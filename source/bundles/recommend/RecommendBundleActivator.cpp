@@ -340,7 +340,7 @@ void RecommendBundleActivator::createMaster_()
     getRecommendBase_ = getRecommendMaster_.get();
 
     updateRecommendMaster_.reset(
-        new UpdateRecommendMaster(config_->collectionName_, updateRecommendWorker_.get()));
+        new UpdateRecommendMaster(config_->collectionName_, shardStrategy_.get(), updateRecommendWorker_.get()));
     updateRecommendBase_ = updateRecommendMaster_.get();
 }
 

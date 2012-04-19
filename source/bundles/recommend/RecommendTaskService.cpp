@@ -848,7 +848,7 @@ void RecommendTaskService::flush_()
     queryPurchaseCounter_.flush();
 
     bool result = true;
-    if (updateRecommendBase_.isMasterNode())
+    if (updateRecommendBase_.needRebuildPurchaseSimMatrix())
     {
         updateRecommendBase_.buildPurchaseSimMatrix(result);
     }

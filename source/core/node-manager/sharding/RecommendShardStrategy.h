@@ -24,6 +24,8 @@ public:
 
     virtual ~RecommendShardStrategy() {}
 
+    shardid_t getShardNum() const { return shardNum_; }
+
     /**
      * get shard id for @p itemId.
      * @param itemId item id

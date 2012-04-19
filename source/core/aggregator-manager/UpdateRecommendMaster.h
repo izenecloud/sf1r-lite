@@ -17,7 +17,7 @@
 
 namespace sf1r
 {
-
+class RecommendShardStrategy;
 class UpdateRecommendWorker;
 
 class UpdateRecommendMaster : public UpdateRecommendBase
@@ -29,6 +29,7 @@ public:
      */
     UpdateRecommendMaster(
         const std::string& collection,
+        RecommendShardStrategy* shardStrategy,
         UpdateRecommendWorker* localWorker
     );
 
@@ -46,6 +47,8 @@ public:
         bool& result
     );
 
+    virtual bool needRebuildPurchaseSimMatrix() const;
+
     virtual void buildPurchaseSimMatrix(bool& result);
 
     virtual void updateVisitMatrix(
@@ -60,6 +63,7 @@ private:
     const std::string collection_;
     boost::scoped_ptr<UpdateRecommendMerger> merger_;
     boost::shared_ptr<UpdateRecommendAggregator> aggregator_;
+    RecommendShardStrategy* shardStrategy_;
 };
 
 } // namespace sf1r
