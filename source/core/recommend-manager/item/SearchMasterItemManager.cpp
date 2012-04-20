@@ -22,7 +22,8 @@ bool SearchMasterItemManager::sendRequest_(
     RawTextResultFromSIA& response
 )
 {
-    return indexSearchService_.getDocumentsByIds(request, response);
+    indexSearchService_.getDocumentsByIds(request, response);
+    return true;
 }
 
 } // namespace sf1r

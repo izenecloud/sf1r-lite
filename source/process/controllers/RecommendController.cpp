@@ -1185,16 +1185,28 @@ void RecommendController::renderBundleResult(const TIBParam& param, const std::v
     for (std::vector<ItemBundle>::const_iterator bundleIt = bundleVec.begin();
         bundleIt != bundleVec.end(); ++bundleIt)
     {
-        Value& bundleValue = resources();
+        Value bundleValue;
         bundleValue[Keys::freq] = bundleIt->freq;
-
         Value& itemsValue = bundleValue[Keys::items];
+
         const std::vector<Document>& items = bundleIt->items;
+        bool isItemRemoved = false;
 
         for (std::vector<Document>::const_iterator itemIt = items.begin();
             itemIt != items.end(); ++itemIt)
         {
+            if (itemIt->isEmpty())
+            {
+                isItemRemoved = true;
+                break;
+            }
+
             renderItem(*itemIt, param.selectRecommendProps, itemsValue());
+        }
+
+        if (! isItemRemoved)
+        {
+            bundleValue.swap(resources());
         }
     }
 }

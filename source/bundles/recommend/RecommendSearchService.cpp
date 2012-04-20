@@ -7,6 +7,7 @@
 #include <recommend-manager/common/ItemBundle.h>
 #include <recommend-manager/item/ItemManager.h>
 #include <recommend-manager/item/ItemIdGenerator.h>
+#include <recommend-manager/item/ItemContainer.h>
 #include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/recommender/RecommenderFactory.h>
 #include <recommend-manager/recommender/Recommender.h>
@@ -53,9 +54,20 @@ bool RecommendSearchService::recommend(
         param.enableItemCondition(&itemManager_);
 
     Recommender* recommender = recommenderFactory_.getRecommender(param.type);
+    RecommendItemContainer itemContainer(recItemVec);
 
     if (recommender && recommender->recommend(param, recItemVec))
-        return getRecommendItems_(param, recItemVec);
+    {
+        itemManager_.getItemProps(param.selectRecommendProps, itemContainer);
+
+        // BAB need not reason results
+        if (param.type != BUY_ALSO_BUY)
+        {
+            getReasonItems_(recItemVec);
+        }
+
+        return true;
+    }
 
     return false;
 }
@@ -85,40 +97,28 @@ bool RecommendSearchService::convertItemId_(
     return true;
 }
 
-bool RecommendSearchService::getRecommendItems_(
-    const RecommendParam& param,
-    std::vector<RecommendItem>& recItemVec
-) const
+void RecommendSearchService::getReasonItems_(std::vector<RecommendItem>& recItemVec) const
 {
-    for (std::vector<RecommendItem>::iterator it = recItemVec.begin();
-        it != recItemVec.end(); ++it)
+    for (std::vector<RecommendItem>::iterator recIt = recItemVec.begin();
+        recIt != recItemVec.end(); ++recIt)
     {
-        itemid_t itemId = it->item_.getId();
-        if (! itemManager_.getItem(itemId, param.selectRecommendProps, it->item_))
+        // empty doc means it has been removed
+        if (recIt->item_.isEmpty())
+            continue;
+
+        std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
+        for (std::vector<ReasonItem>::iterator reasonIt = reasonItems.begin();
+            reasonIt != reasonItems.end(); ++reasonIt)
         {
-            LOG(ERROR) << "error in ItemManager::getItem(), item id: " << itemId;
-            continue;
+            Document& reasonItem = reasonIt->item_;
+            std::string strItemId;
+
+            if (! itemIdGenerator_.itemIdToStrId(reasonItem.getId(), strItemId))
+                continue;
+
+            izenelib::util::UString ustr(strItemId, izenelib::util::UString::UTF_8);
+            reasonItem.property(DOCID) = ustr;
         }
-
-        getReasonItems_(it->reasonItems_);
-    }
-
-    return true;
-}
-
-void RecommendSearchService::getReasonItems_(std::vector<ReasonItem>& reasonItems) const
-{
-    for (std::vector<ReasonItem>::iterator it = reasonItems.begin();
-        it != reasonItems.end(); ++it)
-    {
-        Document& reasonItem = it->item_;
-        std::string strItemId;
-
-        if (! itemIdGenerator_.itemIdToStrId(reasonItem.getId(), strItemId))
-            continue;
-
-        izenelib::util::UString ustr(strItemId, izenelib::util::UString::UTF_8);
-        reasonItem.property(DOCID) = ustr;
     }
 }
 
@@ -142,17 +142,8 @@ bool RecommendSearchService::getBundleItems_(
     for (std::vector<ItemBundle>::iterator bundleIt = bundleVec.begin();
         bundleIt != bundleVec.end(); ++bundleIt)
     {
-        std::vector<Document>& items = bundleIt->items;
-
-        for (std::vector<Document>::iterator it = items.begin();
-            it != items.end(); ++it)
-        {
-            if (! itemManager_.getItem(it->getId(), selectProps, *it))
-            {
-                LOG(ERROR) << "error in ItemManager::getItem(), item id: " << it->getId();
-                return false;
-            }
-        }
+        MultiItemContainer itemContainer(bundleIt->items);
+        itemManager_.getItemProps(selectProps, itemContainer);
     }
 
     return true;

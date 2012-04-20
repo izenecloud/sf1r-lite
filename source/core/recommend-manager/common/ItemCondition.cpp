@@ -1,5 +1,6 @@
 #include "ItemCondition.h"
 #include "../item/ItemManager.h"
+#include "../item/ItemContainer.h"
 #include <document-manager/Document.h>
 
 namespace sf1r
@@ -19,12 +20,14 @@ bool ItemCondition::isMeetCondition(itemid_t itemId) const
     if (propName_.empty())
         return itemManager_->hasItem(itemId);
 
-    Document item;
+    Document item(itemId);
+    SingleItemContainer itemContainer(item);
+
     std::vector<std::string> propList;
     propList.push_back(propName_);
 
     // not exist
-    if (! itemManager_->getItem(itemId, propList, item))
+    if (!itemManager_->getItemProps(propList, itemContainer))
         return false;
 
     // compare property value

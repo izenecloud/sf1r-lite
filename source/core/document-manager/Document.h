@@ -140,10 +140,15 @@ public:
         return propertyList_.end();
     }
 
+    void clearProperties()
+    {
+        propertyList_.clear();
+    }
+
     void clear()
     {
         id_ = 0;
-        propertyList_.clear();
+        clearProperties();
     }
 
     bool isEmpty() const

@@ -1,6 +1,7 @@
 #include "ItemManagerTestFixture.h"
 #include "test_util.h"
 #include <recommend-manager/item/ItemManager.h>
+#include <recommend-manager/item/ItemContainer.h>
 #include <recommend-manager/item/LocalItemManager.h>
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
@@ -74,24 +75,30 @@ void ItemManagerTestFixture::checkItemManager()
     BOOST_TEST_MESSAGE("check " << itemMap_.size() << " items");
 
     Document doc;
-    for (itemid_t i=1; i <= maxItemId_; ++i)
+    SingleItemContainer itemContainer(doc);
+    for (itemid_t i = 1; i <= maxItemId_; ++i)
     {
+        doc.setId(i);
+
         ItemMap::const_iterator findIt = itemMap_.find(i);
         if (findIt != itemMap_.end())
         {
-            BOOST_CHECK(itemManager_->getItem(i, propList_, doc));
+            BOOST_CHECK(itemManager_->getItemProps(propList_, itemContainer));
             checkItem_(doc, findIt->second);
             BOOST_CHECK_MESSAGE(itemManager_->hasItem(i), "item id: " << i);
         }
         else
         {
-            BOOST_CHECK(itemManager_->getItem(i, propList_, doc) == false);
+            BOOST_CHECK(itemManager_->getItemProps(propList_, itemContainer) == false);
+            BOOST_CHECK(doc.isEmpty());
             BOOST_CHECK(itemManager_->hasItem(i) == false);
         }
     }
 
     itemid_t nonExistId = maxItemId_ + 1;
-    BOOST_CHECK(itemManager_->getItem(nonExistId, propList_, doc) == false);
+    doc.setId(nonExistId);
+    BOOST_CHECK(itemManager_->getItemProps(propList_, itemContainer) == false);
+    BOOST_CHECK(doc.isEmpty());
     BOOST_CHECK(itemManager_->hasItem(nonExistId) == false);
 }
 
@@ -201,7 +208,7 @@ void ItemManagerTestFixture::checkItem_(const Document& doc, const ItemInput& it
         it != itemInput.end(); ++it)
     {
         const string& propName = it->first;
-        BOOST_REQUIRE(doc.hasProperty(propName));
+        BOOST_REQUIRE_MESSAGE(doc.hasProperty(propName), propName);
 
         const PropertyValue propValue = doc.property(propName);
         const izenelib::util::UString& ustr = propValue.get<izenelib::util::UString>();

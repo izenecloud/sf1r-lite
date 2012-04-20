@@ -89,12 +89,7 @@ private:
         }
 
         RawTextResultFromSIA resultItem;
-        if (!collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem))
-        {
-            req.error(resultItem.error_);
-            return;
-        }
-
+        collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem);
         req.result(resultItem);
     }
 

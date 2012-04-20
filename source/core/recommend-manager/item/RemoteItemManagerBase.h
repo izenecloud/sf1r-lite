@@ -27,13 +27,12 @@ public:
         ItemIdGenerator* itemIdGenerator
     );
 
-    virtual bool getItem(
-        itemid_t itemId,
-        const std::vector<std::string>& propList,
-        Document& doc
-    );
-
     virtual bool hasItem(itemid_t itemId);
+
+    virtual bool getItemProps(
+        const std::vector<std::string>& propList,
+        ItemContainer& itemContainer
+    );
 
 protected:
     virtual bool sendRequest_(
@@ -42,15 +41,15 @@ protected:
     ) = 0;
 
     bool createRequest_(
-        itemid_t itemId,
         const std::vector<std::string>& propList,
+        ItemContainer& itemContainer,
         GetDocumentsByIdsActionItem& request
     );
 
-    bool getDocFromResponse_(
-        const RawTextResultFromSIA& response,
+    bool getItemsFromResponse_(
         const std::vector<std::string>& propList,
-        Document& doc
+        const RawTextResultFromSIA& response,
+        ItemContainer& itemContainer
     ) const;
 
 protected:

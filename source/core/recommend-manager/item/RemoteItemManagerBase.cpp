@@ -1,4 +1,5 @@
 #include "RemoteItemManagerBase.h"
+#include "ItemContainer.h"
 #include "ItemIdGenerator.h"
 #include <document-manager/Document.h>
 #include <query-manager/ActionItem.h>
@@ -24,48 +25,37 @@ RemoteItemManagerBase::RemoteItemManagerBase(
 {
 }
 
-bool RemoteItemManagerBase::getItem(
-    itemid_t itemId,
-    const std::vector<std::string>& propList,
-    Document& doc
-)
-{
-    GetDocumentsByIdsActionItem request;
-    RawTextResultFromSIA response;
-
-    if (createRequest_(itemId, propList, request) &&
-        sendRequest_(request, response) &&
-        getDocFromResponse_(response, propList, doc))
-    {
-        doc.setId(itemId);
-        return true;
-    }
-
-    return false;
-}
-
 bool RemoteItemManagerBase::hasItem(itemid_t itemId)
 {
     std::vector<std::string> propList;
     propList.push_back(DOCID);
 
-    Document doc;
-    return getItem(itemId, propList, doc);
+    Document doc(itemId);
+    SingleItemContainer itemContainer(doc);
+    return getItemProps(propList, itemContainer);
+}
+
+bool RemoteItemManagerBase::getItemProps(
+    const std::vector<std::string>& propList,
+    ItemContainer& itemContainer
+)
+{
+    GetDocumentsByIdsActionItem request;
+    RawTextResultFromSIA response;
+
+    return createRequest_(propList, itemContainer, request) &&
+           sendRequest_(request, response) &&
+           getItemsFromResponse_(propList, response, itemContainer);
 }
 
 bool RemoteItemManagerBase::createRequest_(
-    itemid_t itemId,
     const std::vector<std::string>& propList,
+    ItemContainer& itemContainer,
     GetDocumentsByIdsActionItem& request
 )
 {
-    std::string strItemId;
-    if (! itemIdGenerator_->itemIdToStrId(itemId, strItemId))
-        return false;
-
     request.collectionName_ = collection_;
     request.env_.encodingType_ = ENCODING_TYPE_STR;
-    request.docIdList_.push_back(strItemId);
 
     for (std::vector<std::string>::const_iterator propIt = propList.begin();
         propIt != propList.end(); ++propIt)
@@ -73,41 +63,77 @@ bool RemoteItemManagerBase::createRequest_(
         request.displayPropertyList_.push_back(DisplayProperty(*propIt));
     }
 
-    return true;
+    bool result = true;
+    const std::size_t itemNum = itemContainer.getItemNum();
+
+    for (std::size_t i = 0; i < itemNum; ++i)
+    {
+        Document& item = itemContainer.getItem(i);
+        item.clearProperties();
+        std::string strItemId;
+
+        if (! itemIdGenerator_->itemIdToStrId(item.getId(), strItemId))
+            result = false;
+
+        request.docIdList_.push_back(strItemId);
+    }
+
+    return result;
 }
 
-bool RemoteItemManagerBase::getDocFromResponse_(
-    const RawTextResultFromSIA& response,
+bool RemoteItemManagerBase::getItemsFromResponse_(
     const std::vector<std::string>& propList,
-    Document& doc
+    const RawTextResultFromSIA& response,
+    ItemContainer& itemContainer
 ) const
 {
     typedef std::vector<izenelib::util::UString> DocValues;
     typedef std::vector<DocValues> PropDocTable;
-    const PropDocTable& propDocTable = response.fullTextOfDocumentInPage_;
 
-    if (propDocTable.size() != propList.size())
+    const PropDocTable& propDocTable = response.fullTextOfDocumentInPage_;
+    const std::size_t propNum = propList.size();
+    if (propDocTable.size() != propNum)
     {
         LOG(ERROR) << "invalid property count in RawTextResultFromSIA::fullTextOfDocumentInPage_"
-                   << ", request count: " << propList.size()
+                   << ", request count: " << propNum
                    << ", returned count: " << propDocTable.size();
         return false;
     }
 
-    doc.clear();
-
-    PropDocTable::const_iterator tableIt = propDocTable.begin();
-    for (std::vector<std::string>::const_iterator propIt = propList.begin();
-        propIt != propList.end(); ++propIt, ++tableIt)
+    const std::size_t itemNum = itemContainer.getItemNum();
+    for (std::size_t propId = 0; propId < propNum; ++propId)
     {
-        const DocValues& docValues = *tableIt;
-        if (! docValues.empty())
+        const DocValues& docValues = propDocTable[propId];
+        const std::string& propName = propList[propId];
+
+        if (docValues.size() != itemNum)
         {
-            doc.property(*propIt) = docValues[0];
+            LOG(ERROR) << "invalid doc count in RawTextResultFromSIA::fullTextOfDocumentInPage_"
+                       << ", request count: " << itemNum
+                       << ", returned count: " << docValues.size();
+            return false;
+        }
+
+        for (std::size_t docValueId = 0; docValueId < itemNum; ++docValueId)
+        {
+            const izenelib::util::UString& propValue = docValues[docValueId];
+
+            if (! propValue.empty())
+            {
+                Document& doc = itemContainer.getItem(docValueId);
+                doc.property(propName) = propValue;
+            }
         }
     }
 
-    return true;
+    bool result = true;
+    for (std::size_t i = 0; i < itemNum; ++i)
+    {
+        if (itemContainer.getItem(i).isEmpty())
+            result = false;
+    }
+
+    return result;
 }
 
 } // namespace sf1r
