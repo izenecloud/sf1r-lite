@@ -97,10 +97,10 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
     }
     typedef izenelib::util::UString UString;
     namespace bfs = boost::filesystem;
-    if(!bfs::exists(scd_path)) return false;
+    if(!bfs::exists(scd_path)) return true;
     std::vector<std::string> scd_list;
     B5MHelper::GetIScdList(scd_path, scd_list);
-    if(scd_list.empty()) return false;
+    if(scd_list.empty()) return true;
 
     for(uint32_t i=0;i<scd_list.size();i++)
     {

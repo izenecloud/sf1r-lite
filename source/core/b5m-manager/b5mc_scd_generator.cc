@@ -47,7 +47,7 @@ void B5MCScdGenerator::Finish()
     bfs::create_directories(output_dir_);
     ScdWriter b5mc_i(output_dir_, INSERT_SCD);
     ScdWriter b5mc_u(output_dir_, UPDATE_SCD);
-    ScdWriter b5mc_d(output_dir_, DELETE_SCD);
+    //ScdWriter b5mc_d(output_dir_, DELETE_SCD);
     std::vector<std::string> old_scd_list;
     if(!old_scd_.empty())
     {
@@ -90,7 +90,7 @@ void B5MCScdGenerator::Finish()
                     p->second.convertString(spid, izenelib::util::UString::UTF_8);
                 }
             }
-            if(sdocid.empty()||soid.empty()||spid.empty()) continue;
+            if(sdocid.empty()||soid.empty()) continue;
             //LOG(INFO)<<"find oid in old "<<soid<<std::endl;
             ModifyMap::const_iterator it = modified_.find(soid);
             if(it!=modified_.end())
@@ -98,15 +98,16 @@ void B5MCScdGenerator::Finish()
                 Document doc;
                 doc.property("DOCID") = izenelib::util::UString(sdocid, izenelib::util::UString::UTF_8);
                 //LOG(INFO)<<"modified "<<sdocid<<std::endl;
-                if(it->second.empty())
-                {
-                    b5mc_d.Append(doc);
-                }
-                else
-                {
-                    doc.property("uuid") = UString(spid, UString::UTF_8);
-                    b5mc_u.Append(doc);
-                }
+                //keep it even if spid is empty
+                doc.property("uuid") = UString(it->second, UString::UTF_8);
+                b5mc_u.Append(doc);
+                //if(it->second.empty())
+                //{
+                    //b5mc_d.Append(doc);
+                //}
+                //else
+                //{
+                //}
             }
 
         }
@@ -158,15 +159,19 @@ void B5MCScdGenerator::Finish()
             std::string soid;
             if(!doc.getString(oid_property_name, soid)) continue;
             //std::string spid = sdocid;
-            //std::string spid;
+            std::string spid;
             OfferDb::ValueType ovalue;
-            if(!odb_->get(soid, ovalue)) continue;
-            doc.property("uuid") = UString(ovalue.pid, UString::UTF_8);
+            if(odb_->get(soid, ovalue))
+            {
+                spid = ovalue.pid;
+            }
+            //keep the non-exist oid comment
+            doc.property("uuid") = UString(spid, UString::UTF_8);
             b5mc_i.Append(doc);
         }
     }
     b5mc_i.Close();
     b5mc_u.Close();
-    b5mc_d.Close();
+    //b5mc_d.Close();
 }
 

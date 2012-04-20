@@ -84,6 +84,7 @@ describe "B5M Real Tester" do
     iter = 0
     test_pid_map = {}
     test_oid_map = {}
+    test_cid_map = {}
     mock_b5m = MockB5M.new
     mock_b5m.dmp.name = "mock_b5m.dmp"
     mock_dmp = MockDm.new
@@ -231,23 +232,21 @@ describe "B5M Real Tester" do
             doc.each_pair do |k,v|
               sym = k.to_sym
               sdoc[sym] = v
-              #if sym==:DOCID or sym==:uuid or sym==:ProdDocid
-                #sdoc[sym] = v
-              #end
             end
             cid = sdoc[:DOCID]
             oid = sdoc[:ProdDocid]
             pid = sdoc[:uuid]
-            #next if cid.nil? or oid.nil? or pid.nil?
             valid = false
-            if oid.nil? and pid.nil?
+            if test_cid_map.has_key?(cid)
               valid = true
-            elsif !oid.nil? and test_oid_map.has_key?(oid)
-              valid = true
-            elsif !pid.nil? and test_pid_map.has_key?(pid)
-              valid = true
+            else
+              if !pid.nil? and test_pid_map.has_key?(pid)
+                valid = true
+                test_cid_map[cid]=true
+              end
             end
             next unless valid
+            puts "index b5mc doc : #{sdoc}"
             if scd_type==ScdParser::INSERT_SCD
               mock_dmc.insert(sdoc)
             elsif scd_type==ScdParser::UPDATE_SCD
@@ -257,9 +256,9 @@ describe "B5M Real Tester" do
             end
           end
         end
+        mock_dmc.should dmc_match(mock_b5m.dmo)
       end
 
-      mock_dmc.should dmc_match(mock_b5m.dmo)
 
     end
 
