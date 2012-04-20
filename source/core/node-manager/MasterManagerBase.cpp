@@ -60,6 +60,28 @@ bool MasterManagerBase::getShardReceiver(
     }
 }
 
+void MasterManagerBase::registerIndexStatus(const std::string& collection, bool isIndexing)
+{
+    std::string indexStatus = isIndexing ? "indexing" : "notindexing";
+
+    std::string data;
+    if (zookeeper_ && zookeeper_->getZNodeData(serverRealPath_, data))
+    {
+        ZNode znode;
+        znode.loadKvString(data);
+        znode.setValue(collection, indexStatus);
+    }
+
+    std::string nodePath = getNodePath(sf1rTopology_.curNode_.replicaId_,  sf1rTopology_.curNode_.nodeId_);
+    if (zookeeper_ && zookeeper_->getZNodeData(nodePath, data))
+    {
+        ZNode znode;
+        znode.loadKvString(data);
+        znode.setValue(collection, indexStatus);
+    }
+
+}
+
 void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     //std::cout <<CLASSNAME<<state2string(masterState_)<<" "<<zkEvent.toString();
@@ -204,8 +226,7 @@ void MasterManagerBase::doStart()
 
     detectWorkers();
 
-    // Register master as search server without waiting for all workers to be ready.
-    // Because even if one worker is broken down and not recovered, other workers should be in serving.
+    // Each Master serves as a Search Server, register it without waiting for all workers to be ready.
     registerSearchServer();
 }
 
