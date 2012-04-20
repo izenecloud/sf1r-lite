@@ -10,6 +10,8 @@ IndexModeSelector::IndexModeSelector(const boost::shared_ptr<IndexManager>& inde
 
 void IndexModeSelector::TrySetIndexMode(long scd_file_size)
 {
+    if(index_manager_->getIndexCompressType() ==  izenelib::ir::indexmanager::CHUNK)
+        return;
     uint32_t exist_docs = index_manager_->numDocs();
     if(exist_docs==0)
     {
@@ -55,4 +57,3 @@ void IndexModeSelector::ForceCommit()
         index_manager_->flush();
     }
 }
-

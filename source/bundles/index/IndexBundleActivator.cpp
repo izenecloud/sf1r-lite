@@ -456,7 +456,6 @@ IndexBundleActivator::createIndexManager_() const
 
         ret->setIndexManagerConfig(config, collectionIdMapping);
     }
-
     return ret;
 }
 
