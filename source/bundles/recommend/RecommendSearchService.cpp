@@ -63,7 +63,7 @@ bool RecommendSearchService::recommend(
         // BAB need not reason results
         if (param.type != BUY_ALSO_BUY)
         {
-            getReasonItems_(recItemVec);
+            getReasonItems_(param.selectReasonProps, recItemVec);
         }
 
         return true;
@@ -97,7 +97,10 @@ bool RecommendSearchService::convertItemId_(
     return true;
 }
 
-void RecommendSearchService::getReasonItems_(std::vector<RecommendItem>& recItemVec) const
+void RecommendSearchService::getReasonItems_(
+    const std::vector<std::string>& selectProps,
+    std::vector<RecommendItem>& recItemVec
+)
 {
     for (std::vector<RecommendItem>::iterator recIt = recItemVec.begin();
         recIt != recItemVec.end(); ++recIt)
@@ -106,19 +109,8 @@ void RecommendSearchService::getReasonItems_(std::vector<RecommendItem>& recItem
         if (recIt->item_.isEmpty())
             continue;
 
-        std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
-        for (std::vector<ReasonItem>::iterator reasonIt = reasonItems.begin();
-            reasonIt != reasonItems.end(); ++reasonIt)
-        {
-            Document& reasonItem = reasonIt->item_;
-            std::string strItemId;
-
-            if (! itemIdGenerator_.itemIdToStrId(reasonItem.getId(), strItemId))
-                continue;
-
-            izenelib::util::UString ustr(strItemId, izenelib::util::UString::UTF_8);
-            reasonItem.property(DOCID) = ustr;
-        }
+        ReasonItemContainer itemContainer(recIt->reasonItems_);
+        itemManager_.getItemProps(selectProps, itemContainer);
     }
 }
 
@@ -129,15 +121,18 @@ bool RecommendSearchService::topItemBundle(
 {
     TIBRecommender* recommender = recommenderFactory_.getTIBRecommender();
     if (recommender && recommender->recommend(param, bundleVec))
-        return getBundleItems_(param.selectRecommendProps, bundleVec);
+    {
+        getBundleItems_(param.selectRecommendProps, bundleVec);
+        return true;
+    }
 
     return false;
 }
 
-bool RecommendSearchService::getBundleItems_(
+void RecommendSearchService::getBundleItems_(
     const std::vector<std::string>& selectProps,
     std::vector<ItemBundle>& bundleVec
-) const
+)
 {
     for (std::vector<ItemBundle>::iterator bundleIt = bundleVec.begin();
         bundleIt != bundleVec.end(); ++bundleIt)
@@ -145,8 +140,6 @@ bool RecommendSearchService::getBundleItems_(
         MultiItemContainer itemContainer(bundleIt->items);
         itemManager_.getItemProps(selectProps, itemContainer);
     }
-
-    return true;
 }
 
 RecommendType RecommendSearchService::getRecommendType(const std::string& typeStr) const

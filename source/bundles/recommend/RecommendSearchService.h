@@ -59,17 +59,15 @@ private:
         std::vector<itemid_t>& outputItemVec
     );
 
-    bool getRecommendItems_(
-        const RecommendParam& param,
+    void getReasonItems_(
+        const std::vector<std::string>& selectProps,
         std::vector<RecommendItem>& recItemVec
-    ) const;
+    );
 
-    void getReasonItems_(std::vector<RecommendItem>& recItemVec) const;
-
-    bool getBundleItems_(
+    void getBundleItems_(
         const std::vector<std::string>& selectProps,
         std::vector<ItemBundle>& bundleVec
-    ) const;
+    );
 
 private:
     RecommendBundleConfiguration& bundleConfig_;

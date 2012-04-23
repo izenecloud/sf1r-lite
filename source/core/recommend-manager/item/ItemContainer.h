@@ -65,6 +65,19 @@ private:
     std::vector<RecommendItem>& recItems_;
 };
 
+class ReasonItemContainer : public ItemContainer
+{
+public:
+    ReasonItemContainer(std::vector<ReasonItem>& reasonItems) : reasonItems_(reasonItems) {}
+
+    virtual std::size_t getItemNum() const { return reasonItems_.size(); }
+
+    virtual Document& getItem(std::size_t i) { return reasonItems_[i].item_; }
+
+private:
+    std::vector<ReasonItem>& reasonItems_;
+};
+
 } // namespace sf1r
 
 #endif // ITEM_CONTAINER_H

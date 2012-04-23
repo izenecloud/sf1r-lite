@@ -32,7 +32,8 @@ bool RemoteItemManagerBase::hasItem(itemid_t itemId)
 
     Document doc(itemId);
     SingleItemContainer itemContainer(doc);
-    return getItemProps(propList, itemContainer);
+
+    return getItemPropsImpl_(propList, itemContainer);
 }
 
 bool RemoteItemManagerBase::getItemProps(
@@ -40,9 +41,39 @@ bool RemoteItemManagerBase::getItemProps(
     ItemContainer& itemContainer
 )
 {
-    if (itemContainer.getItemNum() == 0)
+    if (propList.empty() || itemContainer.getItemNum() == 0)
         return true;
 
+    if (propList.size() == 1 && propList[0] == DOCID)
+        return getItemStrIds_(itemContainer);
+
+    return getItemPropsImpl_(propList, itemContainer);
+}
+
+bool RemoteItemManagerBase::getItemStrIds_(ItemContainer& itemContainer)
+{
+    const std::size_t itemNum = itemContainer.getItemNum();
+
+    for (std::size_t i = 0; i < itemNum; ++i)
+    {
+        Document& item = itemContainer.getItem(i);
+        std::string strItemId;
+
+        if (! itemIdGenerator_->itemIdToStrId(item.getId(), strItemId))
+            return false;
+
+        izenelib::util::UString ustr(strItemId, izenelib::util::UString::UTF_8);
+        item.property(DOCID) = ustr;
+    }
+
+    return true;
+}
+
+bool RemoteItemManagerBase::getItemPropsImpl_(
+    const std::vector<std::string>& propList,
+    ItemContainer& itemContainer
+)
+{
     GetDocumentsByIdsActionItem request;
     RawTextResultFromSIA response;
 

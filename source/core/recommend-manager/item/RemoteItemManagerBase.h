@@ -40,6 +40,13 @@ protected:
         RawTextResultFromSIA& response
     ) = 0;
 
+    bool getItemStrIds_(ItemContainer& itemContainer);
+
+    bool getItemPropsImpl_(
+        const std::vector<std::string>& propList,
+        ItemContainer& itemContainer
+    );
+
     bool createRequest_(
         const std::vector<std::string>& propList,
         ItemContainer& itemContainer,
