@@ -17,7 +17,6 @@
 
 namespace sf1r
 {
-
 class GetRecommendWorker;
 class RecommendShardStrategy;
 

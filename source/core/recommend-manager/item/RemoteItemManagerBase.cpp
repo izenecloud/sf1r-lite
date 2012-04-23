@@ -40,6 +40,9 @@ bool RemoteItemManagerBase::getItemProps(
     ItemContainer& itemContainer
 )
 {
+    if (itemContainer.getItemNum() == 0)
+        return true;
+
     GetDocumentsByIdsActionItem request;
     RawTextResultFromSIA response;
 
@@ -63,7 +66,6 @@ bool RemoteItemManagerBase::createRequest_(
         request.displayPropertyList_.push_back(DisplayProperty(*propIt));
     }
 
-    bool result = true;
     const std::size_t itemNum = itemContainer.getItemNum();
 
     for (std::size_t i = 0; i < itemNum; ++i)
@@ -73,12 +75,12 @@ bool RemoteItemManagerBase::createRequest_(
         std::string strItemId;
 
         if (! itemIdGenerator_->itemIdToStrId(item.getId(), strItemId))
-            result = false;
+            return false;
 
         request.docIdList_.push_back(strItemId);
     }
 
-    return result;
+    return true;
 }
 
 bool RemoteItemManagerBase::getItemsFromResponse_(
@@ -126,14 +128,13 @@ bool RemoteItemManagerBase::getItemsFromResponse_(
         }
     }
 
-    bool result = true;
     for (std::size_t i = 0; i < itemNum; ++i)
     {
         if (itemContainer.getItem(i).isEmpty())
-            result = false;
+            return false;
     }
 
-    return result;
+    return true;
 }
 
 } // namespace sf1r

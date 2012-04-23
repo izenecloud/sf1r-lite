@@ -54,10 +54,10 @@ bool RecommendSearchService::recommend(
         param.enableItemCondition(&itemManager_);
 
     Recommender* recommender = recommenderFactory_.getRecommender(param.type);
-    RecommendItemContainer itemContainer(recItemVec);
 
     if (recommender && recommender->recommend(param, recItemVec))
     {
+        RecommendItemContainer itemContainer(recItemVec);
         itemManager_.getItemProps(param.selectRecommendProps, itemContainer);
 
         // BAB need not reason results
