@@ -108,11 +108,20 @@ boost::shared_ptr<DocumentManager> IndexTaskService::getDocumentManager() const
 
 bool IndexTaskService::distributedIndex_(unsigned int numdoc)
 {
-    return distributedIndexImpl_(
-                numdoc,
-                bundleConfig_->collectionName_,
-                bundleConfig_->masterIndexSCDPath(),
-                bundleConfig_->indexShardKeys_);
+    // notify that current master is indexing for the specified collection,
+    // we may need to check that whether other Master it's indexing this collection in some cases,
+    // or it's depends on Nginx router strategy.
+    SearchMasterManager::get()->registerIndexStatus(bundleConfig_->collectionName_, true);
+
+    bool ret = distributedIndexImpl_(
+                    numdoc,
+                    bundleConfig_->collectionName_,
+                    bundleConfig_->masterIndexSCDPath(),
+                    bundleConfig_->indexShardKeys_);
+
+    SearchMasterManager::get()->registerIndexStatus(bundleConfig_->collectionName_, false);
+
+    return ret;
 }
 
 bool IndexTaskService::distributedIndexImpl_(

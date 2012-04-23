@@ -180,12 +180,16 @@ void B5MPUueProcessor::Finish()
         {
             uint64_t flag = 0;
             docs[i].getProperty("flag", flag);
+            std::string sprice;
+            docs[i].getString("Price", sprice);
             ProductProperty pp(docs[i]);
             if(flag==FLAG_APPEND)
             {
                 //LOG(INFO)<<"+= on pid "<<pid<<std::endl;
                 //LOG(INFO)<<"before += "<<new_product.ToString()<<std::endl;
-                //LOG(INFO)<<"+= "<<pp.ToString()<<std::endl;
+                //LOG(INFO)<<"price+= "<<sprice<<std::endl;
+                //LOG(INFO)<<"price+= "<<pp.price.ToString()<<std::endl;
+                LOG(INFO)<<"+= "<<pp.ToString()<<std::endl;
                 new_product += pp;
                 //LOG(INFO)<<"after += "<<new_product.ToString()<<std::endl;
             }

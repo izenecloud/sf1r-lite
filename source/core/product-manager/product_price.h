@@ -41,6 +41,8 @@ public:
     bool GetMid(ProductPriceType& mid) const;
 
 private:
+    static bool Convert_(const std::string& str, ProductPriceType& p);
+    static bool Convert_(ProductPriceType p, std::stringstream& ss);
     void Check_();
 
     void Reset_();

@@ -5,9 +5,18 @@ module RSpec
   module Matchers
     class DMMatcher
 
-      def initialize(dm)
+      def initialize(dm, properties)
         @dm = dm
         @error = ""
+        @property_map={}
+        properties.each do |p|
+          @property_map[p]=true
+        end
+      end
+
+      def valid_property(p)
+        return true if @property_map.empty?
+        return @property_map.has_key?(p)
       end
       
       def matches?(another_dm)
@@ -29,8 +38,7 @@ module RSpec
           end
           diff_key = nil
           doc.each_pair do |k,v|
-            next if k==:_id
-            next if k==:Title
+            next if !valid_property(k)
             #puts "key : #{k.class}, #{k}"
             if v.to_s!=another_doc[k].to_s
               diff_key = k
@@ -38,7 +46,7 @@ module RSpec
             end
           end
           unless diff_key.nil?
-            @error = "#{docid} diff in key #{diff_key} : #{another_doc.to_s} *** #{doc.to_s}"
+            @error = "#{docid} diff in key #{diff_key} [#{another_dm.name} - #{@dm.name}] : #{another_doc.to_s} *** #{doc.to_s}"
             return false
           end
         end
@@ -54,8 +62,8 @@ module RSpec
 
     end
 
-    def dm_equal(dm)
-      DMMatcher.new(dm)
+    def dm_equal(dm, properties = [:DOCID, :Price, :Source, :itemcount, :uuid])
+      DMMatcher.new(dm, properties)
     end
 
   end

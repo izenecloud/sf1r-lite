@@ -666,13 +666,6 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
     else
         std::cout << "local host ip : " << distributedCommonConfig_.localHost_ << std::endl;
 
-    // For a real cluster of distributed nodes, we can use username(logname) as the default clusterId.
-    // But currently, we make each clusterId unique for each machine. TODO remove this process
-    size_t pos = distributedCommonConfig_.localHost_.find_last_of(".");
-    if (pos != std::string::npos)
-    {
-        distributedCommonConfig_.clusterId_.append(distributedCommonConfig_.localHost_.substr(pos+1));
-    }
     std::cout << "cluster id : " << distributedCommonConfig_.clusterId_ << std::endl;
 }
 
@@ -710,6 +703,7 @@ void SF1Config::parseDistributedTopology(
 
         getAttribute(topology, "enable", topologyConfig.enabled_);
         getAttribute(topology, "type", topologyConfig.type_);
+        topologyConfig.sf1rTopology_.setType(topologyConfig.type_);
 
         Sf1rTopology& sf1rTopology = topologyConfig.sf1rTopology_;
         sf1rTopology.clusterId_ = distributedCommonConfig_.clusterId_;

@@ -6,7 +6,8 @@ require_relative 'product_source'
 
 class MockB5M < MockDm
 
-  attr_reader :dmo, :dmp
+  attr_accessor :dmo, :dmp
+
 
   def initialize
     #@dmo = MockDm.new([:uuid])
@@ -15,6 +16,24 @@ class MockB5M < MockDm
     #@uuid_gen = UUID.new
     #@uuid_map = {}
   end
+
+  #def self.get_product_doc(doc)
+    #sdoc = {}
+    #doc.each_pair do |k,v|
+      #sym = k
+      #unless sym.is_a?Symbol
+        #sym = sym.to_sym
+      #end
+      #sym = k.to_sym
+      #if sym==:Price
+        #sdoc[sym] = ProductPrice.new(v.to_i)
+      #elsif sym==:Source
+        #sdoc[sym] = ProductSource.new(v)
+      #else
+        #sdoc[sym] = v
+      #end
+    #end
+  #end
 
   def index(path)
     scd_list = ScdParser.get_scd_list(path)
@@ -29,7 +48,7 @@ class MockB5M < MockDm
         doc.each_pair do |k,v|
           sym = k.to_sym
           if sym==:Price
-            sdoc[sym] = ProductPrice.new(v.to_i)
+            sdoc[sym] = ProductPrice.parse(v)
           elsif sym==:Source
             sdoc[sym] = ProductSource.new(v)
           else

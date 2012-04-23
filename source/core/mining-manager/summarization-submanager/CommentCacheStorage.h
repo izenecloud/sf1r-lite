@@ -27,12 +27,27 @@ public:
     {
     }
 
-    virtual void Delete(key_t const& key, aux_t const& aux) const
+    void Delete(key_t const& key, aux_t const& aux) const
     {
         db_.update(key, 0);
     }
 
-    virtual void UniqueKeyAppend(key_t const& key, value_t const& value, aux_t const& aux) const
+    void UniqueKeyAppend(key_t const& key, value_t const& value, aux_t const& aux) const
+    {
+        if (first_time_)
+        {
+            db_.update(key, 0);
+            prev_key_ = key;
+            first_time_ = false;
+        }
+        else if (key != prev_key_)
+        {
+            db_.update(key, 0);
+            prev_key_ = key;
+        }
+    }
+
+    void UniqueKeyExpel(key_t const& key, value_t const& value, aux_t const& aux) const
     {
         if (first_time_)
         {
@@ -78,6 +93,7 @@ public:
     {
         NONE,
         APPEND_UPDATE,
+        EXPEL_UPDATE,
         DELETE
     };
 
@@ -88,6 +104,8 @@ public:
     ~CommentCacheStorage();
 
     void AppendUpdate(const KeyType& key, uint32_t docid, const ContentType& content);
+
+    void ExpelUpdate(const KeyType& key, uint32_t docid);
 
     void Delete(const KeyType& key);
 

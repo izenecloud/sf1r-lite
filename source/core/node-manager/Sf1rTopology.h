@@ -189,7 +189,14 @@ public:
 class Sf1rTopology
 {
 public:
+    enum TopologyType
+    {
+        TOPOLOGY_SEARCH,
+        TOPOLOGY_RECOMMEND
+    };
+
     std::string clusterId_;
+    TopologyType type_;
 
     uint32_t nodeNum_;
     uint32_t replicaNum_;
@@ -198,9 +205,22 @@ public:
 
 public:
     Sf1rTopology()
-        : nodeNum_(0)
+        : type_(TOPOLOGY_SEARCH)
+        , nodeNum_(0)
         , replicaNum_(1)
     {}
+
+    void setType(std::string& type)
+    {
+        if (type == "search")
+        {
+            type_ = TOPOLOGY_SEARCH;
+        }
+        else if (type == "recommend")
+        {
+            type_ = TOPOLOGY_RECOMMEND;
+        }
+    }
 
     std::string toString()
     {

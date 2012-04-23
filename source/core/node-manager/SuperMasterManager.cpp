@@ -14,7 +14,11 @@ void SuperMasterManager::start()
         return;
     }
 
-    detectSearchMasters();
+    if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_SEARCH)
+        detectSearchMasters();
+
+    if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_RECOMMEND)
+        detectRecommendMasters();
 }
 
 void SuperMasterManager::detectSearchMasters()
@@ -64,7 +68,9 @@ void SuperMasterManager::detectSearchMasters()
         }
     }
 
-    LOG (INFO) << "detected " << masterMap_.size() << " master(s) in cluster.";
+    LOG (INFO) << "detected " << masterMap_.size() 
+               << ((sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_RECOMMEND) ? " recommend" : " search") 
+               << " master(s) in cluster.";
 }
 
 void SuperMasterManager::process(ZooKeeperEvent& zkEvent)

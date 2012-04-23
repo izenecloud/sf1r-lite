@@ -26,10 +26,10 @@ CategoryScdSpliter::~CategoryScdSpliter()
 
 bool CategoryScdSpliter::Load_(const std::string& category_dir, const std::string& name)
 {
-    LOG(INFO)<<"Loading "<<category_dir<<std::endl;
+    //LOG(INFO)<<"Loading "<<category_dir<<std::endl;
     if(!boost::filesystem::exists(category_dir)) return false;
-    std::string scd_file = category_dir+"/"+name+".SCD";
-    if(boost::filesystem::exists(scd_file)) return true;
+    std::string scd_dir = category_dir+"/"+name;
+    if(boost::filesystem::exists(scd_dir)) return true;
     std::string type = "";
     {
         std::string file = category_dir+"/type";
@@ -53,7 +53,6 @@ bool CategoryScdSpliter::Load_(const std::string& category_dir, const std::strin
             boost::regex r(line);
             ValueType value;
             value.regex = r;
-            std::string scd_dir = category_dir+"/"+name;
             boost::filesystem::create_directories(scd_dir);
             ScdWriterController* writer = new ScdWriterController(scd_dir);
             value.writer = writer;
@@ -68,6 +67,7 @@ bool CategoryScdSpliter::Load(const std::string& dir, const std::string& name)
 {
     namespace bfs = boost::filesystem;
     if(!bfs::exists(dir)) return false;
+    LOG(INFO)<<"Loading "<<dir<<std::endl;
     std::string category_file = dir+"/category";
     if(bfs::exists(category_file))
     {
@@ -90,12 +90,17 @@ bool CategoryScdSpliter::Load(const std::string& dir, const std::string& name)
 
 bool CategoryScdSpliter::Split(const std::string& scd_path)
 {
+    if(values_.empty())
+    {
+        LOG(INFO)<<"No target to output split SCD"<<std::endl;
+        return true;
+    }
     typedef izenelib::util::UString UString;
     namespace bfs = boost::filesystem;
-    if(!bfs::exists(scd_path)) return false;
+    if(!bfs::exists(scd_path)) return true;
     std::vector<std::string> scd_list;
     B5MHelper::GetIScdList(scd_path, scd_list);
-    if(scd_list.empty()) return false;
+    if(scd_list.empty()) return true;
 
     for(uint32_t i=0;i<scd_list.size();i++)
     {

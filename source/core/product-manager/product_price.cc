@@ -4,6 +4,7 @@
 #include <boost/operators.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
+#include <glog/logging.h>
 
 using namespace sf1r;
 
@@ -48,6 +49,32 @@ bool ProductPrice::GetMid(ProductPriceType& mid) const
     return true;
 }
 
+bool ProductPrice::Convert_(const std::string& str, ProductPriceType& p)
+{
+    try
+    {
+        p = boost::lexical_cast<ProductPriceType>(str);
+    }
+    catch(std::exception& ex)
+    {
+        return false;
+    }
+    return true;
+    //int stat = sscanf(str.c_str(), "%lf", &p);
+    //if(stat==0 || stat==EOF) return false;
+    //return true;
+}
+
+bool ProductPrice::Convert_(ProductPriceType p, std::stringstream& os)
+{
+    char buffer[50];
+    int stat = sprintf(buffer, "%.2f", p);
+    if(stat==0 || stat==EOF) return false;
+    os<<buffer;
+    //os<<std::string(buffer);
+    return true;
+}
+
 bool ProductPrice::Parse(const izenelib::util::UString& ustr)
 {
     std::string str;
@@ -57,13 +84,13 @@ bool ProductPrice::Parse(const izenelib::util::UString& ustr)
 
 bool ProductPrice::Parse(const std::string& str)
 {
-    try
+    ProductPriceType p;
+    if(Convert_(str,p))
     {
-        ProductPriceType p = boost::lexical_cast<ProductPriceType>(str);
         value.first = p;
         value.second = p;
     }
-    catch (boost::bad_lexical_cast &)
+    else
     {
         static const char sep[] = {'-', '~', ','};
         static const uint32_t len = sizeof(sep) / sizeof(char);
@@ -93,15 +120,19 @@ bool ProductPrice::Parse(const std::string& str)
 std::string ProductPrice::ToString() const
 {
     if (!Valid()) return "";
+    //LOG(INFO)<<value.first<<"-"<<value.second;
     std::stringstream ss;
     if (value.first == value.second)
     {
-        ss << value.first;
+        if(!Convert_(value.first, ss)) return "";
     }
     else
     {
-        ss << value.first << "-" << value.second;
+        if(!Convert_(value.first, ss)) return "";
+        ss<<"-";
+        if(!Convert_(value.second, ss)) return "";
     }
+    //LOG(INFO)<<ss.str()<<std::endl;
     return ss.str();
 }
 
@@ -149,33 +180,21 @@ bool ProductPrice::split_float_(const std::string& str, char sep)
         {
             if (n != nOld)
             {
-                try
-                {
-                    std::string tmpStr = str.substr(nOld, n - nOld);
-                    boost::algorithm::trim(tmpStr);
-                    ProductPriceType p = boost::lexical_cast<ProductPriceType>(tmpStr);
-                    value_list.push_back(p);
-                }
-                catch (boost::bad_lexical_cast &)
-                {
-                    return false;
-                }
+                std::string tmpStr = str.substr(nOld, n - nOld);
+                boost::algorithm::trim(tmpStr);
+                ProductPriceType p;
+                if(!Convert_(tmpStr, p)) return false;
+                value_list.push_back(p);
             }
             nOld = ++n;
         }
     }
 
-    try
-    {
-        std::string tmpStr = str.substr(nOld, str.length() - nOld);
-        boost::algorithm::trim(tmpStr);
-        ProductPriceType p = boost::lexical_cast<ProductPriceType>(tmpStr);
-        value_list.push_back(p);
-    }
-    catch (boost::bad_lexical_cast &)
-    {
-        return false;
-    }
+    std::string tmpStr = str.substr(nOld, str.length() - nOld);
+    boost::algorithm::trim(tmpStr);
+    ProductPriceType p;
+    if(!Convert_(tmpStr,p)) return false;
+    value_list.push_back(p);
     if (value_list.size() >= 2)
     {
         value.first = std::min(value_list[0], value_list[1]);
