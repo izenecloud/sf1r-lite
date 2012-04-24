@@ -222,14 +222,14 @@ BOOST_AUTO_TEST_CASE(summary)
     std::vector<izenelib::util::UString> outRawSummaryList;
     std::vector<izenelib::util::UString> outFullTextList;
 
-    bool expectedValue = false;
-
-    BOOST_CHECK_EQUAL( documentManager->getRawTextOfDocuments(
+    BOOST_CHECK( documentManager->getRawTextOfDocuments(
             docIdList, "Content", true, 10, O_SNIPPET, queryTermString,
-            outSnippetList, outRawSummaryList, outFullTextList ) ,expectedValue );
-    BOOST_CHECK_EQUAL( outSnippetList.empty(), !expectedValue );
-    BOOST_CHECK_EQUAL( outRawSummaryList.empty(), !expectedValue );
-    BOOST_CHECK_EQUAL( outFullTextList.empty(), !expectedValue );
+            outSnippetList, outRawSummaryList, outFullTextList ) == false);
+
+    std::size_t docNum = docIdList.size();
+    BOOST_CHECK_EQUAL(outSnippetList.size(), docNum);
+    BOOST_CHECK_EQUAL(outRawSummaryList.size(), docNum);
+    BOOST_CHECK_EQUAL(outFullTextList.size(), docNum);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
