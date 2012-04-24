@@ -260,7 +260,7 @@ int MasterManagerBase::detectWorkers()
                         {
                             std::stringstream ss;
                             ss << "[" << CLASSNAME << "] conflict detected: shardid " << shardid
-                               << " is configured for both node " << nodeid << " and node" << workerMap_[shardid]->nodeId_ << endl;
+                               << " is configured in both node" << nodeid << " and node" << workerMap_[shardid]->nodeId_ << endl;
 
                             throw std::runtime_error(ss.str());
                         }
@@ -317,7 +317,7 @@ int MasterManagerBase::detectWorkers()
     {
         masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
         LOG (INFO) << CLASSNAME << " detected " << detected << " workers (good " << good
-                   << "), expected " << sf1rTopology_.curNode_.master_.totalShardNum_ << std::endl;
+                   << "), all " << sf1rTopology_.curNode_.master_.totalShardNum_ << std::endl;
     }
 
     // update workers' info to aggregators
@@ -363,7 +363,8 @@ void MasterManagerBase::updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode
                     << " @" << workerNode->host_;
     }
 
-    LOG (INFO) << CLASSNAME << " detected worker " << workerNode->worker_.shardId_ << " "
+    LOG (INFO) << CLASSNAME << " detected worker" << workerNode->worker_.shardId_
+               << " (node" << workerNode->nodeId_ <<") "
                << workerNode->host_ << ":" << workerNode->worker_.port_ << std::endl;
 }
 

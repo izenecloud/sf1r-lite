@@ -193,9 +193,8 @@ void NodeManagerBase::enterCluster()
                << "] node[" << curNode.nodeId_
                << "]{"
                << (curNode.worker_.isEnabled_ ?
-                       (std::string("worker ") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
+                       (std::string("worker") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
                << curNode.userName_ << "@" << curNode.host_ << "}";
-
 
     // Start Master manager
     if (sf1rTopology_.curNode_.master_.isEnabled_)

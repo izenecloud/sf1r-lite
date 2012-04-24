@@ -170,7 +170,7 @@ bool IndexTaskService::createScdSharder(
 {
     if (shardKeyList.empty())
     {
-        LOG(ERROR) << "No shard key!";
+        LOG(ERROR) << "No sharding key!";
         return false;
     }
 

@@ -5,7 +5,7 @@
     <!-- format: none_time_t, time_t, utc_sec, no_date -->
     <Date format="none_time_t"/>
 
-    <Path basepath="@SF1RENGINE_ROOT@/bin/collection/chinese-wiki">
+    <Path basepath="collection/chinese-wiki"> <!-- fullpath: @SF1RENGINE_ROOT@/bin/collection/chinese-wiki -->
       <!-- The default location can be overwritten -->
       <SCD path=""/>          <!-- default: basepath/scd -->
       <CollectionData path=""/>       <!-- default: basepath/collection-data -->
