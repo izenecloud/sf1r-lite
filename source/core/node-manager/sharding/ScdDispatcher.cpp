@@ -163,7 +163,9 @@ bool BatchScdDispatcher::switchFile()
         std::ofstream*& rof = ofList_[shardid];
 
         if (!rof)
-            rof = new std::ofstream;
+        {
+            continue;
+        }
 
         // close former file
         if (rof->is_open())
@@ -255,6 +257,12 @@ bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
     for (unsigned int shardid = scdSharder_->getMinShardID();
             shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
+        // shards are collection related
+        if (!SearchMasterManager::get()->checkCollectionShardid(collectionName_, shardid))
+        {
+            continue;
+        }
+
         std::ostringstream oss;
         oss << tempDir << shardid; // shard dir path
 

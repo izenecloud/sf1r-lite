@@ -176,7 +176,15 @@ bool IndexTaskService::createScdSharder(
 
     // sharding configuration
     ShardingConfig cfg;
-    cfg.setShardNum(SearchNodeManager::get()->getShardNum());
+    if (SearchMasterManager::get()->getCollectionShardids(bundleConfig_->collectionName_, cfg.shardidList_))
+    {
+        cfg.setShardNum(cfg.shardidList_.size());
+    }
+    else
+    {
+        LOG(ERROR) << "No shardid configured for " << bundleConfig_->collectionName_;
+        return false;
+    }
     for (size_t i = 0; i < shardKeyList.size(); i++)
     {
         cfg.addShardKey(shardKeyList[i]);

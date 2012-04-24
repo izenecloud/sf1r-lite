@@ -7,7 +7,7 @@
 
 using namespace sf1r;
 
-shardid_t HashShardingStrategy::sharding(ShardFieldListT& shardFieldList, ShardingParams& shardingParams)
+shardid_t HashShardingStrategy::sharding(ShardFieldListT& shardFieldList, ShardingConfig& shardingConfig)
 {
     // combine shard keys
     std::string shardkeys;
@@ -20,9 +20,8 @@ shardid_t HashShardingStrategy::sharding(ShardFieldListT& shardFieldList, Shardi
     uint64_t ui = hashmd5(shardkeys.c_str(), shardkeys.size());
 
     // get shard id
-    shardid_t shardid = ui % shardingParams.shardNum_;
-
-    return (shardid+1);
+    shardid_t shardIndex = ui % shardingConfig.shardNum_;
+    return shardingConfig.shardidList_[shardIndex];
 }
 
 uint64_t HashShardingStrategy::hashmd5(const char* data, unsigned long len)

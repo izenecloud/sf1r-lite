@@ -21,11 +21,7 @@ shardid_t ScdSharder::sharding(SCDDoc& scdDoc)
     // set sharding key values
     setShardKeyValues(scdDoc);
 
-    // set sharding parameters
-    ShardingStrategy::ShardingParams shardingParams;
-    shardingParams.shardNum_ = shardingConfig_.getShardNum();
-
-    return shardingStrategy_->sharding(ShardFieldList_, shardingParams);
+    return shardingStrategy_->sharding(ShardFieldList_, shardingConfig_);
 }
 
 bool ScdSharder::init(ShardingConfig& shardingConfig)

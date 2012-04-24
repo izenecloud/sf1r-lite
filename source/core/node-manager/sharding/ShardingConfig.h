@@ -8,6 +8,9 @@
 #ifndef SHARDING_CONFIG_H_
 #define SHARDING_CONFIG_H_
 
+#include <set>
+#include <vector>
+
 #include <boost/algorithm/string.hpp>
 
 namespace sf1r
@@ -67,8 +70,9 @@ public:
         return shardStrategyType_;
     }
 
-private:
+public:
     unsigned int shardNum_;
+    std::vector<uint32_t> shardidList_;
     std::set<std::string> shardKeys_;
     ShardingStrategyType shardStrategyType_;
 };

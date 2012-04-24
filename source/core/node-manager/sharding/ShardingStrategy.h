@@ -7,6 +7,8 @@
 #ifndef SHARDING_STRATEGY_H_
 #define SHARDING_STRATEGY_H_
 
+#include "ShardingConfig.h"
+
 #include <util/ustring/UString.h>
 
 #include <boost/uuid/sha1.hpp>
@@ -29,7 +31,7 @@ public:
         unsigned int shardNum_;
     };
 
-    virtual shardid_t sharding(ShardFieldListT& shardFieldList, ShardingParams& shardingParams) = 0;
+    virtual shardid_t sharding(ShardFieldListT& shardFieldList, ShardingConfig& shardingConfig) = 0;
 
     virtual ~ShardingStrategy(){}
 };
@@ -37,7 +39,7 @@ public:
 class HashShardingStrategy : public ShardingStrategy
 {
 public:
-    virtual shardid_t sharding(ShardFieldListT& shardFieldList, ShardingParams& shardingParams);
+    virtual shardid_t sharding(ShardFieldListT& shardFieldList, ShardingConfig& shardingConfig);
 
 private:
     uint64_t hashmd5(const char* data, unsigned long len);

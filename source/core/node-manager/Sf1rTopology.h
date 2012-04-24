@@ -26,6 +26,17 @@ class MasterCollection
 public:
     MasterCollection():isDistributive_(false) {}
 
+    bool checkShard(shardid_t shardid)
+    {
+        std::vector<shardid_t>::iterator it;
+        for (it = shardList_.begin(); it != shardList_.end(); it++)
+        {
+            if (*it == shardid)
+                return true;
+        }
+        return false;
+    }
+
 public:
     std::string name_;
     bool isDistributive_;
@@ -44,6 +55,23 @@ public:
         {
             if ((*it).name_ == collection)
                 return true;
+        }
+        return false;
+    }
+
+    bool checkCollectionWorker(const std::string& collection, unsigned int shardid)
+    {
+        std::vector<MasterCollection>::iterator it;
+        for (it = collectionList_.begin(); it != collectionList_.end(); it++)
+        {
+            MasterCollection& coll = *it;
+            if (coll.name_ == collection)
+            {
+                if (coll.checkShard(shardid))
+                    return true;
+                else
+                    return false;
+            }
         }
         return false;
     }

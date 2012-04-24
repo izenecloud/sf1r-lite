@@ -60,6 +60,18 @@ bool MasterManagerBase::getShardReceiver(
     }
 }
 
+bool MasterManagerBase::getCollectionShardids(const std::string& collection, std::vector<shardid_t>& shardidList)
+{
+    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+    return sf1rTopology_.curNode_.master_.getShardidList(collection, shardidList);
+}
+
+bool MasterManagerBase::checkCollectionShardid(const std::string& collection, unsigned int shardid)
+{
+    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+    return sf1rTopology_.curNode_.master_.checkCollectionWorker(collection, shardid);
+}
+
 void MasterManagerBase::registerIndexStatus(const std::string& collection, bool isIndexing)
 {
     std::string indexStatus = isIndexing ? "indexing" : "notindexing";
