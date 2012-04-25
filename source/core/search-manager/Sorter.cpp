@@ -169,19 +169,18 @@ boost::shared_ptr<PropertyData> SortPropertyCache::getCTRPropertyData(const std:
 
 bool SortPropertyCache::split_int(const izenelib::util::UString& szText, int64_t& out, izenelib::util::UString::EncodingType encoding, char Separator)
 {
-    izenelib::util::UString str(szText);
-    izenelib::util::UString sep(" ",encoding);
-    sep[0] = Separator;
-    size_t n = 0;
+    std::string str;
+    szText.convertString(str, encoding);
 
-    n = str.find(sep, 0);
+    size_t n = 0;
+    n = str.find(Separator, 0);
     if (n != izenelib::util::UString::npos)
     {
         if (n != 0)
         {
             try
             {
-                izenelib::util::UString tmpStr = str.substr(0, n);
+                std::string tmpStr = str.substr(0, n);
                 trim( tmpStr );
                 out = boost::lexical_cast< int64_t >( tmpStr );
                 return true;
@@ -197,19 +196,18 @@ bool SortPropertyCache::split_int(const izenelib::util::UString& szText, int64_t
 
 bool SortPropertyCache::split_float(const izenelib::util::UString& szText, float& out, izenelib::util::UString::EncodingType encoding, char Separator)
 {
-    izenelib::util::UString str(szText);
-    izenelib::util::UString sep(" ",encoding);
-    sep[0] = Separator;
-    size_t n = 0;
+    std::string str;
+    szText.convertString(str, encoding);
 
-    n = str.find(sep, 0);
+    size_t n = 0;
+    n = str.find(Separator, 0);
     if (n != izenelib::util::UString::npos)
     {
         if (n != 0)
         {
             try
             {
-                izenelib::util::UString tmpStr = str.substr(0, n);
+                std::string tmpStr = str.substr(0, n);
                 trim( tmpStr );
                 out = boost::lexical_cast< float >( tmpStr );
                 return true;
