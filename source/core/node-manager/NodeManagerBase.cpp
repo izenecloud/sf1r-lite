@@ -168,9 +168,9 @@ void NodeManagerBase::enterCluster()
             znode.loadKvString(data);
 
             std::stringstream ss;
-            ss << CLASSNAME << " Conflicted with existed node: "
-               << "[replica "<< sf1rTopology_.curNode_.replicaId_
-               << ", node " << sf1rTopology_.curNode_.nodeId_ << "]@"
+            ss << CLASSNAME << " conflict: node existed "
+               << "[replica"<< sf1rTopology_.curNode_.replicaId_
+               << ", node" << sf1rTopology_.curNode_.nodeId_ << "]@"
                << znode.getStrValue(ZNode::KEY_HOST);
 
             throw std::runtime_error(ss.str());

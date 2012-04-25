@@ -59,7 +59,7 @@ public:
         return sf1rTopology_.curNode_;
     }
 
-    unsigned int getShardNum() const
+    unsigned int getTotalShardNum() const
     {
         return sf1rTopology_.curNode_.master_.totalShardNum_;
     }

@@ -34,12 +34,10 @@ public:
      */
     shardid_t sharding(SCDDoc& scdDoc);
 
-    unsigned int getShardNum() { return shardingConfig_.getShardNum(); }
     ShardingConfig& getShardingConfig() { return shardingConfig_; }
 
-    /// xxx
     unsigned int getMinShardID() { return 1; }
-    unsigned int getMaxShardID() { return shardingConfig_.getShardNum(); }
+    unsigned int getMaxShardID() { return shardingConfig_.totalShardNum_; }
 
 private:
     bool initShardingStrategy();

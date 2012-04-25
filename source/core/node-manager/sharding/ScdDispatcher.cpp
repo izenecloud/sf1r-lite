@@ -220,6 +220,11 @@ bool BatchScdDispatcher::finish()
     for (unsigned int shardid = scdSharder_->getMinShardID();
             shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
+        if (!SearchMasterManager::get()->checkCollectionShardid(collectionName_, shardid))
+        {
+            continue;
+        }
+
         std::string host;
         unsigned int recvPort;
         if (SearchMasterManager::get()->getShardReceiver(shardid, host, recvPort))
@@ -264,7 +269,7 @@ bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
         }
 
         std::ostringstream oss;
-        oss << tempDir << shardid; // shard dir path
+        oss << tempDir << shardid;
 
         std::string shardScdDir = oss.str();
         bfs::create_directory(shardScdDir);
