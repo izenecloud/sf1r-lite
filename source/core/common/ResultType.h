@@ -16,6 +16,7 @@
 
 #include <common/type_defs.h>
 #include <common/sf1_msgpack_serialization_types.h>
+#include <query-manager/ConditionInfo.h>
 #include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/faceted-submanager/GroupRep.h>
@@ -415,6 +416,27 @@ public:
         for (size_t i = 0; i < topKDocs_.size(); i++)
         {
             topKWDocs[i] = net::aggregator::Util::GetWDocId(topKWorkerIds_[i], topKDocs_[i]);
+        }
+    }
+
+    void setStartCount(const PageInfo& pageInfo)
+    {
+        start_ = pageInfo.start_;
+        count_ = pageInfo.count_;
+    }
+
+    void adjustStartCount(std::size_t topKStart)
+    {
+        std::size_t topKEnd = topKStart + topKDocs_.size();
+
+        if (start_ > topKEnd)
+        {
+            start_ = topKEnd;
+        }
+
+        if (start_ + count_ > topKEnd)
+        {
+            count_ = topKEnd - start_;
         }
     }
 

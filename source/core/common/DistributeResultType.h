@@ -213,6 +213,27 @@ public:
     // a list, each element is a label array for an attribute name
     sf1r::faceted::OntologyRep attrRep_;
 
+    void setStartCount(const PageInfo& pageInfo)
+    {
+        start_ = pageInfo.start_;
+        count_ = pageInfo.count_;
+    }
+
+    void adjustStartCount(std::size_t topKStart)
+    {
+        std::size_t topKEnd = topKStart + topKDocs_.size();
+
+        if (start_ > topKEnd)
+        {
+            start_ = topKEnd;
+        }
+
+        if (start_ + count_ > topKEnd)
+        {
+            count_ = topKEnd - start_;
+        }
+    }
+
     MSGPACK_DEFINE(
         distSearchInfo_, rawQueryString_, encodingType_, collectionName_, analyzedQuery_,
         queryTermIdList_, totalCount_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,

@@ -2,9 +2,12 @@
 #include "MergeComparator.h"
 
 #include <common/ResultType.h>
+#include <common/Utilities.h>
 #include <mining-manager/MiningManager.h>
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyRep.h>
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyGenerationSubManager.h>
+
+#include <algorithm> // min
 
 namespace sf1r
 {
@@ -67,12 +70,13 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
     mergeResult.encodingType_ = result0.encodingType_;
     mergeResult.rawQueryString_ = result0.rawQueryString_;
     mergeResult.start_ = result0.start_;
+    mergeResult.count_ = result0.count_;
     mergeResult.analyzedQuery_ = result0.analyzedQuery_;
     mergeResult.queryTermIdList_ = result0.queryTermIdList_;
     mergeResult.propertyQueryTermList_ = result0.propertyQueryTermList_;
 
     mergeResult.totalCount_ = 0;
-    size_t overallResultCount = 0;
+    size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
     float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
     for (size_t i = 0; i < workerNum; i++)
@@ -81,7 +85,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
         //wResult.print();//:~
 
         mergeResult.totalCount_ += wResult.totalCount_;
-        overallResultCount += wResult.topKDocs_.size();
+        totalTopKCount += wResult.topKDocs_.size();
 
         if (wResult.topKCustomRankScoreList_.size() > 0)
             hasCustomRankScore = true;
@@ -99,25 +103,18 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
     mergeResult.propertyRange_.lowValue_ = rangeLow;
     mergeResult.propertyRange_.highValue_ = rangeHigh;
 
-    // set page info
-    if (mergeResult.start_ >= overallResultCount)
-    {
-        mergeResult.count_ = 0;
-        return;
-    }
-    if (mergeResult.start_ + mergeResult.count_ > overallResultCount)
-    {
-        mergeResult.count_ = overallResultCount - mergeResult.start_;
-    }
-    cout << "resultPage      start: " << mergeResult.start_ << ", count: " << mergeResult.count_ << endl;
+    size_t endOffset = mergeResult.start_ + mergeResult.count_;
+    size_t endTopK = Utilities::roundUp(endOffset, TOP_K_NUM);
+    size_t topKCount = std::min(endTopK, totalTopKCount);
 
-    // reserve data size for topK docs
-    size_t resultCount = overallResultCount < size_t(TOP_K_NUM) ? overallResultCount : TOP_K_NUM;
-    mergeResult.topKDocs_.resize(resultCount);
-    mergeResult.topKWorkerIds_.resize(resultCount);
-    mergeResult.topKRankScoreList_.resize(resultCount);
+    cout << "SearchMerger topKCount: " << topKCount << ", totalTopKCount: " << totalTopKCount << endl;
+
+    mergeResult.topKDocs_.resize(topKCount);
+    mergeResult.topKWorkerIds_.resize(topKCount);
+    mergeResult.topKRankScoreList_.resize(topKCount);
+
     if (hasCustomRankScore)
-        mergeResult.topKCustomRankScoreList_.resize(resultCount);
+        mergeResult.topKCustomRankScoreList_.resize(topKCount);
 
     // Prepare comparator for each sub result (compare by sort properties).
     DocumentComparator** docComparators = new DocumentComparator*[workerNum];
@@ -129,7 +126,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
     size_t maxi;
     size_t* iter = new size_t[workerNum];
     memset(iter, 0, sizeof(size_t)*workerNum);
-    for (size_t cnt = 0; cnt < resultCount; cnt++)
+    for (size_t cnt = 0; cnt < topKCount; cnt++)
     {
         // find doc which should be merged firstly from heads of multiple doc lists (sorted).
         maxi = size_t(-1);

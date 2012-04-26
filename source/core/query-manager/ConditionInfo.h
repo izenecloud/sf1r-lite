@@ -14,6 +14,7 @@
 
 #include "SearchingEnumerator.h"
 #include <common/sf1_msgpack_serialization_types.h>
+#include <common/Utilities.h>
 
 #include <util/izene_serialization.h>
 #include <3rdparty/msgpack/msgpack.hpp>
@@ -54,6 +55,11 @@ class PageInfo
         {
             start_ = 0;
             count_ = 0;
+        }
+
+        unsigned topKStart(unsigned topKNum) const
+        {
+            return Utilities::roundDown(start_, topKNum);
         }
 
         DATA_IO_LOAD_SAVE(PageInfo, &start_&count_);
