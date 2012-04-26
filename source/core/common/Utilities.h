@@ -23,9 +23,9 @@ public:
     ~Utilities() {}
 
 public:
-    static int64_t convertDate(const izenelib::util::UString& dataStr, const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr);
-    static int64_t convertDate(const std::string& dataStr);
-
+    static time_t createTimeStampInSeconds(const izenelib::util::UString& dataStr, const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr);
+    static time_t createTimeStampInSeconds(const izenelib::util::UString& text);
+    static time_t createTimeStampInSeconds(const std::string& text);
     static time_t createTimeStamp();
     static time_t createTimeStamp(const boost::posix_time::ptime& pt);
     static time_t createTimeStamp(const izenelib::util::UString& text);

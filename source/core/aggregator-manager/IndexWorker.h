@@ -123,13 +123,28 @@ private:
 
     bool fetchSCDFromLogServer(const std::string& scdPath);
 
-    bool deleteSCD_(ScdParser& parser, time_t timestamp);
+    bool deleteSCD_(
+            ScdParser& parser, 
+            time_t timestamp
+    );
 
-    bool insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp);
+    bool insertDoc_(
+            Document& document, 
+            IndexerDocument& indexDocument, 
+            time_t timestamp
+    );
 
-    bool updateDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp, bool rType);
+    bool updateDoc_(
+            Document& document, 
+            IndexerDocument& indexDocument, 
+            time_t timestamp, 
+            bool rType
+    );
 
-    bool deleteDoc_(docid_t docid, time_t timestamp);
+    bool deleteDoc_(
+            docid_t docid, 
+            time_t timestamp
+    );
 
     void savePriceHistory_(int op);
 
@@ -146,7 +161,12 @@ private:
             bool insert = true
     );
 
-    bool prepareIndexDocument_(docid_t oldId, const Document& document, IndexerDocument& indexDocument);
+    bool prepareIndexDocument_(
+            docid_t oldId, 
+            time_t timestamp,
+            const Document& document, 
+            IndexerDocument& indexDocument
+    );
 
     bool checkSeparatorType_(
             const izenelib::util::UString& propertyValueStr,
