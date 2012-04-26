@@ -138,9 +138,6 @@ time_t Utilities::createTimeStampInSeconds(const izenelib::util::UString& text)
 time_t Utilities::createTimeStampInSeconds(const std::string& dataStr)
 {
     ptime pt = convert(dataStr);
-    if (pt.is_not_a_date_time())
-        return -1;
-
     static const ptime epoch(date(1970, 1, 1));
     return (pt - epoch).total_seconds() + timezone;
 }
