@@ -78,7 +78,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
     for (size_t i = 0; i < workerNum; i++)
     {
         const DistKeywordSearchResult& wResult = workerResults.result(i);
-        //wResult.print();//:~
+        //wResult.print();
 
         mergeResult.totalCount_ += wResult.totalCount_;
         overallResultCount += wResult.topKDocs_.size();
@@ -125,7 +125,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
     {
         docComparators[i] = new DocumentComparator(workerResults.result(i));
     }
-    // Merge topK docs
+    // Merge topK docs (use Loser Tree to optimize k-way merge)
     size_t maxi;
     size_t* iter = new size_t[workerNum];
     memset(iter, 0, sizeof(size_t)*workerNum);
@@ -390,7 +390,7 @@ bool SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& result
     const std::vector<uint32_t>& topKWorkerIds = result.topKWorkerIds_;
     if (topKWorkerIds.size() <= 0)
     {
-        return false; //xxx
+        return false;
     }
 
     // split docs of current page by worker
