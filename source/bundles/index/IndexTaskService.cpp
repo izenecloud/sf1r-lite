@@ -178,7 +178,8 @@ bool IndexTaskService::createScdSharder(
     ShardingConfig cfg;
     if (SearchMasterManager::get()->getCollectionShardids(bundleConfig_->collectionName_, cfg.shardidList_))
     {
-        cfg.setShardNum(cfg.shardidList_.size());
+        cfg.shardNum_ = cfg.shardidList_.size();
+        cfg.totalShardNum_ = SearchNodeManager::get()->getTotalShardNum();
     }
     else
     {

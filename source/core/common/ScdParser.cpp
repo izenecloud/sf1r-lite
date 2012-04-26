@@ -46,7 +46,7 @@ struct scd_grammar
 {
     SCDDoc& scddoc;
     izenelib::util::UString::EncodingType& codingType;
-    izenelib::util::UString property_name;
+    std::string property_name;
 
     scd_grammar(SCDDoc& doc, izenelib::util::UString::EncodingType& type):scddoc(doc), codingType(type) {}
 
@@ -60,20 +60,19 @@ struct scd_grammar
 
     struct add_property_name
     {
-        add_property_name(SCDDoc& doc, izenelib::util::UString::EncodingType& type, izenelib::util::UString& propertyname)
-            : scddoc(doc), codingType(type), property_name(propertyname) {}
+        add_property_name(SCDDoc& doc, std::string& propertyname)
+            : scddoc(doc), property_name(propertyname) {}
         void operator()(const char *begin, const char *end) const
         {
-            property_name.assign(std::string(begin, end), codingType);
+            property_name.assign(std::string(begin, end));
         }
         SCDDoc& scddoc;
-        izenelib::util::UString::EncodingType& codingType;
-        izenelib::util::UString& property_name;
+        std::string& property_name;
     };
 
     struct add_property_value
     {
-        add_property_value(SCDDoc& doc, izenelib::util::UString::EncodingType& type, izenelib::util::UString& propertyname)
+        add_property_value(SCDDoc& doc, izenelib::util::UString::EncodingType& type, std::string& propertyname)
             : scddoc(doc), codingType(type), property_name(propertyname) {}
         void operator()(const char *begin, const char *end) const
         {
@@ -89,7 +88,7 @@ struct scd_grammar
         }
         SCDDoc& scddoc;
         izenelib::util::UString::EncodingType& codingType;
-        izenelib::util::UString& property_name;
+        std::string& property_name;
     };
 
     template <typename Scanner>
@@ -103,9 +102,9 @@ struct scd_grammar
 
             object = *(propertypair);
             propertypair = ch_p('<') >>
-                           propertyName[add_property_name(self.scddoc,self.codingType,const_cast<izenelib::util::UString&>(self.property_name))]
+                           propertyName[add_property_name(self.scddoc,const_cast<std::string&>(self.property_name))]
                            >> ch_p('>') >>
-                           propertyValue[add_property_value(self.scddoc,self.codingType,const_cast<izenelib::util::UString&>(self.property_name))];
+                           propertyValue[add_property_value(self.scddoc,self.codingType,const_cast<std::string&>(self.property_name))];
 
             // WARN: This rule should also apply to field name on XmlConfigParser.cpp.
             // Those two should share same field name rule to make easy validating.

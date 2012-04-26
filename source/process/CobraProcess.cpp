@@ -7,7 +7,6 @@
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
 #include <aggregator-manager/CollectionDataReceiver.h>
-#include <aggregator-manager/NotifyReceiver.h>
 #include <node-manager/ZooKeeperManager.h>
 #include <node-manager/SuperNodeManager.h>
 #include <node-manager/SearchNodeManager.h>
@@ -280,14 +279,9 @@ bool CobraProcess::startDistributedServer()
         workerServer_.reset(new net::aggregator::WorkerServer(
             *workerRouter_, localHost, workerPort, threadNum));
         workerServer_->start();
-
-        // init notifier, xxx
-        //std::string masterHost = //detect master;
-        //uint16_t masterPort = SF1Config::get()->distributedCommonConfig_.notifyRecvPort_;
-        //NotifyReceiver::get()->setReceiverAddress(masterHost, masterPort);
     }
 
-    // Start notification receiver for master
+    // Start server for master
     if (SF1Config::get()->isSearchMaster() || SF1Config::get()->isRecommendMaster())
     {
         std::string localHost = SF1Config::get()->distributedCommonConfig_.localHost_;

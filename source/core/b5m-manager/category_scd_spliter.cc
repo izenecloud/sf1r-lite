@@ -119,11 +119,10 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
             }
             Document doc;
             SCDDoc& scddoc = *(*doc_iter);
-            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-            for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+            SCDDoc::iterator p = scddoc.begin();
+            for(; p!=scddoc.end(); ++p)
             {
-                std::string property_name;
-                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
             UString title;

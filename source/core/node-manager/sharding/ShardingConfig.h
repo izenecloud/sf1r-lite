@@ -26,7 +26,8 @@ public:
 
 public:
     ShardingConfig()
-        : shardNum_(0)
+        : totalShardNum_(0)
+        , shardNum_(0)
         , shardStrategyType_(SHARDING_HASH)
     {}
 
@@ -71,6 +72,7 @@ public:
     }
 
 public:
+    unsigned int totalShardNum_;
     unsigned int shardNum_;
     std::vector<uint32_t> shardidList_;
     std::set<std::string> shardKeys_;

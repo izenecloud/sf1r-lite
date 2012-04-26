@@ -1,4 +1,5 @@
 #include "SuperMasterManager.h"
+#include <aggregator-manager/MasterNotifier.h>
 
 #include <boost/lexical_cast.hpp>
 
@@ -65,6 +66,9 @@ void SuperMasterManager::detectSearchMasters()
 
                     LOG (INFO) << "detected master, node[" << nodeId << "] @ "
                                << sf1rNode->host_ << ":" << sf1rNode->baPort_;
+
+                    // Add master info to notifier of Worker
+                    MasterNotifier::get()->addMasterAddress(sf1rNode->host_, sf1rNode->master_.port_);
                 }
             }
         }

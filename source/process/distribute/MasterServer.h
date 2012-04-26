@@ -6,6 +6,7 @@
 #include <common/ResultType.h>
 #include <query-manager/ActionItem.h>
 #include <aggregator-manager/MasterServerConnector.h>
+#include <aggregator-manager/MasterNotifier.h>
 #include <common/CollectionManager.h>
 #include <controllers/CollectionHandler.h>
 #include <index/IndexSearchService.h>
@@ -50,6 +51,10 @@ public:
             {
                 getDocumentsByIds(req);
             }
+            else if (method == "notify")
+            {
+                notify(req);
+            }
         }
         catch (msgpack::type_error& e)
         {
@@ -61,10 +66,6 @@ public:
             cout << "#[Master] notified, "<<e.what()<<endl;
             req.error(std::string(e.what()));
         }
-
-        // release collection lock
-        if (curCollectionMutex_)
-            curCollectionMutex_->unlock_shared();
     }
 
 private:
@@ -80,30 +81,44 @@ private:
         req.params().convert(&params);
         GetDocumentsByIdsActionItem action = params.get<0>();
 
-        CollectionHandler* collectionHandler = getCollectionHandler(action.collectionName_);
-        if (!collectionHandler)
+        CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(action.collectionName_);
+        CollectionManager::ScopedReadLock lock(*mutex);
+        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(action.collectionName_);
+        if (collectionHandler)
+        {
+            RawTextResultFromSIA resultItem;
+            collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem);
+            req.result(resultItem);
+        }
+        else
         {
             std::string error = "No collectionHandler found for " + action.collectionName_;
             req.error(error);
-            return;
         }
-
-        RawTextResultFromSIA resultItem;
-        collectionHandler->indexSearchService_->getDocumentsByIds(action, resultItem);
-        req.result(resultItem);
     }
 
-private:
-    CollectionHandler* getCollectionHandler(const std::string& collection)
+    void notify(msgpack::rpc::request& req)
     {
-        //std::string collectionLow = boost::to_lower_copy(collection);
-        curCollectionMutex_ = CollectionManager::get()->getCollectionMutex(collection);
-        curCollectionMutex_->lock_shared();
-        return CollectionManager::get()->findHandler(collection);
-    }
+        msgpack::type::tuple<NotifyMSG> params;
+        req.params().convert(&params);
+        NotifyMSG msg = params.get<0>();
 
-private:
-    CollectionManager::MutexType* curCollectionMutex_;
+        if (msg.method == "CLEAR_SEARCH_CACHE")
+        {
+            CollectionManager::MutexType* mutex = CollectionManager::get()->getCollectionMutex(msg.collection);
+            CollectionManager::ScopedReadLock lock(*mutex);
+            CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(msg.collection);
+            if (collectionHandler)
+            {
+                collectionHandler->indexSearchService_->OnUpdateSearchCache();
+            }
+            else
+            {
+                std::string error = "No collectionHandler found for " + msg.collection;
+                req.error(error);
+            }
+        }
+    }
 };
 
 }

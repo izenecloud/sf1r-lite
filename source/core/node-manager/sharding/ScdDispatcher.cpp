@@ -191,8 +191,7 @@ std::ostream& operator<<(std::ostream& out, SCDDoc& scdDoc)
     for (propertyIter = scdDoc.begin(); propertyIter != scdDoc.end(); propertyIter++)
     {
         std::string str;
-        (*propertyIter).first.convertString(str, izenelib::util::UString::UTF_8);
-        out << "<" << str << ">";
+        out << "<" << propertyIter->first << ">";
         (*propertyIter).second.convertString(str, izenelib::util::UString::UTF_8);
         out << str << std::endl;
     }
@@ -220,6 +219,11 @@ bool BatchScdDispatcher::finish()
     for (unsigned int shardid = scdSharder_->getMinShardID();
             shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
+        if (!SearchMasterManager::get()->checkCollectionShardid(collectionName_, shardid))
+        {
+            continue;
+        }
+
         std::string host;
         unsigned int recvPort;
         if (SearchMasterManager::get()->getShardReceiver(shardid, host, recvPort))
@@ -264,7 +268,7 @@ bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
         }
 
         std::ostringstream oss;
-        oss << tempDir << shardid; // shard dir path
+        oss << tempDir << shardid;
 
         std::string shardScdDir = oss.str();
         bfs::create_directory(shardScdDir);
