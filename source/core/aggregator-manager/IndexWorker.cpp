@@ -567,11 +567,10 @@ void IndexWorker::logCreatedDocToLogServer(const SCDDoc& scdDoc)
     std::string docidStr;
     std::string content;
 
-    std::string propertyName;
     std::string propertyValue;
     for (SCDDoc::const_iterator it = scdDoc.begin(); it != scdDoc.end(); it++)
     {
-        it->first.convertString(propertyName, bundleConfig_->encoding_);
+        const std::string propertyName = it->first;
         it->second.convertString(propertyValue, bundleConfig_->encoding_);
 
         izenelib::util::UString propertyNameL = it->first;
@@ -1213,35 +1212,32 @@ bool IndexWorker::prepareDocument_(
     // the iterator is not const because the p-second value may change
     // due to the maxlen setting
 
-    vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+    SCDDoc::iterator p = doc.begin();
     bool dateExistInSCD = false;
 
-    for (p = doc.begin(); p != doc.end(); p++)
+    for (; p != doc.end(); p++)
     {
-        p->first.convertString(fieldStr, bundleConfig_->encoding_);
+        const std::string& fieldStr = p->first;
         PropertyConfig temp;
         temp.propertyName_ = fieldStr;
 
         IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(temp);
         bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
 
-        izenelib::util::UString propertyNameL = p->first;
-        propertyNameL.toLowerString();
         const izenelib::util::UString & propertyValueU = p->second; // preventing copy
 
-        izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
-        std::string fieldValue;
-        propertyValueU.convertString(fieldValue, encoding);
-
         if (!bundleConfig_->productSourceField_.empty()
-              && fieldStr == bundleConfig_->productSourceField_)
+              && boost::iequals(fieldStr,bundleConfig_->productSourceField_))
         {
-            source = fieldValue;
+            propertyValueU.convertString(source, bundleConfig_->encoding_);
         }
 
-        if (propertyNameL == izenelib::util::UString("docid", encoding)
-                && isIndexSchema)
+        if (boost::iequals(fieldStr,DOCID) && isIndexSchema)
         {
+            izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
+            std::string fieldValue;
+            propertyValueU.convertString(fieldValue, encoding);
+
             // update
             if (!insert)
             {
@@ -1266,12 +1262,12 @@ bool IndexWorker::prepareDocument_(
             document.setId(docId);
             document.property(fieldStr) = propertyValueU;
         }
-        else if (propertyNameL == izenelib::util::UString("date", encoding))
+        else if (boost::iequals(fieldStr,DATE))
         {
             /// format <DATE>20091009163011
             dateExistInSCD = true;
             izenelib::util::UString dateStr;
-            Utilities::convertDate(propertyValueU, encoding, dateStr);
+            Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
             document.property(dateProperty_.getName()) = dateStr;
         }
         else if (isIndexSchema)
@@ -1769,15 +1765,12 @@ bool IndexWorker::checkRtype_(
     bool rType = false;
     docid_t docId = 0;
     izenelib::util::UString newPropertyValue, oldPropertyValue;
-    vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+    SCDDoc::iterator p = doc.begin();
 
-    for (p = doc.begin(); p != doc.end(); ++p)
+    for (; p != doc.end(); ++p)
     {
-        izenelib::util::UString propertyNameL = p->first;
-        propertyNameL.toLowerString();
+        const string fieldName = p->first;
         const izenelib::util::UString & propertyValueU = p->second;
-        string fieldName;
-        p->first.convertString(fieldName, bundleConfig_->encoding_);
 
         PropertyConfig tempPropertyConfig;
         tempPropertyConfig.propertyName_ = fieldName;
@@ -1786,7 +1779,7 @@ bool IndexWorker::checkRtype_(
         if (iter == bundleConfig_->indexSchema_.end())
             break;
 
-        if (propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_))
+        if (boost::iequals(fieldName,DOCID))
         {
             std::string docid_str;
             propertyValueU.convertString(docid_str, izenelib::util::UString::UTF_8);
@@ -1797,7 +1790,7 @@ bool IndexWorker::checkRtype_(
         }
 
         newPropertyValue = propertyValueU;
-        if (propertyNameL == izenelib::util::UString("date", bundleConfig_->encoding_))
+        if (boost::iequals(fieldName,DATE))
         {
             izenelib::util::UString dateStr;
             Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
@@ -2040,7 +2033,7 @@ void IndexWorker::value2SCDDoc(const Value& value, SCDDoc& scddoc)
     for (Value::ObjectType::const_iterator it = objectValue.begin();
          it != objectValue.end(); ++it, ++propertyId)
     {
-        scddoc[propertyId].first.assign(it->first, izenelib::util::UString::UTF_8);
+        scddoc[propertyId].first.assign(asString(it->first));
         scddoc[propertyId].second.assign(
             asString(it->second),
             izenelib::util::UString::UTF_8
