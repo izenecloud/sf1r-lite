@@ -946,11 +946,10 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
             izenelib::util::UString url;
             izenelib::util::UString attrib_ustr;
             SCDDoc& doc = *(*doc_iter);
-            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-            for(p=doc.begin(); p!=doc.end(); ++p)
+            SCDDoc::iterator p = doc.begin();
+            for(; p!=doc.end(); ++p)
             {
-                std::string property_name;
-                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                const std::string& property_name = p->first;
                 odoc.property[property_name] = p->second;
                 if(property_name=="DOCID")
                 {
@@ -1138,11 +1137,10 @@ void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
         izenelib::util::UString category;
         izenelib::util::UString attrib_ustr;
         SCDDoc& doc = *(*doc_iter);
-        std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        for(p=doc.begin(); p!=doc.end(); ++p)
+        SCDDoc::iterator p = doc.begin();
+        for(; p!=doc.end(); ++p)
         {
-            std::string property_name;
-            p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+            const std::string& property_name = p->first;
             product_doc.property[property_name] = p->second;
             if(property_name=="DOCID")
             {
@@ -1240,11 +1238,10 @@ bool AttributeIndexer::SplitScd(const std::string& scd_file)
         }
         Document doc;
         SCDDoc& scddoc = *(*doc_iter);
-        std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+        SCDDoc::iterator p = scddoc.begin();
+        for(; p!=scddoc.end(); ++p)
         {
-            std::string property_name;
-            p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+            const std::string& property_name = p->first;
             doc.property(property_name) = p->second;
         }
         std::string scategory;
@@ -1377,11 +1374,10 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
         izenelib::util::UString category;
         izenelib::util::UString attrib_ustr;
         SCDDoc& doc = *(*doc_iter);
-        std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        for(p=doc.begin(); p!=doc.end(); ++p)
+        SCDDoc::iterator p = doc.begin();
+        for(; p!=doc.end(); ++p)
         {
-            std::string property_name;
-            p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+            const std::string& property_name = p->first;
             product_doc.property[property_name] = p->second;
             if(property_name=="DOCID")
             {

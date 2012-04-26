@@ -91,11 +91,10 @@ bool CompleteMatcher::Index(const std::string& scd_path, const std::string& know
             izenelib::util::UString category;
             izenelib::util::UString attrib_ustr;
             SCDDoc& doc = *(*doc_iter);
-            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-            for(p=doc.begin(); p!=doc.end(); ++p)
+            SCDDoc::iterator p = doc.begin();
+            for(; p!=doc.end(); ++p)
             {
-                std::string property_name;
-                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                const std::string& property_name = p->first;
                 product_doc.property[property_name] = p->second;
                 if(property_name=="DOCID")
                 {

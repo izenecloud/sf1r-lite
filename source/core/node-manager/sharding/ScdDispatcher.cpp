@@ -191,8 +191,7 @@ std::ostream& operator<<(std::ostream& out, SCDDoc& scdDoc)
     for (propertyIter = scdDoc.begin(); propertyIter != scdDoc.end(); propertyIter++)
     {
         std::string str;
-        (*propertyIter).first.convertString(str, izenelib::util::UString::UTF_8);
-        out << "<" << str << ">";
+        out << "<" << propertyIter->first << ">";
         (*propertyIter).second.convertString(str, izenelib::util::UString::UTF_8);
         out << str << std::endl;
     }

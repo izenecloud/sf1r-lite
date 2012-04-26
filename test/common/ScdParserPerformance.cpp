@@ -69,12 +69,11 @@ int main(int argc, char** argv)
             SCDDoc doc = *(*doc_iter);
             izenelib::util::UString docname;
 
-            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+            SCDDoc::iterator p = doc.begin();
 
             for (p = doc.begin(); p != doc.end(); p++)
             {
-                std::string property_name;
-                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                const std::string& property_name = p->first;
                 if(property_name=="DOCID")
                 {
                     docname = p->second;

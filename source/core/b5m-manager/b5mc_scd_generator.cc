@@ -69,14 +69,13 @@ void B5MCScdGenerator::Finish()
                 LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
             SCDDoc& scddoc = *(*doc_iter);
-            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+            SCDDoc::iterator p = scddoc.begin();
             std::string sdocid;
             std::string soid;
             std::string spid;
-            for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+            for(; p!=scddoc.end(); ++p)
             {
-                std::string property_name;
-                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                const std::string& property_name = p->first;
                 if(property_name=="DOCID")
                 {
                     p->second.convertString(sdocid, izenelib::util::UString::UTF_8);
@@ -148,11 +147,10 @@ void B5MCScdGenerator::Finish()
             }
             Document doc;
             SCDDoc& scddoc = *(*doc_iter);
-            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-            for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+            SCDDoc::iterator p = scddoc.begin();
+            for(; p!=scddoc.end(); ++p)
             {
-                std::string property_name;
-                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
 

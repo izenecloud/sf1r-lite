@@ -446,7 +446,6 @@ void DriverLogServerHandler::processUpdateDocuments()
         return;
     }
 
-    std::string fieldName;
     std::string fieldVal;
     for (ScdParser::iterator doc_iter = parser.begin();
         doc_iter != parser.end(); ++doc_iter)
@@ -457,10 +456,10 @@ void DriverLogServerHandler::processUpdateDocuments()
         std::string docidStr;
         //std::string docStr;
 
-        vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        for (p = (*doc_iter)->begin(); p != (*doc_iter)->end(); p++)
+        SCDDoc::iterator p = (*doc_iter)->begin();
+        for (; p != (*doc_iter)->end(); p++)
         {
-            p->first.convertString(fieldName, izenelib::util::UString::UTF_8);
+            const std::string& fieldName = p->first;
             std::string fieldNameLow = boost::algorithm::to_lower_copy(fieldName);
             p->second.convertString(fieldVal, izenelib::util::UString::UTF_8);
 
