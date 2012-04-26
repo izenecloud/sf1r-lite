@@ -15,6 +15,11 @@ describe "Test B5M Simhash" do
     FileUtils.mkdir_p(path) unless File.exist?(path)
   end
 
+  def int_to_md5(i)
+
+    "%032d" % i
+  end
+
   def gen_data()
     docs = []
     oarray = (1..@o_max).to_a
@@ -25,8 +30,7 @@ describe "Test B5M Simhash" do
       doc = {}
       docid = oarray[i % @o_max]
       pid = Random.rand(@p_max)+1
-      doc[:DOCID] = ("%032d" % docid)
-      #doc[:Title] = parray[i % @p_max]
+      doc[:DOCID] = int_to_md5(docid)
       doc[:Title] = pid
       doc[:Category] = "TC"
       doc[:Source] = @source
@@ -54,6 +58,7 @@ describe "Test B5M Simhash" do
     end
     match_path = match_config['path_of']
     @cma = match_path['cma']
+    @simhash_dic = match_path['simhash_dic']
     @mock_gt = MockGrouptable.new
     @mock_simhash = MockSimhash.new
     @o_max = 40000
@@ -68,6 +73,12 @@ describe "Test B5M Simhash" do
   it "should always be correct" do
     #currently sf1r simhash ignore the later duplicate docs
 
+    #generate pid dic first
+    File.open(@simhash_dic, 'w') do |f|
+      (1..@o_max).each do |pid|
+        f.puts int_to_md5(pid)
+      end
+    end
     category_dir = @knowledge_dir
     reindex_prob = 0.05
     reindex = true
@@ -111,7 +122,7 @@ describe "Test B5M Simhash" do
       end
       @mock_simhash.flush
       writer.close
-      cmd = "#{@matcher} -I -C #{@cma} -S #{a_scd_instance} -K #{category_dir}"
+      cmd = "#{@matcher} -I -C #{@cma} -S #{a_scd_instance} -K #{category_dir} --dictionary #{@simhash_dic}"
       #puts cmd
       #if iter>1
         #false.should == true

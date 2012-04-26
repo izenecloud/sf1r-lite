@@ -3,6 +3,7 @@ matcher:
     path_of:
         synonym: synonym
         cma: ../../icma/db/icwb/utf8
+        simhash_dic: simhash_dic
         category: category.rb
         work_dir: working
         tmp_dir: tmp

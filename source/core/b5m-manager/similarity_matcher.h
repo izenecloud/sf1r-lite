@@ -4,6 +4,7 @@
 #include <util/ustring/UString.h>
 #include <idmlib/duplicate-detection/dup_detector.h>
 #include <product-manager/product_price.h>
+#include "pid_dictionary.h"
 
 namespace sf1r {
 
@@ -40,8 +41,6 @@ namespace sf1r {
             }
         };
         typedef std::string DocIdType;
-        typedef idmlib::dd::DupDetector<DocIdType, uint32_t, SimilarityMatcherAttach> DDType;
-        typedef DDType::GroupTableType GroupTableType;
 
         struct ValueType
         {
@@ -54,6 +53,110 @@ namespace sf1r {
             }
             
         };
+
+        template <typename DocIdType, typename GT>
+        class SimilarityMatcherGt
+        {
+        public:
+            typedef boost::unordered_map<DocIdType, std::pair<bool, DocIdType> > ResultType;
+            SimilarityMatcherGt(PidDictionary* dic): dic_(dic)
+            {
+            }
+
+            //inline bool IsSymmetric() const
+            //{
+                //return false;
+            //}
+
+            bool AddDoc(const DocIdType& docid1, const DocIdType& docid2, char flag)
+            {
+                bool result = false;
+                //LOG(INFO)<<"flag : "<<(int)flag<<std::endl;
+                bool new1 = (flag & 0x01)>0;
+                flag >>= 1;
+                bool new2 = (flag & 0x01)>0;
+                //LOG(INFO)<<"AddDoc "<<docid1<<","<<docid2<<","<<(int)new1<<","<<(int)new2<<std::endl;
+                if(new1&&new2)
+                {
+                    DocIdType small = std::min(docid1, docid2);
+                    DocIdType big = std::max(docid1, docid2);
+                    if(dic_->Exist(small))
+                    {
+                        FindMatch_(big, small, true);
+                        result = true;
+                    }
+                    else if(dic_->Exist(big))
+                    {
+                        FindMatch_(small, big, true);
+                        result = true;
+                    }
+                }
+                else if(new1)
+                {
+                    if(dic_->Exist(docid2))
+                    {
+                        FindMatch_(docid1, docid2, false);
+                        result = true;
+                    }
+                }
+                else if(new2)
+                {
+                    if(dic_->Exist(docid1))
+                    {
+                        FindMatch_(docid2, docid1, false);
+                        result = true;
+                    }
+                }
+                return result;
+            }
+
+            bool RemoveDoc(const DocIdType& docid)
+            {
+                //do nothing.
+                return true;
+            }
+
+            bool Flush()
+            {
+                return true;
+            }
+
+            void PrintStat()
+            {
+                std::cout<<"Find Match count: "<<result.size()<<std::endl;
+            }
+
+        public:
+            ResultType result;
+
+        private:
+            void FindMatch_(const DocIdType& oid, const DocIdType& pid, bool weak)
+            {
+                std::pair<bool, DocIdType> value(weak, pid);
+                typename ResultType::iterator it = result.find(oid);
+                if(it==result.end())
+                {
+                    result.insert(std::make_pair(oid,value));
+                    dic_->Erase(oid);
+                }
+                else
+                {
+                    if(value<it->second)
+                    {
+                        dic_->Erase(it->second.second);
+                        it->second = value;
+                    }
+                }
+            }
+
+        private:
+            PidDictionary* dic_;
+
+        };
+
+        typedef idmlib::dd::DupDetector<DocIdType, uint32_t, SimilarityMatcherAttach, SimilarityMatcherGt> DDType;
+        typedef DDType::GroupTableType GroupTableType;
+
     public:
         SimilarityMatcher();
         bool Index(const std::string& scd_path, const std::string& knowledge_dir);
@@ -61,8 +164,16 @@ namespace sf1r {
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
 
+        void SetPidDictionary(const std::string& dic_path) 
+        {
+            dic_path_ = dic_path;
+            LOG(INFO)<<"pid dictionary set, path: "<<dic_path<<std::endl;
+        }
+
+
     private:
         std::string cma_path_;
+        std::string dic_path_;
     };
 
 }

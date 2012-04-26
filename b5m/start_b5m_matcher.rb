@@ -81,6 +81,7 @@ train_scd = match_path['train_scd']
 scd = match_path['scd']
 comment_scd = match_path['comment_scd']
 cma = match_path['cma']
+simhash_dic = match_path['simhash_dic']
 b5mo_scd = File.join(match_path['b5mo'], "scd", "index")
 b5mp_scd = File.join(match_path['b5mp'], "scd", "index")
 b5mc_scd = File.join(match_path['b5mc'], "scd", "index")
@@ -221,7 +222,7 @@ task_list.each do |task|
   elsif task.type == CategoryTask::SIM
     #do similarity matching
     puts "start similarity matching #{task.cid}"
-    system("#{matcher_program} -I -C #{cma} -S #{raw_scd} -K #{category_dir}")
+    system("#{matcher_program} -I -C #{cma} -S #{raw_scd} -K #{category_dir} --dictionary #{simhash_dic}")
     abort("similarity matching failed") unless $?.success?
   else
     next unless task.info['disable'].nil?

@@ -27,7 +27,9 @@ class MockSimhash
     end
     @docs.clear
     map.each_pair do |k,v|
-      @gt.add(v, k)
+      v.each do |id|
+        @gt.add(id, k)
+      end
     end
   end
 

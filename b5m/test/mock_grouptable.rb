@@ -6,23 +6,24 @@ class MockGrouptable
     @gid = 1
   end
 
-  def add(id_array, gid = nil)
-    if !id_array.is_a? Array
-      id_array = [id_array]
-    end
-    if gid.nil?
-      id_array.each do |id|
-        gid = @map[id]
-        break unless gid.nil?
-      end
-    end
-    if gid.nil?
-      gid = @gid
-      @gid+=1
-    end
-    id_array.each do |id|
-      map[id] = gid
-    end
+  def add(id, gid = id)
+    #if !id_array.is_a? Array
+      #id_array = [id_array]
+    #end
+    #if gid.nil?
+      #id_array.each do |id|
+        #gid = @map[id]
+        #break unless gid.nil?
+      #end
+    #end
+    #if gid.nil?
+      #gid = @gid
+      #@gid+=1
+    #end
+    #id_array.each do |id|
+      #map[id] = gid
+    #end
+    map[id] = gid
   end
 
   def has_key?(id)
