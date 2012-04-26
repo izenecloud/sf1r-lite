@@ -92,7 +92,7 @@ void DocumentsSearchHandler::search()
         addAclFilters();
         KeywordSearchResult searchResult;
 
-        int startOffset = (actionItem_.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
+        int topKStart = actionItem_.pageInfo_.topKStart(TOP_K_NUM);
 
         if (actionItem_.env_.taxonomyLabel_.empty()
             && actionItem_.env_.nameEntityItem_.empty())
@@ -102,7 +102,13 @@ void DocumentsSearchHandler::search()
             if (doSearch(searchResult))
             {
                 response_[Keys::total_count] = searchResult.totalCount_;
-                response_[Keys::top_k_count] = startOffset + searchResult.topKDocs_.size();
+
+                std::size_t topKCount = searchResult.topKDocs_.size();
+                if (topKStart + topKCount <= searchResult.totalCount_)
+                {
+                    topKCount += topKStart;
+                }
+                response_[Keys::top_k_count] = topKCount;
 
                 renderDocuments(searchResult);
                 renderMiningResult(searchResult);
@@ -127,11 +133,11 @@ void DocumentsSearchHandler::search()
             // Page Info is used to get raw text for documents with the
             // specified label.
 
-            unsigned start = actionItem_.pageInfo_.start_ - startOffset;
+            unsigned start = actionItem_.pageInfo_.start_ - topKStart;
             unsigned count = actionItem_.pageInfo_.count_;
 
             // DO NOT get raw text.
-            actionItem_.pageInfo_.start_ = startOffset;
+            actionItem_.pageInfo_.start_ = topKStart;
             actionItem_.pageInfo_.count_ = 0;
 
             if (doSearch(searchResult))
