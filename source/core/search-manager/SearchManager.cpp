@@ -8,7 +8,7 @@
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-#include <aggregator-manager/Notifier.h>
+#include <aggregator-manager/MasterNotifier.h>
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
@@ -139,9 +139,9 @@ void SearchManager::reset_cache(
 
     // notify master
     NotifyMSG msg;
-    msg.identity = collectionName_;
-    msg.method = "clear_search_cache";
-    Notifier::get()->notify(msg);
+    msg.collection = collectionName_;
+    msg.method = "CLEAR_SEARCH_CACHE";
+    MasterNotifier::get()->notify(msg);
 
     queryBuilder_->reset_cache();
 }
@@ -152,9 +152,9 @@ void SearchManager::reset_all_property_cache()
 
     // notify master
     NotifyMSG msg;
-    msg.identity = collectionName_;
-    msg.method = "clear_search_cache";
-    Notifier::get()->notify(msg);
+    msg.collection = collectionName_;
+    msg.method = "CLEAR_SEARCH_CACHE";
+    MasterNotifier::get()->notify(msg);
 
     queryBuilder_->reset_cache();
 }
