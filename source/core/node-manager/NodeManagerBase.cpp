@@ -70,7 +70,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         }
     }
 
-    if (zkEvent.state_ == ZOO_CHILD_EVENT)
+    if (zkEvent.type_ == ZOO_CHILD_EVENT)
     {
         detectMasters();
     }
