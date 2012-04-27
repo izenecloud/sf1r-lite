@@ -64,15 +64,14 @@ int main(int argc, char** argv)
         while(true)
         {
             if(doc_iter==parser.end()) break;
-            //SCDDoc doc = *(*doc_iter);
+            SCDDoc doc = *(*doc_iter);
 
-            //std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+            //std::vector<std::pair<std::string, izenelib::util::UString> >::iterator p;
 
             //for (p = doc.begin(); p != doc.end(); p++)
             //{
-                //std::string property_name;
+                //const std::string& property_name = p->first;
                 //std::string property_value;
-                //p->first.convertString(property_name, izenelib::util::UString::UTF_8);
                 //p->second.convertString(property_value, izenelib::util::UString::UTF_8);
                 //std::cout<<property_name<<":"<<property_value<<std::endl;
             //}

@@ -6,6 +6,7 @@
 #include <util/ustring/UString.h>
 #include <util/profiler/ProfilerGroup.h>
 #include <util/fileno.hpp>
+#include <glog/logging.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -606,40 +607,13 @@ long ScdParser::iterator::getOffset()
     return offset_;
 }
 
-SCDDoc* ScdParser::iterator::getDoc()
+void ScdParser::iterator::parseDoc(const std::string& str, SCDDoc* doc)
 {
-    CREATE_SCOPED_PROFILER ( proScdParsing, "ScdParser", "ScdParsing::getDoc");
-    CREATE_PROFILER ( proScdParsing0, "ScdParser", "ScdParsing::getDoc::0");
-    CREATE_PROFILER ( proScdParsing1, "ScdParser", "ScdParsing::getDoc::1");
-    CREATE_PROFILER ( proScdParsing2, "ScdParser", "ScdParsing::getDoc::2");
-    CREATE_PROFILER ( proScdParsing3, "ScdParser", "ScdParsing::getDoc::3");
+    if (str == docDelimiter_) return;
+
+    //CREATE_PROFILER ( proScdParsing2, "ScdParser", "ScdParsing::getDoc::2");
+    //CREATE_PROFILER ( proScdParsing3, "ScdParser", "ScdParsing::getDoc::3");
     CREATE_PROFILER ( proScdParsingN, "ScdParser", "ScdParsing::getDoc::N");
-
-    START_PROFILER ( proScdParsing0 );
-    std::size_t readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
-    STOP_PROFILER ( proScdParsing0 );
-    START_PROFILER ( proScdParsing1 );
-    string str(docDelimiter_);
-    if (readLen)
-    {
-        str.append(buffer_->gptr(), readLen - docDelimiter_.size());
-        buffer_->consume(readLen);
-        prevOffset_ += readLen;
-    }
-    else
-    {
-        while ((readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, PATTERN_EOL)))
-        {
-            str.append(buffer_->gptr(), readLen);
-            buffer_->consume(readLen);
-        }
-        prevOffset_ = -1;
-    }
-    SCDDoc* doc = new SCDDoc;
-    STOP_PROFILER ( proScdParsing1 );
-    if (str == docDelimiter_)
-        return doc;
-
     //START_PROFILER ( proScdParsing2 );
     ///// It's recommended to handle this processing in application by which SCD is created.
     //preProcessDoc(str);
@@ -692,6 +666,7 @@ SCDDoc* ScdParser::iterator::getDoc()
                     pname = line.substr(1, len);
                     if(pname_set_.empty() || pname_set_.find(pname)!=pname_set_.end())
                     {
+                        //LOG(INFO)<<"find pname : "<<pname<<","<<pname.length()<<std::endl;
                         if( right_index<line.length() )
                         {
                             pname_left = line.substr(right_index+1, std::string::npos);
@@ -699,6 +674,7 @@ SCDDoc* ScdParser::iterator::getDoc()
                     }
                     else
                     {
+                        //LOG(INFO)<<"invalid pname : "<<pname<<std::endl;
                         pname.clear();
                     }
                           
@@ -714,7 +690,7 @@ SCDDoc* ScdParser::iterator::getDoc()
         {
             if(!property_name.empty())
             {
-                doc->push_back(std::make_pair( izenelib::util::UString(property_name, codingType_), izenelib::util::UString(property_value.str(), codingType_)));
+                doc->push_back(std::make_pair( property_name, izenelib::util::UString(property_value.str(), codingType_)));
             }
             property_name.clear();
             property_value.str("");
@@ -724,9 +700,40 @@ SCDDoc* ScdParser::iterator::getDoc()
     }
     if(!property_name.empty())
     {
-        doc->push_back(std::make_pair( izenelib::util::UString(property_name, codingType_), izenelib::util::UString(property_value.str(), codingType_)));
+        doc->push_back(std::make_pair( property_name, izenelib::util::UString(property_value.str(), codingType_)));
     }
     STOP_PROFILER ( proScdParsingN );
+}
+
+SCDDoc* ScdParser::iterator::getDoc()
+{
+    CREATE_SCOPED_PROFILER ( proScdParsing, "ScdParser", "ScdParsing::getDoc");
+    CREATE_PROFILER ( proScdParsing0, "ScdParser", "ScdParsing::getDoc::0");
+    CREATE_PROFILER ( proScdParsing1, "ScdParser", "ScdParsing::getDoc::1");
+
+    START_PROFILER ( proScdParsing0 );
+    std::size_t readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
+    STOP_PROFILER ( proScdParsing0 );
+    START_PROFILER ( proScdParsing1 );
+    string str(docDelimiter_);
+    if (readLen)
+    {
+        str.append(buffer_->gptr(), readLen - docDelimiter_.size());
+        buffer_->consume(readLen);
+        prevOffset_ += readLen;
+    }
+    else
+    {
+        while ((readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, PATTERN_EOL)))
+        {
+            str.append(buffer_->gptr(), readLen);
+            buffer_->consume(readLen);
+        }
+        prevOffset_ = -1;
+    }
+    SCDDoc* doc = new SCDDoc;
+    STOP_PROFILER ( proScdParsing1 );
+    parseDoc(str, doc);
     return doc;
 }
 

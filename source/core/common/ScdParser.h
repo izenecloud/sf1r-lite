@@ -111,6 +111,9 @@ public:
         /// It's recommended to handle this processing in application by which SCD is created
         void preProcessDoc(string& strDoc);
 
+
+        void parseDoc(const std::string& str, SCDDoc* doc);
+
     private:
         std::ifstream* pfs_;
 
