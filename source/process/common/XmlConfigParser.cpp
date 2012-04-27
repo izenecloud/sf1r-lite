@@ -1106,7 +1106,8 @@ void CollectionConfig::parseCollectionSchema(const ticpp::Element * documentSche
 
 void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, CollectionMeta & collectionMeta)
 {
-    CollectionParameterConfig params(SF1Config::get()->defaultIndexBundleParam_);
+    SF1Config* sf1Config = SF1Config::get();
+    CollectionParameterConfig params(sf1Config->defaultIndexBundleParam_);
     if (index) params.LoadXML(index, true);
 
     std::string encoding;
@@ -1118,14 +1119,14 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.GetString("Sia/searchanalyzer", searchAnalyzer);
     if(!searchAnalyzer.empty())
     {
-        if ((SF1Config::get()->laConfigIdNameMap_.find(searchAnalyzer)) == SF1Config::get()->laConfigIdNameMap_.end()) {
+        if ((sf1Config->laConfigIdNameMap_.find(searchAnalyzer)) == sf1Config->laConfigIdNameMap_.end()) {
             throw XmlConfigParserException("Undefined analyzer configuration id, " + searchAnalyzer);
         }
 
         /// TODO, add a hidden alias here
         AnalysisInfo analysisInfo;
         analysisInfo.analyzerId_ = searchAnalyzer;
-        SF1Config::get()->analysisPairList_.insert(analysisInfo);
+        sf1Config->analysisPairList_.insert(analysisInfo);
     }
 
     indexBundleConfig.searchAnalyzer_ = searchAnalyzer;
@@ -1191,10 +1192,13 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     params.GetString("LanguageIdentifier/dbpath", indexBundleConfig.languageIdentifierDbPath_, "");
 
     LAPool::getInstance()->setLangIdDbPath(indexBundleConfig.languageIdentifierDbPath_);
-    indexBundleConfig.isMasterAggregator_ = SF1Config::get()->checkSearchMasterAggregator(collectionMeta.getName());
 
-    indexBundleConfig.localHostUsername_ = SF1Config::get()->distributedCommonConfig_.userName_;
-    indexBundleConfig.localHostIp_ = SF1Config::get()->distributedCommonConfig_.localHost_;
+    const std::string& collectionName = collectionMeta.getName();
+    indexBundleConfig.isMasterAggregator_ = sf1Config->checkSearchMasterAggregator(collectionName);
+    indexBundleConfig.isWorkerNode_ = sf1Config->checkSearchWorker(collectionName);
+
+    indexBundleConfig.localHostUsername_ = sf1Config->distributedCommonConfig_.userName_;
+    indexBundleConfig.localHostIp_ = sf1Config->distributedCommonConfig_.localHost_;
 }
 
 void CollectionConfig::parseIndexEcSchema(const ticpp::Element * indexEcSchema, CollectionMeta & collectionMeta)

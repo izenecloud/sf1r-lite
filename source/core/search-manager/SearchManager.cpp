@@ -8,7 +8,6 @@
 #include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
 #include <mining-manager/faceted-submanager/GroupFilter.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-#include <aggregator-manager/MasterNotifier.h>
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
@@ -119,42 +118,16 @@ SearchManager::~SearchManager()
         delete pSorterCache_;
 }
 
-void SearchManager::reset_cache(
-        bool rType,
+void SearchManager::updateSortCache(
         docid_t id,
         const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
 {
-    //this method is only used for r-type filed right now
-    if (!rType)
-    {
-        //pSorterCache_->setDirty(true);
-        return;
-    }
-    else
-    {
-        pSorterCache_->updateSortData(id, rTypeFieldValue);
-        return;
-    }
-
-
-    // notify master
-    NotifyMSG msg;
-    msg.collection = collectionName_;
-    msg.method = "CLEAR_SEARCH_CACHE";
-    MasterNotifier::get()->notify(msg);
-
-    queryBuilder_->reset_cache();
+    pSorterCache_->updateSortData(id, rTypeFieldValue);
 }
 
 void SearchManager::reset_all_property_cache()
 {
     pSorterCache_->setDirty(true);
-
-    // notify master
-    NotifyMSG msg;
-    msg.collection = collectionName_;
-    msg.method = "CLEAR_SEARCH_CACHE";
-    MasterNotifier::get()->notify(msg);
 
     queryBuilder_->reset_cache();
 }
