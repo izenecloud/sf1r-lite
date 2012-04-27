@@ -58,7 +58,7 @@ void NodeManagerBase::stop()
 
 void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
-    LOG (INFO) << CLASSNAME << " " << zkEvent.toString();
+    //LOG (INFO) << CLASSNAME << " " << zkEvent.toString();
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
