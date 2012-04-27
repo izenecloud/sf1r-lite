@@ -54,7 +54,12 @@ protected:
 
     virtual void detectMasters()
     {
+        boost::lock_guard<boost::mutex> lock(MasterNotifier::get()->getMutex());
+        MasterNotifier::get()->clear();
+
         replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
+        std::vector<std::string> childrenList;
+        zookeeper_->getZNodeChildren(ZooKeeperNamespace::getSearchReplicaPath(replicaId), childrenList, ZooKeeper::WATCH); // set watcher
         for (nodeid_t nodeId = 1; nodeId <= sf1rTopology_.nodeNum_; nodeId++)
         {
             std::string data;
@@ -86,6 +91,7 @@ protected:
             }
         }
     }
+
 };
 
 

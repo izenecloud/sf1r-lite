@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include <3rdparty/msgpack/msgpack.hpp>
 #include <3rdparty/msgpack/rpc/client.h>
@@ -48,6 +49,8 @@ public:
 
     bool notify(NotifyMSG& msg)
     {
+        boost::lock_guard<boost::mutex> lock(mutex_);
+
         if (masterList_.empty())
         {
             return false;
@@ -77,12 +80,22 @@ public:
         Master master;
         master.host_ = host;
         master.port_ = port;
-
         masterList_.push_back(master);
+    }
+
+    void clear()
+    {
+        masterList_.clear();
+    }
+
+    boost::mutex& getMutex()
+    {
+        return mutex_;
     }
 
 protected:
     std::vector<Master> masterList_;
+    boost::mutex mutex_;
 };
 
 }
