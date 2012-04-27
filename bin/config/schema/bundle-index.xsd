@@ -79,6 +79,7 @@
             <xs:attribute name="logcreateddoc" type="YesNoType" use="optional"/>
             <xs:attribute name="indexlevel" type="xs:string" use="optional"/>
             <xs:attribute name="indexpolicy" type="xs:string" use="optional"/>
+	    <xs:attribute name="samplepolicy" type="xs:string" use="optional"/>
             <xs:attribute name="mergepolicy" type="xs:string" use="optional"/>
             <xs:attribute name="memorypoolsize" use="optional">
                 <xs:simpleType>

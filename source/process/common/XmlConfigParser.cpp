@@ -1159,6 +1159,11 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     indexmanager_config.indexStrategy_.indexLevel_ = (indexLevel == "wordlevel")?
         izenelib::ir::indexmanager::WORDLEVEL : izenelib::ir::indexmanager::DOCLEVEL;
 
+    std::string samplePolicy;
+    params.GetString("IndexStrategy/samplepolicy", samplePolicy, "false");
+    indexmanager_config.indexStrategy_.samplePolicy_ = (samplePolicy == "true")?
+        izenelib::ir::indexmanager::WITHSAMPLE : izenelib::ir::indexmanager::NOSAMPLE;
+
     params.GetString("IndexStrategy/indexpolicy", indexmanager_config.indexStrategy_.indexMode_, "default");
     std::string indexMergePolicy;
     params.GetString("IndexStrategy/mergepolicy",indexMergePolicy, "file");

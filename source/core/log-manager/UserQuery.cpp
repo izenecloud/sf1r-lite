@@ -12,7 +12,7 @@ const char* UserQuery::ColumnName[EoC] = { "query", "collection", "hit_docs_num"
         "page_start", "page_count", "session_id", "duration" , "TimeStamp"
                                          };
 
-const char* UserQuery::ColumnMeta[EoC] = { "Text", "TEXT", "integer", "integer", "integer", "TEXT", "TEXT", "TEXT" };
+const char* UserQuery::ColumnMeta[EoC] = { "Text", "TEXT", "integer", "integer", "integer", "TEXT", "CHAR(15)", "CHAR(22)" };
 
 const char* UserQuery::TableName = "user_queries";
 
