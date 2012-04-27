@@ -857,6 +857,9 @@ bool IndexWorker::insertOrUpdateSCD_(
     long lastOffset = 0;
     //for (ScdParser::cached_iterator doc_iter = parser.cbegin(propertyList_);
         //doc_iter != parser.cend(); ++doc_iter, ++n)
+    Document document;
+    IndexerDocument indexDocument;
+        
     for (ScdParser::iterator doc_iter = parser.begin(propertyList_);
         doc_iter != parser.end(); ++doc_iter, ++n)
     {
@@ -881,15 +884,14 @@ bool IndexWorker::insertOrUpdateSCD_(
         }
 
         SCDDocPtr doc = (*doc_iter);
-        Document document;
-        IndexerDocument indexDocument;
         docid_t oldId = 0;
         bool rType = false;
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
         docid_t id = 0;
         std::string source = "";
         time_t new_timestamp = timestamp;
-
+        document.clear();
+        indexDocument.clear();
         if (!prepareDocument_(*doc, document, oldId, rType, rTypeFieldValue, source, new_timestamp, isInsert))
             continue;
 
@@ -1261,7 +1263,8 @@ bool IndexWorker::prepareDocument_(
             }
 
             document.setId(docId);
-            document.property(fieldStr) = propertyValueU;
+            PropertyValue propData(propertyValueU);
+            document.property(fieldStr).swap(propData);
         }
         else if (boost::iequals(fieldStr,DATE))
         {
@@ -1269,13 +1272,15 @@ bool IndexWorker::prepareDocument_(
             dateExistInSCD = true;
             izenelib::util::UString dateStr;
             timestamp = Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
-            document.property(dateProperty_.getName()) = dateStr;
+            PropertyValue propData(propertyValueU);
+            document.property(dateProperty_.getName()).swap(propData);
         }
         else if (isIndexSchema)
         {
             if (iter->getType() == STRING_PROPERTY_TYPE)
             {
-                document.property(fieldStr) = propertyValueU;
+                PropertyValue propData(propertyValueU);
+                document.property(fieldStr).swap(propData);
                 analysisInfo.clear();
                 analysisInfo = iter->getAnalysisInfo();
                 if (!analysisInfo.analyzerId_.empty())
@@ -1296,8 +1301,8 @@ bool IndexWorker::prepareDocument_(
                         {
                             LOG(ERROR) << "Make Sentence Blocks Failes ";
                         }
-
-                        document.property(fieldStr + ".blocks") = sentenceOffsetList;
+                        PropertyValue propData(sentenceOffsetList);
+                        document.property(fieldStr + ".blocks").swap(propData);
                     }
                 }
             }
@@ -1305,7 +1310,8 @@ bool IndexWorker::prepareDocument_(
                     || iter->getType() == FLOAT_PROPERTY_TYPE
                     || iter->getType() == NOMINAL_PROPERTY_TYPE)
             {
-                document.property(fieldStr) = propertyValueU;
+                PropertyValue propData(propertyValueU);
+                document.property(fieldStr).swap(propData);
             }
             else
             {
@@ -1317,7 +1323,8 @@ bool IndexWorker::prepareDocument_(
     else
     {
         std::string dateStr = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(timestamp / 1000000 - timezone));
-        document.property(dateProperty_.getName()) = izenelib::util::UString(dateStr.erase(8, 1), izenelib::util::UString::UTF_8);
+        PropertyValue propData(izenelib::util::UString(dateStr.erase(8, 1), izenelib::util::UString::UTF_8));
+        document.property(dateProperty_.getName()).swap(propData);
     }
 
     if (!insert && !rType)
@@ -1342,7 +1349,6 @@ bool IndexWorker::prepareIndexDocument_(
 
     docid_t docId = document.getId();//new id;
     izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
-    string fieldStr;
     AnalysisInfo analysisInfo;
     typedef Document::property_const_iterator document_iterator;
     document_iterator p;
@@ -1350,7 +1356,7 @@ bool IndexWorker::prepareIndexDocument_(
     // due to the maxlen setting
     for (p = document.propertyBegin(); p != document.propertyEnd(); ++p)
     {
-        fieldStr = p->first;
+        const string& fieldStr = p->first;
 
         PropertyConfig temp;
         temp.propertyName_ = fieldStr;
@@ -1769,7 +1775,7 @@ bool IndexWorker::checkRtype_(
 
     for (; p != doc.end(); ++p)
     {
-        const string fieldName = p->first;
+        const string& fieldName = p->first;
         const izenelib::util::UString & propertyValueU = p->second;
 
         PropertyConfig tempPropertyConfig;
