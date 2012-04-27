@@ -23,9 +23,9 @@ public:
     ~Utilities() {}
 
 public:
-    static int64_t convertDate(const izenelib::util::UString& dataStr, const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr);
-    static int64_t convertDate(const std::string& dataStr);
-
+    static time_t createTimeStampInSeconds(const izenelib::util::UString& dataStr, const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr);
+    static time_t createTimeStampInSeconds(const izenelib::util::UString& text);
+    static time_t createTimeStampInSeconds(const std::string& text);
     static time_t createTimeStamp();
     static time_t createTimeStamp(const boost::posix_time::ptime& pt);
     static time_t createTimeStamp(const izenelib::util::UString& text);
@@ -66,6 +66,28 @@ public:
     static void getValueList(SeqType& value_list, const AssocType& src_map);
 
     static bool convertPropertyDataType(const std::string& property_name, const PropertyDataType& sf1r_type, izenelib::ir::indexmanager::PropertyType& type);
+
+    /**
+     * Round up @p x to multiple of @p base.
+     */
+    static std::size_t roundUp(std::size_t x, std::size_t base)
+    {
+        if (base == 0)
+            return x;
+
+        return (x + base - 1) / base * base;
+    }
+
+    /**
+     * Round down @p x to multiple of @p base.
+     */
+    static std::size_t roundDown(std::size_t x, std::size_t base)
+    {
+        if (base == 0)
+            return x;
+
+        return x / base * base;
+    }
 };
 
 template <typename AssocType, typename SeqType>

@@ -188,12 +188,10 @@ public:
     Document getDoc_(SCDDoc& doc)
     {
         Document result;
-        vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-        std::string fieldStr;
-        for (p = doc.begin(); p != doc.end(); p++)
+        SCDDoc::iterator p = doc.begin();
+        for (; p != doc.end(); p++)
         {
-            p->first.convertString(fieldStr, izenelib::util::UString::UTF_8);
-            result.property(fieldStr) = p->second;
+            result.property(p->first) = p->second;
         }
         return result;
     }

@@ -155,8 +155,7 @@ bool doc2User(const SCDDoc& doc, sf1r::User& user, const sf1r::RecommendSchema& 
 {
     for (SCDDoc::const_iterator it = doc.begin(); it != doc.end(); ++it)
     {
-        std::string propName;
-        it->first.convertString(propName, DEFAULT_ENCODING);
+        const std::string& propName = it->first;
         const izenelib::util::UString & propValueU = it->second;
 
         if (propName == PROP_USERID)
@@ -197,9 +196,8 @@ bool doc2Order(
     std::map<string, string> docMap;
     for (SCDDoc::const_iterator it = doc.begin(); it != doc.end(); ++it)
     {
-        std::string propName;
+        const std::string& propName = it->first;
         std::string propValue;
-        it->first.convertString(propName, DEFAULT_ENCODING);
         it->second.convertString(docMap[propName], DEFAULT_ENCODING);
     }
 

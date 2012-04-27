@@ -434,9 +434,10 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         }
 
         IndexerDocument indexDocument;
-        prepareIndexDocument_(oldId, document, indexDocument);
+        time_t timestamp = -1;
+        prepareIndexDocument_(oldId, timestamp, document, indexDocument);
 
-        time_t timestamp = Utilities::createTimeStamp();
+        timestamp = Utilities::createTimeStamp();
         if (!insertDoc_(document, indexDocument, timestamp))
             continue;
 
@@ -533,7 +534,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
     if (!prepareDocument_(scddoc, document, oldId, rType, rTypeFieldValue, source, timestamp, true))
         return false;
 
-    prepareIndexDocument_(oldId, document, indexDocument);
+    prepareIndexDocument_(oldId, timestamp, document, indexDocument);
 
     if (rType)
     {
@@ -567,16 +568,12 @@ void IndexWorker::logCreatedDocToLogServer(const SCDDoc& scdDoc)
     std::string docidStr;
     std::string content;
 
-    std::string propertyName;
     std::string propertyValue;
     for (SCDDoc::const_iterator it = scdDoc.begin(); it != scdDoc.end(); it++)
     {
-        it->first.convertString(propertyName, bundleConfig_->encoding_);
+        const std::string& propertyName = it->first;
         it->second.convertString(propertyValue, bundleConfig_->encoding_);
-
-        izenelib::util::UString propertyNameL = it->first;
-        propertyNameL.toLowerString();
-        if (propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_))
+        if (boost::iequals(propertyName,DOCID))
         {
             docidStr = propertyValue;
         }
@@ -655,7 +652,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
-    prepareIndexDocument_(oldId, document, indexDocument);
+    prepareIndexDocument_(oldId, timestamp, document, indexDocument);
 
     if (rType)
     {
@@ -896,7 +893,7 @@ bool IndexWorker::insertOrUpdateSCD_(
         if (!prepareDocument_(*doc, document, oldId, rType, rTypeFieldValue, source, new_timestamp, isInsert))
             continue;
 
-        prepareIndexDocument_(oldId, document, indexDocument);
+        prepareIndexDocument_(oldId, new_timestamp, document, indexDocument);
 
         if (!source.empty())
         {
@@ -1078,6 +1075,9 @@ bool IndexWorker::insertDoc_(Document& document, IndexerDocument& indexDocument,
 
     if (hooker_)
     {
+        ///TODO compatibility issue:
+        ///timestamp 
+        if(-1 != timestamp) timestamp *= 1000000; 
         if (!hooker_->HookInsert(document, indexDocument, timestamp)) return false;
     }
     START_PROFILER(proDocumentIndexing);
@@ -1213,35 +1213,32 @@ bool IndexWorker::prepareDocument_(
     // the iterator is not const because the p-second value may change
     // due to the maxlen setting
 
-    vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+    SCDDoc::iterator p = doc.begin();
     bool dateExistInSCD = false;
 
-    for (p = doc.begin(); p != doc.end(); p++)
+    for (; p != doc.end(); p++)
     {
-        p->first.convertString(fieldStr, bundleConfig_->encoding_);
+        const std::string& fieldStr = p->first;
         PropertyConfig temp;
         temp.propertyName_ = fieldStr;
 
         IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(temp);
         bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
 
-        izenelib::util::UString propertyNameL = p->first;
-        propertyNameL.toLowerString();
         const izenelib::util::UString & propertyValueU = p->second; // preventing copy
 
-        izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
-        std::string fieldValue;
-        propertyValueU.convertString(fieldValue, encoding);
-
         if (!bundleConfig_->productSourceField_.empty()
-              && fieldStr == bundleConfig_->productSourceField_)
+              && boost::iequals(fieldStr,bundleConfig_->productSourceField_))
         {
-            source = fieldValue;
+            propertyValueU.convertString(source, bundleConfig_->encoding_);
         }
 
-        if (propertyNameL == izenelib::util::UString("docid", encoding)
-                && isIndexSchema)
+        if (boost::iequals(fieldStr,DOCID) && isIndexSchema)
         {
+            izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
+            std::string fieldValue;
+            propertyValueU.convertString(fieldValue, encoding);
+
             // update
             if (!insert)
             {
@@ -1266,12 +1263,12 @@ bool IndexWorker::prepareDocument_(
             document.setId(docId);
             document.property(fieldStr) = propertyValueU;
         }
-        else if (propertyNameL == izenelib::util::UString("date", encoding))
+        else if (boost::iequals(fieldStr,DATE))
         {
             /// format <DATE>20091009163011
             dateExistInSCD = true;
             izenelib::util::UString dateStr;
-            Utilities::convertDate(propertyValueU, encoding, dateStr);
+            timestamp = Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
             document.property(dateProperty_.getName()) = dateStr;
         }
         else if (isIndexSchema)
@@ -1333,6 +1330,7 @@ bool IndexWorker::prepareDocument_(
 
 bool IndexWorker::prepareIndexDocument_(
         docid_t oldId,
+        time_t timestamp,
         const Document& document,
         IndexerDocument& indexDocument)
 {
@@ -1363,8 +1361,6 @@ bool IndexWorker::prepareIndexDocument_(
 
         IndexerPropertyConfig indexerPropertyConfig;
 
-        izenelib::util::UString propertyNameL = izenelib::util::UString(fieldStr, encoding);
-        propertyNameL.toLowerString();
         const izenelib::util::UString & propertyValueU = *(get<izenelib::util::UString>(&(p->second)));
         indexerPropertyConfig.setPropertyId(iter->getPropertyId());
         indexerPropertyConfig.setName(iter->getName());
@@ -1375,24 +1371,24 @@ bool IndexWorker::prepareIndexDocument_(
         indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
 
 
-        if (propertyNameL == izenelib::util::UString("docid", encoding))
+        if (boost::iequals(fieldStr,DOCID))
         {
             indexDocument.setId(oldId);
             indexDocument.setDocId(docId, collectionId_);
         }
-        else if (propertyNameL == izenelib::util::UString("date", encoding))
+        else if (boost::iequals(fieldStr,DATE))
         {
             START_PROFILER(pid_date);
             /// format <DATE>20091009163011
-            izenelib::util::UString dateStr;
-            int64_t time = Utilities::convertDate(propertyValueU, encoding, dateStr);
+            if(-1 == timestamp)
+                timestamp = Utilities::createTimeStampInSeconds(propertyValueU);
             indexerPropertyConfig.setPropertyId(dateProperty_.getPropertyId());
             indexerPropertyConfig.setName(dateProperty_.getName());
             indexerPropertyConfig.setIsIndex(true);
             indexerPropertyConfig.setIsFilter(true);
             indexerPropertyConfig.setIsAnalyzed(false);
             indexerPropertyConfig.setIsMultiValue(false);
-            indexDocument.insertProperty(indexerPropertyConfig, time);
+            indexDocument.insertProperty(indexerPropertyConfig, timestamp);
             STOP_PROFILER(pid_date);
         }
         else
@@ -1769,15 +1765,12 @@ bool IndexWorker::checkRtype_(
     bool rType = false;
     docid_t docId = 0;
     izenelib::util::UString newPropertyValue, oldPropertyValue;
-    vector<pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+    SCDDoc::iterator p = doc.begin();
 
-    for (p = doc.begin(); p != doc.end(); ++p)
+    for (; p != doc.end(); ++p)
     {
-        izenelib::util::UString propertyNameL = p->first;
-        propertyNameL.toLowerString();
+        const string fieldName = p->first;
         const izenelib::util::UString & propertyValueU = p->second;
-        string fieldName;
-        p->first.convertString(fieldName, bundleConfig_->encoding_);
 
         PropertyConfig tempPropertyConfig;
         tempPropertyConfig.propertyName_ = fieldName;
@@ -1786,7 +1779,7 @@ bool IndexWorker::checkRtype_(
         if (iter == bundleConfig_->indexSchema_.end())
             break;
 
-        if (propertyNameL == izenelib::util::UString("docid", bundleConfig_->encoding_))
+        if (boost::iequals(fieldName,DOCID))
         {
             std::string docid_str;
             propertyValueU.convertString(docid_str, izenelib::util::UString::UTF_8);
@@ -1797,10 +1790,10 @@ bool IndexWorker::checkRtype_(
         }
 
         newPropertyValue = propertyValueU;
-        if (propertyNameL == izenelib::util::UString("date", bundleConfig_->encoding_))
+        if (boost::iequals(fieldName,DATE))
         {
             izenelib::util::UString dateStr;
-            Utilities::convertDate(propertyValueU, bundleConfig_->encoding_, dateStr);
+            Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
             newPropertyValue = dateStr;
         }
 
@@ -2040,7 +2033,7 @@ void IndexWorker::value2SCDDoc(const Value& value, SCDDoc& scddoc)
     for (Value::ObjectType::const_iterator it = objectValue.begin();
          it != objectValue.end(); ++it, ++propertyId)
     {
-        scddoc[propertyId].first.assign(it->first, izenelib::util::UString::UTF_8);
+        scddoc[propertyId].first.assign(asString(it->first));
         scddoc[propertyId].second.assign(
             asString(it->second),
             izenelib::util::UString::UTF_8

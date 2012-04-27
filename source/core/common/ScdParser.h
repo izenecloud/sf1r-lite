@@ -14,8 +14,8 @@
 #include <fstream>
 #include <vector>
 
-
-typedef std::pair<izenelib::util::UString, izenelib::util::UString> FieldPair;
+///We use std::string as propertyName, UString as propertyValue right now
+typedef std::pair<std::string, izenelib::util::UString> FieldPair;
 typedef std::vector<FieldPair> SCDDoc;
 typedef boost::shared_ptr<SCDDoc> SCDDocPtr;
 typedef std::pair<izenelib::util::UString, unsigned> DocIdPair;
