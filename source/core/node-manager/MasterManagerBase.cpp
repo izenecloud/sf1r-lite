@@ -60,6 +60,40 @@ bool MasterManagerBase::getShardReceiver(
     }
 }
 
+bool MasterManagerBase::getCollectionShardids(const std::string& collection, std::vector<shardid_t>& shardidList)
+{
+    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+    return sf1rTopology_.curNode_.master_.getShardidList(collection, shardidList);
+}
+
+bool MasterManagerBase::checkCollectionShardid(const std::string& collection, unsigned int shardid)
+{
+    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+    return sf1rTopology_.curNode_.master_.checkCollectionWorker(collection, shardid);
+}
+
+void MasterManagerBase::registerIndexStatus(const std::string& collection, bool isIndexing)
+{
+    std::string indexStatus = isIndexing ? "indexing" : "notindexing";
+
+    std::string data;
+    if (zookeeper_ && zookeeper_->getZNodeData(serverRealPath_, data))
+    {
+        ZNode znode;
+        znode.loadKvString(data);
+        znode.setValue(collection, indexStatus);
+    }
+
+    std::string nodePath = getNodePath(sf1rTopology_.curNode_.replicaId_,  sf1rTopology_.curNode_.nodeId_);
+    if (zookeeper_ && zookeeper_->getZNodeData(nodePath, data))
+    {
+        ZNode znode;
+        znode.loadKvString(data);
+        znode.setValue(collection, indexStatus);
+    }
+
+}
+
 void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     //std::cout <<CLASSNAME<<state2string(masterState_)<<" "<<zkEvent.toString();
@@ -204,8 +238,7 @@ void MasterManagerBase::doStart()
 
     detectWorkers();
 
-    // Register master as search server without waiting for all workers to be ready.
-    // Because even if one worker is broken down and not recovered, other workers should be in serving.
+    // Each Master serves as a Search Server, register it without waiting for all workers to be ready.
     registerSearchServer();
 }
 
@@ -239,7 +272,7 @@ int MasterManagerBase::detectWorkers()
                         {
                             std::stringstream ss;
                             ss << "[" << CLASSNAME << "] conflict detected: shardid " << shardid
-                               << " is configured for both node " << nodeid << " and node" << workerMap_[shardid]->nodeId_ << endl;
+                               << " is configured in both node" << nodeid << " and node" << workerMap_[shardid]->nodeId_ << endl;
 
                             throw std::runtime_error(ss.str());
                         }
@@ -296,7 +329,7 @@ int MasterManagerBase::detectWorkers()
     {
         masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
         LOG (INFO) << CLASSNAME << " detected " << detected << " workers (good " << good
-                   << "), expected " << sf1rTopology_.curNode_.master_.totalShardNum_ << std::endl;
+                   << "), all " << sf1rTopology_.curNode_.master_.totalShardNum_ << std::endl;
     }
 
     // update workers' info to aggregators
@@ -342,7 +375,8 @@ void MasterManagerBase::updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode
                     << " @" << workerNode->host_;
     }
 
-    LOG (INFO) << CLASSNAME << " detected worker " << workerNode->worker_.shardId_ << " "
+    LOG (INFO) << CLASSNAME << " detected worker" << workerNode->worker_.shardId_
+               << " (node" << workerNode->nodeId_ <<") "
                << workerNode->host_ << ":" << workerNode->worker_.port_ << std::endl;
 }
 

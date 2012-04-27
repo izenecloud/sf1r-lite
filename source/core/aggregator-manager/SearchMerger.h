@@ -27,7 +27,7 @@ class GetDocumentsByIdsActionItem;
 class SearchMerger : public net::aggregator::BindCallProxyBase<SearchMerger>
 {
 public:
-    SearchMerger(int topKNum = 4000) : TOP_K_NUM(topKNum) {}
+    SearchMerger(std::size_t topKNum = 4000) : TOP_K_NUM(topKNum) {}
 
     virtual bool bindCallProxy(CallProxyType& proxy)
     {
@@ -70,7 +70,7 @@ public:
         std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap);
 
 private:
-    int TOP_K_NUM;
+    std::size_t TOP_K_NUM;
     boost::shared_ptr<MiningManager> miningManager_;
 
     friend class IndexBundleActivator;

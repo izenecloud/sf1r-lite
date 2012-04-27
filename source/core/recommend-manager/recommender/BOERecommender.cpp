@@ -1,8 +1,5 @@
 #include "BOERecommender.h"
-#include "ItemFilter.h"
 #include "UserEventFilter.h"
-#include "../common/RecommendParam.h"
-#include "../common/RecommendItem.h"
 #include <bundles/recommend/RecommendSchema.h>
 
 #include <glog/logging.h>
@@ -51,18 +48,16 @@ namespace sf1r
 {
 
 BOERecommender::BOERecommender(
-    ItemManager& itemManager,
-    ItemCFManager& itemCFManager,
+    GetRecommendBase& getRecommendBase,
     const UserEventFilter& userEventFilter
 )
-    : ItemCFRecommender(itemManager, itemCFManager)
+    : ItemCFRecommender(getRecommendBase)
     , userEventFilter_(userEventFilter)
 {
 }
 
 bool BOERecommender::recommendImpl_(
     RecommendParam& param,
-    ItemFilter& filter,
     std::vector<RecommendItem>& recItemVec
 )
 {
@@ -74,8 +69,8 @@ bool BOERecommender::recommendImpl_(
 
     UserEventFilter::ItemEventMap itemEventMap;
     ItemRateMap itemRateMap;
-    if (! userEventFilter_.addUserEvent(param.userIdStr, param.inputItemIds,
-                                        itemRateMap, itemEventMap, filter))
+    if (! userEventFilter_.addUserEvent(param.userIdStr, param.inputParam.inputItemIds,
+                                        itemRateMap, itemEventMap, param.inputParam.itemFilter))
     {
         LOG(ERROR) << "failed to add user event for user id " << param.userIdStr;
         return false;
@@ -83,15 +78,14 @@ bool BOERecommender::recommendImpl_(
 
     if (itemRateMap.empty())
     {
-        if (! ItemCFRecommender::recommendImpl_(param, filter, recItemVec))
+        if (! ItemCFRecommender::recommendImpl_(param, recItemVec))
             return false;
     }
     else
     {
-        ItemWeightMap itemWeightMap;
-        convertItemWeight_(param.inputItemIds, itemRateMap, itemWeightMap);
+        convertItemWeight_(param.inputParam.inputItemIds, itemRateMap, param.inputParam.itemWeightMap);
 
-        if (! recommendFromItemWeight_(param.limit, itemWeightMap, filter, recItemVec))
+        if (! recommendFromItemWeight_(param.inputParam, recItemVec))
             return false;
     }
 
@@ -103,7 +97,7 @@ bool BOERecommender::recommendImpl_(
 void BOERecommender::convertItemWeight_(
     const std::vector<itemid_t>& inputItemIds,
     const ItemRateMap& itemRateMap,
-    ItemWeightMap& itemWeightMap
+    ItemCFManager::ItemWeightMap& itemWeightMap
 ) const
 {
     for (std::vector<itemid_t>::const_iterator it = inputItemIds.begin();

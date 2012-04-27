@@ -7,6 +7,7 @@ require 'logger'
 require_relative '../b5m_helper'
 require_relative 'mock_b5m'
 require_relative 'matcher/dm_matcher'
+require_relative 'matcher/dmc_matcher'
 
 describe "B5M Real Tester" do
 
@@ -34,6 +35,11 @@ describe "B5M Real Tester" do
   def mdb_dir
 
     File.join(work_dir, "db", "mdb")
+  end
+
+  def b5mc_output_dir
+
+    File.join(@config['matcher']['path_of']['b5mc'], "scd", "index")
   end
 
 
@@ -74,18 +80,25 @@ describe "B5M Real Tester" do
     input_dir_list.each_with_index do |d,i|
       input_dir_list[i] = File.join(@real_scd_dir, d)
     end
-    max_test_num = 10000
+    max_test_num = 50000
     iter = 0
     test_pid_map = {}
     test_oid_map = {}
+    test_cid_map = {}
     mock_b5m = MockB5M.new
     mock_b5m.dmp.name = "mock_b5m.dmp"
     mock_dmp = MockDm.new
     mock_dmp.name = "mock_dmp"
+    mock_dmc = MockDm.new
+    mock_dmc.name = "mock_dmc"
     input_dir_list.each do |input_scd_dir|
       iter+=1
-      gen_yml_config({'scd' => "#{input_scd_dir}"})
-      cmd = "ruby #{@matcher_script} --config #{config_file} --nologserver --nob5mc"
+      offer_scd_dir = File.join(input_scd_dir, "offer")
+      comment_scd_dir = File.join(input_scd_dir, "comment")
+      gen_yml_config({'scd' => "#{offer_scd_dir}", "comment_scd" => "#{comment_scd_dir}"})
+      nob5mc = File.exists?(comment_scd_dir)?false:true
+      cmd = "ruby #{@matcher_script} --config #{config_file} --nologserver"
+      cmd += " --nob5mc" if nob5mc
       if iter==1
         cmd = "#{cmd} --reindex"
       end
@@ -102,6 +115,7 @@ describe "B5M Real Tester" do
       mdb_instance = File.join(mdb_dir, mdb_instance_list.last)
       b5mo_scd = File.join(mdb_instance, "b5mo_scd")
       b5mp_scd = File.join(mdb_instance, "b5mp_scd")
+      b5mc_scd = File.join(mdb_instance, "b5mc_scd")
       #add more pid into test_pid_map from I scd in b5mp_scd
       scd_list = ScdParser.get_scd_list(b5mp_scd)
       scd_list.size.should > 0
@@ -204,7 +218,48 @@ describe "B5M Real Tester" do
         end
       end
       #add to dmp end
-      mock_b5m.dmp.should dm_equal(mock_dmp)
+      #start to add to dmc
+      unless nob5mc
+        scd_list = ScdParser.get_scd_list(b5mc_output_dir)
+        scd_list.size.should > 0
+        puts "find #{scd_list.size} scd in b5mc"
+        scd_list.each do |scd|
+          puts "indexing #{scd}"
+          parser = ScdParser.new(scd)
+          scd_type = ScdParser.scd_type(scd)
+          parser.each do |doc|
+            sdoc = {}
+            doc.each_pair do |k,v|
+              sym = k.to_sym
+              sdoc[sym] = v
+            end
+            cid = sdoc[:DOCID]
+            oid = sdoc[:ProdDocid]
+            pid = sdoc[:uuid]
+            valid = false
+            if test_cid_map.has_key?(cid)
+              valid = true
+            else
+              if !pid.nil? and test_pid_map.has_key?(pid)
+                valid = true
+                test_cid_map[cid]=true
+              end
+            end
+            next unless valid
+            puts "index b5mc doc : #{sdoc}"
+            if scd_type==ScdParser::INSERT_SCD
+              mock_dmc.insert(sdoc)
+            elsif scd_type==ScdParser::UPDATE_SCD
+              mock_dmc.update(sdoc)
+            elsif scd_type==ScdParser::DELETE_SCD
+              mock_dmc.delete(sdoc)
+            end
+          end
+        end
+        mock_dmc.should dmc_match(mock_b5m.dmo)
+      end
+
+
     end
 
   end

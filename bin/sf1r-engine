@@ -26,7 +26,7 @@ if [ -e '../config/sf1config.xml' ]; then
           cd $ARCHIVELOG; ls -rt | head -`expr $LOG_NUM - 80` | xargs rm -f; cd ..
         fi
         echo -n "Starting $NAME"
-        ./$PNAME -F ../config --pid-file ../run/_.pid > $LOGFILE.$TIMENOW.log 2>&1 &
+        ./$PNAME -F ../config --pid-file ../run/_.pid >> $LOGFILE.$TIMENOW.log 2>&1 &
         S=1
         while [ $S -le 900 ]
         do
@@ -87,7 +87,7 @@ if [ -e '../config/sf1config.xml' ]; then
       cd $ARCHIVELOG; ls -rt | head -`expr $LOG_NUM - 80` | xargs rm -f; cd ..
     fi
     echo -n "Starting $NAME"
-    ./$PNAME -F ../config --pid-file ../run/_.pid > $LOGFILE.$TIMENOW.log 2>&1 &
+    ./$PNAME -F ../config --pid-file ../run/_.pid >> $LOGFILE.$TIMENOW.log 2>&1 &
     S=1
     while [ $S -le 900 ]
     do

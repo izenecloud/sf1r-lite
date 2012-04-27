@@ -39,6 +39,7 @@ int main(int ac, char** av)
         ("odb", po::value<std::string>(), "specify offer db path")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
         ("scd-path,S", po::value<std::string>(), "specify scd path")
+        ("old-scd-path", po::value<std::string>(), "specify old processed scd path")
         ("raw", po::value<std::string>(), "specify raw scd path")
         ("b5mo", po::value<std::string>(), "specify b5mo scd path")
         ("b5mp", po::value<std::string>(), "specify b5mp scd path")
@@ -62,6 +63,7 @@ int main(int ac, char** av)
         return 1;
     }
     std::string scd_path;
+    std::string old_scd_path;
     std::string raw;
     std::string b5mo;
     std::string b5mp;
@@ -81,6 +83,10 @@ int main(int ac, char** av)
     if (vm.count("scd-path")) {
         scd_path = vm["scd-path"].as<std::string>();
         std::cout << "scd-path: " << scd_path <<std::endl;
+    } 
+    if (vm.count("old-scd-path")) {
+        old_scd_path = vm["old-scd-path"].as<std::string>();
+        std::cout << "old-scd-path: " << old_scd_path <<std::endl;
     } 
     if (vm.count("raw")) {
         raw = vm["raw"].as<std::string>();
@@ -293,13 +299,16 @@ int main(int ac, char** av)
     }
     else if(vm.count("b5mc-generate"))
     {
-        if( !odb || scd_path.empty() || b5mc.empty())
+        if( !odb || uue.empty() || scd_path.empty() || b5mc.empty())
         {
             return EXIT_FAILURE;
         }
-        B5MCScdGenerator generator(odb.get());
-        if(!generator.Generate(scd_path, b5mc))
+        boost::shared_ptr<B5MCScdGenerator> processor(new B5MCScdGenerator(scd_path, old_scd_path, odb.get(), b5mc));
+        UueWorker<B5MCScdGenerator> worker(processor.get());
+        worker.Load(uue);
+        if(!worker.Run())
         {
+            std::cout<<"b5mc generator run failed."<<std::endl;
             return EXIT_FAILURE;
         }
     }

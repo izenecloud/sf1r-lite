@@ -10,7 +10,7 @@ void SuperMasterManager::start()
     zookeeper_->connect(true);
     if (!zookeeper_ || !zookeeper_->isConnected())
     {
-        LOG (ERROR) << "SuperMasterManager failed to connect ZooKeeper";
+        LOG (ERROR) << "failed to connect to ZooKeeper";
         return;
     }
 
@@ -25,6 +25,8 @@ void SuperMasterManager::detectSearchMasters()
 {
     boost::lock_guard<boost::mutex> lock(mutex_);
 
+    // Here checked each node by nodePath "/SF1R-XXXX/SearchTopology/ReplicaX/NodeX",
+    // actually, all children of "/SF1R-XXXX/SearchTopology/SearchServers" are all Masters.
     replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
     for (nodeid_t nodeId = 1; nodeId <= sf1rTopology_.nodeNum_; nodeId++)
     {

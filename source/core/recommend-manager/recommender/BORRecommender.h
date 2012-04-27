@@ -10,7 +10,6 @@
 
 #include "Recommender.h"
 #include "RandGenerator.h"
-#include "../common/RecTypes.h"
 
 namespace sf1r
 {
@@ -21,7 +20,6 @@ class BORRecommender : public Recommender
 {
 public:
     BORRecommender(
-        ItemManager& itemManager,
         const UserEventFilter& userEventFilter,
         const ItemIdGenerator& itemIdGenerator
     );
@@ -29,7 +27,6 @@ public:
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
-        ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );
 

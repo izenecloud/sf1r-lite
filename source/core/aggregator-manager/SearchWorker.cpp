@@ -118,12 +118,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
     if (getResultItem(actionItem, idList, propertyQueryTermList, resultItem))
     {
         resultItem.idList_.swap(idList);
-        return;
     }
-
-    resultItem.fullTextOfDocumentInPage_.clear();
-    resultItem.snippetTextOfDocumentInPage_.clear();
-    resultItem.rawTextOfSummaryInPage_.clear();
 }
 
 void SearchWorker::getInternalDocumentId(const uint128_t& scdDocumentId, uint64_t& internalId)
@@ -143,10 +138,10 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     START_PROFILER( cacheoverhead )
 
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
-    uint32_t startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
+    uint32_t topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
 
     QueryIdentity identity;
-    makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, startOffset);
+    makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, topKStart);
 
     if (!searchCache_->get(identity, resultItem))
     {
@@ -173,20 +168,8 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         // the cached search results require to be reranked
         searchManager_->rerank(actionItem, resultItem);
 
-        //set page info in resultItem t
-        resultItem.start_ = actionItem.pageInfo_.start_;
-        resultItem.count_ = actionItem.pageInfo_.count_;
-
-        std::size_t overallSearchResultSize = startOffset + resultItem.topKDocs_.size();
-
-        if (resultItem.start_ > overallSearchResultSize)
-        {
-            resultItem.start_ = overallSearchResultSize;
-        }
-        if (resultItem.start_ + resultItem.count_ > overallSearchResultSize)
-        {
-            resultItem.count_ = overallSearchResultSize - resultItem.start_;
-        }
+        resultItem.setStartCount(actionItem.pageInfo_);
+        resultItem.adjustStartCount(topKStart);
 
         if (! getSummaryResult_(actionItem, resultItem, false))
             return false;
@@ -343,7 +326,7 @@ bool SearchWorker::getSearchResult_(
         return true;
     }
 
-    uint32_t startOffset = 0;
+    uint32_t topKStart = 0;
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
     uint32_t KNN_TOP_K_NUM = bundleConfig_->kNNTopKNum_;
     uint32_t KNN_DIST = bundleConfig_->kNNDist_;
@@ -353,7 +336,7 @@ bool SearchWorker::getSearchResult_(
     // to be retrieved in one node is set to TOP_K_NUM.
     if (!isDistributedSearch)
     {
-        startOffset = (actionItem.pageInfo_.start_ / TOP_K_NUM) * TOP_K_NUM;
+        topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
     }
 
     if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN)
@@ -367,7 +350,7 @@ bool SearchWorker::getSearchResult_(
                     resultItem.totalCount_,
                     KNN_TOP_K_NUM,
                     KNN_DIST,
-                    startOffset))
+                    topKStart))
         {
             return true;
         }
@@ -385,7 +368,7 @@ bool SearchWorker::getSearchResult_(
                 TOP_K_NUM,
                 KNN_TOP_K_NUM,
                 KNN_DIST,
-                startOffset
+                topKStart
                 ))
     {
         std::string newQuery;
@@ -414,7 +397,7 @@ bool SearchWorker::getSearchResult_(
                     TOP_K_NUM,
                     KNN_TOP_K_NUM,
                     KNN_DIST,
-                    startOffset
+                    topKStart
                     ))
         {
             return true;
@@ -426,19 +409,12 @@ bool SearchWorker::getSearchResult_(
     if (actionItem.searchingMode_.mode_ != SearchingMode::KNN)
         removeDuplicateDocs(actionItem, resultItem);
 
-    //set page info in resultItem t
-    resultItem.start_ = actionItem.pageInfo_.start_;
-    resultItem.count_ = actionItem.pageInfo_.count_;
-
-    std::size_t overallSearchResultSize = startOffset + resultItem.topKDocs_.size();
-
-    if (resultItem.start_ > overallSearchResultSize)
+    // For non-distributed search, it's necessary to adjust "start_" and "count_"
+    // For distributed search, they would be adjusted in IndexSearchService::getSearchResult()
+    if (!isDistributedSearch)
     {
-        resultItem.start_ = overallSearchResultSize;
-    }
-    if (resultItem.start_ + resultItem.count_ > overallSearchResultSize)
-    {
-        resultItem.count_ = overallSearchResultSize - resultItem.start_;
+        resultItem.setStartCount(actionItem.pageInfo_);
+        resultItem.adjustStartCount(topKStart);
     }
 
     //set query term and Id List

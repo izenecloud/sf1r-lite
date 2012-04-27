@@ -19,8 +19,7 @@ class BOSRecommender : public ItemCFRecommender
 {
 public:
     BOSRecommender(
-        ItemManager& itemManager,
-        ItemCFManager& itemCFManager,
+        GetRecommendBase& getRecommendBase,
         const UserEventFilter& userEventFilter,
         CartManager& cartManager
     );
@@ -28,7 +27,6 @@ public:
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
-        ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );
 

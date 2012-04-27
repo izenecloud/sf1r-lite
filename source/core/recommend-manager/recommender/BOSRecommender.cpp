@@ -1,7 +1,6 @@
 #include "BOSRecommender.h"
 #include "UserEventFilter.h"
 #include "../storage/CartManager.h"
-#include "../common/RecommendParam.h"
 #include <bundles/recommend/RecommendSchema.h>
 
 #include <glog/logging.h>
@@ -10,12 +9,11 @@ namespace sf1r
 {
 
 BOSRecommender::BOSRecommender(
-    ItemManager& itemManager,
-    ItemCFManager& itemCFManager,
+    GetRecommendBase& getRecommendBase,
     const UserEventFilter& userEventFilter,
     CartManager& cartManager
 )
-    : ItemCFRecommender(itemManager, itemCFManager)
+    : ItemCFRecommender(getRecommendBase)
     , userEventFilter_(userEventFilter)
     , cartManager_(cartManager)
 {
@@ -23,7 +21,6 @@ BOSRecommender::BOSRecommender(
 
 bool BOSRecommender::recommendImpl_(
     RecommendParam& param,
-    ItemFilter& filter,
     std::vector<RecommendItem>& recItemVec
 )
 {
@@ -31,13 +28,13 @@ bool BOSRecommender::recommendImpl_(
         return false;
 
     if (!param.userIdStr.empty() &&
-        !userEventFilter_.filter(param.userIdStr, param.inputItemIds, filter))
+        !userEventFilter_.filter(param.userIdStr, param.inputParam.inputItemIds, param.inputParam.itemFilter))
     {
         LOG(ERROR) << "failed to filter user event for user id " << param.userIdStr;
         return false;
     }
 
-    if (! ItemCFRecommender::recommendImpl_(param, filter, recItemVec))
+    if (! ItemCFRecommender::recommendImpl_(param, recItemVec))
         return false;
 
     setReasonEvent_(recItemVec, RecommendSchema::CART_EVENT);
@@ -47,7 +44,7 @@ bool BOSRecommender::recommendImpl_(
 
 bool BOSRecommender::getCartItems_(RecommendParam& param) const
 {
-    if (! param.inputItemIds.empty())
+    if (! param.inputParam.inputItemIds.empty())
         return true;
 
     if (param.userIdStr.empty())
@@ -56,7 +53,7 @@ bool BOSRecommender::getCartItems_(RecommendParam& param) const
         return false;
     }
 
-    if (! cartManager_.getCart(param.userIdStr, param.inputItemIds))
+    if (! cartManager_.getCart(param.userIdStr, param.inputParam.inputItemIds))
     {
         LOG(ERROR) << "failed to get shopping cart items for user id " << param.userIdStr;
         return false;

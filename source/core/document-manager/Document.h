@@ -140,15 +140,20 @@ public:
         return propertyList_.end();
     }
 
-    void clear()
+    void clearProperties()
     {
-        id_ = 0;
         propertyList_.clear();
     }
 
-    bool isEmpty()
+    void clear()
     {
-        return ( propertyList_.size() == 0 );
+        id_ = 0;
+        clearProperties();
+    }
+
+    bool isEmpty() const
+    {
+        return propertyList_.empty();
     }
 
     void swap(Document& rhs)

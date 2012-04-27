@@ -108,11 +108,20 @@ boost::shared_ptr<DocumentManager> IndexTaskService::getDocumentManager() const
 
 bool IndexTaskService::distributedIndex_(unsigned int numdoc)
 {
-    return distributedIndexImpl_(
-                numdoc,
-                bundleConfig_->collectionName_,
-                bundleConfig_->masterIndexSCDPath(),
-                bundleConfig_->indexShardKeys_);
+    // notify that current master is indexing for the specified collection,
+    // we may need to check that whether other Master it's indexing this collection in some cases,
+    // or it's depends on Nginx router strategy.
+    SearchMasterManager::get()->registerIndexStatus(bundleConfig_->collectionName_, true);
+
+    bool ret = distributedIndexImpl_(
+                    numdoc,
+                    bundleConfig_->collectionName_,
+                    bundleConfig_->masterIndexSCDPath(),
+                    bundleConfig_->indexShardKeys_);
+
+    SearchMasterManager::get()->registerIndexStatus(bundleConfig_->collectionName_, false);
+
+    return ret;
 }
 
 bool IndexTaskService::distributedIndexImpl_(
@@ -161,13 +170,22 @@ bool IndexTaskService::createScdSharder(
 {
     if (shardKeyList.empty())
     {
-        LOG(ERROR) << "No shard key!";
+        LOG(ERROR) << "No sharding key!";
         return false;
     }
 
     // sharding configuration
     ShardingConfig cfg;
-    cfg.setShardNum(SearchNodeManager::get()->getShardNum());
+    if (SearchMasterManager::get()->getCollectionShardids(bundleConfig_->collectionName_, cfg.shardidList_))
+    {
+        cfg.shardNum_ = cfg.shardidList_.size();
+        cfg.totalShardNum_ = SearchNodeManager::get()->getTotalShardNum();
+    }
+    else
+    {
+        LOG(ERROR) << "No shardid configured for " << bundleConfig_->collectionName_;
+        return false;
+    }
     for (size_t i = 0; i < shardKeyList.size(); i++)
     {
         cfg.addShardKey(shardKeyList[i]);

@@ -11,6 +11,8 @@
 #include <bundles/mining/MiningSearchService.h>
 #include <bundles/recommend/RecommendTaskService.h>
 #include <bundles/recommend/RecommendSearchService.h>
+#include <aggregator-manager/GetRecommendWorker.h>
+#include <aggregator-manager/UpdateRecommendWorker.h>
 
 #include "CollectionHandler.h"
 #include "DocumentsGetHandler.h"
@@ -38,6 +40,8 @@ CollectionHandler::CollectionHandler(const string& collection)
         , miningSearchService_(0)
         , recommendTaskService_(0)
         , recommendSearchService_(0)
+        , getRecommendWorker_(0)
+        , updateRecommendWorker_(0)
 {
 }
 

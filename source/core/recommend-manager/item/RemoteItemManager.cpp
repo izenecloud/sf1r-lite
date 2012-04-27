@@ -31,6 +31,7 @@ bool RemoteItemManager::sendRequest_(
     }
     catch(const std::exception& e)
     {
+        LOG(ERROR) << "exception from MasterServerConnector syncCall getDocumentsByIds(): " << e.what();
         return false;
     }
 

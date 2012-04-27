@@ -38,6 +38,14 @@ class EventManager;
 class RateManager;
 class RecommenderFactory;
 class ItemIdGenerator;
+class GetRecommendBase;
+class GetRecommendWorker;
+class GetRecommendMaster;
+class UpdateRecommendBase;
+class UpdateRecommendWorker;
+class UpdateRecommendMaster;
+class RecommendShardStrategy;
+class RecommendMatrixSharder;
 
 class RecommendBundleActivator : public IBundleActivator, public IServiceTrackerCustomizer
 {
@@ -51,15 +59,21 @@ public:
 
 private:
     bool init_(IndexSearchService* indexSearchService);
+
     bool createDataDir_();
     bool openDataDirectory_(std::string& dataPath);
     void createSCDDir_();
+
+    void createSharder_();
+    void createWorker_();
+    void createMaster_();
+
     void createStorage_();
     void createItem_(IndexSearchService* indexSearchService);
-    void createMining_();
     void createOrder_();
     void createClickCounter_();
     void createRecommender_();
+
     void createService_();
 
 private:
@@ -84,13 +98,25 @@ private:
     boost::scoped_ptr<OrderManager> orderManager_;
     boost::scoped_ptr<EventManager> eventManager_;
     boost::scoped_ptr<RateManager> rateManager_;
+    boost::scoped_ptr<QueryClickCounter> queryPurchaseCounter_;
 
     boost::scoped_ptr<RecommenderFactory> recommenderFactory_;
 
     boost::scoped_ptr<CoVisitManager> coVisitManager_;
     boost::scoped_ptr<ItemCFManager> itemCFManager_;
 
-    boost::scoped_ptr<QueryClickCounter> queryPurchaseCounter_;
+    boost::scoped_ptr<RecommendShardStrategy> shardStrategy_;
+    boost::scoped_ptr<RecommendMatrixSharder> matrixSharder_;
+
+    GetRecommendBase* getRecommendBase_;
+    boost::scoped_ptr<GetRecommendWorker> getRecommendWorker_;
+    boost::scoped_ptr<GetRecommendMaster> getRecommendMaster_;
+    boost::scoped_ptr<IServiceRegistration> getWorkerReg_;
+
+    UpdateRecommendBase* updateRecommendBase_;
+    boost::scoped_ptr<UpdateRecommendWorker> updateRecommendWorker_;
+    boost::scoped_ptr<UpdateRecommendMaster> updateRecommendMaster_;
+    boost::scoped_ptr<IServiceRegistration> updateWorkerReg_;
 };
 
 } // namespace sf1r

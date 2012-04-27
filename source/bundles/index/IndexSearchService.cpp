@@ -66,16 +66,20 @@ bool IndexSearchService::getSearchResult(
 #endif
 
     QueryIdentity identity;
-    searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, actionItem.pageInfo_.start_);
+    // For distributed search, as it should merge the results over all nodes,
+    // the topK start offset is fixed to zero
+    const uint32_t topKStart = 0;
+    searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, topKStart);
 
     if (!searchCache_->get(identity, resultItem))
     {
         // Get and aggregate keyword search results from mutliple nodes
-        distResultItem.start_ = actionItem.pageInfo_.start_;
-        distResultItem.count_ = actionItem.pageInfo_.count_;
+        distResultItem.setStartCount(actionItem.pageInfo_);
 
         searchAggregator_->distributeRequest(
                 actionItem.collectionName_, "getDistSearchResult", actionItem, distResultItem);
+
+        distResultItem.adjustStartCount(topKStart);
 
         resultItem.swap(distResultItem);
         resultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_MASTER;
@@ -101,6 +105,9 @@ bool IndexSearchService::getSearchResult(
     }
     else
     {
+        resultItem.setStartCount(actionItem.pageInfo_);
+        resultItem.adjustStartCount(topKStart);
+
         typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > ResultMapT;
         typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator ResultMapIterT;
 

@@ -1,4 +1,5 @@
 #include "RecommendSearchService.h"
+#include "RecommendBundleConfiguration.h"
 #include <recommend-manager/common/User.h>
 #include <recommend-manager/common/ItemCondition.h>
 #include <recommend-manager/common/RecommendParam.h>
@@ -6,22 +7,30 @@
 #include <recommend-manager/common/ItemBundle.h>
 #include <recommend-manager/item/ItemManager.h>
 #include <recommend-manager/item/ItemIdGenerator.h>
+#include <recommend-manager/item/ItemContainer.h>
 #include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/recommender/RecommenderFactory.h>
 #include <recommend-manager/recommender/Recommender.h>
 
 #include <glog/logging.h>
 
+namespace
+{
+const std::string DOCID("DOCID");
+}
+
 namespace sf1r
 {
 
 RecommendSearchService::RecommendSearchService(
+    RecommendBundleConfiguration& bundleConfig,
     UserManager& userManager,
     ItemManager& itemManager,
     RecommenderFactory& recommenderFactory,
     ItemIdGenerator& itemIdGenerator
 )
-    :userManager_(userManager)
+    :bundleConfig_(bundleConfig)
+    ,userManager_(userManager)
     ,itemManager_(itemManager)
     ,recommenderFactory_(recommenderFactory)
     ,itemIdGenerator_(itemIdGenerator)
@@ -41,16 +50,31 @@ bool RecommendSearchService::recommend(
     if (!convertIds_(param))
         return false;
 
+    if (bundleConfig_.searchNodeConfig_.isSingleNode_)
+        param.enableItemCondition(&itemManager_);
+
     Recommender* recommender = recommenderFactory_.getRecommender(param.type);
+
     if (recommender && recommender->recommend(param, recItemVec))
-        return getRecommendItems_(param, recItemVec);
+    {
+        RecommendItemContainer itemContainer(recItemVec);
+        itemManager_.getItemProps(param.selectRecommendProps, itemContainer);
+
+        // BAB need not reason results
+        if (param.type != BUY_ALSO_BUY)
+        {
+            getReasonItems_(param.selectReasonProps, recItemVec);
+        }
+
+        return true;
+    }
 
     return false;
 }
 
 bool RecommendSearchService::convertIds_(RecommendParam& param)
 {
-    return convertItemId_(param.inputItems, param.inputItemIds) &&
+    return convertItemId_(param.inputItems, param.inputParam.inputItemIds) &&
            convertItemId_(param.includeItems, param.includeItemIds) &&
            convertItemId_(param.excludeItems, param.excludeItemIds);
 }
@@ -73,33 +97,21 @@ bool RecommendSearchService::convertItemId_(
     return true;
 }
 
-bool RecommendSearchService::getRecommendItems_(
-    const RecommendParam& param,
+void RecommendSearchService::getReasonItems_(
+    const std::vector<std::string>& selectProps,
     std::vector<RecommendItem>& recItemVec
-) const
+)
 {
-    for (std::vector<RecommendItem>::iterator it = recItemVec.begin();
-        it != recItemVec.end(); ++it)
+    for (std::vector<RecommendItem>::iterator recIt = recItemVec.begin();
+        recIt != recItemVec.end(); ++recIt)
     {
-        if (! itemManager_.getItem(it->item_.getId(), param.selectRecommendProps, it->item_))
-        {
-            LOG(ERROR) << "error in ItemManager::getItem(), item id: " << it->item_.getId();
-            return false;
-        }
+        // empty doc means it has been removed
+        if (recIt->item_.isEmpty())
+            continue;
 
-        std::vector<ReasonItem>& reasonItems = it->reasonItems_;
-        for (std::vector<ReasonItem>::iterator reasonIt = reasonItems.begin();
-            reasonIt != reasonItems.end(); ++reasonIt)
-        {
-            if (! itemManager_.getItem(reasonIt->item_.getId(), param.selectReasonProps, reasonIt->item_))
-            {
-                LOG(ERROR) << "error in ItemManager::getItem(), item id: " << reasonIt->item_.getId();
-                return false;
-            }
-        }
+        ReasonItemContainer itemContainer(recIt->reasonItems_);
+        itemManager_.getItemProps(selectProps, itemContainer);
     }
-
-    return true;
 }
 
 bool RecommendSearchService::topItemBundle(
@@ -109,33 +121,25 @@ bool RecommendSearchService::topItemBundle(
 {
     TIBRecommender* recommender = recommenderFactory_.getTIBRecommender();
     if (recommender && recommender->recommend(param, bundleVec))
-        return getBundleItems_(param.selectRecommendProps, bundleVec);
+    {
+        getBundleItems_(param.selectRecommendProps, bundleVec);
+        return true;
+    }
 
     return false;
 }
 
-bool RecommendSearchService::getBundleItems_(
+void RecommendSearchService::getBundleItems_(
     const std::vector<std::string>& selectProps,
     std::vector<ItemBundle>& bundleVec
-) const
+)
 {
     for (std::vector<ItemBundle>::iterator bundleIt = bundleVec.begin();
         bundleIt != bundleVec.end(); ++bundleIt)
     {
-        std::vector<Document>& items = bundleIt->items;
-
-        for (std::vector<Document>::iterator it = items.begin();
-            it != items.end(); ++it)
-        {
-            if (! itemManager_.getItem(it->getId(), selectProps, *it))
-            {
-                LOG(ERROR) << "error in ItemManager::getItem(), item id: " << it->getId();
-                return false;
-            }
-        }
+        MultiItemContainer itemContainer(bundleIt->items);
+        itemManager_.getItemProps(selectProps, itemContainer);
     }
-
-    return true;
 }
 
 RecommendType RecommendSearchService::getRecommendType(const std::string& typeStr) const

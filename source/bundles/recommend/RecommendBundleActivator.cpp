@@ -1,5 +1,6 @@
 #include "RecommendBundleActivator.h"
 #include "RecommendBundleConfiguration.h"
+
 #include <recommend-manager/item/LocalItemFactory.h>
 #include <recommend-manager/item/SearchMasterItemFactory.h>
 #include <recommend-manager/item/RemoteItemFactory.h>
@@ -15,6 +16,14 @@
 #include <recommend-manager/storage/OrderManager.h>
 #include <recommend-manager/recommender/RecommenderFactory.h>
 
+#include <aggregator-manager/GetRecommendMaster.h>
+#include <aggregator-manager/GetRecommendWorker.h>
+#include <aggregator-manager/UpdateRecommendMaster.h>
+#include <aggregator-manager/UpdateRecommendWorker.h>
+#include <node-manager/RecommendNodeManager.h>
+#include <node-manager/sharding/RecommendShardStrategy.h>
+#include <node-manager/sharding/RecommendMatrixSharder.h>
+
 #include <glog/logging.h>
 
 namespace bfs = boost::filesystem;
@@ -24,6 +33,8 @@ namespace sf1r
 
 RecommendBundleActivator::RecommendBundleActivator()
     :context_(NULL)
+    ,getRecommendBase_(NULL)
+    ,updateRecommendBase_(NULL)
 {
 }
 
@@ -70,6 +81,18 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
         searchService_.reset();
     }
 
+    if (getWorkerReg_)
+    {
+        getWorkerReg_->unregister();
+        getWorkerReg_.reset();
+    }
+
+    if (updateWorkerReg_)
+    {
+        updateWorkerReg_->unregister();
+        updateWorkerReg_.reset();
+    }
+
     itemManager_.reset();
     itemIdGenerator_.reset();
 
@@ -83,6 +106,17 @@ void RecommendBundleActivator::stop(IBundleContext::ConstPtr context)
     rateManager_.reset();
 
     recommenderFactory_.reset();
+
+    getRecommendBase_ = NULL;
+    getRecommendWorker_.reset();
+    getRecommendMaster_.reset();
+
+    updateRecommendBase_ = NULL;
+    updateRecommendWorker_.reset();
+    updateRecommendMaster_.reset();
+
+    shardStrategy_.reset();
+    matrixSharder_.reset();
 
     coVisitManager_.reset();
     itemCFManager_.reset();
@@ -118,9 +152,18 @@ bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
     if (! createDataDir_())
         return false;
 
-    createMining_();
+    const DistributedNodeConfig& nodeConfig = config_->recommendNodeConfig_;
 
-    if (config_->recommendNodeConfig_.isServiceNode())
+    if (nodeConfig.isMasterNode_ || nodeConfig.isWorkerNode_)
+        createSharder_();
+
+    if (nodeConfig.isSingleNode_ || nodeConfig.isWorkerNode_)
+        createWorker_();
+
+    if (nodeConfig.isMasterNode_)
+        createMaster_();
+
+    if (nodeConfig.isServiceNode())
     {
         createSCDDir_();
         createStorage_();
@@ -245,20 +288,60 @@ void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchServic
     itemManager_.reset(factory->createItemManager());
 }
 
-void RecommendBundleActivator::createMining_()
+void RecommendBundleActivator::createSharder_()
+{
+    const RecommendNodeManager* nodeManager = RecommendNodeManager::get();
+    const Sf1rNode& sf1rNode = nodeManager->getCurrentSf1rNode();
+
+    shardid_t shardNum = sf1rNode.master_.totalShardNum_;
+    shardStrategy_.reset(new RecommendShardMod(shardNum));
+
+    if (config_->recommendNodeConfig_.isWorkerNode_)
+    {
+        shardid_t workerShardId = sf1rNode.worker_.shardId_;
+        matrixSharder_.reset(new RecommendMatrixSharder(workerShardId, shardStrategy_.get()));
+    }
+}
+
+void RecommendBundleActivator::createWorker_()
 {
     bfs::path miningDir = dataDir_ / "mining";
     bfs::create_directory(miningDir);
 
     bfs::path cfPath = miningDir / "cf";
     bfs::create_directory(cfPath);
+
+    idmlib::recommender::ItemCFParam itemCFParam(cfPath.string());
     const std::size_t matrixSize = config_->purchaseCacheSize_ >> 1;
-    itemCFManager_.reset(new ItemCFManager((cfPath / "covisit").string(), matrixSize,
-                                           (cfPath / "sim").string(), matrixSize,
-                                           (cfPath / "nb.sdb").string(), 30));
+    itemCFParam.coVisitCacheSize = matrixSize;
+    itemCFParam.simMatrixCacheSize = matrixSize;
+
+    itemCFManager_.reset(new ItemCFManager(itemCFParam, matrixSharder_.get()));
 
     coVisitManager_.reset(new CoVisitManager((miningDir / "covisit").string(),
-                                             config_->visitCacheSize_));
+                                             config_->visitCacheSize_, matrixSharder_.get()));
+
+    getRecommendWorker_.reset(new GetRecommendWorker(*itemCFManager_, *coVisitManager_));
+    getRecommendBase_ = getRecommendWorker_.get();
+
+    updateRecommendWorker_.reset(new UpdateRecommendWorker(*itemCFManager_, *coVisitManager_));
+    updateRecommendBase_ = updateRecommendWorker_.get();
+
+    Properties props;
+    props.put("collection", config_->collectionName_);
+    getWorkerReg_.reset(context_->registerService("GetRecommendWorker", getRecommendWorker_.get(), props));
+    updateWorkerReg_.reset(context_->registerService("UpdateRecommendWorker", updateRecommendWorker_.get(), props));
+}
+
+void RecommendBundleActivator::createMaster_()
+{
+    getRecommendMaster_.reset(
+        new GetRecommendMaster(config_->collectionName_, shardStrategy_.get(), getRecommendWorker_.get()));
+    getRecommendBase_ = getRecommendMaster_.get();
+
+    updateRecommendMaster_.reset(
+        new UpdateRecommendMaster(config_->collectionName_, shardStrategy_.get(), updateRecommendWorker_.get()));
+    updateRecommendBase_ = updateRecommendMaster_.get();
 }
 
 void RecommendBundleActivator::createOrder_()
@@ -283,12 +366,12 @@ void RecommendBundleActivator::createClickCounter_()
 
 void RecommendBundleActivator::createRecommender_()
 {
-    recommenderFactory_.reset(new RecommenderFactory(*itemManager_, *itemIdGenerator_,
+    recommenderFactory_.reset(new RecommenderFactory(*itemIdGenerator_,
                                                      *visitManager_, *purchaseManager_,
                                                      *cartManager_, *orderManager_,
                                                      *eventManager_, *rateManager_,
                                                      *queryPurchaseCounter_,
-                                                     *coVisitManager_, *itemCFManager_));
+                                                     *getRecommendBase_));
 }
 
 void RecommendBundleActivator::createService_()
@@ -296,9 +379,9 @@ void RecommendBundleActivator::createService_()
     taskService_.reset(new RecommendTaskService(*config_, directoryRotator_, *userManager_, *itemManager_,
                                                 *visitManager_, *purchaseManager_, *cartManager_, *orderManager_,
                                                 *eventManager_, *rateManager_, *itemIdGenerator_, *queryPurchaseCounter_,
-                                                *coVisitManager_, *itemCFManager_));
+                                                *updateRecommendBase_, updateRecommendWorker_.get()));
 
-    searchService_.reset(new RecommendSearchService(*userManager_, *itemManager_,
+    searchService_.reset(new RecommendSearchService(*config_, *userManager_, *itemManager_,
                                                     *recommenderFactory_, *itemIdGenerator_));
 
     Properties props;

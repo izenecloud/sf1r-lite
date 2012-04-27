@@ -522,18 +522,16 @@ IndexBundleActivator::createSearchWorker_()
 boost::shared_ptr<SearchAggregator>
 IndexBundleActivator::createSearchAggregator_()
 {
-    boost::shared_ptr<SearchAggregator> ret;
     searchMerger_.reset(new SearchMerger(config_->topKNum_));
 
     std::auto_ptr<SearchMergerProxy> mergerProxy(new SearchMergerProxy(searchMerger_.get()));
-    if (!searchMerger_->bindCallProxy(*mergerProxy))
-        return ret;
+    searchMerger_->bindCallProxy(*mergerProxy);
 
     std::auto_ptr<SearchWorkerProxy> localWorkerProxy(new SearchWorkerProxy(searchWorker_.get()));
-    if (!searchWorker_->bindCallProxy(*localWorkerProxy))
-        return ret;
+    searchWorker_->bindCallProxy(*localWorkerProxy);
 
-    ret.reset(new SearchAggregator(mergerProxy.get(), localWorkerProxy.get(), config_->collectionName_));
+    boost::shared_ptr<SearchAggregator> ret(
+        new SearchAggregator(mergerProxy.get(), localWorkerProxy.get(), config_->collectionName_));
 
     mergerProxy.release();
     localWorkerProxy.release();
@@ -553,18 +551,16 @@ IndexBundleActivator::createIndexWorker_()
 boost::shared_ptr<IndexAggregator>
 IndexBundleActivator::createIndexAggregator_()
 {
-    boost::shared_ptr<IndexAggregator> ret;
     indexMerger_.reset(new IndexMerger);
 
     std::auto_ptr<IndexMergerProxy> mergerProxy(new IndexMergerProxy(indexMerger_.get()));
-    if (!indexMerger_->bindCallProxy(*mergerProxy))
-        return ret;
+    indexMerger_->bindCallProxy(*mergerProxy);
 
     std::auto_ptr<IndexWorkerProxy> localWorkerProxy(new IndexWorkerProxy(indexWorker_.get()));
-    if (!indexWorker_->bindCallProxy(*localWorkerProxy))
-        return ret;
+    indexWorker_->bindCallProxy(*localWorkerProxy);
 
-    ret.reset(new IndexAggregator(mergerProxy.get(), localWorkerProxy.get(), config_->collectionName_));
+    boost::shared_ptr<IndexAggregator> ret(
+        new IndexAggregator(mergerProxy.get(), localWorkerProxy.get(), config_->collectionName_));
 
     mergerProxy.release();
     localWorkerProxy.release();

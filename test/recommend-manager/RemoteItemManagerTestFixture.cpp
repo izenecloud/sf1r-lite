@@ -3,6 +3,7 @@
 #include <recommend-manager/item/RemoteItemFactory.h>
 #include <recommend-manager/item/ItemIdGenerator.h>
 #include <recommend-manager/item/ItemManager.h>
+#include <recommend-manager/item/ItemContainer.h>
 #include <document-manager/Document.h>
 
 #include <boost/test/unit_test.hpp>
@@ -54,14 +55,19 @@ void RemoteItemManagerTestFixture::checkGetItemFail()
     BOOST_TEST_MESSAGE("check " << itemMap_.size() << " items, expect fail");
 
     Document doc;
+    SingleItemContainer itemContainer(doc);
     for (itemid_t i=1; i <= ItemManagerTestFixture::maxItemId_; ++i)
     {
-        BOOST_CHECK(itemManager_->getItem(i, propList_, doc) == false);
+        doc.setId(i);
+        BOOST_CHECK(itemManager_->getItemProps(propList_, itemContainer) == false);
+        BOOST_CHECK(doc.isEmpty());
         BOOST_CHECK(itemManager_->hasItem(i) == false);
     }
 
     itemid_t nonExistId = ItemManagerTestFixture::maxItemId_ + 1;
-    BOOST_CHECK(itemManager_->getItem(nonExistId, propList_, doc) == false);
+    doc.setId(nonExistId);
+    BOOST_CHECK(itemManager_->getItemProps(propList_, itemContainer) == false);
+    BOOST_CHECK(doc.isEmpty());
     BOOST_CHECK(itemManager_->hasItem(nonExistId) == false);
 }
 

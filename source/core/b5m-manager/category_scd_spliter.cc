@@ -97,10 +97,10 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
     }
     typedef izenelib::util::UString UString;
     namespace bfs = boost::filesystem;
-    if(!bfs::exists(scd_path)) return false;
+    if(!bfs::exists(scd_path)) return true;
     std::vector<std::string> scd_list;
     B5MHelper::GetIScdList(scd_path, scd_list);
-    if(scd_list.empty()) return false;
+    if(scd_list.empty()) return true;
 
     for(uint32_t i=0;i<scd_list.size();i++)
     {
@@ -119,11 +119,10 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
             }
             Document doc;
             SCDDoc& scddoc = *(*doc_iter);
-            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-            for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+            SCDDoc::iterator p = scddoc.begin();
+            for(; p!=scddoc.end(); ++p)
             {
-                std::string property_name;
-                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
             UString title;

@@ -7,7 +7,7 @@
 #ifndef SF1R_INDEX_MERGER_H_
 #define SF1R_INDEX_MERGER_H_
 
-#include <net/aggregator/BindCallProxyBase.h>                                                                                
+#include <net/aggregator/BindCallProxyBase.h>
 #include <net/aggregator/WorkerResults.h>
 
 namespace sf1r
@@ -16,12 +16,12 @@ namespace sf1r
 class IndexMerger : public net::aggregator::BindCallProxyBase<IndexMerger>
 {
 public:
-    virtual bool bindCallProxy(CallProxyType& proxy)                                                                         
-    {                                                                                                                        
-        BIND_CALL_PROXY_BEGIN(IndexMerger, proxy)                                                                           
+    virtual bool bindCallProxy(CallProxyType& proxy)
+    {
+        BIND_CALL_PROXY_BEGIN(IndexMerger, proxy)
         BIND_CALL_PROXY_2(index, net::aggregator::WorkerResults<bool>, bool)
-        BIND_CALL_PROXY_END()                                                                                                
-    } 
+        BIND_CALL_PROXY_END()
+    }
 
     void index(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult);
 };

@@ -41,7 +41,7 @@ namespace sf1r {
                      |--- Worker
                 |--- ...
 
-      |--- SearchServers           # Each Master node in search topology is a search server
+      |--- SearchServers           # Each Master node in search topology is a search server. xxx, maybe we can remove this node.
            |--- Server00000000
            |--- Server00000001
            |--- ...
@@ -50,7 +50,7 @@ namespace sf1r {
            |--- Replica1
            |--- Replica2
 
-      |--- RecommendServers        # Each Master node in recommend topology is a recommend server
+      |--- RecommendServers        # Each Master node in recommend topology is a recommend server. xxx, maybe we can remove this node.
            |--- Server00000000
            |--- Server00000001
            |--- ...

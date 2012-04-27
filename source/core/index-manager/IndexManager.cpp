@@ -26,7 +26,7 @@ void IndexManager::convertData(const std::string& property, const PropertyValue&
 
     if(property==DATE)
     {
-        int64_t time = sf1r::Utilities::convertDate(in.get<std::string>());
+        int64_t time = sf1r::Utilities::createTimeStampInSeconds(in.get<std::string>());
         PropertyValue inValue(time);
         boost::apply_visitor(converter, inValue.getVariant());
     }

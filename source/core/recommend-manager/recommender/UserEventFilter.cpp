@@ -1,5 +1,5 @@
 #include "UserEventFilter.h"
-#include "ItemFilter.h"
+#include "../common/ItemFilter.h"
 #include "../storage/PurchaseManager.h"
 #include "../storage/CartManager.h"
 #include "../storage/RateManager.h"

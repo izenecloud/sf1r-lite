@@ -6,6 +6,9 @@
 #include <bundles/product/ProductBundleActivator.h>
 #include <bundles/mining/MiningBundleActivator.h>
 #include <bundles/recommend/RecommendBundleActivator.h>
+#include <aggregator-manager/GetRecommendWorker.h>
+#include <aggregator-manager/UpdateRecommendWorker.h>
+#include <common/JobScheduler.h>
 
 #include <boost/filesystem.hpp>
 #include <memory> // for std::auto_ptr
@@ -129,12 +132,22 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
     if (recommendBundleConfig->isSchemaEnable_)
     {
         std::string bundleName = "RecommendBundle-" + collectionName;
+
         DYNAMIC_REGISTER_BUNDLE_ACTIVATOR_CLASS(bundleName, RecommendBundleActivator);
         osgiLauncher_.start(recommendBundleConfig);
+
         RecommendTaskService* recommendTaskService = static_cast<RecommendTaskService*>(osgiLauncher_.getService(bundleName, "RecommendTaskService"));
         collectionHandler->registerService(recommendTaskService);
+
         RecommendSearchService* recommendSearchService = static_cast<RecommendSearchService*>(osgiLauncher_.getService(bundleName, "RecommendSearchService"));
         collectionHandler->registerService(recommendSearchService);
+
+        GetRecommendWorker* getRecommendWorker = static_cast<GetRecommendWorker*>(osgiLauncher_.getService(bundleName, "GetRecommendWorker"));
+        collectionHandler->registerWorker(getRecommendWorker);
+
+        UpdateRecommendWorker* updateRecommendWorker = static_cast<UpdateRecommendWorker*>(osgiLauncher_.getService(bundleName, "UpdateRecommendWorker"));
+        collectionHandler->registerWorker(updateRecommendWorker);
+
         collectionHandler->setBundleSchema(recommendBundleConfig->recommendSchema_);
     }
 

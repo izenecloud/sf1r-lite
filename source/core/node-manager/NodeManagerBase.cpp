@@ -58,7 +58,7 @@ void NodeManagerBase::stop()
 
 void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
-    LOG (INFO) << CLASSNAME << " " << zkEvent.toString();
+    //LOG (INFO) << CLASSNAME << " " << zkEvent.toString();
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
@@ -70,7 +70,10 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         }
     }
 
-    // ZOO_EXPIRED_SESSION_STATE
+    if (zkEvent.type_ == ZOO_CHILD_EVENT)
+    {
+        detectMasters();
+    }
 }
 
 /// protected ////////////////////////////////////////////////////////////////////
@@ -168,9 +171,9 @@ void NodeManagerBase::enterCluster()
             znode.loadKvString(data);
 
             std::stringstream ss;
-            ss << CLASSNAME << " Conflicted with existed node: "
-               << "[replica "<< sf1rTopology_.curNode_.replicaId_
-               << ", node " << sf1rTopology_.curNode_.nodeId_ << "]@"
+            ss << CLASSNAME << " conflict: node existed "
+               << "[replica"<< sf1rTopology_.curNode_.replicaId_
+               << ", node" << sf1rTopology_.curNode_.nodeId_ << "]@"
                << znode.getStrValue(ZNode::KEY_HOST);
 
             throw std::runtime_error(ss.str());
@@ -193,9 +196,8 @@ void NodeManagerBase::enterCluster()
                << "] node[" << curNode.nodeId_
                << "]{"
                << (curNode.worker_.isEnabled_ ?
-                       (std::string("worker ") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
+                       (std::string("worker") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
                << curNode.userName_ << "@" << curNode.host_ << "}";
-
 
     // Start Master manager
     if (sf1rTopology_.curNode_.master_.isEnabled_)
@@ -204,6 +206,11 @@ void NodeManagerBase::enterCluster()
         SuperMasterManager::get()->init(sf1rTopology_);
         SuperMasterManager::get()->start();
         masterStarted_ = true;
+    }
+
+    if (sf1rTopology_.curNode_.worker_.isEnabled_)
+    {
+        detectMasters();
     }
 }
 

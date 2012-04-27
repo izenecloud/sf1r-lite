@@ -14,7 +14,7 @@ LOG_FILE=$CONSOLE_LOG_DIR/log.$TIMENOW.log
         exit 0
       else
         echo -e "Starting $NAME..."
-        ./CobraProcess -F config > $LOG_FILE 2>&1 &
+        ./CobraProcess -F config >> $LOG_FILE 2>&1 &
         sleep 4
         PROCESS_NUM=`ps -ef|grep "CobraProcess"|grep -v grep|wc -l`
         if [ $PROCESS_NUM -eq 1 ]
@@ -35,7 +35,7 @@ LOG_FILE=$CONSOLE_LOG_DIR/log.$TIMENOW.log
     echo -e "Restarting $NAME..."
     ps -ef|grep "CobraProcess"|grep -v grep|awk '{print $2}'|xargs kill -2 2>/dev/null
     sleep 1
-    ./CobraProcess -F config > $LOG_FILE 2>&1 &
+    ./CobraProcess -F config >> $LOG_FILE 2>&1 &
     sleep 4
     PROCESS_NUM=`ps -ef|grep "CobraProcess"|grep -v grep|wc -l`
     if [ $PROCESS_NUM -eq 1 ]

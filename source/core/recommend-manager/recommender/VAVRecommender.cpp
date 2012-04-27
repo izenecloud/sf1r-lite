@@ -1,45 +1,30 @@
 #include "VAVRecommender.h"
-#include "ItemFilter.h"
-#include "../common/RecommendParam.h"
-#include "../common/RecommendItem.h"
+#include <aggregator-manager/GetRecommendBase.h>
 
 #include <glog/logging.h>
 
 namespace sf1r
 {
 
-VAVRecommender::VAVRecommender(
-    ItemManager& itemManager,
-    CoVisitManager& coVisitManager
-)
-    : Recommender(itemManager)
-    , coVisitManager_(coVisitManager)
+VAVRecommender::VAVRecommender(GetRecommendBase& getRecommendBase)
+    : getRecommendBase_(getRecommendBase)
 {
 }
 
 bool VAVRecommender::recommendImpl_(
     RecommendParam& param,
-    ItemFilter& filter,
     std::vector<RecommendItem>& recItemVec
 )
 {
-    if (param.inputItemIds.empty())
+    if (param.inputParam.inputItemIds.empty())
     {
         LOG(ERROR) << "failed to recommend for empty input items";
         return false;
     }
 
-    std::vector<itemid_t> results;
-    coVisitManager_.getCoVisitation(param.limit, param.inputItemIds[0], results, &filter);
-
-    RecommendItem recItem;
-    recItem.weight_ = 1;
-    for (std::vector<itemid_t>::const_iterator it = results.begin();
-        it != results.end(); ++it)
-    {
-        recItem.item_.setId(*it);
-        recItemVec.push_back(recItem);
-    }
+    idmlib::recommender::RecommendItemVec results;
+    getRecommendBase_.recommendVisit(param.inputParam, results);
+    recItemVec.insert(recItemVec.end(), results.begin(), results.end());
 
     return true;
 }

@@ -72,13 +72,40 @@ void renderItem(
     }
 }
 
+void renderReasonItems(
+    const std::vector<sf1r::ReasonItem>& reasonItems,
+    const std::vector<std::string>& selectProps,
+    izenelib::driver::Value& reasonsValue
+)
+{
+    for (std::vector<sf1r::ReasonItem>::const_iterator reasonIt = reasonItems.begin();
+        reasonIt != reasonItems.end(); ++reasonIt)
+    {
+        const sf1r::Document& reasonItem = reasonIt->item_;
+
+        // empty doc means it has been removed
+        if (reasonItem.isEmpty())
+            continue;
+
+        izenelib::driver::Value& value = reasonsValue();
+        value[sf1r::driver::Keys::event] = reasonIt->event_;
+
+        renderItem(reasonItem, selectProps, value);
+
+        if(! reasonIt->value_.empty())
+        {
+            value[sf1r::driver::Keys::value] = reasonIt->value_;
+        }
+    }
+}
+
 }
 
 namespace sf1r
 {
 
 using namespace izenelib::driver;
-using driver::Keys;
+using sf1r::driver::Keys;
 
 RecommendController::RecommendController()
     : recommendTaskService_(NULL)
@@ -995,8 +1022,8 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     }
 
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
-    param.limit = asUintOr(resourceValue[Keys::max_count],
-                           kDefaultRecommendCount);
+    param.inputParam.limit = asUintOr(resourceValue[Keys::max_count],
+                                      kDefaultRecommendCount);
 
     if (! (value2ItemIdVec(Keys::input_items, param.inputItems) &&
            value2ItemIdVec(Keys::include_items, param.includeItems) &&
@@ -1033,29 +1060,23 @@ void RecommendController::renderRecommendResult(const RecommendParam& param, con
     for (std::vector<RecommendItem>::const_iterator recIt = recItemVec.begin();
         recIt != recItemVec.end(); ++recIt)
     {
+        const sf1r::Document& item = recIt->item_;
+
+        // empty doc means it has been removed
+        if (item.isEmpty())
+            continue;
+
         Value& itemValue = resources();
         itemValue[Keys::weight] = recIt->weight_;
 
-        renderItem(recIt->item_, param.selectRecommendProps, itemValue);
+        renderItem(item, param.selectRecommendProps, itemValue);
 
         const std::vector<ReasonItem>& reasonItems = recIt->reasonItems_;
         // BAB need not reason results
-        if (param.type != BUY_ALSO_BUY && reasonItems.empty() == false)
+        if (param.type != BUY_ALSO_BUY)
         {
             Value& reasonsValue = itemValue[Keys::reasons];
-            for (std::vector<ReasonItem>::const_iterator reasonIt = reasonItems.begin();
-                reasonIt != reasonItems.end(); ++reasonIt)
-            {
-                Value& value = reasonsValue();
-                value[Keys::event] = reasonIt->event_;
-
-                renderItem(reasonIt->item_, param.selectReasonProps, value);
-
-                if(! reasonIt->value_.empty())
-                {
-                    value[Keys::value] = reasonIt->value_;
-                }
-            }
+            renderReasonItems(reasonItems, param.selectReasonProps, reasonsValue);
         }
     }
 }
@@ -1164,16 +1185,28 @@ void RecommendController::renderBundleResult(const TIBParam& param, const std::v
     for (std::vector<ItemBundle>::const_iterator bundleIt = bundleVec.begin();
         bundleIt != bundleVec.end(); ++bundleIt)
     {
-        Value& bundleValue = resources();
+        Value bundleValue;
         bundleValue[Keys::freq] = bundleIt->freq;
-
         Value& itemsValue = bundleValue[Keys::items];
+
         const std::vector<Document>& items = bundleIt->items;
+        bool isItemRemoved = false;
 
         for (std::vector<Document>::const_iterator itemIt = items.begin();
             itemIt != items.end(); ++itemIt)
         {
+            if (itemIt->isEmpty())
+            {
+                isItemRemoved = true;
+                break;
+            }
+
             renderItem(*itemIt, param.selectRecommendProps, itemsValue());
+        }
+
+        if (! isItemRemoved)
+        {
+            bundleValue.swap(resources());
         }
     }
 }

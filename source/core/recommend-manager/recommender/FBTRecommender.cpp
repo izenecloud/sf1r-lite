@@ -1,7 +1,4 @@
 #include "FBTRecommender.h"
-#include "ItemFilter.h"
-#include "../common/RecommendParam.h"
-#include "../common/RecommendItem.h"
 #include "../storage/OrderManager.h"
 
 #include <glog/logging.h>
@@ -11,31 +8,28 @@
 namespace sf1r
 {
 
-FBTRecommender::FBTRecommender(
-    ItemManager& itemManager,
-    OrderManager& orderManager
-)
-    : Recommender(itemManager)
-    , orderManager_(orderManager)
+FBTRecommender::FBTRecommender(OrderManager& orderManager)
+    : orderManager_(orderManager)
 {
 }
 
 bool FBTRecommender::recommendImpl_(
     RecommendParam& param,
-    ItemFilter& filter,
     std::vector<RecommendItem>& recItemVec
 )
 {
-    if (param.inputItemIds.empty())
+    const std::vector<itemid_t>& inputItemIds = param.inputParam.inputItemIds;
+    if (inputItemIds.empty())
     {
         LOG(ERROR) << "failed to recommend for empty input items";
         return false;
     }
 
-    std::list<itemid_t> inputItemList(param.inputItemIds.begin(), param.inputItemIds.end());
+    std::list<itemid_t> inputItemList(inputItemIds.begin(), inputItemIds.end());
     std::list<itemid_t> results;
 
-    if (! orderManager_.getFreqItemSets(param.limit, inputItemList, results, &filter))
+    if (! orderManager_.getFreqItemSets(param.inputParam.limit, inputItemList,
+                                        results, &param.inputParam.itemFilter))
     {
         LOG(ERROR) << "failed in OrderManager::getFreqItemSets()";
         return false;

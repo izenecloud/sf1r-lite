@@ -73,6 +73,12 @@ public:
             std::string& host,
             unsigned int& recvPort);
 
+    bool getCollectionShardids(const std::string& collection, std::vector<shardid_t>& shardidList);
+
+    bool checkCollectionShardid(const std::string& collection, unsigned int shardid);
+
+    void registerIndexStatus(const std::string& collection, bool isIndexing);
+
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
 

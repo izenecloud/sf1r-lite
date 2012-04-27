@@ -9,10 +9,9 @@
 #define ITEM_CF_RECOMMENDER_H
 
 #include "Recommender.h"
-#include "../common/RecTypes.h"
+#include <aggregator-manager/GetRecommendBase.h>
 
 #include <vector>
-#include <map>
 #include <string>
 
 namespace sf1r
@@ -21,23 +20,16 @@ namespace sf1r
 class ItemCFRecommender : public Recommender
 {
 public:
-    ItemCFRecommender(
-        ItemManager& itemManager,
-        ItemCFManager& itemCFManager
-    );
+    ItemCFRecommender(GetRecommendBase& getRecommendBase);
 
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
-        ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );
 
-    typedef ItemCFManager::ItemWeightMap ItemWeightMap;
     bool recommendFromItemWeight_(
-        int limit,
-        const ItemWeightMap& itemWeightMap,
-        ItemFilter& filter,
+        RecommendInputParam& inputParam,
         std::vector<RecommendItem>& recItemVec
     );
 
@@ -47,7 +39,7 @@ protected:
     ) const;
 
 protected:
-    ItemCFManager& itemCFManager_;
+    GetRecommendBase& getRecommendBase_;
 };
 
 } // namespace sf1r

@@ -18,22 +18,20 @@ class BOERecommender : public ItemCFRecommender
 {
 public:
     BOERecommender(
-        ItemManager& itemManager,
-        ItemCFManager& itemCFManager,
+        GetRecommendBase& getRecommendBase,
         const UserEventFilter& userEventFilter
     );
 
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
-        ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );
 
     void convertItemWeight_(
         const std::vector<itemid_t>& inputItemIds,
         const ItemRateMap& itemRateMap,
-        ItemWeightMap& itemWeightMap
+        ItemCFManager::ItemWeightMap& itemWeightMap
     ) const;
 
 private:

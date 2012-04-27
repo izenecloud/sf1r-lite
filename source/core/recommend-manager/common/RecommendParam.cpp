@@ -10,7 +10,6 @@ namespace sf1r
 
 RecommendParam::RecommendParam()
     : type(RECOMMEND_TYPE_NUM)
-    , limit(0)
     , queryClickFreq(0)
 {
     // DOCID property is a must in recommendation result
@@ -20,7 +19,7 @@ RecommendParam::RecommendParam()
 
 bool RecommendParam::check(std::string& errorMsg) const
 {
-    if (limit <= 0)
+    if (inputParam.limit <= 0)
     {
         errorMsg = "Require a positive value in request[resource][max_count].";
         return false;
@@ -96,6 +95,12 @@ bool RecommendParam::check(std::string& errorMsg) const
     }
 
     return true;
+}
+
+void RecommendParam::enableItemCondition(ItemManager* itemManager)
+{
+    condition.itemManager_ = itemManager;
+    inputParam.itemFilter.setItemCondition(&condition);
 }
 
 } // namespace sf1r

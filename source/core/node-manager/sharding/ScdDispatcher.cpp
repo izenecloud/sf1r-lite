@@ -163,7 +163,9 @@ bool BatchScdDispatcher::switchFile()
         std::ofstream*& rof = ofList_[shardid];
 
         if (!rof)
-            rof = new std::ofstream;
+        {
+            continue;
+        }
 
         // close former file
         if (rof->is_open())
@@ -189,8 +191,7 @@ std::ostream& operator<<(std::ostream& out, SCDDoc& scdDoc)
     for (propertyIter = scdDoc.begin(); propertyIter != scdDoc.end(); propertyIter++)
     {
         std::string str;
-        (*propertyIter).first.convertString(str, izenelib::util::UString::UTF_8);
-        out << "<" << str << ">";
+        out << "<" << propertyIter->first << ">";
         (*propertyIter).second.convertString(str, izenelib::util::UString::UTF_8);
         out << str << std::endl;
     }
@@ -200,10 +201,7 @@ std::ostream& operator<<(std::ostream& out, SCDDoc& scdDoc)
 
 bool BatchScdDispatcher::dispatch_impl(shardid_t shardid, SCDDoc& scdDoc)
 {
-    //std::cout<<"BatchScdDispatcher::dispatch_impl shardid: "<<shardid<<std::endl;
-
     std::ofstream*& rof = ofList_[shardid];
-
     (*rof) << scdDoc;
 
     // add shardid property?
@@ -221,6 +219,11 @@ bool BatchScdDispatcher::finish()
     for (unsigned int shardid = scdSharder_->getMinShardID();
             shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
+        if (!SearchMasterManager::get()->checkCollectionShardid(collectionName_, shardid))
+        {
+            continue;
+        }
+
         std::string host;
         unsigned int recvPort;
         if (SearchMasterManager::get()->getShardReceiver(shardid, host, recvPort))
@@ -258,8 +261,14 @@ bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
     for (unsigned int shardid = scdSharder_->getMinShardID();
             shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
+        // shards are collection related
+        if (!SearchMasterManager::get()->checkCollectionShardid(collectionName_, shardid))
+        {
+            continue;
+        }
+
         std::ostringstream oss;
-        oss << tempDir << shardid; // shard dir path
+        oss << tempDir << shardid;
 
         std::string shardScdDir = oss.str();
         bfs::create_directory(shardScdDir);
@@ -275,8 +284,8 @@ bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
 
 bool InstantScdDispatcher::dispatch_impl(shardid_t shardid, SCDDoc& scdDoc)
 {
-    // TODO, Send scd doc to shard server corresponding to shardid
-    // scdDoc format? through open api (client)?
+    // Here intended to directly dispatch the scdDoc to Worker identified by shardid,
+    // this can be done by perform a createDocument request through Sf1Driver client.
 
     return false;
 }

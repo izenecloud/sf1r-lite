@@ -9,28 +9,24 @@
 #define VAV_RECOMMENDER_H
 
 #include "Recommender.h"
-#include "../common/RecTypes.h"
 
 namespace sf1r
 {
+class GetRecommendBase;
 
 class VAVRecommender : public Recommender
 {
 public:
-    VAVRecommender(
-        ItemManager& itemManager,
-        CoVisitManager& coVisitManager
-    );
+    VAVRecommender(GetRecommendBase& getRecommendBase);
 
 protected:
     virtual bool recommendImpl_(
         RecommendParam& param,
-        ItemFilter& filter,
         std::vector<RecommendItem>& recItemVec
     );
 
 private:
-    CoVisitManager& coVisitManager_;
+    GetRecommendBase& getRecommendBase_;
 };
 
 } // namespace sf1r

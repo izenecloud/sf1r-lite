@@ -17,7 +17,6 @@
 
 namespace sf1r
 {
-class ItemManager;
 class ItemIdGenerator;
 class VisitManager;
 class PurchaseManager;
@@ -26,12 +25,12 @@ class OrderManager;
 class EventManager;
 class RateManager;
 class Recommender;
+class GetRecommendBase;
 
 class RecommenderFactory
 {
 public:
     RecommenderFactory(
-        ItemManager& itemManager,
         ItemIdGenerator& itemIdGenerator,
         VisitManager& visitManager,
         PurchaseManager& purchaseManager,
@@ -40,8 +39,7 @@ public:
         EventManager& eventManager,
         RateManager& rateManager,
         QueryClickCounter& queryPurchaseCounter,
-        CoVisitManager& coVisitManager,
-        ItemCFManager& itemCFManager
+        GetRecommendBase& getRecommendBase
     );
 
     ~RecommenderFactory();

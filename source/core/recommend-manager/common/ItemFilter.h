@@ -7,24 +7,20 @@
 #ifndef ITEM_FILTER_H
 #define ITEM_FILTER_H
 
+#include "RecTypes.h"
 #include <idmlib/resys/ItemRescorer.h>
-#include "../common/RecTypes.h"
+#include <3rdparty/msgpack/msgpack.hpp>
 
 #include <set>
 
 namespace sf1r
 {
-class ItemManager;
 class ItemCondition;
-struct RecommendParam;
 
 class ItemFilter : public idmlib::recommender::ItemRescorer
 {
 public:
-    ItemFilter(
-        ItemManager& itemManager,
-        const RecommendParam& param
-    );
+    ItemFilter();
 
     float rescore(itemid_t itemId, float originalScore) { return 0; }
 
@@ -33,7 +29,7 @@ public:
      * @param itemId the item id to check
      * @return true to filter @p itemId, false to assume @p itemId as recommendation candidate.
      */
-    bool isFiltered(itemid_t itemId);
+    bool isFiltered(itemid_t itemId) const;
 
     /**
      * Insert the item id to filter.
@@ -51,10 +47,13 @@ public:
         filterSet_.insert(first, last);
     }
 
+    void setItemCondition(const ItemCondition* condition) { condition_ = condition; }
+
+    MSGPACK_DEFINE(filterSet_);
+
 private:
-    ItemManager& itemManager_;
-    const ItemCondition& condition_;
     std::set<itemid_t> filterSet_;
+    const ItemCondition* condition_;
 };
 
 } // namespace sf1r

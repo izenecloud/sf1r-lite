@@ -17,26 +17,21 @@ using namespace izenelib::ir::indexmanager;
 namespace sf1r
 {
 
-void gregorianISO8601Parser(const std::string& dataStr, struct tm& atm)
+ptime gregorianISO8601Parser(const std::string& dataStr)
 {
     try
     {
         if(dataStr.find(" ") != std::string::npos)
         {
-            ptime t(time_from_string(dataStr));
-            atm = to_tm(t);
+            return ptime(time_from_string(dataStr));
         }
         else
         {
-            date d(from_simple_string(dataStr));
-            atm = to_tm(d);
+            return ptime(from_simple_string(dataStr));
         }
     }
     catch (const std::exception& e)
     {
-        ptime now = second_clock::local_time();
-        atm = to_tm(now);
-
         if (dataStr.find("/") != std::string::npos)
         {
             try
@@ -45,46 +40,16 @@ void gregorianISO8601Parser(const std::string& dataStr, struct tm& atm)
                 size_t len = ps.size();
                 if (len == 3)
                 {
+                    /// format 10/02/2009
                     size_t year = boost::lexical_cast<size_t>(ps[len - 1]);
                     size_t month = boost::lexical_cast<size_t>(ps[len - 2]);
                     size_t day = boost::lexical_cast<size_t>(ps[len - 3]);
-                    if (year > 1900 && month <= 12 && month > 0 && day <= 31 && day > 0)
-                    {
-                        /// format 10/02/2009
-                        atm.tm_year = year > 1900 ? (year - 1900) : (year + 2000 - 1900);   // tm_year is 1900 based
-                        atm.tm_mon = month >= 0 ? month : 0;                                // tm_mon is 0 based
-                        atm.tm_mday = day >0 ? day : 1;
-                    }
+                    return ptime(date(year,month,day));
                 }
             }
-            catch (const std::exception& e)
-            {
-                ptime now = second_clock::local_time();
-                atm = to_tm(now);
-            }
+            catch (const std::exception& e){}
         }
-    }
-}
-
-void gregorianISOParser(const std::string& dataStr, struct tm& atm)
-{
-    try
-    {
-        date d(from_undelimited_string(dataStr));
-        date::ymd_type ymd = d.year_month_day();
-        size_t year = ymd.year;
-        size_t month = ymd.month;
-        size_t day = ymd.day;
-
-        atm.tm_year = year > 1900 ? (year - 1900) : (year + 2000 - 1900);   // tm_year is 1900 based
-        atm.tm_mon = month >= 0 ? month : 0;                                // tm_mon is 0 based
-        atm.tm_mday = day > 0 ? day : 1;
-
-    }
-    catch(std::exception& e)
-    {
-        ptime now = second_clock::local_time();
-        atm = to_tm(now);
+        return second_clock::local_time();
     }
 }
 
@@ -101,24 +66,16 @@ bool isAllDigit(const string& str)
     return true;
 }
 
-void convert(const std::string& dataStr, struct tm& atm)
+ptime convert(const std::string& dataStr)
 {
-    if (dataStr.find_first_of("/-") != std::string::npos)
-    {
-        /// format 2009-10-02
-        /// format 2009-10-02 23:12:21
-        /// format 2009/10/02
-        /// format 2009/10/02 23:12:21
-        /// format 10/02/2009
-        gregorianISO8601Parser(dataStr, atm);
-    }
-    else if (dataStr.size() == 14 && isAllDigit(dataStr))
+    if (dataStr.size() == 14 && isAllDigit(dataStr))
     {
         /// format 20091009163011
         try
         {
             int offsets[] = {4, 2, 2, 2, 2, 2};
 
+            tm atm;
             boost::offset_separator f(offsets, offsets+5);
             typedef boost::token_iterator_generator<boost::offset_separator>::type Iter;
             Iter beg = boost::make_token_iterator<string>(dataStr.begin(), dataStr.end(), f);
@@ -138,52 +95,51 @@ void convert(const std::string& dataStr, struct tm& atm)
             atm.tm_hour = datetime[3] > 0 ? datetime[3] : 0;
             atm.tm_min = datetime[4] > 0 ? datetime[4] : 0;
             atm.tm_sec = datetime[5] > 0 ? datetime[5] : 0;
+            return ptime(date_from_tm(atm));
         }
         catch (const std::exception& e)
         {
-            ptime now = second_clock::local_time();
-            atm = to_tm(now);
+            return second_clock::local_time();
         }
     }
     else
     {
-        ptime now = second_clock::local_time();
-        atm = to_tm(now);
-        gregorianISOParser(dataStr, atm);
+        try{
+            /// format 2009-10-02
+            /// format 2009-10-02 23:12:21
+            /// format 2009/10/02
+            /// format 2009/10/02 23:12:21
+            /// format 10/02/2009
+            return gregorianISO8601Parser(dataStr);
+        }catch (const std::exception& e)
+        {
+            return second_clock::local_time();
+        }
     }
 }
 
-int64_t Utilities::convertDate(const izenelib::util::UString& dateStr,const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr)
+time_t Utilities::createTimeStampInSeconds(const izenelib::util::UString& dateStr,const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr)
 {
     std::string datestr;
     dateStr.convertString(datestr, encoding);
-    struct tm atm;
-    convert(datestr, atm);
-    char str[15];
-    memset(str, 0, 15);
-
-    strftime(str, 14, "%Y%m%d%H%M%S", &atm);
-
-    outDateStr.assign(str, encoding);
-#ifdef WIN32
-    return _mktime64(&atm);
-#else
-    //return mktime(&atm);
-    return fastmktime(&atm);
-#endif
+    ptime pt = convert(datestr);
+    outDateStr.assign(to_iso_string(pt).erase(8, 1), encoding);
+    static const ptime epoch(date(1970, 1, 1));
+    return (pt - epoch).total_seconds() + timezone;
 }
 
-int64_t Utilities::convertDate(const std::string& dataStr)
+time_t Utilities::createTimeStampInSeconds(const izenelib::util::UString& text)
 {
-    struct tm atm;
-    convert(dataStr, atm);
-#ifdef WIN32
-    return _mktime64(&atm);
-#else
-    //return mktime(&atm);
-    return fastmktime(&atm);
-#endif
+    std::string str;
+    text.convertString(str, izenelib::util::UString::UTF_8);
+    return createTimeStampInSeconds(str);
+}
 
+time_t Utilities::createTimeStampInSeconds(const std::string& dataStr)
+{
+    ptime pt = convert(dataStr);
+    static const ptime epoch(date(1970, 1, 1));
+    return (pt - epoch).total_seconds() + timezone;
 }
 
 time_t Utilities::createTimeStamp()

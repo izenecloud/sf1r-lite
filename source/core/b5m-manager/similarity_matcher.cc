@@ -104,11 +104,10 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             }
             std::map<std::string, UString> doc;
             SCDDoc& scddoc = *(*doc_iter);
-            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
-            for(p=scddoc.begin(); p!=scddoc.end(); ++p)
+            SCDDoc::iterator p = scddoc.begin();
+            for(; p!=scddoc.end(); ++p)
             {
-                std::string property_name;
-                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                const std::string& property_name = p->first;
                 doc[property_name] = p->second;
             }
             if(doc["Category"].length()==0 || doc["Title"].length()==0 || doc["Source"].length()==0)
