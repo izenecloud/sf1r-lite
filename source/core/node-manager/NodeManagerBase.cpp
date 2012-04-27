@@ -70,7 +70,10 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         }
     }
 
-    // ZOO_EXPIRED_SESSION_STATE
+    if (zkEvent.state_ == ZOO_CHILD_EVENT)
+    {
+        detectMasters();
+    }
 }
 
 /// protected ////////////////////////////////////////////////////////////////////
@@ -203,6 +206,11 @@ void NodeManagerBase::enterCluster()
         SuperMasterManager::get()->init(sf1rTopology_);
         SuperMasterManager::get()->start();
         masterStarted_ = true;
+    }
+
+    if (sf1rTopology_.curNode_.worker_.isEnabled_)
+    {
+        detectMasters();
     }
 }
 
