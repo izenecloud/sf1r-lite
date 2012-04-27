@@ -212,6 +212,11 @@ private:
             SCDDoc& scddoc
     );
 
+    /**
+     * notify to clear cache on master.
+     */
+    void clearMasterCache_();
+
 private:
     IndexBundleConfiguration* bundleConfig_;
     MiningTaskService* miningTaskService_;

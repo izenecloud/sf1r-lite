@@ -13,7 +13,6 @@
 #include <mining-manager/MiningManager.h>
 #include <la-manager/LAManager.h>
 
-
 namespace sf1r
 {
 
@@ -725,16 +724,19 @@ void SearchWorker::reset_cache(
         docid_t id,
         const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
 {
-    //this method is only used for r-type filed right now
     searchCache_->clear();
-    searchManager_->reset_cache(rType, id, rTypeFieldValue);
+
+    if (rType)
+    {
+        searchManager_->updateSortCache(id, rTypeFieldValue);
+    }
 }
 
 void SearchWorker::reset_all_property_cache()
 {
     searchCache_->clear();
+
     searchManager_->reset_all_property_cache();
 }
-
 
 }

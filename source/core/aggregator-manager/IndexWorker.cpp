@@ -14,6 +14,7 @@
 #include <log-manager/LogServerConnection.h>
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
+#include <aggregator-manager/MasterNotifier.h>
 
 // xxx
 #include <bundles/index/IndexBundleConfiguration.h>
@@ -839,6 +840,8 @@ bool IndexWorker::doBuildCollection_(
         if (!deleteSCD_(parser, timestamp))
             return false;
     }
+
+    clearMasterCache_();
 
     saveSourceCount_(op);
 
@@ -2047,5 +2050,15 @@ void IndexWorker::value2SCDDoc(const Value& value, SCDDoc& scddoc)
     }
 }
 
+void IndexWorker::clearMasterCache_()
+{
+    if (bundleConfig_->isWorkerNode())
+    {
+        NotifyMSG msg;
+        msg.collection = bundleConfig_->collectionName_;
+        msg.method = "CLEAR_SEARCH_CACHE";
+        MasterNotifier::get()->notify(msg);
+    }
+}
 
 }
