@@ -8,6 +8,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/unordered_set.hpp>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -126,6 +127,8 @@ public:
         std::string docDelimiter_;
 
         std::vector<string> propertyNameList_;
+
+        boost::unordered_set<std::string> pname_set_;
     };  // class iterator
 
     class cached_iterator : public boost::iterator_facade<cached_iterator, SCDDocPtr const, boost::forward_traversal_tag>

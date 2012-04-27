@@ -46,11 +46,11 @@ int main(int argc, char** argv)
     if(scd_list.empty()) return 0;
     LOG(INFO)<<"total "<<scd_list.size()<<" SCDs"<<std::endl;
 
-    std::string id_dir = "./test_scd_id_manager";
-    boost::filesystem::remove_all(id_dir);
-    boost::filesystem::create_directories(id_dir);
-    id_dir = id_dir+"/id";
-    izenelib::ir::idmanager::IDManager id_manager(id_dir);
+    //std::string id_dir = "./test_scd_id_manager";
+    //boost::filesystem::remove_all(id_dir);
+    //boost::filesystem::create_directories(id_dir);
+    //id_dir = id_dir+"/id";
+    //izenelib::ir::idmanager::IDManager id_manager(id_dir);
 
     izenelib::util::ClockTimer timer;
     double cost = 0.0;
@@ -58,43 +58,38 @@ int main(int argc, char** argv)
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         LOG(INFO)<<"Processing SCD "<<scd_list[i]<<std::endl;
-        timer.restart();
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_list[i]);
         ScdParser::iterator doc_iter = parser.begin(p_vector);
-        cost += timer.elapsed();
         while(true)
         {
             if(doc_iter==parser.end()) break;
-            SCDDoc doc = *(*doc_iter);
-            izenelib::util::UString docname;
+            //SCDDoc doc = *(*doc_iter);
 
-            std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
+            //std::vector<std::pair<izenelib::util::UString, izenelib::util::UString> >::iterator p;
 
-            for (p = doc.begin(); p != doc.end(); p++)
-            {
-                std::string property_name;
-                p->first.convertString(property_name, izenelib::util::UString::UTF_8);
-                if(property_name=="DOCID")
-                {
-                    docname = p->second;
-                    break;
-                }
-            }
-            uint32_t did = 0;
-            std::string sdocname;
-            docname.convertString(sdocname, izenelib::util::UString::UTF_8);
-            id_manager.getDocIdByDocName(Utilities::md5ToUint128(sdocname), did);
+            //for (p = doc.begin(); p != doc.end(); p++)
+            //{
+                //std::string property_name;
+                //std::string property_value;
+                //p->first.convertString(property_name, izenelib::util::UString::UTF_8);
+                //p->second.convertString(property_value, izenelib::util::UString::UTF_8);
+                //std::cout<<property_name<<":"<<property_value<<std::endl;
+            //}
+            //uint32_t did = 0;
+            //std::string sdocname;
+            //docname.convertString(sdocname, izenelib::util::UString::UTF_8);
+            //id_manager.getDocIdByDocName(Utilities::md5ToUint128(sdocname), did);
             //std::cout<<sdocname<<","<<did<<std::endl;
             if(n%100000==0)
             {
+                double cost = timer.elapsed();
                 LOG(INFO)<<"read "<<n<<" docs, "<<cost<<"\t"<<cost/n<<std::endl;
             }
-            timer.restart();
             ++doc_iter;
-            cost += timer.elapsed();
             ++n;
         }
     }
     LOG(INFO)<<"finished, cost "<<cost<<std::endl;
 }
+

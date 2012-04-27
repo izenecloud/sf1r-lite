@@ -520,6 +520,11 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, con
     {
         offset_ = prevOffset_ = -1;
     }
+
+    for(uint32_t i=0;i<propertyNameList_.size();i++)
+    {
+        pname_set_.insert(propertyNameList_[i]);
+    }
 }
 
 ScdParser::iterator::iterator(const iterator& other)
@@ -609,6 +614,7 @@ SCDDoc* ScdParser::iterator::getDoc()
     CREATE_PROFILER ( proScdParsing1, "ScdParser", "ScdParsing::getDoc::1");
     CREATE_PROFILER ( proScdParsing2, "ScdParser", "ScdParsing::getDoc::2");
     CREATE_PROFILER ( proScdParsing3, "ScdParser", "ScdParsing::getDoc::3");
+    CREATE_PROFILER ( proScdParsingN, "ScdParser", "ScdParsing::getDoc::N");
 
     START_PROFILER ( proScdParsing0 );
     std::size_t readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
@@ -635,16 +641,93 @@ SCDDoc* ScdParser::iterator::getDoc()
     if (str == docDelimiter_)
         return doc;
 
-    START_PROFILER ( proScdParsing2 );
-    /// It's recommended to handle this processing in application by which SCD is created.
-    preProcessDoc(str);
-    STOP_PROFILER ( proScdParsing2 );
+    //START_PROFILER ( proScdParsing2 );
+    ///// It's recommended to handle this processing in application by which SCD is created.
+    //preProcessDoc(str);
+    //STOP_PROFILER ( proScdParsing2 );
 
-    START_PROFILER ( proScdParsing3 );
-    scd_grammar g(*doc, codingType_);
-    parse_info<> pi = parse(str.c_str(), g, space_p);
-    STOP_PROFILER ( proScdParsing3 );
+    //START_PROFILER ( proScdParsing3 );
+    //scd_grammar g(*doc, codingType_);
+    //parse_info<> pi = parse(str.c_str(), g, space_p);
+    //STOP_PROFILER ( proScdParsing3 );
 
+    //new start
+    START_PROFILER ( proScdParsingN );
+    static const uint8_t min = 1;
+    static const uint8_t max = 20;
+
+    std::string property_name;
+    std::stringstream property_value;
+    std::stringstream ss(str);
+    std::string line;
+    while( getline(ss, line) )
+    {
+        if(line.empty()) continue;
+        std::string pname;
+        std::string pname_left;
+        //to find pname here
+        if(line[0]=='<')
+        {
+            std::size_t right_index = 0;
+            for(std::size_t i=1;i<line.length();i++)
+            {
+                char c = line[i];
+                if(c=='>')
+                {
+                    right_index = i;
+                    break;
+                }
+                else if( (c>='a'&&c<='z') || (c>='A'&&c<='Z') )
+                {
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if(right_index>0)
+            {
+                std::size_t len = right_index-1;
+                if(len>=min && len<=max)
+                {
+                    pname = line.substr(1, len);
+                    if(pname_set_.empty() || pname_set_.find(pname)!=pname_set_.end())
+                    {
+                        if( right_index<line.length() )
+                        {
+                            pname_left = line.substr(right_index+1, std::string::npos);
+                        }
+                    }
+                    else
+                    {
+                        pname.clear();
+                    }
+                          
+                }
+            }
+        }
+
+        if(pname.empty())// not a pname line
+        {
+            property_value << "\n" << line;
+        }
+        else
+        {
+            if(!property_name.empty())
+            {
+                doc->push_back(std::make_pair( izenelib::util::UString(property_name, codingType_), izenelib::util::UString(property_value.str(), codingType_)));
+            }
+            property_name.clear();
+            property_value.str("");
+            property_name = pname;
+            property_value << pname_left;
+        }
+    }
+    if(!property_name.empty())
+    {
+        doc->push_back(std::make_pair( izenelib::util::UString(property_name, codingType_), izenelib::util::UString(property_value.str(), codingType_)));
+    }
+    STOP_PROFILER ( proScdParsingN );
     return doc;
 }
 
