@@ -90,8 +90,7 @@ public:
 
     bool rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
-    void reset_cache(
-            bool rType,
+    void updateSortCache(
             docid_t id,
             const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
 

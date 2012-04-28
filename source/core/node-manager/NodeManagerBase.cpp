@@ -58,7 +58,7 @@ void NodeManagerBase::stop()
 
 void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
-    LOG (INFO) << CLASSNAME << " " << zkEvent.toString();
+    //LOG (INFO) << CLASSNAME << " " << zkEvent.toString();
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
@@ -70,7 +70,10 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         }
     }
 
-    // ZOO_EXPIRED_SESSION_STATE
+    if (zkEvent.type_ == ZOO_CHILD_EVENT)
+    {
+        detectMasters();
+    }
 }
 
 /// protected ////////////////////////////////////////////////////////////////////
@@ -203,6 +206,11 @@ void NodeManagerBase::enterCluster()
         SuperMasterManager::get()->init(sf1rTopology_);
         SuperMasterManager::get()->start();
         masterStarted_ = true;
+    }
+
+    if (sf1rTopology_.curNode_.worker_.isEnabled_)
+    {
+        detectMasters();
     }
 }
 

@@ -8,9 +8,7 @@
 #include <common/type_defs.h>
 #include <common/PropertyValue.h>
 
-#include <boost/any.hpp>
 #include <boost/serialization/access.hpp>
-
 #include <map>
 #include <string>
 
@@ -187,7 +185,7 @@ private:
     docid_t id_;
 
     /// list of properties of the document
-    std::map<std::string, PropertyValue> propertyList_;
+    property_named_map propertyList_;
 
     template<class DataIO>
     friend void DataIO_loadObject(DataIO& dio, Document& x);

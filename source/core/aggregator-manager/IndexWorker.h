@@ -90,8 +90,6 @@ private:
 
     void doMining_();
 
-    bool completePartialDocument_(docid_t oldId, Document& doc);
-
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
     bool doBuildCollection_(
@@ -153,6 +151,7 @@ private:
     bool prepareDocument_(
             SCDDoc& doc,
             Document& document,
+            IndexerDocument& indexDocument,
             docid_t& oldId,
             bool& rType,
             std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
@@ -161,10 +160,37 @@ private:
             bool insert = true
     );
 
+    bool completePartialDocument_(
+            docid_t oldId, 
+            Document& doc, 
+            IndexerDocument& indexDocument
+    );
+
     bool prepareIndexDocument_(
             docid_t oldId, 
             time_t timestamp,
             const Document& document, 
+            IndexerDocument& indexDocument
+    );
+
+    bool prepareIndexDocumentProperty_(
+            docid_t docId,
+            const FieldPair& p,
+            IndexBundleSchema::iterator iter,
+            IndexerDocument& indexDocument
+    );
+
+    bool prepareIndexDocumentStringProperty_(
+            docid_t docId,
+            const FieldPair& p,
+            IndexBundleSchema::iterator iter,
+            IndexerDocument& indexDocument
+    );
+
+    bool prepareIndexDocumentRtypeProperty_(
+            docid_t docId,
+            const izenelib::util::UString & propertyValueU,
+            IndexBundleSchema::iterator iter,
             IndexerDocument& indexDocument
     );
 
@@ -180,7 +206,9 @@ private:
     );
 
     bool checkRtype_(
+            const uint128_t& scdDocId,
             SCDDoc& doc,
+            docid_t& oldId,
             std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
             bool& isUpdate
     );
@@ -211,6 +239,11 @@ private:
             const ::izenelib::driver::Value& value,
             SCDDoc& scddoc
     );
+
+    /**
+     * notify to clear cache on master.
+     */
+    void clearMasterCache_();
 
 private:
     IndexBundleConfiguration* bundleConfig_;

@@ -74,6 +74,8 @@ protected:
 
     virtual void stopMasterManager() {}
 
+    virtual void detectMasters() {}
+
 protected:
     /**
      * Make sure Zookeeper namespace is initialized properly
