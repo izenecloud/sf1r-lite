@@ -141,7 +141,7 @@ public:
         ScdWriter d_writer(output_dir, DELETE_SCD);
         n = 0;
         typedef boost::unordered_map<std::string, ValueType> CacheType;
-        typedef typename CacheType::iterator cache_iterator;
+        typedef CacheType::iterator cache_iterator;
         boost::unordered_map<std::string, ValueType> cache;
         for (uint32_t i=0;i<scd_list.size();i++)
         {
