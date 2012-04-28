@@ -71,7 +71,7 @@ class ScdMerger
     };
     
     typedef boost::unordered_map<std::string, uint32_t> MapType;
-    typedef typename MapType::iterator map_iterator;
+    typedef MapType::iterator map_iterator;
     
 public:
     ScdMerger(const std::string& work_dir,const std::vector<std::string>& propertyNameList)
