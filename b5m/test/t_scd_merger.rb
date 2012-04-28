@@ -6,9 +6,12 @@ require_relative '../b5m_helper'
 describe "Test Scd Merger" do
 
   top_dir = File.dirname(__FILE__)
+  before do
+    #@scd_merger = B5MPath.scd_merger
+    @scd_merger = File.join(File.dirname(File.dirname(top_dir)), "scripts", "ScdMergeTool")
+  end
 
   it "should merge to one scd" do
-    scd_merger = B5MPath.scd_merger
     input_scd = File.join(top_dir, "input_scd")
     FileUtils.rm_rf(input_scd) if File.exist?(input_scd)
     Dir.mkdir(input_scd)
@@ -62,7 +65,7 @@ describe "Test Scd Merger" do
     end
     writer.close
     
-    system("#{scd_merger} #{input_scd} DOCID,Title #{output_scd}")
+    system("#{@scd_merger} -I #{input_scd} -P DOCID,Title -O #{output_scd}")
 
     scd_list = []
     Dir.foreach(output_scd) do |scd|
@@ -103,7 +106,6 @@ describe "Test Scd Merger" do
 
 
   it "should merge to multiple scds" do
-    scd_merger = B5MPath.scd_merger
     input_scd = File.join(top_dir, "input_scd")
     FileUtils.rm_rf(input_scd) if File.exist?(input_scd)
     Dir.mkdir(input_scd)
@@ -157,7 +159,7 @@ describe "Test Scd Merger" do
     end
     writer.close
     
-    system("#{scd_merger} #{input_scd} DOCID,Title #{output_scd} --gen-all")
+    system("#{@scd_merger} -I #{input_scd} -P DOCID,Title -O #{output_scd} --gen-all")
 
     scd_list = []
     Dir.foreach(output_scd) do |scd|

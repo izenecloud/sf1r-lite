@@ -168,19 +168,18 @@ public:
         return propertyList_.size();
     }
 
-    void copyPropertiesFromDocument(const Document& doc, bool override = true)
+    bool copyPropertiesFromDocument(const Document& doc, bool override = true)
     {
+        bool modified = false;
         for(property_const_iterator it = doc.propertyBegin(); it!=doc.propertyEnd(); ++it)
         {
-            if(!hasProperty(it->first))
+            if(!hasProperty(it->first) || override)
             {
                 property(it->first) = it->second;
-            }
-            else if(override)
-            {
-                property(it->first) = it->second;
+                modified = true;
             }
         }
+        return modified;
     }
 
 private:

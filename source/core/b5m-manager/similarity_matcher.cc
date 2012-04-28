@@ -49,7 +49,9 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
     if(scd_list.empty()) return false;
     PidDictionary dic;
     dic.Load(dic_path_);
-    LOG(INFO)<<"pid dictionary size: "<<dic.Size()<<std::endl;
+    std::size_t dic_start_size = dic.Size();
+    LOG(INFO)<<"pid dictionary size: "<<dic_start_size<<std::endl;
+    if(dic_start_size<1) return false;
 
     std::string work_dir = knowledge_dir+"/work_dir";
 
@@ -156,8 +158,12 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
         ofs<<it->first<<","<<it->second.second<<","<<boost::posix_time::to_iso_string(now)<<std::endl;
 
     }
-    LOG(INFO)<<"after dic size: "<<dic.Size()<<std::endl;
-    dic.Save(dic_path_);
+    std::size_t dic_end_size = dic.Size();
+    LOG(INFO)<<"after dic size: "<<dic_end_size<<std::endl;
+    if(dic_start_size!=dic_end_size)
+    {
+        dic.Save(dic_path_);
+    }
     //const std::vector<std::vector<std::string> >& group_info = group_table.GetGroupInfo();
     //for(uint32_t gid=0;gid<group_info.size();gid++)
     //{

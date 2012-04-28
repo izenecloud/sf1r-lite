@@ -55,7 +55,7 @@ end
 class B5MPath
   def self.scd_merger
 
-    File.join( File.dirname(File.dirname(__FILE__)), "scripts", "ScdMerger")
+    File.join( File.dirname(File.dirname(__FILE__)), "tool", "ScdMergeTool")
   end
 
   def self.matcher
