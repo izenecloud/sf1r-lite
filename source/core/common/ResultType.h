@@ -154,10 +154,10 @@ public:
         ss << endl;
         ss << "page start_    : " << start_ << " count_   : " << count_ << endl;
         ss << endl;
-        ss << "topKPostionList_          : " << topKPostionList_.size() << endl;
-        for (size_t i = 0; i < topKPostionList_.size(); i ++)
+        ss << "pageOffsetList_          : " << pageOffsetList_.size() << endl;
+        for (size_t i = 0; i < pageOffsetList_.size(); i ++)
         {
-            ss << topKPostionList_[i] << ", ";
+            ss << pageOffsetList_[i] << ", ";
         }
         ss << endl << endl;
 
@@ -305,8 +305,8 @@ public:
     /// @brief number of documents in current page
     std::size_t count_;
 
-    /// For results in page in one node, indicates corresponding postions in topk results overall nodes.
-    std::vector<size_t> topKPostionList_;
+    /// For results in page in one node, indicates corresponding postions in that page result.
+    std::vector<size_t> pageOffsetList_;
 
     /// property query terms
     std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList_;
@@ -455,7 +455,7 @@ public:
         topKCustomRankScoreList_ = result.topKCustomRankScoreList_;
         start_ = result.start_;
         count_ = result.count_;
-        topKPostionList_ = result.topKPostionList_;
+        pageOffsetList_ = result.pageOffsetList_;
         propertyQueryTermList_ = result.propertyQueryTermList_;
         onto_rep_ = result.onto_rep_;
         groupRep_ = result.groupRep_;
@@ -477,7 +477,7 @@ public:
         topKCustomRankScoreList_.swap(result.topKCustomRankScoreList_);
         start_ = result.start_;
         count_ = result.count_;
-        topKPostionList_.swap(result.topKPostionList_);
+        pageOffsetList_.swap(result.pageOffsetList_);
         propertyQueryTermList_.swap(result.propertyQueryTermList_);
         onto_rep_.swap(result.onto_rep_);
         groupRep_.swap(result.groupRep_);
@@ -501,7 +501,7 @@ public:
         propertyRange_.swap(other.propertyRange_);
         swap(start_, other.start_);
         swap(count_, other.count_);
-        topKPostionList_.swap(other.topKPostionList_);
+        pageOffsetList_.swap(other.pageOffsetList_);
         propertyQueryTermList_.swap(other.propertyQueryTermList_);
 //      fullTextOfDocumentInPage_.swap(other.fullTextOfDocumentInPage_);
 //      snippetTextOfDocumentInPage_.swap(other.snippetTextOfDocumentInPage_);
@@ -535,7 +535,7 @@ public:
     MSGPACK_DEFINE(
             rawQueryString_, encodingType_, collectionName_, analyzedQuery_,
             queryTermIdList_, totalCount_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
-            topKCustomRankScoreList_, propertyRange_, start_, count_, topKPostionList_, propertyQueryTermList_, fullTextOfDocumentInPage_,
+            topKCustomRankScoreList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_, fullTextOfDocumentInPage_,
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             numberOfDuplicatedDocs_, numberOfSimilarDocs_, docCategories_,
             tg_input, taxonomyString_, numOfTGDocs_, taxonomyLevel_, tgDocIdList_,

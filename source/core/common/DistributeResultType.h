@@ -125,10 +125,10 @@ public:
         ss << endl;
         ss << "page start_    : " << start_ << " count_   : " << count_ << endl;
         ss << endl;
-        ss << "topKPostionList_          : " << topKPostionList_.size() << endl;
-        for (size_t i = 0; i < topKPostionList_.size(); i ++)
+        ss << "pageOffsetList_          : " << pageOffsetList_.size() << endl;
+        for (size_t i = 0; i < pageOffsetList_.size(); i ++)
         {
-            ss << topKPostionList_[i] << ", ";
+            ss << pageOffsetList_[i] << ", ";
         }
         ss << endl << endl;
 
@@ -198,8 +198,8 @@ public:
     /// @brief number of documents in current page
     std::size_t count_;
 
-    /// Temporary, for merging in-page results: recorded the postions in overall results, for in-page docs in this node.
-    std::vector<size_t> topKPostionList_;
+    /// For results in page in one node, indicates corresponding postions in that page result.
+    std::vector<size_t> pageOffsetList_;
 
     /// property query terms
     std::vector<std::vector<izenelib::util::UString> > propertyQueryTermList_;
@@ -237,7 +237,7 @@ public:
     MSGPACK_DEFINE(
         distSearchInfo_, rawQueryString_, encodingType_, collectionName_, analyzedQuery_,
         queryTermIdList_, totalCount_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
-        topKCustomRankScoreList_, propertyRange_, start_, count_, topKPostionList_, propertyQueryTermList_,
+        topKCustomRankScoreList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_,
         onto_rep_, groupRep_, attrRep_);
 };
 
