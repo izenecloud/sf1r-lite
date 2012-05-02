@@ -81,7 +81,9 @@ int main(int ac, char** av)
                     const std::string& property_name = p->first;
                     std::string property_value;
                     p->second.convertString(property_value, izenelib::util::UString::UTF_8);
-                    std::cout<<property_name<<":"<<property_value<<std::endl;
+                    std::cout<<"<"<<property_name<<">"<<std::endl;
+                    std::cout<<p->second<<std::endl;
+                    std::cout<<property_value<<std::endl;
                 }
             }
             if(n%100000==0)

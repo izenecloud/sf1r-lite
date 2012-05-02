@@ -604,6 +604,7 @@ void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
     START_PROFILER ( proScdParsingN );
     static const uint8_t min = 1;
     static const uint8_t max = 20;
+    static const std::string white_spaces(" \f\n\r\t\v");
 
     std::string property_name;
     std::stringstream property_value;
@@ -611,14 +612,27 @@ void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
     std::string line;
     while( getline(ss, line) )
     {
-        if(line.empty()) continue;
+        //boost::algorithm::trim_right(line);
+        std::size_t line_len = line.length();
+        std::size_t pos = line.find_last_not_of( white_spaces );
+        if(pos==std::string::npos)
+        {
+            line_len = 0;
+        }
+        else
+        {
+            line_len = pos+1;
+        }
+        if(line_len==0) continue;
+        bool all_valid = (line_len==line.length())?true:false;
+        //LOG(INFO)<<"find line:"<<line_len<<std::endl;
         std::string pname;
         std::string pname_left;
         //to find pname here
         if(line[0]=='<')
         {
             std::size_t right_index = 0;
-            for(std::size_t i=1;i<line.length();i++)
+            for(std::size_t i=1;i<line_len;i++)
             {
                 char c = line[i];
                 if(c=='>')
@@ -643,9 +657,9 @@ void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
                     if(pname_set_.empty() || pname_set_.find(pname)!=pname_set_.end())
                     {
                         //LOG(INFO)<<"find pname : "<<pname<<","<<pname.length()<<std::endl;
-                        if( right_index<line.length() )
+                        if( right_index<line_len-1 )
                         {
-                            pname_left = line.substr(right_index+1, std::string::npos);
+                            pname_left = line.substr(right_index+1, line_len-right_index-1);
                         }
                     }
                     else
@@ -660,7 +674,14 @@ void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
 
         if(pname.empty())// not a pname line
         {
-            property_value << "\n" << line;
+            if(!all_valid)
+            {
+                property_value << "\n" << line.substr(0, line_len);
+            }
+            else
+            {
+                property_value << "\n" << line;
+            }
         }
         else
         {

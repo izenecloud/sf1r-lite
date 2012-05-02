@@ -16,17 +16,17 @@ namespace sf1r {
 
         B5MPropertyList(const std::string& env_name, const std::vector<std::string>& default_value)
         {
-            char* env_char = getenv(env_name.c_str());
-            if(env_char==NULL)
-            {
-                value = default_value;
-            }
-            else
-            {
-                std::string env_value(env_char);
-                std::cout<<"get env "<<env_name<<" : <"<<env_value<<">"<<std::endl;
-                boost::algorithm::split( value, env_value, boost::algorithm::is_any_of(",") );
-            }
+            //char* env_char = getenv(env_name.c_str());
+            //if(env_char==NULL)
+            //{
+            //    value = default_value;
+            //}
+            //else
+            //{
+            //    std::string env_value(env_char);
+            //    std::cout<<"get env "<<env_name<<" : <"<<env_value<<">"<<std::endl;
+            //    boost::algorithm::split( value, env_value, boost::algorithm::is_any_of(",") );
+            //}
         }
     };
 
