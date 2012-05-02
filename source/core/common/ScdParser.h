@@ -80,9 +80,7 @@ public:
     public:
         iterator(long offset);
 
-        iterator(ScdParser* pScdParser, unsigned int start_doc);
-
-        iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList);
+        iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList = std::vector<std::string>());
 
         iterator(const iterator& other);
 
@@ -112,7 +110,7 @@ public:
         void preProcessDoc(string& strDoc);
 
 
-        void parseDoc(const std::string& str, SCDDoc* doc);
+        void parseDoc(std::string& str, SCDDoc* doc);
 
     private:
         std::ifstream* pfs_;

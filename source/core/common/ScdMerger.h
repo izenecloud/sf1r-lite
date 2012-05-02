@@ -150,7 +150,7 @@ public:
             std::cout<<"X Processing "<<scd_file<<std::endl;
             int type = ScdParser::checkSCDType(scd_file);
             parser.load(scd_file);
-            for (ScdParser::iterator doc_iter = parser.begin(propertyNameList_); doc_iter != parser.end(); ++doc_iter)
+            for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
             {
                 ++n;
                 if(n%100000==0)

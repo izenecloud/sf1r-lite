@@ -847,7 +847,7 @@ bool IndexWorker::insertOrUpdateSCD_(
     Document document;
     IndexerDocument indexDocument;
 
-    for (ScdParser::iterator doc_iter = parser.begin(propertyList_);
+    for (ScdParser::iterator doc_iter = parser.begin();
             doc_iter != parser.end(); ++doc_iter, ++n)
     {
         if (*doc_iter == NULL)

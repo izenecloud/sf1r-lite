@@ -473,30 +473,6 @@ ScdParser::iterator::iterator(long offset)
 {
 }
 
-ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
-    : pfs_(&pScdParser->fs_)
-    , prevOffset_(0)
-    , offset_(0)
-    , codingType_(pScdParser->getEncodingType())
-    , buffer_(new izenelib::util::izene_streambuf)
-    , docDelimiter_(pScdParser->docDelimiter_)
-{
-    pfs_->clear();
-    std::size_t readLen = izenelib::util::izene_read_until(*pfs_,*buffer_,docDelimiter_);
-    if (readLen)
-    {
-        buffer_->consume(readLen);
-        prevOffset_ += readLen;
-        doc_.reset(getDoc());
-        operator+=(start_doc);
-    }
-    else
-    {
-        offset_ = prevOffset_ = -1;
-    }
-
-}
-
 ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList)
     : pfs_(&pScdParser->fs_)
     , prevOffset_(0)
@@ -607,13 +583,12 @@ long ScdParser::iterator::getOffset()
     return offset_;
 }
 
-void ScdParser::iterator::parseDoc(const std::string& str, SCDDoc* doc)
+void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
 {
     if (str == docDelimiter_) return;
 
     //CREATE_PROFILER ( proScdParsing2, "ScdParser", "ScdParsing::getDoc::2");
     //CREATE_PROFILER ( proScdParsing3, "ScdParser", "ScdParsing::getDoc::3");
-    CREATE_PROFILER ( proScdParsingN, "ScdParser", "ScdParsing::getDoc::N");
     //START_PROFILER ( proScdParsing2 );
     ///// It's recommended to handle this processing in application by which SCD is created.
     //preProcessDoc(str);
@@ -625,6 +600,7 @@ void ScdParser::iterator::parseDoc(const std::string& str, SCDDoc* doc)
     //STOP_PROFILER ( proScdParsing3 );
 
     //new start
+    CREATE_PROFILER ( proScdParsingN, "ScdParser", "ScdParsing::getDoc::N");
     START_PROFILER ( proScdParsingN );
     static const uint8_t min = 1;
     static const uint8_t max = 20;
@@ -734,6 +710,18 @@ SCDDoc* ScdParser::iterator::getDoc()
     SCDDoc* doc = new SCDDoc;
     STOP_PROFILER ( proScdParsing1 );
     parseDoc(str, doc);
+    //if(true)
+    //{
+        //std::vector<std::pair<std::string, izenelib::util::UString> >::iterator p;
+
+        //for (p = doc->begin(); p != doc->end(); p++)
+        //{
+            //const std::string& property_name = p->first;
+            //std::string property_value;
+            //p->second.convertString(property_value, izenelib::util::UString::UTF_8);
+            //std::cout<<property_name<<":"<<property_value<<std::endl;
+        //}
+    //}
     return doc;
 }
 
