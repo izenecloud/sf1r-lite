@@ -40,6 +40,18 @@ const boost::regex PATTERN_EOL("\n|\r\n|\r|$");
 
 /** format string for "<>" */
 const char* FORMAT_LT_GT = "(?1<)(?2>)";
+
+/** remove the trailing '\r' */
+inline void removeTrailCarriageReturn(std::string& str)
+{
+    std::size_t length = str.size();
+
+    if (length > 0 && str[--length] == '\r')
+    {
+        str.resize(length);
+    }
+}
+
 }
 
 struct scd_grammar

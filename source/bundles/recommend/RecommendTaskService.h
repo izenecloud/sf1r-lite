@@ -161,8 +161,6 @@ public:
     UpdateRecommendWorker* updateRecommendWorker() { return updateRecommendWorker_; }
 
 private:
-    void initProps_();
-
     /**
      * Convert from @p orderItemVec to @p itemIdVec.
      * @return true for success, false for failure.
@@ -254,10 +252,6 @@ private:
 private:
     RecommendBundleConfiguration& bundleConfig_;
     directory::DirectoryRotator& directoryRotator_;
-
-    // property list used in loading SCD
-    std::vector<string> userProps_;
-    std::vector<string> orderProps_;
 
     UserManager& userManager_;
     ItemManager& itemManager_;
