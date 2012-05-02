@@ -4,6 +4,7 @@ matcher:
         synonym: ../synonym
         cma: ../../../icma/db/icwb/utf8
         category: ../category.rb
+        simhash_dic: simhash_dic
         work_dir: ./b5m_test_dir/working
         tmp_dir: tmp
         result: match_result

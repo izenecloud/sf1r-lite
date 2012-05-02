@@ -296,31 +296,11 @@ RecommendTaskService::RecommendTaskService(
             LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
         }
     }
-
-    initProps_();
 }
 
 RecommendTaskService::~RecommendTaskService()
 {
     izenelib::util::Scheduler::removeJob(cronJobName_);
-}
-
-void RecommendTaskService::initProps_()
-{
-    const std::vector<RecommendProperty>& userSchema = bundleConfig_.recommendSchema_.userSchema_;
-    for (std::vector<RecommendProperty>::const_iterator it = userSchema.begin();
-        it != userSchema.end(); ++it)
-    {
-        userProps_.push_back(it->propertyName_);
-    }
-    userProps_.push_back(PROP_USERID);
-
-    orderProps_.push_back(PROP_USERID);
-    orderProps_.push_back(PROP_ITEMID);
-    orderProps_.push_back(PROP_ORDERID);
-    orderProps_.push_back(PROP_DATE);
-    orderProps_.push_back(PROP_QUANTITY);
-    orderProps_.push_back(PROP_PRICE);
 }
 
 bool RecommendTaskService::addUser(const User& user)
@@ -485,7 +465,7 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
     }
 
     int userNum = 0;
-    for (ScdParser::iterator docIter = userParser.begin(userProps_);
+    for (ScdParser::iterator docIter = userParser.begin();
         docIter != userParser.end(); ++docIter)
     {
         if (++userNum % 10000 == 0)
@@ -591,7 +571,7 @@ bool RecommendTaskService::parseOrderSCD_(const std::string& scdPath)
 
     int orderNum = 0;
     OrderMap orderMap;
-    for (ScdParser::iterator docIter = orderParser.begin(orderProps_);
+    for (ScdParser::iterator docIter = orderParser.begin();
         docIter != orderParser.end(); ++docIter)
     {
         if (updateRecommendWorker_ && ++orderNum % 10000 == 0)

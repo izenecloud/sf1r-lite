@@ -47,31 +47,22 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
     std::vector<std::string> scd_list;
     B5MHelper::GetIScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
+    PidDictionary dic;
+    dic.Load(dic_path_);
+    std::size_t dic_start_size = dic.Size();
+    LOG(INFO)<<"pid dictionary size: "<<dic_start_size<<std::endl;
+    if(dic_start_size<1) return false;
 
-    //boost::unordered_set<DocIdType> processed;
-    //std::string processed_file = knowledge_dir+"/processed";
-    //izenelib::am::ssf::Reader<> processed_reader(processed_file);
-    //uint32_t processed_count = 0;
-    //if(processed_reader.Open())
-    //{
-        //std::string str_id;
-        //while(processed_reader.Next(str_id))
-        //{
-            ////processed.insert(B5MHelper::StringToUint128(str_id));
-            //processed.insert(str_id);
-            //processed_count++;
-        //}
-    //}
-    //processed_reader.Close();
-    //LOG(INFO)<<"load "<<processed_count<<" processed_count"<<std::endl;
     std::string work_dir = knowledge_dir+"/work_dir";
 
     //boost::filesystem::remove_all(work_dir);
     boost::filesystem::create_directories(work_dir);
     std::string dd_container = work_dir +"/dd_container";
-    std::string group_table_file = work_dir +"/group_table";
-    GroupTableType group_table(group_table_file);
-    group_table.Load();
+    //std::string group_table_file = work_dir +"/group_table";
+    //GroupTableType group_table(group_table_file);
+    //group_table.Load();
+    GroupTableType group_table(&dic);
+
     DDType dd(dd_container, &group_table);
     dd.SetFixK(3);
     //dd.SetMaxProcessTable(40);
@@ -154,77 +145,69 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             }
             //dd.InsertDoc(docid, terms, weights, attach);
             dd.InsertDoc(id, terms, weights, attach);
-            //processed.insert(id);
-            //new_id_set.insert(docid);
-            //ValueType value;
-            //doc["DOCID"].convertString(value.soid, UString::UTF_8);
-            //value.title = doc["Title"];
-            //values.push_back(value);
-            //++docid;
         }
     }
     dd.RunDdAnalysis();
     //LOG(INFO)<<"values size "<<values.size()<<std::endl;
     std::string match_file = knowledge_dir+"/match";
     std::ofstream ofs(match_file.c_str());
-    const std::vector<std::vector<std::string> >& group_info = group_table.GetGroupInfo();
-    for(uint32_t gid=0;gid<group_info.size();gid++)
+    const GroupTableType::ResultType& result = group_table.result;
+    for(GroupTableType::ResultType::const_iterator it = result.begin(); it!=result.end();++it)
     {
-        const std::vector<std::string>& in_group = group_info[gid];
-        //std::vector<uint32_t> new_in_group;
-        //bool has_new = false;
-        //for(uint32_t i=0;i<in_group.size();i++)
+        boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+        ofs<<it->first<<","<<it->second.second<<","<<boost::posix_time::to_iso_string(now)<<std::endl;
+
+    }
+    std::size_t dic_end_size = dic.Size();
+    LOG(INFO)<<"after dic size: "<<dic_end_size<<std::endl;
+    if(dic_start_size!=dic_end_size)
+    {
+        dic.Save(dic_path_);
+    }
+    //const std::vector<std::vector<std::string> >& group_info = group_table.GetGroupInfo();
+    //for(uint32_t gid=0;gid<group_info.size();gid++)
+    //{
+        //std::vector<std::string> in_group = group_info[gid];
+        //std::sort(in_group.begin(), in_group.end());
+
+        //std::string pid_str;
+        //if(dic_!=NULL)
         //{
-            //if(new_id_set.find(in_group[i])!=new_id_set.end())
+            //for(uint32_t i=0;i<in_group.size();i++)
             //{
-                //has_new = true;
-                //break;
+                //if(dic_->Exist(in_group[i]))
+                //{
+                    //pid_str = in_group[i];
+                    //break;
+                //}
             //}
         //}
-        //if(has_new)
+        //else
         //{
-            //new_in_group.assign(in_group.begin(), in_group.end());
+            //izenelib::util::UString pid_text("groupid-"+boost::lexical_cast<std::string>(gid), izenelib::util::UString::UTF_8);
+            //uint128_t pid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash128(pid_text);
+            //pid_str = B5MHelper::Uint128ToString(pid);
         //}
-        //if(new_in_group.empty()) continue;
-        //std::vector<ValueType> vec(new_in_group.size());
-        //for(uint32_t i=0;i<new_in_group.size();i++)
+        ////for(uint32_t i=0;i<vec.size();i++)
+        ////{
+            ////std::string soid = vec[i].soid;
+            ////std::string stitle;
+            ////vec[i].title.convertString(stitle, UString::UTF_8);
+            ////boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+            ////ofs<<soid<<","<<pid_str<<","<<boost::posix_time::to_iso_string(now)<<","<<stitle<<std::endl;
+        ////}
+        //for(uint32_t i=0;i<in_group.size();i++)
         //{
-            //uint32_t docid = new_in_group[i];
-            ////LOG(INFO)<<"find new docid "<<docid<<std::endl;
-            //uint32_t index = docid-fp_count;
-            //vec[i] = values[index];
-        //}
-        //std::stable_sort(vec.begin(), vec.end());
-
-        izenelib::util::UString pid_text("groupid-"+boost::lexical_cast<std::string>(gid), izenelib::util::UString::UTF_8);
-        uint128_t pid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash128(pid_text);
-        std::string pid_str = B5MHelper::Uint128ToString(pid);
-        //for(uint32_t i=0;i<vec.size();i++)
-        //{
-            //std::string soid = vec[i].soid;
-            //std::string stitle;
-            //vec[i].title.convertString(stitle, UString::UTF_8);
+            //std::string output_pid = pid_str;
+            //if(output_pid.empty())
+            //{
+                //output_pid = in_group[i];//set to itself
+            //}
             //boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
-            //ofs<<soid<<","<<pid_str<<","<<boost::posix_time::to_iso_string(now)<<","<<stitle<<std::endl;
+            //ofs<<in_group[i]<<","<<output_pid<<","<<boost::posix_time::to_iso_string(now)<<","<<gid<<std::endl;
         //}
-        for(uint32_t i=0;i<in_group.size();i++)
-        {
-            boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
-            ofs<<in_group[i]<<","<<pid_str<<","<<boost::posix_time::to_iso_string(now)<<","<<gid<<std::endl;
-        }
-    }
-    ofs.close();
-    //boost::filesystem::remove_all(processed_file);
-    //processed_count = 0;
-    //izenelib::am::ssf::Writer<> processed_writer(processed_file);
-    //processed_writer.Open();
-    //for(boost::unordered_set<DocIdType>::const_iterator it=processed.begin();it!=processed.end();++it)
-    //{
-        //processed_writer.Append(*it);
-        //processed_count++;
     //}
-    //processed_writer.Close();
-    //LOG(INFO)<<"write "<<processed_count<<" processed_count"<<std::endl;
+    ofs.close();
 
     {
         std::ofstream ofs(done_file.c_str());

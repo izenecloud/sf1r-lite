@@ -48,6 +48,7 @@ int main(int ac, char** av)
         ("category-regex,R", po::value<std::string>(), "specify category regex string")
         ("output-match,O", po::value<std::string>(), "specify output match path")
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
+        ("dictionary", po::value<std::string>(), "specify dictionary path")
         ("logserver-config,L", po::value<std::string>(), "log server config string")
         ("exclude,E", "do not generate non matched categories")
         ("scd-split,P", "split scd files for each categories.")
@@ -77,6 +78,7 @@ int main(int ac, char** av)
     boost::shared_ptr<LogServerConnectionConfig> logserver_config;
     std::string synonym_file;
     std::string category_regex_str;
+    std::string dictionary;
     std::string cma_path = IZENECMA_KNOWLEDGE ;
     std::string work_dir;
     std::string name;
@@ -155,6 +157,10 @@ int main(int ac, char** av)
     {
         cma_path = vm["cma-path"].as<std::string>();
     }
+    if(vm.count("dictionary"))
+    {
+        dictionary = vm["dictionary"].as<std::string>();
+    }
     if(vm.count("work-dir"))
     {
         work_dir = vm["work-dir"].as<std::string>();
@@ -224,12 +230,14 @@ int main(int ac, char** av)
     }
     else if(vm.count("similarity-match"))
     {
-        if( scd_path.empty() || knowledge_dir.empty() )
+        if( scd_path.empty() || knowledge_dir.empty() || dictionary.empty())
         {
             return EXIT_FAILURE;
         }
         SimilarityMatcher matcher;
         matcher.SetCmaPath(cma_path);
+        PidDictionary dic;
+        matcher.SetPidDictionary(dictionary);
         matcher.Index(scd_path, knowledge_dir);
     }
     else if(vm.count("scd-split"))

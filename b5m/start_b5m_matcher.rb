@@ -81,6 +81,7 @@ train_scd = match_path['train_scd']
 scd = match_path['scd']
 comment_scd = match_path['comment_scd']
 cma = match_path['cma']
+simhash_dic = match_path['simhash_dic']
 b5mo_scd = File.join(match_path['b5mo'], "scd", "index")
 b5mp_scd = File.join(match_path['b5mp'], "scd", "index")
 b5mc_scd = File.join(match_path['b5mc'], "scd", "index")
@@ -88,7 +89,7 @@ b5mc_scd = File.join(match_path['b5mc'], "scd", "index")
   FileUtils.mkdir_p(scd_path) unless File.exist?(scd_path)
 end
 matcher_program = File.join(top_dir, "b5m_matcher")
-merger_program = File.join(File.dirname(top_dir), "scripts", "ScdMerger")
+merger_program = B5MPath.scd_merger
 FileUtils.rm_rf("#{match_path['b5m_scd']}")
 FileUtils.rm_rf(work_dir) if doreindex
 FileUtils.mkdir_p(work_dir) unless File.exist?(work_dir)
@@ -179,10 +180,10 @@ end
 if domerge
   if reindex
     puts "reindex!!"
-    system("#{merger_program} #{scd} #{ENV['B5MO_PROPERTY']} #{merged_scd}")
+    system("#{merger_program} -I #{scd} -O #{merged_scd}")
     abort("merge scd failed") unless $?.success?
   else
-    system("#{merger_program} #{scd} #{ENV['B5MO_PROPERTY']} #{merged_scd} --gen-all")
+    system("#{merger_program} -I #{scd} -O #{merged_scd} --gen-all")
     abort("merge scd failed") unless $?.success?
   end
 else
@@ -221,7 +222,7 @@ task_list.each do |task|
   elsif task.type == CategoryTask::SIM
     #do similarity matching
     puts "start similarity matching #{task.cid}"
-    system("#{matcher_program} -I -C #{cma} -S #{raw_scd} -K #{category_dir}")
+    system("#{matcher_program} -I -C #{cma} -S #{raw_scd} -K #{category_dir} --dictionary #{simhash_dic}")
     abort("similarity matching failed") unless $?.success?
   else
     next unless task.info['disable'].nil?
@@ -268,7 +269,7 @@ FileUtils.cp_r(pdb, pdb_in_mdb)
 #merge comment scd
 if dob5mc
   if domerge
-    system("#{merger_program} #{comment_scd} #{ENV['B5MC_PROPERTY']} #{comment_merged_scd}")
+    system("#{merger_program} -I #{comment_scd} -O #{comment_merged_scd}")
     abort("merge comment scd failed") unless $?.success?
   else
     system("cp #{comment_scd}/*.SCD #{comment_merged_scd}/")
@@ -290,7 +291,7 @@ if dob5mc
     system("cp #{last_b5mc_scd}/* #{b5mc_scd_instance}/")
     b5mc_merging = File.join(mdb_instance, "b5mc_merging")
     Dir.mkdir b5mc_merging
-    system("#{merger_program} #{b5mc_scd_instance} #{ENV['B5MC_PROPERTY']} #{b5mc_merging}")
+    system("#{merger_program} -I #{b5mc_scd_instance} -O #{b5mc_merging}")
     FileUtils.rm_rf(b5mc_scd_instance)
     FileUtils.mv(b5mc_merging, b5mc_scd_instance)
   end

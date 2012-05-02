@@ -58,12 +58,18 @@ class ProductPrice
     false
   end
 
+  def f_to_s(f)
+
+    "%.2f" % f
+  end
+
   def to_s
     return "" unless valid
-    return @min.to_s if @min==@max
+    return f_to_s(@min) if @min==@max
 
-    "#{@min}-#{@max}"
+    "#{f_to_s(@min)}-#{f_to_s(@max)}"
   end
+
 
   def clone
     return ProductPrice.new(@min, @max)

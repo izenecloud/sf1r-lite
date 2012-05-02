@@ -107,28 +107,38 @@ void B5MPUueProcessor::Finish()
             {
                 from_to = it->second;
             }
+            if(from_to.from.length()>0)
+            {
+                Document rdoc;
+                rdoc.property("DOCID") = udocid;
+                uint128_t from_id = B5MHelper::StringToUint128(from_to.from);
+                rdoc.property("flag") = FLAG_REMOVE;
+                OfferDb::ValueType ovalue;
+                if(odb_->get(sdocid, ovalue))
+                {
+                    old_source = ovalue.source;
+                    new_source=old_source;
+                    if(!old_source.empty()) rdoc.property("Source") = UString(old_source, UString::UTF_8);
+                }
+                //if(from_to.from!=from_to.to)
+                //{
+                //}
+                writer.Append(from_id, rdoc);
+            }
             if(from_to.to.length()>0)
             {
                 uint128_t to_id = B5MHelper::StringToUint128(from_to.to);
                 doc.property("flag") = FLAG_APPEND;
-                doc.getString("Source", new_source);
-                writer.Append(to_id, doc);
-            }
-            if(from_to.from.length()>0)
-            {
-                doc.clear();
-                doc.property("DOCID") = udocid;
-                uint128_t from_id = B5MHelper::StringToUint128(from_to.from);
-                doc.property("flag") = FLAG_REMOVE;
-                if(from_to.from!=from_to.to)
+                std::string doc_source;
+                if(doc.getString("Source", doc_source))
                 {
-                    OfferDb::ValueType ovalue;
-                    odb_->get(sdocid, ovalue);
-                    old_source = ovalue.source;
-                    if(new_source.empty()) new_source=old_source;
-                    if(!old_source.empty()) doc.property("Source") = UString(old_source, UString::UTF_8);
+                    new_source = doc_source;
                 }
-                writer.Append(from_id, doc);
+                else if(new_source.length()>0)
+                {
+                    doc.property("Source") = UString(new_source, UString::UTF_8);
+                }
+                writer.Append(to_id, doc);
             }
             //TODO update odb here;
             bool need_update_odb = false;
@@ -196,7 +206,7 @@ void B5MPUueProcessor::Finish()
             {
                 //LOG(INFO)<<"-= on pid "<<pid<<std::endl;
                 //LOG(INFO)<<"before -= "<<new_product.ToString()<<std::endl;
-                //LOG(INFO)<<"-= "<<pp.ToString()<<std::endl;
+                LOG(INFO)<<"-= "<<pp.ToString()<<std::endl;
                 new_product -= pp;
                 //LOG(INFO)<<"after -= "<<new_product.ToString()<<std::endl;
             }
@@ -281,6 +291,26 @@ void B5MPUueProcessor::Finish()
             if(product.source!=new_product.source)
             {
                 need_db_update = true;
+            }
+            if(new_product.itemcount==1 && product.itemcount==1)
+            {
+                for(uint32_t i=0;i<docs.size();i++)
+                {
+                    uint64_t flag = 0;
+                    docs[i].getProperty("flag", flag);
+                    if(flag==FLAG_APPEND)
+                    {
+                        for(Document::property_const_iterator pit = docs[i].propertyBegin(); pit!=docs[i].propertyEnd(); ++pit)
+                        {
+                            const std::string& pname = pit->first;
+                            if(pname=="Title" || pname=="Url" || pname=="Picture" || pname=="Content")
+                            {
+                                doc.property(pname) = pit->second;
+                                need_scd_update = true;
+                            }
+                        }
+                    }
+                }
             }
             if(need_scd_update)
             {

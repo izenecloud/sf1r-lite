@@ -8,6 +8,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/unordered_set.hpp>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -79,9 +80,7 @@ public:
     public:
         iterator(long offset);
 
-        iterator(ScdParser* pScdParser, unsigned int start_doc);
-
-        iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList);
+        iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList = std::vector<std::string>());
 
         iterator(const iterator& other);
 
@@ -110,6 +109,9 @@ public:
         /// It's recommended to handle this processing in application by which SCD is created
         void preProcessDoc(string& strDoc);
 
+
+        void parseDoc(std::string& str, SCDDoc* doc);
+
     private:
         std::ifstream* pfs_;
 
@@ -126,6 +128,8 @@ public:
         std::string docDelimiter_;
 
         std::vector<string> propertyNameList_;
+
+        boost::unordered_set<std::string> pname_set_;
     };  // class iterator
 
     class cached_iterator : public boost::iterator_facade<cached_iterator, SCDDocPtr const, boost::forward_traversal_tag>

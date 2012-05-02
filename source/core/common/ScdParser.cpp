@@ -6,6 +6,7 @@
 #include <util/ustring/UString.h>
 #include <util/profiler/ProfilerGroup.h>
 #include <util/fileno.hpp>
+#include <glog/logging.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -39,6 +40,18 @@ const boost::regex PATTERN_EOL("\n|\r\n|\r|$");
 
 /** format string for "<>" */
 const char* FORMAT_LT_GT = "(?1<)(?2>)";
+
+/** remove the trailing '\r' */
+inline void removeTrailCarriageReturn(std::string& str)
+{
+    std::size_t length = str.size();
+
+    if (length > 0 && str[--length] == '\r')
+    {
+        str.resize(length);
+    }
+}
+
 }
 
 struct scd_grammar
@@ -472,30 +485,6 @@ ScdParser::iterator::iterator(long offset)
 {
 }
 
-ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
-    : pfs_(&pScdParser->fs_)
-    , prevOffset_(0)
-    , offset_(0)
-    , codingType_(pScdParser->getEncodingType())
-    , buffer_(new izenelib::util::izene_streambuf)
-    , docDelimiter_(pScdParser->docDelimiter_)
-{
-    pfs_->clear();
-    std::size_t readLen = izenelib::util::izene_read_until(*pfs_,*buffer_,docDelimiter_);
-    if (readLen)
-    {
-        buffer_->consume(readLen);
-        prevOffset_ += readLen;
-        doc_.reset(getDoc());
-        operator+=(start_doc);
-    }
-    else
-    {
-        offset_ = prevOffset_ = -1;
-    }
-
-}
-
 ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList)
     : pfs_(&pScdParser->fs_)
     , prevOffset_(0)
@@ -518,6 +507,11 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, con
     else
     {
         offset_ = prevOffset_ = -1;
+    }
+
+    for(uint32_t i=0;i<propertyNameList_.size();i++)
+    {
+        pname_set_.insert(propertyNameList_[i]);
     }
 }
 
@@ -601,13 +595,130 @@ long ScdParser::iterator::getOffset()
     return offset_;
 }
 
+void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
+{
+    if (str == docDelimiter_) return;
+
+    //CREATE_PROFILER ( proScdParsing2, "ScdParser", "ScdParsing::getDoc::2");
+    //CREATE_PROFILER ( proScdParsing3, "ScdParser", "ScdParsing::getDoc::3");
+    //START_PROFILER ( proScdParsing2 );
+    ///// It's recommended to handle this processing in application by which SCD is created.
+    //preProcessDoc(str);
+    //STOP_PROFILER ( proScdParsing2 );
+
+    //START_PROFILER ( proScdParsing3 );
+    //scd_grammar g(*doc, codingType_);
+    //parse_info<> pi = parse(str.c_str(), g, space_p);
+    //STOP_PROFILER ( proScdParsing3 );
+
+    //new start
+    CREATE_PROFILER ( proScdParsingN, "ScdParser", "ScdParsing::getDoc::N");
+    START_PROFILER ( proScdParsingN );
+    static const uint8_t min = 1;
+    static const uint8_t max = 20;
+    static const std::string white_spaces(" \f\n\r\t\v");
+
+    std::string property_name;
+    std::stringstream property_value;
+    std::stringstream ss(str);
+    std::string line;
+    while( getline(ss, line) )
+    {
+        //boost::algorithm::trim_right(line);
+        std::size_t line_len = line.length();
+        std::size_t pos = line.find_last_not_of( white_spaces );
+        if(pos==std::string::npos)
+        {
+            line_len = 0;
+        }
+        else
+        {
+            line_len = pos+1;
+        }
+        if(line_len==0) continue;
+        bool all_valid = (line_len==line.length())?true:false;
+        //LOG(INFO)<<"find line:"<<line_len<<std::endl;
+        std::string pname;
+        std::string pname_left;
+        //to find pname here
+        if(line[0]=='<')
+        {
+            std::size_t right_index = 0;
+            for(std::size_t i=1;i<line_len;i++)
+            {
+                char c = line[i];
+                if(c=='>')
+                {
+                    right_index = i;
+                    break;
+                }
+                else if( (c>='a'&&c<='z') || (c>='A'&&c<='Z') )
+                {
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if(right_index>0)
+            {
+                std::size_t len = right_index-1;
+                if(len>=min && len<=max)
+                {
+                    pname = line.substr(1, len);
+                    if(pname_set_.empty() || pname_set_.find(pname)!=pname_set_.end())
+                    {
+                        //LOG(INFO)<<"find pname : "<<pname<<","<<pname.length()<<std::endl;
+                        if( right_index<line_len-1 )
+                        {
+                            pname_left = line.substr(right_index+1, line_len-right_index-1);
+                        }
+                    }
+                    else
+                    {
+                        //LOG(INFO)<<"invalid pname : "<<pname<<std::endl;
+                        pname.clear();
+                    }
+                          
+                }
+            }
+        }
+
+        if(pname.empty())// not a pname line
+        {
+            if(!all_valid)
+            {
+                property_value << "\n" << line.substr(0, line_len);
+            }
+            else
+            {
+                property_value << "\n" << line;
+            }
+        }
+        else
+        {
+            if(!property_name.empty())
+            {
+                doc->push_back(std::make_pair( property_name, izenelib::util::UString(property_value.str(), codingType_)));
+            }
+            property_name.clear();
+            property_value.str("");
+            property_name = pname;
+            property_value << pname_left;
+        }
+    }
+    if(!property_name.empty())
+    {
+        doc->push_back(std::make_pair( property_name, izenelib::util::UString(property_value.str(), codingType_)));
+    }
+    STOP_PROFILER ( proScdParsingN );
+}
+
 SCDDoc* ScdParser::iterator::getDoc()
 {
     CREATE_SCOPED_PROFILER ( proScdParsing, "ScdParser", "ScdParsing::getDoc");
     CREATE_PROFILER ( proScdParsing0, "ScdParser", "ScdParsing::getDoc::0");
     CREATE_PROFILER ( proScdParsing1, "ScdParser", "ScdParsing::getDoc::1");
-    CREATE_PROFILER ( proScdParsing2, "ScdParser", "ScdParsing::getDoc::2");
-    CREATE_PROFILER ( proScdParsing3, "ScdParser", "ScdParsing::getDoc::3");
 
     START_PROFILER ( proScdParsing0 );
     std::size_t readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
@@ -631,19 +742,19 @@ SCDDoc* ScdParser::iterator::getDoc()
     }
     SCDDoc* doc = new SCDDoc;
     STOP_PROFILER ( proScdParsing1 );
-    if (str == docDelimiter_)
-        return doc;
+    parseDoc(str, doc);
+    //if(true)
+    //{
+        //std::vector<std::pair<std::string, izenelib::util::UString> >::iterator p;
 
-    START_PROFILER ( proScdParsing2 );
-    /// It's recommended to handle this processing in application by which SCD is created.
-    preProcessDoc(str);
-    STOP_PROFILER ( proScdParsing2 );
-
-    START_PROFILER ( proScdParsing3 );
-    scd_grammar g(*doc, codingType_);
-    parse_info<> pi = parse(str.c_str(), g, space_p);
-    STOP_PROFILER ( proScdParsing3 );
-
+        //for (p = doc->begin(); p != doc->end(); p++)
+        //{
+            //const std::string& property_name = p->first;
+            //std::string property_value;
+            //p->second.convertString(property_value, izenelib::util::UString::UTF_8);
+            //std::cout<<property_name<<":"<<property_value<<std::endl;
+        //}
+    //}
     return doc;
 }
 
