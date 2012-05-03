@@ -443,7 +443,17 @@ bool SearchWorker::getSummaryResult_(
 
     if (resultItem.count_ > 0)
     {
-        getResultItem(actionItem, resultItem.topKDocs_, resultItem.propertyQueryTermList_, resultItem);
+        // id of documents in current page
+        std::vector<sf1r::docid_t> docsInPage;
+        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_%bundleConfig_->topKNum_;
+        for (size_t i = 0 ; it != resultItem.topKDocs_.end() && i < resultItem.count_; i++, it++)
+        {
+          docsInPage.push_back(*it);
+        }
+        resultItem.count_ = docsInPage.size();
+
+        getResultItem(actionItem, docsInPage, resultItem.propertyQueryTermList_, resultItem);    
+        //getResultItem(actionItem, resultItem.topKDocs_, resultItem.propertyQueryTermList_, resultItem);
     }
 
     STOP_PROFILER ( getSummary );
