@@ -65,6 +65,9 @@ bool IndexSearchService::getSearchResult(
     distResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_CARRIED_INFO;
 #endif
 
+    typedef std::map<workerid_t, KeywordSearchResult> ResultMapT;
+    typedef ResultMapT::iterator ResultMapIterT;
+
     QueryIdentity identity;
     // For distributed search, as it should merge the results over all nodes,
     // the topK start offset is fixed to zero
@@ -85,17 +88,14 @@ bool IndexSearchService::getSearchResult(
         resultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_MASTER;
 
         // Get and aggregate Summary, Mining results from multiple nodes.
-        typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > ResultMapT;
-        typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator ResultMapIterT;
-
         ResultMapT resultMap;
         searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
         RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
         for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
         {
             workerid_t workerid = it->first;
-            boost::shared_ptr<KeywordSearchResult>& subResultItem = it->second;
-            requestGroup.addRequest(workerid, &actionItem, subResultItem.get());
+            KeywordSearchResult& subResultItem = it->second;
+            requestGroup.addRequest(workerid, &actionItem, &subResultItem);
         }
 
         searchAggregator_->distributeRequest(
@@ -108,17 +108,14 @@ bool IndexSearchService::getSearchResult(
         resultItem.setStartCount(actionItem.pageInfo_);
         resultItem.adjustStartCount(topKStart);
 
-        typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> > ResultMapT;
-        typedef std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >::iterator ResultMapIterT;
-
         ResultMapT resultMap;
         searchMerger_->splitSearchResultByWorkerid(resultItem, resultMap);
         RequestGroup<KeywordSearchActionItem, KeywordSearchResult> requestGroup;
         for (ResultMapIterT it = resultMap.begin(); it != resultMap.end(); it++)
         {
             workerid_t workerid = it->first;
-            boost::shared_ptr<KeywordSearchResult>& subResultItem = it->second;
-            requestGroup.addRequest(workerid, &actionItem, subResultItem.get());
+            KeywordSearchResult& subResultItem = it->second;
+            requestGroup.addRequest(workerid, &actionItem, &subResultItem);
         }
 
         searchAggregator_->distributeRequest(
@@ -146,8 +143,8 @@ bool IndexSearchService::getDocumentsByIds(
     }
 
     /// Perform distributed search by aggregator
-    typedef std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> > ActionItemMapT;
-    typedef std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >::iterator ActionItemMapIterT;
+    typedef std::map<workerid_t, GetDocumentsByIdsActionItem> ActionItemMapT;
+    typedef ActionItemMapT::iterator ActionItemMapIterT;
 
     ActionItemMapT actionItemMap;
     if (!searchMerger_->splitGetDocsActionItemByWorkerid(actionItem, actionItemMap))
@@ -160,8 +157,8 @@ bool IndexSearchService::getDocumentsByIds(
         for (ActionItemMapIterT it = actionItemMap.begin(); it != actionItemMap.end(); it++)
         {
             workerid_t workerid = it->first;
-            boost::shared_ptr<GetDocumentsByIdsActionItem>& subActionItem = it->second;
-            requestGroup.addRequest(workerid, subActionItem.get());
+            GetDocumentsByIdsActionItem& subActionItem = it->second;
+            requestGroup.addRequest(workerid, &subActionItem);
         }
 
         searchAggregator_->distributeRequest(actionItem.collectionName_, "getDocumentsByIds", requestGroup, resultItem);

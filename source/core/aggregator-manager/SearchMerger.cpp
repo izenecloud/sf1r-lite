@@ -8,6 +8,7 @@
 #include <mining-manager/taxonomy-generation-submanager/TaxonomyGenerationSubManager.h>
 
 #include <algorithm> // min
+#include <vector>
 
 namespace sf1r
 {
@@ -178,26 +179,13 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
 
 void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
 {
-    size_t subResultNum = workerResults.size();
+    const size_t workerNum = workerResults.size();
 
-    if (subResultNum <= 0)
+    if (workerNum == 0)
         return;
 
-    size_t pageCount = 0;
-    for (size_t i = 0; i < subResultNum; i++)
-    {
-        pageCount += workerResults.result(i).count_;
-    }
-    if (mergeResult.count_ > pageCount)
-    {
-        mergeResult.count_ = pageCount;
-    }
-    else
-    {
-        pageCount = mergeResult.count_;
-    }
-
-    size_t displayPropertyNum = workerResults.result(0).snippetTextOfDocumentInPage_.size(); //xxx
+    size_t pageCount = mergeResult.count_;
+    size_t displayPropertyNum = workerResults.result(0).snippetTextOfDocumentInPage_.size();
     size_t isSummaryOn = workerResults.result(0).rawTextOfSummaryInPage_.size();
 
     // initialize summary info for result
@@ -216,47 +204,39 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
         mergeResult.rawTextOfSummaryInPage_[dis].resize(pageCount);
     }
 
-    // merge
-    // each sub result provided part of docs for result page, and they kept the doc postions
-    // in topKDocs of result for that page.
-    size_t curSub;
-    size_t* iter = new size_t[subResultNum];
-    memset(iter, 0, sizeof(size_t)*subResultNum);
-
-    for (size_t i = 0, pos = mergeResult.start_; i < pageCount; i++, pos++)
+    std::vector<std::size_t> workerOffsetVec(workerNum);
+    for (size_t i = 0; i < pageCount; ++i)
     {
-        curSub = size_t(-1);
-        for (size_t sub = 0; sub < subResultNum; sub++)
+        std::size_t curWorker = 0;
+        while (curWorker < workerNum)
         {
-            const std::vector<size_t>& subTopKPosList = workerResults.result(sub).topKPostionList_;
-            if (iter[sub] < subTopKPosList.size() && subTopKPosList[iter[sub]] == pos)
-            {
-                curSub = sub;
+            const std::size_t workerOffset = workerOffsetVec[curWorker];
+            const std::vector<std::size_t>& pageOffsetList = workerResults.result(curWorker).pageOffsetList_;
+
+            if (workerOffset < pageOffsetList.size() && pageOffsetList[workerOffset] == i)
                 break;
-            }
+
+            ++curWorker;
         }
 
-        if (curSub == size_t(-1))
+        if (curWorker == workerNum)
             break;
-        //cout << "index,pos:" << i <<","<< pos <<"   curSub:"<< curSub<<"  iter[curSub]:" << iter[curSub]<<endl;
 
-        // get a result
-        const KeywordSearchResult& subResult = workerResults.result(curSub);
-        for (size_t dis = 0; dis < displayPropertyNum; dis++)
+        const KeywordSearchResult& workerResult = workerResults.result(curWorker);
+        std::size_t& workerOffset = workerOffsetVec[curWorker];
+
+        for (size_t dis = 0; dis < displayPropertyNum; ++dis)
         {
-            mergeResult.snippetTextOfDocumentInPage_[dis][i] = subResult.snippetTextOfDocumentInPage_[dis][iter[curSub]];
-            mergeResult.fullTextOfDocumentInPage_[dis][i] = subResult.fullTextOfDocumentInPage_[dis][iter[curSub]];
+            mergeResult.snippetTextOfDocumentInPage_[dis][i] = workerResult.snippetTextOfDocumentInPage_[dis][workerOffset];
+            mergeResult.fullTextOfDocumentInPage_[dis][i] = workerResult.fullTextOfDocumentInPage_[dis][workerOffset];
         }
-        for (size_t dis = 0; dis < isSummaryOn; dis++)
+        for (size_t dis = 0; dis < isSummaryOn; ++dis)
         {
-            mergeResult.rawTextOfSummaryInPage_[dis][i] = subResult.rawTextOfSummaryInPage_[dis][iter[curSub]];
+            mergeResult.rawTextOfSummaryInPage_[dis][i] = workerResult.rawTextOfSummaryInPage_[dis][workerOffset];
         }
 
-        // next
-        iter[curSub] ++;
+        ++workerOffset;
     }
-
-    delete[] iter;
 }
 
 void SearchMerger::getSummaryMiningResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
@@ -382,55 +362,36 @@ void SearchMerger::clickGroupLabel(const net::aggregator::WorkerResults<bool>& w
     }
 }
 
-bool SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap)
+void SearchMerger::splitSearchResultByWorkerid(const KeywordSearchResult& totalResult, std::map<workerid_t, KeywordSearchResult>& resultMap)
 {
-    const std::vector<uint32_t>& topKWorkerIds = result.topKWorkerIds_;
-    if (topKWorkerIds.size() <= 0)
+    std::size_t i = 0;
+    std::size_t topKOffset = totalResult.start_;
+
+    while (i < totalResult.count_)
     {
-        return false;
+        workerid_t curWorkerId = totalResult.topKWorkerIds_[topKOffset];
+        KeywordSearchResult& workerResult = resultMap[curWorkerId];
+
+        if (workerResult.count_ == 0)
+        {
+            workerResult.propertyQueryTermList_ = totalResult.propertyQueryTermList_;
+        }
+
+        workerResult.topKDocs_.push_back(totalResult.topKDocs_[topKOffset]);
+        workerResult.topKWorkerIds_.push_back(curWorkerId);
+        workerResult.pageOffsetList_.push_back(i);
+        ++workerResult.count_;
+
+        ++i;
+        ++topKOffset;
     }
-
-    // split docs of current page by worker
-    boost::shared_ptr<KeywordSearchResult> subResult;
-    for (size_t i = 0; i < topKWorkerIds.size(); i ++)
-    {
-        workerid_t curWorkerid = topKWorkerIds[i];
-        if (resultMap.find(curWorkerid) == resultMap.end())
-        {
-            subResult.reset(new KeywordSearchResult());
-            // xxx, here just copy info needed for getting summary, mining result.
-            subResult->start_ = size_t(-1);
-            subResult->count_ = 0;
-            subResult->propertyQueryTermList_ = result.propertyQueryTermList_;
-            resultMap.insert(std::make_pair(curWorkerid, subResult));
-        }
-        else
-        {
-            subResult = resultMap[curWorkerid];
-        }
-
-        subResult->topKDocs_.push_back(result.topKDocs_[i]);
-        subResult->topKWorkerIds_.push_back(curWorkerid);
-
-        if (i >= result.start_ && i < result.start_+result.count_)
-        {
-            subResult->topKPostionList_.push_back(i);
-            if (subResult->start_ == size_t(-1))
-            {
-                subResult->start_ = subResult->topKDocs_.size() - 1;
-            }
-            subResult->count_ += 1;
-        }
-    }
-
-    return true;
 }
 
 bool SearchMerger::splitGetDocsActionItemByWorkerid(
     const GetDocumentsByIdsActionItem& actionItem,
-    std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap)
+    std::map<workerid_t, GetDocumentsByIdsActionItem>& actionItemMap)
 {
-    if (actionItem.idList_.size() <= 0)
+    if (actionItem.idList_.empty())
         return false;
 
     std::vector<sf1r::docid_t> idList;
@@ -438,23 +399,18 @@ bool SearchMerger::splitGetDocsActionItemByWorkerid(
     actionItem.getDocWorkerIdLists(idList, workeridList);
 
     // split
-    boost::shared_ptr<GetDocumentsByIdsActionItem> subActionItem;
     for (size_t i = 0; i < workeridList.size(); i++)
     {
         workerid_t& curWorkerid = workeridList[i];
-        if (actionItemMap.find(curWorkerid) == actionItemMap.end())
+        GetDocumentsByIdsActionItem& subActionItem = actionItemMap[curWorkerid];
+
+        if (subActionItem.idList_.empty())
         {
-            subActionItem.reset(new GetDocumentsByIdsActionItem());
-            *subActionItem = actionItem;
-            subActionItem->idList_.clear();
-            actionItemMap.insert(std::make_pair(curWorkerid, subActionItem));
-        }
-        else
-        {
-            subActionItem = actionItemMap[curWorkerid];
+            subActionItem = actionItem;
+            subActionItem.idList_.clear();
         }
 
-        subActionItem->idList_.push_back(actionItem.idList_[i]);
+        subActionItem.idList_.push_back(actionItem.idList_[i]);
     }
 
     return true;

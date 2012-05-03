@@ -53,11 +53,10 @@ public:
 
     /**
      * Split data by workerid to sub data for requesting different workers.
-     * @param result [IN]
+     * @param totalResult [IN]
      * @param resultList [OUT]
-     * @return true if successfully splited, or false.
      */
-    bool splitSearchResultByWorkerid(const KeywordSearchResult& result, std::map<workerid_t, boost::shared_ptr<KeywordSearchResult> >& resultMap);
+    void splitSearchResultByWorkerid(const KeywordSearchResult& totalResult, std::map<workerid_t, KeywordSearchResult>& resultMap);
 
     /**
      *
@@ -67,7 +66,7 @@ public:
      */
     bool splitGetDocsActionItemByWorkerid(
         const GetDocumentsByIdsActionItem& actionItem,
-        std::map<workerid_t, boost::shared_ptr<GetDocumentsByIdsActionItem> >& actionItemMap);
+        std::map<workerid_t, GetDocumentsByIdsActionItem>& actionItemMap);
 
 private:
     std::size_t TOP_K_NUM;
