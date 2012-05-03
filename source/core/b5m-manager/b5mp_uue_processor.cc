@@ -189,8 +189,6 @@ void B5MPUueProcessor::Finish()
         {
             uint64_t flag = 0;
             docs[i].getProperty("flag", flag);
-            std::string sprice;
-            docs[i].getString("Price", sprice);
             ProductProperty pp(docs[i]);
             if(flag==FLAG_APPEND)
             {
@@ -292,22 +290,20 @@ void B5MPUueProcessor::Finish()
             {
                 need_db_update = true;
             }
-            if(new_product.itemcount==1 && product.itemcount==1)
+            //do update on extra properties
+            for(uint32_t i=0;i<docs.size();i++)
             {
-                for(uint32_t i=0;i<docs.size();i++)
+                uint64_t flag = 0;
+                docs[i].getProperty("flag", flag);
+                if(flag==FLAG_APPEND)
                 {
-                    uint64_t flag = 0;
-                    docs[i].getProperty("flag", flag);
-                    if(flag==FLAG_APPEND)
+                    for(Document::property_const_iterator pit = docs[i].propertyBegin(); pit!=docs[i].propertyEnd(); ++pit)
                     {
-                        for(Document::property_const_iterator pit = docs[i].propertyBegin(); pit!=docs[i].propertyEnd(); ++pit)
+                        const std::string& pname = pit->first;
+                        if(pname=="Title" || pname=="Url" || pname=="Picture" || pname=="Content")
                         {
-                            const std::string& pname = pit->first;
-                            if(pname=="Title" || pname=="Url" || pname=="Picture" || pname=="Content")
-                            {
-                                doc.property(pname) = pit->second;
-                                need_scd_update = true;
-                            }
+                            doc.property(pname) = pit->second;
+                            need_scd_update = true;
                         }
                     }
                 }
