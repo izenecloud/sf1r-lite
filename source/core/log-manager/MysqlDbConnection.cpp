@@ -1,6 +1,7 @@
 #include "MysqlDbConnection.h"
 
 #include <vector>
+#include <sstream>
 
 #include <boost/lexical_cast.hpp>
 
@@ -94,27 +95,28 @@ bool MysqlDbConnection::init(const std::string& str )
         }
         mysql_options(mysql, MYSQL_SET_CHARSET_NAME, default_charset.c_str());
 
+        my_bool reconnect = 1;
+        if (mysql_options(mysql, MYSQL_OPT_RECONNECT, &reconnect))
+        {
+            fprintf(stderr, "mysql_options MYSQL_OPT_RECONNECT failed : %d: %s\n", mysql_errno(mysql), mysql_error(mysql));
+            mysql_close(mysql);
+            return false;
+        }
+
+        std::ostringstream initCommand;
+        initCommand << "SET NAMES utf8; "
+                    << "create database IF NOT EXISTS " << database << " default character set utf8; "
+                    << "use " << database << "; ";
+        if (mysql_options(mysql, MYSQL_INIT_COMMAND, initCommand.str().c_str()))
+        {
+            fprintf(stderr, "mysql_options MYSQL_INIT_COMMAND failed : %d: %s\n", mysql_errno(mysql), mysql_error(mysql));
+            mysql_close(mysql);
+            return false;
+        }
+
         if (!mysql_real_connect(mysql, host.c_str(), username.c_str(), password.c_str(), NULL, port, NULL, flags))
         {
             fprintf(stderr, "Couldn't connect mysql : %d:(%s) %s\n", mysql_errno(mysql), mysql_sqlstate(mysql), mysql_error(mysql));
-            mysql_close(mysql);
-            return false;
-        }
-
-        mysql_query(mysql, "SET NAMES utf8");
-
-        std::string create_db_query = "create database IF NOT EXISTS "+database+" default character set utf8";
-        if ( mysql_query(mysql, create_db_query.c_str())>0 )
-        {
-            fprintf(stderr, "Error %u: %s\n", mysql_errno(mysql), mysql_error(mysql));
-            mysql_close(mysql);
-            return false;
-        }
-
-        std::string use_db_query = "use "+database;
-        if ( mysql_query(mysql, use_db_query.c_str())>0 )
-        {
-            fprintf(stderr, "Error %u: %s\n", mysql_errno(mysql), mysql_error(mysql));
             mysql_close(mysql);
             return false;
         }
