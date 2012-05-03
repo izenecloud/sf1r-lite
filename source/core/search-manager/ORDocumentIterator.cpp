@@ -43,6 +43,8 @@ void ORDocumentIterator::initDocIteratorQueue()
                 pDocIteratorQueue_->insert(pDocIterator);
            else
            {
+               ///Mark here!
+               ///If a DocumentIterator does not contain member, remove it from docIteratorList_
                *iter = NULL;
                delete pDocIterator;
            }

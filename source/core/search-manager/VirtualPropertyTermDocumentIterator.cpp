@@ -27,7 +27,7 @@ void VirtualPropertyTermDocumentIterator::doc_item(
 {
     if(propIndex >= docIteratorList_.size()) return;
     DocumentIterator* pEntry = docIteratorList_[propIndex];
-    if(pEntry->isCurrent())
+    if(pEntry&&pEntry->isCurrent())
         pEntry->doc_item(rankDocumentProperty);	
 }
 
