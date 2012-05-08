@@ -211,9 +211,21 @@ void LogAnalysisController::user_queries()
     string limit = asString(request()[Keys::limit]);
     vector<UserQuery> results;
     std::list< std::map<std::string, std::string> > sqlResults;
+    static const time_t refreshInterval = 24 * 60 * 60;
 
     if (existAggregateFunc)
     {
+        typedef std::pair<time_t, std::list<std::map<std::string, std::string> > > user_queries_cache_value_type;
+        typedef izenelib::cache::IzeneCache<
+            std::string,
+            user_queries_cache_value_type,
+            izenelib::util::ReadWriteLock,
+            izenelib::cache::RDE_HASH,
+            izenelib::cache::LRLFU
+        > user_queries_cache_type;
+        static user_queries_cache_type user_queries_cache;
+        user_queries_cache_value_type user_queries;
+
         std::stringstream sql;
 
         sql << "select " << (select.size() ? select : "*");
@@ -236,16 +248,44 @@ void LogAnalysisController::user_queries()
         }
         sql << ";";
 
-        if ( !UserQuery::find_by_sql(sql.str(), sqlResults) )
-        {
-            response().addError("[LogManager] Fail to process such a request");
-            return;
+        if(!user_queries_cache.getValueNoInsert(sql.str(), user_queries)
+                || ((std::time(NULL) - user_queries.first) > refreshInterval) ){
+            if ( !UserQuery::find_by_sql(sql.str(), sqlResults) )
+            {
+                response().addError("[LogManager] Fail to process such a request");
+                return;
+            }else{
+                user_queries_cache.updateValue(sql.str(), std::make_pair(std::time(NULL), sqlResults));
+            }
+        }else{
+            sqlResults = user_queries.second;
         }
     }
-    else if ( !UserQuery::find(select, conditions, group, order, limit, results) )
-    {
-        response().addError("[LogManager] Fail to process such a request");
-        return;
+    else{
+        typedef std::pair<time_t, std::vector<UserQuery> > user_queries_cache_value_type;
+        typedef izenelib::cache::IzeneCache<
+            std::string,
+            user_queries_cache_value_type,
+            izenelib::util::ReadWriteLock,
+            izenelib::cache::RDE_HASH,
+            izenelib::cache::LRLFU
+        > user_queries_cache_type;
+        static user_queries_cache_type user_queries_cache;
+        user_queries_cache_value_type user_queries;
+        string cache_key = select + conditions + group + order + limit;
+
+        if(!user_queries_cache.getValueNoInsert(cache_key, user_queries)
+                || ((std::time(NULL) - user_queries.first) > refreshInterval) ){
+            if ( !UserQuery::find(select, conditions, group, order, limit, results) )
+            {
+                response().addError("[LogManager] Fail to process such a request");
+                return;
+            }else{
+                user_queries_cache.updateValue(cache_key, std::make_pair(std::time(NULL), results));
+            }
+        }else{
+            results = user_queries.second;
+        }
     }
 
     Value& userQueries = response()[Keys::user_queries];
