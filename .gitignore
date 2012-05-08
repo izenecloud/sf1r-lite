@@ -20,6 +20,7 @@ dump
 dump.*
 cscope.out
 cscope.files
+cscope*out
 *_flymake.rb
 *.start
 *.result.yaml
