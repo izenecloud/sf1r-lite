@@ -922,22 +922,19 @@ bool IndexWorker::createUpdateDocId_(
         docid_t& oldId,
         docid_t& newId)
 {
-    bool result = false;
-
     if (rType)
     {
         //if ((result = idManager_->getDocIdByDocName(scdDocId, oldId, false)))
         //Duplicate with checkRtype_
         {
             newId = oldId;
+            return true;
         }
     }
     else
     {
-        result = idManager_->updateDocIdByDocName(scdDocId, oldId, newId);
+        return idManager_->updateDocIdByDocName(scdDocId, oldId, newId);
     }
-
-    return result;
 }
 
 bool IndexWorker::createInsertDocId_(
