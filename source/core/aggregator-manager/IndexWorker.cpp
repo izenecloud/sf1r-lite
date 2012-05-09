@@ -235,6 +235,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         {
             // loops the list of SCD files that belongs to this collection
             long proccessedFileSize = 0;
+            idManager_->warmUp();
             for (scd_it = scdList.begin(); scd_it != scdList.end(); scd_it++)
             {
                 size_t pos = scd_it ->rfind("/")+1;
@@ -309,6 +310,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
                 if(!hooker_->FinishHook())
                 {
                     std::cout<<"[IndexWorker] Hooker Finish failed."<<std::endl;
+                    idManager_->coolDown();
                     return false;
                 }
                 std::cout<<"[IndexWorker] Hooker Finished."<<std::endl;
@@ -320,12 +322,15 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
                 miningTaskService_->DoMiningCollection();
                 indexManager_->resumeMerge();
             }
+
+            idManager_->coolDown();
         }
         catch (std::exception& e)
         {
             LOG(WARNING) << "exception in indexing or mining: " << e.what();
             indexProgress_.getIndexingStatus(indexStatus_);
             indexProgress_.reset();
+            idManager_->coolDown();
             return false;
         }
         indexManager_->getIndexReader();
@@ -400,6 +405,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     docid_t maxDocId = documentManager->getMaxDocId();
     docid_t curDocId = 0;
     docid_t insertedCount = 0;
+    idManager_->warmUp();
     for (curDocId = minDocId; curDocId <= maxDocId; curDocId++)
     {
         if (documentManager->isDeleted(curDocId))
@@ -472,6 +478,8 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         miningTaskService_->DoMiningCollection();
         indexManager_->resumeMerge();
     }
+
+    idManager_->coolDown();
 
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
@@ -1343,8 +1351,8 @@ bool IndexWorker::prepareDocument_(
 }
 
 bool IndexWorker::completePartialDocument_(
-        docid_t oldId, 
-        Document& doc, 
+        docid_t oldId,
+        Document& doc,
         IndexerDocument& indexDocument)
 {
     ///For update (not rtype update)
@@ -1778,7 +1786,7 @@ bool IndexWorker::preparePartialDocument_(
 }
 
 bool IndexWorker::checkRtype_(
-	const uint128_t& scdDocId,
+        const uint128_t& scdDocId,
         SCDDoc& doc,
         docid_t& oldId,
         std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
