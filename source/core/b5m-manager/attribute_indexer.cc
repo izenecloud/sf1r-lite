@@ -28,23 +28,23 @@ AttributeIndexer::AttributeIndexer()
 
 AttributeIndexer::~AttributeIndexer()
 {
-    if(index_!=NULL) 
+    if(index_!=NULL)
     {
         index_->close();
         delete index_;
     }
-    if(id_manager_!=NULL) 
+    if(id_manager_!=NULL)
     {
         id_manager_->close();
         delete id_manager_;
     }
 
-    if(name_index_!=NULL) 
+    if(name_index_!=NULL)
     {
         name_index_->close();
         delete name_index_;
     }
-    if(name_id_manager_!=NULL) 
+    if(name_id_manager_!=NULL)
     {
         name_id_manager_->close();
         delete name_id_manager_;
@@ -274,7 +274,7 @@ void AttributeIndexer::AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const i
                 //bool valid = false;
                 //if(i>0 && i<term_list.size()-1)
                 //{
-                    //if(term_list[i-1].tag==idmlib::util::IDMTermTag::NUM 
+                    //if(term_list[i-1].tag==idmlib::util::IDMTermTag::NUM
                       //|| term_list[i+1].tag==idmlib::util::IDMTermTag::NUM)
                     //{
                         //valid = true;
@@ -582,14 +582,14 @@ void AttributeIndexer::GenNegativeIdMap_(std::map<std::size_t, std::vector<std::
             std::size_t index = indexlist_in_category[p];
             ProductDocument& cdoc = product_list_[index];
             if( index==i ) continue;
-            if( doc.tag_aid_list== cdoc.tag_aid_list ) 
+            if( doc.tag_aid_list== cdoc.tag_aid_list )
             {
                 std::cout<<"[duplicate] ("<<i<<","<<index<<") "<<doc.property["DOCID"]<<","<<cdoc.property["DOCID"]<<std::endl;
                 continue;
             }
             std::vector<std::pair<AttribNameId, double> > n_feature_vec;
             FeatureStatus fs;
-            GetFeatureVector_(doc.aid_list, cdoc.tag_aid_list, n_feature_vec, fs); 
+            GetFeatureVector_(doc.aid_list, cdoc.tag_aid_list, n_feature_vec, fs);
             uint32_t nznum = fs.pnum+fs.nnum;
             if(nznum==0)
             {
@@ -740,13 +740,13 @@ void AttributeIndexer::GenClassiferInstance()
                     }
                     logger_<<std::endl;
                 }
-                
+
             }
 #endif
         }
 
     }
-    
+
 
     ofs.close();
 }
@@ -758,21 +758,21 @@ bool AttributeIndexer::TrainSVM()
     struct svm_problem problem;
     struct svm_model* model;
     struct svm_node* x_space;
-	param.svm_type = C_SVC;
-	param.kernel_type = RBF;
-	param.degree = 3;
-	param.gamma = 0.0;	// 1/num_features
-	param.coef0 = 0;
-	param.nu = 0.5;
-	param.cache_size = 100;
-	param.C = 32;
-	param.eps = 1e-3;
-	param.p = 0.1;
-	param.shrinking = 1;
-	param.probability = 0;
-	param.nr_weight = 0;
-	param.weight_label = NULL;
-	param.weight = NULL;
+    param.svm_type = C_SVC;
+    param.kernel_type = RBF;
+    param.degree = 3;
+    param.gamma = 0.0;	// 1/num_features
+    param.coef0 = 0;
+    param.nu = 0.5;
+    param.cache_size = 100;
+    param.C = 32;
+    param.eps = 1e-3;
+    param.p = 0.1;
+    param.shrinking = 1;
+    param.probability = 0;
+    param.nr_weight = 0;
+    param.weight_label = NULL;
+    param.weight = NULL;
     std::string instance_file = knowledge_dir_+"/instances";
     std::string model_file = knowledge_dir_+"/model";
     if(!boost::filesystem::exists(instance_file))
@@ -821,7 +821,7 @@ bool AttributeIndexer::TrainSVM()
             {
                 std::cout<<"invalid line : "<<i+1<<std::endl;
                 return false;
-                
+
             }
             x_space[n].index = boost::lexical_cast<int>(node_pair[0]);
             x_space[n].value = boost::lexical_cast<double>(node_pair[1]);
@@ -830,7 +830,7 @@ bool AttributeIndexer::TrainSVM()
                 max_index = x_space[n].index;
             }
             ++n;
-            
+
         }
         x_space[n++].index = -1;
     }
@@ -993,7 +993,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
             ProductPrice price;
             price.Parse(odoc.property["Price"]);
             if(!price.Valid()) continue;
-            
+
             std::vector<std::size_t>& pindexlist = ci_it->second;
             std::vector<AttribId> aid_list;
             GetAttribIdList(category, title, aid_list);
@@ -1213,7 +1213,7 @@ void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
             int predict_label = predict_value>0.5?1:0;
             std::cout<<predict_label<<"#"<<predict_value<<std::endl;
         }
-    } 
+    }
 }
 
 bool AttributeIndexer::SplitScd(const std::string& scd_file)
@@ -1445,7 +1445,7 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
                 nav.clear();
             }
             if(nav.length()==0) continue;
-            AttribRep rep = GetAttribRep(category, attrib_name, nav); 
+            AttribRep rep = GetAttribRep(category, attrib_name, nav);
             AttribId aid;
             id_manager_->getDocIdByDocName(rep, aid);
             AttribRep name_rep = GetAttribRep(category, attrib_name);
@@ -1487,9 +1487,11 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
             //}
 
         }
-        std::sort(product_doc.tag_aid_list.begin(), product_doc.tag_aid_list.end()); 
+        std::sort(product_doc.tag_aid_list.begin(), product_doc.tag_aid_list.end());
         product_list_.push_back(product_doc);
     }
+    id_manager_->flush();
+    name_id_manager_->flush();
     LOG(INFO)<<"Generated "<<product_list_.size()<<" docs"<<std::endl;
     //already got tag_aid_list, now build others
     std::vector<double> anid_weight(name_id_manager_->getMaxDocId()+1, 0.0);
@@ -1760,4 +1762,3 @@ bool AttributeIndexer::ValidAnid_(const AttribNameId& anid)
     }
     return false;
 }
-

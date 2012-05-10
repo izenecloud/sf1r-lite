@@ -32,7 +32,7 @@ private:
             izenelib::ir::idmanager::EmptyWildcardQueryHandler<std::string, itemid_t>,
             izenelib::ir::idmanager::EmptyIDGenerator<std::string, itemid_t>,
             izenelib::ir::idmanager::EmptyIDStorage<std::string, itemid_t>,
-            izenelib::ir::idmanager::UniqueIDGenerator<std::string, itemid_t, izenelib::util::ReadWriteLock>,
+            izenelib::ir::idmanager::OldUniqueIDGenerator<std::string, itemid_t, izenelib::util::ReadWriteLock>,
             izenelib::ir::idmanager::SDBIDStorage<std::string, itemid_t, izenelib::util::ReadWriteLock> > IDManagerType;
 
     IDManagerType idManager_;

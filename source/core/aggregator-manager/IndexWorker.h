@@ -122,25 +122,25 @@ private:
     bool fetchSCDFromLogServer(const std::string& scdPath);
 
     bool deleteSCD_(
-            ScdParser& parser, 
+            ScdParser& parser,
             time_t timestamp
     );
 
     bool insertDoc_(
-            Document& document, 
-            IndexerDocument& indexDocument, 
+            Document& document,
+            IndexerDocument& indexDocument,
             time_t timestamp
     );
 
     bool updateDoc_(
-            Document& document, 
-            IndexerDocument& indexDocument, 
-            time_t timestamp, 
+            Document& document,
+            IndexerDocument& indexDocument,
+            time_t timestamp,
             bool rType
     );
 
     bool deleteDoc_(
-            docid_t docid, 
+            docid_t docid,
             time_t timestamp
     );
 
@@ -161,15 +161,15 @@ private:
     );
 
     bool completePartialDocument_(
-            docid_t oldId, 
-            Document& doc, 
+            docid_t oldId,
+            Document& doc,
             IndexerDocument& indexDocument
     );
 
     bool prepareIndexDocument_(
-            docid_t oldId, 
+            docid_t oldId,
             time_t timestamp,
-            const Document& document, 
+            const Document& document,
             IndexerDocument& indexDocument
     );
 
