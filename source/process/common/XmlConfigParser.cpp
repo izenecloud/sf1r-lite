@@ -1634,9 +1634,9 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             {
                 getAttribute(it.Get(), "name", property_name);
                 bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                if (!gottype || property_type != INT_PROPERTY_TYPE)
                 {
-                    throw XmlConfigParserException("ScoreProperty ["+property_name+"] used in Summarization is not string type.");
+                    throw XmlConfigParserException("ScoreProperty ["+property_name+"] used in Summarization is not int type.");
                 }
                 mining_schema.summarization_schema.scorePropName = property_name;
             }
