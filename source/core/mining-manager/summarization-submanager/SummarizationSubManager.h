@@ -6,12 +6,9 @@
 #include <configuration-manager/SummarizeConfig.h>
 #include <query-manager/QueryTypeDef.h>
 
-#include <util/ustring/UString.h>
 #include <3rdparty/am/stx/btree_map.h>
 
 #include <boost/shared_ptr.hpp>
-
-#include <string>
 
 namespace idmlib
 {
@@ -32,8 +29,6 @@ class Corpus;
 
 class MultiDocSummarizationSubManager
 {
-    typedef uint128_t KeyType;
-
 public:
     MultiDocSummarizationSubManager(
             const std::string& homePath,
@@ -57,7 +52,7 @@ private:
     bool DoEvaluateSummarization_(
             Summarization& summarization,
             const KeyType& key,
-            const std::map<uint32_t, izenelib::util::UString>& content_map);
+            const CommentCacheItemType& comment_cache_item);
 
     uint32_t GetLastDocid_() const;
 

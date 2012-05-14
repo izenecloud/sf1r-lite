@@ -21,7 +21,6 @@
 #include <glog/logging.h>
 
 #include <iostream>
-#include <vector>
 #include <algorithm>
 
 using izenelib::util::UString;
@@ -116,11 +115,22 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             continue;
 
         const UString& key = kit->second.get<UString>();
+        const UString& content = cit->second.get<UString>();
         std::string key_str;
         key.convertString(key_str, UString::UTF_8);
 
-        const UString& content = cit->second.get<UString>();
-        comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content);
+        Document::property_const_iterator sit = doc.findProperty(schema_.scorePropName);
+        if (sit != doc.propertyEnd())
+        {
+            const UString& score = sit->second.get<UString>();
+            std::string score_str;
+            score.convertString(score_str, UString::UTF_8);
+            comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content, boost::lexical_cast<float>(score_str));
+        }
+        else
+        {
+            comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content, 0.0f);
+        }
 
         if (++count % 100000 == 0)
         {
@@ -138,7 +148,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         {
             const KeyType& key = dirtyKeyIt->first;
 
-            CommentCacheStorage::CommentCacheItemType commentCacheItem;
+            CommentCacheItemType commentCacheItem;
             comment_cache_storage_->Get(key, commentCacheItem);
             if (commentCacheItem.empty())
             {
@@ -165,7 +175,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         Summarization& summarization,
         const KeyType& key,
-        const std::map<uint32_t, UString>& content_map)
+        const CommentCacheItemType& comment_cache_item)
 {
     if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
         return false;
@@ -174,19 +184,32 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
     ilplib::langid::Analyzer* langIdAnalyzer = LAPool::getInstance()->getLangId();
 
+    ScoreType total_score = 0;
+    uint32_t count = 0;
+
     std::string key_str;
     key_str = Utilities::uint128ToUuid(key);
     UString key_ustr(key_str, UString::UTF_8);
     corpus_->start_new_coll(key_ustr);
     corpus_->start_new_doc(); // XXX
 
-    for (std::map<uint32_t, UString>::const_iterator it = content_map.begin();
-            it != content_map.end(); ++it)
+    for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
+            it != comment_cache_item.end(); ++it)
     {
+        if (it->second.second)
+        {
+            ++count;
+            total_score += it->second.second;
+        }
+
+        // Limit the max count of sentences to be summarized
+        if (corpus_->nsents() >= MAX_SENT_COUNT)
+            continue;
+
         // XXX
         // corpus_->start_new_doc();
 
-        const UString& content = it->second;
+        const UString& content = it->second.first;
         UString sentence;
         std::size_t startPos = 0;
         while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
@@ -205,10 +228,6 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
             startPos += len;
         }
-
-        // Limit the max count of sentences to be summarized
-        if (corpus_->nsents() >= MAX_SENT_COUNT)
-            break;
     }
     corpus_->start_new_sent();
     corpus_->start_new_doc();
@@ -246,6 +265,14 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         }
 #endif
         summarization.insertProperty("overview", summary_list);
+
+        if (count)
+        {
+            std::vector<std::pair<double, UString> > score_list(1);
+            score_list[0].first = (double)total_score / (double)count;
+            summarization.insertProperty("avg_score", score_list);
+        }
+
         summarization_storage_->Update(key, summarization);
     }
     corpus_->reset();

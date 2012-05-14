@@ -220,6 +220,7 @@
                 <xs:element name="DocidProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="UuidProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="ContentProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="ScoreProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>

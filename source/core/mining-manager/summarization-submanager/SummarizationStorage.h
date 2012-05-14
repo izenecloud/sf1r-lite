@@ -7,8 +7,6 @@
 
 #include <boost/thread.hpp>
 
-#include <vector>
-
 namespace sf1r
 {
 
