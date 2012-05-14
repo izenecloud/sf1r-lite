@@ -61,6 +61,7 @@ FILE(GLOB mining_SRC
   "mining-manager/ec-submanager/*.cc"
   "mining-manager/summarization-submanager/*.cpp"
   "mining-manager/summarization-submanager/svd/*.c"
+  "mining-manager/merchant-score-manager/*.cpp"
 )
 
 ADD_DEFINITIONS("-fno-strict-aliasing")

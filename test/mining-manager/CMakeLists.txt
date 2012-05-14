@@ -111,6 +111,17 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_ec_manager")
 
+  ADD_EXECUTABLE(t_MerchantScoreManager
+    Runner.cpp
+    t_MerchantScoreManager.cpp
+    MerchantScoreManagerTestFixture.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_MerchantScoreManager ${libs})
+  SET_TARGET_PROPERTIES(t_MerchantScoreManager PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_MerchantScoreManager")
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 INCLUDE_DIRECTORIES(
