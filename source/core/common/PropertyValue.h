@@ -38,14 +38,18 @@ namespace sf1r {
 
 class PropertyValue {
 public:
-
+/*****************************************
+* boost::variant will construct a default value according
+* to the first type. Since izenelib::util::UString is used as
+* default, we should make it locate at first position
+******************************************/
     typedef boost::variant<
+        izenelib::util::UString,
+        std::string,
         int64_t,
         uint64_t,
         float,
         double,
-        std::string,
-        izenelib::util::UString,
         std::vector<izenelib::util::UString>,
         std::vector<uint32_t>
     > variant_type;

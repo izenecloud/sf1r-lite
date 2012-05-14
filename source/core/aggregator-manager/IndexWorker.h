@@ -22,6 +22,7 @@
 #include <ir/index_manager/index/IndexerDocument.h>
 
 #include <util/driver/Value.h>
+#include <3rdparty/am/stx/btree_map.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/variant/get.hpp>
@@ -44,6 +45,18 @@ class SearchWorker;
 class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
 {
     typedef uint32_t CharacterOffset;
+
+    enum UpdateType
+    {
+    INSERT, ///Not update, it's a new document
+    GENERAL, ///General update, equals to del + insert
+    REPLACE, ///Don't need to change index, just adjust DocumentManager
+    RTYPE,  ///RType update to index
+    BADDOC
+    };
+
+    typedef std::pair<std::pair<Document, IndexerDocument >, UpdateType > UpdateBufferDataType;
+    typedef stx::btree_map<docid_t, UpdateBufferDataType > UpdateBufferType;
 
 public:
     IndexWorker(
@@ -105,13 +118,6 @@ private:
             time_t timestamp
     );
 
-    bool createUpdateDocId_(
-            const uint128_t& scdDocId,
-            bool rType,
-            docid_t& oldId,
-            docid_t& newId
-    );
-
     bool createInsertDocId_(
             const uint128_t& scdDocId,
             docid_t& newId
@@ -136,8 +142,17 @@ private:
             Document& document,
             IndexerDocument& indexDocument,
             time_t timestamp,
-            bool rType
+            IndexWorker::UpdateType updateType,
+            bool immediately = false
     );
+
+    bool doUpdateDoc_(
+            Document& document,
+            IndexerDocument& indexDocument,
+            IndexWorker::UpdateType updateType
+    );
+
+    void flushUpdateBuffer_();
 
     bool deleteDoc_(
             docid_t docid,
@@ -153,17 +168,17 @@ private:
             Document& document,
             IndexerDocument& indexDocument,
             docid_t& oldId,
-            bool& rType,
-            std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
             std::string& source,
             time_t& timestamp,
+            UpdateType& updateType,
             bool insert = true
     );
 
-    bool completePartialDocument_(
+    bool mergeDocument_(
             docid_t oldId,
             Document& doc,
-            IndexerDocument& indexDocument
+            IndexerDocument& indexDocument,
+            bool generateIndexDoc
     );
 
     bool prepareIndexDocument_(
@@ -205,12 +220,10 @@ private:
             IndexerDocument& oldIndexDocument
     );
 
-    bool checkRtype_(
+    UpdateType checkUpdateType_(
             const uint128_t& scdDocId,
             SCDDoc& doc,
-            docid_t& oldId,
-            std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
-            bool& isUpdate
+            docid_t& oldId
     );
 
     bool makeSentenceBlocks_(
@@ -277,6 +290,8 @@ private:
     boost::shared_ptr<IndexHooker> hooker_;
 
     size_t totalSCDSizeSinceLastBackup_;
+
+    UpdateBufferType updateBuffer_;
 
     friend class IndexSearchService;
     friend class IndexBundleActivator;
