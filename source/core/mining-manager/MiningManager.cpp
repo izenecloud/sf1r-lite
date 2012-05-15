@@ -32,6 +32,7 @@
 #include "faceted-submanager/ctr_manager.h"
 
 #include "group-label-logger/GroupLabelLogger.h"
+#include "merchant-score-manager/MerchantScoreManager.h"
 
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
@@ -111,6 +112,7 @@ MiningManager::MiningManager(
     , groupManager_(NULL)
     , attrManager_(NULL)
     , groupReranker_(NULL)
+    , merchantScoreManager_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
 {
@@ -121,6 +123,7 @@ MiningManager::~MiningManager()
     if (analyzer_) delete analyzer_;
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
+    if (merchantScoreManager_) delete merchantScoreManager_;
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
     if (groupReranker_) delete groupReranker_;
@@ -399,6 +402,30 @@ bool MiningManager::open()
             groupReranker_->setCTRManager(ctrManager_);
             groupReranker_->setSearchManager(searchManager_);
             searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank, groupReranker_, _1, _2, _3));
+        }
+
+        /** merchant score */
+        if (!mining_schema_.product_ranking_config.merchantPropName.empty() && groupManager_)
+        {
+            if (merchantScoreManager_) delete merchantScoreManager_;
+
+            const bfs::path scoreDir = bfs::path(prefix_path) / "merchant_score";
+            bfs::create_directories(scoreDir);
+
+            const std::string& merchantProp = mining_schema_.product_ranking_config.merchantPropName;
+            faceted::PropValueTable* merchantValueTable = groupManager_->getPropValueTable(merchantProp);
+
+            const std::string& categoryProp = mining_schema_.product_ranking_config.categoryPropName;
+            faceted::PropValueTable* categoryValueTable = groupManager_->getPropValueTable(categoryProp);
+
+            merchantScoreManager_ = new MerchantScoreManager(merchantValueTable, categoryValueTable);
+
+            const std::string scorePath = (scoreDir / "score.txt").string();
+            if (! merchantScoreManager_->open(scorePath))
+            {
+                std::cerr << "open " << scorePath << " failed" << std::endl;
+                return false;
+            }
         }
 
         /** tdt **/

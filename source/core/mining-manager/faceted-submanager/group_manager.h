@@ -55,6 +55,16 @@ public:
         return NULL;
     }
 
+    PropValueTable* getPropValueTable(const std::string& propName)
+    {
+        PropValueMap::iterator it = propValueMap_.find(propName);
+        if (it != propValueMap_.end())
+        {
+            return &(it->second);
+        }
+        return NULL;
+    }
+
 private:
     sf1r::DocumentManager* documentManager_;
     std::string dirPath_;

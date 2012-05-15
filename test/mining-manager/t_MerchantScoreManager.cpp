@@ -8,8 +8,6 @@
 #include "MerchantScoreManagerTestFixture.h"
 #include <boost/test/unit_test.hpp>
 
-using namespace sf1r;
-
 BOOST_FIXTURE_TEST_SUITE(MerchantScoreManagerTest, sf1r::MerchantScoreManagerTestFixture)
 
 BOOST_AUTO_TEST_CASE(testSet)

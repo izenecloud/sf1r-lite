@@ -1798,6 +1798,9 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
     }
 
+    task_node = getUniqChildElement(mining_schema_node, "ProductRanking", false);
+    parseProductRankingNode(task_node, collectionMeta);
+
     task_node = getUniqChildElement(mining_schema_node, "TDT", false);
     mining_schema.tdt_enable = false;
     if (task_node)
@@ -1848,6 +1851,68 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             mining_schema.recommend_querylog = true;
         }
     }
+}
+
+void CollectionConfig::parseProductRankingNode(const ticpp::Element* productRankingNode, CollectionMeta& collectionMeta)
+{
+    if (!productRankingNode)
+        return;
+
+    CollectionParameterConfig params;
+    params.LoadXML(productRankingNode);
+
+    MiningSchema& miningSchema = collectionMeta.miningBundleConfig_->mining_schema_;
+    ProductRankingConfig& productRankingConfig = miningSchema.product_ranking_config;
+
+    params.Get("MerchantProperty/name", productRankingConfig.merchantPropName);
+    params.Get("CategoryProperty/name", productRankingConfig.categoryPropName);
+    params.Get("BoostingSubProperty/name", productRankingConfig.boostingSubPropName);
+
+    const std::vector<GroupConfig>& groupProps = miningSchema.group_properties;
+    checkStringGroupProperty(productRankingConfig.merchantPropName, groupProps);
+    checkStringGroupProperty(productRankingConfig.categoryPropName, groupProps);
+
+    const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
+    checkNumericFilterProperty(productRankingConfig.boostingSubPropName, indexSchema);
+}
+
+void CollectionConfig::checkStringGroupProperty(const std::string& propName, const std::vector<GroupConfig>& groupProps)
+{
+    if (propName.empty())
+        return;
+
+    for (std::vector<GroupConfig>::const_iterator it = groupProps.begin();
+        it != groupProps.end(); ++it)
+    {
+        if (it->propName == propName)
+        {
+            if (it->isStringType())
+                return;
+
+            throw XmlConfigParserException("Property [" + propName + "] in <ProductRanking> is not string type.");
+        }
+    }
+
+    throw XmlConfigParserException("Property [" + propName + "] in <ProductRanking> is not configured in <Group>.");
+}
+
+void CollectionConfig::checkNumericFilterProperty(const std::string& propName, const IndexBundleSchema& indexSchema)
+{
+    if (propName.empty())
+        return;
+
+    PropertyConfig p;
+    p.setName(propName);
+
+    IndexBundleSchema::const_iterator propIt = indexSchema.find(p);
+
+    if (propIt != indexSchema.end() && propIt->isIndex() &&
+        propIt->getIsFilter() && propIt->isNumericType())
+    {
+        return;
+    }
+
+    throw XmlConfigParserException("Property [" + propName + "] in <ProductRanking> is not numeric filter property.");
 }
 
 void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)

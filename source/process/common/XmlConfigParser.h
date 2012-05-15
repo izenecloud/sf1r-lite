@@ -776,6 +776,13 @@ private:
     /// @param mining           Pointer to the Element
     void parseMiningBundleSchema(const ticpp::Element * mining, CollectionMeta & collectionMeta);
 
+    /// @brief                  Parse <MiningBundle> <Schema> <ProductRanking>
+    /// @param productRankingNode Pointer to the Element
+    void parseProductRankingNode(const ticpp::Element* productRankingNode, CollectionMeta& collectionMeta);
+
+    void checkStringGroupProperty(const std::string& propName, const std::vector<GroupConfig>& groupProps);
+    void checkNumericFilterProperty(const std::string& propName, const IndexBundleSchema& indexSchema);
+
     /// @brief                  Parse <RecommendBundle> <Parameter>
     /// @param recParamNode           Pointer to the Element
     void parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta);

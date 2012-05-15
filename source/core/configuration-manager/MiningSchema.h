@@ -4,6 +4,7 @@
 #include "GroupConfig.h"
 #include "AttrConfig.h"
 #include "PropertyRerankConfig.h"
+#include "ProductRankingConfig.h"
 #include "SummarizeConfig.h"
 
 #include <stdint.h>
@@ -47,6 +48,7 @@ private:
         ar & group_enable & group_properties;
         ar & attr_enable & attr_property;
         ar & property_rerank_enable & prop_rerank_property;
+        ar & product_ranking_config;
         ar & tdt_enable;
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
@@ -72,6 +74,9 @@ public:
     AttrConfig attr_property;
     bool property_rerank_enable;
     PropertyRerankConfig prop_rerank_property;
+
+    ProductRankingConfig product_ranking_config;
+
     bool tdt_enable;
 
     bool ise_enable;

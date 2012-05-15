@@ -86,6 +86,7 @@ class DocumentManager;
 class IndexManager;
 class SearchManager;
 class MultiDocSummarizationSubManager;
+class MerchantScoreManager;
 
 namespace sim
 {
@@ -446,6 +447,9 @@ private:
     /** property name => group label click logger */
     typedef std::map<std::string, GroupLabelLogger*> GroupLabelLoggerMap;
     GroupLabelLoggerMap groupLabelLoggerMap_;
+
+    /** Merchant Score */
+    MerchantScoreManager* merchantScoreManager_;
 
     /** TDT */
     std::string tdt_path_;

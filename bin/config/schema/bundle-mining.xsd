@@ -147,6 +147,7 @@
                             <xs:element ref="Group" minOccurs="0"/>
                             <xs:element ref="Attr" minOccurs="0"/>
                             <xs:element ref="Rerank" minOccurs="0"/>
+                            <xs:element ref="ProductRanking" minOccurs="0"/>
                             <xs:element ref="TDT" minOccurs="0"/>
                             <xs:element ref="Summarization" minOccurs="0"/>
                         </xs:sequence>
@@ -262,6 +263,16 @@
                 <xs:element name="Property" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="Boosting" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="BoostingExtraPolicy" type="PropertyType" minOccurs="0" maxOccurs="1"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="ProductRanking">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="MerchantProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="CategoryProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="BoostingSubProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
