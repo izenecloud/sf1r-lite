@@ -10,7 +10,7 @@
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
 
-#include <common/ScdParser.h>
+#include <common/ScdWriter.h>
 #include <common/Utilities.h>
 #include <idmlib/util/idm_analyzer.h>
 
@@ -148,6 +148,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush(true);
 
+    if (!schema_.scoreSCDPath.empty())
+    {
+        score_scd_writer_.reset(new ScdWriter(schema_.scoreSCDPath, UPDATE_SCD));
+    }
+
     {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
@@ -174,6 +179,12 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         }
         summarization_storage_->Flush();
     } //Destroy dirtyKeyIterator before clearing dirtyKeyDB
+
+    if (score_scd_writer_)
+    {
+        score_scd_writer_->Close();
+        score_scd_writer_.reset();
+    }
 
     comment_cache_storage_->ClearDirtyKey();
     LOG(INFO) << "Finish evaluating summarization.";
@@ -263,6 +274,22 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
     if (ret)
     {
+        if (count)
+        {
+            std::vector<std::pair<double, UString> > score_list(1);
+            double avg_score = (double)total_score / (double)count;
+            score_list[0].first = avg_score;
+            summarization.updateProperty("avg_score", score_list);
+
+            if (score_scd_writer_)
+            {
+                Document doc;
+                doc.property("DOCID") = key_ustr;
+                doc.property(schema_.scorePropName) = UString(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
+                score_scd_writer_->Append(doc);
+            }
+        }
+
 #ifdef DEBUG_SUMMARIZATION
         for (uint32_t i = 0; i < summary_list.size(); i++)
         {
@@ -272,13 +299,6 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         }
 #endif
         summarization.updateProperty("overview", summary_list);
-
-        if (count)
-        {
-            std::vector<std::pair<double, UString> > score_list(1);
-            score_list[0].first = (double)total_score / (double)count;
-            summarization.updateProperty("avg_score", score_list);
-        }
 
         summarization_storage_->Update(key, summarization);
     }
