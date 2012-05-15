@@ -149,7 +149,7 @@ private:
         if(oldid > document_list_->size()) return;
         if(r_type && docid>document_list_->size() ) return;
         if(!r_type && docid<=document_list_->size() ) return;
-        BOOST_CHECK( pm_->HookUpdate(doc, index_document, Utilities::createTimeStamp(), r_type) );
+        BOOST_CHECK( pm_->HookUpdate(doc, index_document, Utilities::createTimeStamp()) );
         if(r_type)
         {
             BOOST_CHECK( data_source_->UpdateDocument(docid, doc) );

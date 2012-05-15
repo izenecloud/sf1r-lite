@@ -1,7 +1,8 @@
 #ifndef SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_COMMENT_CACHE_STORAGE_H
 #define SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_COMMENT_CACHE_STORAGE_H
 
-#include <util/ustring/UString.h>
+#include "summarization_types.h"
+
 #include <3rdparty/am/drum/drum.hpp>
 #include <am/leveldb/Table.h>
 #include <am/range/AmIterator.h>
@@ -71,10 +72,6 @@ private:
 class CommentCacheStorage
 {
 public:
-    typedef uint128_t KeyType;
-    typedef izenelib::util::UString ContentType;
-
-    typedef std::map<uint32_t, ContentType> CommentCacheItemType;
     typedef izenelib::drum::Drum<
         KeyType,
         CommentCacheItemType,
@@ -103,7 +100,7 @@ public:
 
     ~CommentCacheStorage();
 
-    void AppendUpdate(const KeyType& key, uint32_t docid, const ContentType& content);
+    void AppendUpdate(const KeyType& key, uint32_t docid, const ContentType& content, const ScoreType& score);
 
     void ExpelUpdate(const KeyType& key, uint32_t docid);
 
@@ -137,7 +134,5 @@ private:
 };
 
 }
-
-MAKE_FEBIRD_SERIALIZATION(sf1r::CommentCacheStorage::CommentCacheItemType)
 
 #endif

@@ -85,6 +85,7 @@
           <DocidProperty name="DOCID"/>
           <UuidProperty name="uuid"/>
           <ContentProperty name="Content"/>
+          <ScoreProperty name="Score"/>
         </Summarization>
 -->
       </Schema>
