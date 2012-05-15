@@ -1,12 +1,9 @@
 #ifndef SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_SUMMARIZATION_H
 #define SF1R_MINING_MANAGER_SUMMARIZATION_SUBMANAGER_SUMMARIZATION_H
 
-#include <common/type_defs.h>
+#include "summarization_types.h"
 
 #include <am/bitmap/Ewah.h>
-
-#include <map>
-#include <string>
 
 namespace sf1r
 {
