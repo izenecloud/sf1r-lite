@@ -123,9 +123,16 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         if (sit != doc.propertyEnd())
         {
             const UString& score = sit->second.get<UString>();
-            std::string score_str;
-            score.convertString(score_str, UString::UTF_8);
-            comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content, boost::lexical_cast<float>(score_str));
+            if (!score.empty())
+            {
+                std::string score_str;
+                score.convertString(score_str, UString::UTF_8);
+                comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content, boost::lexical_cast<float>(score_str));
+            }
+            else
+            {
+                comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content, 0.0f);
+            }
         }
         else
         {
