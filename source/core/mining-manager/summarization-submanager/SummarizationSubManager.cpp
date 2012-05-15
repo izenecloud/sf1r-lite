@@ -271,13 +271,13 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             std::cout << "\t" << sent << std::endl;
         }
 #endif
-        summarization.insertProperty("overview", summary_list);
+        summarization.updateProperty("overview", summary_list);
 
         if (count)
         {
             std::vector<std::pair<double, UString> > score_list(1);
             score_list[0].first = (double)total_score / (double)count;
-            summarization.insertProperty("avg_score", score_list);
+            summarization.updateProperty("avg_score", score_list);
         }
 
         summarization_storage_->Update(key, summarization);
