@@ -226,7 +226,7 @@ void QueryBuilder::prepare_for_wand_property_(
                                              termIndex,
                                              readPositions);
                 pIterator->set( pTermDocReader );
-                pWandScorer->add(propertyId, termIndex, pIterator);
+                pWandScorer->add(pIterator);
                 ++success_properties;
             }
         }
