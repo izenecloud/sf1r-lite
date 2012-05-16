@@ -30,6 +30,8 @@ TARGET_LINK_LIBRARIES(LicenseFileGenerator
   sf1r_query_manager
   sf1r_log_manager
   sf1r_license_manager
+  ${izenelib_LIBRARIES}
+  ${Boost_LIBRARIES}
   sf1r_product_manager
   sf1r_search_manager
   sf1r_directory_manager
@@ -45,11 +47,9 @@ TARGET_LINK_LIBRARIES(LicenseFileGenerator
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
-  ${izenelib_LIBRARIES}
   ${xml2_LIBRARIES}
 
   #external
-  ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
   ${sqlite3_LIBRARIES}
