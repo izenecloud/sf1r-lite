@@ -145,7 +145,7 @@ private:
     void U_(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, bool r_type)
     {
         uint32_t docid = doc.getId();
-        uint32_t oldid = index_document.getId();
+        uint32_t oldid = index_document.getOldId();
         if(oldid > document_list_->size()) return;
         if(r_type && docid>document_list_->size() ) return;
         if(!r_type && docid<=document_list_->size() ) return;

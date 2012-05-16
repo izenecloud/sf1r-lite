@@ -1066,7 +1066,7 @@ bool IndexWorker::updateDoc_(
     /*if(immediately) */return doUpdateDoc_(document,indexDocument,updateType);
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
-    UpdateBufferDataType& updateData = updateBuffer_[indexDocument.getId()];
+    UpdateBufferDataType& updateData = updateBuffer_[indexDocument.getOldId()];
     updateData.first.first.swap(document);
     updateData.first.second.swap(indexDocument);
     updateData.second = updateType;
@@ -1087,7 +1087,7 @@ bool IndexWorker::doUpdateDoc_(
     {
     case GENERAL:
     {
-        uint32_t oldId = indexDocument.getId();
+        uint32_t oldId = indexDocument.getOldId();
         if (!mergeDocument_(oldId, document, indexDocument, true))
             return false;
         if (!documentManager_->removeDocument(oldId))
@@ -1122,7 +1122,7 @@ bool IndexWorker::doUpdateDoc_(
     }
     case REPLACE:
     {
-        uint32_t oldId = indexDocument.getId();
+        uint32_t oldId = indexDocument.getOldId();
         if (!mergeDocument_(oldId, document, indexDocument, false))
             return false;
         return documentManager_->updateDocument(document);
@@ -1279,7 +1279,7 @@ bool IndexWorker::prepareDocument_(
             PropertyValue propData(propertyValueU);
             document.property(fieldStr).swap(propData);
 
-            indexDocument.setId(oldId);
+            indexDocument.setOldId(oldId);
             indexDocument.setDocId(docId, collectionId_);
         }
         else if (boost::iequals(fieldStr,DATE))
@@ -1450,7 +1450,7 @@ bool IndexWorker::prepareIndexDocument_(
 
         if (boost::iequals(fieldStr,DOCID))
         {
-            indexDocument.setId(oldId);
+            indexDocument.setOldId(oldId);
             indexDocument.setDocId(docId, collectionId_);
         }
         else if (boost::iequals(fieldStr,DATE))

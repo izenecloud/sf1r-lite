@@ -119,7 +119,7 @@ public:
         izenelib::util::UString uprice(vec[2], izenelib::util::UString::UTF_8);
         doc.property("Price") = uprice;
         uint32_t oldid = boost::lexical_cast<uint32_t>(vec[3]);
-        index_document.setId(oldid);
+        index_document.setOldId(oldid);
         int ir = boost::lexical_cast<int>(vec[4]);
         r_type = ir>0?true:false;
     }

@@ -137,7 +137,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
 
-    uint32_t fromid = index_document.getId(); //oldid
+    uint32_t fromid = index_document.getOldId(); //oldid
     PMDocumentType from;
     if (!data_source_->GetDocument(fromid, from)) return false;
     UString from_uuid;
