@@ -92,14 +92,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         Document doc;
         document_manager_->getDocument(i, doc);
         Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
-        if (kit == doc.propertyEnd())
-            continue;
+        if (kit == doc.propertyEnd()) continue;
 
         const UString& key = kit->second.get<UString>();
-        std::string key_str;
-        key.convertString(key_str, UString::UTF_8);
-
-        comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key_str), i);
+        if (key.empty()) continue;
+        comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key), i);
     }
 
     for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
@@ -107,17 +104,14 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         Document doc;
         document_manager_->getDocument(i, doc);
         Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
-        if (kit == doc.propertyEnd())
-            continue;
+        if (kit == doc.propertyEnd()) continue;
 
         Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
-        if (cit == doc.propertyEnd())
-            continue;
+        if (cit == doc.propertyEnd()) continue;
 
         const UString& key = kit->second.get<UString>();
+        if (key.empty()) continue;
         const UString& content = cit->second.get<UString>();
-        std::string key_str;
-        key.convertString(key_str, UString::UTF_8);
 
         Document::property_const_iterator sit = doc.findProperty(schema_.scorePropName);
         if (sit != doc.propertyEnd())
@@ -127,16 +121,16 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             {
                 std::string score_str;
                 score.convertString(score_str, UString::UTF_8);
-                comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content, boost::lexical_cast<float>(score_str));
+                comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, boost::lexical_cast<float>(score_str));
             }
             else
             {
-                comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content, 0.0f);
+                comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, 0.0f);
             }
         }
         else
         {
-            comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content, 0.0f);
+            comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, 0.0f);
         }
 
         if (++count % 100000 == 0)
