@@ -1436,6 +1436,35 @@ bool MiningManager::setTopGroupLabel(
     return logger->setTopLabel(query, pvId);
 }
 
+bool MiningManager::getMerchantScore(
+    const std::vector<std::string>& merchantNames,
+    MerchantStrScoreMap& merchantScoreMap
+) const
+{
+    if (! merchantScoreManager_)
+        return false;
+
+    if (merchantNames.empty())
+    {
+        merchantScoreManager_->getAllStrScore(merchantScoreMap);
+    }
+    else
+    {
+        merchantScoreManager_->getStrScore(merchantNames, merchantScoreMap);
+    }
+
+    return true;
+}
+
+bool MiningManager::setMerchantScore(const MerchantStrScoreMap& merchantScoreMap)
+{
+    if (! merchantScoreManager_)
+        return false;
+
+    merchantScoreManager_->setScore(merchantScoreMap);
+    return true;
+}
+
 bool MiningManager::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
 {
     idmlib::tdt::TimeIdType start_date;

@@ -15,12 +15,13 @@ source = File.dirname(File.dirname(File.expand_path(__FILE__)))
 
 driver_source = File.join(source, "core", "common")
 process_source = File.join(source, "process")
+merchant_score_source = File.join(source, "core", "mining-manager", "merchant-score-manager")
 
 keys_inl = File.join(driver_source, "Keys.inl")
 keys_cpp = File.join(driver_source, "Keys.cpp")
 
 files = FileList.new
-[driver_source, process_source].each do |dir|
+[driver_source, process_source, merchant_score_source].each do |dir|
   ["h", "cpp", "inl"].each do |ext|
     files.include File.join(dir, "**", "*.#{ext}")
   end

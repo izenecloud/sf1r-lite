@@ -1,102 +1,15 @@
 #include "MerchantScoreManager.h"
+#include "MerchantScoreParser.h"
+#include "MerchantScoreRenderer.h"
 #include "../faceted-submanager/prop_value_table.h"
-#include "..//MiningException.hpp"
+#include "../MiningException.hpp"
 #include <util/ustring/UString.h>
 
 #include <glog/logging.h>
-#include <fstream>
-#include <sstream>
-#include <boost/algorithm/string/trim.hpp>
 
 namespace
 {
 const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-
-using namespace sf1r;
-
-void printMerchantScore(
-    const MerchantStrScoreMap& strScoreMap,
-    std::ostream& ost
-)
-{
-    const MerchantStrScoreMap::map_t& merchantStrMap = strScoreMap.map;
-
-    for (MerchantStrScoreMap::map_t::const_iterator merchantIt = merchantStrMap.begin();
-        merchantIt != merchantStrMap.end(); ++merchantIt)
-    {
-        const CategoryStrScore& categoryStrScore = merchantIt->second;
-        const CategoryStrScore::CategoryScoreMap& categoryStrMap = categoryStrScore.categoryScoreMap;
-
-        ost << merchantIt->first << "\t" << categoryStrScore.generalScore << std::endl;
-
-        for (CategoryStrScore::CategoryScoreMap::const_iterator categoryIt = categoryStrMap.begin();
-            categoryIt != categoryStrMap.end(); ++categoryIt)
-        {
-            ost << categoryIt->first << "\t" << categoryIt->second << std::endl;
-        }
-
-        ost << std::endl;
-    }
-}
-
-void loadCategoryScore(
-    std::istream& ist,
-    CategoryStrScore& categoryStrScore
-)
-{
-    std::string line;
-    CategoryStrScore::CategoryScoreMap& categoryStrMap = categoryStrScore.categoryScoreMap;
-
-    while (getline(ist, line))
-    {
-        boost::algorithm::trim(line);
-
-        // empty line means the end of current merchant
-        if (line.empty())
-            return;
-
-        istringstream iss(line);
-        std::string category;
-        score_t score = 0;
-        iss >> category >> score;
-
-        if (! category.empty())
-        {
-            categoryStrMap[category] = score;
-        }
-    }
-}
-
-void loadMerchantScore(
-    std::istream& ist,
-    MerchantStrScoreMap& strScoreMap
-)
-{
-    std::string line;
-    MerchantStrScoreMap::map_t& merchantStrMap = strScoreMap.map;
-
-    while (getline(ist, line))
-    {
-        boost::algorithm::trim(line);
-
-        if (line.empty())
-            continue;
-
-        istringstream iss(line);
-        std::string merchant;
-        score_t score = 0;
-        iss >> merchant >> score;
-
-        if (! merchant.empty())
-        {
-            CategoryStrScore& categoryStrScore = merchantStrMap[merchant];
-            categoryStrScore.generalScore = score;
-
-            loadCategoryScore(ist, categoryStrScore);
-        }
-    }
-}
-
 }
 
 namespace sf1r
@@ -119,15 +32,22 @@ MerchantScoreManager::~MerchantScoreManager()
 bool MerchantScoreManager::open(const std::string& scoreFilePath)
 {
     scoreFilePath_ = scoreFilePath;
+    MerchantScoreParser parser;
 
-    std::ifstream ifs(scoreFilePath_.c_str());
-    if (! ifs)
-        return true;
+    if (! parser.parseFromFile(scoreFilePath_))
+    {
+        LOG(ERROR) << parser.errorMessage();
+        return false;
+    }
 
-    MerchantStrScoreMap strScoreMap;
-    loadMerchantScore(ifs, strScoreMap);
+    if (! parser.warningMessage().empty())
+    {
+        LOG(WARNING) << "warnings in parsing merchant score:\n" << parser.warningMessage();
+    }
 
-    idScoreMap_.map.clear();
+    idScoreMap_.clear();
+
+    const MerchantStrScoreMap& strScoreMap = parser.merchantStrScoreMap();
     setScore(strScoreMap);
 
     return true;
@@ -145,17 +65,15 @@ bool MerchantScoreManager::flush()
 
 bool MerchantScoreManager::flushScoreFile_()
 {
-    std::ofstream ofs(scoreFilePath_.c_str());
-    if (! ofs)
+    MerchantStrScoreMap strScoreMap;
+    getAllStrScore(strScoreMap);
+
+    MerchantScoreRenderer renderer(strScoreMap);
+    if (! renderer.renderToFile(scoreFilePath_))
     {
         LOG(ERROR) << "failed to write " << scoreFilePath_;
         return false;
     }
-
-    MerchantStrScoreMap strScoreMap;
-    getAllStrScore(strScoreMap);
-
-    printMerchantScore(strScoreMap, ofs);
 
     return true;
 }

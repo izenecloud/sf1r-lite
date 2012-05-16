@@ -17,6 +17,7 @@
 
 #include "faceted-submanager/prop_value_table.h" // pvid_t
 #include "summarization-submanager/Summarization.h" //Summarization
+#include "merchant-score-manager/MerchantScore.h"
 
 #include <common/ResultType.h>
 #include <configuration-manager/PropertyConfig.h>
@@ -241,6 +242,22 @@ public:
             const std::string& propName,
             const std::vector<std::string>& groupPath
     );
+
+    /**
+     * if @p merchantNames is empty, it loads all existing merchant score into @p merchantScoreMap;
+     * otherwise, it loads the score of merchant in @p merchantNames into @p merchantScoreMap.
+     * @return true for success, false for failure
+     */
+    bool getMerchantScore(
+        const std::vector<std::string>& merchantNames,
+        MerchantStrScoreMap& merchantScoreMap
+    ) const;
+
+    /**
+     * set merchant score according to @p strScoreMap.
+     * @return true for success, false for failure
+     */
+    bool setMerchantScore(const MerchantStrScoreMap& merchantScoreMap);
 
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
 

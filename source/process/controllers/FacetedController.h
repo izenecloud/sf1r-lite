@@ -40,6 +40,9 @@ public:
     void click();
     void manmade();
 
+    void set_merchant_score();
+    void get_merchant_score();
+
 protected:
     virtual bool checkCollectionService(std::string& error);
 

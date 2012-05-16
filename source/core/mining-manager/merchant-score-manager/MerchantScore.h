@@ -39,6 +39,8 @@ struct MerchantScoreMap
 {
     typedef typename std::map<MerchantT, CategoryScore<CategoryT> > map_t;
     map_t map;
+
+    void clear() { map.clear(); }
 };
 
 /// CategoryScore id version
