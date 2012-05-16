@@ -21,6 +21,7 @@ CHECK_INCLUDE_FILE(ext/hash_map HAVE_EXT_HASH_MAP)
 #####
 
 FIND_PACKAGE(izenelib REQUIRED COMPONENTS
+  izene_util
   index_manager
   mock_index_manager
   febird
@@ -28,7 +29,6 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   izene_log
   bigint
   procmeminfo
-  izene_util
   ticpp
   luxio
   leveldb
