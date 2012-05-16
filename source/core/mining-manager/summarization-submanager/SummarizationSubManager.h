@@ -22,6 +22,7 @@ namespace sf1r
 {
 class DocumentManager;
 class IndexManager;
+class ScdWriter;
 
 class SummarizationStorage;
 class CommentCacheStorage;
@@ -65,6 +66,7 @@ private:
 
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
+    boost::shared_ptr<ScdWriter> score_scd_writer_;
 
     idmlib::util::IDMAnalyzer* analyzer_;
 

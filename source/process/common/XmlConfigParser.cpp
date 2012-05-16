@@ -1641,6 +1641,11 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.summarization_schema.scorePropName = property_name;
             }
         }
+        ticpp::Element* scoreSCDPath_node = getUniqChildElement(task_node, "ScoreSCDPath", false);
+        if (scoreSCDPath_node)
+        {
+            getAttribute(scoreSCDPath_node, "path", mining_schema.summarization_schema.scoreSCDPath);
+        }
         mining_schema.summarization_enable = true;
     }
 
