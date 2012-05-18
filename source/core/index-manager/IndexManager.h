@@ -112,6 +112,7 @@ public:
         T low = NumericUtil<T>::Low();
         T high = NumericUtil<T>::High();
         data = new T[size]();
+        memset(data,0,size * sizeof(T));
         if (pBTreeIndexer->getValueBetween(low,high,size,data) == 0)
         {
             delete[] data;

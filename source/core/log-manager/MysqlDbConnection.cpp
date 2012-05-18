@@ -1,11 +1,8 @@
 #include "MysqlDbConnection.h"
+#include "MysqlDbPath.h"
 
 #include <vector>
-#include <sstream>
-
-#include <boost/lexical_cast.hpp>
-
-#include <cstdio>
+#include <glog/logging.h>
 
 namespace sf1r
 {
@@ -38,93 +35,23 @@ void MysqlDbConnection::close()
 bool MysqlDbConnection::init(const std::string& str )
 {
     mysql_library_init(0, NULL, NULL);
-    std::string host;
-    std::string portStr;
-    uint32_t port = 3306;
-    std::string username;
-    std::string password;
-    std::string database("SF1R");
-    std::string default_charset("utf8");
 
-    std::string conn = str;
-    std::size_t pos = conn.find(":");
-    if (pos==0 || pos == std::string::npos) return false;
-    username = conn.substr(0, pos);
-    conn = conn.substr(pos+1);
-    pos = conn.find("@");
-    if (pos == std::string::npos) return false;
-    password = conn.substr(0, pos);
-    conn = conn.substr(pos+1);
-    pos = conn.find(":");
-    if (pos==0 || pos == std::string::npos) return false;
-    host = conn.substr(0, pos);
-    conn = conn.substr(pos+1);
-    pos = conn.find("/");
-    if (pos==0) return false;
-    if (pos == std::string::npos)
-    {
-        portStr = conn;
-    }
-    else
-    {
-        portStr = conn.substr(0, pos);
-        conn = conn.substr(pos+1);
-        if (!conn.empty())
-            database = conn;
-    }
-    try
-    {
-        port = boost::lexical_cast<uint32_t>(portStr);
-    }
-    catch (std::exception& ex)
-    {
+    MysqlDbPath dbPath;
+
+    if (!dbPath.parse(str) || !dbPath.createDatabase())
         return false;
-    }
-    if (host=="localhost") host = "127.0.0.1";
-    int flags = CLIENT_MULTI_STATEMENTS;
 
-    bool ret = true;
     boost::unique_lock<boost::mutex> lock(mutex_);
     for (int i=0; i<PoolSize; i++)
     {
-        MYSQL* mysql = mysql_init(NULL);
+        MYSQL* mysql = dbPath.createClient();
         if (!mysql)
-        {
-            std::cerr<<"mysql_init failed"<<std::endl;
             return false;
-        }
-        mysql_options(mysql, MYSQL_SET_CHARSET_NAME, default_charset.c_str());
-
-        my_bool reconnect = 1;
-        if (mysql_options(mysql, MYSQL_OPT_RECONNECT, &reconnect))
-        {
-            fprintf(stderr, "mysql_options MYSQL_OPT_RECONNECT failed : %d: %s\n", mysql_errno(mysql), mysql_error(mysql));
-            mysql_close(mysql);
-            return false;
-        }
-
-        std::ostringstream initCommand;
-        initCommand << "SET NAMES utf8; "
-                    << "create database IF NOT EXISTS " << database << " default character set utf8; "
-                    << "use " << database << "; ";
-        if (mysql_options(mysql, MYSQL_INIT_COMMAND, initCommand.str().c_str()))
-        {
-            fprintf(stderr, "mysql_options MYSQL_INIT_COMMAND failed : %d: %s\n", mysql_errno(mysql), mysql_error(mysql));
-            mysql_close(mysql);
-            return false;
-        }
-
-        if (!mysql_real_connect(mysql, host.c_str(), username.c_str(), password.c_str(), NULL, port, NULL, flags))
-        {
-            fprintf(stderr, "Couldn't connect mysql : %d:(%s) %s\n", mysql_errno(mysql), mysql_sqlstate(mysql), mysql_error(mysql));
-            mysql_close(mysql);
-            return false;
-        }
 
         pool_.push_back(mysql);
     }
-    if (!ret) close();
-    return ret;
+
+    return true;
 }
 
 MYSQL* MysqlDbConnection::getDb()
@@ -153,13 +80,13 @@ bool MysqlDbConnection::exec(const std::string & sql, bool omitError)
     MYSQL* db = getDb();
     if ( db == NULL )
     {
-        std::cerr << "[LogManager] No available connection in pool" << std::endl;
+        LOG(ERROR) << "[LogManager] No available connection in pool";
         return false;
     }
 
     if ( mysql_real_query(db, sql.c_str(), sql.length()) >0 && mysql_errno(db) )
     {
-        fprintf(stderr, "Error : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
+        PRINT_MYSQL_ERROR(db, "in mysql_real_query(): " << sql);
         ret = false;
     }
 
@@ -175,13 +102,13 @@ bool MysqlDbConnection::exec(const std::string & sql,
     MYSQL* db = getDb();
     if ( db == NULL )
     {
-        std::cerr << "[LogManager] No available connection in pool" << std::endl;
+        LOG(ERROR) << "[LogManager] No available connection in pool";
         return false;
     }
 
     if ( mysql_real_query(db, sql.c_str(), sql.length()) >0 && mysql_errno(db) )
     {
-        fprintf(stderr, "Error : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
+        PRINT_MYSQL_ERROR(db, "in mysql_real_query(): " << sql);
         ret = false;
     }
     else
@@ -225,7 +152,7 @@ bool MysqlDbConnection::fetchRows_(MYSQL* db, std::list< std::map<std::string, s
         {
             if (mysql_field_count(db))
             {
-                fprintf(stderr, "Error during store_result : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
+                PRINT_MYSQL_ERROR(db, "in mysql_field_count()");
                 success = false;
                 break;
             }
@@ -234,7 +161,7 @@ bool MysqlDbConnection::fetchRows_(MYSQL* db, std::list< std::map<std::string, s
         // more results? -1 = no, >0 = error, 0 = yes (keep looping)
         if ((status = mysql_next_result(db)) > 0)
         {
-            fprintf(stderr, "Error during next_result : %d:(%s) %s\n", mysql_errno(db), mysql_sqlstate(db), mysql_error(db));
+            PRINT_MYSQL_ERROR(db, "in mysql_next_result()");
             success = false;
             break;
         }

@@ -234,7 +234,7 @@ public:
 
         enlarge_(bs_);
         fseek(f_, 0, SEEK_SET);
-        if (fread(buffer_, bs_, 1, f_) == 0);
+        fread(buffer_, bs_, 1, f_);
         ready4query_ = true;
     }
 

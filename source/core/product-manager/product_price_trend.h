@@ -18,21 +18,13 @@ class PriceHistory;
 class PriceHistoryRow;
 class DocumentManager;
 
-struct Uint128Hasher
-{
-    std::size_t operator() (const uint128_t& value) const
-    {
-        return std::size_t(value);
-    }
-};
-
 class ProductPriceTrend
 {
     typedef izenelib::am::tc::BTree<std::string, TPCQueue> TPCBTree;
     typedef std::map<std::string, std::vector<TPCBTree *> > TPCStorage;
 
     typedef std::pair<ProductPriceType, std::map<std::string, std::string> > PropItemType;
-    typedef boost::unordered_map<uint128_t, PropItemType, Uint128Hasher, std::equal_to<uint128_t>, boost::fast_pool_allocator<uint128_t> > PropMapType;
+    typedef boost::unordered_map<uint128_t, PropItemType, boost::hash<uint128_t>, std::equal_to<uint128_t>, boost::fast_pool_allocator<uint128_t> > PropMapType;
 
 public:
     ProductPriceTrend(

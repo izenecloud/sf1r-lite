@@ -5,6 +5,7 @@ NS_FACETED_BEGIN
 
 CTRManager::CTRManager(const std::string& dirPath, size_t docNum)
 : docNum_(docNum)
+, db_(NULL)
 {
     filePath_ = dirPath + "/ctr.db";
 

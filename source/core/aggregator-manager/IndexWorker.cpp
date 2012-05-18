@@ -43,6 +43,7 @@ namespace
 const char* SCD_BACKUP_DIR = "backup";
 const std::string DOCID("DOCID");
 const std::string DATE("DATE");
+const size_t UPDATE_BUFFER_CAPACITY = 10000;
 }
 
 IndexWorker::IndexWorker(
@@ -235,6 +236,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         {
             // loops the list of SCD files that belongs to this collection
             long proccessedFileSize = 0;
+            idManager_->warmUp();
             for (scd_it = scdList.begin(); scd_it != scdList.end(); scd_it++)
             {
                 size_t pos = scd_it ->rfind("/")+1;
@@ -309,6 +311,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
                 if(!hooker_->FinishHook())
                 {
                     std::cout<<"[IndexWorker] Hooker Finish failed."<<std::endl;
+                    idManager_->coolDown();
                     return false;
                 }
                 std::cout<<"[IndexWorker] Hooker Finished."<<std::endl;
@@ -320,12 +323,15 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
                 miningTaskService_->DoMiningCollection();
                 indexManager_->resumeMerge();
             }
+
+            idManager_->coolDown();
         }
         catch (std::exception& e)
         {
             LOG(WARNING) << "exception in indexing or mining: " << e.what();
             indexProgress_.getIndexingStatus(indexStatus_);
             indexProgress_.reset();
+            idManager_->coolDown();
             return false;
         }
         indexManager_->getIndexReader();
@@ -400,6 +406,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     docid_t maxDocId = documentManager->getMaxDocId();
     docid_t curDocId = 0;
     docid_t insertedCount = 0;
+    idManager_->warmUp();
     for (curDocId = minDocId; curDocId <= maxDocId; curDocId++)
     {
         if (documentManager->isDeleted(curDocId))
@@ -473,6 +480,8 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         indexManager_->resumeMerge();
     }
 
+    idManager_->coolDown();
+
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
 
@@ -527,27 +536,17 @@ bool IndexWorker::createDocument(const Value& documentValue)
     Document document;
     IndexerDocument indexDocument;
     docid_t oldId = 0;
-    bool rType = false;
-    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-    docid_t id = 0;
     std::string source = "";
-
-    if (!prepareDocument_(scddoc, document,indexDocument, oldId, rType, rTypeFieldValue, source, timestamp, true))
+    IndexWorker::UpdateType updateType;
+    if (!prepareDocument_(scddoc, document,indexDocument, oldId, source, timestamp, updateType))
         return false;
-
-    //prepareIndexDocument_(oldId, timestamp, document, indexDocument);
-
-    if (rType)
-    {
-        id = document.getId();
-    }
 
     bool ret =  insertDoc_(document, indexDocument, timestamp);
     if(ret)
     {
         doMining_();
     }
-    searchWorker_->reset_cache(rType, id, rTypeFieldValue);
+    //searchWorker_->reset_cache(rType, id, rTypeFieldValue);
 
     // to log server
     if (bundleConfig_->logCreatedDoc_)
@@ -557,7 +556,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
             logCreatedDocToLogServer(scddoc);
         }
         catch (const std::exception& e)
-            {}
+        {}
     }
 
     return ret;
@@ -643,29 +642,25 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     Document document;
     IndexerDocument indexDocument;
     docid_t oldId = 0;
-    bool rType = false;
-    std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-    docid_t id = 0;
+    IndexWorker::UpdateType updateType;
     std::string source = "";
 
-    if (!prepareDocument_(scddoc, document, indexDocument, oldId, rType, rTypeFieldValue, source, timestamp, false))
+    if (!prepareDocument_(scddoc, document, indexDocument, oldId, source, timestamp, updateType,false))
     {
         return false;
     }
 
-    //prepareIndexDocument_(oldId, timestamp, document, indexDocument);
+    //if (updateType == RTYPE )
+    //{
+        //id = document.getId();
+    //}
 
-    if (rType)
-    {
-        id = document.getId();
-    }
-
-    bool ret = updateDoc_(document, indexDocument, timestamp, rType);
+    bool ret = updateDoc_(document, indexDocument, timestamp, updateType, true);
     if(ret)
     {
         doMining_();
     }
-    searchWorker_->reset_cache(rType, id, rTypeFieldValue);
+    //searchWorker_->reset_cache(rType, id, rTypeFieldValue);
 
     // to log server
     if (bundleConfig_->logCreatedDoc_)
@@ -765,7 +760,8 @@ bool IndexWorker::getPropertyValue_(const PropertyValue& value, std::string& val
 {
     try
     {
-        izenelib::util::UString sourceFieldValue = get<izenelib::util::UString>(value);
+        const izenelib::util::UString& sourceFieldValue = *(get<izenelib::util::UString>(&value));
+        if(sourceFieldValue.empty()) return false;
         sourceFieldValue.convertString(valueStr, izenelib::util::UString::UTF_8);
         return true;
     }
@@ -872,26 +868,17 @@ bool IndexWorker::insertOrUpdateSCD_(
 
         SCDDocPtr doc = (*doc_iter);
         docid_t oldId = 0;
-        bool rType = false;
-        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> > rTypeFieldValue;
-        docid_t id = 0;
+        IndexWorker::UpdateType updateType;
         std::string source = "";
         time_t new_timestamp = timestamp;
         document.clear();
         indexDocument.clear();
-        if (!prepareDocument_(*doc, document, indexDocument, oldId, rType, rTypeFieldValue, source, new_timestamp, isInsert))
+        if (!prepareDocument_(*doc, document, indexDocument, oldId, source, new_timestamp, updateType, isInsert))
             continue;
-
-        //prepareIndexDocument_(oldId, new_timestamp, document, indexDocument);
 
         if (!source.empty())
         {
             ++productSourceCount_[source];
-        }
-
-        if (rType)
-        {
-            id = document.getId();
         }
 
         if (isInsert || oldId == 0)
@@ -901,43 +888,18 @@ bool IndexWorker::insertOrUpdateSCD_(
         }
         else
         {
-            if (!updateDoc_(document, indexDocument, new_timestamp, rType))
+            if (!updateDoc_(document, indexDocument, new_timestamp, updateType))
                 continue;
 
             ++numUpdatedDocs_;
         }
-        searchWorker_->reset_cache(rType, id, rTypeFieldValue);
 
         // interrupt when closing the process
         boost::this_thread::interruption_point();
     } // end of for loop for all documents
-
+    if(!isInsert) flushUpdateBuffer_();
     searchWorker_->reset_all_property_cache();
     return true;
-}
-
-bool IndexWorker::createUpdateDocId_(
-        const uint128_t& scdDocId,
-        bool rType,
-        docid_t& oldId,
-        docid_t& newId)
-{
-    bool result = false;
-
-    if (rType)
-    {
-        //if ((result = idManager_->getDocIdByDocName(scdDocId, oldId, false)))
-        //Duplicate with checkRtype_
-        {
-            newId = oldId;
-        }
-    }
-    else
-    {
-        result = idManager_->updateDocIdByDocName(scdDocId, oldId, newId);
-    }
-
-    return result;
 }
 
 bool IndexWorker::createInsertDocId_(
@@ -1058,7 +1020,10 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     return true;
 }
 
-bool IndexWorker::insertDoc_(Document& document, IndexerDocument& indexDocument, time_t timestamp)
+bool IndexWorker::insertDoc_(
+        Document& document, 
+        IndexerDocument& indexDocument, 
+        time_t timestamp)
 {
     CREATE_PROFILER(proDocumentIndexing, "IndexWorker", "IndexWorker : InsertDocument")
     CREATE_PROFILER(proIndexing, "IndexWorker", "IndexWorker : indexing")
@@ -1085,18 +1050,60 @@ bool IndexWorker::insertDoc_(Document& document, IndexerDocument& indexDocument,
 }
 
 bool IndexWorker::updateDoc_(
-    Document& document,
-    IndexerDocument& indexDocument,
-    time_t timestamp,
-    bool rType)
+        Document& document,
+        IndexerDocument& indexDocument,
+        time_t timestamp,
+        IndexWorker::UpdateType updateType,
+        bool immediately)
 {
     CREATE_SCOPED_PROFILER (proDocumentUpdating, "IndexWorker", "IndexWorker::UpdateDocument");
 
     if (hooker_)
     {
-        if (!hooker_->HookUpdate(document, indexDocument, timestamp, rType)) return false;
+        if (!hooker_->HookUpdate(document, indexDocument, timestamp)) return false;
     }
-    if (rType)
+    if(INSERT == updateType) return insertDoc_(document, indexDocument, timestamp);
+    /*if(immediately) */return doUpdateDoc_(document,indexDocument,updateType);
+
+    ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
+    UpdateBufferDataType& updateData = updateBuffer_[indexDocument.getOldId()];
+    updateData.first.first.swap(document);
+    updateData.first.second.swap(indexDocument);
+    updateData.second = updateType;
+    if(updateBuffer_.size() >= UPDATE_BUFFER_CAPACITY)
+    {
+        flushUpdateBuffer_();
+    }
+
+    return true;
+}
+
+bool IndexWorker::doUpdateDoc_(
+        Document& document,
+        IndexerDocument& indexDocument,
+        IndexWorker::UpdateType updateType)
+{
+    switch (updateType)
+    {
+    case GENERAL:
+    {
+        uint32_t oldId = indexDocument.getOldId();
+        if (!mergeDocument_(oldId, document, indexDocument, true))
+            return false;
+        if (!documentManager_->removeDocument(oldId))
+        {
+            //LOG(WARNING) << "document " << oldId << " is already deleted";
+        }
+        if (!documentManager_->insertDocument(document))
+        {
+            LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
+            return false;
+        }
+
+        indexManager_->updateDocument(indexDocument);
+        return true;
+    }
+    case RTYPE:
     {
         // Store the old property value.
         IndexerDocument oldIndexDocument;
@@ -1111,24 +1118,31 @@ bool IndexWorker::updateDoc_(
         }
 
         indexManager_->updateRtypeDocument(oldIndexDocument, indexDocument);
+        return true;
     }
-    else
+    case REPLACE:
     {
-        uint32_t oldId = indexDocument.getId();
-        if (!documentManager_->removeDocument(oldId))
-        {
-            //LOG(WARNING) << "document " << oldId << " is already deleted";
-        }
-        if (!documentManager_->insertDocument(document))
-        {
-            LOG(ERROR) << "Document Insert Failed in SDB. " << document.property("DOCID");
+        uint32_t oldId = indexDocument.getOldId();
+        if (!mergeDocument_(oldId, document, indexDocument, false))
             return false;
-        }
-
-        indexManager_->updateDocument(indexDocument);
+        return documentManager_->updateDocument(document);
+        break;
     }
+    default:
+        return false;
+    }
+    return false;
+}
 
-    return true;
+void IndexWorker::flushUpdateBuffer_()
+{
+    for (UpdateBufferType::iterator it = updateBuffer_.begin();
+            it != updateBuffer_.end(); ++it)
+    {
+        doUpdateDoc_(it->second.first.first, it->second.first.second, it->second.second);
+    }
+    updateBuffer_.clear();
+    UpdateBufferType().swap(updateBuffer_);
 }
 
 bool IndexWorker::deleteDoc_(docid_t docid, time_t timestamp)
@@ -1183,16 +1197,14 @@ void IndexWorker::saveSourceCount_(int op)
     }
 }
 
-
 bool IndexWorker::prepareDocument_(
         SCDDoc& doc,
         Document& document,
         IndexerDocument& indexDocument,
         docid_t& oldId,
-        bool& rType,
-        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
         std::string& source,
         time_t& timestamp,
+        IndexWorker::UpdateType& updateType,
         bool insert)
 {
     CREATE_SCOPED_PROFILER (preparedocument, "IndexWorker", "IndexWorker::prepareDocument_");
@@ -1235,16 +1247,26 @@ bool IndexWorker::prepareDocument_(
             // update
             if (!insert)
             {
-                bool isUpdate = false;
-                rType = checkRtype_(scdDocId, doc, oldId, rTypeFieldValue, isUpdate);
-                if (rType && !isUpdate)
+                updateType = checkUpdateType_(scdDocId, doc, oldId);
+                switch(updateType)
                 {
-                    //LOG(WARNING) << "skip updating SCD DOC " << fieldValue << ", as none of its property values is changed";
+                case INSERT:
+                    insert = true;
+                    break;
+                case GENERAL:
+                    if(!idManager_->updateDocIdByDocName(scdDocId, oldId, docId))
+                        insert = true;
+                    break;
+                case REPLACE:
+                case RTYPE:
+                    docId = oldId;
+                    break;
+                case BADDOC:
+                    LOG(WARNING) << "BAD SCD DOC " << fieldValue;
+                    return false;
+                default:
                     return false;
                 }
-
-                if (! createUpdateDocId_(scdDocId, rType, oldId, docId))
-                    insert = true;
             }
 
             if (insert && !createInsertDocId_(scdDocId, docId))
@@ -1257,6 +1279,7 @@ bool IndexWorker::prepareDocument_(
             PropertyValue propData(propertyValueU);
             document.property(fieldStr).swap(propData);
 
+            indexDocument.setOldId(oldId);
             indexDocument.setDocId(docId, collectionId_);
         }
         else if (boost::iequals(fieldStr,DATE))
@@ -1337,20 +1360,15 @@ bool IndexWorker::prepareDocument_(
         indexDocument.insertProperty(indexerPropertyConfig, tm);
     }
 
-    if (!insert && !rType)
-    {
-        if (!completePartialDocument_(oldId, document, indexDocument))
-            return false;
-    }
     return true;
 }
 
-bool IndexWorker::completePartialDocument_(
-        docid_t oldId, 
-        Document& doc, 
-        IndexerDocument& indexDocument)
+bool IndexWorker::mergeDocument_(
+        docid_t oldId,
+        Document& doc,
+        IndexerDocument& indexDocument,
+        bool generateIndexDoc)
 {
-    ///For update (not rtype update)
     ///We need to retrieve old document, and then merge them with new document data
     docid_t newId = doc.getId();
     Document oldDoc;
@@ -1359,27 +1377,30 @@ bool IndexWorker::completePartialDocument_(
         return false;
     }
 
-    for(Document::property_const_iterator it = doc.propertyBegin(); it!=doc.propertyEnd(); ++it)
+    for(Document::property_iterator it = oldDoc.propertyBegin(); it!=oldDoc.propertyEnd(); ++it)
     {
-        if(!oldDoc.hasProperty(it->first))
+        if(doc.hasProperty(it->first))
         {
-            ///new properties
-            ///We need to prepare index property for old index data
+            ///When new doc has same properties with old doc
+            ///override content of old doc
+            if(it->second == doc.property(it->first)) continue;
+            it->second = doc.property(it->first);
+        }
+        else if(generateIndexDoc)
+        {
+            ///Properties that only exist within old doc, while not in new doc
+            ///Require to prepare for IndexDocument
             PropertyConfig temp;
             temp.propertyName_ = it->first;
             IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(temp);
-            bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
-            if(isIndexSchema)
+            if(iter != bundleConfig_->indexSchema_.end())
             {
                 const izenelib::util::UString& propValue = *(get<izenelib::util::UString>(&oldDoc.property(it->first)));
+                if(propValue.empty()) continue; 
                 prepareIndexDocumentProperty_(newId,std::make_pair(it->first,propValue),iter,indexDocument);
             }
         }
-        ///override old property
-        oldDoc.property(it->first) = it->second;
     }
-
-    indexDocument.setId(oldId);
 
     doc.swap(oldDoc);
     doc.setId(newId);
@@ -1429,7 +1450,7 @@ bool IndexWorker::prepareIndexDocument_(
 
         if (boost::iequals(fieldStr,DOCID))
         {
-            indexDocument.setId(oldId);
+            indexDocument.setOldId(oldId);
             indexDocument.setDocId(docId, collectionId_);
         }
         else if (boost::iequals(fieldStr,DATE))
@@ -1667,8 +1688,8 @@ bool IndexWorker::prepareIndexDocumentRtypeProperty_(
             }
         }
         STOP_PROFILER(pid_int);
-    }
         break;
+    }
     case FLOAT_PROPERTY_TYPE:
     {
         START_PROFILER(pid_float);
@@ -1702,8 +1723,8 @@ bool IndexWorker::prepareIndexDocumentRtypeProperty_(
             }
         }
         STOP_PROFILER(pid_float);
-    }
         break;
+    }
     case STRING_PROPERTY_TYPE:
     {
         ///Impossible for general index
@@ -1719,8 +1740,8 @@ bool IndexWorker::prepareIndexDocumentRtypeProperty_(
             else
                 indexDocument.insertProperty(indexerPropertyConfig, propertyValueU);
         }
-    }
         break;
+    }
     default:
         break;
     }
@@ -1773,6 +1794,7 @@ bool IndexWorker::preparePartialDocument_(
             {
                 PropertyValue propertyValue = oldDoc.property(it->first);
                 const izenelib::util::UString& stringValue = *(get<izenelib::util::UString>(&propertyValue));
+                if(stringValue.empty()) continue;
                 prepareIndexDocumentRtypeProperty_(docId,stringValue,iter,oldIndexDocument);
             }
         }
@@ -1780,84 +1802,60 @@ bool IndexWorker::preparePartialDocument_(
     return true;
 }
 
-bool IndexWorker::checkRtype_(
-	const uint128_t& scdDocId,
+IndexWorker::UpdateType IndexWorker::checkUpdateType_(
+        const uint128_t& scdDocId,
         SCDDoc& doc,
-        docid_t& oldId,
-        std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue,
-        bool& isUpdate)
+        docid_t& oldId)
 {
-    //R-type check
     if (!idManager_->getDocIdByDocName(scdDocId, oldId, false))
-        return false;
+        return INSERT;
 
-    bool rType = false;
-    izenelib::util::UString newPropertyValue, oldPropertyValue;
     SCDDoc::iterator p = doc.begin();
-
+    bool replace = false;
+    bool baddoc = true;
     for (; p != doc.end(); ++p)
     {
         const string& fieldName = p->first;
         const izenelib::util::UString & propertyValueU = p->second;
-
         if (boost::iequals(fieldName,DOCID))
-        {
             continue;
-        }
+        if(propertyValueU.empty())
+            continue;
 
         PropertyConfig tempPropertyConfig;
         tempPropertyConfig.propertyName_ = fieldName;
         IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
 
         if (iter == bundleConfig_->indexSchema_.end())
-            break;
-        newPropertyValue = propertyValueU;
-        if (boost::iequals(fieldName,DATE))
+            return BADDOC;///TO BE ADJUSTED
+
+        baddoc = false;
+        if(iter->isIndex() && iter->isAnalyzed())
         {
-            izenelib::util::UString dateStr;
-            Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
-            newPropertyValue = dateStr;
+            return GENERAL;
         }
-
-        string newValueStr(""), oldValueStr("");
-        newPropertyValue.convertString(newValueStr, izenelib::util::UString::UTF_8);
-
-        PropertyValue value;
-        if (!documentManager_->getPropertyValue(oldId, iter->getName(), value))
-            break;
-
-        if (!getPropertyValue_(value, oldValueStr))
-            return false;
-
-        if (newValueStr == oldValueStr)
-            continue;
-
-        if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
+        else if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())
         {
-            rTypeFieldValue[iter->getName()] = std::make_pair(iter->getType(),newPropertyValue);
-            isUpdate = true;
-        }
-        else if(!iter->isIndex())
-        {
-            isUpdate = true;
+            ///RType Field
         }
         else
-        {
-            break;
-        }
+       	{
+       	    replace = true;
+       	}
     }
 
-    if (p == doc.end())
+    if (replace)
     {
-        rType = true;
+        return REPLACE;
+    }
+    else if(!baddoc)
+    {
+        return RTYPE;
     }
     else
     {
-        rType = false;
-        rTypeFieldValue.clear();
+        return BADDOC;
     }
-
-    return rType;
 }
 
 bool IndexWorker::makeSentenceBlocks_(

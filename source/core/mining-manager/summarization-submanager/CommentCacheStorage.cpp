@@ -31,7 +31,7 @@ CommentCacheStorage::~CommentCacheStorage()
 {
 }
 
-void CommentCacheStorage::AppendUpdate(const KeyType& key, uint32_t docid, const ContentType& content)
+void CommentCacheStorage::AppendUpdate(const KeyType& key, uint32_t docid, const ContentType& content, const ScoreType& score)
 {
     if (op_type_ != APPEND_UPDATE)
     {
@@ -39,7 +39,7 @@ void CommentCacheStorage::AppendUpdate(const KeyType& key, uint32_t docid, const
         op_type_ = APPEND_UPDATE;
     }
 
-    buffer_db_[key][docid] = content;
+    buffer_db_[key][docid] = std::make_pair(content, score);
 
     ++buffer_size_;
     if (IsBufferFull_())

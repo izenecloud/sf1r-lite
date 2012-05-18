@@ -78,6 +78,7 @@ struct ItemLoggerTestFixture
 
     ItemLoggerColumn columns_;
     int rowNum_;
+    bool isConnect_;
 
     typedef map<string, string> Row;
     typedef list<Row> RowList;
@@ -89,6 +90,7 @@ struct ItemLoggerTestFixture
         : rdbConnection_(RDbConnection::instance())
         , itemLogger_(ItemLogger::instance())
         , rowNum_(0)
+        , isConnect_(false)
     {
     }
 
@@ -99,7 +101,7 @@ struct ItemLoggerTestFixture
         {
             bfs::remove_all(TEST_DIR_STR);
         }
-        else if (dbPath_.find("mysql") == 0)
+        else if (dbPath_.find("mysql") == 0 && isConnect_)
         {
             stringstream sql;
             sql << "drop database " << mySqlDBName_ << ";";
@@ -109,30 +111,35 @@ struct ItemLoggerTestFixture
         rdbConnection_.close();
     }
 
-    void initSqlite()
+    bool initSqlite()
     {
         bfs::remove_all(TEST_DIR_STR);
         bfs::create_directories(TEST_DIR_STR);
         dbPath_ = "sqlite3://" + (bfs::path(TEST_DIR_STR) / SQLITE_ITEM_DB_FILE).string();
 
-        initDbConnection();
+        return initDbConnection();
     }
 
-    void initMysql()
+    bool initMysql()
     {
         posix_time::ptime pt(posix_time::second_clock::local_time());
         mySqlDBName_ = MYSQL_ITEM_DB_NAME + "_" + posix_time::to_iso_string(pt);
         dbPath_ = "mysql://root:123456@127.0.0.1:3306/" + mySqlDBName_;
 
-        initDbConnection();
+        return initDbConnection();
     }
 
-    void initDbConnection()
+    bool initDbConnection()
     {
         cout << "dbPath: " << dbPath_ << endl;
-        BOOST_CHECK(rdbConnection_.init(dbPath_));
+        isConnect_ = rdbConnection_.init(dbPath_);
 
-        ItemLogger::createTable();
+        if (isConnect_)
+        {
+            ItemLogger::createTable();
+        }
+
+        return isConnect_;
     }
 
     void resetDbConnection()
@@ -256,13 +263,19 @@ BOOST_AUTO_TEST_SUITE(ItemLoggerTest)
 
 BOOST_FIXTURE_TEST_CASE(checkSqliteInsertItem, ItemLoggerTestFixture)
 {
-    initSqlite();
+    BOOST_CHECK(initSqlite());
+
     run();
 }
 
 BOOST_FIXTURE_TEST_CASE(checkMysqlInsertItem, ItemLoggerTestFixture)
 {
-    initMysql();
+    if (! initMysql())
+    {
+        cerr << "warning: exit test case as failed to connect " << dbPath_ << endl;
+        return;
+    }
+
     run();
 }
 
