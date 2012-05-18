@@ -10,14 +10,17 @@
 namespace sf1r {
     class RawScdGenerator {
     public:
-        RawScdGenerator(OfferDb* odb);
+        RawScdGenerator(OfferDb* odb, int mode);
 
-        bool Generate(const std::string& scd_file, const std::string& output_dir);
+        void Process(Document& doc, int& type);
+
+        bool Generate(const std::string& scd_file, const std::string& mdb_instance);
 
     private:
 
     private:
         OfferDb* odb_;
+        int mode_;
     };
 
 }

@@ -7,7 +7,8 @@
 #include <b5m-manager/complete_matcher.h>
 #include <b5m-manager/similarity_matcher.h>
 #include <b5m-manager/uue_worker.h>
-#include <b5m-manager/b5mp_uue_processor.h>
+#include <b5m-manager/b5mp_processor.h>
+#include <b5m-manager/b5m_mode.h>
 #include <b5m-manager/b5mc_scd_generator.h>
 #include <b5m-manager/log_server_handler.h>
 #include <b5m-manager/product_db.h>
@@ -34,6 +35,9 @@ int main(int ac, char** av)
         ("b5mp-generate", "generate b5mp scd")
         ("b5mc-generate", "generate b5mc scd")
         ("logserver-update", "update logserver")
+        ("mdb-instance", po::value<std::string>(), "specify mdb instance")
+        ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
+        ("mode", po::value<int>(), "specify mode")
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("pdb", po::value<std::string>(), "specify product db path")
         ("odb", po::value<std::string>(), "specify offer db path")
@@ -63,6 +67,9 @@ int main(int ac, char** av)
         std::cout << desc << std::endl;
         return 1;
     }
+    std::string mdb_instance;
+    std::string last_mdb_instance;
+    int mode = B5MMode::INC;
     std::string scd_path;
     std::string old_scd_path;
     std::string raw;
@@ -72,7 +79,7 @@ int main(int ac, char** av)
     std::string uue;
     std::string output_match;
     std::string knowledge_dir;
-    boost::shared_ptr<ProductDb> pdb;
+    //boost::shared_ptr<ProductDb> pdb;
     boost::shared_ptr<OfferDb> odb;
 
     boost::shared_ptr<LogServerConnectionConfig> logserver_config;
@@ -82,6 +89,15 @@ int main(int ac, char** av)
     std::string cma_path = IZENECMA_KNOWLEDGE ;
     std::string work_dir;
     std::string name;
+    if (vm.count("mdb-instance")) {
+        mdb_instance = vm["mdb-instance"].as<std::string>();
+    } 
+    if (vm.count("last-mdb-instance")) {
+        last_mdb_instance = vm["last-mdb-instance"].as<std::string>();
+    } 
+    if (vm.count("mode")) {
+        mode = vm["mode"].as<int>();
+    } 
     if (vm.count("scd-path")) {
         scd_path = vm["scd-path"].as<std::string>();
         std::cout << "scd-path: " << scd_path <<std::endl;
@@ -113,12 +129,12 @@ int main(int ac, char** av)
         knowledge_dir = vm["knowledge-dir"].as<std::string>();
         std::cout << "knowledge-dir: " << knowledge_dir <<std::endl;
     } 
-    if (vm.count("pdb")) {
-        std::string pdb_path = vm["pdb"].as<std::string>();
-        std::cout << "open pdb path: " << pdb_path <<std::endl;
-        pdb.reset(new ProductDb(pdb_path));
-        pdb->open();
-    } 
+    //if (vm.count("pdb")) {
+        //std::string pdb_path = vm["pdb"].as<std::string>();
+        //std::cout << "open pdb path: " << pdb_path <<std::endl;
+        //pdb.reset(new ProductDb(pdb_path));
+        //pdb->open();
+    //} 
     if (vm.count("odb")) {
         std::string odb_path = vm["odb"].as<std::string>();
         std::cout << "open odb path: " << odb_path <<std::endl;
@@ -172,6 +188,34 @@ int main(int ac, char** av)
         std::cout<< "name set to "<<name<<std::endl;
     }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
+
+    if(vm.count("raw-generate"))
+    {
+        if( scd_path.empty() || mdb_instance.empty() || !odb)
+        {
+            return EXIT_FAILURE;
+        }
+        LOG(INFO)<<"raw generator, mode: "<<mode<<std::endl;
+        RawScdGenerator generator(odb.get(), mode);
+        if(!generator.Generate(scd_path, mdb_instance))
+        {
+            return EXIT_FAILURE;
+        }
+        LOG(INFO)<<"raw generator successfully"<<std::endl;
+    }
+    if(vm.count("scd-split"))
+    {
+        if( scd_path.empty() || knowledge_dir.empty() || name.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        CategoryScdSpliter spliter;
+        spliter.Load(knowledge_dir,name);
+        if(!spliter.Split(scd_path))
+        {
+            return EXIT_FAILURE;
+        }
+    }
     if (vm.count("attribute-index")) {
         if( scd_path.empty() || knowledge_dir.empty() )
         {
@@ -197,7 +241,7 @@ int main(int ac, char** av)
             //return EXIT_FAILURE;
         //}
     } 
-    else if(vm.count("b5m-match"))
+    if(vm.count("b5m-match"))
     {
         if( scd_path.empty() || knowledge_dir.empty() )
         {
@@ -219,7 +263,7 @@ int main(int ac, char** av)
         }
         indexer.ProductMatchingSVM(scd_path);
     }
-    else if(vm.count("complete-match"))
+    if(vm.count("complete-match"))
     {
         if( scd_path.empty() || knowledge_dir.empty() )
         {
@@ -228,7 +272,7 @@ int main(int ac, char** av)
         CompleteMatcher matcher;
         matcher.Index(scd_path, knowledge_dir);
     }
-    else if(vm.count("similarity-match"))
+    if(vm.count("similarity-match"))
     {
         if( scd_path.empty() || knowledge_dir.empty() || dictionary.empty())
         {
@@ -240,111 +284,68 @@ int main(int ac, char** av)
         matcher.SetPidDictionary(dictionary);
         matcher.Index(scd_path, knowledge_dir);
     }
-    else if(vm.count("scd-split"))
+    if(vm.count("b5mo-generate"))
     {
-        if( scd_path.empty() || knowledge_dir.empty() || name.empty())
+        if( !odb || mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        CategoryScdSpliter spliter;
-        spliter.Load(knowledge_dir,name);
-        if(!spliter.Split(scd_path))
+        B5moScdGenerator generator(odb.get());
+        if(!generator.Generate(mdb_instance))
         {
             return EXIT_FAILURE;
         }
     }
-    else if(vm.count("raw-generate"))
+    if(vm.count("uue-generate"))
     {
-        if( scd_path.empty() || raw.empty() || !odb)
-        {
-            return EXIT_FAILURE;
-        }
-        RawScdGenerator generator(odb.get());
-        if(!generator.Generate(scd_path, raw))
-        {
-            return EXIT_FAILURE;
-        }
-    }
-    else if(vm.count("b5mo-generate"))
-    {
-        if( scd_path.empty() || knowledge_dir.empty() || b5mo.empty())
-        {
-            return EXIT_FAILURE;
-        }
-        B5MOScdGenerator generator;
-        generator.Load(knowledge_dir);
-        if(!generator.Generate(scd_path, b5mo))
-        {
-            return EXIT_FAILURE;
-        }
-    }
-    else if(vm.count("uue-generate"))
-    {
-        if( b5mo.empty() || uue.empty() || !odb)
+        if( mdb_instance.empty() || !odb)
         {
             return EXIT_FAILURE;
         }
         UueGenerator generator(odb.get());
-        if(!generator.Generate(b5mo, uue))
+        if(!generator.Generate(mdb_instance))
         {
             return EXIT_FAILURE;
         }
     }
-    else if(vm.count("b5mp-generate"))
+    if(vm.count("b5mp-generate"))
     {
-        if( b5mo.empty() || b5mp.empty() || uue.empty() || !odb || !pdb )
+        if( mdb_instance.empty() )
         {
             return EXIT_FAILURE;
         }
-        boost::shared_ptr<B5MPUueProcessor> processor(new B5MPUueProcessor(b5mo, b5mp, odb.get(), pdb.get(), work_dir));
-        UueWorker<B5MPUueProcessor> worker(processor.get());
-        worker.Load(uue);
-        if(!worker.Run())
+        B5mpProcessor processor(mdb_instance, last_mdb_instance);
+        if(!processor.Generate())
         {
-            std::cout<<"b5mp generator run failed."<<std::endl;
+            std::cout<<"b5mp processor failed"<<std::endl;
             return EXIT_FAILURE;
         }
     }
-    else if(vm.count("b5mc-generate"))
+    if(vm.count("b5mc-generate"))
     {
-        if( !odb || uue.empty() || scd_path.empty() || b5mc.empty())
+        if( !odb || scd_path.empty() || mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        boost::shared_ptr<B5MCScdGenerator> processor(new B5MCScdGenerator(scd_path, old_scd_path, odb.get(), b5mc));
-        UueWorker<B5MCScdGenerator> worker(processor.get());
-        worker.Load(uue);
-        if(!worker.Run())
+        B5mcScdGenerator generator(odb.get());
+        if(!generator.Generate(scd_path, mdb_instance))
         {
-            std::cout<<"b5mc generator run failed."<<std::endl;
             return EXIT_FAILURE;
         }
     }
-    else if(vm.count("logserver-update"))
+    if(vm.count("logserver-update"))
     {
-        if( uue.empty() || !logserver_config || !odb )
+        if( mdb_instance.empty() || !logserver_config)
         {
             return EXIT_FAILURE;
         }
-        //bool reindex = false;
-        //if(pdb->size()==0)
-        //{
-            //reindex = true;
-        //}
-        boost::shared_ptr<LogServerHandler> processor(new LogServerHandler(*logserver_config, odb.get(), work_dir));
-        if(!processor->Open())
+        LogServerHandler handler(*logserver_config);
+        if(!handler.Generate(mdb_instance))
         {
-            return EXIT_FAILURE;
-        }
-        UueWorker<LogServerHandler> worker(processor.get());
-        worker.Load(uue);
-        if(!worker.BatchRun())
-        {
-            std::cout<<"log server update run failed."<<std::endl;
             return EXIT_FAILURE;
         }
     }
-    else if(vm.count("match-test"))
+    if(vm.count("match-test"))
     {
         if( knowledge_dir.empty() )
         {
@@ -394,6 +395,11 @@ int main(int ac, char** av)
                 std::cout<<"]"<<std::endl;
             }
         }
+    }
+
+    if(odb)
+    {
+        odb->flush();
     }
     return EXIT_SUCCESS;
 }

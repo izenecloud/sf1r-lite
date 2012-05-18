@@ -14,21 +14,15 @@
 namespace sf1r {
     class LogServerHandler {
     public:
-        LogServerHandler(const LogServerConnectionConfig& config, OfferDb* odb, const std::string& work_dir);
+        LogServerHandler(const LogServerConnectionConfig& config);
 
-        bool Open();
 
-        void Process(const BuueItem& item);
-
-        void Finish();
+        bool Generate(const std::string& mdb_instance);
 
     private:
         LogServerConnectionConfig logserver_config_;
-        OfferDb* odb_;
-        std::string work_dir_;
-        boost::unordered_set<std::string> changed_pid_;
-        //bool reindex_;
-        bool open_;
+        //OfferDb* odb_;
+        //std::string work_dir_;
     };
 
 }

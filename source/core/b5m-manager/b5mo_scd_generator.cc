@@ -15,84 +15,97 @@
 
 using namespace sf1r;
 
-B5MOScdGenerator::B5MOScdGenerator()
-:exclude_(false)
+B5moScdGenerator::B5moScdGenerator(OfferDb* odb)
+:odb_(odb)
 {
 }
 
-bool B5MOScdGenerator::Load_(const std::string& category_dir)
-{
-    LOG(INFO)<<"Loading "<<category_dir<<std::endl;
-    if(!boost::filesystem::exists(category_dir)) return false;
-    {
-        std::string regex_file = category_dir+"/category";
-        std::ifstream ifs(regex_file.c_str());
-        std::string line;
-        if( getline(ifs, line) )
-        {
-            boost::algorithm::trim(line);
-            boost::regex r(line);
-            category_regex_.push_back(r);
-        }
-        ifs.close();
-    }
-    {
-        std::string match_file = category_dir+"/match";
-        std::ifstream ifs(match_file.c_str());
-        std::string line;
-        while( getline(ifs,line))
-        {
-            boost::algorithm::trim(line);
-            std::vector<std::string> vec;
-            boost::algorithm::split(vec, line, boost::is_any_of(","));
-            if(vec.size()<2) continue;
-            o2p_map_.insert(std::make_pair(vec[0], vec[1]));
-        }
-        ifs.close();
-    }
-    return true;
-}
+//bool B5moScdGenerator::Load_(const std::string& category_dir)
+//{
+    //LOG(INFO)<<"Loading "<<category_dir<<std::endl;
+    //if(!boost::filesystem::exists(category_dir)) return false;
+    //{
+        //std::string regex_file = category_dir+"/category";
+        //std::ifstream ifs(regex_file.c_str());
+        //std::string line;
+        //if( getline(ifs, line) )
+        //{
+            //boost::algorithm::trim(line);
+            //boost::regex r(line);
+            //category_regex_.push_back(r);
+        //}
+        //ifs.close();
+    //}
+    //{
+        //std::string match_file = category_dir+"/match";
+        //std::ifstream ifs(match_file.c_str());
+        //std::string line;
+        //while( getline(ifs,line))
+        //{
+            //boost::algorithm::trim(line);
+            //std::vector<std::string> vec;
+            //boost::algorithm::split(vec, line, boost::is_any_of(","));
+            //if(vec.size()<2) continue;
+            //o2p_map_.insert(std::make_pair(vec[0], vec[1]));
+        //}
+        //ifs.close();
+    //}
+    //return true;
+//}
 
-bool B5MOScdGenerator::Load(const std::string& dir)
+//bool B5moScdGenerator::Load(const std::string& dir)
+//{
+    //namespace bfs = boost::filesystem;
+    //if(!bfs::exists(dir)) return false;
+    //std::string match_file = dir+"/match";
+    //std::string category_file = dir+"/category";
+    //if(bfs::exists(match_file))
+    //{
+        //Load_(dir);
+    //}
+    //else if(!bfs::exists(category_file))
+    //{
+        //bfs::path p(dir);
+        //bfs::directory_iterator end;
+        //for(bfs::directory_iterator it(p);it!=end;it++)
+        //{
+            //if(bfs::is_directory(it->path()))
+            //{
+                //Load_(it->path().string());
+            //}
+        //}
+    //}
+    //return true;
+//}
+
+bool B5moScdGenerator::Generate(const std::string& mdb_instance)
 {
-    namespace bfs = boost::filesystem;
-    if(!bfs::exists(dir)) return false;
-    std::string match_file = dir+"/match";
-    std::string category_file = dir+"/category";
-    if(bfs::exists(match_file))
+    if(!odb_->is_open())
     {
-        Load_(dir);
-    }
-    else if(!bfs::exists(category_file))
-    {
-        bfs::path p(dir);
-        bfs::directory_iterator end;
-        for(bfs::directory_iterator it(p);it!=end;it++)
+        if(!odb_->open())
         {
-            if(bfs::is_directory(it->path()))
-            {
-                Load_(it->path().string());
-            }
+            LOG(ERROR)<<"odb open fail"<<std::endl;
+            return false;
         }
     }
-    return true;
-}
-
-bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& output_dir)
-{
-    if(o2p_map_.empty())
-    {
-        LOG(WARNING)<<"Mapping is empty"<<std::endl;
-    }
+    //boost::filesystem::path mi_path(mdb_instance);
+    //std::string ts = mi_path.filename();
+    std::string scd_path = B5MHelper::GetRawPath(mdb_instance);
+    std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
     typedef izenelib::util::UString UString;
     namespace bfs = boost::filesystem;
-    bfs::create_directories(output_dir);
+    B5MHelper::PrepareEmptyDir(output_dir);
 
+    std::string match_file = mdb_instance+"/match";
+    if(bfs::exists(match_file))
+    {
+        LOG(INFO)<<"odb loading match file "<<match_file<<std::endl;
+        odb_->load(match_file);
+    }
     std::vector<std::string> scd_list;
     B5MHelper::GetScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
 
-    //ScdWriterController writer(output_dir);
     ScdWriter b5mo_i(output_dir, INSERT_SCD);
     ScdWriter b5mo_u(output_dir, UPDATE_SCD);
     ScdWriter b5mo_d(output_dir, DELETE_SCD);
@@ -105,7 +118,7 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
+        for( ScdParser::iterator doc_iter = parser.begin();
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)
@@ -122,44 +135,15 @@ bool B5MOScdGenerator::Generate(const std::string& scd_path, const std::string& 
             }
             std::string sdocid;
             doc.getString("DOCID", sdocid);
-            if(sdocid.empty()) continue;
-            if(exclude_)
-            {
-                std::string scategory;
-                doc.getString("Category", scategory);
-                if(scategory.empty()) continue;
-                bool find_match = false;
-                for(uint32_t i=0;i<category_regex_.size();i++)
-                {
-                    if(boost::regex_match(scategory, category_regex_[i]))
-                    {
-                        find_match = true;
-                        break;
-                    }
-                }
-                if(!find_match) continue;
-            }
-            UString uprice;
-            if(doc.getProperty("Price", uprice))
-            {
-                ProductPrice pp;
-                pp.Parse(uprice);
-                doc.property("Price") = pp.ToUString();
-            }
+            //doc.property("lastmodified") = UString(ts_, UString::UTF_8);
             std::string spid;
-            boost::unordered_map<std::string, std::string>::iterator it = o2p_map_.find(sdocid);
-            if(it!=o2p_map_.end())
-            {
-                spid = it->second;
-            }
-            if(spid.empty() && scd_type == INSERT_SCD)
+            if(!odb_->get(sdocid, spid))
             {
                 spid = sdocid;
+                odb_->insert(sdocid, spid);
             }
-            if(!spid.empty() && scd_type==INSERT_SCD)
-            {
-                doc.property("uuid") = UString(spid, UString::UTF_8);
-            }
+            doc.property("uuid") = UString(spid, UString::UTF_8);
+            
             if(scd_type==INSERT_SCD)
             {
                 b5mo_i.Append(doc);

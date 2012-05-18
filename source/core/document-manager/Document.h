@@ -149,6 +149,14 @@ public:
         clearProperties();
     }
 
+    void clearExceptDOCID()
+    {
+        izenelib::util::UString docid;
+        getProperty("DOCID", docid);
+        clear();
+        property("DOCID") = docid;
+    }
+
     bool isEmpty() const
     {
         return propertyList_.empty();

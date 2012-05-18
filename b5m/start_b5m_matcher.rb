@@ -3,6 +3,7 @@
 require 'rubygems'
 require 'yaml'
 require 'fileutils'
+require 'sf1-util/scd_parser'
 require_relative 'b5m_helper'
 
 
@@ -27,12 +28,15 @@ end
 config = nil
 config_file = nil
 doreindex = false
+mode = 0 #B5MMode::INC as default
 domerge = true
 dob5mc = true
 dologserver = true
 ARGV.each_with_index do |a,i|
   if a=="--reindex"
     doreindex = true
+  elsif a=="--mode"
+    mode = ARGV[i+1].to_i
   elsif a=="--nomerge"
     domerge = false
   elsif a=="--nob5mc"
@@ -72,8 +76,9 @@ category_file = match_path['category']
 filter_attrib_name = match_path['filter_attrib_name']
 work_dir = match_path['work_dir']
 db_path = File.join(work_dir, 'db')
-odb = File.join(db_path, 'odb')
-pdb = File.join(db_path, 'pdb')
+status_path = File.join(work_dir, "status")
+#odb = File.join(db_path, 'odb')
+#pdb = File.join(db_path, 'pdb')
 mdb = File.join(db_path, 'mdb')
 tmp_dir = match_path['tmp']
 result_file = match_path['result']
@@ -91,8 +96,14 @@ end
 matcher_program = File.join(top_dir, "b5m_matcher")
 merger_program = B5MPath.scd_merger
 FileUtils.rm_rf("#{match_path['b5m_scd']}")
-FileUtils.rm_rf(work_dir) if doreindex
+if mode==3 #retrain
+  FileUtils.rm_rf(work_dir)
+elsif mode==2 #rematch
+  FileUtils.rm_rf(db_path)
+elsif mode==1 #rebuild
+end
 FileUtils.mkdir_p(work_dir) unless File.exist?(work_dir)
+Dir.mkdir(status_path) unless File.exist?(status_path)
 Dir.mkdir(db_path) unless File.exist?(db_path)
 Dir.mkdir(mdb) unless File.exist?(mdb)
 mdb_instance_list = []
@@ -105,25 +116,59 @@ end
 
 mdb_instance_list.sort!
 last_mdb_instance = mdb_instance_list.last
+last_odb = nil
+unless last_mdb_instance.nil?
+  last_odb = File.join(last_mdb_instance, "odb")
+end
+#reindex = mdb_instance_list.empty?()?true:false
+#retrain = false
 
-reindex = mdb_instance_list.empty?()?true:false
+##check if train_scd modified.
+#train_scd_list = ScdParser.get_scd_list(train_scd)
+#if train_scd_list.size!=1
+  #abort "train_scd number error : #{train_scd_list.size}"
+#end
+
+#saved_train_scd_status = nil
+#train_scd_status_file = File.join(status_path, "train_scd")
+#saved_train_scd_status = YAML::load_file(train_scd_status_file) if File.exist?(train_scd_status_file)
+#train_scd_file = train_scd_list.first
+#train_scd_status = {}
+#train_scd_status['mtime'] = File.mtime(train_scd_file).strftime("%Y-%m-%d %H:%M:%S")
+#train_scd_status['size'] = File.new(train_scd_file).size
+#if !saved_train_scd_status.nil? and saved_train_scd_status==train_scd_status
+  #retrain = false
+#else
+  #retrain = true
+#end
+
+#if retrain
+  #puts "re-train!!"
+  #File.open(train_scd_status_file, 'w') do |out|
+    #YAML.dump(train_scd_status, out)
+  #end
+  #system("rm -rf #{work_dir}/C*/T")
+#end
+
 
 time_str = Time.now.strftime("%Y%m%d%H%M%S")
 mdb_instance = File.join(mdb, time_str)
-merged_scd = File.join(mdb_instance, "merged")
-raw_scd = File.join(mdb_instance, "raw")
-comment_merged_scd = File.join(mdb_instance, "comment_merged")
+odb = File.join(mdb_instance, "odb")
 if File.exist?(mdb_instance)
   abort "#{mdb_instance} already exists"
 else
   Dir.mkdir(mdb_instance)
-  Dir.mkdir(merged_scd)
-  Dir.mkdir(raw_scd)
-  Dir.mkdir(comment_merged_scd)
+  unless last_odb.nil?
+    FileUtils.cp_r(last_odb, odb)
+  end
+  mode_file = File.join(mdb_instance, "mode")
+  File.open(mode_file, 'w') do |f|
+    f.puts mode
+  end
 end
 task_list = []
 
-require_relative 'b5m_env.rb'
+#require_relative 'b5m_env.rb'
 
 IO.readlines(category_file).each do |c_line|
   c_line.strip!
@@ -157,7 +202,6 @@ task_list.each do |task|
   a_scd = File.join(category_dir, "A")
   t_scd = File.join(category_dir, "T")
   FileUtils.rm_rf(a_scd) if File.exist?(a_scd)
-  #FileUtils.rm_rf(t_scd) if File.exist?(t_scd)
 
   regex_file = File.join(category_dir, "category")
   ofs = File.open(regex_file, 'w')
@@ -176,25 +220,12 @@ task_list.each do |task|
   ofs.close
 end
 
-#do scd merge
-if domerge
-  if reindex
-    puts "reindex!!"
-    system("#{merger_program} -I #{scd} -O #{merged_scd}")
-    abort("merge scd failed") unless $?.success?
-  else
-    system("#{merger_program} -I #{scd} -O #{merged_scd} --gen-all")
-    abort("merge scd failed") unless $?.success?
-  end
-else
-  system("cp #{scd}/*.SCD #{merged_scd}/")
-end
-
 #generate raw scds
-system("#{matcher_program} --raw-generate -S #{merged_scd} --raw #{raw_scd} --odb #{odb}")
+system("#{matcher_program} --raw-generate -S #{scd} --mdb-instance #{mdb_instance} --odb #{odb} --mode #{mode}")
 abort("generating raw scd failed") unless $?.success?
 
 #split SCDs
+raw_scd = File.join(mdb_instance, "raw")
 system("#{matcher_program} -P -N T -S #{train_scd} -K #{work_dir}")
 abort("spliting T scd failed") unless $?.success?
 system("#{matcher_program} -P -N A -S #{raw_scd} -K #{work_dir}")
@@ -204,12 +235,16 @@ task_list.each do |task|
   next unless task.valid
   category_dir = File.join(work_dir, task.cid)
   #run c++ matcher program
-  index_done = File.join(category_dir, "index.done")
   match_done = File.join(category_dir, "match.done")
   match_file = File.join(category_dir, "match")
   FileUtils.rm_rf(match_file) if File.exist?(match_file)
   FileUtils.rm_rf(match_done) if File.exist?(match_done)
-  #FileUtils.rm_rf(index_done) if File.exist?(index_done)
+  a_scd = File.join(category_dir, "A")
+  a_scd_list = ScdParser::get_scd_list(a_scd)
+  if a_scd_list.empty?
+    puts "#{a_scd} empty, ignore matching"
+    next
+  end
 
   if task.type == CategoryTask::COM
     puts "start complete matching #{task.cid}"
@@ -222,10 +257,14 @@ task_list.each do |task|
   elsif task.type == CategoryTask::SIM
     #do similarity matching
     puts "start similarity matching #{task.cid}"
+    work_files = File.join(category_dir, "work_dir")
+    FileUtils.rm_rf(work_files) if reindex and File.exist?(work_files)
     system("#{matcher_program} -I -C #{cma} -S #{raw_scd} -K #{category_dir} --dictionary #{simhash_dic}")
     abort("similarity matching failed") unless $?.success?
   else
     next unless task.info['disable'].nil?
+    #index_done = File.join(category_dir, "index.done")
+    #FileUtils.rm_rf(index_done) if retrain and File.exist?(index_done)
     puts "start building attribute index for #{task.cid}"
     system("#{matcher_program} -A -Y #{synonym} -C #{cma} -S #{train_scd} -K #{category_dir}")
     abort("attribute indexing failed") unless $?.success?
@@ -239,67 +278,46 @@ end
 #merge match file to mdb_instance
 system("cat #{work_dir}/C*/match > #{mdb_instance}/match")
 
-b5mo_scd_instance = File.join(mdb_instance, "b5mo_scd")
-b5mp_scd_instance = File.join(mdb_instance, "b5mp_scd")
-b5mc_scd_instance = File.join(mdb_instance, "b5mc_scd")
-Dir.mkdir(b5mo_scd_instance)
-Dir.mkdir(b5mp_scd_instance)
-Dir.mkdir(b5mc_scd_instance)
+b5mo_scd_instance = File.join(mdb_instance, "b5mo")
+b5mo_mirror_instance = File.join(mdb_instance, "b5mo_mirror")
+b5mp_scd_instance = File.join(mdb_instance, "b5mp")
+b5mc_scd_instance = File.join(mdb_instance, "b5mc")
 
-
-#b5mo generator
-system("#{matcher_program} --b5mo-generate -S #{raw_scd} --b5mo #{b5mo_scd_instance} -K #{mdb_instance}")
+#b5mo generator, update odb here
+system("#{matcher_program} --b5mo-generate --odb #{odb} --mdb-instance #{mdb_instance}")
 abort("b5mo generate failed") unless $?.success?
-system("rm -rf #{b5mo_scd}/*")
-system("cp #{b5mo_scd_instance}/* #{b5mo_scd}/")
+system("rm -rf #{b5mo_scd}/*.SCD")
+system("cp #{b5mo_scd_instance}/*.SCD #{b5mo_scd}/")
 
 #uue generator
-system("#{matcher_program} --uue-generate --b5mo #{b5mo_scd_instance} --uue #{mdb_instance}/uue --odb #{odb}")
-abort("uue generate failed") unless $?.success?
+#system("#{matcher_program} --uue-generate --mdb-instance #{mdb_instance} --odb #{odb}")
+#abort("uue generate failed") unless $?.success?
 
-#b5mp generator, update odb and pdb here.
-system("#{matcher_program} --b5mp-generate --b5mo #{b5mo_scd_instance} --b5mp #{b5mp_scd_instance} --uue #{mdb_instance}/uue --odb #{odb} --pdb #{pdb}")
-system("rm -rf #{b5mp_scd}/*")
-system("cp #{b5mp_scd_instance}/* #{b5mp_scd}/")
-odb_in_mdb = File.join(mdb_instance, "odb")
-pdb_in_mdb = File.join(mdb_instance, "pdb")
-FileUtils.cp_r(odb, odb_in_mdb)
-FileUtils.cp_r(pdb, pdb_in_mdb)
+#b5mp generator
+
+cmd = "#{matcher_program} --b5mp-generate --mdb-instance #{mdb_instance}"
+if !last_mdb_instance.nil? and mode!=1
+  cmd+=" --last-mdb-instance #{last_mdb_instance}"
+end
+system(cmd)
+system("rm -rf #{b5mp_scd}/*.SCD")
+system("cp #{b5mp_scd_instance}/*.SCD #{b5mp_scd}/")
 
 #merge comment scd
 if dob5mc
-  if domerge
-    system("#{merger_program} -I #{comment_scd} -O #{comment_merged_scd}")
-    abort("merge comment scd failed") unless $?.success?
-  else
-    system("cp #{comment_scd}/*.SCD #{comment_merged_scd}/")
-  end
 
   #b5mc generator
-  cmd = "#{matcher_program} --b5mc-generate --b5mc #{b5mc_scd_instance} -S #{comment_merged_scd} --odb #{odb} --uue #{mdb_instance}/uue"
-  unless last_mdb_instance.nil?
-    last_b5mc_scd = File.join(last_mdb_instance, "b5mc_scd")
-    cmd += " --old-scd-path #{last_b5mc_scd}"
-  end
+  cmd = "#{matcher_program} --b5mc-generate -S #{comment_scd} --odb #{odb} --mdb-instance #{mdb_instance}"
   puts cmd
   system(cmd)
   abort("b5mc generate failed") unless $?.success?
-  system("rm -rf #{b5mc_scd}/*")
-  system("cp #{b5mc_scd_instance}/* #{b5mc_scd}/")
-  unless last_mdb_instance.nil?
-    last_b5mc_scd = File.join(last_mdb_instance, "b5mc_scd")
-    system("cp #{last_b5mc_scd}/* #{b5mc_scd_instance}/")
-    b5mc_merging = File.join(mdb_instance, "b5mc_merging")
-    Dir.mkdir b5mc_merging
-    system("#{merger_program} -I #{b5mc_scd_instance} -O #{b5mc_merging}")
-    FileUtils.rm_rf(b5mc_scd_instance)
-    FileUtils.mv(b5mc_merging, b5mc_scd_instance)
-  end
+  system("rm -rf #{b5mc_scd}/*.SCD")
+  system("cp #{b5mc_scd_instance}/*.SCD #{b5mc_scd}/")
 end
 
 if dologserver
   #logserver update
-  system("#{matcher_program} --logserver-update --logserver-config '#{log_server}' --uue #{mdb_instance}/uue --odb #{odb}")
+  system("#{matcher_program} --logserver-update --logserver-config '#{log_server}' --mdb-instance #{mdb_instance}")
   abort("log server update failed") unless $?.success?
 end
 

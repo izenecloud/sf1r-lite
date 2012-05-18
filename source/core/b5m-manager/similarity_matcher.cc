@@ -86,7 +86,7 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
         parser.load(scd_file);
         //int scd_type = ScdParser::checkSCDType(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
+        for( ScdParser::iterator doc_iter = parser.begin();
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)

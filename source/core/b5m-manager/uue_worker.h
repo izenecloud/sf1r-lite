@@ -25,11 +25,22 @@ namespace sf1r {
 
         void Load(const std::string& path)
         {
-            LOG(INFO)<<"loading uue"<<std::endl;
-            std::ifstream ifs(path.c_str());
+            path_ = path;
+        }
+
+        bool Run()
+        {
+            LOG(INFO)<<"Processing uue"<<std::endl;
+            std::ifstream ifs(path_.c_str());
             std::string line;
+            uint32_t i = 0;
             while( getline(ifs,line))
             {
+                ++i;
+                if(i%100000==0)
+                {
+                    LOG(INFO)<<"processing "<<i<<" uue item"<<std::endl;
+                }
                 boost::algorithm::trim(line);
                 std::vector<std::string> vec;
                 boost::algorithm::split(vec, line, boost::is_any_of(","));
@@ -38,89 +49,77 @@ namespace sf1r {
                 uue.docid = vec[0];
                 uue.from_to.from = vec[1];
                 uue.from_to.to = vec[2];
-                uue_list_.push_back(uue);
+                processor_->Process(uue);
             }
             ifs.close();
-            LOG(INFO)<<"loading uue finished"<<std::endl;
-        }
-
-        bool Run()
-        {
-            for(uint32_t i=0;i<uue_list_.size();i++)
-            {
-                if(i%100000==0)
-                {
-                    LOG(INFO)<<"processing "<<i<<" uue item"<<std::endl;
-                }
-                processor_->Process(uue_list_[i]);
-            }
-            uue_list_.clear();
             processor_->Finish();
+            LOG(INFO)<<"Processing uue finished"<<std::endl;
             return true;
         }
 
-        bool BatchRun()
-        {
-            std::vector<BuueItem> buue_list;
-            LOG(INFO)<<"getting buue list"<<std::endl;
-            GetBuueList_(buue_list);
-            LOG(INFO)<<"buue list got"<<std::endl;
-            uue_list_.clear();
-            for(uint32_t i=0;i<buue_list.size();i++)
-            {
-                if(i%100000==0)
-                {
-                    LOG(INFO)<<"processing "<<i<<" buue item"<<std::endl;
-                }
-                processor_->Process(buue_list[i]);
-            }
-            buue_list.clear();
-            processor_->Finish();
-            return true;
-        }
+        //bool BatchRun()
+        //{
+            //std::vector<BuueItem> buue_list;
+            //LOG(INFO)<<"getting buue list"<<std::endl;
+            //GetBuueList_(buue_list);
+            //LOG(INFO)<<"buue list got"<<std::endl;
+            //uue_list_.clear();
+            //for(uint32_t i=0;i<buue_list.size();i++)
+            //{
+                //if(i%100000==0)
+                //{
+                    //LOG(INFO)<<"processing "<<i<<" buue item"<<std::endl;
+                //}
+                //processor_->Process(buue_list[i]);
+            //}
+            //buue_list.clear();
+            //processor_->Finish();
+            //return true;
+        //}
 
     private:
-        void GetBuueList_(std::vector<BuueItem>& buue_list)
-        {
-            {
-                std::sort(uue_list_.begin(), uue_list_.end(), CompareUueFrom());
-                izenelib::util::VectorJoiner<UueItem, CompareUueFrom> joiner(&uue_list_);
-                std::vector<UueItem> vec;
-                while(joiner.Next(vec))
-                {
-                    BuueItem buue;
-                    buue.type = BUUE_REMOVE;
-                    buue.pid = vec[0].from_to.from;
-                    if(buue.pid.empty()) continue;
-                    for(uint32_t i=0;i<vec.size();i++)
-                    {
-                        buue.docid_list.push_back(vec[i].docid);
-                    }
-                    buue_list.push_back(buue);
-                }
-            }
-            {
-                std::sort(uue_list_.begin(), uue_list_.end(), CompareUueTo());
-                izenelib::util::VectorJoiner<UueItem, CompareUueTo> joiner(&uue_list_);
-                std::vector<UueItem> vec;
-                while(joiner.Next(vec))
-                {
-                    BuueItem buue;
-                    buue.type = BUUE_APPEND;
-                    buue.pid = vec[0].from_to.to;
-                    if(buue.pid.empty()) continue;
-                    for(uint32_t i=0;i<vec.size();i++)
-                    {
-                        buue.docid_list.push_back(vec[i].docid);
-                    }
-                    buue_list.push_back(buue);
-                }
-            }
-        }
+        //void GetBuueList_(std::vector<BuueItem>& buue_list)
+        //{
+            //{
+                //std::sort(uue_list_.begin(), uue_list_.end(), CompareUueFrom());
+                //izenelib::util::VectorJoiner<UueItem, CompareUueFrom> joiner(&uue_list_);
+                //std::vector<UueItem> vec;
+                //while(joiner.Next(vec))
+                //{
+                    //BuueItem buue;
+                    //buue.type = BUUE_REMOVE;
+                    //buue.pid = vec[0].from_to.from;
+                    //if(buue.pid.empty()) continue;
+                    //for(uint32_t i=0;i<vec.size();i++)
+                    //{
+                        //buue.docid_list.push_back(vec[i].docid);
+                    //}
+                    //buue_list.push_back(buue);
+                //}
+            //}
+            //{
+                //std::sort(uue_list_.begin(), uue_list_.end(), CompareUueTo());
+                //izenelib::util::VectorJoiner<UueItem, CompareUueTo> joiner(&uue_list_);
+                //std::vector<UueItem> vec;
+                //while(joiner.Next(vec))
+                //{
+                    //BuueItem buue;
+                    //buue.type = BUUE_APPEND;
+                    //buue.pid = vec[0].from_to.to;
+                    //if(buue.pid.empty()) continue;
+                    //for(uint32_t i=0;i<vec.size();i++)
+                    //{
+                        //buue.docid_list.push_back(vec[i].docid);
+                    //}
+                    //buue_list.push_back(buue);
+                //}
+            //}
+        //}
 
     private:
         Processor* processor_;
-        std::vector<UueItem> uue_list_;
+        std::string path_;
+        //std::vector<UueItem> uue_list_;
     };
 
 }

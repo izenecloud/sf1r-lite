@@ -8,28 +8,19 @@
 #include "offer_db.h"
 
 namespace sf1r {
-    class B5MCScdGenerator {
-        typedef boost::unordered_map<std::string, std::string> ModifyMap;
+    class B5mcScdGenerator {
     public:
-        B5MCScdGenerator(const std::string& new_scd, const std::string& old_scd, OfferDb* odb, const std::string& output_dir);
+        B5mcScdGenerator(OfferDb* odb);
 
-        void Process(const UueItem& item);
+        bool Generate(const std::string& scd_path, const std::string& mdb_instance);
 
-        void Finish();
-
-        //B5MCScdGenerator(OfferDb* odb, const std::string& mdb);
-
-        //bool Generate(const std::string& scd_file, const std::string& output_dir);
 
     private:
 
+        void Process_(Document& doc, int& type);
+
     private:
-        std::string new_scd_;
-        std::string old_scd_;
         OfferDb* odb_;
-        std::string output_dir_;
-        ModifyMap modified_;
-        //std::string work_path_;
     };
 
 }
