@@ -45,7 +45,7 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
 
     namespace bfs = boost::filesystem;
     std::vector<std::string> scd_list;
-    B5MHelper::GetIScdList(scd_path, scd_list);
+    B5MHelper::GetIUScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
     PidDictionary dic;
     dic.Load(dic_path_);
@@ -101,6 +101,7 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
                 const std::string& property_name = p->first;
                 doc[property_name] = p->second;
             }
+            if(doc["uuid"].length()>0) continue;
             if(doc["Category"].length()==0 || doc["Title"].length()==0 || doc["Source"].length()==0)
             {
                 continue;

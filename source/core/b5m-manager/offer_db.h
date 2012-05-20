@@ -43,30 +43,8 @@ namespace sf1r {
         typedef uint128_t KeyType;
         typedef uint128_t ValueType;
         typedef boost::unordered_map<KeyType, ValueType, uint128_hash > DbType;
-        typedef DbType::iterator iterator;
-        typedef DbType::const_iterator const_iterator;
         OfferDb(const std::string& path, const std::string& tmp_path = "./fuji.tmp"): path_(path), is_open_(false), has_modify_(false)
         {
-        }
-
-        iterator begin()
-        {
-            return db_.begin();
-        }
-
-        const_iterator begin() const
-        {
-            return db_.begin();
-        }
-
-        iterator end()
-        {
-            return db_.end();
-        }
-
-        const_iterator end() const
-        {
-            return db_.end();
         }
 
         bool is_open() const
@@ -79,6 +57,7 @@ namespace sf1r {
             if(is_open_) return true;
             LOG(INFO)<<"Loading odb..."<<std::endl;
             load(path_);
+            has_modify_ = false;
             is_open_ = true;
             return true;
         }
@@ -111,7 +90,7 @@ namespace sf1r {
         bool insert(const KeyType& key, const ValueType& value)
         {
             bool modify = false;
-            iterator it = db_.find(key);
+            DbType::iterator it = db_.find(key);
             if(it==db_.end())
             {
                 db_.insert(std::make_pair(key, value));
@@ -150,16 +129,16 @@ namespace sf1r {
             return true;
         }
 
-        bool erase(const KeyType& key)
-        {
-            has_modify_ = true;
-            return db_.erase(key)>0;
-        }
+        //bool erase(const KeyType& key)
+        //{
+            //has_modify_ = true;
+            //return db_.erase(key)>0;
+        //}
 
-        bool erase(const std::string& soid)
-        {
-            return erase(B5MHelper::StringToUint128(soid));
-        }
+        //bool erase(const std::string& soid)
+        //{
+            //return erase(B5MHelper::StringToUint128(soid));
+        //}
 
         bool flush()
         {

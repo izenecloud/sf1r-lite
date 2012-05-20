@@ -27,15 +27,12 @@ end
 
 config = nil
 config_file = nil
-doreindex = false
 mode = 0 #B5MMode::INC as default
 domerge = true
 dob5mc = true
 dologserver = true
 ARGV.each_with_index do |a,i|
-  if a=="--reindex"
-    doreindex = true
-  elsif a=="--mode"
+  if a=="--mode"
     mode = ARGV[i+1].to_i
   elsif a=="--nomerge"
     domerge = false
@@ -241,8 +238,8 @@ task_list.each do |task|
   FileUtils.rm_rf(match_done) if File.exist?(match_done)
   a_scd = File.join(category_dir, "A")
   a_scd_list = ScdParser::get_scd_list(a_scd)
-  if a_scd_list.empty?
-    puts "#{a_scd} empty, ignore matching"
+  if a_scd_list.empty? and task.type==CategoryTask::ATT
+    puts "#{a_scd} empty in attribute indexing, ignore matching"
     next
   end
 
@@ -258,7 +255,7 @@ task_list.each do |task|
     #do similarity matching
     puts "start similarity matching #{task.cid}"
     work_files = File.join(category_dir, "work_dir")
-    FileUtils.rm_rf(work_files) if reindex and File.exist?(work_files)
+    FileUtils.rm_rf(work_files) if mode>1 and File.exist?(work_files)
     system("#{matcher_program} -I -C #{cma} -S #{raw_scd} -K #{category_dir} --dictionary #{simhash_dic}")
     abort("similarity matching failed") unless $?.success?
   else
