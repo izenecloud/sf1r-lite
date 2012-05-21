@@ -1057,12 +1057,12 @@ bool IndexWorker::updateDoc_(
         bool immediately)
 {
     CREATE_SCOPED_PROFILER (proDocumentUpdating, "IndexWorker", "IndexWorker::UpdateDocument");
+    if(INSERT == updateType) return insertDoc_(document, indexDocument, timestamp);
 
     if (hooker_)
     {
         if (!hooker_->HookUpdate(document, indexDocument, timestamp)) return false;
     }
-    if(INSERT == updateType) return insertDoc_(document, indexDocument, timestamp);
     /*if(immediately) */return doUpdateDoc_(document,indexDocument,updateType);
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
