@@ -103,6 +103,13 @@ FileUtils.mkdir_p(work_dir) unless File.exist?(work_dir)
 Dir.mkdir(status_path) unless File.exist?(status_path)
 Dir.mkdir(db_path) unless File.exist?(db_path)
 Dir.mkdir(mdb) unless File.exist?(mdb)
+
+time_str = Time.now.strftime("%Y%m%d%H%M%S")
+mdb_instance = File.join(mdb, time_str)
+if File.exist?(mdb_instance)
+  abort "#{mdb_instance} already exists"
+end
+odb = File.join(mdb_instance, "odb")
 mdb_instance_list = []
 Dir.foreach(mdb) do |m|
   next unless m =~ /\d{14}/
@@ -116,6 +123,20 @@ last_mdb_instance = mdb_instance_list.last
 last_odb = nil
 unless last_mdb_instance.nil?
   last_odb = File.join(last_mdb_instance, "odb")
+end
+Dir.mkdir(mdb_instance)
+mode_file = File.join(mdb_instance, "mode")
+File.open(mode_file, 'w') do |f|
+  f.puts mode
+end
+unless last_odb.nil?
+  FileUtils.cp_r(last_odb, odb)
+end
+if mode==1 #rebuild, delete mdb_instance_list
+  mdb_instance_list.each do |m|
+    FileUtils.rm_rf(m)
+  end
+  mdb_instance_list.clear
 end
 #reindex = mdb_instance_list.empty?()?true:false
 #retrain = false
@@ -147,22 +168,6 @@ end
   #system("rm -rf #{work_dir}/C*/T")
 #end
 
-
-time_str = Time.now.strftime("%Y%m%d%H%M%S")
-mdb_instance = File.join(mdb, time_str)
-odb = File.join(mdb_instance, "odb")
-if File.exist?(mdb_instance)
-  abort "#{mdb_instance} already exists"
-else
-  Dir.mkdir(mdb_instance)
-  unless last_odb.nil?
-    FileUtils.cp_r(last_odb, odb)
-  end
-  mode_file = File.join(mdb_instance, "mode")
-  File.open(mode_file, 'w') do |f|
-    f.puts mode
-  end
-end
 task_list = []
 
 #require_relative 'b5m_env.rb'

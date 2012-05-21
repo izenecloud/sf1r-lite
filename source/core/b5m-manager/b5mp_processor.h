@@ -3,8 +3,6 @@
 
 #include <string>
 #include <vector>
-#include <boost/unordered_map.hpp>
-#include <boost/regex.hpp>
 #include "b5m_types.h"
 #include "b5m_helper.h"
 #include "product_db.h"
@@ -16,7 +14,6 @@ namespace sf1r {
 
     ///B5mpProcessor is responsibility to generate b5mp scds and also b5mo_mirror scd
     class B5mpProcessor{
-        typedef boost::unordered_map<uint128_t, bool, uint128_hash> DeleteMap;
         typedef izenelib::am::ssf::Writer<> PoMapWriter;
     public:
         B5mpProcessor(const std::string& mdb_instance, const std::string& last_mdb_instance);

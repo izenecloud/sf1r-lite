@@ -13,6 +13,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
 #include <glog/logging.h>
 
 using namespace sf1r;

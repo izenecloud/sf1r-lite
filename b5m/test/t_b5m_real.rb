@@ -72,9 +72,10 @@ describe "B5M Real Tester" do
     @logger = Logger.new(STDERR)
     @mod_count = 20000
     @validate_only = false
-    @reindex_mode = 3
+    @reindex_mode = 1
     @b5mo_limit = 0
     @b5mp_limit = 0
+    @do_logserver = true
   end
 
   it "should always be right" do
@@ -109,7 +110,10 @@ describe "B5M Real Tester" do
       gen_yml_config({'scd' => "#{offer_scd_dir}", "comment_scd" => "#{comment_scd_dir}"})
       nob5mc = File.exists?(comment_scd_dir)?false:true
       unless @validate_only
-        cmd = "ruby #{@matcher_script} --config #{config_file} --nologserver"
+        cmd = "ruby #{@matcher_script} --config #{config_file}"
+        unless @do_logserver
+          cmd += " --nologserver"
+        end
         cmd += " --nob5mc" if nob5mc
         if iter==1
           cmd = "#{cmd} --mode #{@reindex_mode}"

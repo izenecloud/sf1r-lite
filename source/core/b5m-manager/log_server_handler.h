@@ -3,9 +3,6 @@
 
 #include <string>
 #include <vector>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
-#include <boost/regex.hpp>
 #include <configuration-manager/LogServerConnectionConfig.h>
 #include <log-manager/LogServerConnection.h>
 #include "b5m_types.h"

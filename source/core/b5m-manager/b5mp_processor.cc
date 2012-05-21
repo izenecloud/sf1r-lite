@@ -65,9 +65,9 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
     }
     ProductProperty another;
     another.Parse(another_value.doc);
-    pp += another;
     if(another_value.type!=DELETE_SCD)
     {
+        pp += another;
         if(value.empty() || another.oid==another.pid )
         {
             value.doc = another_value.doc;
@@ -76,7 +76,10 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
     }
     else
     {
-        pp.itemcount -= 1;
+        if(pp.pid.empty())
+        {
+            pp.pid = another.pid;
+        }
     }
     pp.Set(value.doc);
 

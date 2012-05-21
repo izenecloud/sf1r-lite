@@ -3,8 +3,6 @@
 
 #include <string>
 #include <vector>
-#include <boost/unordered_map.hpp>
-#include <boost/regex.hpp>
 #include "offer_db.h"
 
 namespace sf1r {
