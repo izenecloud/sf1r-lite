@@ -244,4 +244,17 @@ void PropValueTable::propValuePath(pvid_t pvId, std::vector<izenelib::util::UStr
     std::reverse(path.begin(), path.end());
 }
 
+PropValueTable::pvid_t PropValueTable::getRootValueId(pvid_t pvId) const
+{
+    pvid_t prev = 0;
+
+    while (pvId)
+    {
+        prev = pvId;
+        pvId = parentIdVec_[pvId];
+    }
+
+    return prev;
+}
+
 NS_FACETED_END

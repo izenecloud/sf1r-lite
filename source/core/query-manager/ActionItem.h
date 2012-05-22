@@ -326,6 +326,7 @@ class KeywordSearchActionItem
 public:
     // property name - sorting order(true : Ascending, false : Descending)
     typedef std::pair<std::string , bool> SortPriorityType;
+    typedef std::vector<SortPriorityType> SortPriorityList;
     // Filter Option - propertyName
 
     KeywordSearchActionItem()
@@ -517,7 +518,7 @@ public:
     ///
     /// @brief a list of sort methods. The less the index of a sort item in  the list, the more it has priority.
     ///
-    std::vector<SortPriorityType>               sortPriorityList_;
+    SortPriorityList                            sortPriorityList_;
 
     ///
     /// @brief a list of filtering option.

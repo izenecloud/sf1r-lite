@@ -22,6 +22,12 @@ public:
     /// sub property name, used for category boosting
     std::string boostingSubPropName;
 
+    bool isEnable() const
+    {
+        return !merchantPropName.empty() ||
+               !categoryPropName.empty();
+    }
+
 private:
     friend class boost::serialization::access;
 

@@ -120,6 +120,13 @@ public:
      */
     void propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const;
 
+    /**
+     * Find the parent node of @p pvId, until the root node is found.
+     * @param pvId the value id
+     * @return the root id
+     */
+    pvid_t getRootValueId(pvid_t pvId) const;
+
 private:
     /**
      * Save each property value and its parent id to text file,

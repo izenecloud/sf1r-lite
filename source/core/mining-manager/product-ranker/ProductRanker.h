@@ -1,0 +1,45 @@
+/**
+ * @file ProductRanker.h
+ * @brief do product ranking by several methods,
+ *        such as category boosting, merchant score, etc.
+ * @author Jun Jiang <jun.jiang@izenesoft.com>
+ * @date Created 2012-05-17
+ */
+
+#ifndef SF1R_PRODUCT_RANKER_H
+#define SF1R_PRODUCT_RANKER_H
+
+#include "ProductScoreList.h"
+
+namespace sf1r
+{
+class ProductRankingParam;
+class ProductRankerFactory;
+
+class ProductRanker
+{
+public:
+    ProductRanker(
+        ProductRankingParam& param,
+        ProductRankerFactory& rankerFactory
+    );
+
+    void rank();
+
+private:
+    void loadScore_();
+
+    void sortScore_();
+
+    void getResult_();
+
+private:
+    ProductRankingParam& rankingParam_;
+    ProductRankerFactory& rankerFactory_;
+
+    ProductScoreMatrix scoreMatrix_;
+};
+
+} // namespace sf1r
+
+#endif // SF1R_PRODUCT_RANKER_H

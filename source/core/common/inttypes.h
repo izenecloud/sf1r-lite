@@ -37,6 +37,10 @@ typedef uint32_t collectionid_t;
 typedef uint32_t workerid_t;
 typedef uint64_t wdocid_t;
 
+typedef float score_t;
+typedef uint16_t merchant_id_t;
+typedef uint16_t category_id_t;
+
 } // namespace sf1r
 
 #endif // SF1V5_COMMON_INTTYPES_H

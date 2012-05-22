@@ -15,10 +15,6 @@
 namespace sf1r
 {
 
-typedef float score_t;
-typedef uint16_t merchant_id_t;
-typedef uint16_t category_id_t;
-
 template <typename CategoryT>
 struct CategoryScore
 {

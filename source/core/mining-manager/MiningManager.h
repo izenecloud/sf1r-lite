@@ -88,6 +88,7 @@ class IndexManager;
 class SearchManager;
 class MultiDocSummarizationSubManager;
 class MerchantScoreManager;
+class ProductRankerFactory;
 
 namespace sim
 {
@@ -98,7 +99,6 @@ namespace faceted
 {
 class GroupManager;
 class AttrManager;
-class PropertyDiversityReranker;
 class OntologyManager;
 class CTRManager;
 }
@@ -324,6 +324,31 @@ public:
 
     void onIndexUpdated(size_t docNum);
 
+    const MiningSchema& GetMiningSchema() const
+    {
+        return mining_schema_;
+    }
+
+    const faceted::GroupManager* GetGroupManager() const
+    {
+        return groupManager_;
+    }
+
+    GroupLabelLogger* GetGroupLabelLogger(const std::string& propName)
+    {
+        return groupLabelLoggerMap_[propName];
+    }
+
+    const MerchantScoreManager* GetMerchantScoreManager() const
+    {
+        return merchantScoreManager_;
+    }
+
+    boost::shared_ptr<SearchManager>& GetSearchManager()
+    {
+        return searchManager_;
+    }
+
 private:
     void printSimilarLabelResult_(uint32_t label_id);
 
@@ -458,15 +483,15 @@ private:
     /** ATTR BY */
     faceted::AttrManager* attrManager_;
 
-    /** GROUP RERANKER */
-    faceted::PropertyDiversityReranker* groupReranker_;
-
     /** property name => group label click logger */
     typedef std::map<std::string, GroupLabelLogger*> GroupLabelLoggerMap;
     GroupLabelLoggerMap groupLabelLoggerMap_;
 
     /** Merchant Score */
     MerchantScoreManager* merchantScoreManager_;
+
+    /** Product Ranking */
+    ProductRankerFactory* productRankerFactory_;
 
     /** TDT */
     std::string tdt_path_;

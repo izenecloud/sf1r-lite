@@ -12,7 +12,6 @@
 #include <am/tokyo_cabinet/tc_hash.h>
 #include <sdb/SequentialDB.h>
 
-#include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
 NS_FACETED_BEGIN
@@ -20,16 +19,17 @@ NS_FACETED_BEGIN
 class CTRManager
 {
 public:
-    typedef uint32_t count_t;
-    //typedef izenelib::am::tc_hash<uint32_t, count_t> DBType;
     typedef izenelib::am::sdb_fixedhash<uint32_t, count_t, izenelib::util::ReadWriteLock> DBType;
 
-public:
+    typedef boost::shared_mutex MutexType;
+    typedef boost::shared_lock<MutexType> ScopedReadLock;
+    typedef boost::unique_lock<MutexType> ScopedWriteLock;
+
     CTRManager(const std::string& dirPath, size_t docNum = 0);
 
     ~CTRManager();
 
-public:
+    MutexType& getMutex() const { return mutex_; }
 
     bool open();
 
@@ -78,7 +78,7 @@ private:
 
     DBType* db_;
 
-    mutable boost::shared_mutex mutex_;
+    mutable MutexType mutex_;
 };
 
 NS_FACETED_END

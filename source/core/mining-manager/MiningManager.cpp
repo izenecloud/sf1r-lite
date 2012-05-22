@@ -27,12 +27,12 @@
 #include "faceted-submanager/ontology_manager.h"
 #include "faceted-submanager/group_manager.h"
 #include "faceted-submanager/attr_manager.h"
-#include "faceted-submanager/property_diversity_reranker.h"
 #include "faceted-submanager/GroupFilterBuilder.h"
 #include "faceted-submanager/ctr_manager.h"
 
 #include "group-label-logger/GroupLabelLogger.h"
 #include "merchant-score-manager/MerchantScoreManager.h"
+#include "product-ranker/ProductRankerFactory.h"
 
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
@@ -111,8 +111,8 @@ MiningManager::MiningManager(
     , idManager_(idManager)
     , groupManager_(NULL)
     , attrManager_(NULL)
-    , groupReranker_(NULL)
     , merchantScoreManager_(NULL)
+    , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
 {
@@ -123,10 +123,10 @@ MiningManager::~MiningManager()
     if (analyzer_) delete analyzer_;
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
+    if (productRankerFactory_) delete productRankerFactory_;
     if (merchantScoreManager_) delete merchantScoreManager_;
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
-    if (groupReranker_) delete groupReranker_;
     if (tdt_storage_) delete tdt_storage_;
     if (summarizationManager_) delete summarizationManager_;
     close();
@@ -390,20 +390,6 @@ bool MiningManager::open()
             }
         }
 
-        /** property_rerank **/
-        {
-            const std::string& diversityProperty = mining_schema_.prop_rerank_property.propName;
-            const std::string& boostingProperty = mining_schema_.prop_rerank_property.boostingPropName;
-            const std::string& boostingPolicyProperty = mining_schema_.prop_rerank_property.boostingPolicyPropName;
-
-            groupReranker_ = new faceted::PropertyDiversityReranker(groupManager_, diversityProperty, boostingProperty);
-            groupReranker_->setBoostingPolicyProperty(boostingPolicyProperty);
-            groupReranker_->setGroupLabelLogger(groupLabelLoggerMap_[boostingProperty]);
-            groupReranker_->setCTRManager(ctrManager_);
-            groupReranker_->setSearchManager(searchManager_);
-            searchManager_->set_reranker(boost::bind(&faceted::PropertyDiversityReranker::rerank, groupReranker_, _1, _2, _3));
-        }
-
         /** merchant score */
         if (!mining_schema_.product_ranking_config.merchantPropName.empty() && groupManager_)
         {
@@ -426,6 +412,16 @@ bool MiningManager::open()
                 std::cerr << "open " << scorePath << " failed" << std::endl;
                 return false;
             }
+        }
+
+        /** product ranking */
+        if (mining_schema_.product_ranking_config.isEnable() && groupManager_)
+        {
+            if (productRankerFactory_) delete productRankerFactory_;
+
+            productRankerFactory_ = new ProductRankerFactory(this);
+
+            searchManager_->setProductRankerFactory(productRankerFactory_);
         }
 
         /** tdt **/
