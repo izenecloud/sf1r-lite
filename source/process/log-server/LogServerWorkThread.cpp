@@ -1,4 +1,5 @@
 #include "LogServerWorkThread.h"
+#include <ctime>
 
 #include <glog/logging.h>
 
@@ -143,6 +144,8 @@ void LogServerWorkThread::flushData()
         LogServerStorage::get()->docidDrum()->Synchronize();
         LOG(INFO) << "finished synchronizing drum for docids";
     }
+    LogServerStorage::get()->close();
+    LogServerStorage::get()->init();
 }
 
 }

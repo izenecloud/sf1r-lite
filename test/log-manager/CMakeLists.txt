@@ -1,6 +1,7 @@
 INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/core
   ${CMAKE_SOURCE_DIR}/process/common
+  ${CMAKE_SOURCE_DIR}/process/log-server
   ${idmlib_INCLUDE_DIRS}
   ${imllib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
@@ -106,5 +107,14 @@ ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   TARGET_LINK_LIBRARIES(t_LogServerConnection ${libs})
   SET_TARGET_PROPERTIES(t_LogServerConnection PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+
+  ADD_EXECUTABLE(t_Drum
+    t_Drum.cpp
+    ${CMAKE_SOURCE_DIR}/process/log-server/LogServerCfg.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_Drum ${libs})
+  SET_TARGET_PROPERTIES(t_Drum PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
