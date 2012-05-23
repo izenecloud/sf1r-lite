@@ -102,7 +102,7 @@ ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
             //it->second += oit->second;
         //}
     }
-    itemcount+=1;
+    itemcount+=other.itemcount;
     return *this;
 }
 

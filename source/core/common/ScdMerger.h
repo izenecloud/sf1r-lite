@@ -332,6 +332,9 @@ public:
                                     LOG(INFO)<<pname<<","<<sss<<" not in cache"<<std::endl;
                                 }
 #endif
+                                ValueType empty_value;
+                                config.merge_function(empty_value, value);
+                                empty_value.swap(value);
                             }
                             else
                             {
@@ -356,9 +359,6 @@ public:
                                     LOG(INFO)<<pname<<","<<sss<<" output"<<std::endl;
                                 }
 #endif
-                                ValueType empty_value;
-                                config.merge_function(empty_value, value);
-                                empty_value.swap(value);
                                 output_value = value;
                                 position_map.erase(mit);
                             }
@@ -376,9 +376,9 @@ public:
                                     LOG(INFO)<<pname<<","<<sss<<" insert to cache"<<std::endl;
                                 }
 #endif
-                                ValueType empty_value;
-                                config.merge_function(empty_value, value);
-                                empty_value.swap(value);
+                                //ValueType empty_value;
+                                //config.merge_function(empty_value, value);
+                                //empty_value.swap(value);
                                 config.cache.insert(std::make_pair(id, value));
                             }
                         }

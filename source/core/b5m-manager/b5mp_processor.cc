@@ -65,8 +65,8 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
     }
     ProductProperty another;
     another.Parse(another_value.doc);
-    std::string spid;
-    another.pid.convertString(spid, izenelib::util::UString::UTF_8);
+    //std::string spid;
+    //another.pid.convertString(spid, izenelib::util::UString::UTF_8);
     if(another_value.type!=DELETE_SCD)
     {
         //if(spid=="403ec13d9939290d24c308b3da250658")
