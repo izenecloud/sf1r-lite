@@ -19,7 +19,7 @@ namespace sf1r
 class RangeIdentity
 {
 public:
-    RangeIdentity(int merchantCountIndex);
+    RangeIdentity(int compareScoreCount);
 
     void setScoreIter(ProductScoreIter iter);
 
@@ -40,7 +40,7 @@ private:
 class MerchantDiversityRange
 {
 public:
-    MerchantDiversityRange(int merchantCountIndex);
+    MerchantDiversityRange(int compareScoreCount);
 
     /**
      * @return false if the end of range is found.

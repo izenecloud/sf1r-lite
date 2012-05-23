@@ -16,7 +16,7 @@ namespace sf1r
 class MerchantDiversityReranker : public ProductReranker
 {
 public:
-    MerchantDiversityReranker(int merchantCountIndex);
+    MerchantDiversityReranker(int compareScoreCount);
 
     virtual void rerank(ProductScoreMatrix& scoreMatrix);
 
@@ -27,7 +27,7 @@ private:
     ) const;
 
 private:
-    const int merchantCountIndex_;
+    const int compareScoreCount_;
 };
 
 } // namespace sf1r

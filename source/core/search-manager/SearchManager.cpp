@@ -73,6 +73,7 @@ SearchManager::SearchManager(
     , rankingManagerPtr_(rankingManager)
     , queryBuilder_()
     , filter_hook_(0)
+    , productRankerFactory_(NULL)
 {
     collectionName_ = config->collectionName_;
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
@@ -138,10 +139,15 @@ SearchManager::createPropertyTable(const std::string& propertyName)
 
 bool SearchManager::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    if (productRankerFactory_ && resultItem.topKCustomRankScoreList_.empty() && isProductRanking(actionItem))
+    if (productRankerFactory_ &&
+        resultItem.topKCustomRankScoreList_.empty() &&
+        isProductRanking(actionItem))
     {
-        ProductRankingParam rankingParam(actionItem.env_.queryString_, resultItem.topKDocs_, resultItem.topKRankScoreList_);
-        boost::scoped_ptr<ProductRanker> productRanker(productRankerFactory_->createProductRanker(rankingParam));
+        ProductRankingParam rankingParam(actionItem.env_.queryString_,
+            resultItem.topKDocs_, resultItem.topKRankScoreList_);
+
+        boost::scoped_ptr<ProductRanker> productRanker(
+            productRankerFactory_->createProductRanker(rankingParam));
 
         productRanker->rank();
         return true;

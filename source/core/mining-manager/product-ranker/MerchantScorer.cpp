@@ -16,7 +16,7 @@ category_id_t getCategoryId(
         const faceted::PropValueTable::ValueIdList& valueIdList = (*categoryIdTable)[docId];
 
         if (!valueIdList.empty())
-            return valueIdList[0];
+            return valueIdList.front();
     }
 
     return 0;
@@ -55,22 +55,18 @@ void getMerchantCountScore(
         const faceted::PropValueTable::ValueIdList& valueIdList = merchantIdTable[docId];
         merchantCount = valueIdList.size();
 
-        if (merchantCount != 0)
+        if (merchantCount == 1.0)
         {
-            if (merchantCount == 1.0)
-            {
-                scoreList.singleMerchantId_ = valueIdList.front();
-            }
-            else if (merchantCount > 2)
-            {
-                // for multiple merchants, their "merchantCount" are all set to 2,
-                // so that they could be compared by their following scores
-                merchantCount = 2;
-            }
-
-            merchantScore = sumMerchantScore(merchantScoreManager, valueIdList, categoryId);
+            scoreList.singleMerchantId_ = valueIdList.front();
+        }
+        else if (merchantCount > 2)
+        {
+            // for multiple merchants, their "merchantCount" are all set to 2,
+            // so that they could be compared by their following scores
+            merchantCount = 2;
         }
 
+        merchantScore = sumMerchantScore(merchantScoreManager, valueIdList, categoryId);
     }
 
     scoreList.pushScore(merchantCount);

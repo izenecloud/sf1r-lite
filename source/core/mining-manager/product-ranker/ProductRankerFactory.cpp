@@ -90,10 +90,10 @@ void ProductRankerFactory::createMerchantScorer_()
     ProductScorer* merchantScorer = new MerchantScorer(
         merchantValueTable_, categoryValueTable_, merchantScoreManager_);
 
+    const int compareScoreCount = scorers_.size();
     scorers_.push_back(merchantScorer);
 
-    const int merchantScoreIndex = scorers_.size();
-    rerankers_[DIVERSITY_RERANKER] = new MerchantDiversityReranker(merchantScoreIndex);
+    rerankers_[DIVERSITY_RERANKER] = new MerchantDiversityReranker(compareScoreCount);
 }
 
 void ProductRankerFactory::createRelevanceScorer_()

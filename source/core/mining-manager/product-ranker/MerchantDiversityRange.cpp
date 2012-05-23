@@ -5,9 +5,9 @@
 namespace sf1r
 {
 
-RangeIdentity::RangeIdentity(int merchantCountIndex)
-    : compareScoreCount_(merchantCountIndex)
-    , merchantScoreIndex_(merchantCountIndex+1)
+RangeIdentity::RangeIdentity(int compareScoreCount)
+    : compareScoreCount_(compareScoreCount)
+    , merchantScoreIndex_(compareScoreCount+1)
     , isPositiveScore_(false)
 {
 }
@@ -31,9 +31,9 @@ bool RangeIdentity::checkScorePositive_(ProductScoreIter iter) const
     return iter->rankingScores_[merchantScoreIndex_] > 0;
 }
 
-MerchantDiversityRange::MerchantDiversityRange(int merchantCountIndex)
+MerchantDiversityRange::MerchantDiversityRange(int compareScoreCount)
     : foundBegin_(false)
-    , identity_(merchantCountIndex)
+    , identity_(compareScoreCount)
 {
 }
 

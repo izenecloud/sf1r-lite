@@ -6,8 +6,8 @@
 namespace sf1r
 {
 
-MerchantDiversityReranker::MerchantDiversityReranker(int merchantCountIndex)
-    : merchantCountIndex_(merchantCountIndex)
+MerchantDiversityReranker::MerchantDiversityReranker(int compareScoreCount)
+    : compareScoreCount_(compareScoreCount)
 {
 }
 
@@ -29,7 +29,7 @@ ProductScoreRange MerchantDiversityReranker::findDiversityRange_(
     ProductScoreIter last
 ) const
 {
-    MerchantDiversityRange diversityRange(merchantCountIndex_);
+    MerchantDiversityRange diversityRange(compareScoreCount_);
 
     for (ProductScoreIter it = first; it != last; ++it)
     {
