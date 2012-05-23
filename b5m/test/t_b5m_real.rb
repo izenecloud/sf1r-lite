@@ -71,7 +71,7 @@ describe "B5M Real Tester" do
 
     @logger = Logger.new(STDERR)
     @mod_count = 20000
-    @validate_only = true
+    @validate_only = false
     @reindex_mode = 1
     @b5mo_limit = 0
     @b5mp_limit = 0
