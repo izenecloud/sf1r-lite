@@ -27,26 +27,15 @@ describe "B5M Tester" do
     @category_file = match_path['category']
     @filter_attrib_name = match_path['filter_attrib_name']
     @work_dir = match_path['work_dir']
-    @db_path = File.join(@work_dir, 'db')
-    @odb = File.join(@db_path, 'odb')
-    @pdb = File.join(@db_path, 'pdb')
-    @mdb = File.join(@db_path, 'mdb')
-    @tmp_dir = match_path['tmp']
-    @result_file = match_path['result']
-    @train_scd = match_path['train_scd']
-    @scd = match_path['scd']
-    @comment_scd = match_path['comment_scd']
-    @cma = match_path['cma']
+    @mdb_dir = File.join(@work_dir, "db", "mdb")
     @b5mo_scd = File.join(match_path['b5mo'])
     @b5mp_scd = File.join(match_path['b5mp'])
     @b5mc_scd = File.join(match_path['b5mc'])
     [@b5mo_scd, @b5mp_scd, @b5mc_scd].each do |path|
       prepare_empty_dir(path)
     end
-    #Dir.mkdir(@work_dir) unless File.exist?(@work_dir)
-    #Dir.mkdir(@db_path) unless File.exist?(@db_path)
-    #Dir.mkdir(@mdb) unless File.exist?(@mdb)
     @matcher_program = B5MPath.matcher
+    @matcher_script = File.join(File.dirname(@top_dir), "start_b5m_matcher.rb")
 
     @o_max = 20000
     @p_max = 500
@@ -115,9 +104,6 @@ describe "B5M Tester" do
     reindex_prob = 0.05
 
     #begin test, given b5mo scd, to test b5mp and log server
-    [@mdb, @odb, @pdb].each do |db|
-      prepare_empty_dir(db)
-    end
     mock_b5m = MockB5M.new
     mock_dmp = MockDm.new
     reindex = true
@@ -130,15 +116,20 @@ describe "B5M Tester" do
         mock_b5m.clear
         mock_dmp.clear
       end
-      #prepare_empty_dir(@scd)
+
+      mdb_instance_list = []
+      Dir.foreach(@mdb_dir) do |m|
+        next unless m =~ /\d{14}/
+        next unless File.directory?(File.join(@mdb_dir,m))
+        mdb_instance_list << m
+      end
+      mdb_instance_list.sort!
+      last_mdb_instance = mdb_instance_list.last
       time_str = Time.now.strftime("%Y%m%d%H%M%S")
-      mdb_instance = File.join(@mdb, time_str)
-      b5mo_scd = File.join(@b5mo_scd, time_str)
-      b5mp_scd = File.join(@b5mp_scd, time_str)
-      raw_scd = File.join(mdb_instance, "raw")
-      prepare_empty_dir(mdb_instance)
-      prepare_empty_dir(b5mo_scd)
-      prepare_empty_dir(b5mp_scd)
+      mdb_instance = File.join(@mdb_dir, time_str)
+      raw = File.join(mdb_instance, "raw")
+      b5mo = File.join(mdb_instance, "b5mo")
+      prepare_empty_dir(b5mo)
 
       probs = [0.2, 0.7, 0.1]
       index_count = @o_max/10
@@ -155,35 +146,40 @@ describe "B5M Tester" do
       @logger.info "delete_docs #{delete_docs.size}"
 
       unless insert_docs.empty?
-        writer = ScdWriter.new(b5mo_scd, "I")
+        writer = ScdWriter.new(b5mo, "I")
         insert_docs.each do |doc|
           writer.append(doc)
         end
         writer.close
       end
       unless update_docs.empty?
-        writer = ScdWriter.new(b5mo_scd, "U")
+        writer = ScdWriter.new(b5mo, "U")
         update_docs.each do |doc|
           writer.append(doc)
         end
         writer.close
       end
       unless delete_docs.empty?
-        writer = ScdWriter.new(b5mo_scd, "D")
+        writer = ScdWriter.new(b5mo, "D")
         delete_docs.each do |doc|
           writer.append(doc)
         end
         writer.close
       end
-      system("#{@matcher_program} --raw-generate -S #{b5mo_scd} --raw #{raw_scd} --odb #{@odb}")
+      cmd = "#{matcher_program} --b5mp-generate --mdb-instance #{mdb_instance}"
+      unless last_mdb_instance.nil?
+        cmd += " --last-mdb-instance #{last_mdb_instance}"
+      end
+      puts cmd
+      system(cmd)
       $?.success?.should be true
-      system("#{@matcher_program} --uue-generate --b5mo #{raw_scd} --uue #{mdb_instance}/uue --odb #{@odb}")
-      $?.success?.should be true
-      system("#{@matcher_program} --b5mp-generate --b5mo #{raw_scd} --b5mp #{b5mp_scd} --uue #{mdb_instance}/uue --odb #{@odb} --pdb #{@pdb}")
-      $?.success?.should be true
+      #system("#{@matcher_program} --uue-generate --b5mo #{raw_scd} --uue #{mdb_instance}/uue --odb #{@odb}")
+      #$?.success?.should be true
+      #system("#{@matcher_program} --b5mp-generate --b5mo #{raw_scd} --b5mp #{b5mp_scd} --uue #{mdb_instance}/uue --odb #{@odb} --pdb #{@pdb}")
+      #$?.success?.should be true
 
-      mock_b5m.index(raw_scd)
-      mock_dmp.index(b5mp_scd)
+      mock_b5m.index(b5mo)
+      mock_dmp.index(b5mp)
       puts "mock_dmp count : #{mock_dmp.count}"
 
       mock_b5m.dmp.should dm_equal(mock_dmp)

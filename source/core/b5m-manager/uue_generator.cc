@@ -8,7 +8,7 @@ UueGenerator::UueGenerator(OfferDb* odb)
 {
 }
 
-bool UueGenerator::Generate(const std::string& b5mo_scd, const std::string& result)
+bool UueGenerator::Generate(const std::string& mdb_instance)
 {
     if(!odb_->is_open())
     {
@@ -18,17 +18,8 @@ bool UueGenerator::Generate(const std::string& b5mo_scd, const std::string& resu
             return false;
         }
     }
-    //if(!LogServerClient::Init(logserver_config_))
-    //{
-        //std::cout<<"log server init failed"<<std::endl;
-        //return false;
-    //}
-    //if(!LogServerClient::Test())
-    //{
-        //std::cout<<"log server test connection failed"<<std::endl;
-        //return false;
-    //}
     namespace bfs = boost::filesystem;
+    std::string b5mo_scd = B5MHelper::GetB5moPath(mdb_instance);
     std::vector<std::string> scd_list;
     B5MHelper::GetScdList(b5mo_scd, scd_list);
     if(scd_list.empty()) return false;
@@ -44,7 +35,7 @@ bool UueGenerator::Generate(const std::string& b5mo_scd, const std::string& resu
         //odb_->iterNext(it);
     //}
 
-    std::ofstream ofs(result.c_str());
+    std::ofstream ofs(B5MHelper::GetUuePath(mdb_instance).c_str());
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
@@ -53,7 +44,7 @@ bool UueGenerator::Generate(const std::string& b5mo_scd, const std::string& resu
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
+        for( ScdParser::iterator doc_iter = parser.begin();
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)
@@ -74,55 +65,27 @@ bool UueGenerator::Generate(const std::string& b5mo_scd, const std::string& resu
             std::string spid;
             doc.getProperty("DOCID", docid);
             doc.getProperty("uuid", pid);
-            if( docid.length()==0 ) continue;
             docid.convertString(sdocid, izenelib::util::UString::UTF_8);
             pid.convertString(spid, izenelib::util::UString::UTF_8);
-            OfferDb::ValueType old_ovalue;
-            std::string old_spid;
+            if( sdocid.empty() || spid.empty() ) continue;
             UueItem uue;
             uue.docid = sdocid;
             if(scd_type==INSERT_SCD)
             {
-                if(odb_->get(sdocid, old_ovalue)) 
-                {
-                    LOG(WARNING)<<"[I] "<<sdocid<<" already exists in odb"<<std::endl;
-                    continue;
-                }
                 uue.from_to.to = spid;
-                //odb_->update(sdocid, spid);
             }
             else if(scd_type==UPDATE_SCD)
             {
-                if(!odb_->get(sdocid, old_ovalue)) 
-                {
-                    LOG(WARNING)<<"[U] "<<sdocid<<" not exists in odb"<<std::endl;
-                    continue;
-                }
-                uue.from_to.from = old_ovalue.pid;
-                if(spid.length()>0)
-                {
-                    uue.from_to.to = spid;
-                    //odb_->update(sdocid, spid);
-                }
-                else
-                {
-                    uue.from_to.to = old_ovalue.pid; //pid not changed, but flag it as an update.
-                }
+                uue.from_to.from = spid;
+                uue.from_to.to = spid;
             }
             else
             {
-                if(!odb_->get(sdocid, old_ovalue)) 
-                {
-                    LOG(WARNING)<<"[D] "<<sdocid<<" not exists in odb"<<std::endl;
-                    continue;
-                }
-                uue.from_to.from = old_ovalue.pid;
-                //odb_->del(sdocid);
+                uue.from_to.from = spid;
             }
             ofs<<uue.docid<<","<<uue.from_to.from<<","<<uue.from_to.to<<std::endl;
         }
     }
-    //odb_->flush();
     ofs.close();
     return true;
 }

@@ -13,7 +13,7 @@ namespace sf1r {
     public:
         UueGenerator(OfferDb* odb);
 
-        bool Generate(const std::string& b5mo_scd, const std::string& result);
+        bool Generate(const std::string& mdb_instance);
 
     private:
         OfferDb* odb_;

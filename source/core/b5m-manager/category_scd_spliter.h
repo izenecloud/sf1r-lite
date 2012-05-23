@@ -14,7 +14,7 @@ namespace sf1r {
         struct ValueType
         {
             boost::regex regex;
-            ScdWriterController* writer;
+            ScdWriter* writer;
         };
 
     public:

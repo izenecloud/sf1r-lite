@@ -27,11 +27,9 @@
     </DocumentSchema>
 
     <IndexBundle>
-<!--
-      <ShardSchema>
+      <!--ShardSchema>
         <ShardKey name="DOCID" />
-      </ShardSchema>
--->
+      </ShardSchema-->
       <Schema>
         <Property name="Title">
           <Indexing filter="no" multivalue="no" doclen="yes" analyzer="la_sia" tokenizer="" rankweight="0.8"/>
@@ -50,12 +48,10 @@
         </VirtualProperty>
 
       </Schema>
-<!--
-      <Parameter>
+      <!--Parameter>
         <IndexStrategy autorebuild="n" logcreateddoc="n" />
         <Sia searchanalyzer="la_sia_without_overlap"/>
-      </Parameter>
--->
+      </Parameter-->
     </IndexBundle>
 
     <MiningBundle>
@@ -80,13 +76,13 @@
           <Property name="Title"/>
           <Property name="Content"/>
         </Faceted>
-<!--
-        <Summarization>
+        <!--Summarization>
           <DocidProperty name="DOCID"/>
           <UuidProperty name="uuid"/>
           <ContentProperty name="Content"/>
-        </Summarization>
--->
+          <ScoreProperty name="Score"/>
+          <ScoreSCDPath path="@SF1RENGINE_ROOT@/bin/collection/chinese-wiki/scd/score"/>
+        </Summarization-->
       </Schema>
     </MiningBundle>
 

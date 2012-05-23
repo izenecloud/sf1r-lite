@@ -24,26 +24,8 @@ namespace sf1r{
 
 class WANDDocumentIterator : public DocumentIterator
 {
-    typedef std::vector<std::map<unsigned int,TermDocumentIterator*> >::const_iterator property_index_term_index_iterator;
-    typedef std::map<unsigned int,TermDocumentIterator*>::const_iterator term_index_dociter_iterator;
-
     typedef UpperBoundInProperties::const_iterator property_name_term_index_iterator;
     typedef ID_FREQ_MAP_T::const_iterator term_index_ub_iterator;
-
-public:
-    class DocumentIteratorQueue : public izenelib::ir::indexmanager::PriorityQueue<TermDocumentIterator*>
-    {
-    public:
-        DocumentIteratorQueue(size_t size)
-        {
-            initialize(size,false);
-        }
-    protected:
-        bool lessThan(TermDocumentIterator* o1, TermDocumentIterator* o2)
-        {
-            return o1->doc() < o2->doc();
-        }
-    };
 
 public:
     WANDDocumentIterator(
@@ -61,10 +43,7 @@ public:
 
 public:
 
-    void add(propertyid_t propertyId,
-             unsigned int termIndex,
-             TermDocumentIterator* pDocIterator
-         );
+    void add(TermDocumentIterator* pDocIterator);
 
     void add(DocumentIterator* pDocIterator) {}
 
@@ -122,7 +101,7 @@ protected:
 
     std::vector<double> propertyWeightList_;
 
-    std::vector<std::map<unsigned int,TermDocumentIterator*> > docIteratorList_;
+    std::vector<TermDocumentIterator*> docIteratorList_;
 
     std::multimap<docid_t, TermDocumentIterator*> docIteratorSorter_;
 

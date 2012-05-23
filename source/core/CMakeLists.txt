@@ -30,7 +30,7 @@ FILE(GLOB_RECURSE recommend_SRC "recommend-manager/*.cpp")
 FILE(GLOB_RECURSE aggregator_SRC "aggregator-manager/*.cpp")
 FILE(GLOB_RECURSE node_SRC "node-manager/*.cpp")
 FILE(GLOB_RECURSE product_SRC "product-manager/*.cc")
-FILE(GLOB_RECURSE b5m_SRC "b5m-manager/*.cc")
+FILE(GLOB b5m_SRC "b5m-manager/*.cc")
 
 
 FILE(GLOB document_SRC

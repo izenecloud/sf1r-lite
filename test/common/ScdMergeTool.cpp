@@ -18,7 +18,7 @@ int main(int ac, char** av)
         ("help", "produce help message")
         ("input-path,I", po::value<std::string>(), "specify input scd path")
         ("output-path,O", po::value<std::string>(), "specify output scd path")
-        ("properties,P", po::value<std::string>(), "specify properties, comma seperated")
+        //("properties,P", po::value<std::string>(), "specify properties, comma seperated")
         ("gen-all", "generate possible I,U,D SCD, not I only")
     ;
     po::variables_map vm;
@@ -30,7 +30,7 @@ int main(int ac, char** av)
     }
     std::string input_path;
     std::string output_path;
-    std::string properties;
+    //std::string properties;
     bool i_only = true;
     if (vm.count("input-path")) {
         input_path = vm["input-path"].as<std::string>();
@@ -38,9 +38,9 @@ int main(int ac, char** av)
     if (vm.count("output-path")) {
         output_path = vm["output-path"].as<std::string>();
     } 
-    if (vm.count("properties")) {
-        properties = vm["properties"].as<std::string>();
-    } 
+    //if (vm.count("properties")) {
+        //properties = vm["properties"].as<std::string>();
+    //} 
     if(input_path.empty()||output_path.empty())
     {
         return EXIT_FAILURE;
@@ -49,12 +49,13 @@ int main(int ac, char** av)
     {
         i_only = false;
     }
-    std::vector<std::string> p_vector;
-    if(properties.length()>0)
-    {
-        boost::algorithm::split( p_vector, properties, boost::algorithm::is_any_of(",") );
-    }
-    ScdMerger merger("", p_vector);
-    merger.Merge(input_path, output_path, i_only);
+    //std::vector<std::string> p_vector;
+    //if(properties.length()>0)
+    //{
+        //boost::algorithm::split( p_vector, properties, boost::algorithm::is_any_of(",") );
+    //}
+    ScdMerger merger(output_path, i_only);
+    merger.AddInput(input_path);
+    merger.Output();
 }
 

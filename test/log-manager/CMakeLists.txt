@@ -1,6 +1,7 @@
 INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/core
   ${CMAKE_SOURCE_DIR}/process/common
+  ${CMAKE_SOURCE_DIR}/process/log-server
   ${idmlib_INCLUDE_DIRS}
   ${imllib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
@@ -16,19 +17,19 @@ INCLUDE_DIRECTORIES(
 # sequences is important for some linker
 # if a dpendes b, a must precede b
 SET(libs
+  sf1r_log_manager
+  sf1r_product_manager
+  sf1r_search_manager
+  sf1r_mining_manager
   sf1r_directory_manager
   sf1r_query_manager
-  sf1r_log_manager
   sf1r_license_manager
   sf1r_la_manager
   sf1r_configuration_manager
   sf1r_index_manager
-  sf1r_product_manager
   sf1r_document_manager
   sf1r_node_manager
   sf1r_common
-  sf1r_search_manager
-  sf1r_mining_manager
   sf1r_ranking_manager
 
   ${idmlib_LIBRARIES}
@@ -106,5 +107,14 @@ ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   TARGET_LINK_LIBRARIES(t_LogServerConnection ${libs})
   SET_TARGET_PROPERTIES(t_LogServerConnection PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+
+  ADD_EXECUTABLE(t_Drum
+    t_Drum.cpp
+    ${CMAKE_SOURCE_DIR}/process/log-server/LogServerCfg.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_Drum ${libs})
+  SET_TARGET_PROPERTIES(t_Drum PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )

@@ -314,7 +314,7 @@ bool OrderManager::_getOrder(
     {
     izenelib::util::ScopedReadLock<izenelib::util::ReadWriteLock> lock(db_lock_);
     fseek(order_key_, orderId*sizeof(off_t), SEEK_SET);
-    if (fread(&pos, 1, sizeof(off_t), order_key_) == 0);
+    fread(&pos, 1, sizeof(off_t), order_key_);
     }
 
     FILE* order_db = fopen(order_db_path_.c_str(), "rb" );

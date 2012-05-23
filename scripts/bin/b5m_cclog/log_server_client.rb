@@ -14,8 +14,6 @@ require 'sf1-util/scd_parser'
 $Sf1rHost = "172.16.0.162" 
 $Sf1rPort = 18181
 
-PREFIX = "INFO  com.izenesoft.agent.plugin.sf1.Sf1Client  - Send JSON request: "
-
 class LogServerJsonSender
   def initialize(host=nil, port=nil)
     @host = host
@@ -97,7 +95,7 @@ class LogServerJsonSender
         
         # extract logged request from cclog
         if extract == true
-          if line =~ /#{PREFIX}(.+) At: /
+          if line =~ /Send JSON request: (\{.+\})/
             line = $~[1]
           else
             next

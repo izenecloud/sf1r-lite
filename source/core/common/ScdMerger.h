@@ -16,223 +16,467 @@
 #include <am/sequence_file/ssfr.h>
 #include <glog/logging.h>
 
+//#define MERGER_DEBUG
 
 namespace sf1r
 {
 
 class ScdMerger
 {
+public:
     
-    //struct ValueType
-    //{
-        //Document doc;
-        //int type;
-        //uint32_t n;
-        
-        //friend class boost::serialization::access;
-        //template<class Archive>
-        //void serialize(Archive & ar, const unsigned int version)
-        //{
-            //ar & doc & type & n;
-        //}
-        
-        //bool operator<(const ValueType& other) const
-        //{
-            //return n<other.n;
-        //}
-    //};
-
     struct ValueType
     {
+        ValueType():type(NOT_SCD)
+        {
+        }
+
+        ValueType(const Document& p1, int p2)
+        :doc(p1), type(p2)
+        {
+        }
+
         Document doc;
         int type;
 
-        ValueType& operator+=(const ValueType& value)
+        bool empty() const
         {
-            if(value.type==DELETE_SCD)
-            {
-                doc.clear();
-                doc.property("DOCID") = value.doc.property("DOCID");
-                type = value.type;
-            }
-            else if(value.type==UPDATE_SCD)
-            {
-                doc.copyPropertiesFromDocument(value.doc, true);
-                type = value.type;
-            }
-            else if(value.type==INSERT_SCD)
-            {
-                doc = value.doc;
-                type = value.type;
-            }
-
-            return *this;
+            return doc.isEmpty();
         }
+
+        void swap(ValueType& other)
+        {
+            std::swap(type, other.type);
+            doc.swap(other.doc);
+        }
+
+        //ValueType& operator+=(const ValueType& value)
+        //{
+            //if(value.type==DELETE_SCD)
+            //{
+                ////doc.clear();
+                ////doc.property("DOCID") = value.doc.property("DOCID");
+                //doc.copyPropertiesFromDocument(value.doc, true);
+                //type = value.type;
+            //}
+            //else if(value.type==UPDATE_SCD)
+            //{
+                //type = value.type;
+            //}
+            //else if(value.type==INSERT_SCD)
+            //{
+                //doc = value.doc;
+                //type = value.type;
+            //}
+
+            //return *this;
+        //}
     };
+    typedef boost::function<void (ValueType&, const ValueType&) > MergeFunctionType;
+    typedef boost::function<void (Document&, int&) > OutputFunctionType;
+
+    typedef uint64_t IdType;
+    typedef uint32_t PositionType;
+
+    struct PropertyConfig
+    {
+        std::string output_dir;
+        std::string property_name;
+        MergeFunctionType merge_function;
+        OutputFunctionType output_function;
+        bool output_if_no_position;
+    };
+    typedef boost::unordered_map<IdType, ValueType> CacheType;
+    typedef CacheType::iterator cache_iterator;
+    typedef boost::unordered_map<IdType, PositionType> PositionMap;
+
+    struct PropertyConfigR
+    {
+        PropertyConfigR(const PropertyConfig& config)
+        :output_dir(config.output_dir), property_name(config.property_name), merge_function(config.merge_function), output_function(config.output_function), output_if_no_position(config.output_if_no_position)
+        {
+        }
+        std::string output_dir;
+        std::string property_name;
+        MergeFunctionType merge_function;
+        OutputFunctionType output_function;
+        bool output_if_no_position;
+        boost::shared_ptr<ScdWriter> i_writer;
+        boost::shared_ptr<ScdWriter> u_writer;
+        boost::shared_ptr<ScdWriter> d_writer;
+        PositionMap position_map;
+        CacheType cache;
+    };
+
+    struct InputSource
+    {
+        std::string scd_path;
+        bool position;
+        //bool output_if_no_position;
+    };
+
+
+
+
     
-    typedef boost::unordered_map<std::string, uint32_t> MapType;
-    typedef MapType::iterator map_iterator;
+
     
 public:
-    ScdMerger(const std::string& work_dir,const std::vector<std::string>& propertyNameList)
-    : work_dir_(work_dir), propertyNameList_(propertyNameList)
+
+    ScdMerger()
     {
     }
+
+    ScdMerger(const std::string& output_dir, bool i_only = true)
+    {
+        //use the default config
+        PropertyConfig config;
+        config.output_dir = output_dir;
+        config.property_name = "DOCID";
+        config.merge_function = &DefaultMergeFunction;
+        config.output_function = GetDefaultOutputFunction(i_only);
+        config.output_if_no_position = true;
+        property_config_.push_back(config);
+    }
+
+    void AddPropertyConfig(const PropertyConfig& config)
+    {
+        property_config_.push_back(config);
+    }
+
+
+    void AddInput(const InputSource& is)
+    {
+        input_list_.push_back(is);
+    }
+
+    void AddInput(const std::string& scd_path, bool position = true)
+    {
+        InputSource is;
+        is.scd_path = scd_path;
+        is.position = position;
+        AddInput(is);
+    }
     
-    void Merge(const std::string& scdPath, const std::string& output_dir, bool i_only = true)
+    void Output()
     {
         namespace bfs = boost::filesystem;
-        bfs::remove_all(work_dir_);
-        bfs::create_directories(work_dir_);
-        LOG(INFO)<<"Start merging, properties list : "<<std::endl;
-        for(uint32_t i=0;i<propertyNameList_.size();i++)
+        LOG(INFO)<<"Start merging... "<<std::endl;
+        if(input_list_.empty())
         {
-            std::cout<<propertyNameList_[i]<<std::endl;
+            LOG(WARNING)<<"input list empty"<<std::endl;
+            return;
         }
-        std::string working_file = work_dir_+"/working";
-        bfs::remove_all(working_file);
-        izenelib::am::ssf::Writer<> writer(working_file);
-        writer.Open();
-        std::vector<std::string> scd_list;
-        ScdParser::getScdList(scdPath, scd_list);
-        if(scd_list.empty()) return;
-        uint32_t n = 0;
-        LOG(INFO)<<"Total SCD count : "<<scd_list.size()<<std::endl;
-        for (uint32_t i=0;i<scd_list.size();i++)
+        //build PropertyConfig index
+        typedef std::vector<PropertyConfigR> PropertyConfigList;
+        typedef boost::unordered_map<std::string, PropertyConfigR*> PropertyConfigIndex;
+        PropertyConfigList property_config_list;
+        PropertyConfigIndex property_config_index;
+        for(uint32_t i=0;i<property_config_.size();i++)
         {
-            std::string scd_file = scd_list[i];
-            ScdParser parser(izenelib::util::UString::UTF_8);
-            LOG(INFO)<<"Processing "<<scd_file<<std::endl;
-            int type = ScdParser::checkSCDType(scd_file);
-            parser.load(scd_file);
-            for (ScdParser::iterator doc_iter = parser.begin(propertyNameList_); doc_iter != parser.end(); ++doc_iter)
+            property_config_list.push_back(PropertyConfigR(property_config_[i]));
+        }
+        for(uint32_t i=0;i<property_config_list.size();i++)
+        {
+            property_config_index[property_config_list[i].property_name] = &property_config_list[i];
+        }
+        PositionType p = 0;
+        //typedef std::map<std::string, PositionMap> MapType; //key is property name
+        //MapType map;
+        for (uint32_t i=0;i<input_list_.size();i++)
+        {
+            std::vector<std::string> scd_list;
+            const InputSource& is = input_list_[i];
+            if(!is.position) continue;
+            ScdParser::getScdList(is.scd_path, scd_list);
+            if(scd_list.empty())
             {
-                ++n;
-                if(n%100000==0)
+                LOG(WARNING)<<"no scd under "<<is.scd_path<<std::endl;
+                continue;
+            }
+            for(uint32_t s=0;s<scd_list.size();s++)
+            {
+                std::string scd_file = scd_list[s];
+                ScdParser parser(izenelib::util::UString::UTF_8);
+                LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+                //int type = ScdParser::checkSCDType(scd_file);
+                parser.load(scd_file);
+                for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
                 {
-                    LOG(INFO)<<"Process "<<n<<" scd docs"<<std::endl; 
-                }
-                //ValueType value;
-                //value.n = n;
-                //value.type = type;
-                SCDDoc doc = *(*doc_iter);
-                std::vector<std::pair<std::string, izenelib::util::UString> >::iterator p;
-                std::string sdocid;
-                for (p = doc.begin(); p != doc.end(); p++)
-                {
-                    const std::string& property_name = p->first;
-                    if(property_name == "DOCID")
+                    ++p;
+                    if(p%100000==0)
                     {
-                        p->second.convertString(sdocid, izenelib::util::UString::UTF_8);
-                        break;
+                        LOG(INFO)<<"Process "<<p<<" position scd docs"<<std::endl; 
+                    }
+                    SCDDoc& doc = *(*doc_iter);
+                    std::vector<std::pair<std::string, izenelib::util::UString> >::iterator pit;
+                    std::string sdocid;
+                    for (pit = doc.begin(); pit != doc.end(); pit++)
+                    {
+                        const std::string& property_name = pit->first;
+                        PropertyConfigIndex::iterator cit = property_config_index.find(property_name);
+                        if(cit!=property_config_index.end())
+                        {
+                            IdType id = GenId_(pit->second);
+                            cit->second->position_map[id] = p;
+#ifdef MERGER_DEBUG
+                            std::string sss;
+                            pit->second.convertString(sss, izenelib::util::UString::UTF_8);
+                            if(sss=="403ec13d9939290d24c308b3da250658" && property_name=="uuid")
+                            {
+                                LOG(INFO)<<property_name<<","<<sss<<","<<p<<std::endl;
+                            }
+#endif
+                        }
                     }
                 }
-                if(sdocid.empty()) continue;
-                //std::cout<<"find docid "<<sdocid<<std::endl;
-                map_[sdocid] = n;
             }
         }
-        if(!boost::filesystem::exists(output_dir))
+        for(PropertyConfigList::iterator pci_it = property_config_list.begin(); pci_it!=property_config_list.end();++pci_it)
         {
-            boost::filesystem::create_directories(output_dir);
-        }
-        ScdWriter i_writer(output_dir, INSERT_SCD);
-        ScdWriter u_writer(output_dir, UPDATE_SCD);
-        ScdWriter d_writer(output_dir, DELETE_SCD);
-        n = 0;
-        typedef boost::unordered_map<std::string, ValueType> CacheType;
-        typedef CacheType::iterator cache_iterator;
-        boost::unordered_map<std::string, ValueType> cache;
-        for (uint32_t i=0;i<scd_list.size();i++)
-        {
-            std::string scd_file = scd_list[i];
-            ScdParser parser(izenelib::util::UString::UTF_8);
-            std::cout<<"X Processing "<<scd_file<<std::endl;
-            int type = ScdParser::checkSCDType(scd_file);
-            parser.load(scd_file);
-            for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
+            PropertyConfigR& config = *pci_it;
+            std::string output_dir = config.output_dir;
+            if(!boost::filesystem::exists(output_dir))
             {
-                ++n;
-                if(n%100000==0)
+                boost::filesystem::create_directories(output_dir);
+            }
+            config.i_writer.reset(new ScdWriter(output_dir, INSERT_SCD));
+            config.u_writer.reset(new ScdWriter(output_dir, UPDATE_SCD));
+            config.d_writer.reset(new ScdWriter(output_dir, DELETE_SCD));
+        }
+        p = 0; //reset
+        uint32_t n=0;
+        for (uint32_t i=0;i<input_list_.size();i++)
+        {
+            std::vector<std::string> scd_list;
+            const InputSource& is = input_list_[i];
+            ScdParser::getScdList(is.scd_path, scd_list);
+            if(scd_list.empty())
+            {
+                LOG(WARNING)<<"no scd under "<<is.scd_path<<std::endl;
+                continue;
+            }
+            for(uint32_t s=0;s<scd_list.size();s++)
+            {
+                std::string scd_file = scd_list[s];
+                ScdParser parser(izenelib::util::UString::UTF_8);
+                LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+                int type = ScdParser::checkSCDType(scd_file);
+                parser.load(scd_file);
+                for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
                 {
-                    LOG(INFO)<<"Process "<<n<<" scd docs"<<std::endl; 
-                }
-                //ValueType value;
-                //value.n = n;
-                //value.type = type;
-                SCDDoc scd_doc = *(*doc_iter);
-                Document doc = getDoc_(scd_doc);
-                std::string sdocid;
-                doc.getString("DOCID", sdocid);
-                if(sdocid.empty()) continue;
-                ValueType value;
-                value.doc = doc;
-                value.type = type;
-                bool output = false;
-                map_iterator mit = map_.find(sdocid);
-                if(mit==map_.end()) continue;
-                if(mit->second==n)
-                {
-                    output = true;
-                    map_.erase(mit);
-                }
-                cache_iterator cit = cache.find(sdocid);
-                if(output)
-                {
-                    if(cit!=cache.end())
+                    n++;
+                    if(n%100000==0)
                     {
-                        cit->second += value;
-                        value = cit->second;
-                        cache.erase(cit);
+                        LOG(INFO)<<"Process "<<n<<" scd docs"<<std::endl; 
                     }
-                    //output value
-                    int type = value.type;
-                    const Document& document = value.doc;
-                    if(type==INSERT_SCD)
+                    PositionType position = 0;
+                    if(is.position) 
                     {
-                        i_writer.Append(document);
+                        ++p;
+                        position = p;
                     }
-                    else if(type==UPDATE_SCD)
+                    SCDDoc& scd_doc = *(*doc_iter);
+                    Document doc = getDoc_(scd_doc);
+                    ValueType output_doc_value;
+                    for(PropertyConfigList::iterator pci_it = property_config_list.begin(); pci_it!=property_config_list.end();++pci_it)
                     {
-                        if(i_only)
+                        const std::string& pname = pci_it->property_name;
+                        PropertyConfigR& config = *pci_it;
+                        ValueType value(doc, type);
+                        if(pname!="DOCID")
                         {
-                            i_writer.Append(document);
+                            value = output_doc_value;
+                        }
+                        izenelib::util::UString pvalue;
+                        if(!value.doc.getProperty(pname, pvalue)) continue;
+                        if(pvalue.empty()) continue;
+                        ValueType output_value;
+                        IdType id = GenId_(pvalue);
+                        //ValueType empty_value;
+                        //config.merge_function(empty_value, value);
+                        //empty_value.swap(value);
+                        PositionMap& position_map = config.position_map;
+                        PositionMap::iterator mit = position_map.find(id);
+                        if(mit==position_map.end())
+                        {
+#ifdef MERGER_DEBUG
+                            std::string sss;
+                            pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                            if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                            {
+                                LOG(INFO)<<pname<<","<<sss<<" position_map end"<<std::endl;
+                            }
+#endif
+                            if(pci_it->output_if_no_position)
+                            {
+                                output_value = value;
+                            }
+                            else
+                            {
+                                continue;
+                            }
                         }
                         else
                         {
-                            u_writer.Append(document);
+                            cache_iterator cit = config.cache.find(id);
+                            //ValueType init_value;
+                            //ValueType* p_output = NULL;
+                            if(cit==config.cache.end())
+                            {
+#ifdef MERGER_DEBUG
+                                std::string sss;
+                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                {
+                                    LOG(INFO)<<pname<<","<<sss<<" not in cache"<<std::endl;
+                                }
+#endif
+                            }
+                            else
+                            {
+#ifdef MERGER_DEBUG
+                                std::string sss;
+                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                {
+                                    LOG(INFO)<<pname<<","<<sss<<" merge"<<std::endl;
+                                }
+#endif
+                                config.merge_function(cit->second, value);
+                                value = cit->second;
+                            }
+                            if(mit->second==position)
+                            {
+#ifdef MERGER_DEBUG
+                                std::string sss;
+                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                {
+                                    LOG(INFO)<<pname<<","<<sss<<" output"<<std::endl;
+                                }
+#endif
+                                ValueType empty_value;
+                                config.merge_function(empty_value, value);
+                                empty_value.swap(value);
+                                output_value = value;
+                                position_map.erase(mit);
+                            }
+                            if(!output_value.empty() && cit!=config.cache.end())
+                            {
+                                config.cache.erase(cit);
+                            }
+                            if(output_value.empty() && cit==config.cache.end())
+                            {
+#ifdef MERGER_DEBUG
+                                std::string sss;
+                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                {
+                                    LOG(INFO)<<pname<<","<<sss<<" insert to cache"<<std::endl;
+                                }
+#endif
+                                ValueType empty_value;
+                                config.merge_function(empty_value, value);
+                                empty_value.swap(value);
+                                config.cache.insert(std::make_pair(id, value));
+                            }
                         }
-                    }
-                    else if(type==DELETE_SCD)
-                    {
-                        if(!i_only)
+                        if(!output_value.empty())
                         {
-                            d_writer.Append(document);
+                            if(pname=="DOCID")
+                            {
+                                output_doc_value = output_value;
+                            }
+                            //output value
+                            config.output_function(output_value.doc, output_value.type);
+                            //processor->Process(output_value.doc, output_value.type);
+                            int type = output_value.type;
+                            const Document& document = output_value.doc;
+                            if(type==INSERT_SCD)
+                            {
+                                config.i_writer->Append(document);
+                            }
+                            else if(type==UPDATE_SCD)
+                            {
+                                config.u_writer->Append(document);
+                            }
+                            else if(type==DELETE_SCD)
+                            {
+                                config.d_writer->Append(document);
+                            }
                         }
                     }
-                }
-                else
-                {
-                    if(cit!=cache.end())
-                    {
-                        cit->second += value;
-                    }
-                    else
-                    {
-                        cache.insert(std::make_pair(sdocid, value));
-                    }
-                }
 
+                }
             }
         }
         
+        for(PropertyConfigList::iterator pci_it = property_config_list.begin(); pci_it!=property_config_list.end();++pci_it)
+        {
+            PropertyConfigR& config = *pci_it;
+            config.i_writer->Close();
+            config.u_writer->Close();
+            config.d_writer->Close();
+        }
         
-        i_writer.Close();
-        u_writer.Close();
-        d_writer.Close();
-        bfs::remove_all(working_file);
     }
     
+    static void DefaultMergeFunction(ValueType& value, const ValueType& another_value)
+    {
+        if(another_value.type==DELETE_SCD)
+        {
+            //doc.clear();
+            //doc.property("DOCID") = value.doc.property("DOCID");
+            value.doc.copyPropertiesFromDocument(another_value.doc, true);
+            value.type = another_value.type;
+        }
+        else if(another_value.type==UPDATE_SCD)
+        {
+            value.doc.copyPropertiesFromDocument(another_value.doc, true);
+            if(value.type!=INSERT_SCD)
+            {
+                value.type = another_value.type;
+            }
+        }
+        else if(another_value.type==INSERT_SCD)
+        {
+            value.doc = another_value.doc;
+            value.type = another_value.type;
+        }
+    }
+
+    
+    static void DefaultOutputFunction(Document& doc, int& type, bool i_only)
+    {
+        //LOG(INFO)<<"outputing type: "<<type<<std::endl;
+        if(type==UPDATE_SCD)
+        {
+            if(i_only)
+            {
+                type = INSERT_SCD;
+            }
+        }
+        else if(type==DELETE_SCD)
+        {
+            if(i_only)
+            {
+                type = NOT_SCD;
+            }
+            else
+            {
+                doc.clearExceptDOCID();
+            }
+        }
+    }
+
+    static OutputFunctionType GetDefaultOutputFunction(bool i_only)
+    {
+        return boost::bind(&DefaultOutputFunction, _1, _2, i_only);
+    }
+
+private:
+
     Document getDoc_(SCDDoc& doc)
     {
         Document result;
@@ -243,11 +487,17 @@ public:
         }
         return result;
     }
+
+    IdType GenId_(const izenelib::util::UString& id_str)
+    {
+        return izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(id_str);
+
+    }
+
     
 private:
-    std::string work_dir_;
-    std::vector<std::string> propertyNameList_;
-    boost::unordered_map<std::string, uint32_t> map_;
+    std::vector<PropertyConfig> property_config_;
+    std::vector<InputSource> input_list_;
     
 };
 

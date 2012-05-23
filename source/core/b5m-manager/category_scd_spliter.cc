@@ -54,7 +54,7 @@ bool CategoryScdSpliter::Load_(const std::string& category_dir, const std::strin
             ValueType value;
             value.regex = r;
             boost::filesystem::create_directories(scd_dir);
-            ScdWriterController* writer = new ScdWriterController(scd_dir);
+            ScdWriter* writer = new ScdWriter(scd_dir, INSERT_SCD);
             value.writer = writer;
             values_.push_back(value);
         }
@@ -99,7 +99,7 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
     namespace bfs = boost::filesystem;
     if(!bfs::exists(scd_path)) return true;
     std::vector<std::string> scd_list;
-    B5MHelper::GetIScdList(scd_path, scd_list);
+    B5MHelper::GetIUScdList(scd_path, scd_list);
     if(scd_list.empty()) return true;
 
     for(uint32_t i=0;i<scd_list.size();i++)
@@ -110,7 +110,7 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin(B5MHelper::B5MO_PROPERTY_LIST.value);
+        for( ScdParser::iterator doc_iter = parser.begin();
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
             if(n%10000==0)
@@ -130,13 +130,15 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
             doc.getProperty("Title", title);
             doc.getProperty("Category", category);
             if( title.length()==0 || category.length()==0) continue;
+            UString pid;
+            if(doc.getProperty("uuid", pid)) continue;
             std::string scategory;
             category.convertString(scategory, UString::UTF_8);
             for(uint32_t i=0;i<values_.size();i++)
             {
                 if(boost::regex_match(scategory, values_[i].regex))
                 {
-                    values_[i].writer->Write(doc, scd_type);
+                    values_[i].writer->Append(doc);
                     break;
                 }
             }
@@ -144,7 +146,7 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
     }
     for(uint32_t i=0;i<values_.size();i++)
     {
-        values_[i].writer->Flush();
+        values_[i].writer->Close();
     }
     return true;
 }

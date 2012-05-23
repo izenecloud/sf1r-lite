@@ -9,6 +9,7 @@
 #include <am/tc/BTree.h>
 #include <am/leveldb/Table.h>
 #include <glog/logging.h>
+#include <boost/unordered_set.hpp>
 
 namespace sf1r {
 
@@ -16,21 +17,22 @@ namespace sf1r {
     class ProductProperty
     {
     public:
-        typedef std::map<std::string, int32_t> SourceMap;
+        //typedef std::map<std::string, int32_t> SourceMap;
+        typedef boost::unordered_set<std::string> SourceType;
         typedef izenelib::util::UString UString;
 
+        UString pid;
         ProductPrice price;
-        SourceMap source;
-        int32_t itemcount;
+        SourceType source;
+        int64_t itemcount;
+        UString oid;
 
         ProductProperty();
-        ProductProperty(const Document& doc);
 
-        template<class Archive> 
-        void serialize(Archive& ar, const unsigned int version) 
-        {
-            ar & price & source & itemcount;
-        }
+        bool Parse(const Document& doc);
+
+        void Set(Document& doc) const;
+
 
         std::string GetSourceString() const;
 
@@ -38,13 +40,11 @@ namespace sf1r {
 
         ProductProperty& operator+=(const ProductProperty& other);
 
-        ProductProperty& operator-=(const ProductProperty& other);
+        //ProductProperty& operator-=(const ProductProperty& other);
 
         std::string ToString() const;
     };
 
-    //typedef izenelib::am::tc::BTree<std::string, ProductProperty> ProductDb;
-    typedef izenelib::am::leveldb::Table<std::string, ProductProperty> ProductDb;
 
 }
 

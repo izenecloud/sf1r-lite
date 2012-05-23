@@ -14,118 +14,160 @@
 
 using namespace sf1r;
 
-LogServerHandler::LogServerHandler(const LogServerConnectionConfig& config, OfferDb* odb, const std::string& work_dir)
-:logserver_config_(config), odb_(odb), work_dir_(work_dir), open_(false)
+LogServerHandler::LogServerHandler(const LogServerConnectionConfig& config)
+:logserver_config_(config)
 {
 }
 
-bool LogServerHandler::Open()
+bool LogServerHandler::Generate(const std::string& mdb_instance)
 {
-    if(open_) return true;
     if(!LogServerClient::Init(logserver_config_))
     {
-        std::cout<<"log server init failed"<<std::endl;
+        LOG(ERROR)<<"log server init failed"<<std::endl;
         return false;
     }
     if(!LogServerClient::Test())
     {
-        std::cout<<"log server test connection failed"<<std::endl;
+        LOG(ERROR)<<"log server test connection failed"<<std::endl;
         return false;
     }
-    if(!odb_->simple_open())
+
+    
+    std::string po_map_file = B5MHelper::GetPoMapPath(mdb_instance);
+    if(!boost::filesystem::exists(po_map_file))
     {
-        std::cout<<"simple open odb fail"<<std::endl;
+        LOG(ERROR)<<"po map file not exists, run b5mp-generate first."<<std::endl;
         return false;
     }
-    open_ = true;
-    return true;
-}
-
-void LogServerHandler::Process(const BuueItem& item)
-{
-    changed_pid_.insert(item.pid);
-    //if(item.type==BUUE_APPEND)
-    //{
-        //if(item.pid.length()>0)
-        //{
-            //if(reindex_)
-            //{
-                //LogServerClient::Update(item.pid, item.docid_list);
-            //}
-            //else
-            //{
-                //LogServerClient::AppendUpdate(item.pid, item.docid_list);
-            //}
-
-        //}
-    //}
-    //else if(item.type==BUUE_REMOVE)
-    //{
-        //if(!reindex_)
-        //{
-            ////if(uuid=="*")
-            ////{
-                ////if(!LogServerClient::GetUuid(item.docid_list[0], uuid)) return;
-            ////}
-            //LogServerClient::RemoveUpdate(item.pid, item.docid_list);
-        //}
-
-    //}
-}
-
-void LogServerHandler::Finish()
-{
-    LOG(INFO)<<"LogServerHandler::Finish"<<std::endl;
-    std::string work_path = work_dir_;
-    if(work_path.empty())
-    {
-        work_path = "./logserver-update-working";
-    }
-    OfferDb::cursor_type it = odb_->begin();
-    OfferDb::KeyType oid;
-    OfferDb::ValueType ovalue;
-    boost::filesystem::remove_all(work_path);
-    boost::filesystem::create_directories(work_path);
-    izenelib::am::ssf::Writer<> writer(work_path+"/writer");
-    writer.Open();
-    uint64_t n=0;
-    while(true)
-    {
-        ++n;
-        if(!odb_->fetch(it, oid, ovalue)) break;
-        odb_->iterNext(it);
-        //LOG(INFO)<<"find pid "<<pid<<std::endl;
-        if(n%1000000==0)
-        {
-            LOG(INFO)<<"iter "<<n<<" in odb"<<std::endl;
-        }
-        if(changed_pid_.find(ovalue.pid) == changed_pid_.end()) continue;
-        //writer.Append( B5MHelper::StringToUint128(pid), B5MHelper::StringToUint128(oid));
-        writer.Append( B5MHelper::StringToUint128(ovalue.pid), oid);
-    }
-    writer.Close();
-    izenelib::am::ssf::Sorter<uint32_t, uint128_t>::Sort(writer.GetPath());
-    //izenelib::am::ssf::Joiner<uint32_t, uint128_t, uint128_t> joiner(writer.GetPath());
-    izenelib::am::ssf::Joiner<uint32_t, uint128_t, std::string> joiner(writer.GetPath());
+    izenelib::am::ssf::Sorter<uint32_t, uint128_t>::Sort(po_map_file);
+    izenelib::am::ssf::Joiner<uint32_t, uint128_t, std::string> joiner(po_map_file);
     joiner.Open();
     std::vector<uint128_t> ioid_list;
     std::vector<std::string> oid_list;
     uint128_t ipid;
     std::string pid;
-    n = 0;
+    std::size_t n = 0;
     while(joiner.Next(ipid, oid_list))
     {
-        pid = B5MHelper::Uint128ToString(ipid);
-        //std::cout<<"find pid "<<pid<<std::endl;
         ++n;
         if(n%10000==0)
         {
             LOG(INFO)<<"update "<<n<<" pid"<<std::endl;
         }
-        //LogServerClient::Update(ipid, ioid_list);
-        LogServerClient::Update(pid, oid_list);
+        pid = B5MHelper::Uint128ToString(ipid);
+        std::vector<std::string> non_empty_oid_list;
+        for(uint32_t i=0;i<oid_list.size();i++)
+        {
+            if(!oid_list[i].empty()) non_empty_oid_list.push_back(oid_list[i]);
+        }
+        LogServerClient::Update(pid, non_empty_oid_list);
     }
     LogServerClient::Flush();
-    boost::filesystem::remove_all(work_path);
+    return true;
 }
+
+//bool LogServerHandler::Generate(const std::string& mdb_instance)
+//{
+    //if(!LogServerClient::Init(logserver_config_))
+    //{
+        //LOG(ERROR)<<"log server init failed"<<std::endl;
+        //return false;
+    //}
+    //if(!LogServerClient::Test())
+    //{
+        //LOG(ERROR)<<"log server test connection failed"<<std::endl;
+        //return false;
+    //}
+    //if(!odb_->is_open())
+    //{
+        //if(!odb_->open())
+        //{
+            //LOG(ERROR)<<"open odb fail"<<std::endl;
+            //return false;
+        //}
+    //}
+    //boost::unordered_set<uint128_t, uint128_hash> pid_change;
+
+    //std::vector<std::string> scd_list;
+    //B5MHelper::GetScdList(B5MHelper::GetB5mpPath(mdb_instance), scd_list);
+    //if(scd_list.empty())
+    //{
+        //LOG(WARNING)<<"no b5mp scd"<<std::endl;
+        //return true;
+    //}
+
+    //for(uint32_t i=0;i<scd_list.size();i++)
+    //{
+        //std::string scd_file = scd_list[i];
+        //LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+        //int scd_type = ScdParser::checkSCDType(scd_file);
+        //ScdParser parser(izenelib::util::UString::UTF_8);
+        //parser.load(scd_file);
+        //uint32_t n=0;
+        //for( ScdParser::iterator doc_iter = parser.begin();
+          //doc_iter!= parser.end(); ++doc_iter, ++n)
+        //{
+            //if(n%10000==0)
+            //{
+                //LOG(INFO)<<"Find Documents "<<n<<std::endl;
+            //}
+            //UString pid;
+            //SCDDoc& scddoc = *(*doc_iter);
+            //SCDDoc::iterator p = scddoc.begin();
+            //for(; p!=scddoc.end(); ++p)
+            //{
+                //const std::string& property_name = p->first;
+                //if(property_name=="DOCID")
+                //{
+                    //pid = p->second;
+                    //break;
+                //}
+            //}
+            //if(pid.empty()) continue;
+            //uint128_t ipid = B5MHelper::UStringToUint128(pid);
+            //pid_change.insert(ipid);
+        //}
+    //}
+    //std::string work_path = work_dir_;
+    //if(work_path.empty())
+    //{
+        //work_path = "./logserver-update-working";
+    //}
+    //B5MHelper::PrepareEmptyDir(work_path);
+    //izenelib::am::ssf::Writer<> writer(work_path+"/writer");
+    //writer.Open();
+    //uint64_t n=0;
+    //for(OfferDb::const_iterator it = odb_->begin(); it!=odb_->end(); ++it, ++n)
+    //{
+        //if(n%1000000==0)
+        //{
+            //LOG(INFO)<<"iter "<<n<<" in odb"<<std::endl;
+        //}
+        //if(pid_change.find(it->second) == pid_change.end()) continue;
+        //writer.Append( it->second, B5MHelper::Uint128ToString(it->first));
+    //}
+    //writer.Close();
+    //izenelib::am::ssf::Sorter<uint32_t, uint128_t>::Sort(writer.GetPath());
+    //izenelib::am::ssf::Joiner<uint32_t, uint128_t, std::string> joiner(writer.GetPath());
+    //joiner.Open();
+    //std::vector<uint128_t> ioid_list;
+    //std::vector<std::string> oid_list;
+    //uint128_t ipid;
+    //std::string pid;
+    //n = 0;
+    //while(joiner.Next(ipid, oid_list))
+    //{
+        //pid = B5MHelper::Uint128ToString(ipid);
+        ////std::cout<<"find pid "<<pid<<std::endl;
+        //++n;
+        //if(n%10000==0)
+        //{
+            //LOG(INFO)<<"update "<<n<<" pid"<<std::endl;
+        //}
+        //LogServerClient::Update(pid, oid_list);
+    //}
+    //LogServerClient::Flush();
+    //boost::filesystem::remove_all(work_path);
+    //return true;
+//}
 

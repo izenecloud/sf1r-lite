@@ -132,12 +132,12 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
     return true;
 }
 
-bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp, bool r_type)
+bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
 
-    uint32_t fromid = index_document.getId(); //oldid
+    uint32_t fromid = index_document.getOldId(); //oldid
     PMDocumentType from;
     if (!data_source_->GetDocument(fromid, from)) return false;
     UString from_uuid;

@@ -11,26 +11,18 @@ using namespace sf1r;
 
 WANDDocumentIterator::~WANDDocumentIterator()
 {
-    property_index_term_index_iterator prop_iter = docIteratorList_.begin();
-    for (; prop_iter != docIteratorList_.end(); ++prop_iter)
+    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for (; iter != docIteratorList_.end(); ++iter)
     {
-        term_index_dociter_iterator term_iter = (*prop_iter).begin();
-        for(; term_iter != (*prop_iter).end(); ++term_iter)
-        {
-            if(term_iter->second)
-                delete term_iter->second;
-        }
+        if(*iter)
+            delete *iter;
     }
 }
 
-void WANDDocumentIterator::add(
-        propertyid_t propertyId,
-        unsigned int termIndex,
-        TermDocumentIterator* pDocIterator)
+void WANDDocumentIterator::add(TermDocumentIterator* pDocIterator)
 {
-    size_t index = getIndexOfPropertyId_(propertyId);
     boost::mutex::scoped_lock lock(mutex_);
-    docIteratorList_[index][termIndex] = pDocIterator;
+    docIteratorList_.push_back(pDocIterator);
 }
 
 size_t WANDDocumentIterator::getIndexOfPropertyId_(propertyid_t propertyId)
@@ -57,12 +49,10 @@ size_t WANDDocumentIterator::getIndexOfProperty_(const std::string& property)
 
 void WANDDocumentIterator::init_(const property_weight_map& propertyWeightMap)
 {
-    //pDocIteratorQueue_ = NULL;
     currDoc_ = 0;
     currThreshold_ = 0.0F;
     size_t numProperties = indexPropertyList_.size();
     propertyWeightList_.resize(numProperties);
-    docIteratorList_.resize(numProperties);
 
     for (size_t i = 0; i < numProperties; ++i)
     {
@@ -80,25 +70,16 @@ void WANDDocumentIterator::init_(const property_weight_map& propertyWeightMap)
 void WANDDocumentIterator::set_ub(const UpperBoundInProperties& ubmap)
 {
     ubmap_ = ubmap;
-    property_name_term_index_iterator prop_iter = ubmap.begin();
-    for( ; prop_iter != ubmap.end(); ++prop_iter )
+    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for( ; iter != docIteratorList_.end(); ++iter )
     {
-        const std::string& currentProperty = prop_iter->first;
-        size_t index = getIndexOfProperty_(currentProperty);
-        if (docIteratorList_.size() >= (index + 1) )
+        TermDocumentIterator* pEntry = (*iter);
+        if (pEntry)
         {
-            const std::map<unsigned int,TermDocumentIterator*>& termIndexDociter = docIteratorList_[index];
-            term_index_ub_iterator  term_iter = (prop_iter->second).begin();
-            for(; term_iter != (prop_iter->second).end(); ++term_iter )
-            {
-                size_t termIndex = term_iter->first;
-                term_index_dociter_iterator it;
-                if( (it = termIndexDociter.find(termIndex)) != termIndexDociter.end() )
-                {
-                    TermDocumentIterator* pDocIter = it->second;
-                    pDocIter->set_ub(term_iter->second);
-                }
-            }
+            std::string currentProperty = pEntry->property_;
+            size_t termIndex = pEntry->termIndex_;
+            float ub = ubmap_[currentProperty][termIndex];
+            pEntry->set_ub(ub);
         }
     }
 }
@@ -148,29 +129,23 @@ void WANDDocumentIterator::initDocIteratorSorter()
 {
     if(docIteratorList_.size() < 1)
         return;
-    TermDocumentIterator* pDocIterator;
-    typedef std::vector<std::map<unsigned int,TermDocumentIterator*> >::iterator property_iterator;
-    typedef std::map<unsigned int,TermDocumentIterator*>::iterator term_index_iterator;
 
-    property_iterator prop_iter = docIteratorList_.begin();
-    for( ; prop_iter != docIteratorList_.end(); ++prop_iter)
+    TermDocumentIterator* pDocIterator;
+    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for( ; iter != docIteratorList_.end(); ++iter)
     {
-        term_index_iterator term_iter = (*prop_iter).begin();
-        for( ; term_iter != (*prop_iter).end(); term_iter++ )
+        pDocIterator = (*iter);
+        if(pDocIterator)
         {
-            pDocIterator = term_iter->second;
-            if(pDocIterator)
+            pDocIterator->setCurrent(false);
+            if(pDocIterator->next())
             {
-                pDocIterator->setCurrent(false);
-                if(pDocIterator->next())
-                {
-                    docIteratorSorter_.insert(make_pair(pDocIterator->doc(), pDocIterator));
-                }
-                else
-                {
-                    term_iter->second = NULL;
-                    delete pDocIterator;
-                }
+                docIteratorSorter_.insert(make_pair(pDocIterator->doc(), pDocIterator));
+            }
+            else
+            {
+                *iter = NULL;
+                delete pDocIterator;
             }
         }
     }
@@ -279,20 +254,16 @@ bool WANDDocumentIterator::do_next()
             {
                 currDoc_ = pivotDoc_;
 
-                property_index_term_index_iterator prop_iter = docIteratorList_.begin();
-                for ( ; prop_iter != docIteratorList_.end(); ++prop_iter)
+                std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+                for ( ; iter != docIteratorList_.end(); ++iter)
                 {
-                    term_index_dociter_iterator term_iter = (*prop_iter).begin();
-                    for( ; term_iter != (*prop_iter).end(); ++term_iter )
+                    TermDocumentIterator* pEntry = (*iter);
+                    if(pEntry)
                     {
-                        TermDocumentIterator* pEntry = term_iter->second;
-                        if(pEntry)
-                        {
-                            if (currDoc_ == pEntry->doc())
-                                pEntry->setCurrent(true);
-                            else
-                                pEntry->setCurrent(false);
-                        }
+                        if (currDoc_ == pEntry->doc())
+                            pEntry->setCurrent(true);
+                        else
+                            pEntry->setCurrent(false);
                     }
                 }
                 return true;
@@ -321,17 +292,13 @@ sf1r::docid_t WANDDocumentIterator::do_skipTo(sf1r::docid_t target)
     if(docIteratorSorter_.size() == 0)
         return false;
 
-    property_index_term_index_iterator prop_iter = docIteratorList_.begin();
-    for ( ; prop_iter != docIteratorList_.end(); ++prop_iter)
+    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for ( ; iter != docIteratorList_.end(); ++iter)
     {
-        term_index_dociter_iterator term_iter = (*prop_iter).begin();
-        for( ; term_iter != (*prop_iter).end(); ++term_iter )
+        TermDocumentIterator* pEntry = (*iter);
+        if(pEntry)
         {
-            TermDocumentIterator* pEntry = term_iter->second;
-            if(pEntry)
-            {
-                pEntry->setCurrent(false);
-            }
+            pEntry->setCurrent(false);
         }
     }
 
@@ -354,16 +321,12 @@ void WANDDocumentIterator::df_cmtf(
     MaxTermFrequencyInProperties& maxtfmap)
 {
     TermDocumentIterator* pEntry;
-    property_index_term_index_iterator prop_iter = docIteratorList_.begin();
-    for( ; prop_iter != docIteratorList_.end(); ++prop_iter )
+    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for( ; iter != docIteratorList_.end(); ++iter )
     {
-        term_index_dociter_iterator term_iter = (*prop_iter).begin();
-        for( ; term_iter != (*prop_iter).end(); ++term_iter )
-        {
-            pEntry = term_iter->second;
-            if(pEntry)
-                pEntry->df_cmtf(dfmap, ctfmap, maxtfmap);
-        }
+        pEntry = (*iter);
+        if(pEntry)
+            pEntry->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
 }
 
@@ -377,32 +340,30 @@ double WANDDocumentIterator::score(
 
     TermDocumentIterator* pEntry = 0;
     double score = 0.0F;
-    size_t numProperties = rankQueryProperties.size();
-    for (size_t i = 0; i < numProperties; ++i)
+
+    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for (; iter != docIteratorList_.end(); ++iter)
     {
         //LOG(INFO) << "Scoring the "<<indexPropertyList_[i]<<" property";
-        term_index_dociter_iterator term_iter = docIteratorList_[i].begin();
-        for(; term_iter != docIteratorList_[i].end(); ++term_iter)
+        pEntry = (*iter);
+        size_t index = getIndexOfPropertyId_(pEntry->propertyId_);
+        if (pEntry && pEntry->isCurrent())
         {
-            pEntry = term_iter->second;
-            if (pEntry && pEntry->isCurrent())
+            //LOG(INFO) << "Current scoring the "<<indexPropertyList_[i]<<"property";
+            double weight = propertyWeightList_[index];
+            if (weight != 0.0F)
             {
-                //LOG(INFO) << "Current scoring the "<<indexPropertyList_[i]<<"property";
-                double weight = propertyWeightList_[i];
-                if (weight != 0.0F)
-                {
-                    rankDocumentProperty_.reset();
-                    rankDocumentProperty_.resize(rankQueryProperties[i].size());
-                    pEntry->doc_item(rankDocumentProperty_);
+                rankDocumentProperty_.reset();
+                rankDocumentProperty_.resize(rankQueryProperties[index].size());
+                pEntry->doc_item(rankDocumentProperty_);
 
-                    //START_PROFILER ( compute_score )
-                    score += weight * propertyRankers[i]->getScore(
-                        rankQueryProperties[i],
-                        rankDocumentProperty_
-                    );
-                    //STOP_PROFILER ( compute_score )
-                   // LOG(INFO) << "current property's sum score:"<<score;
-                }
+                //START_PROFILER ( compute_score )
+                score += weight * propertyRankers[index]->getScore(
+                    rankQueryProperties[index],
+                    rankDocumentProperty_
+                );
+                //STOP_PROFILER ( compute_score )
+               // LOG(INFO) << "current property's sum score:"<<score;
             }
         }
     }

@@ -10,7 +10,7 @@
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
 
-#include <common/ScdParser.h>
+#include <common/ScdWriter.h>
 #include <common/Utilities.h>
 #include <idmlib/util/idm_analyzer.h>
 
@@ -21,7 +21,6 @@
 #include <glog/logging.h>
 
 #include <iostream>
-#include <vector>
 #include <algorithm>
 
 using izenelib::util::UString;
@@ -93,14 +92,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         Document doc;
         document_manager_->getDocument(i, doc);
         Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
-        if (kit == doc.propertyEnd())
-            continue;
+        if (kit == doc.propertyEnd()) continue;
 
         const UString& key = kit->second.get<UString>();
-        std::string key_str;
-        key.convertString(key_str, UString::UTF_8);
-
-        comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key_str), i);
+        if (key.empty()) continue;
+        comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key), i);
     }
 
     for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
@@ -108,19 +104,34 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         Document doc;
         document_manager_->getDocument(i, doc);
         Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
-        if (kit == doc.propertyEnd())
-            continue;
+        if (kit == doc.propertyEnd()) continue;
 
         Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
-        if (cit == doc.propertyEnd())
-            continue;
+        if (cit == doc.propertyEnd()) continue;
 
         const UString& key = kit->second.get<UString>();
-        std::string key_str;
-        key.convertString(key_str, UString::UTF_8);
-
+        if (key.empty()) continue;
         const UString& content = cit->second.get<UString>();
-        comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key_str), i, content);
+
+        Document::property_const_iterator sit = doc.findProperty(schema_.scorePropName);
+        if (sit != doc.propertyEnd())
+        {
+            const UString& score = sit->second.get<UString>();
+            if (!score.empty())
+            {
+                std::string score_str;
+                score.convertString(score_str, UString::UTF_8);
+                comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, boost::lexical_cast<float>(score_str));
+            }
+            else
+            {
+                comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, 0.0f);
+            }
+        }
+        else
+        {
+            comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, 0.0f);
+        }
 
         if (++count % 100000 == 0)
         {
@@ -131,6 +142,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush(true);
 
+    if (!schema_.scoreSCDPath.empty())
+    {
+        score_scd_writer_.reset(new ScdWriter(schema_.scoreSCDPath, UPDATE_SCD));
+    }
+
     {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
@@ -138,7 +154,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         {
             const KeyType& key = dirtyKeyIt->first;
 
-            CommentCacheStorage::CommentCacheItemType commentCacheItem;
+            CommentCacheItemType commentCacheItem;
             comment_cache_storage_->Get(key, commentCacheItem);
             if (commentCacheItem.empty())
             {
@@ -158,6 +174,12 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         summarization_storage_->Flush();
     } //Destroy dirtyKeyIterator before clearing dirtyKeyDB
 
+    if (score_scd_writer_)
+    {
+        score_scd_writer_->Close();
+        score_scd_writer_.reset();
+    }
+
     comment_cache_storage_->ClearDirtyKey();
     LOG(INFO) << "Finish evaluating summarization.";
 }
@@ -165,7 +187,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         Summarization& summarization,
         const KeyType& key,
-        const std::map<uint32_t, UString>& content_map)
+        const CommentCacheItemType& comment_cache_item)
 {
     if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
         return false;
@@ -174,19 +196,32 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
     ilplib::langid::Analyzer* langIdAnalyzer = LAPool::getInstance()->getLangId();
 
+    ScoreType total_score = 0;
+    uint32_t count = 0;
+
     std::string key_str;
     key_str = Utilities::uint128ToUuid(key);
     UString key_ustr(key_str, UString::UTF_8);
     corpus_->start_new_coll(key_ustr);
     corpus_->start_new_doc(); // XXX
 
-    for (std::map<uint32_t, UString>::const_iterator it = content_map.begin();
-            it != content_map.end(); ++it)
+    for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
+            it != comment_cache_item.end(); ++it)
     {
+        if (it->second.second)
+        {
+            ++count;
+            total_score += it->second.second;
+        }
+
+        // Limit the max count of sentences to be summarized
+        if (corpus_->nsents() >= MAX_SENT_COUNT)
+            continue;
+
         // XXX
         // corpus_->start_new_doc();
 
-        const UString& content = it->second;
+        const UString& content = it->second.first;
         UString sentence;
         std::size_t startPos = 0;
         while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
@@ -205,10 +240,6 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
             startPos += len;
         }
-
-        // Limit the max count of sentences to be summarized
-        if (corpus_->nsents() >= MAX_SENT_COUNT)
-            break;
     }
     corpus_->start_new_sent();
     corpus_->start_new_doc();
@@ -237,6 +268,22 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
     if (ret)
     {
+        if (count)
+        {
+            std::vector<std::pair<double, UString> > score_list(1);
+            double avg_score = (double)total_score / (double)count;
+            score_list[0].first = avg_score;
+            summarization.updateProperty("avg_score", score_list);
+
+            if (score_scd_writer_)
+            {
+                Document doc;
+                doc.property("DOCID") = key_ustr;
+                doc.property(schema_.scorePropName) = UString(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
+                score_scd_writer_->Append(doc);
+            }
+        }
+
 #ifdef DEBUG_SUMMARIZATION
         for (uint32_t i = 0; i < summary_list.size(); i++)
         {
@@ -245,7 +292,8 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             std::cout << "\t" << sent << std::endl;
         }
 #endif
-        summarization.insertProperty("overview", summary_list);
+        summarization.updateProperty("overview", summary_list);
+
         summarization_storage_->Update(key, summarization);
     }
     corpus_->reset();

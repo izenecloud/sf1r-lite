@@ -18,6 +18,8 @@ public:
     std::string docidPropName;
     std::string uuidPropName;
     std::string contentPropName;
+    std::string scorePropName;
+    std::string scoreSCDPath;
 
     friend class boost::serialization::access;
 
@@ -27,6 +29,8 @@ public:
         ar & docidPropName;
         ar & uuidPropName;
         ar & contentPropName;
+        ar & scorePropName;
+        ar & scoreSCDPath;
     }
 };
 

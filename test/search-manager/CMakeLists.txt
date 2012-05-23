@@ -16,11 +16,11 @@ INCLUDE_DIRECTORIES(
 # sequences is important for some linker
 #if a depends b, a must precede b
 SET(libs
-  sf1r_query_manager
   sf1r_search_manager
+  sf1r_mining_manager
+  sf1r_query_manager
   sf1r_ranking_manager
   sf1r_document_manager
-  sf1r_mining_manager
   sf1r_directory_manager
 
   sf1r_log_manager

@@ -84,7 +84,7 @@ class MockB5M < MockDm
 
   def p(str)
     return
-    Object.p(str)
+    Kernel.p(str)
   end
 
   #def create_doc(doc, same_group_docid = nil)
@@ -140,13 +140,13 @@ class MockB5M < MockDm
         pdoc = make_pdoc(pdoc, [], [old_odoc])
       end
       if old_pdoc[:itemcount]>0
-        p "mockb5m update dmp #{pdoc}"
+        p "mockb5m update old dmp #{old_pdoc}"
         @dmp.update(old_pdoc)
       else
-        p "mockb5m delete dmp #{pdoc}"
+        p "mockb5m delete old dmp #{pdoc}"
         @dmp.delete(old_pdoc)
       end
-      p "mockb5m update dmp #{pdoc}"
+      p "mockb5m update new dmp #{pdoc}"
       @dmp.update(pdoc)
     end
 
