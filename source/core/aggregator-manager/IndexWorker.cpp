@@ -914,12 +914,7 @@ bool IndexWorker::createInsertDocId_(
     {
         if (documentManager_->isDeleted(docId))
         {
-            docid_t oldId = 0;
-            if (! idManager_->updateDocIdByDocName(scdDocId, oldId, docId))
-            {
-                //LOG(WARNING) << "doc id " << docId << " should have been converted";
-                return false;
-            }
+            idManager_->updateDocIdByDocName(scdDocId, docId);
         }
         else
         {
@@ -1021,8 +1016,8 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
 }
 
 bool IndexWorker::insertDoc_(
-        Document& document, 
-        IndexerDocument& indexDocument, 
+        Document& document,
+        IndexerDocument& indexDocument,
         time_t timestamp)
 {
     CREATE_PROFILER(proDocumentIndexing, "IndexWorker", "IndexWorker : InsertDocument")
@@ -1057,12 +1052,12 @@ bool IndexWorker::updateDoc_(
         bool immediately)
 {
     CREATE_SCOPED_PROFILER (proDocumentUpdating, "IndexWorker", "IndexWorker::UpdateDocument");
+    if(INSERT == updateType) return insertDoc_(document, indexDocument, timestamp);
 
     if (hooker_)
     {
         if (!hooker_->HookUpdate(document, indexDocument, timestamp)) return false;
     }
-    if(INSERT == updateType) return insertDoc_(document, indexDocument, timestamp);
     /*if(immediately) */return doUpdateDoc_(document,indexDocument,updateType);
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
@@ -1247,15 +1242,11 @@ bool IndexWorker::prepareDocument_(
             // update
             if (!insert)
             {
-                updateType = checkUpdateType_(scdDocId, doc, oldId);
+                updateType = checkUpdateType_(scdDocId, doc, oldId, docId);
                 switch(updateType)
                 {
                 case INSERT:
-                    insert = true;
-                    break;
                 case GENERAL:
-                    if(!idManager_->updateDocIdByDocName(scdDocId, oldId, docId))
-                        insert = true;
                     break;
                 case REPLACE:
                 case RTYPE:
@@ -1268,8 +1259,7 @@ bool IndexWorker::prepareDocument_(
                     return false;
                 }
             }
-
-            if (insert && !createInsertDocId_(scdDocId, docId))
+            else if (!createInsertDocId_(scdDocId, docId))
             {
                 //LOG(WARNING) << "failed to create id for SCD DOC " << fieldValue;
                 return false;
@@ -1396,7 +1386,7 @@ bool IndexWorker::mergeDocument_(
             if(iter != bundleConfig_->indexSchema_.end())
             {
                 const izenelib::util::UString& propValue = *(get<izenelib::util::UString>(&oldDoc.property(it->first)));
-                if(propValue.empty()) continue; 
+                if(propValue.empty()) continue;
                 prepareIndexDocumentProperty_(newId,std::make_pair(it->first,propValue),iter,indexDocument);
             }
         }
@@ -1805,10 +1795,14 @@ bool IndexWorker::preparePartialDocument_(
 IndexWorker::UpdateType IndexWorker::checkUpdateType_(
         const uint128_t& scdDocId,
         SCDDoc& doc,
-        docid_t& oldId)
+        docid_t& oldId,
+        docid_t& docId)
 {
     if (!idManager_->getDocIdByDocName(scdDocId, oldId, false))
+    {
+        idManager_->updateDocIdByDocName(scdDocId, docId);
         return INSERT;
+    }
 
     SCDDoc::iterator p = doc.begin();
     bool replace = false;
@@ -1830,8 +1824,9 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
             return BADDOC;///TO BE ADJUSTED
 
         baddoc = false;
-        if(iter->isIndex() && iter->isAnalyzed())
+        if (iter->isIndex() && iter->isAnalyzed())
         {
+            idManager_->updateDocIdByDocName(scdDocId, docId);
             return GENERAL;
         }
         else if (iter->isIndex() && iter->getIsFilter() && !iter->isAnalyzed())

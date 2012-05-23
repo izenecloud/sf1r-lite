@@ -223,7 +223,8 @@ private:
     UpdateType checkUpdateType_(
             const uint128_t& scdDocId,
             SCDDoc& doc,
-            docid_t& oldId
+            docid_t& oldId,
+            docid_t& docId
     );
 
     bool makeSentenceBlocks_(
