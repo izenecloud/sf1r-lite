@@ -71,11 +71,11 @@ describe "B5M Real Tester" do
 
     @logger = Logger.new(STDERR)
     @mod_count = 20000
-    @validate_only = false
+    @validate_only = true
     @reindex_mode = 1
     @b5mo_limit = 0
     @b5mp_limit = 0
-    @do_logserver = true
+    @do_logserver = false
   end
 
   it "should always be right" do
@@ -141,9 +141,11 @@ describe "B5M Real Tester" do
       b5mo_mirror_scd = File.join(mdb_instance, "b5mo_mirror")
       b5mp_scd = File.join(mdb_instance, "b5mp")
       b5mc_scd = File.join(mdb_instance, "b5mc")
-      #add more pid into test_pid_map from I scd in b5mp_scd
       scd_list = ScdParser.get_scd_list(b5mp_scd)
       scd_list.size.should > 0
+
+      #for simple test
+      #next
 
       #start add to mock_b5m
       mock_b5m.clear

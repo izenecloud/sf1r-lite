@@ -65,9 +65,19 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
     }
     ProductProperty another;
     another.Parse(another_value.doc);
+    std::string spid;
+    another.pid.convertString(spid, izenelib::util::UString::UTF_8);
     if(another_value.type!=DELETE_SCD)
     {
+        //if(spid=="403ec13d9939290d24c308b3da250658")
+        //{
+            //LOG(INFO)<<pp.ToString()<<std::endl;
+        //}
         pp += another;
+        //if(spid=="403ec13d9939290d24c308b3da250658")
+        //{
+            //LOG(INFO)<<pp.ToString()<<std::endl;
+        //}
         if(value.empty() || another.oid==another.pid )
         {
             value.doc = another_value.doc;
@@ -76,10 +86,15 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
     }
     else
     {
+        //pp.itemcount-=1;
         if(pp.pid.empty())
         {
             pp.pid = another.pid;
         }
+        //if(spid=="403ec13d9939290d24c308b3da250658")
+        //{
+            //LOG(INFO)<<pp.ToString()<<std::endl;
+        //}
     }
     pp.Set(value.doc);
 

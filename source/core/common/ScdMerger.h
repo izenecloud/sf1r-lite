@@ -16,6 +16,7 @@
 #include <am/sequence_file/ssfr.h>
 #include <glog/logging.h>
 
+//#define MERGER_DEBUG
 
 namespace sf1r
 {
@@ -218,6 +219,14 @@ public:
                         {
                             IdType id = GenId_(pit->second);
                             cit->second->position_map[id] = p;
+#ifdef MERGER_DEBUG
+                            std::string sss;
+                            pit->second.convertString(sss, izenelib::util::UString::UTF_8);
+                            if(sss=="403ec13d9939290d24c308b3da250658" && property_name=="uuid")
+                            {
+                                LOG(INFO)<<property_name<<","<<sss<<","<<p<<std::endl;
+                            }
+#endif
                         }
                     }
                 }
@@ -284,13 +293,21 @@ public:
                         if(pvalue.empty()) continue;
                         ValueType output_value;
                         IdType id = GenId_(pvalue);
-                        ValueType empty_value;
-                        config.merge_function(empty_value, value);
-                        empty_value.swap(value);
+                        //ValueType empty_value;
+                        //config.merge_function(empty_value, value);
+                        //empty_value.swap(value);
                         PositionMap& position_map = config.position_map;
                         PositionMap::iterator mit = position_map.find(id);
                         if(mit==position_map.end())
                         {
+#ifdef MERGER_DEBUG
+                            std::string sss;
+                            pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                            if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                            {
+                                LOG(INFO)<<pname<<","<<sss<<" position_map end"<<std::endl;
+                            }
+#endif
                             if(pci_it->output_if_no_position)
                             {
                                 output_value = value;
@@ -307,14 +324,38 @@ public:
                             //ValueType* p_output = NULL;
                             if(cit==config.cache.end())
                             {
+#ifdef MERGER_DEBUG
+                                std::string sss;
+                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                {
+                                    LOG(INFO)<<pname<<","<<sss<<" not in cache"<<std::endl;
+                                }
+#endif
                             }
                             else
                             {
+#ifdef MERGER_DEBUG
+                                std::string sss;
+                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                {
+                                    LOG(INFO)<<pname<<","<<sss<<" merge"<<std::endl;
+                                }
+#endif
                                 config.merge_function(cit->second, value);
                                 value = cit->second;
                             }
                             if(mit->second==position)
                             {
+#ifdef MERGER_DEBUG
+                                std::string sss;
+                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                {
+                                    LOG(INFO)<<pname<<","<<sss<<" output"<<std::endl;
+                                }
+#endif
                                 output_value = value;
                                 position_map.erase(mit);
                             }
@@ -324,6 +365,17 @@ public:
                             }
                             if(output_value.empty() && cit==config.cache.end())
                             {
+#ifdef MERGER_DEBUG
+                                std::string sss;
+                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                {
+                                    LOG(INFO)<<pname<<","<<sss<<" insert to cache"<<std::endl;
+                                }
+#endif
+                                ValueType empty_value;
+                                config.merge_function(empty_value, value);
+                                empty_value.swap(value);
                                 config.cache.insert(std::make_pair(id, value));
                             }
                         }

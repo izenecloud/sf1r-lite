@@ -56,13 +56,13 @@ namespace sf1r {
         {
             if(is_open_) return true;
             LOG(INFO)<<"Loading odb..."<<std::endl;
-            load(path_);
+            load_text(path_);
             has_modify_ = false;
             is_open_ = true;
             return true;
         }
 
-        bool load(const std::string& path)
+        bool load_text(const std::string& path)
         {
             LOG(INFO)<<"loading file "<<path<<std::endl;
             std::ifstream ifs(path.c_str());
