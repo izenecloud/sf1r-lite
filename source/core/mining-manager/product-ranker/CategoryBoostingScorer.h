@@ -40,7 +40,11 @@ public:
     void selectBoostingCategory(ProductRankingParam& param);
 
 private:
-    void printBoostingLabel_(category_id_t boostLabel, bool isMaxAvgLabel) const;
+    void printBoostingLabel_(
+        const std::string& query,
+        category_id_t boostLabel,
+        bool isMaxAvgLabel
+    ) const;
 
     category_id_t getFreqLabel_(const std::string& query);
 
@@ -52,6 +56,9 @@ private:
     boost::shared_ptr<SearchManager> searchManager_;
 
     const std::string& boostingSubProp_;
+
+    const std::string reasonFreqLabel_;
+    const std::string reasonMaxAvgLabel_;
 };
 
 } // namespace sf1r

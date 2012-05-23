@@ -59,30 +59,6 @@ faceted::PropValueTable::pvid_t getMaxAvgLabelId(LabelCounterMap& counterMap)
     return maxLabelId;
 }
 
-faceted::PropValueTable::pvid_t getRootCategory(
-    const faceted::PropValueTable& categoryValueTable,
-    const faceted::PropValueTable::ValueIdTable& categoryIdTable,
-    sf1r::docid_t docId
-)
-{
-    faceted::PropValueTable::pvid_t pvId = 0;
-
-    if (docId >= categoryIdTable.size())
-        return pvId;
-
-    const faceted::PropValueTable::ValueIdList& valueIdList = categoryIdTable[docId];
-    if (! valueIdList.empty())
-    {
-        // get 1st category
-        faceted::PropValueTable::pvid_t pvId = valueIdList.front();
-
-        // find root category
-        pvId = categoryValueTable.getRootValueId(pvId);
-    }
-
-    return pvId;
-}
-
 } // namespace
 
 namespace sf1r
@@ -94,10 +70,13 @@ CategoryBoostingScorer::CategoryBoostingScorer(
     boost::shared_ptr<SearchManager> searchManager,
     const std::string& boostingSubProp
 )
-    : categoryValueTable_(categoryValueTable)
+    : ProductScorer("boost")
+    , categoryValueTable_(categoryValueTable)
     , categoryClickLogger_(categoryClickLogger)
     , searchManager_(searchManager)
     , boostingSubProp_(boostingSubProp)
+    , reasonFreqLabel_("most frequent click")
+    , reasonMaxAvgLabel_("max avg value for property [" + boostingSubProp_ + "]")
 {
 }
 
@@ -136,28 +115,29 @@ void CategoryBoostingScorer::selectBoostingCategory(ProductRankingParam& param)
     }
 
     param.boostingCategoryId_ = boostLabel;
-    printBoostingLabel_(boostLabel, isMaxAvgLabel);
+    printBoostingLabel_(param.query_, boostLabel, isMaxAvgLabel);
 }
 
-void CategoryBoostingScorer::printBoostingLabel_(category_id_t boostLabel, bool isMaxAvgLabel) const
+void CategoryBoostingScorer::printBoostingLabel_(
+    const std::string& query,
+    category_id_t boostLabel,
+    bool isMaxAvgLabel
+) const
 {
+    if (boostLabel == 0)
+    {
+        LOG(INFO) << "no boosting category is selected for query [" << query << "]";
+        return;
+    }
+
     izenelib::util::UString labelUStr;
     categoryValueTable_->propValueStr(boostLabel, labelUStr);
 
     std::string labelStr;
     labelUStr.convertString(labelStr, izenelib::util::UString::UTF_8);
 
-    std::string reason;
-    if (isMaxAvgLabel)
-    {
-        reason = "max avg value of property " + boostingSubProp_;
-    }
-    else
-    {
-        reason = "most frequent click";
-    }
-
-    LOG(INFO) << "boosting category [" << labelStr << "], reason: " << reason;
+    LOG(INFO) << "boosting category [" << labelStr << "] for query [" << query
+              << "], reason: " << (isMaxAvgLabel ? reasonMaxAvgLabel_ : reasonFreqLabel_);
 }
 
 category_id_t CategoryBoostingScorer::getFreqLabel_(const std::string& query)
@@ -187,10 +167,12 @@ category_id_t CategoryBoostingScorer::getMaxAvgLabel_(const std::vector<docid_t>
     }
 
     if (! subPropTable)
+    {
+        LOG(WARNING) << "no NumericPropertyTable is created for property [" << boostingSubProp_ << "]";
         return 0;
+    }
 
     faceted::PropValueTable::ScopedReadLock lock(categoryValueTable_->getLock());
-    const faceted::PropValueTable::ValueIdTable& idTable = categoryValueTable_->valueIdTable();
     LabelCounterMap labelCounterMap;
 
     for (std::vector<docid_t>::const_iterator it = docIds.begin();
@@ -198,16 +180,14 @@ category_id_t CategoryBoostingScorer::getMaxAvgLabel_(const std::vector<docid_t>
     {
         docid_t docId = *it;
 
-        double value = 0;
-        if (! subPropTable->convertPropertyValue(docId, value))
+        double subPropValue = 0;
+        if (! subPropTable->convertPropertyValue(docId, subPropValue))
             continue;
 
-        faceted::PropValueTable::pvid_t pvId =
-            getRootCategory(*categoryValueTable_, idTable, docId);
-
+        faceted::PropValueTable::pvid_t pvId = categoryValueTable_->getRootValueId(docId);
         if (pvId)
         {
-            labelCounterMap[pvId].add(value);
+            labelCounterMap[pvId].add(subPropValue);
         }
     }
 

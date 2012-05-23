@@ -263,6 +263,7 @@
                 <xs:element name="CategoryProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="BoostingSubProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
+            <xs:attribute name="debug" type="YesNoType" use="optional"/>
         </xs:complexType>
     </xs:element>
 

@@ -6,22 +6,6 @@ namespace
 {
 using namespace sf1r;
 
-category_id_t getCategoryId(
-    const faceted::PropValueTable::ValueIdTable* categoryIdTable,
-    docid_t docId
-)
-{
-    if (categoryIdTable && docId < categoryIdTable->size())
-    {
-        const faceted::PropValueTable::ValueIdList& valueIdList = (*categoryIdTable)[docId];
-
-        if (!valueIdList.empty())
-            return valueIdList.front();
-    }
-
-    return 0;
-}
-
 score_t sumMerchantScore(
     const MerchantScoreManager* merchantScoreManager,
     const faceted::PropValueTable::ValueIdList& merchantIdList,
@@ -71,10 +55,9 @@ void getMerchantCountScore(
 
     scoreList.pushScore(merchantCount);
     scoreList.pushScore(merchantScore);
-
 }
 
-}
+} // namespace
 
 namespace sf1r
 {
@@ -84,7 +67,8 @@ MerchantScorer::MerchantScorer(
     const faceted::PropValueTable* merchantValueTable,
     const MerchantScoreManager* merchantScoreManager
 )
-    : categoryValueTable_(categoryValueTable)
+    : ProductScorer("mcount\tmscore")
+    , categoryValueTable_(categoryValueTable)
     , merchantValueTable_(merchantValueTable)
     , merchantScoreManager_(merchantScoreManager)
 {
@@ -99,11 +83,8 @@ void MerchantScorer::pushScore(
     const faceted::PropValueTable::ValueIdTable& merchantIdTable = merchantValueTable_->valueIdTable();
 
     faceted::PropValueTable::LockType* categoryLock = NULL;
-    const faceted::PropValueTable::ValueIdTable* categoryIdTable = NULL;
-
     if (categoryValueTable_)
     {
-        categoryIdTable = &categoryValueTable_->valueIdTable();
         categoryLock = &categoryValueTable_->getLock();
         categoryLock->lock_shared();
     }
@@ -114,8 +95,11 @@ void MerchantScorer::pushScore(
         ProductScoreList& scoreList = *it;
         docid_t docId = scoreList.docId_;
 
-        category_id_t categoryId = getCategoryId(categoryIdTable, docId);
-        categoryId = merchantValueTable_->getRootValueId(categoryId);
+        category_id_t categoryId = 0;
+        if (categoryValueTable_)
+        {
+            categoryId = categoryValueTable_->getRootValueId(docId);
+        }
 
         getMerchantCountScore(merchantIdTable, merchantScoreManager_,
             docId, categoryId, scoreList);

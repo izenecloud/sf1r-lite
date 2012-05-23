@@ -10,6 +10,7 @@
 #define SF1R_PRODUCT_RANKER_H
 
 #include "ProductScoreList.h"
+#include <string>
 
 namespace sf1r
 {
@@ -21,7 +22,8 @@ class ProductRanker
 public:
     ProductRanker(
         ProductRankingParam& param,
-        ProductRankerFactory& rankerFactory
+        ProductRankerFactory& rankerFactory,
+        bool isDebug
     );
 
     void rank();
@@ -33,11 +35,15 @@ private:
 
     void getResult_();
 
+    void printMatrix_(const std::string& message) const;
+
 private:
     ProductRankingParam& rankingParam_;
     ProductRankerFactory& rankerFactory_;
 
     ProductScoreMatrix scoreMatrix_;
+
+    bool isDebug_;
 };
 
 } // namespace sf1r

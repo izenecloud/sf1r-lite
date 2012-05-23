@@ -22,6 +22,11 @@ public:
     /// sub property name, used for category boosting
     std::string boostingSubPropName;
 
+    /// whether print debug info
+    bool isDebug;
+
+    ProductRankingConfig() : isDebug(false) {}
+
     bool isEnable() const
     {
         return !merchantPropName.empty() ||

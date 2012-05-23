@@ -63,7 +63,7 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankingParam& pa
         boostingScorer_->selectBoostingCategory(param);
     }
 
-    return new ProductRanker(param, *this);
+    return new ProductRanker(param, *this, config_.isDebug);
 }
 
 void ProductRankerFactory::createCategoryBoostingScorer_()
@@ -88,7 +88,7 @@ void ProductRankerFactory::createMerchantScorer_()
         return;
 
     ProductScorer* merchantScorer = new MerchantScorer(
-        merchantValueTable_, categoryValueTable_, merchantScoreManager_);
+        categoryValueTable_, merchantValueTable_, merchantScoreManager_);
 
     const int compareScoreCount = scorers_.size();
     scorers_.push_back(merchantScorer);

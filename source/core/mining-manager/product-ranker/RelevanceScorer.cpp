@@ -3,6 +3,11 @@
 namespace sf1r
 {
 
+RelevanceScorer::RelevanceScorer()
+    : ProductScorer("relevance")
+{
+}
+
 void RelevanceScorer::pushScore(
     const ProductRankingParam& param,
     ProductScoreMatrix& scoreMatrix

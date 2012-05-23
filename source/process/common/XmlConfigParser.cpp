@@ -1800,6 +1800,7 @@ void CollectionConfig::parseProductRankingNode(const ticpp::Element* productRank
     MiningSchema& miningSchema = collectionMeta.miningBundleConfig_->mining_schema_;
     ProductRankingConfig& productRankingConfig = miningSchema.product_ranking_config;
 
+    getAttribute(productRankingNode, "debug", productRankingConfig.isDebug, false);
     params.Get("MerchantProperty/name", productRankingConfig.merchantPropName);
     params.Get("CategoryProperty/name", productRankingConfig.categoryPropName);
     params.Get("BoostingSubProperty/name", productRankingConfig.boostingSubPropName);

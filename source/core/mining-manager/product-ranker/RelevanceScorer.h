@@ -16,6 +16,8 @@ namespace sf1r
 class RelevanceScorer : public ProductScorer
 {
 public:
+    RelevanceScorer();
+
     virtual void pushScore(
         const ProductRankingParam& param,
         ProductScoreMatrix& scoreMatrix

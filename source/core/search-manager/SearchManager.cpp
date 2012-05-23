@@ -23,6 +23,7 @@
 
 #include <util/swap.h>
 #include <util/get.h>
+#include <util/ClockTimer.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -143,6 +144,8 @@ bool SearchManager::rerank(const KeywordSearchActionItem& actionItem, KeywordSea
         resultItem.topKCustomRankScoreList_.empty() &&
         isProductRanking(actionItem))
     {
+        izenelib::util::ClockTimer timer;
+
         ProductRankingParam rankingParam(actionItem.env_.queryString_,
             resultItem.topKDocs_, resultItem.topKRankScoreList_);
 
@@ -150,6 +153,10 @@ bool SearchManager::rerank(const KeywordSearchActionItem& actionItem, KeywordSea
             productRankerFactory_->createProductRanker(rankingParam));
 
         productRanker->rank();
+
+        LOG(INFO) << "topK doc num: " << resultItem.topKDocs_.size()
+                  << ", product ranking costs: " << timer.elapsed() << " seconds";
+
         return true;
     }
     return false;

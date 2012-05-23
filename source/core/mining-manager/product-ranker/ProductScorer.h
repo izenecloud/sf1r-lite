@@ -11,18 +11,29 @@
 #include "ProductRankingParam.h"
 #include "ProductScoreList.h"
 
+#include <string>
+
 namespace sf1r
 {
 
 class ProductScorer
 {
 public:
+    ProductScorer(const std::string& scoreMessage)
+        : scoreMessage_(scoreMessage)
+    {}
+
     virtual ~ProductScorer() {}
+
+    const std::string& getScoreMessage() const { return scoreMessage_; }
 
     virtual void pushScore(
         const ProductRankingParam& param,
         ProductScoreMatrix& scoreMatrix
     ) = 0;
+
+private:
+    const std::string scoreMessage_;
 };
 
 } // namespace sf1r
