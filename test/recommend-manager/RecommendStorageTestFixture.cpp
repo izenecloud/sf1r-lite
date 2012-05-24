@@ -6,7 +6,7 @@ namespace sf1r
 {
 
 const std::string RecommendStorageTestFixture::REMOTE_STORAGE_URL("cassandra://localhost");
-const std::string RecommendStorageTestFixture::REMOTE_STORAGE_URL_NOT_CONNECT("cassandra://localhost:9161");
+const std::string RecommendStorageTestFixture::REMOTE_STORAGE_URL_NOT_CONNECT("cassandra://localhost:19161");
 
 bool RecommendStorageTestFixture::initLocalStorage(
     const std::string& collection,
