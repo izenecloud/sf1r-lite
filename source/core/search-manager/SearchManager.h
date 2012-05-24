@@ -42,6 +42,7 @@ class MultiPropertyScorer;
 class WANDDocumentIterator;
 class CombinedDocumentIterator;
 class HitQueue;
+class ProductRankerFactory;
 
 namespace faceted
 {
@@ -60,7 +61,6 @@ class SearchManager : public NumericPropertyTableBuilder
     typedef std::map<std::string, PropertyTermInfo> property_term_info_map;
 
 public:
-    typedef boost::function< void( std::vector<unsigned int>&, std::vector<float>&, const std::string& ) > reranker_t;
     typedef boost::function< void( std::vector<QueryFiltering::FilteringType>& ) > filter_hook_t;
 
     SearchManager(
@@ -96,11 +96,6 @@ public:
 
     void reset_all_property_cache();
 
-    void set_reranker(reranker_t reranker)
-    {
-        reranker_ = reranker;
-    }
-
     void set_filter_hook(filter_hook_t filter_hook)
     {
         filter_hook_ = filter_hook;
@@ -111,6 +106,11 @@ public:
     void setMiningManager(boost::shared_ptr<MiningManager> miningManagerPtr);
 
     NumericPropertyTable* createPropertyTable(const std::string& propertyName);
+
+    void setProductRankerFactory(ProductRankerFactory* productRankerFactory)
+    {
+        productRankerFactory_ = productRankerFactory;
+    }
 
 private:
     bool doSearch_(
@@ -187,9 +187,9 @@ private:
 
     filter_hook_t filter_hook_;
 
-    reranker_t reranker_;
-
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
+
+    ProductRankerFactory* productRankerFactory_;
 };
 
 } // end - namespace sf1r

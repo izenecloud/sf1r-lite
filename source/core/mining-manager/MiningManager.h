@@ -17,6 +17,7 @@
 
 #include "faceted-submanager/prop_value_table.h" // pvid_t
 #include "summarization-submanager/Summarization.h" //Summarization
+#include "merchant-score-manager/MerchantScore.h"
 
 #include <common/ResultType.h>
 #include <configuration-manager/PropertyConfig.h>
@@ -86,6 +87,8 @@ class DocumentManager;
 class IndexManager;
 class SearchManager;
 class MultiDocSummarizationSubManager;
+class MerchantScoreManager;
+class ProductRankerFactory;
 
 namespace sim
 {
@@ -96,7 +99,6 @@ namespace faceted
 {
 class GroupManager;
 class AttrManager;
-class PropertyDiversityReranker;
 class OntologyManager;
 class CTRManager;
 }
@@ -241,6 +243,22 @@ public:
             const std::vector<std::string>& groupPath
     );
 
+    /**
+     * if @p merchantNames is empty, it loads all existing merchant score into @p merchantScoreMap;
+     * otherwise, it loads the score of merchant in @p merchantNames into @p merchantScoreMap.
+     * @return true for success, false for failure
+     */
+    bool getMerchantScore(
+        const std::vector<std::string>& merchantNames,
+        MerchantStrScoreMap& merchantScoreMap
+    ) const;
+
+    /**
+     * set merchant score according to @p strScoreMap.
+     * @return true for success, false for failure
+     */
+    bool setMerchantScore(const MerchantStrScoreMap& merchantScoreMap);
+
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
 
     bool GetTdtInTimeRange(const boost::gregorian::date& start, const boost::gregorian::date& end, std::vector<izenelib::util::UString>& topic_list);
@@ -305,6 +323,31 @@ public:
     }
 
     void onIndexUpdated(size_t docNum);
+
+    const MiningSchema& GetMiningSchema() const
+    {
+        return mining_schema_;
+    }
+
+    const faceted::GroupManager* GetGroupManager() const
+    {
+        return groupManager_;
+    }
+
+    GroupLabelLogger* GetGroupLabelLogger(const std::string& propName)
+    {
+        return groupLabelLoggerMap_[propName];
+    }
+
+    const MerchantScoreManager* GetMerchantScoreManager() const
+    {
+        return merchantScoreManager_;
+    }
+
+    boost::shared_ptr<SearchManager>& GetSearchManager()
+    {
+        return searchManager_;
+    }
 
 private:
     void printSimilarLabelResult_(uint32_t label_id);
@@ -440,12 +483,15 @@ private:
     /** ATTR BY */
     faceted::AttrManager* attrManager_;
 
-    /** GROUP RERANKER */
-    faceted::PropertyDiversityReranker* groupReranker_;
-
     /** property name => group label click logger */
     typedef std::map<std::string, GroupLabelLogger*> GroupLabelLoggerMap;
     GroupLabelLoggerMap groupLabelLoggerMap_;
+
+    /** Merchant Score */
+    MerchantScoreManager* merchantScoreManager_;
+
+    /** Product Ranking */
+    ProductRankerFactory* productRankerFactory_;
 
     /** TDT */
     std::string tdt_path_;
