@@ -243,6 +243,12 @@ void CollectionController::create_collection()
 void CollectionController::delete_collection(){
     namespace bf = boost::filesystem;
     std::string collection = asString(request()[Keys::collection]);
+
+    if(CollectionManager::get()->findHandler(collection) != NULL){
+        response().addError("Collection is not stopped, can't be deleted.");
+        return;
+    }
+
     std::string configFile = SF1Config::get()->getHomeDirectory();
 
     std::string slash("");
