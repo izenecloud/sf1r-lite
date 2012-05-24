@@ -177,12 +177,11 @@ void CollectionController::create_collection()
         else{
             config_file.put(*it);
             if(*it == '>')
-                config_file<<'\n';
+                config_file.put('\n');
             it++;
         }
     }
     config_file.close();
-    cout<<"write end"<<endl;
 
     bf::path config_dir = configPath.parent_path();
     bf::path schema_file = config_dir/"schema"/"collection.xsd";
