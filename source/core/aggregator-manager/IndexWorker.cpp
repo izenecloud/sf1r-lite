@@ -1252,9 +1252,6 @@ bool IndexWorker::prepareDocument_(
                 case RTYPE:
                     docId = oldId;
                     break;
-                case BADDOC:
-                    LOG(WARNING) << "BAD SCD DOC " << fieldValue;
-                    return false;
                 default:
                     return false;
                 }
@@ -1806,7 +1803,6 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
 
     SCDDoc::iterator p = doc.begin();
     bool replace = false;
-    bool baddoc = true;
     for (; p != doc.end(); ++p)
     {
         const string& fieldName = p->first;
@@ -1821,9 +1817,8 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
         IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
 
         if (iter == bundleConfig_->indexSchema_.end())
-            return BADDOC;///TO BE ADJUSTED
+            continue;
 
-        baddoc = false;
         if (iter->isIndex() && iter->isAnalyzed())
         {
             idManager_->updateDocIdByDocName(scdDocId, docId);
@@ -1839,18 +1834,7 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
        	}
     }
 
-    if (replace)
-    {
-        return REPLACE;
-    }
-    else if(!baddoc)
-    {
-        return RTYPE;
-    }
-    else
-    {
-        return BADDOC;
-    }
+    return replace ? REPLACE : RTYPE;
 }
 
 bool IndexWorker::makeSentenceBlocks_(

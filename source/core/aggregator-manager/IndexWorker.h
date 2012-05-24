@@ -51,8 +51,7 @@ class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
     INSERT, ///Not update, it's a new document
     GENERAL, ///General update, equals to del + insert
     REPLACE, ///Don't need to change index, just adjust DocumentManager
-    RTYPE,  ///RType update to index
-    BADDOC
+    RTYPE  ///RType update to index
     };
 
     typedef std::pair<std::pair<Document, IndexerDocument >, UpdateType > UpdateBufferDataType;
