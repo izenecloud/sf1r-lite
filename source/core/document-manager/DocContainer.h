@@ -17,8 +17,7 @@
 #include <boost/archive/archive_exception.hpp>
 #include <boost/scoped_array.hpp>
 
-#include <compression/minilzo/minilzo.h>
-#define OUTPUT_BLOCK_SIZE(input_block_size) (input_block_size + (input_block_size / 16) + 64 + 3)
+#include <compression/compressor.h>
 
 namespace sf1r
 {
@@ -80,22 +79,25 @@ public:
         size_t srcLen;
         izs.write_image(src, srcLen);
 
-        const size_t allocSize = OUTPUT_BLOCK_SIZE(srcLen);
+        const size_t allocSize = compressor_.compressBound(srcLen);
         size_t destLen = 0;
         boost::scoped_array<unsigned char> destPtr(new unsigned char[allocSize + sizeof(uint32_t)]);
         *reinterpret_cast<uint32_t*>(destPtr.get()) = srcLen;
 
         START_PROFILER( proDocumentCompression )
-        if (compress_(src, srcLen, destPtr.get() + sizeof(uint32_t), allocSize, destLen) == false)
+        bool re = compressor_.compress((const unsigned char*)src, srcLen, destPtr.get() + sizeof(uint32_t), destLen);
+        if(!re || destLen > allocSize)
             return false;
         STOP_PROFILER( proDocumentCompression )
 
         bool ret = containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::APPEND);
+
         if (ret)
         {
             unsigned int id = docId;
             containerPtr_->put(0, &id, sizeof(unsigned int), Lux::IO::OVERWRITE);
         }
+
         return ret;
     }
 
@@ -117,18 +119,17 @@ public:
 
         const uint32_t allocSize = *reinterpret_cast<const uint32_t*>(val_p->data);
         unsigned char* p = new unsigned char[allocSize];
-        lzo_uint tmpTarLen;
-        int re = lzo1x_decompress((const unsigned char*)val_p->data + sizeof(uint32_t), val_p->size - sizeof(uint32_t), p, &tmpTarLen, NULL);
+        bool re = compressor_.decompress((const unsigned char*)val_p->data + sizeof(uint32_t), val_p->size - sizeof(uint32_t), p, allocSize);
         //int re = bmz_unpack(val_p->data, val_p->size, p, &tmpTarLen, NULL);
 
-        if (re != LZO_E_OK || tmpTarLen != allocSize)
+        if (!re)
         {
             delete[] p;
             containerPtr_->clean_data(val_p);
             return false;
         }
 
-        nsz = tmpTarLen; //
+        nsz = allocSize; //
         //char *p =(char*)_tc_bzdecompress((const char*)val_p->data, val_p->size, &nsz);
         //STOP_PROFILER(proDocumentDecompression)
 
@@ -166,12 +167,13 @@ public:
         size_t srcLen;
         izs.write_image(src, srcLen);
 
-        const size_t allocSize = OUTPUT_BLOCK_SIZE(srcLen);
+        const size_t allocSize = compressor_.compressBound(srcLen);
         size_t destLen = 0;
         boost::scoped_array<unsigned char> destPtr(new unsigned char[allocSize + sizeof(uint32_t)]);
         *reinterpret_cast<uint32_t*>(destPtr.get()) = srcLen;
 
-        if (compress_(src, srcLen, destPtr.get() + sizeof(uint32_t), allocSize, destLen) == false)
+        bool re = compressor_.compress((const unsigned char*)src, srcLen, destPtr.get() + sizeof(uint32_t), destLen);
+        if(!re || destLen > allocSize)
             return false;
 
         bool ret = containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::OVERWRITE);
@@ -231,26 +233,13 @@ private:
         }
     }
 
-    bool compress_(char* src, size_t srcLen, unsigned char* dest, size_t destAllocSize, size_t& destLen)
-    {
-        static lzo_align_t __LZO_MMODEL
-        wrkmem [((LZO1X_1_MEM_COMPRESS)+(sizeof(lzo_align_t)-1))/sizeof(lzo_align_t)];
-
-        lzo_uint tmpTarLen;
-        int re = lzo1x_1_compress((unsigned char*)src, srcLen, dest, &tmpTarLen, wrkmem);
-        if ( re != LZO_E_OK || tmpTarLen > destAllocSize )
-            return false;
-
-        destLen = tmpTarLen;
-        return true;
-    }
-
 private:
     std::string path_;
     std::string fileName_;
     std::string maxDocIdDb_;
     containerType* containerPtr_;
     docid_t maxDocID_;
+    DocumentCompressor compressor_;
 };
 
 }
