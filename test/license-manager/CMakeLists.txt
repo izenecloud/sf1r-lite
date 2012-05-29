@@ -32,7 +32,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
         sf1r_ranking_manager
         sf1r_index_manager
         sf1r_directory_manager
-        ${Glog_LIBRARIES}
         ${Boost_LIBRARIES}
         ${ilplib_LIBRARIES}
         ${wisekma_LIBRARIES}
@@ -41,6 +40,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
         ${idmlib_LIBRARIES}
         ${imllib_LIBRARIES}
         ${izenelib_LIBRARIES}
+        ${Glog_LIBRARIES}
         ${xml2_LIBRARIES}
         sqlite3
         ${MYSQL_LIBRARIES}

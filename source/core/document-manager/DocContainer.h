@@ -84,6 +84,12 @@ public:
         boost::scoped_array<unsigned char> destPtr(new unsigned char[allocSize + sizeof(uint32_t)]);
         *reinterpret_cast<uint32_t*>(destPtr.get()) = srcLen;
 
+        if ( srcLen == 0 )
+        {
+            cout << "warning : documents data is 0 before compress. ======" << endl;
+            return false;
+        }
+
         START_PROFILER( proDocumentCompression )
         bool re = compressor_.compress((const unsigned char*)src, srcLen, destPtr.get() + sizeof(uint32_t), destLen);
         if(!re || destLen > allocSize)
@@ -116,6 +122,13 @@ public:
         int nsz=0;
 
         //START_PROFILER(proDocumentDecompression)
+
+        if ( val_p->size - sizeof(uint32_t) == 0 )
+        {
+            containerPtr_->clean_data(val_p);
+            cout << "warning : documents compressed data is 0. ======" << endl;
+            return false;
+        }
 
         const uint32_t allocSize = *reinterpret_cast<const uint32_t*>(val_p->data);
         unsigned char* p = new unsigned char[allocSize];
@@ -172,6 +185,11 @@ public:
         boost::scoped_array<unsigned char> destPtr(new unsigned char[allocSize + sizeof(uint32_t)]);
         *reinterpret_cast<uint32_t*>(destPtr.get()) = srcLen;
 
+        if ( srcLen == 0)
+        {
+            cout << "warning : documents data is 0 before compress. ======" << endl;
+            return false;
+        }
         bool re = compressor_.compress((const unsigned char*)src, srcLen, destPtr.get() + sizeof(uint32_t), destLen);
         if(!re || destLen > allocSize)
             return false;

@@ -49,3 +49,7 @@ TAGS
 /log
 scripts/ScdMerger
 scripts/tmp
+/maketags.py
+/maketags.log
+/python_tags_filelist
+/changedliborer
