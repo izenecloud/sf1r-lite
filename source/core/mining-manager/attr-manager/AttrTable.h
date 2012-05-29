@@ -1,5 +1,5 @@
 ///
-/// @file attr_table.h
+/// @file AttrTable.h
 /// @brief a table contains below things for all attribute name and values:
 ///        1. mapping between attribute UString name and id
 ///        2. mapping between attribute UString value and id
@@ -13,7 +13,7 @@
 
 #include <common/inttypes.h>
 #include <util/ustring/UString.h>
-#include "faceted_types.h"
+#include "../faceted-submanager/faceted_types.h"
 
 #include <vector>
 #include <string>

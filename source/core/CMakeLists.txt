@@ -57,6 +57,8 @@ FILE(GLOB mining_SRC
   "mining-manager/query-correction-submanager/*.cpp"
   "mining-manager/auto-fill-submanager/*.cpp"
   "mining-manager/faceted-submanager/*.cc"
+  "mining-manager/group-manager/*.cpp"
+  "mining-manager/attr-manager/*.cpp"
   "mining-manager/group-label-logger/*.cpp"
   "mining-manager/ec-submanager/*.cc"
   "mining-manager/summarization-submanager/*.cpp"

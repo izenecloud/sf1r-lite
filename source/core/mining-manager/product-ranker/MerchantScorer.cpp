@@ -1,5 +1,5 @@
 #include "MerchantScorer.h"
-#include "../faceted-submanager/prop_value_table.h"
+#include "../group-manager/PropValueTable.h"
 #include "../merchant-score-manager/MerchantScoreManager.h"
 
 namespace

@@ -1,5 +1,5 @@
 #include "CategoryBoostingScorer.h"
-#include "../faceted-submanager/prop_value_table.h"
+#include "../group-manager/PropValueTable.h"
 #include "../group-label-logger/GroupLabelLogger.h"
 #include <search-manager/SearchManager.h>
 

@@ -8,7 +8,7 @@
 #ifndef SF1R_GROUP_PARAM_H
 #define SF1R_GROUP_PARAM_H
 
-#include "faceted_types.h"
+#include "../faceted-submanager/faceted_types.h"
 
 #include <util/izene_serialization.h>
 #include <3rdparty/msgpack/msgpack.hpp>

@@ -69,27 +69,27 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_split_ustr")
 
-  ADD_EXECUTABLE(t_group_manager
+  ADD_EXECUTABLE(t_GroupManager
     Runner.cpp
-    t_group_manager.cc
+    t_GroupManager.cpp
     NumericPropertyTableBuilderStub.cpp
     GroupManagerTestFixture.cpp
   )
-  TARGET_LINK_LIBRARIES(t_group_manager ${libs})
-  SET_TARGET_PROPERTIES(t_group_manager PROPERTIES
+  TARGET_LINK_LIBRARIES(t_GroupManager ${libs})
+  SET_TARGET_PROPERTIES(t_GroupManager PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_group_manager")
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_GroupManager")
 
-  ADD_EXECUTABLE(t_attr_manager
+  ADD_EXECUTABLE(t_AttrManager
     Runner.cpp
-    t_attr_manager.cc
+    t_AttrManager.cpp
   )
-  TARGET_LINK_LIBRARIES(t_attr_manager ${libs})
-  SET_TARGET_PROPERTIES(t_attr_manager PROPERTIES
+  TARGET_LINK_LIBRARIES(t_AttrManager ${libs})
+  SET_TARGET_PROPERTIES(t_AttrManager PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_attr_manager")
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_AttrManager")
 
   ADD_EXECUTABLE(t_GroupLabelLogger
     Runner.cpp

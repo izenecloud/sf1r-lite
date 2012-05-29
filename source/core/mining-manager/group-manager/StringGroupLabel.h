@@ -9,7 +9,7 @@
 #define SF1R_STRING_GROUP_LABEL_H
 
 #include "GroupLabel.h"
-#include "prop_value_table.h"
+#include "PropValueTable.h"
 #include "GroupParam.h"
 
 #include <vector>

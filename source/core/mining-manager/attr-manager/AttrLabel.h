@@ -8,8 +8,8 @@
 #ifndef SF1R_ATTR_LABEL_H
 #define SF1R_ATTR_LABEL_H
 
-#include "faceted_types.h"
-#include "attr_table.h"
+#include "../faceted-submanager/faceted_types.h"
+#include "AttrTable.h"
 
 NS_FACETED_BEGIN
 

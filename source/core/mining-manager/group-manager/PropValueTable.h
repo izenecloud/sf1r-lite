@@ -1,5 +1,5 @@
 ///
-/// @file prop_value_table.h
+/// @file PropValueTable.h
 /// @brief a table contains below things for a specific property:
 ///        1. mapping between property UString value and id
 ///        2. mapping from doc id to property value id
@@ -11,7 +11,7 @@
 #define SF1R_PROP_VALUE_TABLE_H_
 
 #include <common/inttypes.h>
-#include "faceted_types.h"
+#include "../faceted-submanager/faceted_types.h"
 
 #include <util/ustring/UString.h>
 

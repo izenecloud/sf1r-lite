@@ -1,4 +1,4 @@
-#include "group_manager.h"
+#include "GroupManager.h"
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/util/FSUtil.hpp>
 #include <document-manager/DocumentManager.h>

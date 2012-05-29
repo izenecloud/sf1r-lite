@@ -1,5 +1,5 @@
 ///
-/// @file attr_manager.h
+/// @file AttrManager.h
 /// @brief calculate doc count for each attribute value
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2011-06-22
@@ -8,8 +8,8 @@
 #ifndef SF1R_ATTR_MANAGER_H_
 #define SF1R_ATTR_MANAGER_H_
 
-#include "ontology_rep.h"
-#include "attr_table.h"
+#include "../faceted-submanager/ontology_rep.h"
+#include "AttrTable.h"
 #include <configuration-manager/AttrConfig.h>
 
 #include <string>

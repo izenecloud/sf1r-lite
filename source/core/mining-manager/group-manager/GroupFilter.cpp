@@ -1,14 +1,14 @@
 #include "GroupFilter.h"
 #include "GroupParam.h"
-#include "group_manager.h"
-#include "attr_table.h"
-#include "ontology_rep.h"
+#include "GroupManager.h"
 #include "GroupCounter.h"
-#include "AttrCounter.h"
 #include "GroupLabel.h"
-#include "AttrLabel.h"
 #include "GroupCounterLabelBuilder.h"
 #include "GroupRep.h"
+#include "../faceted-submanager/ontology_rep.h"
+#include "../attr-manager/AttrTable.h"
+#include "../attr-manager/AttrCounter.h"
+#include "../attr-manager/AttrLabel.h"
 #include <util/ClockTimer.h>
 
 #include <glog/logging.h>

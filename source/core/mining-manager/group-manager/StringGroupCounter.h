@@ -9,7 +9,7 @@
 #define SF1R_STRING_GROUP_COUNTER_H
 
 #include "GroupCounter.h"
-#include "prop_value_table.h"
+#include "PropValueTable.h"
 #include "GroupRep.h"
 #include "SubGroupCounter.h"
 

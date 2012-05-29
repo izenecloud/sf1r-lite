@@ -1,4 +1,4 @@
-#include "prop_value_table.h"
+#include "PropValueTable.h"
 #include <mining-manager/util/fcontainer.h>
 #include <mining-manager/MiningException.hpp>
 

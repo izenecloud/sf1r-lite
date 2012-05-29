@@ -1,8 +1,8 @@
-#include "attr_manager.h"
-#include <mining-manager/util/split_ustr.h>
-#include <mining-manager/util/FSUtil.hpp>
+#include "AttrManager.h"
+#include "../util/split_ustr.h"
+#include "../util/FSUtil.hpp"
+#include "../MiningException.hpp"
 #include <document-manager/DocumentManager.h>
-#include <mining-manager/MiningException.hpp>
 
 #include <glog/logging.h>
 

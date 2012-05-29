@@ -25,9 +25,9 @@
 #include "summarization-submanager/SummarizationSubManager.h"
 
 #include "faceted-submanager/ontology_manager.h"
-#include "faceted-submanager/group_manager.h"
-#include "faceted-submanager/attr_manager.h"
-#include "faceted-submanager/GroupFilterBuilder.h"
+#include "group-manager/GroupManager.h"
+#include "group-manager/GroupFilterBuilder.h"
+#include "attr-manager/AttrManager.h"
 #include "faceted-submanager/ctr_manager.h"
 
 #include "group-label-logger/GroupLabelLogger.h"

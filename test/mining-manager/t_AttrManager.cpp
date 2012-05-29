@@ -8,11 +8,11 @@
 #include <util/ustring/UString.h>
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
-#include <mining-manager/faceted-submanager/attr_manager.h>
-#include <mining-manager/faceted-submanager/GroupParam.h>
-#include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
-#include <mining-manager/faceted-submanager/GroupFilter.h>
-#include <mining-manager/faceted-submanager/GroupRep.h>
+#include <mining-manager/attr-manager/AttrManager.h>
+#include <mining-manager/group-manager/GroupParam.h>
+#include <mining-manager/group-manager/GroupFilterBuilder.h>
+#include <mining-manager/group-manager/GroupFilter.h>
+#include <mining-manager/group-manager/GroupRep.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/GroupConfig.h>
 

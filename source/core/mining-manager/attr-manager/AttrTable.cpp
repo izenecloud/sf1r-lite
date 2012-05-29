@@ -1,4 +1,4 @@
-#include "attr_table.h"
+#include "AttrTable.h"
 #include <mining-manager/util/fcontainer.h>
 #include <mining-manager/MiningException.hpp>
 

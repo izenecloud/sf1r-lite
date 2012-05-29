@@ -28,7 +28,7 @@
 
 #include <ranking-manager/RankingEnumerator.h>
 #include <search-manager/CustomRanker.h>
-#include <mining-manager/faceted-submanager/GroupParam.h>
+#include <mining-manager/group-manager/GroupParam.h>
 
 #include <util/izene_serialization.h>
 #include <net/aggregator/Util.h>
