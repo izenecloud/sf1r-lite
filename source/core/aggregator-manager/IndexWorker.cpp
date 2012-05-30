@@ -2028,15 +2028,23 @@ void IndexWorker::value2SCDDoc(const Value& value, SCDDoc& scddoc)
     const Value::ObjectType& objectValue = value.getObject();
     scddoc.resize(objectValue.size());
 
-    std::size_t propertyId = 0;
+    std::size_t propertyId = 1;
     for (Value::ObjectType::const_iterator it = objectValue.begin();
             it != objectValue.end(); ++it, ++propertyId)
     {
-        scddoc[propertyId].first.assign(asString(it->first));
-        scddoc[propertyId].second.assign(
+        std::size_t insertto = propertyId;
+        // the first position for SCDDoc must be preserved for the DOCID, 
+        // since the other property must be written after the docid in the LAInput. 
+        if( boost::iequals( asString( it->first ), DOCID ) )
+        {
+            insertto = 0;
+            --propertyId;
+        }
+        scddoc[insertto].first.assign(asString(it->first));
+        scddoc[insertto].second.assign(
             asString(it->second),
             izenelib::util::UString::UTF_8
-        );
+            );
     }
 }
 
