@@ -51,6 +51,8 @@ private:
 
 private:
     const PropValueTable& propValueTable_;
+    PropValueTable::MutexType& mutex_;
+    PropValueTable::ScopedReadLock lock_;
 
     /** map from value id to doc count */
     std::vector<CounterType> countTable_;
@@ -62,6 +64,8 @@ private:
 template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTable)
     : propValueTable_(pvTable)
+    , mutex_(pvTable.getMutex())
+    , lock_(mutex_)
     , countTable_(pvTable.propValueNum())
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
@@ -71,6 +75,8 @@ StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTabl
 template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTable, const CounterType& defaultCounter)
     : propValueTable_(pvTable)
+    , mutex_(pvTable.getMutex())
+    , lock_(mutex_)
     , countTable_(pvTable.propValueNum(), defaultCounter)
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
@@ -80,6 +86,8 @@ StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTabl
 template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const StringGroupCounter& groupCounter)
     : propValueTable_(groupCounter.propValueTable_)
+    , mutex_(groupCounter.mutex_)
+    , lock_(mutex_)
     , countTable_(groupCounter.countTable_)
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
@@ -189,8 +197,6 @@ void StringGroupCounter<CounterType>::getGroupRep(GroupRep& groupRep)
 {
     GroupRep::StringGroupRep& itemList = groupRep.stringGroupRep_;
     izenelib::util::UString propName(propValueTable_.propName(), UString::UTF_8);
-
-    PropValueTable::ScopedReadLock lock(propValueTable_.getLock());
     const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
 
     // start from id 0 at level 0
@@ -200,7 +206,6 @@ void StringGroupCounter<CounterType>::getGroupRep(GroupRep& groupRep)
 template<typename CounterType>
 void StringGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
 {
-    PropValueTable::ScopedReadLock lock(propValueTable_.getLock());
     const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
     const PropValueTable::PropStrMap& propStrMap = childMapTable[0];
 
@@ -218,7 +223,6 @@ void StringGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& str
 template<>
 void StringGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& strRep, int level) const
 {
-    PropValueTable::ScopedReadLock lock(propValueTable_.getLock());
     const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
     const PropValueTable::PropStrMap& propStrMap = childMapTable[0];
 

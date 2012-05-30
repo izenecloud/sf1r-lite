@@ -32,6 +32,9 @@ private:
 
 private:
     const PropValueTable& propValueTable_;
+    PropValueTable::MutexType& mutex_;
+    PropValueTable::ScopedReadLock lock_;
+
     std::vector<PropValueTable::pvid_t> targetValueIds_;
     NS_BOOST_MEMORY::block_pool recycle_;
     boost::scoped_alloc alloc_;

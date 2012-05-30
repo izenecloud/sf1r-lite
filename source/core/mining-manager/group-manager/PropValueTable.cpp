@@ -53,14 +53,14 @@ PropValueTable::PropValueTable(const PropValueTable& table)
 
 void PropValueTable::reserveDocIdNum(std::size_t num)
 {
-    ScopedWriteLock lock(lock_);
+    ScopedWriteLock lock(mutex_);
 
     valueIdTable_.reserve(num);
 }
 
 void PropValueTable::insertValueIdList(ValueIdList& valueIdList)
 {
-    ScopedWriteLock lock(lock_);
+    ScopedWriteLock lock(mutex_);
 
     valueIdTable_.push_back(ValueIdList());
     valueIdList.swap(valueIdTable_.back());
@@ -68,14 +68,14 @@ void PropValueTable::insertValueIdList(ValueIdList& valueIdList)
 
 void PropValueTable::propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const
 {
-    ScopedReadLock lock(lock_);
+    ScopedReadLock lock(mutex_);
 
     ustr = propStrVec_[pvId];
 }
 
 PropValueTable::pvid_t PropValueTable::insertPropValueId(const std::vector<izenelib::util::UString>& path)
 {
-    ScopedWriteLock lock(lock_);
+    ScopedWriteLock lock(mutex_);
 
     pvid_t pvId = 0;
 
@@ -119,7 +119,7 @@ PropValueTable::pvid_t PropValueTable::insertPropValueId(const std::vector<izene
 
 PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::util::UString>& path) const
 {
-    ScopedReadLock lock(lock_);
+    ScopedReadLock lock(mutex_);
 
     pvid_t pvId = 0;
 
@@ -143,7 +143,7 @@ PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::u
 
 bool PropValueTable::open()
 {
-    ScopedWriteLock lock(lock_);
+    ScopedWriteLock lock(mutex_);
 
     if (!load_container(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
         !load_container(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
@@ -173,7 +173,7 @@ bool PropValueTable::open()
 
 bool PropValueTable::flush()
 {
-    ScopedWriteLock lock(lock_);
+    ScopedWriteLock lock(mutex_);
 
     if (!saveParentId_(dirPath_, propName_ + SUFFIX_PARENT_STR) ||
         !save_container(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
@@ -232,7 +232,7 @@ bool PropValueTable::testDoc(docid_t docId, pvid_t labelId) const
 
 void PropValueTable::propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const
 {
-    ScopedReadLock lock(lock_);
+    ScopedReadLock lock(mutex_);
 
     // from leaf to root
     for (; pvId; pvId = parentIdVec_[pvId])

@@ -86,6 +86,7 @@ void CategoryBoostingScorer::pushScore(
 )
 {
     category_id_t boostingCategory = param.boostingCategoryId_;
+    faceted::PropValueTable::ScopedReadLock lock(categoryValueTable_->getMutex());
 
     for (ProductScoreMatrix::iterator it = scoreMatrix.begin();
         it != scoreMatrix.end(); ++it)
@@ -172,7 +173,7 @@ category_id_t CategoryBoostingScorer::getMaxAvgLabel_(const std::vector<docid_t>
         return 0;
     }
 
-    faceted::PropValueTable::ScopedReadLock lock(categoryValueTable_->getLock());
+    faceted::PropValueTable::ScopedReadLock lock(categoryValueTable_->getMutex());
     LabelCounterMap labelCounterMap;
 
     for (std::vector<docid_t>::const_iterator it = docIds.begin();

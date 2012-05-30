@@ -50,9 +50,9 @@ public:
     typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t> > ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
 
-    typedef boost::shared_mutex LockType;
-    typedef boost::shared_lock<LockType> ScopedReadLock;
-    typedef boost::unique_lock<LockType> ScopedWriteLock;
+    typedef boost::shared_mutex MutexType;
+    typedef boost::shared_lock<MutexType> ScopedReadLock;
+    typedef boost::unique_lock<MutexType> ScopedWriteLock;
 
     PropValueTable(const std::string& dirPath, const std::string& propName);
     PropValueTable(const PropValueTable& table);
@@ -65,17 +65,6 @@ public:
 
     void reserveDocIdNum(std::size_t num);
     void insertValueIdList(ValueIdList& valueIdList);
-
-    LockType& getLock() const { return lock_; }
-
-    /**
-     * @attention before calling @c valueIdTable(), @c parentIdList(), or @c childMapTable(),
-     * you must call below statement for concurrent access:
-     * PropValueTable::ScopedReadLock lock(PropValueTable::getLock());
-     */
-    const ValueIdTable& valueIdTable() const { return valueIdTable_; }
-    const ValueIdList& parentIdList() const { return parentIdVec_; }
-    const ChildMapTable& childMapTable() const { return childMapTable_; }
 
     std::size_t propValueNum() const { return propStrVec_.size(); }
     void propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const;
@@ -96,6 +85,34 @@ public:
     pvid_t propValueId(const std::vector<izenelib::util::UString>& path) const;
 
     /**
+     * Given value id @p pvId, get its path from root node to leaf node.
+     * @param pvId the value id
+     * @param path store the path
+     */
+    void propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const;
+
+    MutexType& getMutex() const { return mutex_; }
+
+    /**
+     * @attention before calling below public functions,
+     * you must call this statement for safe concurrent access:
+     *
+     * <code>
+     * PropValueTable::ScopedReadLock lock(PropValueTable::getMutex());
+     * </code>
+     */
+    const ValueIdTable& valueIdTable() const { return valueIdTable_; }
+
+    const ChildMapTable& childMapTable() const { return childMapTable_; }
+
+    /**
+     * Get the root id for @p docId.
+     * @param docId the doc id
+     * @return the root value id
+     */
+    pvid_t getRootValueId(docid_t docId) const;
+
+    /**
      * Whether @p docId belongs to group label of @p labelId.
      * @param docId the doc id
      * @param labelId the property value id of group label
@@ -112,20 +129,6 @@ public:
      */
     template<typename SetType>
     void parentIdSet(docid_t docId, SetType& parentSet) const;
-
-    /**
-     * Given value id @p pvId, get its path from root node to leaf node.
-     * @param pvId the value id
-     * @param path store the path
-     */
-    void propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const;
-
-    /**
-     * Get the root id for @p docId.
-     * @param docId the doc id
-     * @return the root value id
-     */
-    pvid_t getRootValueId(docid_t docId) const;
 
 private:
     /**
@@ -162,14 +165,12 @@ private:
     /** the number of elements in @c valueIdTable_ saved in file */
     unsigned int saveDocIdNum_;
 
-    mutable LockType lock_;
+    mutable MutexType mutex_;
 };
 
 template<typename SetType>
 void PropValueTable::parentIdSet(docid_t docId, SetType& parentSet) const
 {
-    ScopedReadLock lock(lock_);
-
     if (docId >= valueIdTable_.size())
         return;
 

@@ -6,6 +6,30 @@ namespace
 {
 using namespace sf1r;
 
+class AllowEmptyLock
+{
+public:
+    AllowEmptyLock(faceted::PropValueTable::MutexType* mutex)
+        : mutex_(mutex)
+    {
+        if (mutex_)
+        {
+            mutex_->lock_shared();
+        }
+    }
+
+    ~AllowEmptyLock()
+    {
+        if (mutex_)
+        {
+            mutex_->unlock_shared();
+        }
+    }
+
+private:
+    faceted::PropValueTable::MutexType* mutex_;
+};
+
 score_t sumMerchantScore(
     const MerchantScoreManager* merchantScoreManager,
     const faceted::PropValueTable::ValueIdList& merchantIdList,
@@ -79,15 +103,12 @@ void MerchantScorer::pushScore(
     ProductScoreMatrix& scoreMatrix
 )
 {
-    faceted::PropValueTable::ScopedReadLock merchantLock(merchantValueTable_->getLock());
+    faceted::PropValueTable::ScopedReadLock merchantLock(merchantValueTable_->getMutex());
     const faceted::PropValueTable::ValueIdTable& merchantIdTable = merchantValueTable_->valueIdTable();
 
-    faceted::PropValueTable::LockType* categoryLock = NULL;
-    if (categoryValueTable_)
-    {
-        categoryLock = &categoryValueTable_->getLock();
-        categoryLock->lock_shared();
-    }
+    faceted::PropValueTable::MutexType* categoryMutex =
+        categoryValueTable_ ? &categoryValueTable_->getMutex() : NULL;
+    AllowEmptyLock categoryLock(categoryMutex);
 
     for (ProductScoreMatrix::iterator it = scoreMatrix.begin();
         it != scoreMatrix.end(); ++it)
@@ -103,11 +124,6 @@ void MerchantScorer::pushScore(
 
         getMerchantCountScore(merchantIdTable, merchantScoreManager_,
             docId, categoryId, scoreList);
-    }
-
-    if (categoryLock)
-    {
-        categoryLock->unlock_shared();
     }
 }
 
