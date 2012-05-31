@@ -11,6 +11,7 @@
 #define SF1R_PROP_VALUE_TABLE_H_
 
 #include <common/inttypes.h>
+#include "PropIdTable.h"
 #include "../faceted-submanager/faceted_types.h"
 
 #include <util/ustring/UString.h>
@@ -36,11 +37,8 @@ public:
      */
     typedef uint16_t pvid_t;
 
-    /** a list of property value id */
-    typedef std::vector<pvid_t> ValueIdList;
-
-    /** mapping from doc id to a list of property value id */
-    typedef std::vector<ValueIdList> ValueIdTable;
+    typedef PropIdTable<pvid_t, uint32_t> ValueIdTable;
+    typedef ValueIdTable::PropIdList PropIdList;
 
     /** mapping from value string to value id */
     typedef std::map<izenelib::util::UString, pvid_t> PropStrMap;
@@ -61,10 +59,10 @@ public:
     bool flush();
 
     const string &propName() const { return propName_; }
-    std::size_t docIdNum() const { return valueIdTable_.size(); }
+    std::size_t docIdNum() const { return valueIdTable_.indexTable_.size(); }
 
     void reserveDocIdNum(std::size_t num);
-    void insertValueIdList(ValueIdList& valueIdList);
+    void appendPropIdList(const std::vector<pvid_t>& inputIdList);
 
     std::size_t propValueNum() const { return propStrVec_.size(); }
     void propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const;
@@ -101,7 +99,10 @@ public:
      * PropValueTable::ScopedReadLock lock(PropValueTable::getMutex());
      * </code>
      */
-    const ValueIdTable& valueIdTable() const { return valueIdTable_; }
+    void getPropIdList(docid_t docId, PropIdList& propIdList) const
+    {
+        valueIdTable_.getIdList(docId, propIdList);
+    }
 
     const ChildMapTable& childMapTable() const { return childMapTable_; }
 
@@ -160,10 +161,12 @@ private:
     /** mapping from value id to the map of child values */
     ChildMapTable childMapTable_;
 
-    /** mapping from doc id to a list of property value id */
+    /** mapping from doc id to a list of property value ids */
     ValueIdTable valueIdTable_;
-    /** the number of elements in @c valueIdTable_ saved in file */
-    unsigned int saveDocIdNum_;
+    /** the number of elements in @c valueIdTable_.indexTable_ saved in file */
+    unsigned int saveIndexNum_;
+    /** the number of elements in @c valueIdTable_.multiValueTable_ saved in file */
+    unsigned int saveValueNum_;
 
     mutable MutexType mutex_;
 };
@@ -171,14 +174,13 @@ private:
 template<typename SetType>
 void PropValueTable::parentIdSet(docid_t docId, SetType& parentSet) const
 {
-    if (docId >= valueIdTable_.size())
-        return;
+    PropIdList propIdList;
+    getPropIdList(docId, propIdList);
 
-    const ValueIdList& valueIdList = valueIdTable_[docId];
-    for (ValueIdList::const_iterator it = valueIdList.begin();
-        it != valueIdList.end(); ++it)
+    const std::size_t idNum = propIdList.size();
+    for (std::size_t i = 0; i < idNum; ++i)
     {
-        for (pvid_t pvId = *it; pvId; pvId = parentIdVec_[pvId])
+        for (pvid_t pvId = propIdList[i]; pvId; pvId = parentIdVec_[pvId])
         {
             // stop finding parent if already inserted
             if (parentSet.insert(pvId).second == false)

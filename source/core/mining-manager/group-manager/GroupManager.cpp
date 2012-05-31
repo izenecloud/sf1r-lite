@@ -88,9 +88,10 @@ bool GroupManager::processCollection()
                   << ", start doc id: " << startDocId
                   << ", end doc id: " << endDocId;
 
+        std::vector<PropValueTable::pvid_t> propIdList;
         for (docid_t docId = startDocId; docId <= endDocId; ++docId)
         {
-            PropValueTable::ValueIdList valueIdList;
+            propIdList.clear();
 
             Document doc;
             if (documentManager_->getDocument(docId, doc))
@@ -108,7 +109,7 @@ bool GroupManager::processCollection()
                             pathIt != groupPaths.end(); ++pathIt)
                         {
                             PropValueTable::pvid_t pvId = pvTable.insertPropValueId(*pathIt);
-                            valueIdList.push_back(pvId);
+                            propIdList.push_back(pvId);
                         }
                     }
                     catch(MiningException& e)
@@ -118,7 +119,7 @@ bool GroupManager::processCollection()
                     }
                 }
             }
-            pvTable.insertValueIdList(valueIdList);
+            pvTable.appendPropIdList(propIdList);
 
             if (docId % 100000 == 0)
             {

@@ -30,51 +30,34 @@ private:
     faceted::PropValueTable::MutexType* mutex_;
 };
 
-score_t sumMerchantScore(
-    const MerchantScoreManager* merchantScoreManager,
-    const faceted::PropValueTable::ValueIdList& merchantIdList,
-    category_id_t categoryId
-)
-{
-    score_t sum = 0;
-
-    for (faceted::PropValueTable::ValueIdList::const_iterator it = merchantIdList.begin();
-        it != merchantIdList.end(); ++it)
-    {
-        sum += merchantScoreManager->getIdScore(*it, categoryId);
-    }
-
-    return sum;
-}
-
 void getMerchantCountScore(
-    const faceted::PropValueTable::ValueIdTable& merchantIdTable,
+    const faceted::PropValueTable* merchantValueTable,
     const MerchantScoreManager* merchantScoreManager,
     docid_t docId,
     category_id_t categoryId,
     ProductScoreList& scoreList
 )
 {
-    score_t merchantCount = 0;
-    score_t merchantScore = 0;
+    faceted::PropValueTable::PropIdList merchantIdList;
+    merchantValueTable->getPropIdList(docId, merchantIdList);
 
-    if (docId < merchantIdTable.size())
+    score_t merchantCount = merchantIdList.size();
+    if (merchantCount == 1.0)
     {
-        const faceted::PropValueTable::ValueIdList& valueIdList = merchantIdTable[docId];
-        merchantCount = valueIdList.size();
+        scoreList.singleMerchantId_ = merchantIdList[0];
+    }
+    else if (merchantCount > 2)
+    {
+        // for multiple merchants, their "merchantCount" are all set to 2,
+        // so that they could be compared by their following scores
+        merchantCount = 2;
+    }
 
-        if (merchantCount == 1.0)
-        {
-            scoreList.singleMerchantId_ = valueIdList.front();
-        }
-        else if (merchantCount > 2)
-        {
-            // for multiple merchants, their "merchantCount" are all set to 2,
-            // so that they could be compared by their following scores
-            merchantCount = 2;
-        }
-
-        merchantScore = sumMerchantScore(merchantScoreManager, valueIdList, categoryId);
+    score_t merchantScore = 0;
+    for (std::size_t i = 0; i < merchantIdList.size(); ++i)
+    {
+        merchantScore += merchantScoreManager->getIdScore(
+            merchantIdList[i], categoryId);
     }
 
     scoreList.pushScore(merchantCount);
@@ -104,7 +87,6 @@ void MerchantScorer::pushScore(
 )
 {
     faceted::PropValueTable::ScopedReadLock merchantLock(merchantValueTable_->getMutex());
-    const faceted::PropValueTable::ValueIdTable& merchantIdTable = merchantValueTable_->valueIdTable();
 
     faceted::PropValueTable::MutexType* categoryMutex =
         categoryValueTable_ ? &categoryValueTable_->getMutex() : NULL;
@@ -122,7 +104,7 @@ void MerchantScorer::pushScore(
             categoryId = categoryValueTable_->getRootValueId(docId);
         }
 
-        getMerchantCountScore(merchantIdTable, merchantScoreManager_,
+        getMerchantCountScore(merchantValueTable_, merchantScoreManager_,
             docId, categoryId, scoreList);
     }
 }

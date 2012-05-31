@@ -1,6 +1,6 @@
 ///
-/// @file t_attr_manager.cpp
-/// @brief test getting doc list for each attribute value
+/// @file t_AttrManager.cpp
+/// @brief test attrby functions
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2011-06-23
 ///
