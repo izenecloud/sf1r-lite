@@ -1,14 +1,11 @@
 #include "CollectionDataReceiver.h"
-
-using namespace net::distribute;
+#include <net/distribute/DataReceiver2.hpp>
 
 namespace sf1r{
 
 void CollectionDataReceiver::init(
         unsigned int port,
-        const std::string& colBaseDir,
-        DataReceiver::buf_size_t bufSize,
-        size_t threadNum)
+        const std::string& colBaseDir)
 {
     // init once with double check
     boost::unique_lock<boost::mutex> lock(mutex_init_);
@@ -17,7 +14,7 @@ void CollectionDataReceiver::init(
     }
 
     dataReceiver_.reset(
-            new DataReceiver(port, colBaseDir, bufSize, threadNum)
+            new izenelib::net::distribute::DataReceiver2(colBaseDir, port)
     );
     isInited_ = true;
 }
@@ -33,7 +30,7 @@ void CollectionDataReceiver::start()
         }
 
         // receive thread
-        recvThread_ = boost::thread(&DataReceiver::start, dataReceiver_);
+        dataReceiver_->start();
         isStarted_ = true;
     }
     else
