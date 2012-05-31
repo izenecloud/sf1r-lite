@@ -2,7 +2,7 @@
 
 #include <node-manager/SuperNodeManager.h>
 
-#include <net/distribute/DataTransfer.h>
+#include <net/distribute/DataTransfer2.hpp>
 
 #include <sstream>
 #include <boost/thread.hpp>
@@ -292,8 +292,8 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
 
             std::cout<<"[SynchroProducer] transfer data to "<<consumerHost<<":"<<consumerPort<<std::endl;
             std::cout<<dataPath<<std::endl;
-            net::distribute::DataTransfer transfer(consumerHost, consumerPort);
-            if (transfer.syncSend(dataPath, recvDir, false) != 0)
+            izenelib::net::distribute::DataTransfer2 transfer(consumerHost, consumerPort);
+            if (not transfer.syncSend(dataPath, recvDir, false))
             {
                 ret = false;
             }
