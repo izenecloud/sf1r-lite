@@ -102,7 +102,7 @@ ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
             //it->second += oit->second;
         //}
     }
-    itemcount+=1;
+    itemcount+=other.itemcount;
     return *this;
 }
 
@@ -137,8 +137,10 @@ ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
 
 std::string ProductProperty::ToString() const
 {
+    std::string spid;
+    pid.convertString(spid, izenelib::util::UString::UTF_8);
     std::stringstream ss;
-    ss<<"itemcount:"<<itemcount<<",price:"<<price.ToString()<<",source:";
+    ss<<"pid:"<<spid<<",itemcount:"<<itemcount<<",price:"<<price.ToString()<<",source:";
     for(SourceType::const_iterator it = source.begin(); it!=source.end(); ++it)
     {
         ss<<"["<<*it<<"]";

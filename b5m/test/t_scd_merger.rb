@@ -8,7 +8,7 @@ describe "Test Scd Merger" do
   top_dir = File.dirname(__FILE__)
   before do
     #@scd_merger = B5MPath.scd_merger
-    @scd_merger = File.join(File.dirname(File.dirname(top_dir)), "scripts", "ScdMergeTool")
+    @scd_merger = File.join(File.dirname(File.dirname(top_dir)), "tool", "ScdMergeTool")
   end
 
   it "should merge to one scd" do
@@ -65,7 +65,7 @@ describe "Test Scd Merger" do
     end
     writer.close
     
-    system("#{@scd_merger} -I #{input_scd} -P DOCID,Title -O #{output_scd}")
+    system("#{@scd_merger} -I #{input_scd} -O #{output_scd}")
 
     scd_list = []
     Dir.foreach(output_scd) do |scd|
@@ -159,7 +159,7 @@ describe "Test Scd Merger" do
     end
     writer.close
     
-    system("#{@scd_merger} -I #{input_scd} -P DOCID,Title -O #{output_scd} --gen-all")
+    system("#{@scd_merger} -I #{input_scd} -O #{output_scd} --gen-all")
 
     scd_list = []
     Dir.foreach(output_scd) do |scd|
@@ -201,8 +201,8 @@ describe "Test Scd Merger" do
     end
 
     delete_doc_list.size.should == 56
-    update_doc_list.size.should == 6
-    insert_doc_list.size.should == 38
+    update_doc_list.size.should == 5
+    insert_doc_list.size.should == 39
 
 
     #do clean

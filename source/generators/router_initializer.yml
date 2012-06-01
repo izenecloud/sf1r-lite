@@ -128,3 +128,5 @@ controllers:
     actions:
       - start_collection
       - stop_collection
+      - create_collection
+      - delete_collection

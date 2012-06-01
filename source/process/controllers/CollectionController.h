@@ -32,6 +32,10 @@ public:
     void start_collection();
 
     void stop_collection();
+
+    void create_collection();
+
+    void delete_collection();
 };
 
 /// @}
