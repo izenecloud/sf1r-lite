@@ -31,6 +31,8 @@ bool GroupManager::open(const std::vector<GroupConfig>& configVec)
 {
     propValueMap_.clear();
 
+    LOG(INFO) << "Start loading group directory: " << dirPath_;
+
     for (std::vector<GroupConfig>::const_iterator it = configVec.begin();
         it != configVec.end(); ++it)
     {
@@ -54,6 +56,8 @@ bool GroupManager::open(const std::vector<GroupConfig>& configVec)
             LOG(WARNING) << "the group property " << it->propName << " is opened already.";
         }
     }
+
+    LOG(INFO) << "End group loading";
 
     return true;
 }

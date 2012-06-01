@@ -133,6 +133,17 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_PropIdTable")
 
+  ADD_EXECUTABLE(t_fcontainer_febird
+    Runner.cpp
+    t_fcontainer_febird.cpp
+    FContainerTestFixture.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_fcontainer_febird ${libs})
+  SET_TARGET_PROPERTIES(t_fcontainer_febird PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_fcontainer_febird")
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 INCLUDE_DIRECTORIES(

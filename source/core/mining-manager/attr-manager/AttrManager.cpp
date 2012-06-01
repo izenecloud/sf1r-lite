@@ -19,11 +19,15 @@ AttrManager::AttrManager(
 
 bool AttrManager::open(const AttrConfig& attrConfig)
 {
+    LOG(INFO) << "Start loading attr directory: " << dirPath_;
+
     if (!attrTable_.open(dirPath_, attrConfig.propName))
     {
         LOG(ERROR) << "AttrTable::open() failed, property name: " << attrConfig.propName;
         return false;
     }
+
+    LOG(INFO) << "End attr loading";
 
     return true;
 }

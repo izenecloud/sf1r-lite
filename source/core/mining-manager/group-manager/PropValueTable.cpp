@@ -1,5 +1,5 @@
 #include "PropValueTable.h"
-#include <mining-manager/util/fcontainer.h>
+#include <mining-manager/util/fcontainer_febird.h>
 #include <mining-manager/MiningException.hpp>
 
 #include <iostream>
@@ -15,10 +15,10 @@
 
 namespace
 {
-const char* SUFFIX_PROP_STR = ".prop_str.txt";
-const char* SUFFIX_PARENT_ID = ".parent_id.txt";
-const char* SUFFIX_INDEX_ID = ".index_id.txt";
-const char* SUFFIX_VALUE_ID = ".value_id.txt";
+const char* SUFFIX_PROP_STR = ".prop_str.bin";
+const char* SUFFIX_PARENT_ID = ".parent_id.bin";
+const char* SUFFIX_INDEX_ID = ".index_id.bin";
+const char* SUFFIX_VALUE_ID = ".value_id.bin";
 const char* SUFFIX_PARENT_STR = ".parent_str.txt";
 }
 
@@ -146,10 +146,10 @@ bool PropValueTable::open()
 {
     ScopedWriteLock lock(mutex_);
 
-    if (!load_container(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
-        !load_container(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
-        !load_container(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) ||
-        !load_container(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_))
+    if (!load_container_febird(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_))
     {
         return false;
     }
@@ -178,10 +178,10 @@ bool PropValueTable::flush()
     ScopedWriteLock lock(mutex_);
 
     if (!saveParentId_(dirPath_, propName_ + SUFFIX_PARENT_STR) ||
-        !save_container(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
-        !save_container(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
-        !save_container(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) ||
-        !save_container(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_))
+        !save_container_febird(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_))
     {
         return false;
     }
