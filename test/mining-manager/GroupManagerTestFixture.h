@@ -8,8 +8,8 @@
 #ifndef SF1R_GROUP_MANAGER_TEST_FIXTURE_H
 #define SF1R_GROUP_MANAGER_TEST_FIXTURE_H
 
-#include <mining-manager/faceted-submanager/GroupParam.h>
-#include <mining-manager/faceted-submanager/GroupRep.h>
+#include <mining-manager/group-manager/GroupParam.h>
+#include <mining-manager/group-manager/GroupRep.h>
 #include <configuration-manager/PropertyConfig.h>
 
 #include <string>

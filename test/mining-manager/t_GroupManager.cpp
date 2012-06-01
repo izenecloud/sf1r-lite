@@ -1,6 +1,6 @@
 ///
-/// @file t_group_manager.cpp
-/// @brief test getting doc list for each property value
+/// @file t_GroupManager.cpp
+/// @brief test groupby functions
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2011-03-23
 ///

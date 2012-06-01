@@ -1,5 +1,5 @@
 #include "GroupCounterLabelBuilder.h"
-#include "group_manager.h"
+#include "GroupManager.h"
 #include "SubGroupCounter.h"
 #include "StringGroupCounter.h"
 #include "StringGroupLabel.h"

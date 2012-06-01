@@ -15,7 +15,7 @@
 #ifndef SF1R_MINING_MANAGER_H_
 #define SF1R_MINING_MANAGER_H_
 
-#include "faceted-submanager/prop_value_table.h" // pvid_t
+#include "group-manager/PropValueTable.h" // pvid_t
 #include "summarization-submanager/Summarization.h" //Summarization
 #include "merchant-score-manager/MerchantScore.h"
 

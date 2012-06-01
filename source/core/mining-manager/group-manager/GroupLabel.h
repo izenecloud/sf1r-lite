@@ -8,7 +8,7 @@
 #ifndef SF1R_GROUP_LABEL_H
 #define SF1R_GROUP_LABEL_H
 
-#include "faceted_types.h"
+#include "../faceted-submanager/faceted_types.h"
 #include "GroupCounter.h"
 
 NS_FACETED_BEGIN

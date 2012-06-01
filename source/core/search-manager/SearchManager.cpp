@@ -5,8 +5,8 @@
 #include <ranking-manager/RankingManager.h>
 #include <mining-manager/MiningManager.h>
 #include <mining-manager/faceted-submanager/ctr_manager.h>
-#include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
-#include <mining-manager/faceted-submanager/GroupFilter.h>
+#include <mining-manager/group-manager/GroupFilterBuilder.h>
+#include <mining-manager/group-manager/GroupFilter.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/product-ranker/ProductRankerFactory.h>
 #include <mining-manager/product-ranker/ProductRanker.h>

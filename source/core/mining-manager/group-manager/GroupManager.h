@@ -1,5 +1,5 @@
 ///
-/// @file group_manager.h
+/// @file GroupManager.h
 /// @brief manage forward index for string property values (doc id => value id)
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2011-03-22
@@ -8,8 +8,8 @@
 #ifndef SF1R_GROUP_MANAGER_H_
 #define SF1R_GROUP_MANAGER_H_
 
-#include "ontology_rep.h"
-#include "prop_value_table.h"
+#include "PropValueTable.h"
+#include "../faceted-submanager/ontology_rep.h"
 #include <configuration-manager/GroupConfig.h>
 
 #include <vector>

@@ -8,7 +8,7 @@
 #ifndef SF1R_GROUP_FILTER_H
 #define SF1R_GROUP_FILTER_H
 
-#include "faceted_types.h"
+#include "../faceted-submanager/faceted_types.h"
 
 NS_FACETED_BEGIN
 

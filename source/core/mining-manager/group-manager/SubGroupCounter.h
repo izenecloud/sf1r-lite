@@ -10,7 +10,7 @@
 #ifndef SF1R_SUB_GROUP_COUNTER_H
 #define SF1R_SUB_GROUP_COUNTER_H
 
-#include "faceted_types.h"
+#include "../faceted-submanager/faceted_types.h"
 #include "GroupCounter.h"
 
 #include <boost/scoped_ptr.hpp>

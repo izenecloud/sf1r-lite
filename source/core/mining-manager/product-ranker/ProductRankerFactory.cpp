@@ -6,10 +6,10 @@
 #include "MerchantDiversityReranker.h"
 #include "CTRReranker.h"
 #include "../MiningManager.h"
-#include "../faceted-submanager/prop_value_table.h"
-#include "../faceted-submanager/group_manager.h"
-#include "../faceted-submanager/ctr_manager.h"
+#include "../group-manager/PropValueTable.h"
+#include "../group-manager/GroupManager.h"
 #include "../group-label-logger/GroupLabelLogger.h"
+#include "../faceted-submanager/ctr_manager.h"
 #include "../merchant-score-manager/MerchantScoreManager.h"
 #include <search-manager/SearchManager.h>
 

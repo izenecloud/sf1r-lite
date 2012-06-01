@@ -1,5 +1,5 @@
-#include "prop_value_table.h"
-#include <mining-manager/util/fcontainer.h>
+#include "PropValueTable.h"
+#include <mining-manager/util/fcontainer_febird.h>
 #include <mining-manager/MiningException.hpp>
 
 #include <iostream>
@@ -15,9 +15,10 @@
 
 namespace
 {
-const char* SUFFIX_PROP_STR = ".prop_str.txt";
-const char* SUFFIX_PARENT_ID = ".parent_id.txt";
-const char* SUFFIX_VALUE_ID = ".value_id.txt";
+const char* SUFFIX_PROP_STR = ".prop_str.bin";
+const char* SUFFIX_PARENT_ID = ".parent_id.bin";
+const char* SUFFIX_INDEX_ID = ".index_id.bin";
+const char* SUFFIX_VALUE_ID = ".value_id.bin";
 const char* SUFFIX_PARENT_STR = ".parent_str.txt";
 }
 
@@ -33,8 +34,8 @@ PropValueTable::PropValueTable(const std::string& dirPath, const std::string& pr
     , parentIdVec_(1)
     , saveParentIdNum_(0)
     , childMapTable_(1)
-    , valueIdTable_(1)
-    , saveDocIdNum_(0)
+    , saveIndexNum_(0)
+    , saveValueNum_(0)
 {
 }
 
@@ -47,35 +48,35 @@ PropValueTable::PropValueTable(const PropValueTable& table)
     , saveParentIdNum_(table.saveParentIdNum_)
     , childMapTable_(table.childMapTable_)
     , valueIdTable_(table.valueIdTable_)
-    , saveDocIdNum_(table.saveDocIdNum_)
+    , saveIndexNum_(table.saveIndexNum_)
+    , saveValueNum_(table.saveValueNum_)
 {
 }
 
 void PropValueTable::reserveDocIdNum(std::size_t num)
 {
-    ScopedWriteLock lock(lock_);
+    ScopedWriteLock lock(mutex_);
 
-    valueIdTable_.reserve(num);
+    valueIdTable_.indexTable_.reserve(num);
 }
 
-void PropValueTable::insertValueIdList(ValueIdList& valueIdList)
+void PropValueTable::appendPropIdList(const std::vector<pvid_t>& inputIdList)
 {
-    ScopedWriteLock lock(lock_);
+    ScopedWriteLock lock(mutex_);
 
-    valueIdTable_.push_back(ValueIdList());
-    valueIdList.swap(valueIdTable_.back());
+    valueIdTable_.appendIdList(inputIdList);
 }
 
 void PropValueTable::propValueStr(pvid_t pvId, izenelib::util::UString& ustr) const
 {
-    ScopedReadLock lock(lock_);
+    ScopedReadLock lock(mutex_);
 
     ustr = propStrVec_[pvId];
 }
 
 PropValueTable::pvid_t PropValueTable::insertPropValueId(const std::vector<izenelib::util::UString>& path)
 {
-    ScopedWriteLock lock(lock_);
+    ScopedWriteLock lock(mutex_);
 
     pvid_t pvId = 0;
 
@@ -119,7 +120,7 @@ PropValueTable::pvid_t PropValueTable::insertPropValueId(const std::vector<izene
 
 PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::util::UString>& path) const
 {
-    ScopedReadLock lock(lock_);
+    ScopedReadLock lock(mutex_);
 
     pvid_t pvId = 0;
 
@@ -143,11 +144,12 @@ PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::u
 
 bool PropValueTable::open()
 {
-    ScopedWriteLock lock(lock_);
+    ScopedWriteLock lock(mutex_);
 
-    if (!load_container(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
-        !load_container(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
-        !load_container(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+    if (!load_container_febird(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_))
     {
         return false;
     }
@@ -173,12 +175,13 @@ bool PropValueTable::open()
 
 bool PropValueTable::flush()
 {
-    ScopedWriteLock lock(lock_);
+    ScopedWriteLock lock(mutex_);
 
     if (!saveParentId_(dirPath_, propName_ + SUFFIX_PARENT_STR) ||
-        !save_container(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
-        !save_container(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
-        !save_container(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+        !save_container_febird(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_))
     {
         return false;
     }
@@ -232,7 +235,7 @@ bool PropValueTable::testDoc(docid_t docId, pvid_t labelId) const
 
 void PropValueTable::propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const
 {
-    ScopedReadLock lock(lock_);
+    ScopedReadLock lock(mutex_);
 
     // from leaf to root
     for (; pvId; pvId = parentIdVec_[pvId])
@@ -246,14 +249,13 @@ void PropValueTable::propValuePath(pvid_t pvId, std::vector<izenelib::util::UStr
 
 PropValueTable::pvid_t PropValueTable::getRootValueId(docid_t docId) const
 {
-    if (docId >= valueIdTable_.size())
+    PropIdList propIdList;
+    getPropIdList(docId, propIdList);
+
+    if (propIdList.empty())
         return 0;
 
-    const ValueIdList& valueIdList = valueIdTable_[docId];
-    if (valueIdList.empty())
-        return 0;
-
-    pvid_t curId = valueIdList.front();
+    pvid_t curId = propIdList[0];
     pvid_t prevId = 0;
 
     while (curId)

@@ -2,9 +2,9 @@
 #include "GroupFilter.h"
 #include "GroupParam.h"
 #include "GroupCounterLabelBuilder.h"
-#include "group_manager.h"
-#include "attr_manager.h"
-#include "attr_table.h"
+#include "GroupManager.h"
+#include "../attr-manager/AttrManager.h"
+#include "../attr-manager/AttrTable.h"
 #include <configuration-manager/GroupConfig.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 

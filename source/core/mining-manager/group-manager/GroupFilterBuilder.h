@@ -8,7 +8,7 @@
 #ifndef SF1R_GROUP_FILTER_BUILDER_H
 #define SF1R_GROUP_FILTER_BUILDER_H
 
-#include "faceted_types.h"
+#include "../faceted-submanager/faceted_types.h"
 
 #include <vector>
 

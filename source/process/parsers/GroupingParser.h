@@ -8,7 +8,7 @@
 #include <util/driver/Parser.h>
 #include <util/driver/Value.h>
 
-#include <mining-manager/faceted-submanager/GroupParam.h>
+#include <mining-manager/group-manager/GroupParam.h>
 
 #include <string>
 #include <vector>

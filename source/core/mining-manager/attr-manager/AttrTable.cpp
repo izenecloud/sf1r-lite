@@ -1,5 +1,5 @@
-#include "attr_table.h"
-#include <mining-manager/util/fcontainer.h>
+#include "AttrTable.h"
+#include <mining-manager/util/fcontainer_boost.h>
 #include <mining-manager/MiningException.hpp>
 
 #include <iostream>
@@ -117,10 +117,10 @@ bool AttrTable::open(
     dirPath_ = dirPath;
     propName_ = propName;
 
-    if (!load_container(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
-        !load_container(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
-        !load_container(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
-        !load_container(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+    if (!load_container_boost(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
+        !load_container_boost(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
+        !load_container_boost(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
+        !load_container_boost(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
     {
         return false;
     }
@@ -145,10 +145,10 @@ bool AttrTable::open(
 
 bool AttrTable::flush()
 {
-    if (!save_container(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
-        !save_container(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
-        !save_container(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
-        !save_container(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+    if (!save_container_boost(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
+        !save_container_boost(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
+        !save_container_boost(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
+        !save_container_boost(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
     {
         return false;
     }

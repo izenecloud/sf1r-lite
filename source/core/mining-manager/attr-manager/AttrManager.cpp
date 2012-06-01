@@ -1,8 +1,8 @@
-#include "attr_manager.h"
-#include <mining-manager/util/split_ustr.h>
-#include <mining-manager/util/FSUtil.hpp>
+#include "AttrManager.h"
+#include "../util/split_ustr.h"
+#include "../util/FSUtil.hpp"
+#include "../MiningException.hpp"
 #include <document-manager/DocumentManager.h>
-#include <mining-manager/MiningException.hpp>
 
 #include <glog/logging.h>
 
@@ -19,11 +19,15 @@ AttrManager::AttrManager(
 
 bool AttrManager::open(const AttrConfig& attrConfig)
 {
+    LOG(INFO) << "Start loading attr directory: " << dirPath_;
+
     if (!attrTable_.open(dirPath_, attrConfig.propName))
     {
         LOG(ERROR) << "AttrTable::open() failed, property name: " << attrConfig.propName;
         return false;
     }
+
+    LOG(INFO) << "End attr loading";
 
     return true;
 }

@@ -1,7 +1,7 @@
 #include "MerchantScoreManager.h"
 #include "MerchantScoreParser.h"
 #include "MerchantScoreRenderer.h"
-#include "../faceted-submanager/prop_value_table.h"
+#include "../group-manager/PropValueTable.h"
 #include "../MiningException.hpp"
 #include <util/ustring/UString.h>
 

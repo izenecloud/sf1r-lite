@@ -1,12 +1,12 @@
 ///
-/// @file fcontainer.h
-/// @brief load/save std container from/to file.
+/// @file fcontainer_boost.h
+/// @brief using boost serialization, load/save std container from/to file.
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2011-08-17
 ///
 
-#ifndef SF1R_FCONTAINER_H_
-#define SF1R_FCONTAINER_H_
+#ifndef SF1R_FCONTAINER_BOOST_H_
+#define SF1R_FCONTAINER_BOOST_H_
 
 #include <fstream>
 
@@ -33,7 +33,7 @@ namespace sf1r
  * @param binary true for binary mode, false for text mode
  * @return true for success, false for failure
  */
-template<class T> bool save_container(
+template<class T> bool save_container_boost(
     const std::string& dirPath,
     const std::string& fileName,
     const T& container,
@@ -48,7 +48,7 @@ template<class T> bool save_container(
     filePath /= fileName;
     std::string pathStr = filePath.string();
 
-    LOG(INFO) << "saving file: " << pathStr
+    LOG(INFO) << "saving file: " << fileName
               << ", element num: " << container.size();
 
     std::ios_base::openmode openMode = std::ios_base::out;
@@ -60,7 +60,7 @@ template<class T> bool save_container(
     std::ofstream ofs(pathStr.c_str(), openMode);
     if (! ofs)
     {
-        LOG(ERROR) << "failed opening file " << pathStr;
+        LOG(ERROR) << "failed opening file " << fileName;
         return false;
     }
 
@@ -80,7 +80,7 @@ template<class T> bool save_container(
     catch(boost::archive::archive_exception& e)
     {
         LOG(ERROR) << "exception in boost::archive::text_oarchive or binary_oarchive: " << e.what()
-                   << ", pathStr: " << pathStr;
+                   << ", fileName: " << fileName;
         return false;
     }
 
@@ -98,7 +98,7 @@ template<class T> bool save_container(
  * @param binary true for binary mode, false for text mode
  * @return true for success, false for failure
  */
-template<class T> bool load_container(
+template<class T> bool load_container_boost(
     const std::string& dirPath,
     const std::string& fileName,
     T& container,
@@ -119,8 +119,6 @@ template<class T> bool load_container(
     std::ifstream ifs(pathStr.c_str(), openMode);
     if (! ifs)
         return true;
-
-    LOG(INFO) << "start loading file: " << pathStr;
 
     try
     {
@@ -143,11 +141,11 @@ template<class T> bool load_container(
     }
 
     count = container.size();
-    LOG(INFO) << "finished loading, element num: " << count;
+    LOG(INFO) << "finished loading file: " << fileName << ", element num: " << count;
 
     return true;
 }
 
 }
 
-#endif //SF1R_FCONTAINER_H_
+#endif //SF1R_FCONTAINER_BOOST_H_
