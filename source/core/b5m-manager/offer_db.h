@@ -84,8 +84,9 @@ namespace sf1r {
             {
                 LOG(INFO)<<"db empty, loading text"<<std::endl;
                 load_text(text_path_, false);
+                if(!flush()) return false;
             }
-            text_.open(text_path_.c_str());
+            text_.open(text_path_.c_str(), std::ios::out | std::ios::app);
             is_open_ = true;
             return true;
         }
@@ -114,7 +115,6 @@ namespace sf1r {
                 insert_(ioid, ipid, text);
             }
             ifs.close();
-            if(!flush()) return false;
             return true;
         }
 
@@ -160,12 +160,25 @@ namespace sf1r {
         bool flush()
         {
             LOG(INFO)<<"try flush odb.."<<std::endl;
-            text_.flush();
-            LOG(INFO)<<"building fujimap.."<<std::endl;
-            if(!db_->build())
+            if(text_.is_open())
             {
-                LOG(ERROR)<<"fujimap build error"<<std::endl;
-                return false;
+                text_.flush();
+            }
+            if(has_modify_)
+            {
+                LOG(INFO)<<"building fujimap.."<<std::endl;
+                if(db_->build()==-1)
+                {
+                    LOG(ERROR)<<"fujimap build error"<<std::endl;
+                    return false;
+                }
+                boost::filesystem::remove_all(db_path_);
+                db_->save(db_path_.c_str());
+                has_modify_ = false;
+            }
+            else
+            {
+                LOG(INFO)<<"db not change"<<std::endl;
             }
             return true;
         }
@@ -179,6 +192,7 @@ namespace sf1r {
                 return false;
             }
             db_->setInteger(key, value);
+            has_modify_ = true;
             if(text)
             {
                 text_<<B5MHelper::Uint128ToString(key)<<","<<B5MHelper::Uint128ToString(value)<<std::endl;

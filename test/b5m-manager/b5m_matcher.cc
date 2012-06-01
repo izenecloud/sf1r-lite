@@ -137,7 +137,7 @@ int main(int ac, char** av)
     //} 
     if (vm.count("odb")) {
         std::string odb_path = vm["odb"].as<std::string>();
-        std::cout << "open odb path: " << odb_path <<std::endl;
+        std::cout << "odb path: " << odb_path <<std::endl;
         odb.reset(new OfferDb(odb_path));
     } 
     if(vm.count("logserver-config"))
@@ -397,10 +397,10 @@ int main(int ac, char** av)
         }
     }
 
-    if(odb)
-    {
-        odb->flush();
-    }
+    //if(odb)
+    //{
+        //odb->flush();
+    //}
     return EXIT_SUCCESS;
 }
 

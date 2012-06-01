@@ -101,6 +101,10 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance)
     {
         LOG(INFO)<<"odb loading match file "<<match_file<<std::endl;
         odb_->load_text(match_file);
+        if(!odb_->flush())
+        {
+            LOG(ERROR)<<"odb flush error"<<std::endl;
+        }
     }
     std::vector<std::string> scd_list;
     B5MHelper::GetScdList(scd_path, scd_list);
@@ -158,7 +162,10 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance)
             }
         }
     }
-    odb_->flush();
+    if(!odb_->flush())
+    {
+        LOG(ERROR)<<"odb flush error"<<std::endl;
+    }
     b5mo_i.Close();
     b5mo_u.Close();
     b5mo_d.Close();
