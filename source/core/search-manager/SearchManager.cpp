@@ -5,9 +5,11 @@
 #include <ranking-manager/RankingManager.h>
 #include <mining-manager/MiningManager.h>
 #include <mining-manager/faceted-submanager/ctr_manager.h>
-#include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
-#include <mining-manager/faceted-submanager/GroupFilter.h>
+#include <mining-manager/group-manager/GroupFilterBuilder.h>
+#include <mining-manager/group-manager/GroupFilter.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
+#include <mining-manager/product-ranker/ProductRankerFactory.h>
+#include <mining-manager/product-ranker/ProductRanker.h>
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
@@ -21,6 +23,7 @@
 
 #include <util/swap.h>
 #include <util/get.h>
+#include <util/ClockTimer.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -35,46 +38,25 @@ const std::string DATE_PROPERTY("date");
 const std::string CUSTOM_RANK_PROPERTY("custom_rank");
 const std::string CTR_PROPERTY("_ctr");
 
-bool hasRelevenceSort(const std::pair<std::string , bool>& element)
-{
-    std::string fieldNameL = element.first;
-    boost::to_lower(fieldNameL);
-    if (fieldNameL == RANK_PROPERTY)
-        return true;
-    return false;
-}
-
-bool action_rerankable(const KeywordSearchActionItem& actionItem)
+bool isProductRanking(const KeywordSearchActionItem& actionItem)
 {
     if (actionItem.searchingMode_.mode_ == SearchingMode::KNN)
         return false;
 
-    bool rerank = false;
-    if (actionItem.env_.taxonomyLabel_.empty() &&
-            actionItem.env_.nameEntityItem_.empty() &&
-            actionItem.groupParam_.groupLabels_.empty() &&
-            actionItem.groupParam_.attrLabels_.empty())
+    const KeywordSearchActionItem::SortPriorityList& sortPropertyList = actionItem.sortPriorityList_;
+    if (sortPropertyList.empty())
+        return true;
+
+    for (KeywordSearchActionItem::SortPriorityList::const_iterator it = sortPropertyList.begin();
+        it != sortPropertyList.end(); ++it)
     {
-        const std::vector<std::pair<std::string , bool> >& sortPropertyList
-            = actionItem.sortPriorityList_;
-        if (sortPropertyList.empty())
-            rerank = true;
-        else if (sortPropertyList.size() == 1)
-        {
-            std::string fieldNameL = sortPropertyList[0].first;
-            boost::to_lower(fieldNameL);
-            if (fieldNameL == RANK_PROPERTY)
-                rerank = true;
-        }
-        else
-        {
-            std::vector<std::pair<std::string , bool> >::const_iterator it
-                = std::find_if(sortPropertyList.begin(), sortPropertyList.end(), hasRelevenceSort);
-            if (it != sortPropertyList.end())
-                rerank = true;
-        }
+        std::string fieldNameL = it->first;
+        boost::to_lower(fieldNameL);
+        if (fieldNameL == RANK_PROPERTY)
+            return true;
     }
-    return rerank;
+
+    return false;
 }
 
 SearchManager::SearchManager(
@@ -92,7 +74,7 @@ SearchManager::SearchManager(
     , rankingManagerPtr_(rankingManager)
     , queryBuilder_()
     , filter_hook_(0)
-    , reranker_(0)
+    , productRankerFactory_(NULL)
 {
     collectionName_ = config->collectionName_;
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
@@ -158,9 +140,23 @@ SearchManager::createPropertyTable(const std::string& propertyName)
 
 bool SearchManager::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    if (reranker_ && resultItem.topKCustomRankScoreList_.empty() && action_rerankable(actionItem))
+    if (productRankerFactory_ &&
+        resultItem.topKCustomRankScoreList_.empty() &&
+        isProductRanking(actionItem))
     {
-        reranker_(resultItem.topKDocs_, resultItem.topKRankScoreList_, actionItem.env_.queryString_);
+        izenelib::util::ClockTimer timer;
+
+        ProductRankingParam rankingParam(actionItem.env_.queryString_,
+            resultItem.topKDocs_, resultItem.topKRankScoreList_);
+
+        boost::scoped_ptr<ProductRanker> productRanker(
+            productRankerFactory_->createProductRanker(rankingParam));
+
+        productRanker->rank();
+
+        LOG(INFO) << "topK doc num: " << resultItem.topKDocs_.size()
+                  << ", product ranking costs: " << timer.elapsed() << " seconds";
+
         return true;
     }
     return false;
@@ -465,32 +461,6 @@ bool SearchManager::search(
 
         if (groupFilter)
             groupFilter->getGroupRep(groupRep, attrRep);
-
-        ///rerank is only used for pure ranking
-        std::vector<std::pair<std::string, bool> >& sortPropertyList
-        = actionOperation.actionItem_.sortPriorityList_;
-        bool rerank = false;
-        if (!pSorter) rerank = true;
-        else if (sortPropertyList.size() == 1)
-        {
-            std::string fieldNameL = sortPropertyList[0].first;
-            boost::to_lower(fieldNameL);
-            if (fieldNameL == RANK_PROPERTY)
-                rerank = true;
-        }
-        else
-        {
-            std::vector<std::pair<std::string, bool> >::iterator it =
-                std::find_if(sortPropertyList.begin(),sortPropertyList.end(),hasRelevenceSort);
-            if (it != sortPropertyList.end())
-                rerank = true;
-        }
-
-
-        if (rerank && reranker_)
-        {
-            reranker_(docIdList,rankScoreList,actionOperation.actionItem_.env_.queryString_);
-        }
 
         if (distSearchInfo.effective_ && pSorter)
         {

@@ -2,9 +2,9 @@
 #include "NumericPropertyTableBuilderStub.h"
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
-#include <mining-manager/faceted-submanager/group_manager.h>
-#include <mining-manager/faceted-submanager/GroupFilterBuilder.h>
-#include <mining-manager/faceted-submanager/GroupFilter.h>
+#include <mining-manager/group-manager/GroupManager.h>
+#include <mining-manager/group-manager/GroupFilterBuilder.h>
+#include <mining-manager/group-manager/GroupFilter.h>
 #include <configuration-manager/GroupConfig.h>
 
 #include <util/ustring/UString.h>

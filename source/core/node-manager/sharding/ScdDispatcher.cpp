@@ -2,7 +2,7 @@
 
 #include <node-manager/SearchMasterManager.h>
 
-#include <net/distribute/DataTransfer.h>
+#include <net/distribute/DataTransfer2.hpp>
 
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
@@ -11,7 +11,6 @@
 #include <glog/logging.h>
 
 using namespace sf1r;
-using namespace net::distribute;
 namespace bfs = boost::filesystem;
 
 const static std::string DISPATCH_TEMP_DIR = "dispatch-temp-dir/";
@@ -231,8 +230,8 @@ bool BatchScdDispatcher::finish()
             LOG(INFO) << "Transfer scd from "<<shardScdfileMap_[shardid]
                       <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";
 
-            DataTransfer transfer(host, recvPort);
-            if (transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index") != 0)
+            izenelib::net::distribute::DataTransfer2 transfer(host, recvPort);
+            if (not transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index"))
             {
                 ret = false;
                 LOG(ERROR) << "Failed to transfer scd"<<shardid;

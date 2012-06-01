@@ -36,7 +36,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   json
   ticpp
   am
-  lzo
+  compressor
   beansdb
   aggregator
   distribute

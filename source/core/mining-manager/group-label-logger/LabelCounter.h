@@ -8,7 +8,7 @@
 #ifndef SF1R_LABEL_COUNTER
 #define SF1R_LABEL_COUNTER
 
-#include <mining-manager/faceted-submanager/prop_value_table.h> // pvid_t
+#include <mining-manager/group-manager/PropValueTable.h> // pvid_t
 
 #include <vector>
 #include <map>

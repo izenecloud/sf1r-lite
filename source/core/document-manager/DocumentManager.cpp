@@ -336,7 +336,7 @@ bool DocumentManager::loadDelFilter_()
 {
     boost::mutex::scoped_lock lock(delfilter_mutex_);
 
-    const std::string filter_file = path_+"/del_filter";
+    const std::string filter_file = (boost::filesystem::path(path_)/"del_filter").string();
     std::vector<DelFilterBlockType> filter_data;
     if(!izenelib::am::ssf::Util<>::Load(filter_file, filter_data))
         return false;
@@ -351,7 +351,7 @@ bool DocumentManager::saveDelFilter_()
 {
     boost::mutex::scoped_lock lock(delfilter_mutex_);
 
-    const std::string filter_file = path_+"/del_filter";
+    const std::string filter_file = (boost::filesystem::path(path_)/"del_filter").string();
     std::vector<DelFilterBlockType> filter_data(delfilter_.num_blocks());
     boost::to_block_range(delfilter_, filter_data.begin());
     if(!izenelib::am::ssf::Util<>::Save(filter_file, filter_data))

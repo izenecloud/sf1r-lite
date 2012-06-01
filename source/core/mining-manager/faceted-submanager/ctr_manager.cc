@@ -24,7 +24,7 @@ CTRManager::~CTRManager()
 
 bool CTRManager::open()
 {
-    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+    ScopedWriteLock lock(mutex_);
 
     db_ = new DBType(filePath_);
 
@@ -56,7 +56,7 @@ bool CTRManager::open()
 
 void CTRManager::updateDocNum(size_t docNum)
 {
-    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+    ScopedWriteLock lock(mutex_);
 
     if (docNum_ != docNum)
     {
@@ -67,7 +67,7 @@ void CTRManager::updateDocNum(size_t docNum)
 
 bool CTRManager::update(uint32_t docId)
 {
-    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+    ScopedWriteLock lock(mutex_);
 
     if (docId >= docClickCountList_.size())
     {
@@ -85,7 +85,7 @@ bool CTRManager::getClickCountListByDocIdList(
         const std::vector<unsigned int>& docIdList,
         std::vector<std::pair<size_t, count_t> >& posClickCountList)
 {
-    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+    ScopedReadLock lock(mutex_);
 
     bool result = false;
     const size_t listSize = docIdList.size();
@@ -110,7 +110,7 @@ bool CTRManager::getClickCountListByDocIdList(
         const std::vector<unsigned int>& docIdList,
         std::vector<count_t>& clickCountList)
 {
-    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+    ScopedReadLock lock(mutex_);
 
     clickCountList.resize(docIdList.size(), 0);
 
@@ -130,7 +130,7 @@ bool CTRManager::getClickCountListByDocIdList(
 
 void CTRManager::loadCtrDataInt64(uint64_t*& data, size_t& size)
 {
-    boost::lock_guard<boost::shared_mutex> lg(mutex_);
+    ScopedReadLock lock(mutex_);
 
     size_t docNum = docClickCountList_.size();
 

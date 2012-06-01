@@ -82,6 +82,8 @@ controllers:
       - get_rep
       - click
       - manmade
+      - set_merchant_score
+      - get_merchant_score
 
   TopicController:
     actions:

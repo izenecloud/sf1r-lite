@@ -2,12 +2,13 @@
 #define COLLECTION_DATA_RECEIVER_H_
 
 #include <util/singleton.h>
-#include <net/distribute/DataReceiver.h>
 
-#include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
 
-using namespace net::distribute;
+namespace izenelib { namespace net { namespace distribute {
+class DataReceiver2;
+}}}
 
 namespace sf1r{
 
@@ -25,9 +26,7 @@ public:
 
     void init(
             unsigned int port,
-            const std::string& colBaseDir,
-            DataReceiver::buf_size_t bufSize=DataReceiver::DEFAULT_BUFFER_SIZE,
-            size_t threadNum=5);
+            const std::string& colBaseDir);
 
     void start();
 
@@ -39,8 +38,7 @@ private:
     bool isStarted_;
     boost::mutex mutex_start_;
 
-    boost::shared_ptr<DataReceiver> dataReceiver_;
-    boost::thread recvThread_;
+    boost::shared_ptr<izenelib::net::distribute::DataReceiver2> dataReceiver_;
 };
 
 }

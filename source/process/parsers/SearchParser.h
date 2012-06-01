@@ -10,7 +10,7 @@
 
 #include <query-manager/ConditionInfo.h>
 #include <ranking-manager/RankingEnumerator.h>
-#include <mining-manager/faceted-submanager/GroupParam.h>
+#include <mining-manager/group-manager/GroupParam.h>
 #include <query-manager/SearchingEnumerator.h>
 
 #include <bundles/index/IndexBundleConfiguration.h>

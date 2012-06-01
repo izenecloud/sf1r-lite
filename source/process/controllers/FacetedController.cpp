@@ -2,8 +2,12 @@
 #include "CollectionHandler.h"
 
 #include <common/Keys.h>
-
 #include <bundles/mining/MiningSearchService.h>
+#include <mining-manager/MiningManager.h>
+#include <mining-manager/merchant-score-manager/MerchantScore.h>
+#include <mining-manager/merchant-score-manager/MerchantScoreParser.h>
+#include <mining-manager/merchant-score-manager/MerchantScoreRenderer.h>
+#include <parsers/MerchantNameParser.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -461,6 +465,143 @@ bool FacetedController::requireSearchResult_()
         }
     }
     return true;
+}
+
+/**
+ * @brief Action @b set_merchant_score. Set merchant's score for product ranking.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b resource* (@c Array): Each item gives the score for the merchant and its categories.
+ *   - @b merchant* (@c String): The merchant's name.
+ *   - @b score* (@c Float): The merchant's general score, this value should be non-negative.
+ *   - @b category_score (@c Array): Each item gives the score for a category of the merchant.
+ *     - @b category* (@c String): The category name, note:@n
+ *       1. this @b category would be seemed as a top level category.@n
+ *       2. other categories' score not listed in @b request would still be kept.
+ *     - @b score* (@c Float): The category score, this value should be non-negative.
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "resource": [
+ *     { "merchant": "京东",
+ *       "score": 8,
+ *       "category_score": [
+ *         { "category": "家用电器", "score": 9.2 },
+ *         { "category": "数码", "score": 8.5 }
+ *       ]
+ *     }
+ *   ]
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
+void FacetedController::set_merchant_score()
+{
+    const Value& resource = request()[Keys::resource];
+    MerchantScoreParser parser;
+
+    if (! parser.parse(resource))
+    {
+        response().addError(parser.errorMessage());
+        return;
+    }
+
+    boost::shared_ptr<MiningManager> miningManager = miningSearchService_->GetMiningManager();
+    const MerchantStrScoreMap& scoreMap = parser.merchantStrScoreMap();
+
+    if (! miningManager->setMerchantScore(scoreMap))
+    {
+        response().addError("Failed to set merchant score.");
+    }
+}
+
+/**
+ * @brief Action @b get_merchant_score. Get merchant's score.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b merchants (@c Array): The array of merchant names, note:@n
+ *   1. if @b merchants is empty, it returns all existing merchant scores.@n
+ *   2. otherwise, it only returns the scores for each item in @b merchants.
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ * - @b resource (@c Array): Each item gives the score for the merchant and its categories.
+ *   - @b merchant (@c String): The merchant's name.
+ *   - @b score (@c Float): The merchant's general score.
+ *   - @b category_score (@c Array): Each item gives the score for the merchant's category.
+ *     - @b category (@c String): The category name.
+ *     - @b score (@c Float): The category score.
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "merchants": ["京东"]
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resource": [
+ *     { "merchant": "京东",
+ *       "score": 8,
+ *       "category_score": [
+ *         { "category": "家用电器", "score": 9.2 },
+ *         { "category": "数码", "score": 8.5 }
+ *       ]
+ *     }
+ *   ]
+ * }
+ * @endcode
+ */
+void FacetedController::get_merchant_score()
+{
+    const Value& merchantArray = request()[Keys::merchants];
+    MerchantNameParser parser;
+
+    if (! parser.parse(merchantArray))
+    {
+        response().addError(parser.errorMessage());
+        return;
+    }
+
+    boost::shared_ptr<MiningManager> miningManager = miningSearchService_->GetMiningManager();
+    const std::vector<std::string>& merchantNames = parser.merchantNames();
+    MerchantStrScoreMap merchantStrScoreMap;
+
+    if (! miningManager->getMerchantScore(merchantNames, merchantStrScoreMap))
+    {
+        response().addError("Failed to get merchant score.");
+        return;
+    }
+
+    MerchantScoreRenderer renderer(merchantStrScoreMap);
+    Value& resourceValue = response()[Keys::resource];
+
+    renderer.renderToValue(resourceValue);
 }
 
 }

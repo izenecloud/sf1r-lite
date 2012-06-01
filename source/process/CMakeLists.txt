@@ -108,7 +108,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   leveldb
   json
   am
-  lzo
+  compressor
   aggregator
   msgpack
   zookeeper
