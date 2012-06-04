@@ -5,6 +5,7 @@
 #include <document-manager/DocumentManager.h>
 
 #include <glog/logging.h>
+#include <iostream>
 
 using namespace sf1r::faceted;
 
@@ -47,21 +48,26 @@ bool AttrManager::processCollection()
     }
 
     const char* propName = attrTable_.propName();
-    AttrTable::ValueIdTable& idTable = attrTable_.valueIdTable();
-    assert(! idTable.empty() && "id 0 should have been reserved in AttrTable constructor");
 
-    const docid_t startDocId = idTable.size();
+    const docid_t startDocId = attrTable_.docIdNum();
+    assert(startDocId && "id 0 should have been reserved in AttrTable constructor");
+
     const docid_t endDocId = documentManager_->getMaxDocId();
-    idTable.reserve(endDocId + 1);
+    attrTable_.reserveDocIdNum(endDocId + 1);
 
     LOG(INFO) << "start building property: " << propName
-        << ", start doc id: " << startDocId
-        << ", end doc id: " << endDocId;
+              << ", start doc id: " << startDocId
+              << ", end doc id: " << endDocId;
 
+    AttrTable::ValueIdList valueIdList;
     for (docid_t docId = startDocId; docId <= endDocId; ++docId)
     {
-        idTable.push_back(AttrTable::ValueIdList());
-        AttrTable::ValueIdList& valueIdList = idTable.back();
+        if (docId % 100000 == 0)
+        {
+            std::cout << "\rinserting doc id: " << docId << "\t" << std::flush;
+        }
+
+        valueIdList.clear();
 
         Document doc;
         if (documentManager_->getDocument(docId, doc))
@@ -78,12 +84,12 @@ bool AttrManager::processCollection()
                     for (std::vector<AttrPair>::const_iterator pairIt = attrPairs.begin();
                         pairIt != attrPairs.end(); ++pairIt)
                     {
-                        AttrTable::nid_t nameId = attrTable_.nameId(pairIt->first);
+                        AttrTable::nid_t nameId = attrTable_.insertNameId(pairIt->first);
 
                         for (std::vector<izenelib::util::UString>::const_iterator valueIt = pairIt->second.begin();
                             valueIt != pairIt->second.end(); ++valueIt)
                         {
-                            AttrTable::vid_t valueId = attrTable_.valueId(nameId, *valueIt);
+                            AttrTable::vid_t valueId = attrTable_.insertValueId(nameId, *valueIt);
                             valueIdList.push_back(valueId);
                         }
                     }
@@ -94,12 +100,9 @@ bool AttrManager::processCollection()
                 }
             }
         }
-
-        if (docId % 100000 == 0)
-        {
-            LOG(INFO) << "inserted doc id: " << docId;
-        }
+        attrTable_.appendValueIdList(valueIdList);
     }
+    std::cout << "\rinserting doc id: " << endDocId << "\t" << std::endl;
 
     if (!attrTable_.flush())
     {

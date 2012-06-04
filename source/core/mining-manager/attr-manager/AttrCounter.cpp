@@ -64,6 +64,7 @@ NS_FACETED_BEGIN
 
 AttrCounter::AttrCounter(const AttrTable* attrTable)
     : attrTable_(attrTable)
+    , lock_(attrTable->getMutex())
     , valueIdTable_(attrTable->valueIdTable())
     , nameCountTable_(attrTable->nameNum())
     , valueIdNum_(attrTable->valueNum())

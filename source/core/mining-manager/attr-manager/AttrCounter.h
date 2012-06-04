@@ -29,6 +29,7 @@ public:
 
 private:
     const AttrTable* attrTable_;
+    AttrTable::ScopedReadLock lock_;
     const AttrTable::ValueIdTable& valueIdTable_;
 
     /** map from name id to doc count */

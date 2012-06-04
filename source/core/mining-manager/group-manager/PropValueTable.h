@@ -59,9 +59,11 @@ public:
     bool flush();
 
     const string &propName() const { return propName_; }
+
     std::size_t docIdNum() const { return valueIdTable_.indexTable_.size(); }
 
     void reserveDocIdNum(std::size_t num);
+
     void appendPropIdList(const std::vector<pvid_t>& inputIdList);
 
     std::size_t propValueNum() const { return propStrVec_.size(); }

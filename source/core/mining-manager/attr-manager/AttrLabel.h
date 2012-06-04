@@ -26,6 +26,8 @@ public:
     AttrTable::nid_t attrNameId() const;
 
 private:
+    AttrTable::ScopedReadLock lock_;
+
     const AttrTable::ValueIdTable& valueIdTable_;
     const AttrTable::nid_t attrNameId_;
     const AttrTable::vid_t targetValueId_;

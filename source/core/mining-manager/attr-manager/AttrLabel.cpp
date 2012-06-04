@@ -9,7 +9,8 @@ AttrLabel::AttrLabel(
     const std::pair<std::string, std::string>& label,
     const AttrTable* attrTable
 )
-    : valueIdTable_(attrTable->valueIdTable())
+    : lock_(attrTable->getMutex())
+    , valueIdTable_(attrTable->valueIdTable())
     , attrNameId_(attrTable->nameId(
         izenelib::util::UString(label.first, izenelib::util::UString::UTF_8)))
     , targetValueId_(attrTable->valueId(

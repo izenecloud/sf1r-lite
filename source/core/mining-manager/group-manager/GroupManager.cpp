@@ -95,6 +95,11 @@ bool GroupManager::processCollection()
         std::vector<PropValueTable::pvid_t> propIdList;
         for (docid_t docId = startDocId; docId <= endDocId; ++docId)
         {
+            if (docId % 100000 == 0)
+            {
+                std::cout << "\rinserting doc id: " << docId << "\t" << std::flush;
+            }
+
             propIdList.clear();
 
             Document doc;
@@ -124,12 +129,8 @@ bool GroupManager::processCollection()
                 }
             }
             pvTable.appendPropIdList(propIdList);
-
-            if (docId % 100000 == 0)
-            {
-                LOG(INFO) << "inserted doc id: " << docId;
-            }
         }
+        std::cout << "\rinserting doc id: " << endDocId << "\t" << std::endl;
 
         if (!pvTable.flush())
         {

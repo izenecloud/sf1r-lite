@@ -15,6 +15,7 @@
 #include <util/ustring/UString.h>
 #include "../faceted-submanager/faceted_types.h"
 
+#include <boost/thread.hpp>
 #include <vector>
 #include <string>
 #include <map>
@@ -44,6 +45,10 @@ public:
     /** mapping from doc id to a list of attribute value id */
     typedef std::vector<ValueIdList> ValueIdTable;
 
+    typedef boost::shared_mutex MutexType;
+    typedef boost::shared_lock<MutexType> ScopedReadLock;
+    typedef boost::unique_lock<MutexType> ScopedWriteLock;
+
     AttrTable();
 
     bool open(
@@ -53,61 +58,35 @@ public:
 
     bool flush();
 
-    const char* propName() const {
-        return propName_.c_str();
-    }
+    const char* propName() const { return propName_.c_str(); }
 
-    ValueIdTable& valueIdTable() {
-        return valueIdTable_;
-    }
+    std::size_t nameNum() const { return nameStrVec_.size(); }
 
-    const ValueIdTable& valueIdTable() const {
-        return valueIdTable_;
-    }
+    std::size_t valueNum() const { return valueStrVec_.size(); }
 
-    const izenelib::util::UString& nameStr(nid_t nameId) const {
-        return nameStrVec_[nameId];
-    }
+    std::size_t docIdNum() const { return valueIdTable_.size(); }
 
-    const izenelib::util::UString& valueStr(vid_t valueId) const {
-        return valueStrVec_[valueId];
-    }
+    void reserveDocIdNum(std::size_t num);
 
-    std::size_t nameNum() const {
-        return nameStrVec_.size();
-    }
-
-    std::size_t valueNum() const {
-        return valueStrVec_.size();
-    }
+    void appendValueIdList(const AttrTable::ValueIdList& valueIdList);
 
     /**
-     * Get attribute name id.
+     * Insert attribute name id.
      * @param name attribute name string
      * @exception MiningException when the new id created is overflow
      * @return name id, if @p name is not inserted before, its new id is created and returned
      */
-    nid_t nameId(const izenelib::util::UString& name);
+    nid_t insertNameId(const izenelib::util::UString& name);
 
     /**
      * Get attribute name id.
      * @param name attribute name string
      * @return name id, if @p name is not inserted before, 0 is returned
      */
-    nid_t nameId(const izenelib::util::UString& name) const {
-        nid_t nameId = 0;
-
-        std::map<izenelib::util::UString, nid_t>::const_iterator it = nameStrMap_.find(name);
-        if (it != nameStrMap_.end())
-        {
-            nameId = it->second; 
-        }
-
-        return nameId;
-    }
+    nid_t nameId(const izenelib::util::UString& name) const;
 
     /**
-     * Get attribute value id.
+     * Insert attribute value id.
      * @param nameId the attribute name id
      * @param value attribute value string
      * @exception MiningException when the new id created is overflow
@@ -116,7 +95,7 @@ public:
      * to differentiate their attribute names for those same attribute value,
      * different @p nameId must return different value id
      */
-    vid_t valueId(nid_t nameId, const izenelib::util::UString& value);
+    vid_t insertValueId(nid_t nameId, const izenelib::util::UString& value);
 
     /**
      * Get attribute value id.
@@ -124,30 +103,30 @@ public:
      * @param value attribute value string
      * @return value id, if @p value is not inserted before, 0 is returned
      */
-    vid_t valueId(nid_t nameId, const izenelib::util::UString& value) const {
-        assert(nameId < valueStrTable_.size());
+    vid_t valueId(nid_t nameId, const izenelib::util::UString& value) const;
 
-        vid_t valueId = 0;
-        const ValueStrMap& valueStrMap = valueStrTable_[nameId];
+    MutexType& getMutex() const { return mutex_; }
 
-        ValueStrMap::const_iterator it = valueStrMap.find(value);
-        if (it != valueStrMap.end())
-        {
-            valueId = it->second;
-        }
+    /**
+     * @attention before calling below public functions,
+     * you must call this statement for safe concurrent access:
+     *
+     * <code>
+     * AttrTable::ScopedReadLock lock(AttrTable::getMutex());
+     * </code>
+     */
+    const ValueIdTable& valueIdTable() const { return valueIdTable_; }
 
-        return valueId;
-    }
+    const izenelib::util::UString& nameStr(nid_t nameId) const { return nameStrVec_[nameId]; }
+
+    const izenelib::util::UString& valueStr(vid_t valueId) const { return valueStrVec_[valueId]; }
 
     /**
      * Get the name id of value id @p valueId.
      * @param valueId the value id
      * @return the name id
      */
-    nid_t valueId2NameId(vid_t valueId) const {
-        assert(valueId < nameIdVec_.size());
-        return nameIdVec_[valueId];
-    }
+    nid_t valueId2NameId(vid_t valueId) const { return nameIdVec_[valueId]; }
 
 private:
     /**
@@ -191,6 +170,8 @@ private:
     ValueIdTable valueIdTable_;
     /** the number of elements in @c valueIdTable_ saved in file */
     unsigned int saveDocIdNum_;
+
+    mutable MutexType mutex_;
 };
 
 NS_FACETED_END

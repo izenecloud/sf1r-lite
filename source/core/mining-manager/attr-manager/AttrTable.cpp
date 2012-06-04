@@ -27,24 +27,90 @@ const izenelib::util::UString::EncodingType ENCODING_TYPE =
 
 // as id 0 is reserved for empty value
 // members are initialized to size 1
-AttrTable::AttrTable(
-)
-: nameStrVec_(1)
-, saveNameStrNum_(0)
-, valueStrVec_(1)
-, saveValueStrNum_(0)
-, nameIdVec_(1)
-, saveNameIdNum_(0)
-, valueIdTable_(1)
-, saveDocIdNum_(0)
+AttrTable::AttrTable()
+    : nameStrVec_(1)
+    , saveNameStrNum_(0)
+    , valueStrVec_(1)
+    , saveValueStrNum_(0)
+    , nameIdVec_(1)
+    , saveNameIdNum_(0)
+    , valueIdTable_(1)
+    , saveDocIdNum_(0)
 {
 }
 
-AttrTable::nid_t AttrTable::nameId(const izenelib::util::UString& name)
+bool AttrTable::open(
+    const std::string& dirPath,
+    const std::string& propName
+)
 {
-    assert(nameStrVec_.size() == valueStrTable_.size());
+    ScopedWriteLock lock(mutex_);
+
+    dirPath_ = dirPath;
+    propName_ = propName;
+
+    if (!load_container_febird(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+    {
+        return false;
+    }
+
+    nameStrMap_.clear();
+    for (unsigned int i = 0; i < nameStrVec_.size(); ++i)
+    {
+        nameStrMap_[nameStrVec_[i]] = i;
+    }
+
+    assert(valueStrVec_.size() == nameIdVec_.size());
+    valueStrTable_.clear();
+    valueStrTable_.resize(nameStrVec_.size());
+    for (unsigned int i = 0; i < valueStrVec_.size(); ++i)
+    {
+        nid_t nameId = nameIdVec_[i];
+        valueStrTable_[nameId][valueStrVec_[i]] = i;
+    }
+
+    return true;
+}
+
+bool AttrTable::flush()
+{
+    ScopedWriteLock lock(mutex_);
+
+    if (!saveNameValuePair_(dirPath_, propName_ + SUFFIX_NAME_VALUE) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void AttrTable::reserveDocIdNum(std::size_t num)
+{
+    ScopedWriteLock lock(mutex_);
+
+    valueIdTable_.reserve(num);
+}
+
+void AttrTable::appendValueIdList(const AttrTable::ValueIdList& valueIdList)
+{
+    ScopedWriteLock lock(mutex_);
+
+    valueIdTable_.push_back(valueIdList);
+}
+
+AttrTable::nid_t AttrTable::insertNameId(const izenelib::util::UString& name)
+{
+    ScopedWriteLock lock(mutex_);
 
     nid_t nameId = nameStrVec_.size();
+    assert(nameId == valueStrTable_.size());
 
     typedef std::map<izenelib::util::UString, nid_t> NameStrMap;
     std::pair<NameStrMap::iterator, bool> result = nameStrMap_.insert(
@@ -76,8 +142,25 @@ AttrTable::nid_t AttrTable::nameId(const izenelib::util::UString& name)
     return nameId;
 }
 
-AttrTable::vid_t AttrTable::valueId(nid_t nameId, const izenelib::util::UString& value)
+AttrTable::nid_t AttrTable::nameId(const izenelib::util::UString& name) const
 {
+    ScopedReadLock lock(mutex_);
+
+    nid_t nameId = 0;
+
+    std::map<izenelib::util::UString, nid_t>::const_iterator it = nameStrMap_.find(name);
+    if (it != nameStrMap_.end())
+    {
+        nameId = it->second; 
+    }
+
+    return nameId;
+}
+
+AttrTable::vid_t AttrTable::insertValueId(nid_t nameId, const izenelib::util::UString& value)
+{
+    ScopedWriteLock lock(mutex_);
+
     assert(nameId < valueStrTable_.size());
     assert(valueStrVec_.size() == nameIdVec_.size());
 
@@ -113,52 +196,21 @@ AttrTable::vid_t AttrTable::valueId(nid_t nameId, const izenelib::util::UString&
     return valueId;
 }
 
-bool AttrTable::open(
-    const std::string& dirPath,
-    const std::string& propName
-)
+AttrTable::vid_t AttrTable::valueId(nid_t nameId, const izenelib::util::UString& value) const
 {
-    dirPath_ = dirPath;
-    propName_ = propName;
+    ScopedReadLock lock(mutex_);
 
-    if (!load_container_febird(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
-        !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
-        !load_container_febird(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
-        !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+    assert(nameId < valueStrTable_.size());
+    vid_t valueId = 0;
+    const ValueStrMap& valueStrMap = valueStrTable_[nameId];
+
+    ValueStrMap::const_iterator it = valueStrMap.find(value);
+    if (it != valueStrMap.end())
     {
-        return false;
+        valueId = it->second;
     }
 
-    nameStrMap_.clear();
-    for (unsigned int i = 0; i < nameStrVec_.size(); ++i)
-    {
-        nameStrMap_[nameStrVec_[i]] = i;
-    }
-
-    assert(valueStrVec_.size() == nameIdVec_.size());
-    valueStrTable_.clear();
-    valueStrTable_.resize(nameStrVec_.size());
-    for (unsigned int i = 0; i < valueStrVec_.size(); ++i)
-    {
-        nid_t nameId = nameIdVec_[i];
-        valueStrTable_[nameId][valueStrVec_[i]] = i;
-    }
-
-    return true;
-}
-
-bool AttrTable::flush()
-{
-    if (!saveNameValuePair_(dirPath_, propName_ + SUFFIX_NAME_VALUE) ||
-        !save_container_febird(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
-        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
-        !save_container_febird(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
-        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
-    {
-        return false;
-    }
-
-    return true;
+    return valueId;
 }
 
 bool AttrTable::saveNameValuePair_(const std::string& dirPath, const std::string& fileName) const
