@@ -35,8 +35,6 @@ bool AttrManager::open(const AttrConfig& attrConfig)
 
 bool AttrManager::processCollection()
 {
-    LOG(INFO) << "start building attr index data...";
-
     try
     {
         FSUtil::createDir(dirPath_);
@@ -50,16 +48,19 @@ bool AttrManager::processCollection()
     const char* propName = attrTable_.propName();
 
     const docid_t startDocId = attrTable_.docIdNum();
+    const docid_t endDocId = documentManager_->getMaxDocId();
     assert(startDocId && "id 0 should have been reserved in AttrTable constructor");
 
-    const docid_t endDocId = documentManager_->getMaxDocId();
-    attrTable_.reserveDocIdNum(endDocId + 1);
+    if (startDocId > endDocId)
+        return true;
 
-    LOG(INFO) << "start building property: " << propName
+    LOG(INFO) << "start building attr index data for property: " << propName
               << ", start doc id: " << startDocId
               << ", end doc id: " << endDocId;
 
+    attrTable_.reserveDocIdNum(endDocId + 1);
     AttrTable::ValueIdList valueIdList;
+
     for (docid_t docId = startDocId; docId <= endDocId; ++docId)
     {
         if (docId % 100000 == 0)

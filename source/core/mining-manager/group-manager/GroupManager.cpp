@@ -83,16 +83,19 @@ bool GroupManager::processCollection()
         PropValueTable& pvTable = it->second;
 
         const docid_t startDocId = pvTable.docIdNum();
+        const docid_t endDocId = documentManager_->getMaxDocId();
         assert(startDocId && "docid 0 should have been reserved in PropValueTable constructor");
 
-        const docid_t endDocId = documentManager_->getMaxDocId();
-        pvTable.reserveDocIdNum(endDocId + 1);
+        if (startDocId > endDocId)
+            continue;
 
         LOG(INFO) << "start building property: " << propName
                   << ", start doc id: " << startDocId
                   << ", end doc id: " << endDocId;
 
+        pvTable.reserveDocIdNum(endDocId + 1);
         std::vector<PropValueTable::pvid_t> propIdList;
+
         for (docid_t docId = startDocId; docId <= endDocId; ++docId)
         {
             if (docId % 100000 == 0)
