@@ -133,8 +133,7 @@ public:
 
 private:
     /**
-     * Save each property value and its parent id to text file,
-     * this text file is only used by administrator to read the whole value tree.
+     * Save each property value and its parent id to text file for debug use.
      * @param dirPath directory path
      * @param fileName file name
      * @return true for success, false for failure

@@ -150,6 +150,15 @@ public:
     }
 
 private:
+    /**
+     * Save each name/value pair to text file for debug use.
+     * @param dirPath directory path
+     * @param fileName file name
+     * @return true for success, false for failure
+     */
+    bool saveNameValuePair_(const std::string& dirPath, const std::string& fileName) const;
+
+private:
     /** directory path */
     std::string dirPath_;
 

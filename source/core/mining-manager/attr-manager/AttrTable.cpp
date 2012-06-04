@@ -15,10 +15,14 @@ using namespace sf1r::faceted;
 
 namespace
 {
+const char* SUFFIX_NAME_VALUE_PAIR = ".name_value_pair.txt";
 const char* SUFFIX_NAME_STR = ".name_str.txt";
 const char* SUFFIX_VALUE_STR = ".value_str.txt";
 const char* SUFFIX_NAME_ID = ".name_id.txt";
 const char* SUFFIX_VALUE_ID = ".value_id.txt";
+
+const izenelib::util::UString::EncodingType ENCODING_TYPE =
+    izenelib::util::UString::UTF_8;
 }
 
 // as id 0 is reserved for empty value
@@ -145,12 +149,63 @@ bool AttrTable::open(
 
 bool AttrTable::flush()
 {
-    if (!save_container_boost(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
+    if (!saveNameValuePair_(dirPath_, propName_ + SUFFIX_NAME_VALUE_PAIR) ||
+        !save_container_boost(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
         !save_container_boost(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
         !save_container_boost(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
         !save_container_boost(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
     {
         return false;
+    }
+
+    return true;
+}
+
+bool AttrTable::saveNameValuePair_(const std::string& dirPath, const std::string& fileName) const
+{
+    const unsigned int nameNum = valueStrTable_.size();
+    if (nameNum != nameStrVec_.size())
+    {
+        LOG(ERROR) << "unequal name number in valueStrTable_ and nameStrVec_";
+        return false;
+    }
+
+    const unsigned int valueNum = valueStrVec_.size();
+    if (saveNameStrNum_ >= nameNum && saveValueStrNum_ >= valueNum)
+        return true;
+
+    boost::filesystem::path filePath(dirPath);
+    filePath /= fileName;
+    std::string pathStr = filePath.string();
+
+    LOG(INFO) << "saving file: " << fileName
+              << ", name num: " << nameNum
+              << ", value num: " << valueNum;
+
+    std::ofstream ofs(pathStr.c_str());
+    if (! ofs)
+    {
+        LOG(ERROR) << "failed opening file " << fileName;
+        return false;
+    }
+
+    std::string nameStr;
+    std::string valueStr;
+    for (unsigned int nameId = 1; nameId < nameNum; ++nameId)
+    {
+        // columns: name id, name str
+        nameStrVec_[nameId].convertString(nameStr, ENCODING_TYPE);
+        ofs << nameId << "  " << nameStr << std::endl;
+
+        const ValueStrMap& valueStrMap = valueStrTable_[nameId];
+        for (ValueStrMap::const_iterator it = valueStrMap.begin();
+            it != valueStrMap.end(); ++it)
+        {
+            it->first.convertString(valueStr, ENCODING_TYPE);
+
+            // columns: value str, value id
+            ofs << "    " << valueStr << "  " << it->second << std::endl;
+        }
     }
 
     return true;
