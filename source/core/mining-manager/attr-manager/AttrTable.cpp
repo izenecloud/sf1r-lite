@@ -1,5 +1,5 @@
 #include "AttrTable.h"
-#include <mining-manager/util/fcontainer_boost.h>
+#include <mining-manager/util/fcontainer_febird.h>
 #include <mining-manager/MiningException.hpp>
 
 #include <iostream>
@@ -15,11 +15,11 @@ using namespace sf1r::faceted;
 
 namespace
 {
-const char* SUFFIX_NAME_VALUE_PAIR = ".name_value_pair.txt";
-const char* SUFFIX_NAME_STR = ".name_str.txt";
-const char* SUFFIX_VALUE_STR = ".value_str.txt";
-const char* SUFFIX_NAME_ID = ".name_id.txt";
-const char* SUFFIX_VALUE_ID = ".value_id.txt";
+const char* SUFFIX_NAME_STR = ".name_str.bin";
+const char* SUFFIX_VALUE_STR = ".value_str.bin";
+const char* SUFFIX_NAME_ID = ".name_id.bin";
+const char* SUFFIX_VALUE_ID = ".value_id.bin";
+const char* SUFFIX_NAME_VALUE = ".name_value.txt";
 
 const izenelib::util::UString::EncodingType ENCODING_TYPE =
     izenelib::util::UString::UTF_8;
@@ -121,10 +121,10 @@ bool AttrTable::open(
     dirPath_ = dirPath;
     propName_ = propName;
 
-    if (!load_container_boost(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
-        !load_container_boost(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
-        !load_container_boost(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
-        !load_container_boost(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+    if (!load_container_febird(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
     {
         return false;
     }
@@ -149,11 +149,11 @@ bool AttrTable::open(
 
 bool AttrTable::flush()
 {
-    if (!saveNameValuePair_(dirPath_, propName_ + SUFFIX_NAME_VALUE_PAIR) ||
-        !save_container_boost(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
-        !save_container_boost(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
-        !save_container_boost(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
-        !save_container_boost(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+    if (!saveNameValuePair_(dirPath_, propName_ + SUFFIX_NAME_VALUE) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
     {
         return false;
     }
