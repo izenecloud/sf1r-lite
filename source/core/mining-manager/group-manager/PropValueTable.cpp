@@ -164,6 +164,7 @@ bool PropValueTable::open()
         return false;
     }
 
+    LOG(INFO) << "loading " << valueNum << " prop values into map";
     childMapTable_.clear();
     childMapTable_.resize(valueNum);
     for (unsigned int i = 1; i < valueNum; ++i)

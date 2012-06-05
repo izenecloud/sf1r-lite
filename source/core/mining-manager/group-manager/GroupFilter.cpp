@@ -108,11 +108,12 @@ bool GroupFilter::initAttr(const AttrTable& attrTable)
         attrCounter_ = new AttrCounter(attrTable);
     }
 
-    const GroupParam::AttrLabelVec& labels = groupParam_.attrLabels_;
-    for (GroupParam::AttrLabelVec::const_iterator it = labels.begin();
-        it != labels.end(); ++it)
+    const GroupParam::AttrLabelMap& labels = groupParam_.attrLabels_;
+    for (GroupParam::AttrLabelMap::const_iterator labelIt = labels.begin();
+        labelIt != labels.end(); ++labelIt)
     {
-        attrLabels_.push_back(new AttrLabel(*it, attrTable));
+        attrLabels_.push_back(new AttrLabel(attrTable,
+            labelIt->first, labelIt->second));
     }
 
     return true;

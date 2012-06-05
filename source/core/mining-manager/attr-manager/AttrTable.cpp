@@ -59,12 +59,16 @@ bool AttrTable::open(
         return false;
     }
 
+    LOG(INFO) << "loading " << nameStrVec_.size()
+              << " attribute names into map";
     nameStrMap_.clear();
     for (unsigned int i = 0; i < nameStrVec_.size(); ++i)
     {
         nameStrMap_[nameStrVec_[i]] = i;
     }
 
+    LOG(INFO) << "loading " << valueStrVec_.size()
+              << " attribute values into map";
     assert(valueStrVec_.size() == nameIdVec_.size());
     valueStrTable_.clear();
     valueStrTable_.resize(nameStrVec_.size());

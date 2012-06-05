@@ -91,11 +91,11 @@ public:
         return groupLabels_;
     }
 
-    faceted::GroupParam::AttrLabelVec& mutableAttrLabels()
+    faceted::GroupParam::AttrLabelMap& mutableAttrLabels()
     {
         return attrLabels_;
     }
-    const faceted::GroupParam::AttrLabelVec& attrLabels() const
+    const faceted::GroupParam::AttrLabelMap& attrLabels() const
     {
         return attrLabels_;
     }
@@ -142,7 +142,7 @@ private:
     std::string nameEntityType_;
     std::string nameEntityItem_;
     faceted::GroupParam::GroupLabelMap groupLabels_;
-    faceted::GroupParam::AttrLabelVec attrLabels_;
+    faceted::GroupParam::AttrLabelMap attrLabels_;
     bool logKeywords_;
     std::vector<std::string> properties_;
     RankingType::TextRankingType rankingModel_;
