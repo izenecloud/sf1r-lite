@@ -7,13 +7,13 @@ NS_FACETED_BEGIN
 
 AttrLabel::AttrLabel(
     const std::pair<std::string, std::string>& label,
-    const AttrTable* attrTable
+    const AttrTable& attrTable
 )
-    : lock_(attrTable->getMutex())
-    , valueIdTable_(attrTable->valueIdTable())
-    , attrNameId_(attrTable->nameId(
+    : attrTable_(attrTable)
+    , lock_(attrTable.getMutex())
+    , attrNameId_(attrTable.nameId(
         izenelib::util::UString(label.first, izenelib::util::UString::UTF_8)))
-    , targetValueId_(attrTable->valueId(
+    , targetValueId_(attrTable.valueId(
         attrNameId_,
         izenelib::util::UString(label.second, izenelib::util::UString::UTF_8)))
 {
@@ -21,16 +21,16 @@ AttrLabel::AttrLabel(
 
 bool AttrLabel::test(docid_t doc) const
 {
-    // this doc has no attr index data yet
-    if (doc >= valueIdTable_.size())
-        return false;
+    AttrTable::ValueIdList valueIdList;
+    attrTable_.getValueIdList(doc, valueIdList);
 
-    const AttrTable::ValueIdList& valueIdList = valueIdTable_[doc];
+    for (std::size_t i = 0; i < valueIdList.size(); ++i)
+    {
+        if (valueIdList[i] == targetValueId_)
+            return true;
+    }
 
-    AttrTable::ValueIdList::const_iterator findIt =
-        std::find(valueIdList.begin(), valueIdList.end(), targetValueId_);
-
-    return (findIt != valueIdList.end());
+    return false;
 }
 
 AttrTable::nid_t AttrLabel::attrNameId() const

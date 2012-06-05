@@ -21,7 +21,7 @@ GroupFilterBuilder::GroupFilterBuilder(
 )
     : groupConfigs_(groupConfigs)
     , groupManager_(groupManager)
-    , attrTable_(attrManager ? attrManager->getAttrTable() : NULL)
+    , attrTable_(attrManager ? &attrManager->getAttrTable() : NULL)
     , numericTableBuilder_(numericTableBuilder)
 {
 }
@@ -48,7 +48,7 @@ GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) cons
             return NULL;
         }
 
-        if (!groupFilter->initAttr(attrTable_))
+        if (!groupFilter->initAttr(*attrTable_))
             return NULL;
     }
 

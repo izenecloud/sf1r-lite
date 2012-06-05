@@ -94,7 +94,6 @@ bool GroupManager::processCollection()
                   << ", end doc id: " << endDocId;
 
         pvTable.reserveDocIdNum(endDocId + 1);
-        std::vector<PropValueTable::pvid_t> propIdList;
 
         for (docid_t docId = startDocId; docId <= endDocId; ++docId)
         {
@@ -103,35 +102,7 @@ bool GroupManager::processCollection()
                 std::cout << "\rinserting doc id: " << docId << "\t" << std::flush;
             }
 
-            propIdList.clear();
-
-            Document doc;
-            if (documentManager_->getDocument(docId, doc))
-            {
-                Document::property_iterator it = doc.findProperty(propName);
-                if (it != doc.propertyEnd())
-                {
-                    const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
-                    std::vector<vector<izenelib::util::UString> > groupPaths;
-                    split_group_path(propValue, groupPaths);
-
-                    try
-                    {
-                        for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
-                            pathIt != groupPaths.end(); ++pathIt)
-                        {
-                            PropValueTable::pvid_t pvId = pvTable.insertPropValueId(*pathIt);
-                            propIdList.push_back(pvId);
-                        }
-                    }
-                    catch(MiningException& e)
-                    {
-                        LOG(ERROR) << "exception: " << e.what()
-                                   << ", doc id: " << docId;
-                    }
-                }
-            }
-            pvTable.appendPropIdList(propIdList);
+            buildDoc_(docId, propName, pvTable);
         }
         std::cout << "\rinserting doc id: " << endDocId << "\t" << std::endl;
 
@@ -145,3 +116,48 @@ bool GroupManager::processCollection()
     return true;
 }
 
+void GroupManager::buildDoc_(
+    docid_t docId,
+    const std::string& propName,
+    PropValueTable& pvTable
+)
+{
+    std::vector<PropValueTable::pvid_t> propIdList;
+    Document doc;
+
+    if (documentManager_->getDocument(docId, doc))
+    {
+        Document::property_iterator it = doc.findProperty(propName);
+        if (it != doc.propertyEnd())
+        {
+            const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
+            std::vector<vector<izenelib::util::UString> > groupPaths;
+            split_group_path(propValue, groupPaths);
+
+            try
+            {
+                for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
+                    pathIt != groupPaths.end(); ++pathIt)
+                {
+                    PropValueTable::pvid_t pvId = pvTable.insertPropValueId(*pathIt);
+                    propIdList.push_back(pvId);
+                }
+            }
+            catch(MiningException& e)
+            {
+                LOG(ERROR) << "exception: " << e.what()
+                           << ", doc id: " << docId;
+            }
+        }
+    }
+
+    try
+    {
+        pvTable.appendPropIdList(propIdList);
+    }
+    catch(MiningException& e)
+    {
+        LOG(ERROR) << "exception: " << e.what()
+                   << ", doc id: " << docId;
+    }
+}

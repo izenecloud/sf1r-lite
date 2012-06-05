@@ -19,7 +19,7 @@ NS_FACETED_BEGIN
 class AttrCounter
 {
 public:
-    AttrCounter(const AttrTable* attrTable);
+    AttrCounter(const AttrTable& attrTable);
 
     void addDoc(docid_t doc);
 
@@ -28,9 +28,8 @@ public:
     void getGroupRep(int topGroupNum, OntologyRep& groupRep) const;
 
 private:
-    const AttrTable* attrTable_;
+    const AttrTable& attrTable_;
     AttrTable::ScopedReadLock lock_;
-    const AttrTable::ValueIdTable& valueIdTable_;
 
     /** map from name id to doc count */
     std::vector<int> nameCountTable_;

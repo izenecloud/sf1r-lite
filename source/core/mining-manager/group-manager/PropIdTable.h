@@ -9,8 +9,10 @@
 #define SF1R_PROP_ID_TABLE_H
 
 #include "../faceted-submanager/faceted_types.h"
+#include "../MiningException.hpp"
 #include <vector>
 #include <boost/static_assert.hpp>
+#include <boost/lexical_cast.hpp>
 
 NS_FACETED_BEGIN
 
@@ -43,7 +45,7 @@ struct PropIdTable
 
 private:
     /// @see the requirement on parameter type size by #indexTable_
-    BOOST_STATIC_ASSERT(sizeof(valueid_t) < sizeof(index_t));
+    BOOST_STATIC_ASSERT(sizeof(valueid_t) <= sizeof(index_t));
 };
 
 template <typename valueid_t, typename index_t>
@@ -118,26 +120,46 @@ void PropIdTable<valueid_t, index_t>::getIdList(docid_t docId, PropIdList& propI
 template <typename valueid_t, typename index_t>
 void PropIdTable<valueid_t, index_t>::appendIdList(const std::vector<valueid_t>& inputIdList)
 {
-    std::size_t count = inputIdList.size();
+    const std::size_t inputNum = inputIdList.size();
+    indexTable_.push_back(0);
+    index_t& index = indexTable_.back();
 
-    switch (count)
+    switch (inputNum)
     {
-    case 0:
-        indexTable_.push_back(0);
-        break;
+        case 0: break;
 
-    case 1:
-        indexTable_.push_back(inputIdList.front());
-        break;
+        case 1:
+        {
+            valueid_t inputId = inputIdList.front();
 
-    default:
-        index_t index = INDEX_MSB | multiValueTable_.size();
-        indexTable_.push_back(index);
+            if (inputId >= INDEX_MSB)
+            {
+                throw MiningException("property value id is out of range",
+                    boost::lexical_cast<std::string>(inputId),
+                    "PropIdTable::appendIdList");
+            }
 
-        multiValueTable_.push_back(count);
-        multiValueTable_.insert(multiValueTable_.end(),
-            inputIdList.begin(), inputIdList.end());
-        break;
+            index = inputId;
+            break;
+        }
+
+        default:
+        {
+            std::size_t valueTableSize = multiValueTable_.size();
+
+            if (valueTableSize >= INDEX_MSB)
+            {
+                throw MiningException("property value count is out of range",
+                    boost::lexical_cast<std::string>(valueTableSize),
+                    "PropIdTable::appendIdList");
+            }
+
+            index = INDEX_MSB | valueTableSize;
+            multiValueTable_.push_back(inputNum);
+            multiValueTable_.insert(multiValueTable_.end(),
+                inputIdList.begin(), inputIdList.end());
+            break;
+        }
     }
 }
 

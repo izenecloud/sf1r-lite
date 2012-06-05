@@ -101,7 +101,7 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
     return true;
 }
 
-bool GroupFilter::initAttr(const AttrTable* attrTable)
+bool GroupFilter::initAttr(const AttrTable& attrTable)
 {
     if (groupParam_.isAttrGroup_)
     {

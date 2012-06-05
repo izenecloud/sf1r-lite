@@ -46,7 +46,6 @@ bool AttrManager::processCollection()
     }
 
     const char* propName = attrTable_.propName();
-
     const docid_t startDocId = attrTable_.docIdNum();
     const docid_t endDocId = documentManager_->getMaxDocId();
     assert(startDocId && "id 0 should have been reserved in AttrTable constructor");
@@ -59,7 +58,6 @@ bool AttrManager::processCollection()
               << ", end doc id: " << endDocId;
 
     attrTable_.reserveDocIdNum(endDocId + 1);
-    AttrTable::ValueIdList valueIdList;
 
     for (docid_t docId = startDocId; docId <= endDocId; ++docId)
     {
@@ -68,40 +66,7 @@ bool AttrManager::processCollection()
             std::cout << "\rinserting doc id: " << docId << "\t" << std::flush;
         }
 
-        valueIdList.clear();
-
-        Document doc;
-        if (documentManager_->getDocument(docId, doc))
-        {
-            Document::property_iterator it = doc.findProperty(propName);
-            if (it != doc.propertyEnd())
-            {
-                const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
-                std::vector<AttrPair> attrPairs;
-                split_attr_pair(propValue, attrPairs);
-
-                try
-                {
-                    for (std::vector<AttrPair>::const_iterator pairIt = attrPairs.begin();
-                        pairIt != attrPairs.end(); ++pairIt)
-                    {
-                        AttrTable::nid_t nameId = attrTable_.insertNameId(pairIt->first);
-
-                        for (std::vector<izenelib::util::UString>::const_iterator valueIt = pairIt->second.begin();
-                            valueIt != pairIt->second.end(); ++valueIt)
-                        {
-                            AttrTable::vid_t valueId = attrTable_.insertValueId(nameId, *valueIt);
-                            valueIdList.push_back(valueId);
-                        }
-                    }
-                }
-                catch(MiningException& e)
-                {
-                    LOG(ERROR) << "exception: " << e.what() << ", doc id: " << docId;
-                }
-            }
-        }
-        attrTable_.appendValueIdList(valueIdList);
+        buildDoc_(docId, propName);
     }
     std::cout << "\rinserting doc id: " << endDocId << "\t" << std::endl;
 
@@ -112,4 +77,56 @@ bool AttrManager::processCollection()
 
     LOG(INFO) << "finished building attr index data";
     return true;
+}
+
+void AttrManager::buildDoc_(
+    docid_t docId,
+    const std::string& propName
+)
+{
+    std::vector<AttrTable::vid_t> valueIdList;
+    Document doc;
+
+    if (documentManager_->getDocument(docId, doc))
+    {
+        Document::property_iterator it = doc.findProperty(propName);
+
+        if (it != doc.propertyEnd())
+        {
+            const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
+            std::vector<AttrPair> attrPairs;
+            split_attr_pair(propValue, attrPairs);
+
+            try
+            {
+                for (std::vector<AttrPair>::const_iterator pairIt = attrPairs.begin();
+                    pairIt != attrPairs.end(); ++pairIt)
+                {
+                    AttrTable::nid_t nameId = attrTable_.insertNameId(pairIt->first);
+
+                    for (std::vector<izenelib::util::UString>::const_iterator valueIt = pairIt->second.begin();
+                        valueIt != pairIt->second.end(); ++valueIt)
+                    {
+                        AttrTable::vid_t valueId = attrTable_.insertValueId(nameId, *valueIt);
+                        valueIdList.push_back(valueId);
+                    }
+                }
+            }
+            catch(MiningException& e)
+            {
+                LOG(ERROR) << "exception: " << e.what()
+                           << ", doc id: " << docId;
+            }
+        }
+    }
+
+    try
+    {
+        attrTable_.appendValueIdList(valueIdList);
+    }
+    catch(MiningException& e)
+    {
+        LOG(ERROR) << "exception: " << e.what()
+                   << ", doc id: " << docId;
+    }
 }

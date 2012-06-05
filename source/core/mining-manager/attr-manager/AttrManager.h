@@ -41,10 +41,16 @@ public:
      */
     bool processCollection();
 
-    const AttrTable* getAttrTable() const
+    const AttrTable& getAttrTable() const
     {
-        return &attrTable_;
+        return attrTable_;
     }
+
+private:
+    void buildDoc_(
+        docid_t docId,
+        const std::string& propName
+    );
 
 private:
     sf1r::DocumentManager* documentManager_;

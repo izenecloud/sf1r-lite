@@ -14,6 +14,7 @@
 #include <common/inttypes.h>
 #include <util/ustring/UString.h>
 #include "../faceted-submanager/faceted_types.h"
+#include "../group-manager/PropIdTable.h"
 
 #include <boost/thread.hpp>
 #include <vector>
@@ -35,15 +36,13 @@ public:
     /**
      * attribute value id type.
      * as 0 is reserved as invalid id, meaning no attribute value is availabe,
-     * the valid id range is [1, 2^32) (4G ids)
+     * and as the most significant bit is used as index flag in PropIdTable,
+     * the valid id range is [1, 2^31) (2G ids)
      */
     typedef uint32_t vid_t;
 
-    /** a list of attribute value id */
-    typedef std::vector<vid_t> ValueIdList;
-
-    /** mapping from doc id to a list of attribute value id */
-    typedef std::vector<ValueIdList> ValueIdTable;
+    typedef PropIdTable<vid_t, uint32_t> ValueIdTable;
+    typedef ValueIdTable::PropIdList ValueIdList;
 
     typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ScopedReadLock;
@@ -64,11 +63,11 @@ public:
 
     std::size_t valueNum() const { return valueStrVec_.size(); }
 
-    std::size_t docIdNum() const { return valueIdTable_.size(); }
+    std::size_t docIdNum() const { return valueIdTable_.indexTable_.size(); }
 
     void reserveDocIdNum(std::size_t num);
 
-    void appendValueIdList(const AttrTable::ValueIdList& valueIdList);
+    void appendValueIdList(const std::vector<vid_t>& inputIdList);
 
     /**
      * Insert attribute name id.
@@ -115,7 +114,10 @@ public:
      * AttrTable::ScopedReadLock lock(AttrTable::getMutex());
      * </code>
      */
-    const ValueIdTable& valueIdTable() const { return valueIdTable_; }
+    void getValueIdList(docid_t docId, ValueIdList& valueIdList) const
+    {
+        valueIdTable_.getIdList(docId, valueIdList);
+    }
 
     const izenelib::util::UString& nameStr(nid_t nameId) const { return nameStrVec_[nameId]; }
 
@@ -168,8 +170,10 @@ private:
 
     /** mapping from doc id to a list of attribute value id */
     ValueIdTable valueIdTable_;
-    /** the number of elements in @c valueIdTable_ saved in file */
-    unsigned int saveDocIdNum_;
+    /** the number of elements in @c valueIdTable_.indexTable_ saved in file */
+    unsigned int saveIndexNum_;
+    /** the number of elements in @c valueIdTable_.multiValueTable_ saved in file */
+    unsigned int saveValueNum_;
 
     mutable MutexType mutex_;
 };

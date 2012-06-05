@@ -18,7 +18,7 @@ class AttrLabel
 public:
     AttrLabel(
         const std::pair<std::string, std::string>& label,
-        const AttrTable* attrTable
+        const AttrTable& attrTable
     );
 
     bool test(docid_t doc) const;
@@ -26,9 +26,9 @@ public:
     AttrTable::nid_t attrNameId() const;
 
 private:
+    const AttrTable& attrTable_;
     AttrTable::ScopedReadLock lock_;
 
-    const AttrTable::ValueIdTable& valueIdTable_;
     const AttrTable::nid_t attrNameId_;
     const AttrTable::vid_t targetValueId_;
 };

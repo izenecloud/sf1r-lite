@@ -18,6 +18,7 @@ namespace
 const char* SUFFIX_NAME_STR = ".name_str.bin";
 const char* SUFFIX_VALUE_STR = ".value_str.bin";
 const char* SUFFIX_NAME_ID = ".name_id.bin";
+const char* SUFFIX_INDEX_ID = ".index_id.bin";
 const char* SUFFIX_VALUE_ID = ".value_id.bin";
 const char* SUFFIX_NAME_VALUE = ".name_value.txt";
 
@@ -34,8 +35,8 @@ AttrTable::AttrTable()
     , saveValueStrNum_(0)
     , nameIdVec_(1)
     , saveNameIdNum_(0)
-    , valueIdTable_(1)
-    , saveDocIdNum_(0)
+    , saveIndexNum_(0)
+    , saveValueNum_(0)
 {
 }
 
@@ -52,7 +53,8 @@ bool AttrTable::open(
     if (!load_container_febird(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
         !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
         !load_container_febird(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
-        !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+        !load_container_febird(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) ||
+        !load_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_))
     {
         return false;
     }
@@ -83,7 +85,8 @@ bool AttrTable::flush()
         !save_container_febird(dirPath_, propName_ + SUFFIX_NAME_STR, nameStrVec_, saveNameStrNum_) ||
         !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_STR, valueStrVec_, saveValueStrNum_) ||
         !save_container_febird(dirPath_, propName_ + SUFFIX_NAME_ID, nameIdVec_, saveNameIdNum_) ||
-        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_, saveDocIdNum_))
+        !save_container_febird(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) ||
+        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_))
     {
         return false;
     }
@@ -95,14 +98,14 @@ void AttrTable::reserveDocIdNum(std::size_t num)
 {
     ScopedWriteLock lock(mutex_);
 
-    valueIdTable_.reserve(num);
+    valueIdTable_.indexTable_.reserve(num);
 }
 
-void AttrTable::appendValueIdList(const AttrTable::ValueIdList& valueIdList)
+void AttrTable::appendValueIdList(const std::vector<vid_t>& inputIdList)
 {
     ScopedWriteLock lock(mutex_);
 
-    valueIdTable_.push_back(valueIdList);
+    valueIdTable_.appendIdList(inputIdList);
 }
 
 AttrTable::nid_t AttrTable::insertNameId(const izenelib::util::UString& name)
