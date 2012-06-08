@@ -80,6 +80,7 @@ mdb = File.join(db_path, 'mdb')
 tmp_dir = match_path['tmp']
 result_file = match_path['result']
 train_scd = match_path['train_scd']
+psm_train_scd = match_path['psm_train_scd']
 scd = match_path['scd']
 comment_scd = match_path['comment_scd']
 cma = match_path['cma']
@@ -138,35 +139,6 @@ if mode==1 #rebuild, delete mdb_instance_list
   end
   mdb_instance_list.clear
 end
-#reindex = mdb_instance_list.empty?()?true:false
-#retrain = false
-
-##check if train_scd modified.
-#train_scd_list = ScdParser.get_scd_list(train_scd)
-#if train_scd_list.size!=1
-  #abort "train_scd number error : #{train_scd_list.size}"
-#end
-
-#saved_train_scd_status = nil
-#train_scd_status_file = File.join(status_path, "train_scd")
-#saved_train_scd_status = YAML::load_file(train_scd_status_file) if File.exist?(train_scd_status_file)
-#train_scd_file = train_scd_list.first
-#train_scd_status = {}
-#train_scd_status['mtime'] = File.mtime(train_scd_file).strftime("%Y-%m-%d %H:%M:%S")
-#train_scd_status['size'] = File.new(train_scd_file).size
-#if !saved_train_scd_status.nil? and saved_train_scd_status==train_scd_status
-  #retrain = false
-#else
-  #retrain = true
-#end
-
-#if retrain
-  #puts "re-train!!"
-  #File.open(train_scd_status_file, 'w') do |out|
-    #YAML.dump(train_scd_status, out)
-  #end
-  #system("rm -rf #{work_dir}/C*/T")
-#end
 
 task_list = []
 
@@ -258,11 +230,19 @@ task_list.each do |task|
     abort("complete matching failed") unless $?.success?
   elsif task.type == CategoryTask::SIM
     #do similarity matching
-    puts "start similarity matching #{task.cid}"
-    work_files = File.join(category_dir, "work_dir")
-    FileUtils.rm_rf(work_files) if mode>1 and File.exist?(work_files)
-    system("#{matcher_program} -I -C #{cma} -S #{raw_scd} -K #{category_dir} --dictionary #{simhash_dic}")
-    abort("similarity matching failed") unless $?.success?
+    #puts "start similarity matching #{task.cid}"
+    #work_files = File.join(category_dir, "work_dir")
+    #FileUtils.rm_rf(work_files) if mode>1 and File.exist?(work_files)
+    #system("#{matcher_program} -I -C #{cma} -S #{raw_scd} -K #{category_dir} --dictionary #{simhash_dic}")
+    #abort("similarity matching failed") unless $?.success?
+
+    puts "start psm index for #{task.cid}"
+    system("#{matcher_program} --psm-index -C #{cma} -S #{psm_train_scd} -K #{category_dir}")
+    abort("psm indexing failed") unless $?.success?
+    puts "start psm matching for #{task.cid}"
+    system("#{matcher_program} --psm-match -C #{cma} -S #{raw_scd} -K #{category_dir}")
+    abort("psm matching failed") unless $?.success?
+
   else
     next unless task.info['disable'].nil?
     #index_done = File.join(category_dir, "index.done")

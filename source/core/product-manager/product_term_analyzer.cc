@@ -30,13 +30,12 @@ ProductTermAnalyzer::~ProductTermAnalyzer()
     delete analyzer_;
 }
 
-void ProductTermAnalyzer::Analyze(const izenelib::util::UString& title, std::vector<std::string>& terms, std::vector<double>& weights)
+void ProductTermAnalyzer::Analyze(const izenelib::util::UString& title, std::vector<std::pair<std::string, double> >& doc_vector)
 {
     std::vector<idmlib::util::IDMTerm> term_list;
     analyzer_->GetTermList(title, term_list);
 
-    terms.reserve(term_list.size());
-    weights.reserve(term_list.size());
+    doc_vector.reserve(term_list.size());
 
 #ifdef PM_CLUST_TEXT_DEBUG
     std::string stitle;
@@ -62,15 +61,14 @@ void ProductTermAnalyzer::Analyze(const izenelib::util::UString& title, std::vec
         char tag = term_list[i].tag;
         double weight = GetWeight_(term_list.size(), term_list[i].text, tag);
         if( weight<=0.0 ) continue;
-        terms.push_back(str);
-        weights.push_back(weight);
+        doc_vector.push_back(std::make_pair(str, weight));
     }
 
 #ifdef PM_CLUST_TEXT_DEBUG
     std::cout<<"[ATokens] ";
-    for (uint32_t i=0;i<terms.size();i++)
+    for (uint32_t i=0;i<doc_vector.size();i++)
     {
-        std::cout<<"["<<terms[i]<<","<<weights[i]<<"],";
+        std::cout<<"["<<doc_vector[i].first<<","<<doc_vector[i].second<<"],";
     }
     std::cout<<std::endl;
 #endif
