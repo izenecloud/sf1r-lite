@@ -38,6 +38,7 @@ int main(int ac, char** av)
         ("b5mp-generate", "generate b5mp scd")
         ("b5mc-generate", "generate b5mc scd")
         ("logserver-update", "update logserver")
+        ("match-test,T", "b5m matching test")
         ("mdb-instance", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
@@ -61,7 +62,7 @@ int main(int ac, char** av)
         ("scd-split,P", "split scd files for each categories.")
         ("name,N", po::value<std::string>(), "specify the name")
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
-        ("match-test,T", "b5m matching test")
+        ("test", "specify test flag")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -91,6 +92,7 @@ int main(int ac, char** av)
     std::string cma_path = IZENECMA_KNOWLEDGE ;
     std::string work_dir;
     std::string name;
+    bool test_flag = false;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
     } 
@@ -189,6 +191,10 @@ int main(int ac, char** av)
         name = vm["name"].as<std::string>();
         std::cout<< "name set to "<<name<<std::endl;
     }
+    if(vm.count("test"))
+    {
+        test_flag = true;
+    }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
 
     if(vm.count("raw-generate"))
@@ -272,7 +278,7 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
         PsmIndexer psm(cma_path);
-        psm.Index(scd_path, knowledge_dir);
+        psm.Index(scd_path, knowledge_dir, test_flag);
     }
     if(vm.count("psm-match"))
     {
@@ -281,7 +287,11 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
         PsmIndexer psm(cma_path);
-        psm.DoMatch(scd_path, knowledge_dir);
+        if(!psm.DoMatch(scd_path, knowledge_dir))
+        {
+            LOG(ERROR)<<"psm matching fail"<<std::endl;
+            return EXIT_FAILURE;
+        }
     }
     if(vm.count("complete-match"))
     {

@@ -1,6 +1,5 @@
 #include "psm_indexer.h"
 #include <product-manager/product_term_analyzer.h>
-#include <idmlib/duplicate-detection/psm.h>
 #include <util/ClockTimer.h>
 #include <util/filesystem.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -8,7 +7,7 @@
 using namespace sf1r;
 
 PsmIndexer::PsmIndexer(const std::string& cma_path)
-:cma_path_(cma_path)
+:cma_path_(cma_path), psmk_(400)
 {
 }
 
@@ -112,9 +111,8 @@ bool PsmIndexer::Index(const std::string& scd_path, const std::string& output_pa
     }
     dd.RunDdAnalysis();
     const std::vector<std::vector<uint32_t> >& group_info = group_table.GetGroupInfo();
-    typedef idmlib::dd::PSM<64, 3, std::string, std::string, PsmAttach> PsmType;
     PsmType psm(psm_path);
-    psm.SetK(400);
+    psm.SetK(psmk_);
     psm.Open();
     std::vector<uint32_t> group_centroid(group_info.size(), 0);
     for(uint32_t gid = 0;gid<group_info.size();gid++)
@@ -193,12 +191,9 @@ bool PsmIndexer::Index(const std::string& scd_path, const std::string& output_pa
                 bool b = psm.Search(cache.doc_vector, cache.attach, key);
                 search_time += timer.elapsed();
                 search_count += 1;
-                if(b)
+                if(b&&key==okey)
                 {
-                    if(key==okey)
-                    {
-                        correct+=1;
-                    }
+                    correct+=1;
                 }
             }
             aexpect += in_group.size()-1;
@@ -288,9 +283,8 @@ bool PsmIndexer::DoMatch(const std::string& scd_path, const std::string& knowled
         LOG(ERROR)<<"psm not ready"<<std::endl;
         return false;
     }
-    typedef idmlib::dd::PSM<64, 3, std::string, std::string, PsmAttach> PsmType;
     PsmType psm(psm_path);
-    psm.SetK(400);
+    psm.SetK(psmk_);
     psm.Open();
     LOG(INFO)<<"psm opened"<<std::endl;
     ProductTermAnalyzer analyzer(cma_path_);
@@ -336,5 +330,6 @@ bool PsmIndexer::DoMatch(const std::string& scd_path, const std::string& knowled
         }
     }
     match_ofs.close();
+    return true;
 }
 

@@ -27,7 +27,7 @@ int main(int ac, char** av)
 {
     //std::string p1(av[1]);
     //double w1 = boost::lexical_cast<double>(p1);
-    typedef idmlib::dd::PSM<64, 3, std::string, std::string, PriceAttach> PSMType;
+    typedef idmlib::dd::PSM<64, 3, 24, std::string, std::string, PriceAttach> PSMType;
     std::string tmp_path = "./psm_test";
     boost::filesystem::remove_all(tmp_path);
     boost::filesystem::create_directories(tmp_path);

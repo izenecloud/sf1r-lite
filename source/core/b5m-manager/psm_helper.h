@@ -38,6 +38,11 @@ namespace sf1r {
             if(ratio>2.2) return false;
             return true;
         }
+        friend std::ostream& operator<<(std::ostream& out, const PsmAttach& attach)
+        {
+            out<<"price "<<attach.price.ToString()<<", id "<<attach.id<<", cid "<<attach.cid;
+            return out;
+        }
     };
 
     class PsmHelper

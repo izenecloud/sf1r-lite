@@ -12,6 +12,7 @@
 #include <glog/logging.h>
 #include <boost/unordered_map.hpp>
 #include <idmlib/duplicate-detection/dup_detector.h>
+#include <idmlib/duplicate-detection/psm.h>
 
 namespace sf1r {
 
@@ -32,13 +33,16 @@ namespace sf1r {
     public:
         typedef idmlib::dd::DupDetector<uint32_t, uint32_t, PsmAttach> DDType;
         typedef DDType::GroupTableType GroupTableType;
+        typedef idmlib::dd::PSM<64, 3, 24, std::string, std::string, PsmAttach> PsmType;
         PsmIndexer(const std::string& cma_path);
+        void SetPsmK(uint32_t k) {psmk_ = k;}
         
         bool Index(const std::string& scd_path, const std::string& output_path, bool test = false);
         bool DoMatch(const std::string& scd_path, const std::string& knowledge_dir);
 
     private:
         std::string cma_path_;
+        uint32_t psmk_;
     };
 
 }
