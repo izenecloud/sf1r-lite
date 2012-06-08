@@ -9,7 +9,6 @@
 #include <util/hashFunction.h>
 #include <stdint.h>
 #include <algorithm>
-#include <am/graph_index/dyn_array.hpp>
 #include <common/type_defs.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>

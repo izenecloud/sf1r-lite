@@ -7,13 +7,13 @@
 #define _WORD_COMPLETION_TABLE_HPP_
 
 #include <types.h>
-#include <am/graph_index/dyn_array.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/filesystem.hpp>
 #include <stdio.h>
 #include <string>
-#include "value_shared_table.h"
+#include <am/dyn_array.hpp>
 #include <am/external_sort/izene_sort.hpp>
+#include "value_shared_table.h"
 #include <algorithm>
 #include <sdb/SequentialDB.h>
 #include <util/ustring/UString.h>

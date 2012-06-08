@@ -17,7 +17,7 @@
 #include <boost/filesystem.hpp>
 
 #include <algorithm>
-#include <am/graph_index/dyn_array.hpp>
+#include <am/dyn_array.hpp>
 #include <time.h>
 #include <boost/thread/mutex.hpp>
 
