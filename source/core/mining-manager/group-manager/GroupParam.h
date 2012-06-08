@@ -75,12 +75,12 @@ struct GroupParam
     /** the number of attributes to return */
     int attrGroupNum_;
 
-    /** the attribute label contains a pair of attribute name and value */
-    typedef std::pair<std::string, std::string> AttrLabel;
-    /** a list of attribute labels */
-    typedef std::vector<AttrLabel> AttrLabelVec;
+    /** a list of attribute values for one attribute name */
+    typedef std::vector<std::string> AttrValueVec;
+    /** map from attribute name to attribute values */
+    typedef std::map<std::string, AttrValueVec> AttrLabelMap;
     /** selected attribute labels */
-    AttrLabelVec attrLabels_;
+    AttrLabelMap attrLabels_;
 
     bool isEmpty() const;
     bool isGroupEmpty() const;

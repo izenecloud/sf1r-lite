@@ -10,6 +10,7 @@
 
 #include "../faceted-submanager/faceted_types.h"
 #include "AttrTable.h"
+#include <set>
 
 NS_FACETED_BEGIN
 
@@ -17,8 +18,9 @@ class AttrLabel
 {
 public:
     AttrLabel(
-        const std::pair<std::string, std::string>& label,
-        const AttrTable* attrTable
+        const AttrTable& attrTable,
+        const std::string& attrName,
+        const std::vector<std::string>& attrValues
     );
 
     bool test(docid_t doc) const;
@@ -26,9 +28,15 @@ public:
     AttrTable::nid_t attrNameId() const;
 
 private:
-    const AttrTable::ValueIdTable& valueIdTable_;
+    void getTargetValueIds_(const std::vector<std::string>& attrValues);
+
+private:
+    const AttrTable& attrTable_;
+    AttrTable::ScopedReadLock lock_;
+
     const AttrTable::nid_t attrNameId_;
-    const AttrTable::vid_t targetValueId_;
+    std::set<AttrTable::vid_t> targetValueIds_;
+    std::set<AttrTable::vid_t>::const_iterator targetIterEnd_;
 };
 
 NS_FACETED_END

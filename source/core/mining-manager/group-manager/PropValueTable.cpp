@@ -20,6 +20,9 @@ const char* SUFFIX_PARENT_ID = ".parent_id.bin";
 const char* SUFFIX_INDEX_ID = ".index_id.bin";
 const char* SUFFIX_VALUE_ID = ".value_id.bin";
 const char* SUFFIX_PARENT_STR = ".parent_str.txt";
+
+const izenelib::util::UString::EncodingType ENCODING_TYPE =
+    izenelib::util::UString::UTF_8;
 }
 
 NS_FACETED_BEGIN
@@ -161,6 +164,7 @@ bool PropValueTable::open()
         return false;
     }
 
+    LOG(INFO) << "loading " << valueNum << " prop values into map";
     childMapTable_.clear();
     childMapTable_.resize(valueNum);
     for (unsigned int i = 1; i < valueNum; ++i)
@@ -194,18 +198,18 @@ bool PropValueTable::saveParentId_(const std::string& dirPath, const std::string
     const unsigned int valueNum = propStrVec_.size();
     if (valueNum != parentIdVec_.size())
     {
-        LOG(ERROR) << "unequal property value number in propStrVec_ and parentIdVec_ ";
+        LOG(ERROR) << "unequal property value number in propStrVec_ and parentIdVec_";
         return false;
     }
 
-    if (savePropStrNum_ >= propStrVec_.size())
+    if (savePropStrNum_ >= valueNum)
         return true;
 
     boost::filesystem::path filePath(dirPath);
     filePath /= fileName;
     std::string pathStr = filePath.string();
 
-    LOG(INFO) << "saving file: " << pathStr
+    LOG(INFO) << "saving file: " << fileName
               << ", element num: " << valueNum;
 
     std::ofstream ofs(pathStr.c_str());
@@ -216,12 +220,15 @@ bool PropValueTable::saveParentId_(const std::string& dirPath, const std::string
     }
 
     std::string convertBuffer;
-    for (unsigned int i = 1; i < valueNum; ++i)
+    for (unsigned int valueId = 1; valueId < valueNum; ++valueId)
     {
-        propStrVec_[i].convertString(convertBuffer, UString::UTF_8);
+        propStrVec_[valueId].convertString(convertBuffer, ENCODING_TYPE);
+
         // columns: id, str, parentId
-        ofs << i << "\t" << convertBuffer << "\t" << parentIdVec_[i] << std::endl;
+        ofs << valueId << "\t" << convertBuffer << "\t"
+            << parentIdVec_[valueId] << std::endl;
     }
+
     return true;
 }
 

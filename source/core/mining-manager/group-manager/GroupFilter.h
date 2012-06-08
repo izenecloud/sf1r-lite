@@ -38,7 +38,7 @@ public:
     /**
      * @return true for success, false for failure
      */
-    bool initAttr(const AttrTable* attrTable);
+    bool initAttr(const AttrTable& attrTable);
 
     /**
      * Check whether doc belongs to the labels in @c groupParam_.

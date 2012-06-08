@@ -62,33 +62,29 @@ void getTopNameIds(
 
 NS_FACETED_BEGIN
 
-AttrCounter::AttrCounter(const AttrTable* attrTable)
+AttrCounter::AttrCounter(const AttrTable& attrTable)
     : attrTable_(attrTable)
-    , valueIdTable_(attrTable->valueIdTable())
-    , nameCountTable_(attrTable->nameNum())
-    , valueIdNum_(attrTable->valueNum())
+    , lock_(attrTable.getMutex())
+    , nameCountTable_(attrTable.nameNum())
+    , valueIdNum_(attrTable.valueNum())
     , valueCountTable_(valueIdNum_)
 {
 }
 
 void AttrCounter::addDoc(docid_t doc)
 {
-    // this doc has no attr index data yet
-    if (doc >= valueIdTable_.size())
-        return;
-
-    const AttrTable::ValueIdList& valueIdList = valueIdTable_[doc];
     std::set<AttrTable::nid_t> nameIdSet;
+    AttrTable::ValueIdList valueIdList;
+    attrTable_.getValueIdList(doc, valueIdList);
 
-    for (AttrTable::ValueIdList::const_iterator valueIt = valueIdList.begin();
-        valueIt != valueIdList.end(); ++valueIt)
+    for (std::size_t i = 0; i < valueIdList.size(); ++i)
     {
-        AttrTable::vid_t vId = *valueIt;
+        AttrTable::vid_t vId = valueIdList[i];
         if (vId < valueIdNum_)
         {
             ++valueCountTable_[vId];
 
-            AttrTable::nid_t nameId = attrTable_->valueId2NameId(vId);
+            AttrTable::nid_t nameId = attrTable_.valueId2NameId(vId);
             if (nameIdSet.insert(nameId).second)
             {
                 ++nameCountTable_[nameId];
@@ -99,19 +95,16 @@ void AttrCounter::addDoc(docid_t doc)
 
 void AttrCounter::addAttrDoc(AttrTable::nid_t nId, docid_t doc)
 {
-    // this doc has no attr index data yet
-    if (doc >= valueIdTable_.size())
-        return;
-
-    const AttrTable::ValueIdList& valueIdList = valueIdTable_[doc];
     bool findNameId = false;
+    AttrTable::ValueIdList valueIdList;
+    attrTable_.getValueIdList(doc, valueIdList);
 
-    for (AttrTable::ValueIdList::const_iterator valueIt = valueIdList.begin();
-        valueIt != valueIdList.end(); ++valueIt)
+    for (std::size_t i = 0; i < valueIdList.size(); ++i)
     {
-        AttrTable::vid_t vId = *valueIt;
-        if (vId < valueIdNum_
-            && attrTable_->valueId2NameId(vId) == nId)
+        AttrTable::vid_t vId = valueIdList[i];
+
+        if (vId < valueIdNum_ &&
+            attrTable_.valueId2NameId(vId) == nId)
         {
             ++valueCountTable_[vId];
             findNameId = true;
@@ -134,7 +127,7 @@ void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
         int count = valueCountTable_[valueId];
         if (count)
         {
-            AttrTable::nid_t nameId = attrTable_->valueId2NameId(valueId);
+            AttrTable::nid_t nameId = attrTable_.valueId2NameId(valueId);
             nameCountMap[nameId][valueId] = count;
         }
     }
@@ -149,7 +142,7 @@ void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
         // attribute name as root node
         itemList.push_back(OntologyRepItem());
         OntologyRepItem& nameItem = itemList.back();
-        nameItem.text = attrTable_->nameStr(*nameIt);
+        nameItem.text = attrTable_.nameStr(*nameIt);
         nameItem.doc_count = nameCountTable_[*nameIt];
 
         // attribute values are appended as level 1
@@ -160,7 +153,7 @@ void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
             itemList.push_back(OntologyRepItem());
             OntologyRepItem& valueItem = itemList.back();
             valueItem.level = 1;
-            valueItem.text = attrTable_->valueStr(mapIt->first);
+            valueItem.text = attrTable_.valueStr(mapIt->first);
             valueItem.doc_count = mapIt->second;
         }
     }

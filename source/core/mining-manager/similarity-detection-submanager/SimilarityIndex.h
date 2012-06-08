@@ -24,7 +24,6 @@
 #include <algorithm>
 #include <am/sdb_hash/sdb_fixedhash.h>
 #include <am/external_sort/izene_sort.hpp>
-#include <ir/mr_word_id/bigram_freq.hpp>
 #include <boost/unordered_map.hpp>
 namespace sf1r {
 namespace sim {
@@ -93,8 +92,6 @@ public:
 //        weightTable_.setMergeFactor(4);
 //        weightTable_.open();
 
-//        pairTable_=new izenelib::ir::BigramFrequency<>((filePrefix_+"/pair.table").c_str());
-//        pairTable_->load();
 
         sorter_=new izenelib::am::IzeneSort<uint32_t, uint8_t, true>((filePrefix_+"/pair.sort").c_str(), 100000000);
 
@@ -198,7 +195,6 @@ private:
     mutable boost::shared_ptr<Hash> db_;
     boost::shared_ptr<INT_FIXED_HASH> simCount_;
 //    mutable HugeDB weightTable_;
-//    izenelib::ir::BigramFrequency<>* pairTable_;
     izenelib::am::IzeneSort<uint32_t, uint8_t, true>* sorter_;
 
 

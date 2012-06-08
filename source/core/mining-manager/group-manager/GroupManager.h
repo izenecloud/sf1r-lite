@@ -66,6 +66,13 @@ public:
     }
 
 private:
+    void buildDoc_(
+        docid_t docId,
+        const std::string& propName,
+        PropValueTable& pvTable
+    );
+
+private:
     sf1r::DocumentManager* documentManager_;
     std::string dirPath_;
 

@@ -261,12 +261,20 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
     out << "attrGroupNum_: " << groupParam.attrGroupNum_ << std::endl;
 
     out << "attrLabels_: ";
-    for (std::size_t i = 0; i < groupParam.attrLabels_.size(); ++i)
+    for (GroupParam::AttrLabelMap::const_iterator labelIt = groupParam.attrLabels_.begin();
+        labelIt != groupParam.attrLabels_.end(); ++labelIt)
     {
-        const GroupParam::AttrLabel& attrLabel = groupParam.attrLabels_[i];
-        out << "(" << attrLabel.first << ", " << attrLabel.second << "), ";
+        const std::string& attrName = labelIt->first;
+        const GroupParam::AttrValueVec& valueVec = labelIt->second;
+
+        out << "\t" << attrName << ": ";
+        for (GroupParam::AttrValueVec::const_iterator valueIt = valueVec.begin();
+            valueIt != valueVec.end(); ++valueIt)
+        {
+            out << *valueIt << ", ";
+        }
+        out << std::endl;
     }
-    out << std::endl;
 
     return out;
 }

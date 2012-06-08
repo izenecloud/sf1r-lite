@@ -32,7 +32,6 @@ private:
 
 private:
     const PropValueTable& propValueTable_;
-    PropValueTable::MutexType& mutex_;
     PropValueTable::ScopedReadLock lock_;
 
     std::vector<PropValueTable::pvid_t> targetValueIds_;
