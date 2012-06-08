@@ -86,7 +86,6 @@ public:
 
         if ( srcLen == 0 )
         {
-            cout << "warning : documents data is 0 before compress. ======" << endl;
             return false;
         }
 
@@ -96,15 +95,7 @@ public:
             return false;
         STOP_PROFILER( proDocumentCompression )
 
-        bool ret = containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::APPEND);
-
-        if (ret)
-        {
-            unsigned int id = docId;
-            containerPtr_->put(0, &id, sizeof(unsigned int), Lux::IO::OVERWRITE);
-        }
-
-        return ret;
+        return containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::APPEND);
     }
 
     bool get(const unsigned int docId, Document& doc)
@@ -126,14 +117,12 @@ public:
         if ( val_p->size - sizeof(uint32_t) == 0 )
         {
             containerPtr_->clean_data(val_p);
-            cout << "warning : documents compressed data is 0. ======" << endl;
             return false;
         }
 
         const uint32_t allocSize = *reinterpret_cast<const uint32_t*>(val_p->data);
         unsigned char* p = new unsigned char[allocSize];
         bool re = compressor_.decompress((const unsigned char*)val_p->data + sizeof(uint32_t), val_p->size - sizeof(uint32_t), p, allocSize);
-        //int re = bmz_unpack(val_p->data, val_p->size, p, &tmpTarLen, NULL);
 
         if (!re)
         {
@@ -143,7 +132,6 @@ public:
         }
 
         nsz = allocSize; //
-        //char *p =(char*)_tc_bzdecompress((const char*)val_p->data, val_p->size, &nsz);
         //STOP_PROFILER(proDocumentDecompression)
 
         izene_deserialization<Document> izd((char*)p, nsz);
@@ -187,7 +175,6 @@ public:
 
         if ( srcLen == 0)
         {
-            cout << "warning : documents data is 0 before compress. ======" << endl;
             return false;
         }
         bool re = compressor_.compress((const unsigned char*)src, srcLen, destPtr.get() + sizeof(uint32_t), destLen);
@@ -213,6 +200,8 @@ private:
     {
         try
         {
+            ///Not Used. Array[0] could be used to store maxDocID since all doc ids start from 1
+            containerPtr_->put(0, &maxDocID_, sizeof(unsigned int), Lux::IO::OVERWRITE);
             std::ofstream ofs(maxDocIdDb_.c_str());
             if (ofs)
             {
