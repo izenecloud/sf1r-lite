@@ -836,6 +836,8 @@ void DocumentsController::set_top_group_label()
  *   "collection": "ChnWiki",
  *   "resource": {
  *     "DOCID": "post.1",
+ *     "session_id": "session_001",
+ *     "context": "keywords",
  *   }
  * }
  * @endcode
@@ -847,6 +849,12 @@ void DocumentsController::visit()
     uint64_t internalId = 0;
     Value& docidValue = request()[Keys::resource][Keys::DOCID];
     std::string docidStr = asString(docidValue);
+
+    std::string context;///Not used
+    Value& sessionValue = request()[Keys::resource][Keys::session_id];
+    context = asString(sessionValue);
+    Value& contextValue = request()[Keys::resource][Keys::context];
+    context = asString(contextValue);
 
     if (indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(docidStr), internalId)
             && internalId != 0)
