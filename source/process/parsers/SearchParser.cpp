@@ -91,6 +91,7 @@ using driver::Keys;
  * {
  *   "keywords": "test",
  *   "USERID": "56",
+ *   "session_id":"session_123"
  *   "in": [
  *     {"property": "title"},
  *     {"property": "content"}

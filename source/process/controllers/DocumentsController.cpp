@@ -836,6 +836,7 @@ void DocumentsController::set_top_group_label()
  *   "collection": "ChnWiki",
  *   "resource": {
  *     "DOCID": "post.1",
+ *     "USERID": "56",
  *     "session_id": "session_001",
  *     "context": "keywords",
  *   }
