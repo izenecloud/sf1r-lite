@@ -851,6 +851,8 @@ void DocumentsController::visit()
     std::string docidStr = asString(docidValue);
 
     std::string context;///Not used
+    Value& userIDValue = request()[Keys::resource][Keys::USERID];
+    context = asString(userIDValue);
     Value& sessionValue = request()[Keys::resource][Keys::session_id];
     context = asString(sessionValue);
     Value& contextValue = request()[Keys::resource][Keys::context];
