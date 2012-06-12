@@ -147,11 +147,10 @@ void TermDocumentIterator::doc_item(
             pIndexReader_->docLength(doc(), propertyId_)
         );
 
-        TermPositions* pPositions = dynamic_cast<TermPositions*>(pTermDocReader_);
-        if (readPositions_ && pPositions)
+        if (readPositions_)
         {
             START_PROFILER ( get_position )
-
+            TermPositions* pPositions = reinterpret_cast<TermPositions*>(pTermDocReader_);
             rankDocumentProperty.activate(termIndex_);
 
             loc_t pos = pPositions->nextPosition();
