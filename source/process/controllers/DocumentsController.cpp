@@ -840,12 +840,11 @@ void DocumentsController::set_top_group_label()
  *     "USERID":"111",
  *     "session_id":"session_123",
  *     "context":
- *     {
- *       "query":"keywords",
- *       "rank":"3"
- *     }
- *   }
- * } 
+ *    {
+ *      "query":"keywords",
+ *      "rank":"bm25:desc",
+ *      "pos":"2"
+ *    }
  * }
  * @endcode
  */
@@ -866,6 +865,8 @@ void DocumentsController::visit()
     context = asString(queryValue);
     Value& rankValue = request()[Keys::resource][Keys::context][Keys::rank];
     context = asString(rankValue);
+    Value& posValue = request()[Keys::resource][Keys::context][Keys::pos];
+    context = asString(posValue);
 
     if (indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(docidStr), internalId)
             && internalId != 0)
