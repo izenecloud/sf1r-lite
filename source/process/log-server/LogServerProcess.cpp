@@ -73,11 +73,11 @@ void LogServerProcess::stop()
 bool LogServerProcess::initRpcLogServer()
 {
     rpcLogServer_.reset(
-            new RpcLogServer(
-                LogServerCfg::get()->getLocalHost(),
-                LogServerCfg::get()->getRpcServerPort(),
-                LogServerCfg::get()->getRpcThreadNum()
-            ));
+        new RpcLogServer(
+            LogServerCfg::get()->getLocalHost(),
+            LogServerCfg::get()->getRpcServerPort(),
+            LogServerCfg::get()->getRpcThreadNum()
+        ));
 
     if (rpcLogServer_ && rpcLogServer_->init())
     {
@@ -90,10 +90,10 @@ bool LogServerProcess::initRpcLogServer()
 bool LogServerProcess::initDriverLogServer()
 {
     driverLogServer_.reset(
-            new DriverLogServer(
-                LogServerCfg::get()->getDriverServerPort(),
-                LogServerCfg::get()->getDriverThreadNum()
-            ));
+        new DriverLogServer(
+            LogServerCfg::get()->getDriverServerPort(),
+            LogServerCfg::get()->getDriverThreadNum()
+        ));
 
     if (driverLogServer_ && driverLogServer_->init())
     {
