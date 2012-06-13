@@ -20,7 +20,16 @@ public:
     {
         static boost::uuids::uuid uuid_raw;
         Gen_(uuid_raw);
-        uuid_str = boost::uuids::to_string(uuid_raw);
+        std::string uuid_str_raw = boost::uuids::to_string(uuid_raw);
+        uuid_str.resize(32);
+        std::size_t pos = 0;
+        for(std::size_t i=0;i<uuid_str_raw.length();i++)
+        {
+            if(uuid_str_raw[i]!='-')
+            {
+                uuid_str[pos++] = uuid_str_raw[i];
+            }
+        }
     }
 
     static void Gen(uint128_t& uuid_int)
