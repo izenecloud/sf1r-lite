@@ -55,6 +55,16 @@ public:
         return userID_;
     }
 
+    std::string& mutableSessionID()
+    {
+        return sessionID_;
+    }
+
+    const std::string& sessionID() const
+    {
+        return sessionID_;
+    }
+
     std::string& mutableTaxonomyLabel()
     {
         return taxonomyLabel_;
@@ -138,6 +148,7 @@ private:
 
     std::string keywords_;
     std::string userID_;
+    std::string sessionID_;
     std::string taxonomyLabel_;
     std::string nameEntityType_;
     std::string nameEntityItem_;

@@ -91,6 +91,7 @@ using driver::Keys;
  * {
  *   "keywords": "test",
  *   "USERID": "56",
+ *   "session_id":"session_123"
  *   "in": [
  *     {"property": "title"},
  *     {"property": "content"}
@@ -123,6 +124,7 @@ bool SearchParser::parse(const Value& search)
     }
 
     userID_ = asString(search[Keys::USERID]);
+    sessionID_ = asString(search[Keys::session_id]);
 
     int labelCount = 0;
     if (search.hasKey(Keys::taxonomy_label))

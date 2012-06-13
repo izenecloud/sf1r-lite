@@ -833,10 +833,18 @@ void DocumentsController::set_top_group_label()
  *
  * @code
  * {
- *   "collection": "ChnWiki",
- *   "resource": {
- *     "DOCID": "post.1",
- *   }
+ *   "collection":"ChnWiki",
+ *   "resource":
+ *   {
+ *     "DOCID":"12345",
+ *     "USERID":"111",
+ *     "session_id":"session_123",
+ *     "context":
+ *    {
+ *      "query":"keywords",
+ *      "rank":"bm25:desc",
+ *      "pos":"2"
+ *    }
  * }
  * @endcode
  */
@@ -847,6 +855,18 @@ void DocumentsController::visit()
     uint64_t internalId = 0;
     Value& docidValue = request()[Keys::resource][Keys::DOCID];
     std::string docidStr = asString(docidValue);
+
+    std::string context;///Not used
+    Value& userIDValue = request()[Keys::resource][Keys::USERID];
+    context = asString(userIDValue);
+    Value& sessionValue = request()[Keys::resource][Keys::session_id];
+    context = asString(sessionValue);
+    Value& queryValue = request()[Keys::resource][Keys::context][Keys::query];
+    context = asString(queryValue);
+    Value& rankValue = request()[Keys::resource][Keys::context][Keys::rank];
+    context = asString(rankValue);
+    Value& posValue = request()[Keys::resource][Keys::context][Keys::pos];
+    context = asString(posValue);
 
     if (indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(docidStr), internalId)
             && internalId != 0)
