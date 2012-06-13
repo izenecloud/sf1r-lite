@@ -833,13 +833,19 @@ void DocumentsController::set_top_group_label()
  *
  * @code
  * {
- *   "collection": "ChnWiki",
- *   "resource": {
- *     "DOCID": "post.1",
- *     "USERID": "56",
- *     "session_id": "session_001",
- *     "context": "keywords",
+ *   "collection":"ChnWiki",
+ *   "resource":
+ *   {
+ *     "DOCID":"12345",
+ *     "USERID":"111",
+ *     "session_id":"session_123",
+ *     "context":
+ *     {
+ *       "query":"keywords",
+ *       "rank":"3"
+ *     }
  *   }
+ * } 
  * }
  * @endcode
  */
@@ -856,8 +862,10 @@ void DocumentsController::visit()
     context = asString(userIDValue);
     Value& sessionValue = request()[Keys::resource][Keys::session_id];
     context = asString(sessionValue);
-    Value& contextValue = request()[Keys::resource][Keys::context];
-    context = asString(contextValue);
+    Value& queryValue = request()[Keys::resource][Keys::context][Keys::query];
+    context = asString(queryValue);
+    Value& rankValue = request()[Keys::resource][Keys::context][Keys::rank];
+    context = asString(rankValue);
 
     if (indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(docidStr), internalId)
             && internalId != 0)
