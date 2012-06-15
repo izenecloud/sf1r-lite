@@ -7,6 +7,9 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/bimap.hpp>
+#include <boost/bimap/set_of.hpp>
+#include <boost/bimap/multiset_of.hpp>
 
 #include <glog/logging.h>
 
@@ -26,11 +29,11 @@ void LogDispatchHandler::Init()
     // call back for drum dispatcher
     LogServerStorage::get()->uuidDrumDispatcher().registerOp(
         LogServerStorage::UuidDrumDispatcherType::UNIQUE_KEY_CHECK,
-        boost::bind(&LogDispatchHandler::onUniqueKeyCheck, this, _1, _2, _3));
+        boost::bind(&LogDispatchHandler::OnUniqueKeyCheck, this, _1, _2, _3));
 
     LogServerStorage::get()->uuidDrumDispatcher().registerOp(
         LogServerStorage::UuidDrumDispatcherType::DUPLICATE_KEY_CHECK,
-        boost::bind(&LogDispatchHandler::onDuplicateKeyCheck, this, _1, _2, _3));
+        boost::bind(&LogDispatchHandler::OnDuplicateKeyCheck, this, _1, _2, _3));
 
     // collections of which log need to be updated
     driverCollections_ = LogServerCfg::get()->getDriverCollections();
@@ -686,14 +689,19 @@ std::string LogDispatchHandler::UpdateUuidStr_(const std::string& uuidStr)
     return uuidStr;
 }
 
+///Get suitable UUID according to DOCID list.
+///The policy is, return the most frequent UUID
 bool LogDispatchHandler::GetUuidByDocidList_(
     const std::vector<uint128_t>& docidList, 
     std::vector<uint128_t>& uuids)
 {
     boost::lock_guard<boost::mutex> lockDocidDrum(LogServerStorage::get()->docidDrumMutex());
 
+    using namespace boost::bimaps;
+    typedef boost::bimap<set_of<uint128_t>, multiset_of<unsigned> > uuid_freq_map_type;
+ 
     bool ret = false;
-    std::set<uint128_t> uuidUniqueSet;
+    uuid_freq_map_type uuid_freq_map;
 
     std::vector<uint128_t>::const_iterator it;
     for (it = docidList.begin(); it != docidList.end(); ++it)
@@ -702,17 +710,27 @@ bool LogDispatchHandler::GetUuidByDocidList_(
         if (LogServerStorage::get()->docidDrum()->GetValue(*it, uuid))
         {
             ret = true;
-            if (uuidUniqueSet.insert(uuid).second == true)
+            uuid_freq_map_type::left_map::const_iterator uuid_left_it = uuid_freq_map.left.find(uuid);
+            if(uuid_left_it == uuid_freq_map.left.end())
+                uuid_freq_map.left.insert(uuid_freq_map_type::left_map::value_type(uuid, 1));
+            else
             {
-                uuids.push_back(uuid);
+                uuid_freq_map.left.erase(uuid);
+                uuid_freq_map.left.insert(uuid_freq_map_type::left_map::value_type(uuid, uuid_left_it->second + 1));
             }
         }
+    }
+
+    if(ret)
+    {
+        uuid_freq_map_type::right_map::const_reverse_iterator iter = uuid_freq_map.right.rbegin();
+        uuids.push_back(iter->second);
     }
 
     return ret;
 }
 
-void LogDispatchHandler::onUniqueKeyCheck(
+void LogDispatchHandler::OnUniqueKeyCheck(
     const LogServerStorage::uuid_t& uuid,
     const LogServerStorage::raw_docid_list_t& docidList,
     const std::string& aux)
@@ -723,7 +741,7 @@ void LogDispatchHandler::onUniqueKeyCheck(
     ///OutputCclog_(fileName, json);
 }
 
-void LogDispatchHandler::onDuplicateKeyCheck(
+void LogDispatchHandler::OnDuplicateKeyCheck(
     const LogServerStorage::uuid_t& uuid,
     const LogServerStorage::raw_docid_list_t& docidList,
     const std::string& aux)
@@ -747,7 +765,7 @@ void LogDispatchHandler::onDuplicateKeyCheck(
         boost::lock_guard<boost::mutex> lock(cclog_merge_mutex_);
         cclogMergeUnit->uuidUpdateVec_.push_back(std::make_pair(uuid, newUuidSet));
         if (cclogMergeUnit->uuidCnt_ == cclogMergeUnit->uuidUpdateVec_.size())
-            mergeCClog(cclogMergeUnit);
+            MergeCClog_(cclogMergeUnit);
     }
     else
     {
@@ -771,7 +789,7 @@ void LogDispatchHandler::onDuplicateKeyCheck(
     }
 }
 
-void LogDispatchHandler::mergeCClog(
+void LogDispatchHandler::MergeCClog_(
     boost::shared_ptr<CCLogMerge>& cclogMergeUnit)
 {
     // join all uuids' update

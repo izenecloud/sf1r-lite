@@ -94,13 +94,13 @@ private:
     bool GetUuidByDocidList_(const std::vector<uint128_t>& docidList, std::vector<uint128_t>& uuids);
 
     /// reserved
-    void onUniqueKeyCheck(
+    void OnUniqueKeyCheck(
         const LogServerStorage::uuid_t& uuid,
         const LogServerStorage::raw_docid_list_t& docidList,
         const std::string& aux);
 
     /// reserved
-    void onDuplicateKeyCheck(
+    void OnDuplicateKeyCheck(
         const LogServerStorage::uuid_t& uuid,
         const LogServerStorage::raw_docid_list_t& docidList,
         const std::string& aux);
@@ -118,7 +118,7 @@ private:
     };
 
     /// reserved
-    void mergeCClog(boost::shared_ptr<CCLogMerge>& cclogMergeUnit);
+    void MergeCClog_(boost::shared_ptr<CCLogMerge>& cclogMergeUnit);
 
     struct OutFile
     {
