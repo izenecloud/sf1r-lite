@@ -32,6 +32,12 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND AND Boost_SERIALIZATION_FOUND
     )
   TARGET_LINK_LIBRARIES(t_ClickCounterDB ${libs})
 
+  ADD_EXECUTABLE(t_SDBWrapper
+    Runner.cpp
+    t_SDBWrapper.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_SDBWrapper ${libs})
+
   ADD_EXECUTABLE(t_Utilities
     Runner.cpp
     t_Utilities.cpp
