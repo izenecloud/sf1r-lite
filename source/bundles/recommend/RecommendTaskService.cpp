@@ -262,7 +262,7 @@ RecommendTaskService::RecommendTaskService(
     EventManager& eventManager,
     RateManager& rateManager,
     ItemIdGenerator& itemIdGenerator,
-    QueryClickCounter& queryPurchaseCounter,
+    QueryPurchaseCounter& queryPurchaseCounter,
     UpdateRecommendBase& updateRecommendBase,
     UpdateRecommendWorker* updateRecommendWorker
 )
@@ -674,7 +674,7 @@ bool RecommendTaskService::saveOrder_(
     orderManager_.addOrder(itemIdVec);
 
     if (purchaseManager_.addPurchaseItem(userIdStr, itemIdVec, matrix) &&
-        insertClickCounterDB_(orderItemVec, itemIdVec) &&
+        insertPurchaseCounter_(orderItemVec, itemIdVec) &&
         insertOrderDB_(userIdStr, orderIdStr, orderItemVec, itemIdVec))
     {
         return true;
@@ -729,7 +729,7 @@ bool RecommendTaskService::insertOrderDB_(
     return result;
 }
 
-bool RecommendTaskService::insertClickCounterDB_(
+bool RecommendTaskService::insertPurchaseCounter_(
     const OrderItemVec& orderItemVec,
     const std::vector<itemid_t>& itemIdVec
 )
@@ -744,16 +744,16 @@ bool RecommendTaskService::insertClickCounterDB_(
         if (query.empty())
             continue;
 
-        QueryClickCounter::click_counter_type clickCounter;
-        if (! queryPurchaseCounter_.get(query, clickCounter))
+        PurchaseCounter purchaseCounter;
+        if (! queryPurchaseCounter_.get(query, purchaseCounter))
         {
             result = false;
             continue;
         }
 
-        clickCounter.click(itemIdVec[i]);
+        purchaseCounter.click(itemIdVec[i]);
 
-        if (! queryPurchaseCounter_.update(query, clickCounter))
+        if (! queryPurchaseCounter_.update(query, purchaseCounter))
         {
             result = false;
         }

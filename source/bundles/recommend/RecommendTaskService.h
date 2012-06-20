@@ -56,7 +56,7 @@ public:
         EventManager& eventManager,
         RateManager& rateManager,
         ItemIdGenerator& itemIdGenerator,
-        QueryClickCounter& queryPurchaseCounter,
+        QueryPurchaseCounter& queryPurchaseCounter,
         UpdateRecommendBase& updateRecommendBase,
         UpdateRecommendWorker* updateRecommendWorker
     );
@@ -240,7 +240,7 @@ private:
         const std::vector<itemid_t>& itemIdVec
     );
 
-    bool insertClickCounterDB_(
+    bool insertPurchaseCounter_(
         const OrderItemVec& orderItemVec,
         const std::vector<itemid_t>& itemIdVec
     );
@@ -263,7 +263,7 @@ private:
     RateManager& rateManager_;
     ItemIdGenerator& itemIdGenerator_;
 
-    QueryClickCounter& queryPurchaseCounter_;
+    QueryPurchaseCounter& queryPurchaseCounter_;
 
     UpdateRecommendBase& updateRecommendBase_;
     UpdateRecommendWorker* updateRecommendWorker_;

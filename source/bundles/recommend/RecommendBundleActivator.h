@@ -98,7 +98,7 @@ private:
     boost::scoped_ptr<OrderManager> orderManager_;
     boost::scoped_ptr<EventManager> eventManager_;
     boost::scoped_ptr<RateManager> rateManager_;
-    boost::scoped_ptr<QueryClickCounter> queryPurchaseCounter_;
+    boost::scoped_ptr<QueryPurchaseCounter> queryPurchaseCounter_;
 
     boost::scoped_ptr<RecommenderFactory> recommenderFactory_;
 

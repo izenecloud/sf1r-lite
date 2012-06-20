@@ -17,7 +17,7 @@ namespace sf1r
 class BAQRecommender : public Recommender
 {
 public:
-    BAQRecommender(QueryClickCounter& queryPurchaseCounter);
+    BAQRecommender(QueryPurchaseCounter& queryPurchaseCounter);
 
 protected:
     virtual bool recommendImpl_(
@@ -26,7 +26,7 @@ protected:
     );
 
 private:
-    QueryClickCounter& queryPurchaseCounter_;
+    QueryPurchaseCounter& queryPurchaseCounter_;
 };
 
 } // namespace sf1r
