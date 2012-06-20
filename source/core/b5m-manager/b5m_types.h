@@ -32,24 +32,6 @@ namespace sf1r {
         boost::regex category_regex;
     };
 
-    struct CategoryStringMatcher
-    {
-        std::vector<boost::regex> regex_list;
-        void AddCategoryRegex(const std::string& r)
-        {
-            boost::regex reg(r);
-            regex_list.push_back(reg);
-        }
-        bool Match(const std::string& scategory) const
-        {
-            for(uint32_t i=0;i<regex_list.size();i++)
-            {
-                if(boost::regex_match(scategory, regex_list[i])) return true;
-
-            }
-            return false;
-        }
-    };
 
     //struct FeatureCondition
     //{

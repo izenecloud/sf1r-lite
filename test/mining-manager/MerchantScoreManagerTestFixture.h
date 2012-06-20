@@ -9,7 +9,7 @@
 #define SF1R_MERCHANT_SCORE_MANAGER_TEST_FIXTURE_H
 
 #include <mining-manager/merchant-score-manager/MerchantScoreManager.h>
-#include <mining-manager/faceted-submanager/prop_value_table.h>
+#include <mining-manager/group-manager/PropValueTable.h>
 
 #include <string>
 #include <boost/scoped_ptr.hpp>

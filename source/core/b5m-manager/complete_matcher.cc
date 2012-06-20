@@ -67,10 +67,8 @@ bool CompleteMatcher::Index(const std::string& scd_path, const std::string& know
     std::vector<std::string> scd_list;
     B5MHelper::GetIUScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
-    std::string writer_file = knowledge_dir+"/writer";
-    boost::filesystem::remove_all(writer_file);
-    izenelib::am::ssf::Writer<> writer(writer_file);
-    writer.Open();
+    std::string match_file = knowledge_dir+"/match";
+    std::ofstream ofs(match_file.c_str());
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
@@ -129,8 +127,6 @@ bool CompleteMatcher::Index(const std::string& scd_path, const std::string& know
             {
                 continue;
             }
-            std::string stitle;
-            title.convertString(stitle, izenelib::util::UString::UTF_8);
             //logger_<<"[BPD][Title]"<<stitle<<std::endl;
             std::vector<AttrPair> attrib_list;
             split_attr_pair(attrib_ustr, attrib_list);
@@ -167,39 +163,14 @@ bool CompleteMatcher::Index(const std::string& scd_path, const std::string& know
             izenelib::util::UString pid_str("attrib-"+nattrib_name+"-", izenelib::util::UString::UTF_8);
             pid_str.append(attrib_for_match);
             uint128_t pid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash128(pid_str);
-            ValueType value;
+            std::string spid = B5MHelper::Uint128ToString(pid);
             std::string soid;
-            oid.convertString(soid, UString::UTF_8);
-            value.soid = soid;
-            value.title = title;
-            value.n = n;
-            writer.Append(pid, value);
-        }
-    }
-    writer.Close();
-    izenelib::am::ssf::Sorter<uint32_t, uint128_t>::Sort(writer_file);
-    izenelib::am::ssf::Joiner<uint32_t, uint128_t, ValueType> joiner(writer_file);
-    joiner.Open();
-    uint128_t pid;
-    std::vector<ValueType> value_list;
-    std::string match_file = knowledge_dir+"/match";
-    std::ofstream ofs(match_file.c_str());
-    while(joiner.Next(pid, value_list))
-    {
-        std::sort(value_list.begin(), value_list.end());
-        //if(value_list.size()<2) continue;
-        //ValueType& base = value_list[0];
-        //std::string sptitle;
-        //base.title.convertString(sptitle, UString::UTF_8);
-        for(uint32_t i=0;i<value_list.size();i++)
-        {
-            ValueType& value = value_list[i];
-            std::string pid_str = B5MHelper::Uint128ToString(pid);
-            ofs<<value.soid<<","<<pid_str;
+            oid.convertString(soid, izenelib::util::UString::UTF_8);
+            ofs<<soid<<","<<spid;
             boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
             ofs<<","<<boost::posix_time::to_iso_string(now);
             std::string stitle;
-            value.title.convertString(stitle, UString::UTF_8);
+            title.convertString(stitle, UString::UTF_8);
             ofs<<","<<stitle<<std::endl;
         }
     }

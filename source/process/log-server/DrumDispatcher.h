@@ -11,8 +11,8 @@ namespace sf1r
 {
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 class DrumDispatcher
     : public izenelib::drum::NullDispatcher<key_t, value_t, aux_t>
 {
@@ -33,10 +33,10 @@ public:
     };
 
     typedef boost::function3<
-            void,
-            key_t const&,
-            value_t const&,
-            aux_t const&
+    void,
+    key_t const&,
+    value_t const&,
+    aux_t const&
     > func_t;
 
 public:
@@ -82,8 +82,8 @@ protected:
 };
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
 UniqueKeyCheck(key_t const& key, aux_t const& aux) const
 {
@@ -92,8 +92,8 @@ UniqueKeyCheck(key_t const& key, aux_t const& aux) const
 }
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
 DuplicateKeyCheck(key_t const& key, value_t const& value, aux_t const& aux) const
 {
@@ -102,8 +102,8 @@ DuplicateKeyCheck(key_t const& key, value_t const& value, aux_t const& aux) cons
 }
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
 Update(key_t const& key, value_t const& value, aux_t const& aux) const
 {
@@ -112,8 +112,8 @@ Update(key_t const& key, value_t const& value, aux_t const& aux) const
 }
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
 UniqueKeyUpdate(key_t const& key, value_t const& value, aux_t const& aux) const
 {
@@ -122,8 +122,8 @@ UniqueKeyUpdate(key_t const& key, value_t const& value, aux_t const& aux) const
 }
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
 DuplicateKeyUpdate(key_t const& key, value_t const& value, aux_t const& aux) const
 {
@@ -132,8 +132,8 @@ DuplicateKeyUpdate(key_t const& key, value_t const& value, aux_t const& aux) con
 }
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
 Delete(key_t const& key, aux_t const& aux) const
 {
@@ -142,8 +142,8 @@ Delete(key_t const& key, aux_t const& aux) const
 }
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
 UniqueKeyDelete(key_t const& key, aux_t const& aux) const
 {
@@ -152,8 +152,8 @@ UniqueKeyDelete(key_t const& key, aux_t const& aux) const
 }
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
 DuplicateKeyDelete(key_t const& key, value_t const& value, aux_t const& aux) const
 {
@@ -162,8 +162,8 @@ DuplicateKeyDelete(key_t const& key, value_t const& value, aux_t const& aux) con
 }
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
 UniqueKeyAppend(key_t const& key, value_t const& value, aux_t const& aux) const
 {
@@ -172,8 +172,8 @@ UniqueKeyAppend(key_t const& key, value_t const& value, aux_t const& aux) const
 }
 
 template <class key_t,
-          class value_t,
-          class aux_t>
+         class value_t,
+         class aux_t>
 void DrumDispatcher<key_t, value_t, aux_t>::
 DuplicateKeyAppend(key_t const& key, value_t const& value, aux_t const& aux) const
 {

@@ -105,18 +105,17 @@ void ProductClustering::Insert(const PMDocumentType& doc)
     attach.city = city;
     attach.price = price;
 
-    std::vector<std::string> terms;
-    std::vector<double> weights;
-    analyzer_.Analyze(title, terms, weights);
+    std::vector<std::pair<std::string, double > > doc_vector;
+    analyzer_.Analyze(title, doc_vector);
 
-    if( terms.empty() )
+    if( doc_vector.empty() )
     {
         error_ = "Title analyzer result is empty.";
         return;
     }
     std::string docid;
     udocid.convertString(docid, izenelib::util::UString::UTF_8);
-    dd_->InsertDoc(docid, terms, weights, attach);
+    dd_->InsertDoc(docid, doc_vector, attach);
 }
 
 bool ProductClustering::Run()

@@ -7,7 +7,7 @@
 #define _VALUE_SHARED_H_
 
 #include <types.h>
-#include <am/graph_index/dyn_array.hpp>
+#include <am/dyn_array.hpp>
 #include <boost/thread/mutex.hpp>
 #include <util/hashFunction.h>
 #include <stdio.h>

@@ -13,6 +13,7 @@
 #include <b5m-manager/log_server_handler.h>
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
+#include <b5m-manager/psm_indexer.h>
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
 
@@ -28,6 +29,8 @@ int main(int ac, char** av)
         ("raw-generate", "generate standard raw scd")
         ("attribute-index,A", "build attribute index")
         ("b5m-match,B", "make b5m matching")
+        ("psm-index", "psm index")
+        ("psm-match", "psm match")
         ("complete-match,M", "attribute complete matching")
         ("similarity-match,I", "title based similarity matching")
         ("b5mo-generate", "generate b5mo scd")
@@ -35,6 +38,7 @@ int main(int ac, char** av)
         ("b5mp-generate", "generate b5mp scd")
         ("b5mc-generate", "generate b5mc scd")
         ("logserver-update", "update logserver")
+        ("match-test,T", "b5m matching test")
         ("mdb-instance", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
@@ -58,7 +62,7 @@ int main(int ac, char** av)
         ("scd-split,P", "split scd files for each categories.")
         ("name,N", po::value<std::string>(), "specify the name")
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
-        ("match-test,T", "b5m matching test")
+        ("test", "specify test flag")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -79,16 +83,16 @@ int main(int ac, char** av)
     std::string uue;
     std::string output_match;
     std::string knowledge_dir;
-    //boost::shared_ptr<ProductDb> pdb;
     boost::shared_ptr<OfferDb> odb;
 
     boost::shared_ptr<LogServerConnectionConfig> logserver_config;
     std::string synonym_file;
-    std::string category_regex_str;
+    std::string category_regex;
     std::string dictionary;
     std::string cma_path = IZENECMA_KNOWLEDGE ;
     std::string work_dir;
     std::string name;
+    bool test_flag = false;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
     } 
@@ -137,7 +141,7 @@ int main(int ac, char** av)
     //} 
     if (vm.count("odb")) {
         std::string odb_path = vm["odb"].as<std::string>();
-        std::cout << "open odb path: " << odb_path <<std::endl;
+        std::cout << "odb path: " << odb_path <<std::endl;
         odb.reset(new OfferDb(odb_path));
     } 
     if(vm.count("logserver-config"))
@@ -166,8 +170,8 @@ int main(int ac, char** av)
     }
     if(vm.count("category-regex"))
     {
-        category_regex_str = vm["category-regex"].as<std::string>();
-        std::cout<< "category_regex set to "<<category_regex_str<<std::endl;
+        category_regex = vm["category-regex"].as<std::string>();
+        std::cout<< "category_regex set to "<<category_regex<<std::endl;
     }
     if(vm.count("cma-path"))
     {
@@ -186,6 +190,10 @@ int main(int ac, char** av)
     {
         name = vm["name"].as<std::string>();
         std::cout<< "name set to "<<name<<std::endl;
+    }
+    if(vm.count("test"))
+    {
+        test_flag = true;
     }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
 
@@ -227,9 +235,9 @@ int main(int ac, char** av)
         {
             indexer.LoadSynonym(synonym_file);
         }
-        if(!category_regex_str.empty())
+        if(!category_regex.empty())
         {
-            indexer.SetCategoryRegex(category_regex_str);
+            indexer.SetCategoryRegex(category_regex);
         }
         if(!indexer.Index(scd_path, knowledge_dir))
         {
@@ -253,15 +261,37 @@ int main(int ac, char** av)
         {
             indexer.LoadSynonym(synonym_file);
         }
-        if(!category_regex_str.empty())
+        if(!category_regex.empty())
         {
-            indexer.SetCategoryRegex(category_regex_str);
+            indexer.SetCategoryRegex(category_regex);
         }
         if(!indexer.Open(knowledge_dir))
         {
             return EXIT_FAILURE;
         }
         indexer.ProductMatchingSVM(scd_path);
+    }
+    if(vm.count("psm-index"))
+    {
+        if( scd_path.empty() || knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        PsmIndexer psm(cma_path);
+        psm.Index(scd_path, knowledge_dir, test_flag);
+    }
+    if(vm.count("psm-match"))
+    {
+        if( scd_path.empty() || knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        PsmIndexer psm(cma_path);
+        if(!psm.DoMatch(scd_path, knowledge_dir))
+        {
+            LOG(ERROR)<<"psm matching fail"<<std::endl;
+            return EXIT_FAILURE;
+        }
     }
     if(vm.count("complete-match"))
     {
@@ -357,9 +387,9 @@ int main(int ac, char** av)
         {
             indexer.LoadSynonym(synonym_file);
         }
-        if(!category_regex_str.empty())
+        if(!category_regex.empty())
         {
-            indexer.SetCategoryRegex(category_regex_str);
+            indexer.SetCategoryRegex(category_regex);
         }
         indexer.Open(knowledge_dir);
         std::cout<<"Input Product Title:"<<std::endl;
@@ -397,10 +427,10 @@ int main(int ac, char** av)
         }
     }
 
-    if(odb)
-    {
-        odb->flush();
-    }
+    //if(odb)
+    //{
+        //odb->flush();
+    //}
     return EXIT_SUCCESS;
 }
 

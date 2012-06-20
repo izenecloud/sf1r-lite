@@ -25,7 +25,7 @@ public:
 
     ~ProductTermAnalyzer();
 
-    void Analyze(const izenelib::util::UString& title, std::vector<std::string>& terms, std::vector<double>& weights);
+    void Analyze(const izenelib::util::UString& title, std::vector<std::pair<std::string, double> >& doc_vector);
 
 private:
     double GetWeight_(uint32_t title_length, const izenelib::util::UString& term, char tag);

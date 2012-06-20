@@ -39,8 +39,7 @@ using driver::Keys;
  * - @b name_entity_item (@c Object): Only get documents in the specified name
  *   entity item. Must be used with @b name_entity_type together and cannot be
  *   used with @b taxonomy_label.
- * - @b group_label (@c Array): Only get documents in the specified group labels.@n
- *   Each label is an object consisting of a property name and value.@n
+ * - @b group_label (@c Array): Get documents in the specified group labels. Each label consists of a property name and value.@n
  *   You could specify multiple labels, for example, there are 4 labels named as "A1", "A2", "B1", "B2".@n
  *   If the property name of label "A1" and "A2" is "A", while the property name of label "B1" and "B2" is "B",@n
  *   then the documents returned would belong to the labels with the condition of ("A1" or "A2") and ("B1" or "B2").
@@ -56,13 +55,12 @@ using driver::Keys;
  *   meaning all values between 101 and 200, including both boundary values,
  *   or in the form of "-200", meaning all values not larger than 200,
  *   or in the form of "101-", meaning all values not less than 101.
- * - @b attr_label (@c Array): Only get documents in the specified attribute groups.
- *   Multiple labels could be specified. It could also be used with @b group_label
- *   together, so that the documents returned must be contained in each label in
- *   @b attr_label and @b group_label.
+ * - @b attr_label (@c Array): Get documents in the specified attribute labels. Each label consists of an attribute name and value.@n
+ *   You could specify multiple labels, for example, there are 4 labels named as "A1", "A2", "B1", "B2".@n
+ *   If the attribute name of label "A1" and "A2" is "A", while the attribute name of label "B1" and "B2" is "B",@n
+ *   then the documents returned would belong to the labels with the condition of ("A1" or "A2") and ("B1" or "B2").
  *   - @b attr_name* (@c String): the attribute name
- *   - @b attr_value* (@c String): the attribute value, only those documents with this
- *   attribute value would be returned.
+ *   - @b attr_value* (@c String): the attribute value
  * - @b ranking_model (@c String): How to rank the search result. Result with
  *   high ranking score is considered has high relevance. Now SF1 supports
  *   following ranking models.
@@ -93,6 +91,7 @@ using driver::Keys;
  * {
  *   "keywords": "test",
  *   "USERID": "56",
+ *   "session_id":"session_123"
  *   "in": [
  *     {"property": "title"},
  *     {"property": "content"}
@@ -125,6 +124,7 @@ bool SearchParser::parse(const Value& search)
     }
 
     userID_ = asString(search[Keys::USERID]);
+    sessionID_ = asString(search[Keys::session_id]);
 
     int labelCount = 0;
     if (search.hasKey(Keys::taxonomy_label))
@@ -345,19 +345,19 @@ bool SearchParser::parseAttrLabel_(const Value& search)
         return false;
     }
 
-    attrLabels_.resize(attrNode.size());
     for (std::size_t i = 0; i < attrNode.size(); ++i)
     {
         const Value& attrPair = attrNode(i);
-        faceted::GroupParam::AttrLabel& attrLabel = attrLabels_[i];
-        attrLabel.first = asString(attrPair[Keys::attr_name]);
-        attrLabel.second = asString(attrPair[Keys::attr_value]);
+        std::string attrName = asString(attrPair[Keys::attr_name]);
+        std::string attrValue = asString(attrPair[Keys::attr_value]);
 
-        if (attrLabel.first.empty() || attrLabel.second.empty())
+        if (attrName.empty() || attrValue.empty())
         {
             error() = "Must specify both attribute name and value for attr label";
             return false;
         }
+
+        attrLabels_[attrName].push_back(attrValue);
     }
 
     return true;

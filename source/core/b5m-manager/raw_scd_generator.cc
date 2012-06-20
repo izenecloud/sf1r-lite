@@ -74,6 +74,7 @@ bool RawScdGenerator::Generate(const std::string& scd_path, const std::string& m
 {
     if(!odb_->is_open())
     {
+        LOG(INFO)<<"open odb..."<<std::endl;
         if(!odb_->open())
         {
             LOG(ERROR)<<"odb open fail"<<std::endl;

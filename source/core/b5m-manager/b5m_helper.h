@@ -12,6 +12,33 @@
 namespace sf1r {
 
 
+    class CategoryStringMatcher
+    {
+    public:
+        CategoryStringMatcher(bool reverse = false):reverse_(reverse)
+        {
+        }
+        void AddCategoryRegex(const std::string& r)
+        {
+            boost::regex reg(r);
+            regex_list_.push_back(reg);
+        }
+        bool Match(const std::string& scategory) const
+        {
+            for(uint32_t i=0;i<regex_list_.size();i++)
+            {
+                if(boost::regex_match(scategory, regex_list_[i]))
+                {
+                    return !reverse_;
+                }
+
+            }
+            return reverse_;
+        }
+    private:
+        bool reverse_;
+        std::vector<boost::regex> regex_list_;
+    };
 
     class B5MHelper {
     public:

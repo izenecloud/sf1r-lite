@@ -10,7 +10,7 @@
 
 #include <query-manager/ConditionInfo.h>
 #include <ranking-manager/RankingEnumerator.h>
-#include <mining-manager/faceted-submanager/GroupParam.h>
+#include <mining-manager/group-manager/GroupParam.h>
 #include <query-manager/SearchingEnumerator.h>
 
 #include <bundles/index/IndexBundleConfiguration.h>
@@ -55,6 +55,16 @@ public:
         return userID_;
     }
 
+    std::string& mutableSessionID()
+    {
+        return sessionID_;
+    }
+
+    const std::string& sessionID() const
+    {
+        return sessionID_;
+    }
+
     std::string& mutableTaxonomyLabel()
     {
         return taxonomyLabel_;
@@ -91,11 +101,11 @@ public:
         return groupLabels_;
     }
 
-    faceted::GroupParam::AttrLabelVec& mutableAttrLabels()
+    faceted::GroupParam::AttrLabelMap& mutableAttrLabels()
     {
         return attrLabels_;
     }
-    const faceted::GroupParam::AttrLabelVec& attrLabels() const
+    const faceted::GroupParam::AttrLabelMap& attrLabels() const
     {
         return attrLabels_;
     }
@@ -138,11 +148,12 @@ private:
 
     std::string keywords_;
     std::string userID_;
+    std::string sessionID_;
     std::string taxonomyLabel_;
     std::string nameEntityType_;
     std::string nameEntityItem_;
     faceted::GroupParam::GroupLabelMap groupLabels_;
-    faceted::GroupParam::AttrLabelVec attrLabels_;
+    faceted::GroupParam::AttrLabelMap attrLabels_;
     bool logKeywords_;
     std::vector<std::string> properties_;
     RankingType::TextRankingType rankingModel_;

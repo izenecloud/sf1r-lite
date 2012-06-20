@@ -1,5 +1,6 @@
 #include "DriverLogServer.h"
 #include "DriverLogServerController.h"
+#include "LogDispatchHandler.h"
 #include "LogServerCfg.h"
 #include "LogServerStorage.h"
 
@@ -66,8 +67,8 @@ bool DriverLogServer::initRouter()
 {
     typedef ::izenelib::driver::ActionHandler<DriverLogServerController> handler_t;
 
-    boost::shared_ptr<DriverLogServerHandler> logServerhandler(new DriverLogServerHandler);
-    logServerhandler->init();
+    boost::shared_ptr<LogDispatchHandler> logServerhandler(new LogDispatchHandler);
+    logServerhandler->Init();
     DriverLogServerController logServerCtrl(logServerhandler);
 
     handler_t* cclogHandler = new handler_t(logServerCtrl, &DriverLogServerController::update_cclog);

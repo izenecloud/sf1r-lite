@@ -1,6 +1,9 @@
+#include <types.h>
+#include <algorithm>
+#include <am/succinct/fujimap/fujimap.hpp>
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
-#include <common/ScdWriterController.h>
+#include <common/Utilities.h>
 #include <document-manager/Document.h>
 #include <iostream>
 #include <string>
@@ -9,11 +12,8 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
-#include <am/luxio/BTree.h>
-#include <am/tc/BTree.h>
-#include <am/leveldb/Table.h>
 #include <am/range/AmIterator.h>
-#include <am/sequence_file/ssfr.h>
+//#include <am/sequence_file/ssfr.h>
 #include <glog/logging.h>
 
 //#define MERGER_DEBUG
@@ -75,7 +75,7 @@ public:
     typedef boost::function<void (ValueType&, const ValueType&) > MergeFunctionType;
     typedef boost::function<void (Document&, int&) > OutputFunctionType;
 
-    typedef uint64_t IdType;
+    typedef uint128_t IdType;
     typedef uint32_t PositionType;
 
     struct PropertyConfig
@@ -88,13 +88,29 @@ public:
     };
     typedef boost::unordered_map<IdType, ValueType> CacheType;
     typedef CacheType::iterator cache_iterator;
-    typedef boost::unordered_map<IdType, PositionType> PositionMap;
+    //typedef boost::unordered_map<IdType, PositionType> PositionMap;
+    typedef izenelib::am::succinct::fujimap::Fujimap<IdType, PositionType> PositionMap;
 
     struct PropertyConfigR
     {
         PropertyConfigR(const PropertyConfig& config)
         :output_dir(config.output_dir), property_name(config.property_name), merge_function(config.merge_function), output_function(config.output_function), output_if_no_position(config.output_if_no_position)
         {
+            if(!boost::filesystem::exists(output_dir))
+            {
+                boost::filesystem::create_directories(output_dir);
+            }
+            std::string tmp_file = output_dir+"/fuji.tmp";
+            boost::filesystem::remove_all(tmp_file);
+            LOG(INFO)<<"init fujimap at "<<tmp_file<<std::endl;
+            position_map.reset(new PositionMap(tmp_file.c_str()));
+            position_map->initFP(32);
+            position_map->initTmpN(30000000);
+        }
+
+        ~PropertyConfigR()
+        {
+            //delete position_map;
         }
         std::string output_dir;
         std::string property_name;
@@ -104,7 +120,7 @@ public:
         boost::shared_ptr<ScdWriter> i_writer;
         boost::shared_ptr<ScdWriter> u_writer;
         boost::shared_ptr<ScdWriter> d_writer;
-        PositionMap position_map;
+        boost::shared_ptr<PositionMap> position_map;
         CacheType cache;
     };
 
@@ -112,7 +128,6 @@ public:
     {
         std::string scd_path;
         bool position;
-        //bool output_if_no_position;
     };
 
 
@@ -206,7 +221,7 @@ public:
                     ++p;
                     if(p%100000==0)
                     {
-                        LOG(INFO)<<"Process "<<p<<" position scd docs"<<std::endl; 
+                        LOG(INFO)<<"Process "<<(std::size_t)p<<" position scd docs"<<std::endl; 
                     }
                     SCDDoc& doc = *(*doc_iter);
                     std::vector<std::pair<std::string, izenelib::util::UString> >::iterator pit;
@@ -218,7 +233,8 @@ public:
                         if(cit!=property_config_index.end())
                         {
                             IdType id = GenId_(pit->second);
-                            cit->second->position_map[id] = p;
+                            //cit->second->position_map[id] = p;
+                            cit->second->position_map->setInteger(id, p);
 #ifdef MERGER_DEBUG
                             std::string sss;
                             pit->second.convertString(sss, izenelib::util::UString::UTF_8);
@@ -235,11 +251,12 @@ public:
         for(PropertyConfigList::iterator pci_it = property_config_list.begin(); pci_it!=property_config_list.end();++pci_it)
         {
             PropertyConfigR& config = *pci_it;
-            std::string output_dir = config.output_dir;
-            if(!boost::filesystem::exists(output_dir))
+            LOG(INFO)<<"building fujimap for "<<config.property_name<<std::endl;
+            if(config.position_map->build()<0)
             {
-                boost::filesystem::create_directories(output_dir);
+                LOG(ERROR)<<config.property_name<<" fujimap build error"<<std::endl;
             }
+            std::string output_dir = config.output_dir;
             config.i_writer.reset(new ScdWriter(output_dir, INSERT_SCD));
             config.u_writer.reset(new ScdWriter(output_dir, UPDATE_SCD));
             config.d_writer.reset(new ScdWriter(output_dir, DELETE_SCD));
@@ -296,9 +313,26 @@ public:
                         //ValueType empty_value;
                         //config.merge_function(empty_value, value);
                         //empty_value.swap(value);
-                        PositionMap& position_map = config.position_map;
-                        PositionMap::iterator mit = position_map.find(id);
-                        if(mit==position_map.end())
+                        int pstatus = -1;//-1 means not in position, 0 means not output, 1 means output
+                        PositionType pos = config.position_map->getInteger(id);
+                        if(pos==(PositionType)izenelib::am::succinct::fujimap::NOTFOUND)
+                        {
+                            pstatus = -1;
+                        }
+                        else
+                        {
+                            if(pos==position)
+                            {
+                                pstatus = 1;
+                            }
+                            else
+                            {
+                                pstatus = 0;
+                            }
+                        }
+                        //std::cout<<"pstatus"<<pstatus<<std::endl;
+                        //PositionMap::iterator mit = position_map.find(id);
+                        if(pstatus<0)
                         {
 #ifdef MERGER_DEBUG
                             std::string sss;
@@ -349,7 +383,7 @@ public:
                                 config.merge_function(cit->second, value);
                                 value = cit->second;
                             }
-                            if(mit->second==position)
+                            if(pstatus>0)
                             {
 #ifdef MERGER_DEBUG
                                 std::string sss;
@@ -360,7 +394,7 @@ public:
                                 }
 #endif
                                 output_value = value;
-                                position_map.erase(mit);
+                                //position_map.erase(mit);
                             }
                             if(!output_value.empty() && cit!=config.cache.end())
                             {
@@ -490,8 +524,8 @@ private:
 
     IdType GenId_(const izenelib::util::UString& id_str)
     {
-        return izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(id_str);
-
+        return Utilities::md5ToUint128(id_str);
+        //return izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(id_str);
     }
 
     

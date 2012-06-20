@@ -33,8 +33,8 @@ RpcLogServer::~RpcLogServer()
 bool RpcLogServer::init()
 {
     LogServerStorage::get()->uuidDrumDispatcher().registerOp(
-            LogServerStorage::UuidDrumDispatcherType::UPDATE,
-            boost::bind(&RpcLogServer::onUpdate, this, _1, _2, _3));
+        LogServerStorage::UuidDrumDispatcherType::UPDATE,
+        boost::bind(&RpcLogServer::onUpdate, this, _1, _2, _3));
 
     workerThread_.reset(new LogServerWorkThread());
 
@@ -185,9 +185,9 @@ void RpcLogServer::synchronize(const SynchronizeData& syncReqData)
 }
 
 void RpcLogServer::onUpdate(
-        const LogServerStorage::uuid_t& uuid,
-        const LogServerStorage::raw_docid_list_t& docidList,
-        const std::string& aux)
+    const LogServerStorage::uuid_t& uuid,
+    const LogServerStorage::raw_docid_list_t& docidList,
+    const std::string& aux)
 {
 #ifdef DOCID_DB_DEBUG
     static int cnt;
@@ -257,7 +257,7 @@ void RpcLogServer::deleteScdDoc(const DeleteScdDocRequestData& delReq)
     if (LogServerStorage::get()->checkScdDb(collection))
     {
         boost::shared_ptr<LogServerStorage::ScdStorage>& scdStorage =
-                LogServerStorage::get()->scdStorage(collection);
+            LogServerStorage::get()->scdStorage(collection);
 
         boost::lock_guard<boost::mutex> lock(scdStorage->mutex_);
         scdStorage->scdDb_->del(delReq.docid_);

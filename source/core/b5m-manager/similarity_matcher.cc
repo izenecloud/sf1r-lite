@@ -136,16 +136,15 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
             id_str.append(price.ToUString());
             attach.id = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(id_str);
 
-            std::vector<std::string> terms;
-            std::vector<double> weights;
-            analyzer.Analyze(doc["Title"], terms, weights);
+            std::vector<std::pair<std::string, double> > doc_vector;
+            analyzer.Analyze(doc["Title"], doc_vector);
 
-            if( terms.empty() )
+            if( doc_vector.empty() )
             {
                 continue;
             }
             //dd.InsertDoc(docid, terms, weights, attach);
-            dd.InsertDoc(id, terms, weights, attach);
+            dd.InsertDoc(id, doc_vector, attach);
         }
     }
     dd.RunDdAnalysis();

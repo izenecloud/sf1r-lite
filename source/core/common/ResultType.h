@@ -19,7 +19,7 @@
 #include <query-manager/ConditionInfo.h>
 #include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-#include <mining-manager/faceted-submanager/GroupRep.h>
+#include <mining-manager/group-manager/GroupRep.h>
 #include <idmlib/concept-clustering/cc_types.h>
 // #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
 #include <util/ustring/UString.h>

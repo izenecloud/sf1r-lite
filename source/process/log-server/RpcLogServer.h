@@ -47,9 +47,9 @@ public:
 
     /// Will be called when update is actually performed
     void onUpdate(
-            const LogServerStorage::uuid_t& uuid,
-            const LogServerStorage::raw_docid_list_t& docidList,
-            const std::string& aux);
+        const LogServerStorage::uuid_t& uuid,
+        const LogServerStorage::raw_docid_list_t& docidList,
+        const std::string& aux);
 
     /// Add new scd doc
     void createScdDoc(const CreateScdDocRequestData& scdDoc);

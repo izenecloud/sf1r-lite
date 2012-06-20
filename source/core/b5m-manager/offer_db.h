@@ -10,6 +10,7 @@
 #include <am/tc/BTree.h>
 #include <am/tc/Hash.h>
 #include <am/leveldb/Table.h>
+#include <am/succinct/fujimap/fujimap.hpp>
 #include <glog/logging.h>
 #include <boost/unordered_map.hpp>
 
@@ -42,9 +43,21 @@ namespace sf1r {
     public:
         typedef uint128_t KeyType;
         typedef uint128_t ValueType;
-        typedef boost::unordered_map<KeyType, ValueType, uint128_hash > DbType;
-        OfferDb(const std::string& path, const std::string& tmp_path = "./fuji.tmp"): path_(path), is_open_(false), has_modify_(false)
+        //typedef boost::unordered_map<KeyType, ValueType, uint128_hash > DbType;
+        typedef izenelib::am::succinct::fujimap::Fujimap<KeyType, ValueType> DbType;
+        OfferDb(const std::string& path)
+        : path_(path), db_path_(path+"/db"), text_path_(path+"/text"), tmp_path_(path+"/tmp")
+        , db_(NULL), is_open_(false), has_modify_(false)
         {
+        }
+
+        ~OfferDb()
+        {
+            if(db_!=NULL)
+            {
+                delete db_;
+            }
+            text_.close();
         }
 
         bool is_open() const
@@ -55,16 +68,32 @@ namespace sf1r {
         bool open()
         {
             if(is_open_) return true;
-            LOG(INFO)<<"Loading odb..."<<std::endl;
-            load_text(path_);
-            has_modify_ = false;
+            boost::filesystem::create_directories(path_);
+            if(boost::filesystem::exists(tmp_path_))
+            {
+                boost::filesystem::remove_all(tmp_path_);
+            }
+            db_ = new DbType(tmp_path_.c_str());
+            db_->initFP(32);
+            db_->initTmpN(30000000);
+            if(boost::filesystem::exists(db_path_))
+            {
+                db_->load(db_path_.c_str());
+            }
+            else if(boost::filesystem::exists(text_path_))
+            {
+                LOG(INFO)<<"db empty, loading text"<<std::endl;
+                load_text(text_path_, false);
+                if(!flush()) return false;
+            }
+            text_.open(text_path_.c_str(), std::ios::out | std::ios::app);
             is_open_ = true;
             return true;
         }
 
-        bool load_text(const std::string& path)
+        bool load_text(const std::string& path, bool text = true)
         {
-            LOG(INFO)<<"loading file "<<path<<std::endl;
+            LOG(INFO)<<"loading text "<<path<<std::endl;
             std::ifstream ifs(path.c_str());
             std::string line;
             uint32_t i = 0;
@@ -81,7 +110,9 @@ namespace sf1r {
                 if(vec.size()<2) continue;
                 const std::string& soid = vec[0];
                 const std::string& spid = vec[1];
-                insert(soid, spid);
+                KeyType ioid = B5MHelper::StringToUint128(soid);
+                ValueType ipid = B5MHelper::StringToUint128(spid);
+                insert_(ioid, ipid, text);
             }
             ifs.close();
             return true;
@@ -89,23 +120,7 @@ namespace sf1r {
 
         bool insert(const KeyType& key, const ValueType& value)
         {
-            bool modify = false;
-            DbType::iterator it = db_.find(key);
-            if(it==db_.end())
-            {
-                db_.insert(std::make_pair(key, value));
-                modify = true;
-            }
-            else
-            {
-                if(value!=it->second)
-                {
-                    it->second = value;
-                    modify = true;
-                }
-            }
-            if(modify) has_modify_ = true;
-            return modify;
+            return insert_(key, value, true);
         }
 
         bool insert(const std::string& soid, const std::string& spid)
@@ -115,9 +130,11 @@ namespace sf1r {
 
         bool get(const KeyType& key, ValueType& value) const
         {
-            DbType::const_iterator it = db_.find(key);
-            if(it==db_.end()) return false;
-            value = it->second;
+            value = db_->getInteger(key);
+            if(value==(ValueType)izenelib::am::succinct::fujimap::NOTFOUND)
+            {
+                return false;
+            }
             return true;
         }
 
@@ -143,103 +160,54 @@ namespace sf1r {
         bool flush()
         {
             LOG(INFO)<<"try flush odb.."<<std::endl;
-            if(!has_modify_)
+            if(text_.is_open())
             {
-                LOG(INFO)<<"not modified, return"<<std::endl;
-                return true;
+                text_.flush();
             }
-            LOG(INFO)<<"Saving odb, size: "<<db_.size()<<std::endl;
-            std::ofstream ofs(path_.c_str());
-            for(DbType::const_iterator it = db_.begin(); it!=db_.end(); ++it)
+            if(has_modify_)
             {
-                ofs<<B5MHelper::Uint128ToString(it->first)<<","<<B5MHelper::Uint128ToString(it->second)<<std::endl;
+                LOG(INFO)<<"building fujimap.."<<std::endl;
+                if(db_->build()==-1)
+                {
+                    LOG(ERROR)<<"fujimap build error"<<std::endl;
+                    return false;
+                }
+                boost::filesystem::remove_all(db_path_);
+                db_->save(db_path_.c_str());
+                has_modify_ = false;
             }
-            ofs.close();
-            has_modify_ = false;
+            else
+            {
+                LOG(INFO)<<"db not change"<<std::endl;
+            }
             return true;
         }
 
-        //bool simple_open()
-        //{
-            //simple_ = true;
-            //return BaseType::open();
-        //}
-
-        //bool open()
-        //{
-            //if(!BaseType::open()) return false;
-
-            //LOG(INFO)<<"odb load to memory.."<<std::endl;
-            //BaseType::cursor_type it = BaseType::begin();
-            //KeyType key;
-            //ValueType value;
-            //while(true)
-            //{
-                //if(!BaseType::fetch(it, key, value)) break;
-                //std::pair<ValueType, bool> mem_value(value, false);
-                //mem_db_.insert(std::make_pair(key, mem_value));
-                //BaseType::iterNext(it);
-            //}
-            //LOG(INFO)<<"odb size : "<<mem_db_.size()<<std::endl;
-            //return true;
-
-        //}
-        //bool get(const KeyType& key, ValueType& value) const
-        //{
-            //if(!simple_)
-            //{
-                //MemType::const_iterator it = mem_db_.find(key);
-                //if(it==mem_db_.end()) return false;
-                //value = it->second.first;
-                //if(value.empty()) return false;
-                //return true;
-            //}
-            //else
-            //{
-                //return BaseType::get(key, value);
-            //}
-        //}
-
-        //bool has_key(const KeyType& key) const
-        //{
-            //ValueType value;
-            //return get(key, value);
-        //}
-
-        //bool update(const KeyType& key, const ValueType& value)
-        //{
-            //mem_db_[key] = std::make_pair(value, true);
-            //return true;
-        //}
-
-        //bool del(const KeyType& key)
-        //{
-            //return update(key, ValueType());
-        //}
-
-        //bool flush()
-        //{
-            //LOG(INFO)<<"odb flush size : "<<mem_db_.size()<<std::endl;
-            //uint64_t n=0;
-            //for(MemType::const_iterator it = mem_db_.begin(); it!=mem_db_.end(); ++it)
-            //{
-                //if(it->second.second) //modified
-                //{
-                    //BaseType::update(it->first, it->second.first);
-                //}
-                //++n;
-                //if(n%10000==0)
-                //{
-                    //LOG(INFO)<<"write "<<n<<" odb items"<<std::endl;
-                //}
-            //}
-            //return BaseType::flush();
-        //}
+    private:
+        bool insert_(const KeyType& key, const ValueType& value, bool text)
+        {
+            ValueType evalue = db_->getInteger(key);
+            if(evalue==value)
+            {
+                return false;
+            }
+            db_->setInteger(key, value);
+            has_modify_ = true;
+            if(text)
+            {
+                text_<<B5MHelper::Uint128ToString(key)<<","<<B5MHelper::Uint128ToString(value)<<std::endl;
+            }
+            return true;
+        }
 
     private:
 
         std::string path_;
-        DbType db_;
+        std::string db_path_;
+        std::string text_path_;
+        std::string tmp_path_;
+        DbType* db_;
+        std::ofstream text_;
         bool is_open_;
         bool has_modify_;
     };

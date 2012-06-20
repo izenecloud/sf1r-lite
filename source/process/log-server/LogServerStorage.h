@@ -29,36 +29,36 @@ public:
 
     // DRUM <uuid, raw_docids>
     typedef izenelib::drum::Drum<
-        uuid_t,
-        raw_docid_list_t,
-        std::string,
-        izenelib::am::leveldb::TwoPartComparator,
-        izenelib::am::leveldb::Table,
-        DrumDispatcher
+    uuid_t,
+    raw_docid_list_t,
+    std::string,
+    izenelib::am::leveldb::TwoPartComparator,
+    izenelib::am::leveldb::Table,
+    DrumDispatcher
     > UuidDrumType;
     typedef boost::scoped_ptr<UuidDrumType> UuidDrumPtr;
 
     typedef DrumDispatcher<
-        uuid_t,
-        raw_docid_list_t,
-        std::string
+    uuid_t,
+    raw_docid_list_t,
+    std::string
     > UuidDrumDispatcherType;
 
     // DRUM <raw_docid, uuid>
     typedef izenelib::drum::Drum<
-        raw_docid_t,
-        uuid_t,
-        std::string,
-        izenelib::am::leveldb::TwoPartComparator,
-        izenelib::am::leveldb::Table,
-        DrumDispatcher
+    raw_docid_t,
+    uuid_t,
+    std::string,
+    izenelib::am::leveldb::TwoPartComparator,
+    izenelib::am::leveldb::Table,
+    DrumDispatcher
     > DocidDrumType;
     typedef boost::scoped_ptr<DocidDrumType> DocidDrumPtr;
 
     typedef DrumDispatcher<
-        raw_docid_t,
-        uuid_t,
-        std::string
+    raw_docid_t,
+    uuid_t,
+    std::string
     > DocidDrumDispatcherType;
 
     // KV DB
@@ -88,13 +88,13 @@ public:
     {
         // Initialize DRUM <uuid, raw_docids>
         uuidDrum_.reset(
-                new UuidDrumType(
-                    LogServerCfg::get()->getDrumName(LogServerCfg::UUID),
-                    LogServerCfg::get()->getDrumNumBuckets(LogServerCfg::UUID),
-                    LogServerCfg::get()->getDrumBucketBuffElemSize(LogServerCfg::UUID),
-                    LogServerCfg::get()->getDrumBucketByteSize(LogServerCfg::UUID),
-                    uuidDrumDispathcer_
-                ));
+            new UuidDrumType(
+                LogServerCfg::get()->getDrumName(LogServerCfg::UUID),
+                LogServerCfg::get()->getDrumNumBuckets(LogServerCfg::UUID),
+                LogServerCfg::get()->getDrumBucketBuffElemSize(LogServerCfg::UUID),
+                LogServerCfg::get()->getDrumBucketByteSize(LogServerCfg::UUID),
+                uuidDrumDispathcer_
+            ));
 
         if (!uuidDrum_)
         {
@@ -105,13 +105,13 @@ public:
 
         // Initialize DRUM <raw_docid, uuid>
         docidDrum_.reset(
-                new DocidDrumType(
-                    LogServerCfg::get()->getDrumName(LogServerCfg::DOCID),
-                    LogServerCfg::get()->getDrumNumBuckets(LogServerCfg::DOCID),
-                    LogServerCfg::get()->getDrumBucketBuffElemSize(LogServerCfg::DOCID),
-                    LogServerCfg::get()->getDrumBucketByteSize(LogServerCfg::DOCID),
-                    docidDrumDispathcer_
-                ));
+            new DocidDrumType(
+                LogServerCfg::get()->getDrumName(LogServerCfg::DOCID),
+                LogServerCfg::get()->getDrumNumBuckets(LogServerCfg::DOCID),
+                LogServerCfg::get()->getDrumBucketBuffElemSize(LogServerCfg::DOCID),
+                LogServerCfg::get()->getDrumBucketByteSize(LogServerCfg::DOCID),
+                docidDrumDispathcer_
+            ));
 
         if (!docidDrum_)
         {
