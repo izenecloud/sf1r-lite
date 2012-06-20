@@ -9,7 +9,7 @@
 #define SF1R_GROUP_LABEL_LOGGER_H
 
 #include "LabelCounter.h"
-#include <sdb/SequentialDB.h>
+#include <common/SDBWrapper.h>
 
 #include <vector>
 #include <string>
@@ -17,8 +17,11 @@
 namespace sf1r
 {
 
-class GroupLabelLogger {
+class GroupLabelLogger
+{
 public:
+    typedef LabelCounter::LabelId LabelId;
+
     /**
      * @brief Constructor
      * @param dirPath the directory path
@@ -29,32 +32,24 @@ public:
         const std::string& propName
     );
 
-    ~GroupLabelLogger();
-
     void flush();
-
-    /**
-     * @brief Open the log data.
-     * @return true for success, false for failure
-     */
-    bool open();
 
     /**
      * Log the group label click.
      * @param query user query
-     * @param value the value of the group label
+     * @param labelId the id of the group label
      * @return true for success, false for failure
      */
     bool logLabel(
         const std::string& query,
-        LabelCounter::value_type value
+        LabelId labelId
     );
 
     /**
      * Get the most frequently clicked group labels.
      * @param query user query
      * @param limit the max number of labels to get
-     * @param valueVec store the values of each group label
+     * @param labelIdVec store the ids of each group label
      * @param freqVec the click count for each group label
      * @return true for success, false for failure
      * @post @p freqVec is sorted in descending order.
@@ -62,25 +57,26 @@ public:
     bool getFreqLabel(
         const std::string& query,
         int limit,
-        std::vector<LabelCounter::value_type>& valueVec,
+        std::vector<LabelId>& labelIdVec,
         std::vector<int>& freqVec
     );
 
     /**
-     * Set the most frequently clicked group label.
+     * Set the most frequently clicked group labels.
      * @param query user query
-     * @param value the value of group label
+     * @param labelIdVec the ids of each group label
      * @return true for success, false for failure
      */
     bool setTopLabel(
         const std::string& query,
-        LabelCounter::value_type value
+        const std::vector<LabelId>& labelIdVec
     );
 
 private:
     /** query => LabelCounter */
-    typedef izenelib::sdb::unordered_sdb_tc<std::string, LabelCounter, ReadWriteLock> DBType;
-    DBType container_;
+    typedef SDBWrapper<std::string, LabelCounter> DBType;
+
+    DBType db_;
 };
 
 }

@@ -51,6 +51,7 @@ SET(libs
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
   )
+
 SET(Boost_USE_STATIC_LIBS OFF)
 FIND_PACKAGE(Boost ${Boost_FIND_VERSION}
   COMPONENTS unit_test_framework)
@@ -94,6 +95,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   ADD_EXECUTABLE(t_GroupLabelLogger
     Runner.cpp
     t_GroupLabelLogger.cpp
+    GroupLabelLoggerTestFixture.cpp
   )
   TARGET_LINK_LIBRARIES(t_GroupLabelLogger ${libs})
   SET_TARGET_PROPERTIES(t_GroupLabelLogger PROPERTIES
