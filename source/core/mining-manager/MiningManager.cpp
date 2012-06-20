@@ -374,11 +374,6 @@ bool MiningManager::open()
                 if (!groupLabelLoggerMap_[propName])
                 {
                     std::auto_ptr<GroupLabelLogger> loggerPtr(new GroupLabelLogger(logPath, propName));
-                    if (! loggerPtr->open())
-                    {
-                        std::cerr << "failed in openning label logger on group property: " << propName << std::endl;
-                        return false;
-                    }
                     groupLabelLoggerMap_[propName] = loggerPtr.release();
                 }
                 else
@@ -1429,7 +1424,9 @@ bool MiningManager::setTopGroupLabel(
             return false;
     }
 
-    return logger->setTopLabel(query, pvId);
+    std::vector<faceted::PropValueTable::pvid_t> pvIdVec;
+    pvIdVec.push_back(pvId);
+    return logger->setTopLabel(query, pvIdVec);
 }
 
 bool MiningManager::getMerchantScore(

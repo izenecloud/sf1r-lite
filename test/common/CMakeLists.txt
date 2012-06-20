@@ -7,7 +7,7 @@ SET(libs
 
   ${izenelib_LIBRARIES}
 
-  # #external
+  #external
   ${Boost_LIBRARIES}
   ${Glog_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
