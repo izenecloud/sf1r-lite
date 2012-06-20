@@ -46,6 +46,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   snappy
   cassandra
   sf1r
+  NUMA
   )
 
 FIND_PACKAGE(ilplib REQUIRED)

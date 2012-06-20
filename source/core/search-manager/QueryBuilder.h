@@ -57,7 +57,7 @@ public:
     *@return if failed, NULL is returned
     */
     MultiPropertyScorer* prepare_dociterator(
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const property_weight_map& propertyWeightMap_,
         const std::vector<std::string>& properties,
@@ -71,7 +71,7 @@ public:
     *@return if failed, NULL is returned
     */
     WANDDocumentIterator* prepare_wand_dociterator(
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const property_weight_map& propertyWeightMap,
         const std::vector<std::string>& properties,
@@ -122,7 +122,7 @@ private:
     void prepare_for_property_(
         MultiPropertyScorer* pScorer,
         size_t & success_properties,
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const PropertyConfig& properyConfig,        
         bool readPositions,
@@ -132,7 +132,7 @@ private:
     void prepare_for_virtual_property_(
         MultiPropertyScorer* pScorer,
         size_t & success_properties,
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const PropertyConfig& properyConfig,        
         bool readPositions,
@@ -144,7 +144,7 @@ private:
     void prepare_for_wand_property_(
         WANDDocumentIterator* pWandScorer,
         size_t & success_properties,
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const std::string& property,
         unsigned int propertyId,

@@ -29,8 +29,7 @@ double MultiPropertyScorer::score(
             {
                 if (weight != 0.0F)
                 {
-                    //rankDocumentProperty_.reset();
-                    rankDocumentProperty_.resize(rankQueryProperties[i].size());
+                    rankDocumentProperty_.resize_and_initdata(rankQueryProperties[i].size());
                     pEntry->doc_item(rankDocumentProperty_);
 
                     //START_PROFILER ( compute_score )
