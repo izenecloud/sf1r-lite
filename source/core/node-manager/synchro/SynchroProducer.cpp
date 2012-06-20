@@ -266,7 +266,7 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
     // to local host
     if (consumerHost == SuperNodeManager::get()->getLocalHostIP())
     {
-        std::cout << "[SynchroProducer] consumerHost: "<<consumerHost<< " is on localhost";
+        std::cout << "[SynchroProducer] consumerHost: "<<consumerHost<< " is on localhost" << std::endl;
         ret = true;
     }
     // to remote host
