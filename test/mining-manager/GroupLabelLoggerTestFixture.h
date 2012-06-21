@@ -11,6 +11,7 @@
 #include <mining-manager/group-label-logger/GroupLabelLogger.h>
 
 #include <map>
+#include <vector>
 #include <string>
 #include <boost/scoped_ptr.hpp>
 #include <boost/random/mersenne_twister.hpp>
@@ -41,9 +42,7 @@ private:
     struct LabelCounterFixture
     {
         LabelCountMap countMap_;
-        LabelId manualTop_;
-
-        LabelCounterFixture() : manualTop_(0) {}
+        std::vector<LabelId> setLabels_;
     };
 
     void checkLabel_(
@@ -51,6 +50,20 @@ private:
         const std::vector<LabelId>& labelIdVec,
         const std::vector<int>& freqVec,
         const LabelCounterFixture& labelCounterFixture
+    );
+
+    void checkLogLabel_(
+        int limit,
+        const std::vector<LabelId>& labelIdVec,
+        const std::vector<int>& freqVec,
+        const LabelCountMap& labelCountMap
+    );
+
+    void checkSetLabel_(
+        int limit,
+        const std::vector<LabelId>& labelIdVec,
+        const std::vector<int>& freqVec,
+        const std::vector<LabelId>& setLabels
     );
 
     std::string getRandomQuery_();
