@@ -715,8 +715,9 @@ bool LogDispatchHandler::GetUuidByDocidList_(
                 uuid_freq_map.left.insert(uuid_freq_map_type::left_map::value_type(uuid, 1));
             else
             {
+                unsigned freq = uuid_left_it->second + 1;
                 uuid_freq_map.left.erase(uuid);
-                uuid_freq_map.left.insert(uuid_freq_map_type::left_map::value_type(uuid, uuid_left_it->second + 1));
+                uuid_freq_map.left.insert(uuid_freq_map_type::left_map::value_type(uuid, freq));
             }
         }
     }
