@@ -87,7 +87,8 @@ public:
             uint32_t topK = 200,
             uint32_t knnTopK = 200,
             uint32_t knnDist = 15,
-            uint32_t start = 0);
+            uint32_t start = 0,
+            bool enable_parallel_searching = false);
 
     bool rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 

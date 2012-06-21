@@ -123,6 +123,9 @@ public:
     /// @brief whether trigger Question Answering mode
     bool bTriggerQA_;
 
+    /// @brief whether the parallel searching
+    bool enable_parallel_searching_;
+
     /// @brief document cache number
     size_t documentCacheNum_;
 

@@ -17,6 +17,7 @@ IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collection
     , isWorkerNode_(false)
     , encoding_(izenelib::util::UString::UNKNOWN)
     , wildcardType_("unigram")
+    , enable_parallel_searching_(false)
 {}
 
 void IndexBundleConfiguration::setSchema(const DocumentSchema& documentSchema)

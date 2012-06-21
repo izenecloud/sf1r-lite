@@ -209,7 +209,8 @@ bool SearchManager::search(
         uint32_t topK,
         uint32_t knnTopK,
         uint32_t knnDist,
-        uint32_t start)
+        uint32_t start,
+        bool enable_parallel_searching)
 {
     CREATE_PROFILER( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
     CREATE_PROFILER( preparerank, "SearchManager", "doSearch_: prepare ranker");
@@ -227,7 +228,9 @@ bool SearchManager::search(
         running_node = ++s_round%s_cpu_topology_info.cpu_topology_array.size();
         thread_num = s_cpu_topology_info.cpu_topology_array[running_node].size();
     }
-    //thread_num = 1;
+
+    if(!enable_parallel_searching)
+        thread_num = 1;
 
     if (distSearchInfo.effective_ && 
         (distSearchInfo.option_ == DistKeywordSearchInfo::OPTION_GATHER_INFO))
