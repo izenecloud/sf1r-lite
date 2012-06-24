@@ -1372,8 +1372,8 @@ faceted::PropValueTable::pvid_t MiningManager::propValueId_(
     faceted::PropValueTable::pvid_t pvId = 0;
     const faceted::PropValueTable* propValueTable = NULL;
 
-    if (groupManager_
-            && (propValueTable = groupManager_->getPropValueTable(propName)))
+    if (groupManager_ &&
+        (propValueTable = groupManager_->getPropValueTable(propName)))
     {
         std::vector<izenelib::util::UString> ustrPath;
         for (std::vector<std::string>::const_iterator it = groupPath.begin();
@@ -1406,7 +1406,7 @@ faceted::PropValueTable::pvid_t MiningManager::propValueId_(
 bool MiningManager::setTopGroupLabel(
         const std::string& query,
         const std::string& propName,
-        const std::vector<std::string>& groupPath
+        const std::vector<std::vector<std::string> >& groupLabels
 )
 {
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
@@ -1416,16 +1416,17 @@ bool MiningManager::setTopGroupLabel(
         return false;
     }
 
-    faceted::PropValueTable::pvid_t pvId = 0;
-    if (! groupPath.empty())
+    std::vector<faceted::PropValueTable::pvid_t> pvIdVec;
+    for (std::vector<std::vector<std::string> >::const_iterator it = groupLabels.begin();
+        it != groupLabels.end(); ++it)
     {
-        pvId = propValueId_(propName, groupPath);
+        faceted::PropValueTable::pvid_t pvId = propValueId_(propName, *it);
         if (pvId == 0)
             return false;
+
+        pvIdVec.push_back(pvId);
     }
 
-    std::vector<faceted::PropValueTable::pvid_t> pvIdVec;
-    pvIdVec.push_back(pvId);
     return logger->setTopLabel(query, pvIdVec);
 }
 

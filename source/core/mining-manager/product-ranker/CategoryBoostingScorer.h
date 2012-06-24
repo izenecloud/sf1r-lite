@@ -11,6 +11,7 @@
 
 #include "ProductScorer.h"
 #include <boost/shared_ptr.hpp>
+#include <vector>
 
 namespace sf1r
 {
@@ -20,6 +21,7 @@ class SearchManager;
 namespace faceted
 {
 class PropValueTable;
+struct GroupPropParam;
 }
 
 class CategoryBoostingScorer : public ProductScorer
@@ -40,11 +42,21 @@ public:
     void selectBoostingCategory(ProductRankingParam& param);
 
 private:
+    enum BOOSTING_REASON
+    {
+        BOOSTING_SELECT_LABEL = 0,
+        BOOSTING_FREQ_LABEL,
+        BOOSTING_MAX_AVG_LABEL,
+        BOOSTING_REASON_NUM
+    };
+
     void printBoostingLabel_(
         const std::string& query,
         category_id_t boostLabel,
-        bool isMaxAvgLabel
+        BOOSTING_REASON reason
     ) const;
+
+    category_id_t getFirstSelectLabel_(const faceted::GroupParam& groupParam);
 
     category_id_t getFreqLabel_(const std::string& query);
 
@@ -57,8 +69,7 @@ private:
 
     const std::string& boostingSubProp_;
 
-    const std::string reasonFreqLabel_;
-    const std::string reasonMaxAvgLabel_;
+    std::vector<std::string> boostingReasons_;
 };
 
 } // namespace sf1r

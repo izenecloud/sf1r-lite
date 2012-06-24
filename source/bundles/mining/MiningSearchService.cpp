@@ -247,10 +247,10 @@ bool MiningSearchService::getFreqGroupLabel(
 bool MiningSearchService::setTopGroupLabel(
     const std::string& query,
     const std::string& propName,
-    const std::vector<std::string>& groupPath
+    const std::vector<std::vector<std::string> >& groupLabels
 )
 {
-    return miningManager_->setTopGroupLabel(query, propName, groupPath);
+    return miningManager_->setTopGroupLabel(query, propName, groupLabels);
 }
 
 bool MiningSearchService::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
