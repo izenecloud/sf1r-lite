@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(sorter1)
     SortPropertyComparator* pComparator =
         new SortPropertyComparator(propDate);
 
-    Sorter* pSorter = new Sorter(NULL);
+    boost::shared_ptr<Sorter> pSorter(new Sorter(NULL));
     SortProperty* pSortProperty = new SortProperty("date", UNSIGNED_INT_PROPERTY_TYPE, pComparator, SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty);
     PropertySortedHitQueue* scoreItemQueue = new PropertySortedHitQueue(pSorter, MAXDOC);
@@ -79,7 +79,6 @@ BOOST_AUTO_TEST_CASE(sorter1)
     }
 
     delete scoreItemQueue;
-    delete pSorter;
 }
 
 BOOST_AUTO_TEST_CASE(sorter2)
@@ -100,7 +99,7 @@ BOOST_AUTO_TEST_CASE(sorter2)
     SortPropertyComparator* pComparator2 = 
         new SortPropertyComparator(propDate2);
 
-    Sorter* pSorter = new Sorter(NULL);
+    boost::shared_ptr<Sorter> pSorter(new Sorter(NULL));
     SortProperty* pSortProperty1 = new SortProperty("date", UNSIGNED_INT_PROPERTY_TYPE,pComparator1, SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty1);
     SortProperty* pSortProperty2 = new SortProperty("count", UNSIGNED_INT_PROPERTY_TYPE,pComparator2,SortProperty::AUTO, false);
@@ -120,7 +119,6 @@ BOOST_AUTO_TEST_CASE(sorter2)
     }
 
     delete scoreItemQueue;
-    delete pSorter;
 }
 
 BOOST_AUTO_TEST_CASE(sorter3)
@@ -141,7 +139,7 @@ BOOST_AUTO_TEST_CASE(sorter3)
     SortPropertyComparator* pComparator2 = 
         new SortPropertyComparator(propDate2);
 
-    Sorter* pSorter = new Sorter(NULL);
+    boost::shared_ptr<Sorter> pSorter(new Sorter(NULL));
     SortProperty* pSortProperty2 = new SortProperty("count", UNSIGNED_INT_PROPERTY_TYPE,pComparator2,SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty2);
     SortProperty* pSortProperty1 = new SortProperty("date", UNSIGNED_INT_PROPERTY_TYPE,pComparator1,SortProperty::AUTO, false);
@@ -161,7 +159,6 @@ BOOST_AUTO_TEST_CASE(sorter3)
     }
 
     delete scoreItemQueue;
-    delete pSorter;
 }
 
 BOOST_AUTO_TEST_SUITE_END()

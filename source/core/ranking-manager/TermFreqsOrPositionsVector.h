@@ -13,6 +13,7 @@
 #include <limits>
 #include <utility>
 #include <vector>
+#include <memory.h>
 
 namespace sf1r {
 
@@ -45,24 +46,30 @@ public:
 
     TermFreqsOrPositionsVector()
     : active_(kNotPosition)
+    ,positionusedsize_(0)
+    ,usedsize_(0)
     {}
 
     ///@brief Initializes the vector with specified size.
     explicit TermFreqsOrPositionsVector(size_type size)
     : active_(kNotPosition)
-    , offsets_(size, std::pair<size_type, size_type>(kNotPosition, 0))
+      ,positionusedsize_(0)
+      , offsets_(size, std::pair<size_type, size_type>(kNotPosition, 0))
+      ,usedsize_(size)
     {}
 
     ///@brief Number of terms
     size_type size() const
     {
-        return offsets_.size();
+        return usedsize_;
+        //return offsets_.size();
     }
 
     ///@brief Number of terms
     bool empty() const
     {
-        return offsets_.empty();
+        return usedsize_ == 0;
+        //return offsets_.empty();
     }
 
     void resize(size_type size)
@@ -71,7 +78,9 @@ public:
         {
             active_ = kNotPosition;
         }
-        offsets_.resize(size, std::pair<size_type, size_type>(kNotPosition, 0));
+        if(size > usedsize_)
+            offsets_.resize(size, std::pair<size_type, size_type>(kNotPosition, 0));
+        usedsize_ = size;
     }
 
     ///@brief Clears data but reserve memory chunk
@@ -80,6 +89,34 @@ public:
         active_ = kNotPosition;
         offsets_.resize(0);
         positions_.resize(0);
+        usedsize_ = 0;
+        positionusedsize_ = 0;
+    }
+    
+    ///@brief  for efficient, only fill the data with zeros, a resize need be called after this call.
+    void initdata()
+    {
+        active_ = kNotPosition;
+        memset(&offsets_[0], 0, sizeof(offsets_[0])*offsets_.size());
+        memset(&positions_[0], 0, sizeof(positions_[0])*positions_.size());
+        usedsize_ = 0;
+        positionusedsize_ = 0;
+    }
+
+    void resize_and_initdata(size_type size)
+    {
+        active_ = kNotPosition;
+        positionusedsize_ = 0;
+        if (active_ >= size)
+        {
+            active_ = kNotPosition;
+        }
+        if(size > usedsize_)
+            offsets_.resize(size, std::pair<size_type, size_type>(kNotPosition, 0));
+        usedsize_ = size;
+
+        memset(&offsets_[0], 0, sizeof(offsets_[0])*size);
+        //memset(&positions_[0], 0, sizeof(positions_[0])*size);
     }
 
     /**
@@ -89,7 +126,7 @@ public:
      */
     bool activated(size_type i) const
     {
-        return i < offsets_.size() && offsets_[i].first != kNotPosition;
+        return i < usedsize_ && offsets_[i].first != kNotPosition;
     }
 
     /**
@@ -104,12 +141,12 @@ public:
      */
     void activate(size_type i)
     {
-        BOOST_ASSERT(i < offsets_.size());
+        BOOST_ASSERT(i < usedsize_);
 
         if (active_ != i)
         {
             // points to the end of positions
-            offsets_[i].first = positions_.size();
+            offsets_[i].first = positionusedsize_;
             offsets_[i].second = 0;
 
             active_ = i;
@@ -121,8 +158,16 @@ public:
      */
     void addTerm()
     {
-        offsets_.push_back(std::pair<size_type, size_type>(positions_.size(), 0));
-        active_ = offsets_.size() - 1;
+        if(usedsize_ == offsets_.size())
+        {
+            offsets_.push_back(std::pair<size_type, size_type>(positionusedsize_, 0));
+            ++usedsize_;
+        }
+        else if(usedsize_ < offsets_.size())
+        {
+            offsets_[usedsize_++] = std::pair<size_type, size_type>(positionusedsize_, 0);
+        }
+        active_ = usedsize_ - 1;
     }
 
     /**
@@ -139,7 +184,7 @@ public:
      */
     void setFreq(size_type i, size_type freq)
     {
-        BOOST_ASSERT(i < offsets_.size());
+        BOOST_ASSERT(i < usedsize_);
         offsets_[i].first = kNotPosition;
         offsets_[i].second = freq;
 
@@ -156,14 +201,20 @@ public:
     {
         BOOST_ASSERT(active_ != kNotPosition);
 
-        positions_.push_back(position);
+        if(positionusedsize_ == positions_.size())
+        {
+            positions_.push_back(position);
+            ++positionusedsize_;
+        }
+        else
+            positions_[positionusedsize_++] = position;
         ++(offsets_[active_].second);
     }
 
     ///@brief begin iterator of \a i -th term
     position_iterator beginAt(size_type i)
     {
-        BOOST_ASSERT(i < offsets_.size());
+        BOOST_ASSERT(i < usedsize_);
         return offsets_[i].first == kNotPosition
             ? positions_.end()
             : positions_.begin() + offsets_[i].first;
@@ -172,7 +223,7 @@ public:
     ///@brief end iterator of \a i -th term
     position_iterator endAt(size_type i)
     {
-        BOOST_ASSERT(i < offsets_.size());
+        BOOST_ASSERT(i < usedsize_);
         return offsets_[i].first == kNotPosition
             ? positions_.end()
             : positions_.begin() + offsets_[i].first + offsets_[i].second;
@@ -181,7 +232,7 @@ public:
     ///@brief begin iterator of \a i -th term
     const_position_iterator beginAt(size_type i) const
     {
-        BOOST_ASSERT(i < offsets_.size());
+        BOOST_ASSERT(i < usedsize_);
         return offsets_[i].first == kNotPosition
             ? positions_.end()
             : positions_.begin() + offsets_[i].first;
@@ -190,7 +241,7 @@ public:
     ///@brief end iterator of \a i -th term
     const_position_iterator endAt(size_type i) const
     {
-        BOOST_ASSERT(i < offsets_.size());
+        BOOST_ASSERT(i < usedsize_);
         return offsets_[i].first == kNotPosition
             ? positions_.end()
             : positions_.begin() + offsets_[i].first + offsets_[i].second;
@@ -199,7 +250,7 @@ public:
     ///@brief number of positions of \a i -th term, i.e., tf of the term.
     size_type freqAt(size_type i) const
     {
-        BOOST_ASSERT(i < offsets_.size());
+        BOOST_ASSERT(i < usedsize_);
         return offsets_[i].second;
     }
 
@@ -209,9 +260,11 @@ private:
 
     ///@brief positions of all terms stored in one vector
     std::vector<loc_t> positions_;
+    std::size_t positionusedsize_;
 
     ///@brief start and end position of positions in \c positions_
     std::vector<std::pair<size_type, size_type> > offsets_;
+    std::size_t usedsize_;
 };
 
 } // namespace sf1r

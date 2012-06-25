@@ -129,7 +129,7 @@ void QueryBuilder::prepare_filter(
 }
 
 WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const property_weight_map& propertyWeightMap,
         const std::vector<std::string>& properties,
@@ -180,7 +180,7 @@ WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
 void QueryBuilder::prepare_for_wand_property_(
         WANDDocumentIterator* pWandScorer,
         size_t & success_properties,
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const std::string& property,
         unsigned int propertyId,
@@ -236,7 +236,7 @@ void QueryBuilder::prepare_for_wand_property_(
 }
 
 MultiPropertyScorer* QueryBuilder::prepare_dociterator(
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const property_weight_map& propertyWeightMap,
         const std::vector<std::string>& properties,
@@ -390,7 +390,7 @@ void QueryBuilder::prefetch_term_doc_readers_(
 void QueryBuilder::prepare_for_property_(
         MultiPropertyScorer* pScorer,
         size_t & success_properties,
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const PropertyConfig& properyConfig,
         bool readPositions,
@@ -533,7 +533,7 @@ void QueryBuilder::post_prepare_ranker_(
 void QueryBuilder::prepare_for_virtual_property_(
         MultiPropertyScorer* pScorer,
         size_t & success_properties,
-        SearchKeywordOperation& actionOperation,
+        const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
         const PropertyConfig& properyConfig, //virtual property config
         bool readPositions,

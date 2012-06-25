@@ -369,7 +369,8 @@ bool SearchWorker::getSearchResult_(
                 TOP_K_NUM,
                 KNN_TOP_K_NUM,
                 KNN_DIST,
-                topKStart
+                topKStart,
+                bundleConfig_->enable_parallel_searching_
                 ))
     {
         std::string newQuery;
@@ -398,7 +399,8 @@ bool SearchWorker::getSearchResult_(
                     TOP_K_NUM,
                     KNN_TOP_K_NUM,
                     KNN_DIST,
-                    topKStart
+                    topKStart,
+                    bundleConfig_->enable_parallel_searching_
                     ))
         {
             return true;

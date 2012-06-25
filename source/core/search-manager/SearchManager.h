@@ -43,6 +43,7 @@ class WANDDocumentIterator;
 class CombinedDocumentIterator;
 class HitQueue;
 class ProductRankerFactory;
+class SearchThreadParam;
 
 namespace faceted
 {
@@ -86,7 +87,8 @@ public:
             uint32_t topK = 200,
             uint32_t knnTopK = 200,
             uint32_t knnDist = 15,
-            uint32_t start = 0);
+            uint32_t start = 0,
+            bool enable_parallel_searching = false);
 
     bool rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
@@ -115,15 +117,12 @@ public:
 private:
     bool doSearch_(
             bool isWandSearch,
-            SearchKeywordOperation& actionOperation,
-            std::vector<unsigned int>& docIdList,
-            std::vector<float>& rankScoreList,
-            std::vector<float>& customRankScoreList,
+            const SearchKeywordOperation& actionOperation,
             std::size_t& totalCount,
             sf1r::PropertyRange& propertyRange,
             uint32_t start,
-            std::vector<RankQueryProperty>& rankQueryProperties,
-            std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
+            const std::vector<RankQueryProperty>& rankQueryProperties,
+            const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
             Sorter* pSorter,
             CustomRankerPtr customRanker,
             MultiPropertyScorer* pMultiPropertyIterator,
@@ -131,7 +130,27 @@ private:
             CombinedDocumentIterator* pDocIterator,
             faceted::GroupFilter* groupFilter,
             HitQueue* scoreItemQueue,
-            int heapSize);
+            int heapSize,
+            std::size_t docid_start,
+            std::size_t docid_num_byeachthread,
+            std::size_t docid_nextstart_inc);
+
+    void doSearchInThreadOneParam(SearchThreadParam* pParam);
+
+    bool doSearchInThread(const SearchKeywordOperation& actionOperation,
+        std::size_t& totalCount,
+        sf1r::PropertyRange& propertyRange,
+        uint32_t start,
+        boost::shared_ptr<Sorter>& pSorter_orig,
+        CustomRankerPtr& customRanker_orig,
+        boost::shared_ptr<faceted::GroupFilter>& groupFilter,
+        boost::shared_ptr<HitQueue>& scoreItemQueue,
+        DistKeywordSearchInfo& distSearchInfo,
+        int heapSize,
+        std::size_t docid_start,
+        std::size_t docid_num_byeachthread,
+        std::size_t docid_nextstart_inc
+        );
 
 
     bool getPropertyTypeByName_(
@@ -141,9 +160,9 @@ private:
     boost::shared_ptr<PropertyData> getPropertyData_(const std::string& name);
 
     void prepare_sorter_customranker_(
-            SearchKeywordOperation& actionOperation,
+            const SearchKeywordOperation& actionOperation,
             CustomRankerPtr& customRanker,
-            Sorter* &pSorter);
+            boost::shared_ptr<Sorter> &pSorter);
 
     /**
      * rebuild custom ranker.

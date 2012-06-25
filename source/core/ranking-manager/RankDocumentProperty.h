@@ -55,6 +55,10 @@ public:
     {
         freqsOrPositionsVector_.reset();
     }
+    void resize_and_initdata(size_type size)
+    {
+        freqsOrPositionsVector_.resize_and_initdata(size);
+    }
     bool activated(size_type i) const
     {
         return freqsOrPositionsVector_.activated(i);

@@ -47,8 +47,7 @@ double VirtualPropertyScorer::score(
         double weight = propertyWeightList_[i];
         if(weight != 0.0F)
         {
-            rankDocumentProperty_.reset();
-            rankDocumentProperty_.resize(rankQueryProperties_[i].size());
+            rankDocumentProperty_.resize_and_initdata(rankQueryProperties_[i].size());
             pIter_->doc_item(rankDocumentProperty_,i);
             score += weight * propertyRankers_[i]->getScore(
                     rankQueryProperties_[i],

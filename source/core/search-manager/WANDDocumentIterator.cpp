@@ -353,8 +353,7 @@ double WANDDocumentIterator::score(
             double weight = propertyWeightList_[index];
             if (weight != 0.0F)
             {
-                rankDocumentProperty_.reset();
-                rankDocumentProperty_.resize(rankQueryProperties[index].size());
+                rankDocumentProperty_.resize_and_initdata(rankQueryProperties[index].size());
                 pEntry->doc_item(rankDocumentProperty_);
 
                 //START_PROFILER ( compute_score )

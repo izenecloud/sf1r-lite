@@ -114,35 +114,35 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
 
   MACRO_SET_BUILD_TYPES(
     RelWithDebInfo
-    "-O2 -g -Wno-deprecated -DNDEBUG"
+    "-fopenmp -O2 -g -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during Release with Debug Info builds."
 
     Release
-    "-O3 -Wno-deprecated -DNDEBUG"
+    "-fopenmp -O3 -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during release builds"
 
     MinSizeRel
-    "-Os -Wno-deprecated -DNDEBUG"
+    "-fopenmp -Os -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during release minsize builds."
 
     Debug
-    "-g -O0 -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated"
+    "-fopenmp -g -O0 -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated"
     "Flags used by the compiler during debug builds."
 
     Profile
-    "-g3 -fno-inline -ftest-coverage -fprofile-arcs -Wno-deprecated"
+    "-fopenmp -g3 -fno-inline -ftest-coverage -fprofile-arcs -Wno-deprecated"
     "Profile build type"
 
     SF1DEBUG
-    "-O3 -g -Wno-deprecated -DSF1_DEBUG"
+    "-fopenmp -O3 -g -Wno-deprecated -DSF1_DEBUG"
     "Sf1 Debug build type"
 
     SF1TIMECHECK
-    "-O3 -DNDEBUG -g -Wno-deprecated -DSF1_TIME_CHECK"
+    "-fopenmp -O3 -DNDEBUG -g -Wno-deprecated -DSF1_TIME_CHECK"
     "Sf1 time check build type"
 
     SF1PCHECK
-    "-O3 -Wno-deprecated -DNDEBUG -DSF1_TIME_CHECK"
+    "-fopenmp -O3 -Wno-deprecated -DNDEBUG -DSF1_TIME_CHECK"
     "Sf1 performance check build type"
 
     COBRARELWITHDEBINFO
