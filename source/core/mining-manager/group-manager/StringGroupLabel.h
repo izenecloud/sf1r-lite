@@ -27,12 +27,13 @@ public:
 
     bool test(docid_t doc) const;
 
+    const PropSharedLock* getSharedLock() { return &propValueTable_; }
+
 private:
     void getTargetValueIds_(const GroupParam::GroupPathVec& labelPaths);
 
 private:
     const PropValueTable& propValueTable_;
-    PropValueTable::ScopedReadLock lock_;
 
     std::vector<PropValueTable::pvid_t> targetValueIds_;
     NS_BOOST_MEMORY::block_pool recycle_;

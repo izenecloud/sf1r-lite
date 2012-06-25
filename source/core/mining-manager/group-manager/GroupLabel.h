@@ -10,25 +10,18 @@
 
 #include "../faceted-submanager/faceted_types.h"
 #include "GroupCounter.h"
+#include "PropSharedLockGetter.h"
 
 NS_FACETED_BEGIN
 
-class GroupLabel
+class GroupLabel : public PropSharedLockGetter
 {
 public:
-    GroupLabel()
-        : counter_(NULL)
-    {}
+    GroupLabel() : counter_(NULL) {}
 
-    virtual ~GroupLabel() {}
+    void setCounter(GroupCounter* counter) { counter_ = counter; }
 
-    void setCounter(GroupCounter* counter) {
-        counter_ = counter;
-    }
-
-    GroupCounter* getCounter() {
-        return counter_;
-    }
+    GroupCounter* getCounter() { return counter_; }
 
     virtual bool test(docid_t doc) const = 0;
 

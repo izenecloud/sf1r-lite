@@ -15,15 +15,15 @@
 #include <util/ustring/UString.h>
 #include "../faceted-submanager/faceted_types.h"
 #include "../group-manager/PropIdTable.h"
+#include "../group-manager/PropSharedLock.h"
 
-#include <boost/thread.hpp>
 #include <vector>
 #include <string>
 #include <map>
 
 NS_FACETED_BEGIN
 
-class AttrTable
+class AttrTable : public PropSharedLock
 {
 public:
     /**
@@ -43,10 +43,6 @@ public:
 
     typedef PropIdTable<vid_t, uint32_t> ValueIdTable;
     typedef ValueIdTable::PropIdList ValueIdList;
-
-    typedef boost::shared_mutex MutexType;
-    typedef boost::shared_lock<MutexType> ScopedReadLock;
-    typedef boost::unique_lock<MutexType> ScopedWriteLock;
 
     AttrTable();
 
@@ -103,8 +99,6 @@ public:
      * @return value id, if @p value is not inserted before, 0 is returned
      */
     vid_t valueId(nid_t nameId, const izenelib::util::UString& value) const;
-
-    MutexType& getMutex() const { return mutex_; }
 
     /**
      * @attention before calling below public functions,
@@ -174,8 +168,6 @@ private:
     unsigned int saveIndexNum_;
     /** the number of elements in @c valueIdTable_.multiValueTable_ saved in file */
     unsigned int saveValueNum_;
-
-    mutable MutexType mutex_;
 };
 
 NS_FACETED_END

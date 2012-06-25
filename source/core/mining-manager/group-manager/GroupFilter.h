@@ -9,6 +9,7 @@
 #define SF1R_GROUP_FILTER_H
 
 #include "../faceted-submanager/faceted_types.h"
+#include <set>
 
 NS_FACETED_BEGIN
 
@@ -22,6 +23,8 @@ class AttrLabel;
 class GroupCounter;
 class AttrCounter;
 class GroupCounterLabelBuilder;
+class PropSharedLock;
+class PropSharedLockGetter;
 
 class GroupFilter
 {
@@ -39,6 +42,9 @@ public:
      * @return true for success, false for failure
      */
     bool initAttr(const AttrTable& attrTable);
+
+    /** lock shared data */
+    void lockShared() const;
 
     /**
      * Check whether doc belongs to the labels in @c groupParam_.
@@ -60,6 +66,10 @@ public:
     );
 
 private:
+    void insertSharedLock_(PropSharedLockGetter* getter);
+    void unlockShared_() const;
+
+private:
     const GroupParam& groupParam_;
 
     /** group label instances */
@@ -73,6 +83,10 @@ private:
 
     /** attr counter instance */
     AttrCounter* attrCounter_;
+
+    /** a set of shared locks */
+    typedef std::set<const PropSharedLock*> SharedLockSet;
+    SharedLockSet sharedLockSet_;
 };
 
 NS_FACETED_END

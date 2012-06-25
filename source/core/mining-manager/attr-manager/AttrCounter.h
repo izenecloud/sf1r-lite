@@ -8,18 +8,21 @@
 #ifndef SF1R_ATTR_COUNTER_H
 #define SF1R_ATTR_COUNTER_H
 
+#include "AttrTable.h"
 #include "../faceted-submanager/faceted_types.h"
 #include "../faceted-submanager/ontology_rep.h"
-#include "AttrTable.h"
+#include "../group-manager/PropSharedLockGetter.h"
 
 #include <vector>
 
 NS_FACETED_BEGIN
 
-class AttrCounter
+class AttrCounter : public PropSharedLockGetter
 {
 public:
     AttrCounter(const AttrTable& attrTable);
+
+    virtual const PropSharedLock* getSharedLock() { return &attrTable_; }
 
     void addDoc(docid_t doc);
 
@@ -29,7 +32,6 @@ public:
 
 private:
     const AttrTable& attrTable_;
-    AttrTable::ScopedReadLock lock_;
 
     /** map from name id to doc count */
     std::vector<int> nameCountTable_;

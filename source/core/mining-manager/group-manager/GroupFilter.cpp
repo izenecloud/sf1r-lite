@@ -5,6 +5,7 @@
 #include "GroupLabel.h"
 #include "GroupCounterLabelBuilder.h"
 #include "GroupRep.h"
+#include "PropSharedLockGetter.h"
 #include "../faceted-submanager/ontology_rep.h"
 #include "../attr-manager/AttrTable.h"
 #include "../attr-manager/AttrCounter.h"
@@ -42,6 +43,8 @@ GroupFilter::~GroupFilter()
     attrLabels_.clear();
 
     delete attrCounter_;
+
+    unlockShared_();
 }
 
 bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
@@ -62,6 +65,7 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
             {
                 groupCounterMap[propName] = counter;
                 groupCounters_.push_back(counter);
+                insertSharedLock_(counter);
             }
             else
             {
@@ -90,6 +94,7 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
             }
 
             groupLabels_.push_back(label);
+            insertSharedLock_(label);
         }
         else
         {
@@ -106,14 +111,18 @@ bool GroupFilter::initAttr(const AttrTable& attrTable)
     if (groupParam_.isAttrGroup_)
     {
         attrCounter_ = new AttrCounter(attrTable);
+        insertSharedLock_(attrCounter_);
     }
 
     const GroupParam::AttrLabelMap& labels = groupParam_.attrLabels_;
     for (GroupParam::AttrLabelMap::const_iterator labelIt = labels.begin();
         labelIt != labels.end(); ++labelIt)
     {
-        attrLabels_.push_back(new AttrLabel(attrTable,
-            labelIt->first, labelIt->second));
+        AttrLabel* label = new AttrLabel(attrTable,
+            labelIt->first, labelIt->second);
+
+        attrLabels_.push_back(label);
+        insertSharedLock_(label);
     }
 
     return true;
@@ -214,6 +223,34 @@ void GroupFilter::getGroupRep(
     }
 
     LOG(INFO) << "GroupFilter::getGroupRep() costs " << timer.elapsed() << " seconds";
+}
+
+void GroupFilter::insertSharedLock_(PropSharedLockGetter* getter)
+{
+    const PropSharedLock* lock = getter->getSharedLock();
+
+    if (lock)
+    {
+        sharedLockSet_.insert(lock);
+    }
+}
+
+void GroupFilter::lockShared() const
+{
+    for (SharedLockSet::const_iterator it = sharedLockSet_.begin();
+        it != sharedLockSet_.end(); ++it)
+    {
+        (*it)->lockShared();
+    }
+}
+
+void GroupFilter::unlockShared_() const
+{
+    for (SharedLockSet::const_iterator it = sharedLockSet_.begin();
+        it != sharedLockSet_.end(); ++it)
+    {
+        (*it)->unlockShared();
+    }
 }
 
 NS_FACETED_END

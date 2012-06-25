@@ -10,7 +10,6 @@ StringGroupLabel::StringGroupLabel(
     const PropValueTable& pvTable
 )
     : propValueTable_(pvTable)
-    , lock_(pvTable.getMutex())
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
 {

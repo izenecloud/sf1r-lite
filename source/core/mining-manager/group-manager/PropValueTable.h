@@ -11,13 +11,13 @@
 #define SF1R_PROP_VALUE_TABLE_H_
 
 #include <common/inttypes.h>
+#include "PropSharedLock.h"
 #include "PropIdTable.h"
 #include "../faceted-submanager/faceted_types.h"
 
 #include <util/ustring/UString.h>
 
 #include <boost/memory.hpp>
-#include <boost/thread.hpp>
 
 #include <vector>
 #include <string>
@@ -27,7 +27,7 @@
 NS_FACETED_BEGIN
 
 using boost::stl_allocator;
-class PropValueTable
+class PropValueTable : public PropSharedLock
 {
 public:
     /**
@@ -47,10 +47,6 @@ public:
 
     typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t> > ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
-
-    typedef boost::shared_mutex MutexType;
-    typedef boost::shared_lock<MutexType> ScopedReadLock;
-    typedef boost::unique_lock<MutexType> ScopedWriteLock;
 
     PropValueTable(const std::string& dirPath, const std::string& propName);
     PropValueTable(const PropValueTable& table);
@@ -90,8 +86,6 @@ public:
      * @param path store the path
      */
     void propValuePath(pvid_t pvId, std::vector<izenelib::util::UString>& path) const;
-
-    MutexType& getMutex() const { return mutex_; }
 
     /**
      * @attention before calling below public functions,
@@ -168,8 +162,6 @@ private:
     unsigned int saveIndexNum_;
     /** the number of elements in @c valueIdTable_.multiValueTable_ saved in file */
     unsigned int saveValueNum_;
-
-    mutable MutexType mutex_;
 };
 
 template<typename SetType>

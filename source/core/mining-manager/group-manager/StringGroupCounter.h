@@ -31,6 +31,7 @@ public:
     virtual void addDoc(docid_t doc);
     virtual void getGroupRep(GroupRep& groupRep);
     virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const;
+    virtual const PropSharedLock* getSharedLock() { return &propValueTable_; }
 
 private:
     /**
@@ -51,8 +52,6 @@ private:
 
 private:
     const PropValueTable& propValueTable_;
-    PropValueTable::MutexType& mutex_;
-    PropValueTable::ScopedReadLock lock_;
 
     /** map from value id to doc count */
     std::vector<CounterType> countTable_;
@@ -64,8 +63,6 @@ private:
 template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTable)
     : propValueTable_(pvTable)
-    , mutex_(pvTable.getMutex())
-    , lock_(mutex_)
     , countTable_(pvTable.propValueNum())
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
@@ -75,8 +72,6 @@ StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTabl
 template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTable, const CounterType& defaultCounter)
     : propValueTable_(pvTable)
-    , mutex_(pvTable.getMutex())
-    , lock_(mutex_)
     , countTable_(pvTable.propValueNum(), defaultCounter)
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
@@ -86,8 +81,6 @@ StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTabl
 template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const StringGroupCounter& groupCounter)
     : propValueTable_(groupCounter.propValueTable_)
-    , mutex_(groupCounter.mutex_)
-    , lock_(mutex_)
     , countTable_(groupCounter.countTable_)
     , alloc_(recycle_)
     , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)

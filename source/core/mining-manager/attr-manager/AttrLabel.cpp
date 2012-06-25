@@ -17,7 +17,6 @@ AttrLabel::AttrLabel(
     const std::vector<std::string>& attrValues
 )
     : attrTable_(attrTable)
-    , lock_(attrTable.getMutex())
     , attrNameId_(attrTable.nameId(
         izenelib::util::UString(attrName, ENCODING_TYPE)))
 {

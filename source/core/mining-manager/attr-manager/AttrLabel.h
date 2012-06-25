@@ -8,13 +8,14 @@
 #ifndef SF1R_ATTR_LABEL_H
 #define SF1R_ATTR_LABEL_H
 
-#include "../faceted-submanager/faceted_types.h"
 #include "AttrTable.h"
+#include "../faceted-submanager/faceted_types.h"
+#include "../group-manager/PropSharedLockGetter.h"
 #include <set>
 
 NS_FACETED_BEGIN
 
-class AttrLabel
+class AttrLabel : public PropSharedLockGetter
 {
 public:
     AttrLabel(
@@ -22,6 +23,8 @@ public:
         const std::string& attrName,
         const std::vector<std::string>& attrValues
     );
+
+    virtual const PropSharedLock* getSharedLock() { return &attrTable_; }
 
     bool test(docid_t doc) const;
 
@@ -32,7 +35,6 @@ private:
 
 private:
     const AttrTable& attrTable_;
-    AttrTable::ScopedReadLock lock_;
 
     const AttrTable::nid_t attrNameId_;
     std::set<AttrTable::vid_t> targetValueIds_;

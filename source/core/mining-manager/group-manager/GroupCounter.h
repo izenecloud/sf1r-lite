@@ -10,16 +10,13 @@
 
 #include "../faceted-submanager/faceted_types.h"
 #include "GroupRep.h"
+#include "PropSharedLockGetter.h"
 
 NS_FACETED_BEGIN
 
-class GroupCounter
+class GroupCounter : public PropSharedLockGetter
 {
 public:
-    GroupCounter() {}
-
-    virtual ~GroupCounter() {}
-
     virtual GroupCounter* clone() const = 0;
 
     virtual void addDoc(docid_t doc) = 0;
