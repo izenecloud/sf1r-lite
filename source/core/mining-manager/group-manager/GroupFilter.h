@@ -44,7 +44,7 @@ public:
     bool initAttr(const AttrTable& attrTable);
 
     /** lock shared data */
-    void lockShared() const;
+    void lockShared();
 
     /**
      * Check whether doc belongs to the labels in @c groupParam_.
@@ -67,7 +67,7 @@ public:
 
 private:
     void insertSharedLock_(PropSharedLockGetter* getter);
-    void unlockShared_() const;
+    void unlockShared_();
 
 private:
     const GroupParam& groupParam_;
@@ -87,6 +87,9 @@ private:
     /** a set of shared locks */
     typedef std::set<const PropSharedLock*> SharedLockSet;
     SharedLockSet sharedLockSet_;
+
+    /** whether @c lockShared() is called */
+    bool isSharedLocked_;
 };
 
 NS_FACETED_END
