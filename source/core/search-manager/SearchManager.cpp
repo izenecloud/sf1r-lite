@@ -249,9 +249,9 @@ bool SearchManager::search(
     std::vector< boost::shared_ptr<faceted::GroupFilter> > groupFilters;
     groupFilters.resize(thread_num);
 
-    struct timeval tv_start;
-    struct timeval tv_end;
-    gettimeofday(&tv_start, NULL);
+    //struct timeval tv_start;
+    //struct timeval tv_end;
+    //gettimeofday(&tv_start, NULL);
     // begin thread code
     //
     std::vector< boost::shared_ptr<boost::thread> > searching_threads;
@@ -433,10 +433,10 @@ bool SearchManager::search(
         return false;
     }
 
-    gettimeofday(&tv_end, NULL);
-    double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec
-                       + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
-    std::cout << "In thread: " << (long)pthread_self() << "searching by threading all cost " << timespend << " seconds." << std::endl;
+    //gettimeofday(&tv_end, NULL);
+    //double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec
+    //                   + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
+    //std::cout << "In thread: " << (long)pthread_self() << "searching by threading all cost " << timespend << " seconds." << std::endl;
 
     REPORT_PROFILE_TO_SCREEN();
     return true;
