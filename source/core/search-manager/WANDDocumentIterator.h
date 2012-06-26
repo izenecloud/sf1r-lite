@@ -47,7 +47,7 @@ public:
 
     void add(DocumentIterator* pDocIterator) {}
 
-    void set_ub(const UpperBoundInProperties& ubmap);
+    void set_ub(UpperBoundInProperties& ubmap);
 
     void init_threshold(float threshold);
 
@@ -110,8 +110,6 @@ protected:
     float currThreshold_;
 
     docid_t pivotDoc_;
-
-    UpperBoundInProperties ubmap_;
 
     boost::mutex mutex_;
 
