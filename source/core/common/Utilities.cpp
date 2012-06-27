@@ -220,11 +220,11 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
         type = float(0.0);
         return true;
     }
-	else if (sf1r_type == DATETIME_PROPERTY_TYPE)
-	{
-		type = int64_t(0);
-		return true;
-	}
+    else if (sf1r_type == DATETIME_PROPERTY_TYPE)
+    {
+        type = int64_t(0);
+        return true;
+    }
     else
     {
         return false;

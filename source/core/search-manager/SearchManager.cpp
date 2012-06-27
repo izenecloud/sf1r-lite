@@ -1114,7 +1114,7 @@ void SearchManager::getSortPropertyData_(
         switch (propData->type_)
         {
         case INT_PROPERTY_TYPE:
-		case DATETIME_PROPERTY_TYPE:
+        case DATETIME_PROPERTY_TYPE:
             {
                 std::vector<int64_t> dataList(docNum);
                 for (size_t i = 0; i < docNum; i++)

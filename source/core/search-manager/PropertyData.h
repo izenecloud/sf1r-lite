@@ -44,7 +44,7 @@ struct PropertyData
         switch (type_)
         {
         case INT_PROPERTY_TYPE:
-		case DATETIME_PROPERTY_TYPE:
+        case DATETIME_PROPERTY_TYPE:
             delete[] (int64_t*)data_;
             break;
 

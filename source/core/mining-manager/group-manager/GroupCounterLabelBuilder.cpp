@@ -189,7 +189,7 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const std::string& p
     case UNSIGNED_INT_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
-	case DATETIME_PROPERTY_TYPE:
+    case DATETIME_PROPERTY_TYPE:
          counter = createNumericCounter_(prop, subCounter);
          break;
 
@@ -286,7 +286,7 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
     case UNSIGNED_INT_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
-	case DATETIME_PROPERTY_TYPE:
+    case DATETIME_PROPERTY_TYPE:
         label = createNumericRangeLabel_(labelParam);
         break;
 
