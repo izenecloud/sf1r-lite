@@ -28,6 +28,9 @@ public:
         const driver::Value& driverValue,
         PropertyValue& propertyValue
     );
+
+    /// @brief convert @a stringValue to time_t value
+    static time_t stringValue2DatetimeValue(const std::string &stringValue);
 };
 
 } // namespace sf1r

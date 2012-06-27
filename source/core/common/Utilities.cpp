@@ -92,10 +92,10 @@ ptime convert(const std::string& dataStr)
             atm.tm_year = datetime[0] > 1900 ? (datetime[0] - 1900) : (datetime[0] + 2000 - 1900);  // tm_year is 1900 based
             atm.tm_mon = datetime[1] > 0 ? (datetime[1] - 1) : 0;                                   // tm_mon is 0 based
             atm.tm_mday = datetime[2] > 0 ? datetime[2] : 1;
-            //atm.tm_hour = datetime[3] > 0 ? datetime[3] : 0;
-            //atm.tm_min = datetime[4] > 0 ? datetime[4] : 0;
-            //atm.tm_sec = datetime[5] > 0 ? datetime[5] : 0;
-            return ptime(date_from_tm(atm),hours(datetime[3])+minutes(datetime[4])+seconds(datetime[5]));
+            atm.tm_hour = datetime[3] > 0 ? datetime[3] : 0;
+            atm.tm_min = datetime[4] > 0 ? datetime[4] : 0;
+            atm.tm_sec = datetime[5] > 0 ? datetime[5] : 0;
+            return ptime(date_from_tm(atm), time_duration(atm.tm_hour, atm.tm_min, atm.tm_sec));
         }
         catch (const std::exception& e)
         {
@@ -218,6 +218,11 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
     else if (sf1r_type == FLOAT_PROPERTY_TYPE)
     {
         type = float(0.0);
+        return true;
+    }
+    else if (sf1r_type == DATETIME_PROPERTY_TYPE)
+    {
+        type = int64_t(0);
         return true;
     }
     else

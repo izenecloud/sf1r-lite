@@ -45,7 +45,8 @@ bool RangeParser::parse(const Value& rangeValue)
 
     if (propertyConfig.bIndex_ && propertyConfig.bFilter_
         && (propertyConfig.propertyType_ == INT_PROPERTY_TYPE
-           || propertyConfig.propertyType_ == FLOAT_PROPERTY_TYPE))
+           || propertyConfig.propertyType_ == FLOAT_PROPERTY_TYPE
+           || propertyConfig.propertyType_ == DATETIME_PROPERTY_TYPE))
     {
         rangeProperty_ = property;
     }

@@ -1313,7 +1313,8 @@ bool IndexWorker::prepareDocument_(
             }
             else if (iter->getType() == INT_PROPERTY_TYPE
                      || iter->getType() == FLOAT_PROPERTY_TYPE
-                     || iter->getType() == NOMINAL_PROPERTY_TYPE)
+                     || iter->getType() == NOMINAL_PROPERTY_TYPE
+                     || iter->getType() == DATETIME_PROPERTY_TYPE)
             {
                 PropertyValue propData(propertyValueU);
                 document.property(fieldStr).swap(propData);
@@ -1607,6 +1608,7 @@ bool IndexWorker::prepareIndexDocumentRtypeProperty_(
     CREATE_SCOPED_PROFILER (prepareIndexRTypeProperty, "IndexWorker", "IndexWorker::prepareIndexDocumentRTypeProperty_");
     CREATE_PROFILER (pid_int, "IndexWorker", "IndexWorker::prepareIndexDocument_::INT");
     CREATE_PROFILER (pid_float, "IndexWorker", "IndexWorker::prepareIndexDocument_::FLOAT");
+    CREATE_PROFILER (pid_datetime, "IndexWorker", "IndexWorker::prepareIndexDocument_::DATETIME");
 
     if(!iter->isIndex()) return false;
     izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
@@ -1729,6 +1731,15 @@ bool IndexWorker::prepareIndexDocumentRtypeProperty_(
             else
                 indexDocument.insertProperty(indexerPropertyConfig, propertyValueU);
         }
+        break;
+    }
+    case DATETIME_PROPERTY_TYPE:
+    {
+        START_PROFILER(pid_datetime);
+        izenelib::util::UString dateStr;
+        time_t timestamp = Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
+        indexDocument.insertProperty(indexerPropertyConfig, timestamp);
+        STOP_PROFILER(pid_datetime);
         break;
     }
     default:

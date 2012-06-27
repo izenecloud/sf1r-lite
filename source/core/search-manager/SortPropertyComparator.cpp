@@ -32,6 +32,7 @@ void SortPropertyComparator::initComparator()
     switch (type_)
     {
     case INT_PROPERTY_TYPE:
+    case DATETIME_PROPERTY_TYPE:
         comparator_ = &SortPropertyComparator::compareImplInt;
         break;
     case UNSIGNED_INT_PROPERTY_TYPE:

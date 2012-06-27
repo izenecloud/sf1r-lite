@@ -76,6 +76,7 @@ void SortPropertyCache::loadSortData(const std::string& property, PropertyDataTy
     switch (type)
     {
     case INT_PROPERTY_TYPE:
+    case DATETIME_PROPERTY_TYPE:
         pIndexer_->loadPropertyDataForSorting(property, (int64_t*&)data, size);
         break;
 

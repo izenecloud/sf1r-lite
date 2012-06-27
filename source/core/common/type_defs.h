@@ -24,6 +24,7 @@ enum PropertyDataType
     INT_PROPERTY_TYPE,
     FLOAT_PROPERTY_TYPE,
     NOMINAL_PROPERTY_TYPE,
+    DATETIME_PROPERTY_TYPE,
     UNKNOWN_DATA_PROPERTY_TYPE,
     // document-manager's  internal data types
     //FLOAT_TYPE = 0,
