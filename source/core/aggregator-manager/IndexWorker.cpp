@@ -1372,7 +1372,9 @@ bool IndexWorker::mergeDocument_(
             ///When new doc has same properties with old doc
             ///override content of old doc
             if(it->second == doc.property(it->first)) continue;
-            it->second = doc.property(it->first);
+            const izenelib::util::UString& newPropValue = *(get<izenelib::util::UString>(&doc.property(it->first)));
+            if(newPropValue.empty()) continue;
+            it->second = newPropValue;
         }
         else if(generateIndexDoc)
         {

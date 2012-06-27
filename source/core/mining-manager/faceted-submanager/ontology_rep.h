@@ -14,6 +14,8 @@
 #include <common/type_defs.h>
 #include "faceted_types.h"
 #include "ontology_rep_item.h"
+#include <util/PriorityQueue.h>
+
 NS_FACETED_BEGIN
 
 
@@ -22,6 +24,25 @@ class OntologyRep
 {
 public:
     typedef std::list<OntologyRepItem>::iterator item_iterator;
+    /** attribute name , and its doc count */
+    typedef std::pair<sf1r::faceted::CategoryNameType, int> AttrNameFreq;
+
+    class AttrNameFreqQueue : public izenelib::util::PriorityQueue<AttrNameFreq>
+    {
+    public:
+        AttrNameFreqQueue(size_t size)
+        {
+            this->initialize(size);
+        }
+
+    protected:
+        bool lessThan(const AttrNameFreq& p1, const AttrNameFreq& p2) const
+        {
+            return (p1.second < p2.second);
+        }
+    };
+
+
     OntologyRep() {}
     ~OntologyRep() {}
 
@@ -40,6 +61,157 @@ public:
     void swap(OntologyRep& rep)
     {
         item_list.swap(rep.item_list);
+    }
+
+    /* -----------------------------------*/
+    /**
+     * @Brief  merge the OntologyRep and keep the top topGroupNum number by doc_count.
+     * Make sure the list of OntologyRep is in order by doc_count before merge. 
+     *
+     * @Param topGroupNum
+     * @Param other
+     */
+    /* -----------------------------------*/
+    void merge(int topGroupNum, std::list<OntologyRep*>& others)
+    {
+        std::list<OntologyRep*>::iterator others_it = others.begin();
+        while(others_it != others.end())
+        {
+            if((*others_it)->item_list.size() > 0)
+            {
+                if (item_list.empty())
+                {
+                    // find the first non-empty to swap with self
+                    swap(*(*others_it));
+                    others_it = others.erase(others_it);
+                }
+                else
+                    ++others_it;
+            }
+            else
+            {
+                // clear empty OntologyRep
+                others_it = others.erase(others_it);
+            }
+        }
+        if(others.size() == 0)
+        {
+            if(topGroupNum == 0 || ((int)item_list.size() <= topGroupNum) )
+                return;
+            item_iterator it = item_list.begin();
+            int group_num = 0;
+            while(it != item_list.end())
+            {
+                if((*it).level == 0)
+                    ++group_num;
+                if( group_num > topGroupNum )
+                {
+                    break;
+                }
+                ++it;
+            }
+            item_list.erase(it, item_list.end());
+            return;
+        }
+        others_it = others.begin();
+
+        typedef std::map<CategoryNameType , int> ValueCountMap;
+        typedef std::map<CategoryNameType, int> NameCountMap;
+        typedef std::map<CategoryNameType, ValueCountMap> NameValueCountMap;
+        NameValueCountMap nv_cnt_map;
+        NameCountMap name_cnt_map;
+        item_iterator it = item_list.begin();
+        CategoryNameType current_name;
+        NameValueCountMap::iterator current_nvmap_it; 
+        while(it != item_list.end())
+        {
+            if((*it).level == 0)
+            {
+                current_name = (*it).text;
+                name_cnt_map[current_name] = (*it).doc_count;
+                current_nvmap_it = nv_cnt_map.insert(std::make_pair(current_name, ValueCountMap())).first;
+            }
+            else
+            {
+                (current_nvmap_it->second)[(*it).text] = (*it).doc_count;
+            }
+            ++it;
+        }
+        while(others_it != others.end())
+        {
+            OntologyRep& other = *(*others_it);
+            it = other.item_list.begin();
+            while(it != other.item_list.end())
+            {
+                if((*it).level == 0)
+                {
+                    current_name = (*it).text;
+                    NameCountMap::iterator n_it = name_cnt_map.find(current_name);
+                    // same name merged
+                    if(n_it != name_cnt_map.end())
+                        n_it->second += (*it).doc_count;
+                    else
+                    {
+                        // new name added
+                        name_cnt_map[current_name] = (*it).doc_count;
+                    }
+                    current_nvmap_it = nv_cnt_map.insert(std::make_pair(current_name, ValueCountMap())).first;
+                }
+                else
+                {
+                    ValueCountMap::iterator v_it = current_nvmap_it->second.find((*it).text);
+                    if(v_it != current_nvmap_it->second.end())
+                    {
+                        v_it->second += (*it).doc_count;
+                    }
+                    else
+                        (current_nvmap_it->second)[(*it).text] = (*it).doc_count;
+                }
+                ++it;
+            }
+            ++others_it;
+        }
+        if (topGroupNum == 0)
+        {
+            topGroupNum = name_cnt_map.size();
+        }
+        AttrNameFreqQueue queue(topGroupNum);
+        NameCountMap::const_iterator cit = name_cnt_map.begin();
+        while (cit != name_cnt_map.end())
+        {
+            queue.insert(AttrNameFreq(cit->first, cit->second));
+            ++cit;
+        }
+        std::size_t retsize = queue.size();
+        std::vector<CategoryNameType> top_names;
+        top_names.resize(retsize);
+        for(int i = (int)retsize - 1; i >= 0; --i)
+        {
+            top_names[i] = queue.pop().first;
+        }
+
+        item_list.clear();
+        for (std::size_t i = 0; i < retsize; ++i)
+        {
+            CategoryNameType name = top_names[i];
+
+            item_list.push_back(OntologyRepItem());
+            OntologyRepItem& item = item_list.back();
+            item.level = 0;
+            item.text = name;
+            item.doc_count = name_cnt_map[name];
+            const ValueCountMap& value_cnt_map = nv_cnt_map[name];
+            ValueCountMap::const_iterator cit = value_cnt_map.begin();
+            while(cit != value_cnt_map.end())
+            {
+                item_list.push_back(OntologyRepItem());
+                OntologyRepItem& sub_item = item_list.back();
+                sub_item.level = 1;
+                sub_item.text = cit->first;
+                sub_item.doc_count = cit->second;
+                ++cit;
+            }
+        }
     }
 
     bool operator==(const OntologyRep& rep) const
