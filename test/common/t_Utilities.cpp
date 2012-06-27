@@ -7,8 +7,15 @@
 
 #include <common/Utilities.h>
 #include <boost/test/unit_test.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
+#include <vector>
+
+using namespace boost::gregorian;
+using namespace boost::posix_time;
 
 using namespace sf1r;
+using izenelib::util::UString;
 
 BOOST_AUTO_TEST_SUITE(Utilities_test)
 
@@ -62,4 +69,21 @@ BOOST_AUTO_TEST_CASE(testRoundDown)
     BOOST_CHECK_EQUAL(Utilities::roundDown(123U, 0U), 123U);
 }
 
+BOOST_AUTO_TEST_CASE(testTimestamp)
+{
+    std::string datestr1("20120627093011");
+    int64_t timestamp1 = Utilities::createTimeStampInSeconds(datestr1);
+    std::string datestr2("20120627253011");
+    int64_t timestamp2 = Utilities::createTimeStampInSeconds(datestr2);
+    BOOST_CHECK(timestamp1<timestamp2);
+    std::string datestr1_1("2012-06-27 09:30:11");
+    timestamp2 = Utilities::createTimeStampInSeconds(datestr1_1);
+    BOOST_CHECK_EQUAL(timestamp1, timestamp2);
+
+    std::string datestr3("2012-06-27 16:12:21");
+    timestamp1 = Utilities::createTimeStampInSeconds(datestr3);
+    std::string datestr4("2012-06-27 23:12:21");
+    timestamp2 = Utilities::createTimeStampInSeconds(datestr4);
+    BOOST_CHECK(timestamp1<timestamp2);
+}
 BOOST_AUTO_TEST_SUITE_END() 

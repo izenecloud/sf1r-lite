@@ -67,9 +67,22 @@ void WANDDocumentIterator::init_(const property_weight_map& propertyWeightMap)
     }
 }
 
-void WANDDocumentIterator::set_ub(const UpperBoundInProperties& ubmap)
+void WANDDocumentIterator::set_ub(UpperBoundInProperties& ubmap)
 {
-    ubmap_ = ubmap;
+    float sum = 0.0F, termThreshold = 0.0F;
+    size_t nTerms= 0;
+    property_name_term_index_iterator property_iter = ubmap.begin();
+    for(; property_iter != ubmap.end(); ++property_iter)
+    {
+        term_index_ub_iterator term_iter = (property_iter->second).begin();
+        for(; term_iter != (property_iter->second).end(); ++term_iter)
+        {
+            sum += term_iter->second;
+            ++nTerms;
+        }
+    }
+
+    termThreshold = sum/nTerms * 0.8F;
     std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
     for( ; iter != docIteratorList_.end(); ++iter )
     {
@@ -78,42 +91,44 @@ void WANDDocumentIterator::set_ub(const UpperBoundInProperties& ubmap)
         {
             std::string currentProperty = pEntry->property_;
             size_t termIndex = pEntry->termIndex_;
-            float ub = ubmap_[currentProperty][termIndex];
-            pEntry->set_ub(ub);
+            float ub = ubmap[currentProperty][termIndex];
+            if (ub > termThreshold)
+            {
+                pEntry->set_ub(ub);
+            }
+            else
+            {
+                *iter = NULL;
+                delete pEntry;
+            }
         }
     }
 }
 
 void WANDDocumentIterator::init_threshold(float threshold)
 {
-    property_name_term_index_iterator property_iter = ubmap_.begin();
-    float minUB = (std::numeric_limits<float>::max) ();
-    float maxUB = - minUB;
     std::string currProperty;
     size_t currIndex;
-    for( ; property_iter != ubmap_.end(); ++property_iter )
+    float sumUBs = 0.0F;
+    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for(; iter != docIteratorList_.end(); ++iter)
     {
-        currProperty = property_iter->first;
-        currIndex = getIndexOfProperty_(currProperty);
-        float sumUBs = 0.0F;
-        term_index_ub_iterator term_iter = (property_iter->second).begin();
-        for( ; term_iter != (property_iter->second).end(); ++term_iter )
+        TermDocumentIterator* pEntry = (*iter);
+        if (pEntry)
         {
-            sumUBs += term_iter->second;
-        }
-        sumUBs *= propertyWeightList_[currIndex];
-        if(sumUBs > maxUB)
-        {
-            maxUB = sumUBs;
+            currProperty = pEntry->property_;
+            currIndex = getIndexOfProperty_(currProperty);
+            sumUBs += pEntry->ub_ * propertyWeightList_[currIndex];
         }
     }
+
     if(threshold > 0.0F)
     {
-        currThreshold_ = maxUB * threshold;
+        currThreshold_ = sumUBs * threshold;
     }
     else
     {
-        currThreshold_ = maxUB * 0.5;
+        currThreshold_ = sumUBs * 0.5;
     }
 
     //LOG(INFO)<<"the initial currThreshold = "<<currThreshold_;
@@ -344,12 +359,10 @@ double WANDDocumentIterator::score(
     std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
     for (; iter != docIteratorList_.end(); ++iter)
     {
-        //LOG(INFO) << "Scoring the "<<indexPropertyList_[i]<<" property";
         pEntry = (*iter);
-        size_t index = getIndexOfPropertyId_(pEntry->propertyId_);
         if (pEntry && pEntry->isCurrent())
         {
-            //LOG(INFO) << "Current scoring the "<<indexPropertyList_[i]<<"property";
+            size_t index = getIndexOfPropertyId_(pEntry->propertyId_);
             double weight = propertyWeightList_[index];
             if (weight != 0.0F)
             {

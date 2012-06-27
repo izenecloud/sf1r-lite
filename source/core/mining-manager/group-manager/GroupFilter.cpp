@@ -19,6 +19,7 @@ NS_FACETED_BEGIN
 GroupFilter::GroupFilter(const GroupParam& groupParam)
     : groupParam_(groupParam)
     , attrCounter_(NULL)
+    , isSharedLocked_(false)
 {
 }
 
@@ -235,8 +236,10 @@ void GroupFilter::insertSharedLock_(PropSharedLockGetter* getter)
     }
 }
 
-void GroupFilter::lockShared() const
+void GroupFilter::lockShared()
 {
+    isSharedLocked_ = true;
+
     for (SharedLockSet::const_iterator it = sharedLockSet_.begin();
         it != sharedLockSet_.end(); ++it)
     {
@@ -244,8 +247,11 @@ void GroupFilter::lockShared() const
     }
 }
 
-void GroupFilter::unlockShared_() const
+void GroupFilter::unlockShared_()
 {
+    if (! isSharedLocked_)
+        return;
+
     for (SharedLockSet::const_iterator it = sharedLockSet_.begin();
         it != sharedLockSet_.end(); ++it)
     {
