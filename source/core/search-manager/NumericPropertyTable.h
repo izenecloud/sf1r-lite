@@ -44,6 +44,7 @@ public:
         switch(type_)
         {
         case INT_PROPERTY_TYPE:
+		case DATETIME_PROPERTY_TYPE:
             value = static_cast<T>(((int64_t *)data_)[did]);
             break;
 

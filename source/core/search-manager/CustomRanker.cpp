@@ -161,6 +161,7 @@ bool CustomRanker::sub_evaluate(ExpSyntaxTreePtr& estree, docid_t& docid)
             switch(estree->propertyData_->type_)
             {
                 case INT_PROPERTY_TYPE:
+				case DATETIME_PROPERTY_TYPE:
                     estree->value_ = ((int64_t*)data)[docid];
                     break;
                 case UNSIGNED_INT_PROPERTY_TYPE:

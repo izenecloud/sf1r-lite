@@ -95,7 +95,7 @@ ptime convert(const std::string& dataStr)
             atm.tm_hour = datetime[3] > 0 ? datetime[3] : 0;
             atm.tm_min = datetime[4] > 0 ? datetime[4] : 0;
             atm.tm_sec = datetime[5] > 0 ? datetime[5] : 0;
-            return ptime(date_from_tm(atm));
+            return ptime(date_from_tm(atm), time_duration(atm.tm_hour, atm.tm_min, atm.tm_sec));
         }
         catch (const std::exception& e)
         {
@@ -220,6 +220,11 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
         type = float(0.0);
         return true;
     }
+	else if (sf1r_type == DATETIME_PROPERTY_TYPE)
+	{
+		type = int64_t(0);
+		return true;
+	}
     else
     {
         return false;

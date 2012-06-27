@@ -82,6 +82,7 @@ NumericPropertyTable* NumericPropertyTableBuilderStub::createPropertyTable(const
     switch(propType)
     {
     case INT_PROPERTY_TYPE:
+	case DATETIME_PROPERTY_TYPE:
         propData = createPropertyData<int64_t>(INT_PROPERTY_TYPE, intPropMap_, propertyName);
         break;
 
@@ -164,6 +165,7 @@ void NumericPropertyTableBuilderStub::insertPropMap_(
     switch(type)
     {
     case INT_PROPERTY_TYPE:
+	case DATETIME_PROPERTY_TYPE:
         insertPropertyMap<int64_t>(prop, propValue, intPropMap_);
         break;
 

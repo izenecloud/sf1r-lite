@@ -85,6 +85,20 @@ static unsigned int Low() {return 0;}
 static unsigned int High() {return 0xFFFFFFFF;}
 };
 
+template<>
+struct NumericUtil<uint64_t>
+{
+static uint64_t Low() {return 0;}
+static uint64_t High() {return 0xFFFFFFFFFFFFFFFF;}
+};
+
+template<>
+struct NumericUtil<int64_t>
+{
+static uint64_t Low() {return -0x7FFFFFFFFFFFFFFF;}
+static uint64_t High() {return 0x7FFFFFFFFFFFFFFF;}
+};
+
 
 class SearchManager;
 class IndexManager: public izenelib::ir::indexmanager::Indexer

@@ -1074,6 +1074,10 @@ void CollectionConfig::parseCollectionSchema(const ticpp::Element * documentSche
             {
                 dataType = FLOAT_PROPERTY_TYPE;
             }
+            else if (type == "datetime")
+            {
+                dataType = DATETIME_PROPERTY_TYPE;
+            }
             else
             {
                 throw_TypeMismatch(property.Get(), "name", type, "\"string\", \"int\" or \"float\"");
@@ -1096,7 +1100,7 @@ void CollectionConfig::parseCollectionSchema(const ticpp::Element * documentSche
     {
         PropertyConfigBase propertyConfig;
         propertyConfig.propertyName_ = "DATE";
-        propertyConfig.propertyType_ = STRING_PROPERTY_TYPE;
+        propertyConfig.propertyType_ = DATETIME_PROPERTY_TYPE;
         collectionMeta.insertProperty(propertyConfig);
     }
 

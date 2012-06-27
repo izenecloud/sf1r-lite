@@ -4,6 +4,8 @@
  * @date Created <2010-06-11 17:54:46>
  */
 #include "ValueConverter.h"
+#include "Utilities.h"
+#include <time.h>
 #include <boost/utility/enable_if.hpp>
 #include <boost/mpl/contains.hpp>
 
@@ -93,11 +95,25 @@ void ValueConverter::driverValue2PropertyValue(
     case DOUBLE_PROPERTY_TYPE:
         propertyValue = asDouble(driverValue);
         break;
+    case DATETIME_PROPERTY_TYPE:
+        {
+            std::string pValue = asString(driverValue);
+            propertyValue = (int64_t)stringValue2DatetimeValue(pValue);
+        }
+        break;
     default:
         throw std::runtime_error(
             "Cannot convert to internal property data type"
         );
     }
+}
+
+time_t ValueConverter::stringValue2DatetimeValue(const std::string &stringValue)
+{
+    izenelib::util::UString dateStr;
+    izenelib::util::UString stringValueU (stringValue, izenelib::util::UString::UTF_8);
+    time_t timestamp = Utilities::createTimeStampInSeconds(stringValueU, izenelib::util::UString::UTF_8, dateStr);
+    return timestamp;
 }
 
 } // namespace sf1r

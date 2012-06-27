@@ -116,6 +116,7 @@ bool isPropertySortable(
         case UNSIGNED_INT_PROPERTY_TYPE:
         case DOUBLE_PROPERTY_TYPE:
         case STRING_PROPERTY_TYPE:
+        case DATETIME_PROPERTY_TYPE:
             break;
         default:
             return false;
@@ -166,7 +167,7 @@ sf1r::PropertyDataType getPropertyDataType(
     }
     else if (lowerPropertyName == "date")
     {
-        return sf1r::STRING_PROPERTY_TYPE;
+        return sf1r::DATETIME_PROPERTY_TYPE;
     }
     else
     {
