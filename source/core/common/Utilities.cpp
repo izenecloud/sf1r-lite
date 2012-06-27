@@ -92,10 +92,10 @@ ptime convert(const std::string& dataStr)
             atm.tm_year = datetime[0] > 1900 ? (datetime[0] - 1900) : (datetime[0] + 2000 - 1900);  // tm_year is 1900 based
             atm.tm_mon = datetime[1] > 0 ? (datetime[1] - 1) : 0;                                   // tm_mon is 0 based
             atm.tm_mday = datetime[2] > 0 ? datetime[2] : 1;
-            atm.tm_hour = datetime[3] > 0 ? datetime[3] : 0;
-            atm.tm_min = datetime[4] > 0 ? datetime[4] : 0;
-            atm.tm_sec = datetime[5] > 0 ? datetime[5] : 0;
-            return ptime(date_from_tm(atm));
+            //atm.tm_hour = datetime[3] > 0 ? datetime[3] : 0;
+            //atm.tm_min = datetime[4] > 0 ? datetime[4] : 0;
+            //atm.tm_sec = datetime[5] > 0 ? datetime[5] : 0;
+            return ptime(date_from_tm(atm),hours(datetime[3])+minutes(datetime[4])+seconds(datetime[5]));
         }
         catch (const std::exception& e)
         {
