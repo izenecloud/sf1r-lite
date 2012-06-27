@@ -82,6 +82,7 @@ SearchManager::SearchManager(
     , queryBuilder_()
     , filter_hook_(0)
     , productRankerFactory_(NULL)
+    , threadpool_(omp_get_num_procs()*4)
 {
     collectionName_ = config->collectionName_;
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
@@ -253,7 +254,7 @@ bool SearchManager::search(
     //gettimeofday(&tv_start, NULL);
     // begin thread code
     //
-    std::vector< boost::shared_ptr<boost::thread> > searching_threads;
+    //std::vector< boost::shared_ptr<boost::thread> > searching_threads;
     std::vector<SearchThreadParam> searchparams;
     if(thread_num > 1)
     {
@@ -278,23 +279,23 @@ bool SearchManager::search(
 
         if(!s_cpu_topology_info.cpu_topology_supported)
         {
+            boost::detail::atomic_count finishedJobs(0);
 #pragma omp parallel for schedule(dynamic, 2)
             for(size_t i = 0; i < thread_num; ++i)
             {
-                doSearchInThreadOneParam(&searchparams[i]);
+                doSearchInThreadOneParam(&searchparams[i], &finishedJobs);
             }
         }
         else
         {
+            boost::detail::atomic_count finishedJobs(0);
             for(size_t i = 0; i < thread_num; ++i)
             {
-                searching_threads.push_back(boost::shared_ptr<boost::thread>(new boost::thread( boost::bind( &SearchManager::doSearchInThreadOneParam, 
-                                this, &searchparams[i]) ) ) );
+                threadpool_.schedule(boost::bind(&SearchManager::doSearchInThreadOneParam, 
+                                this, &searchparams[i], &finishedJobs));
+
             }
-            for(size_t i = 0; i < thread_num; ++i)
-            {
-                searching_threads[i]->join();
-            }
+            threadpool_.wait(finishedJobs, thread_num);
         }
     }
     else
@@ -424,7 +425,9 @@ bool SearchManager::search(
     return true;
 }
 
-void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam)
+void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam,
+    boost::detail::atomic_count* finishedJobs
+    )
 {
 
     assert(pParam);
@@ -436,9 +439,9 @@ void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam)
         pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
     }
 
-    struct timeval tv_start;
-    struct timeval tv_end;
-    gettimeofday(&tv_start, NULL);
+    //struct timeval tv_start;
+    //struct timeval tv_end;
+    //gettimeofday(&tv_start, NULL);
 
     if(pParam)
     {
@@ -448,16 +451,17 @@ void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam)
             *(pParam->scoreItemQueue), *(pParam->distSearchInfo), pParam->heapSize,
             pParam->docid_start, pParam->docid_num_byeachthread, pParam->docid_nextstart_inc, true);
     }
-    gettimeofday(&tv_end, NULL);
+    ++(*finishedJobs);
+    //gettimeofday(&tv_end, NULL);
 
-    double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec
-                       + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
-    std::cout << "==== In worker thread: " << (long)pthread_self() << "searching cost " << timespend << " seconds." << std::endl;
-    if(pParam->ret)
-    {
-        std::cout << "thread: " << (long)pthread_self() << " result: topK-" << 
-            (*(pParam->scoreItemQueue))->size() << ", total-"<< pParam->totalCount_thread << endl;
-    }
+    //double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec
+    //                   + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
+    //std::cout << "==== In worker thread: " << (long)pthread_self() << "searching cost " << timespend << " seconds." << std::endl;
+    //if(pParam->ret)
+    //{
+    //    std::cout << "thread: " << (long)pthread_self() << " result: topK-" << 
+    //        (*(pParam->scoreItemQueue))->size() << ", total-"<< pParam->totalCount_thread << endl;
+    //}
 
 }
 
@@ -756,6 +760,10 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             docid_start,
             docid_num_byeachthread,
             docid_nextstart_inc);
+        // for CPU cache missing optimization, parallel searching need
+        // to separate all the result containers to get the best performance.
+        // That is minimize the access to the memory which is not allocated in
+        // the self thread.
         scoreItemQueue_orig = scoreItemQueue;
         totalCount_orig = totalCount;
         propertyRange_orig = propertyRange;
@@ -763,7 +771,11 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         customRanker_orig = customRanker;
         if(groupFilter)
         {
-            groupFilter->getGroupRep(groupRep, attrRep);
+            faceted::GroupRep groupRep_thread;
+            faceted::OntologyRep attrRep_thread;
+            groupFilter->getGroupRep(groupRep_thread, attrRep_thread);
+            groupRep = groupRep_thread;
+            attrRep = attrRep_thread;
         }
         return ret;
     }

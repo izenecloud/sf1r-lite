@@ -20,6 +20,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/function.hpp>
+#include <boost/threadpool.hpp>
 
 #include <vector>
 #include <deque>
@@ -135,7 +136,8 @@ private:
             std::size_t docid_num_byeachthread,
             std::size_t docid_nextstart_inc);
 
-    void doSearchInThreadOneParam(SearchThreadParam* pParam);
+    void doSearchInThreadOneParam(SearchThreadParam* pParam, 
+        boost::detail::atomic_count* finishedJobs);
 
     bool doSearchInThread(const SearchKeywordOperation& actionOperation,
         std::size_t& totalCount,
@@ -211,6 +213,7 @@ private:
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
 
     ProductRankerFactory* productRankerFactory_;
+    boost::threadpool::pool  threadpool_;
 };
 
 } // end - namespace sf1r
