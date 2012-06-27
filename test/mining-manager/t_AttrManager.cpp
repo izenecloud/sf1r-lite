@@ -267,6 +267,8 @@ private:
 
     void checkAttrRepMerge(const faceted::OntologyRep& attrRep)
     {
+        if(attrRep.item_list.size() == 0)
+            return;
         BOOST_TEST_MESSAGE("check attr merge: ");
         using namespace faceted;
         faceted::OntologyRep testattrRep;
