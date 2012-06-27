@@ -204,6 +204,8 @@ public:
         faceted::OntologyRep groupRep;
         createGroupRep_(groupRep);
 
+        checkAttrRepMerge(groupRep);
+
         AttrMap attrMap;
         createAttrMap_(attrMap);
 
@@ -261,6 +263,112 @@ private:
         filter->getGroupRep(groupRep, attrRep);
 
         delete filter;
+    }
+
+    void checkAttrRepMerge(const faceted::OntologyRep& attrRep)
+    {
+        BOOST_TEST_MESSAGE("check attr merge: ");
+        using namespace faceted;
+        faceted::OntologyRep testattrRep;
+        std::list<OntologyRep*> others_rep;
+        std::vector<OntologyRep> others_rep_dup;
+        std::vector<OntologyRep> others_rep_dup_tmp;
+        std::vector<OntologyRep> empty_rep;
+        empty_rep.resize(10);
+        for(int i = 0; i < 10; ++i)
+        {
+            others_rep_dup.push_back(attrRep);
+        }
+        //test empty merge
+        testattrRep.merge(0, others_rep);
+        BOOST_CHECK_EQUAL(testattrRep.item_list.size(), 0);
+        // test only 1 merge
+        others_rep_dup_tmp = others_rep_dup;
+        others_rep.push_back(&others_rep_dup_tmp[0]);
+        testattrRep.merge(0, others_rep);
+        BOOST_CHECK_EQUAL(testattrRep.item_list.size(), attrRep.item_list.size());
+        BOOST_CHECK_EQUAL(testattrRep.item_list.begin()->doc_count, 
+            attrRep.item_list.begin()->doc_count);
+        others_rep.clear();
+        testattrRep = OntologyRep();
+
+        others_rep_dup_tmp = others_rep_dup;
+        others_rep.push_back(&others_rep_dup_tmp[0]);
+        testattrRep.merge(1, others_rep);
+        OntologyRep::item_iterator it = testattrRep.Begin();
+        int topN = 0;
+        size_t current_maxdoc = INT_MAX;
+        while(it != testattrRep.End())
+        {
+            if(it->level == 0)
+            {
+                ++topN;
+                BOOST_CHECK(it->doc_count <= current_maxdoc);
+                current_maxdoc = it->doc_count;
+            }
+            ++it;
+        }
+        BOOST_CHECK(topN <= 1);
+        BOOST_CHECK_EQUAL(testattrRep.item_list.begin()->doc_count, 
+            attrRep.item_list.begin()->doc_count);
+        others_rep.clear();
+        testattrRep = OntologyRep();
+
+        // test several empty merge
+        for(int i = 0; i < 5; ++i)
+        {
+            others_rep.push_back(&empty_rep[i]);
+        }
+        others_rep_dup_tmp = others_rep_dup;
+        others_rep.push_back(&others_rep_dup_tmp[0]);
+        testattrRep.merge(0, others_rep);
+        BOOST_CHECK_EQUAL(testattrRep.item_list.size(), attrRep.item_list.size());
+        BOOST_CHECK_EQUAL(testattrRep.item_list.begin()->doc_count, 
+            attrRep.item_list.begin()->doc_count);
+        others_rep.clear();
+        testattrRep = OntologyRep();
+
+        // test common merge
+        //
+        others_rep_dup_tmp = others_rep_dup;
+        for(int i = 0; i < 10; ++i)
+        {
+            others_rep.push_back(&others_rep_dup_tmp[i]);
+            others_rep.push_back(&empty_rep[i]);
+        }
+        testattrRep.merge(0, others_rep);
+        BOOST_CHECK_EQUAL(testattrRep.item_list.size(), attrRep.item_list.size());
+        BOOST_CHECK_EQUAL(testattrRep.item_list.begin()->doc_count, 
+            10*attrRep.item_list.begin()->doc_count);
+        others_rep.clear();
+        others_rep_dup_tmp = others_rep_dup;
+        for(int i = 0; i < 10; ++i)
+        {
+            others_rep.push_back(&others_rep_dup_tmp[i]);
+            others_rep.push_back(&empty_rep[i]);
+        }
+        testattrRep.merge(0, others_rep);
+        BOOST_CHECK_EQUAL(testattrRep.item_list.size(), attrRep.item_list.size());
+        BOOST_CHECK_EQUAL(testattrRep.item_list.begin()->doc_count, 
+            20*attrRep.item_list.begin()->doc_count);
+        others_rep.clear();
+        testattrRep.merge(5, others_rep);
+        topN = 0;
+        current_maxdoc = INT_MAX;
+        it = testattrRep.Begin();
+        while(it != testattrRep.End())
+        {
+            if(it->level == 0)
+            {
+                ++topN;
+                BOOST_CHECK(it->doc_count <= current_maxdoc);
+                current_maxdoc = it->doc_count;
+            }
+            ++it;
+        }
+        BOOST_CHECK(topN <= 5);
+        BOOST_CHECK_EQUAL(testattrRep.item_list.begin()->doc_count, 
+            20*attrRep.item_list.begin()->doc_count);
     }
 
     void createAttrMap_(AttrMap& attrMap)

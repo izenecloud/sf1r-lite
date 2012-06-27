@@ -32,7 +32,7 @@
 #include <omp.h>
 #include <util/cpu_topology.h>
 
-#define PARALLEL_THRESHOLD 8000000
+#define PARALLEL_THRESHOLD 80000
 
 namespace sf1r
 {
@@ -184,7 +184,8 @@ struct SearchThreadParam
     MultiPropertyScorer* pMultiPropertyIterator;
     WANDDocumentIterator* pWandDocIterator;
     CombinedDocumentIterator* pDocIterator;
-    boost::shared_ptr<faceted::GroupFilter>* groupFilter;
+    faceted::GroupRep groupRep_thread;
+    faceted::OntologyRep attrRep_thread;
     boost::shared_ptr<HitQueue>* scoreItemQueue;
     DistKeywordSearchInfo* distSearchInfo;
     int heapSize;
@@ -229,7 +230,7 @@ bool SearchManager::search(
         thread_num = s_cpu_topology_info.cpu_topology_array[running_node].size();
     }
 
-    if(!enable_parallel_searching)
+    if(!enable_parallel_searching || (maxDocId < PARALLEL_THRESHOLD) )
         thread_num = 1;
 
     if (distSearchInfo.effective_ && 
@@ -246,8 +247,6 @@ bool SearchManager::search(
 
     int heapSize = topK + start;
 
-    std::vector< boost::shared_ptr<faceted::GroupFilter> > groupFilters;
-    groupFilters.resize(thread_num);
 
     struct timeval tv_start;
     struct timeval tv_end;
@@ -268,7 +267,6 @@ bool SearchManager::search(
             searchparams[i].start                         =    start;                     
             searchparams[i].propertyRange                 =    propertyRange;                     
             //searchparams[i].pSorter                       =    NULL;                     
-            searchparams[i].groupFilter                   =    &groupFilters[i];     
             searchparams[i].scoreItemQueue                =    &scoreItemQueue[i];
             searchparams[i].distSearchInfo                =    &distSearchInfo;
             searchparams[i].heapSize                      =    heapSize;
@@ -310,7 +308,8 @@ bool SearchManager::search(
             start,
             pSorter,
             customRanker,
-            groupFilters[0],
+            groupRep,
+            attrRep,
             scoreItemQueue[0],
             distSearchInfo,
             heapSize,
@@ -394,33 +393,16 @@ bool SearchManager::search(
 
     try
     {
-        for(size_t i = 0; i < thread_num; ++i)
+        if(thread_num > 1)
         {
-            faceted::GroupRep groupRep_thread;
-            faceted::OntologyRep attrRep_thread;
-
-            if (groupFilters[i])
-                groupFilters[i]->getGroupRep(groupRep_thread, attrRep_thread);
-
-            groupRep.merge(groupRep_thread);
-            // how to merge the OntologyRep, these should be reviewed.
-            //
-            if (attrRep_thread.item_list.empty())
-                continue;
-
-            if (attrRep.item_list.empty())
+            std::list<faceted::OntologyRep*> all_attrReps;
+            for(size_t i = 0; i < thread_num; ++i)
             {
-                attrRep.swap(attrRep_thread);
-                continue;
+                groupRep.merge(searchparams[i].groupRep_thread);
+                all_attrReps.push_back(&searchparams[i].attrRep_thread);
             }
-            faceted::OntologyRep::item_iterator it = attrRep_thread.Begin();
-            faceted::OntologyRep::item_iterator endit = attrRep_thread.End();
-            while(it != endit)
-            {
-                attrRep.item_list.push_back(*it);
-                ++it;
-            }
-
+            attrRep.merge(actionOperation.actionItem_.groupParam_.attrGroupNum_, 
+                all_attrReps);
         }
         if (distSearchInfo.effective_ && pSorter)
         {
@@ -462,9 +444,9 @@ void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam)
     {
         pParam->ret = doSearchInThread(*(pParam->actionOperation), 
             pParam->totalCount_thread, pParam->propertyRange, pParam->start,
-            pParam->pSorter, pParam->customRanker, *(pParam->groupFilter), 
+            pParam->pSorter, pParam->customRanker, pParam->groupRep_thread, pParam->attrRep_thread, 
             *(pParam->scoreItemQueue), *(pParam->distSearchInfo), pParam->heapSize,
-            pParam->docid_start, pParam->docid_num_byeachthread, pParam->docid_nextstart_inc);
+            pParam->docid_start, pParam->docid_num_byeachthread, pParam->docid_nextstart_inc, true);
     }
     gettimeofday(&tv_end, NULL);
 
@@ -485,13 +467,15 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         uint32_t start,
         boost::shared_ptr<Sorter>& pSorter_orig,
         CustomRankerPtr& customRanker_orig,
-        boost::shared_ptr<faceted::GroupFilter>& groupFilter_orig,
+        faceted::GroupRep& groupRep,
+        faceted::OntologyRep& attrRep,
         boost::shared_ptr<HitQueue>& scoreItemQueue_orig,
         DistKeywordSearchInfo& distSearchInfo,
         int heapSize,
         std::size_t docid_start,
         std::size_t docid_num_byeachthread,
-        std::size_t docid_nextstart_inc
+        std::size_t docid_nextstart_inc,
+        bool is_parallel
         )
 {
     unsigned int collectionId = 1;
@@ -736,10 +720,18 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     STOP_PROFILER( preparerank )
 
     boost::shared_ptr<faceted::GroupFilter> groupFilter;
+    sf1r::faceted::GroupParam gp = actionOperation.actionItem_.groupParam_;
     if (groupFilterBuilder_)
     {
+        if(is_parallel)
+        {
+            // Because the top info can not be decided until
+            // all threads' result merged, we need to get all the 
+            // attribute info in each thread.
+            gp.attrGroupNum_ = 0;
+        }
         groupFilter.reset(
-            groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_));
+            groupFilterBuilder_->createFilter(gp));
     }
     std::size_t totalCount;
     sf1r::PropertyRange propertyRange = propertyRange_orig;
@@ -764,12 +756,15 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             docid_start,
             docid_num_byeachthread,
             docid_nextstart_inc);
-        groupFilter_orig = groupFilter;
         scoreItemQueue_orig = scoreItemQueue;
         totalCount_orig = totalCount;
         propertyRange_orig = propertyRange;
         pSorter_orig = pSorter;
         customRanker_orig = customRanker;
+        if(groupFilter)
+        {
+            groupFilter->getGroupRep(groupRep, attrRep);
+        }
         return ret;
     }
     catch (std::exception& e)
