@@ -26,7 +26,8 @@
 # endif
 #endif
 
-#include <common/click_counter/ClickCounterDB.h>
+#include <common/SDBWrapper.h>
+#include <common/ClickCounter.h>
 #include <idmlib/resys/ItemCoVisitation.h>
 #include <idmlib/resys/incremcf/IncrementalItemCF.h>
 
@@ -56,7 +57,9 @@ enum RecommendType
 
 typedef std::set<itemid_t> ItemIdSet;
 typedef std::map<itemid_t, rate_t> ItemRateMap;
-typedef ClickCounterDB<std::string, itemid_t> QueryClickCounter;
+
+typedef ClickCounter<itemid_t, int> PurchaseCounter;
+typedef SDBWrapper<std::string, PurchaseCounter> QueryPurchaseCounter;
 
 typedef idmlib::recommender::ItemCoVisitation<idmlib::recommender::CoVisitFreq> CoVisitManager;
 typedef idmlib::recommender::IncrementalItemCF ItemCFManager;

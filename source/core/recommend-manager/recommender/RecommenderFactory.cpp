@@ -22,7 +22,7 @@ RecommenderFactory::RecommenderFactory(
     OrderManager& orderManager,
     EventManager& eventManager,
     RateManager& rateManager,
-    QueryClickCounter& queryPurchaseCounter,
+    QueryPurchaseCounter& queryPurchaseCounter,
     GetRecommendBase& getRecommendBase
 )
     : userEventFilter_(purchaseManager, cartManager, eventManager, rateManager)

@@ -54,7 +54,7 @@ public:
     bool open();
     bool flush();
 
-    const string &propName() const { return propName_; }
+    const std::string& propName() const { return propName_; }
 
     std::size_t docIdNum() const { return valueIdTable_.indexTable_.size(); }
 

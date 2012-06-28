@@ -3,7 +3,7 @@
 namespace sf1r
 {
 
-BAQRecommender::BAQRecommender(QueryClickCounter& queryPurchaseCounter)
+BAQRecommender::BAQRecommender(QueryPurchaseCounter& queryPurchaseCounter)
     : queryPurchaseCounter_(queryPurchaseCounter)
 {
 }
@@ -13,14 +13,13 @@ bool BAQRecommender::recommendImpl_(
     std::vector<RecommendItem>& recItemVec
 )
 {
-    typedef QueryClickCounter::click_counter_type ClickCounter;
-    ClickCounter clickCounter;
-    if (! queryPurchaseCounter_.get(param.query, clickCounter))
+    PurchaseCounter purchaseCounter;
+    if (! queryPurchaseCounter_.get(param.query, purchaseCounter))
         return false;
 
     std::vector<itemid_t> itemIds;
-    std::vector<ClickCounter::freq_type> freqs;
-    clickCounter.getFreqClick(param.inputParam.limit, itemIds, freqs);
+    std::vector<PurchaseCounter::freq_type> freqs;
+    purchaseCounter.getFreqClick(param.inputParam.limit, itemIds, freqs);
 
     ItemFilter& filter = param.inputParam.itemFilter;
     RecommendItem recItem;
@@ -39,7 +38,7 @@ bool BAQRecommender::recommendImpl_(
         }
     }
 
-    param.queryClickFreq = clickCounter.getTotalFreq();
+    param.queryClickFreq = purchaseCounter.getTotalFreq();
 
     return true;
 }

@@ -233,14 +233,14 @@ public:
     /**
      * Set the most frequently clicked group label.
      * @param query user query
-     * @param propName the property name for the group labels to get
-     * @param groupPath the path of the group label
+     * @param propName the property name
+     * @param groupLabels an array of group paths
      * @return true for success, false for failure
      */
     bool setTopGroupLabel(
             const std::string& query,
             const std::string& propName,
-            const std::vector<std::string>& groupPath
+            const std::vector<std::vector<std::string> >& groupLabels
     );
 
     /**
