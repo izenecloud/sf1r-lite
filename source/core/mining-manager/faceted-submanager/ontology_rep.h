@@ -66,7 +66,9 @@ public:
     /* -----------------------------------*/
     /**
      * @Brief  merge the OntologyRep and keep the top topGroupNum number by doc_count.
-     * Make sure the list of OntologyRep is in order by doc_count before merge. 
+     * Make sure the list of OntologyRep with level=0(that means attribute name) 
+     * is in order by doc_count before merge and level=1 (that means attribute value)
+     *  is in order by value id before merge.
      *
      * @Param topGroupNum
      * @Param other
@@ -115,9 +117,9 @@ public:
         }
         others_it = others.begin();
 
-        typedef std::map<CategoryNameType , int> ValueCountMap;
+        typedef std::list<OntologyRepItem> ValueCountList;
         typedef std::map<CategoryNameType, int> NameCountMap;
-        typedef std::map<CategoryNameType, ValueCountMap> NameValueCountMap;
+        typedef std::map<CategoryNameType, ValueCountList> NameValueCountMap;
         NameValueCountMap nv_cnt_map;
         NameCountMap name_cnt_map;
         item_iterator it = item_list.begin();
@@ -129,11 +131,11 @@ public:
             {
                 current_name = (*it).text;
                 name_cnt_map[current_name] = (*it).doc_count;
-                current_nvmap_it = nv_cnt_map.insert(std::make_pair(current_name, ValueCountMap())).first;
+                current_nvmap_it = nv_cnt_map.insert(std::make_pair(current_name, ValueCountList())).first;
             }
             else
             {
-                (current_nvmap_it->second)[(*it).text] = (*it).doc_count;
+                (current_nvmap_it->second).push_back(*it);
             }
             ++it;
         }
@@ -141,31 +143,39 @@ public:
         {
             OntologyRep& other = *(*others_it);
             it = other.item_list.begin();
+            bool newname = false;
+            ValueCountList::iterator current_value_it;
             while(it != other.item_list.end())
             {
                 if((*it).level == 0)
                 {
                     current_name = (*it).text;
-                    NameCountMap::iterator n_it = name_cnt_map.find(current_name);
-                    // same name merged
-                    if(n_it != name_cnt_map.end())
-                        n_it->second += (*it).doc_count;
-                    else
-                    {
-                        // new name added
-                        name_cnt_map[current_name] = (*it).doc_count;
-                    }
-                    current_nvmap_it = nv_cnt_map.insert(std::make_pair(current_name, ValueCountMap())).first;
+                    std::pair<NameCountMap::iterator, bool> n_it = name_cnt_map.insert(std::make_pair(current_name, 0));
+                    n_it.first->second += it->doc_count;
+                    // whether a new name added
+                    newname = n_it.second;
+                    current_nvmap_it = nv_cnt_map.insert(std::make_pair(current_name, ValueCountList())).first;
+                    current_value_it = current_nvmap_it->second.begin();
                 }
                 else
                 {
-                    ValueCountMap::iterator v_it = current_nvmap_it->second.find((*it).text);
-                    if(v_it != current_nvmap_it->second.end())
+                    if(newname)
                     {
-                        v_it->second += (*it).doc_count;
+                        (current_nvmap_it->second).push_back(*it);
                     }
                     else
-                        (current_nvmap_it->second)[(*it).text] = (*it).doc_count;
+                    {
+                        while(current_value_it->id < it->id)
+                            ++current_value_it;
+                        if(current_value_it->id == it->id)
+                        {
+                            current_value_it->doc_count += it->doc_count;
+                        }
+                        else
+                        {
+                            current_nvmap_it->second.insert(current_value_it, *it);
+                        }
+                    }
                 }
                 ++it;
             }
@@ -190,28 +200,38 @@ public:
             top_names[i] = queue.pop().first;
         }
 
-        item_list.clear();
+        item_iterator item_nextit = item_list.begin();
         for (std::size_t i = 0; i < retsize; ++i)
         {
             CategoryNameType name = top_names[i];
 
-            item_list.push_back(OntologyRepItem());
-            OntologyRepItem& item = item_list.back();
+            if(item_nextit == item_list.end())
+            {
+                item_nextit = item_list.insert(item_nextit, OntologyRepItem());
+            }
+            OntologyRepItem& item = *item_nextit;
             item.level = 0;
             item.text = name;
             item.doc_count = name_cnt_map[name];
-            const ValueCountMap& value_cnt_map = nv_cnt_map[name];
-            ValueCountMap::const_iterator cit = value_cnt_map.begin();
+            const ValueCountList& value_cnt_map = nv_cnt_map[name];
+            ValueCountList::const_iterator cit = value_cnt_map.begin();
             while(cit != value_cnt_map.end())
             {
-                item_list.push_back(OntologyRepItem());
-                OntologyRepItem& sub_item = item_list.back();
+                ++item_nextit;
+                if(item_nextit == item_list.end())
+                {
+                    item_nextit = item_list.insert(item_nextit, OntologyRepItem());
+                }
+                OntologyRepItem& sub_item = *item_nextit;
                 sub_item.level = 1;
-                sub_item.text = cit->first;
-                sub_item.doc_count = cit->second;
+                sub_item.id = cit->id;
+                sub_item.text = cit->text;
+                sub_item.doc_count = cit->doc_count;
                 ++cit;
             }
+            ++item_nextit;
         }
+        item_list.erase(item_nextit, item_list.end());
     }
 
     bool operator==(const OntologyRep& rep) const

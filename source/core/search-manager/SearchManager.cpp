@@ -774,8 +774,8 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             faceted::GroupRep groupRep_thread;
             faceted::OntologyRep attrRep_thread;
             groupFilter->getGroupRep(groupRep_thread, attrRep_thread);
-            groupRep = groupRep_thread;
-            attrRep = attrRep_thread;
+            groupRep.swap(groupRep_thread);
+            attrRep.swap(attrRep_thread);
         }
         return ret;
     }

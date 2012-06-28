@@ -267,10 +267,25 @@ private:
 
     void checkAttrRepMerge(const faceted::OntologyRep& attrRep)
     {
+        using namespace faceted;
         if(attrRep.item_list.size() == 0)
             return;
+        CategoryIdType valueid = 0;
+        std::list<OntologyRepItem>::const_iterator orig_it = attrRep.item_list.begin();
+        while(orig_it != attrRep.item_list.end())
+        {
+            if(orig_it->level == 0)
+            {
+                valueid = 0;
+            }
+            else
+            {
+                BOOST_CHECK(orig_it->id >= valueid);
+                valueid = orig_it->id;
+            }
+            ++orig_it;
+        }
         BOOST_TEST_MESSAGE("check attr merge: ");
-        using namespace faceted;
         faceted::OntologyRep testattrRep;
         std::list<OntologyRep*> others_rep;
         std::vector<OntologyRep> others_rep_dup;
@@ -371,6 +386,22 @@ private:
         BOOST_CHECK(topN <= 5);
         BOOST_CHECK_EQUAL(testattrRep.item_list.begin()->doc_count, 
             20*attrRep.item_list.begin()->doc_count);
+        it = testattrRep.Begin();
+        valueid = 0;
+        while(it != testattrRep.End())
+        {
+            if(it->level == 0)
+            {
+                valueid = 0;
+            }
+            else
+            {
+                BOOST_CHECK(it->id >= valueid);
+                valueid = it->id;
+            }
+            ++it;
+        }
+
     }
 
     void createAttrMap_(AttrMap& attrMap)
