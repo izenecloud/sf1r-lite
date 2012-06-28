@@ -152,6 +152,8 @@ void AttrCounter::getGroupRep(int topGroupNum, OntologyRep& groupRep) const
             itemList.push_back(OntologyRepItem());
             OntologyRepItem& valueItem = itemList.back();
             valueItem.level = 1;
+            // store id for quick find while merge attribute values.
+            valueItem.id = mapIt->first;
             valueItem.text = attrTable_.valueStr(mapIt->first);
             valueItem.doc_count = mapIt->second;
         }
