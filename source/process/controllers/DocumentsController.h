@@ -67,7 +67,10 @@ private:
 
     bool requireKeywords(std::string& keywords);
     bool requireGroupProperty(std::string& groupProperty);
-    bool requireGroupLabel(std::vector<std::string>& groupPath);
+
+    typedef std::vector<std::string> GroupPath;
+    bool requireGroupLabel(GroupPath& groupPath);
+    bool requireGroupLabelVec(std::vector<GroupPath>& groupPathVec);
 
     IndexSearchService* indexSearchService_;
     IndexTaskService* indexTaskService_;

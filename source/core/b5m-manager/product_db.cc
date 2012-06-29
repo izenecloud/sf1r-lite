@@ -62,8 +62,15 @@ void ProductProperty::Set(Document& doc) const
     doc.property("DOCID") = pid;
     //LOG(INFO)<<"set oid "<<oid<<std::endl;
     doc.property("OID") = oid;
-    doc.property("Price") = price.ToUString();
-    doc.property("Source") = GetSourceUString();
+    if(price.Valid())
+    {
+        doc.property("Price") = price.ToUString();
+    }
+    izenelib::util::UString usource = GetSourceUString();
+    if(!usource.empty())
+    {
+        doc.property("Source") = usource;
+    }
     doc.property("itemcount") = itemcount;
     doc.eraseProperty("uuid");
 }
@@ -92,15 +99,6 @@ ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
     for(SourceType::const_iterator oit = other.source.begin(); oit!=other.source.end(); ++oit)
     {
         source.insert(*oit);
-        //SourceMap::iterator it = source.find(oit->first);
-        //if(it==source.end())
-        //{
-            //source.insert(std::make_pair(oit->first, oit->second));
-        //}
-        //else
-        //{
-            //it->second += oit->second;
-        //}
     }
     itemcount+=other.itemcount;
     return *this;

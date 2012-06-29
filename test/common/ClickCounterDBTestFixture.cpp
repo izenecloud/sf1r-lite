@@ -37,7 +37,7 @@ void ClickCounterDBTestFixture::runClick(int times)
 
         ++keyValueCounter_[keyStr][value];
 
-        ClickCounter clickCounter;
+        ClickCounterT clickCounter;
         BOOST_CHECK(db_->get(keyStr, clickCounter));
 
         clickCounter.click(value);
@@ -63,9 +63,9 @@ void ClickCounterDBTestFixture::checkClickCounter_(const std::string& keyStr)
 {
     int limit = limitDistrib_(limitEngine_);
 
-    std::vector<ClickCounter::value_type> values;
-    std::vector<ClickCounter::freq_type> freqs;
-    ClickCounter clickCounter;
+    std::vector<ClickCounterT::value_type> values;
+    std::vector<ClickCounterT::freq_type> freqs;
+    ClickCounterT clickCounter;
 
     BOOST_CHECK(db_->get(keyStr, clickCounter));
     clickCounter.getFreqClick(limit, values, freqs);

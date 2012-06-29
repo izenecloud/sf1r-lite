@@ -11,6 +11,7 @@
 #include <common/inttypes.h>
 #include <string>
 #include <vector>
+#include <mining-manager/group-manager/GroupParam.h>
 
 namespace sf1r
 {
@@ -25,17 +26,21 @@ struct ProductRankingParam
 
     const std::size_t docNum_;
 
+    const faceted::GroupParam& groupParam_;
+
     category_id_t boostingCategoryId_;
 
     ProductRankingParam(
         const std::string& query,
         std::vector<docid_t>& docIds,
-        std::vector<score_t>& relevanceScores
+        std::vector<score_t>& relevanceScores,
+        const faceted::GroupParam& groupParam
     )
         : query_(query)
         , docIds_(docIds)
         , relevanceScores_(relevanceScores)
         , docNum_(docIds.size())
+        , groupParam_(groupParam)
         , boostingCategoryId_(0)
     {}
 

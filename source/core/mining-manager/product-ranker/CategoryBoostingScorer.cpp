@@ -2,6 +2,7 @@
 #include "../group-manager/PropValueTable.h"
 #include "../group-label-logger/GroupLabelLogger.h"
 #include <search-manager/SearchManager.h>
+#include <mining-manager/group-manager/GroupParam.h>
 
 #include <glog/logging.h>
 #include <boost/scoped_ptr.hpp>
@@ -75,9 +76,12 @@ CategoryBoostingScorer::CategoryBoostingScorer(
     , categoryClickLogger_(categoryClickLogger)
     , searchManager_(searchManager)
     , boostingSubProp_(boostingSubProp)
-    , reasonFreqLabel_("most frequent click")
-    , reasonMaxAvgLabel_("max avg value for property [" + boostingSubProp_ + "]")
+    , boostingReasons_(BOOSTING_REASON_NUM)
 {
+    boostingReasons_[BOOSTING_SELECT_LABEL] = "the 1st selected label";
+    boostingReasons_[BOOSTING_FREQ_LABEL] = "most frequent click";
+    boostingReasons_[BOOSTING_MAX_AVG_LABEL] = "max avg value for property [" +
+                                               boostingSubProp_ + "]";
 }
 
 void CategoryBoostingScorer::pushScore(
@@ -106,23 +110,31 @@ void CategoryBoostingScorer::pushScore(
 
 void CategoryBoostingScorer::selectBoostingCategory(ProductRankingParam& param)
 {
-    category_id_t boostLabel = getFreqLabel_(param.query_);
-    bool isMaxAvgLabel = false;
+    category_id_t boostLabel = 0;
+    BOOSTING_REASON reason = BOOSTING_REASON_NUM;
 
-    if (boostLabel == 0 && !boostingSubProp_.empty())
+    if ((boostLabel = getFirstSelectLabel_(param.groupParam_)))
     {
-        boostLabel = getMaxAvgLabel_(param.docIds_);
-        isMaxAvgLabel = true;
+        reason = BOOSTING_SELECT_LABEL;
+    }
+    else if ((boostLabel = getFreqLabel_(param.query_)))
+    {
+        reason = BOOSTING_FREQ_LABEL;
+    }
+    else if (!boostingSubProp_.empty() &&
+             (boostLabel = getMaxAvgLabel_(param.docIds_)))
+    {
+        reason = BOOSTING_MAX_AVG_LABEL;
     }
 
     param.boostingCategoryId_ = boostLabel;
-    printBoostingLabel_(param.query_, boostLabel, isMaxAvgLabel);
+    printBoostingLabel_(param.query_, boostLabel, reason);
 }
 
 void CategoryBoostingScorer::printBoostingLabel_(
     const std::string& query,
     category_id_t boostLabel,
-    bool isMaxAvgLabel
+    BOOSTING_REASON reason
 ) const
 {
     if (boostLabel == 0)
@@ -138,7 +150,33 @@ void CategoryBoostingScorer::printBoostingLabel_(
     labelUStr.convertString(labelStr, izenelib::util::UString::UTF_8);
 
     LOG(INFO) << "boosting category [" << labelStr << "] for query [" << query
-              << "], reason: " << (isMaxAvgLabel ? reasonMaxAvgLabel_ : reasonFreqLabel_);
+              << "], reason: " << boostingReasons_[reason];
+}
+
+category_id_t CategoryBoostingScorer::getFirstSelectLabel_(const faceted::GroupParam& groupParam)
+{
+    const faceted::GroupParam::GroupLabelMap& labelMap = groupParam.groupLabels_;
+    const std::string& propName = categoryValueTable_->propName();
+    faceted::GroupParam::GroupLabelMap::const_iterator findIt = labelMap.find(propName);
+
+    if (findIt == labelMap.end())
+        return 0;
+
+    const faceted::GroupParam::GroupPathVec& pathVec = findIt->second;
+    if (pathVec.size() <= 1)
+        return 0;
+
+    const faceted::GroupParam::GroupPath& path = pathVec.front();
+    std::vector<izenelib::util::UString> ustrPath;
+
+    for (std::vector<std::string>::const_iterator nodeIt = path.begin();
+        nodeIt != path.end(); ++nodeIt)
+    {
+        ustrPath.push_back(izenelib::util::UString(*nodeIt,
+                           izenelib::util::UString::UTF_8));
+    }
+
+    return categoryValueTable_->propValueId(ustrPath);
 }
 
 category_id_t CategoryBoostingScorer::getFreqLabel_(const std::string& query)

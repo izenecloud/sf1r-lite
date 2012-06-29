@@ -10,6 +10,8 @@ namespace sf1r {
     public:
         RawScdGenerator(OfferDb* odb, int mode);
 
+        void LoadMobileSource(const std::string& file);
+
         void Process(Document& doc, int& type);
 
         bool Generate(const std::string& scd_file, const std::string& mdb_instance);
@@ -19,6 +21,7 @@ namespace sf1r {
     private:
         OfferDb* odb_;
         int mode_;
+        boost::unordered_set<std::string> mobile_source_;
     };
 
 }

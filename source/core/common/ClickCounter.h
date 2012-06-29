@@ -85,7 +85,7 @@ void ClickCounter<ValueType, FreqType>::getFreqClick(
     std::vector<freq_type>& freqVec
 ) const
 {
-    if (limit < 1)
+    if (limit <= 0)
         return;
 
     ValueFreqQueue queue(limit);

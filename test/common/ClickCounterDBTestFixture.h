@@ -1,6 +1,6 @@
 /**
  * @file ClickCounterDBTestFixture.h
- * @brief fixture to test ClickCounterDB
+ * @brief fixture to test ClickCounter and serialize it into db storage.
  * @author Jun Jiang
  * @date 2012-03-16
  */
@@ -8,7 +8,8 @@
 #ifndef SF1R_CLICK_COUNTER_DB_TEST_FIXTURE_H
 #define SF1R_CLICK_COUNTER_DB_TEST_FIXTURE_H
 
-#include <common/click_counter/ClickCounterDB.h>
+#include <common/SDBWrapper.h>
+#include <common/ClickCounter.h>
 
 #include <string>
 #include <boost/scoped_ptr.hpp>
@@ -33,8 +34,8 @@ private:
     void checkClickCounter_(const std::string& keyStr);
 
 protected:
-    typedef ClickCounterDB<> DBType;
-    typedef DBType::click_counter_type ClickCounter;
+    typedef ClickCounter<int, int> ClickCounterT;
+    typedef SDBWrapper<std::string, ClickCounterT> DBType;
     boost::scoped_ptr<DBType> db_;
 
     typedef std::map<int, int> ValueCounter; /// value -> freq

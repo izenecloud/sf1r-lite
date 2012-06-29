@@ -57,6 +57,7 @@ int main(int ac, char** av)
         ("output-match,O", po::value<std::string>(), "specify output match path")
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
         ("dictionary", po::value<std::string>(), "specify dictionary path")
+        ("mobile-source", po::value<std::string>(), "specify mobile source list file")
         ("logserver-config,L", po::value<std::string>(), "log server config string")
         ("exclude,E", "do not generate non matched categories")
         ("scd-split,P", "split scd files for each categories.")
@@ -89,6 +90,7 @@ int main(int ac, char** av)
     std::string synonym_file;
     std::string category_regex;
     std::string dictionary;
+    std::string mobile_source;
     std::string cma_path = IZENECMA_KNOWLEDGE ;
     std::string work_dir;
     std::string name;
@@ -181,6 +183,10 @@ int main(int ac, char** av)
     {
         dictionary = vm["dictionary"].as<std::string>();
     }
+    if(vm.count("mobile-source"))
+    {
+        mobile_source = vm["mobile-source"].as<std::string>();
+    }
     if(vm.count("work-dir"))
     {
         work_dir = vm["work-dir"].as<std::string>();
@@ -205,6 +211,14 @@ int main(int ac, char** av)
         }
         LOG(INFO)<<"raw generator, mode: "<<mode<<std::endl;
         RawScdGenerator generator(odb.get(), mode);
+        if(!mobile_source.empty())
+        {
+            if(boost::filesystem::exists(mobile_source))
+            {
+                LOG(INFO)<<"raw generator loading mobile source "<<mobile_source<<std::endl;
+                generator.LoadMobileSource(mobile_source);
+            }
+        }
         if(!generator.Generate(scd_path, mdb_instance))
         {
             return EXIT_FAILURE;
