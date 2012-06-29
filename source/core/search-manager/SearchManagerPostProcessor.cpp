@@ -37,6 +37,7 @@ bool isProductRanking(const KeywordSearchActionItem& actionItem)
 
 
 SearchManagerPostProcessor::SearchManagerPostProcessor()
+    :productRankerFactory_(NULL)
 {
 }
 
@@ -44,7 +45,9 @@ SearchManagerPostProcessor::~SearchManagerPostProcessor()
 {
 }
 
-bool SearchManagerPostProcessor::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
+bool SearchManagerPostProcessor::rerank(
+    const KeywordSearchActionItem& actionItem, 
+    KeywordSearchResult& resultItem)
 {
     if (productRankerFactory_ &&
         resultItem.topKCustomRankScoreList_.empty() &&

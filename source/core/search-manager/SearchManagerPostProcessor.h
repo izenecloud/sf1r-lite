@@ -1,10 +1,9 @@
 #ifndef CORE_SEARCH_MANAGER_SEARCH_MANAGER_POSTPROCESSOR_H
 #define CORE_SEARCH_MANAGER_SEARCH_MANAGER_POSTPROCESSOR_H
 
-//#include <query-manager/SearchKeywordOperation.h>
+#include <types.h>
 #include <query-manager/ActionItem.h>
 #include <common/ResultType.h>
-//#include <util/ustring/UString.h>
 
 namespace sf1r
 {
@@ -15,11 +14,13 @@ class SearchManagerPostProcessor
 {
     friend class SearchManager;
 private:
+    DISALLOW_COPY_AND_ASSIGN(SearchManagerPostProcessor);
     SearchManagerPostProcessor();
     ~SearchManagerPostProcessor();
 
-    bool rerank(const KeywordSearchActionItem& actionItem, 
-        KeywordSearchResult& resultItem);
+    bool rerank(
+            const KeywordSearchActionItem& actionItem, 
+            KeywordSearchResult& resultItem);
 
     ProductRankerFactory* productRankerFactory_;
 };
