@@ -156,7 +156,7 @@ bool SearchManager::rerank(const KeywordSearchActionItem& actionItem, KeywordSea
         izenelib::util::ClockTimer timer;
 
         ProductRankingParam rankingParam(actionItem.env_.queryString_,
-            resultItem.topKDocs_, resultItem.topKRankScoreList_);
+            resultItem.topKDocs_, resultItem.topKRankScoreList_, actionItem.groupParam_);
 
         boost::scoped_ptr<ProductRanker> productRanker(
             productRankerFactory_->createProductRanker(rankingParam));
@@ -774,8 +774,8 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             faceted::GroupRep groupRep_thread;
             faceted::OntologyRep attrRep_thread;
             groupFilter->getGroupRep(groupRep_thread, attrRep_thread);
-            groupRep = groupRep_thread;
-            attrRep = attrRep_thread;
+            groupRep.swap(groupRep_thread);
+            attrRep.swap(attrRep_thread);
         }
         return ret;
     }

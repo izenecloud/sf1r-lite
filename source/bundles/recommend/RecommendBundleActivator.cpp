@@ -361,7 +361,7 @@ void RecommendBundleActivator::createClickCounter_()
     bfs::path counterPath = counterDir / "query_purchase.db";
     bfs::create_directory(counterDir);
 
-    queryPurchaseCounter_.reset(new QueryClickCounter(counterPath.string()));
+    queryPurchaseCounter_.reset(new QueryPurchaseCounter(counterPath.string()));
 }
 
 void RecommendBundleActivator::createRecommender_()

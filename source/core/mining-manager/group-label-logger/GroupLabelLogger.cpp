@@ -1,5 +1,6 @@
 #include "GroupLabelLogger.h"
 
+#include <algorithm> // min
 #include <glog/logging.h>
 
 namespace sf1r
@@ -9,92 +10,72 @@ GroupLabelLogger::GroupLabelLogger(
     const std::string& dirPath,
     const std::string& propName
 )
-    : container_(dirPath + "/" + propName + ".db")
+    : db_(dirPath + "/" + propName + ".db")
 {
-}
-
-GroupLabelLogger::~GroupLabelLogger()
-{
-    flush();
 }
 
 void GroupLabelLogger::flush()
 {
-    try
-    {
-        container_.flush();
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::flush(): " << e.what();
-    }
-}
-
-bool GroupLabelLogger::open()
-{
-    return container_.open();
+    db_.flush();
 }
 
 bool GroupLabelLogger::logLabel(
     const std::string& query,
-    LabelCounter::value_type value
+    LabelId labelId
 )
 {
     LabelCounter labelCounter;
-    container_.getValue(query, labelCounter);
-    labelCounter.increment(value);
+    if (! db_.get(query, labelCounter))
+        return false;
 
-    bool result = false;
-    try
-    {
-        result = container_.update(query, labelCounter);
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::update(): " << e.what();
-    }
-
-    return result;
+    labelCounter.freqCounter_.click(labelId);
+    return db_.update(query, labelCounter);
 }
 
 bool GroupLabelLogger::getFreqLabel(
     const std::string& query,
     int limit,
-    std::vector<LabelCounter::value_type>& valueVec,
+    std::vector<LabelId>& labelIdVec,
     std::vector<int>& freqVec
 )
 {
+    if (limit <= 0)
+        return true;
+
     LabelCounter labelCounter;
-    container_.getValue(query, labelCounter);
-
-    labelCounter.getFreqLabel(limit, valueVec, freqVec);
-
-    if (valueVec.size() != freqVec.size())
+    if (! db_.get(query, labelCounter))
         return false;
+
+    if (labelCounter.setLabelIds_.empty())
+    {
+        labelCounter.freqCounter_.getFreqClick(limit, labelIdVec, freqVec);
+    }
+    else
+    {
+        std::vector<LabelId>::const_iterator beginIt =
+            labelCounter.setLabelIds_.begin();
+
+        int setIdNum = labelCounter.setLabelIds_.size();
+        limit = std::min(limit, setIdNum);
+
+        labelIdVec.assign(beginIt, beginIt + limit);
+        freqVec.assign(limit, 0);
+    }
 
     return true;
 }
 
 bool GroupLabelLogger::setTopLabel(
     const std::string& query,
-    LabelCounter::value_type value
+    const std::vector<LabelId>& labelIdVec
 )
 {
     LabelCounter labelCounter;
-    container_.getValue(query, labelCounter);
-    labelCounter.setTopLabel(value);
+    if (! db_.get(query, labelCounter))
+        return false;
 
-    bool result = false;
-    try
-    {
-        result = container_.update(query, labelCounter);
-    }
-    catch(izenelib::util::IZENELIBException& e)
-    {
-        LOG(ERROR) << "exception in SDB::update(): " << e.what();
-    }
-
-    return result;
+    labelCounter.setLabelIds_ = labelIdVec;
+    return db_.update(query, labelCounter);
 }
 
-}
+} // namespace sf1r

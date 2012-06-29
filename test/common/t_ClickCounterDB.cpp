@@ -54,9 +54,9 @@ BOOST_AUTO_TEST_CASE(testKeyTypeUString)
 
     const std::string dbPath = (dir / DB_FILE_NAME).string();
 
-    typedef ClickCounterDB<izenelib::util::UString, unsigned int> DBType;
-    typedef DBType::click_counter_type ClickCounter;
-    ClickCounter clickCounter;
+    typedef ClickCounter<unsigned int, int> ClickCounterT;
+    typedef SDBWrapper<izenelib::util::UString, ClickCounterT> DBType;
+    ClickCounterT clickCounter;
     izenelib::util::UString keyStr("key_001", izenelib::util::UString::UTF_8);
     int value = 15;
     const int CLICK_NUM = 100;
@@ -81,8 +81,8 @@ BOOST_AUTO_TEST_CASE(testKeyTypeUString)
         BOOST_CHECK(db.get(keyStr, clickCounter));
         BOOST_CHECK_EQUAL(clickCounter.getTotalFreq(), CLICK_NUM);
 
-        std::vector<ClickCounter::value_type> values;
-        std::vector<ClickCounter::freq_type> freqs;
+        std::vector<ClickCounterT::value_type> values;
+        std::vector<ClickCounterT::freq_type> freqs;
         clickCounter.getFreqClick(10, values, freqs);
 
         BOOST_CHECK_EQUAL(values.size(), 1);
