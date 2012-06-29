@@ -111,6 +111,7 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
 
 void B5mpProcessor::ProductOutput_(Document& doc, int& type)
 {
+    doc.eraseProperty("OID");
     int64_t itemcount = 0;
     doc.getProperty("itemcount", itemcount);
     if(itemcount<=0)

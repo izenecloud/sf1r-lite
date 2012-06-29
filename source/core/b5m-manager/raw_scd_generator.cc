@@ -23,6 +23,18 @@ RawScdGenerator::RawScdGenerator(OfferDb* odb, int mode)
 {
 }
 
+void RawScdGenerator::LoadMobileSource(const std::string& file)
+{
+    std::ifstream ifs(file.c_str());
+    std::string line;
+    while( getline(ifs,line))
+    {
+        boost::algorithm::trim(line);
+        mobile_source_.insert(line);
+    }
+    ifs.close();
+}
+
 void RawScdGenerator::Process(Document& doc, int& type)
 {
     if(mode_!=B5MMode::INC)
@@ -53,6 +65,17 @@ void RawScdGenerator::Process(Document& doc, int& type)
         ProductPrice pp;
         pp.Parse(uprice);
         doc.property("Price") = pp.ToUString();
+    }
+
+    UString usource;
+    if(doc.getProperty("Source", usource))
+    {
+        std::string ssource;
+        usource.convertString(ssource, izenelib::util::UString::UTF_8);
+        if(mobile_source_.find(ssource)!=mobile_source_.end())
+        {
+            doc.property("mobile") = (int64_t)1;
+        }
     }
     std::string spid;
     bool got_pid = false;
