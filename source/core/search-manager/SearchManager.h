@@ -45,6 +45,8 @@ class CombinedDocumentIterator;
 class HitQueue;
 class ProductRankerFactory;
 class SearchThreadParam;
+class SearchManagerPreProcessor;
+class SearchManagerPostProcessor;
 
 namespace faceted
 {
@@ -110,10 +112,7 @@ public:
 
     NumericPropertyTable* createPropertyTable(const std::string& propertyName);
 
-    void setProductRankerFactory(ProductRankerFactory* productRankerFactory)
-    {
-        productRankerFactory_ = productRankerFactory;
-    }
+    void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
 
 private:
     bool doSearch_(
@@ -156,24 +155,10 @@ private:
         bool is_parallel = false
         );
 
-
-    bool getPropertyTypeByName_(
-            const std::string& name,
-            PropertyDataType& type) const;
-
-    boost::shared_ptr<PropertyData> getPropertyData_(const std::string& name);
-
     void prepare_sorter_customranker_(
             const SearchKeywordOperation& actionOperation,
             CustomRankerPtr& customRanker,
             boost::shared_ptr<Sorter> &pSorter);
-
-    /**
-     * rebuild custom ranker.
-     * @param actionItem
-     * @return
-     */
-    CustomRankerPtr buildCustomRanker_(KeywordSearchActionItem& actionItem);
 
     /**
      * @brief get data list of each sort property for documents referred by docIdList,
@@ -182,7 +167,7 @@ private:
      * @param docIdList [IN]
      * @param distSearchInfo [OUT]
      */
-    void getSortPropertyData_(
+    void fillSearchInfoWithSortPropertyData_(
             Sorter* pSorter,
             std::vector<unsigned int>& docIdList,
             DistKeywordSearchInfo& distSearchInfo);
@@ -198,7 +183,6 @@ private:
 private:
     IndexBundleConfiguration* config_;
     std::string collectionName_;
-    boost::unordered_map<std::string, PropertyConfig> schemaMap_;
     boost::shared_ptr<IndexManager> indexManagerPtr_;
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
     boost::shared_ptr<RankingManager> rankingManagerPtr_;
@@ -212,8 +196,9 @@ private:
 
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
 
-    ProductRankerFactory* productRankerFactory_;
     boost::threadpool::pool  threadpool_;
+    SearchManagerPreProcessor*  preprocessor_;
+    SearchManagerPostProcessor*  postprocessor_;
 };
 
 } // end - namespace sf1r

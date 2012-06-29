@@ -201,6 +201,7 @@ private:
     size_t nNumProperties_;
 
     friend class SearchManager;
+    friend class SearchManagerPreProcessor;
 };
 
 }
