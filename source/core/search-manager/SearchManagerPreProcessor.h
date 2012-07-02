@@ -7,6 +7,7 @@
 #include <query-manager/ActionItem.h>
 #include <common/ResultType.h>
 #include <common/PropertyTermInfo.h>
+#include <types.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -28,18 +29,23 @@ class SearchManagerPreProcessor
 {
     friend class SearchManager;
 private:
+    DISALLOW_COPY_AND_ASSIGN(SearchManagerPreProcessor);
     SearchManagerPreProcessor();
     ~SearchManagerPreProcessor();
 
     boost::unordered_map<std::string, PropertyConfig> schemaMap_;
 
-    NumericPropertyTable* createPropertyTable(const std::string& propertyName, SortPropertyCache* psortercache);
+    NumericPropertyTable* createPropertyTable(
+            const std::string& propertyName, 
+            SortPropertyCache* psortercache);
 
     bool getPropertyTypeByName_(
             const std::string& name,
             PropertyDataType& type) const;
 
-    boost::shared_ptr<PropertyData> getPropertyData_(const std::string& name, SortPropertyCache* psortercache);
+    boost::shared_ptr<PropertyData> getPropertyData_(
+            const std::string& name, 
+            SortPropertyCache* psortercache);
 
     void prepare_sorter_customranker_(
             const SearchKeywordOperation& actionOperation,
