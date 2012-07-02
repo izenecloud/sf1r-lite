@@ -41,6 +41,7 @@ namespace sf1r
 
 static izenelib::util::CpuTopologyT  s_cpu_topology_info;
 static int  s_round = 0;
+static int  s_cpunum = 0;
 
 SearchManager::SearchManager(
         const IndexBundleSchema& indexSchema,
@@ -56,7 +57,7 @@ SearchManager::SearchManager(
     , rankingManagerPtr_(rankingManager)
     , queryBuilder_()
     , filter_hook_(0)
-    , threadpool_(omp_get_num_procs()*4)
+    , threadpool_(0)
     , preprocessor_(new SearchManagerPreProcessor())
     , postprocessor_(new SearchManagerPostProcessor())
 {
@@ -77,6 +78,14 @@ SearchManager::SearchManager(
                             config->filterCacheNum_));
     rankingManagerPtr_->getPropertyWeightMap(propertyWeightMap_);
     izenelib::util::CpuInfo::InitCpuTopologyInfo(s_cpu_topology_info);
+    if(s_cpunum == 0)
+    {
+        s_cpunum = omp_get_num_procs();
+        if(s_cpunum <= 0)
+        {
+            s_cpunum = 1;
+        }
+    }
 }
 
 SearchManager::~SearchManager()
@@ -180,13 +189,18 @@ bool SearchManager::search(
         return false;
 
     docid_t maxDocId = documentManagerPtr_->getMaxDocId();
-    size_t thread_num = omp_get_num_procs();
+    size_t thread_num = s_cpunum;
 
     int running_node = 0;
     if(s_cpu_topology_info.cpu_topology_supported)
     {
         running_node = ++s_round%s_cpu_topology_info.cpu_topology_array.size();
         thread_num = s_cpu_topology_info.cpu_topology_array[running_node].size();
+    }
+
+    if(enable_parallel_searching && s_cpu_topology_info.cpu_topology_supported)
+    {
+        threadpool_.size_controller().resize(s_cpunum*4);
     }
 
     if(!enable_parallel_searching || (maxDocId < PARALLEL_THRESHOLD) )

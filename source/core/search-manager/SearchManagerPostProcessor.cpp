@@ -37,6 +37,7 @@ bool isProductRanking(const KeywordSearchActionItem& actionItem)
 
 
 SearchManagerPostProcessor::SearchManagerPostProcessor()
+    :productRankerFactory_(NULL)
 {
 }
 
