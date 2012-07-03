@@ -27,7 +27,10 @@ public:
 
     bool test(docid_t doc) const;
 
-    const PropSharedLock* getSharedLock() { return &propValueTable_; }
+    virtual void insertSharedLock(SharedLockSet& lockSet) const
+    {
+        lockSet.insert(&propValueTable_);
+    }
 
 private:
     void getTargetValueIds_(const GroupParam::GroupPathVec& labelPaths);

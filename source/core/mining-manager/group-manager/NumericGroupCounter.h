@@ -33,6 +33,7 @@ public:
     virtual void addDoc(docid_t doc);
     virtual void getGroupRep(GroupRep& groupRep);
     virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const;
+    virtual void insertSharedLock(SharedLockSet& lockSet) const;
 
 private:
     boost::scoped_ptr<const NumericPropertyTable> propertyTable_;
@@ -154,6 +155,19 @@ void NumericGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep
         strRep.push_back(faceted::OntologyRepItem(level, ustr, 0, subCounter.count_));
         subCounter.groupCounter_->getStringRep(strRep, level+1);
     }
+}
+
+template<typename CounterType>
+void NumericGroupCounter<CounterType>::insertSharedLock(SharedLockSet& lockSet) const
+{
+    // no lock for NumericGroupCounter itself
+}
+
+template<>
+void NumericGroupCounter<SubGroupCounter>::insertSharedLock(SharedLockSet& lockSet) const
+{
+    // insert lock for SubGroupCounter
+    defaultCounter_.groupCounter_->insertSharedLock(lockSet);
 }
 
 NS_FACETED_END
