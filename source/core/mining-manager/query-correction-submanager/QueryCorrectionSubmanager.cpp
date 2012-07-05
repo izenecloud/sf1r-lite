@@ -279,7 +279,10 @@ bool QueryCorrectionSubmanager::getPinyin(
         std::vector<izenelib::util::UString>& pinyin)
 {
     std::vector<std::string> result_list;
-    cmgr_->GetPinyin(hanzi, result_list);
+    if(enableChn_ && cmgr_)
+    {
+        cmgr_->GetPinyin(hanzi, result_list);
+    }
     for (uint32_t i=0;i<result_list.size();i++)
     {
         boost::algorithm::replace_all(result_list[i], ",", "");
@@ -294,7 +297,8 @@ void QueryCorrectionSubmanager::updateCogramAndDict(
         const std::list<PropertyLabelType>& labelList)
 {
     DLOG(INFO) << "updateCogramAndDict..." << endl;
-    cmgr_->Update(queryList, labelList);
+    if(enableChn_ && cmgr_)
+        cmgr_->Update(queryList, labelList);
 }
 
 void QueryCorrectionSubmanager::Inject(
