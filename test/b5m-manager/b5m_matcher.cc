@@ -6,6 +6,7 @@
 #include <b5m-manager/uue_generator.h>
 #include <b5m-manager/complete_matcher.h>
 #include <b5m-manager/similarity_matcher.h>
+#include <b5m-manager/ticket_matcher.h>
 #include <b5m-manager/uue_worker.h>
 #include <b5m-manager/b5mp_processor.h>
 #include <b5m-manager/b5m_mode.h>
@@ -33,6 +34,7 @@ int main(int ac, char** av)
         ("psm-match", "psm match")
         ("complete-match,M", "attribute complete matching")
         ("similarity-match,I", "title based similarity matching")
+        ("ticket-match", "ticket matching")
         ("b5mo-generate", "generate b5mo scd")
         ("uue-generate", "generate uue")
         ("b5mp-generate", "generate b5mp scd")
@@ -327,6 +329,20 @@ int main(int ac, char** av)
         PidDictionary dic;
         matcher.SetPidDictionary(dictionary);
         matcher.Index(scd_path, knowledge_dir);
+    }
+    if(vm.count("ticket-match"))
+    {
+        if( scd_path.empty() || knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        TicketMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Index(scd_path, knowledge_dir))
+        {
+            std::cout<<"ticket matcher fail"<<std::endl;
+            return EXIT_FAILURE;
+        }
     }
     if(vm.count("b5mo-generate"))
     {

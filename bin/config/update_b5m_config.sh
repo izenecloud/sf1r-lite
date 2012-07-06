@@ -6,3 +6,5 @@ scp dev@izenesoft.cn:/data/B5M/config/b5mc.xml $HOM/
 scp dev@izenesoft.cn:/data/B5M/config/tuanm.xml $HOM/
 scp dev@izenesoft.cn:/data/B5M/config/tuana.xml $HOM/
 scp dev@izenesoft.cn:/data/B5M/config/second.xml $HOM/
+scp dev@izenesoft.cn:/data/B5M/config/ticketo.xml $HOM/
+scp dev@izenesoft.cn:/data/B5M/config/ticketp.xml $HOM/
