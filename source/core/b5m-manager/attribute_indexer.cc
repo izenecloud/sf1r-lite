@@ -21,8 +21,8 @@ using namespace idmlib::sim;
 
 #define B5M_DEBUG
 
-AttributeIndexer::AttributeIndexer()
-:is_open_(false), index_(NULL), id_manager_(NULL), name_index_(NULL), name_id_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL)
+AttributeIndexer::AttributeIndexer(const std::string& knowledge_dir)
+:knowledge_dir_(knowledge_dir), is_open_(false), index_(NULL), id_manager_(NULL), name_index_(NULL), name_id_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL)
 {
 }
 
@@ -86,7 +86,7 @@ bool AttributeIndexer::LoadSynonym(const std::string& file)
     return true;
 }
 
-bool AttributeIndexer::Index(const std::string& scd_file, const std::string& knowledge_dir)
+bool AttributeIndexer::Index()
 {
     std::string done_file = knowledge_dir+"/index.done";
     if(boost::filesystem::exists(done_file))
@@ -94,9 +94,9 @@ bool AttributeIndexer::Index(const std::string& scd_file, const std::string& kno
         std::cout<<knowledge_dir<<" index done, ignore."<<std::endl;
         return true;
     }
-    ClearKnowledge_(knowledge_dir);
-    Open(knowledge_dir);
-    BuildProductDocuments_(scd_file);
+    ClearKnowledge_();
+    Open();
+    BuildProductDocuments_();
     if(product_list_.empty())
     {
         LOG(INFO)<<"product_list_ empty, ignore training."<<std::endl;
@@ -1327,44 +1327,39 @@ void AttributeIndexer::GetFeatureVector_(const std::vector<AttribId>& o, const s
 
 }
 
-void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
+void AttributeIndexer::BuildProductDocuments_()
 {
     namespace bfs = boost::filesystem;
-    std::string scd_file = scd_path;
-    bool inner_scd = false;
     std::string t_scd_dir = knowledge_dir_+"/T";
-    std::string t_scd;
-    uint32_t counting = 10000;
-    if(bfs::is_directory(t_scd_dir))
+    std::vector<std::string> t_scd_list;
+    ScdParser::GetScdList(t_scd_dir, t_scd_list);
+    if(t_scd_list.size()!=1)
     {
-        bfs::path p(t_scd_dir);
-        bfs::directory_iterator end;
-        for(bfs::directory_iterator it(p);it!=end;it++)
-        {
-            if(bfs::is_regular_file(it->path()))
-            {
-                std::string file = it->path().string();
-                if(ScdParser::checkSCDType(file)==INSERT_SCD)
-                {
-                    t_scd = file;
-                }
-            }
-        }
+        std::cout<<"t scd count error"<<std::endl;
+        return false;
     }
-    if(!t_scd.empty())
+    std::string t_scd = t_scd_list[0];
+    std::string anid_file = knowledge_dir_+"/T/anid.txt";
+    std::string aid_file = knowledge_dir_+"/T/aid.txt";
+    std::ifstream anid_ofs(anid_file.c_str());
+    std::string line;
+    while(getline(anid_ofs, line))
     {
-        scd_file = t_scd;
-        inner_scd = true;
-        counting = 200;
-        std::cout<<"USE inner T FOR TRAINING"<<std::endl;
+        std::vector<std::string> vec;
+        boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
+        anid_map_.insert(std::make_pair(vec[1], boost::lexical_cast<uint32_t>(vec[0])));
     }
-    else
+    anid_ofs.close();
+    std::ifstream aid_ofs(aid_file.c_str());
+    while(getline(aid_ofs, line))
     {
-        //force use T
-        return;
+        std::vector<std::string> vec;
+        boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
+        aid_map_.insert(std::make_pair(vec[1], boost::lexical_cast<uint32_t>(vec[0])));
     }
+    aid_ofs.close();
     ScdParser parser(izenelib::util::UString::UTF_8);
-    parser.load(scd_file);
+    parser.load(t_scd);
     uint32_t n=0;
     for( ScdParser::iterator doc_iter = parser.begin();
       doc_iter!= parser.end(); ++doc_iter, ++n)

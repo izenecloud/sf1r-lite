@@ -18,6 +18,8 @@ namespace sf1r {
 
 
     public:
+        typedef boost::unordered_map<std::string, uint32_t> AidMap;
+        typedef boost::unordered_map<std::string, uint32_t> AnidMap;
 
         typedef izenelib::ir::idmanager::DocIdManager<AttribRep, AttribId> AttribIDManager;
         typedef izenelib::ir::idmanager::DocIdManager<AttribRep, AttribNameId> AttribNameIDManager;
@@ -34,11 +36,11 @@ namespace sf1r {
                            //izenelib::ir::idmanager::HDBIDStorage<AttribRep, AttribNameId> >  AttribNameIDManager;
         typedef izenelib::am::leveldb::Table<izenelib::util::UString, std::vector<AttribId> > AttribIndex;
         typedef izenelib::am::leveldb::Table<AttribId, AttribNameId > AttribNameIndex;
-        AttributeIndexer();
+        AttributeIndexer(const std::string& knowledge_dir);
         ~AttributeIndexer();
         bool LoadSynonym(const std::string& file);
-        bool Index(const std::string& scd_file, const std::string& knowledge_dir);
-        bool Open(const std::string& knowledge_dir);
+        bool Index();
+        bool DoMatch();
         void GetAttribIdList(const izenelib::util::UString& value, std::vector<AttribId>& id_list);
         void GetAttribIdList(const izenelib::util::UString& category, const izenelib::util::UString& value, std::vector<AttribId>& id_list);
         bool GetAttribRep(const AttribId& aid, AttribRep& rep);
@@ -53,11 +55,6 @@ namespace sf1r {
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
-
-        void SetCategoryRegex(const std::string& str)
-        {
-            match_param_.SetCategoryRegex(str);
-        }
 
     private:
         void ClearKnowledge_(const std::string& knowledge_dir);
@@ -142,15 +139,14 @@ namespace sf1r {
         }
 
     private:
+        std::string knowledge_dir_;
+        bool is_open_;
         std::string cma_path_;
         std::vector<std::pair<boost::regex, std::string> > normalize_pattern_;
-        //boost::unordered_map<std::string, std::string> synonym_map_;
         NgramSynonym ngram_synonym_;
-        //SynonymHandler synonym_handler_;
-        bool is_open_;
         std::ofstream logger_;
-        MatchParameter match_param_;
-        std::string knowledge_dir_;
+        AidMap aid_map_;
+        AnidMap anid_map_;
         AttribIndex* index_;
         AttribIDManager* id_manager_;
         AttribNameIndex* name_index_;
