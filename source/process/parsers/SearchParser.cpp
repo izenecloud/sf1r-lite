@@ -54,7 +54,9 @@ using driver::Keys;
  *   Regarding the range format, you could specify it in the form of "101-200",
  *   meaning all values between 101 and 200, including both boundary values,
  *   or in the form of "-200", meaning all values not larger than 200,
- *   or in the form of "101-", meaning all values not less than 101.
+ *   or in the form of "101-", meaning all values not less than 101.@n
+ *   For the property type of datetime, in @b value[0], you could specify a string of year, month or day.@n
+ *   For example, "2012" means the year of 2012, "2012-07" means the month of 2012 July, "2012-07-06" means the day of 2012 July 6th.
  * - @b attr_label (@c Array): Get documents in the specified attribute labels. Each label consists of an attribute name and value.@n
  *   You could specify multiple labels, for example, there are 4 labels named as "A1", "A2", "B1", "B2".@n
  *   If the attribute name of label "A1" and "A2" is "A", while the attribute name of label "B1" and "B2" is "B",@n
