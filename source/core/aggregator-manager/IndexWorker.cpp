@@ -1372,9 +1372,17 @@ bool IndexWorker::mergeDocument_(
             ///When new doc has same properties with old doc
             ///override content of old doc
             if(it->second == doc.property(it->first)) continue;
-            const izenelib::util::UString& newPropValue = *(get<izenelib::util::UString>(&doc.property(it->first)));
-            if(newPropValue.empty()) continue;
-            it->second = newPropValue;
+            try
+            {
+                const izenelib::util::UString& newPropValue = get<izenelib::util::UString>(doc.property(it->first));
+                if(newPropValue.empty()) continue;
+                it->second = newPropValue;
+            }
+            catch(boost::bad_get& e)
+            {
+                LOG(WARNING) <<"exception in propertyValue, not UString type:"<< doc.property(it->first) << "," << it->first << endl;
+                continue;
+            }
         }
         else if(generateIndexDoc)
         {
