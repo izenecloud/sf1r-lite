@@ -87,11 +87,18 @@ bool checkGroupPropParam(
         }
     }
 
-    if (! unit.empty())
+    if (!configIt->isDateTimeType() &&
+        !unit.empty())
     {
-        if (! configIt->isDateTimeType())
+        message = "as property type of " + propName + " is not datetime, request[group][unit] should be empty.";
+        return false;
+    }
+
+    if (configIt->isDateTimeType())
+    {
+        if (unit.empty())
         {
-            message = "property type of " + propName + " should be datetime when request[group][unit] is specified.";
+            message = "as property type of " + propName + " is datetime, request[group][unit] should not be empty.";
             return false;
         }
 
@@ -141,7 +148,8 @@ bool operator==(const GroupPropParam& a, const GroupPropParam& b)
 {
     return a.property_ == b.property_ &&
            a.subProperty_ == b.subProperty_ &&
-           a.isRange_ == b.isRange_;
+           a.isRange_ == b.isRange_ &&
+           a.unit_ == b.unit_;
 }
 
 std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam)
@@ -149,6 +157,7 @@ std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam
     out << "property: " << groupPropParam.property_
         << ", sub property: " << groupPropParam.subProperty_
         << ", is range: " << groupPropParam.isRange_
+        << ", unit: " << groupPropParam.unit_
         << std::endl;
 
     return out;
