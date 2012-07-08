@@ -145,7 +145,7 @@ void DateGroupCounter<CounterType>::getStringRep(GroupRep::StringGroupRep& strRe
         it != countTable_.end(); ++it)
     {
         dateStrParser->dateToAPIStr(it->first, dateStr);
-        dateUStr.convertString(dateStr, izenelib::util::UString::UTF_8);
+        dateUStr.assign(dateStr, izenelib::util::UString::UTF_8);
         strRep.push_back(faceted::OntologyRepItem(level, dateUStr, 0, it->second));
     }
 }
@@ -161,7 +161,7 @@ void DateGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& s
         it != countTable_.end(); ++it)
     {
         dateStrParser->dateToAPIStr(it->first, dateStr);
-        dateUStr.convertString(dateStr, izenelib::util::UString::UTF_8);
+        dateUStr.assign(dateStr, izenelib::util::UString::UTF_8);
         const SubGroupCounter& subCounter = it->second;
 
         strRep.push_back(faceted::OntologyRepItem(level, dateUStr, 0, subCounter.count_));

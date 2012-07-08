@@ -35,6 +35,7 @@ const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UStr
 const char* PROP_NAME_GROUP_STR = "Group_str";
 const char* PROP_NAME_GROUP_INT = "Group_int";
 const char* PROP_NAME_GROUP_FLOAT = "Group_float";
+const char* PROP_NAME_GROUP_DATETIME = "Group_datetime";
 const char* TEST_DIR_STR = "group_test";
 
 string normalizeDoubleRep(double value)
@@ -104,6 +105,9 @@ void prepareDocument(
     property.assign(docInput.groupStr_, ENCODING_TYPE);
     document.property(PROP_NAME_GROUP_STR) = property;
 
+    property.assign(docInput.dateStr_, ENCODING_TYPE);
+    document.property(PROP_NAME_GROUP_DATETIME) = property;
+
     document.property(PROP_NAME_GROUP_INT) = lexical_cast<int64_t>(docInput.groupInt_);
     document.property(PROP_NAME_GROUP_FLOAT) = lexical_cast<float>(docInput.groupFloat_);
 }
@@ -113,13 +117,22 @@ void create_EmptyLabel(faceted::GroupParam::GroupLabelMap& labels)
     labels.clear();
 }
 
-void create_OneLabel(faceted::GroupParam::GroupLabelMap& labels)
+void create_OneLabel_PropStr(faceted::GroupParam::GroupLabelMap& labels)
 {
     labels.clear();
 
     faceted::GroupParam::GroupPath path;
     path.push_back("aaa");
     labels[PROP_NAME_GROUP_STR].push_back(path);
+}
+
+void create_OneLabel_PropDate(faceted::GroupParam::GroupLabelMap& labels)
+{
+    labels.clear();
+
+    faceted::GroupParam::GroupPath path;
+    path.push_back("2012-07");
+    labels[PROP_NAME_GROUP_DATETIME].push_back(path);
 }
 
 void create_TwoLabel_OneProperty(faceted::GroupParam::GroupLabelMap& labels)
@@ -182,7 +195,7 @@ void create_ThreeLabel_TwoProperty(faceted::GroupParam::GroupLabelMap& labels)
     labels[PROP_NAME_GROUP_FLOAT].push_back(path3);
 }
 
-void create_ThreeLabel_ThreeProperty(faceted::GroupParam::GroupLabelMap& labels)
+void create_ThreeLabel_FourProperty(faceted::GroupParam::GroupLabelMap& labels)
 {
     labels.clear();
 
@@ -197,6 +210,10 @@ void create_ThreeLabel_ThreeProperty(faceted::GroupParam::GroupLabelMap& labels)
     faceted::GroupParam::GroupPath path3;
     path3.push_back("0.3");
     labels[PROP_NAME_GROUP_FLOAT].push_back(path3);
+
+    faceted::GroupParam::GroupPath path4;
+    path4.push_back("2012-12");
+    labels[PROP_NAME_GROUP_DATETIME].push_back(path4);
 }
 
 bool isDocBelongToStrLabel(
@@ -259,6 +276,26 @@ bool isDocBelongToFloatLabel(
     return false;
 }
 
+bool isDocBelongToDateLabel(
+    const GroupManagerTestFixture::DocInput& docInput,
+    const faceted::GroupParam::GroupLabelMap& labels
+)
+{
+    faceted::GroupParam::GroupLabelMap::const_iterator findIt = labels.find(PROP_NAME_GROUP_DATETIME);
+    if (findIt == labels.end())
+        return true;
+
+    const faceted::GroupParam::GroupPathVec& paths = findIt->second;
+    for (faceted::GroupParam::GroupPathVec::const_iterator pathIt = paths.begin();
+        pathIt != paths.end(); ++pathIt)
+    {
+        if (pathIt->front() == docInput.yearMonthStr_)
+            return true;
+    }
+
+    return false;
+}
+
 }
 
 namespace sf1r
@@ -275,12 +312,16 @@ GroupManagerTestFixture::DocInput::DocInput(
     unsigned int docId,
     const std::string& groupStr,
     int groupInt,
-    float groupFloat
+    float groupFloat,
+    const std::string& dateStr,
+    const std::string& yearMonthStr
 )
     : docId_(docId)
     , groupStr_(groupStr)
     , groupInt_(groupInt)
     , groupFloat_(groupFloat)
+    , dateStr_(dateStr)
+    , yearMonthStr_(yearMonthStr)
 {
     title_ = "Title ";
     title_ += lexical_cast<std::string>(docId);
@@ -341,16 +382,16 @@ void GroupManagerTestFixture::createDocument(int num)
         switch (mod)
         {
         case 0:
-            docInput = DocInput(i, "aaa", 1, 0.1);
+            docInput = DocInput(i, "aaa", 1, 0.1, "20120720093000", "2012-07");
             break;
         case 1:
-            docInput = DocInput(i, "上海", 2, 0.2);
+            docInput = DocInput(i, "上海", 2, 0.2, "20121008190000", "2012-10");
             break;
         case 2:
-            docInput = DocInput(i, "中国", 3, 0.3);
+            docInput = DocInput(i, "中国", 3, 0.3, "20121211100908", "2012-12");
             break;
         case 3:
-            docInput = DocInput(i, "aaa", 2, 0.3);
+            docInput = DocInput(i, "aaa", 2, 0.3, "20121231235959", "2012-12");
             break;
         default:
             BOOST_ASSERT(false);
@@ -377,7 +418,10 @@ void GroupManagerTestFixture::checkGetGroupRep()
     create_EmptyLabel(labels);
     createAndCheckGroupRep_(labels);
 
-    create_OneLabel(labels);
+    create_OneLabel_PropStr(labels);
+    createAndCheckGroupRep_(labels);
+
+    create_OneLabel_PropDate(labels);
     createAndCheckGroupRep_(labels);
 
     create_TwoLabel_OneProperty(labels);
@@ -392,7 +436,7 @@ void GroupManagerTestFixture::checkGetGroupRep()
     create_ThreeLabel_TwoProperty(labels);
     createAndCheckGroupRep_(labels);
 
-    create_ThreeLabel_ThreeProperty(labels);
+    create_ThreeLabel_FourProperty(labels);
     createAndCheckGroupRep_(labels);
 }
 
@@ -466,18 +510,25 @@ void GroupManagerTestFixture::initConfig_()
     groupConfigs_.push_back(GroupConfig(config3.propertyName_, config3.propertyType_));
 
     PropertyConfigBase config4;
-    config4.propertyName_ = PROP_NAME_GROUP_INT;
-    config4.propertyType_ = INT_PROPERTY_TYPE;
+    config4.propertyName_ = PROP_NAME_GROUP_DATETIME;
+    config4.propertyType_ = DATETIME_PROPERTY_TYPE;
     schema_.insert(config4);
     propNames_.push_back(config4.propertyName_);
     groupConfigs_.push_back(GroupConfig(config4.propertyName_, config4.propertyType_));
 
     PropertyConfigBase config5;
-    config5.propertyName_ = PROP_NAME_GROUP_FLOAT;
-    config5.propertyType_ = FLOAT_PROPERTY_TYPE;
+    config5.propertyName_ = PROP_NAME_GROUP_INT;
+    config5.propertyType_ = INT_PROPERTY_TYPE;
     schema_.insert(config5);
     propNames_.push_back(config5.propertyName_);
     groupConfigs_.push_back(GroupConfig(config5.propertyName_, config5.propertyType_));
+
+    PropertyConfigBase config6;
+    config6.propertyName_ = PROP_NAME_GROUP_FLOAT;
+    config6.propertyType_ = FLOAT_PROPERTY_TYPE;
+    schema_.insert(config6);
+    propNames_.push_back(config6.propertyName_);
+    groupConfigs_.push_back(GroupConfig(config6.propertyName_, config6.propertyType_));
 }
 
 void GroupManagerTestFixture::checkCollection_()
@@ -493,14 +544,12 @@ void GroupManagerTestFixture::checkCollection_()
         checkProperty(doc, PROP_NAME_GROUP_STR, docInput.groupStr_);
         checkProperty(doc, PROP_NAME_GROUP_INT, docInput.groupInt_);
         checkProperty(doc, PROP_NAME_GROUP_FLOAT, docInput.groupFloat_);
+        checkProperty(doc, PROP_NAME_GROUP_DATETIME, docInput.dateStr_);
     }
 }
 
 void GroupManagerTestFixture::createAndCheckGroupRep_(const faceted::GroupParam::GroupLabelMap& labels)
 {
-    faceted::GroupRep groupRep;
-    PropertyMap propMap;
-
     int labelNum = 0;
     for (faceted::GroupParam::GroupLabelMap::const_iterator it = labels.begin();
         it != labels.end(); ++it)
@@ -509,6 +558,9 @@ void GroupManagerTestFixture::createAndCheckGroupRep_(const faceted::GroupParam:
     }
     BOOST_TEST_MESSAGE("check label num: " << labelNum
                        << ", prop num: " << labels.size());
+
+    faceted::GroupRep groupRep;
+    PropertyMap propMap;
 
     createGroupRep_(labels, groupRep);
     createPropertyMap_(labels, propMap);
@@ -527,6 +579,13 @@ void GroupManagerTestFixture::createGroupRep_(
     {
         faceted::GroupPropParam propParam;
         propParam.property_ = *it;
+
+        if (propParam.property_ == PROP_NAME_GROUP_DATETIME)
+        {
+            // groupby year-month
+            propParam.unit_ = "M";
+        }
+
         groupParam.groupProps_.push_back(propParam);
     }
     groupParam.groupLabels_ = labels;
@@ -557,28 +616,39 @@ void GroupManagerTestFixture::createPropertyMap_(
     DocIdMap& strDocIdMap = propertyMap[PROP_NAME_GROUP_STR];
     DocIdMap& intDocIdMap = propertyMap[PROP_NAME_GROUP_INT];
     DocIdMap& floatDocIdMap = propertyMap[PROP_NAME_GROUP_FLOAT];
+    DocIdMap& dateDocIdMap = propertyMap[PROP_NAME_GROUP_DATETIME];
 
     for (vector<DocInput>::const_iterator it = docInputVec_.begin();
         it != docInputVec_.end(); ++it)
     {
-        if (isDocBelongToIntLabel(*it, labels)
-            && isDocBelongToFloatLabel(*it, labels))
+        if (isDocBelongToIntLabel(*it, labels) &&
+            isDocBelongToFloatLabel(*it, labels) &&
+            isDocBelongToDateLabel(*it, labels))
         {
             strDocIdMap[it->groupStr_].push_back(it->docId_);
         }
 
-        if (isDocBelongToStrLabel(*it, labels)
-            && isDocBelongToFloatLabel(*it, labels))
+        if (isDocBelongToStrLabel(*it, labels) &&
+            isDocBelongToFloatLabel(*it, labels) &&
+            isDocBelongToDateLabel(*it, labels))
         {
             string normRep = normalizeDoubleRep(it->groupInt_);
             intDocIdMap[normRep].push_back(it->docId_);
         }
 
-        if (isDocBelongToStrLabel(*it, labels)
-            && isDocBelongToIntLabel(*it, labels))
+        if (isDocBelongToStrLabel(*it, labels) &&
+            isDocBelongToIntLabel(*it, labels) &&
+            isDocBelongToDateLabel(*it, labels))
         {
             string normRep = normalizeDoubleRep(it->groupFloat_);
             floatDocIdMap[normRep].push_back(it->docId_);
+        }
+
+        if (isDocBelongToStrLabel(*it, labels) &&
+            isDocBelongToIntLabel(*it, labels) &&
+            isDocBelongToFloatLabel(*it, labels))
+        {
+            dateDocIdMap[it->yearMonthStr_].push_back(it->docId_);
         }
     }
 }
