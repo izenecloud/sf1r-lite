@@ -10,12 +10,12 @@
 
 #include "AttrTable.h"
 #include "../faceted-submanager/faceted_types.h"
-#include "../group-manager/PropSharedLockGetter.h"
+#include "../group-manager/PropSharedLockInserter.h"
 #include <set>
 
 NS_FACETED_BEGIN
 
-class AttrLabel : public PropSharedLockGetter
+class AttrLabel : public PropSharedLockInserter
 {
 public:
     AttrLabel(
@@ -24,7 +24,10 @@ public:
         const std::vector<std::string>& attrValues
     );
 
-    virtual const PropSharedLock* getSharedLock() { return &attrTable_; }
+    virtual void insertSharedLock(SharedLockSet& lockSet) const
+    {
+        lockSet.insert(&attrTable_);
+    }
 
     bool test(docid_t doc) const;
 

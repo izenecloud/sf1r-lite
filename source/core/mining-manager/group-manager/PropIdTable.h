@@ -25,7 +25,8 @@ struct PropIdTable
 
     void getIdList(docid_t docId, PropIdList& propIdList) const;
 
-    void appendIdList(const std::vector<valueid_t>& inputIdList);
+    template <class IdContainer>
+    void appendIdList(const IdContainer& idContainer);
 
     /// key: doc id
     /// value: if the most significant bit is 0, it's just the single value id
@@ -118,9 +119,10 @@ void PropIdTable<valueid_t, index_t>::getIdList(docid_t docId, PropIdList& propI
 }
 
 template <typename valueid_t, typename index_t>
-void PropIdTable<valueid_t, index_t>::appendIdList(const std::vector<valueid_t>& inputIdList)
+template <class IdContainer>
+void PropIdTable<valueid_t, index_t>::appendIdList(const IdContainer& idContainer)
 {
-    const std::size_t inputNum = inputIdList.size();
+    const std::size_t inputNum = idContainer.size();
     indexTable_.push_back(0);
     index_t& index = indexTable_.back();
 
@@ -130,7 +132,7 @@ void PropIdTable<valueid_t, index_t>::appendIdList(const std::vector<valueid_t>&
 
         case 1:
         {
-            valueid_t inputId = inputIdList.front();
+            valueid_t inputId = *idContainer.begin();
 
             if (inputId >= INDEX_MSB)
             {
@@ -157,7 +159,7 @@ void PropIdTable<valueid_t, index_t>::appendIdList(const std::vector<valueid_t>&
             index = INDEX_MSB | valueTableSize;
             multiValueTable_.push_back(inputNum);
             multiValueTable_.insert(multiValueTable_.end(),
-                inputIdList.begin(), inputIdList.end());
+                idContainer.begin(), idContainer.end());
             break;
         }
     }

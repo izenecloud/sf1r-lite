@@ -43,6 +43,11 @@ public:
                 propType == DOUBLE_PROPERTY_TYPE);
     }
 
+    bool isDateTimeType() const
+    {
+        return propType == DATETIME_PROPERTY_TYPE;
+    }
+
 private:
     friend class boost::serialization::access;
 

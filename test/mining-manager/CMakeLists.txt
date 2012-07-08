@@ -145,6 +145,26 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_fcontainer_febird")
 
+  ADD_EXECUTABLE(t_DateStrParser
+    Runner.cpp
+    t_DateStrParser.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_DateStrParser ${libs})
+  SET_TARGET_PROPERTIES(t_DateStrParser PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_DateStrParser")
+
+  ADD_EXECUTABLE(t_DateGroupTable
+    Runner.cpp
+    t_DateGroupTable.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_DateGroupTable ${libs})
+  SET_TARGET_PROPERTIES(t_DateGroupTable PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_DateGroupTable")
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 INCLUDE_DIRECTORIES(

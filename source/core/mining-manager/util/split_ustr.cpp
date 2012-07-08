@@ -18,11 +18,14 @@ const izenelib::util::UString GT(">", ENCODING_TYPE);
 /** comma */
 const izenelib::util::UString COMMA(",", ENCODING_TYPE);
 
+/** semicolon, the same usage to comma in @c split_group_path */
+const izenelib::util::UString SEMI_COLON(";", ENCODING_TYPE);
+
 /** comma and vertical line */
 const izenelib::util::UString COMMA_VL(",|", ENCODING_TYPE);
 
-/** comma and greater-than symbol */
-const izenelib::util::UString COMMA_GT(",>", ENCODING_TYPE);
+/** comma, semicolon and greater-than symbol */
+const izenelib::util::UString COMMA_SEMICOLON_GT(",;>", ENCODING_TYPE);
 
 /** quote to embed escape characters */
 const izenelib::util::UString QUOTE("\"", ENCODING_TYPE);
@@ -118,7 +121,7 @@ void split_group_path(
         std::vector<izenelib::util::UString> path;
         izenelib::util::UString value;
 
-        it = parse_ustr(it, endIt, COMMA_GT, value);
+        it = parse_ustr(it, endIt, COMMA_SEMICOLON_GT, value);
         if (!value.empty())
         {
             path.push_back(value);
@@ -128,7 +131,7 @@ void split_group_path(
         {
             // escape ">"
             ++it;
-            it = parse_ustr(it, endIt, COMMA_GT, value);
+            it = parse_ustr(it, endIt, COMMA_SEMICOLON_GT, value);
             if (!value.empty())
             {
                 path.push_back(value);
@@ -141,8 +144,8 @@ void split_group_path(
 
         if (it != endIt)
         {
-            assert(*it == COMMA[0]);
-            // escape comma
+            assert(*it == COMMA[0] || *it == SEMI_COLON[0]);
+            // escape comma or semicolon
             ++it;
         }
     }
