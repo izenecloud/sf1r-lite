@@ -88,10 +88,10 @@ bool AttributeIndexer::LoadSynonym(const std::string& file)
 
 bool AttributeIndexer::Index()
 {
-    std::string done_file = knowledge_dir+"/index.done";
+    std::string done_file = knowledge_dir_+"/index.done";
     if(boost::filesystem::exists(done_file))
     {
-        std::cout<<knowledge_dir<<" index done, ignore."<<std::endl;
+        std::cout<<knowledge_dir_<<" index done, ignore."<<std::endl;
         return true;
     }
     ClearKnowledge_();
@@ -1347,7 +1347,8 @@ void AttributeIndexer::BuildProductDocuments_()
     {
         std::vector<std::string> vec;
         boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
-        anid_map_.insert(std::make_pair(vec[1], boost::lexical_cast<uint32_t>(vec[0])));
+        name_id_manager_->Set(UString(vec[1], UString::UTF_8), boost::lexical_cast<uint32_t>(vec[0]));
+        //anid_map_.insert(std::make_pair(vec[1], boost::lexical_cast<uint32_t>(vec[0])));
     }
     anid_ofs.close();
     std::ifstream aid_ofs(aid_file.c_str());
@@ -1355,7 +1356,26 @@ void AttributeIndexer::BuildProductDocuments_()
     {
         std::vector<std::string> vec;
         boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
-        aid_map_.insert(std::make_pair(vec[1], boost::lexical_cast<uint32_t>(vec[0])));
+        UString nav(vec[1], UString::UTF_8);
+        uint32_t aid = boost::lexical_cast<uint32_t>(vec[0]);
+        id_manager_->Set(nav, aid);
+        std::vector<AttribId> aid_list;
+        index_->get(nav, aid_list);
+        bool aid_dd = false;
+        for(std::size_t j=0;j<aid_list.size();j++)
+        {
+            if(aid==aid_list[j])
+            {
+                aid_dd = true;
+                break;
+            }
+        }
+        if(!aid_dd)
+        {
+            aid_list.push_back(aid);
+            index_->update(nav, aid_list);
+        }
+        //aid_map_.insert(std::make_pair(vec[1], boost::lexical_cast<uint32_t>(vec[0])));
     }
     aid_ofs.close();
     ScdParser parser(izenelib::util::UString::UTF_8);
