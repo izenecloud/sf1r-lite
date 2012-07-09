@@ -111,6 +111,7 @@ void DateGroupCounter<SubGroupCounter>::addDoc(docid_t doc)
     for (DateGroupTable::DateSet::const_iterator it = dateSet_.begin();
         it != dateSet_.end(); ++it)
     {
+        initSubCounterPair_.first = *it;
         SubGroupCounter& subCounter = countTable_.insert(initSubCounterPair_).first->second;
         ++subCounter.count_;
         subCounter.groupCounter_->addDoc(doc);

@@ -67,7 +67,7 @@ bool checkGroupPropParam(
 
         if (subConfigIt->isDateTimeType())
         {
-            message = "property " + subPropName + " in request[group][sub_property] should not be property type of datetime.";
+            message = "request[group][sub_property] does not support datetime property " + subPropName;
             return false;
         }
     }
