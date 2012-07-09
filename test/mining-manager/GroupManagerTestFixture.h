@@ -38,13 +38,17 @@ public:
         std::string groupStr_;
         int groupInt_;
         float groupFloat_;
+        std::string dateStr_;
+        std::string yearMonthStr_;
 
         DocInput();
         DocInput(
             unsigned int docId,
             const std::string& groupStr,
             int groupInt,
-            float groupFloat
+            float groupFloat,
+            const std::string& dateStr,
+            const std::string& yearMonthStr
         );
     };
 

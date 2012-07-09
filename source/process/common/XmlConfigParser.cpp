@@ -1720,9 +1720,9 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                             "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
                 }
             }
-            else if (!groupConfig.isStringType())
+            else if (!groupConfig.isStringType() && !groupConfig.isDateTimeType())
             {
-                throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string, int or float type.");
+                throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string, int, float or datetime type.");
             }
 
             mining_schema.group_properties.push_back(groupConfig);

@@ -26,30 +26,31 @@ class NumericGroupCounter : public GroupCounter
 {
 public:
     NumericGroupCounter(const NumericPropertyTable* propertyTable);
-    NumericGroupCounter(const NumericPropertyTable* propertyTable, const CounterType& defaultCounter);
+    NumericGroupCounter(const NumericPropertyTable* propertyTable, const CounterType& subCounter);
     NumericGroupCounter(const NumericGroupCounter& groupCounter);
 
     virtual NumericGroupCounter* clone() const;
     virtual void addDoc(docid_t doc);
     virtual void getGroupRep(GroupRep& groupRep);
     virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const;
+    virtual void insertSharedLock(SharedLockSet& lockSet) const;
 
 private:
     boost::scoped_ptr<const NumericPropertyTable> propertyTable_;
     std::map<double, CounterType> countTable_;
-    const CounterType defaultCounter_;
+    std::pair<double, const CounterType> initSubCounterPair_;
 };
 
 template<typename CounterType>
 NumericGroupCounter<CounterType>::NumericGroupCounter(const NumericPropertyTable *propertyTable)
     : propertyTable_(propertyTable)
-    , defaultCounter_(0)
+    , initSubCounterPair_(0, 0)
 {}
 
 template<typename CounterType>
-NumericGroupCounter<CounterType>::NumericGroupCounter(const NumericPropertyTable* propertyTable, const CounterType& defaultCounter)
+NumericGroupCounter<CounterType>::NumericGroupCounter(const NumericPropertyTable* propertyTable, const CounterType& subCounter)
     : propertyTable_(propertyTable)
-    , defaultCounter_(defaultCounter)
+    , initSubCounterPair_(0, subCounter)
 {
 }
 
@@ -57,7 +58,7 @@ template<typename CounterType>
 NumericGroupCounter<CounterType>::NumericGroupCounter(const NumericGroupCounter& groupCounter)
     : propertyTable_(new NumericPropertyTable(*groupCounter.propertyTable_))
     , countTable_(groupCounter.countTable_)
-    , defaultCounter_(groupCounter.defaultCounter_)
+    , initSubCounterPair_(groupCounter.initSubCounterPair_)
 {
 }
 
@@ -83,7 +84,8 @@ void NumericGroupCounter<SubGroupCounter>::addDoc(docid_t doc)
     double value = 0;
     if (propertyTable_->convertPropertyValue(doc, value))
     {
-        SubGroupCounter& subCounter = countTable_.insert(std::make_pair(value, defaultCounter_)).first->second;
+        initSubCounterPair_.first = value;
+        SubGroupCounter& subCounter = countTable_.insert(initSubCounterPair_).first->second;
         ++subCounter.count_;
         subCounter.groupCounter_->addDoc(doc);
     }
@@ -154,6 +156,19 @@ void NumericGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep
         strRep.push_back(faceted::OntologyRepItem(level, ustr, 0, subCounter.count_));
         subCounter.groupCounter_->getStringRep(strRep, level+1);
     }
+}
+
+template<typename CounterType>
+void NumericGroupCounter<CounterType>::insertSharedLock(SharedLockSet& lockSet) const
+{
+    // no lock for NumericGroupCounter itself
+}
+
+template<>
+void NumericGroupCounter<SubGroupCounter>::insertSharedLock(SharedLockSet& lockSet) const
+{
+    // insert lock for SubGroupCounter
+    initSubCounterPair_.second.groupCounter_->insertSharedLock(lockSet);
 }
 
 NS_FACETED_END

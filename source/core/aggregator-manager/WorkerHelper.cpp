@@ -143,14 +143,14 @@ void split_string(const izenelib::util::UString& szText, std::list<PropertyType>
     out.push_back(str.substr(nOld, str.length()-nOld));
 }
 
-void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char sep )
+void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep)
 {
     std::string str;
     szText.convertString(str, encoding);
     std::size_t n = 0, nOld=0;
     while (n != std::string::npos)
     {
-        n = str.find(sep,n);
+        n = str.find_first_of(sep,n);
         if (n != std::string::npos)
         {
             if (n != nOld)
@@ -183,14 +183,14 @@ void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& o
     }
 }
 
-void split_float(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char sep )
+void split_float(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep)
 {
     std::string str;
     szText.convertString(str, encoding);
     std::size_t n = 0, nOld=0;
     while (n != std::string::npos)
     {
-        n = str.find(sep,n);
+        n = str.find_first_of(sep,n);
         if (n != std::string::npos)
         {
             if (n != nOld)
@@ -221,6 +221,34 @@ void split_float(const izenelib::util::UString& szText, std::list<PropertyType>&
     catch(boost::bad_lexical_cast & )
     {
     }
+}
+
+void split_datetime(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep)
+{
+    std::string str;
+    szText.convertString(str, encoding);
+    std::size_t n = 0, nOld=0;
+    while (n != std::string::npos)
+    {
+        n = str.find_first_of(sep,n);
+        if (n != std::string::npos)
+        {
+            if (n != nOld)
+            {
+                std::string tmpStr = str.substr(nOld, n-nOld);
+                boost::algorithm::trim( tmpStr );
+                time_t timestamp = Utilities::createTimeStampInSeconds(tmpStr);
+                out.push_back(timestamp);
+            }
+            n += 1;
+            nOld = n;
+        }
+    }
+
+    std::string tmpStr = str.substr(nOld, str.length()-nOld);
+    boost::algorithm::trim( tmpStr );
+    time_t timestamp = Utilities::createTimeStampInSeconds(tmpStr);
+    out.push_back(timestamp);
 }
 
 }

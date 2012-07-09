@@ -1,9 +1,12 @@
 #include "GroupParam.h"
+#include "DateStrParser.h"
 #include <configuration-manager/MiningSchema.h>
 
 namespace
 {
 const char* NUMERIC_RANGE_DELIMITER = "-";
+
+using namespace sf1r::faceted;
 
 typedef std::vector<sf1r::GroupConfig> GroupConfigVec;
 typedef GroupConfigVec::const_iterator GroupConfigIter;
@@ -25,13 +28,14 @@ GroupConfigIter findGroupConfig(
 }
 
 bool checkGroupPropParam(
-    const sf1r::faceted::GroupPropParam& param,
+    const GroupPropParam& param,
     const GroupConfigVec& configs,
     std::string& message
 )
 {
     const std::string& propName = param.property_;
     const std::string& subPropName = param.subProperty_;
+    const std::string& unit = param.unit_;
 
     if (propName.empty())
     {
@@ -60,6 +64,12 @@ bool checkGroupPropParam(
             message = "property " + subPropName + " in request[group][sub_property] should not be duplicated with request[group][property].";
             return false;
         }
+
+        if (subConfigIt->isDateTimeType())
+        {
+            message = "request[group][sub_property] does not support datetime property " + subPropName;
+            return false;
+        }
     }
 
     if (param.isRange_)
@@ -77,10 +87,55 @@ bool checkGroupPropParam(
         }
     }
 
+    if (!configIt->isDateTimeType() &&
+        !unit.empty())
+    {
+        message = "as property type of " + propName + " is not datetime, request[group][unit] should be empty.";
+        return false;
+    }
+
+    if (configIt->isDateTimeType())
+    {
+        if (unit.empty())
+        {
+            message = "as property type of " + propName + " is datetime, request[group][unit] should not be empty.";
+            return false;
+        }
+
+        DATE_MASK_TYPE mask;
+        if (! DateStrParser::get()->unitStrToMask(unit, mask, message))
+            return false;
+    }
+
     return true;
 }
 
+bool checkDateLabel(
+    const GroupParam::GroupPathVec& groupPathVec,
+    std::string& message
+)
+{
+    DateStrParser* dateStrParser = DateStrParser::get();
+
+    for (GroupParam::GroupPathVec::const_iterator pathIt = groupPathVec.begin();
+            pathIt != groupPathVec.end(); ++pathIt)
+    {
+        const GroupParam::GroupPath& path = *pathIt;
+        if (path.empty())
+        {
+            message = "Must specify non-empty [search][group_label][value]";
+            return false;
+        }
+
+        DateStrParser::DateMask dateMask;
+        if (! dateStrParser->apiStrToDateMask(path.front(), dateMask, message))
+            return false;
+    }
+
+    return true;
 }
+
+} // namespace
 
 NS_FACETED_BEGIN
 
@@ -93,7 +148,8 @@ bool operator==(const GroupPropParam& a, const GroupPropParam& b)
 {
     return a.property_ == b.property_ &&
            a.subProperty_ == b.subProperty_ &&
-           a.isRange_ == b.isRange_;
+           a.isRange_ == b.isRange_ &&
+           a.unit_ == b.unit_;
 }
 
 std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam)
@@ -101,6 +157,7 @@ std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam
     out << "property: " << groupPropParam.property_
         << ", sub property: " << groupPropParam.subProperty_
         << ", is range: " << groupPropParam.isRange_
+        << ", unit: " << groupPropParam.unit_
         << std::endl;
 
     return out;
@@ -179,6 +236,12 @@ bool GroupParam::checkGroupLabels_(const std::vector<GroupConfig>& groupConfigs,
         if (configIt == groupConfigs.end())
         {
             message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
+            return false;
+        }
+
+        if (configIt->isDateTimeType() &&
+            !checkDateLabel(labelIt->second, message))
+        {
             return false;
         }
     }

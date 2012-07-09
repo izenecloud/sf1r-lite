@@ -1638,7 +1638,7 @@ bool IndexWorker::prepareIndexDocumentRtypeProperty_(
         if (iter->getIsMultiValue())
         {
             MultiValuePropertyType props;
-            split_int(propertyValueU,props, encoding,',');
+            split_int(propertyValueU,props, encoding,",;");
             indexDocument.insertProperty(indexerPropertyConfig, props);
         }
         else
@@ -1656,19 +1656,19 @@ bool IndexWorker::prepareIndexDocumentRtypeProperty_(
                 MultiValuePropertyType multiProps;
                 if (checkSeparatorType_(propertyValueU, encoding, '-'))
                 {
-                    split_int(propertyValueU, multiProps, encoding,'-');
+                    split_int(propertyValueU, multiProps, encoding,"-");
                     indexerPropertyConfig.setIsMultiValue(true);
                     indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                 }
                 else if (checkSeparatorType_(propertyValueU, encoding, '~'))
                 {
-                    split_int(propertyValueU, multiProps, encoding,'~');
+                    split_int(propertyValueU, multiProps, encoding,"~");
                     indexerPropertyConfig.setIsMultiValue(true);
                     indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                 }
                 else if (checkSeparatorType_(propertyValueU, encoding, ','))
                 {
-                    split_int(propertyValueU, multiProps, encoding,',');
+                    split_int(propertyValueU, multiProps, encoding,",");
                     indexerPropertyConfig.setIsMultiValue(true);
                     indexDocument.insertProperty(indexerPropertyConfig, multiProps);
                 }
@@ -1695,7 +1695,7 @@ bool IndexWorker::prepareIndexDocumentRtypeProperty_(
         if (iter->getIsMultiValue())
         {
             MultiValuePropertyType props;
-            split_float(propertyValueU,props, encoding,',');
+            split_float(propertyValueU,props, encoding,",;");
             indexDocument.insertProperty(indexerPropertyConfig, props);
         }
         else
@@ -1712,11 +1712,11 @@ bool IndexWorker::prepareIndexDocumentRtypeProperty_(
             {
                 MultiValuePropertyType multiProps;
                 if (checkSeparatorType_(propertyValueU, encoding, '-'))
-                    split_float(propertyValueU, multiProps, encoding,'-');
+                    split_float(propertyValueU, multiProps, encoding,"-");
                 else if (checkSeparatorType_(propertyValueU, encoding, '~'))
-                    split_float(propertyValueU, multiProps, encoding,'~');
+                    split_float(propertyValueU, multiProps, encoding,"~");
                 else if (checkSeparatorType_(propertyValueU, encoding, ','))
-                    split_float(propertyValueU, multiProps, encoding,',');
+                    split_float(propertyValueU, multiProps, encoding,",");
                 indexerPropertyConfig.setIsMultiValue(true);
                 indexDocument.insertProperty(indexerPropertyConfig, multiProps);
             }
@@ -1744,9 +1744,17 @@ bool IndexWorker::prepareIndexDocumentRtypeProperty_(
     case DATETIME_PROPERTY_TYPE:
     {
         START_PROFILER(pid_datetime);
-        izenelib::util::UString dateStr;
-        time_t timestamp = Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
-        indexDocument.insertProperty(indexerPropertyConfig, timestamp);
+        if (iter->getIsMultiValue())
+        {
+            MultiValuePropertyType props;
+            split_datetime(propertyValueU,props, encoding,",;");
+            indexDocument.insertProperty(indexerPropertyConfig, props);
+        }
+        else
+        {
+            time_t timestamp = Utilities::createTimeStampInSeconds(propertyValueU);
+            indexDocument.insertProperty(indexerPropertyConfig, timestamp);
+        }
         STOP_PROFILER(pid_datetime);
         break;
     }

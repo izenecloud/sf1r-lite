@@ -6,6 +6,9 @@
 #include "NumericGroupCounter.h"
 #include "NumericRangeGroupCounter.h"
 #include "NumericRangeGroupLabel.h"
+#include "DateGroupCounter.h"
+#include "DateGroupLabel.h"
+#include "DateStrParser.h"
 #include <configuration-manager/GroupConfig.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 #include <search-manager/NumericPropertyTable.h>
@@ -152,31 +155,34 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(const GroupPropParam&
 {
     GroupCounter* counter = NULL;
 
-    const std::string& propName = groupPropParam.property_;
     if (groupPropParam.isRange_)
     {
-        counter = createNumericRangeCounter_(propName);
+        counter = createNumericRangeCounter_(groupPropParam.property_);
     }
     else
     {
         const std::string& subPropName = groupPropParam.subProperty_;
         if (subPropName.empty())
         {
-            counter = createValueCounter_(propName);
+            counter = createValueCounter_(groupPropParam);
         }
         else
         {
-            boost::scoped_ptr<GroupCounter> subCounter(createValueCounter_(subPropName));
-            counter = createValueCounter_(propName, subCounter.get());
+            GroupPropParam subPropParam;
+            subPropParam.property_ = subPropName;
+
+            boost::scoped_ptr<GroupCounter> subCounter(createValueCounter_(subPropParam));
+            counter = createValueCounter_(groupPropParam, subCounter.get());
         }
     }
 
     return counter;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const std::string& prop, GroupCounter* subCounter) const
+GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const GroupPropParam& groupPropParam, GroupCounter* subCounter) const
 {
     GroupCounter* counter = NULL;
+    const std::string& prop = groupPropParam.property_;
 
     PropertyDataType type = getPropertyType_(prop);
     switch(type)
@@ -189,8 +195,11 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const std::string& p
     case UNSIGNED_INT_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
-    case DATETIME_PROPERTY_TYPE:
          counter = createNumericCounter_(prop, subCounter);
+         break;
+
+    case DATETIME_PROPERTY_TYPE:
+         counter = createDateCounter_(prop, groupPropParam.unit_, subCounter);
          break;
 
     default:
@@ -270,6 +279,38 @@ GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter_(const std::st
     return NULL;
 }
 
+GroupCounter* GroupCounterLabelBuilder::createDateCounter_(const std::string& prop, const std::string& unit, GroupCounter* subCounter) const
+{
+    DATE_MASK_TYPE mask;
+    std::string errorMsg;
+    if (! DateStrParser::get()->unitStrToMask(unit, mask, errorMsg))
+    {
+        LOG(ERROR) << errorMsg;
+        return NULL;
+    }
+
+    const DateGroupTable* dateTable = groupManager_->getDateGroupTable(prop);
+    if (! dateTable)
+    {
+        LOG(ERROR) << "group index file is not loaded for group property " << prop;
+        return NULL;
+    }
+
+    GroupCounter* counter = NULL;
+
+    if (subCounter)
+    {
+        SubGroupCounter subGroupCounter(subCounter);
+        counter = new DateGroupCounter<SubGroupCounter>(*dateTable, mask, subGroupCounter);
+    }
+    else
+    {
+        counter = new DateGroupCounter<>(*dateTable, mask);
+    }
+
+    return counter;
+}
+
 GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLabelParam& labelParam)
 {
     GroupLabel* label = NULL;
@@ -286,8 +327,11 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
     case UNSIGNED_INT_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
-    case DATETIME_PROPERTY_TYPE:
         label = createNumericRangeLabel_(labelParam);
+        break;
+
+    case DATETIME_PROPERTY_TYPE:
+        label = createDateLabel_(labelParam);
         break;
 
     default:
@@ -400,6 +444,44 @@ GroupLabel* GroupCounterLabelBuilder::createRangeLabel_(const GroupParam::GroupL
     }
 
     return new NumericRangeGroupLabel(propTable, ranges);
+}
+
+GroupLabel* GroupCounterLabelBuilder::createDateLabel_(const GroupParam::GroupLabelParam& labelParam) const
+{
+    const std::string& propName = labelParam.first;
+    const GroupParam::GroupPathVec& labelPaths = labelParam.second;
+    DateGroupLabel::DateMaskVec dateMaskVec;
+
+    for (GroupParam::GroupPathVec::const_iterator pathIt = labelPaths.begin();
+        pathIt != labelPaths.end(); ++pathIt)
+    {
+        const GroupParam::GroupPath& path = *pathIt;
+        if (path.empty())
+        {
+            LOG(ERROR) << "empty group label value for property " << propName;
+            return NULL;
+        }
+
+        const std::string& propValue = path.front();
+        DateStrParser::DateMask dateMask;
+        std::string errorMsg;
+        if (! DateStrParser::get()->apiStrToDateMask(propValue, dateMask, errorMsg))
+        {
+            LOG(ERROR) << errorMsg;
+            return NULL;
+        }
+
+        dateMaskVec.push_back(dateMask);
+    }
+
+    const DateGroupTable* dateTable = groupManager_->getDateGroupTable(propName);
+    if (! dateTable)
+    {
+        LOG(ERROR) << "group index file is not loaded for group property " << propName;
+        return NULL;
+    }
+
+    return new DateGroupLabel(*dateTable, dateMaskVec);
 }
 
 NS_FACETED_END
