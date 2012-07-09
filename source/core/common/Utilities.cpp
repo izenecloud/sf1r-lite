@@ -210,7 +210,12 @@ bool Utilities::convertPropertyDataType(const std::string& property_name, const 
         type = izenelib::util::UString("", izenelib::util::UString::UTF_8);
         return true;
     }
-    else if (sf1r_type == INT_PROPERTY_TYPE)
+    else if (sf1r_type == INT32_PROPERTY_TYPE)
+    {
+        type = int32_t(0);
+        return true;
+    }
+    else if (sf1r_type == INT64_PROPERTY_TYPE)
     {
         type = int64_t(0);
         return true;
@@ -274,14 +279,14 @@ std::string Utilities::uint128ToMD5(const uint128_t& val)
 uint128_t Utilities::md5ToUint128(const std::string& str)
 {
     if (str.length() != 32)
-        return HashFunction<std::string>::generateHash128(str);
+        return izenelib::util::HashFunction<std::string>::generateHash128(str);
 
     unsigned long long high = 0, low = 0;
 
     if (sscanf(str.c_str(), "%016llx%016llx", &high, &low) == 2)
         return (uint128_t) high << 64 | (uint128_t) low;
     else
-        return HashFunction<std::string>::generateHash128(str);
+        return izenelib::util::HashFunction<std::string>::generateHash128(str);
 }
 
 uint128_t Utilities::md5ToUint128(const izenelib::util::UString& ustr)

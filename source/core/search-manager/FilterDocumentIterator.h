@@ -1,6 +1,6 @@
 /**
  * \file FilterDocumentIterator.h
- * \brief 
+ * \brief
  * \date Nov 17, 2011
  * \author Xin Liu
  */
@@ -9,7 +9,6 @@
 #define FILTER_DOCUMENT_ITERATOR_H_
 
 #include "DocumentIterator.h"
-#include <index-manager/IndexManager.h>
 #include <ir/index_manager/utility/BitMapIterator.h>
 
 #include <string>

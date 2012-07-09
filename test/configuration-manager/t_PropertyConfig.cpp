@@ -44,8 +44,8 @@ BOOST_AUTO_TEST_CASE(Type_test)
 {
     BOOST_CHECK(config.getType() == sf1r::UNKNOWN_DATA_PROPERTY_TYPE);
 
-    config.setType(sf1r::INT_PROPERTY_TYPE);
-    BOOST_CHECK(config.getType() == sf1r::INT_PROPERTY_TYPE);
+    config.setType(sf1r::INT32_PROPERTY_TYPE);
+    BOOST_CHECK(config.getType() == sf1r::INT32_PROPERTY_TYPE);
 }
 
 BOOST_AUTO_TEST_CASE(IsIndex_test)

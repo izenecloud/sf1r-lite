@@ -1,5 +1,7 @@
 #include "TermDocumentIterator.h"
 
+#include <index-manager/IndexManager.h>
+
 #include <ir/index_manager/index/TermPositions.h>
 #include <ir/index_manager/utility/BitVector.h>
 #include <ir/index_manager/utility/BitMapIterator.h>
@@ -133,7 +135,7 @@ bool TermDocumentIterator::accept()
 }
 
 void TermDocumentIterator::doc_item(
-    RankDocumentProperty& rankDocumentProperty, 
+    RankDocumentProperty& rankDocumentProperty,
     unsigned propIndex)
 {
     CREATE_PROFILER ( get_position, "SearchManager", "doSearch_: getting positions");

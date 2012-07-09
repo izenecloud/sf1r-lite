@@ -2,16 +2,19 @@
 #include "product_data_source.h"
 #include "operation_processor.h"
 #include "uuid_generator.h"
+
 #include <glog/logging.h>
 #include <common/Utilities.h>
 
-#define USE_LOG_SERVER 
+#define USE_LOG_SERVER
 
 #ifdef USE_LOG_SERVER
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
 #endif
-using namespace sf1r;
+
+namespace sf1r
+{
 
 #define PM_EDIT_INFO
 
@@ -28,7 +31,7 @@ ProductEditor::~ProductEditor()
 bool ProductEditor::UpdateADoc(const PMDocumentType& doc)
 {
     UString uuid;
-    if( !doc.getProperty(config_.docid_property_name, uuid) )
+    if ( !doc.getProperty(config_.docid_property_name, uuid) )
     {
         error_ = "Input doc does not have DOCID property";
         return false;
@@ -45,7 +48,7 @@ bool ProductEditor::UpdateADoc(const PMDocumentType& doc)
     }
     std::vector<uint32_t> same_docid_list;
     data_source_->GetDocIdList(uuid, same_docid_list, 0);
-    if(same_docid_list.empty())
+    if (same_docid_list.empty())
     {
         std::string suuid;
         uuid.convertString(suuid, izenelib::util::UString::UTF_8);
@@ -66,7 +69,7 @@ bool ProductEditor::AddGroup(const std::vector<uint32_t>& docid_list, PMDocument
         return false;
     }
     UString uuid;
-    if( info.getProperty(config_.docid_property_name, uuid) )
+    if ( info.getProperty(config_.docid_property_name, uuid) )
     {
         std::vector<uint32_t> same_docid_list;
         data_source_->GetDocIdList(uuid, same_docid_list, 0);
@@ -99,7 +102,7 @@ bool ProductEditor::AddGroup(const std::vector<uint32_t>& docid_list, PMDocument
         PMDocumentType doc;
         if (!data_source_->GetDocument(docid_list[i], doc))
         {
-            if( !option.force )
+            if ( !option.force )
             {
                 error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[i]);
                 return false;
@@ -128,10 +131,10 @@ bool ProductEditor::AddGroup(const std::vector<uint32_t>& docid_list, PMDocument
         data_source_->GetDocIdList(uuid_list[i], same_docid_list, docid);
         if (!same_docid_list.empty())
         {
-            if( !option.force )
+            if (!option.force)
             {
 #ifdef PM_EDIT_INFO
-                for(uint32_t s=0;s<same_docid_list.size();s++)
+                for (uint32_t s=0;s<same_docid_list.size();s++)
                 {
                     LOG(INFO)<<"Uuid in : "<<uuid_list[i]<<" , "<<same_docid_list[s]<<std::endl;
                 }
@@ -173,7 +176,7 @@ bool ProductEditor::AppendToGroup(const izenelib::util::UString& uuid, const std
         PMDocumentType doc;
         if (!data_source_->GetDocument(docid_list[i], doc))
         {
-            if( !option.force )
+            if ( !option.force )
             {
                 error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[i]);
                 return false;
@@ -202,7 +205,7 @@ bool ProductEditor::AppendToGroup(const izenelib::util::UString& uuid, const std
         data_source_->GetDocIdList(uuid_list[i], same_docid_list, docid);
         if (!same_docid_list.empty())
         {
-            if( !option.force )
+            if (!option.force)
             {
                 error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[i])+" belongs to other group";
                 return false;
@@ -227,7 +230,7 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
     UString uuid;
     info.getProperty(config_.docid_property_name, uuid);
     PMDocumentType new_doc(info);
-    if(doc_list.size()>0)
+    if (doc_list.size()>0)
     {
         //use the first document info as the group info by default
         new_doc.copyPropertiesFromDocument(doc_list[0], false);
@@ -243,7 +246,7 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
             type = 2; //update
         }
     }
-    for(uint32_t i=0;i<doc_list.size();i++)
+    for (uint32_t i = 0; i < doc_list.size(); i++)
     {
         const PMDocumentType& doc = doc_list[i];
         uint32_t docid = doc.getId();
@@ -329,10 +332,10 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
 #ifdef USE_LOG_SERVER
         UpdateUUIDRequest uuidReq;
         uuidReq.param_.uuid_ = Utilities::uuidToUint128(doc_uuid);
-        for(uint32_t s=0;s<same_docid_list.size();s++)
+        for (uint32_t s = 0; s < same_docid_list.size(); s++)
         {
             PMDocumentType sdoc;
-            if(!data_source_->GetDocument(same_docid_list[s], sdoc)) continue;
+            if (!data_source_->GetDocument(same_docid_list[s], sdoc)) continue;
             izenelib::util::UString sdocid;
             sdoc.getProperty(config_.docid_property_name, sdocid);
             uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocid));
@@ -351,7 +354,7 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
 #ifdef USE_LOG_SERVER
     UpdateUUIDRequest uuidReq;
     uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuid);
-    for(uint32_t s=0;s<doc_list.size();s++)
+    for (uint32_t s = 0; s < doc_list.size(); s++)
     {
         izenelib::util::UString sdocid;
         doc_list[s].getProperty(config_.docid_property_name, sdocid);
@@ -449,7 +452,7 @@ bool ProductEditor::RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& d
         DelOldDocIdData rsp;
         conn.syncRequest(del_docidreq, rsp);
 #endif
-        // remove all its history groups 
+        // remove all its history groups
         doc_list[i].eraseProperty(config_.olduuid_property_name);
         data_source_->Flush();
 
@@ -546,7 +549,7 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
         PMDocumentType doc;
         if (!data_source_->GetDocument(docid_list[i], doc))
         {
-            if( !option.force )
+            if ( !option.force )
             {
                 error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[i]);
                 return false;
@@ -561,9 +564,9 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
             doc_list.push_back(doc);
         }
     }
-    if(doc_list.empty())
+    if (doc_list.empty())
     {
-        if( !option.force )
+        if (!option.force)
         {
             error_ = "Empty document list.";
             return false;
@@ -583,7 +586,7 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
             error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid);
             return false;
         }
-        if( uuid_list[i] != uuid )
+        if ( uuid_list[i] != uuid )
         {
             error_ = "Uuid in document "+boost::lexical_cast<std::string>(docid)+" does not match the request uuid";
             return false;
@@ -603,7 +606,7 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
         new_doc.property(config_.docid_property_name) = doc_uuid;
         new_doc.eraseProperty(config_.uuid_property_name);
         util_.SetItemCount(new_doc, 1);
- 
+
 #ifdef PM_EDIT_INFO
         LOG(INFO)<<"Output : "<<1<<" , "<<doc_uuid<<" , itemcount: "<<1<<std::endl;
 #endif
@@ -688,10 +691,10 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
 #ifdef USE_LOG_SERVER
     UpdateUUIDRequest uuidReq;
     uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuid);
-    for(uint32_t s=0;s<same_docid_list.size();s++)
+    for (uint32_t s = 0; s < same_docid_list.size(); s++)
     {
         PMDocumentType sdoc;
-        if(!data_source_->GetDocument(same_docid_list[s], sdoc)) continue;
+        if (!data_source_->GetDocument(same_docid_list[s], sdoc)) continue;
         izenelib::util::UString sdocid;
         sdoc.getProperty(config_.docid_property_name, sdocid);
         uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocid));
@@ -699,4 +702,6 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
     conn.asynRequest(uuidReq);
 #endif
     return true;
+}
+
 }

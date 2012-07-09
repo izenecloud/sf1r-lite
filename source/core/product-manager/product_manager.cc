@@ -17,19 +17,23 @@
 #include <boost/dynamic_bitset.hpp>
 #include <glog/logging.h>
 
-using namespace sf1r;
+namespace sf1r
+{
+
 using izenelib::util::UString;
 
 //#define PM_PROFILER
 
 ProductManager::ProductManager(
         const std::string& work_dir,
+        const boost::shared_ptr<DocumentManager>& document_manager,
         ProductDataSource* data_source,
         OperationProcessor* op_processor,
         ProductPriceTrend* price_trend,
         const PMConfig& config)
     : work_dir_(work_dir)
     , config_(config)
+    , document_manager_(document_manager)
     , data_source_(data_source)
     , op_processor_(op_processor)
     , price_trend_(price_trend)
@@ -617,7 +621,7 @@ bool ProductManager::MigratePriceHistory(
         return false;
     }
 
-    return price_trend_->MigratePriceHistory(new_keyspace, start, error_);
+    return price_trend_->MigratePriceHistory(document_manager_, new_keyspace, start, error_);
 }
 
 bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const
@@ -655,4 +659,6 @@ bool ProductManager::GetGroupProperties_(const PMDocumentType& doc, std::map<std
             prop_str.resize(pos);
     }
     return group_prop_map.empty();
+}
+
 }

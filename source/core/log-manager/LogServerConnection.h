@@ -69,7 +69,7 @@ void LogServerConnection::syncRequest(const LogServerRequest::method_t& method, 
 {
     flushRequests();
     msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
-    respData = session.call(method, reqData).get<ResponseDataT>();
+    respData = session.call(method, reqData).template get<ResponseDataT>();
 }
 
 template <class RequestT, class ResponseDataT>

@@ -36,7 +36,7 @@ void setReasonEvent(
 
             if (reasonIt->event_ == RecommendSchema::RATE_EVENT)
             {
-                reasonIt->value_ = lexical_cast<std::string>(itemRateMap[itemId]);
+                reasonIt->value_ = boost::lexical_cast<std::string>(itemRateMap[itemId]);
             }
         }
     }

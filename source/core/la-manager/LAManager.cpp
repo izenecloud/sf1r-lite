@@ -23,8 +23,8 @@ using namespace la;
 namespace sf1r
 {
 
-LAManager::LAManager( bool isMultiThreadEnv )
-        : isMultiThreadEnv_( isMultiThreadEnv )
+LAManager::LAManager(bool isMultiThreadEnv)
+        : isMultiThreadEnv_(isMultiThreadEnv)
 {
     laPool_ = LAPool::getInstance();
 }
@@ -33,22 +33,22 @@ LAManager::~LAManager()
 {
 }
 
-void LAManager::loadStopDict( const std::string & path )
+void LAManager::loadStopDict(const std::string & path)
 {
-    if ( stopDict_.get() == NULL )
-        stopDict_.reset( new PlainDictionary() );
-    stopDict_->reloadDict( path.c_str() );
+    if (!stopDict_)
+        stopDict_.reset(new PlainDictionary());
+    stopDict_->reloadDict(path.c_str());
 }
 
 bool LAManager::getTermList(
-    const izenelib::util::UString & text,
-    const AnalysisInfo& analysisInfo,
-    la::TermList& termList )
+        const izenelib::util::UString & text,
+        const AnalysisInfo& analysisInfo,
+        la::TermList& termList)
 {
     LA * pLA = NULL;
 
-    pLA = isMultiThreadEnv_ ? laPool_->popSearchLA( analysisInfo ) :
-          laPool_->topSearchLA( analysisInfo );
+    pLA = isMultiThreadEnv_ ? laPool_->popSearchLA(analysisInfo) :
+          laPool_->topSearchLA(analysisInfo);
 
     if (!pLA)
     {
@@ -57,30 +57,30 @@ bool LAManager::getTermList(
     }
 
     LAConfigUnit config;
-    if (laPool_->getLAConfigUnit( analysisInfo.analyzerId_, config ))
+    if (laPool_->getLAConfigUnit(analysisInfo.analyzerId_, config))
     {
-        if (config.getAnalysis() == "multilang" )
+        if (config.getAnalysis() == "multilang")
             static_cast<la::MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(false);
     }
 
-    pLA->process( text, termList );
+    pLA->process(text, termList);
 
-    if ( isMultiThreadEnv_ )
+    if (isMultiThreadEnv_)
         laPool_->pushSearchLA(analysisInfo, pLA);
 
     return true;
 }
 
 bool LAManager::getExpandedQuery(
-    const izenelib::util::UString& text,
-    const AnalysisInfo& analysisInfo,
-    bool isCaseSensitive,
-    bool isSynonymInclude,
-    izenelib::util::UString& expQuery )
+        const izenelib::util::UString& text,
+        const AnalysisInfo& analysisInfo,
+        bool isCaseSensitive,
+        bool isSynonymInclude,
+        izenelib::util::UString& expQuery)
 {
     LA * pLA = NULL;
-    pLA = isMultiThreadEnv_ ? laPool_->popSearchLA( analysisInfo ) :
-          laPool_->topSearchLA( analysisInfo );
+    pLA = isMultiThreadEnv_ ? laPool_->popSearchLA(analysisInfo) :
+          laPool_->topSearchLA(analysisInfo);
 
     if (!pLA)
     {
@@ -92,59 +92,58 @@ bool LAManager::getExpandedQuery(
     TermList termList;
 
     LAConfigUnit config;
-    if ( laPool_->getLAConfigUnit( analysisInfo.analyzerId_, config ) )
+    if (laPool_->getLAConfigUnit(analysisInfo.analyzerId_, config))
     {
-//            if (config.getAnalysis() == "multilang" )
+//            if (config.getAnalysis() == "multilang")
 //                static_cast<MultiLanguageAnalyzer*>(pLA->getAnalyzer().get())->setExtractSynonym(isSynonymInclude);
     }
 
-    /*if( isCaseSensitive )
+    /*if (isCaseSensitive)
     {*/
     if (isSynonymInclude)
-        pLA->processSynonym( text, termList );
+        pLA->processSynonym(text, termList);
     else
-        pLA->process( text, termList );
+        pLA->process(text, termList);
     /*}
     else
     {
         UString temp = text;
         temp.toLowerString();
-        pLA->process_search( temp, termList );
+        pLA->process_search(temp, termList);
     }*/
 
-    removeStopwords( termList, stopDict_ );
+    removeStopwords(termList, stopDict_);
 
-    for (TermList::iterator it = termList.begin(); it!=termList.end(); it++ )
+    for (TermList::iterator it = termList.begin(); it!=termList.end(); it++)
     {
         cout << "^^^^" << la::to_utf8(it->text_) << endl;
     }
 
-    expQuery = toExpandedString( termList );
+    expQuery = toExpandedString(termList);
 
     cout << "##########################" << la::to_utf8(expQuery) << endl;
 
 
-    if ( isMultiThreadEnv_ )
+    if (isMultiThreadEnv_)
         laPool_->pushSearchLA(analysisInfo, pLA);
 
     return true;
 }
 
 void LAManager::removeStopwords(
-    TermList & termList,
-    shared_ptr<la::PlainDictionary>&  stopDict
-)
+        TermList & termList,
+        boost::shared_ptr<la::PlainDictionary>& stopDict)
 {
     /// TODO: add stopDict support
-//        if( stopDict.get() != NULL )
-//            LA::removeStopwords( termList, stopDict );
+//        if (stopDict.get() != NULL)
+//            LA::removeStopwords(termList, stopDict);
 }
 
 la::LA* LAManager::get_la(const AnalysisInfo& analysisInfo)
 {
     LA * p_la = NULL;
-    p_la = isMultiThreadEnv_ ? laPool_->popSearchLA( analysisInfo ) :
-           laPool_->topSearchLA( analysisInfo );
+    p_la = isMultiThreadEnv_ ? laPool_->popSearchLA(analysisInfo) :
+           laPool_->topSearchLA(analysisInfo);
     return p_la;
 }
 

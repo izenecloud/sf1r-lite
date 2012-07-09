@@ -71,7 +71,7 @@ class PropertySortedHitQueue : public HitQueue
     class Queue_ : public izenelib::util::PriorityQueue<ScoreDoc>
     {
     public:
-        Queue_(boost::shared_ptr<Sorter> pSorter, size_t size)
+        Queue_(boost::shared_ptr<Sorter>& pSorter, size_t size)
             : pSorter_(pSorter)
         {
             if(pSorter)
@@ -88,7 +88,7 @@ class PropertySortedHitQueue : public HitQueue
     };
 
 public:
-    PropertySortedHitQueue(boost::shared_ptr<Sorter> pSorter, size_t size)
+    PropertySortedHitQueue(boost::shared_ptr<Sorter>& pSorter, size_t size)
         : queue_(pSorter, size)
     {
     }

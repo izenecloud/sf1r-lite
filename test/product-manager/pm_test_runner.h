@@ -5,7 +5,7 @@
 #include <common/type_defs.h>
 
 
-#include <document-manager/Document.h>
+#include <document-manager/DocumentManager.h>
 #include <ir/index_manager/index/IndexerDocument.h>
 
 #include <product-manager/pm_def.h>
@@ -26,7 +26,7 @@ public:
         , data_source_(new SimpleDataSource(pm_config_, document_list_))
         , op_processor_(new SimpleOperationProcessor())
         , price_trend_(NULL)
-        , pm_(new ProductManager("./", data_source_, op_processor_, price_trend_, pm_config_))
+        , pm_(new ProductManager("./", boost::shared_ptr<DocumentManager>(), data_source_, op_processor_, price_trend_, pm_config_))
     {
     }
 

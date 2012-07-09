@@ -16,7 +16,7 @@
 
       <Property name="DOCID" type="string"/>
 
-      <Property name="DATE" type="string"/>
+      <Property name="DATE" type="datetime"/>
 
       <Property name="Title" type="string"/>
 

@@ -292,7 +292,7 @@ void GroupRep::toOntologyRepItemList()
     for (GroupRep::NumericGroupRep::const_iterator it = numericGroupRep_.begin();
         it != numericGroupRep_.end(); ++it)
     {
-        izenelib::util::UString propName(it->first, UString::UTF_8);
+        izenelib::util::UString propName(it->first, izenelib::util::UString::UTF_8);
         stringGroupRep_.push_back(faceted::OntologyRepItem(0, propName, 0, 0));
         faceted::OntologyRepItem& topItem = stringGroupRep_.back();
         unsigned int count = 0;
@@ -332,7 +332,7 @@ void GroupRep::formatNumericToUStr(double value, izenelib::util::UString& ustr)
 {
     ostringstream ss;
     ss << std::fixed << std::setprecision(2) << value;
-    ustr.assign(ss.str(), UString::UTF_8);
+    ustr.assign(ss.str(), izenelib::util::UString::UTF_8);
 }
 
 NS_FACETED_END

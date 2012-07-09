@@ -197,7 +197,7 @@ void ItemManagerTestFixture::initDMSchema_()
 
     PropertyConfigBase config5;
     config5.propertyName_ = PROP_NAME_COUNT;
-    config5.propertyType_ = INT_PROPERTY_TYPE;
+    config5.propertyType_ = INT32_PROPERTY_TYPE;
     indexSchema_.insert(config5);
     propList_.push_back(config5.propertyName_);
 }
@@ -223,7 +223,7 @@ void ItemManagerTestFixture::prepareDoc_(
 {
     doc.setId(id);
 
-    const string idStr = lexical_cast<string>(id);
+    const string idStr = boost::lexical_cast<string>(id);
     insertItemId_(idStr, id);
 
     izenelib::util::UString ustr;
@@ -233,7 +233,7 @@ void ItemManagerTestFixture::prepareDoc_(
     doc.property(PROP_NAME_DOCID) = ustr;
 
     int randValue = rand();
-    const string randIdStr = lexical_cast<string>(randValue);
+    const string randIdStr = boost::lexical_cast<string>(randValue);
 
     ustr.assign(PROP_VALUE_TITLE + randIdStr, ENCODING_TYPE);
     itemInput[PROP_NAME_TITLE] = ustr;
@@ -244,12 +244,12 @@ void ItemManagerTestFixture::prepareDoc_(
     doc.property(PROP_NAME_URL) = ustr;
 
     float f = static_cast<float>(randValue) / 3;
-    ustr.assign(lexical_cast<string>(f), ENCODING_TYPE);
+    ustr.assign(boost::lexical_cast<string>(f), ENCODING_TYPE);
     itemInput[PROP_NAME_PRICE] = ustr;
     doc.property(PROP_NAME_PRICE) = ustr;
 
     int c = randValue * 10;
-    ustr.assign(lexical_cast<string>(c), ENCODING_TYPE);
+    ustr.assign(boost::lexical_cast<string>(c), ENCODING_TYPE);
     itemInput[PROP_NAME_COUNT] = ustr;
     doc.property(PROP_NAME_COUNT) = ustr;
 }

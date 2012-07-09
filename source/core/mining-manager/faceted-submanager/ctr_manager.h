@@ -9,6 +9,8 @@
 
 #include "faceted_types.h"
 
+#include <common/NumericPropertyTable.h>
+
 #include <am/tokyo_cabinet/tc_hash.h>
 #include <sdb/SequentialDB.h>
 
@@ -19,7 +21,7 @@ NS_FACETED_BEGIN
 class CTRManager
 {
 public:
-    typedef izenelib::am::sdb_fixedhash<uint32_t, count_t, izenelib::util::ReadWriteLock> DBType;
+    typedef izenelib::am::sdb_fixedhash<docid_t, count_t, izenelib::util::ReadWriteLock> DBType;
 
     typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ScopedReadLock;
@@ -41,7 +43,7 @@ public:
      * @param docId, indicates which document to be updated.
      * @return true if success, or false
      */
-    bool update(uint32_t docId);
+    bool update(docid_t docId);
 
     /**
      * Get click-count for each document.
@@ -51,30 +53,30 @@ public:
      *         false for @p posClickCountList is empty or its values are all zero.
      */
     bool getClickCountListByDocIdList(
-            const std::vector<unsigned int>& docIdList,
+            const std::vector<docid_t>& docIdList,
             std::vector<std::pair<size_t, count_t> >& posClickCountList);
 
     bool getClickCountListByDocIdList(
             const std::vector<unsigned int>& docIdList,
             std::vector<count_t>& clickCountList);
 
-    void loadCtrDataInt64(uint64_t*& data, size_t& size);
+    void loadCtrData(boost::shared_ptr<NumericPropertyTableBase>& rTypeTable);
 
     /**
      * Get click-count for specified document
      * @param docId
      * @return click count
      */
-    count_t getClickCountByDocId(uint32_t docId);
+    count_t getClickCountByDocId(docid_t docId);
 
 private:
-    bool updateDB(uint32_t docId, count_t clickCount);
+    bool updateDB(docid_t docId, count_t clickCount);
 
 private:
     std::string filePath_;
     size_t docNum_;
 
-    std::vector<count_t> docClickCountList_;
+    boost::shared_ptr<NumericPropertyTable<count_t> > docClickCountList_;
 
     DBType* db_;
 

@@ -17,6 +17,7 @@ namespace sf1r
 class SimpleDataSource : public ProductDataSource
 {
     typedef boost::unordered_map<std::string, std::vector<uint32_t> > UuidIndexType;
+
 public:
 
     SimpleDataSource(const PMConfig& config, std::vector<PMDocumentType>* document_list);
@@ -37,9 +38,11 @@ public:
 
     bool DeleteDocument(uint32_t docid);
 
+    bool GetPrice(const PMDocumentType& doc, ProductPrice& price) const;
+
+    bool GetPrice(const uint32_t& docid, ProductPrice& price) const;
 
 private:
-
     void RebuildIndex_();
 
     bool GetUuid_(uint32_t docid, izenelib::util::UString& uuid);

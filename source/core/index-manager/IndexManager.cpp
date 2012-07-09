@@ -24,7 +24,7 @@ void IndexManager::convertData(const std::string& property, const PropertyValue&
 {
     PropertyValue2IndexPropertyType converter(out);
 
-    if(property==DATE)
+    if (property == DATE)
     {
         int64_t time = in.get<int64_t>();
         PropertyValue inValue(time);
@@ -34,23 +34,23 @@ void IndexManager::convertData(const std::string& property, const PropertyValue&
         boost::apply_visitor(converter, in.getVariant());
 }
 
-void IndexManager::convertStringPropertyDataForSorting(const string& property, uint32_t* &data, size_t&size)
+bool IndexManager::convertStringPropertyDataForSorting(const string& property, boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable)
 {
-    BTreeIndexer<izenelib::util::UString>* pBTreeIndexer = 
+    BTreeIndexer<izenelib::util::UString>* pBTreeIndexer =
         pBTreeIndexer_->getIndexer<izenelib::util::UString>(property);
-    size = getIndexReader()->maxDoc();
-    if(!size)
+    std::size_t size = getIndexReader()->maxDoc();
+    if (!size)
     {
-        data = NULL;
-        return;
+        return false;
     }
     size += 1;
-    data = new uint32_t[size]();
-    if (pBTreeIndexer->convertAllValue(size,data) == 0)
-    {
-        delete[] data;
-        data = NULL;
-    }
+    if (!numericPropertyTable)
+        numericPropertyTable.reset(new NumericPropertyTable<uint32_t>(STRING_PROPERTY_TYPE));
+    numericPropertyTable->resize(size);
+
+    NumericPropertyTableBase::WriteLock lock(numericPropertyTable->mutex_);
+    uint32_t* data = (uint32_t *)numericPropertyTable->getValueList();
+    return pBTreeIndexer->convertAllValue(size, data);
 }
 
 void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
@@ -89,7 +89,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         docIdSet->toggle();
     }
         break;
-     case QueryFiltering::NOT_EQUAL:
+    case QueryFiltering::NOT_EQUAL:
     {
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());

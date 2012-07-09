@@ -14,11 +14,10 @@
 NS_FACETED_BEGIN
 
 GroupFilterBuilder::GroupFilterBuilder(
-    const std::vector<GroupConfig>& groupConfigs,
-    const GroupManager* groupManager,
-    const AttrManager* attrManager,
-    NumericPropertyTableBuilder* numericTableBuilder
-)
+        const std::vector<GroupConfig>& groupConfigs,
+        const GroupManager* groupManager,
+        const AttrManager* attrManager,
+        NumericPropertyTableBuilder* numericTableBuilder)
     : groupConfigs_(groupConfigs)
     , groupManager_(groupManager)
     , attrTable_(attrManager ? &attrManager->getAttrTable() : NULL)

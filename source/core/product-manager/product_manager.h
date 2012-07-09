@@ -19,6 +19,7 @@
 namespace sf1r
 {
 
+class DocumentManager;
 class ProductDataSource;
 class OperationProcessor;
 class ProductEditor;
@@ -33,6 +34,7 @@ public:
 
     ProductManager(
             const std::string& work_dir,
+            const boost::shared_ptr<DocumentManager>& document_manager,
             ProductDataSource* data_source,
             OperationProcessor* op_processor,
             ProductPriceTrend* price_trend,
@@ -56,9 +58,9 @@ public:
     //all intervention functions.
     bool AddGroup(const std::vector<uint32_t>& docid_list, PMDocumentType& info, const ProductEditOption& option);
 
-    bool AppendToGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
+    bool AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
 
-    bool RemoveFromGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
+    bool RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
 
 
     bool GetMultiPriceHistory(
@@ -111,6 +113,7 @@ private:
 private:
     std::string work_dir_;
     PMConfig config_;
+    boost::shared_ptr<DocumentManager> document_manager_;
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     ProductPriceTrend* price_trend_;

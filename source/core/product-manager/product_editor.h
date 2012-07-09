@@ -49,7 +49,6 @@ public:
 private:
     bool AppendToGroup_(const std::vector<PMDocumentType>& doc_list, const PMDocumentType& info);
 
-
 private:
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;

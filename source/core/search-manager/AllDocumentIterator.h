@@ -2,7 +2,6 @@
 #define CORE_SEARCH_MANAGER_ALL_DOCUMENT_ITERATOR_H_
 
 #include "DocumentIterator.h"
-#include <index-manager/IndexManager.h>
 #include <ir/index_manager/utility/BitMapIterator.h>
 
 #include <string>
@@ -14,13 +13,13 @@ using izenelib::ir::indexmanager::BitMapIterator;
 // Iterate all document together with deleted doc bitmap
 // The implementation is similar with ANDDocIterator,
 // We don't inherit from ANDDocIterator for higher performance
-// Since the number of iteration of AllDocumentIterator is 
+// Since the number of iteration of AllDocumentIterator is
 // much higher than general ANDDocIterator
 class AllDocumentIterator : public DocumentIterator
 {
 public:
-    AllDocumentIterator (docid_t maxDoc) 
-        : delDocIterator_(NULL) 
+    AllDocumentIterator (docid_t maxDoc)
+        : delDocIterator_(NULL)
         , currDoc_(0)
         , maxDoc_(maxDoc){}
     AllDocumentIterator (BitMapIterator* bitMapIterator, docid_t maxDoc)
@@ -28,7 +27,7 @@ public:
         , currDoc_(0)
         , maxDoc_(maxDoc)
     {
-        if(delDocIterator_->next()) 
+        if(delDocIterator_->next())
             currDelDoc_ = delDocIterator_->doc();
         else
             currDelDoc_ = MAX_DOC_ID;
@@ -88,7 +87,7 @@ public:
 
     void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0) {}
 
-    void df_ctf(DocumentFrequencyInProperties& dfmap, 
+    void df_ctf(DocumentFrequencyInProperties& dfmap,
                      CollectionTermFrequencyInProperties& ctfmap){}
 
     void df_cmtf(DocumentFrequencyInProperties& dfmap,
@@ -104,7 +103,7 @@ protected:
         currDoc_ = currDoc_ > target ? currDoc_ : ++target;
         return currDoc_ > maxDoc_ ? MAX_DOC_ID : currDoc_;
     }
-	
+
     bool move_with_del() {
         do
         {

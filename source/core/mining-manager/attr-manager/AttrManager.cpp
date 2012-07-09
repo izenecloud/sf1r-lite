@@ -10,10 +10,9 @@
 using namespace sf1r::faceted;
 
 AttrManager::AttrManager(
-    const AttrConfig& attrConfig,
-    const std::string& dirPath,
-    DocumentManager& documentManager
-)
+        const AttrConfig& attrConfig,
+        const std::string& dirPath,
+        DocumentManager& documentManager)
     : attrConfig_(attrConfig)
     , dirPath_(dirPath)
     , documentManager_(documentManager)
@@ -81,10 +80,7 @@ bool AttrManager::processCollection()
     return true;
 }
 
-void AttrManager::buildDoc_(
-    docid_t docId,
-    const std::string& propName
-)
+void AttrManager::buildDoc_(docid_t docId, const std::string& propName)
 {
     std::vector<AttrTable::vid_t> valueIdList;
     Document doc;

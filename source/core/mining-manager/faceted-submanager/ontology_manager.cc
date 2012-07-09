@@ -31,18 +31,18 @@ bool myfunction (std::pair<uint32_t, uint32_t> p1,std::pair<uint32_t, uint32_t> 
 
 //used for jia's baseline
 OntologyManager::OntologyManager(
-    const std::string& container, 
-    const boost::shared_ptr<DocumentManager>& document_manager, 
-    const std::vector<std::string>& properties, 
-    idmlib::util::IDMAnalyzer* analyzer)
-        :container_(container)
-        , document_manager_(document_manager)
-        , analyzer_(analyzer)
-        , service_(NULL)
-        , searcher_(new OntologySearcher())
-        , manmade_(new ManmadeDocCategory(container_+"/manmade"))
-        , max_docid_file_(container_+"/max_id")
-        ,docItemListFile_(container_+"/label/docItemList")
+        const std::string& container,
+        const boost::shared_ptr<DocumentManager>& document_manager,
+        const std::vector<std::string>& properties,
+        idmlib::util::IDMAnalyzer* analyzer)
+    : container_(container)
+    , document_manager_(document_manager)
+    , analyzer_(analyzer)
+    , service_(NULL)
+    , searcher_(new OntologySearcher())
+    , manmade_(new ManmadeDocCategory(container_+"/manmade"))
+    , max_docid_file_(container_+"/max_id")
+    , docItemListFile_(container_+"/label/docItemList")
 {
     for (uint32_t i=0;i<properties.size();i++)
     {
@@ -110,7 +110,7 @@ OntologyManager::OntologyManager(
     docRuleTFSDB_ = new IndexSDB<unsigned int, unsigned int,izenelib::util::ReadWriteLock> (sdbfile);
     docRuleTFSDB_->initialize(20, 8, 1024, 1000000);
 }
-#endif 
+#endif
 
 OntologyManager::~OntologyManager()
 {
@@ -870,18 +870,18 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
         CountingTrie trie;
         property_it = doc.propertyBegin();
         izenelib::util::UString last_faceted_property;
-        while (property_it != doc.propertyEnd() )
+        while (property_it != doc.propertyEnd())
         {
-            if ( faceted_properties_.find( property_it->first)!= NULL)
+            if (faceted_properties_.find(property_it->first))
             {
                 const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
                 std::vector<idmlib::util::IDMTerm> term_list;
                 analyzer_->GetStemTermList( content, term_list );
-//         std::cout<<"after la "<<term_list.size()<<std::endl;
-//         if(term_list.size()>100000)
-//         {
-//           std::cout<<content<<std::endl;
-//         }
+//              std::cout<<"after la "<<term_list.size()<<std::endl;
+//              if(term_list.size()>100000)
+//              {
+//                  std::cout<<content<<std::endl;
+//              }
                 terms_count+=term_list.size();
                 uint32_t last_position=0;
                 std::vector<uint32_t> terms;

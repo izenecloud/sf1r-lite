@@ -4,13 +4,14 @@ NS_FACETED_BEGIN
 
 
 CTRManager::CTRManager(const std::string& dirPath, size_t docNum)
-: docNum_(docNum)
-, db_(NULL)
+    : docNum_(docNum)
+    , docClickCountList_(new NumericPropertyTable<count_t>(INT32_PROPERTY_TYPE))
+    , db_(NULL)
 {
     filePath_ = dirPath + "/ctr.db";
 
     // docid start from 1
-    docClickCountList_.resize(docNum+1, 0);
+    docClickCountList_->resize(docNum + 1);
 }
 
 CTRManager::~CTRManager()
@@ -36,16 +37,13 @@ bool CTRManager::open()
     size_t nums = db_->num_items();
     if (nums > 0)
     {
-        uint32_t k;
+        docid_t k;
         count_t v;
 
         DBType::SDBCursor locn = db_->get_first_locn();
-        while ( db_->get(locn, k, v) )
+        while (db_->get(locn, k, v))
         {
-            if (k < docClickCountList_.size())
-            {
-                docClickCountList_[k] = v;
-            }
+            docClickCountList_->setValue(k, v);
 
             db_->seq(locn);
         }
@@ -61,28 +59,30 @@ void CTRManager::updateDocNum(size_t docNum)
     if (docNum_ != docNum)
     {
         docNum_ = docNum;
-        docClickCountList_.resize(docNum+1, 0);
+        docClickCountList_->resize(docNum + 1);
     }
 }
 
-bool CTRManager::update(uint32_t docId)
+bool CTRManager::update(docid_t docId)
 {
     ScopedWriteLock lock(mutex_);
 
-    if (docId >= docClickCountList_.size())
+    if (docId >= docClickCountList_->size())
     {
         return false;
     }
 
-    docClickCountList_[docId] ++;
-
-    updateDB(docId, docClickCountList_[docId]);
+    count_t count = 0;
+    docClickCountList_->getValue(docId, count);
+    ++count;
+    docClickCountList_->setValue(docId, count);
+    updateDB(docId, count);
 
     return true;
 }
 
 bool CTRManager::getClickCountListByDocIdList(
-        const std::vector<unsigned int>& docIdList,
+        const std::vector<docid_t>& docIdList,
         std::vector<std::pair<size_t, count_t> >& posClickCountList)
 {
     ScopedReadLock lock(mutex_);
@@ -92,13 +92,9 @@ bool CTRManager::getClickCountListByDocIdList(
     posClickCountList.resize(listSize);
     for (size_t pos = 0; pos < listSize; ++pos)
     {
-        const unsigned int& docId = docIdList[pos];
         count_t count = 0;
-        if (docId < docClickCountList_.size())
-        {
-            if ((count = docClickCountList_[docId]))
-                result = true;
-        }
+        if (docClickCountList_->getValue(docIdList[pos], count))
+            result = true;
         posClickCountList[pos].first = pos;
         posClickCountList[pos].second = count;
     }
@@ -107,46 +103,37 @@ bool CTRManager::getClickCountListByDocIdList(
 }
 
 bool CTRManager::getClickCountListByDocIdList(
-        const std::vector<unsigned int>& docIdList,
+        const std::vector<docid_t>& docIdList,
         std::vector<count_t>& clickCountList)
 {
     ScopedReadLock lock(mutex_);
 
-    clickCountList.resize(docIdList.size(), 0);
+    clickCountList.resize(docIdList.size());
 
     bool result = false;
     for (size_t i = 0; i < docIdList.size(); i++)
     {
-        const unsigned int& docId = docIdList[i];
-        if (docId < docClickCountList_.size())
-        {
-            if ((clickCountList[i] = docClickCountList_[docId]))
-                result = true;
-        }
+        if (docClickCountList_->getValue(docIdList[i], clickCountList[i]))
+            result = true;
     }
 
     return result;
 }
 
-void CTRManager::loadCtrDataInt64(uint64_t*& data, size_t& size)
+void CTRManager::loadCtrData(boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable)
 {
     ScopedReadLock lock(mutex_);
 
-    size_t docNum = docClickCountList_.size();
-
-    data = new uint64_t[docNum];
-    for (size_t i = 0; i < docNum; i++)
-    {
-        data[i] = docClickCountList_[i];
-    }
-    size = docNum;
+    numericPropertyTable = static_pointer_cast<NumericPropertyTableBase>(docClickCountList_);
 }
 
-count_t CTRManager::getClickCountByDocId(uint32_t docId)
+count_t CTRManager::getClickCountByDocId(docid_t docId)
 {
-    if (docId < docClickCountList_.size())
+    if (docId < docClickCountList_->size())
     {
-        return docClickCountList_[docId];
+        count_t count = 0;
+        docClickCountList_->getValue(docId, count);
+        return count;
     }
 
     return 0;
@@ -154,7 +141,7 @@ count_t CTRManager::getClickCountByDocId(uint32_t docId)
 
 /// private
 
-bool CTRManager::updateDB(uint32_t docId, count_t clickCount)
+bool CTRManager::updateDB(docid_t docId, count_t clickCount)
 {
     if (db_->update(docId, clickCount))
     {
@@ -166,5 +153,3 @@ bool CTRManager::updateDB(uint32_t docId, count_t clickCount)
 }
 
 NS_FACETED_END
-
-

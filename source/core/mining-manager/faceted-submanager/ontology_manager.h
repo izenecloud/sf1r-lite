@@ -49,10 +49,10 @@ class OntologyManager
 
 public:
     OntologyManager(
-        const std::string& container, 
-        const boost::shared_ptr<DocumentManager>& document_manager, 
-        const std::vector<std::string>& properties, 
-        idmlib::util::IDMAnalyzer* analyzer);
+            const std::string& container,
+            const boost::shared_ptr<DocumentManager>& document_manager,
+            const std::vector<std::string>& properties,
+            idmlib::util::IDMAnalyzer* analyzer);
 
 #if 0
     OntologyManager(
@@ -79,8 +79,8 @@ public:
     bool GetXML(std::string& xml);
 
     bool SetXML(const std::string& xml);
-    
-    
+
+
     Ontology* GetOntology()
     {
         return service_;
@@ -90,7 +90,7 @@ public:
     {
         return searcher_;
     }
-    
+
 
     bool DefineDocCategory(const std::vector<ManmadeDocCategoryItem>& items);
     int getCoOccurence(uint32_t labelTermId,uint32_t topicTermId);
@@ -98,19 +98,19 @@ private:
     void OutputToFile_(const std::string& file, Ontology* ontology);
     void  calculateCoOccurenceByIndexManager(Ontology* ontology);
     uint32_t GetProcessedMaxId_();
-    
+
     bool ProcessCollectionSimple_(bool rebuild = false);
     bool ProcessCollectionWithSmooth_(bool rebuild);
-    
+
     bool SetXMLSimple_(const std::string& xml);
     bool SetXMLWithSmooth_(const std::string& xml);
-    
+
     //void readDocsFromFile(const std::string& file, vector<Document> &docs);
     int getCollectionTermsCount();
     int getTFInDoc(izenelib::util::UString& label,Document& doc );
     int getTFInCollection(izenelib::util::UString& label);
     int getDocTermsCount(Document& doc);
-    
+
     void getDocumentFrequency(boost::shared_ptr<DocumentManager>& document_manager,
                               uint32_t last_docid,Ontology* ontology,
                               std::map<uint32_t, uint32_t> &topicDF,
@@ -144,10 +144,9 @@ private:
     uint32_t maxDocid_;
     std::vector<uint32_t> property_ids_;
     std::vector<std::string> property_names_;
-#if 0	
+#if 0
     IndexSDB<unsigned int, unsigned int,izenelib::util::ReadWriteLock>* docRuleTFSDB_;
 #endif
 };
 NS_FACETED_END
 #endif
-

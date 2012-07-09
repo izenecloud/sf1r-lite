@@ -17,14 +17,10 @@ struct PropertyData
     void* data_;
     size_t size_;
     time_t lastLoadTime_;
+    bool temp_;
 
-    PropertyData(
-      PropertyDataType type, 
-      void* data,
-      size_t size)
-        : type_(type)
-        , data_(data)
-        , size_(size)
+    PropertyData(PropertyDataType type, void* data, size_t size, bool temp = false)
+        : type_(type) , data_(data) , size_(size), temp_(temp)
     {
         resetLoadTime();
     }
@@ -41,30 +37,33 @@ struct PropertyData
 
     ~PropertyData()
     {
-        switch (type_)
+        if (temp_)
         {
-        case INT_PROPERTY_TYPE:
-        case DATETIME_PROPERTY_TYPE:
-            delete[] (int64_t*)data_;
-            break;
+            switch (type_)
+            {
+            case INT32_PROPERTY_TYPE:
+                delete[] (int32_t*)data_;
+                break;
 
-        case UNSIGNED_INT_PROPERTY_TYPE:
-            delete[] (uint64_t*)data_;
-            break;
+            case INT64_PROPERTY_TYPE:
+            case DATETIME_PROPERTY_TYPE:
+                delete[] (int64_t*)data_;
+                break;
 
-        case FLOAT_PROPERTY_TYPE:
-            delete[] (float*)data_;
-            break;
+            case FLOAT_PROPERTY_TYPE:
+                delete[] (float*)data_;
+                break;
 
-        case DOUBLE_PROPERTY_TYPE:
-            delete[] (double*)data_;
-            break;
+            case DOUBLE_PROPERTY_TYPE:
+                delete[] (double*)data_;
+                break;
 
-        case STRING_PROPERTY_TYPE:
-            delete[] (uint32_t*)data_;
-            break;
-        default:
-            break;
+            case STRING_PROPERTY_TYPE:
+                delete[] (uint32_t*)data_;
+                break;
+            default:
+                break;
+            }
         }
     }
 };

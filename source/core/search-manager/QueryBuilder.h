@@ -118,13 +118,13 @@ private:
         bool& isNumericFilter,
         std::map<termid_t, std::vector<TermDocFreqs*> > & termDocReaders
     );
-	
+
     void prepare_for_property_(
         MultiPropertyScorer* pScorer,
         size_t & success_properties,
         const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
-        const PropertyConfig& properyConfig,        
+        const PropertyConfig& properyConfig,
         bool readPositions,
         const std::map<termid_t, unsigned>& termIndexMapInProperty
     );
@@ -134,7 +134,7 @@ private:
         size_t & success_properties,
         const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
-        const PropertyConfig& properyConfig,        
+        const PropertyConfig& properyConfig,
         bool readPositions,
         const std::map<termid_t, unsigned>& termIndexMapInProperty,
         const property_weight_map& propertyWeightMap

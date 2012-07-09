@@ -110,10 +110,10 @@ bool isPropertySortable(
 
         switch (propertyConfig.propertyType_)
         {
-        case INT_PROPERTY_TYPE:
+        case INT32_PROPERTY_TYPE:
         case FLOAT_PROPERTY_TYPE:
+        case INT64_PROPERTY_TYPE:
         case NOMINAL_PROPERTY_TYPE:
-        case UNSIGNED_INT_PROPERTY_TYPE:
         case DOUBLE_PROPERTY_TYPE:
         case STRING_PROPERTY_TYPE:
         case DATETIME_PROPERTY_TYPE:

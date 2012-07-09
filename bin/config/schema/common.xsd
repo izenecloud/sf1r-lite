@@ -20,9 +20,11 @@
             <xs:simpleType>
                 <xs:restriction base="xs:string">
                     <xs:enumeration value="string"/>
-                    <xs:enumeration value="int"/>
+                    <xs:enumeration value="int32"/>
                     <xs:enumeration value="float"/>
                     <xs:enumeration value="datetime"/>
+                    <xs:enumeration value="int64"/>
+                    <xs:enumeration value="double"/>
                 </xs:restriction>
             </xs:simpleType>
         </xs:attribute>

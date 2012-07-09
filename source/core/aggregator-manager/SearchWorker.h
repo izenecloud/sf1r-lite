@@ -95,11 +95,6 @@ public:
 
     bool doLocalSearch(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
-    void reset_cache(
-            bool rType,
-            docid_t id,
-            const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
-
     void reset_all_property_cache();
 
     void clearSearchCache();

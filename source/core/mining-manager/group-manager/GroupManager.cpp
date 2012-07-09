@@ -20,12 +20,11 @@ const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UStr
 }
 
 GroupManager::GroupManager(
-    DocumentManager* documentManager,
-    const std::string& dirPath
-)
-: documentManager_(documentManager)
-, dirPath_(dirPath)
-, dateStrParser_(*DateStrParser::get())
+        DocumentManager* documentManager,
+        const std::string& dirPath)
+    : documentManager_(documentManager)
+    , dirPath_(dirPath)
+    , dateStrParser_(*DateStrParser::get())
 {
 }
 
@@ -178,10 +177,9 @@ void GroupManager::buildStrPropForCollection_(PropValueTable& pvTable)
 }
 
 void GroupManager::buildStrPropForDoc_(
-    docid_t docId,
-    const std::string& propName,
-    PropValueTable& pvTable
-)
+        docid_t docId,
+        const std::string& propName,
+        PropValueTable& pvTable)
 {
     std::vector<PropValueTable::pvid_t> propIdList;
     Document doc;
@@ -198,13 +196,13 @@ void GroupManager::buildStrPropForDoc_(
             try
             {
                 for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
-                    pathIt != groupPaths.end(); ++pathIt)
+                        pathIt != groupPaths.end(); ++pathIt)
                 {
                     PropValueTable::pvid_t pvId = pvTable.insertPropValueId(*pathIt);
                     propIdList.push_back(pvId);
                 }
             }
-            catch(MiningException& e)
+            catch (MiningException& e)
             {
                 LOG(ERROR) << "exception: " << e.what()
                            << ", doc id: " << docId;
@@ -216,7 +214,7 @@ void GroupManager::buildStrPropForDoc_(
     {
         pvTable.appendPropIdList(propIdList);
     }
-    catch(MiningException& e)
+    catch (MiningException& e)
     {
         LOG(ERROR) << "exception: " << e.what()
                    << ", doc id: " << docId;

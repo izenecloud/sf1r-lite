@@ -46,15 +46,13 @@ void QueryManager::addCollectionPropertyInfo(CollPropertyKey_T colPropertyKey,
 void QueryManager::addCollectionDisplayProperty(CollPropertyKey_T colPropertyKey,
         DisplayProperty& displayProperty )
 {
-    boost::upgrade_lock<boost::shared_mutex> lock(dpmSM_);
-    boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
+    boost::unique_lock<boost::shared_mutex> lock(dpmSM_);
     displayPropertyMap_[colPropertyKey] = displayProperty;
 }
 
 void QueryManager::addCollectionSearchProperty(CollPropertyKey_T colPropertyKey)
 {
-    boost::upgrade_lock<boost::shared_mutex> lock(dpmSM_);
-    boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
+    boost::unique_lock<boost::shared_mutex> lock(dpmSM_);
     searchPropertySet_.insert(colPropertyKey);
 }
 
@@ -66,8 +64,7 @@ const std::map<QueryManager::CollPropertyKey_T,
 
 void QueryManager::swapPropertyInfo(DPM_T& displayPropertyMap, SPS_T& searchPropertySet)
 {
-    boost::upgrade_lock<boost::shared_mutex> lock(dpmSM_);
-    boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
+    boost::unique_lock<boost::shared_mutex> lock(dpmSM_);
     displayPropertyMap_.swap( displayPropertyMap );
     searchPropertySet_.swap( searchPropertySet );
 } // end - setDisplayPropertyMap()

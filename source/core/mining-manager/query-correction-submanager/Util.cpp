@@ -15,12 +15,12 @@ namespace sf1r
 {
 
 //Check if one word is pure english word
-bool isEnglishWord(const UString& queryToken)
+bool isEnglishWord(const izenelib::util::UString& queryToken)
 {
     bool flag = true;
     for (unsigned int i = 0; i < queryToken.length(); i++)
     {
-        if (!UString::isThisAlphaChar(queryToken.at(i)))
+        if (!izenelib::util::UString::isThisAlphaChar(queryToken.at(i)))
         {
             flag = false;
             return flag;
@@ -30,12 +30,12 @@ bool isEnglishWord(const UString& queryToken)
 }
 
 //Check if one word is pure korean
-bool isKoreanWord(const UString& queryToken)
+bool isKoreanWord(const izenelib::util::UString& queryToken)
 {
     bool flag = true;
     for (unsigned int i = 0; i < queryToken.length(); i++)
     {
-        if (!UString::isThisKoreanChar(queryToken.at(i)))
+        if (!izenelib::util::UString::isThisKoreanChar(queryToken.at(i)))
         {
             flag = false;
             return flag;
@@ -44,7 +44,7 @@ bool isKoreanWord(const UString& queryToken)
     return flag;
 }
 
-bool hasChineseChar(const UString& queryToken)
+bool hasChineseChar(const izenelib::util::UString& queryToken)
 {
     bool flag = false;
     for (size_t i = 0; i < queryToken.length(); i++)

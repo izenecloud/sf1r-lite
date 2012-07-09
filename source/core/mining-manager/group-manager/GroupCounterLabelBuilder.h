@@ -18,7 +18,6 @@ namespace sf1r
 {
 class GroupConfig;
 class NumericPropertyTableBuilder;
-class NumericPropertyTable;
 }
 
 NS_FACETED_BEGIN
@@ -33,8 +32,7 @@ public:
     GroupCounterLabelBuilder(
         const std::vector<GroupConfig>& groupConfigs,
         const GroupManager* groupManager,
-        NumericPropertyTableBuilder* numericTableBuilder
-    );
+        NumericPropertyTableBuilder* numericTableBuilder);
 
     GroupCounter* createGroupCounter(const GroupPropParam& groupPropParam);
     GroupLabel* createGroupLabel(const GroupParam::GroupLabelParam& labelParam);

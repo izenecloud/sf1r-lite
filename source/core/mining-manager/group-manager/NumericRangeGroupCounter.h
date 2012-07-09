@@ -10,19 +10,17 @@
 
 #include "GroupCounter.h"
 
+#include <common/NumericPropertyTableBase.h>
+
 #define LEVEL_1_OF_SEGMENT_TREE 7
 #define MAX_RANGE_NUMBER 7
-
-namespace sf1r{
-class NumericPropertyTable;
-}
 
 NS_FACETED_BEGIN
 
 class NumericRangeGroupCounter : public GroupCounter
 {
 public:
-    NumericRangeGroupCounter(const NumericPropertyTable *propertyTable);
+    NumericRangeGroupCounter(const std::string& property, const NumericPropertyTableBase* numericPropertyTable);
 
     ~NumericRangeGroupCounter();
 
@@ -35,7 +33,8 @@ public:
     static void toOntologyRepItemList(GroupRep &groupRep);
 
 private:
-    const NumericPropertyTable *propertyTable_;
+    const std::string property_;
+    const NumericPropertyTableBase* numericPropertyTable_;
     std::vector<unsigned int> segmentTree_;
 
     static const int bound_[LEVEL_1_OF_SEGMENT_TREE + 1];

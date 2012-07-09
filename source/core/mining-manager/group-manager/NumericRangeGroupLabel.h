@@ -10,13 +10,11 @@
 
 #include "GroupLabel.h"
 
+#include <common/NumericPropertyTableBase.h>
+
 #include <vector>
 #include <set>
 #include <utility> // std::pair
-
-namespace sf1r{
-class NumericPropertyTable;
-}
 
 NS_FACETED_BEGIN
 
@@ -27,8 +25,8 @@ public:
     typedef std::pair<int64_t, int64_t> NumericRange;
     typedef std::vector<NumericRange> NumericRangeVec;
 
-    NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const std::vector<float>& targetValues);
-    NumericRangeGroupLabel(const NumericPropertyTable *propertyTable, const NumericRangeVec& ranges);
+    NumericRangeGroupLabel(const NumericPropertyTableBase *numericPropertyTable, const std::vector<float>& targetValues);
+    NumericRangeGroupLabel(const NumericPropertyTableBase *numericPropertyTable, const NumericRangeVec& ranges);
 
     ~NumericRangeGroupLabel();
 
@@ -39,7 +37,7 @@ private:
     bool test2(docid_t doc) const;
 
 private:
-    const NumericPropertyTable *propertyTable_;
+    const NumericPropertyTableBase* numericPropertyTable_;
     NumericRangeVec ranges_;
     std::set<float> targetValueSet_;
     bool (NumericRangeGroupLabel::*test_)(docid_t doc) const;

@@ -1,5 +1,5 @@
-#ifndef UTILITY_H
-#define UTILITY_H
+#ifndef SF1R_COMMON_UTILITY_H
+#define SF1R_COMMON_UTILITY_H
 
 #include "type_defs.h"
 #include <ir/index_manager/index/IndexerPropertyConfig.h>

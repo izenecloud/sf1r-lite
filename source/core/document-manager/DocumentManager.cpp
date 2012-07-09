@@ -5,15 +5,18 @@
 /// @author Deepesh Shrestha, Peiseng Wang,
 ///
 
-#include <common/SFLogger.h>
 #include "DocumentManager.h"
 #include "DocContainer.h"
 #include "highlighter/Highlighter.h"
 #include "snippet-generation-submanager/SnippetGeneratorSubManager.h"
 #include "text-summarization-submanager/TextSummarizationSubManager.h"
+
 #include <configuration-manager/ConfigurationTool.h>
 #include <util/profiler/ProfilerGroup.h>
 #include <license-manager/LicenseManager.h>
+#include <common/SFLogger.h>
+#include <common/NumericPropertyTable.h>
+#include <common/NumericRangePropertyTable.h>
 #include <la/analyzer/MultiLanguageAnalyzer.h>
 #include <am/sequence_file/ssfr.h>
 
@@ -35,25 +38,28 @@ namespace sf1r
 const std::string DocumentManager::ACL_FILE = "ACLTable";
 const std::string DocumentManager::PROPERTY_LENGTH_FILE = "PropertyLengthDb.xml";
 const std::string DocumentManager::PROPERTY_BLOCK_SUFFIX = ".blocks";
+
+namespace
+{
 const std::string DOCID("DOCID");
 const std::string DATE("DATE");
+}
 
 DocumentManager::DocumentManager(
-    const std::string& path,
-    const IndexBundleSchema& indexSchema,
-    const izenelib::util::UString::EncodingType encodingType,
-    size_t documentCacheNum
-)
-    :path_(path)
-    ,documentCache_(100)
-    ,indexSchema_(indexSchema)
-    ,encodingType_(encodingType)
-    ,propertyLengthDb_()
-    ,propertyIdMapper_()
-    ,propertyAliasMap_()
-    ,displayLengthMap_()
-    ,maxSnippetLength_(200)
-    ,threadPool_(20)
+        const std::string& path,
+        const IndexBundleSchema& indexSchema,
+        const izenelib::util::UString::EncodingType encodingType,
+        size_t documentCacheNum)
+    : path_(path)
+    , documentCache_(100)
+    , indexSchema_(indexSchema)
+    , encodingType_(encodingType)
+    , propertyLengthDb_()
+    , propertyIdMapper_()
+    , propertyAliasMap_()
+    , displayLengthMap_()
+    , maxSnippetLength_(200)
+    , threadPool_(20)
 {
     propertyValueTable_ = new DocContainer(path);
     propertyValueTable_->open();
@@ -63,20 +69,34 @@ DocumentManager::DocumentManager(
     //aclTable_.open();
     snippetGenerator_ = new SnippetGeneratorSubManager;
     highlighter_ = new Highlighter;
+
+    for (IndexBundleSchema::const_iterator it = indexSchema_.begin();
+            it != indexSchema_.end(); ++it)
+    {
+        if (it->isIndex() && !it->isAnalyzed() && it->getIsFilter())
+        {
+            initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
+        }
+    }
 }
 
 DocumentManager::~DocumentManager()
 {
     flush();
 
-    if(propertyValueTable_) delete propertyValueTable_;
-    if(snippetGenerator_) delete snippetGenerator_;
-    if(highlighter_) delete highlighter_;
+    if (propertyValueTable_) delete propertyValueTable_;
+    if (snippetGenerator_) delete snippetGenerator_;
+    if (highlighter_) delete highlighter_;
 }
 
 bool DocumentManager::flush()
 {
     propertyValueTable_->flush();
+    for (NumericPropertyTableMap::iterator it = numericPropertyTables_.begin();
+            it != numericPropertyTables_.end(); ++it)
+    {
+        it->second->flush();
+    }
     saveDelFilter_();
     return savePropertyLengthDb_();
 }
@@ -107,7 +127,7 @@ bool DocumentManager::insertDocument(const Document& document)
         }
     }
 
-    if ( LicenseManager::continueIndex_ )
+    if (LicenseManager::continueIndex_)
     {
         COBRA_RESTRICT_EXCEED_N_RETURN_FALSE( document.getId(), LICENSE_MAX_DOC, 0 );
     }
@@ -126,9 +146,9 @@ bool DocumentManager::insertDocument(const Document& document)
 
 bool DocumentManager::updateDocument(const Document& document)
 {
-    //if(acl_) aclTable_.update(document.getId(), document);
+    //if (acl_) aclTable_.update(document.getId(), document);
 
-    if ( LicenseManager::continueIndex_ )
+    if (LicenseManager::continueIndex_)
     {
         COBRA_RESTRICT_EXCEED_N_RETURN_FALSE( document.getId(), LICENSE_MAX_DOC, 0 );
     }
@@ -168,7 +188,7 @@ bool DocumentManager::updatePartialDocument(const Document& document)
             continue;
         }
 
-        if(! boost::iequals(it->first,DOCID) && ! boost::iequals(it->first,DATE))
+        if (! boost::iequals(it->first,DOCID) && ! boost::iequals(it->first,DATE))
         {
             oldDoc.updateProperty(it->first, it->second);
         }
@@ -179,24 +199,22 @@ bool DocumentManager::updatePartialDocument(const Document& document)
 
 bool DocumentManager::isDeleted(docid_t docId) const
 {
-    if(docId == 0 || docId > delfilter_.size())
+    if (docId == 0 || docId > delfilter_.size())
     {
         return false;
     }
 
-    return delfilter_[docId-1];
+    return delfilter_[docId - 1];
 }
 
 bool DocumentManager::removeDocument(docid_t docId)
 {
-    //if(acl_) aclTable_.del(docId);
-    if(docId<1) return false;
-    if(!propertyValueTable_->del(docId)) return false;
-    if(delfilter_.size()<docId)
+    if (docId < 1) return false;
+    if (delfilter_.size() < docId)
     {
         delfilter_.resize(docId);
     }
-    delfilter_.set(docId-1);
+    delfilter_.set(docId - 1);
     documentCache_.del(docId);
     return true;
 }
@@ -207,13 +225,12 @@ std::size_t DocumentManager::getTotalPropertyLength(const std::string& property)
     boost::unordered_map< std::string, unsigned int>::const_iterator iter =
         propertyAliasMap_.find(property);
 
-    if (iter != propertyAliasMap_.end() && iter->second
-            < propertyLengthDb_.size() )
+    if (iter != propertyAliasMap_.end() && iter->second < propertyLengthDb_.size())
         return propertyLengthDb_[ iter->second ];
     else
     {
         const unsigned int* id = propertyIdMapper_.findIdByValue(property);
-        if ( (id != 0) && (*id < propertyLengthDb_.size()))
+        if (id != 0 && *id < propertyLengthDb_.size())
             return propertyLengthDb_[*id];
     }
 
@@ -221,46 +238,55 @@ std::size_t DocumentManager::getTotalPropertyLength(const std::string& property)
 }
 
 bool DocumentManager::getPropertyValue(
-    docid_t docId,
-    const std::string& propertyName,
-    PropertyValue& result
-)
+        docid_t docId,
+        const std::string& propertyName,
+        PropertyValue& result)
 {
     Document doc;
     const std::string* realPropertyName = &propertyName;
 
     //restore alias property name to original
-    boost::unordered_map< std::string, unsigned int>::iterator aIter =
+    boost::unordered_map<std::string, unsigned int>::iterator aIter =
         propertyAliasMap_.find(propertyName);
-    if (aIter != propertyAliasMap_.end() )
+    if (aIter != propertyAliasMap_.end())
     {
         realPropertyName = propertyIdMapper_.findValueById(aIter->second);
     }
 
-    if (documentCache_.getValue(docId, doc) )
+    NumericPropertyTableMap::const_iterator it = numericPropertyTables_.find(*realPropertyName);
+    if (it != numericPropertyTables_.end())
+    {
+        std::string tempStr;
+        if (!it->second->getStringValue(docId, tempStr))
+        {
+//          return false;
+        }
+        result = izenelib::util::UString(tempStr, encodingType_);
+        return true;
+    }
+
+    if (documentCache_.getValue(docId, doc))
     {
         result = doc.property(*realPropertyName);
     }
     else
     {
-        if(getDocument(docId, doc) == false)
+        if (getDocument(docId, doc) == false)
             return false;
         documentCache_.insertValue(docId, doc);
         result = doc.property(*realPropertyName);
     }
-//  if( getDocument(docId, doc) )
+//  if (getDocument(docId, doc))
 //      result = doc.property(*realPropertyName);
     return true;
 }
 
-bool DocumentManager::getDocument(
-    docid_t docId,
-    Document& document
-)
+bool DocumentManager::getDocument(docid_t docId, Document& document)
 {
     CREATE_SCOPED_PROFILER ( getDocument, "DocumentManager", "DocumentManager::getDocument");
-    return propertyValueTable_->get(docId, document);
+    return !isDeleted(docId) && propertyValueTable_->get(docId, document);
 }
+
 bool DocumentManager::existDocument(docid_t docId)
 {
     return propertyValueTable_->exist(docId);
@@ -276,15 +302,14 @@ bool DocumentManager::getDocumentAsync(docid_t docId)
 }
 
 bool DocumentManager::getDocumentByCache(
-    docid_t docId,
-    Document& document
-)
+        docid_t docId,
+        Document& document)
 {
-    if (documentCache_.getValue(docId, document) )
+    if (documentCache_.getValue(docId, document))
     {
         return true;
     }
-    if ( propertyValueTable_->get(docId, document) )
+    if (!isDeleted(docId) && propertyValueTable_->get(docId, document))
     {
         documentCache_.insertValue(docId, document);
         return true;
@@ -293,17 +318,16 @@ bool DocumentManager::getDocumentByCache(
 }
 
 bool DocumentManager::getDocument_impl(
-    docid_t docId,
-    Document& document,
-    boost::detail::atomic_count* finishedJobs
-)
+        docid_t docId,
+        Document& document,
+        boost::detail::atomic_count* finishedJobs)
 {
-    if (documentCache_.getValue(docId, document) )
+    if (documentCache_.getValue(docId, document))
     {
         ++(*finishedJobs);
         return true;
     }
-    if ( propertyValueTable_->get(docId, document) )
+    if (!isDeleted(docId) && propertyValueTable_->get(docId, document))
     {
         documentCache_.insertValue(docId, document);
         ++(*finishedJobs);
@@ -322,10 +346,10 @@ bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list)
 {
     docid_list.clear();
     DelFilterType::size_type find = delfilter_.find_first();
-    docid_list.reserve(	delfilter_.count());
-    while(find!=DelFilterType::npos)
+    docid_list.reserve(delfilter_.count());
+    while (find!=DelFilterType::npos)
     {
-        docid_t docid = (docid_t)find+1;
+        docid_t docid = (docid_t)find + 1;
         docid_list.push_back(docid);
         find = delfilter_.find_next(find);
     }
@@ -338,7 +362,7 @@ bool DocumentManager::loadDelFilter_()
 
     const std::string filter_file = (boost::filesystem::path(path_)/"del_filter").string();
     std::vector<DelFilterBlockType> filter_data;
-    if(!izenelib::am::ssf::Util<>::Load(filter_file, filter_data))
+    if (!izenelib::am::ssf::Util<>::Load(filter_file, filter_data))
         return false;
 
     delfilter_.clear();
@@ -354,7 +378,7 @@ bool DocumentManager::saveDelFilter_()
     const std::string filter_file = (boost::filesystem::path(path_)/"del_filter").string();
     std::vector<DelFilterBlockType> filter_data(delfilter_.num_blocks());
     boost::to_block_range(delfilter_, filter_data.begin());
-    if(!izenelib::am::ssf::Util<>::Save(filter_file, filter_data))
+    if (!izenelib::am::ssf::Util<>::Save(filter_file, filter_data))
     {
         std::cout << "DocumentManager::saveDelFilter_() failed" << std::endl;
         return false;
@@ -369,12 +393,12 @@ void DocumentManager::buildPropertyIdMapper_()
     config_tool::buildPropertyAliasMap(indexSchema_, propertyAliasMap);
 
     for (IndexBundleSchema::const_iterator it = indexSchema_.begin(), itEnd = indexSchema_.end();
-        it != itEnd; ++it)
+            it != itEnd; ++it)
     {
         propertyid_t originalPropertyId(0), originalBlockId(0);
 
-        bool hasSummary(it->getIsSummary() );
-        bool hasSnippet(it->getIsSnippet() );
+        bool hasSummary(it->getIsSummary());
+        bool hasSnippet(it->getIsSnippet());
 
         if (hasSnippet || hasSummary)
         {
@@ -396,23 +420,23 @@ void DocumentManager::buildPropertyIdMapper_()
 
         // For alias property
         config_tool::PROPERTY_ALIAS_MAP_T::iterator aliasIter =
-            propertyAliasMap.find(it->getName() );
-        if (aliasIter != propertyAliasMap.end() )
+            propertyAliasMap.find(it->getName());
+        if (aliasIter != propertyAliasMap.end())
         {
 
             for (std::vector<PropertyConfig>::iterator vecIter =
-                        aliasIter->second.begin(); vecIter
+                    aliasIter->second.begin(); vecIter
                     != aliasIter->second.end(); vecIter++)
             {
                 if (hasSnippet)
                 {
 
                     propertyAliasMap_.insert(make_pair(vecIter->getName()
-                                                       + PROPERTY_BLOCK_SUFFIX, originalBlockId) );
+                                                       + PROPERTY_BLOCK_SUFFIX, originalBlockId));
 
                 }
                 propertyAliasMap_.insert(make_pair(vecIter->getName(),
-                                                   originalPropertyId) ) ;
+                                                   originalPropertyId)) ;
             }
         }
     }
@@ -427,9 +451,7 @@ bool DocumentManager::savePropertyLengthDb_() const
         if (ofs)
         {
             boost::archive::xml_oarchive oa(ofs);
-            oa << boost::serialization::make_nvp(
-                "PropertyLength", propertyLengthDb_
-            );
+            oa << boost::serialization::make_nvp("PropertyLength", propertyLengthDb_);
         }
 
         return ofs;
@@ -450,9 +472,7 @@ bool DocumentManager::restorePropertyLengthDb_()
         if (ifs)
         {
             boost::archive::xml_iarchive ia(ifs);
-            ia >> boost::serialization::make_nvp(
-                "PropertyLength", propertyLengthDb_
-            );
+            ia >> boost::serialization::make_nvp("PropertyLength", propertyLengthDb_);
         }
         return ifs;
     }
@@ -465,13 +485,13 @@ bool DocumentManager::restorePropertyLengthDb_()
 }
 
 bool DocumentManager::getRawTextOfDocuments(
-    const std::vector<docid_t>& docIdList, const string& propertyName,
-    const bool summaryOn, const unsigned int summaryNum,
-    const unsigned int option,
-    const std::vector<izenelib::util::UString>& queryTerms,
-    std::vector<izenelib::util::UString>& outSnippetList,
-    std::vector<izenelib::util::UString>& outRawSummaryList,
-    std::vector<izenelib::util::UString>& outFullTextList)
+        const std::vector<docid_t>& docIdList, const string& propertyName,
+        const bool summaryOn, const unsigned int summaryNum,
+        const unsigned int option,
+        const std::vector<izenelib::util::UString>& queryTerms,
+        std::vector<izenelib::util::UString>& outSnippetList,
+        std::vector<izenelib::util::UString>& outRawSummaryList,
+        std::vector<izenelib::util::UString>& outFullTextList)
 {
     try
     {
@@ -483,33 +503,29 @@ bool DocumentManager::getRawTextOfDocuments(
         izenelib::util::UString rawText; // raw text
         izenelib::util::UString result; // output variable to store return value
 
-        bool ret = true;
-        for (unsigned int listId = 0; listId != docListSize; ++listId) 
+        bool ret = false;
+        for (unsigned int listId = 0; listId != docListSize; ++listId)
         {
             docid_t docId = docIdList[listId];
             result.clear();
 
             if (!getPropertyValue(docId, propertyName, rawText))
-            {
-                ret = false;
                 continue;
-            }
 
             fullTextList[listId] = rawText;
 
             std::string sentenceProperty = propertyName + PROPERTY_BLOCK_SUFFIX;
             std::vector<CharacterOffset> sentenceOffsets;
             if (!getPropertyValue(docId, sentenceProperty, sentenceOffsets))
-            {
-                ret = false;
                 continue;
-            }
+
+            ret = true;
 
             maxSnippetLength_ = getDisplayLength_(propertyName);
             processOptionForRawText(option, queryTerms, rawText,
                                     sentenceOffsets, result);
 
-            if (result.size()> 0 )
+            if (result.size() > 0)
                 snippetList[listId] = result;
             else
                 snippetList[listId] = rawText;
@@ -539,11 +555,10 @@ bool DocumentManager::getRawTextOfDocuments(
 }
 
 bool DocumentManager::getDocumentsParallel(
-    const std::vector<unsigned int>& ids,
-    vector<Document>& docs
-)
+        const std::vector<unsigned int>& ids,
+        vector<Document>& docs)
 {
-    docs.resize(ids.size() );
+    docs.resize(ids.size());
     boost::detail::atomic_count finishedJobs(0);
     for (size_t i=0; i<ids.size(); i++)
     {
@@ -554,11 +569,10 @@ bool DocumentManager::getDocumentsParallel(
 }
 
 bool DocumentManager::getDocumentsSequential(
-    const std::vector<unsigned int>& ids,
-    vector<Document>& docs
-)
+        const std::vector<unsigned int>& ids,
+        vector<Document>& docs)
 {
-    docs.resize(ids.size() );
+    docs.resize(ids.size());
     for (size_t i=0; i<ids.size(); i++)
     {
         getDocumentByCache(ids[i], docs[i]);
@@ -567,12 +581,12 @@ bool DocumentManager::getDocumentsSequential(
 }
 
 bool DocumentManager::getRawTextOfDocuments(
-    const std::vector<docid_t>& docIdList,
-    const string& propertyName,
-    const unsigned int option,
-    const std::vector<izenelib::util::UString>& queryTerms,
-    std::vector<izenelib::util::UString>& rawTextList,
-    std::vector<izenelib::util::UString>& fullTextList)
+        const std::vector<docid_t>& docIdList,
+        const string& propertyName,
+        const unsigned int option,
+        const std::vector<izenelib::util::UString>& queryTerms,
+        std::vector<izenelib::util::UString>& rawTextList,
+        std::vector<izenelib::util::UString>& fullTextList)
 {
     map<docid_t, int> doc_idx_map;
     unsigned int docListSize = docIdList.size();
@@ -581,7 +595,7 @@ bool DocumentManager::getRawTextOfDocuments(
     fullTextList.resize(docListSize);
 
     for (unsigned int i=0; i<docListSize; i++)
-        doc_idx_map.insert(make_pair(docIdList[i], i) );
+        doc_idx_map.insert(make_pair(docIdList[i], i));
 
     vector<Document> docs;
     vector<unsigned int> ids;
@@ -595,26 +609,25 @@ bool DocumentManager::getRawTextOfDocuments(
     //make getRawTextOfOneDocument_(...) called in the order of docid
     //    map<docid_t, int>::iterator
     it = doc_idx_map.begin();
-    bool ret = true;
+    bool ret = false;
     for (; it != doc_idx_map.end(); it++)
     {
-        if (!getRawTextOfOneDocument_(it->first, propertyName, option,
-                                      queryTerms, rawTextList[it->second], fullTextList[it->second]))
+        if (getRawTextOfOneDocument_(it->first, propertyName, option,
+                                     queryTerms, rawTextList[it->second], fullTextList[it->second]))
         {
-            ret = false;
+            ret = true;
         }
     }
     return ret;
 }
 
 bool DocumentManager::getRawTextOfOneDocument_(
-    const docid_t docId,
-    const string& propertyName,
-    const unsigned int option,
-    const std::vector<izenelib::util::UString>& queryTerms,
-    izenelib::util::UString& outSnippet,
-    izenelib::util::UString& rawText
-)
+        const docid_t docId,
+        const string& propertyName,
+        const unsigned int option,
+        const std::vector<izenelib::util::UString>& queryTerms,
+        izenelib::util::UString& outSnippet,
+        izenelib::util::UString& rawText)
 {
     PropertyValue propValue;
     if (!getPropertyValue(docId, propertyName, propValue))
@@ -651,12 +664,11 @@ bool DocumentManager::getRawTextOfOneDocument_(
 }
 
 bool DocumentManager::processOptionForRawText(
-    const unsigned int option,
-    const std::vector<izenelib::util::UString>& queryTerms,
-    const izenelib::util::UString& rawText,
-    const std::vector<CharacterOffset>& sentenceOffsets,
-    izenelib::util::UString& result
-)
+        const unsigned int option,
+        const std::vector<izenelib::util::UString>& queryTerms,
+        const izenelib::util::UString& rawText,
+        const std::vector<CharacterOffset>& sentenceOffsets,
+        izenelib::util::UString& result)
 {
     switch (option)
     {
@@ -665,31 +677,29 @@ bool DocumentManager::processOptionForRawText(
         break;
 
     case O_RAWTEXT:
-        highlighter_->getHighlightedText(rawText, queryTerms, encodingType_,
-                                        result);
+        highlighter_->getHighlightedText(rawText, queryTerms, encodingType_, result);
         break;
 
     case X_SNIPPET:
         snippetGenerator_->getSnippet(rawText, sentenceOffsets, queryTerms,
-                                     maxSnippetLength_, false, encodingType_, result);
+                                      maxSnippetLength_, false, encodingType_, result);
         break;
 
     case O_SNIPPET:
         snippetGenerator_->getSnippet(rawText, sentenceOffsets, queryTerms,
-                                     maxSnippetLength_, true, encodingType_, result);
+                                      maxSnippetLength_, true, encodingType_, result);
         break;
     }
     return true;
 }
 
 bool DocumentManager::getSummary(
-    const izenelib::util::UString& rawText,
-    const std::vector<CharacterOffset>& sentenceOffsets,
-    unsigned int numSentences,
-    const unsigned int option,
-    const std::vector<izenelib::util::UString>& queryTerms,
-    izenelib::util::UString& summary
-)
+        const izenelib::util::UString& rawText,
+        const std::vector<CharacterOffset>& sentenceOffsets,
+        unsigned int numSentences,
+        const unsigned int option,
+        const std::vector<izenelib::util::UString>& queryTerms,
+        izenelib::util::UString& summary)
 {
     uint32_t offsetIndex = 1;
     uint32_t summaryCount = 0;
@@ -699,8 +709,7 @@ bool DocumentManager::getSummary(
     if (numSentences > sentenceOffsets[indexedSummaryCount])
         numSentences = sentenceOffsets[indexedSummaryCount];
 
-    while ( ( (offsetIndex + 1) < ((sentenceOffsets[indexedSummaryCount]*2)+1) )
-            && (summaryCount < numSentences))
+    while (offsetIndex < sentenceOffsets[indexedSummaryCount] * 2 && summaryCount < numSentences)
     {
         uint32_t length = sentenceOffsets[offsetIndex + 1]
                           - sentenceOffsets[offsetIndex];
@@ -742,16 +751,86 @@ unsigned int DocumentManager::getDisplayLength_(const string& propertyName)
 }
 
 bool DocumentManager::highlightText(
-    const izenelib::util::UString& text,
-    const std::vector<izenelib::util::UString> queryTerms,
-    izenelib::util::UString& outText
-)
+        const izenelib::util::UString& text,
+        const std::vector<izenelib::util::UString> queryTerms,
+        izenelib::util::UString& outText)
 {
     izenelib::util::UString highlightedText;
     highlighter_->getHighlightedText(text, queryTerms, encodingType_,
                                     highlightedText);
     outText.swap(highlightedText);
     return true;
+}
+
+boost::shared_ptr<NumericPropertyTableBase>& DocumentManager::getNumericPropertyTable(const std::string& propertyName)
+{
+    static boost::shared_ptr<NumericPropertyTableBase> emptyNumericPropertyTable;
+    NumericPropertyTableMap::iterator it = numericPropertyTables_.find(propertyName);
+    if (it != numericPropertyTables_.end())
+        return it->second;
+    else
+        return emptyNumericPropertyTable;
+}
+
+void DocumentManager::initNumericPropertyTable_(
+        const std::string& propertyName,
+        PropertyDataType propertyType,
+        bool isRange)
+{
+    if (numericPropertyTables_.find(propertyName) != numericPropertyTables_.end())
+        return;
+
+    boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = numericPropertyTables_[propertyName];
+    switch (propertyType)
+    {
+    case INT32_PROPERTY_TYPE:
+        if (isRange)
+            numericPropertyTable.reset(new NumericRangePropertyTable<int32_t>(propertyType));
+        else
+            numericPropertyTable.reset(new NumericPropertyTable<int32_t>(propertyType));
+        break;
+
+    case FLOAT_PROPERTY_TYPE:
+        if (isRange)
+            numericPropertyTable.reset(new NumericRangePropertyTable<float>(propertyType));
+        else
+            numericPropertyTable.reset(new NumericPropertyTable<float>(propertyType));
+        break;
+
+    case INT64_PROPERTY_TYPE:
+    case DATETIME_PROPERTY_TYPE:
+        if (isRange)
+            numericPropertyTable.reset(new NumericRangePropertyTable<int64_t>(propertyType));
+        else
+            numericPropertyTable.reset(new NumericPropertyTable<int64_t>(propertyType));
+        break;
+
+    case DOUBLE_PROPERTY_TYPE:
+        if (isRange)
+            numericPropertyTable.reset(new NumericRangePropertyTable<double>(propertyType));
+        else
+            numericPropertyTable.reset(new NumericPropertyTable<double>(propertyType));
+        break;
+
+    default:
+        numericPropertyTables_.erase(propertyName);
+        return;
+    }
+    numericPropertyTable->init(path_ + propertyName + ".rtype_data");
+}
+
+void DocumentManager::moveRTypeValues(docid_t oldId, docid_t newId)
+{
+    for (NumericPropertyTableMap::iterator it = numericPropertyTables_.begin();
+            it != numericPropertyTables_.end(); ++it)
+    {
+        it->second->copyValue(oldId, newId);
+    }
+}
+
+DocumentManager::NumericPropertyTableMap& DocumentManager::getNumericPropertyTableMap()
+{
+    return numericPropertyTables_;
 }
 
 }

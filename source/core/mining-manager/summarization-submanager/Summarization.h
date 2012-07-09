@@ -12,7 +12,7 @@ namespace sf1r
 /// a list of summarization properties.
 class Summarization
 {
-    typedef std::map<std::string, std::vector<std::pair<double, UString> > > property_named_map;
+    typedef std::map<std::string, std::vector<std::pair<double, izenelib::util::UString> > > property_named_map;
     typedef izenelib::am::EWAHBoolArray<uint32_t> fingerprint_type;
 
 public:
@@ -52,14 +52,14 @@ public:
         fingerPrint_.set(pos);
     }
 
-    std::vector<std::pair<double, UString> >& property(const std::string& propertyName)
+    std::vector<std::pair<double, izenelib::util::UString> >& property(const std::string& propertyName)
     {
         return propertyList_[propertyName];
     }
 
-    const std::vector<std::pair<double, UString> >& property(const std::string& propertyName) const
+    const std::vector<std::pair<double, izenelib::util::UString> >& property(const std::string& propertyName) const
     {
-        static std::vector<std::pair<double, UString> > empty_property;
+        static std::vector<std::pair<double, izenelib::util::UString> > empty_property;
 
         property_const_iterator found = findProperty(propertyName);
         if (found != propertyEnd())
@@ -73,7 +73,7 @@ public:
     /// Insert a new property into the document.
     /// @return \c true if successful, \c false if already existed
     bool insertProperty(const std::string& propertyName,
-                        const std::vector<std::pair<double, UString> >& propertyValue)
+                        const std::vector<std::pair<double, izenelib::util::UString> >& propertyValue)
     {
         return propertyList_.insert(
                    std::make_pair(propertyName, propertyValue)
@@ -82,7 +82,7 @@ public:
 
     /// Set a new value to a property of the document.
     void updateProperty(const std::string& propertyName,
-                        std::vector<std::pair<double, UString> > propertyValue)
+                        std::vector<std::pair<double, izenelib::util::UString> > propertyValue)
     {
         propertyList_[propertyName].swap(propertyValue);
     }

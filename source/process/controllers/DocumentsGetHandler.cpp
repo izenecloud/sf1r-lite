@@ -31,16 +31,15 @@ using driver::Keys;
 const std::size_t DocumentsGetHandler::kMaxSimilarDocumentCount = 200;
 
 DocumentsGetHandler::DocumentsGetHandler(
-    ::izenelib::driver::Request& request,
-    ::izenelib::driver::Response& response,
-    const CollectionHandler& collectionHandler
-)
-        : request_(request),
-        response_(response),
-        indexSearchService_(collectionHandler.indexSearchService_),
-        miningSearchService_(collectionHandler.miningSearchService_),
-        indexSchema_(collectionHandler.indexSchema_),
-        actionItem_()
+        ::izenelib::driver::Request& request,
+        ::izenelib::driver::Response& response,
+        const CollectionHandler& collectionHandler)
+    : request_(request)
+    , response_(response)
+    , indexSearchService_(collectionHandler.indexSearchService_)
+    , miningSearchService_(collectionHandler.miningSearchService_)
+    , indexSchema_(collectionHandler.indexSchema_)
+    , actionItem_()
 {
     actionItem_.env_.encodingType_ = "UTF-8";
     actionItem_.env_.ipAddress_ = request.header()[Keys::remote_ip].getString();
@@ -130,10 +129,8 @@ void DocumentsGetHandler::duplicate_with()
             end = duplicateDocuments.size();
         }
 
-        for (std::size_t i = offset_; i < end; ++i)
-        {
-            actionItem_.idList_.push_back(duplicateDocuments[i]);
-        }
+        std::vector<docid_t>::const_iterator iterBegin = duplicateDocuments.begin();
+        actionItem_.idList_.insert(actionItem_.idList_.end(), iterBegin + offset_, iterBegin + end);
 
         doGet();
         response_[Keys::total_count] = duplicateDocuments.size();
@@ -179,10 +176,8 @@ void DocumentsGetHandler::similar_to_image()
             end = similarDocuments.docIdList_.size();
         }
 
-        for (std::size_t i = offset_; i < end; ++i)
-        {
-            actionItem_.idList_.push_back(similarDocuments.docIdList_[i]);
-        }
+        std::vector<docid_t>::const_iterator iterBegin = similarDocuments.docIdList_.begin();
+        actionItem_.idList_.insert(actionItem_.idList_.end(), iterBegin + offset_, iterBegin + end);
 
         doGet();
 
@@ -408,10 +403,10 @@ bool DocumentsGetHandler::doGet()
 
     DocumentsRenderer renderer;
     renderer.renderDocuments(
-        actionItem_.displayPropertyList_,
-        result,
-        response_[Keys::resources]
-    );
+            actionItem_.displayPropertyList_,
+            result,
+            response_[Keys::resources]);
+
     return true;
 }
 

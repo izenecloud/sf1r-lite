@@ -62,10 +62,10 @@
           <!-- In unigram searching mode (unigramsearchmode="y"), searching performs on unigram terms, while ranking performs on word segments.
                Make sure unigram terms have been indexed for Property (LA for Indexing is "la_sia_with_unigram"), or search(retrieve) may fail.
           -->
-          <Sia triggerqa="n" enable_parallel_searching="n" doccachenum="20000" searchcachenum="1000" 
-               filtercachenum="1000" mastersearchcachenum="1000" topknum="4000" knntopknum="30" knndist="32" 
-               sortcacheupdateinterval="1800" encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="n" 
-               unigramsearchmode="n" multilanggranularity="field" />
+          <Sia triggerqa="n" enable_parallel_searching="n" doccachenum="20000" searchcachenum="1000"
+               filtercachenum="1000" mastersearchcachenum="1000" topknum="4000" knntopknum="30" knndist="32"
+               sortcacheupdateinterval="1800" encoding="UTF-8" wildcardtype="unigram" indexunigramproperty="n"
+               unigramsearchmode="n" multilanggranularity="field"/>
 
 
           <LanguageIdentifier dbpath="@ilplib_LANGUAGEIDENTIFIER_DB@"/>
@@ -92,7 +92,7 @@
           <!-- Specify multiple index directory to support backup and directory rotating -->
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
           <TaxonomyPara topdocnum="100" levels="3" perlevelnum="8" candlabelnum="250" enablenec="n" maxpeopnum="20" maxlocnum="20" maxorgnum="20"/>
-          <RecommendPara recommendnum="9" cron="0 2 * * *" />
+          <RecommendPara recommendnum="9" cron="0 2 * * *"/>
           <SimilarityPara docnumlimit="100" termnumlimit="400000" enableesa="n"/>
           <ClassificationPara customizetraining="n" trainingencoding="UTF-8"/>
           <!-- index mode for image search
@@ -201,7 +201,7 @@
         <!-- T5: minimum match without overlapped segments -->
         <settings mode="label" option="R+S-T5" specialchar="#" dictionarypath="@izenecma_KNOWLEDGE@"/>
       </Method>
-      <Method id="la_sia_without_overlap" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sa" />
+      <Method id="la_sia_without_overlap" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sa"/>
       <Method id="la_sia" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_sia"/>
       <Method id="la_sia_with_unigram" analysis="multilang" advoption="default,inner_la_korall_sia;en,inner_la_cnall_sa;cn,inner_la_cnall_ia"/>
 
@@ -238,23 +238,23 @@
         1) ids are started at 1
     -->
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
-                       workerport="18151" masterport="18131" datarecvport="18121" />
+                       workerport="18151" masterport="18131" datarecvport="18121"/>
 
     <DistributedTopology enable="n" type="search" nodenum="2">
       <CurrentSf1rNode nodeid="1" replicaid="1">
         <!--master names for B5M are www|stage|beta-->
         <MasterServer enable="y" name="undefined" shardnum="2">
           <!--for distributive collection, shardid is set to all as default-->
-          <Collection name="web" distributive="n" />
-          <Collection name="qa" distributive="n" />
-          <Collection name="b5mo" distributive="n" />
-          <Collection name="b5mc" distributive="n" />
-          <Collection name="b5mp" distributive="y" shardids="1,2" />
+          <Collection name="web" distributive="n"/>
+          <Collection name="qa" distributive="n"/>
+          <Collection name="b5mo" distributive="n"/>
+          <Collection name="b5mc" distributive="n"/>
+          <Collection name="b5mp" distributive="y" shardids="1,2"/>
         </MasterServer>
 
         <WorkerServer enable="y" shardid="1">
-          <Collection name="web" />
-          <Collection name="b5mp" />
+          <Collection name="web"/>
+          <Collection name="b5mp"/>
         </WorkerServer>
       </CurrentSf1rNode>
     </DistributedTopology>
@@ -262,20 +262,20 @@
     <DistributedTopology enable="n" type="recommend" nodenum="2">
       <CurrentSf1rNode nodeid="1" replicaid="1">
         <MasterServer enable="y" name="undefined" shardnum="1">
-          <Collection name="b5mo" distributive="n" />
-          <Collection name="b5mc" distributive="n" />
-          <Collection name="b5mp" distributive="y" />
+          <Collection name="b5mo" distributive="n"/>
+          <Collection name="b5mc" distributive="n"/>
+          <Collection name="b5mp" distributive="y"/>
         </MasterServer>
 
         <WorkerServer enable="y" shardid="1">
-          <Collection name="b5mp" />
+          <Collection name="b5mp"/>
         </WorkerServer>
       </CurrentSf1rNode>
     </DistributedTopology>
 
     <DistributedUtil>
-      <ZooKeeper disable="n" servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="2000" />
-      <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000" />
+      <ZooKeeper disable="n" servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="2000"/>
+      <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000"/>
     </DistributedUtil>
   </Deployment>
 

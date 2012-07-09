@@ -9,8 +9,8 @@ CustomRankDocumentIterator::CustomRankDocumentIterator(CustomRankScorer* customR
     : customRankScorer_(customRankScorer)
     , defaultScoreDocIterator_(NULL)
 {
-    boost::shared_ptr<EWAHBoolArray<uint32_t> > customDocIdSet(
-        new EWAHBoolArray<uint32_t>());
+    boost::shared_ptr<izenelib::am::EWAHBoolArray<uint32_t> > customDocIdSet(
+        new izenelib::am::EWAHBoolArray<uint32_t>());
 
     const CustomRankScorer::ScoreMap& scoreMap =
         customRankScorer_->getScoreMap();
@@ -21,7 +21,7 @@ CustomRankDocumentIterator::CustomRankDocumentIterator(CustomRankScorer* customR
         customDocIdSet->set(it->first);
     }
 
-    BitMapIterator* bitMapIter = new BitMapIterator(customDocIdSet);
+    izenelib::ir::indexmanager::BitMapIterator* bitMapIter = new izenelib::ir::indexmanager::BitMapIterator(customDocIdSet);
     FilterDocumentIterator* filterDocIter = new FilterDocumentIterator(bitMapIter);
 
     ORDocumentIterator::add(filterDocIter);
@@ -51,4 +51,3 @@ double CustomRankDocumentIterator::score(
 }
 
 } // namespace sf1r
-

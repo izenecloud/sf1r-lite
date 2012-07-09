@@ -11,7 +11,6 @@
 #include "DateStrParser.h"
 #include <configuration-manager/GroupConfig.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
-#include <search-manager/NumericPropertyTable.h>
 
 #include <limits>
 #include <boost/lexical_cast.hpp>
@@ -117,10 +116,9 @@ bool convertRangeLabel(const std::string& src, NumericRangeGroupLabel::NumericRa
 NS_FACETED_BEGIN
 
 GroupCounterLabelBuilder::GroupCounterLabelBuilder(
-    const std::vector<GroupConfig>& groupConfigs,
-    const GroupManager* groupManager,
-    NumericPropertyTableBuilder* numericTableBuilder
-)
+        const std::vector<GroupConfig>& groupConfigs,
+        const GroupManager* groupManager,
+        NumericPropertyTableBuilder* numericTableBuilder)
     : groupConfigs_(groupConfigs)
     , groupManager_(groupManager)
     , numericTableBuilder_(numericTableBuilder)
@@ -191,9 +189,9 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const GroupPropParam
         counter = createStringCounter_(prop, subCounter);
         break;
 
-    case INT_PROPERTY_TYPE:
-    case UNSIGNED_INT_PROPERTY_TYPE:
+    case INT32_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
+    case INT64_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
          counter = createNumericCounter_(prop, subCounter);
          break;
@@ -239,18 +237,18 @@ GroupCounter* GroupCounterLabelBuilder::createStringCounter_(const std::string& 
 GroupCounter* GroupCounterLabelBuilder::createNumericCounter_(const std::string& prop, GroupCounter* subCounter) const
 {
     GroupCounter* counter = NULL;
-    NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(prop);
+    boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = numericTableBuilder_->createPropertyTable(prop);
 
-    if (propertyTable)
+    if (numericPropertyTable)
     {
         if (subCounter)
         {
             SubGroupCounter subGroupCounter(subCounter);
-            counter = new NumericGroupCounter<SubGroupCounter>(propertyTable, subGroupCounter);
+            counter = new NumericGroupCounter<SubGroupCounter>(prop, numericPropertyTable.get(), subGroupCounter);
         }
         else
         {
-            counter = new NumericGroupCounter<>(propertyTable);
+            counter = new NumericGroupCounter<>(prop, numericPropertyTable.get());
         }
     }
     else
@@ -271,10 +269,10 @@ GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter_(const std::st
         return NULL;
     }
 
-    NumericPropertyTable *propertyTable = numericTableBuilder_->createPropertyTable(prop);
-    if (propertyTable)
+    boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = numericTableBuilder_->createPropertyTable(prop);
+    if (numericPropertyTable)
     {
-        return new NumericRangeGroupCounter(propertyTable);
+        return new NumericRangeGroupCounter(prop, numericPropertyTable.get());
     }
     return NULL;
 }
@@ -323,9 +321,9 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
         label = createStringLabel_(labelParam);
         break;
 
-    case INT_PROPERTY_TYPE:
-    case UNSIGNED_INT_PROPERTY_TYPE:
+    case INT32_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
+    case INT64_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
         label = createNumericRangeLabel_(labelParam);
         break;
@@ -383,8 +381,8 @@ GroupLabel* GroupCounterLabelBuilder::createNumericLabel_(const GroupParam::Grou
     const std::string& propName = labelParam.first;
     const GroupParam::GroupPathVec& paths = labelParam.second;
 
-    const NumericPropertyTable *propTable = numericTableBuilder_->createPropertyTable(propName);
-    if (!propTable)
+    const boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = numericTableBuilder_->createPropertyTable(propName);
+    if (!numericPropertyTable)
     {
         LOG(ERROR) << "failed in creating numeric table for property " << propName;
         return NULL;
@@ -403,13 +401,13 @@ GroupLabel* GroupCounterLabelBuilder::createNumericLabel_(const GroupParam::Grou
 
         const std::string& propValue = path.front();
         float value = 0;
-        if (! convertNumericLabel(propValue, value))
+        if (!convertNumericLabel(propValue, value))
             return NULL;
 
         targetValues.push_back(value);
     }
 
-    return new NumericRangeGroupLabel(propTable, targetValues);
+    return new NumericRangeGroupLabel(numericPropertyTable.get(), targetValues);
 }
 
 GroupLabel* GroupCounterLabelBuilder::createRangeLabel_(const GroupParam::GroupLabelParam& labelParam) const
@@ -417,8 +415,8 @@ GroupLabel* GroupCounterLabelBuilder::createRangeLabel_(const GroupParam::GroupL
     const std::string& propName = labelParam.first;
     const GroupParam::GroupPathVec& paths = labelParam.second;
 
-    const NumericPropertyTable *propTable = numericTableBuilder_->createPropertyTable(propName);
-    if (!propTable)
+    const boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = numericTableBuilder_->createPropertyTable(propName);
+    if (!numericPropertyTable)
     {
         LOG(ERROR) << "failed in creating numeric table for property " << propName;
         return NULL;
@@ -426,7 +424,7 @@ GroupLabel* GroupCounterLabelBuilder::createRangeLabel_(const GroupParam::GroupL
 
     NumericRangeGroupLabel::NumericRangeVec ranges;
     for (GroupParam::GroupPathVec::const_iterator pathIt = paths.begin();
-        pathIt != paths.end(); ++pathIt)
+            pathIt != paths.end(); ++pathIt)
     {
         const GroupParam::GroupPath& path = *pathIt;
         if (path.empty())
@@ -437,13 +435,13 @@ GroupLabel* GroupCounterLabelBuilder::createRangeLabel_(const GroupParam::GroupL
 
         const std::string& propValue = path.front();
         NumericRangeGroupLabel::NumericRange range;
-        if (! convertRangeLabel(propValue, range))
+        if (!convertRangeLabel(propValue, range))
             return NULL;
 
         ranges.push_back(range);
     }
 
-    return new NumericRangeGroupLabel(propTable, ranges);
+    return new NumericRangeGroupLabel(numericPropertyTable.get(), ranges);
 }
 
 GroupLabel* GroupCounterLabelBuilder::createDateLabel_(const GroupParam::GroupLabelParam& labelParam) const

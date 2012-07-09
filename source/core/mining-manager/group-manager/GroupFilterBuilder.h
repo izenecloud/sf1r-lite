@@ -33,8 +33,7 @@ public:
         const std::vector<GroupConfig>& groupConfigs,
         const GroupManager* groupManager,
         const AttrManager* attrManager,
-        NumericPropertyTableBuilder* numericTableBuilder
-    );
+        NumericPropertyTableBuilder* numericTableBuilder);
 
     /**
      * create group filter instance.
@@ -54,4 +53,4 @@ private:
 
 NS_FACETED_END
 
-#endif 
+#endif

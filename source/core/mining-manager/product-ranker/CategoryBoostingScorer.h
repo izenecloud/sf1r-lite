@@ -28,16 +28,14 @@ class CategoryBoostingScorer : public ProductScorer
 {
 public:
     CategoryBoostingScorer(
-        const faceted::PropValueTable* categoryValueTable,
-        GroupLabelLogger* categoryClickLogger,
-        boost::shared_ptr<SearchManager> searchManager,
-        const std::string& boostingSubProp
-    );
+            const faceted::PropValueTable* categoryValueTable,
+            GroupLabelLogger* categoryClickLogger,
+            boost::shared_ptr<SearchManager> searchManager,
+            const std::string& boostingSubProp);
 
     virtual void pushScore(
-        const ProductRankingParam& param,
-        ProductScoreMatrix& scoreMatrix
-    );
+            const ProductRankingParam& param,
+            ProductScoreMatrix& scoreMatrix);
 
     void selectBoostingCategory(ProductRankingParam& param);
 
@@ -51,10 +49,9 @@ private:
     };
 
     void printBoostingLabel_(
-        const std::string& query,
-        category_id_t boostLabel,
-        BOOSTING_REASON reason
-    ) const;
+            const std::string& query,
+            category_id_t boostLabel,
+            BOOSTING_REASON reason) const;
 
     category_id_t getFirstSelectLabel_(const faceted::GroupParam& groupParam);
 

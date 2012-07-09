@@ -1,5 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
+#include <index-manager/IndexManager.h>
 #include <search-manager/AllDocumentIterator.h>
 
 using namespace sf1r;
@@ -14,12 +15,12 @@ BOOST_AUTO_TEST_CASE(alldociter_test)
     {
         boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
 
-        pFilterIdSet->set(1);        
-        pFilterIdSet->set(2);        
-        pFilterIdSet->set(3);        
-        pFilterIdSet->set(4);        
-        pFilterIdSet->set(5);        
-        pFilterIdSet->set(6);        
+        pFilterIdSet->set(1);
+        pFilterIdSet->set(2);
+        pFilterIdSet->set(3);
+        pFilterIdSet->set(4);
+        pFilterIdSet->set(5);
+        pFilterIdSet->set(6);
         pFilterIdSet->set(10);
         pFilterIdSet->set(20);
         pFilterIdSet->set(30);
@@ -69,12 +70,12 @@ BOOST_AUTO_TEST_CASE(alldociter_test)
     {
         boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
 
-        pFilterIdSet->set(1);        
-        pFilterIdSet->set(2);        
-        pFilterIdSet->set(3);        
-        pFilterIdSet->set(4);        
-        pFilterIdSet->set(5);        
-        pFilterIdSet->set(6);        
+        pFilterIdSet->set(1);
+        pFilterIdSet->set(2);
+        pFilterIdSet->set(3);
+        pFilterIdSet->set(4);
+        pFilterIdSet->set(5);
+        pFilterIdSet->set(6);
         pFilterIdSet->set(10);
         pFilterIdSet->set(20);
         pFilterIdSet->set(30);

@@ -39,8 +39,8 @@ std::string PropertyConfig::toString() const
     case sf1r::STRING_PROPERTY_TYPE:
         ss << "string_type";
         break;
-    case sf1r::INT_PROPERTY_TYPE:
-        ss << "int_type";
+    case sf1r::INT32_PROPERTY_TYPE:
+        ss << "int32_type";
         break;
     case sf1r::FLOAT_PROPERTY_TYPE:
         ss << "float_type";
@@ -50,6 +50,9 @@ std::string PropertyConfig::toString() const
         break;
     case sf1r::DATETIME_PROPERTY_TYPE:
         ss << "datetime_type";
+        break;
+    case sf1r::INT64_PROPERTY_TYPE:
+        ss << "int64_type";
         break;
     default:
         break;

@@ -24,10 +24,9 @@ NS_FACETED_BEGIN
 class AttrManager {
 public:
     AttrManager(
-        const AttrConfig& attrConfig,
-        const std::string& dirPath,
-        DocumentManager& documentManager
-    );
+            const AttrConfig& attrConfig,
+            const std::string& dirPath,
+            DocumentManager& documentManager);
 
     /**
      * @brief Open the attribute property.
@@ -47,10 +46,7 @@ public:
     }
 
 private:
-    void buildDoc_(
-        docid_t docId,
-        const std::string& propName
-    );
+    void buildDoc_(docid_t docId, const std::string& propName);
 
 private:
     const AttrConfig& attrConfig_;

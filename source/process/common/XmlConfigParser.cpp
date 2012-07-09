@@ -505,7 +505,7 @@ void SF1Config::parseLanguageAnalyzer(const ticpp::Element * languageAnalyzer)
 #ifdef USE_IZENEJMA
                 || analysis == "japanese"
 #endif
-           )
+                )
         {
             Element * settings = NULL;
             // dictionary path set here can overwrite the global one set in <LanguageAnalyzer>
@@ -519,7 +519,7 @@ void SF1Config::parseLanguageAnalyzer(const ticpp::Element * languageAnalyzer)
                 getAttribute(settings, "specialchar", specialChar, false);
                 getAttribute(settings, "dictionarypath", dictionaryPath_inner, false);
 
-                if(!dictionaryPath_inner.empty())
+                if (!dictionaryPath_inner.empty())
                 {
                     laDictionaryPath_ = dictionaryPath_inner;
                 }
@@ -658,7 +658,7 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
     getAttribute(distributedCommon, "datarecvport", distributedCommonConfig_.dataRecvPort_);
     distributedCommonConfig_.baPort_ = brokerAgentConfig_.port_;
 
-    if (!net::distribute::Util::getLoalHostIp(distributedCommonConfig_.localHost_))
+    if (!net::distribute::Util::getLocalHostIp(distributedCommonConfig_.localHost_))
     {
         getAttribute(distributedCommon, "localhost", distributedCommonConfig_.localHost_);
         std::cout << "failed to detect local host ip, set by config: " << distributedCommonConfig_.localHost_ << std::endl;
@@ -751,10 +751,10 @@ void SF1Config::parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& s
                 if (getAttribute(collection_it.Get(), "shardids", shardids, false))
                 {
                     boost::char_separator<char> sep(", ");
-                    boost::tokenizer<char_separator<char> > tokens(shardids, sep);
+                    boost::tokenizer<boost::char_separator<char> > tokens(shardids, sep);
 
-                    boost::tokenizer<char_separator<char> >::iterator it;
-                    for(it = tokens.begin(); it != tokens.end(); ++it)
+                    boost::tokenizer<boost::char_separator<char> >::iterator it;
+                    for (it = tokens.begin(); it != tokens.end(); ++it)
                     {
                         shardid_t shardid;
                         try
@@ -768,7 +768,8 @@ void SF1Config::parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& s
                                 throw std::runtime_error(ss.str());
                             }
                         }
-                        catch (const std::exception& e) {
+                        catch (const std::exception& e)
+                        {
                             throw std::runtime_error(
                                     std::string("failed to parse shardids: ") + shardids + ", " + e.what());
                         }
@@ -1066,9 +1067,9 @@ void CollectionConfig::parseCollectionSchema(const ticpp::Element * documentSche
             {
                 dataType = STRING_PROPERTY_TYPE;
             }
-            else if (type == "int")
+            else if (type == "int32")
             {
-                dataType = INT_PROPERTY_TYPE;
+                dataType = INT32_PROPERTY_TYPE;
             }
             else if (type == "float")
             {
@@ -1077,6 +1078,14 @@ void CollectionConfig::parseCollectionSchema(const ticpp::Element * documentSche
             else if (type == "datetime")
             {
                 dataType = DATETIME_PROPERTY_TYPE;
+            }
+            else if (type == "int64")
+            {
+                dataType = INT64_PROPERTY_TYPE;
+            }
+            else if (type == "double")
+            {
+                dataType = DOUBLE_PROPERTY_TYPE;
             }
             else
             {
@@ -1121,9 +1130,10 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
     IndexBundleConfiguration& indexBundleConfig = *collectionMeta.indexBundleConfig_;
     std::string searchAnalyzer;
     params.GetString("Sia/searchanalyzer", searchAnalyzer);
-    if(!searchAnalyzer.empty())
+    if (!searchAnalyzer.empty())
     {
-        if ((sf1Config->laConfigIdNameMap_.find(searchAnalyzer)) == sf1Config->laConfigIdNameMap_.end()) {
+        if ((sf1Config->laConfigIdNameMap_.find(searchAnalyzer)) == sf1Config->laConfigIdNameMap_.end())
+        {
             throw XmlConfigParserException("Undefined analyzer configuration id, " + searchAnalyzer);
         }
 
@@ -1300,7 +1310,7 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
                 PropertyConfig tmp;
                 tmp.setName(subPropName);
                 IndexBundleSchema::const_iterator pit = indexSchema.find(tmp);
-                if(pit != indexSchema.end())
+                if (pit != indexSchema.end())
                 {
                     ///Ugly here, each property right now should have same analysisinfo
                     p.setAnalysisInfo(pit->getAnalysisInfo());
@@ -1337,13 +1347,13 @@ void CollectionConfig::parseIndexBundleSchema(const ticpp::Element * indexSchema
         if (! it->subProperties_.empty())
         {
             float weight = 0.0f;
-            for(unsigned i = 0; i < it->subProperties_.size(); ++i)
+            for (unsigned i = 0; i < it->subProperties_.size(); ++i)
             {
                 PropertyConfig p;
                 p.setName(it->subProperties_[i]);
 
                 IndexBundleSchema::const_iterator pit = indexSchema.find(p);
-                if((pit != indexSchema.end())&&(pit->getRankWeight() >= 0.0f))
+                if ((pit != indexSchema.end())&&(pit->getRankWeight() >= 0.0f))
                 {
                     weight += pit->getRankWeight();
                 }
@@ -1639,7 +1649,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             {
                 getAttribute(it.Get(), "name", property_name);
                 bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-                if (!gottype || property_type != INT_PROPERTY_TYPE)
+                if (!gottype || property_type != INT32_PROPERTY_TYPE)
                 {
                     throw XmlConfigParserException("ScoreProperty ["+property_name+"] used in Summarization is not int type.");
                 }
@@ -2114,7 +2124,8 @@ void CollectionConfig::parseIndexSchemaProperty(
 
         // if (collectionMeta.isUnigramWildcard())
         {
-            if ((SF1Config::get()->laConfigIdNameMap_.find("la_unigram")) == SF1Config::get()->laConfigIdNameMap_.end()) {
+            if ((SF1Config::get()->laConfigIdNameMap_.find("la_unigram")) == SF1Config::get()->laConfigIdNameMap_.end())
+            {
                 throw XmlConfigParserException("Undefined analyzer configuration id, \"la_unigram\"");
             }
 
@@ -2196,6 +2207,7 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
     string alias, analyzer, tokenizers;
     bool bFilter = false;
     bool bMultiValue = false;
+    bool bRange = false;
     bool bStoreDocLen = true;
     float rankWeight = 0.0f;
 
@@ -2205,6 +2217,7 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
     getAttribute(indexing, "analyzer", analyzer, false);
     getAttribute(indexing, "filter", bFilter, false);
     getAttribute(indexing, "multivalue", bMultiValue, false);
+    getAttribute(indexing, "range", bRange, false);
     getAttribute(indexing, "doclen", bStoreDocLen, false);
     getAttribute(indexing, "tokenizer", tokenizers, false);
     getAttribute_FloatType(indexing, "rankweight", rankWeight, false);
@@ -2280,6 +2293,7 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
 
     propertyConfig.setIsFilter(bFilter);
     propertyConfig.setIsMultiValue(bMultiValue);
+    propertyConfig.setIsRange(bRange);
     propertyConfig.setIsStoreDocLen(bStoreDocLen);
     propertyConfig.setAnalysisInfo(analysisInfo);
     propertyConfig.setRankWeight(rankWeight);

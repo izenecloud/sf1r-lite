@@ -9,6 +9,7 @@
 
 #include <common/type_defs.h>
 #include <common/SFLogger.h>
+#include <common/NumericPropertyTable.h>
 #include <query-manager/ActionItem.h>
 
 #include <ir/index_manager/index/Indexer.h>
@@ -39,11 +40,11 @@ struct PropertyValue2IndexPropertyType
     {
         throw std::runtime_error("Type not supported in PropertyType");
     }
-    void operator()(int64_t value)
+    void operator()(int32_t value)
     {
-        out_ = static_cast<int64_t>(value);
+        out_ = static_cast<int32_t>(value);
     }
-    void operator()(uint64_t value)
+    void operator()(int64_t value)
     {
         out_ = static_cast<int64_t>(value);
     }
@@ -74,7 +75,7 @@ private:
 template<typename T>
 struct NumericUtil
 {
-static T Low() {return (T)-0x7FFFFFFF;}
+static T Low() {return (T)-0x80000000;}
 static T High() {return (T)0x7FFFFFFF;}
 };
 
@@ -88,15 +89,15 @@ static unsigned int High() {return 0xFFFFFFFF;}
 template<>
 struct NumericUtil<uint64_t>
 {
-static uint64_t Low() {return 0;}
-static uint64_t High() {return 0xFFFFFFFFFFFFFFFF;}
+static uint64_t Low() {return 0LLU;}
+static uint64_t High() {return 0xFFFFFFFFFFFFFFFFLLU;}
 };
 
 template<>
 struct NumericUtil<int64_t>
 {
-static uint64_t Low() {return -0x7FFFFFFFFFFFFFFF;}
-static uint64_t High() {return 0x7FFFFFFFFFFFFFFF;}
+static uint64_t Low() {return -0x8000000000000000LL;}
+static uint64_t High() {return 0x7FFFFFFFFFFFFFFFLL;}
 };
 
 
@@ -113,28 +114,27 @@ public:
     ///load data for BTree index.
     ///@param data - the buffer provided by user
     template<typename T>
-    void loadPropertyDataForSorting(const string& property, T* &data, size_t&size)
+    bool loadPropertyDataForSorting(const string& property, PropertyDataType type, boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable)
     {
         BTreeIndexer<T>* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>(property);
-        size = getIndexReader()->maxDoc();
-        if(!size)
+        std::size_t size = getIndexReader()->maxDoc();
+        if (!size)
         {
-            data = NULL;
-            return;
+            return false;
         }
         size += 1;
+        if (!numericPropertyTable)
+            numericPropertyTable.reset(new NumericPropertyTable<T>(type));
+        numericPropertyTable->resize(size);
+
+        NumericPropertyTableBase::WriteLock lock(numericPropertyTable->mutex_);
+        T* data = (T *)numericPropertyTable->getValueList();
         T low = NumericUtil<T>::Low();
         T high = NumericUtil<T>::High();
-        data = new T[size]();
-        memset(data,0,size * sizeof(T));
-        if (pBTreeIndexer->getValueBetween(low,high,size,data) == 0)
-        {
-            delete[] data;
-            data = NULL;
-        }
+        return pBTreeIndexer->getValueBetween(low, high, size, data);
     }
 
-    void convertStringPropertyDataForSorting(const string& property, uint32_t* &data, size_t&size);
+    bool convertStringPropertyDataForSorting(const string& property, boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable);
 
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,

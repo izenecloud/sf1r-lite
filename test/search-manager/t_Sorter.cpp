@@ -7,6 +7,7 @@
 
 #include <search-manager/Sorter.h>
 #include <search-manager/HitQueue.h>
+#include <common/NumericPropertyTable.h>
 
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
@@ -29,18 +30,20 @@ public:
     ~MockIndexManager(){}
 
 public:
-    void loadPropertyDataForSorting(const string& property, uint64_t* &data, size_t& size)
+    void loadPropertyDataForSorting(const string& property, boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable)
     {
-        data = new uint64_t[MAXDOC];
-        size = MAXDOC;
-        if(property == "date")
+        if (!numericPropertyTable)
+            numericPropertyTable.reset(new NumericPropertyTable<int64_t>(INT64_PROPERTY_TYPE));
+        numericPropertyTable->resize(MAXDOC);
+        int64_t* data = (int64_t*)numericPropertyTable->getValueList();
+        if (property == "date")
         {
-            for(size_t i = 0; i < MAXDOC; ++i)
+            for (size_t i = 0; i < MAXDOC; ++i)
                 data[i] = i;
         }
         else
         {
-            for(size_t i = 0; i < MAXDOC; ++i)
+            for (size_t i = 0; i < MAXDOC; ++i)
                 data[i] = MAXDOC - i;
         }
     }
@@ -53,16 +56,14 @@ BOOST_AUTO_TEST_SUITE( Sorter_suite )
 BOOST_AUTO_TEST_CASE(sorter1)
 {
     MockIndexManager indexManager;
-    uint64_t* data;
-    size_t size;
-    indexManager.loadPropertyDataForSorting("date", data, size);
+    boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable;
+    indexManager.loadPropertyDataForSorting("date", numericPropertyTable);
 
-    boost::shared_ptr<PropertyData> propDate(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data, size));
     SortPropertyComparator* pComparator =
-        new SortPropertyComparator(propDate);
+        new SortPropertyComparator(numericPropertyTable);
 
     boost::shared_ptr<Sorter> pSorter(new Sorter(NULL));
-    SortProperty* pSortProperty = new SortProperty("date", UNSIGNED_INT_PROPERTY_TYPE, pComparator, SortProperty::AUTO, false);
+    SortProperty* pSortProperty = new SortProperty("date", INT64_PROPERTY_TYPE, pComparator, SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty);
     PropertySortedHitQueue* scoreItemQueue = new PropertySortedHitQueue(pSorter, MAXDOC);
     //ScoreSortedHitQueue* scoreItemQueue = new ScoreSortedHitQueue(MAXDOC);
@@ -84,25 +85,22 @@ BOOST_AUTO_TEST_CASE(sorter1)
 BOOST_AUTO_TEST_CASE(sorter2)
 {
     MockIndexManager indexManager;
-    uint64_t* data1;
-    size_t size;
-    indexManager.loadPropertyDataForSorting("date", data1, size);
+    boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable1;
+    indexManager.loadPropertyDataForSorting("date", numericPropertyTable1);
 
-    boost::shared_ptr<PropertyData> propDate1(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data1, size));
-    SortPropertyComparator* pComparator1 = 
-        new SortPropertyComparator(propDate1);
+    SortPropertyComparator* pComparator1 =
+        new SortPropertyComparator(numericPropertyTable1);
 
-    uint64_t* data2;
-    indexManager.loadPropertyDataForSorting("count", data2, size);
+    boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable2;
+    indexManager.loadPropertyDataForSorting("count", numericPropertyTable2);
 
-    boost::shared_ptr<PropertyData> propDate2(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data2, size));
-    SortPropertyComparator* pComparator2 = 
-        new SortPropertyComparator(propDate2);
+    SortPropertyComparator* pComparator2 =
+        new SortPropertyComparator(numericPropertyTable2);
 
     boost::shared_ptr<Sorter> pSorter(new Sorter(NULL));
-    SortProperty* pSortProperty1 = new SortProperty("date", UNSIGNED_INT_PROPERTY_TYPE,pComparator1, SortProperty::AUTO, false);
+    SortProperty* pSortProperty1 = new SortProperty("date", INT64_PROPERTY_TYPE,pComparator1, SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty1);
-    SortProperty* pSortProperty2 = new SortProperty("count", UNSIGNED_INT_PROPERTY_TYPE,pComparator2,SortProperty::AUTO, false);
+    SortProperty* pSortProperty2 = new SortProperty("count", INT64_PROPERTY_TYPE,pComparator2,SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty2);
     PropertySortedHitQueue* scoreItemQueue = new PropertySortedHitQueue(pSorter, MAXDOC);
 
@@ -124,25 +122,22 @@ BOOST_AUTO_TEST_CASE(sorter2)
 BOOST_AUTO_TEST_CASE(sorter3)
 {
     MockIndexManager indexManager;
-    uint64_t* data1;
-    size_t size;
-    indexManager.loadPropertyDataForSorting("date", data1, size);
+    boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable1;
+    indexManager.loadPropertyDataForSorting("date", numericPropertyTable1);
 
-    boost::shared_ptr<PropertyData> propDate1(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data1, size));
     SortPropertyComparator* pComparator1 =
-        new SortPropertyComparator(propDate1);
+        new SortPropertyComparator(numericPropertyTable1);
 
-    uint64_t* data2;
-    indexManager.loadPropertyDataForSorting("count", data2, size);
+    boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable2;
+    indexManager.loadPropertyDataForSorting("count", numericPropertyTable2);
 
-    boost::shared_ptr<PropertyData> propDate2(new PropertyData(UNSIGNED_INT_PROPERTY_TYPE, data2, size));
-    SortPropertyComparator* pComparator2 = 
-        new SortPropertyComparator(propDate2);
+    SortPropertyComparator* pComparator2 =
+        new SortPropertyComparator(numericPropertyTable2);
 
     boost::shared_ptr<Sorter> pSorter(new Sorter(NULL));
-    SortProperty* pSortProperty2 = new SortProperty("count", UNSIGNED_INT_PROPERTY_TYPE,pComparator2,SortProperty::AUTO, false);
+    SortProperty* pSortProperty2 = new SortProperty("count", INT64_PROPERTY_TYPE,pComparator2,SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty2);
-    SortProperty* pSortProperty1 = new SortProperty("date", UNSIGNED_INT_PROPERTY_TYPE,pComparator1,SortProperty::AUTO, false);
+    SortProperty* pSortProperty1 = new SortProperty("date", INT64_PROPERTY_TYPE, pComparator1, SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty1);
     PropertySortedHitQueue* scoreItemQueue = new PropertySortedHitQueue(pSorter, MAXDOC);
 

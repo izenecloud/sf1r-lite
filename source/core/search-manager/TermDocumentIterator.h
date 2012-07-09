@@ -9,7 +9,6 @@
 
 #include "DocumentIterator.h"
 #include <common/TermTypeDetector.h>
-#include <index-manager/IndexManager.h>
 
 #include <ir/index_manager/index/AbsTermReader.h>
 #include <ir/index_manager/index/IndexReader.h>
@@ -21,7 +20,10 @@
 #include <vector>
 #include <string>
 
-namespace sf1r{
+namespace sf1r
+{
+
+class IndexManager;
 
 ///DocumentIterator for one term in one property
 class TermDocumentIterator: public DocumentIterator

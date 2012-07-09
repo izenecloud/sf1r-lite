@@ -3,6 +3,7 @@
 #include "../group-label-logger/GroupLabelLogger.h"
 #include <search-manager/SearchManager.h>
 #include <mining-manager/group-manager/GroupParam.h>
+#include <common/NumericPropertyTableBase.h>
 
 #include <glog/logging.h>
 #include <boost/scoped_ptr.hpp>
@@ -66,11 +67,10 @@ namespace sf1r
 {
 
 CategoryBoostingScorer::CategoryBoostingScorer(
-    const faceted::PropValueTable* categoryValueTable,
-    GroupLabelLogger* categoryClickLogger,
-    boost::shared_ptr<SearchManager> searchManager,
-    const std::string& boostingSubProp
-)
+        const faceted::PropValueTable* categoryValueTable,
+        GroupLabelLogger* categoryClickLogger,
+        boost::shared_ptr<SearchManager> searchManager,
+        const std::string& boostingSubProp)
     : ProductScorer("boost")
     , categoryValueTable_(categoryValueTable)
     , categoryClickLogger_(categoryClickLogger)
@@ -85,9 +85,8 @@ CategoryBoostingScorer::CategoryBoostingScorer(
 }
 
 void CategoryBoostingScorer::pushScore(
-    const ProductRankingParam& param,
-    ProductScoreMatrix& scoreMatrix
-)
+        const ProductRankingParam& param,
+        ProductScoreMatrix& scoreMatrix)
 {
     category_id_t boostingCategory = param.boostingCategoryId_;
     faceted::PropValueTable::ScopedReadLock lock(categoryValueTable_->getMutex());
@@ -132,10 +131,9 @@ void CategoryBoostingScorer::selectBoostingCategory(ProductRankingParam& param)
 }
 
 void CategoryBoostingScorer::printBoostingLabel_(
-    const std::string& query,
-    category_id_t boostLabel,
-    BOOSTING_REASON reason
-) const
+        const std::string& query,
+        category_id_t boostLabel,
+        BOOSTING_REASON reason) const
 {
     if (boostLabel == 0)
     {
@@ -198,14 +196,15 @@ category_id_t CategoryBoostingScorer::getFreqLabel_(const std::string& query)
 
 category_id_t CategoryBoostingScorer::getMaxAvgLabel_(const std::vector<docid_t>& docIds)
 {
-    boost::scoped_ptr<NumericPropertyTable> subPropTable;
-
-    if (searchManager_)
+    if (!searchManager_)
     {
-        subPropTable.reset(searchManager_->createPropertyTable(boostingSubProp_));
+        LOG(WARNING) << "no NumericPropertyTable is created for property [" << boostingSubProp_ << "]";
+        return 0;
     }
 
-    if (! subPropTable)
+    boost::shared_ptr<NumericPropertyTableBase>& subPropTable = searchManager_->createPropertyTable(boostingSubProp_);
+
+    if (!subPropTable)
     {
         LOG(WARNING) << "no NumericPropertyTable is created for property [" << boostingSubProp_ << "]";
         return 0;
@@ -220,7 +219,7 @@ category_id_t CategoryBoostingScorer::getMaxAvgLabel_(const std::vector<docid_t>
         docid_t docId = *it;
 
         double subPropValue = 0;
-        if (! subPropTable->convertPropertyValue(docId, subPropValue))
+        if (!subPropTable->getDoubleValue(docId, subPropValue))
             continue;
 
         faceted::PropValueTable::pvid_t pvId = categoryValueTable_->getRootValueId(docId);

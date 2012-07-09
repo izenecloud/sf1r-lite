@@ -115,5 +115,3 @@ void registerExceptionSignal(int signal)
 }
 
 } // namespace sf1r
-
-

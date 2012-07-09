@@ -198,8 +198,7 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     op_processor_ = new ScdOperationProcessor(config_->productId_, config_->collectionName_, scd_dir);
     if (config_->pm_config_.enable_price_trend)
     {
-        price_trend_ = new ProductPriceTrend(indexService->searchWorker_->documentManager_,
-                                             config_->cassandraConfig_,
+        price_trend_ = new ProductPriceTrend(config_->cassandraConfig_,
                                              dir,
                                              config_->pm_config_.group_property_names,
                                              config_->pm_config_.time_interval_days);
@@ -219,7 +218,12 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     {
         config_->pm_config_.enable_clustering_algo = false;
     }
-    boost::shared_ptr<ProductManager> product_manager(new ProductManager(work_dir, data_source_, op_processor_, price_trend_, config_->pm_config_));
+    boost::shared_ptr<ProductManager> product_manager(new ProductManager(work_dir,
+                                                                         indexService->searchWorker_->documentManager_,
+                                                                         data_source_,
+                                                                         op_processor_,
+                                                                         price_trend_,
+                                                                         config_->pm_config_));
     return product_manager;
 }
 

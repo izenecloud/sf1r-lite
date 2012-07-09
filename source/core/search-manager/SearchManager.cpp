@@ -72,7 +72,7 @@ SearchManager::SearchManager(
         preprocessor_->schemaMap_[iter->getName()] = *iter;
     }
 
-    pSorterCache_ = new SortPropertyCache(indexManagerPtr_.get(), config);
+    pSorterCache_ = new SortPropertyCache(documentManagerPtr_.get(), indexManagerPtr_.get(), config);
     queryBuilder_.reset(new QueryBuilder(
                             indexManager,
                             documentManager,
@@ -110,22 +110,13 @@ void SearchManager::setCustomRankManager(CustomRankManager* customRankManager)
     customRankManager_ = customRankManager;
 }
 
-void SearchManager::updateSortCache(
-        docid_t id,
-        const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
-{
-    pSorterCache_->updateSortData(id, rTypeFieldValue);
-}
-
 void SearchManager::reset_all_property_cache()
 {
-    pSorterCache_->setDirty(true);
-
     queryBuilder_->reset_cache();
+    pSorterCache_->setDirty(true);
 }
 
-void SearchManager::setGroupFilterBuilder(
-    faceted::GroupFilterBuilder* builder)
+void SearchManager::setGroupFilterBuilder(faceted::GroupFilterBuilder* builder)
 {
     groupFilterBuilder_.reset(builder);
 }
@@ -136,10 +127,9 @@ void SearchManager::setMiningManager(
     miningManagerPtr_ = miningManagerPtr;
 }
 
-NumericPropertyTable*
-SearchManager::createPropertyTable(const std::string& propertyName)
+boost::shared_ptr<NumericPropertyTableBase>& SearchManager::createPropertyTable(const std::string& propertyName)
 {
-   return preprocessor_->createPropertyTable(propertyName, pSorterCache_); 
+   return preprocessor_->createPropertyTable(propertyName, pSorterCache_);
 }
 
 bool SearchManager::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
@@ -209,7 +199,7 @@ bool SearchManager::search(
     if(!enable_parallel_searching || (maxDocId < PARALLEL_THRESHOLD) )
         thread_num = 1;
 
-    if (distSearchInfo.effective_ && 
+    if (distSearchInfo.effective_ &&
         (distSearchInfo.option_ == DistKeywordSearchInfo::OPTION_GATHER_INFO))
     {
         // gather distribute info do not need multi-threads.
@@ -233,21 +223,21 @@ bool SearchManager::search(
     {
         searchparams.resize(thread_num);
         // make each thread process 2 separated data will get the most efficient.
-        std::size_t  docid_num_byeachthread = maxDocId/thread_num;
-        for(size_t i = 0; i < thread_num; ++i)
+        std::size_t docid_num_byeachthread = maxDocId/thread_num;
+        for (size_t i = 0; i < thread_num; ++i)
         {
-            searchparams[i].actionOperation               =    &actionOperation;          
-            searchparams[i].totalCount_thread             =    0;                     
-            searchparams[i].start                         =    start;                     
-            searchparams[i].propertyRange                 =    propertyRange;                     
-            //searchparams[i].pSorter                       =    NULL;                     
+            searchparams[i].actionOperation               =    &actionOperation;
+            searchparams[i].totalCount_thread             =    0;
+            searchparams[i].start                         =    start;
+            searchparams[i].propertyRange                 =    propertyRange;
+            //searchparams[i].pSorter                       =    NULL;
             searchparams[i].scoreItemQueue                =    &scoreItemQueue[i];
             searchparams[i].distSearchInfo                =    &distSearchInfo;
             searchparams[i].heapSize                      =    heapSize;
             searchparams[i].docid_start                   =    i*docid_num_byeachthread;
-            searchparams[i].docid_num_byeachthread        =    docid_num_byeachthread;                       
-            searchparams[i].docid_nextstart_inc           =    docid_num_byeachthread*(thread_num - 1);                       
-            searchparams[i].running_node                  =    running_node;                       
+            searchparams[i].docid_num_byeachthread        =    docid_num_byeachthread;
+            searchparams[i].docid_nextstart_inc           =    docid_num_byeachthread*(thread_num - 1);
+            searchparams[i].running_node                  =    running_node;
         }
 
         if(!s_cpu_topology_info.cpu_topology_supported)
@@ -264,8 +254,8 @@ bool SearchManager::search(
             boost::detail::atomic_count finishedJobs(0);
             for(size_t i = 0; i < thread_num; ++i)
             {
-                threadpool_.schedule(boost::bind(&SearchManager::doSearchInThreadOneParam, 
-                                this, &searchparams[i], &finishedJobs));
+                threadpool_.schedule(boost::bind(&SearchManager::doSearchInThreadOneParam,
+                            this, &searchparams[i], &finishedJobs));
 
             }
             threadpool_.wait(finishedJobs, thread_num);
@@ -294,7 +284,7 @@ bool SearchManager::search(
                 return false;
             }
 
-            if (distSearchInfo.effective_ && 
+            if (distSearchInfo.effective_ &&
                 (distSearchInfo.option_ == DistKeywordSearchInfo::OPTION_GATHER_INFO))
             {
                 return true;
@@ -344,7 +334,7 @@ bool SearchManager::search(
     size_t count = start > 0 ? (finalResultQueue->size() - start) : finalResultQueue->size();
     docIdList.resize(count);
     rankScoreList.resize(count);
-    if (customRanker.get())
+    if (customRanker)
     {
         customRankScoreList.resize(count);
     }
@@ -358,7 +348,7 @@ bool SearchManager::search(
         const ScoreDoc& pScoreItem = finalResultQueue->pop();
         docIdList[count - i - 1] = pScoreItem.docId;
         rankScoreList[count - i - 1] = pScoreItem.score;
-        if (customRanker.get())
+        if (customRanker)
         {
             // should not be normalized
             customRankScoreList[count - i - 1] = pScoreItem.custom_score;
@@ -375,7 +365,7 @@ bool SearchManager::search(
                 groupRep.merge(searchparams[i].groupRep_thread);
                 all_attrReps.push_back(&searchparams[i].attrRep_thread);
             }
-            attrRep.merge(actionOperation.actionItem_.groupParam_.attrGroupNum_, 
+            attrRep.merge(actionOperation.actionItem_.groupParam_.attrGroupNum_,
                 all_attrReps);
         }
         if (distSearchInfo.effective_ && pSorter)
@@ -418,9 +408,9 @@ void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam,
 
     if(pParam)
     {
-        pParam->ret = doSearchInThread(*(pParam->actionOperation), 
+        pParam->ret = doSearchInThread(*(pParam->actionOperation),
             pParam->totalCount_thread, pParam->propertyRange, pParam->start,
-            pParam->pSorter, pParam->customRanker, pParam->groupRep_thread, pParam->attrRep_thread, 
+            pParam->pSorter, pParam->customRanker, pParam->groupRep_thread, pParam->attrRep_thread,
             *(pParam->scoreItemQueue), *(pParam->distSearchInfo), pParam->heapSize,
             pParam->docid_start, pParam->docid_num_byeachthread, pParam->docid_nextstart_inc, true);
     }
@@ -431,10 +421,9 @@ void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam,
     //std::cout << "==== In worker thread: " << (long)pthread_self() << "searching cost " << timespend << " seconds." << std::endl;
     //if(pParam->ret)
     //{
-    //    std::cout << "thread: " << (long)pthread_self() << " result: topK-" << 
+    //    std::cout << "thread: " << (long)pthread_self() << " result: topK-" <<
     //        (*(pParam->scoreItemQueue))->size() << ", total-"<< pParam->totalCount_thread << endl;
     //}
-
 }
 
 bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperation,
@@ -681,7 +670,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         if(is_parallel)
         {
             // Because the top info can not be decided until
-            // all threads' result merged, we need to get all the 
+            // all threads' result merged, we need to get all the
             // attribute info in each thread.
             gp.attrGroupNum_ = 0;
         }
@@ -758,14 +747,13 @@ CREATE_PROFILER( inserttoqueue, "SearchManager", "doSearch_: overall time for in
 CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall time for scoring customized score for a doc");
     totalCount = 0;
     const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
-    boost::scoped_ptr<NumericPropertyTable> rangePropertyTable;
+    boost::shared_ptr<NumericPropertyTableBase> rangePropertyTable;
     float lowValue = (std::numeric_limits<float>::max) ();
     float highValue = - lowValue;
 
     if (!rangePropertyName.empty())
     {
-        typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-        rangePropertyTable.reset(createPropertyTable(rangePropertyName));
+        rangePropertyTable = documentManagerPtr_->getNumericPropertyTable(rangePropertyName);
     }
     bool requireScorer = false;
     if ( pScoreDocIterator && pSorter )
@@ -787,17 +775,17 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         if (rangePropertyTable)
         {
             float docPropertyValue = 0;
-            if (rangePropertyTable->convertPropertyValue(curDocId, docPropertyValue))
+            if (rangePropertyTable->getFloatValue(curDocId, docPropertyValue))
             {
                 if (docPropertyValue < lowValue)
                 {
                     lowValue = docPropertyValue;
                 }
 
-               if (docPropertyValue > highValue)
-               {
+                if (docPropertyValue > highValue)
+                {
                     highValue = docPropertyValue;
-               }
+                }
             }
         }
 
@@ -812,7 +800,7 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         STOP_PROFILER( computerankscore )
 
         START_PROFILER( computecustomrankscore )
-        if (customRanker.get())
+        if (customRanker)
         {
             scoreItem.custom_score = customRanker->evaluate(scoreItem.docId);
         }
@@ -853,10 +841,7 @@ void SearchManager::fillSearchInfoWithSortPropertyData_(
         std::vector<unsigned int>& docIdList,
         DistKeywordSearchInfo& distSearchInfo)
 {
-    if (!pSorter)
-        return;
-    preprocessor_->fillSearchInfoWithSortPropertyData_(pSorter, docIdList, distSearchInfo,
-        pSorterCache_);
+    preprocessor_->fillSearchInfoWithSortPropertyData_(pSorter, docIdList, distSearchInfo, pSorterCache_);
 }
 
 DocumentIterator* SearchManager::combineCustomDocIterator_(

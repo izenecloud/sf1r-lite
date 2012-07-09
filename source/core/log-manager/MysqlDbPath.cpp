@@ -69,7 +69,7 @@ bool MysqlDbPath::createDatabase() const
 {
     MYSQL* mysql = mysql_init(NULL);
     if (!mysql)
-    {  
+    {
         LOG(ERROR) << "mysql_init failed";
         return false;
     }
