@@ -24,16 +24,16 @@ NS_FACETED_BEGIN
 class AttrManager {
 public:
     AttrManager(
-        DocumentManager* documentManager,
-        const std::string& dirPath
+        const AttrConfig& attrConfig,
+        const std::string& dirPath,
+        DocumentManager& documentManager
     );
 
     /**
-     * @brief Open the property which need group result for attribute value.
-     * @param attrConfig the property config
+     * @brief Open the attribute property.
      * @return true for success, false for failure
      */
-    bool open(const AttrConfig& attrConfig);
+    bool open();
 
     /**
      * @brief Build group index data for the whole collection.
@@ -53,8 +53,10 @@ private:
     );
 
 private:
-    sf1r::DocumentManager* documentManager_;
+    const AttrConfig& attrConfig_;
     std::string dirPath_;
+
+    sf1r::DocumentManager& documentManager_;
 
     AttrTable attrTable_;
 };

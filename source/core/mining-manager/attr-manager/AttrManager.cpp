@@ -10,21 +10,23 @@
 using namespace sf1r::faceted;
 
 AttrManager::AttrManager(
-    DocumentManager* documentManager,
-    const std::string& dirPath
+    const AttrConfig& attrConfig,
+    const std::string& dirPath,
+    DocumentManager& documentManager
 )
-: documentManager_(documentManager)
-, dirPath_(dirPath)
+    : attrConfig_(attrConfig)
+    , dirPath_(dirPath)
+    , documentManager_(documentManager)
 {
 }
 
-bool AttrManager::open(const AttrConfig& attrConfig)
+bool AttrManager::open()
 {
     LOG(INFO) << "Start loading attr directory: " << dirPath_;
 
-    if (!attrTable_.open(dirPath_, attrConfig.propName))
+    if (!attrTable_.open(dirPath_, attrConfig_.propName))
     {
-        LOG(ERROR) << "AttrTable::open() failed, property name: " << attrConfig.propName;
+        LOG(ERROR) << "AttrTable::open() failed, property name: " << attrConfig_.propName;
         return false;
     }
 
@@ -47,7 +49,7 @@ bool AttrManager::processCollection()
 
     const char* propName = attrTable_.propName();
     const docid_t startDocId = attrTable_.docIdNum();
-    const docid_t endDocId = documentManager_->getMaxDocId();
+    const docid_t endDocId = documentManager_.getMaxDocId();
     assert(startDocId && "id 0 should have been reserved in AttrTable constructor");
 
     if (startDocId > endDocId)
@@ -87,7 +89,7 @@ void AttrManager::buildDoc_(
     std::vector<AttrTable::vid_t> valueIdList;
     Document doc;
 
-    if (documentManager_->getDocument(docId, doc))
+    if (documentManager_.getDocument(docId, doc))
     {
         Document::property_iterator it = doc.findProperty(propName);
 
@@ -102,7 +104,12 @@ void AttrManager::buildDoc_(
                 for (std::vector<AttrPair>::const_iterator pairIt = attrPairs.begin();
                     pairIt != attrPairs.end(); ++pairIt)
                 {
-                    AttrTable::nid_t nameId = attrTable_.insertNameId(pairIt->first);
+                    const izenelib::util::UString& attrName = pairIt->first;
+
+                    if (attrConfig_.isExcludeAttrName(attrName))
+                        continue;
+
+                    AttrTable::nid_t nameId = attrTable_.insertNameId(attrName);
 
                     for (std::vector<izenelib::util::UString>::const_iterator valueIt = pairIt->second.begin();
                         valueIt != pairIt->second.end(); ++valueIt)

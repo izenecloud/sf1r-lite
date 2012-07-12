@@ -1738,15 +1738,15 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     if (task_node)
     {
         int propNum = 0;
-        Iterator<Element> it("Property");
-        for (it = it.begin(task_node); it != it.end(); ++it)
+        Iterator<Element> propIt("Property");
+        for (propIt = propIt.begin(task_node); propIt != propIt.end(); ++propIt)
         {
             if (++propNum > 1)
             {
                 throw XmlConfigParserException("in <Attr> Config, at most one <Property> is allowed.");
             }
 
-            getAttribute(it.Get(), "name", property_name);
+            getAttribute(propIt.Get(), "name", property_name);
             bool gottype = collectionMeta.getPropertyType(property_name, property_type);
             if (!gottype || property_type != STRING_PROPERTY_TYPE)
             {
@@ -1754,6 +1754,15 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
             mining_schema.attr_property.propName = property_name;
             mining_schema.attr_enable = true;
+        }
+
+        Iterator<Element> excludeIt("Exclude");
+        std::set<std::string>& excludeAttrNames = mining_schema.attr_property.excludeAttrNames;
+        for (excludeIt = excludeIt.begin(task_node); excludeIt != excludeIt.end(); ++excludeIt)
+        {
+            std::string attrName;
+            getAttribute(excludeIt.Get(), "name", attrName);
+            excludeAttrNames.insert(attrName);
         }
     }
 
