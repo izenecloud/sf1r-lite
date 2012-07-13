@@ -21,14 +21,15 @@ namespace sf1r {
 
         typedef boost::unordered_map<std::string, uint32_t> AidMap;
         typedef boost::unordered_map<std::string, uint32_t> AnidMap;
-        AttributeProcessor();
+        AttributeProcessor(const std::string& knowledge_dir);
         ~AttributeProcessor();
         bool LoadSynonym(const std::string& file);
-        bool Process(const std::string& knowledge_dir);
+        bool Process();
 
 
 
     private:
+        bool BuildAttributeId_();
         uint32_t GetNameId_(const UString& category, const UString& attrib_name);
         uint32_t GetAid_(const UString& category, const UString& attrib_name, const UString& attrib_value);
         inline std::string GetAttribRep_(const izenelib::util::UString& category, const izenelib::util::UString& attrib_name, const izenelib::util::UString& attrib_value)
@@ -40,7 +41,7 @@ namespace sf1r {
             result.append(izenelib::util::UString("|", izenelib::util::UString::UTF_8));
             result.append(attrib_value);
             std::string str;
-            result.covertString(str, UString::UTF_8);
+            result.convertString(str, UString::UTF_8);
             return str;
         }
 
@@ -52,7 +53,7 @@ namespace sf1r {
             result.append(izenelib::util::UString("|", izenelib::util::UString::UTF_8));
             result.append(attrib_name);
             std::string str;
-            result.covertString(str, UString::UTF_8);
+            result.convertString(str, UString::UTF_8);
             return str;
         }
 
