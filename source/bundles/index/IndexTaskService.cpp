@@ -1,5 +1,4 @@
 #include "IndexTaskService.h"
-#include "IndexBundleHelper.h"
 
 #include <common/JobScheduler.h>
 #include <aggregator-manager/IndexWorker.h>

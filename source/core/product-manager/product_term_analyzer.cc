@@ -23,6 +23,7 @@ ProductTermAnalyzer::ProductTermAnalyzer(const std::string& pcma_path)
     stop_set_.insert("在");
     stop_set_.insert("是");
     stop_set_.insert("和");
+    stop_set_.insert("与");
 }
 
 ProductTermAnalyzer::~ProductTermAnalyzer()
@@ -74,6 +75,7 @@ void ProductTermAnalyzer::Analyze(const izenelib::util::UString& title, std::vec
 #endif
 
 }
+
 
 double ProductTermAnalyzer::GetWeight_(uint32_t title_length, const izenelib::util::UString& term, char tag)
 {

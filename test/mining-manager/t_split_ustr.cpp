@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(split_group)
     }
 
     {
-        izenelib::util::UString src(",,,", ENCODING_TYPE);
+        izenelib::util::UString src(",,,;,;;,", ENCODING_TYPE);
         vector<vector<izenelib::util::UString> > groupPaths;
         split_group_path(src, groupPaths);
         BOOST_CHECK_EQUAL(groupPaths.size(), 0U);
@@ -87,6 +87,22 @@ BOOST_AUTO_TEST_CASE(split_group)
 
     {
         izenelib::util::UString src("a,b,c", ENCODING_TYPE);
+        vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(src, groupPaths);
+
+        vector<vector<string> > goldGroupPaths;
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("a");
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("b");
+        goldGroupPaths.push_back(vector<string>());
+        goldGroupPaths.back().push_back("c");
+
+        checkGroupPaths(groupPaths, goldGroupPaths);
+    }
+
+    {
+        izenelib::util::UString src("a;b;c", ENCODING_TYPE);
         vector<vector<izenelib::util::UString> > groupPaths;
         split_group_path(src, groupPaths);
 
@@ -120,7 +136,7 @@ BOOST_AUTO_TEST_CASE(split_group)
     }
 
     {
-        izenelib::util::UString src("创意生活,电脑办公>网络设备  ,手机数码> 手机通讯>手机,\"John, Mark\">\"1+1>2\">\"\"\"Mary\"\"\"   ,,,,,", ENCODING_TYPE);
+        izenelib::util::UString src("创意生活,电脑办公>网络设备  ,手机数码> 手机通讯>手机;\"John, Mark\">\"1+1>2\">\"\"\"Mary\"\"\"   ,,,,,", ENCODING_TYPE);
         vector<vector<izenelib::util::UString> > groupPaths;
         split_group_path(src, groupPaths);
 

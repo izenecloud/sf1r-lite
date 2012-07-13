@@ -5,7 +5,6 @@
 #include "GroupLabel.h"
 #include "GroupCounterLabelBuilder.h"
 #include "GroupRep.h"
-#include "PropSharedLockGetter.h"
 #include "../faceted-submanager/ontology_rep.h"
 #include "../attr-manager/AttrTable.h"
 #include "../attr-manager/AttrCounter.h"
@@ -66,7 +65,7 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
             {
                 groupCounterMap[propName] = counter;
                 groupCounters_.push_back(counter);
-                insertSharedLock_(counter);
+                counter->insertSharedLock(sharedLockSet_);
             }
             else
             {
@@ -95,7 +94,7 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
             }
 
             groupLabels_.push_back(label);
-            insertSharedLock_(label);
+            label->insertSharedLock(sharedLockSet_);
         }
         else
         {
@@ -112,7 +111,7 @@ bool GroupFilter::initAttr(const AttrTable& attrTable)
     if (groupParam_.isAttrGroup_)
     {
         attrCounter_ = new AttrCounter(attrTable);
-        insertSharedLock_(attrCounter_);
+        attrCounter_->insertSharedLock(sharedLockSet_);
     }
 
     const GroupParam::AttrLabelMap& labels = groupParam_.attrLabels_;
@@ -123,7 +122,7 @@ bool GroupFilter::initAttr(const AttrTable& attrTable)
             labelIt->first, labelIt->second);
 
         attrLabels_.push_back(label);
-        insertSharedLock_(label);
+        label->insertSharedLock(sharedLockSet_);
     }
 
     return true;
@@ -226,21 +225,11 @@ void GroupFilter::getGroupRep(
     LOG(INFO) << "GroupFilter::getGroupRep() costs " << timer.elapsed() << " seconds";
 }
 
-void GroupFilter::insertSharedLock_(PropSharedLockGetter* getter)
-{
-    const PropSharedLock* lock = getter->getSharedLock();
-
-    if (lock)
-    {
-        sharedLockSet_.insert(lock);
-    }
-}
-
 void GroupFilter::lockShared()
 {
     isSharedLocked_ = true;
 
-    for (SharedLockSet::const_iterator it = sharedLockSet_.begin();
+    for (PropSharedLockInserter::SharedLockSet::const_iterator it = sharedLockSet_.begin();
         it != sharedLockSet_.end(); ++it)
     {
         (*it)->lockShared();
@@ -252,7 +241,7 @@ void GroupFilter::unlockShared_()
     if (! isSharedLocked_)
         return;
 
-    for (SharedLockSet::const_iterator it = sharedLockSet_.begin();
+    for (PropSharedLockInserter::SharedLockSet::const_iterator it = sharedLockSet_.begin();
         it != sharedLockSet_.end(); ++it)
     {
         (*it)->unlockShared();

@@ -9,6 +9,7 @@
 #define SF1R_GROUP_MANAGER_H_
 
 #include "PropValueTable.h"
+#include "DateGroupTable.h"
 #include "../faceted-submanager/ontology_rep.h"
 #include <configuration-manager/GroupConfig.h>
 
@@ -22,10 +23,12 @@ class DocumentManager;
 }
 
 NS_FACETED_BEGIN
+class DateStrParser;
 
 class GroupManager {
 public:
-    typedef std::map<std::string, PropValueTable> PropValueMap;
+    typedef std::map<std::string, PropValueTable> StrPropMap;
+    typedef std::map<std::string, DateGroupTable> DatePropMap;
 
     GroupManager(
         DocumentManager* documentManager,
@@ -47,8 +50,8 @@ public:
 
     const PropValueTable* getPropValueTable(const std::string& propName) const
     {
-        PropValueMap::const_iterator it = propValueMap_.find(propName);
-        if (it != propValueMap_.end())
+        StrPropMap::const_iterator it = strPropMap_.find(propName);
+        if (it != strPropMap_.end())
         {
             return &(it->second);
         }
@@ -57,8 +60,28 @@ public:
 
     PropValueTable* getPropValueTable(const std::string& propName)
     {
-        PropValueMap::iterator it = propValueMap_.find(propName);
-        if (it != propValueMap_.end())
+        StrPropMap::iterator it = strPropMap_.find(propName);
+        if (it != strPropMap_.end())
+        {
+            return &(it->second);
+        }
+        return NULL;
+    }
+
+    const DateGroupTable* getDateGroupTable(const std::string& propName) const
+    {
+        DatePropMap::const_iterator it = datePropMap_.find(propName);
+        if (it != datePropMap_.end())
+        {
+            return &(it->second);
+        }
+        return NULL;
+    }
+
+    DateGroupTable* getDateGroupTable(const std::string& propName)
+    {
+        DatePropMap::iterator it = datePropMap_.find(propName);
+        if (it != datePropMap_.end())
         {
             return &(it->second);
         }
@@ -66,17 +89,30 @@ public:
     }
 
 private:
-    void buildDoc_(
+    bool createPropValueTable_(const std::string& propName);
+    bool createDateGroupTable_(const std::string& propName);
+
+    void buildStrPropForCollection_(PropValueTable& pvTable);
+    void buildStrPropForDoc_(
         docid_t docId,
         const std::string& propName,
         PropValueTable& pvTable
     );
 
+    void buildDatePropForCollection_(DateGroupTable& dateTable);
+    void buildDatePropForDoc_(
+        docid_t docId,
+        const std::string& propName,
+        DateGroupTable& dateTable
+    );
+
 private:
     sf1r::DocumentManager* documentManager_;
     std::string dirPath_;
+    DateStrParser& dateStrParser_;
 
-    PropValueMap propValueMap_;
+    StrPropMap strPropMap_;
+    DatePropMap datePropMap_;
 };
 
 NS_FACETED_END

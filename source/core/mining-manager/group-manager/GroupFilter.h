@@ -9,7 +9,7 @@
 #define SF1R_GROUP_FILTER_H
 
 #include "../faceted-submanager/faceted_types.h"
-#include <set>
+#include "PropSharedLockInserter.h"
 
 NS_FACETED_BEGIN
 
@@ -24,7 +24,6 @@ class GroupCounter;
 class AttrCounter;
 class GroupCounterLabelBuilder;
 class PropSharedLock;
-class PropSharedLockGetter;
 
 class GroupFilter
 {
@@ -66,7 +65,6 @@ public:
     );
 
 private:
-    void insertSharedLock_(PropSharedLockGetter* getter);
     void unlockShared_();
 
 private:
@@ -85,8 +83,7 @@ private:
     AttrCounter* attrCounter_;
 
     /** a set of shared locks */
-    typedef std::set<const PropSharedLock*> SharedLockSet;
-    SharedLockSet sharedLockSet_;
+    PropSharedLockInserter::SharedLockSet sharedLockSet_;
 
     /** whether @c lockShared() is called */
     bool isSharedLocked_;

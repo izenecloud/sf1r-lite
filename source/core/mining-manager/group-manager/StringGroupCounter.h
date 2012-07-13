@@ -31,7 +31,7 @@ public:
     virtual void addDoc(docid_t doc);
     virtual void getGroupRep(GroupRep& groupRep);
     virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const;
-    virtual const PropSharedLock* getSharedLock() { return &propValueTable_; }
+    virtual void insertSharedLock(SharedLockSet& lockSet) const;
 
 private:
     /**
@@ -228,6 +228,21 @@ void StringGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep&
             appendGroupRep(childMapTable, strRep, childId, level, it->first);
         }
     }
+}
+
+template<typename CounterType>
+void StringGroupCounter<CounterType>::insertSharedLock(SharedLockSet& lockSet) const
+{
+    lockSet.insert(&propValueTable_);
+}
+
+template<>
+void StringGroupCounter<SubGroupCounter>::insertSharedLock(SharedLockSet& lockSet) const
+{
+    lockSet.insert(&propValueTable_);
+
+    // insert lock for SubGroupCounter
+    countTable_[0].groupCounter_->insertSharedLock(lockSet);
 }
 
 NS_FACETED_END

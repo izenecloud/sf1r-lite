@@ -124,6 +124,7 @@ private:
     vector<unsigned int> docIdList_;
 
     string attrPath_;
+    AttrConfig attrConfig_;
     faceted::AttrManager* attrManager_;
 
 public:
@@ -157,10 +158,8 @@ public:
     {
         delete attrManager_;
 
-        attrManager_ = new faceted::AttrManager(documentManager_, attrPath_);
-        AttrConfig attrConfig;
-        attrConfig.propName = PROP_NAME_ATTR;
-        BOOST_CHECK(attrManager_->open(attrConfig));
+        attrManager_ = new faceted::AttrManager(attrConfig_, attrPath_, *documentManager_);
+        BOOST_CHECK(attrManager_->open());
     }
 
     void createDocument(int start, int end)
@@ -229,6 +228,8 @@ private:
         config3.propertyName_ = PROP_NAME_ATTR;
         config3.propertyType_ = STRING_PROPERTY_TYPE;
         schema_.insert(config3);
+
+        attrConfig_.propName = PROP_NAME_ATTR;
     }
 
     void checkCollection_()

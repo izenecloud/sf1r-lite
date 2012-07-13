@@ -11,6 +11,8 @@
 #include <mining-manager/util/split_ustr.h>
 #include <product-manager/product_term_analyzer.h>
 
+//#define TICKET_DEBUG
+
 using namespace sf1r;
 
 TicketMatcher::TicketMatcher()
@@ -35,7 +37,7 @@ bool TicketMatcher::Index(const std::string& scd_path, const std::string& knowle
     group_table.Load();
 
     DDType dd(dd_container, &group_table);
-    dd.SetFixK(3);
+    dd.SetFixK(6);
     if(!dd.Open())
     {
         std::cout<<"DD open failed"<<std::endl;
@@ -102,6 +104,13 @@ bool TicketMatcher::Index(const std::string& scd_path, const std::string& knowle
                 continue;
             }
             dd.InsertDoc(id, doc_vector, attach);
+#ifdef TICKET_DEBUG
+            LOG(INFO)<<"insert id "<<id<<std::endl;
+            for(uint32_t i=0;i<doc_vector.size();i++)
+            {
+                LOG(INFO)<<doc_vector[i].first<<","<<doc_vector[i].second<<std::endl;
+            }
+#endif
         }
     }
     dd.RunDdAnalysis();
