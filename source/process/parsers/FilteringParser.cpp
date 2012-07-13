@@ -32,7 +32,7 @@ bool FilteringParser::parse(const Value& conditions)
         QueryFiltering::FilteringType& filteringRule = filteringRules_[i];
 
         // validation
-        sf1r::PropertyDataType dataType;
+        sf1r::PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
 
         if (isPropertyFilterable(indexSchema_, condition.property()))
         {

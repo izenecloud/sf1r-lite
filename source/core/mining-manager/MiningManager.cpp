@@ -333,8 +333,8 @@ bool MiningManager::open()
             if (attrManager_) delete attrManager_;
             std::string attrPath = prefix_path + "/attr";
 
-            attrManager_ = new faceted::AttrManager(document_manager_.get(), attrPath);
-            if (! attrManager_->open(mining_schema_.attr_property))
+            attrManager_ = new faceted::AttrManager(mining_schema_.attr_property, attrPath, *document_manager_.get());
+            if (! attrManager_->open())
             {
                 std::cerr << "open ATTR failed" << std::endl;
                 return false;
