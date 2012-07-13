@@ -210,13 +210,17 @@ uint32_t AttributeProcessor::GetNameId_(const UString& category, const UString& 
 
 uint32_t AttributeProcessor::GetAid_(const UString& category, const UString& attrib_name, const UString& attrib_value)
 {
+    std::string sname;
+    attrib_name.convertString(sname, UString::UTF_8);
     std::string svalue;
     attrib_value.convertString(svalue, UString::UTF_8);
-    std::size_t index = svalue.find(' ');
-    if(index!=std::string::npos)
+    std::vector<std::string> value_vec;
+    boost::algorithm::split(value_vec, svalue, boost::algorithm::is_any_of(" "));
+    if(value_vec.size()>1 && sname!="型号")
     {
-        svalue = svalue.substr(0, index);
+        svalue = value_vec[0];
     }
+    boost::algorithm::replace_all(svalue, " ", "");
     std::vector<std::string> vec;
     boost::algorithm::split(vec, svalue, boost::algorithm::is_any_of("/"));
     std::vector<UString> values;
