@@ -42,6 +42,7 @@ namespace
 /** the directory for scd file backup */
 const char* SCD_BACKUP_DIR = "backup";
 const std::string DOCID("DOCID");
+const std::string NEW_DOCID("NEW_DOCID");
 const std::string DATE("DATE");
 const size_t UPDATE_BUFFER_CAPACITY = 10000;
 }
@@ -1239,6 +1240,13 @@ bool IndexWorker::prepareDocument_(
             std::string fieldValue;
             propertyValueU.convertString(fieldValue, encoding);
             uint128_t scdDocId = Utilities::md5ToUint128(fieldValue);
+            if(!idManager_->getNewestDocName(scdDocId))
+            {
+                LOG(ERROR) <<"get newest DOCID :" << fieldValue << " failed." << endl;
+                return false;
+            }
+            izenelib::util::UString newest_scdDocId_prop;
+            newest_scdDocId_prop.assign( Utilities::uint128ToMD5(scdDocId), encoding);
             // update
             if (!insert)
             {
@@ -1263,11 +1271,37 @@ bool IndexWorker::prepareDocument_(
             }
 
             document.setId(docId);
-            PropertyValue propData(propertyValueU);
+            PropertyValue propData(newest_scdDocId_prop);
             document.property(fieldStr).swap(propData);
 
             indexDocument.setOldId(oldId);
             indexDocument.setDocId(docId, collectionId_);
+        }
+        else if(boost::iequals(fieldStr, NEW_DOCID))
+        {
+            izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
+            std::string fieldValue;
+            propertyValueU.convertString(fieldValue, encoding);
+            if(docId != 0)
+            {
+                uint128_t new_scddocid = Utilities::md5ToUint128(fieldValue);
+                // associate the new doc name with the original docid.
+                std::string oldDocName;
+                doc[0].second.convertString(oldDocName, encoding);
+                uint128_t old_scddocid = Utilities::md5ToUint128(oldDocName);
+                if(!idManager_->changeDocName(docId, new_scddocid, old_scddocid))
+                {
+                    LOG(ERROR) <<"change to new DOCID :" << fieldValue << " failed." << endl;
+                    return false;
+                }
+                LOG(WARNING) <<"a new DOCID :" << fieldValue << " has pointed to the docid:"<< docId << endl;
+                PropertyValue propData(propertyValueU);
+                document.property(DOCID).swap(propData);
+            }
+            else
+            {
+                LOG(WARNING) <<"docid is invalid while changing DOCID to a new one." << fieldValue << endl;
+            }
         }
         else if (boost::iequals(fieldStr,DATE))
         {
@@ -1832,6 +1866,8 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
             continue;
         if(propertyValueU.empty())
             continue;
+        if(boost::iequals(fieldName, NEW_DOCID))
+            replace = true;
 
         PropertyConfig tempPropertyConfig;
         tempPropertyConfig.propertyName_ = fieldName;
