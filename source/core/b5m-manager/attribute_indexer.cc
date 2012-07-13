@@ -1558,33 +1558,33 @@ void AttributeIndexer::BuildProductDocuments_()
     }
 
     //do de-duplicate
-    {
-        std::vector<ProductDocument> product_list;
-        for(std::size_t i=0;i<product_list_.size();i++)
-        {
-            bool dd = false;
-            for(std::size_t j=0;j<product_list.size();j++)
-            {
-                if(product_list_[i].tag_aid_list == product_list[j].tag_aid_list)
-                {
-                    dd = true;
-                    UString ititle = product_list_[i].property["Title"];
-                    UString jtitle = product_list[j].property["Title"];
-                    if(ititle.length()>0 && ititle.length()<jtitle.length())
-                    {
-                        product_list[j].property["Title"] = ititle;
-                    }
-                    break;
-                }
-            }
-            if(!dd)
-            {
-                product_list.push_back(product_list_[i]);
-            }
-        }
-        product_list_.swap(product_list);
-        LOG(INFO)<<"After DD "<<product_list_.size()<<" docs"<<std::endl;
-    }
+    //{
+        //std::vector<ProductDocument> product_list;
+        //for(std::size_t i=0;i<product_list_.size();i++)
+        //{
+            //bool dd = false;
+            //for(std::size_t j=0;j<product_list.size();j++)
+            //{
+                //if(product_list_[i].tag_aid_list == product_list[j].tag_aid_list)
+                //{
+                    //dd = true;
+                    //UString ititle = product_list_[i].property["Title"];
+                    //UString jtitle = product_list[j].property["Title"];
+                    //if(ititle.length()>0 && ititle.length()<jtitle.length())
+                    //{
+                        //product_list[j].property["Title"] = ititle;
+                    //}
+                    //break;
+                //}
+            //}
+            //if(!dd)
+            //{
+                //product_list.push_back(product_list_[i]);
+            //}
+        //}
+        //product_list_.swap(product_list);
+        //LOG(INFO)<<"After DD "<<product_list_.size()<<" docs"<<std::endl;
+    //}
 
     for(std::size_t i=0;i<product_list_.size();i++)
     {
