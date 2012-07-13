@@ -96,6 +96,10 @@ bool TicketMatcher::Index(const std::string& scd_path, const std::string& knowle
             UString text = name;
             //text.append(UString(" ", UString::UTF_8));
             //text.append(address);
+            text.append(UString(" ", UString::UTF_8));
+            text.append(category);
+            text.append(UString(" ", UString::UTF_8));
+            text.append(city);
             std::vector<std::pair<std::string, double> > doc_vector;
             analyzer.Analyze(text, doc_vector);
 
