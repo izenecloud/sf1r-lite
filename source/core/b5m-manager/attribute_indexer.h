@@ -3,6 +3,7 @@
 #include "ngram_synonym.h"
 //#include "synonym_handler.h"
 #include "b5m_types.h"
+#include "attribute_id_manager.h"
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
@@ -18,9 +19,14 @@ namespace sf1r {
 
 
     public:
+        //typedef boost::unordered_map<std::string, uint32_t> AidMap;
+        //typedef boost::unordered_map<std::string, uint32_t> AnidMap;
 
-        typedef izenelib::ir::idmanager::DocIdManager<AttribRep, AttribId> AttribIDManager;
-        typedef izenelib::ir::idmanager::DocIdManager<AttribRep, AttribNameId> AttribNameIDManager;
+        //typedef izenelib::ir::idmanager::DocIdManager<AttribRep, AttribId> AttribIDManager;
+        //typedef izenelib::ir::idmanager::DocIdManager<AttribRep, AttribNameId> AttribNameIDManager;
+
+        typedef AttributeIdManager AttribIDManager;
+        typedef AttributeIdManager AttribNameIDManager;
 
         //typedef izenelib::ir::idmanager::_IDManager<AttribRep, AttribId,
                            //izenelib::util::NullLock,
@@ -34,17 +40,17 @@ namespace sf1r {
                            //izenelib::ir::idmanager::HDBIDStorage<AttribRep, AttribNameId> >  AttribNameIDManager;
         typedef izenelib::am::leveldb::Table<izenelib::util::UString, std::vector<AttribId> > AttribIndex;
         typedef izenelib::am::leveldb::Table<AttribId, AttribNameId > AttribNameIndex;
-        AttributeIndexer();
+        AttributeIndexer(const std::string& knowledge_dir);
         ~AttributeIndexer();
         bool LoadSynonym(const std::string& file);
-        bool Index(const std::string& scd_file, const std::string& knowledge_dir);
-        bool Open(const std::string& knowledge_dir);
+        bool Index();
+        bool Open();
         void GetAttribIdList(const izenelib::util::UString& value, std::vector<AttribId>& id_list);
         void GetAttribIdList(const izenelib::util::UString& category, const izenelib::util::UString& value, std::vector<AttribId>& id_list);
         bool GetAttribRep(const AttribId& aid, AttribRep& rep);
         bool GetAttribNameId(const AttribId& aid, AttribNameId& name_id);
         void GenClassiferInstance();
-        void ProductMatchingSVM(const std::string& scd_file);
+        void ProductMatchingSVM();
         void ProductMatchingLR(const std::string& scd_file);
 
         bool TrainSVM();
@@ -54,13 +60,8 @@ namespace sf1r {
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
 
-        void SetCategoryRegex(const std::string& str)
-        {
-            match_param_.SetCategoryRegex(str);
-        }
-
     private:
-        void ClearKnowledge_(const std::string& knowledge_dir);
+        void ClearKnowledge_();
         inline AttribRep GetAttribRep(const izenelib::util::UString& category, const izenelib::util::UString& attrib_name, const izenelib::util::UString& attrib_value)
         {
             AttribRep result;
@@ -106,7 +107,7 @@ namespace sf1r {
             return izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(av);
         }
 
-        void BuildProductDocuments_(const std::string& scd_file);
+        void BuildProductDocuments_();
 
         void NormalizeText_(const izenelib::util::UString& text, izenelib::util::UString& ntext);
         void Analyze_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
@@ -142,15 +143,12 @@ namespace sf1r {
         }
 
     private:
+        std::string knowledge_dir_;
+        bool is_open_;
         std::string cma_path_;
         std::vector<std::pair<boost::regex, std::string> > normalize_pattern_;
-        //boost::unordered_map<std::string, std::string> synonym_map_;
         NgramSynonym ngram_synonym_;
-        //SynonymHandler synonym_handler_;
-        bool is_open_;
         std::ofstream logger_;
-        MatchParameter match_param_;
-        std::string knowledge_dir_;
         AttribIndex* index_;
         AttribIDManager* id_manager_;
         AttribNameIndex* name_index_;
