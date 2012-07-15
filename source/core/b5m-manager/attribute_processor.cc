@@ -78,16 +78,16 @@ bool AttributeProcessor::BuildAttributeId_()
 {
     namespace bfs = boost::filesystem;
     std::string o_scd_dir = knowledge_dir_+"/T";
+    std::string t_scd_dir = knowledge_dir_+"/T/P";
+    boost::filesystem::remove_all(t_scd_dir);
+    boost::filesystem::create_directories(t_scd_dir);
     std::vector<std::string> o_scd_list;
     ScdParser::getScdList(o_scd_dir, o_scd_list);
     if(o_scd_list.empty())
     {
         std::cout<<"o scd empty"<<std::endl;
-        return false;
+        return true;
     }
-    std::string t_scd_dir = knowledge_dir_+"/T/P";
-    boost::filesystem::remove_all(t_scd_dir);
-    boost::filesystem::create_directories(t_scd_dir);
     ScdWriter writer(t_scd_dir, INSERT_SCD);
     for(uint32_t i=0;i<o_scd_list.size();i++)
     {
@@ -221,6 +221,29 @@ uint32_t AttributeProcessor::GetAid_(const UString& category, const UString& att
         svalue = value_vec[0];
     }
     boost::algorithm::replace_all(svalue, " ", "");
+    std::size_t kpos = svalue.find("(");
+    if(kpos!=std::string::npos)
+    {
+        svalue = svalue.substr(0, kpos);
+    }
+    kpos = svalue.find("（");
+    if(kpos!=std::string::npos)
+    {
+        svalue = svalue.substr(0, kpos);
+    }
+    if(true)
+    {
+        kpos = svalue.find("单机");
+        if(kpos!=std::string::npos)
+        {
+            svalue = svalue.substr(0, kpos);
+        }
+        kpos = svalue.find("套机");
+        if(kpos!=std::string::npos)
+        {
+            svalue = svalue.substr(0, kpos);
+        }
+    }
     std::vector<std::string> vec;
     boost::algorithm::split(vec, svalue, boost::algorithm::is_any_of("/"));
     std::vector<UString> values;
