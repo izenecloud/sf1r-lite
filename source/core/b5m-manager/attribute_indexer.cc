@@ -242,10 +242,10 @@ void AttributeIndexer::NormalizeText_(const izenelib::util::UString& text, izene
     text.convertString(str, izenelib::util::UString::UTF_8);
     //logger_<<"[BNO]"<<str<<std::endl;
     boost::to_lower(str);
-    for(uint32_t i=0;i<normalize_pattern_.size();i++)
-    {
-        str = boost::regex_replace(str, normalize_pattern_[i].first, normalize_pattern_[i].second);
-    }
+    //for(uint32_t i=0;i<normalize_pattern_.size();i++)
+    //{
+        //str = boost::regex_replace(str, normalize_pattern_[i].first, normalize_pattern_[i].second);
+    //}
     //logger_<<"[ANO]"<<str<<std::endl;
     ntext = izenelib::util::UString(str, izenelib::util::UString::UTF_8);
 }
@@ -878,6 +878,7 @@ void AttributeIndexer::ProductMatchingSVM()
         return;
     }
     std::string match_file = knowledge_dir_+"/match";
+    std::string not_match_file = knowledge_dir_+"/not_match";
     struct svm_model* model;
     std::string model_file = knowledge_dir_+"/model";
     if( (model=svm_load_model(model_file.c_str()))==0 )
@@ -888,6 +889,7 @@ void AttributeIndexer::ProductMatchingSVM()
     std::cout<<model_file<<" loaded!"<<std::endl;
     //std::ofstream match_ofs(match_file.c_str(), std::ios::out | std::ios::app);
     std::ofstream match_ofs(match_file.c_str());
+    std::ofstream not_match_ofs(not_match_file.c_str());
     boost::unordered_map<std::string, std::vector<std::size_t> > category_indexlist;
     boost::unordered_map<std::string, std::vector<std::size_t> >::iterator ci_it;
     BuildCategoryMap_(category_indexlist);
@@ -960,18 +962,11 @@ void AttributeIndexer::ProductMatchingSVM()
             category.convertString(scategory, izenelib::util::UString::UTF_8);
             std::string surl;
             url.convertString(surl, izenelib::util::UString::UTF_8);
-            //if(!inner_scd)
-            //{
-                //if( !match_param_.MatchCategory(scategory) )
-                //{
-                    //continue;
-                //}
-            //}
             ci_it = category_indexlist.find(scategory);
             if( ci_it==category_indexlist.end()) continue;
-            ProductPrice price;
-            price.Parse(odoc.property["Price"]);
-            if(!price.Valid()) continue;
+            //ProductPrice price;
+            //price.Parse(odoc.property["Price"]);
+            //if(!price.Valid()) continue;
 
             std::vector<std::size_t>& pindexlist = ci_it->second;
             std::vector<AttribId> aid_list;
@@ -981,8 +976,8 @@ void AttributeIndexer::ProductMatchingSVM()
             {
                 std::size_t pindex = pindexlist[p];
                 ProductDocument& product_doc = product_list_[pindex];
-                ProductPrice pprice;
-                pprice.Parse(product_doc.property["Price"]);
+                //ProductPrice pprice;
+                //pprice.Parse(product_doc.property["Price"]);
                 std::vector<std::pair<AttribNameId, double> > feature_vec;
                 FeatureStatus fs;
                 //GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, nzfc);
@@ -1028,11 +1023,11 @@ void AttributeIndexer::ProductMatchingSVM()
                 if(predict_label>0)
                 {
                     if(fs.pnum+fs.nnum<2) continue;
-                    double om, pm;
-                    if(!price.GetMid(om) || !pprice.GetMid(pm)) continue;
-                    if(om<=0.0 || pm<=0.0) continue;
-                    double ratio = om/pm;
-                    if(ratio<invert_price_ratio || ratio>price_ratio) continue;
+                    //double om, pm;
+                    //if(!price.GetMid(om) || !pprice.GetMid(pm)) continue;
+                    //if(om<=0.0 || pm<=0.0) continue;
+                    //double ratio = om/pm;
+                    //if(ratio<invert_price_ratio || ratio>price_ratio) continue;
                     double str_sim = StringSimilarity::Sim(title, product_doc.property["Title"]);
                     //double str_sim = ss_list[pindex]->Sim(title);
                     match_list.push_back(std::make_pair(pindex, str_sim));
@@ -1059,6 +1054,11 @@ void AttributeIndexer::ProductMatchingSVM()
                 boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
                 match_ofs<<soid<<","<<spid<<","<<boost::posix_time::to_iso_string(now)<<","<<stitle<<"\t["<<sptitle<<"]"<<std::endl;
             }
+            else
+            {
+                not_match_ofs<<soid<<","<<stitle<<std::endl;
+
+            }
             num_for_match++;
         }
     }
@@ -1068,6 +1068,7 @@ void AttributeIndexer::ProductMatchingSVM()
         //delete ss_list[i];
     //}
     match_ofs.close();
+    not_match_ofs.close();
     //std::ofstream ofs(done_file.c_str());
     //ofs<<product_list_.size()<<","<<num_for_match<<std::endl;
     //ofs.close();
@@ -1322,11 +1323,16 @@ void AttributeIndexer::BuildProductDocuments_()
     while(getline(anid_ofs, line))
     {
         boost::algorithm::trim(line);
-        std::vector<std::string> vec;
-        boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
-        std::string snav = vec[1];
+        std::size_t kpos = line.find(",");
+        uint32_t anid = 0;
+        std::string snav;
+        if(kpos!=std::string::npos)
+        {
+            std::string sanid = line.substr(0, kpos);
+            anid = boost::lexical_cast<uint32_t>(sanid);
+            snav = line.substr(kpos+1);
+        }
         UString nav(snav, UString::UTF_8);
-        uint32_t anid = boost::lexical_cast<uint32_t>(vec[0]);
         name_id_manager_->Set(nav, anid);
         //LOG(INFO)<<"name idmanager set "<<snav<<","<<anid<<std::endl;
         //anid_map_.insert(std::make_pair(vec[1], boost::lexical_cast<uint32_t>(vec[0])));
@@ -1336,13 +1342,20 @@ void AttributeIndexer::BuildProductDocuments_()
     while(getline(aid_ofs, line))
     {
         boost::algorithm::trim(line);
-        std::vector<std::string> vec;
-        boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
-        std::string snav = vec[1];
+        std::size_t kpos = line.find(",");
+        uint32_t aid = 0;
+        std::string snav;
+        if(kpos!=std::string::npos)
+        {
+            std::string said = line.substr(0, kpos);
+            aid = boost::lexical_cast<uint32_t>(said);
+            snav = line.substr(kpos+1);
+        }
+        else continue;
         UString nav(snav, UString::UTF_8);
-        uint32_t aid = boost::lexical_cast<uint32_t>(vec[0]);
         id_manager_->Set(nav, aid);
         UString category, attrib_name, attrib_value;
+        std::cout<<"snav : "<<snav<<std::endl;
         SplitAttribRep(nav, category, attrib_name, attrib_value);
         std::vector<AttribId> aid_list;
         index_->get(attrib_value, aid_list);

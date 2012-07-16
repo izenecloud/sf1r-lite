@@ -154,6 +154,10 @@ bool AttributeProcessor::BuildAttributeId_()
                 {
                     san = "型号";
                 }
+                if(boost::algorithm::ends_with(san, "品牌")&&!boost::algorithm::starts_with(san, "品牌"))
+                {
+                    san = "型号";
+                }
                 //LOG(INFO)<<"san after "<<san<<std::endl;
                 attrib_name = UString(san, UString::UTF_8);
                 if(attrib_value.length()==0 || attrib_value.length()>30) continue;

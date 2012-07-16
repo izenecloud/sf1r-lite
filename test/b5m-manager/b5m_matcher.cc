@@ -66,6 +66,7 @@ int main(int ac, char** av)
         ("name,N", po::value<std::string>(), "specify the name")
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
         ("test", "specify test flag")
+        ("force", "specify force flag")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -97,6 +98,7 @@ int main(int ac, char** av)
     std::string work_dir;
     std::string name;
     bool test_flag = false;
+    bool force_flag = false;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
     } 
@@ -203,6 +205,10 @@ int main(int ac, char** av)
     {
         test_flag = true;
     }
+    if(vm.count("force"))
+    {
+        force_flag = true;
+    }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
 
     if(vm.count("raw-generate"))
@@ -244,6 +250,10 @@ int main(int ac, char** av)
         if( knowledge_dir.empty() )
         {
             return EXIT_FAILURE;
+        }
+        if(force_flag)
+        {
+            boost::filesystem::remove_all(knowledge_dir+"/index.done");
         }
         AttributeIndexer indexer(knowledge_dir);
         indexer.SetCmaPath(cma_path);
