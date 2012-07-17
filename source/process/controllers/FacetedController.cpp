@@ -8,8 +8,15 @@
 #include <mining-manager/merchant-score-manager/MerchantScoreParser.h>
 #include <mining-manager/merchant-score-manager/MerchantScoreRenderer.h>
 #include <parsers/MerchantNameParser.h>
+#include <process/common/BundleSchemaHelpers.h>
 
 #include <boost/algorithm/string.hpp>
+
+namespace
+{
+const izenelib::util::UString::EncodingType ENCODING_TYPE =
+    izenelib::util::UString::UTF_8;
+}
 
 namespace sf1r
 {
@@ -604,4 +611,228 @@ void FacetedController::get_merchant_score()
     renderer.renderToValue(resourceValue);
 }
 
+/**
+ * @brief Action @b set_custom_rank. Customize the product ranking.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b resource* (@c Object): Specify the keywords and doc id list.
+ *   - @b keywords* (@c String): User query.
+ *   - @b docid_list* (@c Array): Each item is a DOCID @c String.@n
+ *   If it's non-empty, it gives top ranking to these DOCIDs for @b keywords;@n
+ *   otherwise, it clears the previous ranking customization for @b keywords.
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "resource": {
+ *     "keywords": "iphone",
+ *     "docid_list": ["1122", "3344", "5566"]
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true}
+ * }
+ * @endcode
+ */
+void FacetedController::set_custom_rank()
+{
+    std::string query;
+    std::vector<std::string> docIdList;
+
+    if (requireKeywords_(query) &&
+        requireDocIdList_(docIdList))
+    {
+        if (! miningSearchService_->setCustomRank(query, docIdList))
+        {
+            response().addError("Failed to set custom rank.");
+        }
+    }
 }
+
+/**
+ * @brief Action @b get_custom_rank. Get the customization of product ranking.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b resource* (@c Object): Specify the keywords and select properties.
+ *   - @b keywords* (@c String): User query.
+ *   - @b select (@c Array): Each element is a property name @c String, which property would be returned in response @b resources.@n
+ *   If it's empty, all property names configured in <DocumentSchema> would be returned.
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ * - @b resources (@c Array): Each element is a document @c Object, where property name is the key, and property value is the value.@n
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "resource": {
+ *     "keywords": "iphone",
+ *     "select": ["DOCID", "Title"]
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resources": [
+ *     { "DOCID": "1122", "Title": "iphone4S 手机"},
+ *     { "DOCID": "3344", "Title": "iphone4 手机"},
+ *     { "DOCID": "5566", "Title": "iphone3 手机"}
+ *   ]
+ * }
+ * @endcode
+ */
+void FacetedController::get_custom_rank()
+{
+    std::string query;
+    std::vector<std::string> propNameList;
+
+    if (requireKeywords_(query) &&
+        getPropNameList_(propNameList))
+    {
+        std::vector<Document> docList;
+
+        if (miningSearchService_->getCustomRank(query, docList))
+        {
+            renderCustomRank_(docList, propNameList);
+        }
+        else
+        {
+            response().addError("Failed to get custom rank.");
+        }
+    }
+}
+
+bool FacetedController::requireKeywords_(std::string& keywords)
+{
+    Value& input = request()[Keys::resource];
+
+    keywords = asString(input[Keys::keywords]);
+    if (keywords.empty())
+    {
+        response().addError("Require resource[keywords] as user query.");
+        return false;
+    }
+
+    return true;
+}
+
+bool FacetedController::requireDocIdList_(std::vector<std::string>& docIdList)
+{
+    Value& input = request()[Keys::resource];
+    Value& listValue = input[Keys::docid_list];
+
+    if (listValue.type() != Value::kArrayType)
+    {
+        response().addError("Require resource[docid_list] as an array of doc id.");
+        return false;
+    }
+
+    for (std::size_t i = 0; i < listValue.size(); ++i)
+    {
+        std::string docId = asString(listValue(i));
+        docIdList.push_back(docId);
+    }
+
+    return true;
+}
+
+bool FacetedController::getPropNameList_(std::vector<std::string>& propNameList)
+{
+    Value& input = request()[Keys::resource];
+    Value& selectValue = input[Keys::select];
+    const DocumentSchema& documentSchema = collectionHandler_->documentSchema_;
+
+    if (nullValue(selectValue))
+    {
+        getDocumentPropertyNames(documentSchema, propNameList);
+        return true;
+    }
+
+    if (selectValue.type() != Value::kArrayType)
+    {
+        response().addError("Require resource[select] as an array of property names.");
+        return false;
+    }
+
+    for (std::size_t i = 0; i < selectValue.size(); ++i)
+    {
+        std::string propName = asString(selectValue(i));
+
+        if (! isDocumentProperty(documentSchema, propName))
+        {
+            response().addError("Unknown property name \"" + propName + "\" in request[resource][select].");
+            return false;
+        }
+
+        propNameList.push_back(propName);
+    }
+
+    return true;
+}
+
+void FacetedController::renderCustomRank_(
+    const std::vector<Document>& docList,
+    const std::vector<std::string>& propNameList
+)
+{
+    Value& resources = response()[Keys::resources];
+
+    for (std::vector<Document>::const_iterator docIt = docList.begin();
+        docIt != docList.end(); ++docIt)
+    {
+        const Document& doc = *docIt;
+        Value& docValue = resources();
+
+        renderDoc_(doc, propNameList, docValue);
+    }
+}
+
+void FacetedController::renderDoc_(
+    const Document& doc,
+    const std::vector<std::string>& propNameList,
+    izenelib::driver::Value& docValue
+)
+{
+    std::string utf8;
+    Document::property_const_iterator endIt = doc.propertyEnd();
+
+    for (std::vector<std::string>::const_iterator propIt = propNameList.begin();
+        propIt != propNameList.end(); ++propIt)
+    {
+        const std::string& propName = *propIt;
+        Document::property_const_iterator findIt = doc.findProperty(propName);
+
+        if (findIt == endIt)
+            continue;
+
+        const izenelib::util::UString& ustr =
+            findIt->second.get<izenelib::util::UString>();
+        ustr.convertString(utf8, ENCODING_TYPE);
+
+        docValue[propName] = utf8;
+    }
+}
+
+} // namespace sf1r

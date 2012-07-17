@@ -8,6 +8,7 @@
 #include "Sf1Controller.h"
 
 #include <string>
+#include <vector>
 
 namespace sf1r
 {
@@ -43,12 +44,29 @@ public:
     void set_merchant_score();
     void get_merchant_score();
 
+    void set_custom_rank();
+    void get_custom_rank();
+
 protected:
     virtual bool checkCollectionService(std::string& error);
 
 private:
     bool requireCID_();
     bool requireSearchResult_();
+    bool requireKeywords_(std::string& keywords);
+    bool requireDocIdList_(std::vector<std::string>& docIdList);
+
+    bool getPropNameList_(std::vector<std::string>& propNameList);
+
+    void renderCustomRank_(
+        const std::vector<Document>& docList,
+        const std::vector<std::string>& propNameList
+    );
+    void renderDoc_(
+        const Document& doc,
+        const std::vector<std::string>& propNameList,
+        izenelib::driver::Value& docValue
+    );
 
     uint32_t cid_;
     std::vector<uint32_t> search_result_;

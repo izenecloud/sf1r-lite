@@ -88,6 +88,7 @@ class IndexManager;
 class SearchManager;
 class MultiDocSummarizationSubManager;
 class MerchantScoreManager;
+class CustomRankManager;
 class ProductRankerFactory;
 
 namespace sim
@@ -259,6 +260,16 @@ public:
      */
     bool setMerchantScore(const MerchantStrScoreMap& merchantScoreMap);
 
+    bool setCustomRank(
+        const std::string& query,
+        const std::vector<std::string>& docIdList
+    );
+
+    bool getCustomRank(
+        const std::string& query,
+        std::vector<Document>& docList
+    );
+
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
 
     bool GetTdtInTimeRange(const boost::gregorian::date& start, const boost::gregorian::date& end, std::vector<izenelib::util::UString>& topic_list);
@@ -412,6 +423,16 @@ private:
             const std::vector<std::string>& groupPath
     ) const;
 
+    bool convertDocIdList_(
+        const std::vector<std::string>& strList,
+        std::vector<docid_t>& idList
+    );
+
+    bool getDocList_(
+        const std::vector<docid_t>& docIdList,
+        std::vector<Document>& docList
+    );
+
 public:
     /// Should be initialized after construction
     static std::string system_resource_path_;
@@ -489,6 +510,9 @@ private:
 
     /** Merchant Score */
     MerchantScoreManager* merchantScoreManager_;
+
+    /** Custom Rank Manager */
+    CustomRankManager* customRankManager_;
 
     /** Product Ranking */
     ProductRankerFactory* productRankerFactory_;
