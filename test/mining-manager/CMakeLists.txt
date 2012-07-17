@@ -165,6 +165,16 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_DateGroupTable")
 
+  ADD_EXECUTABLE(t_CustomRankManager
+    Runner.cpp
+    t_CustomRankManager.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_CustomRankManager ${libs})
+  SET_TARGET_PROPERTIES(t_CustomRankManager PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_CustomRankManager")
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 INCLUDE_DIRECTORIES(
