@@ -148,18 +148,12 @@ bool SearchManager::rerank(const KeywordSearchActionItem& actionItem, KeywordSea
 
 struct SearchThreadParam
 {
-    bool isWandSearch;
     SearchKeywordOperation* actionOperation;
     std::size_t totalCount_thread;
     sf1r::PropertyRange propertyRange;
     uint32_t start;
-    std::vector<RankQueryProperty>* rankQueryProperties;
-    std::vector<boost::shared_ptr<PropertyRanker> >* propertyRankers;
     boost::shared_ptr<Sorter> pSorter;
     CustomRankerPtr customRanker;
-    MultiPropertyScorer* pMultiPropertyIterator;
-    WANDDocumentIterator* pWandDocIterator;
-    CombinedDocumentIterator* pDocIterator;
     faceted::GroupRep groupRep_thread;
     faceted::OntologyRep attrRep_thread;
     boost::shared_ptr<HitQueue>* scoreItemQueue;
@@ -485,12 +479,12 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     rankingManagerPtr_->createPropertyRankers(pTextRankingType, indexPropertySize, propertyRankers);
     bool readTermPosition = propertyRankers[0]->requireTermPosition();
 
-
-    MultiPropertyScorer* pMultiPropertyIterator;
-    pMultiPropertyIterator = NULL;
+    DocumentIterator* pScoreDocIterator = NULL;
+    MultiPropertyScorer* pMultiPropertyIterator = NULL;
     WANDDocumentIterator* pWandDocIterator = NULL;
-    std::vector<QueryFiltering::FilteringType>& filtingList
-    = actionOperation.actionItem_.filteringList_;
+
+    std::vector<QueryFiltering::FilteringType>& filtingList =
+        actionOperation.actionItem_.filteringList_;
     boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet;
 
     try
@@ -514,6 +508,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
                                         readTermPosition,
                                         termIndexMaps
                                    );
+                pScoreDocIterator = pWandDocIterator;
             }
             else
             {
@@ -525,22 +520,18 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
                                              indexPropertyIdList,
                                              readTermPosition,
                                              termIndexMaps );
+                pScoreDocIterator = pMultiPropertyIterator;
             }
 
-            if ( !pWandDocIterator )
-            {
-                if(pMultiPropertyIterator == NULL)
-                    return false;
-            }
+            if (pScoreDocIterator == NULL)
+                return false;
         }
 
     }
     catch (std::exception& e)
     {
-        if (pMultiPropertyIterator)
-            delete pMultiPropertyIterator;
-        if(pWandDocIterator)
-            delete pWandDocIterator;
+        if (pScoreDocIterator)
+            delete pScoreDocIterator;
         return false;
     }
 
@@ -554,15 +545,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator(pBitmapIter);
         pDocIterator->add((DocumentIterator*) pFilterIterator);
     }
-    if (pMultiPropertyIterator)
-    {
-        ///Relevance query
-        pDocIterator->add((DocumentIterator*) pMultiPropertyIterator);
-    }
-    else if (pWandDocIterator)
-    {
-        pDocIterator->add((DocumentIterator*) pWandDocIterator);
-    }
+    pDocIterator->add(pScoreDocIterator);
 
     STOP_PROFILER( preparedociter )
 
@@ -584,7 +567,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     else
         scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
 
-    if (!pMultiPropertyIterator &&  !pWandDocIterator && !pFilterIdSet)
+    if (!pScoreDocIterator && !pFilterIdSet)
     {//SELECT * , and filter is null
         if (pSorter)
         {
@@ -659,7 +642,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             propertyRankers);
 
     UpperBoundInProperties ubmap;
-    if( isWandSearch && pWandDocIterator)
+    if (pWandDocIterator)
     {
         for (size_t i = 0; i < indexPropertyList.size(); ++i )
         {
@@ -692,7 +675,6 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     try
     {
         bool ret = doSearch_(
-            isWandSearch,
             actionOperation,
             totalCount,
             propertyRange,
@@ -701,8 +683,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             propertyRankers,
             pSorter.get(),
             customRanker,
-            pMultiPropertyIterator,
-            pWandDocIterator,
+            pScoreDocIterator,
             pDocIterator.get(),
             groupFilter.get(),
             scoreItemQueue.get(),
@@ -737,7 +718,6 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
 }
 
 bool SearchManager::doSearch_(
-        bool isWandSearch,
         const SearchKeywordOperation& actionOperation,
         std::size_t& totalCount,
         sf1r::PropertyRange& propertyRange,
@@ -746,8 +726,7 @@ bool SearchManager::doSearch_(
         const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
         Sorter* pSorter,
         CustomRankerPtr customRanker,
-        MultiPropertyScorer* pMultiPropertyIterator,
-        WANDDocumentIterator* pWandDocIterator,
+        DocumentIterator* pScoreDocIterator,
         CombinedDocumentIterator* pDocIterator,
         faceted::GroupFilter* groupFilter,
         HitQueue* scoreItemQueue,
@@ -771,7 +750,10 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         rangePropertyTable.reset(createPropertyTable(rangePropertyName));
     }
     bool requireScorer = false;
-    if ( (pMultiPropertyIterator || pWandDocIterator) && pSorter ) requireScorer = pSorter->requireScorer();
+    if ( pScoreDocIterator && pSorter )
+    {
+        requireScorer = pSorter->requireScorer();
+    }
 
     if(docid_start > 0)
         pDocIterator->skipTo(docid_start);
@@ -799,22 +781,11 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         }
 
         ScoreDoc scoreItem(pDocIterator->doc());
+
         START_PROFILER( computerankscore )
         ++totalCount;
-        if( !isWandSearch )
-        {
-            scoreItem.score = requireScorer?
-                              pMultiPropertyIterator->score(
-                                  rankQueryProperties,
-                                  propertyRankers) : 1.0;
-        }
-        else
-        {
-            scoreItem.score = requireScorer?
-                              pWandDocIterator->score(
-                                  rankQueryProperties,
-                                  propertyRankers) : 1.0;
-        }
+        scoreItem.score = requireScorer ? pScoreDocIterator->score(
+                rankQueryProperties, propertyRankers) : 1.0;
         STOP_PROFILER( computerankscore )
 
         START_PROFILER( computecustomrankscore )
@@ -826,8 +797,6 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
 
         START_PROFILER( inserttoqueue )
         scoreItemQueue->insert(scoreItem);
-        //if( isWandSearch && scoreItemQueue->size() == (unsigned)heapSize )
-        //    pWandDocIterator->set_threshold((scoreItemQueue->top()).score);
         STOP_PROFILER( inserttoqueue )
 
         if(pDocIterator->doc() >= docid_end)

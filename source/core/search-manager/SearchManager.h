@@ -119,7 +119,6 @@ public:
 
 private:
     bool doSearch_(
-            bool isWandSearch,
             const SearchKeywordOperation& actionOperation,
             std::size_t& totalCount,
             sf1r::PropertyRange& propertyRange,
@@ -128,8 +127,7 @@ private:
             const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
             Sorter* pSorter,
             CustomRankerPtr customRanker,
-            MultiPropertyScorer* pMultiPropertyIterator,
-            WANDDocumentIterator* pWandDocIterator,
+            DocumentIterator* pScoreDocIterator,
             CombinedDocumentIterator* pDocIterator,
             faceted::GroupFilter* groupFilter,
             HitQueue* scoreItemQueue,

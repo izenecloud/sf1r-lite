@@ -68,6 +68,10 @@ public:
         const boost::shared_ptr<PropertyRanker>& propertyRanker
     ){ return 0.0f; }
 
+    virtual double score(
+        const std::vector<RankQueryProperty>& rankQueryProperties,
+        const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers
+    ){ return 0.0f; }
 
     void setCurrent(bool current){ current_ = current; }
 
