@@ -10,6 +10,8 @@
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/product-ranker/ProductRankerFactory.h>
 #include <mining-manager/product-ranker/ProductRanker.h>
+#include <mining-manager/custom-rank-manager/CustomRankManager.h>
+#include <mining-manager/custom-rank-manager/CustomRankScorer.h>
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
@@ -57,6 +59,7 @@ SearchManager::SearchManager(
     , rankingManagerPtr_(rankingManager)
     , queryBuilder_()
     , filter_hook_(0)
+    , customRankManager_(NULL)
     , threadpool_(0)
     , preprocessor_(new SearchManagerPreProcessor())
     , postprocessor_(new SearchManagerPostProcessor())
@@ -99,6 +102,11 @@ SearchManager::~SearchManager()
 void SearchManager::setProductRankerFactory(ProductRankerFactory* productRankerFactory)
 {
     postprocessor_->productRankerFactory_ = productRankerFactory;
+}
+
+void SearchManager::setCustomRankManager(CustomRankManager* customRankManager)
+{
+    customRankManager_ = customRankManager;
 }
 
 void SearchManager::updateSortCache(

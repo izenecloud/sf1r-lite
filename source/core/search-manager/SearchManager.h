@@ -47,6 +47,7 @@ class ProductRankerFactory;
 class SearchThreadParam;
 class SearchManagerPreProcessor;
 class SearchManagerPostProcessor;
+class CustomRankManager;
 
 namespace faceted
 {
@@ -113,6 +114,8 @@ public:
     NumericPropertyTable* createPropertyTable(const std::string& propertyName);
 
     void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
+
+    void setCustomRankManager(CustomRankManager* customRankManager);
 
 private:
     bool doSearch_(
@@ -195,6 +198,7 @@ private:
     filter_hook_t filter_hook_;
 
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
+    CustomRankManager* customRankManager_;
 
     boost::threadpool::pool  threadpool_;
     SearchManagerPreProcessor*  preprocessor_;
