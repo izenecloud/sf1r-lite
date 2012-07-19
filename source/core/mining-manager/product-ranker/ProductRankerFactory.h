@@ -46,6 +46,8 @@ public:
     ProductReranker* getReranker(RerankerType type) { return rerankers_[type]; }
 
 private:
+    void createTopKCustomRankScorer_();
+
     void createCategoryBoostingScorer_();
 
     void createMerchantScorer_();

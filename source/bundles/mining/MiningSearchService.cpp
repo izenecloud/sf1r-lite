@@ -258,7 +258,14 @@ bool MiningSearchService::setCustomRank(
     const std::vector<std::string>& docIdList
 )
 {
-    return miningManager_->setCustomRank(query, docIdList);
+    bool result = miningManager_->setCustomRank(query, docIdList);
+
+    if (result)
+    {
+        searchWorker_->clearSearchCache();
+    }
+
+    return result;
 }
 
 bool MiningSearchService::getCustomRank(

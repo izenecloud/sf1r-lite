@@ -755,18 +755,28 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         requireScorer = pSorter->requireScorer();
     }
 
+    boost::scoped_ptr<CustomRankScorer> customRankScorer;
+    if (requireScorer && customRankManager_)
+    {
+        const std::string& query = actionOperation.actionItem_.env_.queryString_;
+        customRankScorer.reset(customRankManager_->getScorer(query));
+    }
+
     if(docid_start > 0)
         pDocIterator->skipTo(docid_start);
     std::size_t docid_end = docid_start + docid_num_byeachthread;
+
     while (pDocIterator->next())
     {
-        if (groupFilter && !groupFilter->test(pDocIterator->doc()))
+        docid_t curDocId = pDocIterator->doc();
+
+        if (groupFilter && !groupFilter->test(curDocId))
             continue;
 
         if (rangePropertyTable)
         {
             float docPropertyValue = 0;
-            if (rangePropertyTable->convertPropertyValue(pDocIterator->doc(), docPropertyValue))
+            if (rangePropertyTable->convertPropertyValue(curDocId, docPropertyValue))
             {
                 if (docPropertyValue < lowValue)
                 {
@@ -780,12 +790,29 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
             }
         }
 
-        ScoreDoc scoreItem(pDocIterator->doc());
+        ScoreDoc scoreItem(curDocId);
 
         START_PROFILER( computerankscore )
         ++totalCount;
-        scoreItem.score = requireScorer ? pScoreDocIterator->score(
-                rankQueryProperties, propertyRankers) : 1.0;
+
+        if (requireScorer)
+        {
+            if (customRankScorer)
+            {
+                scoreItem.score = customRankScorer->getScore(curDocId);
+            }
+
+            if (scoreItem.score == 0.0)
+            {
+                scoreItem.score = pScoreDocIterator->score(
+                    rankQueryProperties, propertyRankers);
+            }
+        }
+        else
+        {
+            scoreItem.score = 1.0;
+        }
+
         STOP_PROFILER( computerankscore )
 
         START_PROFILER( computecustomrankscore )
@@ -799,10 +826,10 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         scoreItemQueue->insert(scoreItem);
         STOP_PROFILER( inserttoqueue )
 
-        if(pDocIterator->doc() >= docid_end)
+        if(curDocId >= docid_end)
         {
             docid_start = docid_end + docid_nextstart_inc;
-            if(docid_start > pDocIterator->doc())
+            if(docid_start > curDocId)
                 pDocIterator->skipTo(docid_start);
             docid_end = docid_start + docid_num_byeachthread;
         }

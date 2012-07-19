@@ -1,5 +1,6 @@
 #include "ProductRankerFactory.h"
 #include "ProductRanker.h"
+#include "TopKCustomRankScorer.h"
 #include "CategoryBoostingScorer.h"
 #include "MerchantScorer.h"
 #include "RelevanceScorer.h"
@@ -35,6 +36,7 @@ ProductRankerFactory::ProductRankerFactory(MiningManager* miningManager)
         merchantValueTable_ = groupManager->getPropValueTable(merchantProp);
     }
 
+    createTopKCustomRankScorer_();
     createCategoryBoostingScorer_();
     createMerchantScorer_();
     createRelevanceScorer_();
@@ -64,6 +66,11 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankingParam& pa
     }
 
     return new ProductRanker(param, *this, config_.isDebug);
+}
+
+void ProductRankerFactory::createTopKCustomRankScorer_()
+{
+    scorers_.push_back(new TopKCustomRankScorer);
 }
 
 void ProductRankerFactory::createCategoryBoostingScorer_()

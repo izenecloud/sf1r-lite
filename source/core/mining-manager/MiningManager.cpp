@@ -429,6 +429,7 @@ bool MiningManager::open()
 
             productRankerFactory_ = new ProductRankerFactory(this);
 
+            searchManager_->setCustomRankManager(customRankManager_);
             searchManager_->setProductRankerFactory(productRankerFactory_);
         }
 

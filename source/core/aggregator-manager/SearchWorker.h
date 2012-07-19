@@ -102,6 +102,8 @@ public:
 
     void reset_all_property_cache();
 
+    void clearSearchCache();
+
 private:
     template <typename ResultItemType>
     bool getSearchResult_(
