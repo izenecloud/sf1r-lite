@@ -22,6 +22,7 @@
 #include "FilterDocumentIterator.h"
 #include "AllDocumentIterator.h"
 #include "CombinedDocumentIterator.h"
+#include "CustomRankDocumentIterator.h"
 #include "SearchManagerPreProcessor.h"
 #include "SearchManagerPostProcessor.h"
 
@@ -543,9 +544,8 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         ///2. Select * WHERE    (FilterQuery)
         BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator(pBitmapIter);
-        pDocIterator->add((DocumentIterator*) pFilterIterator);
+        pDocIterator->add(pFilterIterator);
     }
-    pDocIterator->add(pScoreDocIterator);
 
     STOP_PROFILER( preparedociter )
 
@@ -566,6 +566,20 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         scoreItemQueue.reset(new PropertySortedHitQueue(pSorter, heapSize));
     else
         scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
+
+    if (pScoreDocIterator)
+    {
+        const std::string& query = actionOperation.actionItem_.env_.queryString_;
+        DocumentIterator* pCustomDocIter = createCustomRankDocIterator_(query, pSorter);
+
+        if (pCustomDocIter)
+        {
+            pCustomDocIter->add(pScoreDocIterator);
+            pScoreDocIterator = pCustomDocIter;
+        }
+
+        pDocIterator->add(pScoreDocIterator);
+    }
 
     if (!pScoreDocIterator && !pFilterIdSet)
     {//SELECT * , and filter is null
@@ -755,13 +769,6 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         requireScorer = pSorter->requireScorer();
     }
 
-    boost::scoped_ptr<CustomRankScorer> customRankScorer;
-    if (requireScorer && customRankManager_)
-    {
-        const std::string& query = actionOperation.actionItem_.env_.queryString_;
-        customRankScorer.reset(customRankManager_->getScorer(query));
-    }
-
     if(docid_start > 0)
         pDocIterator->skipTo(docid_start);
     std::size_t docid_end = docid_start + docid_num_byeachthread;
@@ -795,23 +802,8 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         START_PROFILER( computerankscore )
         ++totalCount;
 
-        if (requireScorer)
-        {
-            if (customRankScorer)
-            {
-                scoreItem.score = customRankScorer->getScore(curDocId);
-            }
-
-            if (scoreItem.score == 0.0)
-            {
-                scoreItem.score = pScoreDocIterator->score(
-                    rankQueryProperties, propertyRankers);
-            }
-        }
-        else
-        {
-            scoreItem.score = 1.0;
-        }
+        scoreItem.score = requireScorer ? pScoreDocIterator->score(
+                rankQueryProperties, propertyRankers) : 1.0;
 
         STOP_PROFILER( computerankscore )
 
@@ -861,6 +853,23 @@ void SearchManager::fillSearchInfoWithSortPropertyData_(
         return;
     preprocessor_->fillSearchInfoWithSortPropertyData_(pSorter, docIdList, distSearchInfo,
         pSorterCache_);
+}
+
+DocumentIterator* SearchManager::createCustomRankDocIterator_(
+    const std::string& query,
+    boost::shared_ptr<Sorter> pSorter)
+{
+    if (customRankManager_ &&
+        pSorter && pSorter->requireScorer())
+    {
+        CustomRankScorer* customRankScorer =
+            customRankManager_->getScorer(query);
+
+        if (customRankScorer)
+            return new CustomRankDocumentIterator(customRankScorer);
+    }
+
+    return NULL;
 }
 
 void SearchManager::printDFCTF_(

@@ -46,8 +46,11 @@ public:
         return 0;
     }
 
-private:
     typedef std::map<docid_t, score_t> ScoreMap;
+
+    const ScoreMap& getScoreMap() const { return scoreMap_; }
+
+private:
     ScoreMap scoreMap_;
 };
 

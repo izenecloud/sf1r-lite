@@ -173,6 +173,18 @@ private:
             std::vector<unsigned int>& docIdList,
             DistKeywordSearchInfo& distSearchInfo);
 
+    /**
+     * create the doc iterator for customized rankings.
+     * @param query the user query
+     * @param pSorter the Sorter instance, it decides whether need to create
+     *                the doc iterator.
+     * @return doc iterator instance, it would be NULL if not created.
+     * @attention the caller is responsible to delete the doc iterator.
+     */
+    DocumentIterator* createCustomRankDocIterator_(
+        const std::string& query,
+        boost::shared_ptr<Sorter> pSorter);
+
 private:
     /**
      * @brief for testing
