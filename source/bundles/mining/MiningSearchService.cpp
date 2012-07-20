@@ -253,6 +253,34 @@ bool MiningSearchService::setTopGroupLabel(
     return miningManager_->setTopGroupLabel(query, propName, groupLabels);
 }
 
+bool MiningSearchService::setCustomRank(
+    const std::string& query,
+    const std::vector<std::string>& docIdList
+)
+{
+    bool result = miningManager_->setCustomRank(query, docIdList);
+
+    if (result)
+    {
+        searchWorker_->clearSearchCache();
+    }
+
+    return result;
+}
+
+bool MiningSearchService::getCustomRank(
+    const std::string& query,
+    std::vector<Document>& docList
+)
+{
+    return miningManager_->getCustomRank(query, docList);
+}
+
+bool MiningSearchService::getCustomQueries(std::vector<std::string>& queries)
+{
+    return miningManager_->getCustomQueries(queries);
+}
+
 bool MiningSearchService::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
 {
     return miningManager_->GetTdtInTimeRange(start, end, topic_list);

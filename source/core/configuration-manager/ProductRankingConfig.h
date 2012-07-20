@@ -13,6 +13,12 @@ namespace sf1r
 class ProductRankingConfig
 {
 public:
+    /// whether enable product ranking
+    bool isEnable;
+
+    /// whether print debug info
+    bool isDebug;
+
     /// merchant property name, used for merchant score and diversity
     std::string merchantPropName;
 
@@ -22,16 +28,7 @@ public:
     /// sub property name, used for category boosting
     std::string boostingSubPropName;
 
-    /// whether print debug info
-    bool isDebug;
-
-    ProductRankingConfig() : isDebug(false) {}
-
-    bool isEnable() const
-    {
-        return !merchantPropName.empty() ||
-               !categoryPropName.empty();
-    }
+    ProductRankingConfig() : isEnable(false), isDebug(false) {}
 
 private:
     friend class boost::serialization::access;

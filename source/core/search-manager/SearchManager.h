@@ -47,6 +47,7 @@ class ProductRankerFactory;
 class SearchThreadParam;
 class SearchManagerPreProcessor;
 class SearchManagerPostProcessor;
+class CustomRankManager;
 
 namespace faceted
 {
@@ -114,9 +115,10 @@ public:
 
     void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
 
+    void setCustomRankManager(CustomRankManager* customRankManager);
+
 private:
     bool doSearch_(
-            bool isWandSearch,
             const SearchKeywordOperation& actionOperation,
             std::size_t& totalCount,
             sf1r::PropertyRange& propertyRange,
@@ -125,8 +127,7 @@ private:
             const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
             Sorter* pSorter,
             CustomRankerPtr customRanker,
-            MultiPropertyScorer* pMultiPropertyIterator,
-            WANDDocumentIterator* pWandDocIterator,
+            DocumentIterator* pScoreDocIterator,
             CombinedDocumentIterator* pDocIterator,
             faceted::GroupFilter* groupFilter,
             HitQueue* scoreItemQueue,
@@ -172,6 +173,19 @@ private:
             std::vector<unsigned int>& docIdList,
             DistKeywordSearchInfo& distSearchInfo);
 
+    /**
+     * combine the @p originDocIterator with the customized doc iterator.
+     * @param query the user query
+     * @param pSorter the Sorter instance, it decides whether need to create
+     *                the customized doc iterator.
+     * @return the combined doc iterator instance, it would be just
+     *         @p originDocIterator if no customized doc iterator is created.
+     */
+    DocumentIterator* combineCustomDocIterator_(
+        const std::string& query,
+        boost::shared_ptr<Sorter> pSorter,
+        DocumentIterator* originDocIterator);
+
 private:
     /**
      * @brief for testing
@@ -195,6 +209,7 @@ private:
     filter_hook_t filter_hook_;
 
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
+    CustomRankManager* customRankManager_;
 
     boost::threadpool::pool  threadpool_;
     SearchManagerPreProcessor*  preprocessor_;
