@@ -31,6 +31,8 @@ public:
 
     virtual bool GetInternalDocidList(const std::vector<uint128_t>& sdocid_list, std::vector<uint32_t>& docid_list) {return false;}
 
+    virtual bool AddCurUuidToHistory(uint32_t docid){return false;}
+
     virtual void Flush() {}
 
     const std::string& GetLastError()

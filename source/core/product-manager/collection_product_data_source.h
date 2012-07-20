@@ -45,6 +45,8 @@ public:
 
     bool GetInternalDocidList(const std::vector<uint128_t>& sdocid_list, std::vector<uint32_t>& docid_list);
 
+    bool AddCurUuidToHistory(uint32_t docid);
+
     void Flush();
 
 private:

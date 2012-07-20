@@ -14,6 +14,7 @@
 #include <b5m-manager/log_server_handler.h>
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
+#include <b5m-manager/history_db.h>
 #include <b5m-manager/psm_indexer.h>
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
@@ -47,6 +48,7 @@ int main(int ac, char** av)
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("pdb", po::value<std::string>(), "specify product db path")
         ("odb", po::value<std::string>(), "specify offer db path")
+        ("historydb", po::value<std::string>(), "specify offer history db path")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
         ("scd-path,S", po::value<std::string>(), "specify scd path")
         ("old-scd-path", po::value<std::string>(), "specify old processed scd path")
@@ -87,6 +89,7 @@ int main(int ac, char** av)
     std::string output_match;
     std::string knowledge_dir;
     boost::shared_ptr<OfferDb> odb;
+    boost::shared_ptr<HistoryDB> historydb;
 
     boost::shared_ptr<LogServerConnectionConfig> logserver_config;
     std::string synonym_file;
@@ -148,10 +151,18 @@ int main(int ac, char** av)
         std::cout << "odb path: " << odb_path <<std::endl;
         odb.reset(new OfferDb(odb_path));
     } 
+    if (vm.count("historydb")) {
+        std::string hdb_path = vm["historydb"].as<std::string>();
+        std::cout << "historydb path: " << hdb_path <<std::endl;
+        if(hdb_path != "////" && hdb_path != "")
+        {
+            historydb.reset(new HistoryDB(hdb_path));
+        }
+    } 
+
     if(vm.count("logserver-config"))
     {
         std::string config_string = vm["logserver-config"].as<std::string>();
- 
         std::vector<std::string> vec;
         boost::algorithm::split( vec, config_string, boost::algorithm::is_any_of("|") );
         if(vec.size()==4)
@@ -161,6 +172,7 @@ int main(int ac, char** av)
             uint32_t rpc_thread_num = boost::lexical_cast<uint32_t>(vec[2]);
             uint32_t driver_port = boost::lexical_cast<uint32_t>(vec[3]);
             logserver_config.reset(new LogServerConnectionConfig(host, rpc_port, rpc_thread_num, driver_port));
+            cout << "using log server: " << host << "," << rpc_port << "," << driver_port << std::endl;
         }
         else
         {
@@ -207,12 +219,12 @@ int main(int ac, char** av)
 
     if(vm.count("raw-generate"))
     {
-        if( scd_path.empty() || mdb_instance.empty() || !odb)
+        if( scd_path.empty() || mdb_instance.empty() || !odb )
         {
             return EXIT_FAILURE;
         }
         LOG(INFO)<<"raw generator, mode: "<<mode<<std::endl;
-        RawScdGenerator generator(odb.get(), mode);
+        RawScdGenerator generator(odb.get(), historydb.get(), mode, logserver_config.get());
         if(!mobile_source.empty())
         {
             if(boost::filesystem::exists(mobile_source))
@@ -350,7 +362,7 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5moScdGenerator generator(odb.get());
+        B5moScdGenerator generator(odb.get(), historydb.get(), logserver_config.get());
         if(!generator.Generate(mdb_instance))
         {
             return EXIT_FAILURE;
@@ -358,7 +370,7 @@ int main(int ac, char** av)
     }
     if(vm.count("uue-generate"))
     {
-        if( mdb_instance.empty() || !odb)
+        if( mdb_instance.empty() || !odb )
         {
             return EXIT_FAILURE;
         }
@@ -374,7 +386,7 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5mpProcessor processor(mdb_instance, last_mdb_instance);
+        B5mpProcessor processor(historydb.get(), mdb_instance, last_mdb_instance, logserver_config.get());
         if(!processor.Generate())
         {
             std::cout<<"b5mp processor failed"<<std::endl;

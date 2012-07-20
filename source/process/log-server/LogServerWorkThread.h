@@ -36,6 +36,7 @@ public:
 
     void putUuidRequestData(const UUID2DocidList& uuid2DocidList);
 
+    bool idle();
     void putSyncRequestData(const SynchronizeData& syncReqData);
 
 private:

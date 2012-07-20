@@ -173,3 +173,77 @@ void CollectionProductDataSource::Flush()
     index_manager_->flush();
     search_manager_->reset_all_property_cache();
 }
+
+bool CollectionProductDataSource::AddCurUuidToHistory(uint32_t docid)
+{
+    PropertyConfig property_config;
+    property_config.propertyName_ = config_.olduuid_property_name;
+    IndexBundleSchema::const_iterator iter = indexSchema_.find(property_config);
+    if(iter==indexSchema_.end()) return false;
+    IndexerPropertyConfig indexerPropertyConfig;
+    indexerPropertyConfig.setPropertyId(iter->getPropertyId());
+    indexerPropertyConfig.setName(iter->getName());
+    indexerPropertyConfig.setIsIndex(iter->isIndex());
+    indexerPropertyConfig.setIsAnalyzed(iter->isAnalyzed());
+    indexerPropertyConfig.setIsFilter(iter->getIsFilter());
+    indexerPropertyConfig.setIsMultiValue(iter->getIsMultiValue());
+    indexerPropertyConfig.setIsStoreDocLen(iter->getIsStoreDocLen());
+    PMDocumentType doc;
+    if(!GetDocument(docid, doc))
+    {
+        return false;
+    }
+    izenelib::util::UString uuid;
+    PMDocumentType::property_const_iterator it = doc.findProperty(config_.uuid_property_name);
+    if(it == doc.propertyEnd())
+    {
+        return false;
+    }
+    uuid = it->second.get<izenelib::util::UString>();
+    izenelib::util::UString olduuid;
+    doc.getProperty(config_.olduuid_property_name, olduuid);
+    if(olduuid.find(uuid) != UString::npos)
+    {
+        // already in history
+        std::cout << "warning: current uuid already in history while adding to history" << endl;
+        return true;
+    }
+    std::string s_olduuid;
+    olduuid.convertString(s_olduuid, UString::UTF_8);
+    std::string s_uuid;
+    uuid.convertString(s_uuid, UString::UTF_8);
+
+    izenelib::util::UString new_olduuid;
+    if(olduuid.empty())
+    {
+        new_olduuid = uuid;
+    }
+    else
+    {
+        new_olduuid = UString(s_olduuid + "," + s_uuid, UString::UTF_8);
+    }
+
+    //update DM first
+    PMDocumentType newdoc;
+    newdoc.setId(docid);
+    newdoc.property(config_.olduuid_property_name) = new_olduuid;
+    if(!document_manager_->updatePartialDocument(newdoc))
+    {
+        std::cout<<"updatePartialDocument failed : "<< docid <<std::endl;
+        return false;
+    }
+    //update IM
+    IndexerDocument oldIndexDocument;
+    oldIndexDocument.setDocId(docid, 1);
+    oldIndexDocument.insertProperty(indexerPropertyConfig, olduuid);
+    IndexerDocument indexDocument;
+    indexDocument.setDocId(docid, 1);
+    indexDocument.insertProperty(indexerPropertyConfig, new_olduuid);
+    if(!index_manager_->updateRtypeDocument(oldIndexDocument, indexDocument))
+    {
+        //TODO how to rollback in IM?
+    }
+
+    return true;
+}
+

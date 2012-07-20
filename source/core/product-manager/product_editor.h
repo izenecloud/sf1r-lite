@@ -34,6 +34,7 @@ public:
     bool AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
 
     bool RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
+    bool RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
 
     inline const std::string& GetLastError() const
     {

@@ -114,6 +114,34 @@ struct ItemIdToStrIdRequestData
     MSGPACK_DEFINE(collection_, itemId_)
 };
 
+struct OldUUIDData : public LogServerRequestData
+{
+    bool success_;
+    uint128_t docid_;
+    std::string olduuid_;
+    MSGPACK_DEFINE(success_, docid_, olduuid_)
+};
+
+struct OldDocIdData: public LogServerRequestData
+{
+    bool success_;
+    uint128_t uuid_;
+    std::string olddocid_;
+    MSGPACK_DEFINE(success_, uuid_, olddocid_)
+};
+
+struct DelOldDocIdData: public LogServerRequestData
+{
+    typedef std::vector<uint128_t> UuidListType;
+
+    bool success_;
+    std::string olddocid_;
+    UuidListType uuid_list_;
+    //std::string toString() const;
+
+    MSGPACK_DEFINE(success_, olddocid_, uuid_list_)
+};
+
 }
 
 #endif /* LOG_SERVER_REQUEST_DATA_H_ */

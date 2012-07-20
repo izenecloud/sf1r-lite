@@ -4,6 +4,9 @@
 #include "uuid_generator.h"
 #include <glog/logging.h>
 #include <common/Utilities.h>
+
+#define USE_LOG_SERVER 
+
 #ifdef USE_LOG_SERVER
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
@@ -111,6 +114,7 @@ bool ProductEditor::AddGroup(const std::vector<uint32_t>& docid_list, PMDocument
             doc_list.push_back(doc);
         }
     }
+
     std::vector<UString> uuid_list(doc_list.size());
     for (uint32_t i = 0; i < doc_list.size(); i++)
     {
@@ -138,6 +142,7 @@ bool ProductEditor::AddGroup(const std::vector<uint32_t>& docid_list, PMDocument
             else
             {
                 LOG(WARNING)<<"Document id "<<docid_list[i]<<" belongs to other group";
+
             }
         }
     }
@@ -183,6 +188,7 @@ bool ProductEditor::AppendToGroup(const izenelib::util::UString& uuid, const std
             doc_list.push_back(doc);
         }
     }
+
     std::vector<UString> uuid_list(doc_list.size());
     for (uint32_t i = 0; i < doc_list.size(); i++)
     {
@@ -201,6 +207,10 @@ bool ProductEditor::AppendToGroup(const izenelib::util::UString& uuid, const std
                 error_ = "Document id "+boost::lexical_cast<std::string>(docid_list[i])+" belongs to other group";
                 return false;
             }
+            else
+            {
+                LOG(WARNING)<<"Document id "<<docid_list[i]<<" belongs to other group";
+            }
         }
     }
 
@@ -212,6 +222,7 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
 #ifdef USE_LOG_SERVER
     LogServerConnection& conn = LogServerConnection::instance();
 #endif
+
     //do not make any check in this function
     UString uuid;
     info.getProperty(config_.docid_property_name, uuid);
@@ -235,32 +246,65 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
     for(uint32_t i=0;i<doc_list.size();i++)
     {
         const PMDocumentType& doc = doc_list[i];
-
         uint32_t docid = doc.getId();
         UString doc_uuid;
         doc.getProperty(config_.uuid_property_name, doc_uuid);
+        std::string old_docids_inuuid;
+        //
+        if(!doc_uuid.empty() && doc_uuid != uuid)
+        {
+            std::string scd_docid;
+            doc.getString("DOCID", scd_docid);
+            LOG(WARNING)<<"Document id "<< scd_docid <<" group has been changed from " <<
+               doc_uuid << " to new group:" << uuid << endl;
+            // add old group info to this docid's history groups (docid, ..., uuid_list[i])
+            data_source_->AddCurUuidToHistory(docid);
+#ifdef USE_LOG_SERVER
+            // add old docid to the old group's history docids (uuid_list[i], ..., docid)
+            AddOldUUIDRequest add_uuidreq;
+            AddOldDocIdRequest add_docidreq;
+            add_uuidreq.param_.docid_ = Utilities::uuidToUint128(scd_docid);
+            doc_uuid.convertString(add_uuidreq.param_.olduuid_, UString::UTF_8);
+            add_docidreq.param_.uuid_ = Utilities::uuidToUint128(doc_uuid);
+            add_docidreq.param_.olddocid_ = scd_docid;
+            OldDocIdData docid_rsp;
+            OldUUIDData  uuid_rsp;
+            conn.syncRequest(add_uuidreq, uuid_rsp);
+            conn.syncRequest(add_docidreq, docid_rsp);
+
+            old_docids_inuuid = docid_rsp.olddocid_;
+#endif
+        }
+
         std::vector<uint32_t> same_docid_list;
         data_source_->GetDocIdList(doc_uuid, same_docid_list, docid);
-        if( same_docid_list.empty())
-        {
-            //this docid not belongs to any group
+        // deletion will only happen when the docid is actually deleted
+        // moving to another group will never cause an deletion
+        //
+        //if( same_docid_list.empty())
+        //{
+        //    //this docid not belongs to any group
 
-            //need to delete
-            PMDocumentType del_doc;
-            del_doc.property(config_.docid_property_name) = doc_uuid;
-#ifdef PM_EDIT_INFO
-            LOG(INFO)<<"Output : "<<3<<" , "<<doc_uuid<<std::endl;
-#endif
-            op_processor_->Append(3, del_doc);
-            util_.AddPrice(new_doc, doc);
+        //    //need to delete
+        //    PMDocumentType del_doc;
+        //    del_doc.property(config_.docid_property_name) = doc_uuid;
+//#ifdef PM_EDIT_INFO
+        //    LOG(INFO)<<"Output : "<<3<<" , "<<doc_uuid<<std::endl;
+//#endif
+        //    op_processor_->Append(3, del_doc);
+        //    util_.AddPrice(new_doc, doc);
 
-        }
-        else
+        //}
+        //else
         {
             ProductPrice update_price;
             util_.GetPrice(same_docid_list, update_price);
             PMDocumentType update_doc;
             update_doc.property(config_.docid_property_name) = doc_uuid;
+            if(!old_docids_inuuid.empty())
+            {
+                update_doc.property(config_.oldofferids_property_name) = UString(old_docids_inuuid, UString::UTF_8);
+            }
             uint32_t itemcount = same_docid_list.size();
             util_.SetItemCount(update_doc, itemcount);
             util_.AddPrice(update_doc, update_price);
@@ -315,6 +359,162 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
     }
     conn.asynRequest(uuidReq);
 #endif
+    return true;
+}
+
+// remove should only be called when the document will be deleted later
+// if just want to change the group please call another instead.
+bool ProductEditor::RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& docid_list, const ProductEditOption& option)
+{
+#ifdef USE_LOG_SERVER
+    LogServerConnection& conn = LogServerConnection::instance();
+#endif
+    std::vector<PMDocumentType> doc_list;
+    doc_list.reserve(docid_list.size());
+    for (uint32_t i = 0; i < docid_list.size(); i++)
+    {
+        PMDocumentType doc;
+        if (!data_source_->GetDocument(docid_list[i], doc))
+        {
+            if( !option.force )
+            {
+                error_ = "Can not get document "+boost::lexical_cast<std::string>(docid_list[i]);
+                return false;
+            }
+            else
+            {
+                LOG(WARNING)<<"Can not get document "<<docid_list[i]<<std::endl;
+            }
+        }
+        else
+        {
+            doc_list.push_back(doc);
+        }
+    }
+    if(doc_list.empty())
+    {
+        if( !option.force )
+        {
+            error_ = "Empty document list.";
+            return false;
+        }
+        else
+        {
+            LOG(WARNING)<<"Empty document list."<<std::endl;
+            return true;
+        }
+    }
+    std::vector<UString> uuid_list(doc_list.size());
+    for (uint32_t i = 0; i < doc_list.size(); i++)
+    {
+        uint32_t docid = doc_list[i].getId();
+        if (!doc_list[i].getProperty(config_.uuid_property_name, uuid_list[i]))
+        {
+            error_ = "Can not get uuid in document "+boost::lexical_cast<std::string>(docid);
+            return false;
+        }
+    }
+
+    for (uint32_t i = 0; i < doc_list.size(); i++)
+    {
+        std::string s_oldgroups;
+        doc_list[i].getString(config_.olduuid_property_name, s_oldgroups);
+        std::set<string> s_oldgroups_set;
+        boost::algorithm::split(s_oldgroups_set, s_oldgroups, boost::is_any_of(","));
+        std::string s_curuuid;
+        uuid_list[i].convertString(s_curuuid, UString::UTF_8);
+        s_oldgroups_set.insert(s_curuuid);
+
+        std::set<string>::iterator it = s_oldgroups_set.begin();
+        std::vector<uint128_t> olduuid_list;
+        while(it != s_oldgroups_set.end())
+        {
+            if((*it).empty())
+            {
+                ++it;
+               continue;
+            }
+            olduuid_list.push_back(Utilities::md5ToUint128(*it));
+            ++it;
+        }
+
+#ifdef USE_LOG_SERVER
+        std::string scd_docid;
+        doc_list[i].getString(config_.docid_property_name, scd_docid);
+
+        DelOldDocIdRequest del_docidreq;
+        del_docidreq.param_.uuid_list_ = olduuid_list;
+        del_docidreq.param_.olddocid_ = scd_docid;
+        // delete should be sync
+        DelOldDocIdData rsp;
+        conn.syncRequest(del_docidreq, rsp);
+#endif
+        // remove all its history groups 
+        doc_list[i].eraseProperty(config_.olduuid_property_name);
+        data_source_->Flush();
+
+        // check all the history groups and the current group in the docid to see
+        // if any of these group can be deleted (empty group)
+        it = s_oldgroups_set.begin();
+        while(it != s_oldgroups_set.end())
+        {
+            UString olduuid = UString(*it, UString::UTF_8);
+            std::string history_docid_list;
+            // get the history docid list in the group. if history is also empty
+            // then this group can be deleted.
+#ifdef USE_LOG_SERVER
+            GetOldDocIdRequest get_docidreq;
+            get_docidreq.param_.uuid_ = Utilities::uuidToUint128(olduuid);
+            OldDocIdData rsp;
+            conn.syncRequest(get_docidreq, rsp);
+            history_docid_list = rsp.olddocid_;
+            // except the deleting docid.
+            history_docid_list.replace(history_docid_list.find(scd_docid),
+              scd_docid.size(), "");
+#endif
+            // get the current docid list in the group, if both history and
+            // current docid are empty, that means no more items in this group,
+            // the group can be safely deleted.
+            PMDocumentType origin_doc;
+            origin_doc.property(config_.docid_property_name) = olduuid;
+            std::vector<uint32_t> same_docid_list;
+            data_source_->GetDocIdList(olduuid, same_docid_list, 0);
+            if (same_docid_list.empty() && history_docid_list.empty())
+            {
+                //all deleted
+#ifdef PM_EDIT_INFO
+                LOG(INFO)<<"Output : "<<3<<" , "<< olduuid <<std::endl;
+#endif
+                op_processor_->Append(3, origin_doc);
+            }
+            else
+            {
+                ProductPrice price;
+                util_.GetPrice(same_docid_list, price);
+                origin_doc.property(config_.price_property_name) = price.ToUString();
+                uint32_t itemcount = same_docid_list.size();
+                util_.SetItemCount(origin_doc, itemcount);
+                util_.SetManmade(origin_doc);
+#ifdef PM_EDIT_INFO
+                LOG(INFO)<<"Output : "<<2<<" , "<< olduuid <<" , itemcount: "<<itemcount<<std::endl;
+#endif
+                op_processor_->Append(2, origin_doc);
+            }
+#ifdef USE_LOG_SERVER
+            UpdateUUIDRequest uuidReq;
+            uuidReq.param_.uuid_ = Utilities::uuidToUint128(olduuid);
+            for(uint32_t s=0;s<same_docid_list.size();s++)
+            {
+                PMDocumentType sdoc;
+                if(!data_source_->GetDocument(same_docid_list[s], sdoc)) continue;
+                izenelib::util::UString sdocid;
+                sdoc.getProperty(config_.docid_property_name, sdocid);
+                uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocid));
+            }
+            conn.asynRequest(uuidReq);
+#endif
+        }
+    }
     return true;
 }
 
@@ -388,12 +588,17 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
     for (uint32_t i = 0; i < doc_list.size(); i++)
     {
         uint32_t docid = doc_list[i].getId();
+
+        // add the removing group info to this docid's history groups (docid, ..., uuid_list[i])
+        data_source_->AddCurUuidToHistory(docid);
+
         PMDocumentType new_doc(doc_list[i]);
         izenelib::util::UString doc_uuid;
         UuidGenerator::Gen(doc_uuid);
         new_doc.property(config_.docid_property_name) = doc_uuid;
         new_doc.eraseProperty(config_.uuid_property_name);
         util_.SetItemCount(new_doc, 1);
+ 
 #ifdef PM_EDIT_INFO
         LOG(INFO)<<"Output : "<<1<<" , "<<doc_uuid<<" , itemcount: "<<1<<std::endl;
 #endif
@@ -414,22 +619,55 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
         doc_list[i].getProperty(config_.docid_property_name, docname);
         uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(docname));
         conn.asynRequest(uuidReq);
+        // add the removing group info to this docid's history groups (docid, ..., uuid_list[i])
+        // add old docid to the removing group's history docids (uuid_list[i], ..., docid)
+        AddOldUUIDRequest add_uuidreq;
+        AddOldDocIdRequest add_docidreq;
+        std::string scd_docid;
+        doc_list[i].getString(config_.docid_property_name, scd_docid);
+        std::string s_uuid;
+        uuid.convertString(s_uuid, UString::UTF_8);
+        add_uuidreq.param_.docid_ = Utilities::uuidToUint128(scd_docid);
+        add_uuidreq.param_.olduuid_ = s_uuid;
+        add_docidreq.param_.uuid_ = Utilities::uuidToUint128(uuid);
+        add_docidreq.param_.olddocid_ = scd_docid;
+        OldDocIdData docid_rsp;
+        OldUUIDData uuid_rsp;
+        conn.syncRequest(add_uuidreq, uuid_rsp);
+        conn.syncRequest(add_docidreq, docid_rsp);
 #endif
     }
+    std::string old_docids_inuuid;
+
+#ifdef USE_LOG_SERVER
+    GetOldDocIdRequest get_docidreq;
+    get_docidreq.param_.uuid_ = Utilities::uuidToUint128(uuid);
+    OldDocIdData rsp;
+    conn.syncRequest(get_docidreq, rsp);
+    old_docids_inuuid = rsp.olddocid_;
+#endif
+
     data_source_->Flush();
     PMDocumentType origin_doc;
     origin_doc.property(config_.docid_property_name) = uuid;
+    if(!old_docids_inuuid.empty())
+    {
+        origin_doc.property(config_.oldofferids_property_name) = UString(old_docids_inuuid, UString::UTF_8);
+    }
     std::vector<uint32_t> same_docid_list;
     data_source_->GetDocIdList(uuid, same_docid_list, 0);
-    if (same_docid_list.empty())
-    {
-        //all deleted
-#ifdef PM_EDIT_INFO
-        LOG(INFO)<<"Output : "<<3<<" , "<<uuid<<std::endl;
-#endif
-        op_processor_->Append(3, origin_doc);
-    }
-    else
+
+    // deletion will only happen when the docid is actually deleted
+    // moving to another group or just removing from a group will never cause an deletion
+    //if (same_docid_list.empty())
+    //{
+    //    //all deleted
+//#ifdef PM_EDIT_INFO
+    //    LOG(INFO)<<"Output : "<<3<<" , "<<uuid<<std::endl;
+//#endif
+    //    op_processor_->Append(3, origin_doc);
+    //}
+    //else
     {
         ProductPrice price;
         util_.GetPrice(same_docid_list, price);

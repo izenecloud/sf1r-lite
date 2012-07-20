@@ -20,6 +20,8 @@ struct PMConfig
     std::string docid_property_name;
     std::string itemcount_property_name;
     std::string uuid_property_name;
+    std::string olduuid_property_name;
+    std::string oldofferids_property_name;
     std::string title_property_name;
     std::string category_property_name;
     std::string source_property_name;
@@ -39,6 +41,8 @@ struct PMConfig
         , docid_property_name("DOCID")
         , itemcount_property_name("itemcount")
         , uuid_property_name("uuid")
+        , olduuid_property_name("olduuid")
+        , oldofferids_property_name("OldOfferIds")
         , title_property_name("Title")
         , category_property_name("Category")
         , source_property_name("Source")

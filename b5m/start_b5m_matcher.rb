@@ -3,6 +3,7 @@
 require 'rubygems'
 require 'yaml'
 require 'fileutils'
+require 'extensions/all'
 require 'sf1-util/scd_parser'
 require_relative 'b5m_helper'
 
@@ -29,7 +30,8 @@ config = nil
 config_file = nil
 mode = 0 #B5MMode::INC as default
 domerge = true
-dob5mc = true
+dob5mc = false
+uselocal_history = true
 dologserver = true
 ARGV.each_with_index do |a,i|
   if a=="--mode"
@@ -40,6 +42,8 @@ ARGV.each_with_index do |a,i|
     dob5mc = false
   elsif a=="--nologserver"
     dologserver = false
+  elsif a=="--nolocalhistory"
+      uselocal_history = false
   elsif a=="--config"
     config_file = ARGV[i+1]
   end
@@ -74,7 +78,15 @@ filter_attrib_name = match_path['filter_attrib_name']
 work_dir = match_path['work_dir']
 db_path = File.join(work_dir, 'db')
 status_path = File.join(work_dir, "status")
-#odb = File.join(db_path, 'odb')
+odb = File.join(db_path, 'odb')
+historydb = nil
+if uselocal_history
+    historydb = match_config['historydb']
+    if historydb.nil? or (not File.exist?(historydb))
+        historydb = File.join(work_dir, "historydb")
+        puts "local historydb using default configured, #{historydb} "
+    end
+end
 #pdb = File.join(db_path, 'pdb')
 mdb = File.join(db_path, 'mdb')
 tmp_dir = match_path['tmp']
@@ -111,6 +123,7 @@ if File.exist?(mdb_instance)
   abort "#{mdb_instance} already exists"
 end
 odb = File.join(mdb_instance, "odb")
+
 mdb_instance_list = []
 Dir.foreach(mdb) do |m|
   next unless m =~ /\d{14}/
@@ -194,8 +207,12 @@ task_list.each do |task|
   ofs.close
 end
 
+historydb_config = "--historydb #{historydb} "
+if not uselocal_history
+    historydb_config = "--logserver-config '#{log_server}' "
+end
 #generate raw scds
-system("#{matcher_program} --raw-generate -S #{scd} --mdb-instance #{mdb_instance} --odb #{odb} --mode #{mode}")
+    system("#{matcher_program} --raw-generate -S #{scd} --mdb-instance #{mdb_instance} --odb #{odb} #{historydb_config} --mode #{mode}")
 abort("generating raw scd failed") unless $?.success?
 
 #split SCDs
@@ -266,7 +283,7 @@ b5mp_scd_instance = File.join(mdb_instance, "b5mp")
 b5mc_scd_instance = File.join(mdb_instance, "b5mc")
 
 #b5mo generator, update odb here
-system("#{matcher_program} --b5mo-generate --odb #{odb} --mdb-instance #{mdb_instance}")
+system("#{matcher_program} --b5mo-generate --odb #{odb}  #{historydb_config} --mdb-instance #{mdb_instance}")
 abort("b5mo generate failed") unless $?.success?
 system("rm -rf #{b5mo_scd}/*.SCD")
 system("cp #{b5mo_scd_instance}/*.SCD #{b5mo_scd}/")
@@ -277,7 +294,7 @@ system("cp #{b5mo_scd_instance}/*.SCD #{b5mo_scd}/")
 
 #b5mp generator
 
-cmd = "#{matcher_program} --b5mp-generate --mdb-instance #{mdb_instance}"
+cmd = "#{matcher_program} --b5mp-generate --mdb-instance #{mdb_instance} #{historydb_config} "
 if !last_mdb_instance.nil? and mode!=1
   cmd+=" --last-mdb-instance #{last_mdb_instance}"
 end

@@ -1,4 +1,5 @@
 #include "b5mp_processor.h"
+#include "log_server_client.h"
 #include "b5m_types.h"
 #include "b5m_helper.h"
 #include <types.h>
@@ -11,16 +12,48 @@
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
+#include <configuration-manager/LogServerConnectionConfig.h>
 
 using namespace sf1r;
 
-B5mpProcessor::B5mpProcessor(const std::string& mdb_instance, const std::string& last_mdb_instance)
-:mdb_instance_(mdb_instance), last_mdb_instance_(last_mdb_instance), po_map_writer_(NULL)
+B5mpProcessor::B5mpProcessor(HistoryDB* hdb, const std::string& mdb_instance,
+    const std::string& last_mdb_instance, LogServerConnectionConfig* config)
+:historydb_(hdb), mdb_instance_(mdb_instance),
+    last_mdb_instance_(last_mdb_instance), po_map_writer_(NULL),
+    log_server_cfg_(config)
 {
 }
 
 bool B5mpProcessor::Generate()
 {
+    if(historydb_)
+    {
+        if(!historydb_->is_open())
+        {
+            if(!historydb_->open())
+            {
+                LOG(ERROR)<<"HistoryDB open fail"<<std::endl;
+                return false;
+            }
+        }
+    }
+    else
+    {
+        if(log_server_cfg_ == NULL)
+            return false;
+        // use logserver instead of local history 
+        if(!LogServerClient::Init(*log_server_cfg_))
+        {
+            LOG(ERROR) << "Log Server Init failed." << std::endl;
+            return false;
+        }
+        if(!LogServerClient::Test())
+        {
+            LOG(ERROR) << "log server test failed" << std::endl;
+            return false;
+        }
+    }
+
     ScdMerger::PropertyConfig config;
     config.output_dir = B5MHelper::GetB5mpPath(mdb_instance_);
     B5MHelper::PrepareEmptyDir(config.output_dir);
@@ -65,6 +98,8 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
     }
     ProductProperty another;
     another.Parse(another_value.doc);
+    UString anotherdocid, another_uuid, curdocid,curuuid;
+
     //std::string spid;
     //another.pid.convertString(spid, izenelib::util::UString::UTF_8);
     if(another_value.type!=DELETE_SCD)
@@ -96,7 +131,6 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
             //LOG(INFO)<<pp.ToString()<<std::endl;
         //}
     }
-    pp.Set(value.doc);
 
     //add to po_map
     uint128_t ipid = B5MHelper::UStringToUint128(another.pid);
@@ -106,6 +140,7 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
         another.oid.convertString(oid, izenelib::util::UString::UTF_8);
     }
     po_map_writer_->Append(ipid, oid);
+    pp.Set(value.doc);
 
 }
 
@@ -114,8 +149,32 @@ void B5mpProcessor::ProductOutput_(Document& doc, int& type)
     doc.eraseProperty("OID");
     int64_t itemcount = 0;
     doc.getProperty("itemcount", itemcount);
+
+    UString docid;
+    std::string docid_s;
+    doc.getProperty("DOCID", docid);
+    docid.convertString(docid_s, izenelib::util::UString::UTF_8);
+    std::string offerids_s;
+    if(historydb_)
+    {
+        historydb_->pd_get(docid_s, offerids_s);
+    }
+    else
+    {
+        LogServerClient::GetOldDocIdList(docid_s, offerids_s);
+    }
+    doc.property("OldOfferIds") = UString(offerids_s, UString::UTF_8);
+
     if(itemcount<=0)
     {
+        if(!offerids_s.empty())
+        {
+            cout << "===== itemcount = 0 but old offers not empty, docid:" << 
+                docid_s << "offerids:" << offerids_s <<endl;
+            cout << "this product would be reserved for keep consistent." << endl;
+            return;
+        }
+
         type = DELETE_SCD;
         doc.clearExceptDOCID();
     }

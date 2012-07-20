@@ -42,6 +42,11 @@ public:
 
     /// Asynchronous update
     void updateUUID(const UUID2DocidList& uuid2DocidList);
+    void AddOldUUID(OldUUIDData& reqdata);
+    void AddOldDocId(OldDocIdData& reqdata);
+    void DelOldDocId(const DelOldDocIdData& reqdata);
+    void GetOldUUID(OldUUIDData& reqdata);
+    void GetOldDocId(OldDocIdData& reqdata);
 
     void synchronize(const SynchronizeData& syncReqData);
 

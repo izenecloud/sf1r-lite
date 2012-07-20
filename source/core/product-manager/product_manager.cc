@@ -206,28 +206,11 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
     boost::mutex::scoped_lock lock(human_mutex_);
     if (config_.enable_clustering_algo)
     {
-        PMDocumentType from;
-        if (!data_source_->GetDocument(docid, from)) return false;
-        UString from_uuid;
-        if (!from.getProperty(config_.uuid_property_name, from_uuid) ) return false;
-        std::vector<uint32_t> docid_list;
-        data_source_->GetDocIdList(from_uuid, docid_list, docid); // except from.docid
-        if (docid_list.empty()) // the from doc is unique, so delete it in A
-        {
-            PMDocumentType del_doc;
-            del_doc.property(config_.docid_property_name) = from_uuid;
-            op_processor_->Append(3, del_doc);
-        }
-        else
-        {
-            PMDocumentType diff_properties;
-            ProductPrice price;
-            util_.GetPrice(docid_list, price);
-            diff_properties.property(config_.price_property_name) = price.ToUString();
-            diff_properties.property(config_.docid_property_name) = from_uuid;
-            util_.SetItemCount(diff_properties, docid_list.size());
-            op_processor_->Append(2, diff_properties);
-        }
+        std::vector<uint32_t> deleting_docids;
+        deleting_docids.push_back(docid);
+        ProductEditOption edit_op;
+        edit_op.force = true;
+        return editor_->RemovePermanentlyFromAnyGroup(deleting_docids, edit_op);
     }
     return true;
 }
@@ -385,7 +368,9 @@ bool ProductManager::FinishHook()
                 PMDocumentType new_doc(doc);
                 new_doc.property(config_.docid_property_name) = uuid;
                 new_doc.eraseProperty(config_.uuid_property_name);
+                new_doc.eraseProperty(config_.olduuid_property_name);
                 util_.SetItemCount(new_doc, 1);
+                new_doc.property(config_.oldofferids_property_name) = "";
                 op_processor_->Append(1, new_doc);
                 if (uuid_map_writer)
                 {
@@ -417,7 +402,9 @@ bool ProductManager::FinishHook()
             PMDocumentType& doc = g2doc_it->second;
             PMDocumentType new_doc(doc);
             new_doc.property(config_.docid_property_name) = new_doc.property(config_.uuid_property_name);
+            new_doc.property(config_.oldofferids_property_name) = "";
             new_doc.eraseProperty(config_.uuid_property_name);
+            new_doc.eraseProperty(config_.olduuid_property_name);
             op_processor_->Append(1, new_doc);
             ++append_count;
             ++g2doc_it;
