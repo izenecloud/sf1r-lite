@@ -46,6 +46,7 @@ public:
 
     void set_custom_rank();
     void get_custom_rank();
+    void get_custom_query();
 
 protected:
     virtual bool checkCollectionService(std::string& error);
@@ -67,6 +68,8 @@ private:
         const std::vector<std::string>& propNameList,
         izenelib::driver::Value& docValue
     );
+
+    void renderCustomQueries_(const std::vector<std::string>& queries);
 
     uint32_t cid_;
     std::vector<uint32_t> search_result_;

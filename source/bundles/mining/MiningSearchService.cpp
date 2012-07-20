@@ -276,6 +276,11 @@ bool MiningSearchService::getCustomRank(
     return miningManager_->getCustomRank(query, docList);
 }
 
+bool MiningSearchService::getCustomQueries(std::vector<std::string>& queries)
+{
+    return miningManager_->getCustomQueries(queries);
+}
+
 bool MiningSearchService::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
 {
     return miningManager_->GetTdtInTimeRange(start, end, topic_list);

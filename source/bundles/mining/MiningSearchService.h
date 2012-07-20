@@ -152,6 +152,13 @@ public:
         std::vector<Document>& docList
     );
 
+    /**
+     * Get @p queries which have been customized by @c setCustomRank() with
+     * non-empty @p docIdList.
+     * @return true for success, false for failure
+     */
+    bool getCustomQueries(std::vector<std::string>& queries);
+
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info);
 

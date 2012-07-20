@@ -86,6 +86,7 @@ controllers:
       - get_merchant_score
       - set_custom_rank
       - get_custom_rank
+      - get_custom_query
 
   TopicController:
     actions:

@@ -1503,6 +1503,14 @@ bool MiningManager::getCustomRank(
     return getDocList_(docIdList, docList);
 }
 
+bool MiningManager::getCustomQueries(std::vector<std::string>& queries)
+{
+    if (customRankManager_)
+        return customRankManager_->getQueries(queries);
+
+    return false;
+}
+
 bool MiningManager::convertDocIdList_(
     const std::vector<std::string>& strList,
     std::vector<docid_t>& idList

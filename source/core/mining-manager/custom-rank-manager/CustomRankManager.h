@@ -62,6 +62,13 @@ public:
      */
     CustomRankScorer* getScorer(const std::string& query);
 
+    /**
+     * get the @p queries which have been customized by @c setDocIdList() with
+     * non-empty @p docIdList.
+     * @return true for success, false for failure
+     */
+    bool getQueries(std::vector<std::string>& queries);
+
 private:
     /** key: query */
     typedef SDBWrapper<std::string, DocIdList> DBType;

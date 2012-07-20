@@ -130,14 +130,24 @@ BOOST_AUTO_TEST_CASE(testNormalCase)
         checkSet(customRankManager, query1, "13 12 15");
         checkGet(customRankManager, query1, "13 12 15", "1 2 3");
 
-        checkSet(customRankManager, query1, "");
-        checkEmpty(customRankManager, query1);
-
         checkSet(customRankManager, query2, "9 7 5 3 1 2 4 6 8");
         checkGet(customRankManager, query2, "9 7 5 3 1 2 4 6 8", "10 11 12");
 
+        std::vector<std::string> queries;
+        BOOST_CHECK(customRankManager.getQueries(queries));
+        BOOST_REQUIRE_EQUAL(queries.size(), 2U);
+        BOOST_CHECK_EQUAL(queries[0], query1);
+        BOOST_CHECK_EQUAL(queries[1], query2);
+
+        checkSet(customRankManager, query1, "");
+        checkEmpty(customRankManager, query1);
+
         checkSet(customRankManager, query2, "");
         checkEmpty(customRankManager, query2);
+
+        queries.clear();
+        BOOST_CHECK(customRankManager.getQueries(queries));
+        BOOST_CHECK_EQUAL(queries.size(), 0U);
     }
 }
 

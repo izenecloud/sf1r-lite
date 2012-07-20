@@ -676,7 +676,7 @@ void FacetedController::set_custom_rank()
  * @section response
  *
  * - @b header (@c Object): Property @b success gives the result, true or false.
- * - @b resources (@c Array): Each element is a document @c Object, where property name is the key, and property value is the value.@n
+ * - @b resources (@c Array): Each element is a document @c Object, where property name is the key, and property value is the value.
  *
  * @section Example
  *
@@ -832,6 +832,62 @@ void FacetedController::renderDoc_(
         ustr.convertString(utf8, ENCODING_TYPE);
 
         docValue[propName] = utf8;
+    }
+}
+
+void FacetedController::renderCustomQueries_(const std::vector<std::string>& queries)
+{
+    Value& resources = response()[Keys::resources];
+
+    for (std::vector<std::string>::const_iterator it = queries.begin();
+        it != queries.end(); ++it)
+    {
+        resources() = *it;
+    }
+}
+
+/**
+ * @brief Action @b get_custom_query. Get all the queries which has
+ *        customization on product ranking.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ * - @b resources (@c Array): Each element is a query @c String, which has been
+ *   called in @c set_custom_rank() as @b keywords with non-empty @b docid_list.
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "ChnWiki"
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resources": ["iphone", "ipad", "imac"]
+ * }
+ * @endcode
+ */
+void FacetedController::get_custom_query()
+{
+    std::vector<std::string> queries;
+
+    if (miningSearchService_->getCustomQueries(queries))
+    {
+        renderCustomQueries_(queries);
+    }
+    else
+    {
+        response().addError("Failed to get custom queries.");
     }
 }
 

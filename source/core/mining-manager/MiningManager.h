@@ -270,6 +270,8 @@ public:
         std::vector<Document>& docList
     );
 
+    bool getCustomQueries(std::vector<std::string>& queries);
+
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
 
     bool GetTdtInTimeRange(const boost::gregorian::date& start, const boost::gregorian::date& end, std::vector<izenelib::util::UString>& topic_list);
