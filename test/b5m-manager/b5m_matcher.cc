@@ -68,6 +68,7 @@ int main(int ac, char** av)
         ("name,N", po::value<std::string>(), "specify the name")
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
         ("test", "specify test flag")
+        ("force", "specify force flag")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -100,6 +101,7 @@ int main(int ac, char** av)
     std::string work_dir;
     std::string name;
     bool test_flag = false;
+    bool force_flag = false;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
     } 
@@ -215,6 +217,10 @@ int main(int ac, char** av)
     {
         test_flag = true;
     }
+    if(vm.count("force"))
+    {
+        force_flag = true;
+    }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
 
     if(vm.count("raw-generate"))
@@ -253,21 +259,25 @@ int main(int ac, char** av)
         }
     }
     if (vm.count("attribute-index")) {
-        if( scd_path.empty() || knowledge_dir.empty() )
+        if( knowledge_dir.empty() )
         {
             return EXIT_FAILURE;
         }
-        AttributeIndexer indexer;
+        if(force_flag)
+        {
+            boost::filesystem::remove_all(knowledge_dir+"/index.done");
+        }
+        AttributeIndexer indexer(knowledge_dir);
         indexer.SetCmaPath(cma_path);
         if(!synonym_file.empty())
         {
             indexer.LoadSynonym(synonym_file);
         }
-        if(!category_regex.empty())
-        {
-            indexer.SetCategoryRegex(category_regex);
-        }
-        if(!indexer.Index(scd_path, knowledge_dir))
+        //if(!category_regex.empty())
+        //{
+            //indexer.SetCategoryRegex(category_regex);
+        //}
+        if(!indexer.Index())
         {
             return EXIT_FAILURE;
         }
@@ -279,25 +289,25 @@ int main(int ac, char** av)
     } 
     if(vm.count("b5m-match"))
     {
-        if( scd_path.empty() || knowledge_dir.empty() )
+        if( knowledge_dir.empty() )
         {
             return EXIT_FAILURE;
         }
-        AttributeIndexer indexer;
+        AttributeIndexer indexer(knowledge_dir);
         indexer.SetCmaPath(cma_path);
         if(!synonym_file.empty())
         {
             indexer.LoadSynonym(synonym_file);
         }
-        if(!category_regex.empty())
-        {
-            indexer.SetCategoryRegex(category_regex);
-        }
-        if(!indexer.Open(knowledge_dir))
+        //if(!category_regex.empty())
+        //{
+            //indexer.SetCategoryRegex(category_regex);
+        //}
+        if(!indexer.Open())
         {
             return EXIT_FAILURE;
         }
-        indexer.ProductMatchingSVM(scd_path);
+        indexer.ProductMatchingSVM();
     }
     if(vm.count("psm-index"))
     {
@@ -417,57 +427,57 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
-    if(vm.count("match-test"))
-    {
-        if( knowledge_dir.empty() )
-        {
-            return EXIT_FAILURE;
-        }
-        AttributeIndexer indexer;
-        indexer.SetCmaPath(cma_path);
-        if(!synonym_file.empty())
-        {
-            indexer.LoadSynonym(synonym_file);
-        }
-        if(!category_regex.empty())
-        {
-            indexer.SetCategoryRegex(category_regex);
-        }
-        indexer.Open(knowledge_dir);
-        std::cout<<"Input Product Title:"<<std::endl;
-        std::string line;
-        while( getline(std::cin, line) )
-        {
-            if(line.empty()) break;
-            izenelib::util::UString category;
-            izenelib::util::UString ustr;
-            std::size_t split_index = line.find("|");
-            if(split_index!=std::string::npos)
-            {
-                category.append( izenelib::util::UString(line.substr(0, split_index), izenelib::util::UString::UTF_8) );
-                ustr.append( izenelib::util::UString(line.substr(split_index+1), izenelib::util::UString::UTF_8) );
-            }
-            else
-            {
-                ustr.append( izenelib::util::UString(line, izenelib::util::UString::UTF_8) );
-            }
-            std::vector<uint32_t> aid_list;
-            indexer.GetAttribIdList(category, ustr, aid_list);
-            for(std::size_t i=0;i<aid_list.size();i++)
-            {
-                std::cout<<"["<<aid_list[i]<<",";
-                izenelib::util::UString arep;
-                indexer.GetAttribRep(aid_list[i], arep);
-                if(arep.length()>0)
-                {
-                    std::string sarep;
-                    arep.convertString(sarep, izenelib::util::UString::UTF_8);
-                    std::cout<<sarep;
-                }
-                std::cout<<"]"<<std::endl;
-            }
-        }
-    }
+    //if(vm.count("match-test"))
+    //{
+        //if( knowledge_dir.empty() )
+        //{
+            //return EXIT_FAILURE;
+        //}
+        //AttributeIndexer indexer;
+        //indexer.SetCmaPath(cma_path);
+        //if(!synonym_file.empty())
+        //{
+            //indexer.LoadSynonym(synonym_file);
+        //}
+        //if(!category_regex.empty())
+        //{
+            //indexer.SetCategoryRegex(category_regex);
+        //}
+        //indexer.Open(knowledge_dir);
+        //std::cout<<"Input Product Title:"<<std::endl;
+        //std::string line;
+        //while( getline(std::cin, line) )
+        //{
+            //if(line.empty()) break;
+            //izenelib::util::UString category;
+            //izenelib::util::UString ustr;
+            //std::size_t split_index = line.find("|");
+            //if(split_index!=std::string::npos)
+            //{
+                //category.append( izenelib::util::UString(line.substr(0, split_index), izenelib::util::UString::UTF_8) );
+                //ustr.append( izenelib::util::UString(line.substr(split_index+1), izenelib::util::UString::UTF_8) );
+            //}
+            //else
+            //{
+                //ustr.append( izenelib::util::UString(line, izenelib::util::UString::UTF_8) );
+            //}
+            //std::vector<uint32_t> aid_list;
+            //indexer.GetAttribIdList(category, ustr, aid_list);
+            //for(std::size_t i=0;i<aid_list.size();i++)
+            //{
+                //std::cout<<"["<<aid_list[i]<<",";
+                //izenelib::util::UString arep;
+                //indexer.GetAttribRep(aid_list[i], arep);
+                //if(arep.length()>0)
+                //{
+                    //std::string sarep;
+                    //arep.convertString(sarep, izenelib::util::UString::UTF_8);
+                    //std::cout<<sarep;
+                //}
+                //std::cout<<"]"<<std::endl;
+            //}
+        //}
+    //}
 
     //if(odb)
     //{

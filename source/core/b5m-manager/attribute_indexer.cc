@@ -1,4 +1,5 @@
 #include "attribute_indexer.h"
+#include "attribute_processor.h"
 #include "b5m_helper.h"
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
@@ -21,8 +22,8 @@ using namespace idmlib::sim;
 
 #define B5M_DEBUG
 
-AttributeIndexer::AttributeIndexer()
-:is_open_(false), index_(NULL), id_manager_(NULL), name_index_(NULL), name_id_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL)
+AttributeIndexer::AttributeIndexer(const std::string& knowledge_dir)
+:knowledge_dir_(knowledge_dir), is_open_(false), index_(NULL), id_manager_(NULL), name_index_(NULL), name_id_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL)
 {
 }
 
@@ -86,26 +87,32 @@ bool AttributeIndexer::LoadSynonym(const std::string& file)
     return true;
 }
 
-bool AttributeIndexer::Index(const std::string& scd_file, const std::string& knowledge_dir)
+bool AttributeIndexer::Index()
 {
-    std::string done_file = knowledge_dir+"/index.done";
+    std::string done_file = knowledge_dir_+"/index.done";
     if(boost::filesystem::exists(done_file))
     {
-        std::cout<<knowledge_dir<<" index done, ignore."<<std::endl;
+        std::cout<<knowledge_dir_<<" index done, ignore."<<std::endl;
         return true;
     }
-    ClearKnowledge_(knowledge_dir);
-    Open(knowledge_dir);
-    BuildProductDocuments_(scd_file);
+    ClearKnowledge_();
+    Open();
+    AttributeProcessor ap(knowledge_dir_);
+    if(!ap.Process())
+    {
+        std::cout<<"attribute process on "<<knowledge_dir_<<" fail"<<std::endl;
+        return false;
+    }
+    BuildProductDocuments_();
     if(product_list_.empty())
     {
         LOG(INFO)<<"product_list_ empty, ignore training."<<std::endl;
         return true;
     }
     WriteIdInfo_();
-    std::string pa_path = knowledge_dir+"/product_list";
+    std::string pa_path = knowledge_dir_+"/product_list";
     izenelib::am::ssf::Util<>::Save(pa_path, product_list_);
-    std::string filter_attrib_name_file = knowledge_dir+"/filter_attrib_name";
+    std::string filter_attrib_name_file = knowledge_dir_+"/filter_attrib_name";
     std::ofstream fofs(filter_attrib_name_file.c_str());
     boost::unordered_set<AttribNameId>::iterator it = filter_anid_.begin();
     while(it!=filter_anid_.end())
@@ -138,9 +145,9 @@ bool AttributeIndexer::Index(const std::string& scd_file, const std::string& kno
     return true;
 }
 
-void AttributeIndexer::ClearKnowledge_(const std::string& knowledge_dir)
+void AttributeIndexer::ClearKnowledge_()
 {
-    if(!boost::filesystem::exists(knowledge_dir)) return;
+    if(!boost::filesystem::exists(knowledge_dir_)) return;
     std::vector<std::string> runtime_path;
     runtime_path.push_back("logger");
     runtime_path.push_back("match");
@@ -153,27 +160,26 @@ void AttributeIndexer::ClearKnowledge_(const std::string& knowledge_dir)
 
     for(uint32_t i=0;i<runtime_path.size();i++)
     {
-        boost::filesystem::remove_all(knowledge_dir+"/"+runtime_path[i]);
+        boost::filesystem::remove_all(knowledge_dir_+"/"+runtime_path[i]);
     }
 }
 
-bool AttributeIndexer::Open(const std::string& knowledge_dir)
+bool AttributeIndexer::Open()
 {
     if(!is_open_)
     {
-        knowledge_dir_ = knowledge_dir;
-        boost::filesystem::create_directories(knowledge_dir);
-        std::string logger_file = knowledge_dir+"/logger";
+        boost::filesystem::create_directories(knowledge_dir_);
+        std::string logger_file = knowledge_dir_+"/logger";
         logger_.open(logger_file.c_str(), std::ios::out | std::ios::app );
-        std::string id_dir = knowledge_dir+"/attrib_id";
+        std::string id_dir = knowledge_dir_+"/attrib_id";
         boost::filesystem::create_directories(id_dir);
         id_manager_ = new AttribIDManager(id_dir+"/id");
-        index_ = new AttribIndex(knowledge_dir+"/attrib_index");
+        index_ = new AttribIndex(knowledge_dir_+"/attrib_index");
         index_->open();
-        std::string name_id_dir = knowledge_dir+"/attrib_name_id";
+        std::string name_id_dir = knowledge_dir_+"/attrib_name_id";
         boost::filesystem::create_directories(name_id_dir);
         name_id_manager_ = new AttribNameIDManager(name_id_dir+"/id");
-        name_index_ = new AttribNameIndex(knowledge_dir+"/attrib_name_index");
+        name_index_ = new AttribNameIndex(knowledge_dir_+"/attrib_name_index");
         name_index_->open();
         idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path_, "");
         aconfig.symbol = true;
@@ -181,27 +187,27 @@ bool AttributeIndexer::Open(const std::string& knowledge_dir)
         idmlib::util::IDMAnalyzerConfig cconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
         cconfig.symbol = true;
         char_analyzer_ = new idmlib::util::IDMAnalyzer(cconfig);
-        std::string pa_path = knowledge_dir+"/product_list";
+        std::string pa_path = knowledge_dir_+"/product_list";
         izenelib::am::ssf::Util<>::Load(pa_path, product_list_);
 
 
         //predefined knowledges
-        std::string category_file = knowledge_dir+"/category";
-        if(boost::filesystem::exists(category_file))
-        {
-            std::ifstream cifs(category_file.c_str());
-            std::string line;
-            if(getline(cifs, line))
-            {
-                boost::algorithm::trim(line);
-                LOG(INFO)<<"find category regex : "<<line<<std::endl;
-                SetCategoryRegex(line);
-            }
-            cifs.close();
-        }
+        //std::string category_file = knowledge_dir_+"/category";
+        //if(boost::filesystem::exists(category_file))
+        //{
+            //std::ifstream cifs(category_file.c_str());
+            //std::string line;
+            //if(getline(cifs, line))
+            //{
+                //boost::algorithm::trim(line);
+                //LOG(INFO)<<"find category regex : "<<line<<std::endl;
+                //SetCategoryRegex(line);
+            //}
+            //cifs.close();
+        //}
 
         uint32_t num_filter_attrib = 0;
-        std::string filter_attrib_name_file = knowledge_dir+"/filter_attrib_name";
+        std::string filter_attrib_name_file = knowledge_dir_+"/filter_attrib_name";
         if(boost::filesystem::exists(filter_attrib_name_file ))
         {
             std::ifstream fifs(filter_attrib_name_file.c_str());
@@ -215,7 +221,7 @@ bool AttributeIndexer::Open(const std::string& knowledge_dir)
                 filter_attrib_name_.insert(line);
                 AttribRep name_rep(line, izenelib::util::UString::UTF_8);
                 AttribNameId name_aid;
-                if(name_id_manager_->getDocIdByDocName(name_rep, name_aid, false))
+                if(name_id_manager_->getDocIdByDocName(name_rep, name_aid))
                 {
                     filter_anid_.insert(name_aid);
                 }
@@ -236,10 +242,10 @@ void AttributeIndexer::NormalizeText_(const izenelib::util::UString& text, izene
     text.convertString(str, izenelib::util::UString::UTF_8);
     //logger_<<"[BNO]"<<str<<std::endl;
     boost::to_lower(str);
-    for(uint32_t i=0;i<normalize_pattern_.size();i++)
-    {
-        str = boost::regex_replace(str, normalize_pattern_[i].first, normalize_pattern_[i].second);
-    }
+    //for(uint32_t i=0;i<normalize_pattern_.size();i++)
+    //{
+        //str = boost::regex_replace(str, normalize_pattern_[i].first, normalize_pattern_[i].second);
+    //}
     //logger_<<"[ANO]"<<str<<std::endl;
     ntext = izenelib::util::UString(str, izenelib::util::UString::UTF_8);
 }
@@ -437,7 +443,7 @@ void AttributeIndexer::GetAttribIdList(const izenelib::util::UString& category, 
     static const uint32_t max_ngram_len = 20;
     static const uint32_t max_unmatch_count = 1;
     std::vector<izenelib::util::UString> termstr_list;
-    AnalyzeChar_(value, termstr_list);
+    AnalyzeChar_(value, termstr_list); //convert to lower case
     std::size_t index = 0;
     while(index<termstr_list.size())
     {
@@ -854,20 +860,25 @@ bool AttributeIndexer::TrainSVM()
     return true;
 }
 
-void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
+void AttributeIndexer::ProductMatchingSVM()
 {
-    namespace bfs = boost::filesystem;
-    std::string done_file = knowledge_dir_+"/match.done";
-    if(boost::filesystem::exists(done_file))
+    std::vector<std::string> scd_list;
+    std::string a_scd_dir = knowledge_dir_+"/A";
+    ScdParser::getScdList(a_scd_dir, scd_list);
+    uint32_t counting = 200;
+    if(scd_list.empty())
     {
+        std::cout<<"No valid SCD for matching"<<std::endl;
         return;
     }
+    Open();
     if(product_list_.empty())
     {
         std::cout<<"product_list_ empty, ignore matching"<<std::endl;
         return;
     }
     std::string match_file = knowledge_dir_+"/match";
+    std::string not_match_file = knowledge_dir_+"/not_match";
     struct svm_model* model;
     std::string model_file = knowledge_dir_+"/model";
     if( (model=svm_load_model(model_file.c_str()))==0 )
@@ -878,6 +889,7 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     std::cout<<model_file<<" loaded!"<<std::endl;
     //std::ofstream match_ofs(match_file.c_str(), std::ios::out | std::ios::app);
     std::ofstream match_ofs(match_file.c_str());
+    std::ofstream not_match_ofs(not_match_file.c_str());
     boost::unordered_map<std::string, std::vector<std::size_t> > category_indexlist;
     boost::unordered_map<std::string, std::vector<std::size_t> >::iterator ci_it;
     BuildCategoryMap_(category_indexlist);
@@ -886,42 +898,6 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
     //{
         //ss_list[i] = new StringSimilarity(product_list_[i].property["Title"]);
     //}
-    std::vector<std::string> scd_list;
-    bool inner_scd = false;
-    std::string a_scd_dir = knowledge_dir_+"/A";
-    std::string a_scd;
-    uint32_t counting = 10000;
-    if(bfs::is_directory(a_scd_dir))
-    {
-        bfs::path p(a_scd_dir);
-        bfs::directory_iterator end;
-        for(bfs::directory_iterator it(p);it!=end;it++)
-        {
-            if(bfs::is_regular_file(it->path()))
-            {
-                std::string file = it->path().string();
-                if(ScdParser::checkSCDFormat(file))
-                {
-                    scd_list.push_back(file);
-                }
-            }
-        }
-        inner_scd = true;
-        counting = 200;
-        std::cout<<"USE inner A FOR MATCHING"<<std::endl;
-    }
-    else
-    {
-        if(ScdParser::checkSCDFormat(scd_path))
-        {
-            scd_list.push_back(scd_path);
-        }
-    }
-    if(scd_list.empty())
-    {
-        std::cout<<"No valid SCD for matching"<<std::endl;
-        return;
-    }
     static const double price_ratio = 2.2;
     static const double invert_price_ratio = 1.0/price_ratio;
     uint32_t n=0;
@@ -986,18 +962,11 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
             category.convertString(scategory, izenelib::util::UString::UTF_8);
             std::string surl;
             url.convertString(surl, izenelib::util::UString::UTF_8);
-            if(!inner_scd)
-            {
-                if( !match_param_.MatchCategory(scategory) )
-                {
-                    continue;
-                }
-            }
             ci_it = category_indexlist.find(scategory);
             if( ci_it==category_indexlist.end()) continue;
-            ProductPrice price;
-            price.Parse(odoc.property["Price"]);
-            if(!price.Valid()) continue;
+            //ProductPrice price;
+            //price.Parse(odoc.property["Price"]);
+            //if(!price.Valid()) continue;
 
             std::vector<std::size_t>& pindexlist = ci_it->second;
             std::vector<AttribId> aid_list;
@@ -1007,8 +976,8 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
             {
                 std::size_t pindex = pindexlist[p];
                 ProductDocument& product_doc = product_list_[pindex];
-                ProductPrice pprice;
-                pprice.Parse(product_doc.property["Price"]);
+                //ProductPrice pprice;
+                //pprice.Parse(product_doc.property["Price"]);
                 std::vector<std::pair<AttribNameId, double> > feature_vec;
                 FeatureStatus fs;
                 //GetFeatureVector_(aid_list, product_doc.tag_aid_list, feature_vec, nzfc);
@@ -1054,11 +1023,11 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
                 if(predict_label>0)
                 {
                     if(fs.pnum+fs.nnum<2) continue;
-                    double om, pm;
-                    if(!price.GetMid(om) || !pprice.GetMid(pm)) continue;
-                    if(om<=0.0 || pm<=0.0) continue;
-                    double ratio = om/pm;
-                    if(ratio<invert_price_ratio || ratio>price_ratio) continue;
+                    //double om, pm;
+                    //if(!price.GetMid(om) || !pprice.GetMid(pm)) continue;
+                    //if(om<=0.0 || pm<=0.0) continue;
+                    //double ratio = om/pm;
+                    //if(ratio<invert_price_ratio || ratio>price_ratio) continue;
                     double str_sim = StringSimilarity::Sim(title, product_doc.property["Title"]);
                     //double str_sim = ss_list[pindex]->Sim(title);
                     match_list.push_back(std::make_pair(pindex, str_sim));
@@ -1085,6 +1054,11 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
                 boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
                 match_ofs<<soid<<","<<spid<<","<<boost::posix_time::to_iso_string(now)<<","<<stitle<<"\t["<<sptitle<<"]"<<std::endl;
             }
+            else
+            {
+                not_match_ofs<<soid<<","<<stitle<<std::endl;
+
+            }
             num_for_match++;
         }
     }
@@ -1094,9 +1068,10 @@ void AttributeIndexer::ProductMatchingSVM(const std::string& scd_path)
         //delete ss_list[i];
     //}
     match_ofs.close();
-    std::ofstream ofs(done_file.c_str());
-    ofs<<product_list_.size()<<","<<num_for_match<<std::endl;
-    ofs.close();
+    not_match_ofs.close();
+    //std::ofstream ofs(done_file.c_str());
+    //ofs<<product_list_.size()<<","<<num_for_match<<std::endl;
+    //ofs.close();
 }
 
 void AttributeIndexer::ProductMatchingLR(const std::string& scd_file)
@@ -1251,10 +1226,10 @@ bool AttributeIndexer::SplitScd(const std::string& scd_file)
         }
         std::string scategory;
         doc.property("Category").get<UString>().convertString(scategory, UString::UTF_8);
-        if( !match_param_.MatchCategory(scategory) )
-        {
-            continue;
-        }
+        //if( !match_param_.MatchCategory(scategory) )
+        //{
+            //continue;
+        //}
         writer.Append(doc);
     }
     writer.Close();
@@ -1268,6 +1243,7 @@ void AttributeIndexer::GetAttribNameMap_(const std::vector<AttribId>& aid_list, 
     {
         AttribNameId nameid;
         GetAttribNameId(aid_list[i], nameid);
+        //LOG(INFO)<<"get map "<<aid_list[i]<<" "<<nameid<<std::endl;
         map_it = map.find(nameid);
         if(map_it==map.end())
         {
@@ -1291,6 +1267,7 @@ void AttributeIndexer::GetFeatureVector_(const std::vector<AttribId>& o, const s
     for(;pit!=pname_aid_map.end();++pit)
     {
         AttribNameId nameid = pit->first;
+        //LOG(INFO)<<"get nameid "<<nameid<<std::endl;
         std::vector<AttribId>& p_aid_list = pit->second;
         boost::unordered_map<AttribNameId, std::vector<AttribId> >::iterator oit = oname_aid_map.find(nameid);
         if(oit==oname_aid_map.end())
@@ -1327,170 +1304,118 @@ void AttributeIndexer::GetFeatureVector_(const std::vector<AttribId>& o, const s
 
 }
 
-void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
+void AttributeIndexer::BuildProductDocuments_()
 {
     namespace bfs = boost::filesystem;
-    std::string scd_file = scd_path;
-    bool inner_scd = false;
-    std::string t_scd_dir = knowledge_dir_+"/T";
-    std::string t_scd;
-    uint32_t counting = 10000;
-    if(bfs::is_directory(t_scd_dir))
+    std::string t_scd_dir = knowledge_dir_+"/T/P";
+    std::vector<std::string> t_scd_list;
+    ScdParser::getScdList(t_scd_dir, t_scd_list);
+    if(t_scd_list.size()!=1)
     {
-        bfs::path p(t_scd_dir);
-        bfs::directory_iterator end;
-        for(bfs::directory_iterator it(p);it!=end;it++)
-        {
-            if(bfs::is_regular_file(it->path()))
-            {
-                std::string file = it->path().string();
-                if(ScdParser::checkSCDType(file)==INSERT_SCD)
-                {
-                    t_scd = file;
-                }
-            }
-        }
-    }
-    if(!t_scd.empty())
-    {
-        scd_file = t_scd;
-        inner_scd = true;
-        counting = 200;
-        std::cout<<"USE inner T FOR TRAINING"<<std::endl;
-    }
-    else
-    {
-        //force use T
+        std::cout<<"t scd count error"<<std::endl;
         return;
     }
+    std::string t_scd = t_scd_list[0];
+    std::string anid_file = knowledge_dir_+"/T/anid.txt";
+    std::string aid_file = knowledge_dir_+"/T/aid.txt";
+    std::ifstream anid_ofs(anid_file.c_str());
+    std::string line;
+    while(getline(anid_ofs, line))
+    {
+        boost::algorithm::trim(line);
+        std::size_t kpos = line.find(",");
+        uint32_t anid = 0;
+        std::string snav;
+        if(kpos!=std::string::npos)
+        {
+            std::string sanid = line.substr(0, kpos);
+            anid = boost::lexical_cast<uint32_t>(sanid);
+            snav = line.substr(kpos+1);
+        }
+        UString nav(snav, UString::UTF_8);
+        name_id_manager_->Set(nav, anid);
+        //LOG(INFO)<<"name idmanager set "<<snav<<","<<anid<<std::endl;
+        //anid_map_.insert(std::make_pair(vec[1], boost::lexical_cast<uint32_t>(vec[0])));
+    }
+    anid_ofs.close();
+    std::ifstream aid_ofs(aid_file.c_str());
+    while(getline(aid_ofs, line))
+    {
+        boost::algorithm::trim(line);
+        std::size_t kpos = line.find(",");
+        uint32_t aid = 0;
+        std::string snav;
+        if(kpos!=std::string::npos)
+        {
+            std::string said = line.substr(0, kpos);
+            aid = boost::lexical_cast<uint32_t>(said);
+            snav = line.substr(kpos+1);
+        }
+        else continue;
+        UString nav(snav, UString::UTF_8);
+        id_manager_->Set(nav, aid);
+        UString category, attrib_name, attrib_value;
+        std::cout<<"snav : "<<snav<<std::endl;
+        SplitAttribRep(nav, category, attrib_name, attrib_value);
+        std::vector<AttribId> aid_list;
+        index_->get(attrib_value, aid_list);
+        bool aid_dd = false;
+        for(std::size_t j=0;j<aid_list.size();j++)
+        {
+            if(aid==aid_list[j])
+            {
+                aid_dd = true;
+                break;
+            }
+        }
+        if(!aid_dd)
+        {
+            aid_list.push_back(aid);
+            index_->update(attrib_value, aid_list);
+        }
+        UString name_rep = GetAttribRep(category, attrib_name);
+        AttribNameId name_aid;
+        name_id_manager_->getDocIdByDocName(name_rep, name_aid);
+        //std::string sname_rep;
+        //name_rep.convertString(sname_rep, izenelib::util::UString::UTF_8);
+        //LOG(INFO)<<"name_index insert "<<sname_rep<<","<<aid<<","<<name_aid<<std::endl;
+        name_index_->insert(aid, name_aid);
+    }
+    aid_ofs.close();
     ScdParser parser(izenelib::util::UString::UTF_8);
-    parser.load(scd_file);
+    parser.load(t_scd);
     uint32_t n=0;
     for( ScdParser::iterator doc_iter = parser.begin();
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
-        if(n%counting==0)
+        if(n%200==0)
         {
             LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
         }
         ProductDocument product_doc;
-        izenelib::util::UString oid;
-        izenelib::util::UString title;
-        izenelib::util::UString category;
-        izenelib::util::UString attrib_ustr;
+        std::string aid_str;
         SCDDoc& doc = *(*doc_iter);
         SCDDoc::iterator p = doc.begin();
         for(; p!=doc.end(); ++p)
         {
             const std::string& property_name = p->first;
             product_doc.property[property_name] = p->second;
-            if(property_name=="DOCID")
+            if(property_name=="AID")
             {
-                oid = p->second;
+                p->second.convertString(aid_str, UString::UTF_8);
             }
-            else if(property_name=="Title")
-            {
-                title = p->second;
-            }
-            else if(property_name=="Category")
-            {
-                category = p->second;
-            }
-            else if(property_name=="Attribute")
-            {
-                attrib_ustr = p->second;
-            }
-            //{
-                //if(property_name=="Url")
-                //{
-                    //std::cout<<p->second<<std::endl;
-                //}
-            //}
         }
-        if(category.length()==0 || attrib_ustr.length()==0 || title.length()==0)
+        if(aid_str.length()==0)
         {
             continue;
         }
-        std::string scategory;
-        category.convertString(scategory, izenelib::util::UString::UTF_8);
-        if(!inner_scd)
+        std::vector<std::string> vec;
+        boost::algorithm::split(vec, aid_str, boost::algorithm::is_any_of(","));
+        for(uint32_t i=0;i<vec.size();i++)
         {
-            if( !match_param_.MatchCategory(scategory) )
-            {
-                continue;
-            }
-        }
-        std::string stitle;
-        title.convertString(stitle, izenelib::util::UString::UTF_8);
-        //logger_<<"[BPD][Title]"<<stitle<<std::endl;
-        std::vector<AttrPair> attrib_list;
-        split_attr_pair(attrib_ustr, attrib_list);
-        for(std::size_t i=0;i<attrib_list.size();i++)
-        {
-            const std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
-            if(attrib_value_list.size()!=1) continue; //ignore empty value attrib and multi value attribs
-            const izenelib::util::UString& attrib_value = attrib_value_list[0];
-            const izenelib::util::UString& attrib_name = attrib_list[i].first;
-            if(attrib_value.length()==0 || attrib_value.length()>30) continue;
-            izenelib::util::UString nav;
-            NormalizeAV_(attrib_value, nav);
-            //post process nav
-            bool b_value = false;
-            if(IsBoolAttribValue_(nav, b_value))
-            {
-                //if(b_value)
-                //{
-                    //nav = attrib_name;
-                //}
-                //else
-                //{
-                    //nav.clear();
-                //}
-                //disable bool attrib now
-                nav.clear();
-            }
-            if(nav.length()==0) continue;
-            AttribRep rep = GetAttribRep(category, attrib_name, nav);
-            AttribId aid;
-            id_manager_->getDocIdByDocName(rep, aid);
-            AttribRep name_rep = GetAttribRep(category, attrib_name);
-            AttribNameId name_aid;
-            name_id_manager_->getDocIdByDocName(name_rep, name_aid);
-            name_index_->insert(aid, name_aid);
-            std::string sname_rep;
-            name_rep.convertString(sname_rep, izenelib::util::UString::UTF_8);
-            if(filter_attrib_name_.find(sname_rep)!=filter_attrib_name_.end())
-            {
-                filter_anid_.insert(name_aid);
-            }
-            if(ValidAnid_(name_aid))
-            {
-                product_doc.tag_aid_list.push_back(aid);
-            }
-            std::vector<AttribId> aid_list;
-            index_->get(nav, aid_list);
-            bool aid_dd = false;
-            for(std::size_t j=0;j<aid_list.size();j++)
-            {
-                if(aid==aid_list[j])
-                {
-                    aid_dd = true;
-                    break;
-                }
-            }
-            if(!aid_dd)
-            {
-                aid_list.push_back(aid);
-                index_->update(nav, aid_list);
-            }
-            //{
-                //std::string srep;
-                //rep.convertString(srep, izenelib::util::UString::UTF_8);
-                //std::string snav;
-                //nav.convertString(snav, izenelib::util::UString::UTF_8);
-                //logger_<<srep<<" - "<<snav<<" : "<<aid<<","<<name_aid<<std::endl;
-            //}
-
+            std::vector<std::string> vec2;
+            boost::algorithm::split(vec2, vec[i], boost::algorithm::is_any_of(":"));
+            product_doc.tag_aid_list.push_back(boost::lexical_cast<uint32_t>(vec2[1]));
         }
         std::sort(product_doc.tag_aid_list.begin(), product_doc.tag_aid_list.end());
         product_list_.push_back(product_doc);
@@ -1500,6 +1425,7 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
     LOG(INFO)<<"Generated "<<product_list_.size()<<" docs"<<std::endl;
     //already got tag_aid_list, now build others
     std::vector<double> anid_weight(name_id_manager_->getMaxDocId()+1, 0.0);
+    LOG(INFO)<<"anid weight size "<<anid_weight.size()<<std::endl;
     for(std::size_t i=0;i<product_list_.size();i++)
     {
         if(i%100==0)
@@ -1510,6 +1436,17 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
         izenelib::util::UString& category = doc.property["Category"];
         izenelib::util::UString& title = doc.property["Title"];
         GetAttribIdList(category, title, doc.aid_list);
+        //std::string stitle;
+        //title.convertString(stitle, izenelib::util::UString::UTF_8);
+        //LOG(INFO)<<"get title "<<stitle<<std::endl;
+        //for(uint32_t j=0;j<doc.aid_list.size();j++)
+        //{
+            //LOG(INFO)<<"get aid "<<doc.aid_list[j]<<std::endl;
+        //}
+        //for(uint32_t j=0;j<doc.tag_aid_list.size();j++)
+        //{
+            //LOG(INFO)<<"get tag aid "<<doc.tag_aid_list[j]<<std::endl;
+        //}
 
         FeatureType feature_vec;
         FeatureStatus fs;
@@ -1517,6 +1454,7 @@ void AttributeIndexer::BuildProductDocuments_(const std::string& scd_path)
         for(uint32_t f=0;f<feature_vec.size();f++)
         {
             AttribNameId anid = feature_vec[f].first;
+            //LOG(INFO)<<"get anid "<<anid<<std::endl;
             double value = feature_vec[f].second;
             anid_weight[anid] += value;
         }

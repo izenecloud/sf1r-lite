@@ -37,7 +37,7 @@ bool TicketMatcher::Index(const std::string& scd_path, const std::string& knowle
     group_table.Load();
 
     DDType dd(dd_container, &group_table);
-    dd.SetFixK(6);
+    dd.SetFixK(12);
     if(!dd.Open())
     {
         std::cout<<"DD open failed"<<std::endl;
@@ -94,8 +94,20 @@ bool TicketMatcher::Index(const std::string& scd_path, const std::string& knowle
             std::sort(attach.time_array.begin(), attach.time_array.end());
 
             UString text = name;
-            text.append(UString(" ", UString::UTF_8));
-            text.append(address);
+            //text.append(UString(" ", UString::UTF_8));
+            //text.append(address);
+            //text.append(UString(" ", UString::UTF_8));
+            //text.append(category);
+            //text.append(UString(" ", UString::UTF_8));
+            //text.append(category);
+            //text.append(UString(" ", UString::UTF_8));
+            //text.append(category);
+            //text.append(UString(" ", UString::UTF_8));
+            //text.append(city);
+            //text.append(UString(" ", UString::UTF_8));
+            //text.append(city);
+            //text.append(UString(" ", UString::UTF_8));
+            //text.append(city);
             std::vector<std::pair<std::string, double> > doc_vector;
             analyzer.Analyze(text, doc_vector);
 
