@@ -488,6 +488,10 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         actionOperation.actionItem_.filteringList_;
     boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet;
 
+    // when query is "*"
+    const bool isFilterQuery =
+        actionOperation.rawQueryTree_->type_ == QueryTree::FILTER_QUERY;
+
     try
     {
         if (filter_hook_)
@@ -496,7 +500,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         if (!filtingList.empty())
             queryBuilder_->prepare_filter(filtingList, pFilterIdSet);
 
-        if (actionOperation.rawQueryTree_->type_ != QueryTree::FILTER_QUERY)
+        if (isFilterQuery == false)
         {
             if( isWandSearch )
             {
@@ -523,9 +527,6 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
                                              termIndexMaps );
                 pScoreDocIterator = pMultiPropertyIterator;
             }
-
-            if (pScoreDocIterator == NULL)
-                return false;
         }
 
     }
@@ -567,21 +568,23 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     else
         scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
 
-    if (pScoreDocIterator)
+    if (isFilterQuery == false)
     {
         const std::string& query = actionOperation.actionItem_.env_.queryString_;
-        DocumentIterator* pCustomDocIter = createCustomRankDocIterator_(query, pSorter);
 
-        if (pCustomDocIter)
+        pScoreDocIterator = combineCustomDocIterator_(
+            query, pSorter, pScoreDocIterator);
+
+        if (pScoreDocIterator == NULL)
         {
-            pCustomDocIter->add(pScoreDocIterator);
-            pScoreDocIterator = pCustomDocIter;
+            LOG(INFO) << "empty search result for query [" << query << "]";
+            return false;
         }
 
         pDocIterator->add(pScoreDocIterator);
     }
 
-    if (!pScoreDocIterator && !pFilterIdSet)
+    if (isFilterQuery && !pFilterIdSet)
     {//SELECT * , and filter is null
         if (pSorter)
         {
@@ -855,9 +858,10 @@ void SearchManager::fillSearchInfoWithSortPropertyData_(
         pSorterCache_);
 }
 
-DocumentIterator* SearchManager::createCustomRankDocIterator_(
+DocumentIterator* SearchManager::combineCustomDocIterator_(
     const std::string& query,
-    boost::shared_ptr<Sorter> pSorter)
+    boost::shared_ptr<Sorter> pSorter,
+    DocumentIterator* originDocIterator)
 {
     if (customRankManager_ &&
         pSorter && pSorter->requireScorer())
@@ -866,10 +870,20 @@ DocumentIterator* SearchManager::createCustomRankDocIterator_(
             customRankManager_->getScorer(query);
 
         if (customRankScorer)
-            return new CustomRankDocumentIterator(customRankScorer);
+        {
+            DocumentIterator* pCustomDocIter =
+                new CustomRankDocumentIterator(customRankScorer);
+
+            if (originDocIterator)
+            {
+                pCustomDocIter->add(originDocIterator);
+            }
+
+            return pCustomDocIter;
+        }
     }
 
-    return NULL;
+    return originDocIterator;
 }
 
 void SearchManager::printDFCTF_(

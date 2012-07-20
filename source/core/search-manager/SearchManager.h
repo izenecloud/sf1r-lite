@@ -174,16 +174,17 @@ private:
             DistKeywordSearchInfo& distSearchInfo);
 
     /**
-     * create the doc iterator for customized rankings.
+     * combine the @p originDocIterator with the customized doc iterator.
      * @param query the user query
      * @param pSorter the Sorter instance, it decides whether need to create
-     *                the doc iterator.
-     * @return doc iterator instance, it would be NULL if not created.
-     * @attention the caller is responsible to delete the doc iterator.
+     *                the customized doc iterator.
+     * @return the combined doc iterator instance, it would be just
+     *         @p originDocIterator if no customized doc iterator is created.
      */
-    DocumentIterator* createCustomRankDocIterator_(
+    DocumentIterator* combineCustomDocIterator_(
         const std::string& query,
-        boost::shared_ptr<Sorter> pSorter);
+        boost::shared_ptr<Sorter> pSorter,
+        DocumentIterator* originDocIterator);
 
 private:
     /**
