@@ -16,7 +16,7 @@
 
 using namespace sf1r;
 
-B5mpProcessor::B5mpProcessor(HistoryDB* hdb, const std::string& mdb_instance,
+B5mpProcessor::B5mpProcessor(B5MHistoryDBHelper* hdb, const std::string& mdb_instance,
     const std::string& last_mdb_instance, LogServerConnectionConfig* config)
 :historydb_(hdb), mdb_instance_(mdb_instance),
     last_mdb_instance_(last_mdb_instance), po_map_writer_(NULL),
@@ -32,7 +32,7 @@ bool B5mpProcessor::Generate()
         {
             if(!historydb_->open())
             {
-                LOG(ERROR)<<"HistoryDB open fail"<<std::endl;
+                LOG(ERROR)<<"B5MHistoryDBHelper open fail"<<std::endl;
                 return false;
             }
         }

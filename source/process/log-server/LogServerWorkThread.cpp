@@ -1,4 +1,5 @@
 #include "LogServerWorkThread.h"
+#include "LogServerStorage.h"
 #include <ctime>
 
 #include <glog/logging.h>

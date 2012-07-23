@@ -468,9 +468,6 @@ bool ProductEditor::RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& d
             OldDocIdData rsp;
             conn.syncRequest(get_docidreq, rsp);
             history_docid_list = rsp.olddocid_;
-            // except the deleting docid.
-            history_docid_list.replace(history_docid_list.find(scd_docid),
-              scd_docid.size(), "");
 #endif
             // get the current docid list in the group, if both history and
             // current docid are empty, that means no more items in this group,
@@ -492,6 +489,8 @@ bool ProductEditor::RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& d
                 ProductPrice price;
                 util_.GetPrice(same_docid_list, price);
                 origin_doc.property(config_.price_property_name) = price.ToUString();
+                if( !history_docid_list.empty() )
+                    origin_doc.property(config_.oldofferids_property_name) = UString(history_docid_list, UString::UTF_8);
                 uint32_t itemcount = same_docid_list.size();
                 util_.SetItemCount(origin_doc, itemcount);
                 util_.SetManmade(origin_doc);
@@ -513,6 +512,7 @@ bool ProductEditor::RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& d
             }
             conn.asynRequest(uuidReq);
 #endif
+            ++it;
         }
     }
     return true;

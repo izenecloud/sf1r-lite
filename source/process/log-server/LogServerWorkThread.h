@@ -7,10 +7,7 @@
 #ifndef LOG_SERVER_WORK_THREAD_H_
 #define LOG_SERVER_WORK_THREAD_H_
 
-#include "LogServerStorage.h"
-
 #include <log-manager/LogServerRequestData.h>
-
 #include <util/concurrent_queue.h>
 #include <util/singleton.h>
 

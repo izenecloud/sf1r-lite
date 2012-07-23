@@ -1,4 +1,5 @@
 #include "RpcLogServer.h"
+#include "LogServerWorkThread.h"
 
 #include "errno.h"
 
@@ -221,15 +222,15 @@ void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
 void RpcLogServer::AddOldUUID(OldUUIDData& reqdata)
 {
     boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
-    LogServerStorage::get()->historyDB()->offer_insert(reqdata.docid_, reqdata.olduuid_);
-    reqdata.success_ = LogServerStorage::get()->historyDB()->offer_get(reqdata.docid_, reqdata.olduuid_);
+    LogServerStorage::get()->historyDB()->insert_olduuid(reqdata.docid_, reqdata.olduuid_);
+    reqdata.success_ = LogServerStorage::get()->historyDB()->get_olduuid(reqdata.docid_, reqdata.olduuid_);
 }
 
 void RpcLogServer::AddOldDocId(OldDocIdData& reqdata)
 {
     boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
-    LogServerStorage::get()->historyDB()->pd_insert(reqdata.uuid_, reqdata.olddocid_);
-    reqdata.success_ = LogServerStorage::get()->historyDB()->pd_get(reqdata.uuid_, reqdata.olddocid_);
+    LogServerStorage::get()->historyDB()->insert_olddocid(reqdata.uuid_, reqdata.olddocid_);
+    reqdata.success_ = LogServerStorage::get()->historyDB()->get_olddocid(reqdata.uuid_, reqdata.olddocid_);
 }
 
 void RpcLogServer::DelOldDocId(const DelOldDocIdData& reqdata)
@@ -237,20 +238,20 @@ void RpcLogServer::DelOldDocId(const DelOldDocIdData& reqdata)
     boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
     for(size_t i = 0; i < reqdata.uuid_list_.size(); ++i)
     {
-        LogServerStorage::get()->historyDB()->pd_remove_offerid(reqdata.uuid_list_[i], reqdata.olddocid_);
+        LogServerStorage::get()->historyDB()->remove_olddocid(reqdata.uuid_list_[i], reqdata.olddocid_);
     }
 }
 
 void RpcLogServer::GetOldUUID(OldUUIDData& reqdata)
 {
     boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
-    reqdata.success_ = LogServerStorage::get()->historyDB()->offer_get(reqdata.docid_, reqdata.olduuid_);
+    reqdata.success_ = LogServerStorage::get()->historyDB()->get_olduuid(reqdata.docid_, reqdata.olduuid_);
 }
 
 void RpcLogServer::GetOldDocId(OldDocIdData& reqdata)
 {
     boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
-    reqdata.success_ = LogServerStorage::get()->historyDB()->pd_get(reqdata.uuid_, reqdata.olddocid_);
+    reqdata.success_ = LogServerStorage::get()->historyDB()->get_olddocid(reqdata.uuid_, reqdata.olddocid_);
 }
 
 void RpcLogServer::synchronize(const SynchronizeData& syncReqData)

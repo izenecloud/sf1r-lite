@@ -3,7 +3,7 @@
 
 #include "LogServerCfg.h"
 #include "DrumDispatcher.h"
-#include "history_db.h"
+#include <b5m-manager/history_db.h>
 
 #include <util/singleton.h>
 #include <am/leveldb/Table.h>

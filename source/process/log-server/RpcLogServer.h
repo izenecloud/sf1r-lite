@@ -2,8 +2,6 @@
 #define RPC_LOG_SERVER_H_
 
 #include "LogServerStorage.h"
-#include "LogServerWorkThread.h"
-
 #include <log-manager/LogServerRequest.h>
 #include <recommend-manager/item/MultiCollectionItemIdGenerator.h>
 
@@ -13,7 +11,7 @@
 
 namespace sf1r
 {
-
+class LogServerWorkThread;
 class RpcLogServer : public msgpack::rpc::server::base
 {
 public:

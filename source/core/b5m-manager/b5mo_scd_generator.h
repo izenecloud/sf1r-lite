@@ -4,13 +4,13 @@
 #include <string>
 #include <vector>
 #include "offer_db.h"
-#include "history_db.h"
+#include "history_db_helper.h"
 
 namespace sf1r {
     class LogServerConnectionConfig;
     class B5moScdGenerator {
     public:
-        B5moScdGenerator( OfferDb* odb, HistoryDB* hdb, LogServerConnectionConfig* config);
+        B5moScdGenerator( OfferDb* odb, B5MHistoryDBHelper* hdb, LogServerConnectionConfig* config);
 
 
         bool Generate(const std::string& mdb_instance);
@@ -18,7 +18,7 @@ namespace sf1r {
 
     private:
         OfferDb* odb_;
-        HistoryDB* historydb_;
+        B5MHistoryDBHelper* historydb_;
         LogServerConnectionConfig* log_server_cfg_;
     };
 

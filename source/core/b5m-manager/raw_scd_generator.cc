@@ -20,7 +20,7 @@
 
 using namespace sf1r;
 
-RawScdGenerator::RawScdGenerator(OfferDb* odb, HistoryDB* hdb, int mode, LogServerConnectionConfig* config)
+RawScdGenerator::RawScdGenerator(OfferDb* odb, B5MHistoryDBHelper* hdb, int mode, LogServerConnectionConfig* config)
 :odb_(odb), historydb_(hdb), mode_(mode), log_server_cfg_(config)
 {
 }

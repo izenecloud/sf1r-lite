@@ -7,7 +7,7 @@
 #include "b5m_helper.h"
 #include "product_db.h"
 #include "offer_db.h"
-#include "history_db.h"
+#include "history_db_helper.h"
 #include <common/ScdMerger.h>
 #include <am/sequence_file/ssfr.h>
 
@@ -20,7 +20,7 @@ namespace sf1r {
         typedef std::set<std::string> ItemsT;
         typedef boost::unordered_map<std::string, ItemsT >  ProductOfferT;
     public:
-        B5mpProcessor(HistoryDB* hdb, const std::string& mdb_instance,
+        B5mpProcessor(B5MHistoryDBHelper* hdb, const std::string& mdb_instance,
             const std::string& last_mdb_instance, LogServerConnectionConfig* config);
 
         bool Generate();
@@ -32,7 +32,7 @@ namespace sf1r {
         void ProductOutput_(Document& doc, int& type);
 
     private:
-        HistoryDB*   historydb_;
+        B5MHistoryDBHelper*   historydb_;
         std::string mdb_instance_;
         std::string last_mdb_instance_;
         PoMapWriter* po_map_writer_;

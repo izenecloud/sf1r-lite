@@ -14,7 +14,7 @@
 #include <b5m-manager/log_server_handler.h>
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
-#include <b5m-manager/history_db.h>
+#include <b5m-manager/history_db_helper.h>
 #include <b5m-manager/psm_indexer.h>
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
@@ -90,7 +90,7 @@ int main(int ac, char** av)
     std::string output_match;
     std::string knowledge_dir;
     boost::shared_ptr<OfferDb> odb;
-    boost::shared_ptr<HistoryDB> historydb;
+    boost::shared_ptr<B5MHistoryDBHelper> historydb;
 
     boost::shared_ptr<LogServerConnectionConfig> logserver_config;
     std::string synonym_file;
@@ -158,7 +158,7 @@ int main(int ac, char** av)
         std::cout << "historydb path: " << hdb_path <<std::endl;
         if(hdb_path != "////" && hdb_path != "")
         {
-            historydb.reset(new HistoryDB(hdb_path));
+            historydb.reset(new B5MHistoryDBHelper(hdb_path));
         }
     } 
 

@@ -17,7 +17,7 @@
 
 using namespace sf1r;
 
-B5moScdGenerator::B5moScdGenerator(OfferDb* odb, HistoryDB* hdb, LogServerConnectionConfig* config)
+B5moScdGenerator::B5moScdGenerator(OfferDb* odb, B5MHistoryDBHelper* hdb, LogServerConnectionConfig* config)
 :odb_(odb), historydb_(hdb), log_server_cfg_(config)
 {
 }
@@ -96,7 +96,7 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance)
         {
             if(!historydb_->open())
             {
-                LOG(ERROR)<<"HistoryDB open fail"<<std::endl;
+                LOG(ERROR)<<"B5MHistoryDBHelper open fail"<<std::endl;
                 return false;
             }
         }
@@ -252,7 +252,7 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance)
     {
         if(!historydb_->flush())
         {
-            LOG(WARNING)<<"HistoryDB flush error"<<std::endl;
+            LOG(WARNING)<<"B5MHistoryDBHelper flush error"<<std::endl;
         }
     }
     else
