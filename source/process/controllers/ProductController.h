@@ -37,6 +37,7 @@ public:
     void get_top_price_cut_list();
 
     void migrate_price_history();
+    void finish_hook();
 
 protected:
     virtual bool checkCollectionService(std::string& error);

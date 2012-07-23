@@ -432,7 +432,7 @@ bool ProductEditor::RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& d
             if((*it).empty())
             {
                 ++it;
-               continue;
+                continue;
             }
             olduuid_list.push_back(Utilities::md5ToUint128(*it));
             ++it;
@@ -458,6 +458,11 @@ bool ProductEditor::RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& d
         it = s_oldgroups_set.begin();
         while(it != s_oldgroups_set.end())
         {
+            if((*it).empty())
+            {
+                ++it;
+                continue;
+            }
             UString olduuid = UString(*it, UString::UTF_8);
             std::string history_docid_list;
             // get the history docid list in the group. if history is also empty

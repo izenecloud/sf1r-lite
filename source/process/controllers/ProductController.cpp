@@ -678,5 +678,33 @@ void ProductController::migrate_price_history()
         response().addError(product_manager_->GetLastError());
     }
 }
+/**
+ * @brief Action @b finish_hook. FinishHook for product-manager to update the hook event
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name for 'M'(b5mm).
+ *
+ * @section response
+ *
+ * No extra fields.
+ *
+ * @section example
+ *
+ * @code
+ * {
+ *   "collection" : "b5mm",
+ * }
+ * @endcode
+ */
+void ProductController::finish_hook()
+{
+    if (!product_manager_->FinishHook())
+    {
+        response().addError(product_manager_->GetLastError());
+        return;
+    }
+}
+
 
 }

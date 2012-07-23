@@ -139,9 +139,17 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 
     uint32_t fromid = index_document.getOldId(); //oldid
     PMDocumentType from;
-    if (!data_source_->GetDocument(fromid, from)) return false;
+    if (!data_source_->GetDocument(fromid, from)) 
+    {
+        inhook_ = false;
+        return false;
+    }
     UString from_uuid;
-    if (!from.getProperty(config_.uuid_property_name, from_uuid) ) return false;
+    if (!from.getProperty(config_.uuid_property_name, from_uuid) )
+    {
+        inhook_ = false;
+        return false;
+    }
     ProductPrice from_price;
     ProductPrice to_price;
     util_.GetPrice(fromid, from_price);
@@ -170,7 +178,11 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         data_source_->GetDocIdList(from_uuid, docid_list, fromid); // except from.docid
         if (docid_list.empty()) // the from doc is unique, so delete it and insert 'to'
         {
-            if (!data_source_->SetUuid(index_document, from_uuid)) return false;
+            if (!data_source_->SetUuid(index_document, from_uuid))
+            {
+                inhook_ = false;
+                return false;
+            }
             PMDocumentType new_doc(to);
             to.property(config_.uuid_property_name) = from_uuid;
             new_doc.property(config_.docid_property_name) = from_uuid;
@@ -180,7 +192,11 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         else
         {
             //need not to update(insert) to.uuid,
-            if (!data_source_->SetUuid(index_document, from_uuid)) return false;
+            if (!data_source_->SetUuid(index_document, from_uuid))
+            {
+                inhook_ = false;
+                return false;
+            }
             to.property(config_.uuid_property_name) = from_uuid;
             //update price only
             if (from_price != to_price)
@@ -210,7 +226,7 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
         deleting_docids.push_back(docid);
         ProductEditOption edit_op;
         edit_op.force = true;
-        return editor_->RemovePermanentlyFromAnyGroup(deleting_docids, edit_op);
+        editor_->RemovePermanentlyFromAnyGroup(deleting_docids, edit_op);
     }
     return true;
 }

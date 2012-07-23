@@ -1146,6 +1146,20 @@ void initializeDriverRouter(::izenelib::driver::Router& router, IService* servic
             update_a_docHandler.get()
         );
         update_a_docHandler.release();
+
+        handler_ptr finish_hookHandler(
+            new handler_type(
+                product,
+                &ProductController::finish_hook
+            )
+        );
+
+        router.map(
+            controllerName,
+            "finish_hook",
+            finish_hookHandler.get()
+        );
+        finish_hookHandler.release();
     }
 
     {
