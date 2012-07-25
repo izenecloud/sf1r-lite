@@ -287,7 +287,7 @@ bool SearchParser::parse(const Value& search)
         searchingModeInfo_.useOriginalQuery_ = true;
         if( searching_mode.hasKey(Keys::original_query) )
         {
-            searchingModeInfo_.useOriginalQuery_ = asBool(search[Keys::original_query]);
+            searchingModeInfo_.useOriginalQuery_ = asBool(searching_mode[Keys::original_query]);
         }
     }
 
