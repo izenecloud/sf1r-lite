@@ -475,6 +475,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     bool isTFIDFModel = (pTextRankingType == RankingType::BM25
                       ||config_->rankingManagerConfig_.rankingConfigUnit_.textRankingModel_ == RankingType::BM25);
     bool isWandSearch = (isWandStrategy && isTFIDFModel && (!actionOperation.isPhraseOrWildcardQuery_));
+    bool useOriginalQuery = actionOperation.actionItem_.searchingMode_.useOriginalQuery_;
 
     std::vector<boost::shared_ptr<PropertyRanker> > propertyRankers;
     rankingManagerPtr_->createPropertyRankers(pTextRankingType, indexPropertySize, propertyRankers);
@@ -667,7 +668,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             ID_FREQ_MAP_T& ub = ubmap[currentProperty];
             propertyRankers[i]->calculateTermUBs(rankQueryProperties[i], ub);
         }
-        pWandDocIterator->set_ub( ubmap );
+        pWandDocIterator->set_ub( useOriginalQuery, ubmap );
         pWandDocIterator->init_threshold(actionOperation.actionItem_.searchingMode_.threshold_);
     }
 

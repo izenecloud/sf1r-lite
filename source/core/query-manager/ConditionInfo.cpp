@@ -29,7 +29,8 @@ void LanguageAnalyzerInfo::clear(void)
 
 SearchingModeInfo::SearchingModeInfo(void):
     mode_(SearchingMode::DefaultSearchingMode),
-    threshold_(0.0F)
+    threshold_(0.0F),
+    useOriginalQuery_(true)
 {
 }
 
@@ -37,6 +38,7 @@ void SearchingModeInfo::clear(void)
 {
     mode_ = SearchingMode::DefaultSearchingMode;
     threshold_ = 0.0F;
+    useOriginalQuery_ = true;
 }
 
 } // end - namespace sf1r

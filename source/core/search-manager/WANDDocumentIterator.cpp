@@ -67,22 +67,26 @@ void WANDDocumentIterator::init_(const property_weight_map& propertyWeightMap)
     }
 }
 
-void WANDDocumentIterator::set_ub(UpperBoundInProperties& ubmap)
+void WANDDocumentIterator::set_ub(bool useOriginalQuery, UpperBoundInProperties& ubmap)
 {
     float sum = 0.0F, termThreshold = 0.0F;
     size_t nTerms= 0;
-    property_name_term_index_iterator property_iter = ubmap.begin();
-    for(; property_iter != ubmap.end(); ++property_iter)
-    {
-        term_index_ub_iterator term_iter = (property_iter->second).begin();
-        for(; term_iter != (property_iter->second).end(); ++term_iter)
-        {
-            sum += term_iter->second;
-            ++nTerms;
-        }
-    }
 
-    termThreshold = sum/nTerms * 0.8F;
+    if (!useOriginalQuery)
+    {
+        property_name_term_index_iterator property_iter = ubmap.begin();
+        for(; property_iter != ubmap.end(); ++property_iter)
+        {
+            term_index_ub_iterator term_iter = (property_iter->second).begin();
+            for(; term_iter != (property_iter->second).end(); ++term_iter)
+            {
+                sum += term_iter->second;
+                ++nTerms;
+            }
+        }
+
+        termThreshold = sum/nTerms * 0.8F;
+    }
     std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
     for( ; iter != docIteratorList_.end(); ++iter )
     {
@@ -92,14 +96,22 @@ void WANDDocumentIterator::set_ub(UpperBoundInProperties& ubmap)
             std::string currentProperty = pEntry->property_;
             size_t termIndex = pEntry->termIndex_;
             float ub = ubmap[currentProperty][termIndex];
-            if (ub > termThreshold)
+
+            if(useOriginalQuery)
             {
                 pEntry->set_ub(ub);
             }
             else
             {
-                *iter = NULL;
-                delete pEntry;
+                if (ub > termThreshold)
+                {
+                    pEntry->set_ub(ub);
+                }
+                else
+                {
+                    *iter = NULL;
+                    delete pEntry;
+                }
             }
         }
     }

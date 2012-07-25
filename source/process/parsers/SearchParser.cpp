@@ -283,6 +283,12 @@ bool SearchParser::parse(const Value& search)
                 warning() = "Threshold is invalid. Warning: threshold must be smaller than one";
             }
         }
+
+        searchingModeInfo_.useOriginalQuery_ = true;
+        if( searching_mode.hasKey(Keys::original_query) )
+        {
+            searchingModeInfo_.useOriginalQuery_ = asBool(search[Keys::original_query]);
+        }
     }
 
     return true;
