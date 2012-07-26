@@ -7,13 +7,13 @@
 #include "pm_types.h"
 #include "pm_config.h"
 #include "product_price.h"
-#include "pm_util.h"
 
 namespace sf1r
 {
 
 class ProductDataSource;
 class OperationProcessor;
+class PMUtil;
 
 class ProductEditor
 {
@@ -21,7 +21,8 @@ public:
     ProductEditor(
             ProductDataSource* data_source,
             OperationProcessor* op_processor,
-            const PMConfig& config);
+            const PMConfig& config,
+            PMUtil* util);
 
     ~ProductEditor();
 
@@ -54,7 +55,7 @@ private:
     OperationProcessor* op_processor_;
 
     PMConfig config_;
-    PMUtil util_;
+    PMUtil* util_;
     std::string error_;
 };
 

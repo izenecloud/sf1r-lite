@@ -2,6 +2,7 @@
 #include "product_data_source.h"
 #include "operation_processor.h"
 #include "uuid_generator.h"
+#include "pm_util.h"
 
 #include <glog/logging.h>
 #include <common/Utilities.h>
@@ -18,8 +19,8 @@ namespace sf1r
 
 #define PM_EDIT_INFO
 
-ProductEditor::ProductEditor(ProductDataSource* data_source, OperationProcessor* op_processor,const PMConfig& config)
-: data_source_(data_source), op_processor_(op_processor), config_(config), util_(config, data_source)
+ProductEditor::ProductEditor(ProductDataSource* data_source, OperationProcessor* op_processor, const PMConfig& config, PMUtil* util)
+: data_source_(data_source), op_processor_(op_processor), config_(config), util_(util)
 {
 }
 
@@ -220,7 +221,7 @@ bool ProductEditor::AppendToGroup(const izenelib::util::UString& uuid, const std
     return AppendToGroup_(doc_list, info);
 }
 
-bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list,  const PMDocumentType& info)
+bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, const PMDocumentType& info)
 {
 #ifdef USE_LOG_SERVER
     LogServerConnection& conn = LogServerConnection::instance();
@@ -295,13 +296,13 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
         //    LOG(INFO)<<"Output : "<<3<<" , "<<doc_uuid<<std::endl;
 //#endif
         //    op_processor_->Append(3, del_doc);
-        //    util_.AddPrice(new_doc, doc);
+        //    util_->AddPrice(new_doc, doc);
 
         //}
         //else
         {
             ProductPrice update_price;
-            util_.GetPrice(same_docid_list, update_price);
+            util_->GetPrice(same_docid_list, update_price);
             PMDocumentType update_doc;
             update_doc.property(config_.docid_property_name) = doc_uuid;
             if(!old_docids_inuuid.empty())
@@ -309,13 +310,13 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
                 update_doc.property(config_.oldofferids_property_name) = UString(old_docids_inuuid, UString::UTF_8);
             }
             uint32_t itemcount = same_docid_list.size();
-            util_.SetItemCount(update_doc, itemcount);
-            util_.AddPrice(update_doc, update_price);
+            util_->SetItemCount(update_doc, itemcount);
+            util_->AddPrice(update_doc, update_price);
 #ifdef PM_EDIT_INFO
             LOG(INFO)<<"Output : "<<2<<" , "<<doc_uuid<<" , itemcount: "<<itemcount<<std::endl;
 #endif
             op_processor_->Append(2, update_doc);
-            util_.AddPrice(new_doc, doc);
+            util_->AddPrice(new_doc, doc);
         }
 
 
@@ -344,9 +345,9 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
 #endif
     }
     data_source_->Flush();
-    uint32_t itemcount = util_.GetUuidDf(uuid);
-    util_.SetItemCount(new_doc, itemcount);
-    util_.SetManmade(new_doc);
+    uint32_t itemcount = util_->GetUuidDf(uuid);
+    util_->SetItemCount(new_doc, itemcount);
+    util_->SetManmade(new_doc);
 #ifdef PM_EDIT_INFO
     LOG(INFO)<<"Output : "<<type<<" , "<<uuid<<" , itemcount: "<<itemcount<<std::endl;
 #endif
@@ -495,13 +496,13 @@ bool ProductEditor::RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& d
             else
             {
                 ProductPrice price;
-                util_.GetPrice(same_docid_list, price);
+                util_->GetPrice(same_docid_list, price);
                 origin_doc.property(config_.price_property_name) = price.ToUString();
                 if( !history_docid_list.empty() )
                     origin_doc.property(config_.oldofferids_property_name) = UString(history_docid_list, UString::UTF_8);
                 uint32_t itemcount = same_docid_list.size();
-                util_.SetItemCount(origin_doc, itemcount);
-                util_.SetManmade(origin_doc);
+                util_->SetItemCount(origin_doc, itemcount);
+                util_->SetManmade(origin_doc);
 #ifdef PM_EDIT_INFO
                 LOG(INFO)<<"Output : "<<2<<" , "<< olduuid <<" , itemcount: "<<itemcount<<std::endl;
 #endif
@@ -605,7 +606,7 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
         UuidGenerator::Gen(doc_uuid);
         new_doc.property(config_.docid_property_name) = doc_uuid;
         new_doc.eraseProperty(config_.uuid_property_name);
-        util_.SetItemCount(new_doc, 1);
+        util_->SetItemCount(new_doc, 1);
 
 #ifdef PM_EDIT_INFO
         LOG(INFO)<<"Output : "<<1<<" , "<<doc_uuid<<" , itemcount: "<<1<<std::endl;
@@ -678,11 +679,11 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
     //else
     {
         ProductPrice price;
-        util_.GetPrice(same_docid_list, price);
+        util_->GetPrice(same_docid_list, price);
         origin_doc.property(config_.price_property_name) = price.ToUString();
         uint32_t itemcount = same_docid_list.size();
-        util_.SetItemCount(origin_doc, itemcount);
-        util_.SetManmade(origin_doc);
+        util_->SetItemCount(origin_doc, itemcount);
+        util_->SetManmade(origin_doc);
 #ifdef PM_EDIT_INFO
         LOG(INFO)<<"Output : "<<2<<" , "<<uuid<<" , itemcount: "<<itemcount<<std::endl;
 #endif
