@@ -1067,25 +1067,33 @@ void CollectionConfig::parseCollectionSchema(const ticpp::Element * documentSche
             {
                 dataType = STRING_PROPERTY_TYPE;
             }
+            else if (type == "int8")
+            {
+                dataType = INT8_PROPERTY_TYPE;
+            }
+            else if (type == "int16")
+            {
+                dataType = INT16_PROPERTY_TYPE;
+            }
             else if (type == "int32")
             {
                 dataType = INT32_PROPERTY_TYPE;
-            }
-            else if (type == "float")
-            {
-                dataType = FLOAT_PROPERTY_TYPE;
-            }
-            else if (type == "datetime")
-            {
-                dataType = DATETIME_PROPERTY_TYPE;
             }
             else if (type == "int64")
             {
                 dataType = INT64_PROPERTY_TYPE;
             }
+            else if (type == "float")
+            {
+                dataType = FLOAT_PROPERTY_TYPE;
+            }
             else if (type == "double")
             {
                 dataType = DOUBLE_PROPERTY_TYPE;
+            }
+            else if (type == "datetime")
+            {
+                dataType = DATETIME_PROPERTY_TYPE;
             }
             else
             {

@@ -39,6 +39,8 @@ public:
     {
         return (propType == INT32_PROPERTY_TYPE ||
                 propType == FLOAT_PROPERTY_TYPE ||
+                propType == INT8_PROPERTY_TYPE ||
+                propType == INT16_PROPERTY_TYPE ||
                 propType == INT64_PROPERTY_TYPE ||
                 propType == DOUBLE_PROPERTY_TYPE);
     }

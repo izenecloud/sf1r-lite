@@ -99,6 +99,8 @@ void SortPropertyCache::loadSortData(const std::string& property, PropertyDataTy
             switch (type)
             {
             case INT32_PROPERTY_TYPE:
+            case INT8_PROPERTY_TYPE:
+            case INT16_PROPERTY_TYPE:
                 pIndexer_->loadPropertyDataForSorting<int32_t>(property, type, numericPropertyTable);
                 break;
 

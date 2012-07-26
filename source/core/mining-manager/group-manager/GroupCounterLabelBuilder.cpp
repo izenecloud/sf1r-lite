@@ -191,6 +191,8 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter_(const GroupPropParam
 
     case INT32_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
+    case INT8_PROPERTY_TYPE:
+    case INT16_PROPERTY_TYPE:
     case INT64_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
          counter = createNumericCounter_(prop, subCounter);
@@ -323,6 +325,8 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(const GroupParam::GroupLa
 
     case INT32_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
+    case INT8_PROPERTY_TYPE:
+    case INT16_PROPERTY_TYPE:
     case INT64_PROPERTY_TYPE:
     case DOUBLE_PROPERTY_TYPE:
         label = createNumericRangeLabel_(labelParam);

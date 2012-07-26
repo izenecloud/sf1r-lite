@@ -28,6 +28,12 @@ void ValueConverter::driverValue2PropertyValue(
     case FLOAT_PROPERTY_TYPE:
         propertyValue = (float)asDouble(driverValue);
         break;
+    case INT8_PROPERTY_TYPE:
+        propertyValue = (int8_t)asInt(driverValue);
+        break;
+    case INT16_PROPERTY_TYPE:
+        propertyValue = (int16_t)asInt(driverValue);
+        break;
     case INT64_PROPERTY_TYPE:
         propertyValue = (int64_t)asInt(driverValue);
         break;

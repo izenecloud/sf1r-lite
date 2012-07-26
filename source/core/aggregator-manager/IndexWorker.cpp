@@ -1371,6 +1371,8 @@ bool IndexWorker::prepareDocument_(
 
             case INT32_PROPERTY_TYPE:
             case FLOAT_PROPERTY_TYPE:
+            case INT8_PROPERTY_TYPE:
+            case INT16_PROPERTY_TYPE:
             case INT64_PROPERTY_TYPE:
             case DOUBLE_PROPERTY_TYPE:
             case NOMINAL_PROPERTY_TYPE:
@@ -1669,6 +1671,8 @@ bool IndexWorker::prepareIndexRTypeProperties_(
         switch (iter->getType())
         {
         case INT32_PROPERTY_TYPE:
+        case INT8_PROPERTY_TYPE:
+        case INT16_PROPERTY_TYPE:
             START_PROFILER(pid_int32)
             if (iter->getIsRange())
             {
@@ -1804,6 +1808,8 @@ bool IndexWorker::prepareIndexDocumentNumericProperty_(
     switch (iter->getType())
     {
     case INT32_PROPERTY_TYPE:
+    case INT8_PROPERTY_TYPE:
+    case INT16_PROPERTY_TYPE:
     {
         START_PROFILER(pid_int32);
         if (iter->getIsMultiValue())
@@ -1847,7 +1853,7 @@ bool IndexWorker::prepareIndexDocumentNumericProperty_(
                 {
                     try
                     {
-                        value = (int64_t)(boost::lexical_cast<float>(str));
+                        value = (int32_t)(boost::lexical_cast<float>(str));
                         indexDocument.insertProperty(indexerPropertyConfig, value);
                     }
                     catch (const boost::bad_lexical_cast &)
