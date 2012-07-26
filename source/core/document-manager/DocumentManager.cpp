@@ -73,7 +73,7 @@ DocumentManager::DocumentManager(
     for (IndexBundleSchema::const_iterator it = indexSchema_.begin();
             it != indexSchema_.end(); ++it)
     {
-        if (it->isIndex() && !it->isAnalyzed() && it->getIsFilter())
+        if (it->isIndex() && !it->isAnalyzed() && it->getIsFilter() && !it->getIsMultiValue())
         {
             initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
         }
@@ -783,18 +783,25 @@ void DocumentManager::initNumericPropertyTable_(
     boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = numericPropertyTables_[propertyName];
     switch (propertyType)
     {
+    case INT8_PROPERTY_TYPE:
+        if (isRange)
+            numericPropertyTable.reset(new NumericRangePropertyTable<int8_t>(propertyType));
+        else
+            numericPropertyTable.reset(new NumericPropertyTable<int8_t>(propertyType));
+        break;
+
+    case INT16_PROPERTY_TYPE:
+        if (isRange)
+            numericPropertyTable.reset(new NumericRangePropertyTable<int16_t>(propertyType));
+        else
+            numericPropertyTable.reset(new NumericPropertyTable<int16_t>(propertyType));
+        break;
+
     case INT32_PROPERTY_TYPE:
         if (isRange)
             numericPropertyTable.reset(new NumericRangePropertyTable<int32_t>(propertyType));
         else
             numericPropertyTable.reset(new NumericPropertyTable<int32_t>(propertyType));
-        break;
-
-    case FLOAT_PROPERTY_TYPE:
-        if (isRange)
-            numericPropertyTable.reset(new NumericRangePropertyTable<float>(propertyType));
-        else
-            numericPropertyTable.reset(new NumericPropertyTable<float>(propertyType));
         break;
 
     case INT64_PROPERTY_TYPE:
@@ -803,6 +810,13 @@ void DocumentManager::initNumericPropertyTable_(
             numericPropertyTable.reset(new NumericRangePropertyTable<int64_t>(propertyType));
         else
             numericPropertyTable.reset(new NumericPropertyTable<int64_t>(propertyType));
+        break;
+
+    case FLOAT_PROPERTY_TYPE:
+        if (isRange)
+            numericPropertyTable.reset(new NumericRangePropertyTable<float>(propertyType));
+        else
+            numericPropertyTable.reset(new NumericPropertyTable<float>(propertyType));
         break;
 
     case DOUBLE_PROPERTY_TYPE:

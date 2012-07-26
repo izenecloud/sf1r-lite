@@ -55,7 +55,7 @@ template<typename CounterType>
 NumericGroupCounter<CounterType>::NumericGroupCounter(const std::string& property, const NumericPropertyTableBase* numericPropertyTable, const CounterType& defaultCounter)
     : property_(property)
     , numericPropertyTable_(numericPropertyTable)
-    , initSubCounterPair_(0, 0)
+    , initSubCounterPair_(0, defaultCounter)
 {
 }
 

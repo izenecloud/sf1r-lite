@@ -202,6 +202,8 @@ public:
     {
         return (propertyType_ == INT32_PROPERTY_TYPE
                 || propertyType_ == FLOAT_PROPERTY_TYPE
+                || propertyType_ == INT8_PROPERTY_TYPE
+                || propertyType_ == INT16_PROPERTY_TYPE
                 || propertyType_ == INT64_PROPERTY_TYPE
                 || propertyType_ == DOUBLE_PROPERTY_TYPE);
     }

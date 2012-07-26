@@ -33,6 +33,7 @@ public:
     virtual bool getDoubleValue(std::size_t pos, double& value) const = 0;
 
     virtual bool getStringValue(std::size_t pos, std::string& value) const = 0;
+    virtual bool getFloatPairValue(std::size_t pos, std::pair<float, float>& value) const = 0;
 
     virtual void* getValueList() = 0;
     virtual const void* getValueList() const = 0;

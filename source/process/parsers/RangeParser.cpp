@@ -44,10 +44,12 @@ bool RangeParser::parse(const Value& rangeValue)
     }
 
     if (propertyConfig.bIndex_ && propertyConfig.bFilter_
-        && (propertyConfig.propertyType_ == INT32_PROPERTY_TYPE
-           || propertyConfig.propertyType_ == DATETIME_PROPERTY_TYPE
-           || propertyConfig.propertyType_ == FLOAT_PROPERTY_TYPE
-           || propertyConfig.propertyType_ == INT64_PROPERTY_TYPE))
+            && (propertyConfig.propertyType_ == INT32_PROPERTY_TYPE
+                || propertyConfig.propertyType_ == DATETIME_PROPERTY_TYPE
+                || propertyConfig.propertyType_ == FLOAT_PROPERTY_TYPE
+                || propertyConfig.propertyType_ == INT8_PROPERTY_TYPE
+                || propertyConfig.propertyType_ == INT16_PROPERTY_TYPE
+                || propertyConfig.propertyType_ == INT64_PROPERTY_TYPE))
     {
         rangeProperty_ = property;
     }
