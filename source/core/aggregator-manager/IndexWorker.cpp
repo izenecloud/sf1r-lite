@@ -1392,6 +1392,22 @@ bool IndexWorker::prepareDocument_(
                 }
                 break;
 
+            case DATETIME_PROPERTY_TYPE:
+                if (iter->getIsFilter() && !iter->getIsMultiValue())
+                {
+                    izenelib::util::UString dateStr;
+                    time_t ts = Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
+                    boost::shared_ptr<NumericPropertyTableBase>& datePropertyTable = documentManager_->getNumericPropertyTable(dateProperty_.getName());
+                    datePropertyTable->setInt64Value(docId, ts);
+                }
+                else
+                {
+                    PropertyValue propData(propertyValueU);
+                    document.property(fieldStr).swap(propData);
+                    prepareIndexDocumentNumericProperty_(docId, p->second, iter, indexDocument);
+                }
+                break;
+
             default:
                 break;
             }
