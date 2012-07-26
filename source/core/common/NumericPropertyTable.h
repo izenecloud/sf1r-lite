@@ -108,6 +108,15 @@ public:
         value = boost::lexical_cast<std::string>(data_[pos]);
         return true;
     }
+    bool getFloatPairValue(std::size_t pos, std::pair<float, float>& value) const
+    {
+        ReadLock lock(mutex_);
+        if (pos >= data_.size() || data_[pos] == invalidValue_)
+            return false;
+
+        value.first = value.second = static_cast<float>(data_[pos]);
+        return true;
+    }
 
     bool getValue(std::size_t pos, T& value) const
     {

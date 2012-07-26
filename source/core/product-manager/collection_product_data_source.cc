@@ -249,12 +249,11 @@ bool CollectionProductDataSource::GetPrice(const uint32_t& docid, ProductPrice& 
     if (!propertyTable)
         return false;
 
-    std::pair<float, float> price_value;
-    NumericRangePropertyTable<float>* priceTable = static_cast<NumericRangePropertyTable<float> *>(propertyTable.get());
-    if (!priceTable->getValue(docid, price_value))
+    std::pair<float, float> value;
+    if (!propertyTable->getFloatPairValue(docid, value))
         return false;
 
-    price.value = price_value;
+    price.value = value;
     return true;
 }
 
