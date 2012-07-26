@@ -1836,31 +1836,43 @@ void CollectionConfig::parseProductRankingNode(const ticpp::Element* productRank
     if (!productRankingNode)
         return;
 
-    CollectionParameterConfig params;
-    params.LoadXML(productRankingNode);
-
     MiningSchema& miningSchema = collectionMeta.miningBundleConfig_->mining_schema_;
     ProductRankingConfig& productRankingConfig = miningSchema.product_ranking_config;
 
     productRankingConfig.isEnable = true;
     getAttribute(productRankingNode, "debug", productRankingConfig.isDebug, false);
-    params.Get("MerchantProperty/name", productRankingConfig.merchantPropName);
-    params.Get("CategoryProperty/name", productRankingConfig.categoryPropName);
-    params.Get("BoostingSubProperty/name", productRankingConfig.boostingSubPropName);
 
     const std::vector<GroupConfig>& groupProps = miningSchema.group_properties;
-    checkStringGroupProperty(productRankingConfig.merchantPropName, groupProps);
-    checkStringGroupProperty(productRankingConfig.categoryPropName, groupProps);
-
     const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
-    checkNumericFilterProperty(productRankingConfig.boostingSubPropName, indexSchema);
+    std::string propName;
+
+    ticpp::Element* subNode = getUniqChildElement(productRankingNode, "MerchantProperty", false);
+    if (subNode)
+    {
+        getAttribute(subNode, "name", propName);
+        checkStringGroupProperty(propName, groupProps);
+        productRankingConfig.merchantPropName = propName;
+    }
+
+    subNode = getUniqChildElement(productRankingNode, "CategoryProperty", false);
+    if (subNode)
+    {
+        getAttribute(subNode, "name", propName);
+        checkStringGroupProperty(propName, groupProps);
+        productRankingConfig.categoryPropName = propName;
+    }
+
+    Iterator<Element> it("CategoryScoreProperty");
+    for (it = it.begin(productRankingNode); it != it.end(); ++it)
+    {
+        getAttribute(it.Get(), "name", propName);
+        checkNumericFilterProperty(propName, indexSchema);
+        productRankingConfig.categoryScorePropNames.push_back(propName);
+    }
 }
 
 void CollectionConfig::checkStringGroupProperty(const std::string& propName, const std::vector<GroupConfig>& groupProps)
 {
-    if (propName.empty())
-        return;
-
     for (std::vector<GroupConfig>::const_iterator it = groupProps.begin();
         it != groupProps.end(); ++it)
     {
@@ -1878,9 +1890,6 @@ void CollectionConfig::checkStringGroupProperty(const std::string& propName, con
 
 void CollectionConfig::checkNumericFilterProperty(const std::string& propName, const IndexBundleSchema& indexSchema)
 {
-    if (propName.empty())
-        return;
-
     PropertyConfig p;
     p.setName(propName);
 

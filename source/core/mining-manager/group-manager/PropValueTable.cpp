@@ -254,6 +254,17 @@ void PropValueTable::propValuePath(pvid_t pvId, std::vector<izenelib::util::UStr
     std::reverse(path.begin(), path.end());
 }
 
+PropValueTable::pvid_t PropValueTable::getFirstValueId(docid_t docId) const
+{
+    PropIdList propIdList;
+    getPropIdList(docId, propIdList);
+
+    if (propIdList.empty())
+        return 0;
+
+    return propIdList[0];
+}
+
 PropValueTable::pvid_t PropValueTable::getRootValueId(docid_t docId) const
 {
     PropIdList propIdList;

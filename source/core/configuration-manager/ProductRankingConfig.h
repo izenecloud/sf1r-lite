@@ -2,6 +2,7 @@
 #define SF1R_PRODUCT_RANKING_CONFIG_H_
 
 #include <string>
+#include <vector>
 #include <boost/serialization/access.hpp>
 
 namespace sf1r
@@ -22,11 +23,12 @@ public:
     /// merchant property name, used for merchant score and diversity
     std::string merchantPropName;
 
-    /// category property name, used for category boosting
+    /// category property name, used for category score
     std::string categoryPropName;
 
-    /// sub property name, used for category boosting
-    std::string boostingSubPropName;
+    /// to calculate category score, also use other property names
+    /// such as "Price", etc
+    std::vector<std::string> categoryScorePropNames;
 
     ProductRankingConfig() : isEnable(false), isDebug(false) {}
 
@@ -36,9 +38,11 @@ private:
     template <typename Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
+        ar & isEnable;
+        ar & isDebug;
         ar & merchantPropName;
         ar & categoryPropName;
-        ar & boostingSubPropName;
+        ar & categoryScorePropNames;
     }
 };
 
