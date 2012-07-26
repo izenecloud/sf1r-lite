@@ -6,6 +6,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <vector>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 
 namespace sf1r
 {
@@ -449,6 +451,29 @@ inline bool NumericRangePropertyTable<int64_t>::getStringValue(std::size_t pos, 
             value += boost::lexical_cast<std::string>(data.second);
         }
     }
+    return true;
+}
+
+template <>
+inline bool NumericRangePropertyTable<float>::getStringValue(std::size_t pos, std::string& value) const
+{
+    ReadLock lock(mutex_);
+    if (pos >= data_.size() || data_[pos] == invalidValue_)
+        return false;
+
+    static std::stringstream ss;
+    ss << fixed << setprecision(2);
+    const value_type& data = data_[pos];
+    if (data.first == data.second)
+    {
+        ss << data.first;
+    }
+    else
+    {
+        ss << data.first << "-" << data.second;
+    }
+    value = ss.str();
+    ss.str(std::string());
     return true;
 }
 
