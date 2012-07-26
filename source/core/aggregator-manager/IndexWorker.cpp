@@ -1374,7 +1374,7 @@ bool IndexWorker::prepareDocument_(
             case INT64_PROPERTY_TYPE:
             case DOUBLE_PROPERTY_TYPE:
             case NOMINAL_PROPERTY_TYPE:
-                if (!iter->getIsMultiValue())
+                if (iter->getIsFilter() && !iter->getIsMultiValue())
                 {
                     boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = documentManager_->getNumericPropertyTable(iter->getName());
                     izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
