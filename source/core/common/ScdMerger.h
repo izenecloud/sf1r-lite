@@ -138,11 +138,11 @@ public:
     
 public:
 
-    ScdMerger()
+    ScdMerger(): mod_split_(1)
     {
     }
 
-    ScdMerger(const std::string& output_dir, bool i_only = true)
+    ScdMerger(const std::string& output_dir, bool i_only = true): mod_split_(1)
     {
         //use the default config
         PropertyConfig config;
@@ -152,6 +152,12 @@ public:
         config.output_function = GetDefaultOutputFunction(i_only);
         config.output_if_no_position = true;
         property_config_.push_back(config);
+    }
+
+    void SetModSplit(uint32_t m)
+    {
+        LOG(INFO)<<"set mod split "<<m<<std::endl;
+        mod_split_ = m;
     }
 
     void AddPropertyConfig(const PropertyConfig& config)
@@ -261,187 +267,193 @@ public:
             config.u_writer.reset(new ScdWriter(output_dir, UPDATE_SCD));
             config.d_writer.reset(new ScdWriter(output_dir, DELETE_SCD));
         }
-        p = 0; //reset
-        uint32_t n=0;
-        for (uint32_t i=0;i<input_list_.size();i++)
+        LOG(INFO)<<"mod split : "<<mod_split_<<std::endl;
+        for(uint32_t m=0;m<mod_split_;m++)
         {
-            std::vector<std::string> scd_list;
-            const InputSource& is = input_list_[i];
-            ScdParser::getScdList(is.scd_path, scd_list);
-            if(scd_list.empty())
+            LOG(INFO)<<"m "<<m<<std::endl;
+            p = 0; //reset
+            uint32_t n=0;
+            for (uint32_t i=0;i<input_list_.size();i++)
             {
-                LOG(WARNING)<<"no scd under "<<is.scd_path<<std::endl;
-                continue;
-            }
-            for(uint32_t s=0;s<scd_list.size();s++)
-            {
-                std::string scd_file = scd_list[s];
-                ScdParser parser(izenelib::util::UString::UTF_8);
-                LOG(INFO)<<"Processing "<<scd_file<<std::endl;
-                int type = ScdParser::checkSCDType(scd_file);
-                parser.load(scd_file);
-                for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
+                std::vector<std::string> scd_list;
+                const InputSource& is = input_list_[i];
+                ScdParser::getScdList(is.scd_path, scd_list);
+                if(scd_list.empty())
                 {
-                    n++;
-                    if(n%100000==0)
+                    LOG(WARNING)<<"no scd under "<<is.scd_path<<std::endl;
+                    continue;
+                }
+                for(uint32_t s=0;s<scd_list.size();s++)
+                {
+                    std::string scd_file = scd_list[s];
+                    ScdParser parser(izenelib::util::UString::UTF_8);
+                    LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+                    int type = ScdParser::checkSCDType(scd_file);
+                    parser.load(scd_file);
+                    for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
                     {
-                        LOG(INFO)<<"Process "<<n<<" scd docs"<<std::endl; 
-                    }
-                    PositionType position = 0;
-                    if(is.position) 
-                    {
-                        ++p;
-                        position = p;
-                    }
-                    SCDDoc& scd_doc = *(*doc_iter);
-                    Document doc = getDoc_(scd_doc);
-                    ValueType output_doc_value;
-                    for(PropertyConfigList::iterator pci_it = property_config_list.begin(); pci_it!=property_config_list.end();++pci_it)
-                    {
-                        const std::string& pname = pci_it->property_name;
-                        PropertyConfigR& config = *pci_it;
-                        ValueType value(doc, type);
-                        if(pname!="DOCID")
+                        n++;
+                        if(n%100000==0)
                         {
-                            value = output_doc_value;
+                            LOG(INFO)<<"Process "<<n<<" scd docs"<<std::endl; 
                         }
-                        izenelib::util::UString pvalue;
-                        if(!value.doc.getProperty(pname, pvalue)) continue;
-                        if(pvalue.empty()) continue;
-                        ValueType output_value;
-                        IdType id = GenId_(pvalue);
-                        //ValueType empty_value;
-                        //config.merge_function(empty_value, value);
-                        //empty_value.swap(value);
-                        int pstatus = -1;//-1 means not in position, 0 means not output, 1 means output
-                        PositionType pos = config.position_map->getInteger(id);
-                        if(pos==(PositionType)izenelib::am::succinct::fujimap::NOTFOUND)
+                        PositionType position = 0;
+                        if(is.position) 
                         {
-                            pstatus = -1;
+                            ++p;
+                            position = p;
                         }
-                        else
+                        SCDDoc& scd_doc = *(*doc_iter);
+                        Document doc = getDoc_(scd_doc);
+                        ValueType output_doc_value;
+                        for(PropertyConfigList::iterator pci_it = property_config_list.begin(); pci_it!=property_config_list.end();++pci_it)
                         {
-                            if(pos==position)
+                            const std::string& pname = pci_it->property_name;
+                            PropertyConfigR& config = *pci_it;
+                            ValueType value(doc, type);
+                            if(pname!="DOCID")
                             {
-                                pstatus = 1;
+                                value = output_doc_value;
+                            }
+                            izenelib::util::UString pvalue;
+                            if(!value.doc.getProperty(pname, pvalue)) continue;
+                            if(pvalue.empty()) continue;
+                            ValueType output_value;
+                            IdType id = GenId_(pvalue);
+                            if(id%mod_split_!=m) continue;
+                            //ValueType empty_value;
+                            //config.merge_function(empty_value, value);
+                            //empty_value.swap(value);
+                            int pstatus = -1;//-1 means not in position, 0 means not output, 1 means output
+                            PositionType pos = config.position_map->getInteger(id);
+                            if(pos==(PositionType)izenelib::am::succinct::fujimap::NOTFOUND)
+                            {
+                                pstatus = -1;
                             }
                             else
                             {
-                                pstatus = 0;
+                                if(pos==position)
+                                {
+                                    pstatus = 1;
+                                }
+                                else
+                                {
+                                    pstatus = 0;
+                                }
                             }
-                        }
-                        //std::cout<<"pstatus"<<pstatus<<std::endl;
-                        //PositionMap::iterator mit = position_map.find(id);
-                        if(pstatus<0)
-                        {
+                            //std::cout<<"pstatus"<<pstatus<<std::endl;
+                            //PositionMap::iterator mit = position_map.find(id);
+                            if(pstatus<0)
+                            {
 #ifdef MERGER_DEBUG
-                            std::string sss;
-                            pvalue.convertString(sss, izenelib::util::UString::UTF_8);
-                            if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
-                            {
-                                LOG(INFO)<<pname<<","<<sss<<" position_map end"<<std::endl;
-                            }
+                                std::string sss;
+                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                {
+                                    LOG(INFO)<<pname<<","<<sss<<" position_map end"<<std::endl;
+                                }
 #endif
-                            if(pci_it->output_if_no_position)
-                            {
-                                output_value = value;
+                                if(pci_it->output_if_no_position)
+                                {
+                                    output_value = value;
+                                }
+                                else
+                                {
+                                    continue;
+                                }
                             }
                             else
                             {
-                                continue;
+                                cache_iterator cit = config.cache.find(id);
+                                //ValueType init_value;
+                                //ValueType* p_output = NULL;
+                                if(cit==config.cache.end())
+                                {
+#ifdef MERGER_DEBUG
+                                    std::string sss;
+                                    pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                    if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                    {
+                                        LOG(INFO)<<pname<<","<<sss<<" not in cache"<<std::endl;
+                                    }
+#endif
+                                    ValueType empty_value;
+                                    config.merge_function(empty_value, value);
+                                    empty_value.swap(value);
+                                }
+                                else
+                                {
+#ifdef MERGER_DEBUG
+                                    std::string sss;
+                                    pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                    if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                    {
+                                        LOG(INFO)<<pname<<","<<sss<<" merge"<<std::endl;
+                                    }
+#endif
+                                    config.merge_function(cit->second, value);
+                                    value = cit->second;
+                                }
+                                if(pstatus>0)
+                                {
+#ifdef MERGER_DEBUG
+                                    std::string sss;
+                                    pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                    if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                    {
+                                        LOG(INFO)<<pname<<","<<sss<<" output"<<std::endl;
+                                    }
+#endif
+                                    output_value = value;
+                                    //position_map.erase(mit);
+                                }
+                                if(!output_value.empty() && cit!=config.cache.end())
+                                {
+                                    config.cache.erase(cit);
+                                }
+                                if(output_value.empty() && cit==config.cache.end())
+                                {
+#ifdef MERGER_DEBUG
+                                    std::string sss;
+                                    pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                                    if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
+                                    {
+                                        LOG(INFO)<<pname<<","<<sss<<" insert to cache"<<std::endl;
+                                    }
+#endif
+                                    //ValueType empty_value;
+                                    //config.merge_function(empty_value, value);
+                                    //empty_value.swap(value);
+                                    config.cache.insert(std::make_pair(id, value));
+                                }
+                            }
+                            if(!output_value.empty())
+                            {
+                                if(pname=="DOCID")
+                                {
+                                    output_doc_value = output_value;
+                                }
+                                //output value
+                                config.output_function(output_value.doc, output_value.type);
+                                //processor->Process(output_value.doc, output_value.type);
+                                int type = output_value.type;
+                                const Document& document = output_value.doc;
+                                if(type==INSERT_SCD)
+                                {
+                                    config.i_writer->Append(document);
+                                }
+                                else if(type==UPDATE_SCD)
+                                {
+                                    config.u_writer->Append(document);
+                                }
+                                else if(type==DELETE_SCD)
+                                {
+                                    config.d_writer->Append(document);
+                                }
                             }
                         }
-                        else
-                        {
-                            cache_iterator cit = config.cache.find(id);
-                            //ValueType init_value;
-                            //ValueType* p_output = NULL;
-                            if(cit==config.cache.end())
-                            {
-#ifdef MERGER_DEBUG
-                                std::string sss;
-                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
-                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
-                                {
-                                    LOG(INFO)<<pname<<","<<sss<<" not in cache"<<std::endl;
-                                }
-#endif
-                                ValueType empty_value;
-                                config.merge_function(empty_value, value);
-                                empty_value.swap(value);
-                            }
-                            else
-                            {
-#ifdef MERGER_DEBUG
-                                std::string sss;
-                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
-                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
-                                {
-                                    LOG(INFO)<<pname<<","<<sss<<" merge"<<std::endl;
-                                }
-#endif
-                                config.merge_function(cit->second, value);
-                                value = cit->second;
-                            }
-                            if(pstatus>0)
-                            {
-#ifdef MERGER_DEBUG
-                                std::string sss;
-                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
-                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
-                                {
-                                    LOG(INFO)<<pname<<","<<sss<<" output"<<std::endl;
-                                }
-#endif
-                                output_value = value;
-                                //position_map.erase(mit);
-                            }
-                            if(!output_value.empty() && cit!=config.cache.end())
-                            {
-                                config.cache.erase(cit);
-                            }
-                            if(output_value.empty() && cit==config.cache.end())
-                            {
-#ifdef MERGER_DEBUG
-                                std::string sss;
-                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
-                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
-                                {
-                                    LOG(INFO)<<pname<<","<<sss<<" insert to cache"<<std::endl;
-                                }
-#endif
-                                //ValueType empty_value;
-                                //config.merge_function(empty_value, value);
-                                //empty_value.swap(value);
-                                config.cache.insert(std::make_pair(id, value));
-                            }
-                        }
-                        if(!output_value.empty())
-                        {
-                            if(pname=="DOCID")
-                            {
-                                output_doc_value = output_value;
-                            }
-                            //output value
-                            config.output_function(output_value.doc, output_value.type);
-                            //processor->Process(output_value.doc, output_value.type);
-                            int type = output_value.type;
-                            const Document& document = output_value.doc;
-                            if(type==INSERT_SCD)
-                            {
-                                config.i_writer->Append(document);
-                            }
-                            else if(type==UPDATE_SCD)
-                            {
-                                config.u_writer->Append(document);
-                            }
-                            else if(type==DELETE_SCD)
-                            {
-                                config.d_writer->Append(document);
-                            }
-                        }
-                    }
 
+                    }
                 }
             }
         }
@@ -532,6 +544,7 @@ private:
 private:
     std::vector<PropertyConfig> property_config_;
     std::vector<InputSource> input_list_;
+    uint32_t mod_split_;
     
 };
 

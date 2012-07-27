@@ -40,7 +40,10 @@ bool B5mpProcessor::Generate()
     else
     {
         if(log_server_cfg_ == NULL)
+        {
+            LOG(ERROR)<<"log server config empty"<<std::endl;
             return false;
+        }
         // use logserver instead of local history 
         if(!LogServerClient::Init(*log_server_cfg_))
         {
@@ -77,6 +80,11 @@ bool B5mpProcessor::Generate()
     is.scd_path = B5MHelper::GetB5moPath(mdb_instance_);
     is.position = true;
     merger.AddInput(is);
+    if(!last_mdb_instance_.empty())
+    {
+        uint32_t m = ScdParser::getScdDocCount(is.scd_path)/1200000+1;
+        merger.SetModSplit(m);
+    }
 
     po_map_writer_ = new PoMapWriter(B5MHelper::GetPoMapPath(mdb_instance_));
     po_map_writer_->Open();
