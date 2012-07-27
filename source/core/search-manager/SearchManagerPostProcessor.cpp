@@ -56,7 +56,7 @@ bool SearchManagerPostProcessor::rerank(
         izenelib::util::ClockTimer timer;
 
         ProductRankingParam rankingParam(actionItem.env_.queryString_,
-            resultItem.topKDocs_, resultItem.topKRankScoreList_, actionItem.groupParam_);
+            resultItem.topKDocs_, resultItem.topKRankScoreList_);
 
         boost::scoped_ptr<ProductRanker> productRanker(
             productRankerFactory_->createProductRanker(rankingParam));

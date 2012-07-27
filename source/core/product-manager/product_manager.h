@@ -8,7 +8,6 @@
 #include "pm_def.h"
 #include "pm_types.h"
 #include "pm_config.h"
-#include "pm_util.h"
 #include "product_price.h"
 
 #include <common/JobScheduler.h>
@@ -26,6 +25,7 @@ class ProductEditor;
 class ProductPriceTrend;
 class ProductClustering;
 class ProductClusteringPostItem;
+class PMUtil;
 
 class ProductManager
 {
@@ -117,9 +117,9 @@ private:
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
     ProductPriceTrend* price_trend_;
+    PMUtil* util_;
     ProductClustering* clustering_;
     ProductEditor* editor_;
-    PMUtil util_;
     std::string error_;
 
     bool has_price_trend_;

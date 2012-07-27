@@ -143,13 +143,15 @@ void SearchManagerPreProcessor::prepare_sorter_customranker_(
             PropertyDataType propertyType = propertyConfig.getType();
             switch (propertyType)
             {
+            case STRING_PROPERTY_TYPE:
             case INT32_PROPERTY_TYPE:
             case FLOAT_PROPERTY_TYPE:
-            case INT64_PROPERTY_TYPE:
-            case NOMINAL_PROPERTY_TYPE:
-            case DOUBLE_PROPERTY_TYPE:
-            case STRING_PROPERTY_TYPE:
             case DATETIME_PROPERTY_TYPE:
+            case INT8_PROPERTY_TYPE:
+            case INT16_PROPERTY_TYPE:
+            case INT64_PROPERTY_TYPE:
+            case DOUBLE_PROPERTY_TYPE:
+            case NOMINAL_PROPERTY_TYPE:
             {
                 if (!pSorter) pSorter.reset(new Sorter(pSorterCache));
                 SortProperty* pSortProperty = new SortProperty(
@@ -235,6 +237,8 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData_(
         switch (numericPropertyTable->getType())
         {
         case INT32_PROPERTY_TYPE:
+        case INT8_PROPERTY_TYPE:
+        case INT16_PROPERTY_TYPE:
             {
                 distSearchInfo.sortPropertyInt32DataList_.push_back(std::make_pair(SortPropertyName, std::vector<int32_t>()));
                 std::vector<int32_t>& dataList = distSearchInfo.sortPropertyInt32DataList_.back().second;

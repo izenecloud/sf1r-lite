@@ -6,6 +6,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <vector>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 
 namespace sf1r
 {
@@ -106,6 +108,15 @@ public:
             return false;
 
         value = boost::lexical_cast<std::string>(data_[pos]);
+        return true;
+    }
+    bool getFloatPairValue(std::size_t pos, std::pair<float, float>& value) const
+    {
+        ReadLock lock(mutex_);
+        if (pos >= data_.size() || data_[pos] == invalidValue_)
+            return false;
+
+        value.first = value.second = static_cast<float>(data_[pos]);
         return true;
     }
 
@@ -358,6 +369,20 @@ inline bool NumericPropertyTable<int64_t>::getStringValue(std::size_t pos, std::
     {
         value = boost::lexical_cast<std::string>(data_[pos]);
     }
+    return true;
+}
+
+template <>
+inline bool NumericPropertyTable<float>::getStringValue(std::size_t pos, std::string& value) const
+{
+    ReadLock lock(mutex_);
+    if (pos >= data_.size() || data_[pos] == invalidValue_)
+        return false;
+
+    static std::stringstream ss;
+    ss << fixed << setprecision(2) << data_[pos];
+    value = ss.str();
+    ss.str(std::string());
     return true;
 }
 

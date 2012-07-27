@@ -1,7 +1,6 @@
 #ifndef CORE_SEARCH_MANAGER_SEARCH_MANAGER_PPEPROCESSOR_H
 #define CORE_SEARCH_MANAGER_SEARCH_MANAGER_PREPROCESSOR_H
 
-#include "PropertyData.h"
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>

@@ -798,7 +798,6 @@ void DocumentsController::get_freq_group_labels()
  *   - @b group_property* (@c String): the group property name, which property type must be string
  *   - @b group_label* (@c Array): an array of group labels.@n
  *     Each element is a group label, which is a @c String array of the path from root to leaf node.@n
- *     The 1st element would be used to boost document ranking in @c search().@n
  *     If @b group_label is an empty array [], it would clear the top labels previously set.
  *
  * @section response

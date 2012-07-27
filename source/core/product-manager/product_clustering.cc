@@ -1,4 +1,6 @@
 #include "product_clustering.h"
+#include "pm_util.h"
+
 #include <document-manager/Document.h>
 
 #include <ir/index_manager/index/IndexerDocument.h>
@@ -7,8 +9,8 @@
 using namespace sf1r;
 namespace bfs = boost::filesystem;
 
-ProductClustering::ProductClustering(const std::string& work_dir, const PMConfig& config)
-    : work_dir_(work_dir), config_(config)
+ProductClustering::ProductClustering(const std::string& work_dir, const PMConfig& config, PMUtil* util)
+    : work_dir_(work_dir), config_(config), util_(util)
     , dd_(NULL), group_table_(NULL)
 {
 
@@ -20,26 +22,26 @@ bool ProductClustering::Open()
     {
         bfs::remove_all(work_dir_);
         bfs::create_directories(work_dir_);
-        std::string dd_container = work_dir_ +"/dd_container";
-        std::string group_table_file = work_dir_ +"/group_table";
+        std::string dd_container = work_dir_ + "/dd_container";
+        std::string group_table_file = work_dir_ + "/group_table";
         group_table_ = new GroupTableType(group_table_file);
         group_table_->Load();
         dd_ = new DDType(dd_container, group_table_);
-        if(config_.algo_fixk>0)
+        if (config_.algo_fixk > 0)
         {
-            LOG(INFO)<<"Set algorithm fixk="<<config_.algo_fixk<<std::endl;
+            LOG(INFO) << "Set algorithm fixk=" << config_.algo_fixk;
             dd_->SetFixK(config_.algo_fixk);
         }
 //         dd_->SetMaxProcessTable(40);
-        if(!dd_->Open())
+        if (!dd_->Open())
         {
-            std::cout<<"DD open failed"<<std::endl;
+            LOG(ERROR) << "DD open failed";
             return false;
         }
     }
-    catch(std::exception& ex)
+    catch (std::exception& ex)
     {
-        std::cout<<ex.what()<<std::endl;
+        std::cout << ex.what() << std::endl;
         return false;
     }
     return true;
@@ -47,11 +49,11 @@ bool ProductClustering::Open()
 
 ProductClustering::~ProductClustering()
 {
-    if(group_table_!=NULL)
+    if (group_table_)
     {
         delete group_table_;
     }
-    if(dd_!=NULL)
+    if (dd_)
     {
         delete dd_;
     }
@@ -60,38 +62,31 @@ ProductClustering::~ProductClustering()
 void ProductClustering::Insert(const PMDocumentType& doc)
 {
     izenelib::util::UString udocid;
-    if(!doc.getProperty(config_.docid_property_name, udocid))
+    if (!doc.getProperty(config_.docid_property_name, udocid))
     {
         error_ = "DOCID is empty.";
         return;
     }
     izenelib::util::UString title;
-    if(!doc.getProperty(config_.title_property_name, title))
+    if (!doc.getProperty(config_.title_property_name, title))
     {
         error_ = "Title is empty.";
         return;
     }
     izenelib::util::UString category;
-    if(!doc.getProperty(config_.category_property_name, category))
+    if (!doc.getProperty(config_.category_property_name, category))
     {
         error_ = "Category is empty.";
         return;
     }
 
-    if(title.length()==0 || category.length()==0 )
+    if (title.empty() || category.empty())
     {
         error_ = "Title or Category length equals zero.";
         return;
     }
-    izenelib::util::UString uprice;
-    if(!doc.getProperty(config_.price_property_name, uprice))
-    {
-        error_ = "Price is empty.";
-        return;
-    }
     ProductPrice price;
-    price.Parse(uprice);
-    if(!price.Valid() || price.value.first<=0.0 )
+    if (!util_->GetPrice(doc, price))
     {
         error_ = "Price is invalid.";
         return;
@@ -100,15 +95,14 @@ void ProductClustering::Insert(const PMDocumentType& doc)
     izenelib::util::UString city;
     doc.getProperty(config_.city_property_name, city);
     ProductClusteringAttach attach;
-//     udocid.convertString(attach.docid, izenelib::util::UString::UTF_8);
     attach.category = category;
     attach.city = city;
     attach.price = price;
 
-    std::vector<std::pair<std::string, double > > doc_vector;
+    std::vector<std::pair<std::string, double> > doc_vector;
     analyzer_.Analyze(title, doc_vector);
 
-    if( doc_vector.empty() )
+    if (doc_vector.empty())
     {
         error_ = "Title analyzer result is empty.";
         return;

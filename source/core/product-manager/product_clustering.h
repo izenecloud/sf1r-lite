@@ -16,6 +16,8 @@
 namespace sf1r
 {
 
+class PMUtil;
+
 class ProductClusteringAttach
 {
 public:
@@ -53,7 +55,7 @@ public:
     typedef idmlib::dd::DupDetector<std::string, uint32_t, ProductClusteringAttach> DDType;
     typedef DDType::GroupTableType GroupTableType;
 
-    ProductClustering(const std::string& work_dir, const PMConfig& config);
+    ProductClustering(const std::string& work_dir, const PMConfig& config, PMUtil* util);
 
     ~ProductClustering();
 
@@ -82,6 +84,7 @@ public:
 private:
     std::string work_dir_;
     PMConfig config_;
+    PMUtil* util_;
     std::string error_;
     ProductTermAnalyzer analyzer_;
     DDType* dd_;

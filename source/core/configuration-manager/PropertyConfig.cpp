@@ -45,14 +45,20 @@ std::string PropertyConfig::toString() const
     case sf1r::FLOAT_PROPERTY_TYPE:
         ss << "float_type";
         break;
-    case sf1r::NOMINAL_PROPERTY_TYPE:
-        ss << "nominal_type";
-        break;
     case sf1r::DATETIME_PROPERTY_TYPE:
         ss << "datetime_type";
         break;
+    case sf1r::INT8_PROPERTY_TYPE:
+        ss << "int8_type";
+        break;
+    case sf1r::INT16_PROPERTY_TYPE:
+        ss << "int16_type";
+        break;
     case sf1r::INT64_PROPERTY_TYPE:
         ss << "int64_type";
+        break;
+    case sf1r::NOMINAL_PROPERTY_TYPE:
+        ss << "nominal_type";
         break;
     default:
         break;

@@ -1,7 +1,10 @@
 /**
  * @file ProductRanker.h
- * @brief do product ranking by several methods,
- *        such as category boosting, merchant score, etc.
+ * @brief ranking products by below scores:
+ * 1. custom score
+ * 2. category score
+ * 3. merchant score
+ * 4. relevance score
  * @author Jun Jiang <jun.jiang@izenesoft.com>
  * @date Created 2012-05-17
  */

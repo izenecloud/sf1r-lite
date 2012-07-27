@@ -5,6 +5,7 @@
 #include "product_editor.h"
 #include "product_clustering.h"
 #include "product_price_trend.h"
+#include "pm_util.h"
 
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
@@ -37,9 +38,9 @@ ProductManager::ProductManager(
     , data_source_(data_source)
     , op_processor_(op_processor)
     , price_trend_(price_trend)
+    , util_(new PMUtil(config, data_source))
     , clustering_(NULL)
-    , editor_(new ProductEditor(data_source, op_processor, config))
-    , util_(config, data_source)
+    , editor_(new ProductEditor(data_source, op_processor, config, util_))
     , has_price_trend_(false)
     , inhook_(false)
 {
@@ -59,6 +60,8 @@ ProductManager::ProductManager(
 
 ProductManager::~ProductManager()
 {
+    delete util_;
+    delete clustering_;
     delete editor_;
 }
 
@@ -88,7 +91,7 @@ ProductClustering* ProductManager::GetClustering_()
     {
         if (config_.enable_clustering_algo)
         {
-            clustering_ = new ProductClustering(work_dir_+"/clustering", config_);
+            clustering_ = new ProductClustering(work_dir_+"/clustering", config_, util_);
             if (!clustering_->Open())
             {
                 std::cout<<"ProductClustering open failed"<<std::endl;
@@ -108,7 +111,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
     if (has_price_trend_)
     {
         ProductPrice price;
-        if (util_.GetPrice(doc, price))
+        if (util_->GetPrice(doc, price))
         {
             UString docid;
             if (doc.getProperty(config_.docid_property_name, docid))
@@ -143,7 +146,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 
     uint32_t fromid = index_document.getOldId(); //oldid
     PMDocumentType from;
-    if (!data_source_->GetDocument(fromid, from)) 
+    if (!data_source_->GetDocument(fromid, from))
     {
         inhook_ = false;
         return false;
@@ -156,8 +159,8 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
     }
     ProductPrice from_price;
     ProductPrice to_price;
-    util_.GetPrice(fromid, from_price);
-    util_.GetPrice(to, to_price);
+    util_->GetPrice(fromid, from_price);
+    util_->GetPrice(to, to_price);
 
     if (has_price_trend_ && to_price.Valid() && from_price != to_price)
     {
@@ -190,7 +193,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             PMDocumentType new_doc(to);
             to.property(config_.uuid_property_name) = from_uuid;
             new_doc.property(config_.docid_property_name) = from_uuid;
-            util_.SetItemCount(new_doc, 1);
+            util_->SetItemCount(new_doc, 1);
             op_processor_->Append(2, new_doc);// if r_type, only numeric properties in 'to'
         }
         else
@@ -207,7 +210,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             {
                 PMDocumentType diff_properties;
                 ProductPrice price(to_price);
-                util_.GetPrice(docid_list, price);
+                util_->GetPrice(docid_list, price);
                 diff_properties.property(config_.price_property_name) = price.ToUString();
                 diff_properties.property(config_.docid_property_name) = from_uuid;
                 //auto r_type? itemcount no need?
@@ -254,8 +257,8 @@ bool ProductManager::FinishHook()
         typedef ProductClustering::GroupTableType GroupTableType;
         GroupTableType* group_table = clustering_->GetGroupTable();
         typedef izenelib::util::UString UuidType;
-//         boost::unordered_map<GroupTableType::GroupIdType, UuidType> g2u_map;
-        boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType> g2doc_map;
+        typedef boost::unordered_map<GroupTableType::GroupIdType, std::pair<PMDocumentType, ProductPrice> > GroupDocMapType;
+        GroupDocMapType g2doc_map;
 
         //output DOCID -> uuid map SCD
         ScdWriter* uuid_map_writer = NULL;
@@ -279,11 +282,10 @@ bool ProductManager::FinishHook()
             UuidGenerator::Gen(uuidstr, uuid);
             PMDocumentType doc;
             doc.property(config_.docid_property_name) = docname;
-            doc.property(config_.price_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
             doc.property(config_.source_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
             doc.property(config_.uuid_property_name) = uuid;
-            util_.SetItemCount(doc, in_group.size());
-            g2doc_map.insert(std::make_pair(gid, doc));
+            util_->SetItemCount(doc, in_group.size());
+            g2doc_map[gid] = std::make_pair(doc, ProductPrice());
             if (uuid_map_writer)
             {
                 UpdateUUIDRequest uuidReq;
@@ -339,13 +341,13 @@ bool ProductManager::FinishHook()
             std::string sdocid;
             doc.getProperty(config_.docid_property_name, udocid);
             ProductPrice price;
-            util_.GetPrice(doc, price);
+            util_->GetPrice(doc, price);
             udocid.convertString(sdocid, izenelib::util::UString::UTF_8);
             GroupTableType::GroupIdType group_id;
             bool in_group = false;
             if (group_table->GetGroupId(sdocid, group_id))
             {
-                if (g2doc_map.find(group_id)!=g2doc_map.end())
+                if (g2doc_map.find(group_id) != g2doc_map.end())
                 {
                     in_group = true;
                 }
@@ -357,10 +359,9 @@ bool ProductManager::FinishHook()
             if (in_group)
             {
 //                 boost::unordered_map<GroupTableType::GroupIdType, UuidType>::iterator g2u_it = g2u_map.find(group_id);
-                boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.find(group_id);
-                PMDocumentType& combine_doc = g2doc_it->second;
-                ProductPrice combine_price;
-                util_.GetPrice(combine_doc, combine_price);
+                GroupDocMapType::iterator g2doc_it = g2doc_map.find(group_id);
+                PMDocumentType& combine_doc = g2doc_it->second.first;
+                ProductPrice& combine_price = g2doc_it->second.second;
                 combine_price += price;
                 izenelib::util::UString base_udocid = doc.property(config_.docid_property_name).get<izenelib::util::UString>();
                 UString uuid = combine_doc.property(config_.uuid_property_name).get<izenelib::util::UString>();
@@ -368,13 +369,12 @@ bool ProductManager::FinishHook()
                 UString combine_source;
                 doc.getProperty(config_.source_property_name, source);
                 combine_doc.getProperty(config_.source_property_name, combine_source);
-                util_.AddSource(combine_source, source);
+                util_->AddSource(combine_source, source);
                 if (udocid == base_udocid)
                 {
                     combine_doc.copyPropertiesFromDocument(doc, false);
                 }
-                combine_doc.property(config_.price_property_name) = combine_price.ToUString();
-                combine_doc.property(config_.source_property_name) = combine_source;
+                g2doc_it->second.second = combine_price;
                 uuid_update_list.push_back(std::make_pair(docid, uuid));
             }
             else
@@ -387,9 +387,10 @@ bool ProductManager::FinishHook()
                 uuid_update_list.push_back(std::make_pair(docid, uuid));
                 PMDocumentType new_doc(doc);
                 new_doc.property(config_.docid_property_name) = uuid;
+                new_doc.property(config_.price_property_name) = price.ToUString();
                 new_doc.eraseProperty(config_.uuid_property_name);
                 new_doc.eraseProperty(config_.olduuid_property_name);
-                util_.SetItemCount(new_doc, 1);
+                util_->SetItemCount(new_doc, 1);
                 new_doc.property(config_.oldofferids_property_name) = "";
                 op_processor_->Append(1, new_doc);
                 if (uuid_map_writer)
@@ -416,13 +417,14 @@ bool ProductManager::FinishHook()
         conn.flushRequests();
 
         //process the comparison items.
-        boost::unordered_map<GroupTableType::GroupIdType, PMDocumentType>::iterator g2doc_it = g2doc_map.begin();
+        GroupDocMapType::iterator g2doc_it = g2doc_map.begin();
         while (g2doc_it != g2doc_map.end())
         {
-            PMDocumentType& doc = g2doc_it->second;
+            PMDocumentType& doc = g2doc_it->second.first;
             PMDocumentType new_doc(doc);
             new_doc.property(config_.docid_property_name) = new_doc.property(config_.uuid_property_name);
             new_doc.property(config_.oldofferids_property_name) = "";
+            new_doc.property(config_.price_property_name) = g2doc_it->second.second.ToUString();
             new_doc.eraseProperty(config_.uuid_property_name);
             new_doc.eraseProperty(config_.olduuid_property_name);
             op_processor_->Append(1, new_doc);
