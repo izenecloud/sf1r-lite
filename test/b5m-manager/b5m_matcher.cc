@@ -3,6 +3,7 @@
 #include <b5m-manager/category_scd_spliter.h>
 #include <b5m-manager/b5mo_scd_generator.h>
 #include <b5m-manager/log_server_client.h>
+#include <b5m-manager/image_server_client.h>
 #include <b5m-manager/uue_generator.h>
 #include <b5m-manager/complete_matcher.h>
 #include <b5m-manager/similarity_matcher.h>
@@ -63,6 +64,7 @@ int main(int ac, char** av)
         ("dictionary", po::value<std::string>(), "specify dictionary path")
         ("mobile-source", po::value<std::string>(), "specify mobile source list file")
         ("logserver-config,L", po::value<std::string>(), "log server config string")
+        ("imgserver-config,L", po::value<std::string>(), "image server config string")
         ("exclude,E", "do not generate non matched categories")
         ("scd-split,P", "split scd files for each categories.")
         ("name,N", po::value<std::string>(), "specify the name")
@@ -93,6 +95,7 @@ int main(int ac, char** av)
     boost::shared_ptr<B5MHistoryDBHelper> historydb;
 
     boost::shared_ptr<LogServerConnectionConfig> logserver_config;
+    boost::shared_ptr<RpcServerConnectionConfig> imgserver_config;
     std::string synonym_file;
     std::string category_regex;
     std::string dictionary;
@@ -181,6 +184,24 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
+    if(vm.count("imgserver-config"))
+    {
+        std::string config_string = vm["imgserver-config"].as<std::string>();
+        std::vector<std::string> vec;
+        boost::algorithm::split( vec, config_string, boost::algorithm::is_any_of("|") );
+        if(vec.size()==3)
+        {
+            std::string host = vec[0];
+            uint32_t rpc_port = boost::lexical_cast<uint32_t>(vec[1]);
+            uint32_t rpc_thread_num = boost::lexical_cast<uint32_t>(vec[2]);
+            imgserver_config.reset(new RpcServerConnectionConfig(host, rpc_port, rpc_thread_num));
+        }
+        else
+        {
+            return EXIT_FAILURE;
+        }
+    }
+
     if(vm.count("synonym"))
     {
         synonym_file = vm["synonym"].as<std::string>();
@@ -372,7 +393,7 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5moScdGenerator generator(odb.get(), historydb.get(), logserver_config.get());
+        B5moScdGenerator generator(odb.get(), historydb.get(), logserver_config.get(), imgserver_config.get());
         if(!generator.Generate(mdb_instance))
         {
             return EXIT_FAILURE;

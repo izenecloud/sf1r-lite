@@ -1,5 +1,6 @@
 #include "b5mo_scd_generator.h"
 #include "log_server_client.h"
+#include "image_server_client.h"
 #include "b5m_types.h"
 #include "b5m_helper.h"
 #include <common/ScdParser.h>
@@ -9,6 +10,7 @@
 #include <product-manager/product_price.h>
 #include <product-manager/uuid_generator.h>
 #include <configuration-manager/LogServerConnectionConfig.h>
+#include <sf1r-net/RpcServerConnectionConfig.h>
 #include <am/sequence_file/ssfr.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -17,8 +19,11 @@
 
 using namespace sf1r;
 
-B5moScdGenerator::B5moScdGenerator(OfferDb* odb, B5MHistoryDBHelper* hdb, LogServerConnectionConfig* config)
-:odb_(odb), historydb_(hdb), log_server_cfg_(config)
+B5moScdGenerator::B5moScdGenerator(OfferDb* odb,
+    B5MHistoryDBHelper* hdb,
+    LogServerConnectionConfig* config,
+    RpcServerConnectionConfig* img_server_config)
+:odb_(odb), historydb_(hdb), log_server_cfg_(config), img_server_cfg_(img_server_config)
 {
 }
 
@@ -118,6 +123,22 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance)
         }
     }
 
+
+    if(img_server_cfg_)
+    {
+        LOG(INFO) << "Got Image Server Cfg, begin Init server connection." << std::endl;
+        if(!ImageServerClient::Init(*img_server_cfg_))
+        {
+            LOG(ERROR) << "Image Server Init failed." << std::endl;
+            return false;
+        }
+        if(!ImageServerClient::Test())
+        {
+            LOG(ERROR) << "Image Server test failed." << std::endl;
+            return false;
+        }
+    }
+
     //boost::filesystem::path mi_path(mdb_instance);
     //std::string ts = mi_path.filename();
     std::string scd_path = B5MHelper::GetRawPath(mdb_instance);
@@ -170,6 +191,20 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance)
                 if(property_name ==  "uuid")
                 {
                     p->second.convertString(soldpid, UString::UTF_8);
+                }
+                if(img_server_cfg_)
+                {
+                    if(property_name == "Picture")
+                    {
+                        std::string img_file;
+                        p->second.convertString(img_file, UString::UTF_8);
+                        if(!img_file.empty())
+                        {
+                            std::string color_str;
+                            ImageServerClient::GetImageColor(img_file, color_str);
+                            doc.property("Color") = UString(color_str, UString::UTF_8);
+                        }
+                    }
                 }
             }
             std::string sdocid;
