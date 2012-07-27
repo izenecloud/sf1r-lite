@@ -5,12 +5,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/unordered_map.hpp>
-#include <3rdparty/am/luxio/btree.h>
+//#include <3rdparty/am/luxio/btree.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <string>
+#include <am/tokyo_cabinet/tc_hash.h>
+
 
 #define MAX_RET_LEN  8
 
@@ -23,7 +25,8 @@ public:
     typedef std::string KeyType ;
     typedef std::string ValueType;
 
-    typedef Lux::IO::Btree ImageColorDBT;
+    //typedef Lux::IO::Btree ImageColorDBT;
+    typedef izenelib::am::tc_hash<KeyType, ValueType>  ImageColorDBT;
 public:
     static ImageServerStorage* get()
     {
@@ -38,10 +41,8 @@ public:
     {
         if(img_color_db_)
             return true;
-        img_color_db_ = new ImageColorDBT(Lux::IO::NONCLUSTER);
-        img_color_db_->set_noncluster_params(Lux::IO::Linked);
-        img_color_db_->set_lock_type(Lux::IO::LOCK_THREAD);
-        if(!open(img_color_db_path))
+        img_color_db_ = new ImageColorDBT(img_color_db_path);
+        if(!open())
         {
             std::cerr << "Failed to open image color db." << std::endl;
             delete img_color_db_;
@@ -61,18 +62,11 @@ public:
         }
     }
 
-    bool open(const std::string& path)
+    bool open()
     {
         try
         {
-            if ( !boost::filesystem::exists( path ) )
-            {
-                img_color_db_->open(path.c_str(), Lux::IO::DB_CREAT);
-            }
-            else
-            {
-                img_color_db_->open(path.c_str(), Lux::IO::DB_RDWR);
-            }
+            return img_color_db_->open();
         }
         catch (...)
         {
@@ -86,15 +80,7 @@ public:
     {
         if(img_color_db_)
         {
-            Lux::IO::data_t key = {img_path.c_str(), img_path.size()};
-            Lux::IO::data_t *val = NULL;
-            if(!img_color_db_->get(&key, &val, Lux::IO::SYSTEM) || val == NULL || val->data == NULL)
-            {
-                return false;
-            }
-            ret.assign((const char*)val->data, val->size);
-            img_color_db_->clean_data(val);
-            return true;
+            return img_color_db_->get(img_path, ret);
         }
         return false;
     }
@@ -103,9 +89,7 @@ public:
     {
         if(img_color_db_)
         {
-            Lux::IO::data_t key = {img_path.c_str(), img_path.size()};
-            Lux::IO::data_t val = {value.c_str(), value.size()};
-            return img_color_db_->put(&key, &val); // insert operation
+            return img_color_db_->update(img_path, value);
         }
         return false;
     }

@@ -150,6 +150,7 @@ IF(OpenCV_FOUND)
         #external
         ${Boost_LIBRARIES}
         ${Glog_LIBRARIES}
+        ${TokyoCabinet_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
         )
 
