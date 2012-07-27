@@ -31,6 +31,8 @@ SET(libs
   sf1r_configuration_manager
   sf1r_index_manager
   sf1r_common
+  sf1r_image_manager
+  sf1r_net
 
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}

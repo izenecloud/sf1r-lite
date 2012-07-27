@@ -272,7 +272,7 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
             add_docidreq.param_.uuid_ = Utilities::uuidToUint128(doc_uuid);
             add_docidreq.param_.olddocid_ = scd_docid;
             OldDocIdData docid_rsp;
-            OldUUIDData  uuid_rsp;
+            OldUUIDData uuid_rsp;
             conn.syncRequest(add_uuidreq, uuid_rsp);
             conn.syncRequest(add_docidreq, docid_rsp);
 

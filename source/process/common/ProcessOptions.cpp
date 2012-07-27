@@ -59,6 +59,7 @@ void validate(boost::any& v,
 ProcessOptions::ProcessOptions()
     : cobraProcessDescription_("Cobra Process Options")
     , logServerProcessDescription_("Log Server Process Options")
+    , colorServerProcessDescription_("Color Server Process Options")
     , isVerboseOn_(false)
     , logPrefix_("")
 {
@@ -102,6 +103,7 @@ ProcessOptions::ProcessOptions()
     cobraProcessDescription_.add(base).add(verbose).add(logPrefix).add(configDir).add(pidFile);
 
     logServerProcessDescription_.add(base).add(verbose).add(configFile).add(pidFile);
+    colorServerProcessDescription_.add(base).add(verbose).add(configFile).add(pidFile);
 }
 
 
@@ -193,6 +195,32 @@ bool ProcessOptions::setLogServerProcessArgs(const std::string& processName, con
     cout << "Usage:   " << processName << " <settings (-F )[, -H, ...]>" << endl;
     cout << "Exapmle: " << processName << " -F ./config/logserver.cfg" << endl;
     cout << logServerProcessDescription_ << endl;
+
+    return false;
+}
+
+bool ProcessOptions::setImageServerProcessArgs(const std::string& processName, const std::vector<std::string>& args)
+{
+    try
+    {
+        po::store(po::command_line_parser(args).options(colorServerProcessDescription_).positional(additional_).run(), variableMap_);
+        po::notify(variableMap_);
+
+        if (!variableMap_.count("help") && variableMap_.count("config-file"))
+        {
+            setProcessOptions();
+            return true;
+        }
+    }
+    catch (std::exception& e)
+    {
+        cerr << "Caught exception: " << e.what() << endl;
+    }
+
+    // Print usage
+    cout << "Usage:   " << processName << " <settings (-F )[, -H, ...]>" << endl;
+    cout << "Exapmle: " << processName << " -F ./config/colorserver.cfg" << endl;
+    cout << colorServerProcessDescription_ << endl;
 
     return false;
 }
