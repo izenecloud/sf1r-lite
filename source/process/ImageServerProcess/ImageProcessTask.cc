@@ -168,18 +168,7 @@ void *ImageProcessTask::compute(void *arg)
             task->doCompute(img_file);
         }
     }
-    while(task->compute_queue_.getSize()>0){
-        flag=false;
-        while(!task->compute_queue_.popNonBlocking(img_file)){
-            if(task->_stop){
-                flag=true;
-                break;
-            }
-            usleep(100000);
-        }
-        if(!flag){
-            task->doCompute(img_file);
-        }
+    while(task->compute_queue_.popNonBlocking(img_file)){
     }
     return 0;
 }
@@ -202,18 +191,7 @@ void *ImageProcessTask::process(void *arg)
             task->doJobs(msg);
         }
     }
-    while(task->msg_queue_.getSize()>0){
-        flag=false;
-        while(!task->msg_queue_.popNonBlocking(msg)){
-            if(task->_stop){
-                flag=true;
-                break;
-            }
-            usleep(100000);
-        }
-        if(!flag){
-            task->doJobs(msg);
-        }
+    while(task->msg_queue_.popNonBlocking(msg)){
     }
     return 0;
 }

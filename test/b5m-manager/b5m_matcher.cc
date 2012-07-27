@@ -251,7 +251,7 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
         LOG(INFO)<<"raw generator, mode: "<<mode<<std::endl;
-        RawScdGenerator generator(odb.get(), historydb.get(), mode, logserver_config.get());
+        RawScdGenerator generator(odb.get(), historydb.get(), mode, logserver_config.get(), imgserver_config.get());
         if(!mobile_source.empty())
         {
             if(boost::filesystem::exists(mobile_source))
@@ -393,7 +393,7 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5moScdGenerator generator(odb.get(), historydb.get(), logserver_config.get(), imgserver_config.get());
+        B5moScdGenerator generator(odb.get(), historydb.get(), logserver_config.get());
         if(!generator.Generate(mdb_instance))
         {
             return EXIT_FAILURE;
