@@ -6,13 +6,14 @@
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
-using namespace sf1r;
+namespace sf1r
+{
 
-ProductPrice::ProductPrice():value(-1.0, -1.0)
+ProductPrice::ProductPrice() : value(-1.0, -1.0)
 {
 }
 
-ProductPrice::ProductPrice(ProductPriceType a, ProductPriceType b): value(a,b)
+ProductPrice::ProductPrice(ProductPriceType a, ProductPriceType b) : value(a,b)
 {
     Check_();
 }
@@ -44,8 +45,8 @@ bool ProductPrice::operator==(const ProductPrice& b) const
 
 bool ProductPrice::GetMid(ProductPriceType& mid) const
 {
-    if(!Valid()) return false;
-    mid = (value.first+value.second)/2;
+    if (!Valid()) return false;
+    mid = (value.first + value.second) / 2;
     return true;
 }
 
@@ -60,18 +61,14 @@ bool ProductPrice::Convert_(const std::string& str, ProductPriceType& p)
         return false;
     }
     return true;
-    //int stat = sscanf(str.c_str(), "%lf", &p);
-    //if(stat==0 || stat==EOF) return false;
-    //return true;
 }
 
 bool ProductPrice::Convert_(ProductPriceType p, std::stringstream& os)
 {
     char buffer[50];
     int stat = sprintf(buffer, "%.2f", p);
-    if(stat==0 || stat==EOF) return false;
-    os<<buffer;
-    //os<<std::string(buffer);
+    if (stat == 0 || stat == EOF) return false;
+    os << buffer;
     return true;
 }
 
@@ -85,7 +82,7 @@ bool ProductPrice::Parse(const izenelib::util::UString& ustr)
 bool ProductPrice::Parse(const std::string& str)
 {
     ProductPriceType p;
-    if(Convert_(str,p))
+    if (Convert_(str, p))
     {
         value.first = p;
         value.second = p;
@@ -124,13 +121,13 @@ std::string ProductPrice::ToString() const
     std::stringstream ss;
     if (value.first == value.second)
     {
-        if(!Convert_(value.first, ss)) return "";
+        if (!Convert_(value.first, ss)) return "";
     }
     else
     {
-        if(!Convert_(value.first, ss)) return "";
-        ss<<"-";
-        if(!Convert_(value.second, ss)) return "";
+        if (!Convert_(value.first, ss)) return "";
+        ss << "-";
+        if (!Convert_(value.second, ss)) return "";
     }
     //LOG(INFO)<<ss.str()<<std::endl;
     return ss.str();
@@ -163,7 +160,7 @@ void ProductPrice::Reset_()
 
 bool ProductPrice::checkSeparatorType_(const std::string& propertyValueStr, char separator)
 {
-    size_t n = propertyValueStr.find(separator,0);
+    size_t n = propertyValueStr.find(separator, 0);
     if (n != std::string::npos)
         return true;
     return false;
@@ -183,7 +180,7 @@ bool ProductPrice::split_float_(const std::string& str, char sep)
                 std::string tmpStr = str.substr(nOld, n - nOld);
                 boost::algorithm::trim(tmpStr);
                 ProductPriceType p;
-                if(!Convert_(tmpStr, p)) return false;
+                if (!Convert_(tmpStr, p)) return false;
                 value_list.push_back(p);
             }
             nOld = ++n;
@@ -193,7 +190,7 @@ bool ProductPrice::split_float_(const std::string& str, char sep)
     std::string tmpStr = str.substr(nOld, str.length() - nOld);
     boost::algorithm::trim(tmpStr);
     ProductPriceType p;
-    if(!Convert_(tmpStr,p)) return false;
+    if (!Convert_(tmpStr, p)) return false;
     value_list.push_back(p);
     if (value_list.size() >= 2)
     {
@@ -205,4 +202,6 @@ bool ProductPrice::split_float_(const std::string& str, char sep)
     {
         return false;
     }
+}
+
 }

@@ -1,6 +1,5 @@
 #include "NumericRangeGroupCounter.h"
 
-#include <search-manager/NumericPropertyTable.h>
 #include <util/ustring/UString.h>
 #include "GroupRep.h"
 
@@ -9,15 +8,15 @@ NS_FACETED_BEGIN
 const int NumericRangeGroupCounter::bound_[]
     = {0, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
 
-NumericRangeGroupCounter::NumericRangeGroupCounter(const NumericPropertyTable *propertyTable)
-    : propertyTable_(propertyTable)
+NumericRangeGroupCounter::NumericRangeGroupCounter(const std::string& property, const NumericPropertyTableBase* numericPropertyTable)
+    : property_(property)
+    , numericPropertyTable_(numericPropertyTable)
     , segmentTree_(111 * LEVEL_1_OF_SEGMENT_TREE + 1)
 {
 }
 
 NumericRangeGroupCounter::~NumericRangeGroupCounter()
 {
-    delete propertyTable_;
 }
 
 NumericRangeGroupCounter* NumericRangeGroupCounter::clone() const
@@ -27,10 +26,10 @@ NumericRangeGroupCounter* NumericRangeGroupCounter::clone() const
 
 void NumericRangeGroupCounter::addDoc(docid_t doc)
 {
-    int64_t value;
-    if (propertyTable_->convertPropertyValue(doc, value))
+    int32_t value;
+    if (numericPropertyTable_->getInt32Value(doc, value))
     {
-        value = std::min(value, int64_t(bound_[LEVEL_1_OF_SEGMENT_TREE] - 1));
+        value = std::min(value, bound_[LEVEL_1_OF_SEGMENT_TREE] - 1);
         int exponent;
         for (exponent = 1; value >= bound_[exponent]; ++exponent);
         value /= bound_[exponent--] / 100;
@@ -53,7 +52,7 @@ void NumericRangeGroupCounter::getGroupRep(GroupRep &groupRep)
     for (int i = 0; i < LEVEL_1_OF_SEGMENT_TREE; i++)
         *it0 += *(it++);
 
-    groupRep.numericRangeGroupRep_.push_back(make_pair(propertyTable_->getPropertyName(), vector<unsigned int>()));
+    groupRep.numericRangeGroupRep_.push_back(make_pair(property_, vector<unsigned int>()));
     segmentTree_.swap(groupRep.numericRangeGroupRep_.back().second);
 }
 
@@ -64,7 +63,7 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
     for (GroupRep::NumericRangeGroupRep::const_iterator it = groupRep.numericRangeGroupRep_.begin();
         it != groupRep.numericRangeGroupRep_.end(); ++it)
     {
-        izenelib::util::UString propName(it->first, UString::UTF_8);
+        izenelib::util::UString propName(it->first, izenelib::util::UString::UTF_8);
         itemList.push_back(faceted::OntologyRepItem(0, propName, 0, it->second.back()));
 
         vector<unsigned int>::const_iterator level3 = it->second.begin();
@@ -186,7 +185,7 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
                     ss << atom * (10 * oldStop.first + oldStop.second)
                         << "-"
                         << atom * (10 * tempStop.first + tempStop.second + 1) - 1;
-                    izenelib::util::UString ustr(ss.str(), UString::UTF_8);
+                    izenelib::util::UString ustr(ss.str(), izenelib::util::UString::UTF_8);
                     itemList.push_back(faceted::OntologyRepItem(1, ustr, 0, tempCount - oldCount));
                     if (tempCount == *level1)
                         break;
@@ -201,7 +200,7 @@ void NumericRangeGroupCounter::toOntologyRepItemList(GroupRep &groupRep)
                 ss << atom * (10 * stop.first + stop.second)
                     << "-"
                     << atom * (10 * end.first + end.second + 1) - 1;
-                izenelib::util::UString ustr(ss.str(), UString::UTF_8);
+                izenelib::util::UString ustr(ss.str(), izenelib::util::UString::UTF_8);
                 itemList.push_back(faceted::OntologyRepItem(1, ustr, 0, *level1 - tempCount));
             }
 

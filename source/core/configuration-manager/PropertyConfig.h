@@ -30,8 +30,8 @@ namespace sf1r
 struct PropertyConfigBase
 {
     PropertyConfigBase()
-            : propertyId_(0)
-            , propertyType_(sf1r::UNKNOWN_DATA_PROPERTY_TYPE)
+        : propertyId_(0)
+        , propertyType_(sf1r::UNKNOWN_DATA_PROPERTY_TYPE)
     {}
 
     /**
@@ -59,30 +59,32 @@ public:
      * @brief   Initializes the member variables with default values
      */
     PropertyConfig()
-            : bIndex_(false)
-            , displayLength_(0)
-            , summaryNum_(0)
-            , bSnippet_(false)
-            , bSummary_(false)
-            , bHighlight_(false)
-            , bFilter_(false)
-            , bMultiValue_(false)
-            , bStoreDocLen_(false)
-            , rankWeight_(0.0f)
+        : displayLength_(0)
+        , summaryNum_(0)
+        , bIndex_(false)
+        , bSnippet_(false)
+        , bSummary_(false)
+        , bHighlight_(false)
+        , bFilter_(false)
+        , bMultiValue_(false)
+        , bRange_(false)
+        , bStoreDocLen_(false)
+        , rankWeight_(0.0f)
     {}
 
     PropertyConfig(const PropertyConfigBase& base)
-            : PropertyConfigBase(base)
-            , bIndex_(false)
-            , displayLength_(0)
-            , summaryNum_(0)
-            , bSnippet_(false)
-            , bSummary_(false)
-            , bHighlight_(false)
-            , bFilter_(false)
-            , bMultiValue_(false)
-            , bStoreDocLen_(false)
-            , rankWeight_(0.0f)
+        : PropertyConfigBase(base)
+        , displayLength_(0)
+        , summaryNum_(0)
+        , bIndex_(false)
+        , bSnippet_(false)
+        , bSummary_(false)
+        , bHighlight_(false)
+        , bFilter_(false)
+        , bMultiValue_(false)
+        , bRange_(false)
+        , bStoreDocLen_(false)
+        , rankWeight_(0.0f)
     {}
 
 public:
@@ -93,7 +95,7 @@ public:
      *
      * @param id The id value
      */
-    void setPropertyId( uint32_t id )
+    inline void setPropertyId(uint32_t id)
     {
         propertyId_ = id;
     }
@@ -103,7 +105,7 @@ public:
      *
      * @return  The id value
      */
-    uint32_t getPropertyId() const
+    inline uint32_t getPropertyId() const
     {
         return propertyId_;
     }
@@ -121,7 +123,7 @@ public:
      * If there are more than one <Indexing> config for the property, only one "name" will match the
      * "originalName" since the <Indexing> configs will have different "alias" names.
      */
-    void setName( const std::string & name )
+    inline void setName(const std::string& name)
     {
         propertyName_ = name;
     }
@@ -137,7 +139,7 @@ public:
      * If there are more than one <Indexing> config for the property, only one "name" will match the
      * "originalName" since the <Indexing> configs will have different "alias" names.
      */
-    std::string getName() const
+    inline const std::string& getName() const
     {
         return propertyName_;
     }
@@ -154,7 +156,7 @@ public:
      * alias copies of itself by assigning multiple <Indexing> configs to a single Property.
      * The original name is to sepcify the original property setting.
      */
-    void setOriginalName( const std::string & oriName )
+    inline void setOriginalName(const std::string& oriName)
     {
         originalName_ = oriName;
     }
@@ -169,7 +171,7 @@ public:
      * alias copies of itself by assigning multiple <Indexing> configs to a single Property.
      * The original name is to sepcify the original property setting.
      */
-    std::string getOriginalName() const
+    inline const std::string& getOriginalName() const
     {
         return originalName_;
     }
@@ -181,7 +183,7 @@ public:
      *
      * TODO: Need to finalize the names
      */
-    void setType( sf1r::PropertyDataType type )
+    inline void setType(sf1r::PropertyDataType type)
     {
         propertyType_ = type;
     }
@@ -191,16 +193,18 @@ public:
      *
      * @return  The property type as specified in document-manager
      */
-    sf1r::PropertyDataType getType() const
+    inline sf1r::PropertyDataType getType() const
     {
         return propertyType_;
     }
 
-    bool isNumericType() const
+    inline bool isNumericType() const
     {
-        return (propertyType_ == INT_PROPERTY_TYPE
-                || propertyType_ == UNSIGNED_INT_PROPERTY_TYPE
+        return (propertyType_ == INT32_PROPERTY_TYPE
                 || propertyType_ == FLOAT_PROPERTY_TYPE
+                || propertyType_ == INT8_PROPERTY_TYPE
+                || propertyType_ == INT16_PROPERTY_TYPE
+                || propertyType_ == INT64_PROPERTY_TYPE
                 || propertyType_ == DOUBLE_PROPERTY_TYPE);
     }
 
@@ -209,7 +213,7 @@ public:
      *
      * @param isIndex   Flag. If true, the property is indexed.
      */
-    void setIsIndex( const bool isIndex )
+    inline void setIsIndex(const bool isIndex)
     {
         bIndex_ = isIndex;
     }
@@ -219,7 +223,7 @@ public:
      *
      * @return  Flag. If true, the property is indexed.
      */
-    bool isIndex() const
+    inline bool isIndex() const
     {
         return bIndex_;
     }
@@ -229,7 +233,7 @@ public:
      *
      * @param displayLength The length in number of characters
      */
-    void setDisplayLength( const unsigned int displayLength )
+    inline void setDisplayLength(const unsigned int displayLength)
     {
         displayLength_ = displayLength;
     }
@@ -239,7 +243,7 @@ public:
      *
      * @return The length in number of characters
      */
-    unsigned int getDisplayLength() const
+    inline unsigned int getDisplayLength() const
     {
         return displayLength_;
     }
@@ -249,7 +253,7 @@ public:
      *
      * @param displayLength The number of sentences
      */
-    void setSummaryNum( const unsigned int num )
+    inline void setSummaryNum(const unsigned int num)
     {
         summaryNum_ = num;
     }
@@ -259,7 +263,7 @@ public:
      *
      * @return  The number of sentences
      */
-    unsigned int getSummaryNum() const
+    inline unsigned int getSummaryNum() const
     {
         return summaryNum_;
     }
@@ -269,7 +273,7 @@ public:
      *
      * @param snippet   Flag. If true, a snippet is generated from this property
      */
-    void setIsSnippet( const bool snippet)
+    inline void setIsSnippet(const bool snippet)
     {
         bSnippet_ = snippet;
     }
@@ -279,7 +283,7 @@ public:
      *
      * @return  Flag. If true, a snippet is generated from this property
      */
-    bool getIsSnippet() const
+    inline bool getIsSnippet() const
     {
         return bSnippet_;
     }
@@ -289,7 +293,7 @@ public:
      *
      * @param summary   Flag. If true, a summary is generated from this property
      */
-    void setIsSummary( const bool summary )
+    inline void setIsSummary(const bool summary)
     {
         bSummary_ = summary;
     }
@@ -299,7 +303,7 @@ public:
      *
      * @return  Flag. If true, a summary is generated from this property
      */
-    bool getIsSummary() const
+    inline bool getIsSummary() const
     {
         return bSummary_;
     }
@@ -309,7 +313,7 @@ public:
      *
      * @param highlight     Flag. If true, the property(text, or snippet, or summary) is highlighted
      */
-    void setIsHighlight( const bool highlight )
+    inline void setIsHighlight(const bool highlight)
     {
         bHighlight_ = highlight;
     }
@@ -319,7 +323,7 @@ public:
      *
      * @return  Flag. If true, the property(text, or snippet, or summary) is highlighted
      */
-    bool getIsHighlight() const
+    inline bool getIsHighlight() const
     {
         return bHighlight_;
     }
@@ -329,7 +333,7 @@ public:
      *
      * @param snippet   Flag. If true, a snippet is generated from this property
      */
-    void setIsFilter( const bool bFilter)
+    inline void setIsFilter(const bool bFilter)
     {
         bFilter_ = bFilter;
     }
@@ -339,28 +343,38 @@ public:
      *
      * @return  Flag. If true, a snippet is generated from this property
      */
-    bool getIsFilter() const
+    inline bool getIsFilter() const
     {
         return bFilter_;
     }
 
 
-    void setIsMultiValue( const bool bMultiValue)
+    inline void setIsMultiValue(const bool bMultiValue)
     {
         bMultiValue_ = bMultiValue;
     }
 
-    bool getIsMultiValue() const
+    inline bool getIsMultiValue() const
     {
         return bMultiValue_;
     }
 
-    void setIsStoreDocLen( const bool bStoreDocLen)
+    inline void setIsRange(const bool bRange)
+    {
+        bRange_ = bRange;
+    }
+
+    inline bool getIsRange() const
+    {
+        return bRange_;
+    }
+
+    inline void setIsStoreDocLen(const bool bStoreDocLen)
     {
         bStoreDocLen_ = bStoreDocLen;
     }
 
-    bool getIsStoreDocLen() const
+    inline bool getIsStoreDocLen() const
     {
         return bStoreDocLen_;
     }
@@ -373,7 +387,7 @@ public:
      * AnalysisInfo consists of a LA unit, and a list of regulators.
      * They are given in <Indexing> config of a Property.
      */
-    void setAnalysisInfo( const AnalysisInfo & analysisInfo )
+    inline void setAnalysisInfo(const AnalysisInfo & analysisInfo)
     {
         analysisInfo_ = analysisInfo;
     }
@@ -387,7 +401,7 @@ public:
      * AnalysisInfo consists of a LA unit, and a list of regulators.
      * They are given in <Indexing> config of a Property.
      */
-    const AnalysisInfo & getAnalysisInfo() const
+    inline const AnalysisInfo & getAnalysisInfo() const
     {
         return analysisInfo_;
     }
@@ -397,7 +411,7 @@ public:
      *
      * @param name  The name of this unit.
      */
-    void setRankWeight( const float rankWeight )
+    inline void setRankWeight(const float rankWeight)
     {
         rankWeight_ = rankWeight;
     }
@@ -407,7 +421,7 @@ public:
      *
      * @return  The ID of this unit
      */
-    float getRankWeight() const
+    inline float getRankWeight() const
     {
         return rankWeight_;
     }
@@ -438,6 +452,7 @@ public:
         swap(bHighlight_, rhs.bHighlight_);
         swap(bFilter_, rhs.bFilter_);
         swap(bMultiValue_, rhs.bMultiValue_);
+        swap(bRange_, rhs.bRange_);
         swap(bStoreDocLen_, rhs.bStoreDocLen_);
         swap(analysisInfo_, rhs.analysisInfo_);
         swap(rankWeight_, rhs.rankWeight_);
@@ -449,7 +464,7 @@ private:
     friend class boost::serialization::access;
 
     template <class Archive>
-    void serialize( Archive & ar, const unsigned int version )
+    void serialize(Archive & ar, const unsigned int version)
     {
         ar & propertyId_;
         ar & propertyName_;
@@ -463,6 +478,7 @@ private:
         ar & bHighlight_;
         ar & bFilter_;
         ar & bMultiValue_;
+        ar & bRange_;
         ar & bStoreDocLen_;
         ar & analysisInfo_;
         ar & rankWeight_;
@@ -475,14 +491,14 @@ public:
     /// If the property is an alias of the original, the property name and original name will be different
     std::string originalName_;
 
-    ///@brief   A flag indicating whether the Property will be indexed or not.
-    bool bIndex_;
-
     /// @brief  The displaying length of the property, in terms of number of characters.
     unsigned int displayLength_;
 
     /// @brief  The number of sentences to save from the output of summarization
     unsigned int summaryNum_;
+
+    ///@brief   A flag indicating whether the Property will be indexed or not.
+    bool bIndex_;
 
     /// @brief  A flag indicating whether the property generates snippet
     bool bSnippet_;
@@ -498,6 +514,9 @@ public:
 
     /// @brief  Whether multivalue filter will be applied to this property
     bool bMultiValue_;
+
+    /// @brief  Whether to support range values for numeric property
+    bool bRange_;
 
     /// @brief  Whether store doc length to this property
     bool bStoreDocLen_;
@@ -516,8 +535,8 @@ struct PropertyComp
 {
     bool operator()(const PropertyConfig & lhs, const PropertyConfig & rhs) const
     {
-        //return ( lhs.getName() < rhs.getName() || (lhs.getName() == rhs.getName() && lhs.getType() < rhs.getType()) );
-        return ( lhs.getName() < rhs.getName() );
+        //return (lhs.getName() < rhs.getName() || (lhs.getName() == rhs.getName() && lhs.getType() < rhs.getType()));
+        return lhs.getName() < rhs.getName();
     }
 };
 
@@ -525,7 +544,7 @@ struct PropertyBaseComp
 {
     bool operator()(const PropertyConfigBase & lhs, const PropertyConfigBase & rhs) const
     {
-        return ( lhs.propertyName_ < rhs.propertyName_ );
+        return lhs.propertyName_ < rhs.propertyName_;
     }
 };
 

@@ -1,7 +1,7 @@
 #include "NumericPropertyTableBuilderStub.h"
 #include <document-manager/Document.h>
 #include <configuration-manager/GroupConfig.h>
-#include <search-manager/NumericPropertyTable.h>
+#include <common/NumericPropertyTable.h>
 
 #include <glog/logging.h>
 
@@ -12,28 +12,27 @@ namespace
 using namespace sf1r;
 
 template<typename T>
-boost::shared_ptr<PropertyData> createPropertyData(
-   PropertyDataType type,
-   typename NumericPropertyTableBuilderStub::PropertyMap<T>::map_type& propMap,
-   const std::string& propName
-)
+void createPropertyData(
+        PropertyDataType type,
+        typename NumericPropertyTableBuilderStub::PropertyMap<T>::map_type& propMap,
+        const std::string& propName,
+        boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable)
 {
     typename NumericPropertyTableBuilderStub::PropertyMap<T>::table_type& propTable = propMap[propName];
+    if (!numericPropertyTable)
+        numericPropertyTable.reset(new NumericPropertyTable<T>(type));
     std::size_t num = propTable.size();
-    void* data = new T[num];
+    numericPropertyTable->resize(num);
+    void* data = numericPropertyTable->getValueList();
     size_t size = num*sizeof(T);
     memcpy(data, &propTable[0], size);
-
-    boost::shared_ptr<PropertyData> propData(new PropertyData(type, data, size));
-    return propData;
 }
 
 template<typename T>
 void insertPropertyMap(
-    const std::string& propName,
-    const PropertyValue* propValue,
-    typename NumericPropertyTableBuilderStub::PropertyMap<T>::map_type& propMap
-)
+        const std::string& propName,
+        const PropertyValue* propValue,
+        typename NumericPropertyTableBuilderStub::PropertyMap<T>::map_type& propMap)
 {
     T value = 0;
     if (propValue)
@@ -74,27 +73,28 @@ PropertyDataType NumericPropertyTableBuilderStub::getPropertyType_(const std::st
     return UNKNOWN_DATA_PROPERTY_TYPE;
 }
 
-NumericPropertyTable* NumericPropertyTableBuilderStub::createPropertyTable(const std::string& propertyName)
+boost::shared_ptr<NumericPropertyTableBase>& NumericPropertyTableBuilderStub::createPropertyTable(const std::string& propertyName)
 {
     PropertyDataType propType = getPropertyType_(propertyName);
-    boost::shared_ptr<PropertyData> propData;
+    boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = numericPropertyTableMap_[propertyName];
 
-    switch(propType)
+    switch (propType)
     {
-    case INT_PROPERTY_TYPE:
-        propData = createPropertyData<int64_t>(INT_PROPERTY_TYPE, intPropMap_, propertyName);
+    case INT32_PROPERTY_TYPE:
+        createPropertyData<int32_t>(INT32_PROPERTY_TYPE, int32PropMap_, propertyName, numericPropertyTable);
         break;
 
-    case UNSIGNED_INT_PROPERTY_TYPE:
-        propData = createPropertyData<uint64_t>(UNSIGNED_INT_PROPERTY_TYPE, uintPropMap_, propertyName);
+    case INT64_PROPERTY_TYPE:
+	case DATETIME_PROPERTY_TYPE:
+        createPropertyData<int64_t>(INT64_PROPERTY_TYPE, int64PropMap_, propertyName, numericPropertyTable);
         break;
 
     case FLOAT_PROPERTY_TYPE:
-        propData = createPropertyData<float>(FLOAT_PROPERTY_TYPE, floatPropMap_, propertyName);
+        createPropertyData<float>(FLOAT_PROPERTY_TYPE, floatPropMap_, propertyName, numericPropertyTable);
         break;
 
     case DOUBLE_PROPERTY_TYPE:
-        propData = createPropertyData<double>(DOUBLE_PROPERTY_TYPE, doublePropMap_, propertyName);
+        createPropertyData<double>(DOUBLE_PROPERTY_TYPE, doublePropMap_, propertyName, numericPropertyTable);
         break;
 
     default:
@@ -103,12 +103,7 @@ NumericPropertyTable* NumericPropertyTableBuilderStub::createPropertyTable(const
         break;
     }
 
-    if (propData)
-    {
-        return new NumericPropertyTable(propertyName, propData);
-    }
-
-    return NULL;
+    return numericPropertyTable;
 }
 
 bool NumericPropertyTableBuilderStub::insertDocument(const Document& doc)
@@ -136,15 +131,15 @@ bool NumericPropertyTableBuilderStub::insertDocument(const Document& doc)
 }
 
 bool NumericPropertyTableBuilderStub::insertProperty_(
-    const std::string& prop,
-    PropertyDataType type,
-    const PropertyValue* propValue
-)
+        const std::string& prop,
+        PropertyDataType type,
+        const PropertyValue* propValue)
 {
     try
     {
         insertPropMap_(prop, type, propValue);
-    }catch(const boost::bad_get& e)
+    }
+    catch (const boost::bad_get& e)
     {
         LOG(ERROR) << "failed in converting type: " << type
                    << ", property: " << prop
@@ -156,19 +151,18 @@ bool NumericPropertyTableBuilderStub::insertProperty_(
 }
 
 void NumericPropertyTableBuilderStub::insertPropMap_(
-    const std::string& prop,
-    PropertyDataType type,
-    const PropertyValue* propValue
-)
+        const std::string& prop,
+        PropertyDataType type,
+        const PropertyValue* propValue)
 {
-    switch(type)
+    switch (type)
     {
-    case INT_PROPERTY_TYPE:
-        insertPropertyMap<int64_t>(prop, propValue, intPropMap_);
+    case INT32_PROPERTY_TYPE:
+        insertPropertyMap<int32_t>(prop, propValue, int32PropMap_);
         break;
 
-    case UNSIGNED_INT_PROPERTY_TYPE:
-        insertPropertyMap<uint64_t>(prop, propValue, uintPropMap_);
+    case INT64_PROPERTY_TYPE:
+        insertPropertyMap<int64_t>(prop, propValue, int64PropMap_);
         break;
 
     case FLOAT_PROPERTY_TYPE:

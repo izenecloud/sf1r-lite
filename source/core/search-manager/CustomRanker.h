@@ -15,9 +15,9 @@
 #include <common/inttypes.h>
 #include <util/ustring/UString.h>
 
-namespace sf1r {
-
 using namespace BOOST_SPIRIT_CLASSIC_NS;
+
+namespace sf1r {
 
 class SortPropertyCache;
 
@@ -88,7 +88,8 @@ public:
             ret = boost::lexical_cast<double>(str);
             return true;
         }
-        catch(const boost::bad_lexical_cast&) {
+        catch(const boost::bad_lexical_cast&)
+        {
             ret = 0;
             return false;
         }
@@ -212,7 +213,8 @@ private:
         size_t begin = s.find_first_not_of(whitespaces);
         size_t end = s.find_last_not_of(whitespaces);
 
-        if (begin == string::npos) {
+        if (begin == string::npos)
+        {
             string().swap(s); // only whitespaces in string
             return;
         }

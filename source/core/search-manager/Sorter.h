@@ -7,12 +7,8 @@
 #ifndef _SORTER_H
 #define _SORTER_H
 
-#include <index-manager/IndexManager.h>
-#include <mining-manager/faceted-submanager/ctr_manager.h>
-#include "PropertyData.h"
 #include "SortPropertyComparator.h"
 #include <util/ustring/UString.h>
-#include <bundles/index/IndexBundleConfiguration.h>
 
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
@@ -23,7 +19,18 @@
 
 using namespace std;
 
-namespace sf1r{
+namespace sf1r
+{
+
+class DocumentManager;
+class IndexManager;
+class IndexBundleConfiguration;
+
+namespace faceted
+{
+class CTRManager;
+}
+
 /*
 * @brief Sortproperty  indicates a property according to which the query results are sorted
 */
@@ -88,7 +95,7 @@ private:
 class SortPropertyCache
 {
 public:
-    SortPropertyCache(IndexManager* pIndexer, IndexBundleConfiguration* config);
+    SortPropertyCache(DocumentManager* pDocumentManager, IndexManager* pIndexer, IndexBundleConfiguration* config);
 
     void setCtrManager(faceted::CTRManager* pCTRManager);
 
@@ -98,21 +105,16 @@ public:
 
     SortPropertyComparator* getComparator(SortProperty* pSortProperty);
 
-    void updateSortData(docid_t id, const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
+    boost::shared_ptr<NumericPropertyTableBase>& getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType);
 
-    boost::shared_ptr<PropertyData> getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType);
-
-    boost::shared_ptr<PropertyData> getCTRPropertyData(const std::string& propertyName, PropertyDataType propertyType);
+    boost::shared_ptr<NumericPropertyTableBase>& getCTRPropertyData(const std::string& propertyName, PropertyDataType propertyType);
 
 private:
     void loadSortData(const std::string& property, PropertyDataType type);
 
-    bool split_int(const izenelib::util::UString& szText, int64_t& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
-
-    bool split_float(const izenelib::util::UString& szText, float& out, izenelib::util::UString::EncodingType encoding, char Separator = ' ');
-
 private:
-    ///All data would be got through IndexManager
+    DocumentManager* pDocumentManager_;
+
     IndexManager* pIndexer_;
 
     ///CTR data will be get from CTRManager
@@ -125,7 +127,7 @@ private:
 
     ///key: the name of sorted property
     ///value: memory pool containing the property data
-    typedef std::map<std::string, boost::shared_ptr<PropertyData> > SortDataCache;
+    typedef std::map<std::string, boost::shared_ptr<NumericPropertyTableBase> > SortDataCache;
     SortDataCache sortDataCache_;
 
     boost::mutex mutex_;
@@ -175,7 +177,7 @@ public:
             {
                 //return c < 0;
                 ///Tricky optmization, while difficult to maintain
-                return c ^ (reverseMul_[i]); 
+                return c ^ (reverseMul_[i]);
             }
         //c = (pSortProperty->isReverse()) ? pSortProperty->pComparator_->compare(doc2, doc1)
         //       : pSortProperty->pComparator_->compare(doc1, doc2);

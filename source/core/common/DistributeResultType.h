@@ -41,8 +41,8 @@ public:
 
     /// @brief data lists for sort properties of docList.
     std::vector<std::pair<std::string , bool> > sortPropertyList_;
-    std::vector<std::pair<std::string, std::vector<int64_t> > > sortPropertyIntDataList_;
-    std::vector<std::pair<std::string, std::vector<uint64_t> > > sortPropertyUIntDataList_;
+    std::vector<std::pair<std::string, std::vector<int32_t> > > sortPropertyInt32DataList_;
+    std::vector<std::pair<std::string, std::vector<int64_t> > > sortPropertyInt64DataList_;
     std::vector<std::pair<std::string, std::vector<float> > > sortPropertyFloatDataList_;
 
     void swap(DistKeywordSearchInfo& other)
@@ -55,13 +55,13 @@ public:
         ctfmap_.swap(other.ctfmap_);
         maxtfmap_.swap(other.maxtfmap_);
         sortPropertyList_.swap(other.sortPropertyList_);
-        sortPropertyIntDataList_.swap(other.sortPropertyIntDataList_);
-        sortPropertyUIntDataList_.swap(other.sortPropertyUIntDataList_);
+        sortPropertyInt32DataList_.swap(other.sortPropertyInt32DataList_);
+        sortPropertyInt64DataList_.swap(other.sortPropertyInt64DataList_);
         sortPropertyFloatDataList_.swap(other.sortPropertyFloatDataList_);
     }
 
     MSGPACK_DEFINE(effective_, option_, nodeType_, dfmap_, ctfmap_, maxtfmap_, sortPropertyList_,
-        sortPropertyIntDataList_, sortPropertyUIntDataList_, sortPropertyFloatDataList_);
+        sortPropertyInt32DataList_, sortPropertyInt64DataList_, sortPropertyFloatDataList_);
 };
 
 class DistKeywordSearchResult : public ErrorInfo

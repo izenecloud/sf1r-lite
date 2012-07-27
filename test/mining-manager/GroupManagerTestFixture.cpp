@@ -56,7 +56,7 @@ void checkProperty(
     BOOST_REQUIRE(it != doc.propertyEnd());
 
     const PropertyValue& value = it->second;
-    BOOST_CHECK_EQUAL(value.get<int64_t>(), propValue);
+    BOOST_CHECK_EQUAL(value.get<int32_t>(), propValue);
 }
 
 void checkProperty(
@@ -108,7 +108,7 @@ void prepareDocument(
     property.assign(docInput.dateStr_, ENCODING_TYPE);
     document.property(PROP_NAME_GROUP_DATETIME) = property;
 
-    document.property(PROP_NAME_GROUP_INT) = lexical_cast<int64_t>(docInput.groupInt_);
+    document.property(PROP_NAME_GROUP_INT) = lexical_cast<int32_t>(docInput.groupInt_);
     document.property(PROP_NAME_GROUP_FLOAT) = lexical_cast<float>(docInput.groupFloat_);
 }
 
@@ -518,7 +518,7 @@ void GroupManagerTestFixture::initConfig_()
 
     PropertyConfigBase config5;
     config5.propertyName_ = PROP_NAME_GROUP_INT;
-    config5.propertyType_ = INT_PROPERTY_TYPE;
+    config5.propertyType_ = INT32_PROPERTY_TYPE;
     schema_.insert(config5);
     propNames_.push_back(config5.propertyName_);
     groupConfigs_.push_back(GroupConfig(config5.propertyName_, config5.propertyType_));

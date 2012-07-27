@@ -23,13 +23,12 @@ class CollectionProductDataSource : public ProductDataSource
 {
 public:
     CollectionProductDataSource(
-        const boost::shared_ptr<DocumentManager>& document_manager,
-        const boost::shared_ptr<IndexManager>& index_manager,
-        const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager,
-        const boost::shared_ptr<SearchManager>& search_manager,
-        const PMConfig& config,
-        const IndexBundleSchema& indexSchema
-    );
+            const boost::shared_ptr<DocumentManager>& document_manager,
+            const boost::shared_ptr<IndexManager>& index_manager,
+            const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager,
+            const boost::shared_ptr<SearchManager>& search_manager,
+            const PMConfig& config,
+            const IndexBundleSchema& indexSchema);
 
     ~CollectionProductDataSource();
 
@@ -44,6 +43,12 @@ public:
     bool SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid);
 
     bool GetInternalDocidList(const std::vector<uint128_t>& sdocid_list, std::vector<uint32_t>& docid_list);
+
+    bool AddCurUuidToHistory(uint32_t docid);
+
+    bool GetPrice(const PMDocumentType& doc, ProductPrice& price) const;
+
+    bool GetPrice(const uint32_t& doc, ProductPrice& price) const;
 
     void Flush();
 

@@ -1,10 +1,9 @@
-#ifndef DOCCONTAINER_H_
-#define DOCCONTAINER_H_
+#ifndef SF1V5_DOCUMENT_MANAGER_DOC_CONTAINER_H
+#define SF1V5_DOCUMENT_MANAGER_DOC_CONTAINER_H
 
 #include "Document.h"
 
 #include <3rdparty/am/luxio/array.h>
-#include <3rdparty/am/stx/btree_set.h>
 #include <util/izene_serialization.h>
 #include <util/bzip.h>
 
@@ -25,13 +24,14 @@ namespace sf1r
 class DocContainer
 {
     typedef Lux::IO::Array containerType;
+
 public:
-    DocContainer(const std::string&path) :
-            path_(path),
-            fileName_(path + "DocumentPropertyTable"),
-            maxDocIdDb_(path + "MaxDocID.xml"),
-            containerPtr_(NULL),
-            maxDocID_(0)
+    DocContainer(const std::string&path)
+        : path_(path)
+        , fileName_(path + "DocumentPropertyTable")
+        , maxDocIdDb_(path + "MaxDocID.xml")
+        , containerPtr_(NULL)
+        , maxDocID_(0)
     {
         containerPtr_ = new containerType(Lux::IO::NONCLUSTER);
         containerPtr_->set_noncluster_params(Lux::IO::Linked);
@@ -91,7 +91,7 @@ public:
 
         START_PROFILER( proDocumentCompression )
         bool re = compressor_.compress((const unsigned char*)src, srcLen, destPtr.get() + sizeof(uint32_t), destLen);
-        if(!re || destLen > allocSize)
+        if (!re || destLen > allocSize)
             return false;
         STOP_PROFILER( proDocumentCompression )
 
@@ -103,7 +103,9 @@ public:
         //CREATE_SCOPED_PROFILER(get_document, "Index:SIAProcess", "Indexer : get_document")
         //CREATE_PROFILER(proDocumentDecompression, "Index:SIAProcess", "Indexer : DocumentDecompression")
         if (docId > maxDocID_ )
+        {
             return false;
+        }
         Lux::IO::data_t *val_p = NULL;
         if (!containerPtr_->get(docId, &val_p, Lux::IO::SYSTEM))
         {
@@ -178,7 +180,7 @@ public:
             return false;
         }
         bool re = compressor_.compress((const unsigned char*)src, srcLen, destPtr.get() + sizeof(uint32_t), destLen);
-        if(!re || destLen > allocSize)
+        if (!re || destLen > allocSize)
             return false;
 
         bool ret = containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::OVERWRITE);

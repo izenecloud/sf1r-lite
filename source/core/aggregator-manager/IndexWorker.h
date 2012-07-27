@@ -25,9 +25,11 @@
 #include <3rdparty/am/stx/btree_map.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/variant/get.hpp>
+#include <boost/tuple/tuple.hpp>
 
-namespace sf1r{
+namespace sf1r
+{
+
 using izenelib::ir::idmanager::IDManager;
 
 class IndexBundleConfiguration;
@@ -48,14 +50,15 @@ class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
 
     enum UpdateType
     {
-    INSERT, ///Not update, it's a new document
-    GENERAL, ///General update, equals to del + insert
-    REPLACE, ///Don't need to change index, just adjust DocumentManager
-    RTYPE  ///RType update to index
+        UNKNOWN,
+        INSERT, ///Not update, it's a new document
+        GENERAL, ///General update, equals to del + insert
+        REPLACE, ///Don't need to change index, just adjust DocumentManager
+        RTYPE  ///RType update to index
     };
 
-    typedef std::pair<std::pair<Document, IndexerDocument >, UpdateType > UpdateBufferDataType;
-    typedef stx::btree_map<docid_t, UpdateBufferDataType > UpdateBufferType;
+    typedef boost::tuple<UpdateType, Document, IndexerDocument, IndexerDocument> UpdateBufferDataType;
+    typedef stx::btree_map<docid_t, UpdateBufferDataType> UpdateBufferType;
 
 public:
     IndexWorker(
@@ -104,59 +107,44 @@ private:
 
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
-    bool doBuildCollection_(
-            const std::string& scdFile,
-            int op,
-            uint32_t numdoc
-    );
+    bool doBuildCollection_(const std::string& scdFile, int op, uint32_t numdoc);
 
     bool insertOrUpdateSCD_(
             ScdParser& parser,
             bool isInsert,
             uint32_t numdoc,
-            time_t timestamp
-    );
+            time_t timestamp);
 
-    bool createInsertDocId_(
-            const uint128_t& scdDocId,
-            docid_t& newId
-    );
+    bool createInsertDocId_(const uint128_t& scdDocId, docid_t& newId);
 
     void logCreatedDocToLogServer(const SCDDoc& scdDoc);
 
     bool fetchSCDFromLogServer(const std::string& scdPath);
 
-    bool deleteSCD_(
-            ScdParser& parser,
-            time_t timestamp
-    );
+    bool deleteSCD_(ScdParser& parser, time_t timestamp);
 
     bool insertDoc_(
             Document& document,
             IndexerDocument& indexDocument,
-            time_t timestamp
-    );
+            time_t timestamp);
 
     bool updateDoc_(
             Document& document,
             IndexerDocument& indexDocument,
+            IndexerDocument& oldIndexDocument,
             time_t timestamp,
             IndexWorker::UpdateType updateType,
-            bool immediately = false
-    );
+            bool immediately = false);
 
     bool doUpdateDoc_(
             Document& document,
             IndexerDocument& indexDocument,
-            IndexWorker::UpdateType updateType
-    );
+            IndexerDocument& oldIndexDocument,
+            IndexWorker::UpdateType updateType);
 
     void flushUpdateBuffer_();
 
-    bool deleteDoc_(
-            docid_t docid,
-            time_t timestamp
-    );
+    bool deleteDoc_(docid_t docid, time_t timestamp);
 
     void savePriceHistory_(int op);
 
@@ -166,79 +154,70 @@ private:
             SCDDoc& doc,
             Document& document,
             IndexerDocument& indexDocument,
+            IndexerDocument& oldIndexDocument,
             docid_t& oldId,
             std::string& source,
             time_t& timestamp,
             UpdateType& updateType,
-            bool insert = true
-    );
+            bool insert = true);
 
     bool mergeDocument_(
             docid_t oldId,
             Document& doc,
             IndexerDocument& indexDocument,
-            bool generateIndexDoc
-    );
+            bool generateIndexDoc);
 
     bool prepareIndexDocument_(
             docid_t oldId,
             time_t timestamp,
             const Document& document,
-            IndexerDocument& indexDocument
-    );
+            IndexerDocument& indexDocument);
 
     bool prepareIndexDocumentProperty_(
             docid_t docId,
             const FieldPair& p,
             IndexBundleSchema::iterator iter,
-            IndexerDocument& indexDocument
-    );
+            IndexerDocument& indexDocument);
 
     bool prepareIndexDocumentStringProperty_(
             docid_t docId,
             const FieldPair& p,
             IndexBundleSchema::iterator iter,
-            IndexerDocument& indexDocument
-    );
+            IndexerDocument& indexDocument);
 
-    bool prepareIndexDocumentRtypeProperty_(
+    bool prepareIndexRTypeProperties_(
+            docid_t docId,
+            IndexerDocument& indexDocument);
+
+    bool prepareIndexDocumentNumericProperty_(
             docid_t docId,
             const izenelib::util::UString & propertyValueU,
             IndexBundleSchema::iterator iter,
-            IndexerDocument& indexDocument
-    );
+            IndexerDocument& indexDocument);
 
     bool checkSeparatorType_(
             const izenelib::util::UString& propertyValueStr,
             izenelib::util::UString::EncodingType encoding,
-            char separator
-    );
-
-    bool preparePartialDocument_(
-            Document& document,
-            IndexerDocument& oldIndexDocument
-    );
+            char separator);
 
     UpdateType checkUpdateType_(
             const uint128_t& scdDocId,
             SCDDoc& doc,
             docid_t& oldId,
-            docid_t& docId
-    );
+            docid_t& docId);
 
     bool makeSentenceBlocks_(
             const izenelib::util::UString& text,
             const unsigned int numOfSummary,
             const unsigned int maxDisplayLength,
-            std::vector<CharacterOffset>& sentenceOffsetList
-    );
+            std::vector<CharacterOffset>& sentenceOffsetList);
 
     bool makeForwardIndex_(
+            docid_t docId,
             const izenelib::util::UString& text,
             const std::string& propertyName,
             unsigned int propertyId,
-            const AnalysisInfo& analysisInfo
-    );
+            const AnalysisInfo& analysisInfo);
 
     size_t getTotalScdSize_();
 
@@ -248,10 +227,7 @@ private:
 
     bool recoverSCD_();
 
-    static void value2SCDDoc(
-            const ::izenelib::driver::Value& value,
-            SCDDoc& scddoc
-    );
+    static void value2SCDDoc(const ::izenelib::driver::Value& value, SCDDoc& scddoc);
 
     /**
      * notify to clear cache on master.

@@ -43,22 +43,22 @@ namespace ticpp = izenelib::util::ticpp;
 // ------------------------- HELPER FUNCTIONS --------------------------
 
 /// @brief  Converts the given string to lower-case letters (only for ascii)
-void downCase( std::string & str );
+void downCase(std::string & str);
 
 ///
 /// @brief The method finds out if the string is true(y, yes) or false(n, no), or neither
 /// @return  -1:false, 0:neither,  1:true
 ///
-int parseTruth( const string & str );
+int parseTruth(const string & str);
 
 /// @brief  Parses a given string based on commas ','
-void parseByComma( const std::string & str, std::vector<std::string> & subStrList );
+void parseByComma(const std::string & str, std::vector<std::string> & subStrList);
 
 ///@ brief  The exception class
 class XmlConfigParserException : public std::exception
 {
 public:
-    XmlConfigParserException( const std::string & details )
+    XmlConfigParserException(const std::string & details)
     : details_(details)
     {}
 
@@ -84,7 +84,7 @@ protected:
     /// @param throwIfNoElement If set to "true", the method will throw exception if there is
     ///             no Child Element
     inline ticpp::Element * getUniqChildElement(
-            const ticpp::Element * ele, const std::string & name, bool throwIfNoElement = true ) const;
+            const ticpp::Element * ele, const std::string & name, bool throwIfNoElement = true) const;
 
     /// @brief The internal method for getAttribute_* methods. Checks if a value exists and retrieves in
     ///             std::string form if it exists. User can decide if the attribute is essential with the
@@ -99,7 +99,7 @@ protected:
             const ticpp::Element * ele,
             const std::string & name,
             std::string & val,
-            bool throwIfNoAttribute = true ) const;
+            bool throwIfNoAttribute = true) const;
 
     /// @brief  Gets a float type attribute. User can decide if the attribute is essential
     /// with the attribute throwIfNoAttribute
@@ -113,14 +113,14 @@ protected:
             const ticpp::Element * ele,
             const std::string & name,
             float & val,
-            bool throwIfNoAttribute = true ) const
+            bool throwIfNoAttribute = true) const
     {
         std::string temp;
 
-        if( !getAttribute( ele, name, temp, throwIfNoAttribute ) )
+        if (!getAttribute(ele, name, temp, throwIfNoAttribute))
             return false;
 
-        if ( TermTypeDetector::checkFloatFormat(temp) )
+        if (TermTypeDetector::checkFloatFormat(temp))
         {
             stringstream ss;
             ss << temp;
@@ -128,7 +128,7 @@ protected:
         }
         else
         {
-            throw_TypeMismatch( ele, name, temp );
+            throw_TypeMismatch(ele, name, temp);
         }
 
         return true;
@@ -147,14 +147,14 @@ protected:
             const ticpp::Element * ele,
             const std::string & name,
             Type & val,
-            bool throwIfNoAttribute = true ) const
+            bool throwIfNoAttribute = true) const
     {
         std::string temp;
 
-        if( !getAttribute( ele, name, temp, throwIfNoAttribute ) )
+        if (!getAttribute(ele, name, temp, throwIfNoAttribute))
             return false;
 
-        if( TermTypeDetector::checkUnsignedIntFormat(temp) )
+        if (TermTypeDetector::checkInt64Format(temp))
         {
             stringstream ss;
             ss << temp;
@@ -162,7 +162,7 @@ protected:
         }
         else
         {
-            throw_TypeMismatch( ele, name, temp );
+            throw_TypeMismatch(ele, name, temp);
         }
 
         return true;
@@ -172,20 +172,10 @@ protected:
     inline bool getAttribute(
             const ticpp::Element * ele,
             const std::string & name,
-            int & val,
-            bool throwIfNoAttribute = true ) const
+            int32_t & val,
+            bool throwIfNoAttribute = true) const
     {
-        return getAttribute_IntType( ele, name, val, throwIfNoAttribute );
-    }
-
-    /// @brief      Overloaded function for getting "unsigned int" attributes
-    inline bool getAttribute(
-            const ticpp::Element * ele,
-            const std::string & name,
-            unsigned int & val,
-            bool throwIfNoAttribute = true ) const
-    {
-        return getAttribute_IntType( ele, name, val, throwIfNoAttribute );
+        return getAttribute_IntType(ele, name, val, throwIfNoAttribute);
     }
 
     /// @brief      Overloaded function for getting "int64_t" attributes
@@ -193,22 +183,30 @@ protected:
             const ticpp::Element * ele,
             const std::string & name,
             int64_t & val,
-            bool throwIfNoAttribute = true ) const
+            bool throwIfNoAttribute = true) const
     {
-        return getAttribute_IntType( ele, name, val, throwIfNoAttribute );
+        return getAttribute_IntType(ele, name, val, throwIfNoAttribute);
     }
 
-#ifdef __x86_64
-    /// @brief      Overloaded function for getting "size_t" attributes
+    /// @brief      Overloaded function for getting "int" attributes
     inline bool getAttribute(
             const ticpp::Element * ele,
             const std::string & name,
-            size_t & val,
-            bool throwIfNoAttribute = true ) const
+            uint32_t & val,
+            bool throwIfNoAttribute = true) const
     {
-        return getAttribute_IntType( ele, name, val, throwIfNoAttribute );
+        return getAttribute_IntType(ele, name, val, throwIfNoAttribute);
     }
-#endif
+
+    /// @brief      Overloaded function for getting "int64_t" attributes
+    inline bool getAttribute(
+            const ticpp::Element * ele,
+            const std::string & name,
+            uint64_t & val,
+            bool throwIfNoAttribute = true) const
+    {
+        return getAttribute_IntType(ele, name, val, throwIfNoAttribute);
+    }
 
     /// @brief  Gets a bool type attribute. User can decide if the attribute is essential
     ///         with the attribute throwIfNoAttribute.
@@ -224,7 +222,7 @@ protected:
             const ticpp::Element * ele,
             const std::string & name,
             bool & val,
-            bool throwIfNoAttribute = true ) const;
+            bool throwIfNoAttribute = true) const;
 
     // ----------------------------- THROW METHODS -----------------------------
 
@@ -232,20 +230,20 @@ protected:
 
     /// @brief  Throws an exception when an element does not exist
     /// @param  name  The name of the element
-    inline void throw_MultipleElement( const std::string & name ) const
+    inline void throw_MultipleElement(const std::string & name) const
     {
         std::stringstream msg;
         msg << "Multiple definitions of <" << name << "> element";
-        throw XmlConfigParserException( msg.str() );
+        throw XmlConfigParserException(msg.str());
     }
 
     /// @brief  Throws an exception when an element does not exist
     /// @param  name  The name of the element
-    inline void throw_NoElement( const std::string & name ) const
+    inline void throw_NoElement(const std::string & name) const
     {
         std::stringstream msg;
         msg << "Definitions of element <" << name << "> is missing";
-        throw XmlConfigParserException( msg.str() );
+        throw XmlConfigParserException(msg.str());
     }
 
     // 2. ATTRIBUTES ---------------
@@ -258,13 +256,13 @@ protected:
     inline void throw_TypeMismatch(
             const ticpp::Element * ele,
             const std::string & name,
-            const std::string & valueStr = "" ) const
+            const std::string & valueStr = "") const
     {
         stringstream msg;
         msg << "<" << ele->Value() << ">, wrong data type is given for attribute \"" << name << "\"";
-        if( !valueStr.empty() )
+        if (!valueStr.empty())
             msg << " value: " << valueStr;
-        throw XmlConfigParserException( msg.str() );
+        throw XmlConfigParserException(msg.str());
     }
 
     /// @brief Throws an exception when an attribute is given the wrong data type
@@ -280,11 +278,11 @@ protected:
     {
         stringstream msg;
         msg << "<" << ele->Value() << ">, wrong data type is given for attribute \"" << name << "\"";
-        if( !valueStr.empty() )
+        if (!valueStr.empty())
             msg << " value: " << valueStr;
-        if( !validValueStr.empty() )
+        if (!validValueStr.empty())
             msg << " suggestion : " << validValueStr;
-        throw XmlConfigParserException( msg.str() );
+        throw XmlConfigParserException(msg.str());
     }
 
     /// @brief          Throws an exception when an attribute is given the wrong data type
@@ -301,19 +299,19 @@ protected:
         stringstream msg;
         msg << "<" << ele->Value() << ">, wrong data type is given for attribute \"" << name << "\"";
         msg << " value: " << valueLong;
-        if( !validValueStr.empty() )
+        if (!validValueStr.empty())
             msg << " suggestion : " << validValueStr;
-        throw XmlConfigParserException( msg.str() );
+        throw XmlConfigParserException(msg.str());
     }
 
     /// @brief Throws an exception when an attribute does not exist
     /// @param ele The Element which holds the attribute
     /// @param name The name of the attribute
-    inline void throw_NoAttribute( const ticpp::Element * ele, const std::string & name ) const
+    inline void throw_NoAttribute(const ticpp::Element * ele, const std::string & name) const
     {
         stringstream msg;
         msg << "<" << ele->Value() << ">, requires attribute \"" << name << "\"";
-        throw XmlConfigParserException( msg.str() );
+        throw XmlConfigParserException(msg.str());
     }
 
     izenelib::util::UString::EncodingType parseEncodingType(const std::string& encoding_str);
@@ -324,9 +322,9 @@ protected:
     inline bool validateID(const string & id) const
     {
         const char *chars = id.c_str();
-        for(unsigned int i = 0; i < id.size(); i++)
+        for (unsigned int i = 0; i < id.size(); i++)
         {
-            if(!isalnum(chars[i]) && chars[i] != '-' && chars[i] != '_' && chars[i] != '.')
+            if (!isalnum(chars[i]) && chars[i] != '-' && chars[i] != '_' && chars[i] != '.')
                 return false;
         }
 
@@ -355,7 +353,7 @@ public:
     /// @details
     /// The configuration file <System>, <Environment>, and"<Document> are processed
     ///
-    bool parseConfigFile( const std::string & fileName ) throw(XmlConfigParserException );
+    bool parseConfigFile(const std::string & fileName) throw(XmlConfigParserException);
 
     const std::string& getResourceDir() const
     {
@@ -387,18 +385,18 @@ public:
     ///
     const LAManagerConfig & getLAManagerConfig()
     {
-        //laManagerConfig_.setAnalysisPairList( analysisPairList_ );
+        //laManagerConfig_.setAnalysisPairList(analysisPairList_);
         boost::unordered_set<AnalysisInfo>::iterator it;
-        for( it = analysisPairList_.begin(); it != analysisPairList_.end(); it++ )
+        for (it = analysisPairList_.begin(); it != analysisPairList_.end(); it++)
         {
-            laManagerConfig_.addAnalysisPair( *it );
+            laManagerConfig_.addAnalysisPair(*it);
         }
         return laManagerConfig_;
     }
 
     /// @brief Gets the configuration related to LAManager
     /// @param laManagerConfig  The settings for LAManager
-    void getLAManagerConfig( LAManagerConfig & laManagerConfig )
+    void getLAManagerConfig(LAManagerConfig & laManagerConfig)
     {
         laManagerConfig = getLAManagerConfig();
     }
@@ -412,7 +410,7 @@ public:
 
     /// @brief Gets the configuration related to BrokerAgent
     /// @param brokerAgentConfig    The settings for BrokerAgent
-    void getBrokerAgentConfig( BrokerAgentConfig& brokerAgentConfig )
+    void getBrokerAgentConfig(BrokerAgentConfig& brokerAgentConfig)
     {
         brokerAgentConfig = brokerAgentConfig_;
     }
@@ -426,19 +424,18 @@ public:
 
     /// @brief                      Gets the configuration related to Firewall
     /// @param logManagerConfig     The settings for Firewall
-    void getFirewallConfig( FirewallConfig & firewallConfig)
+    void getFirewallConfig(FirewallConfig & firewallConfig)
     {
         firewallConfig = firewallConfig;
     }
 
     bool getCollectionMetaByName(
-        const std::string& collectionName,
-        CollectionMeta& collectionMeta
-    ) const
+            const std::string& collectionName,
+            CollectionMeta& collectionMeta) const
     {
         CollectionMetaMap::const_iterator it = collectionMetaMap_.find(collectionName);
 
-        if(it != collectionMetaMap_.end())
+        if (it != collectionMetaMap_.end())
         {
             collectionMeta = it->second;
             return true;
@@ -540,7 +537,7 @@ public:
     {
         CollectionMetaMap::const_iterator it = collectionMetaMap_.find(collectionName);
 
-        if(it != collectionMetaMap_.end())
+        if (it != collectionMetaMap_.end())
             return true;
         return false;
     }
@@ -551,13 +548,13 @@ public:
     {
         CollectionMetaMap::const_iterator it = collectionMetaMap_.find(collectionName);
 
-        if(it != collectionMetaMap_.end())
+        if (it != collectionMetaMap_.end())
         {
-            if(!it->second.getAcl().checkDenyList())
+            if (!it->second.getAcl().checkDenyList())
                 return false;
-            if(!aclTokens.empty())
+            if (!aclTokens.empty())
             {
-                if(!it->second.getAcl().check(aclTokens))
+                if (!it->second.getAcl().check(aclTokens))
                     return false;
             }
             return true;
@@ -596,7 +593,7 @@ public:
 private:
     /// @brief                  Parse <System> settings
     /// @param system           Pointer to the Element
-    void parseSystemSettings( const ticpp::Element * system );
+    void parseSystemSettings(const ticpp::Element * system);
 
     /// @brief Parse <BundlesDefault>
     /// @param Pointer to the Element
@@ -604,22 +601,22 @@ private:
 
     /// @brief                  Parse <FireWall> settings
     /// @param system           Pointer to the Element
-    void parseFirewall( const ticpp::Element * tgElement );
+    void parseFirewall(const ticpp::Element * tgElement);
 
     /// @brief                  Parse <Tokenizer> settings
     /// @param system           Pointer to the Element
-    void parseTokenizer( const ticpp::Element * tokenizer );
+    void parseTokenizer(const ticpp::Element * tokenizer);
 
     /// @brief                  Parse <LanguageAnalyzer> settings
     /// @param system           Pointer to the Element
-    void parseLanguageAnalyzer( const ticpp::Element * languageAnalyzer );
+    void parseLanguageAnalyzer(const ticpp::Element * languageAnalyzer);
 
     /// @brief                  Parse <Deploy> settings
     /// @param system           Pointer to the Element
-    void parseDeploymentSettings( const ticpp::Element * deploy );
+    void parseDeploymentSettings(const ticpp::Element * deploy);
     /// @brief                  Parse <BrokerAgnet> settings
     /// @param system           Pointer to the Element
-    void parseBrokerAgent( const ticpp::Element * brokerAgent );
+    void parseBrokerAgent(const ticpp::Element * brokerAgent);
     /// @brief                  Parse <DistributedCommon> settings
     /// @param system           Pointer to the Element
     void parseDistributedCommon(const ticpp::Element * distributedCommon);
@@ -736,7 +733,7 @@ public:
     /// @param fileName  The path of the configuration file
     /// @details
     ///
-    bool parseConfigFile( const string& collectionName , const std::string & fileName, CollectionMeta& collectionMeta) throw(XmlConfigParserException );
+    bool parseConfigFile(const string& collectionName , const std::string & fileName, CollectionMeta& collectionMeta) throw(XmlConfigParserException);
 
 private:
 
@@ -796,15 +793,15 @@ private:
 
     /// @brief                  Parse <Collection> settings
     /// @param system           Pointer to the Element
-    void parseCollectionSettings( const ticpp::Element * collection, CollectionMeta & collectionMeta );
+    void parseCollectionSettings(const ticpp::Element * collection, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <Path> settings
     /// @param system           Pointer to the Element
-    void parseCollectionPath( const ticpp::Element * path, CollectionMeta & collectionMeta );
+    void parseCollectionPath(const ticpp::Element * path, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <DocumentSchema> settings
     /// @param system           Pointer to the Element
-    void parseCollectionSchema( const ticpp::Element * documentSchema, CollectionMeta & collectionMeta );
+    void parseCollectionSchema(const ticpp::Element * documentSchema, CollectionMeta & collectionMeta);
 
     /// Helper functions for IndexSchema
     /// @brief                  Parse <Property> settings
@@ -815,13 +812,13 @@ private:
     /// @param system           Pointer to the Element
     /// @param propertyConfig   Property settings
     ///
-    void parseProperty_Display( const ticpp::Element * display, PropertyConfig & propertyConfig );
+    void parseProperty_Display(const ticpp::Element * display, PropertyConfig & propertyConfig);
 
     /// @brief                  Parse <Indexing> settings
     /// @param system           Pointer to the Element
     /// @param propertyConfig   Property settings
     ///
-    void parseProperty_Indexing( const ticpp::Element * indexing, PropertyConfig & propertyConfig );
+    void parseProperty_Indexing(const ticpp::Element * indexing, PropertyConfig & propertyConfig);
 
 private:
     //----------------------------  PRIVATE MEMBER VARIABLES  ----------------------------

@@ -130,6 +130,35 @@ public:
         const std::vector<std::vector<std::string> >& groupLabels
     );
 
+    /**
+     * Set @p docIdList as the custom ranking for @p query.
+     * @param query user query
+     * @param docIdList doc id list
+     * @return true for success, false for failure
+     */
+    bool setCustomRank(
+        const std::string& query,
+        const std::vector<std::string>& docIdList
+    );
+
+    /**
+     * Get @p docList as the custom ranking for @p query.
+     * @param query user query
+     * @param docList doc list
+     * @return true for success, false for failure
+     */
+    bool getCustomRank(
+        const std::string& query,
+        std::vector<Document>& docList
+    );
+
+    /**
+     * Get @p queries which have been customized by @c setCustomRank() with
+     * non-empty @p docIdList.
+     * @return true for success, false for failure
+     */
+    bool getCustomQueries(std::vector<std::string>& queries);
+
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info);
 

@@ -189,7 +189,7 @@ template<typename CounterType>
 void StringGroupCounter<CounterType>::getGroupRep(GroupRep& groupRep)
 {
     GroupRep::StringGroupRep& itemList = groupRep.stringGroupRep_;
-    izenelib::util::UString propName(propValueTable_.propName(), UString::UTF_8);
+    izenelib::util::UString propName(propValueTable_.propName(), izenelib::util::UString::UTF_8);
     const PropValueTable::ChildMapTable& childMapTable = propValueTable_.childMapTable();
 
     // start from id 0 at level 0
@@ -247,4 +247,4 @@ void StringGroupCounter<SubGroupCounter>::insertSharedLock(SharedLockSet& lockSe
 
 NS_FACETED_END
 
-#endif 
+#endif

@@ -16,7 +16,7 @@ namespace sf1r
 class ProductScorer;
 class ProductRanker;
 class ProductReranker;
-class CategoryBoostingScorer;
+class CategoryScorer;
 class MiningManager;
 class ProductRankingConfig;
 class MerchantScoreManager;
@@ -46,7 +46,9 @@ public:
     ProductReranker* getReranker(RerankerType type) { return rerankers_[type]; }
 
 private:
-    void createCategoryBoostingScorer_();
+    void createTopKCustomRankScorer_();
+
+    void createCategoryScorer_();
 
     void createMerchantScorer_();
 
@@ -65,7 +67,7 @@ private:
     std::vector<ProductScorer*> scorers_;
     std::vector<ProductReranker*> rerankers_;
 
-    CategoryBoostingScorer* boostingScorer_;
+    CategoryScorer* categoryScorer_;
 };
 
 } // namespace sf1r

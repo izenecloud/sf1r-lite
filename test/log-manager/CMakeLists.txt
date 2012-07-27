@@ -100,6 +100,18 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(log_manager "${SF1RENGINE_ROOT}/testbin/t_RpcServerConnection")
+
+  ADD_EXECUTABLE(t_HistoryDB
+    Runner.cpp
+    t_HistoryDB.cpp
+    ${CMAKE_SOURCE_DIR}/process/log-server/LogServerCfg.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_HistoryDB ${libs})
+  SET_TARGET_PROPERTIES(t_HistoryDB PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(log_manager "${SF1RENGINE_ROOT}/testbin/t_HistoryDB")
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
   ADD_EXECUTABLE(t_LogServerConnection
@@ -118,3 +130,4 @@ ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   SET_TARGET_PROPERTIES(t_Drum PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
+

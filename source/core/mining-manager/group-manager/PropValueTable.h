@@ -103,9 +103,15 @@ public:
     const ChildMapTable& childMapTable() const { return childMapTable_; }
 
     /**
+     * Get the first property value id for @p docId.
+     * @return the first value id, if @p docId has no value ids, 0 is returned.
+     */
+    pvid_t getFirstValueId(docid_t docId) const;
+
+    /**
      * Get the root id for @p docId.
      * @param docId the doc id
-     * @return the root value id
+     * @return the root value id, if @p docId has no value ids, 0 is returned.
      */
     pvid_t getRootValueId(docid_t docId) const;
 

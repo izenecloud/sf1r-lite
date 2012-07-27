@@ -46,8 +46,8 @@ public:
     typedef boost::variant<
         izenelib::util::UString,
         std::string,
+        int32_t,
         int64_t,
-        uint64_t,
         float,
         double,
         std::vector<izenelib::util::UString>,
@@ -309,14 +309,7 @@ inline sf1r::PropertyValue& operator>>(object o, sf1r::PropertyValue& v)
 {
     if(o.type == type::POSITIVE_INTEGER)
     {
-        if (o.raw_type == type::RAW_UINT64)
-        {
-            v = type::detail::convert_integer<uint64_t>(o); return v;
-        }
-        else
-        {
-            v = type::detail::convert_integer<int64_t>(o); return v;
-        }
+        v = type::detail::convert_integer<int64_t>(o); return v;
     }
     else if(o.type == type::NEGATIVE_INTEGER)
     {
@@ -355,13 +348,13 @@ template <typename Stream>
 inline packer<Stream>& operator<< (packer<Stream>& o, const sf1r::PropertyValue& cv)
 {
     sf1r::PropertyValue& v = const_cast<sf1r::PropertyValue&>(cv);
-    if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
+    if (int32_t* p = boost::get<int32_t>(&v.getVariant()))
+    {
+        o.pack_fix_int32(*p);
+    }
+    else if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
     {
         o.pack_fix_int64(*p);
-    }
-    else if (uint64_t* p = boost::get<uint64_t>(&v.getVariant()))
-    {
-        o.pack_fix_uint64(*p);
     }
     else if (const float* p = boost::get<float>(&v.getVariant()))
     {
@@ -403,14 +396,15 @@ inline packer<Stream>& operator<< (packer<Stream>& o, const sf1r::PropertyValue&
 
 inline void operator<< (object& o, sf1r::PropertyValue v)
 {
-    if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
+    if (int32_t* p = boost::get<int32_t>(&v.getVariant()))
     {
         *p < 0 ? (o.type = type::NEGATIVE_INTEGER, o.via.i64 = *p, o.raw_type = type::RAW_INT64)
                : (o.type = type::POSITIVE_INTEGER, o.via.u64 = *p);
     }
-    else if (uint64_t* p = boost::get<uint64_t>(&v.getVariant()))
+    else if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
     {
-        o.type = type::POSITIVE_INTEGER, o.via.u64 = *p,  o.raw_type = type::RAW_UINT64;
+        *p < 0 ? (o.type = type::NEGATIVE_INTEGER, o.via.i64 = *p, o.raw_type = type::RAW_INT64)
+               : (o.type = type::POSITIVE_INTEGER, o.via.u64 = *p);
     }
     else if (float* p = boost::get<float>(&v.getVariant()))
     {
@@ -443,10 +437,6 @@ inline void operator<< (object& o, sf1r::PropertyValue v)
 inline void operator<< (object::with_zone& o, sf1r::PropertyValue v)
 {
     if (int64_t* p = boost::get<int64_t>(&v.getVariant()))
-    {
-        static_cast<object&>(o) << *p;
-    }
-    else if (uint64_t* p = boost::get<uint64_t>(&v.getVariant()))
     {
         static_cast<object&>(o) << *p;
     }

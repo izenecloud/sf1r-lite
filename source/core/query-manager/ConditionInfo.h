@@ -143,15 +143,17 @@ class SearchingModeInfo
 
         float threshold_;
 
+        bool useOriginalQuery_;
+
         /// @brief a constructor
         SearchingModeInfo(void);
 
         /// @brief clear member variables
         void clear(void);
 
-        DATA_IO_LOAD_SAVE(SearchingModeInfo, &mode_&threshold_)
+        DATA_IO_LOAD_SAVE(SearchingModeInfo, &mode_&threshold_&useOriginalQuery_)
 
-        MSGPACK_DEFINE(mode_,threshold_);
+        MSGPACK_DEFINE(mode_,threshold_,useOriginalQuery_);
 
     private:
             // Log : 2009.09.08
@@ -162,6 +164,7 @@ class SearchingModeInfo
                 {
                     ar & mode_;
                     ar & threshold_;
+                    ar & useOriginalQuery_;
                 }
 };
 
@@ -169,7 +172,8 @@ inline bool operator==(const SearchingModeInfo& a,
                        const SearchingModeInfo& b)
 {
     return a.mode_ == b.mode_
-        && a.threshold_ == b.threshold_;
+        && a.threshold_ == b.threshold_
+        && a.useOriginalQuery_ == b.useOriginalQuery_;
 }
 
 } // end - namespace sf1r

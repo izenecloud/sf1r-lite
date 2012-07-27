@@ -32,8 +32,7 @@ RecommendManager::RecommendManager(
         const boost::shared_ptr<DocumentManager>& documentManager,
         boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
         idmlib::util::IDMAnalyzer* analyzer,
-        uint32_t logdays
-)
+        uint32_t logdays)
     : path_(path)
     , isOpen_(false)
     , collection_name_(collection_name)

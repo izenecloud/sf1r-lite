@@ -9,8 +9,6 @@
 #ifndef SORT_PROPERTY_COMPARATOR_H
 #define SORT_PROPERTY_COMPARATOR_H
 
-#include <common/type_defs.h>
-#include "PropertyData.h"
 #include "ScoreDoc.h"
 #include "CustomRanker.h"
 
@@ -18,32 +16,26 @@
 
 namespace sf1r{
 
-class CustomRanker;
-
 class SortPropertyComparator
 {
 public:
     int compare(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
 
 private:
-    boost::shared_ptr<PropertyData> propertyData_;
+    boost::shared_ptr<NumericPropertyTableBase> propertyTable_;
     PropertyDataType type_;
-    void* data_;
     size_t size_;
     int (SortPropertyComparator::*comparator_)(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
 
 public:
     SortPropertyComparator();
-    explicit SortPropertyComparator(boost::shared_ptr<PropertyData> propData);
+    explicit SortPropertyComparator(const boost::shared_ptr<NumericPropertyTableBase>& propData);
     explicit SortPropertyComparator(PropertyDataType dataType);
 
 private:
     void initComparator();
     int compareImplDefault(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
-    int compareImplInt(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
-    int compareImplUnsigned(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
-    int compareImplUInt32(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
-    int compareImplFloat(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
+    int compareImplNumeric(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplDouble(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplUnknown(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplCustomRanking(const ScoreDoc& doc1, const ScoreDoc& doc2) const;

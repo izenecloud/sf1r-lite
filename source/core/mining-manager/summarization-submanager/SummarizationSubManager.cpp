@@ -99,6 +99,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key), i);
     }
 
+    float score;
+    boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = document_manager_->getNumericPropertyTable(schema_.scorePropName);
     for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
     {
         Document doc;
@@ -113,25 +115,9 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         if (key.empty()) continue;
         const UString& content = cit->second.get<UString>();
 
-        Document::property_const_iterator sit = doc.findProperty(schema_.scorePropName);
-        if (sit != doc.propertyEnd())
-        {
-            const UString& score = sit->second.get<UString>();
-            if (!score.empty())
-            {
-                std::string score_str;
-                score.convertString(score_str, UString::UTF_8);
-                comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, boost::lexical_cast<float>(score_str));
-            }
-            else
-            {
-                comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, 0.0f);
-            }
-        }
-        else
-        {
-            comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, 0.0f);
-        }
+        score = 0.0f;
+        numericPropertyTable->getFloatValue(i, score);
+        comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, score);
 
         if (++count % 100000 == 0)
         {

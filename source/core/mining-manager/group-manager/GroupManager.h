@@ -31,9 +31,8 @@ public:
     typedef std::map<std::string, DateGroupTable> DatePropMap;
 
     GroupManager(
-        DocumentManager* documentManager,
-        const std::string& dirPath
-    );
+            DocumentManager* documentManager,
+            const std::string& dirPath);
 
     /**
      * @brief Open the properties which need group result.
@@ -94,17 +93,15 @@ private:
 
     void buildStrPropForCollection_(PropValueTable& pvTable);
     void buildStrPropForDoc_(
-        docid_t docId,
-        const std::string& propName,
-        PropValueTable& pvTable
-    );
+            docid_t docId,
+            const std::string& propName,
+            PropValueTable& pvTable);
 
     void buildDatePropForCollection_(DateGroupTable& dateTable);
     void buildDatePropForDoc_(
-        docid_t docId,
-        const std::string& propName,
-        DateGroupTable& dateTable
-    );
+            docid_t docId,
+            const std::string& propName,
+            DateGroupTable& dateTable);
 
 private:
     sf1r::DocumentManager* documentManager_;
@@ -117,4 +114,4 @@ private:
 
 NS_FACETED_END
 
-#endif 
+#endif

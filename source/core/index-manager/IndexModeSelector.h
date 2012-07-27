@@ -7,7 +7,6 @@
 #define SF1R_INDEXMANAGER_INDEXMODESELECTOR_H_
 
 #include <boost/shared_ptr.hpp>
-#include "IndexManager.h"
 
 namespace sf1r
 {
@@ -23,15 +22,13 @@ public:
     void TryCommit();
 
     void ForceCommit();
+
 private:
     boost::shared_ptr<IndexManager> index_manager_;
     double threshold_;
     long max_realtime_msize_;
 };
-    
-    
-    
-}
 
+}
 
 #endif

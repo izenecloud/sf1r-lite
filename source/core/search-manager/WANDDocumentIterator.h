@@ -47,7 +47,7 @@ public:
 
     void add(DocumentIterator* pDocIterator) {}
 
-    void set_ub(UpperBoundInProperties& ubmap);
+    void set_ub(bool useOriginalQuery, UpperBoundInProperties& ubmap);
 
     void init_threshold(float threshold);
 

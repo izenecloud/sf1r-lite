@@ -413,7 +413,9 @@ public:
         ss << "Refined Query    : " << refinedQueryString_ << endl;
         ss << "RankingType      : " << rankingType_ << endl;
         ss << "SearchingMode    : " << searchingMode_.mode_ << " , "
-                                    << searchingMode_.threshold_ <<endl;
+                                    << searchingMode_.threshold_ <<", "
+                                    << searchingMode_.useOriginalQuery_<<endl;
+
         ss << "PageInfo         : " << pageInfo_.start_ << " , " << pageInfo_.count_ << endl;
         ss << "LanguageAnalyzer : " << languageAnalyzerInfo_.applyLA_ << " , "
                                     << languageAnalyzerInfo_.useOriginalKeyword_ << " , "

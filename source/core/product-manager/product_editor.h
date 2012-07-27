@@ -7,13 +7,13 @@
 #include "pm_types.h"
 #include "pm_config.h"
 #include "product_price.h"
-#include "pm_util.h"
 
 namespace sf1r
 {
 
 class ProductDataSource;
 class OperationProcessor;
+class PMUtil;
 
 class ProductEditor
 {
@@ -21,7 +21,8 @@ public:
     ProductEditor(
             ProductDataSource* data_source,
             OperationProcessor* op_processor,
-            const PMConfig& config);
+            const PMConfig& config,
+            PMUtil* util);
 
     ~ProductEditor();
 
@@ -34,6 +35,7 @@ public:
     bool AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
 
     bool RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
+    bool RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
 
     inline const std::string& GetLastError() const
     {
@@ -48,13 +50,12 @@ public:
 private:
     bool AppendToGroup_(const std::vector<PMDocumentType>& doc_list, const PMDocumentType& info);
 
-
 private:
     ProductDataSource* data_source_;
     OperationProcessor* op_processor_;
 
     PMConfig config_;
-    PMUtil util_;
+    PMUtil* util_;
     std::string error_;
 };
 

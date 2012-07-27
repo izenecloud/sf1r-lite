@@ -485,16 +485,14 @@ ScdParser::iterator::iterator(long offset)
 {
 }
 
-ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList)
+ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
     : pfs_(&pScdParser->fs_)
     , prevOffset_(0)
     , offset_(0)
     , codingType_(pScdParser->getEncodingType())
     , buffer_(new izenelib::util::izene_streambuf)
     , docDelimiter_(pScdParser->docDelimiter_)
-    , propertyNameList_(propertyNameList)
 {
-    pfs_ = &(pScdParser->fs_);
     pfs_->clear();
     std::size_t readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
     if(readLen)
@@ -508,10 +506,30 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, con
     {
         offset_ = prevOffset_ = -1;
     }
+}
 
-    for(uint32_t i=0;i<propertyNameList_.size();i++)
+ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList)
+    : pfs_(&pScdParser->fs_)
+    , prevOffset_(0)
+    , offset_(0)
+    , codingType_(pScdParser->getEncodingType())
+    , buffer_(new izenelib::util::izene_streambuf)
+    , docDelimiter_(pScdParser->docDelimiter_)
+    , propertyNameList_(propertyNameList)
+    , pname_set_(propertyNameList_.begin(), propertyNameList_.end())
+{
+    pfs_->clear();
+    std::size_t readLen = izenelib::util::izene_read_until(*pfs_, *buffer_, docDelimiter_);
+    if(readLen)
     {
-        pname_set_.insert(propertyNameList_[i]);
+        buffer_->consume(readLen);
+        prevOffset_ += readLen;
+        doc_.reset(getDoc());
+        operator+=(start_doc);
+    }
+    else
+    {
+        offset_ = prevOffset_ = -1;
     }
 }
 
@@ -585,7 +603,7 @@ ScdParser::iterator& ScdParser::iterator::operator+=(unsigned int offset)
     return *this;
 }
 
-SCDDocPtr ScdParser::iterator::operator*()
+const SCDDocPtr& ScdParser::iterator::operator*()
 {
     return doc_;
 }
@@ -679,7 +697,7 @@ void ScdParser::iterator::parseDoc(std::string& str, SCDDoc* doc)
                         //LOG(INFO)<<"invalid pname : "<<pname<<std::endl;
                         pname.clear();
                     }
-                          
+
                 }
             }
         }
@@ -891,5 +909,3 @@ bool ScdParser::cached_iterator::equal(const ScdParser::cached_iterator& other) 
 {
     return it_ == other.get_iterator() && cache_index_==other.cache_index_ && cache_.size()==other.cache_.size();
 }
-
-

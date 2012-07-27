@@ -40,7 +40,7 @@ boost::variate_generator< boost::mt19937&, boost::uniform_int<> > r( generator, 
 void clearFiles()
 {
     bfs::path dmPath(bfs::path(".") /"document");
-//    boost::filesystem::remove_all(dmPath);
+    boost::filesystem::remove_all(dmPath);
 }
 
 void makeSchema(IndexBundleSchema& indexSchema)
@@ -156,6 +156,8 @@ BOOST_AUTO_TEST_CASE(update)
         BOOST_CHECK_EQUAL(documentManager->insertDocument(document),true);
     }
 
+    documentManager.reset();
+    documentManager = createDocumentManager();
     for(unsigned int i = 1; i <= 1000; ++i)
     {
         Document document;

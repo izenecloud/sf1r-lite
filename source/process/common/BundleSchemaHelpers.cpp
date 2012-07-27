@@ -90,8 +90,7 @@ bool isPropertySortable(
 )
 {
     std::string lowerPropertyName = boost::to_lower_copy(property);
-    if (lowerPropertyName != "_rank"
-        && lowerPropertyName != "date")
+    if (lowerPropertyName != "_rank" && lowerPropertyName != "date")
     {
         PropertyConfig propertyConfig;
         propertyConfig.setName(property);
@@ -110,13 +109,15 @@ bool isPropertySortable(
 
         switch (propertyConfig.propertyType_)
         {
-        case INT_PROPERTY_TYPE:
-        case FLOAT_PROPERTY_TYPE:
-        case NOMINAL_PROPERTY_TYPE:
-        case UNSIGNED_INT_PROPERTY_TYPE:
-        case DOUBLE_PROPERTY_TYPE:
         case STRING_PROPERTY_TYPE:
+        case INT32_PROPERTY_TYPE:
+        case FLOAT_PROPERTY_TYPE:
         case DATETIME_PROPERTY_TYPE:
+        case INT8_PROPERTY_TYPE:
+        case INT16_PROPERTY_TYPE:
+        case INT64_PROPERTY_TYPE:
+        case DOUBLE_PROPERTY_TYPE:
+        case NOMINAL_PROPERTY_TYPE:
             break;
         default:
             return false;
@@ -132,8 +133,7 @@ bool isPropertyFilterable(
 )
 {
     std::string lowerPropertyName = boost::to_lower_copy(property);
-    if (lowerPropertyName != "_rank"
-        && lowerPropertyName != "date")
+    if (lowerPropertyName != "_rank" && lowerPropertyName != "date")
     {
         PropertyConfig propertyConfig;
         propertyConfig.setName(property);

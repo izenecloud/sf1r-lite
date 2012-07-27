@@ -4,11 +4,13 @@
 #include <string>
 #include <vector>
 #include "offer_db.h"
+#include "history_db_helper.h"
 
 namespace sf1r {
+    class LogServerConnectionConfig;
     class RawScdGenerator {
     public:
-        RawScdGenerator(OfferDb* odb, int mode);
+        RawScdGenerator(OfferDb* odb, B5MHistoryDBHelper* hdb, int mode, LogServerConnectionConfig* config);
 
         void LoadMobileSource(const std::string& file);
 
@@ -20,7 +22,9 @@ namespace sf1r {
 
     private:
         OfferDb* odb_;
+        B5MHistoryDBHelper* historydb_;
         int mode_;
+        LogServerConnectionConfig* log_server_cfg_;
         boost::unordered_set<std::string> mobile_source_;
     };
 

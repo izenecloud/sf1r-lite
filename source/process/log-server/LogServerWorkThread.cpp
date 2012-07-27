@@ -1,4 +1,5 @@
 #include "LogServerWorkThread.h"
+#include "LogServerStorage.h"
 #include <ctime>
 
 #include <glog/logging.h>
@@ -42,6 +43,11 @@ void LogServerWorkThread::putSyncRequestData(const SynchronizeData& syncReqData)
 
     drumReqData.syncReqData.reset(new SynchronizeData(syncReqData));
     drumRequestQueue_.push(drumReqData);
+}
+
+bool LogServerWorkThread::idle()
+{
+    return drumRequestQueue_.empty();
 }
 
 void LogServerWorkThread::run()
@@ -143,6 +149,10 @@ void LogServerWorkThread::flushData()
         LOG(INFO) << "synchronizing drum for docids (locked)";
         LogServerStorage::get()->docidDrum()->Synchronize();
         LOG(INFO) << "finished synchronizing drum for docids";
+    }
+    {
+        boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
+        LogServerStorage::get()->historyDB()->flush();
     }
     LogServerStorage::get()->close();
     LogServerStorage::get()->init();

@@ -67,9 +67,7 @@ void SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionI
 void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionItem, RawTextResultFromSIA& resultItem)
 {
     const izenelib::util::UString::EncodingType kEncodingType =
-        izenelib::util::UString::convertEncodingTypeFromStringToEnum(
-            actionItem.env_.encodingType_.c_str()
-        );
+        izenelib::util::UString::convertEncodingTypeFromStringToEnum(actionItem.env_.encodingType_.c_str());
 
     std::vector<sf1r::docid_t> idList;
     std::vector<sf1r::workerid_t> workeridList;
@@ -93,7 +91,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
     {
         std::vector<PropertyValue>::const_iterator property_value;
         for (property_value = actionItem.propertyValueList_.begin();
-             property_value != actionItem.propertyValueList_.end(); ++property_value)
+                property_value != actionItem.propertyValueList_.end(); ++property_value)
         {
             PropertyType value;
             PropertyValue2IndexPropertyType converter(value);
@@ -104,11 +102,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
 
     // get query terms
 
-    izenelib::util::UString rawQueryUStr(
-        izenelib::util::UString(
-        actionItem.env_.queryString_, kEncodingType
-        )
-    );
+    izenelib::util::UString rawQueryUStr(actionItem.env_.queryString_, kEncodingType);
 
     // Just let empty propertyQueryTermList to getResultItem() for using only raw query term list.
     vector<vector<izenelib::util::UString> > propertyQueryTermList;
@@ -464,7 +458,7 @@ bool SearchWorker::getSummaryResult_(
         }
         resultItem.count_ = docsInPage.size();
 
-        getResultItem(actionItem, docsInPage, resultItem.propertyQueryTermList_, resultItem);    
+        getResultItem(actionItem, docsInPage, resultItem.propertyQueryTermList_, resultItem);
     }
 
     STOP_PROFILER ( getSummary );
@@ -525,11 +519,10 @@ void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util:
 
 template <typename ResultItemT>
 bool SearchWorker::buildQuery(
-    SearchKeywordOperation& actionOperation,
-    std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
-    ResultItemT& resultItem,
-    PersonalSearchInfo& personalSearchInfo
-)
+        SearchKeywordOperation& actionOperation,
+        std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
+        ResultItemT& resultItem,
+        PersonalSearchInfo& personalSearchInfo)
 {
     if (actionOperation.actionItem_.searchingMode_.mode_== SearchingMode::KNN)
         return true;
@@ -607,17 +600,11 @@ bool  SearchWorker::getResultItem(
 
     //boost::mutex::scoped_lock lock(mutex_);
 
-    resultItem.snippetTextOfDocumentInPage_.resize(
-            actionItem.displayPropertyList_.size()
-            );
-    resultItem.fullTextOfDocumentInPage_.resize(
-            actionItem.displayPropertyList_.size()
-            );
+    resultItem.snippetTextOfDocumentInPage_.resize(actionItem.displayPropertyList_.size());
+    resultItem.fullTextOfDocumentInPage_.resize(actionItem.displayPropertyList_.size());
 
     // shrink later
-    resultItem.rawTextOfSummaryInPage_.resize(
-            actionItem.displayPropertyList_.size()
-            );
+    resultItem.rawTextOfSummaryInPage_.resize(actionItem.displayPropertyList_.size());
 
 
     UString::EncodingType encodingType(UString::convertEncodingTypeFromStringToEnum(actionItem.env_.encodingType_.c_str()));
@@ -704,7 +691,7 @@ bool  SearchWorker::getResultItem(
     // indexSummary now is the real size of the array
     resultItem.rawTextOfSummaryInPage_.resize(indexSummary);
     if (!ret)
-        resultItem.error_="Error : Cannot get document data";
+        resultItem.error_ = "Error : Cannot get document data";
 
     return ret;
 }
@@ -712,8 +699,7 @@ bool  SearchWorker::getResultItem(
 template <typename ResultItemType>
 bool SearchWorker::removeDuplicateDocs(
         const KeywordSearchActionItem& actionItem,
-        ResultItemType& resultItem
-)
+        ResultItemType& resultItem)
 {
     // Remove duplicated docs from the result if the option is on.
     if (miningManager_)
@@ -731,24 +717,16 @@ bool SearchWorker::removeDuplicateDocs(
     return true;
 }
 
-void SearchWorker::reset_cache(
-        bool rType,
-        docid_t id,
-        const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue)
-{
-    searchCache_->clear();
-
-    if (rType)
-    {
-        searchManager_->updateSortCache(id, rTypeFieldValue);
-    }
-}
-
 void SearchWorker::reset_all_property_cache()
 {
     searchCache_->clear();
 
     searchManager_->reset_all_property_cache();
+}
+
+void SearchWorker::clearSearchCache()
+{
+    searchCache_->clear();
 }
 
 }

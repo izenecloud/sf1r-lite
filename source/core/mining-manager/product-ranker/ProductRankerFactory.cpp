@@ -1,6 +1,7 @@
 #include "ProductRankerFactory.h"
 #include "ProductRanker.h"
-#include "CategoryBoostingScorer.h"
+#include "TopKCustomRankScorer.h"
+#include "CategoryScorer.h"
 #include "MerchantScorer.h"
 #include "RelevanceScorer.h"
 #include "MerchantDiversityReranker.h"
@@ -23,7 +24,7 @@ ProductRankerFactory::ProductRankerFactory(MiningManager* miningManager)
     , merchantValueTable_(NULL)
     , merchantScoreManager_(miningManager_->GetMerchantScoreManager())
     , rerankers_(RERANKER_TYPE_NUM)
-    , boostingScorer_(NULL)
+    , categoryScorer_(NULL)
 {
     const std::string& categoryProp = config_.categoryPropName;
     const std::string& merchantProp = config_.merchantPropName;
@@ -35,7 +36,8 @@ ProductRankerFactory::ProductRankerFactory(MiningManager* miningManager)
         merchantValueTable_ = groupManager->getPropValueTable(merchantProp);
     }
 
-    createCategoryBoostingScorer_();
+    createTopKCustomRankScorer_();
+    createCategoryScorer_();
     createMerchantScorer_();
     createRelevanceScorer_();
     createCTRReranker_();
@@ -58,28 +60,37 @@ ProductRankerFactory::~ProductRankerFactory()
 
 ProductRanker* ProductRankerFactory::createProductRanker(ProductRankingParam& param)
 {
-    if (boostingScorer_)
+    if (categoryScorer_)
     {
-        boostingScorer_->selectBoostingCategory(param);
+        categoryScorer_->createCategoryScores(param);
     }
 
     return new ProductRanker(param, *this, config_.isDebug);
 }
 
-void ProductRankerFactory::createCategoryBoostingScorer_()
+void ProductRankerFactory::createTopKCustomRankScorer_()
+{
+    scorers_.push_back(new TopKCustomRankScorer);
+}
+
+void ProductRankerFactory::createCategoryScorer_()
 {
     if (! categoryValueTable_)
         return;
 
     GroupLabelLogger* categoryClickLogger =
         miningManager_->GetGroupLabelLogger(config_.categoryPropName);
-    boost::shared_ptr<SearchManager>& searchManager = miningManager_->GetSearchManager();
-    const std::string& boostingSubProp = config_.boostingSubPropName;
 
-    boostingScorer_ = new CategoryBoostingScorer(
-        categoryValueTable_, categoryClickLogger, searchManager, boostingSubProp);
+    boost::shared_ptr<SearchManager>& searchManager =
+        miningManager_->GetSearchManager();
 
-    scorers_.push_back(boostingScorer_);
+    const std::vector<std::string>& scorePropNames =
+        config_.categoryScorePropNames;
+
+    categoryScorer_ = new CategoryScorer(categoryValueTable_,
+        categoryClickLogger, searchManager, scorePropNames);
+
+    scorers_.push_back(categoryScorer_);
 }
 
 void ProductRankerFactory::createMerchantScorer_()

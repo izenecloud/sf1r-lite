@@ -1,4 +1,5 @@
 #include "RpcLogServer.h"
+#include "LogServerWorkThread.h"
 
 #include "errno.h"
 
@@ -155,6 +156,46 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
         {
             getMaxItemId_(req);
         }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_ADD_OLD_UUID])
+        {
+            msgpack::type::tuple<OldUUIDData> params;
+            req.params().convert(&params);
+            OldUUIDData& reqdata = params.get<0>();
+            AddOldUUID(reqdata);
+            req.result(reqdata);
+        }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_ADD_OLD_DOCID])
+        {
+            msgpack::type::tuple<OldDocIdData> params;
+            req.params().convert(&params);
+            OldDocIdData& reqdata = params.get<0>();
+            AddOldDocId(reqdata);
+            req.result(reqdata);
+        }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_DEL_OLD_DOCID])
+        {
+            msgpack::type::tuple<DelOldDocIdData> params;
+            req.params().convert(&params);
+            const DelOldDocIdData& reqdata = params.get<0>();
+            DelOldDocId(reqdata);
+            req.result(reqdata);
+        }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_GET_OLD_UUID])
+        {
+            msgpack::type::tuple<OldUUIDData> params;
+            req.params().convert(&params);
+            OldUUIDData& reqdata = params.get<0>();
+            GetOldUUID(reqdata);
+            req.result(reqdata);
+        }
+        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_GET_OLD_DOCID])
+        {
+            msgpack::type::tuple<OldDocIdData> params;
+            req.params().convert(&params);
+            OldDocIdData& reqdata = params.get<0>();
+            GetOldDocId(reqdata);
+            req.result(reqdata);
+        }
         else
         {
             req.error(msgpack::rpc::NO_METHOD_ERROR);
@@ -176,6 +217,41 @@ void RpcLogServer::updateUUID(const UUID2DocidList& uuid2DocidList)
     std::cout << "UUID -> DOCIDs: " << uuid2DocidList.toString() << std::endl;
 #endif
     workerThread_->putUuidRequestData(uuid2DocidList);
+}
+
+void RpcLogServer::AddOldUUID(OldUUIDData& reqdata)
+{
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
+    LogServerStorage::get()->historyDB()->insert_olduuid(reqdata.docid_, reqdata.olduuid_);
+    reqdata.success_ = LogServerStorage::get()->historyDB()->get_olduuid(reqdata.docid_, reqdata.olduuid_);
+}
+
+void RpcLogServer::AddOldDocId(OldDocIdData& reqdata)
+{
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
+    LogServerStorage::get()->historyDB()->insert_olddocid(reqdata.uuid_, reqdata.olddocid_);
+    reqdata.success_ = LogServerStorage::get()->historyDB()->get_olddocid(reqdata.uuid_, reqdata.olddocid_);
+}
+
+void RpcLogServer::DelOldDocId(const DelOldDocIdData& reqdata)
+{
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
+    for(size_t i = 0; i < reqdata.uuid_list_.size(); ++i)
+    {
+        LogServerStorage::get()->historyDB()->remove_olddocid(reqdata.uuid_list_[i], reqdata.olddocid_);
+    }
+}
+
+void RpcLogServer::GetOldUUID(OldUUIDData& reqdata)
+{
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
+    reqdata.success_ = LogServerStorage::get()->historyDB()->get_olduuid(reqdata.docid_, reqdata.olduuid_);
+}
+
+void RpcLogServer::GetOldDocId(OldDocIdData& reqdata)
+{
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->historyDBMutex());
+    reqdata.success_ = LogServerStorage::get()->historyDB()->get_olddocid(reqdata.uuid_, reqdata.olddocid_);
 }
 
 void RpcLogServer::synchronize(const SynchronizeData& syncReqData)

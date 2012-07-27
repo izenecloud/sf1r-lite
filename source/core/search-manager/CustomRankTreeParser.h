@@ -8,17 +8,15 @@
 #ifndef CUSTOM_RANK_TREE_PARSER_H_
 #define CUSTOM_RANK_TREE_PARSER_H_
 
+#include <common/NumericPropertyTableBase.h>
+
 #define BOOST_SPIRIT_THREADSAFE
 #include <boost/spirit/include/classic.hpp>
 #include <boost/spirit/include/classic_ast.hpp>
 
-#include "PropertyData.h"
-#include <common/type_defs.h>
+using namespace BOOST_SPIRIT_CLASSIC_NS;
 
 namespace sf1r {
-
-using namespace std;
-using namespace BOOST_SPIRIT_CLASSIC_NS;
 
 class ExpSyntaxTree // Node
 {
@@ -74,7 +72,7 @@ public:
     string name_; // param name or property name
     double value_;
 
-    boost::shared_ptr<PropertyData> propertyData_;
+    boost::shared_ptr<NumericPropertyTableBase> propertyData_;
     std::vector<boost::shared_ptr<ExpSyntaxTree> > children_;
 
     ExpSyntaxTree()

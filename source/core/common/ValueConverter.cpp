@@ -11,70 +11,6 @@
 
 namespace sf1r {
 
-namespace detail {
-
-class DriverValueToPropertyValueConverter : public boost::static_visitor<>
-{
-public:
-    PropertyValue* propertyValue;
-
-    DriverValueToPropertyValueConverter(PropertyValue& v)
-    : propertyValue(&v)
-    {}
-
-    void operator()(const Value::NullType&) const
-    {
-        *propertyValue = PropertyValue();
-    }
-
-    void operator()(const Value::IntType& val) const
-    {
-        *propertyValue = (int64_t)val;
-    }
-
-    void operator()(const Value::UintType& val) const
-    {
-        *propertyValue = (uint64_t)val;
-    }
-
-    void operator()(const Value::DoubleType& val) const
-    {
-        *propertyValue = val;
-    }
-
-    void operator()(const Value::StringType& val) const
-    {
-        *propertyValue = val;
-    }
-
-    void operator()(const Value::BoolType& array) const
-    {
-        *propertyValue = (int64_t)0;
-    }
-
-    void operator()(const Value::ArrayType& array) const
-    {
-        *propertyValue = std::string();
-    }
-
-    void operator()(const Value::ObjectType& array) const
-    {
-        *propertyValue = std::string();
-    }
-};
-
-
-} // namespace detail
-
-void ValueConverter::driverValue2PropertyValue(
-    const driver::Value& driverValue,
-    PropertyValue& propertyValue
-)
-{
-    detail::DriverValueToPropertyValueConverter converter(propertyValue);
-    boost::apply_visitor(converter, driverValue.variant());
-}
-
 void ValueConverter::driverValue2PropertyValue(
     sf1r::PropertyDataType dataType,
     const driver::Value& driverValue,
@@ -86,11 +22,20 @@ void ValueConverter::driverValue2PropertyValue(
     case STRING_PROPERTY_TYPE:
         propertyValue = asString(driverValue);
         break;
-    case INT_PROPERTY_TYPE:
-        propertyValue = (int64_t)asInt(driverValue);
+    case INT32_PROPERTY_TYPE:
+        propertyValue = (int32_t)asInt(driverValue);
         break;
     case FLOAT_PROPERTY_TYPE:
         propertyValue = (float)asDouble(driverValue);
+        break;
+    case INT8_PROPERTY_TYPE:
+        propertyValue = (int8_t)asInt(driverValue);
+        break;
+    case INT16_PROPERTY_TYPE:
+        propertyValue = (int16_t)asInt(driverValue);
+        break;
+    case INT64_PROPERTY_TYPE:
+        propertyValue = (int64_t)asInt(driverValue);
         break;
     case DOUBLE_PROPERTY_TYPE:
         propertyValue = asDouble(driverValue);

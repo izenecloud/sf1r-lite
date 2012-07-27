@@ -41,10 +41,10 @@ void B5mcScdGenerator::Process_(Document& doc, int& type)
         std::string spid;
         if(odb_->get(soid, spid))
         {
-            
+
         }
         //keep the non-exist oid comment
-        doc.property("uuid") = UString(spid, UString::UTF_8);
+        doc.property("uuid") = izenelib::util::UString(spid, izenelib::util::UString::UTF_8);
     }
 }
 
@@ -71,4 +71,3 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
     merger.Output();
     return true;
 }
-

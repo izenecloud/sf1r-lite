@@ -3,6 +3,7 @@
 
 #include "LogServerCfg.h"
 #include "DrumDispatcher.h"
+#include <b5m-manager/history_db.h>
 
 #include <util/singleton.h>
 #include <am/leveldb/Table.h>
@@ -120,6 +121,12 @@ public:
             return false;
         }
 
+        historydb_ = new HistoryDB(LogServerCfg::get()->getStorageBaseDir() + "/historydb");
+        if(!historydb_->open())
+        {
+            std::cerr << "Failed to open history db." << endl;
+            return false;
+        }
         // Initialize SCD DB
         std::string scdDbName = LogServerCfg::get()->getStorageBaseDir() + "/scd_db";
         boost::filesystem::create_directories(scdDbName);
@@ -167,6 +174,20 @@ public:
                 }
             }
 
+            if (historydb_)
+            {
+                boost::unique_lock<boost::mutex> lock(historyDBMutex_, boost::defer_lock);
+                if (lock.try_lock())
+                {
+                    historydb_->flush();
+                    delete historydb_;
+                }
+                else
+                {
+                    std::cout << "HistoryDB is still working... " << std::endl;
+                    return;
+                }
+            }
             // close scd dbs
             CollectionScdDbMapType::iterator it;
             for (it = collectionScdDbMap_.begin(); it != collectionScdDbMap_.end(); it++)
@@ -226,6 +247,16 @@ public:
     boost::mutex& docidDrumMutex()
     {
         return docidDrumMutex_;
+    }
+
+    HistoryDB* historyDB()
+    {
+        return historydb_;
+    }
+
+    boost::mutex& historyDBMutex()
+    {
+        return historyDBMutex_;
     }
 
     DocidDrumDispatcherType& docidDrumDispatcher()
@@ -323,6 +354,9 @@ private:
 
     typedef boost::unordered_map<std::string, boost::shared_ptr<ScdStorage> > CollectionScdDbMapType;
     CollectionScdDbMapType collectionScdDbMap_;
+
+    HistoryDB*  historydb_;
+    boost::mutex historyDBMutex_;
 };
 
 }

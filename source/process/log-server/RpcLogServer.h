@@ -2,8 +2,6 @@
 #define RPC_LOG_SERVER_H_
 
 #include "LogServerStorage.h"
-#include "LogServerWorkThread.h"
-
 #include <log-manager/LogServerRequest.h>
 #include <recommend-manager/item/MultiCollectionItemIdGenerator.h>
 
@@ -13,7 +11,7 @@
 
 namespace sf1r
 {
-
+class LogServerWorkThread;
 class RpcLogServer : public msgpack::rpc::server::base
 {
 public:
@@ -42,6 +40,11 @@ public:
 
     /// Asynchronous update
     void updateUUID(const UUID2DocidList& uuid2DocidList);
+    void AddOldUUID(OldUUIDData& reqdata);
+    void AddOldDocId(OldDocIdData& reqdata);
+    void DelOldDocId(const DelOldDocIdData& reqdata);
+    void GetOldUUID(OldUUIDData& reqdata);
+    void GetOldDocId(OldDocIdData& reqdata);
 
     void synchronize(const SynchronizeData& syncReqData);
 

@@ -36,9 +36,9 @@ class QueryCorrectionSubmanager : public boost::noncopyable
 
 public:
     QueryCorrectionSubmanager(
-        const std::string& queryDataPath, 
-        bool enableEK, 
-        bool enableChn, 
+        const std::string& queryDataPath,
+        bool enableEK,
+        bool enableChn,
         int ed = DEFAULT_MAX_EDITDISTANCE_);
 
     ~QueryCorrectionSubmanager();
@@ -53,20 +53,20 @@ public:
      */
 
     bool getRefinedQuery(
-        const UString& queryUString, 
-        UString& refinedQueryUString);
+            const izenelib::util::UString& queryUString,
+            izenelib::util::UString& refinedQueryUString);
 
     bool getPinyin(
-        const izenelib::util::UString& hanzi,
-        std::vector<izenelib::util::UString>& pinyin);
+            const izenelib::util::UString& hanzi,
+            std::vector<izenelib::util::UString>& pinyin);
 
     void updateCogramAndDict(
-        const std::list<QueryLogType>& queryList, 
-        const std::list<PropertyLabelType>& labelList);
+            const std::list<QueryLogType>& queryList,
+            const std::list<PropertyLabelType>& labelList);
 
     void Inject(
-        const izenelib::util::UString& query, 
-        const izenelib::util::UString& result);
+            const izenelib::util::UString& query,
+            const izenelib::util::UString& result);
 
     void FinishInject();
 
@@ -78,8 +78,8 @@ protected:
     bool initialize();
 
     bool getRefinedToken_(
-        const izenelib::util::UString& token, 
-        izenelib::util::UString& result);
+            const izenelib::util::UString& token,
+            izenelib::util::UString& result);
 
 public:
     static std::string system_resource_path_;

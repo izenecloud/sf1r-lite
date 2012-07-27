@@ -13,14 +13,14 @@
 #ifndef SF1V5_DOCUMENT_MANAGER_DOCUMENT_MANAGER_H
 #define SF1V5_DOCUMENT_MANAGER_DOCUMENT_MANAGER_H
 
-#include <util/profiler/ProfilerGroup.h>
-#include <common/PropertyKey.h>
-#include <common/PropertyValue.h>
-
 #include "Document.h"
 
 #include <configuration-manager/PropertyConfig.h>
+#include <common/PropertyKey.h>
+#include <common/PropertyValue.h>
+#include <common/NumericPropertyTableBase.h>
 
+#include <util/profiler/ProfilerGroup.h>
 #include <util/IdMapper.h>
 #include <util/ustring/UString.h>
 #include <cache/IzeneCache.h>
@@ -67,6 +67,7 @@ class DocumentManager
     typedef boost::dynamic_bitset<DelFilterBlockType> DelFilterType;
 public:
     typedef Document DocumentType;
+    typedef std::map<std::string, boost::shared_ptr<NumericPropertyTableBase> > NumericPropertyTableMap;
     /**
      * @brief initializes manager with @a path as working directory.
      *
@@ -74,11 +75,10 @@ public:
      * @param propertyConfigs property specification read from config file.
      */
     DocumentManager(
-        const std::string& path,
-        const IndexBundleSchema& indexSchema,
-        izenelib::util::UString::EncodingType encondingType,
-        size_t documentCacheNum = 20000
-    );
+            const std::string& path,
+            const IndexBundleSchema& indexSchema,
+            izenelib::util::UString::EncodingType encondingType,
+            size_t documentCacheNum = 20000);
     /**
      * @brief a destructor
      */
@@ -145,25 +145,18 @@ public:
      * @return \c true if the document existed, and \a document has set to the
      *         correct value, \c false otherwise.
      */
-    bool getDocument(
-        docid_t docId,
-        Document& document
-    );
+    bool getDocument(docid_t docId, Document& document);
 
     bool existDocument(docid_t docId);
 
     bool getDocumentAsync(docid_t docId);
 
     bool getDocument_impl(
-        docid_t docId,
-        Document& document,
-        boost::detail::atomic_count* finishedJobs
-    );
+            docid_t docId,
+            Document& document,
+            boost::detail::atomic_count* finishedJobs);
 
-    bool getDocumentByCache(
-        docid_t docId,
-        Document& document
-    );
+    bool getDocumentByCache(docid_t docId, Document& document);
 
     /**
      * @brief gets total \c propertyLength_[i] in \c propertyDb_[i]
@@ -181,17 +174,19 @@ public:
      * @return \c true if property has been found
      */
     bool getPropertyValue(
-        docid_t docId,
-        const std::string& propertyName,
-        PropertyValue& result
-    );
+            docid_t docId,
+            const std::string& propertyName,
+            PropertyValue& result);
 
     /**
      * @brief get property value and convert to type \c T
      * @return \c true if property has been found and has the type \c T
      */
-    template<typename T> bool getPropertyValue(docid_t docId,
-            const std::string& propertyName, T& result)
+    template <class T>
+    bool getPropertyValue(
+            docid_t docId,
+            const std::string& propertyName,
+            T& result)
     {
         PropertyValue value;
         if (getPropertyValue(docId, propertyName, value))
@@ -216,9 +211,9 @@ public:
      * @return true if highlight is successful else false
      */
     bool highlightText(
-        const izenelib::util::UString& text,
-        const std::vector<izenelib::util::UString> queryTerms,
-        izenelib::util::UString& outText);
+            const izenelib::util::UString& text,
+            const std::vector<izenelib::util::UString> queryTerms,
+            izenelib::util::UString& outText);
 
     /**
      * @brief fetches summary, snippet and highlight with options.
@@ -236,16 +231,15 @@ public:
      */
 
     bool getRawTextOfDocuments(
-        const std::vector<docid_t>& docIdList,
-        const string& propertyName,
-        const bool summaryOn,
-        const unsigned int summaryNum,
-        const unsigned int option,
-        const std::vector<izenelib::util::UString>& queryTermString,
-        std::vector<izenelib::util::UString>& outSnippetList,
-        std::vector<izenelib::util::UString>& outRawSummaryList,
-        std::vector<izenelib::util::UString>& outFullTextList
-    );
+            const std::vector<docid_t>& docIdList,
+            const string& propertyName,
+            const bool summaryOn,
+            const unsigned int summaryNum,
+            const unsigned int option,
+            const std::vector<izenelib::util::UString>& queryTermString,
+            std::vector<izenelib::util::UString>& outSnippetList,
+            std::vector<izenelib::util::UString>& outRawSummaryList,
+            std::vector<izenelib::util::UString>& outFullTextList);
 
     /**
      * @brief handles snippet and highlight with options: Method needs
@@ -269,13 +263,12 @@ public:
      * @return \c true if fetching rawtext for given property is successful
      */
     bool getRawTextOfDocuments(
-        const std::vector<docid_t>& docIdList,
-        const string& propertyName,
-        const unsigned int option,
-        const std::vector<izenelib::util::UString>& queryTerms,
-        std::vector<izenelib::util::UString>& outSnippetList,
-        std::vector<izenelib::util::UString>& outFullTextList
-    );
+            const std::vector<docid_t>& docIdList,
+            const string& propertyName,
+            const unsigned int option,
+            const std::vector<izenelib::util::UString>& queryTerms,
+            std::vector<izenelib::util::UString>& outSnippetList,
+            std::vector<izenelib::util::UString>& outFullTextList);
 
     /**
      * @brief  returns the maximum doc Id value managed by document manager. The docId
@@ -288,7 +281,11 @@ public:
 
     bool getDeletedDocIdList(std::vector<docid_t>& docid_list);
 
+    boost::shared_ptr<NumericPropertyTableBase>& getNumericPropertyTable(const std::string& propertyName);
 
+    void moveRTypeValues(docid_t oldId, docid_t newId);
+
+    NumericPropertyTableMap& getNumericPropertyTableMap();
 
 private:
     bool loadDelFilter_();
@@ -330,13 +327,12 @@ private:
      * @return returns true if getting @a document is successful
      */
     bool getRawTextOfOneDocument_(
-        const docid_t docId,
-        const string& propertyName,
-        const unsigned int option,
-        const std::vector<izenelib::util::UString>& queryTerms,
-        izenelib::util::UString& outSnippetList,
-        izenelib::util::UString& outFullTextList
-    );
+            const docid_t docId,
+            const string& propertyName,
+            const unsigned int option,
+            const std::vector<izenelib::util::UString>& queryTerms,
+            izenelib::util::UString& outSnippetList,
+            izenelib::util::UString& outFullTextList);
 
     /**
      * @brief process options for summary, snippet and highlight for getRawText
@@ -353,11 +349,11 @@ private:
      * @return returns true when option is processed correctly
      */
     bool processOptionForRawText(
-        const unsigned int option,
-        const std::vector<izenelib::util::UString>& queryTerms,
-        const izenelib::util::UString& rawText,
-        const std::vector<CharacterOffset>& sentenceOffsets,
-        izenelib::util::UString& result);
+            const unsigned int option,
+            const std::vector<izenelib::util::UString>& queryTerms,
+            const izenelib::util::UString& rawText,
+            const std::vector<CharacterOffset>& sentenceOffsets,
+            izenelib::util::UString& result);
 
     /**
      * @brief fetches summary sentences as requested by geRawTextOfDocument
@@ -376,25 +372,27 @@ private:
      * @return returns true when summary is generated.
      */
     bool getSummary(
-        const izenelib::util::UString& rawText,
-        const std::vector<CharacterOffset>& sentenceOffsets,
-        unsigned int numSentences,
-        const unsigned int option,
-        const std::vector<izenelib::util::UString>& queryTerms,
-        izenelib::util::UString& summary
-    );
+            const izenelib::util::UString& rawText,
+            const std::vector<CharacterOffset>& sentenceOffsets,
+            unsigned int numSentences,
+            const unsigned int option,
+            const std::vector<izenelib::util::UString>& queryTerms,
+            izenelib::util::UString& summary);
 
     unsigned int getDisplayLength_(const string& propertyName);
 
     bool getDocumentsParallel(
-        const std::vector<unsigned int>& ids,
-        vector<Document>& docs
-    );
+            const std::vector<unsigned int>& ids,
+            vector<Document>& docs);
 
     bool getDocumentsSequential(
-        const std::vector<unsigned int>& ids,
-        vector<Document>& docs
-    );
+            const std::vector<unsigned int>& ids,
+            vector<Document>& docs);
+
+    void initNumericPropertyTable_(
+            const std::string& propertyName,
+            PropertyDataType propertyType,
+            bool isRange);
 
 private:
     /// @brief path for the index property file
@@ -404,6 +402,8 @@ private:
 
     /// @brief SDB file that holds all corresponding property and files
     DocContainer* propertyValueTable_;
+
+    NumericPropertyTableMap numericPropertyTables_;
 
     /// @brief The delete flag filter
     DelFilterType delfilter_;
@@ -427,7 +427,7 @@ private:
     izenelib::util::IdMapper<std::string, propertyid_t> propertyIdMapper_;
 
     /// @brief maps property map for Alias
-    boost::unordered_map< std::string, unsigned int> propertyAliasMap_;
+    boost::unordered_map<std::string, unsigned int> propertyAliasMap_;
 
     /// @brief maps property name to the display Length
     boost::unordered_map<std::string, unsigned int> displayLengthMap_;

@@ -19,6 +19,7 @@ namespace sf1r {
     public:
         //typedef std::map<std::string, int32_t> SourceMap;
         typedef boost::unordered_set<std::string> SourceType;
+        typedef std::set<std::string> OfferIdSetType;
         typedef izenelib::util::UString UString;
 
         UString pid;
@@ -26,6 +27,7 @@ namespace sf1r {
         SourceType source;
         int64_t itemcount;
         UString oid;
+        OfferIdSetType  old_offerids;
 
         ProductProperty();
 
@@ -35,8 +37,10 @@ namespace sf1r {
 
 
         std::string GetSourceString() const;
+        std::string GetOldOfferIdsString() const;
 
         izenelib::util::UString GetSourceUString() const;
+        izenelib::util::UString GetOldOfferIdsUString() const;
 
         ProductProperty& operator+=(const ProductProperty& other);
 

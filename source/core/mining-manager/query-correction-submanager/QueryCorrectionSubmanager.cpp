@@ -26,9 +26,9 @@ boost::shared_ptr<EkQueryCorrection> QueryCorrectionSubmanager::ekmgr_;
 boost::unordered_map<std::string, izenelib::util::UString> QueryCorrectionSubmanager::global_inject_data_;
 
 QueryCorrectionSubmanager::QueryCorrectionSubmanager(
-    const string& queryDataPath, 
-    bool enableEK, 
-    bool enableChn, 
+    const string& queryDataPath,
+    bool enableEK,
+    bool enableChn,
     int ed)
     : queryDataPath_(queryDataPath)
     , enableEK_(enableEK), enableChn_(enableChn)
@@ -170,7 +170,7 @@ QueryCorrectionSubmanager::~QueryCorrectionSubmanager()
 }
 
 bool QueryCorrectionSubmanager::getRefinedToken_(
-        const izenelib::util::UString& token, 
+        const izenelib::util::UString& token,
         izenelib::util::UString& result)
 {
     if (enableChn_)
@@ -200,8 +200,8 @@ bool QueryCorrectionSubmanager::getRefinedToken_(
 
 //The public interface, when user input wrong query, given the correct refined query.
 bool QueryCorrectionSubmanager::getRefinedQuery(
-        const UString& queryUString, 
-        UString& refinedQueryUString)
+        const izenelib::util::UString& queryUString,
+        izenelib::util::UString& refinedQueryUString)
 {
     if (queryUString.empty() || !activate_)
     {
@@ -231,8 +231,8 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
     CREATE_SCOPED_PROFILER(getRealRefinedQuery, "QueryCorrectionSubmanager",
                            "QueryCorrectionSubmanager :: getRealRefinedQuery");
 
-    typedef tokenizer<char_separator<char> > tokenizers;
-    char_separator<char> sep;
+    typedef boost::tokenizer<boost::char_separator<char> > tokenizers;
+    boost::char_separator<char> sep;
 
     std::string queryStr;
     queryUString.convertString(queryStr, izenelib::util::UString::UTF_8);
@@ -293,7 +293,7 @@ bool QueryCorrectionSubmanager::getPinyin(
 }
 
 void QueryCorrectionSubmanager::updateCogramAndDict(
-        const std::list<QueryLogType>& queryList, 
+        const std::list<QueryLogType>& queryList,
         const std::list<PropertyLabelType>& labelList)
 {
     DLOG(INFO) << "updateCogramAndDict..." << endl;
@@ -302,7 +302,7 @@ void QueryCorrectionSubmanager::updateCogramAndDict(
 }
 
 void QueryCorrectionSubmanager::Inject(
-        const izenelib::util::UString& query, 
+        const izenelib::util::UString& query,
         const izenelib::util::UString& result)
 {
     std::string str_query;

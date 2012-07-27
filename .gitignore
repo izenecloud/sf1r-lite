@@ -53,3 +53,5 @@ scripts/tmp
 /maketags.log
 /python_tags_filelist
 /changedliborer
+*.diff
+*.patch

@@ -1,5 +1,5 @@
-#include <search-manager/CustomRanker.h>
-#include <search-manager/Sorter.h>
+#include "CustomRanker.h"
+#include "Sorter.h"
 
 using namespace sf1r;
 
@@ -15,7 +15,8 @@ bool CustomRanker::parse(std::string& strExp)
 {
     trim(strExp); // important
 
-    if (strExp.empty()) {
+    if (strExp.empty())
+    {
         errorInfo_ = "Fialed to parse custom_rank[expression], it's empty.";
         return false;
     }
@@ -26,7 +27,8 @@ bool CustomRanker::parse(std::string& strExp)
     tree_parse_info<> info = ast_parse(strExp.c_str(), customRankTreeParser_, space_p);
     //showBoostAST(info.trees, 0); // test
 
-    if (!info.full) {
+    if (!info.full)
+    {
         errorInfo_ = "Failed to parse custom_rank[expression], error at \"" + std::string(strExp.c_str(), info.stop) +"^\"";
         return false;
     }
@@ -51,7 +53,8 @@ bool CustomRanker::buildExpSyntaxTree(const ast_info_trees& astrees, ExpSyntaxTr
                 string v(iter->value.begin(), iter->value.end());
                 trim(v);
                 //child->value_ = atof(v.c_str());
-                if(!str2real(v, child->value_)) {
+                if(!str2real(v, child->value_))
+                {
                     errorInfo_ = "Failed to parse \"" + v + "\" in custom_rank[expression], as a real number. ";
                     return false;
                 }
@@ -101,7 +104,8 @@ bool CustomRanker::buildExpSyntaxTree(const ast_info_trees& astrees, ExpSyntaxTr
         }
 
         // children in AST
-        if (!buildExpSyntaxTree(iter->children, child)) {
+        if (!buildExpSyntaxTree(iter->children, child))
+        {
             return false;
         }
 
@@ -114,10 +118,12 @@ bool CustomRanker::buildExpSyntaxTree(const ast_info_trees& astrees, ExpSyntaxTr
 
 bool CustomRanker::setInnerPropertyData(ExpSyntaxTreePtr& estree, SortPropertyCache* pPropertyData)
 {
-    if (estree->type_ == ExpSyntaxTree::PARAMETER) {
+    if (estree->type_ == ExpSyntaxTree::PARAMETER)
+    {
         PropertyDataType dataType = propertyDataTypeMap_[estree->name_];
         estree->propertyData_ = pPropertyData->getSortPropertyData(estree->name_, dataType);
-        if (!estree->propertyData_) {
+        if (!estree->propertyData_)
+        {
             stringstream ss;
             ss << "Failed to get sort data for property: " << estree->name_
                << " with data type: " << dataType << endl;
@@ -157,25 +163,7 @@ bool CustomRanker::sub_evaluate(ExpSyntaxTreePtr& estree, docid_t& docid)
             if (! estree->propertyData_)
                 break;
 
-            void* data = estree->propertyData_->data_;
-            switch(estree->propertyData_->type_)
-            {
-                case INT_PROPERTY_TYPE:
-                case DATETIME_PROPERTY_TYPE:
-                    estree->value_ = ((int64_t*)data)[docid];
-                    break;
-                case UNSIGNED_INT_PROPERTY_TYPE:
-                    estree->value_ = ((uint64_t*)data)[docid];
-                    break;
-                case FLOAT_PROPERTY_TYPE:
-                    estree->value_ = ((float*)data)[docid];
-                    break;
-                case DOUBLE_PROPERTY_TYPE:
-                    estree->value_ = ((double*)data)[docid];
-                    break;
-                default:
-                    break;
-            }
+            estree->propertyData_->getDoubleValue(docid, estree->value_);
             //cout << "CustomRanker::sub_evaluate docid(" << docid << ") get property \"" << estree->name_ << "\" data value: " << estree->value_ <<endl;
             break;
         }
@@ -245,7 +233,8 @@ bool CustomRanker::sub_evaluate(ExpSyntaxTreePtr& estree, docid_t& docid)
 
 void CustomRanker::showBoostAST(const ast_info_trees& trees, int level)
 {
-    if (level == 0) {
+    if (level == 0)
+    {
         cout << "[ AST (Syntax Tree): ]" << endl;
     }
 
@@ -280,5 +269,3 @@ void CustomRanker::printESTree()
     cout << "[ EST (Expression Syntax Tree): ]" << endl;
     showEST(ESTree_->children_);
 }
-
-

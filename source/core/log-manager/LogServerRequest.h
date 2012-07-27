@@ -25,6 +25,11 @@ public:
         METHOD_STRID_TO_ITEMID,
         METHOD_ITEMID_TO_STRID,
         METHOD_GET_MAX_ITEMID,
+        METHOD_ADD_OLD_UUID,     // when uuid change to a new one, log the old uuid for the changing doc
+        METHOD_ADD_OLD_DOCID,    // when doc moved to a new uuid, add the docid to the old uuid group.
+        METHOD_DEL_OLD_DOCID,    // when doc deleted, remove the docid from all the uuid groups who hold it.
+        METHOD_GET_OLD_UUID,    
+        METHOD_GET_OLD_DOCID,  
         COUNT_OF_METHODS
     };
 
@@ -113,6 +118,52 @@ public:
     {
     }
 };
+
+class AddOldUUIDRequest : public LogRequestRequestT<OldUUIDData>
+{
+public:
+    AddOldUUIDRequest ()
+        : LogRequestRequestT<OldUUIDData>(METHOD_ADD_OLD_UUID)
+    {
+    }
+};
+
+class AddOldDocIdRequest : public LogRequestRequestT<OldDocIdData>
+{
+public:
+    AddOldDocIdRequest ()
+        : LogRequestRequestT<OldDocIdData>(METHOD_ADD_OLD_DOCID)
+    {
+    }
+};
+
+class DelOldDocIdRequest : public LogRequestRequestT<DelOldDocIdData>
+{
+public:
+    DelOldDocIdRequest ()
+        : LogRequestRequestT<DelOldDocIdData>(METHOD_DEL_OLD_DOCID)
+    {
+    }
+};
+
+class GetOldUUIDRequest : public LogRequestRequestT<OldUUIDData>
+{
+public:
+    GetOldUUIDRequest ()
+        : LogRequestRequestT<OldUUIDData>(METHOD_GET_OLD_UUID)
+    {
+    }
+};
+
+class GetOldDocIdRequest : public LogRequestRequestT<OldDocIdData>
+{
+public:
+    GetOldDocIdRequest ()
+        : LogRequestRequestT<OldDocIdData>(METHOD_GET_OLD_DOCID)
+    {
+    }
+};
+
 
 }
 

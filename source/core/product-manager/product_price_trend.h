@@ -28,7 +28,6 @@ class ProductPriceTrend
 
 public:
     ProductPriceTrend(
-            const boost::shared_ptr<DocumentManager>& document_manager,
             const CassandraStorageConfig& cassandraConfig,
             const std::string& data_dir,
             const std::vector<std::string>& group_prop_vec,
@@ -74,6 +73,7 @@ public:
             std::string& error_msg);
 
     bool MigratePriceHistory(
+            const boost::shared_ptr<DocumentManager>& document_manager,
             const std::string& new_keyspace,
             uint32_t start,
             std::string& error_msg);
@@ -86,7 +86,6 @@ private:
     bool UpdateTPC_(uint32_t time_int, time_t timestamp);
 
 private:
-    boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<PriceHistory> price_history_;
 
     const CassandraStorageConfig cassandraConfig_;

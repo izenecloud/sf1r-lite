@@ -11,7 +11,8 @@
 #include "GroupCounter.h"
 #include "GroupRep.h"
 #include "SubGroupCounter.h"
-#include <search-manager/NumericPropertyTable.h>
+
+#include <common/NumericPropertyTableBase.h>
 
 #include <util/ustring/UString.h>
 #include <boost/scoped_ptr.hpp>
@@ -25,9 +26,9 @@ template<typename CounterType = unsigned int>
 class NumericGroupCounter : public GroupCounter
 {
 public:
-    NumericGroupCounter(const NumericPropertyTable* propertyTable);
-    NumericGroupCounter(const NumericPropertyTable* propertyTable, const CounterType& subCounter);
-    NumericGroupCounter(const NumericGroupCounter& groupCounter);
+    NumericGroupCounter(const std::string& property, const NumericPropertyTableBase* numericPropertyTable);
+    NumericGroupCounter(const std::string& property, const NumericPropertyTableBase* numericPropertyTable, const CounterType& subCounter);
+    NumericGroupCounter(const NumericGroupCounter& other);
 
     virtual NumericGroupCounter* clone() const;
     virtual void addDoc(docid_t doc);
@@ -36,27 +37,32 @@ public:
     virtual void insertSharedLock(SharedLockSet& lockSet) const;
 
 private:
-    boost::scoped_ptr<const NumericPropertyTable> propertyTable_;
+    std::string property_;
+    const NumericPropertyTableBase* numericPropertyTable_;
     std::map<double, CounterType> countTable_;
     std::pair<double, const CounterType> initSubCounterPair_;
 };
 
 template<typename CounterType>
-NumericGroupCounter<CounterType>::NumericGroupCounter(const NumericPropertyTable *propertyTable)
-    : propertyTable_(propertyTable)
+NumericGroupCounter<CounterType>::NumericGroupCounter(const std::string& property, const NumericPropertyTableBase* numericPropertyTable)
+    : property_(property)
+    , numericPropertyTable_(numericPropertyTable)
     , initSubCounterPair_(0, 0)
-{}
+{
+}
 
 template<typename CounterType>
-NumericGroupCounter<CounterType>::NumericGroupCounter(const NumericPropertyTable* propertyTable, const CounterType& subCounter)
-    : propertyTable_(propertyTable)
-    , initSubCounterPair_(0, subCounter)
+NumericGroupCounter<CounterType>::NumericGroupCounter(const std::string& property, const NumericPropertyTableBase* numericPropertyTable, const CounterType& defaultCounter)
+    : property_(property)
+    , numericPropertyTable_(numericPropertyTable)
+    , initSubCounterPair_(0, defaultCounter)
 {
 }
 
 template<typename CounterType>
 NumericGroupCounter<CounterType>::NumericGroupCounter(const NumericGroupCounter& groupCounter)
-    : propertyTable_(new NumericPropertyTable(*groupCounter.propertyTable_))
+    : property_(groupCounter.property_)
+    , numericPropertyTable_(groupCounter.numericPropertyTable_)
     , countTable_(groupCounter.countTable_)
     , initSubCounterPair_(groupCounter.initSubCounterPair_)
 {
@@ -72,7 +78,7 @@ template<typename CounterType>
 void NumericGroupCounter<CounterType>::addDoc(docid_t doc)
 {
     double value = 0;
-    if (propertyTable_->convertPropertyValue(doc, value))
+    if (numericPropertyTable_->getDoubleValue(doc, value))
     {
         ++countTable_[value];
     }
@@ -82,7 +88,7 @@ template<>
 void NumericGroupCounter<SubGroupCounter>::addDoc(docid_t doc)
 {
     double value = 0;
-    if (propertyTable_->convertPropertyValue(doc, value))
+    if (numericPropertyTable_->getDoubleValue(doc, value))
     {
         initSubCounterPair_.first = value;
         SubGroupCounter& subCounter = countTable_.insert(initSubCounterPair_).first->second;
@@ -94,7 +100,7 @@ void NumericGroupCounter<SubGroupCounter>::addDoc(docid_t doc)
 template<typename CounterType>
 void NumericGroupCounter<CounterType>::getGroupRep(GroupRep &groupRep)
 {
-    groupRep.numericGroupRep_.push_back(make_pair(propertyTable_->getPropertyName(), list<pair<double, unsigned int> >()));
+    groupRep.numericGroupRep_.push_back(std::make_pair(property_, std::list<std::pair<double, unsigned int> >()));
     list<pair<double, unsigned int> > &countList = groupRep.numericGroupRep_.back().second;
 
     for (typename std::map<double, CounterType>::const_iterator it = countTable_.begin();
@@ -109,7 +115,7 @@ void NumericGroupCounter<SubGroupCounter>::getGroupRep(GroupRep &groupRep)
 {
     GroupRep::StringGroupRep& itemList = groupRep.stringGroupRep_;
 
-    izenelib::util::UString propName(propertyTable_->getPropertyName(), UString::UTF_8);
+    izenelib::util::UString propName(property_, izenelib::util::UString::UTF_8);
     itemList.push_back(faceted::OntologyRepItem(0, propName, 0, 0));
     faceted::OntologyRepItem& topItem = itemList.back();
     unsigned int totalCount = 0;

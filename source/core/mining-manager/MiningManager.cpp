@@ -32,6 +32,7 @@
 
 #include "group-label-logger/GroupLabelLogger.h"
 #include "merchant-score-manager/MerchantScoreManager.h"
+#include "custom-rank-manager/CustomRankManager.h"
 #include "product-ranker/ProductRankerFactory.h"
 
 #include <search-manager/SearchManager.h>
@@ -112,6 +113,7 @@ MiningManager::MiningManager(
     , groupManager_(NULL)
     , attrManager_(NULL)
     , merchantScoreManager_(NULL)
+    , customRankManager_(NULL)
     , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
@@ -124,6 +126,7 @@ MiningManager::~MiningManager()
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
     if (productRankerFactory_) delete productRankerFactory_;
+    if (customRankManager_) delete customRankManager_;
     if (merchantScoreManager_) delete merchantScoreManager_;
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
@@ -410,12 +413,23 @@ bool MiningManager::open()
         }
 
         /** product ranking */
-        if (mining_schema_.product_ranking_config.isEnable() && groupManager_)
+        if (mining_schema_.product_ranking_config.isEnable)
         {
+            // custom rank manager
+            if (customRankManager_) delete customRankManager_;
+
+            const bfs::path customRankDir = bfs::path(prefix_path) / "custom_rank";
+            bfs::create_directories(customRankDir);
+
+            const std::string customRankPath = (customRankDir / "custom.db").string();
+            customRankManager_ = new CustomRankManager(customRankPath);
+
+            // product ranker factory
             if (productRankerFactory_) delete productRankerFactory_;
 
             productRankerFactory_ = new ProductRankerFactory(this);
 
+            searchManager_->setCustomRankManager(customRankManager_);
             searchManager_->setProductRankerFactory(productRankerFactory_);
         }
 
@@ -1456,6 +1470,92 @@ bool MiningManager::setMerchantScore(const MerchantStrScoreMap& merchantScoreMap
         return false;
 
     merchantScoreManager_->setScore(merchantScoreMap);
+    return true;
+}
+
+bool MiningManager::setCustomRank(
+    const std::string& query,
+    const std::vector<std::string>& docIdList
+)
+{
+    if (! customRankManager_)
+        return false;
+
+    std::vector<docid_t> convertIdList;
+    if (! convertDocIdList_(docIdList, convertIdList))
+        return false;
+
+    return customRankManager_->setDocIdList(query, convertIdList);
+}
+
+bool MiningManager::getCustomRank(
+    const std::string& query,
+    std::vector<Document>& docList
+)
+{
+    if (! customRankManager_)
+        return false;
+
+    std::vector<docid_t> docIdList;
+    if (! customRankManager_->getDocIdList(query, docIdList))
+        return false;
+
+    return getDocList_(docIdList, docList);
+}
+
+bool MiningManager::getCustomQueries(std::vector<std::string>& queries)
+{
+    if (customRankManager_)
+        return customRankManager_->getQueries(queries);
+
+    return false;
+}
+
+bool MiningManager::convertDocIdList_(
+    const std::vector<std::string>& strList,
+    std::vector<docid_t>& idList
+)
+{
+    for (std::vector<std::string>::const_iterator it = strList.begin();
+        it != strList.end(); ++it)
+    {
+        const std::string& strId = *it;
+        uint128_t convertId = Utilities::md5ToUint128(strId);
+        docid_t docId = 0;
+
+        if (! idManager_->getDocIdByDocName(convertId, docId, false))
+        {
+            LOG(WARNING) << "in convertDocIdList_(), DOCID " << strId << " does not exist";
+            return false;
+        }
+
+        idList.push_back(docId);
+    }
+
+    return true;
+}
+
+bool MiningManager::getDocList_(
+    const std::vector<docid_t>& docIdList,
+    std::vector<Document>& docList
+)
+{
+    Document doc;
+
+    for (std::vector<docid_t>::const_iterator it = docIdList.begin();
+        it != docIdList.end(); ++it)
+    {
+        docid_t docId = *it;
+
+        if (! document_manager_->getDocument(docId, doc))
+        {
+            LOG(WARNING) << "in getDocList_(), docid_t " << docId << " does not exist";
+            return false;
+        }
+
+        docList.push_back(doc);
+    }
+
     return true;
 }
 

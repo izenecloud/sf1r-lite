@@ -16,11 +16,6 @@ using namespace izenelib::driver;
 class ValueConverter
 {
 public:
-    /// @brief convert @a dirverValue to @a proeprtyValue according to the
-    /// underlying type of @a driverValue.
-    static void driverValue2PropertyValue(const driver::Value& driverValue,
-                                          PropertyValue& propertyValue);
-
     /// @brief convert @a dirverValue to @a proeprtyValue of specified type @a
     /// dataType.
     static void driverValue2PropertyValue(

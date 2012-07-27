@@ -80,7 +80,9 @@ public:
     public:
         iterator(long offset);
 
-        iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList = std::vector<std::string>());
+        iterator(ScdParser* pScdParser, unsigned int start_doc);
+
+        iterator(ScdParser* pScdParser, unsigned int start_doc, const std::vector<string>& propertyNameList);
 
         iterator(const iterator& other);
 
@@ -98,8 +100,10 @@ public:
 
         iterator& operator+=(unsigned int offset);
 
-        SCDDocPtr operator*();
+        const SCDDocPtr& operator*();
+
         long getOffset();
+
     private:
         SCDDoc* getDoc();
 
@@ -108,7 +112,6 @@ public:
         /// @brief
         /// It's recommended to handle this processing in application by which SCD is created
         void preProcessDoc(string& strDoc);
-
 
         void parseDoc(std::string& str, SCDDoc* doc);
 

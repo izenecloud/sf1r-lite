@@ -19,13 +19,11 @@ namespace sf1r
 {
 
 ProductPriceTrend::ProductPriceTrend(
-        const boost::shared_ptr<DocumentManager>& document_manager,
         const CassandraStorageConfig& cassandraConfig,
         const string& data_dir,
         const vector<string>& group_prop_vec,
         const vector<uint32_t>& time_int_vec)
-    : document_manager_(document_manager)
-    , cassandraConfig_(cassandraConfig)
+    : cassandraConfig_(cassandraConfig)
     , data_dir_(data_dir)
     , group_prop_vec_(group_prop_vec)
     , time_int_vec_(time_int_vec)
@@ -333,6 +331,7 @@ bool ProductPriceTrend::GetTopPriceCutList(
 }
 
 bool ProductPriceTrend::MigratePriceHistory(
+        const boost::shared_ptr<DocumentManager>& document_manager,
         const string& new_keyspace,
         uint32_t start,
         string& error_msg)
@@ -346,10 +345,12 @@ bool ProductPriceTrend::MigratePriceHistory(
     new_price_history->createColumnFamily();
 
     uint32_t count = 0;
-    for (uint32_t i = start; i <= document_manager_->getMaxDocId(); i++)
+    for (uint32_t i = start; i <= document_manager->getMaxDocId(); i++)
     {
         Document doc;
-        document_manager_->getDocument(i, doc);
+        if (!document_manager->getDocument(i, doc))
+            continue;
+
         Document::property_const_iterator kit = doc.findProperty("DOCID");
         if (kit == doc.propertyEnd())
             continue;

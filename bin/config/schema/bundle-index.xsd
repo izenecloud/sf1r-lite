@@ -107,7 +107,7 @@
             <xs:attribute name="searchcachenum" use="optional">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
-                        <xs:minInclusive value="100"/>
+                        <xs:minInclusive value="1"/>
                         <xs:maxInclusive value="100000"/>
                     </xs:restriction>
                 </xs:simpleType>
@@ -224,6 +224,7 @@
             <xs:attribute name="analyzer" type="xs:NCName" use="optional"/>
             <xs:attribute name="filter" type="YesNoType" use="required"/>
             <xs:attribute name="multivalue" type="YesNoType" use="optional"/>
+            <xs:attribute name="range" type="YesNoType" use="optional"/>
             <xs:attribute name="doclen" type="YesNoType" use="optional"/>
             <xs:attribute name="rankweight" type="xs:float" use="optional"/>
             <xs:attribute name="tokenizer" use="optional"/>

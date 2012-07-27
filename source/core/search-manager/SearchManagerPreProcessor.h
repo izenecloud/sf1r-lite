@@ -1,12 +1,12 @@
 #ifndef CORE_SEARCH_MANAGER_SEARCH_MANAGER_PPEPROCESSOR_H
 #define CORE_SEARCH_MANAGER_SEARCH_MANAGER_PREPROCESSOR_H
 
-#include "PropertyData.h"
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
 #include <common/ResultType.h>
 #include <common/PropertyTermInfo.h>
+#include <common/NumericPropertyTableBase.h>
 #include <types.h>
 
 #include <boost/shared_ptr.hpp>
@@ -22,7 +22,7 @@ class PropertyRanker;
 class ProductRankerFactory;
 class SortPropertyCache;
 class Sorter;
-class NumericPropertyTable;
+class NumericPropertyTableBase;
 class MiningManager;
 
 class SearchManagerPreProcessor
@@ -35,25 +35,20 @@ private:
 
     boost::unordered_map<std::string, PropertyConfig> schemaMap_;
 
-    NumericPropertyTable* createPropertyTable(
-            const std::string& propertyName, 
-            SortPropertyCache* psortercache);
+    boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(
+            const std::string& propertyName,
+            SortPropertyCache* pSorterCache);
 
     bool getPropertyTypeByName_(
             const std::string& name,
             PropertyDataType& type) const;
 
-    boost::shared_ptr<PropertyData> getPropertyData_(
-            const std::string& name, 
-            SortPropertyCache* psortercache);
-
     void prepare_sorter_customranker_(
             const SearchKeywordOperation& actionOperation,
             CustomRankerPtr& customRanker,
             boost::shared_ptr<Sorter> &pSorter,
-            SortPropertyCache* psortercache,
-            boost::weak_ptr<MiningManager> miningManagerPtr
-            );
+            SortPropertyCache* pSorterCache,
+            boost::weak_ptr<MiningManager> miningManagerPtr);
 
     /**
      * rebuild custom ranker.
@@ -73,30 +68,29 @@ private:
             Sorter* pSorter,
             std::vector<unsigned int>& docIdList,
             DistKeywordSearchInfo& distSearchInfo,
-            SortPropertyCache* psortercache);
+            SortPropertyCache* pSorterCache);
 
-    template<class UnaryOperator> 
-        void PreparePropertyList(
+    template<class UnaryOperator>
+    void PreparePropertyList(
             std::vector<std::string>& indexPropertyList,
-            std::vector<propertyid_t>& indexPropertyIdList, 
-            UnaryOperator op 
-            )
-        {
+            std::vector<propertyid_t>& indexPropertyIdList,
+            UnaryOperator op)
+    {
 #if PREFETCH_TERMID
-            std::stable_sort (indexPropertyList.begin(), indexPropertyList.end());
+        std::stable_sort (indexPropertyList.begin(), indexPropertyList.end());
 #endif
-            std::transform(
+        std::transform(
                 indexPropertyList.begin(),
                 indexPropertyList.end(),
                 indexPropertyIdList.begin(),
-                op );
+                op);
 
-        }
+    }
 
     void PreparePropertyTermIndex(
-        const std::map<std::string, PropertyTermInfo>& propertyTermInfoMap,
-        const std::vector<std::string>& indexPropertyList, 
-        std::vector<std::map<termid_t, unsigned> >& termIndexMaps);
+            const std::map<std::string, PropertyTermInfo>& propertyTermInfoMap,
+            const std::vector<std::string>& indexPropertyList,
+            std::vector<std::map<termid_t, unsigned> >& termIndexMaps);
 
 };
 

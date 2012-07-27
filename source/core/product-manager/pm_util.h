@@ -13,42 +13,32 @@ namespace sf1r
 
 class PMUtil
 {
-
 public:
-
     PMUtil(const PMConfig& config, ProductDataSource* data_source)
-    : config_(config), data_source_(data_source)
+        : config_(config), data_source_(data_source)
     {
     }
 
     bool GetPrice(uint32_t docid, ProductPrice& price) const
     {
-        PMDocumentType doc;
-        if( !data_source_->GetDocument(docid, doc)) return false;
-        return GetPrice(doc, price);
+        return data_source_->GetPrice(docid, price);
     }
 
     bool GetPrice(const PMDocumentType& doc, ProductPrice& price) const
     {
-        izenelib::util::UString price_ustr;
-        if(!doc.getProperty(config_.price_property_name, price_ustr)) return false;
-        return price.Parse(price_ustr);
+        return data_source_->GetPrice(doc, price);
     }
 
     void GetPrice(const std::vector<uint32_t>& docid_list, ProductPrice& price) const
     {
-        std::vector<PMDocumentType> doc_list;
-        doc_list.reserve(docid_list.size());
-
         for (uint32_t i = 0; i < docid_list.size(); i++)
         {
-            PMDocumentType doc;
-            if( data_source_->GetDocument(docid_list[i], doc))
+            ProductPrice p;
+            if (GetPrice(docid_list[i], p))
             {
-                doc_list.push_back(doc);
+                price += p;
             }
         }
-        GetPrice(doc_list, price);
     }
 
     void GetPrice(const std::vector<PMDocumentType>& doc_list, ProductPrice& price) const
@@ -63,8 +53,7 @@ public:
         }
     }
 
-
-    void AddPrice( PMDocumentType& doc, const ProductPrice& price ) const
+    void AddPrice(PMDocumentType& doc, const ProductPrice& price) const
     {
         ProductPrice doc_price;
         GetPrice(doc, doc_price);
@@ -72,10 +61,10 @@ public:
         doc.property(config_.price_property_name) = doc_price.ToUString();
     }
 
-    void AddPrice( PMDocumentType& doc, const PMDocumentType& from ) const
+    void AddPrice(PMDocumentType& doc, const PMDocumentType& from) const
     {
         ProductPrice price;
-        if( GetPrice(from, price ) )
+        if (GetPrice(from, price))
         {
             ProductPrice doc_price;
             GetPrice(doc, doc_price);
@@ -120,7 +109,7 @@ public:
 
     }
 
-    void SetItemCount( PMDocumentType& doc, uint32_t count)
+    void SetItemCount(PMDocumentType& doc, uint32_t count)
     {
         doc.property(config_.itemcount_property_name) = izenelib::util::UString(boost::lexical_cast<std::string>(count), izenelib::util::UString::UTF_8);
     }
@@ -139,7 +128,6 @@ public:
     }
 
 private:
-
     PMConfig config_;
     ProductDataSource* data_source_;
 };

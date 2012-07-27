@@ -14,13 +14,13 @@ namespace sf1r
 {
 
 //Check if one word is pure english word
-bool isEnglishWord(const UString& queryToken);
+bool isEnglishWord(const izenelib::util::UString& queryToken);
 
 //Check if one word is pure korean
-bool isKoreanWord(const UString& queryToken) ;
+bool isKoreanWord(const izenelib::util::UString& queryToken) ;
 
 //Check if one word is pure Chinese
-bool hasChineseChar(const UString& queryToken);
+bool hasChineseChar(const izenelib::util::UString& queryToken);
 
 }
 

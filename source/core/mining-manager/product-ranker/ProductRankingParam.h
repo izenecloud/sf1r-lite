@@ -11,7 +11,7 @@
 #include <common/inttypes.h>
 #include <string>
 #include <vector>
-#include <mining-manager/group-manager/GroupParam.h>
+#include <map>
 
 namespace sf1r
 {
@@ -24,29 +24,37 @@ struct ProductRankingParam
 
     std::vector<score_t>& relevanceScores_;
 
+    typedef std::map<category_id_t, score_t> CategoryScores;
+    CategoryScores categoryScores_;
+
+    std::string categoryScoreReason_;
+
     const std::size_t docNum_;
-
-    const faceted::GroupParam& groupParam_;
-
-    category_id_t boostingCategoryId_;
 
     ProductRankingParam(
         const std::string& query,
         std::vector<docid_t>& docIds,
-        std::vector<score_t>& relevanceScores,
-        const faceted::GroupParam& groupParam
+        std::vector<score_t>& relevanceScores
     )
         : query_(query)
         , docIds_(docIds)
         , relevanceScores_(relevanceScores)
         , docNum_(docIds.size())
-        , groupParam_(groupParam)
-        , boostingCategoryId_(0)
     {}
 
     bool isValid() const
     {
         return docNum_ == relevanceScores_.size();
+    }
+
+    score_t getCategoryScore(category_id_t catId) const
+    {
+        CategoryScores::const_iterator it = categoryScores_.find(catId);
+
+        if (it != categoryScores_.end())
+            return it->second;
+
+        return 0;
     }
 };
 

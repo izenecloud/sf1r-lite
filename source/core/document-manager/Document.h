@@ -26,16 +26,12 @@ public:
     typedef property_named_map::const_iterator property_const_iterator;
     typedef property_named_map::iterator property_iterator;
 
-    Document()
-            : id_(0)
-            , propertyList_()
+    Document() : id_(0)
     {
     }
 
     /// Construct a document with predefined document identifier
-    explicit Document(docid_t id)
-            : id_(id)
-            , propertyList_()
+    explicit Document(docid_t id) : id_(id)
     {
     }
 
@@ -50,17 +46,18 @@ public:
 
     PropertyValue& property(const std::string& propertyName)
     {
-        return propertyList_[propertyName];
+        return propertyMap_[propertyName];
     }
-    const PropertyValue property(const std::string& propertyName) const
+    const PropertyValue& property(const std::string& propertyName) const
     {
+        static const PropertyValue not_found;
         property_const_iterator found = findProperty(propertyName);
         if (found != propertyEnd())
         {
             return found->second;
         }
 
-        return PropertyValue();
+        return not_found;
     }
 
     /// Insert a new property into the document.
@@ -68,16 +65,16 @@ public:
     bool insertProperty(const std::string& propertyName,
                         const PropertyValue& propertyValue)
     {
-        return propertyList_.insert(
+        return propertyMap_.insert(
                    std::make_pair(propertyName, propertyValue)
                ).second;
     }
 
     /// Set a new value to a property of the document.
     void updateProperty(const std::string& propertyName,
-                        PropertyValue propertyValue)
+                        const PropertyValue& propertyValue)
     {
-        propertyList_[propertyName].swap(propertyValue);
+        propertyMap_[propertyName] = propertyValue;
     }
 
     /// Remove a property from the document. Return false if the property
@@ -85,30 +82,30 @@ public:
     /// @return true if successful, false otherwise
     bool eraseProperty(const std::string& propertyName)
     {
-        return propertyList_.erase(propertyName);
+        return propertyMap_.erase(propertyName);
     }
 
     property_iterator findProperty(const std::string& propertyName)
     {
-        return propertyList_.find(propertyName);
+        return propertyMap_.find(propertyName);
     }
     property_const_iterator findProperty(const std::string& propertyName) const
     {
-        return propertyList_.find(propertyName);
+        return propertyMap_.find(propertyName);
     }
 
     bool hasProperty(const std::string& pname) const
     {
         property_const_iterator it = findProperty(pname);
-        return it!=propertyEnd() ;
+        return it != propertyEnd();
     }
-    
+
     /// may throw bad cast exception if type not match
     template <class T>
     bool getProperty(const std::string& pname, T& value) const
     {
         property_const_iterator it = findProperty(pname);
-        if(it==propertyEnd()) return false;
+        if (it == propertyEnd()) return false;
         value = it->second.get<T>();
         return true;
     }
@@ -123,24 +120,24 @@ public:
 
     property_iterator propertyBegin()
     {
-        return propertyList_.begin();
+        return propertyMap_.begin();
     }
     property_iterator propertyEnd()
     {
-        return propertyList_.end();
+        return propertyMap_.end();
     }
     property_const_iterator propertyBegin() const
     {
-        return propertyList_.begin();
+        return propertyMap_.begin();
     }
     property_const_iterator propertyEnd() const
     {
-        return propertyList_.end();
+        return propertyMap_.end();
     }
 
     void clearProperties()
     {
-        propertyList_.clear();
+        propertyMap_.clear();
     }
 
     void clear()
@@ -159,27 +156,26 @@ public:
 
     bool isEmpty() const
     {
-        return propertyList_.empty();
+        return propertyMap_.empty();
     }
 
     void swap(Document& rhs)
     {
-        using std::swap;
-        swap(id_, rhs.id_);
-        swap(propertyList_, rhs.propertyList_);
+        std::swap(id_, rhs.id_);
+        propertyMap_.swap(rhs.propertyMap_);
     }
 
     size_t getPropertySize() const
     {
-        return propertyList_.size();
+        return propertyMap_.size();
     }
 
     bool copyPropertiesFromDocument(const Document& doc, bool override = true)
     {
         bool modified = false;
-        for(property_const_iterator it = doc.propertyBegin(); it!=doc.propertyEnd(); ++it)
+        for (property_const_iterator it = doc.propertyBegin(); it != doc.propertyEnd(); ++it)
         {
-            if(!hasProperty(it->first) || override)
+            if (!hasProperty(it->first) || override)
             {
                 property(it->first) = it->second;
                 modified = true;
@@ -193,7 +189,7 @@ private:
     docid_t id_;
 
     /// list of properties of the document
-    property_named_map propertyList_;
+    property_named_map propertyMap_;
 
     template<class DataIO>
     friend void DataIO_loadObject(DataIO& dio, Document& x);
@@ -205,7 +201,7 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & id_;
-        ar & propertyList_;
+        ar & propertyMap_;
     }
 };
 
@@ -218,13 +214,13 @@ template<class DataIO>
 inline void DataIO_loadObject(DataIO& dio, Document& x)
 {
     dio & x.id_;
-    dio & x.propertyList_;
+    dio & x.propertyMap_;
 }
 template<class DataIO>
 inline void DataIO_saveObject(DataIO& dio, const Document& x)
 {
     dio & x.id_;
-    dio & x.propertyList_;
+    dio & x.propertyMap_;
 }
 
 } // namespace sf1r

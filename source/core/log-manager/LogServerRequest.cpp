@@ -16,6 +16,11 @@ const LogServerRequest::method_t LogServerRequest::method_names[] =
             "strid_to_itemid",
             "itemid_to_strid",
             "get_max_itemid",
+            "add_old_uuid",
+            "add_old_docid",
+            "del_old_docid",
+            "get_old_uuid",
+            "get_old_docid",
         };
 
 }

@@ -53,6 +53,13 @@ public:
      */
     bool update(const key_type& key, const value_type& value);
 
+    /**                                                                                                                                                                      
+     * @brief Apply function @p func(key, value) to each key/value pair.                                                                                                     
+     * @return true for success, false for failure
+     */                                                                                                                                                                      
+    template <class Func>                                                                                                                                                    
+    bool forEach(Func& func);
+
 private:
     typedef ContainerType<key_type, value_type, lock_type> container_type;
     typedef izenelib::sdb::SequentialDB<key_type, value_type,
@@ -115,6 +122,26 @@ bool SDBWrapper<KeyType, ValueType, LockType, ContainerType>::update(const key_t
     catch(izenelib::util::IZENELIBException& e)
     {
         LOG(ERROR) << "exception in SDB::update(): " << e.what();
+    }
+
+    return result;
+}
+
+template <typename KeyType, typename ValueType, typename LockType,
+          template <typename, typename, typename> class ContainerType>
+template <class Func>                                                                                                                                                    
+bool SDBWrapper<KeyType, ValueType, LockType, ContainerType>::forEach(Func& func)
+{
+    bool result = false;
+
+    try
+    {
+        db_.forEach(func);
+        result = true;
+    }
+    catch(izenelib::util::IZENELIBException& e)
+    {
+        LOG(ERROR) << "exception in SDB::forEach(): " << e.what();
     }
 
     return result;

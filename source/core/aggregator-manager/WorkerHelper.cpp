@@ -33,7 +33,7 @@ void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::str
         result += str;
         result += "|";
     }
-    boost::trim_right_if(result,is_any_of("|"));
+    boost::trim_right_if(result, boost::is_any_of("|"));
 }
 
 bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bundleConfig, std::string& btqError,  PersonalSearchInfo& personalSearchInfo)
@@ -123,62 +123,102 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
     return true;
 } // end - buildQueryTree()
 
-void split_string(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator )
+void split_string(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator)
 {
     izenelib::util::UString str(szText);
-    izenelib::util::UString sep(" ",encoding);
+    izenelib::util::UString sep(" ", encoding);
     sep[0] = Separator;
-    size_t n = 0, nOld=0;
+    size_t n = 0, nOld = 0;
     while (n != izenelib::util::UString::npos)
     {
         n = str.find(sep,n);
         if (n != izenelib::util::UString::npos)
         {
             if (n != nOld)
-                out.push_back(str.substr(nOld, n-nOld));
+                out.push_back(str.substr(nOld, n - nOld));
             n += sep.length();
             nOld = n;
         }
     }
-    out.push_back(str.substr(nOld, str.length()-nOld));
+    out.push_back(str.substr(nOld));
 }
 
-void split_int(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep)
+void split_int32(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep)
 {
     std::string str;
     szText.convertString(str, encoding);
-    std::size_t n = 0, nOld=0;
+    std::size_t n = 0, nOld = 0;
     while (n != std::string::npos)
     {
-        n = str.find_first_of(sep,n);
+        n = str.find_first_of(sep, n);
         if (n != std::string::npos)
         {
             if (n != nOld)
             {
                 try
                 {
-                    std::string tmpStr = str.substr(nOld, n-nOld);
-                    boost::algorithm::trim( tmpStr );
-                    int64_t value = boost::lexical_cast< int64_t >( tmpStr );
+                    std::string tmpStr = str.substr(nOld, n - nOld);
+                    boost::algorithm::trim(tmpStr);
+                    int32_t value = boost::lexical_cast<int32_t>(tmpStr);
                     out.push_back(value);
                 }
-                catch(boost::bad_lexical_cast & )
+                catch (boost::bad_lexical_cast &)
                 {
                 }
             }
-            n += 1;
+            ++n;
             nOld = n;
         }
     }
 
     try
     {
-        std::string tmpStr = str.substr(nOld, str.length()-nOld);
-        boost::algorithm::trim( tmpStr );
-        int64_t value = boost::lexical_cast< int64_t >( tmpStr );
+        std::string tmpStr = str.substr(nOld);
+        boost::algorithm::trim(tmpStr);
+        int32_t value = boost::lexical_cast<int32_t>(tmpStr);
         out.push_back(value);
     }
-    catch(boost::bad_lexical_cast & )
+    catch (boost::bad_lexical_cast &)
+    {
+    }
+}
+
+void split_int64(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, const char* sep)
+{
+    std::string str;
+    szText.convertString(str, encoding);
+    std::size_t n = 0, nOld = 0;
+    while (n != std::string::npos)
+    {
+        n = str.find_first_of(sep, n);
+        if (n != std::string::npos)
+        {
+            if (n != nOld)
+            {
+                try
+                {
+                    std::string tmpStr = str.substr(nOld, n - nOld);
+                    boost::algorithm::trim(tmpStr);
+                    int64_t value = boost::lexical_cast<int64_t>(tmpStr);
+                    out.push_back(value);
+                }
+                catch (boost::bad_lexical_cast &)
+                {
+                }
+            }
+            ++n;
+            nOld = n;
+        }
+    }
+
+    try
+    {
+        std::string tmpStr = str.substr(nOld);
+        boost::algorithm::trim(tmpStr);
+        int64_t value = boost::lexical_cast<int64_t>(tmpStr);
+        out.push_back(value);
+    }
+    catch (boost::bad_lexical_cast &)
     {
     }
 }
@@ -187,38 +227,38 @@ void split_float(const izenelib::util::UString& szText, std::list<PropertyType>&
 {
     std::string str;
     szText.convertString(str, encoding);
-    std::size_t n = 0, nOld=0;
+    std::size_t n = 0, nOld = 0;
     while (n != std::string::npos)
     {
-        n = str.find_first_of(sep,n);
+        n = str.find_first_of(sep, n);
         if (n != std::string::npos)
         {
             if (n != nOld)
             {
                 try
                 {
-                    std::string tmpStr = str.substr(nOld, n-nOld);
-                    boost::algorithm::trim( tmpStr );
-                    float value = boost::lexical_cast< float >( tmpStr );
+                    std::string tmpStr = str.substr(nOld, n - nOld);
+                    boost::algorithm::trim(tmpStr);
+                    float value = boost::lexical_cast<float>(tmpStr);
                     out.push_back(value);
                 }
-                catch(boost::bad_lexical_cast & )
+                catch (boost::bad_lexical_cast &)
                 {
                 }
             }
-            n += 1;
+            ++n;
             nOld = n;
         }
     }
 
     try
     {
-        std::string tmpStr = str.substr(nOld, str.length()-nOld);
-        boost::algorithm::trim( tmpStr );
-        float value = boost::lexical_cast< float >( tmpStr );
+        std::string tmpStr = str.substr(nOld);
+        boost::algorithm::trim(tmpStr);
+        float value = boost::lexical_cast<float>(tmpStr);
         out.push_back(value);
     }
-    catch(boost::bad_lexical_cast & )
+    catch (boost::bad_lexical_cast &)
     {
     }
 }
@@ -227,7 +267,7 @@ void split_datetime(const izenelib::util::UString& szText, std::list<PropertyTyp
 {
     std::string str;
     szText.convertString(str, encoding);
-    std::size_t n = 0, nOld=0;
+    std::size_t n = 0, nOld = 0;
     while (n != std::string::npos)
     {
         n = str.find_first_of(sep,n);
@@ -236,16 +276,16 @@ void split_datetime(const izenelib::util::UString& szText, std::list<PropertyTyp
             if (n != nOld)
             {
                 std::string tmpStr = str.substr(nOld, n-nOld);
-                boost::algorithm::trim( tmpStr );
+                boost::algorithm::trim(tmpStr);
                 time_t timestamp = Utilities::createTimeStampInSeconds(tmpStr);
                 out.push_back(timestamp);
             }
-            n += 1;
+            ++n;
             nOld = n;
         }
     }
 
-    std::string tmpStr = str.substr(nOld, str.length()-nOld);
+    std::string tmpStr = str.substr(nOld);
     boost::algorithm::trim( tmpStr );
     time_t timestamp = Utilities::createTimeStampInSeconds(tmpStr);
     out.push_back(timestamp);

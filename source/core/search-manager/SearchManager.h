@@ -6,10 +6,9 @@
 #include <query-manager/ActionItem.h>
 #include <ranking-manager/RankQueryProperty.h>
 #include <common/ResultType.h>
-#include "NumericPropertyTable.h"
-#include "NumericPropertyTableBuilder.h"
 #include "ANDDocumentIterator.h"
 #include "Sorter.h"
+#include "NumericPropertyTableBuilder.h"
 
 #include <ir/id_manager/IDManager.h>
 
@@ -47,6 +46,7 @@ class ProductRankerFactory;
 class SearchThreadParam;
 class SearchManagerPreProcessor;
 class SearchManagerPostProcessor;
+class CustomRankManager;
 
 namespace faceted
 {
@@ -95,10 +95,6 @@ public:
 
     bool rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
-    void updateSortCache(
-            docid_t id,
-            const std::map<std::string, pair<PropertyDataType, izenelib::util::UString> >& rTypeFieldValue);
-
     void reset_all_property_cache();
 
     void set_filter_hook(filter_hook_t filter_hook)
@@ -110,13 +106,14 @@ public:
 
     void setMiningManager(boost::shared_ptr<MiningManager> miningManagerPtr);
 
-    NumericPropertyTable* createPropertyTable(const std::string& propertyName);
+    boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(const std::string& propertyName);
 
     void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
 
+    void setCustomRankManager(CustomRankManager* customRankManager);
+
 private:
     bool doSearch_(
-            bool isWandSearch,
             const SearchKeywordOperation& actionOperation,
             std::size_t& totalCount,
             sf1r::PropertyRange& propertyRange,
@@ -125,8 +122,7 @@ private:
             const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
             Sorter* pSorter,
             CustomRankerPtr customRanker,
-            MultiPropertyScorer* pMultiPropertyIterator,
-            WANDDocumentIterator* pWandDocIterator,
+            DocumentIterator* pScoreDocIterator,
             CombinedDocumentIterator* pDocIterator,
             faceted::GroupFilter* groupFilter,
             HitQueue* scoreItemQueue,
@@ -135,25 +131,24 @@ private:
             std::size_t docid_num_byeachthread,
             std::size_t docid_nextstart_inc);
 
-    void doSearchInThreadOneParam(SearchThreadParam* pParam, 
-        boost::detail::atomic_count* finishedJobs);
+    void doSearchInThreadOneParam(SearchThreadParam* pParam,
+            boost::detail::atomic_count* finishedJobs);
 
     bool doSearchInThread(const SearchKeywordOperation& actionOperation,
-        std::size_t& totalCount,
-        sf1r::PropertyRange& propertyRange,
-        uint32_t start,
-        boost::shared_ptr<Sorter>& pSorter_orig,
-        CustomRankerPtr& customRanker_orig,
-        faceted::GroupRep& groupRep,
-        faceted::OntologyRep& attrRep,
-        boost::shared_ptr<HitQueue>& scoreItemQueue,
-        DistKeywordSearchInfo& distSearchInfo,
-        int heapSize,
-        std::size_t docid_start,
-        std::size_t docid_num_byeachthread,
-        std::size_t docid_nextstart_inc,
-        bool is_parallel = false
-        );
+            std::size_t& totalCount,
+            sf1r::PropertyRange& propertyRange,
+            uint32_t start,
+            boost::shared_ptr<Sorter>& pSorter_orig,
+            CustomRankerPtr& customRanker_orig,
+            faceted::GroupRep& groupRep,
+            faceted::OntologyRep& attrRep,
+            boost::shared_ptr<HitQueue>& scoreItemQueue,
+            DistKeywordSearchInfo& distSearchInfo,
+            int heapSize,
+            std::size_t docid_start,
+            std::size_t docid_num_byeachthread,
+            std::size_t docid_nextstart_inc,
+            bool is_parallel = false);
 
     void prepare_sorter_customranker_(
             const SearchKeywordOperation& actionOperation,
@@ -171,6 +166,19 @@ private:
             Sorter* pSorter,
             std::vector<unsigned int>& docIdList,
             DistKeywordSearchInfo& distSearchInfo);
+
+    /**
+     * combine the @p originDocIterator with the customized doc iterator.
+     * @param query the user query
+     * @param pSorter the Sorter instance, it decides whether need to create
+     *                the customized doc iterator.
+     * @return the combined doc iterator instance, it would be just
+     *         @p originDocIterator if no customized doc iterator is created.
+     */
+    DocumentIterator* combineCustomDocIterator_(
+        const std::string& query,
+        boost::shared_ptr<Sorter> pSorter,
+        DocumentIterator* originDocIterator);
 
 private:
     /**
@@ -195,6 +203,7 @@ private:
     filter_hook_t filter_hook_;
 
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
+    CustomRankManager* customRankManager_;
 
     boost::threadpool::pool  threadpool_;
     SearchManagerPreProcessor*  preprocessor_;
