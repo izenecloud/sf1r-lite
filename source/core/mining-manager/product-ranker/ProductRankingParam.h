@@ -25,9 +25,8 @@ struct ProductRankingParam
     std::vector<score_t>& relevanceScores_;
 
     typedef std::map<category_id_t, score_t> CategoryScores;
-    CategoryScores categoryScores_;
-
-    std::string categoryScoreReason_;
+    typedef std::vector<CategoryScores> MultiCategoryScores;
+    MultiCategoryScores multiCategoryScores_;
 
     const std::size_t docNum_;
 
@@ -47,11 +46,12 @@ struct ProductRankingParam
         return docNum_ == relevanceScores_.size();
     }
 
-    score_t getCategoryScore(category_id_t catId) const
+    score_t getCategoryScore(int scoreId, category_id_t catId) const
     {
-        CategoryScores::const_iterator it = categoryScores_.find(catId);
+        const CategoryScores& categoryScores = multiCategoryScores_[scoreId];
+        CategoryScores::const_iterator it = categoryScores.find(catId);
 
-        if (it != categoryScores_.end())
+        if (it != categoryScores.end())
             return it->second;
 
         return 0;

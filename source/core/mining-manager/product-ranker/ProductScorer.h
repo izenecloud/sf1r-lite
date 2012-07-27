@@ -19,21 +19,25 @@ namespace sf1r
 class ProductScorer
 {
 public:
-    ProductScorer(const std::string& scoreMessage)
+    ProductScorer(const std::string& scoreMessage, int scoreNum = 1)
         : scoreMessage_(scoreMessage)
+        , scoreNum_(scoreNum)
     {}
 
     virtual ~ProductScorer() {}
 
     const std::string& getScoreMessage() const { return scoreMessage_; }
 
+    int getScoreNum() const { return scoreNum_; }
+
     virtual void pushScore(
         const ProductRankingParam& param,
         ProductScoreMatrix& scoreMatrix
     ) = 0;
 
-private:
-    const std::string scoreMessage_;
+protected:
+    std::string scoreMessage_;
+    const int scoreNum_;
 };
 
 } // namespace sf1r

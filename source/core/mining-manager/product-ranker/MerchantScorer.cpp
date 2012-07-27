@@ -74,7 +74,7 @@ MerchantScorer::MerchantScorer(
     const faceted::PropValueTable* merchantValueTable,
     const MerchantScoreManager* merchantScoreManager
 )
-    : ProductScorer("mcount\tmscore")
+    : ProductScorer("mcount\tmscore", 2)
     , categoryValueTable_(categoryValueTable)
     , merchantValueTable_(merchantValueTable)
     , merchantScoreManager_(merchantScoreManager)
