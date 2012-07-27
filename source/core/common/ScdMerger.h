@@ -385,11 +385,11 @@ public:
     
 public:
 
-    ScdMerger()
+    ScdMerger():mod_split_(1)
     {
     }
 
-    ScdMerger(const std::string& output_dir, bool i_only = true)
+    ScdMerger(const std::string& output_dir, bool i_only = true): mod_split_(1)
     {
         //use the default config
         PropertyConfig config;
@@ -399,6 +399,11 @@ public:
         config.output_function = GetDefaultOutputFunction(i_only);
         config.output_if_no_position = true;
         property_config_.push_back(config);
+    }
+
+    void SetModSplit(uint32_t m)
+    {
+        mod_split_ = m;
     }
 
     void AddPropertyConfig(const PropertyConfig& config)
@@ -519,6 +524,7 @@ public:
             config.u_writer.reset(new ScdWriter(output_dir, UPDATE_SCD));
             config.d_writer.reset(new ScdWriter(output_dir, DELETE_SCD));
         }
+        uint32_t cmod = 0;
         while(true)
         {
             bool all_finish = true;
@@ -597,6 +603,7 @@ public:
                             CacheType& cache = cache_all[pname];
                             ValueType output_value;
                             IdType id = GenId_(pvalue);
+                            if(id%mod_split_!=cmod) continue;
                             //ValueType empty_value;
                             //config.merge_function(empty_value, value);
                             //empty_value.swap(value);
@@ -716,7 +723,7 @@ public:
                                 }
                                 if(!output_value.empty() && cit!=cache.end())
                                 {
-                                    //LOG(INFO)<<"cache erase "<<std::endl;
+                                    LOG(INFO)<<"cache erase "<<std::endl;
                                     cache.erase(cit);
                                 }
                                 if(output_value.empty() && cit==cache.end())
@@ -768,6 +775,7 @@ public:
                     }
                 }
             }
+            ++cmod;
 
             for(PropertyConfigList::iterator pci_it = property_config_list.begin(); pci_it!=property_config_list.end();++pci_it)
             {
@@ -777,6 +785,7 @@ public:
                 {
                     config.finish = false;
                 }
+                if(cmod!=mod_split_) config.finish = false;
             }
         }
         
@@ -880,6 +889,7 @@ private:
 private:
     std::vector<PropertyConfig> property_config_;
     std::vector<InputSource> input_list_;
+    uint32_t mod_split_;
     
 };
 
