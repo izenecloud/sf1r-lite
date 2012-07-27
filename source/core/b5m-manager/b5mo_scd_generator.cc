@@ -17,7 +17,9 @@
 
 using namespace sf1r;
 
-B5moScdGenerator::B5moScdGenerator(OfferDb* odb, B5MHistoryDBHelper* hdb, LogServerConnectionConfig* config)
+B5moScdGenerator::B5moScdGenerator(OfferDb* odb,
+    B5MHistoryDBHelper* hdb,
+    LogServerConnectionConfig* config)
 :odb_(odb), historydb_(hdb), log_server_cfg_(config)
 {
 }

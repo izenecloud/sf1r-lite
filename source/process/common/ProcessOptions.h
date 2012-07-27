@@ -54,6 +54,8 @@ public:
 
     bool setLogServerProcessArgs(const std::string& processName, const std::vector<std::string>& args);
 
+    bool setImageServerProcessArgs(const std::string& processName, const std::vector<std::string>& args);
+
     inline unsigned int getNumberOfOptions() const
     {
         return variableMap_.size();
@@ -106,6 +108,11 @@ private:
      * @brief  Description of LogServerProcess options
      */
     boost::program_options::options_description logServerProcessDescription_;
+
+    /**
+     * @brief  Description of ImageServerProcess options
+     */
+    boost::program_options::options_description colorServerProcessDescription_;
 
     /// @brief  The file name (path) of the configuration file
     std::string configFileDir_;

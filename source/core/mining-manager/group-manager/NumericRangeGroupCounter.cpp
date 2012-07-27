@@ -27,7 +27,7 @@ NumericRangeGroupCounter* NumericRangeGroupCounter::clone() const
 void NumericRangeGroupCounter::addDoc(docid_t doc)
 {
     int32_t value;
-    if (numericPropertyTable_->getInt32Value(doc, value))
+    if (numericPropertyTable_->getInt32Value(doc, value) && value > 0)
     {
         value = std::min(value, bound_[LEVEL_1_OF_SEGMENT_TREE] - 1);
         int exponent;
