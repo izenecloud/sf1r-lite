@@ -1550,7 +1550,7 @@ bool MiningManager::getDocList_(
         if (! document_manager_->getDocument(docId, doc))
         {
             LOG(WARNING) << "in getDocList_(), docid_t " << docId << " does not exist";
-            return false;
+            continue;
         }
 
         docList.push_back(doc);
