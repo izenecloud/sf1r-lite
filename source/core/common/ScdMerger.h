@@ -320,7 +320,10 @@ public:
                             if(pvalue.empty()) continue;
                             ValueType output_value;
                             IdType id = GenId_(pvalue);
-                            if(id%mod_split_!=m) continue;
+                            if(pname=="DOCID")
+                            {
+                                if(id%mod_split_!=m) continue;
+                            }
                             //ValueType empty_value;
                             //config.merge_function(empty_value, value);
                             //empty_value.swap(value);
