@@ -49,6 +49,7 @@ public:
             img_color_db_ = NULL;
             return false;
         }
+        img_color_db_path_ = img_color_db_path;
         return true;
     }
 
@@ -76,6 +77,35 @@ public:
     }
 
 
+    /* -----------------------------------*/
+    /**
+     * @Brief  used for copy current image color db to a backup db.
+     * during the backup, make sure there is no write on the db file. 
+     *
+     * @Param backup_suffix, the extra suffix name append to the current db path.
+     *
+     * @Returns  return true if backup success, otherwise return false. 
+     */
+    /* -----------------------------------*/
+    bool backup_imagecolor_db(const std::string& backup_suffix)
+    {
+        if(img_color_db_)
+        {
+            img_color_db_->flush();
+            try
+            {
+                boost::filesystem::copy_file(img_color_db_path_, img_color_db_path_ + backup_suffix, 
+                    boost::filesystem::copy_option::overwrite_if_exists);
+                return true;
+            }
+            catch(...)
+            {
+                return false;
+            }
+        }
+        return false;
+    }
+
     bool GetImageColor(const KeyType& img_path, std::string& ret)
     {
         if(img_color_db_)
@@ -96,6 +126,7 @@ public:
 
 private:
 
+    std::string   img_color_db_path_;
     ImageColorDBT*  img_color_db_;
 };
 

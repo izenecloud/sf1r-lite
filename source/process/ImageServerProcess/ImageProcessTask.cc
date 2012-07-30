@@ -22,6 +22,8 @@ ImageProcessTask::~ImageProcessTask()
 
 bool ImageProcessTask::init(const std::string& imgfiledir, ssize_t threadCount)
 {
+    cur_writter_ = 0;
+    need_backup_ = false;
     img_file_dir_ = imgfiledir;
     _stop=true;
 
@@ -120,6 +122,8 @@ int ImageProcessTask::doJobs(const MSG& msg)
 int ImageProcessTask::doCompute(const std::string& img_file)
 {
     static int num = 0;
+    static int new_num = 0;
+    static int bak_num = 0;
     int indexCollection[COLOR_RET_NUM];
     //RECORD_TIME_START(ONEJOB);
     std::string full_img_path = std::string(img_file_dir_) + "/" + img_file;
@@ -134,7 +138,34 @@ int ImageProcessTask::doCompute(const std::string& img_file)
         }
         oss << indexCollection[COLOR_RET_NUM - 1];
 
+        while(need_backup_)
+        {
+            if(_stop)
+                return 0;
+            usleep(100*1000);
+        }
+
+        {
+            boost::unique_lock<boost::mutex> l(backup_db_lock_);
+            ++cur_writter_;
+        }
         ImageServerStorage::get()->SetImageColor(img_file, oss.str());
+        {
+            boost::unique_lock<boost::mutex> l(backup_db_lock_);
+            --cur_writter_;
+            if(++new_num > 30000)
+                need_backup_ = true;
+            if( new_num > 30000 && cur_writter_ == 0 )
+            {
+                LOG(INFO) << "doCompute is backingup." << std::endl;
+                std::string bak_char;
+                bak_char = "a";
+                bak_char[0] = char('a' + (++bak_num%3));
+                ImageServerStorage::get()->backup_imagecolor_db(".tmpbak-" + bak_char);
+                new_num = 0;
+                need_backup_ = false;
+            }
+        }
         if(++num%1000 == 0)
         {
             LOG(INFO) << "doCompute processed : " << num << std::endl;
@@ -145,7 +176,7 @@ int ImageProcessTask::doCompute(const std::string& img_file)
         //   getColorText(indexCollection[1]) << getColorText(indexCollection[2]) <<
         //   "]" << std::endl;
     }else{
-        LOG(WARNING) << "getImageColor failed imagePath=" << full_img_path << std::endl;
+        //LOG(WARNING) << "getImageColor failed imagePath=" << full_img_path << std::endl;
     }
     return 0;
 }
