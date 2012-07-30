@@ -16,6 +16,7 @@
 #include <boost/spirit/include/classic_while.hpp>
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <fstream>
 #include <sstream>
 #include <iterator>
@@ -361,6 +362,34 @@ void ScdParser::getScdList(const std::string& scd_path, std::vector<std::string>
 }
 
 
+std::size_t ScdParser::getScdDocCount(const std::string& path)
+{
+    std::vector<std::string> scd_list;
+    getScdList(path, scd_list);
+    std::size_t count = 0;
+    for(uint32_t i=0;i<scd_list.size();i++)
+    {
+        std::string file = scd_list[i];
+        std::string cmd = "grep -c '^<DOCID>' "+file;
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if(!pipe) continue;
+        char buffer[128];
+        std::string result = "";
+        while(!feof(pipe))
+        {
+            if(fgets(buffer, 128, pipe)!=NULL)
+            {
+                result += buffer;
+            }
+        }
+        pclose(pipe);
+        boost::algorithm::trim(result);
+        std::size_t c = boost::lexical_cast<std::size_t>(result);
+        count+=c;
+    }
+    return count;
+}
+
 bool ScdParser::load(const string& path)
 {
     if (fs_.is_open())
@@ -417,6 +446,7 @@ bool ScdParser::getDocIdList(std::vector<DocIdPair > & list)
 
     return true;
 }
+
 
 ScdParser::iterator ScdParser::begin(unsigned int start_doc)
 {

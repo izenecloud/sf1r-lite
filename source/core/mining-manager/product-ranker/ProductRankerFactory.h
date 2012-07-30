@@ -68,6 +68,8 @@ private:
     std::vector<ProductReranker*> rerankers_;
 
     CategoryScorer* categoryScorer_;
+
+    int totalScoreNum_;
 };
 
 } // namespace sf1r

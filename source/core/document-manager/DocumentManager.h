@@ -147,6 +147,8 @@ public:
      */
     bool getDocument(docid_t docId, Document& document);
 
+    void getRTypePropertiesForDocument(docid_t, Document& document);
+
     bool existDocument(docid_t docId);
 
     bool getDocumentAsync(docid_t docId);

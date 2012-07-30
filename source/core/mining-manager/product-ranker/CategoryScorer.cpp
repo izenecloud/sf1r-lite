@@ -8,12 +8,11 @@
 #include <glog/logging.h>
 #include <boost/scoped_ptr.hpp>
 #include <map>
+#include <sstream>
 
 namespace
 {
 const int kFreqLabelLimit = 100;
-const std::string kReasonClickCount("label click count");
-const std::string kReasonAvgValue("average value for property ");
 
 using namespace sf1r;
 
@@ -77,12 +76,20 @@ CategoryScorer::CategoryScorer(
         GroupLabelLogger* categoryClickLogger,
         boost::shared_ptr<SearchManager> searchManager,
         const std::vector<std::string>& avgPropNames)
-    : ProductScorer("category")
+    : ProductScorer("click", avgPropNames.size() + 1) // plus click count
     , categoryValueTable_(categoryValueTable)
     , categoryClickLogger_(categoryClickLogger)
     , searchManager_(searchManager)
     , avgPropNames_(avgPropNames)
 {
+    std::ostringstream oss;
+    for (std::vector<std::string>::const_iterator it = avgPropNames_.begin();
+        it != avgPropNames_.end(); ++it)
+    {
+        oss << "\t" << *it;
+    }
+
+    scoreMessage_.append(oss.str());
 }
 
 void CategoryScorer::pushScore(
@@ -96,42 +103,46 @@ void CategoryScorer::pushScore(
     {
         docid_t docId = it->docId_;
         category_id_t catId = categoryValueTable_->getFirstValueId(docId);
-        score_t score = param.getCategoryScore(catId);
 
-        it->pushScore(score);
+        for (int scoreId = 0; scoreId < scoreNum_; ++scoreId)
+        {
+            score_t score = param.getCategoryScore(scoreId, catId);
+            it->pushScore(score);
+        }
     }
 }
 
 void CategoryScorer::createCategoryScores(ProductRankingParam& param)
 {
-    if (! getLabelClickCount_(param))
+    param.multiCategoryScores_.resize(scoreNum_);
+
+    getLabelClickCount_(param, 0);
+
+    for (int scoreId = 1; scoreId < scoreNum_; ++scoreId)
     {
-        for (std::vector<std::string>::const_iterator it = avgPropNames_.begin();
-            it != avgPropNames_.end(); ++it)
-        {
-            if (getLabelAvgValue_(*it, param))
-                break;
-        }
+        getLabelAvgValue_(avgPropNames_[scoreId-1], param, scoreId);
     }
 
     printScoreReason_(param);
 }
 
-void CategoryScorer::printScoreReason_(ProductRankingParam& param) const
+void CategoryScorer::printScoreReason_(const ProductRankingParam& param) const
 {
-    if (param.categoryScores_.empty())
+    const ProductRankingParam::MultiCategoryScores& multiScores = param.multiCategoryScores_;
+    std::ostringstream oss;
+    oss << "(click: " << multiScores[0].size() << ")";
+
+    for (int scoreId = 1; scoreId < scoreNum_; ++scoreId)
     {
-        LOG(INFO) << "no category score for query [" << param.query_ << "]";
+        oss << ", (" << avgPropNames_[scoreId-1]
+            << ": " << multiScores[scoreId].size() << ")";
     }
-    else
-    {
-        LOG(INFO) << param.categoryScores_.size()
-                  << " category scores for query [" << param.query_
-                  << "], reason: " << param.categoryScoreReason_;
-    }
+
+    LOG(INFO) << "category score num for query [" << param.query_
+              << "]: " << oss.str();
 }
 
-bool CategoryScorer::getLabelClickCount_(ProductRankingParam& param)
+bool CategoryScorer::getLabelClickCount_(ProductRankingParam& param, int scoreId)
 {
     if (! categoryClickLogger_)
         return false;
@@ -143,7 +154,8 @@ bool CategoryScorer::getLabelClickCount_(ProductRankingParam& param)
         param.query_, kFreqLabelLimit, pvIdVec, freqVec) &&
         !pvIdVec.empty())
     {
-        ProductRankingParam::CategoryScores& catScores = param.categoryScores_;
+        ProductRankingParam::CategoryScores& catScores =
+            param.multiCategoryScores_[scoreId];
         const std::size_t catNum = pvIdVec.size();
         const bool hasFreq = freqVec[0] != 0;
 
@@ -153,7 +165,6 @@ bool CategoryScorer::getLabelClickCount_(ProductRankingParam& param)
             catScores[catId] = hasFreq ? freqVec[i] : (catNum - i);
         }
 
-        param.categoryScoreReason_ = kReasonClickCount;
         return true;
     }
 
@@ -162,7 +173,8 @@ bool CategoryScorer::getLabelClickCount_(ProductRankingParam& param)
 
 bool CategoryScorer::getLabelAvgValue_(
     const std::string& avgPropName,
-    ProductRankingParam& param
+    ProductRankingParam& param,
+    int scoreId
 )
 {
     if (!searchManager_)
@@ -191,8 +203,7 @@ bool CategoryScorer::getLabelAvgValue_(
         docid_t docId = *it;
 
         double propValue = 0;
-        if (!avgPropTable->getDoubleValue(docId, propValue))
-            continue;
+        avgPropTable->getDoubleValue(docId, propValue);
 
         category_id_t catId = categoryValueTable_->getFirstValueId(docId);
         if (catId)
@@ -201,13 +212,7 @@ bool CategoryScorer::getLabelAvgValue_(
         }
     }
 
-    if (calcLabelAvgValue(labelCounterMap, param.categoryScores_))
-    {
-        param.categoryScoreReason_ = kReasonAvgValue + avgPropName;
-        return true;
-    }
-
-    return false;
+    return calcLabelAvgValue(labelCounterMap, param.multiCategoryScores_[scoreId]);
 }
 
 } // namespace sf1r

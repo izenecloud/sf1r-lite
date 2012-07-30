@@ -47,6 +47,7 @@ public:
     static SCD_TYPE checkSCDType(const string & file);
     static bool compareSCD(const string & file1, const string & file2);
     static void getScdList(const std::string& path, std::vector<std::string>& scd_list);
+    static std::size_t getScdDocCount(const std::string& path);
 
 
     /// @brief Release allocated memory and make it as initial state.

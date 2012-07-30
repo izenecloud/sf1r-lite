@@ -134,6 +134,9 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
         UString uuid;
         doc.property(config_.uuid_property_name) = uuid;
         if (!data_source_->SetUuid(index_document, uuid)) return false; // set a empty uuid for rtype update later
+//      PMDocumentType new_doc(doc);
+//      data_source_->GetRTypePropertiesForDocument(new_doc.getId(), new_doc);
+//      clustering->Insert(new_doc);
         clustering->Insert(doc);
     }
     return true;
@@ -191,6 +194,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
                 return false;
             }
             PMDocumentType new_doc(to);
+            data_source_->GetRTypePropertiesForDocument(new_doc.getId(), new_doc);
             to.property(config_.uuid_property_name) = from_uuid;
             new_doc.property(config_.docid_property_name) = from_uuid;
             util_->SetItemCount(new_doc, 1);
@@ -386,8 +390,8 @@ bool ProductManager::FinishHook()
                 doc.property(config_.uuid_property_name) = uuid;
                 uuid_update_list.push_back(std::make_pair(docid, uuid));
                 PMDocumentType new_doc(doc);
+                data_source_->GetRTypePropertiesForDocument(new_doc.getId(), new_doc);
                 new_doc.property(config_.docid_property_name) = uuid;
-                new_doc.property(config_.price_property_name) = price.ToUString();
                 new_doc.eraseProperty(config_.uuid_property_name);
                 new_doc.eraseProperty(config_.olduuid_property_name);
                 util_->SetItemCount(new_doc, 1);
