@@ -55,3 +55,6 @@ scripts/tmp
 /changedliborer
 *.diff
 *.patch
+nbproject
+*.kdev4
+callgrind
