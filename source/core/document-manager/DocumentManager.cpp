@@ -287,6 +287,17 @@ bool DocumentManager::getDocument(docid_t docId, Document& document)
     return !isDeleted(docId) && propertyValueTable_->get(docId, document);
 }
 
+void DocumentManager::getRTypePropertiesForDocument(docid_t docId, Document& document)
+{
+    for (NumericPropertyTableMap::const_iterator it = numericPropertyTables_.begin();
+            it != numericPropertyTables_.end(); ++it)
+    {
+        std::string tempStr;
+        if (it->second->getStringValue(docId, tempStr))
+            document.property(it->first) = izenelib::util::UString(tempStr, encodingType_);
+    }
+}
+
 bool DocumentManager::existDocument(docid_t docId)
 {
     return propertyValueTable_->exist(docId);

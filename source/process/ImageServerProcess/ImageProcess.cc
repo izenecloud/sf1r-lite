@@ -415,9 +415,12 @@ const char *getColorText(int index)
 
 bool getImageColor(const char * const imagePath,int *indexCollection,int count)
 {
+    static int non_exist = 0;
+    static int load_failed = 0;
     float factor=0.8;
     if(access(imagePath,F_OK)==-1){
-        LOG(ERROR) << "file does not exist:" << imagePath << endl;
+        if(++non_exist % 10000 == 0)
+            LOG(ERROR) << "file does not exist:" << non_exist << endl;
         return false;
     }
     if(access(imagePath,R_OK)==-1){
@@ -427,8 +430,9 @@ bool getImageColor(const char * const imagePath,int *indexCollection,int count)
 
     IplImage *srcGray=NULL,*srcGrayTmp=NULL,*srcOrig=NULL,*srcOrigTmp=NULL;
     if(NULL==(srcGray=cvLoadImage(imagePath,CV_LOAD_IMAGE_GRAYSCALE))){
-        LOG(ERROR) << "cvLoadImage failed 1" << endl;
-        printf("Error string %s\n", cvErrorStr(cvGetErrStatus()));
+        // GIF not supported, so this may fail.
+        if(++load_failed % 100 == 0)
+            LOG(ERROR) << "cvLoadImage failed 1 : " << load_failed << endl;
         return false;
     }
     if(NULL==(srcOrig=cvLoadImage(imagePath,CV_LOAD_IMAGE_COLOR))){

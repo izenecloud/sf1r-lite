@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <util/singleton.h>
 #include <boost/noncopyable.hpp>
+#include <boost/thread/mutex.hpp>
 
 #define DEFAULT_THREAD_COUNT    1
 class ImageProcessTask : public boost::noncopyable
@@ -41,6 +42,9 @@ private:
     std::vector<pthread_t> io_threadIds_;
     std::vector<pthread_t> compute_threadIds_;
     std::string  img_file_dir_;
+    int   cur_writter_;
+    bool  need_backup_;
+    boost::mutex  backup_db_lock_;
 
 };
 
