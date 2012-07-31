@@ -1,6 +1,6 @@
 /**
  * @file CategoryScorer.h
- * @brief it gives the category score, which is calculated by below priority:
+ * @brief it gives multiple category scores, which are calculated by below priority:
  * 1. label click count
  * 2. average value from CategoryScorer::avgPropNames_
  * @author Jun Jiang <jun.jiang@izenesoft.com>
@@ -40,13 +40,14 @@ public:
     void createCategoryScores(ProductRankingParam& param);
 
 private:
-    void printScoreReason_(ProductRankingParam& param) const;
+    void printScoreReason_(const ProductRankingParam& param) const;
 
-    bool getLabelClickCount_(ProductRankingParam& param);
+    bool getLabelClickCount_(ProductRankingParam& param, int scoreId);
 
     bool getLabelAvgValue_(
         const std::string& avgPropName,
-        ProductRankingParam& param
+        ProductRankingParam& param,
+        int scoreId
     );
 
 private:

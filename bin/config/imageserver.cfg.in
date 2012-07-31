@@ -1,0 +1,13 @@
+# Log Server Configuration
+#
+host=localhost
+
+rpc.port=18821
+rpc.thread_num=10
+rpc.request_queue_size=32768
+
+storage.base_dir=image_server_storage
+storage.img_color.dbname=imgcolor.db
+
+storage.img_file_fullpath=/opt/se/b5m/images
+storage.scd_file_fullpath=~/scd

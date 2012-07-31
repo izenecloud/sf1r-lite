@@ -1,5 +1,6 @@
 #include "raw_scd_generator.h"
 #include "log_server_client.h"
+#include "image_server_client.h"
 #include "b5m_types.h"
 #include "b5m_helper.h"
 #include "b5m_mode.h"
@@ -11,6 +12,7 @@
 #include <product-manager/product_price.h>
 #include <product-manager/uuid_generator.h>
 #include <configuration-manager/LogServerConnectionConfig.h>
+#include <sf1r-net/RpcServerConnectionConfig.h>
 #include <am/sequence_file/ssfr.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -20,8 +22,10 @@
 
 using namespace sf1r;
 
-RawScdGenerator::RawScdGenerator(OfferDb* odb, B5MHistoryDBHelper* hdb, int mode, LogServerConnectionConfig* config)
-:odb_(odb), historydb_(hdb), mode_(mode), log_server_cfg_(config)
+RawScdGenerator::RawScdGenerator(OfferDb* odb, B5MHistoryDBHelper* hdb,
+    int mode, LogServerConnectionConfig* config,
+    RpcServerConnectionConfig* img_server_config)
+:odb_(odb), historydb_(hdb), mode_(mode), log_server_cfg_(config), img_server_cfg_(img_server_config)
 {
 }
 
@@ -79,6 +83,19 @@ void RawScdGenerator::Process(Document& doc, int& type)
             doc.property("mobile") = (int64_t)1;
         }
     }
+
+    if(img_server_cfg_)
+    {
+        std::string img_file;
+        doc.getString("Picture", img_file);
+        if(!img_file.empty())
+        {
+            std::string color_str;
+            ImageServerClient::GetImageColor(img_file, color_str);
+            doc.property("Color") = UString(color_str, UString::UTF_8);
+        }
+    }
+
     std::string spid;
     bool got_pid = false;
     if(odb_->get(sdocid, spid)) got_pid = true;
@@ -161,6 +178,22 @@ bool RawScdGenerator::Generate(const std::string& scd_path, const std::string& m
             return false;
         }
     }
+
+    if(img_server_cfg_)
+    {
+        LOG(INFO) << "Got Image Server Cfg, begin Init server connection." << std::endl;
+        if(!ImageServerClient::Init(*img_server_cfg_))
+        {
+            LOG(ERROR) << "Image Server Init failed." << std::endl;
+            return false;
+        }
+        if(!ImageServerClient::Test())
+        {
+            LOG(ERROR) << "Image Server test failed." << std::endl;
+            return false;
+        }
+    }
+
 
     ScdMerger::PropertyConfig config;
     config.output_dir = B5MHelper::GetRawPath(mdb_instance);

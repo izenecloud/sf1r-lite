@@ -8,9 +8,12 @@
 
 namespace sf1r {
     class LogServerConnectionConfig;
+    class RpcServerConnectionConfig;
     class RawScdGenerator {
     public:
-        RawScdGenerator(OfferDb* odb, B5MHistoryDBHelper* hdb, int mode, LogServerConnectionConfig* config);
+        RawScdGenerator(OfferDb* odb, B5MHistoryDBHelper* hdb,
+            int mode, LogServerConnectionConfig* config,
+            RpcServerConnectionConfig* img_server_config);
 
         void LoadMobileSource(const std::string& file);
 
@@ -26,6 +29,7 @@ namespace sf1r {
         int mode_;
         LogServerConnectionConfig* log_server_cfg_;
         boost::unordered_set<std::string> mobile_source_;
+        RpcServerConnectionConfig* img_server_cfg_;
     };
 
 }

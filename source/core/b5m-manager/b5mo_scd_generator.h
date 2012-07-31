@@ -10,7 +10,8 @@ namespace sf1r {
     class LogServerConnectionConfig;
     class B5moScdGenerator {
     public:
-        B5moScdGenerator( OfferDb* odb, B5MHistoryDBHelper* hdb, LogServerConnectionConfig* config);
+        B5moScdGenerator( OfferDb* odb, B5MHistoryDBHelper* hdb,
+            LogServerConnectionConfig* config);
 
 
         bool Generate(const std::string& mdb_instance);

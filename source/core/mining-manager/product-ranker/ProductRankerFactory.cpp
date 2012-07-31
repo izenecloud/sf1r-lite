@@ -25,6 +25,7 @@ ProductRankerFactory::ProductRankerFactory(MiningManager* miningManager)
     , merchantScoreManager_(miningManager_->GetMerchantScoreManager())
     , rerankers_(RERANKER_TYPE_NUM)
     , categoryScorer_(NULL)
+    , totalScoreNum_(0)
 {
     const std::string& categoryProp = config_.categoryPropName;
     const std::string& merchantProp = config_.merchantPropName;
@@ -70,7 +71,9 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankingParam& pa
 
 void ProductRankerFactory::createTopKCustomRankScorer_()
 {
-    scorers_.push_back(new TopKCustomRankScorer);
+    ProductScorer* scorer = new TopKCustomRankScorer;
+    scorers_.push_back(scorer);
+    totalScoreNum_ += scorer->getScoreNum();
 }
 
 void ProductRankerFactory::createCategoryScorer_()
@@ -91,6 +94,7 @@ void ProductRankerFactory::createCategoryScorer_()
         categoryClickLogger, searchManager, scorePropNames);
 
     scorers_.push_back(categoryScorer_);
+    totalScoreNum_ += categoryScorer_->getScoreNum();
 }
 
 void ProductRankerFactory::createMerchantScorer_()
@@ -101,15 +105,18 @@ void ProductRankerFactory::createMerchantScorer_()
     ProductScorer* merchantScorer = new MerchantScorer(
         categoryValueTable_, merchantValueTable_, merchantScoreManager_);
 
-    const int compareScoreCount = scorers_.size();
+    const int compareScoreCount = totalScoreNum_;
     scorers_.push_back(merchantScorer);
+    totalScoreNum_ += merchantScorer->getScoreNum();
 
     rerankers_[DIVERSITY_RERANKER] = new MerchantDiversityReranker(compareScoreCount);
 }
 
 void ProductRankerFactory::createRelevanceScorer_()
 {
-    scorers_.push_back(new RelevanceScorer);
+    ProductScorer* scorer = new RelevanceScorer;
+    scorers_.push_back(scorer);
+    totalScoreNum_ += scorer->getScoreNum();
 }
 
 void ProductRankerFactory::createCTRReranker_()

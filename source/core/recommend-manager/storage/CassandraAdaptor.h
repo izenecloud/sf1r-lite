@@ -8,6 +8,7 @@
 #define CASSANDRA_ADAPTOR_H
 
 #include "CassandraAdaptorTraits.h"
+#include <config.h>
 #include <3rdparty/libcassandra/cassandra.h>
 
 #include <string>

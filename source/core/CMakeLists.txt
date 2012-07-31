@@ -31,6 +31,11 @@ FILE(GLOB_RECURSE aggregator_SRC "aggregator-manager/*.cpp")
 FILE(GLOB_RECURSE node_SRC "node-manager/*.cpp")
 FILE(GLOB_RECURSE product_SRC "product-manager/*.cc")
 FILE(GLOB b5m_SRC "b5m-manager/*.cc")
+FILE(GLOB sf1r_net_SRC "sf1r-net/*.cpp")
+
+FILE(GLOB image_SRC 
+    "image-manager/*.cc" 
+    "image-manager/*.cpp")
 
 
 FILE(GLOB document_SRC
@@ -86,6 +91,8 @@ ADD_LIBRARY(sf1r_aggregator_manager ${aggregator_SRC})
 ADD_LIBRARY(sf1r_node_manager ${node_SRC})
 ADD_LIBRARY(sf1r_product_manager ${product_SRC})
 ADD_LIBRARY(sf1r_b5m_manager ${b5m_SRC})
+ADD_LIBRARY(sf1r_net ${sf1r_net_SRC})
+ADD_LIBRARY(sf1r_image_manager ${image_SRC})
 
 INSTALL(TARGETS
     sf1r_configuration_manager
@@ -105,6 +112,8 @@ INSTALL(TARGETS
     sf1r_node_manager
     sf1r_product_manager
     sf1r_b5m_manager
+    sf1r_net
+    sf1r_image_manager
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     COMPONENT sf1r_libraries)

@@ -42,6 +42,11 @@ bool CollectionProductDataSource::GetDocument(uint32_t docid, PMDocumentType& do
     return document_manager_->getDocument(docid, doc);
 }
 
+void CollectionProductDataSource::GetRTypePropertiesForDocument(uint32_t docid, PMDocumentType& doc)
+{
+    document_manager_->getRTypePropertiesForDocument(docid, doc);
+}
+
 void CollectionProductDataSource::GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid)
 {
     PropertyType value(uuid);

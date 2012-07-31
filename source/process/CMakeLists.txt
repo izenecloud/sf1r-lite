@@ -30,6 +30,7 @@ FILE(GLOB_RECURSE renderers_SRC "renderers/*.cpp")
 FILE(GLOB_RECURSE log_server_SRC "log-server/*.cpp")
 FILE(GLOB_RECURSE distribute_SRC "distribute/*.cpp")
 
+
 FILE(GLOB cobra_process_SRC
   "Cobra*.cpp"
   ${common_SRC}
@@ -51,7 +52,6 @@ FILE(GLOB log_server_process_SRC
   ${CMAKE_SOURCE_DIR}/core/common/Keys.cpp
   ${CMAKE_SOURCE_DIR}/core/common/ScdWriter.cpp
   )
-
 ADD_DEFINITIONS("-fno-strict-aliasing")
 ADD_EXECUTABLE(CobraProcess ${cobra_process_SRC})
 ADD_EXECUTABLE(LogServerProcess ${log_server_process_SRC})
@@ -128,6 +128,39 @@ TARGET_LINK_LIBRARIES(LogServerProcess
   ${TokyoCabinet_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
 )
+
+IF(OpenCV_FOUND)
+
+    MESSAGE("============ OpenCV found, The ImageServerProcess will be builded. ==============")
+
+    FILE(GLOB_RECURSE image_server_process_SRC
+        "ImageServerProcess/*.cc" 
+        "ImageServerProcess/*.cpp" 
+        "common/ProcessOptions.cpp" 
+        "common/OnSignal.cpp" 
+        )
+    ADD_EXECUTABLE(ImageServerProcess ${image_server_process_SRC})
+
+    TARGET_LINK_LIBRARIES(ImageServerProcess
+        sf1r_common
+        ${izenelib_LIBRARIES}
+        sf1r_image_manager
+        ${OpenCV_LIBS}
+
+        #external
+        ${Boost_LIBRARIES}
+        ${Glog_LIBRARIES}
+        ${TokyoCabinet_LIBRARIES}
+        ${CMAKE_THREAD_LIBS_INIT}
+        )
+
+    INSTALL(TARGETS
+        ImageServerProcess
+        RUNTIME DESTINATION bin
+        COMPONENT sf1r_apps)
+ELSE(OpenCV_FOUND)
+    MESSAGE("!!!!!!! OpenCV not found, the ImageServerProcess target will not be builded. !!!!!!!!!!!!!")
+ENDIF(OpenCV_FOUND)
 
 INSTALL(TARGETS
     CobraProcess
