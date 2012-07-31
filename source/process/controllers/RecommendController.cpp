@@ -597,6 +597,11 @@ void RecommendController::visit_item()
  *     - @b quantity (@c Uint): the number of items purchased.
  *     - @b keywords (@c String): if non-empty, it means that @b USERID searched this keyword before purchasing @b ITEMID.@n
  *       This parameter is used to recommend items for @b BAQ type in @c do_recommend().
+ *     - @b referer (@c String): before @b USERID purchases @b ITEMID, where does this @b ITEMID come from.@n
+ *       This parameter is used to calculate conversion rate in log analysis, only below values are allowed:
+ *       - @b search: it comes from DocumentsController#search().
+ *       - @b recommend: it comes from @c do_recommend().
+ *       - @b others: it comes from other referers, such as home page, promotions, etc.
  *   - @b order_id (@c String): the order id.
  *
  * @section response
@@ -612,9 +617,9 @@ void RecommendController::visit_item()
  *   "resource": {
  *     "USERID": "user_001",
  *     "items": [
- *       {"ITEMID": "item_001", "price": 100, "quantity": 1},
- *       {"ITEMID": "item_002", "price": 200, "quantity": 2},
- *       {"ITEMID": "item_003", "price": 300, "quantity": 3}
+ *       {"ITEMID": "item_001", "price": 100, "quantity": 1, "referer": "search"},
+ *       {"ITEMID": "item_002", "price": 200, "quantity": 2, "referer": "recommend"},
+ *       {"ITEMID": "item_003", "price": 300, "quantity": 3, "referer": "others"}
  *     ],
  *     "order_id": "order_001"
  *   }
