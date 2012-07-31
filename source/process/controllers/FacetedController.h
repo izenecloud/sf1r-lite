@@ -55,11 +55,16 @@ private:
     bool requireCID_();
     bool requireSearchResult_();
     bool requireKeywords_(std::string& keywords);
-    bool requireDocIdList_(std::vector<std::string>& docIdList);
+
+    bool getDocIdList_(
+        const std::string& listName,
+        std::vector<std::string>& docIdList
+    );
 
     bool getPropNameList_(std::vector<std::string>& propNameList);
 
     void renderCustomRank_(
+        const std::string& listName,
         const std::vector<Document>& docList,
         const std::vector<std::string>& propNameList
     );

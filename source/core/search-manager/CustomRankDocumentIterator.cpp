@@ -2,6 +2,30 @@
 #include "FilterDocumentIterator.h"
 #include <mining-manager/custom-rank-manager/CustomRankScorer.h>
 
+namespace
+{
+
+using namespace sf1r;
+
+FilterDocumentIterator* createFilterDocIterator(const CustomRankValue::DocIdList& docIdList)
+{
+    boost::shared_ptr<izenelib::am::EWAHBoolArray<uint32_t> > docIdSet(
+        new izenelib::am::EWAHBoolArray<uint32_t>());
+
+    for (CustomRankValue::DocIdList::const_iterator it = docIdList.begin();
+        it != docIdList.end(); ++it)
+    {
+        docIdSet->set(*it);
+    }
+
+    izenelib::ir::indexmanager::BitMapIterator* bitMapIter =
+        new izenelib::ir::indexmanager::BitMapIterator(docIdSet);
+
+    return new FilterDocumentIterator(bitMapIter);
+}
+
+} // namespace
+
 namespace sf1r
 {
 
@@ -9,22 +33,25 @@ CustomRankDocumentIterator::CustomRankDocumentIterator(CustomRankScorer* customR
     : customRankScorer_(customRankScorer)
     , defaultScoreDocIterator_(NULL)
 {
-    boost::shared_ptr<izenelib::am::EWAHBoolArray<uint32_t> > customDocIdSet(
-        new izenelib::am::EWAHBoolArray<uint32_t>());
+    const CustomRankValue& sortCustomValue =
+        customRankScorer_->getSortCustomValue();
 
-    const CustomRankScorer::ScoreMap& scoreMap =
-        customRankScorer_->getScoreMap();
-
-    for (CustomRankScorer::ScoreMap::const_iterator it = scoreMap.begin();
-        it != scoreMap.end(); ++it)
+    if (! sortCustomValue.topIds.empty())
     {
-        customDocIdSet->set(it->first);
+        FilterDocumentIterator* includeDocIter =
+            createFilterDocIterator(sortCustomValue.topIds);
+
+        ORDocumentIterator::add(includeDocIter);
     }
 
-    izenelib::ir::indexmanager::BitMapIterator* bitMapIter = new izenelib::ir::indexmanager::BitMapIterator(customDocIdSet);
-    FilterDocumentIterator* filterDocIter = new FilterDocumentIterator(bitMapIter);
+    if (! sortCustomValue.excludeIds.empty())
+    {
+        FilterDocumentIterator* excludeDocIter =
+            createFilterDocIterator(sortCustomValue.excludeIds);
 
-    ORDocumentIterator::add(filterDocIter);
+        excludeDocIter->setNot(true);
+        ORDocumentIterator::add(excludeDocIter);
+    }
 }
 
 void CustomRankDocumentIterator::add(DocumentIterator* pDocIterator)

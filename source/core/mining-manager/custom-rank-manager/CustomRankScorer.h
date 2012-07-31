@@ -8,8 +8,7 @@
 #ifndef SF1R_CUSTOM_RANK_SCORER_H
 #define SF1R_CUSTOM_RANK_SCORER_H
 
-#include <common/inttypes.h>
-#include <vector>
+#include "CustomRankValue.h"
 #include <map>
 
 namespace sf1r
@@ -27,7 +26,7 @@ public:
         CUSTOM_RANK_BASE_SCORE = 100
     };
 
-    CustomRankScorer(const std::vector<docid_t>& docIdList);
+    CustomRankScorer(const CustomRankValue& customValue);
 
     /**
      * get the score of @p docId.
@@ -46,11 +45,12 @@ public:
         return 0;
     }
 
-    typedef std::map<docid_t, score_t> ScoreMap;
-
-    const ScoreMap& getScoreMap() const { return scoreMap_; }
+    const CustomRankValue& getSortCustomValue() const { return sortCustomValue_; }
 
 private:
+    CustomRankValue sortCustomValue_;
+
+    typedef std::map<docid_t, score_t> ScoreMap;
     ScoreMap scoreMap_;
 };
 

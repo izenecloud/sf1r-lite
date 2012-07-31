@@ -8,7 +8,7 @@
 #ifndef SF1R_CUSTOM_RANK_MANAGER_H
 #define SF1R_CUSTOM_RANK_MANAGER_H
 
-#include <common/inttypes.h>
+#include "CustomRankValue.h"
 #include <common/SDBWrapper.h>
 
 #include <vector>
@@ -21,8 +21,6 @@ class CustomRankScorer;
 class CustomRankManager
 {
 public:
-    typedef std::vector<docid_t> DocIdList;
-
     /**
      * @brief Constructor
      * @param dbPath the db path
@@ -32,25 +30,25 @@ public:
     void flush();
 
     /**
-     * Set the doc id list which is customized for @p query.
+     * Set the customized value for @p query.
      * @param query user query
-     * @param docIdList the doc id list to set
+     * @param customRankValue the value to customize
      * @return true for success, false for failure
      */
-    bool setDocIdList(
+    bool setCustomValue(
         const std::string& query,
-        const DocIdList& docIdList
+        const CustomRankValue& customValue
     );
 
     /**
-     * get the doc id list which is customized for @p query.
+     * get the value which is customized for @p query.
      * @param query user query
-     * @param docIdList the doc id list to get
+     * @param customValue the customized value
      * @return true for success, false for failure
      */
-    bool getDocIdList(
+    bool getCustomValue(
         const std::string& query,
-        DocIdList& docIdList
+        CustomRankValue& customValue
     );
 
     /**
@@ -63,15 +61,15 @@ public:
     CustomRankScorer* getScorer(const std::string& query);
 
     /**
-     * get the @p queries which have been customized by @c setDocIdList() with
-     * non-empty @p docIdList.
+     * get the @p queries which have been customized by @c setCustomValue() with
+     * non-empty @p customValue.
      * @return true for success, false for failure
      */
     bool getQueries(std::vector<std::string>& queries);
 
 private:
     /** key: query */
-    typedef SDBWrapper<std::string, DocIdList> DBType;
+    typedef SDBWrapper<std::string, CustomRankValue> DBType;
 
     DBType db_;
 };

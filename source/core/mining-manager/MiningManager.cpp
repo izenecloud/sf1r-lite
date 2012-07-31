@@ -1475,32 +1475,30 @@ bool MiningManager::setMerchantScore(const MerchantStrScoreMap& merchantScoreMap
 
 bool MiningManager::setCustomRank(
     const std::string& query,
-    const std::vector<std::string>& docIdList
+    const std::vector<std::string>& topDocIdList,
+    const std::vector<std::string>& excludeDocIdList
 )
 {
-    if (! customRankManager_)
-        return false;
+    CustomRankValue customValue;
 
-    std::vector<docid_t> convertIdList;
-    if (! convertDocIdList_(docIdList, convertIdList))
-        return false;
-
-    return customRankManager_->setDocIdList(query, convertIdList);
+    return customRankManager_ &&
+           convertDocIdList_(topDocIdList, customValue.topIds) &&
+           convertDocIdList_(excludeDocIdList, customValue.excludeIds) &&
+           customRankManager_->setCustomValue(query, customValue);
 }
 
 bool MiningManager::getCustomRank(
     const std::string& query,
-    std::vector<Document>& docList
+    std::vector<Document>& topDocList,
+    std::vector<Document>& excludeDocList
 )
 {
-    if (! customRankManager_)
-        return false;
+    CustomRankValue customValue;
 
-    std::vector<docid_t> docIdList;
-    if (! customRankManager_->getDocIdList(query, docIdList))
-        return false;
-
-    return getDocList_(docIdList, docList);
+    return customRankManager_ &&
+           customRankManager_->getCustomValue(query, customValue) &&
+           getDocList_(customValue.topIds, topDocList) &&
+           getDocList_(customValue.excludeIds, excludeDocList);
 }
 
 bool MiningManager::getCustomQueries(std::vector<std::string>& queries)
