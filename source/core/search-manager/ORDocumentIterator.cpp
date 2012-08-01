@@ -70,32 +70,26 @@ bool ORDocumentIterator::next()
 {
     if (!hasNot_)
         return do_next();
-    else
+
+    if (! initNOTIterator_)
     {
-        if (! initNOTIterator_)
-        {
-            initNOTIterator_ = true;
-            if (pNOTDocIterator_->next())
-                currDocOfNOTIter_ = pNOTDocIterator_->doc();
-            else
-                currDocOfNOTIter_ = MAX_DOC_ID;
-        }
-
-        bool ret = do_next();
-
-        if (currDoc_ == currDocOfNOTIter_)
-            return move_together_with_not();
-        if (currDoc_ < currDocOfNOTIter_)
-            return ret;
+        initNOTIterator_ = true;
+        if (pNOTDocIterator_->next())
+            currDocOfNOTIter_ = pNOTDocIterator_->doc();
         else
-        {
-            currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currDoc_);
-            if (currDoc_ == currDocOfNOTIter_)
-                return move_together_with_not();
-            else
-                return ret;
-        }
+            currDocOfNOTIter_ = MAX_DOC_ID;
     }
+
+    bool ret = do_next();
+
+    if (currDoc_ > currDocOfNOTIter_)
+        currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currDoc_);
+
+    if (currDoc_ == currDocOfNOTIter_)
+        return move_together_with_not();
+
+    assert(currDoc_ < currDocOfNOTIter_);
+    return ret;
 }
 
 bool ORDocumentIterator::move_together_with_not()

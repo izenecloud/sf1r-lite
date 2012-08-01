@@ -619,9 +619,12 @@ void FacetedController::get_merchant_score()
  * - @b collection* (@c String): Collection name.
  * - @b resource* (@c Object): Specify the keywords and doc id list.
  *   - @b keywords* (@c String): User query.
- *   - @b docid_list* (@c Array): Each item is a DOCID @c String.@n
+ *   - @b top_docid_list (@c Array): Each item is a DOCID @c String.@n
  *   If it's non-empty, it gives top ranking to these DOCIDs for @b keywords;@n
- *   otherwise, it clears the previous ranking customization for @b keywords.
+ *   otherwise, it clears the previous @b top_docid_list.
+ *   - @b exclude_docid_list (@c Array): Each item is a DOCID @c String.@n
+ *   If it's non-empty, it excludes these DOCIDs in @c search() results for @b keywords;@n
+ *   otherwise, it clears the previous @b exclude_docid_list.
  *
  * @section response
  *
@@ -635,7 +638,8 @@ void FacetedController::get_merchant_score()
  *   "collection": "ChnWiki",
  *   "resource": {
  *     "keywords": "iphone",
- *     "docid_list": ["1122", "3344", "5566"]
+ *     "top_docid_list": ["111", "222", "333"],
+ *     "exclude_docid_list": ["444", "555", "666"]
  *   }
  * }
  * @endcode
@@ -650,12 +654,15 @@ void FacetedController::get_merchant_score()
 void FacetedController::set_custom_rank()
 {
     std::string query;
-    std::vector<std::string> docIdList;
+    std::vector<std::string> topDocIdList;
+    std::vector<std::string> excludeDocIdList;
 
     if (requireKeywords_(query) &&
-        requireDocIdList_(docIdList))
+        getDocIdList_(Keys::top_docid_list, topDocIdList) &&
+        getDocIdList_(Keys::exclude_docid_list, excludeDocIdList))
     {
-        if (! miningSearchService_->setCustomRank(query, docIdList))
+        if (! miningSearchService_->setCustomRank(query,
+            topDocIdList, excludeDocIdList))
         {
             response().addError("Failed to set custom rank.");
         }
@@ -670,13 +677,15 @@ void FacetedController::set_custom_rank()
  * - @b collection* (@c String): Collection name.
  * - @b resource* (@c Object): Specify the keywords and select properties.
  *   - @b keywords* (@c String): User query.
- *   - @b select (@c Array): Each element is a property name @c String, which property would be returned in response @b resources.@n
+ *   - @b select (@c Array): Each element is a property name @c String, which property would be returned.@n
  *   If it's empty, all property names configured in <DocumentSchema> would be returned.
  *
  * @section response
  *
  * - @b header (@c Object): Property @b success gives the result, true or false.
- * - @b resources (@c Array): Each element is a document @c Object, where property name is the key, and property value is the value.
+ * - @b resource (@c Object): The top docs and excluded docs.
+ *   - @b top_docs (@c Array): Each element is a document @c Object, where property name is the key, and property value is the value.
+ *   - @b exclude_docs (@c Array): Each element is a document @c Object.
  *
  * @section Example
  *
@@ -695,11 +704,17 @@ void FacetedController::set_custom_rank()
  * @code
  * {
  *   "header": {"success": true},
- *   "resources": [
- *     { "DOCID": "1122", "Title": "iphone4S 手机"},
- *     { "DOCID": "3344", "Title": "iphone4 手机"},
- *     { "DOCID": "5566", "Title": "iphone3 手机"}
- *   ]
+ *   "resource": {
+ *     "top_docs": [
+ *       { "DOCID": "111", "Title": "iphone4S 手机"},
+ *       { "DOCID": "222", "Title": "iphone4 手机"},
+ *       { "DOCID": "333", "Title": "iphone3 手机"}
+ *     ],
+ *     "exclude_docs": [
+ *       { "DOCID": "444", "Title": "iphone4S 配件"},
+ *       { "DOCID": "555", "Title": "iphone4 配件"},
+ *       { "DOCID": "666", "Title": "iphone3 配件"}
+ *     ]
  * }
  * @endcode
  */
@@ -711,11 +726,14 @@ void FacetedController::get_custom_rank()
     if (requireKeywords_(query) &&
         getPropNameList_(propNameList))
     {
-        std::vector<Document> docList;
+        std::vector<Document> topDocList;
+        std::vector<Document> excludeDocList;
 
-        if (miningSearchService_->getCustomRank(query, docList))
+        if (miningSearchService_->getCustomRank(query,
+            topDocList, excludeDocList))
         {
-            renderCustomRank_(docList, propNameList);
+            renderCustomRank_(Keys::top_docs, topDocList, propNameList);
+            renderCustomRank_(Keys::exclude_docs, excludeDocList, propNameList);
         }
         else
         {
@@ -738,14 +756,20 @@ bool FacetedController::requireKeywords_(std::string& keywords)
     return true;
 }
 
-bool FacetedController::requireDocIdList_(std::vector<std::string>& docIdList)
+bool FacetedController::getDocIdList_(
+    const std::string& listName,
+    std::vector<std::string>& docIdList
+)
 {
     Value& input = request()[Keys::resource];
-    Value& listValue = input[Keys::docid_list];
+    Value& listValue = input[listName];
+
+    if (nullValue(listValue))
+        return true;
 
     if (listValue.type() != Value::kArrayType)
     {
-        response().addError("Require resource[docid_list] as an array of doc id.");
+        response().addError("Require an array of doc ids in resource.");
         return false;
     }
 
@@ -793,17 +817,21 @@ bool FacetedController::getPropNameList_(std::vector<std::string>& propNameList)
 }
 
 void FacetedController::renderCustomRank_(
+    const std::string& listName,
     const std::vector<Document>& docList,
     const std::vector<std::string>& propNameList
 )
 {
-    Value& resources = response()[Keys::resources];
+    if (docList.empty())
+        return;
+
+    Value& listValue = response()[Keys::resource][listName];
 
     for (std::vector<Document>::const_iterator docIt = docList.begin();
         docIt != docList.end(); ++docIt)
     {
         const Document& doc = *docIt;
-        Value& docValue = resources();
+        Value& docValue = listValue();
 
         renderDoc_(doc, propNameList, docValue);
     }
