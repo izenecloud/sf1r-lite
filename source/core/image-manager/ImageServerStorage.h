@@ -91,9 +91,9 @@ public:
     {
         if(img_color_db_)
         {
-            img_color_db_->flush();
             try
             {
+                img_color_db_->flush();
                 boost::filesystem::copy_file(img_color_db_path_, img_color_db_path_ + backup_suffix, 
                     boost::filesystem::copy_option::overwrite_if_exists);
                 return true;
@@ -110,7 +110,14 @@ public:
     {
         if(img_color_db_)
         {
-            return img_color_db_->get(img_path, ret);
+            try
+            {
+                return img_color_db_->get(img_path, ret);
+            }
+            catch(izenelib::util::IZENELIBException& e)
+            {
+                std::cerr << "get image color exception : " << e.what() << endl;
+            }
         }
         return false;
     }
@@ -119,7 +126,14 @@ public:
     {
         if(img_color_db_)
         {
-            return img_color_db_->update(img_path, value);
+            try
+            {
+                return img_color_db_->update(img_path, value);
+            }
+            catch(izenelib::util::IZENELIBException& e)
+            {
+                std::cerr << "set image color exception : " << e.what() << endl;
+            }
         }
         return false;
     }

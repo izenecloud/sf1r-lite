@@ -102,6 +102,7 @@ int ImageProcessTask::doJobs(const MSG& msg)
                 picFilePath.erase(picFilePath.find_last_not_of(" ")+1);
                 if(_stop)
                     return 0;
+
                 std::string ret;
                 if(ImageServerStorage::get()->GetImageColor(picFilePath, ret) && !ret.empty())
                 {
@@ -149,7 +150,12 @@ int ImageProcessTask::doCompute(const std::string& img_file)
             boost::unique_lock<boost::mutex> l(backup_db_lock_);
             ++cur_writter_;
         }
-        ImageServerStorage::get()->SetImageColor(img_file, oss.str());
+        ret = ImageServerStorage::get()->SetImageColor(img_file, oss.str());
+        if(!ret)
+        {
+            LOG(ERROR) << "write image color to db failed imagePath=" << img_file << std::endl;
+        }
+
         {
             boost::unique_lock<boost::mutex> l(backup_db_lock_);
             --cur_writter_;
