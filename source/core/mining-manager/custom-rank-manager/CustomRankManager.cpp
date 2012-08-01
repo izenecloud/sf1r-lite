@@ -11,7 +11,7 @@ public:
 
     void operator()(
         const std::string& key,
-        const sf1r::CustomRankManager::DocIdList& value
+        const sf1r::CustomRankValue& value
     )
     {
         if (! value.empty())
@@ -39,32 +39,32 @@ void CustomRankManager::flush()
     db_.flush();
 }
 
-bool CustomRankManager::setDocIdList(
+bool CustomRankManager::setCustomValue(
     const std::string& query,
-    const DocIdList& docIdList
+    const CustomRankValue& customValue
 )
 {
-    return db_.update(query, docIdList);
+    return db_.update(query, customValue);
 }
 
-bool CustomRankManager::getDocIdList(
+bool CustomRankManager::getCustomValue(
     const std::string& query,
-    DocIdList& docIdList
+    CustomRankValue& customValue
 )
 {
-    docIdList.clear();
+    customValue.clear();
 
-    return db_.get(query, docIdList);
+    return db_.get(query, customValue);
 }
 
 CustomRankScorer* CustomRankManager::getScorer(const std::string& query)
 {
-    DocIdList docIdList;
+    CustomRankValue customValue;
 
-    if (!db_.get(query, docIdList) || docIdList.empty())
+    if (!db_.get(query, customValue) || customValue.empty())
         return NULL;
 
-    return new CustomRankScorer(docIdList);
+    return new CustomRankScorer(customValue);
 }
 
 bool CustomRankManager::getQueries(std::vector<std::string>& queries)

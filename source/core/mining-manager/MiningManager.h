@@ -262,12 +262,14 @@ public:
 
     bool setCustomRank(
         const std::string& query,
-        const std::vector<std::string>& docIdList
+        const std::vector<std::string>& topDocIdList,
+        const std::vector<std::string>& excludeDocIdList
     );
 
     bool getCustomRank(
         const std::string& query,
-        std::vector<Document>& docList
+        std::vector<Document>& topDocList,
+        std::vector<Document>& excludeDocList
     );
 
     bool getCustomQueries(std::vector<std::string>& queries);
