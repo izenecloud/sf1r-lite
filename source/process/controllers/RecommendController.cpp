@@ -620,7 +620,7 @@ void RecommendController::visit_item()
  *     "items": [
  *       {"ITEMID": "item_001", "price": 100, "quantity": 1, "referer": "search"},
  *       {"ITEMID": "item_002", "price": 200, "quantity": 2, "referer": "recommend"},
- *       {"ITEMID": "item_003", "price": 300, "quantity": 3, "referer": "others"}
+ *       {"ITEMID": "item_003", "price": 300, "quantity": 3}
  *     ],
  *     "order_id": "order_001"
  *   }
