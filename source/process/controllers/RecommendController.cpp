@@ -1031,14 +1031,15 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     param.inputParam.limit = asUintOr(resourceValue[Keys::max_count],
                                       kDefaultRecommendCount);
 
-    if (! (value2ItemIdVec(Keys::input_items, param.inputItems) &&
-           value2ItemIdVec(Keys::include_items, param.includeItems) &&
-           value2ItemIdVec(Keys::exclude_items, param.excludeItems) &&
-           value2SelectProps(param.selectRecommendProps) &&
-           value2ItemCondition(param.condition)))
-    {
+    const bool convertResult =
+        value2ItemIdVec(Keys::input_items, param.inputItems) &&
+        value2ItemIdVec(Keys::include_items, param.includeItems) &&
+        value2ItemIdVec(Keys::exclude_items, param.excludeItems) &&
+        value2SelectProps(param.selectRecommendProps) &&
+        value2ItemCondition(param.condition);
+
+    if (! convertResult)
         return false;
-    }
 
     param.userIdStr = asString(resourceValue[Keys::USERID]);
     param.sessionIdStr = asString(resourceValue[Keys::session_id]);
