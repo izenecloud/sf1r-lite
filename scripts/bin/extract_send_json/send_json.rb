@@ -64,6 +64,7 @@ errorFile = File.open(ERROR_LOG, "a")
 totalCount = 0
 successCount = 0
 failCount = 0
+parseErrorCount = 0
 
 while line = ARGF.gets
   line = line.chomp!
@@ -75,7 +76,7 @@ while line = ARGF.gets
 
   url = "#{URL_PREFIX}/#{uri}"
   result = RestClient.post(url, request.to_json, :content_type => :json)
-  response = JSON.parse(result)
+  response = JSON.parse(result) rescue nil
 
   if response
     if response["header"] && response["header"]["success"]
@@ -86,12 +87,12 @@ while line = ARGF.gets
       errorFile.puts "errors: #{response["errors"]}"
     end
   else
-    failCount += 1
+    parseErrorCount += 1
   end
 
   totalCount += 1
-  $stderr.print "\r#{successCount} success, #{failCount} fail in #{ERROR_LOG}" if totalCount % 10 == 0
+  $stderr.print "\r#{successCount} success, #{parseErrorCount} response parse error, #{failCount} failed in #{ERROR_LOG}" if totalCount % 10 == 0
 end
 
 errorFile.close
-$stderr.puts "\r#{successCount} success, #{failCount} fail in #{ERROR_LOG}"
+$stderr.puts "\r#{successCount} success, #{parseErrorCount} response parse error, #{failCount} failed in #{ERROR_LOG}"
