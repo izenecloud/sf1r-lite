@@ -21,7 +21,7 @@ namespace sf1r
 {
 
 class RecommendManager;
-class MiningQueryLogHandler : public boost::noncopyable
+class MiningQueryLogHandler
 {
     typedef std::map<std::string, boost::shared_ptr<RecommendManager> >::iterator map_it_type;
 public:
@@ -55,6 +55,8 @@ public:
     void runEvents();
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(MiningQueryLogHandler);	
+
     void cronJob_();
 
 private:

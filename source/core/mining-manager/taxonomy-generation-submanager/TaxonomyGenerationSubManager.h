@@ -37,7 +37,7 @@ namespace sf1r
 {
 
 class LabelManager;
-class TaxonomyGenerationSubManager : public boost::noncopyable
+class TaxonomyGenerationSubManager
 {
 
     struct ScoreItem
@@ -94,6 +94,7 @@ public:
 
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(TaxonomyGenerationSubManager);
 
     void CombineConceptItem_(const idmlib::cc::ConceptItem& from, idmlib::cc::ConceptItem& to);
 

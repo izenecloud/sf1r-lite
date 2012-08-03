@@ -32,7 +32,7 @@ namespace sf1r
  * getAutoFillList : To get the list of matched items for a given prefix.
  */
 class  WordCompletionTable;
-class AutoFillSubManager: public boost::noncopyable
+class AutoFillSubManager
 {
     //freq, df, text
     typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> ItemValueType;
@@ -44,6 +44,8 @@ public:
     ~AutoFillSubManager();
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(AutoFillSubManager);
+
     std::string fillSupportPath_;
     std::string triePath_;
     /**

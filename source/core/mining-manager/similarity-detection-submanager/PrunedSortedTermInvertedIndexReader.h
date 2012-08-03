@@ -28,7 +28,7 @@ using izenelib::ir::indexmanager::TermIterator;
 /**
  * @brief The class to access the pruned terms from the Index.
  */
-class PrunedSortedTermInvertedIndexReader : boost::noncopyable
+class PrunedSortedTermInvertedIndexReader
 {
 public:
     typedef std::size_t size_type;
@@ -76,6 +76,7 @@ public:
     }
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(PrunedSortedTermInvertedIndexReader);
     IndexReader* indexReader_;
     boost::scoped_ptr<TermReader> termReader_;
 
