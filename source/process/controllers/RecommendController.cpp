@@ -917,9 +917,7 @@ bool RecommendController::parseRateParam(RateParam& param)
  *   - @b select (@c Array): each is a property name String, which property would be returned in response @b resources.@n
  *     For example, you could specify @b select as ["ITEMID", "name", "link"].@n
  *     The default value would be all property names configured in <DocumentSchema>.
- *   - @b condition (@c Object): specify the condition that recommendation results must meet.
- *     - @b property* (@c String): item property name, such as @b ITEMID, @b category, etc
- *     - @b value* (@c Array): the property values, each recommendation result must match one of the property value in this array.
+ *   - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
  *
  * @section response
  *
