@@ -29,9 +29,16 @@ bool LocalItemManager::getItemProps(
     {
         Document& doc = itemContainer.getItem(i);
         doc.clearProperties();
+        docid_t docId = doc.getId();
 
-        if (! docManager_.getDocument(doc.getId(), doc))
+        if (docManager_.getDocument(docId, doc))
+        {
+            docManager_.getRTypePropertiesForDocument(docId, doc);
+        }
+        else
+        {
             result = false;
+        }
     }
 
     return result;
