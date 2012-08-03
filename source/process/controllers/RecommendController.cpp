@@ -17,6 +17,7 @@
 #include <recommend-manager/common/ItemBundle.h>
 #include <recommend-manager/common/RateParam.h>
 
+#include <parsers/FilteringParser.h>
 #include <common/BundleSchemaHelpers.h>
 #include <common/Keys.h>
 
@@ -230,59 +231,23 @@ bool RecommendController::value2ItemIdVec(const std::string& propName, std::vect
 
 bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
 {
-    const izenelib::driver::Value& condValue = request()[Keys::resource][Keys::condition];
+    const IndexBundleSchema& indexSchema = collectionHandler_->indexSchema_;
+    const MiningSchema& miningSchema = collectionHandler_->miningSchema_;
+    FilteringParser filteringParser(indexSchema, miningSchema);
 
-    if (nullValue(condValue))
-    {
-        return true;
-    }
+    const izenelib::driver::Value& condValue =
+        request()[Keys::resource][Keys::conditions];
 
-    if (condValue.type() != izenelib::driver::Value::kObjectType)
+    if (! filteringParser.parse(condValue))
     {
-        response().addError("Require a map in request[resource][condition].");
+        response().addError(filteringParser.errorMessage());
         return false;
     }
 
-    std::string propName = asString(condValue[Keys::property]);
-    if (propName.empty())
-    {
-        response().addError("Require \"" + Keys::property + "\" in request[resource][condition].");
-        return false;
-    }
-    itemIdToDocId(propName);
+    response().addWarning(filteringParser.warningMessage());
 
-    if (! isDocumentProperty(collectionHandler_->documentSchema_, propName))
-    {
-        response().addError("Unknown item property \"" + propName + "\" in request[resource][condition].");
-        return false;
-    }
-    itemCondition.propName_ = propName;
-
-    const izenelib::driver::Value& arrayValue = condValue[Keys::value];
-    if (arrayValue.type() != izenelib::driver::Value::kArrayType)
-    {
-        response().addError("Require an array of property values in request[resource][condition][value].");
-        return false;
-    }
-
-    for (std::size_t i = 0; i < arrayValue.size(); ++i)
-    {
-        std::string valueStr = asString(arrayValue(i));
-
-        if (valueStr.empty())
-        {
-            response().addError("Invalid property value in request[resource][condition][value].");
-            return false;
-        }
-
-        itemCondition.propValueSet_.insert(izenelib::util::UString(valueStr, ENCODING_TYPE));
-    }
-
-    if (itemCondition.propValueSet_.empty())
-    {
-        response().addError("No property values in request[resource][condition][value].");
-        return false;
-    }
+    std::swap(itemCondition.filteringList_,
+        filteringParser.mutableFilteringRules());
 
     return true;
 }

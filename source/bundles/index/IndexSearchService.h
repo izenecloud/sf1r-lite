@@ -55,6 +55,7 @@ private:
     friend class MiningBundleActivator;
     friend class ProductBundleActivator;
     friend class LocalItemFactory;
+    friend class RecommendSearchService;
     friend class SearchMasterItemManagerTestFixture;
 };
 

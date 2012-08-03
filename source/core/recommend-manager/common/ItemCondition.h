@@ -8,27 +8,27 @@
 #define ITEM_CONDITION_H
 
 #include "RecTypes.h"
-#include <util/ustring/UString.h>
-
-#include <string>
-#include <set>
+#include <query-manager/QueryTypeDef.h> // FilteringType
+#include <ir/index_manager/utility/BitVector.h>
 
 namespace sf1r
 {
 class ItemManager;
+class QueryBuilder;
 
 struct ItemCondition
 {
+    ItemManager* itemManager_;
+
+    /** a list of filtering conditions */
+    std::vector<QueryFiltering::FilteringType> filteringList_;
+
+    /** bit 1 for meet condition, bit 0 for not meet condition */
+    boost::scoped_ptr<izenelib::ir::indexmanager::BitVector> pBitVector_;
+
     ItemCondition();
 
-    /** property name */
-    std::string propName_;
-
-    /** property values set */
-    typedef std::set<izenelib::util::UString> PropValueSet;
-    PropValueSet propValueSet_;
-
-    ItemManager* itemManager_;
+    void createBitVector(QueryBuilder* queryBuilder);
 
     /**
      * Check whether @p itemId meets the condition.
