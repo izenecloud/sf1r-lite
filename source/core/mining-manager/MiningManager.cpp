@@ -243,6 +243,13 @@ bool MiningManager::open()
         rmDb_.reset(new RecommendManager(queryDataPath_, collectionName_, mining_schema_, document_manager_,
                                          qcManager_, analyzer_, logdays));
 
+        if(!rmDb_->open())
+        {
+            std::cerr<<"open query recommend manager failed"<<std::endl;
+            rmDb_->close();
+            return false;
+        }
+
         /** log manager */
         MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
         if (!handler->cronStart(miningConfig_.recommend_param.cron))
