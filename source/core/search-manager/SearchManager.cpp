@@ -34,6 +34,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include <memory> // auto_ptr
 #include <omp.h>
 #include <util/cpu_topology.h>
 
@@ -470,7 +471,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     rankingManagerPtr_->createPropertyRankers(pTextRankingType, indexPropertySize, propertyRankers);
     bool readTermPosition = propertyRankers[0]->requireTermPosition();
 
-    DocumentIterator* pScoreDocIterator = NULL;
+    std::auto_ptr<DocumentIterator> scoreDocIterPtr;
     MultiPropertyScorer* pMultiPropertyIterator = NULL;
     WANDDocumentIterator* pWandDocIterator = NULL;
 
@@ -503,7 +504,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
                                         readTermPosition,
                                         termIndexMaps
                                    );
-                pScoreDocIterator = pWandDocIterator;
+                scoreDocIterPtr.reset(pWandDocIterator);
             }
             else
             {
@@ -515,20 +516,17 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
                                              indexPropertyIdList,
                                              readTermPosition,
                                              termIndexMaps );
-                pScoreDocIterator = pMultiPropertyIterator;
+                scoreDocIterPtr.reset(pMultiPropertyIterator);
             }
         }
-
     }
     catch (std::exception& e)
     {
-        if (pScoreDocIterator)
-            delete pScoreDocIterator;
         return false;
     }
 
-    boost::shared_ptr<CombinedDocumentIterator> pDocIterator;
-    pDocIterator.reset(new CombinedDocumentIterator());
+    boost::shared_ptr<CombinedDocumentIterator> pDocIterator(
+        new CombinedDocumentIterator());
     if (pFilterIdSet)
     {
         ///1. Search Filter
@@ -558,12 +556,13 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     else
         scoreItemQueue.reset(new ScoreSortedHitQueue(heapSize));
 
+    DocumentIterator* pScoreDocIterator = scoreDocIterPtr.get();
     if (isFilterQuery == false)
     {
         const std::string& query = actionOperation.actionItem_.env_.queryString_;
 
         pScoreDocIterator = combineCustomDocIterator_(
-            query, pSorter, pScoreDocIterator);
+            query, pSorter, scoreDocIterPtr.release());
 
         if (pScoreDocIterator == NULL)
         {

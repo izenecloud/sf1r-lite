@@ -27,6 +27,7 @@
 #include <algorithm>
 
 #include <boost/token_iterator.hpp>
+#include <boost/scoped_ptr.hpp>
 
 //#define VERBOSE_SERACH_MANAGER 1
 
@@ -247,54 +248,47 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
 {
     size_t size_of_properties = propertyIds.size();
 
-    MultiPropertyScorer* docIterPtr = new MultiPropertyScorer(propertyWeightMap, propertyIds);
+    std::auto_ptr<MultiPropertyScorer> docIterPtr(new MultiPropertyScorer(propertyWeightMap, propertyIds));
     if (pIndexReader_->isDirty())
     {
         pIndexReader_ = indexManagerPtr_->getIndexReader();
     }
-    try{
-        size_t success_properties = 0;
-        typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator schema_iterator;
-	
-        for (size_t i = 0; i < size_of_properties; i++)
-        {
-            schema_iterator found = schemaMap_.find(properties[i]);
-            if (found == schemaMap_.end())
-                continue;
-            if(found->second.subProperties_.empty())
-                prepare_for_property_(
-                    docIterPtr,
-                    success_properties,
-                    actionOperation,
-                    colID,
-                    found->second,
-                    readPositions,
-                    termIndexMaps[i]
-                );
-            else
-                prepare_for_virtual_property_(
-                    docIterPtr,
-                    success_properties,
-                    actionOperation,
-                    colID,
-                    found->second,
-                    readPositions,
-                    termIndexMaps[i],
-                    propertyWeightMap
-                );
-        }
 
-        if (success_properties)
-            return docIterPtr;
+    size_t success_properties = 0;
+    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator schema_iterator;
+
+    for (size_t i = 0; i < size_of_properties; i++)
+    {
+        schema_iterator found = schemaMap_.find(properties[i]);
+        if (found == schemaMap_.end())
+            continue;
+        if(found->second.subProperties_.empty())
+            prepare_for_property_(
+                docIterPtr.get(),
+                success_properties,
+                actionOperation,
+                colID,
+                found->second,
+                readPositions,
+                termIndexMaps[i]
+            );
         else
-            delete docIterPtr;
-
-        return NULL;
-    }catch(std::exception& e){
-        delete docIterPtr;
-        throw std::runtime_error("Failed to prepare dociterator");
-        return NULL;
+            prepare_for_virtual_property_(
+                docIterPtr.get(),
+                success_properties,
+                actionOperation,
+                colID,
+                found->second,
+                readPositions,
+                termIndexMaps[i],
+                propertyWeightMap
+            );
     }
+
+    if (success_properties)
+        return docIterPtr.release();
+
+    return NULL;
 }
 
 void QueryBuilder::prefetch_term_doc_readers_(
@@ -317,10 +311,10 @@ void QueryBuilder::prefetch_term_doc_readers_(
     const string& property = properyConfig.getName();
 
 #if PREFETCH_TERMID
-    TermReader* pTermReader = NULL;
+    boost::scoped_ptr<TermReader> pTermReader;
     if (!isNumericFilter)
     {
-        pTermReader = pIndexReader_->getTermReader(colID);
+        pTermReader.reset(pIndexReader_->getTermReader(colID));
         if (!pTermReader)
             return;
     }
@@ -382,8 +376,6 @@ void QueryBuilder::prefetch_term_doc_readers_(
             }
         }
      }
-     if (pTermReader)
-        delete pTermReader;
 #endif
 }
 
