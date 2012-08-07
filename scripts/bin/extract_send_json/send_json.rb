@@ -7,6 +7,27 @@ require 'json'
 require 'yaml'
 require 'set'
 
+module RestClient
+
+  class << self
+    attr_accessor :timeout
+    attr_accessor :open_timeout
+  end
+
+  def self.post(url, payload, headers={}, &block)
+    Request.execute(:method => :post,
+                    :url => url,
+                    :payload => payload,
+                    :headers => headers,
+                    :timeout=>@timeout,
+                    :open_timeout=>@open_timeout,
+                    &block)
+  end
+
+end
+
+
+
 CONFIG_FILE = "send_config.yml"
 unless File.exists? CONFIG_FILE
   $stderr.puts "error: require config file \"#{CONFIG_FILE}\""
@@ -65,6 +86,9 @@ totalCount = 0
 successCount = 0
 failCount = 0
 parseErrorCount = 0
+
+RestClient.open_timeout = 90000000
+RestClient.timeout = 90000000
 
 while line = ARGF.gets
   line = line.chomp!
