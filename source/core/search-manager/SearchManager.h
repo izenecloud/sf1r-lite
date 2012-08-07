@@ -112,6 +112,8 @@ public:
 
     void setCustomRankManager(CustomRankManager* customRankManager);
 
+    QueryBuilder* getQueryBuilder() { return queryBuilder_.get(); }
+
 private:
     bool doSearch_(
             const SearchKeywordOperation& actionOperation,

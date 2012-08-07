@@ -26,6 +26,8 @@ struct RecommendParam;
 struct TIBParam;
 struct ItemBundle;
 class RecommendBundleConfiguration;
+class IndexSearchService;
+class QueryBuilder;
 
 class RecommendSearchService : public ::izenelib::osgi::IService
 {
@@ -35,7 +37,8 @@ public:
         UserManager& userManager,
         ItemManager& itemManager,
         RecommenderFactory& recommenderFactory,
-        ItemIdGenerator& itemIdGenerator
+        ItemIdGenerator& itemIdGenerator,
+        IndexSearchService* indexSearchService
     );
 
     bool getUser(const std::string& userId, User& user);
@@ -75,6 +78,8 @@ private:
     ItemManager& itemManager_;
     RecommenderFactory& recommenderFactory_;
     ItemIdGenerator& itemIdGenerator_;
+
+    QueryBuilder* queryBuilder_;
 };
 
 } // namespace sf1r

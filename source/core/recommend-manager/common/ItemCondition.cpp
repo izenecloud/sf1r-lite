@@ -1,7 +1,6 @@
 #include "ItemCondition.h"
 #include "../item/ItemManager.h"
-#include "../item/ItemContainer.h"
-#include <document-manager/Document.h>
+#include <search-manager/QueryBuilder.h>
 
 namespace sf1r
 {
@@ -11,32 +10,26 @@ ItemCondition::ItemCondition()
 {
 }
 
+void ItemCondition::createBitVector(QueryBuilder* queryBuilder)
+{
+    // no condition
+    if (filteringList_.empty() || !queryBuilder)
+        return;
+
+    boost::shared_ptr<izenelib::am::EWAHBoolArray<uint32_t> > ewahArray;
+    queryBuilder->prepare_filter(filteringList_, ewahArray);
+
+    pBitVector_.reset(new izenelib::ir::indexmanager::BitVector);
+    pBitVector_->importFromEWAH(*ewahArray);
+}
+
 bool ItemCondition::isMeetCondition(itemid_t itemId) const
 {
-    if (! itemManager_)
-        return false;
+    if (pBitVector_)
+        return pBitVector_->test(itemId);
 
-    // no condition
-    if (propName_.empty())
+    if (itemManager_)
         return itemManager_->hasItem(itemId);
-
-    Document item(itemId);
-    SingleItemContainer itemContainer(item);
-
-    std::vector<std::string> propList;
-    propList.push_back(propName_);
-
-    // not exist
-    if (!itemManager_->getItemProps(propList, itemContainer))
-        return false;
-
-    // compare property value
-    Document::property_const_iterator it = item.findProperty(propName_);
-    if (it != item.propertyEnd())
-    {
-        const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
-        return propValueSet_.find(propValue) != propValueSet_.end();
-    }
 
     return false;
 }

@@ -11,6 +11,9 @@
 #include <recommend-manager/storage/UserManager.h>
 #include <recommend-manager/recommender/RecommenderFactory.h>
 #include <recommend-manager/recommender/Recommender.h>
+#include <bundles/index/IndexSearchService.h>
+#include <aggregator-manager/SearchWorker.h>
+#include <search-manager/SearchManager.h>
 
 #include <glog/logging.h>
 
@@ -27,14 +30,21 @@ RecommendSearchService::RecommendSearchService(
     UserManager& userManager,
     ItemManager& itemManager,
     RecommenderFactory& recommenderFactory,
-    ItemIdGenerator& itemIdGenerator
+    ItemIdGenerator& itemIdGenerator,
+    IndexSearchService* indexSearchService
 )
     :bundleConfig_(bundleConfig)
     ,userManager_(userManager)
     ,itemManager_(itemManager)
     ,recommenderFactory_(recommenderFactory)
     ,itemIdGenerator_(itemIdGenerator)
+    ,queryBuilder_(NULL)
 {
+    if (indexSearchService)
+    {
+        queryBuilder_ = indexSearchService->searchWorker_->
+            searchManager_->getQueryBuilder();
+    }
 }
 
 bool RecommendSearchService::getUser(const std::string& userId, User& user)
@@ -51,7 +61,7 @@ bool RecommendSearchService::recommend(
         return false;
 
     if (bundleConfig_.searchNodeConfig_.isSingleNode_)
-        param.enableItemCondition(&itemManager_);
+        param.enableItemCondition(&itemManager_, queryBuilder_);
 
     Recommender* recommender = recommenderFactory_.getRecommender(param.type);
 

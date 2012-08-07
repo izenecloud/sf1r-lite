@@ -16,6 +16,7 @@
 
 namespace sf1r
 {
+class QueryBuilder;
 
 struct RecommendParam
 {
@@ -43,7 +44,10 @@ struct RecommendParam
     ItemCondition condition;
     RecommendInputParam inputParam;
 
-    void enableItemCondition(ItemManager* itemManager);
+    void enableItemCondition(
+        ItemManager* itemManager,
+        QueryBuilder* queryBuilder
+    );
 };
 
 } // namespace sf1r
