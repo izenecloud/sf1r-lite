@@ -25,17 +25,13 @@ void ItemCondition::createBitVector(QueryBuilder* queryBuilder)
 
 bool ItemCondition::isMeetCondition(itemid_t itemId) const
 {
-    if (! itemManager_)
-        return false;
-
-    // no condition
-    if (filteringList_.empty())
-        return itemManager_->hasItem(itemId);
-
     if (pBitVector_)
         return pBitVector_->test(itemId);
 
-    return true;
+    if (itemManager_)
+        return itemManager_->hasItem(itemId);
+
+    return false;
 }
 
 } // namespace sf1r
