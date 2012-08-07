@@ -115,6 +115,8 @@ void SynchroConsumer::doWatchProducer()
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
 
+    LOG(INFO) << SYNCHRO_CONSUMER << " watching for producer ...";
+
     if (consumerStatus_ == CONSUMER_STATUS_CONSUMING) {
         return;
     }
@@ -177,6 +179,7 @@ bool SynchroConsumer::synchronize()
     while (true)
     {
         // timeout?
+        LOG(INFO) << SYNCHRO_CONSUMER << " sleeping for " << step << " seconds ...";
         boost::this_thread::sleep(boost::posix_time::seconds(step));
 
         std::string data;
@@ -187,11 +190,13 @@ bool SynchroConsumer::synchronize()
             if (status.getStrValue(SynchroData::KEY_CONSUMER_STATUS) ==
                     SynchroData::CONSUMER_STATUS_RECEIVE_SUCCESS)
             {
+                LOG(INFO) << SYNCHRO_CONSUMER << "received correctly";
                 return true;
             }
             else if (status.getStrValue(SynchroData::KEY_CONSUMER_STATUS) ==
                     SynchroData::CONSUMER_STATUS_RECEIVE_FAILURE)
             {
+                LOG(INFO) << SYNCHRO_CONSUMER << "error on receive";
                 return false;
             }
         }
