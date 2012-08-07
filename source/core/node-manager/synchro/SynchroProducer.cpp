@@ -89,9 +89,10 @@ bool SynchroProducer::wait(int timeout)
     // wait consumer(s) to consume produced data
     int step = 1;
     int waited = 0;
-    LOG(INFO) << SYNCHRO_PRODUCER << " waiting for consumer";
+    LOG(INFO) << SYNCHRO_PRODUCER << " waiting for consumer (timeout: " << timeout << ")";
     while (!watchedConsumer_)
     {
+        LOG(INFO) << SYNCHRO_PRODUCER << " sleeping for " << step << " seconds ...";
         boost::this_thread::sleep(boost::posix_time::seconds(step));
         waited += step;
         if (waited >= timeout)
@@ -104,6 +105,8 @@ bool SynchroProducer::wait(int timeout)
     // wait synchronizing to finish
     while (isSynchronizing_)
     {
+        LOG(INFO) << SYNCHRO_PRODUCER << " is synchronizing, "
+                  << "sleeping for 1 second ...";
         boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
 
@@ -212,6 +215,7 @@ void SynchroProducer::watchConsumers()
     if (!isSynchronizing_)
         return;
 
+    LOG(INFO) << SYNCHRO_PRODUCER << " watching for consumers";
     // [Synchro Node]
     //  |--- Producer
     //  |--- Consumer00000000
@@ -323,13 +327,13 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
 
 void SynchroProducer::checkConsumers()
 {
-    DLOG(INFO) << SYNCHRO_PRODUCER << " checking consumers";
+    LOG(INFO) << SYNCHRO_PRODUCER << " checking consumers";
     boost::unique_lock<boost::mutex> lock(consumers_mutex_);
 
     if (!isSynchronizing_)
         return;
 
-    DLOG(INFO) << SYNCHRO_PRODUCER << " consumers map size: " << consumersMap_.size();
+    LOG(INFO) << SYNCHRO_PRODUCER << " consumers map size: " << consumersMap_.size();
     consumermap_t::iterator it;
     for (it = consumersMap_.begin(); it != consumersMap_.end(); it++)
     {
@@ -385,8 +389,8 @@ void SynchroProducer::checkConsumers()
     }
     else
     {
-        LOG(INFO) << SYNCHRO_PRODUCER << " consumed by "<< consumedCount_ << " consumers,"
-                  << " all "<< consumersMap_.size();
+        LOG(INFO) << SYNCHRO_PRODUCER << " consumed by "<< consumedCount_
+                  << "/" << consumersMap_.size() << " consumers";
     }
 
     if (consumedCount_ == consumersMap_.size())
