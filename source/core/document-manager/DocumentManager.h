@@ -31,7 +31,6 @@
 #include <deque>
 
 #include <boost/thread.hpp>
-#include <boost/threadpool.hpp>
 #include <boost/dynamic_bitset.hpp>
 
 namespace ilplib
@@ -150,13 +149,6 @@ public:
     void getRTypePropertiesForDocument(docid_t, Document& document);
 
     bool existDocument(docid_t docId);
-
-    bool getDocumentAsync(docid_t docId);
-
-    bool getDocument_impl(
-            docid_t docId,
-            Document& document,
-            boost::detail::atomic_count* finishedJobs);
 
     bool getDocumentByCache(docid_t docId, Document& document);
 
@@ -383,10 +375,6 @@ private:
 
     unsigned int getDisplayLength_(const string& propertyName);
 
-    bool getDocumentsParallel(
-            const std::vector<unsigned int>& ids,
-            vector<Document>& docs);
-
     bool getDocumentsSequential(
             const std::vector<unsigned int>& ids,
             vector<Document>& docs);
@@ -444,9 +432,6 @@ private:
     Highlighter* highlighter_;
 
     boost::mutex mutex_;
-
-    boost::threadpool::pool threadPool_;
-
 private:
     static const std::string INDEX_FILE;
     static const std::string ACL_FILE;

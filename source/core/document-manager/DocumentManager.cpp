@@ -59,7 +59,6 @@ DocumentManager::DocumentManager(
     , propertyAliasMap_()
     , displayLengthMap_()
     , maxSnippetLength_(200)
-    , threadPool_(20)
 {
     propertyValueTable_ = new DocContainer(path);
     propertyValueTable_->open();
@@ -303,15 +302,6 @@ bool DocumentManager::existDocument(docid_t docId)
     return propertyValueTable_->exist(docId);
 }
 
-bool DocumentManager::getDocumentAsync(docid_t docId)
-{
-    Document document;
-    boost::detail::atomic_count finishedJobs(0);
-    threadPool_.schedule(boost::bind(&DocumentManager::getDocument_impl, this, docId, document, &finishedJobs));
-
-    return true;
-}
-
 bool DocumentManager::getDocumentByCache(
         docid_t docId,
         Document& document)
@@ -325,26 +315,6 @@ bool DocumentManager::getDocumentByCache(
         documentCache_.insertValue(docId, document);
         return true;
     }
-    return false;
-}
-
-bool DocumentManager::getDocument_impl(
-        docid_t docId,
-        Document& document,
-        boost::detail::atomic_count* finishedJobs)
-{
-    if (documentCache_.getValue(docId, document))
-    {
-        ++(*finishedJobs);
-        return true;
-    }
-    if (!isDeleted(docId) && propertyValueTable_->get(docId, document))
-    {
-        documentCache_.insertValue(docId, document);
-        ++(*finishedJobs);
-        return true;
-    }
-    ++(*finishedJobs);
     return false;
 }
 
@@ -565,20 +535,6 @@ bool DocumentManager::getRawTextOfDocuments(
     }
 }
 
-bool DocumentManager::getDocumentsParallel(
-        const std::vector<unsigned int>& ids,
-        vector<Document>& docs)
-{
-    docs.resize(ids.size());
-    boost::detail::atomic_count finishedJobs(0);
-    for (size_t i=0; i<ids.size(); i++)
-    {
-        threadPool_.schedule(boost::bind(&DocumentManager::getDocument_impl, this, ids[i], docs[i], &finishedJobs));
-    }
-    threadPool_.wait(finishedJobs, ids.size());
-    return true;
-}
-
 bool DocumentManager::getDocumentsSequential(
         const std::vector<unsigned int>& ids,
         vector<Document>& docs)
@@ -616,7 +572,7 @@ bool DocumentManager::getRawTextOfDocuments(
     {
         ids.push_back(it->first);
     }
-    getDocumentsParallel(ids, docs);
+    getDocumentsSequential(ids, docs);
     //make getRawTextOfOneDocument_(...) called in the order of docid
     //    map<docid_t, int>::iterator
     it = doc_idx_map.begin();
