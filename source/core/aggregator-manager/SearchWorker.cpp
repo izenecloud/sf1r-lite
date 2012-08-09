@@ -606,13 +606,26 @@ bool  SearchWorker::getResultItem(
     // shrink later
     resultItem.rawTextOfSummaryInPage_.resize(actionItem.displayPropertyList_.size());
 
-
     UString::EncodingType encodingType(UString::convertEncodingTypeFromStringToEnum(actionItem.env_.encodingType_.c_str()));
     UString rawQueryUStr(actionItem.env_.queryString_, encodingType);
 
-    bool containsOriginalTermsOnly = false;
-    if (propertyQueryTermList.size() != actionItem.displayPropertyList_.size())
-        containsOriginalTermsOnly = true;
+    std::vector<izenelib::util::UString> queryTerms;
+
+    QueryUtility::getMergedUniqueTokens(
+            rawQueryUStr,
+            laManager_,
+            queryTerms,
+            actionItem.languageAnalyzerInfo_.useOriginalKeyword_
+    );
+ 
+    //analyze_(actionItem.env_.queryString_, queryTerms);
+
+    // propertyOption
+    if (!actionItem.env_.taxonomyLabel_.empty())
+        queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.taxonomyLabel_, encodingType));
+
+    if (!actionItem.env_.nameEntityItem_.empty())
+        queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.nameEntityItem_, encodingType));
 
     typedef std::vector<DisplayProperty>::size_type vec_size_type;
     // counter for properties requiring summary, later
@@ -621,33 +634,6 @@ bool  SearchWorker::getResultItem(
     for (vec_size_type i = 0; i < actionItem.displayPropertyList_.size(); ++i)
     {
         //add raw + analyzed + tokenized query terms for snippet and highlight algorithms
-        std::vector<izenelib::util::UString> queryTerms;
-
-        if (containsOriginalTermsOnly)
-            QueryUtility::getMergedUniqueTokens(
-                    rawQueryUStr,
-                    laManager_,
-                    queryTerms,
-                    actionItem.languageAnalyzerInfo_.useOriginalKeyword_
-                    );
-        else
-            QueryUtility::getMergedUniqueTokens(
-                    propertyQueryTermList[i],
-                    rawQueryUStr,
-                    laManager_,
-                    queryTerms,
-                    actionItem.languageAnalyzerInfo_.useOriginalKeyword_);
-
-        //analyze_(actionItem.env_.queryString_, queryTerms);
-
-
-        // propertyOption
-
-        if (!actionItem.env_.taxonomyLabel_.empty())
-           queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.taxonomyLabel_, encodingType));
-
-        if (!actionItem.env_.nameEntityItem_.empty())
-           queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.nameEntityItem_, encodingType));
 
         unsigned propertyOption = 0;
         if (actionItem.displayPropertyList_[i].isHighlightOn_)
