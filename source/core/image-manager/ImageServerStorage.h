@@ -12,9 +12,13 @@
 #include <boost/thread/mutex.hpp>
 #include <string>
 #include <am/tokyo_cabinet/tc_hash.h>
-
+#include <tfs_client_api.h>
+#include <tblog.h>
 
 #define MAX_RET_LEN  8
+
+using namespace tfs::client;
+using namespace tfs::common;
 
 namespace sf1r
 {
@@ -34,10 +38,11 @@ public:
     }
     ImageServerStorage()
         :img_color_db_(NULL)
+         , tfsclient(NULL)
     {
     }
 
-    bool init(const std::string& img_color_db_path)
+    bool init(const std::string& img_color_db_path, const std::string& img_file_server)
     {
         if(img_color_db_)
             return true;
@@ -50,6 +55,17 @@ public:
             return false;
         }
         img_color_db_path_ = img_color_db_path;
+
+        TBSYS_LOGGER.setLogLevel("INFO");
+        tfsclient = TfsClient::Instance();
+        int ret = tfsclient->initialize(img_file_server.c_str());
+        if(ret != TFS_SUCCESS)
+        {
+            std::cerr << "Error: connect to image file server failed." << std::endl;
+            tfsclient = NULL;
+            return false;
+        }
+
         return true;
     }
 
@@ -138,10 +154,101 @@ public:
         return false;
     }
 
+    bool UploadImageFile(const std::string& img_local_file, std::string& ret_file_name)
+    {
+        if(tfsclient)
+        {
+            char tmp_name[TFS_FILE_LEN];
+            int64_t ret_size = tfsclient->save_file(tmp_name, TFS_FILE_LEN, img_local_file.c_str(), T_DEFAULT, NULL, NULL);
+            if(ret_size <= 0)
+            {
+                return false;
+            }
+            ret_file_name = std::string(tmp_name);
+            return true;
+        }
+        return false;
+    }
+    bool UploadImageData(const char* img_data, std::size_t data_size, std::string& ret_file_name)
+    {
+        if(tfsclient)
+        {
+            char tmp_name[TFS_FILE_LEN];
+            int64_t ret_size = tfsclient->save_buf(tmp_name, TFS_FILE_LEN,
+                img_data, data_size, T_DEFAULT, NULL, NULL, NULL);
+            if(ret_size < (int64_t)data_size)
+            {
+                return false;
+            }
+            ret_file_name = std::string(tmp_name);
+            return true;
+        }
+        return false;
+    }
+    bool DeleteImage(const std::string& storage_img_name)
+    {
+        if(tfsclient)
+        {
+            int64_t file_size;
+            int ret = tfsclient->unlink(file_size, storage_img_name.c_str(), NULL);
+            if(ret != TFS_SUCCESS)
+            {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    bool DownloadImageData(const std::string& storage_img_name, char*& buffer, std::size_t& buf_size)
+    {
+        assert(buffer == NULL);
+        int fd = -1;
+        int ret = 0;
+        fd = tfsclient->open(storage_img_name.c_str(), NULL, T_READ);
+        if( fd <= 0 )
+        {
+            std::cerr << "tfs open file failed : " << storage_img_name << std::endl;
+            return false;
+        }
+        TfsFileStat fstat;
+        ret = tfsclient->fstat(fd, &fstat);
+        if( ret != TFS_SUCCESS || fstat.size_ <= 0)
+        {
+            buf_size = 0;
+            return false;
+        }
+
+        buf_size = fstat.size_;
+        buffer = new char[buf_size];
+        std::size_t readed = 0;
+        while(readed < buf_size)
+        {
+            ret = tfsclient->read(fd, buffer + readed, buf_size - readed);
+            if(ret < 0)
+            {
+                break;
+            }
+            else
+            {
+                readed += ret;
+            }
+        }
+        if(ret < 0)
+        {
+            tfsclient->close(fd);
+            delete[] buffer;
+            buf_size = 0;
+            return false;
+        }
+        tfsclient->close(fd);
+        return true;
+    }
+
 private:
 
     std::string   img_color_db_path_;
     ImageColorDBT*  img_color_db_;
+    TfsClient*      tfsclient;
 };
 
 }

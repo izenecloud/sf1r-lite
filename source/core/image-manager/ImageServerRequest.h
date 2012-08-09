@@ -17,6 +17,9 @@ public:
     {
         METHOD_TEST = 0,
         METHOD_GET_IMAGE_COLOR,
+        METHOD_UPLOAD_IMAGE,
+        METHOD_DELETE_IMAGE,
+        METHOD_EXPORT_IMAGE,
         COUNT_OF_METHODS
     };
 
@@ -31,6 +34,33 @@ class GetImageColorRequest : public RpcRequestRequestT<ImageColorData, ImageServ
 public:
     GetImageColorRequest()
         : RpcRequestRequestT<ImageColorData, ImageServerRequest>(METHOD_GET_IMAGE_COLOR)
+    {
+    }
+};
+
+class UploadImageRequest : public RpcRequestRequestT<UploadImageData, ImageServerRequest>
+{
+public:
+    UploadImageRequest()
+        : RpcRequestRequestT<UploadImageData, ImageServerRequest>(METHOD_UPLOAD_IMAGE)
+    {
+    }
+};
+
+class DeleteImageRequest : public RpcRequestRequestT<DeleteImageData, ImageServerRequest>
+{
+public:
+    DeleteImageRequest()
+        : RpcRequestRequestT<DeleteImageData, ImageServerRequest>(METHOD_DELETE_IMAGE)
+    {
+    }
+};
+
+class ExportImageRequest : public RpcRequestRequestT<ExportImageData, ImageServerRequest>
+{
+public:
+    ExportImageRequest()
+        : RpcRequestRequestT<ExportImageData, ImageServerRequest>(METHOD_EXPORT_IMAGE)
     {
     }
 };

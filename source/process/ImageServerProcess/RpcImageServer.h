@@ -30,9 +30,13 @@ public:
     virtual void dispatch(msgpack::rpc::request req);
 
 private:
+    void exportimage(const std::string& log_file, const std::string& outdir);
+
     std::string host_;
     uint16_t port_;
     uint32_t threadNum_;
+    bool  is_exporting_;
+    boost::thread* export_thread_;
 };
 
 }
