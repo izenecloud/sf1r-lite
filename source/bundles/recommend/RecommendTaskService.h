@@ -275,7 +275,7 @@ private:
     izenelib::util::CronExpression cronExpression_;
     const std::string cronJobName_;
 
-    boost::mutex buildFreqItemMutex_;
+    boost::mutex buildCollectionMutex_;
 };
 
 } // namespace sf1r
