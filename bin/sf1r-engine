@@ -3,45 +3,50 @@
 NAME=SF1R-Engine
 PNAME=CobraProcess
 
-LOGFILE="llog"
-TIMENOW=`date +%m%d%H%M`
-COUNT_COLL=`ls ../config/*.xml|grep -v sf1config.xml|wc -l`
-ARCHIVELOG="archivelog"
+LOG_NAME="ll"
+LOG_FOLDER="log"
+SUCCESS_WORD="starting data-receiving service ..."
 
+
+function verifyconfig() {
 export LD_LIBRARY_PATH="../lib:../lib-thirdparty"
-if [ -e '../config/sf1config.xml' ]; then
- case "$1" in
+if [ ! -e '../config/sf1config.xml' ]; then
+  echo -e "\nCannot find the configuration file for SF1r -- #'sf1config.xml'#. \nPlease verify if it exists in '../config'.\n" 
+  exit 1
+fi
+}
+
+case "$1" in
   start)
-    PROCESS_NUM=`ps -ef|grep $PNAME|grep -v grep|wc -l`
-    if [ $PROCESS_NUM -eq 1 ]
+    verifyconfig
+    if [ `ps -ef|grep $PNAME|grep -v grep|wc -l` -eq 1 ]
       then
         echo -e "$NAME has already started!\n"
         exit 1
       else
-        mkdir -p $ARCHIVELOG
-        mv $LOGFILE.*.log $ARCHIVELOG/. 2>/dev/null
-        sleep 1
-        LOG_NUM=`ls $ARCHIVELOG | wc -l`
+        mkdir -p $LOG_FOLDER
+        if [ `ls -l $LOG_FOLDER/$LOG_NAME.log | awk -F' '  '{print $5}'` -ge 999000000 ]; then
+          cp $LOG_FOLDER/$LOG_NAME.log "$LOG_FOLDER/$LOG_NAME.log.`date +%m%d%H%M`"
+          echo >$LOG_FOLDER/$LOG_NAME.log
+        fi
+        LOG_NUM=`ls $LOG_FOLDER | wc -l`
         if [ $LOG_NUM -gt 80 ]; then
-          cd $ARCHIVELOG; ls -rt | head -`expr $LOG_NUM - 80` | xargs rm -f; cd ..
+          cd $LOG_FOLDER; ls -rt | head -`expr $LOG_NUM - 80` | xargs rm -f; cd ..
         fi
         echo -n "Starting $NAME"
-        ./$PNAME -F ../config --pid-file ../run/_.pid >> $LOGFILE.$TIMENOW.log 2>&1 &
+        ./$PNAME -F ../config --pid-file ../run/_.pid >> $LOG_FOLDER/$LOG_NAME.log 2>&1 &
         S=1
         while [ $S -le 900 ]
         do
           echo -n "."; sleep 1;
           let S=S+1
-          PROCESS_NUM=`ps -ef|grep $PNAME|grep -v grep|wc -l`
-          if [ $PROCESS_NUM -eq 0 ]; then
-            echo -e "Fail.\nCheck llog for more detail.\n"
+          if [ `ps -ef|grep $PNAME|grep -v grep|wc -l` -eq 0 ]; then
+            echo -e "Fail.\nCheck $LOG_FOLDER/$LOG_NAME.log for more detail.\n"
             exit 1
           fi
-          PROCESS_NUM=`ps -ef|grep $PNAME|grep -v grep|wc -l`
-          SUCCESS_WORD=`grep -c "open index manager.." $LOGFILE.$TIMENOW.log`
-          if [ $PROCESS_NUM -eq 1 ] && [ $SUCCESS_WORD -ge $COUNT_COLL ]; then
-            echo -e "Success. \nTo monitor the log file, type: 'tail -f $LOGFILE.$TIMENOW.log'\n"
-            exit 0
+          if [ `ps -ef|grep $PNAME|grep -v grep|wc -l` -eq 1 ] && [ `grep $(date +%m%d) $LOG_FOLDER/$LOG_NAME.log|grep $(date +%H:%M)|grep -c "$SUCCESS_WORD"` -ge 1 ]; then
+            echo -e "Success. \nTo monitor the log file, type: 'tail -f $LOG_FOLDER/$LOG_NAME.log'\n"
+            break
           fi
         done
     fi
@@ -56,62 +61,20 @@ if [ -e '../config/sf1config.xml' ]; then
       let S=S+1
       if [ `ps -ef|grep $PNAME|grep -v grep|wc -l` -ne 1 ]; then
         echo -e "Done.\n"
-        exit 0
-      fi
-    done
-    echo -e "Failed.\n"
-    exit 1
-    ;;
-  restart)
-    echo -n "Stopping $NAME"
-    ps -ef|grep $PNAME|grep -v grep|awk '{print $2}'|xargs kill -2 2>/dev/null
-    S=1
-    while [ $S -le 90 ]
-    do
-      echo -n "."; sleep 1;
-      let S=S+1
-      if [ `ps -ef|grep $PNAME|grep -v grep|wc -l` -ne 1 ]; then
-        echo -e "Done."
-		break
+        break
       fi
     done
     if [ `ps -ef|grep $PNAME|grep -v grep|wc -l` -ge 1 ]; then
-        echo -e "Failed.\n"
-        exit 1
+      echo -e "Failed.\n"
+      exit 1
     fi
-    mkdir -p $ARCHIVELOG
-    mv $LOGFILE.*.log $ARCHIVELOG/. 2>/dev/null
-    sleep 1
-    LOG_NUM=`ls $ARCHIVELOG | wc -l`
-    if [ $LOG_NUM -gt 80 ]; then
-      cd $ARCHIVELOG; ls -rt | head -`expr $LOG_NUM - 80` | xargs rm -f; cd ..
-    fi
-    echo -n "Starting $NAME"
-    ./$PNAME -F ../config --pid-file ../run/_.pid >> $LOGFILE.$TIMENOW.log 2>&1 &
-    S=1
-    while [ $S -le 900 ]
-    do
-      echo -n "."; sleep 1
-      let S=S+1
-      PROCESS_NUM=`ps -ef|grep $PNAME|grep -v grep|wc -l`
-      if [ $PROCESS_NUM -eq 0 ]; then
-        echo -e "Fail.\nCheck llog for more detail.\n"
-        exit 1
-      fi
-      PROCESS_NUM=`ps -ef|grep $PNAME|grep -v grep|wc -l`
-      SUCCESS_WORD=`grep -c "open index manager.." $LOGFILE.$TIMENOW.log`
-      if [ $PROCESS_NUM -eq 1 ] && [ $SUCCESS_WORD -ge $COUNT_COLL ]; then
-        echo -e "Success. \nTo monitor the log file, type: 'tail -f $LOGFILE.$TIMENOW.log'\n"
-        exit 0
-      fi
-    done
+    ;;
+  restart)
+    $0 stop
+    $0 start
     ;;
   *)
     echo -e "Usage: ./sf1r-engine  { start | stop | restart }\n" >&2
     exit 1
     ;;
- esac
-else
-  echo -e "\nCannot find the configuration file for SF1r -- #'sf1config.xml'#. \nPlease verify if it exists in '../config'.\n" 
-fi
-exit 0
+esac
