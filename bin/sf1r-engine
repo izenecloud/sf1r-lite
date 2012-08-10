@@ -24,7 +24,7 @@ case "$1" in
         echo -e "$NAME has already started!\n"
         exit 1
       else
-        mkdir -p $LOG_FOLDER
+        mkdir -p $LOG_FOLDER && touch $LOG_FOLDER/$LOG_NAME.log
         if [ `ls -l $LOG_FOLDER/$LOG_NAME.log | awk -F' '  '{print $5}'` -ge 999000000 ]; then
           cp $LOG_FOLDER/$LOG_NAME.log "$LOG_FOLDER/$LOG_NAME.log.`date +%m%d%H%M`"
           echo >$LOG_FOLDER/$LOG_NAME.log
