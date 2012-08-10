@@ -12,7 +12,7 @@
 #include <glog/logging.h>
 #include <boost/bind.hpp>
 
-#define IO_THREAD_NUM  2
+#define IO_THREAD_NUM  1
 
 using namespace sf1r;
 
@@ -22,12 +22,9 @@ ImageProcessTask::~ImageProcessTask()
 
 bool ImageProcessTask::init(const std::string& imgfiledir, ssize_t threadCount)
 {
-    cur_writter_ = 0;
-    need_backup_ = false;
     img_file_dir_ = imgfiledir;
     _stop=true;
 
-    io_threadIds_.resize(IO_THREAD_NUM);
     compute_threadIds_.resize(threadCount);
     return true;
 }
@@ -35,12 +32,16 @@ bool ImageProcessTask::init(const std::string& imgfiledir, ssize_t threadCount)
 bool ImageProcessTask::start()
 {
     _stop=false;
-    for(size_t i=0; i< io_threadIds_.size(); ++i){
-        int ret=pthread_create(&io_threadIds_[i],NULL,&ImageProcessTask::process,(void*)this);
-        if(ret != 0){
-            LOG(ERROR) << "[ImageProcessTask::start] failed to create new thread" << std::endl;
-            return false;
-        }
+    int ret=pthread_create(&io_threadId_,NULL,&ImageProcessTask::process,(void*)this);
+    if(ret != 0){
+        LOG(ERROR) << "[ImageProcessTask::start] failed to create new thread" << std::endl;
+        return false;
+    }
+
+    ret=pthread_create(&db_write_threadId_,NULL,&ImageProcessTask::write_result,(void*)this);
+    if(ret != 0){
+        LOG(ERROR) << "[ImageProcessTask::start] failed to create new thread" << std::endl;
+        return false;
     }
 
     for(size_t i=0;i<compute_threadIds_.size();++i){
@@ -58,9 +59,9 @@ bool ImageProcessTask::stop()
 {
     std::cout << "stopping ImageProcessTask " << std::endl;
     _stop=true;
-    for(size_t i=0;i<io_threadIds_.size();++i){
-        pthread_join(io_threadIds_[i],NULL);
-    }
+    pthread_join(io_threadId_,NULL);
+    pthread_join(db_write_threadId_,NULL);
+
     for(size_t i=0;i<compute_threadIds_.size();++i){
         pthread_join(compute_threadIds_[i],NULL);
     }
@@ -119,12 +120,9 @@ int ImageProcessTask::doJobs(const MSG& msg)
     ifs.close();
     return 0;
 }
-
 int ImageProcessTask::doCompute(const std::string& img_file)
 {
     static int num = 0;
-    static int new_num = 0;
-    static int bak_num = 0;
     int indexCollection[COLOR_RET_NUM];
     //RECORD_TIME_START(ONEJOB);
     std::string full_img_path = std::string(img_file_dir_) + "/" + img_file;
@@ -139,39 +137,11 @@ int ImageProcessTask::doCompute(const std::string& img_file)
         }
         oss << indexCollection[COLOR_RET_NUM - 1];
 
-        while(need_backup_)
-        {
-            if(_stop)
-                return 0;
-            usleep(100*1000);
-        }
+        if(_stop)
+            return 0;
 
-        {
-            boost::unique_lock<boost::mutex> l(backup_db_lock_);
-            ++cur_writter_;
-        }
-        ret = ImageServerStorage::get()->SetImageColor(img_file, oss.str());
-        if(!ret)
-        {
-            LOG(ERROR) << "write image color to db failed imagePath=" << img_file << std::endl;
-        }
+        db_result_queue_.push(std::make_pair(img_file, oss.str()));
 
-        {
-            boost::unique_lock<boost::mutex> l(backup_db_lock_);
-            --cur_writter_;
-            if(++new_num > 30000)
-                need_backup_ = true;
-            if( new_num > 30000 && cur_writter_ == 0 )
-            {
-                LOG(INFO) << "doCompute is backingup." << std::endl;
-                std::string bak_char;
-                bak_char = "a";
-                bak_char[0] = char('a' + (++bak_num%3));
-                ImageServerStorage::get()->backup_imagecolor_db(".tmpbak-" + bak_char);
-                new_num = 0;
-                need_backup_ = false;
-            }
-        }
         if(++num%1000 == 0)
         {
             LOG(INFO) << "doCompute processed : " << num << std::endl;
@@ -186,6 +156,51 @@ int ImageProcessTask::doCompute(const std::string& img_file)
     }
     return 0;
 }
+
+int ImageProcessTask::doWriteResultToDB(const std::pair<std::string, std::string>& result)
+{
+    static int new_num = 0;
+    static int bak_num = 0;
+    bool ret = ImageServerStorage::get()->SetImageColor(result.first, result.second);
+    if(!ret)
+    {
+        LOG(ERROR) << "write image color to db failed imagePath=" << result.first << std::endl;
+    }
+    if( ++new_num > 30000 )
+    {
+        LOG(INFO) << "doWriteResultToDB is backingup." << std::endl;
+        std::string bak_char;
+        bak_char = "a";
+        bak_char[0] = char('a' + (++bak_num%3));
+        ImageServerStorage::get()->backup_imagecolor_db(".tmpbak-" + bak_char);
+        new_num = 0;
+    }
+    return 0;
+}
+
+void *ImageProcessTask::write_result(void *arg)
+{
+    ImageProcessTask *task=(ImageProcessTask*)arg;
+    bool flag;
+    std::pair<std::string, std::string> img_color_result;
+    while(!task->_stop){
+        flag=false;
+        while(!task->db_result_queue_.popNonBlocking(img_color_result)){
+            if(task->_stop){
+                flag=true;
+                break;
+            }
+            usleep(100000);
+        }
+        if(!flag){
+            task->doWriteResultToDB(img_color_result);
+        }
+    }
+    while(task->db_result_queue_.popNonBlocking(img_color_result)){
+    }
+    return 0;
+}
+
 
 void *ImageProcessTask::compute(void *arg)
 {

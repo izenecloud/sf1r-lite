@@ -143,6 +143,10 @@ void RpcImageServer::dispatch(msgpack::rpc::request req)
                     ofs.close();
                 }
             }
+            else
+            {
+                LOG(WARNING) << "file upload failed: " << reqdata.img_file << std::endl;
+            }
             reqdata.img_file = ret_file;
             req.result(reqdata);
         }
@@ -156,15 +160,16 @@ void RpcImageServer::dispatch(msgpack::rpc::request req)
         }
         else if (method == ImageServerRequest::method_names[ImageServerRequest::METHOD_EXPORT_IMAGE])
         {
+            msgpack::type::tuple<ExportImageData> params;
+            req.params().convert(&params);
+            ExportImageData& reqdata = params.get<0>();
+            req.result(reqdata);
             if(is_exporting_)
             {
                 LOG(WARNING) << "image is already exporting! Ignore any more request." << std::endl;
                 return;
             }
             is_exporting_ = true;
-            msgpack::type::tuple<ExportImageData> params;
-            req.params().convert(&params);
-            ExportImageData& reqdata = params.get<0>();
             if(export_thread_)
             {
                 delete export_thread_;
