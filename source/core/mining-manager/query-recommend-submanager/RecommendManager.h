@@ -47,7 +47,7 @@ class ConceptIDManager;
 class DocumentManager;
 class QueryCorrectionSubmanager;
 class AutoFillSubManager;
-class RecommendManager : public boost::noncopyable
+class RecommendManager
 {
     typedef uint32_t INFO_TYPE;
     typedef  boost::mpl::vector<uint8_t, uint8_t>  IR_DATA_TYPES;
@@ -119,6 +119,7 @@ public:
     }
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(RecommendManager);
 
     uint8_t LabelScore_(uint32_t df);
 

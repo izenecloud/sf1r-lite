@@ -5,6 +5,8 @@ host=localhost
 rpc.port=18821
 rpc.thread_num=10
 rpc.request_queue_size=32768
+image_fileserver.ns=172.16.0.168:8108
+image_upload_log=./image_upload_log
 
 storage.base_dir=image_server_storage
 storage.img_color.dbname=imgcolor.db

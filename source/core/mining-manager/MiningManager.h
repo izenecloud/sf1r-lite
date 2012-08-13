@@ -110,7 +110,7 @@ class CTRManager;
  * to the mining results.  Currently, it includes  taxonomy generation, duplication detection,
  * query recommendation and similarity clustering.
  */
-class MiningManager : public boost::noncopyable
+class MiningManager
 {
 typedef DupDetectorWrapper DupDType;
 typedef idmlib::util::ContainerSwitch<idmlib::tdt::Storage> TdtStorageType;
@@ -262,12 +262,14 @@ public:
 
     bool setCustomRank(
         const std::string& query,
-        const std::vector<std::string>& docIdList
+        const std::vector<std::string>& topDocIdList,
+        const std::vector<std::string>& excludeDocIdList
     );
 
     bool getCustomRank(
         const std::string& query,
-        std::vector<Document>& docList
+        std::vector<Document>& topDocList,
+        std::vector<Document>& excludeDocList
     );
 
     bool getCustomQueries(std::vector<std::string>& queries);
@@ -363,6 +365,8 @@ public:
     }
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(MiningManager);
+
     void printSimilarLabelResult_(uint32_t label_id);
 
     /**

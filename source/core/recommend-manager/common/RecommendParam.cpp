@@ -97,9 +97,14 @@ bool RecommendParam::check(std::string& errorMsg) const
     return true;
 }
 
-void RecommendParam::enableItemCondition(ItemManager* itemManager)
+void RecommendParam::enableItemCondition(
+    ItemManager* itemManager,
+    QueryBuilder* queryBuilder
+)
 {
     condition.itemManager_ = itemManager;
+    condition.createBitVector(queryBuilder);
+
     inputParam.itemFilter.setItemCondition(&condition);
 }
 

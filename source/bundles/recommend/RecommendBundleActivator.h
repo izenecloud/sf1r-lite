@@ -74,7 +74,7 @@ private:
     void createClickCounter_();
     void createRecommender_();
 
-    void createService_();
+    void createService_(IndexSearchService* indexSearchService);
 
 private:
     IBundleContext* context_;

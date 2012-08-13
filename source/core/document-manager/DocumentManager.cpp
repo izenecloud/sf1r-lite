@@ -59,7 +59,6 @@ DocumentManager::DocumentManager(
     , propertyAliasMap_()
     , displayLengthMap_()
     , maxSnippetLength_(200)
-    , threadPool_(20)
 {
     propertyValueTable_ = new DocContainer(path);
     propertyValueTable_->open();
@@ -287,18 +286,20 @@ bool DocumentManager::getDocument(docid_t docId, Document& document)
     return !isDeleted(docId) && propertyValueTable_->get(docId, document);
 }
 
+void DocumentManager::getRTypePropertiesForDocument(docid_t docId, Document& document)
+{
+    for (NumericPropertyTableMap::const_iterator it = numericPropertyTables_.begin();
+            it != numericPropertyTables_.end(); ++it)
+    {
+        std::string tempStr;
+        if (it->second->getStringValue(docId, tempStr))
+            document.property(it->first) = izenelib::util::UString(tempStr, encodingType_);
+    }
+}
+
 bool DocumentManager::existDocument(docid_t docId)
 {
     return propertyValueTable_->exist(docId);
-}
-
-bool DocumentManager::getDocumentAsync(docid_t docId)
-{
-    Document document;
-    boost::detail::atomic_count finishedJobs(0);
-    threadPool_.schedule(boost::bind(&DocumentManager::getDocument_impl, this, docId, document, &finishedJobs));
-
-    return true;
 }
 
 bool DocumentManager::getDocumentByCache(
@@ -317,24 +318,17 @@ bool DocumentManager::getDocumentByCache(
     return false;
 }
 
-bool DocumentManager::getDocument_impl(
-        docid_t docId,
-        Document& document,
-        boost::detail::atomic_count* finishedJobs)
+bool DocumentManager::getDocuments(
+        const std::vector<unsigned int>& ids,
+        std::vector<Document>& docs)
 {
-    if (documentCache_.getValue(docId, document))
+    docs.resize(ids.size());
+    bool ret = true;
+    for (size_t i=0; i<ids.size(); i++)
     {
-        ++(*finishedJobs);
-        return true;
+        ret &= getDocumentByCache(ids[i], docs[i]);
     }
-    if (!isDeleted(docId) && propertyValueTable_->get(docId, document))
-    {
-        documentCache_.insertValue(docId, document);
-        ++(*finishedJobs);
-        return true;
-    }
-    ++(*finishedJobs);
-    return false;
+    return ret;
 }
 
 docid_t DocumentManager::getMaxDocId() const
@@ -554,88 +548,32 @@ bool DocumentManager::getRawTextOfDocuments(
     }
 }
 
-bool DocumentManager::getDocumentsParallel(
-        const std::vector<unsigned int>& ids,
-        vector<Document>& docs)
-{
-    docs.resize(ids.size());
-    boost::detail::atomic_count finishedJobs(0);
-    for (size_t i=0; i<ids.size(); i++)
-    {
-        threadPool_.schedule(boost::bind(&DocumentManager::getDocument_impl, this, ids[i], docs[i], &finishedJobs));
-    }
-    threadPool_.wait(finishedJobs, ids.size());
-    return true;
-}
-
-bool DocumentManager::getDocumentsSequential(
-        const std::vector<unsigned int>& ids,
-        vector<Document>& docs)
-{
-    docs.resize(ids.size());
-    for (size_t i=0; i<ids.size(); i++)
-    {
-        getDocumentByCache(ids[i], docs[i]);
-    }
-    return true;
-}
-
-bool DocumentManager::getRawTextOfDocuments(
-        const std::vector<docid_t>& docIdList,
-        const string& propertyName,
-        const unsigned int option,
-        const std::vector<izenelib::util::UString>& queryTerms,
-        std::vector<izenelib::util::UString>& rawTextList,
-        std::vector<izenelib::util::UString>& fullTextList)
-{
-    map<docid_t, int> doc_idx_map;
-    unsigned int docListSize = docIdList.size();
-
-    rawTextList.resize(docListSize);
-    fullTextList.resize(docListSize);
-
-    for (unsigned int i=0; i<docListSize; i++)
-        doc_idx_map.insert(make_pair(docIdList[i], i));
-
-    vector<Document> docs;
-    vector<unsigned int> ids;
-    ids.reserve(doc_idx_map.size());
-    map<docid_t, int>::iterator it = doc_idx_map.begin();
-    for (; it != doc_idx_map.end(); it++)
-    {
-        ids.push_back(it->first);
-    }
-    getDocumentsParallel(ids, docs);
-    //make getRawTextOfOneDocument_(...) called in the order of docid
-    //    map<docid_t, int>::iterator
-    it = doc_idx_map.begin();
-    bool ret = false;
-    for (; it != doc_idx_map.end(); it++)
-    {
-        if (getRawTextOfOneDocument_(it->first, propertyName, option,
-                                     queryTerms, rawTextList[it->second], fullTextList[it->second]))
-        {
-            ret = true;
-        }
-    }
-    return ret;
-}
-
-bool DocumentManager::getRawTextOfOneDocument_(
+bool DocumentManager::getRawTextOfOneDocument(
         const docid_t docId,
+        Document& document,
         const string& propertyName,
         const unsigned int option,
         const std::vector<izenelib::util::UString>& queryTerms,
         izenelib::util::UString& outSnippet,
         izenelib::util::UString& rawText)
 {
-    PropertyValue propValue;
-    if (!getPropertyValue(docId, propertyName, propValue))
-        return false; // docId does not exist
-
     rawText.clear();
-    if (izenelib::util::UString* pCast = get<izenelib::util::UString>(&propValue))
-        std::swap(rawText, *pCast);
+    NumericPropertyTableMap::const_iterator it = numericPropertyTables_.find(propertyName);
+    if (it != numericPropertyTables_.end())
+    {
+        std::string tempStr;
+        if (!it->second->getStringValue(docId, tempStr))
+        {
+//          return false;
+        }
+        rawText = izenelib::util::UString(tempStr, encodingType_);
+    }
+    else
+    {
+        PropertyValue& propValue = document.property(propertyName);
+        if (izenelib::util::UString* pCast = get<izenelib::util::UString>(&propValue))
+            std::swap(rawText, *pCast);
+    }
 
     if (rawText.empty())
     {
@@ -648,7 +586,10 @@ bool DocumentManager::getRawTextOfOneDocument_(
     {
         if (!getPropertyValue(docId, propertyName + PROPERTY_BLOCK_SUFFIX,
                               sentenceOffsets))
+        {
+            outSnippet = rawText;
             return false;
+        }
     }
 
     maxSnippetLength_ = getDisplayLength_(propertyName);

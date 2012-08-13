@@ -77,6 +77,16 @@ public:
         return compute_thread_;
     }
 
+    inline const std::string& getImageFileServer() const
+    {
+        return img_file_server_;
+    }
+
+    inline const std::string& getUploadImageLog() const
+    {
+        return img_upload_log_;
+    }
+
 private:
     bool parseCfgFile_(const std::string& cfgFile);
 
@@ -100,6 +110,8 @@ private:
     std::string img_color_dbname_;
     std::string scd_file_fullpath_;
     std::string img_file_fullpath_;
+    std::string img_file_server_;
+    std::string img_upload_log_;
 };
 
 }

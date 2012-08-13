@@ -16,7 +16,7 @@ namespace sf1r
 
 class ProductPriceTrend;
 
-class ProductCronJobHandler : public boost::noncopyable
+class ProductCronJobHandler
 {
 public:
     static ProductCronJobHandler* getInstance()
@@ -38,6 +38,7 @@ public:
     void runEvents();
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(ProductCronJobHandler);
     void cronJob_();
 
 private:

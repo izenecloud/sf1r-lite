@@ -23,7 +23,7 @@ namespace sf1r
 typedef izenelib::sdb::unordered_sdb_fixed<unsigned int, float,
 izenelib::util::ReadWriteLock> CogramType;
 
-class EkQueryCorrection : public boost::noncopyable
+class EkQueryCorrection
 {
 public:
     EkQueryCorrection(int ed);
@@ -62,6 +62,7 @@ public:
     bool ReloadKrResource();
 
 protected:
+    DISALLOW_COPY_AND_ASSIGN(EkQueryCorrection);
 
     void initDictHash(
         izenelib::am::rde_hash<izenelib::util::UString, bool>& hashdb,

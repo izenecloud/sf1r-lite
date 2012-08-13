@@ -693,6 +693,7 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     bool ret = deleteDoc_(docid, timestamp);
     if (ret)
     {
+        searchWorker_->clearSearchCache();
         doMining_();
     }
 
@@ -1004,6 +1005,8 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
 
     // interrupt when closing the process
     boost::this_thread::interruption_point();
+
+    searchWorker_->clearSearchCache();
 
     return true;
 }

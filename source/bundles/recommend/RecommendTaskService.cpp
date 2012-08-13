@@ -412,6 +412,8 @@ bool RecommendTaskService::buildCollection()
         return false;
     }
 
+    boost::mutex::scoped_lock lock(buildCollectionMutex_);
+
     if (loadUserSCD_() && loadOrderSCD_())
     {
         LOG(INFO) << "End recommend collection build, elapsed time: " << timer.elapsed() << " seconds";
@@ -787,13 +789,6 @@ void RecommendTaskService::buildFreqItemSet_()
     if (! bundleConfig_.freqItemSetEnable_)
         return;
 
-    boost::mutex::scoped_try_lock lock(buildFreqItemMutex_);
-    if (lock.owns_lock() == false)
-    {
-        LOG(INFO) << "exit frequent item set building as it has already been started for collection " << bundleConfig_.collectionName_;
-        return;
-    }
-
     LOG(INFO) << "start building frequent item set for collection " << bundleConfig_.collectionName_;
 
     orderManager_.buildFreqItemsets();
@@ -805,6 +800,14 @@ void RecommendTaskService::cronJob_()
 {
     if (cronExpression_.matches_now())
     {
+        boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+
+        if (lock.owns_lock() == false)
+        {
+            LOG(INFO) << "exit recommend cron job as still in building collection " << bundleConfig_.collectionName_;
+            return;
+        }
+
         flush_();
 
         buildFreqItemSet_();

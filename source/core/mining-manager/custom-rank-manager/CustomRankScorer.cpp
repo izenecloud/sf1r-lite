@@ -1,18 +1,24 @@
 #include "CustomRankScorer.h"
+#include <algorithm>
 
 namespace sf1r
 {
 
-CustomRankScorer::CustomRankScorer(const std::vector<docid_t>& docIdList)
+CustomRankScorer::CustomRankScorer(const CustomRankValue& customValue)
+    : sortCustomValue_(customValue)
 {
-    std::size_t relativeScore = docIdList.size();
+    const CustomRankValue::DocIdList& topIds = customValue.topIds;
+    std::size_t relativeScore = topIds.size();
 
-    for (std::vector<docid_t>::const_iterator it = docIdList.begin();
-        it != docIdList.end(); ++it)
+    for (CustomRankValue::DocIdList::const_iterator it = topIds.begin();
+        it != topIds.end(); ++it)
     {
         scoreMap_[*it] = CUSTOM_RANK_BASE_SCORE + relativeScore;
         --relativeScore;
     }
+
+    std::sort(sortCustomValue_.topIds.begin(), sortCustomValue_.topIds.end());
+    std::sort(sortCustomValue_.excludeIds.begin(), sortCustomValue_.excludeIds.end());
 }
 
 } // namespace sf1r

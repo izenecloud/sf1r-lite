@@ -122,6 +122,16 @@ void ImageServerCfg::parseServerCfg(properties& props)
     {
         rpcRequestQueueSize_ = DEFAULT_RPC_REQUEST_QUEUE_SIZE;
     }
+
+    if (!props.getValue("image_fileserver.ns", img_file_server_))
+    {
+        throw std::runtime_error("Image File Server Configuration mssing property: image_fileserver.ns");
+    }
+    if (!props.getValue("image_upload_log", img_upload_log_))
+    {
+        throw std::runtime_error("Image File Server Configuration mssing property: image_upload_log");
+    }
+
 }
 
 void ImageServerCfg::parseStorageCfg(properties& props)

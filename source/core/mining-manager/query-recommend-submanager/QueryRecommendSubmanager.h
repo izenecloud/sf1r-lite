@@ -27,7 +27,7 @@ namespace sf1r
 /**
  * The class interface to recommend query.
  */
-class QueryRecommendSubmanager : public boost::noncopyable
+class QueryRecommendSubmanager
 {
 public:
 
@@ -54,11 +54,8 @@ public:
                            const std::vector<docid_t>& topDocIdList, unsigned int maxNum,
                            QueryRecommendRep& queryList);
 
-
-
-
-
 private:
+    DISALLOW_COPY_AND_ASSIGN(QueryRecommendSubmanager);
 
     boost::shared_ptr<RecommendManager> rmDb_;
     std::string inject_file_;

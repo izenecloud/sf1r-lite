@@ -17,6 +17,7 @@
 #include <recommend-manager/common/ItemBundle.h>
 #include <recommend-manager/common/RateParam.h>
 
+#include <parsers/FilteringParser.h>
 #include <common/BundleSchemaHelpers.h>
 #include <common/Keys.h>
 
@@ -230,59 +231,23 @@ bool RecommendController::value2ItemIdVec(const std::string& propName, std::vect
 
 bool RecommendController::value2ItemCondition(ItemCondition& itemCondition)
 {
-    const izenelib::driver::Value& condValue = request()[Keys::resource][Keys::condition];
+    const IndexBundleSchema& indexSchema = collectionHandler_->indexSchema_;
+    const MiningSchema& miningSchema = collectionHandler_->miningSchema_;
+    FilteringParser filteringParser(indexSchema, miningSchema);
 
-    if (nullValue(condValue))
-    {
-        return true;
-    }
+    const izenelib::driver::Value& condValue =
+        request()[Keys::resource][Keys::conditions];
 
-    if (condValue.type() != izenelib::driver::Value::kObjectType)
+    if (! filteringParser.parse(condValue))
     {
-        response().addError("Require a map in request[resource][condition].");
+        response().addError(filteringParser.errorMessage());
         return false;
     }
 
-    std::string propName = asString(condValue[Keys::property]);
-    if (propName.empty())
-    {
-        response().addError("Require \"" + Keys::property + "\" in request[resource][condition].");
-        return false;
-    }
-    itemIdToDocId(propName);
+    response().addWarning(filteringParser.warningMessage());
 
-    if (! isDocumentProperty(collectionHandler_->documentSchema_, propName))
-    {
-        response().addError("Unknown item property \"" + propName + "\" in request[resource][condition].");
-        return false;
-    }
-    itemCondition.propName_ = propName;
-
-    const izenelib::driver::Value& arrayValue = condValue[Keys::value];
-    if (arrayValue.type() != izenelib::driver::Value::kArrayType)
-    {
-        response().addError("Require an array of property values in request[resource][condition][value].");
-        return false;
-    }
-
-    for (std::size_t i = 0; i < arrayValue.size(); ++i)
-    {
-        std::string valueStr = asString(arrayValue(i));
-
-        if (valueStr.empty())
-        {
-            response().addError("Invalid property value in request[resource][condition][value].");
-            return false;
-        }
-
-        itemCondition.propValueSet_.insert(izenelib::util::UString(valueStr, ENCODING_TYPE));
-    }
-
-    if (itemCondition.propValueSet_.empty())
-    {
-        response().addError("No property values in request[resource][condition][value].");
-        return false;
-    }
+    std::swap(itemCondition.filteringList_,
+        filteringParser.mutableFilteringRules());
 
     return true;
 }
@@ -597,6 +562,12 @@ void RecommendController::visit_item()
  *     - @b quantity (@c Uint): the number of items purchased.
  *     - @b keywords (@c String): if non-empty, it means that @b USERID searched this keyword before purchasing @b ITEMID.@n
  *       This parameter is used to recommend items for @b BAQ type in @c do_recommend().
+ *     - @b referer (@c String): before @b USERID purchases @b ITEMID, where does this @b ITEMID come from.@n
+ *       This parameter is used to calculate conversion rate in log analysis. Currently only below values are allowed.@n
+ *       If it comes from none of below referers, for example, it might come from home page, promotions, etc,@n
+ *       there is no need to specify @b referer for such item.
+ *       - @b search: it comes from DocumentsController#search().
+ *       - @b recommend: it comes from @c do_recommend().
  *   - @b order_id (@c String): the order id.
  *
  * @section response
@@ -612,8 +583,8 @@ void RecommendController::visit_item()
  *   "resource": {
  *     "USERID": "user_001",
  *     "items": [
- *       {"ITEMID": "item_001", "price": 100, "quantity": 1},
- *       {"ITEMID": "item_002", "price": 200, "quantity": 2},
+ *       {"ITEMID": "item_001", "price": 100, "quantity": 1, "referer": "search"},
+ *       {"ITEMID": "item_002", "price": 200, "quantity": 2, "referer": "recommend"},
  *       {"ITEMID": "item_003", "price": 300, "quantity": 3}
  *     ],
  *     "order_id": "order_001"
@@ -946,9 +917,7 @@ bool RecommendController::parseRateParam(RateParam& param)
  *   - @b select (@c Array): each is a property name String, which property would be returned in response @b resources.@n
  *     For example, you could specify @b select as ["ITEMID", "name", "link"].@n
  *     The default value would be all property names configured in <DocumentSchema>.
- *   - @b condition (@c Object): specify the condition that recommendation results must meet.
- *     - @b property* (@c String): item property name, such as @b ITEMID, @b category, etc
- *     - @b value* (@c Array): the property values, each recommendation result must match one of the property value in this array.
+ *   - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
  *
  * @section response
  *
@@ -1025,14 +994,15 @@ bool RecommendController::parseRecommendParam(RecommendParam& param)
     param.inputParam.limit = asUintOr(resourceValue[Keys::max_count],
                                       kDefaultRecommendCount);
 
-    if (! (value2ItemIdVec(Keys::input_items, param.inputItems) &&
-           value2ItemIdVec(Keys::include_items, param.includeItems) &&
-           value2ItemIdVec(Keys::exclude_items, param.excludeItems) &&
-           value2SelectProps(param.selectRecommendProps) &&
-           value2ItemCondition(param.condition)))
-    {
+    const bool convertResult =
+        value2ItemIdVec(Keys::input_items, param.inputItems) &&
+        value2ItemIdVec(Keys::include_items, param.includeItems) &&
+        value2ItemIdVec(Keys::exclude_items, param.excludeItems) &&
+        value2SelectProps(param.selectRecommendProps) &&
+        value2ItemCondition(param.condition);
+
+    if (! convertResult)
         return false;
-    }
 
     param.userIdStr = asString(resourceValue[Keys::USERID]);
     param.sessionIdStr = asString(resourceValue[Keys::session_id]);

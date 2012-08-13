@@ -1,14 +1,15 @@
 #include "SynchroProducer.h"
 
 #include <node-manager/SuperNodeManager.h>
-
 #include <net/distribute/DataTransfer2.hpp>
 
-#include <sstream>
 #include <boost/thread.hpp>
+#include <glog/logging.h>
+#include <sstream>
 
 using namespace sf1r;
 
+#define SYNCHRO_PRODUCER "[" << syncZkNode_ << "]"
 
 SynchroProducer::SynchroProducer(
         boost::shared_ptr<ZooKeeper>& zookeeper,
@@ -50,7 +51,7 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
     // start synchronizing
     if (isSynchronizing_)
     {
-        std::cout<<"[SynchroProducer] error: is synchroning!"<<std::endl;
+        LOG(ERROR) << SYNCHRO_PRODUCER << " is synchronizing!";
         return false;
     }
     else
@@ -81,16 +82,17 @@ bool SynchroProducer::wait(int timeout)
 {
     if (!isSynchronizing_)
     {
-        std::cout<<"[SynchroProducer::wait] not synchronizing, call produce() first."<<std::endl;
+        LOG(INFO) << SYNCHRO_PRODUCER << " wait not synchronizing, call produce() first.";
         return false;
     }
 
     // wait consumer(s) to consume produced data
     int step = 1;
     int waited = 0;
-    std::cout<<"[SynchroProducer] waiting for consumer"<<std::endl;
+    LOG(INFO) << SYNCHRO_PRODUCER << " waiting for consumer (timeout: " << timeout << ")";
     while (!watchedConsumer_)
     {
+        LOG(INFO) << SYNCHRO_PRODUCER << " sleeping for " << step << " seconds ...";
         boost::this_thread::sleep(boost::posix_time::seconds(step));
         waited += step;
         if (waited >= timeout)
@@ -103,6 +105,8 @@ bool SynchroProducer::wait(int timeout)
     // wait synchronizing to finish
     while (isSynchronizing_)
     {
+        LOG(INFO) << SYNCHRO_PRODUCER << " is synchronizing, "
+                  << "sleeping for 1 second ...";
         boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
 
@@ -112,13 +116,14 @@ bool SynchroProducer::wait(int timeout)
 /* virtual */
 void SynchroProducer::process(ZooKeeperEvent& zkEvent)
 {
-    //std::cout<<"[SynchroProducer] "<< zkEvent.toString();
+    DLOG(INFO) << SYNCHRO_PRODUCER << "process event: "<< zkEvent.toString();
 }
 
 void SynchroProducer::onNodeDeleted(const std::string& path)
 {
     if (consumersMap_.find(path) != consumersMap_.end())
     {
+        DLOG(INFO) << SYNCHRO_PRODUCER << " on node deleted: " << path;
         // check if consumer broken down
         checkConsumers();
     }
@@ -127,6 +132,7 @@ void SynchroProducer::onDataChanged(const std::string& path)
 {
     if (consumersMap_.find(path) != consumersMap_.end())
     {
+        DLOG(INFO) << SYNCHRO_PRODUCER << " on data changed: " << path;
         // check if consumer finished
         checkConsumers();
     }
@@ -135,6 +141,7 @@ void SynchroProducer::onChildrenChanged(const std::string& path)
 {
     if (path == syncZkNode_)
     {
+        DLOG(INFO) << SYNCHRO_PRODUCER << " on children changed: " << path;
         // whether new consumer comes, or consumer break down.
         watchConsumers();
         checkConsumers();
@@ -158,20 +165,20 @@ bool SynchroProducer::doProduce(SynchroData& syncData)
             if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
             {
                 zookeeper_->setZNodeData(producerZkNode_, syncData.serialize());
-                std::cout<<"[SynchroProducer] warning: overwrote "<<producerZkNode_<<std::endl;
+                LOG(WARNING) << SYNCHRO_PRODUCER << " overwrite " << producerZkNode_;
                 produced = true;
             }
 
-            std::cout<<"[SynchroProducer] Failed to create "<<producerZkNode_
-                     <<" ("<<zookeeper_->getErrorString()<<")"<<std::endl;
+            LOG(INFO) << SYNCHRO_PRODUCER << " failed to create " << producerZkNode_
+                      << " (" << zookeeper_->getErrorString() << ")";
 
             // wait ZooKeeperManager to init
-            std::cout<<"[SynchroProducer] waiting for znode initialization"<<std::endl;
+            LOG(INFO) << SYNCHRO_PRODUCER << " waiting for znode initialization";
             sleep(10);
         }
         else
         {
-            std::cout<<"[SynchroProducer] created "<<producerZkNode_<<std::endl;
+            LOG(INFO) << SYNCHRO_PRODUCER << " created " << producerZkNode_;
             produced = true;
         }
     }
@@ -181,7 +188,8 @@ bool SynchroProducer::doProduce(SynchroData& syncData)
         int retryCnt = 0;
         while (!zookeeper_->isConnected())
         {
-            std::cout<<"[SynchroProducer] connecting to ZooKeeper ("<<zookeeper_->getHosts()<<")"<<std::endl;
+            LOG(INFO) << SYNCHRO_PRODUCER << " connecting to ZooKeeper (" 
+                      << zookeeper_->getHosts() << ")";
             zookeeper_->connect(true);
             if ((retryCnt++) > 10)
                 break;
@@ -189,7 +197,7 @@ bool SynchroProducer::doProduce(SynchroData& syncData)
 
         if (!zookeeper_->isConnected())
         {
-            std::cout<< "[SynchroProducer] connecting to ZooKeeper Timeout!"<<std::endl;
+            LOG(INFO) << SYNCHRO_PRODUCER << " connect to ZooKeeper timeout!";
         }
         else
         {
@@ -207,6 +215,7 @@ void SynchroProducer::watchConsumers()
     if (!isSynchronizing_)
         return;
 
+    LOG(INFO) << SYNCHRO_PRODUCER << " watching for consumers";
     // [Synchro Node]
     //  |--- Producer
     //  |--- Consumer00000000
@@ -218,6 +227,7 @@ void SynchroProducer::watchConsumers()
     // If watched any consumer
     if (childrenList.size() > 1)
     {
+        LOG(INFO) << SYNCHRO_PRODUCER << " found (" << childrenList.size() << ") children";
         if (!watchedConsumer_)
             watchedConsumer_ = true;
 
@@ -228,7 +238,7 @@ void SynchroProducer::watchConsumers()
                 consumersMap_.find(childrenList[i]) == consumersMap_.end())
             {
                 consumersMap_[childrenList[i]] = std::make_pair(false, false);
-                std::cout<<"[SynchroProducer] watched a consumer "<<childrenList[i]<<std::endl;
+                LOG(INFO) << SYNCHRO_PRODUCER << " watched a consumer: " << childrenList[i];
             }
         }
     }
@@ -240,6 +250,7 @@ void SynchroProducer::watchConsumers()
         if (!transferData(it->first))
         {
             // xxx set failed status
+            LOG(WARNING) << SYNCHRO_PRODUCER << " set failed status";
         }
     }
 }
@@ -266,7 +277,7 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
     // to local host
     if (consumerHost == SuperNodeManager::get()->getLocalHostIP())
     {
-        std::cout << "[SynchroProducer] consumerHost: "<<consumerHost<< " is on localhost" << std::endl;
+        LOG(INFO) << SYNCHRO_PRODUCER << " consumerHost: " << consumerHost << " is on localhost";
         ret = true;
     }
     // to remote host
@@ -290,8 +301,8 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
                 //xxx extend
             }
 
-            std::cout<<"[SynchroProducer] transfer data to "<<consumerHost<<":"<<consumerPort<<std::endl;
-            std::cout<<dataPath<<std::endl;
+            LOG(INFO) << SYNCHRO_PRODUCER << " transfer data " << dataPath
+                      << " to " << consumerHost << ":" <<consumerPort;
             izenelib::net::distribute::DataTransfer2 transfer(consumerHost, consumerPort);
             if (not transfer.syncSend(dataPath, recvDir, false))
             {
@@ -301,24 +312,28 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
     }
 
     // notify consumer after transferred
-    if (ret)
-        consumerInfo.setValue(SynchroData::KEY_CONSUMER_STATUS, SynchroData::CONSUMER_STATUS_RECEIVE_SUCCESS);
-    else
-        consumerInfo.setValue(SynchroData::KEY_CONSUMER_STATUS, SynchroData::CONSUMER_STATUS_RECEIVE_FAILURE);
+    const char* status;
+    if (ret) {
+        status = SynchroData::CONSUMER_STATUS_RECEIVE_SUCCESS;
+    } else {
+        status = SynchroData::CONSUMER_STATUS_RECEIVE_FAILURE;
+    }
 
+    LOG(INFO) << SYNCHRO_PRODUCER << " setting consumer status to " << status;
+    consumerInfo.setValue(SynchroData::KEY_CONSUMER_STATUS, status);
     zookeeper_->setZNodeData(consumerZnodePath, consumerInfo.serialize());
     return ret;
 }
 
 void SynchroProducer::checkConsumers()
 {
-    //std::cout<<"SynchroProducer::checkConsumers"<<std::endl;
+    LOG(INFO) << SYNCHRO_PRODUCER << " checking consumers";
     boost::unique_lock<boost::mutex> lock(consumers_mutex_);
 
     if (!isSynchronizing_)
         return;
 
-    //std::cout << consumersMap_.size()<< std::endl;
+    LOG(INFO) << SYNCHRO_PRODUCER << " consumers map size: " << consumersMap_.size();
     consumermap_t::iterator it;
     for (it = consumersMap_.begin(); it != consumersMap_.end(); it++)
     {
@@ -328,11 +343,11 @@ void SynchroProducer::checkConsumers()
         }
 
         const std::string& consumer = it->first;
-        //std::cout<<"[SynchroProducer] checking consumer "<<consumer<<" ";
+        DLOG(INFO) << SYNCHRO_PRODUCER << " checking consumer " << consumer;
         std::string sdata;
         if (zookeeper_->getZNodeData(consumer, sdata, ZooKeeper::WATCH))
         {
-            //std::cout<<sdata<<std::endl;
+            DLOG(INFO) << SYNCHRO_PRODUCER << " data: " << sdata;
             SynchroData syncData;
             syncData.loadKvString(sdata);
             std::string syncRet = syncData.getStrValue(SynchroData::KEY_RETURN);
@@ -349,8 +364,11 @@ void SynchroProducer::checkConsumers()
             else
                 continue;
 
+            LOG(INFO) << SYNCHRO_PRODUCER << " " << syncRet << " on consumer " << consumer;
+                    
             consumedCount_ ++; // how many consumers have finished
             zookeeper_->deleteZNode(consumer); // delete node after have got result.
+            LOG(INFO) << SYNCHRO_PRODUCER << " deleted node " << consumer;
         }
         else
         {
@@ -360,7 +378,7 @@ void SynchroProducer::checkConsumers()
                 it->second.second = false;
                 consumedCount_ ++;
 
-                std::cout<<"[SynchroProducer]!! lost connection to "<<consumer<<std::endl;
+                LOG(WARNING) << SYNCHRO_PRODUCER << " lost connection to " << consumer<< "!!";
             }
         }
     }
@@ -371,7 +389,8 @@ void SynchroProducer::checkConsumers()
     }
     else
     {
-        std::cout<<"[SynchroProducer] consumed by "<<consumedCount_<<" consumers, all "<<consumersMap_.size()<<std::endl;
+        LOG(INFO) << SYNCHRO_PRODUCER << " consumed by "<< consumedCount_
+                  << "/" << consumersMap_.size() << " consumers";
     }
 
     if (consumedCount_ == consumersMap_.size())
@@ -390,8 +409,10 @@ void SynchroProducer::checkConsumers()
             }
         }
 
-        if (callback_on_consumed_)
+        if (callback_on_consumed_) {
+            DLOG(INFO) << SYNCHRO_PRODUCER << " calling completion callback";
             callback_on_consumed_(result_on_consumed_);
+        }
 
         // Synchronizing finished
         endSynchroning(info);
@@ -413,15 +434,5 @@ void SynchroProducer::endSynchroning(const std::string& info)
     // Synchronizing finished
     isSynchronizing_ = false;
     zookeeper_->deleteZNode(syncZkNode_, true);
-    std::cout<<"Synchronizing finished - "<<info<<std::endl;
+    LOG(INFO) << SYNCHRO_PRODUCER << " synchronizing finished - "<< info;
 }
-
-
-
-
-
-
-
-
-
-

@@ -41,7 +41,8 @@ bool ImageServerProcess::init(const std::string& cfgFile)
     // Parse config first
     RETURN_ON_FAILURE(ImageServerCfg::get()->parse(cfgFile));
 
-    RETURN_ON_FAILURE(ImageServerStorage::get()->init(ImageServerCfg::get()->getImageColorDB()));
+    RETURN_ON_FAILURE(ImageServerStorage::get()->init(ImageServerCfg::get()->getImageColorDB(),
+            ImageServerCfg::get()->getImageFileServer()));
     RETURN_ON_FAILURE(initRpcImageServer());
 
     addExitHook(boost::bind(&ImageServerProcess::stop, this));

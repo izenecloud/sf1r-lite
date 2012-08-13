@@ -48,7 +48,6 @@ RecommendManager::RecommendManager(
     , dir_switcher_(path)
     , max_docid_(0), max_docid_file_(path+"/max_id")
 {
-    open();
 }
 
 RecommendManager::~RecommendManager()
@@ -80,18 +79,18 @@ bool RecommendManager::open()
     {
         return false;
     }
-    //try {
+    try {
         std::cout<<"open ir manager on "<<current_recommend_path<<std::endl;
         recommend_db_ = new MIRDatabase(current_recommend_path);
         recommend_db_->setCacheSize<0>(100000000);
         recommend_db_->setCacheSize<1>(0);
         recommend_db_->open();
-    //}
-    //catch(std::exception& ex)
-    //{
-        //LOG(ERROR)<<ex.what()<<std::endl;
-        //return false;
-    //}
+    }
+    catch(std::exception& ex)
+    {
+        LOG(ERROR)<<ex.what()<<std::endl;
+        return false;
+    }
     std::cout<<"open ir manager finished"<<std::endl;
     std::string path_tocreate = current_recommend_path+"/concept-id";
     boost::filesystem::create_directories(path_tocreate);
@@ -99,6 +98,7 @@ bool RecommendManager::open()
     if (!concept_id_manager_->Open())
     {
         //TODO
+        return false;
     }
     if(!autofill_->Init(path_+"/autofill")) return false;
     isOpen_ = true;
@@ -107,7 +107,7 @@ bool RecommendManager::open()
 
 void RecommendManager::close()
 {
-    if (isOpen_)
+    //if (isOpen_)
     {
         serInfo_.close();
         if (recommend_db_ != NULL)

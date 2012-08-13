@@ -131,30 +131,34 @@ public:
     );
 
     /**
-     * Set @p docIdList as the custom ranking for @p query.
+     * Set custom ranking for @p query.
      * @param query user query
-     * @param docIdList doc id list
+     * @param topDocIdList doc id list for top ranking docs
+     * @param excludeDocIdList doc id list for docs to exclude
      * @return true for success, false for failure
      */
     bool setCustomRank(
         const std::string& query,
-        const std::vector<std::string>& docIdList
+        const std::vector<std::string>& topDocIdList,
+        const std::vector<std::string>& excludeDocIdList
     );
 
     /**
-     * Get @p docList as the custom ranking for @p query.
+     * Get the custom ranking for @p query.
      * @param query user query
-     * @param docList doc list
+     * @param topDocList doc list for top ranking docs
+     * @param excludeDocList doc list for docs to exclude
      * @return true for success, false for failure
      */
     bool getCustomRank(
         const std::string& query,
-        std::vector<Document>& docList
+        std::vector<Document>& topDocList,
+        std::vector<Document>& excludeDocList
     );
 
     /**
      * Get @p queries which have been customized by @c setCustomRank() with
-     * non-empty @p docIdList.
+     * non-empty doc id list.
      * @return true for success, false for failure
      */
     bool getCustomQueries(std::vector<std::string>& queries);

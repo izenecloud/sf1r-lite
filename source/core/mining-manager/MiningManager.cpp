@@ -243,6 +243,13 @@ bool MiningManager::open()
         rmDb_.reset(new RecommendManager(queryDataPath_, collectionName_, mining_schema_, document_manager_,
                                          qcManager_, analyzer_, logdays));
 
+        if(!rmDb_->open())
+        {
+            std::cerr<<"open query recommend manager failed"<<std::endl;
+            rmDb_->close();
+            return false;
+        }
+
         /** log manager */
         MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
         if (!handler->cronStart(miningConfig_.recommend_param.cron))
@@ -422,7 +429,8 @@ bool MiningManager::open()
             bfs::create_directories(customRankDir);
 
             const std::string customRankPath = (customRankDir / "custom.db").string();
-            customRankManager_ = new CustomRankManager(customRankPath);
+            customRankManager_ = new CustomRankManager(customRankPath,
+                document_manager_.get());
 
             // product ranker factory
             if (productRankerFactory_) delete productRankerFactory_;
@@ -1475,32 +1483,30 @@ bool MiningManager::setMerchantScore(const MerchantStrScoreMap& merchantScoreMap
 
 bool MiningManager::setCustomRank(
     const std::string& query,
-    const std::vector<std::string>& docIdList
+    const std::vector<std::string>& topDocIdList,
+    const std::vector<std::string>& excludeDocIdList
 )
 {
-    if (! customRankManager_)
-        return false;
+    CustomRankValue customValue;
 
-    std::vector<docid_t> convertIdList;
-    if (! convertDocIdList_(docIdList, convertIdList))
-        return false;
-
-    return customRankManager_->setDocIdList(query, convertIdList);
+    return customRankManager_ &&
+           convertDocIdList_(topDocIdList, customValue.topIds) &&
+           convertDocIdList_(excludeDocIdList, customValue.excludeIds) &&
+           customRankManager_->setCustomValue(query, customValue);
 }
 
 bool MiningManager::getCustomRank(
     const std::string& query,
-    std::vector<Document>& docList
+    std::vector<Document>& topDocList,
+    std::vector<Document>& excludeDocList
 )
 {
-    if (! customRankManager_)
-        return false;
+    CustomRankValue customValue;
 
-    std::vector<docid_t> docIdList;
-    if (! customRankManager_->getDocIdList(query, docIdList))
-        return false;
-
-    return getDocList_(docIdList, docList);
+    return customRankManager_ &&
+           customRankManager_->getCustomValue(query, customValue) &&
+           getDocList_(customValue.topIds, topDocList) &&
+           getDocList_(customValue.excludeIds, excludeDocList);
 }
 
 bool MiningManager::getCustomQueries(std::vector<std::string>& queries)
@@ -1550,7 +1556,7 @@ bool MiningManager::getDocList_(
         if (! document_manager_->getDocument(docId, doc))
         {
             LOG(WARNING) << "in getDocList_(), docid_t " << docId << " does not exist";
-            return false;
+            continue;
         }
 
         docList.push_back(doc);

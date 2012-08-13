@@ -28,7 +28,7 @@ class CnQueryCorrection;
 namespace sf1r
 {
 class EkQueryCorrection;
-class QueryCorrectionSubmanager : public boost::noncopyable
+class QueryCorrectionSubmanager
 {
     typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> QueryLogType;
     typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
@@ -71,6 +71,7 @@ public:
     void FinishInject();
 
 protected:
+    DISALLOW_COPY_AND_ASSIGN(QueryCorrectionSubmanager);
     /**
      * @brief Initialize some member variables
      * @return true if success false if failed.

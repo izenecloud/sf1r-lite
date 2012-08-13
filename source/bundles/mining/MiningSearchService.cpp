@@ -255,10 +255,11 @@ bool MiningSearchService::setTopGroupLabel(
 
 bool MiningSearchService::setCustomRank(
     const std::string& query,
-    const std::vector<std::string>& docIdList
+    const std::vector<std::string>& topDocIdList,
+    const std::vector<std::string>& excludeDocIdList
 )
 {
-    bool result = miningManager_->setCustomRank(query, docIdList);
+    bool result = miningManager_->setCustomRank(query, topDocIdList, excludeDocIdList);
 
     if (result)
     {
@@ -270,10 +271,11 @@ bool MiningSearchService::setCustomRank(
 
 bool MiningSearchService::getCustomRank(
     const std::string& query,
-    std::vector<Document>& docList
+    std::vector<Document>& topDocList,
+    std::vector<Document>& excludeDocList
 )
 {
-    return miningManager_->getCustomRank(query, docList);
+    return miningManager_->getCustomRank(query, topDocList, excludeDocList);
 }
 
 bool MiningSearchService::getCustomQueries(std::vector<std::string>& queries)

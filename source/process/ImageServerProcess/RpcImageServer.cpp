@@ -6,7 +6,13 @@
 #include "errno.h"
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/thread.hpp>
 #include <glog/logging.h>
+
+#include <tfs_client_api.h>
+
+using namespace tfs::client;
+using namespace tfs::common;
 
 namespace sf1r
 {
@@ -15,6 +21,8 @@ RpcImageServer::RpcImageServer(const std::string& host, uint16_t port, uint32_t 
     : host_(host)
     , port_(port)
     , threadNum_(threadNum)
+    , is_exporting_(false)
+    , export_thread_(NULL)
 {
 }
 
@@ -45,6 +53,12 @@ void RpcImageServer::stop()
 {
     instance.end();
     instance.join();
+    if(export_thread_)
+    {
+        export_thread_->interrupt();
+        export_thread_->join();
+        delete export_thread_;
+    }
 }
 
 void RpcImageServer::dispatch(msgpack::rpc::request req)
@@ -93,6 +107,78 @@ void RpcImageServer::dispatch(msgpack::rpc::request req)
             }
             req.result(reqdata);
         }
+        else if (method == ImageServerRequest::method_names[ImageServerRequest::METHOD_UPLOAD_IMAGE])
+        {
+            msgpack::type::tuple<UploadImageData> params;
+            req.params().convert(&params);
+            UploadImageData& reqdata = params.get<0>();
+            std::string ret_file;
+            if(reqdata.param_type == 0)
+            {
+                reqdata.success = ImageServerStorage::get()->UploadImageFile(reqdata.img_file, ret_file);
+            }
+            else if(reqdata.param_type == 1)
+            {
+                reqdata.success = ImageServerStorage::get()->UploadImageData(reqdata.img_file.data(),
+                    reqdata.img_file.size(), ret_file);
+            }
+            else
+            {
+                reqdata.success = false;
+            }
+            if(reqdata.success)
+            {
+                // write log file
+                //
+                ofstream ofs;
+                try
+                {
+                    ofs.open(ImageServerCfg::get()->getUploadImageLog().c_str(), ofstream::app);
+                    ofs << ret_file.c_str() << std::endl;
+                    ofs.close();
+                }
+                catch(std::exception& e)
+                {
+                    LOG(ERROR) << "write upload log failed: " << ret_file << std::endl;
+                    ofs.close();
+                }
+            }
+            else
+            {
+                LOG(WARNING) << "file upload failed: " << reqdata.img_file << std::endl;
+            }
+            reqdata.img_file = ret_file;
+            req.result(reqdata);
+        }
+        else if (method == ImageServerRequest::method_names[ImageServerRequest::METHOD_DELETE_IMAGE])
+        {
+            msgpack::type::tuple<DeleteImageData> params;
+            req.params().convert(&params);
+            DeleteImageData& reqdata = params.get<0>();
+            reqdata.success = ImageServerStorage::get()->DeleteImage(reqdata.img_file);
+            req.result(reqdata);
+        }
+        else if (method == ImageServerRequest::method_names[ImageServerRequest::METHOD_EXPORT_IMAGE])
+        {
+            msgpack::type::tuple<ExportImageData> params;
+            req.params().convert(&params);
+            ExportImageData& reqdata = params.get<0>();
+            req.result(reqdata);
+            if(is_exporting_)
+            {
+                LOG(WARNING) << "image is already exporting! Ignore any more request." << std::endl;
+                return;
+            }
+            is_exporting_ = true;
+            if(export_thread_)
+            {
+                delete export_thread_;
+            }
+
+            export_thread_ = new boost::thread(&RpcImageServer::exportimage, this, 
+                    reqdata.img_log_file, reqdata.out_dir);
+
+        }
         else
         {
             req.error(msgpack::rpc::NO_METHOD_ERROR);
@@ -106,6 +192,51 @@ void RpcImageServer::dispatch(msgpack::rpc::request req)
     {
         req.error(std::string(e.what()));
     }
+}
+
+void RpcImageServer::exportimage(const std::string& log_file, const std::string& outdir)
+{
+    ifstream ifs;
+    try
+    {
+    ifs.open(log_file.c_str(), ifstream::in);
+
+    while(ifs.good())
+    {
+        char file_name[TFS_FILE_LEN];
+        ifs.getline(file_name, TFS_FILE_LEN);
+        char* buffer = NULL;
+        std::size_t buf_size = 0;
+        bool ret = ImageServerStorage::get()->DownloadImageData(file_name, buffer, buf_size);
+        if(ret)
+        {
+            ofstream ofs;
+            try
+            {
+                ofs.open((outdir + "/" + file_name).c_str(), ofstream::trunc);
+                ofs.write(buffer, buf_size);
+                ofs.close();
+            }
+            catch(std::exception& e)
+            {
+                ofs.close();
+                LOG(WARNING) << "export failed (save data to out file error) : " << e.what() << ",file: " << file_name << std::endl;
+            }
+        }
+        else
+        {
+            LOG(WARNING) << "export failed (download error): " << file_name << std::endl;
+        }
+    }
+
+    ifs.close();
+    }
+    catch(std::exception& e)
+    {
+        ifs.close();
+        LOG(WARNING) << "exception while exporting: " << e.what() << std::endl;
+    }
+    is_exporting_ = false;
 }
 
 }

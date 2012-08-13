@@ -1,5 +1,6 @@
 #include "CustomRankManager.h"
 #include "CustomRankScorer.h"
+#include <document-manager/DocumentManager.h>
 
 namespace
 {
@@ -11,7 +12,7 @@ public:
 
     void operator()(
         const std::string& key,
-        const sf1r::CustomRankManager::DocIdList& value
+        const sf1r::CustomRankValue& value
     )
     {
         if (! value.empty())
@@ -29,8 +30,12 @@ private:
 namespace sf1r
 {
 
-CustomRankManager::CustomRankManager(const std::string& dbPath)
+CustomRankManager::CustomRankManager(
+    const std::string& dbPath,
+    const DocumentManager* docManager
+)
     : db_(dbPath)
+    , docManager_(docManager)
 {
 }
 
@@ -39,32 +44,57 @@ void CustomRankManager::flush()
     db_.flush();
 }
 
-bool CustomRankManager::setDocIdList(
+bool CustomRankManager::setCustomValue(
     const std::string& query,
-    const DocIdList& docIdList
+    const CustomRankValue& customValue
 )
 {
-    return db_.update(query, docIdList);
+    return db_.update(query, customValue);
 }
 
-bool CustomRankManager::getDocIdList(
+bool CustomRankManager::getCustomValue(
     const std::string& query,
-    DocIdList& docIdList
+    CustomRankValue& customValue
 )
 {
-    docIdList.clear();
+    customValue.clear();
 
-    return db_.get(query, docIdList);
+    return db_.get(query, customValue);
 }
 
 CustomRankScorer* CustomRankManager::getScorer(const std::string& query)
 {
-    DocIdList docIdList;
+    CustomRankValue customValue;
 
-    if (!db_.get(query, docIdList) || docIdList.empty())
+    if (! db_.get(query, customValue))
         return NULL;
 
-    return new CustomRankScorer(docIdList);
+    removeDeletedDocs_(customValue.topIds);
+
+    if (customValue.empty())
+        return NULL;
+
+    return new CustomRankScorer(customValue);
+}
+
+void CustomRankManager::removeDeletedDocs_(std::vector<docid_t>& docIds)
+{
+    if (! docManager_)
+        return;
+
+    const std::size_t size = docIds.size();
+    std::size_t j = 0;
+
+    for (std::size_t i = 0; i < size; ++i)
+    {
+        if (! docManager_->isDeleted(docIds[i]))
+        {
+            docIds[j] = docIds[i];
+            ++j;
+        }
+    }
+
+    docIds.resize(j);
 }
 
 bool CustomRankManager::getQueries(std::vector<std::string>& queries)

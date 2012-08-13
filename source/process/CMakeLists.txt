@@ -131,32 +131,45 @@ TARGET_LINK_LIBRARIES(LogServerProcess
 
 IF(OpenCV_FOUND)
 
-    MESSAGE("============ OpenCV found, The ImageServerProcess will be builded. ==============")
+    IF(NOT $ENV{TBLIB_ROOT} STREQUAL "")
+        MESSAGE("============ OpenCV and TFS client found, The ImageServerProcess will be builded. ==============")
 
-    FILE(GLOB_RECURSE image_server_process_SRC
-        "ImageServerProcess/*.cc" 
-        "ImageServerProcess/*.cpp" 
-        "common/ProcessOptions.cpp" 
-        "common/OnSignal.cpp" 
-        )
-    ADD_EXECUTABLE(ImageServerProcess ${image_server_process_SRC})
+        INCLUDE_DIRECTORIES(
+            $ENV{TBLIB_ROOT}/include
+            $ENV{TBLIB_ROOT}/include/tbsys
+            $ENV{TBLIB_ROOT}/include/tbnet
+            $ENV{HOME}/tfs_bin/include
+            )
 
-    TARGET_LINK_LIBRARIES(ImageServerProcess
-        sf1r_common
-        ${izenelib_LIBRARIES}
-        sf1r_image_manager
-        ${OpenCV_LIBS}
+        FILE(GLOB image_server_process_SRC
+            "ImageServerProcess/*.cc" 
+            "ImageServerProcess/*.cpp" 
+            "common/ProcessOptions.cpp" 
+            "common/OnSignal.cpp" 
+            )
+        ADD_EXECUTABLE(ImageServerProcess ${image_server_process_SRC})
 
-        #external
-        ${Boost_LIBRARIES}
-        ${Glog_LIBRARIES}
-        ${CMAKE_THREAD_LIBS_INIT}
-        )
+        TARGET_LINK_LIBRARIES(ImageServerProcess
+            sf1r_common
+            ${izenelib_LIBRARIES}
+            sf1r_image_manager
+            ${OpenCV_LIBS}
 
-    INSTALL(TARGETS
-        ImageServerProcess
-        RUNTIME DESTINATION bin
-        COMPONENT sf1r_apps)
+            #external
+            ${Boost_LIBRARIES}
+            ${Glog_LIBRARIES}
+            ${TokyoCabinet_LIBRARIES}
+            ${CMAKE_THREAD_LIBS_INIT}
+            $ENV{TBLIB_ROOT}/lib/libtbnet.so
+            $ENV{TBLIB_ROOT}/lib/libtbsys.so
+            $ENV{HOME}/tfs_bin/lib/libtfsclient.so
+            )
+
+        INSTALL(TARGETS
+            ImageServerProcess
+            RUNTIME DESTINATION bin
+            COMPONENT sf1r_apps)
+    ENDIF()
 ELSE(OpenCV_FOUND)
     MESSAGE("!!!!!!! OpenCV not found, the ImageServerProcess target will not be builded. !!!!!!!!!!!!!")
 ENDIF(OpenCV_FOUND)

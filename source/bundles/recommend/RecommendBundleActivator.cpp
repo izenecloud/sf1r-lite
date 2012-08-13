@@ -171,7 +171,7 @@ bool RecommendBundleActivator::init_(IndexSearchService* indexSearchService)
         createOrder_();
         createClickCounter_();
         createRecommender_();
-        createService_();
+        createService_(indexSearchService);
     }
 
     return true;
@@ -374,7 +374,7 @@ void RecommendBundleActivator::createRecommender_()
                                                      *getRecommendBase_));
 }
 
-void RecommendBundleActivator::createService_()
+void RecommendBundleActivator::createService_(IndexSearchService* indexSearchService)
 {
     taskService_.reset(new RecommendTaskService(*config_, directoryRotator_, *userManager_, *itemManager_,
                                                 *visitManager_, *purchaseManager_, *cartManager_, *orderManager_,
@@ -382,7 +382,8 @@ void RecommendBundleActivator::createService_()
                                                 *updateRecommendBase_, updateRecommendWorker_.get()));
 
     searchService_.reset(new RecommendSearchService(*config_, *userManager_, *itemManager_,
-                                                    *recommenderFactory_, *itemIdGenerator_));
+                                                    *recommenderFactory_, *itemIdGenerator_,
+                                                    indexSearchService));
 
     Properties props;
     props.put("collection", config_->collectionName_);

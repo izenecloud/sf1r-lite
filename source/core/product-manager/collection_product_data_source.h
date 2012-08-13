@@ -36,6 +36,8 @@ public:
 
     bool GetDocument(uint32_t docid, PMDocumentType& doc);
 
+    void GetRTypePropertiesForDocument(uint32_t docid, PMDocumentType& doc);
+
     void GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid);
 
     bool UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid);
