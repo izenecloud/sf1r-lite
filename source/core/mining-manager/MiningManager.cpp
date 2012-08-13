@@ -429,7 +429,8 @@ bool MiningManager::open()
             bfs::create_directories(customRankDir);
 
             const std::string customRankPath = (customRankDir / "custom.db").string();
-            customRankManager_ = new CustomRankManager(customRankPath);
+            customRankManager_ = new CustomRankManager(customRankPath,
+                document_manager_.get());
 
             // product ranker factory
             if (productRankerFactory_) delete productRankerFactory_;

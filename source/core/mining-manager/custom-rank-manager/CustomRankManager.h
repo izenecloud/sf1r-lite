@@ -17,6 +17,7 @@
 namespace sf1r
 {
 class CustomRankScorer;
+class DocumentManager;
 
 class CustomRankManager
 {
@@ -25,7 +26,10 @@ public:
      * @brief Constructor
      * @param dbPath the db path
      */
-    CustomRankManager(const std::string& dbPath);
+    CustomRankManager(
+        const std::string& dbPath,
+        const DocumentManager* docManager = NULL
+    );
 
     void flush();
 
@@ -68,10 +72,15 @@ public:
     bool getQueries(std::vector<std::string>& queries);
 
 private:
+    void removeDeletedDocs_(std::vector<docid_t>& docIds);
+
+private:
     /** key: query */
     typedef SDBWrapper<std::string, CustomRankValue> DBType;
 
     DBType db_;
+
+    const DocumentManager* docManager_;
 };
 
 } // namespace sf1r
