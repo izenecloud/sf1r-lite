@@ -45,7 +45,10 @@ public:
         return 0;
     }
 
-    const CustomRankValue& getSortCustomValue() const { return sortCustomValue_; }
+    const CustomRankValue& getSortCustomValue() const
+    {
+        return sortCustomValue_;
+    }
 
 private:
     CustomRankValue sortCustomValue_;
