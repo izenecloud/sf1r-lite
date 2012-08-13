@@ -62,7 +62,9 @@ bool LogServerHandler::Generate(const std::string& mdb_instance)
         }
         LogServerClient::Update(pid, non_empty_oid_list);
     }
+    LOG(INFO)<<"log server start flushing"<<std::endl;
     LogServerClient::Flush();
+    LOG(INFO)<<"log server flush finished"<<std::endl;
     return true;
 }
 
