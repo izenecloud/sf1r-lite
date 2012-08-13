@@ -18,6 +18,8 @@ static char **gColorText;
 //using namespace sf1r;
 using namespace std;
 
+bool getImageColor(IplImage* srcGray, IplImage* srcOrig, int* indexCollection, int count);
+
 void getHistogram(unsigned char *imageData,int width,int height,int widthStep,int blockSize,int *histogram)
 {
     int i=0,j=0;
@@ -413,11 +415,32 @@ const char *getColorText(int index)
     }
 }
 
+bool getImageColor(char *imgdata, unsigned int imgsize,int *indexCollection,int count)
+{
+    static int load_failed = 0;
+    CvMat mat = cvMat( 100, 100, CV_8UC1, imgdata);
+    IplImage* srcOrig = cvDecodeImage( &mat, CV_LOAD_IMAGE_COLOR);
+    if(srcOrig == NULL)
+    {
+        // GIF not supported, so this may fail.
+        if(++load_failed % 100 == 0)
+            LOG(ERROR) << "decode image data failed." << load_failed << endl;
+        return false;
+    }
+    IplImage* srcGray = cvDecodeImage(&mat, CV_LOAD_IMAGE_GRAYSCALE);
+    if(srcGray == NULL)
+    {
+        cvReleaseImage(&srcOrig);
+        LOG(WARNING) << "decode image data failed." << std::endl;
+        return false;
+    }
+    return getImageColor(srcGray, srcOrig, indexCollection, count);
+}
+
 bool getImageColor(const char * const imagePath,int *indexCollection,int count)
 {
     static int non_exist = 0;
     static int load_failed = 0;
-    float factor=0.8;
     if(access(imagePath,F_OK)==-1){
         if(++non_exist % 10000 == 0)
             LOG(ERROR) << "file does not exist:" << non_exist << endl;
@@ -428,7 +451,7 @@ bool getImageColor(const char * const imagePath,int *indexCollection,int count)
         return false;
     }
 
-    IplImage *srcGray=NULL,*srcGrayTmp=NULL,*srcOrig=NULL,*srcOrigTmp=NULL;
+    IplImage *srcGray=NULL,*srcOrig=NULL;
     if(NULL==(srcGray=cvLoadImage(imagePath,CV_LOAD_IMAGE_GRAYSCALE))){
         // GIF not supported, so this may fail.
         if(++load_failed % 100 == 0)
@@ -441,6 +464,13 @@ bool getImageColor(const char * const imagePath,int *indexCollection,int count)
         printf("Error string %s\n", cvErrorStr(cvGetErrStatus()));
         return false;
     }
+    return getImageColor(srcGray, srcOrig, indexCollection, count);
+}
+
+bool getImageColor(IplImage* srcGray, IplImage* srcOrig, int* indexCollection, int count)
+{
+    IplImage *srcGrayTmp=NULL,*srcOrigTmp=NULL;
+    float factor=0.8;
     if(srcGray->width*factor>50&&srcGray->height*factor>50){
         if(NULL==(srcGrayTmp=cvCreateImage(cvSize(srcGray->width*factor,srcGray->height*factor),srcGray->depth,srcGray->nChannels))){
             cvReleaseImage(&srcGray);
@@ -518,4 +548,7 @@ bool getImageColor(const char * const imagePath,int *indexCollection,int count)
         cvReleaseImage(&srcOrigTmp);
     }
     return true;
+
 }
+
+

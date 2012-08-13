@@ -155,9 +155,11 @@ void ImageServerCfg::parseStorageCfg(properties& props)
     {
         throw std::runtime_error("Color Server Configuration missing property: storage.img_file_fullpath");
     }
-    if(!bfs::exists(img_file_fullpath_))
+    if(img_file_fullpath_.empty() || !bfs::exists(img_file_fullpath_))
     {
-        throw std::runtime_error("Color Server : the image file path did not exist!");
+        //throw std::runtime_error("Color Server : the image file path did not exist!");
+        std::cout << "img_file_fullpath is empty or not exists, use the tfs server instead!" << std::endl;
+        img_file_fullpath_.clear();
     }
     props.getValue("storage.scd_file_fullpath", scd_file_fullpath_);
 }

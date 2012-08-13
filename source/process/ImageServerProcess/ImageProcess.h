@@ -14,6 +14,7 @@ typedef struct S_RGB{
     {
     }
 }RGB,*RGBPtr;
+
 void getHistogram(unsigned char *imageData,int width,int height,int widthStep,int blockSize,int *histogram);
 //void getEntityHistogram(IplImage *imageSrc,unsigned char *contourData,int width,int height,int widthStep,int blockSize,int *contourHist,unsigned char mask=0x0);
 int otsu(unsigned char *imageData, int width, int height, int widthStep);
@@ -27,6 +28,7 @@ void initColorTable();
 void initDistTable();
 const char *getColorText(int index);
 bool getImageColor(const char * const imagePath,int *indexCollection,int count);
+bool getImageColor(char *imgdata, unsigned int imgsize,int *indexCollection,int count);
 
 void testGetEntityImage(const char * const imagePath);
 

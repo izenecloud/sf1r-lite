@@ -124,9 +124,31 @@ int ImageProcessTask::doCompute(const std::string& img_file)
 {
     static int num = 0;
     int indexCollection[COLOR_RET_NUM];
+    std::string full_img_path;
+    bool ret;
     //RECORD_TIME_START(ONEJOB);
-    std::string full_img_path = std::string(img_file_dir_) + "/" + img_file;
-    bool ret=getImageColor(full_img_path.c_str(),indexCollection,COLOR_RET_NUM);
+    if(img_file_dir_.empty())
+    {
+        // using tfs file
+        full_img_path = img_file;
+        char* imgdata = NULL;
+        std::size_t imgsize = 0;
+        ret = ImageServerStorage::get()->DownloadImageData(full_img_path, imgdata, imgsize);
+        if(ret)
+        {
+            ret = getImageColor(imgdata, imgsize, indexCollection, COLOR_RET_NUM);
+        }
+        else
+        {
+            LOG(INFO) << "Download Image data failed imagePath=" << img_file << std::endl;
+        }
+    }
+    else
+    {
+        // use local image file
+        full_img_path = std::string(img_file_dir_) + "/" + img_file;
+        ret=getImageColor(full_img_path.c_str(),indexCollection,COLOR_RET_NUM);
+    }
     //RECORD_TIME_END(ONEJOB);
     //CALC_TIME_ELAPSED(ONEJOB);
     if(ret){
