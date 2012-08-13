@@ -690,17 +690,17 @@ bool  SearchWorker::getResultItem(
         {
             resultItem.snippetTextOfDocumentInPage_[i].resize(docListSize);
             resultItem.fullTextOfDocumentInPage_[i].resize(docListSize);
-            std::map<docid_t, int>::const_iterator it = doc_idx_map.begin();
-            for (; it != doc_idx_map.end(); it++)
+            std::map<docid_t, int>::const_iterator dit = doc_idx_map.begin();
+            for (size_t ii = 0; dit != doc_idx_map.end(); ++dit,++ii)
             {
                 documentManager_->getRawTextOfOneDocument(
-                    it->first,
-                    docs[it->second],
+                    dit->first,
+                    docs[ii],
                     actionItem.displayPropertyList_[i].propertyString_,
                     propertyOption,
                     queryTerms,
-                    resultItem.snippetTextOfDocumentInPage_[i][it->second],
-                    resultItem.fullTextOfDocumentInPage_[i][it->second]);
+                    resultItem.snippetTextOfDocumentInPage_[i][dit->second],
+                    resultItem.fullTextOfDocumentInPage_[i][dit->second]);
             }
             ret = true;
         }
