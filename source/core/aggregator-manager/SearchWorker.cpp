@@ -632,18 +632,16 @@ bool  SearchWorker::getResultItem(
     ///summary/snipet/highlight should utlize the extracted documents object, instead of get once more
     ///ugly design currently
     std::map<docid_t, int> doc_idx_map;
-    unsigned int docListSize = docsInPage.size();
+    const unsigned int docListSize = docsInPage.size();
+    std::vector<unsigned int> ids(docListSize);
 
     for (unsigned int i=0; i<docListSize; i++)
-        doc_idx_map.insert(std::make_pair(docsInPage[i], i));
-
-    std::vector<unsigned int> ids;
-    ids.reserve(doc_idx_map.size());
-    std::map<docid_t, int>::iterator it = doc_idx_map.begin();
-    for (; it != doc_idx_map.end(); it++)
     {
-        ids.push_back(it->first);
+        docid_t docId = docsInPage[i];
+        doc_idx_map[docId] = i;
+        ids[i] = docId;
     }
+
     std::vector<Document> docs;
     if(!documentManager_->getDocuments(ids, docs))
     {

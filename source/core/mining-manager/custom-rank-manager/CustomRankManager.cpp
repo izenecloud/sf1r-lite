@@ -1,5 +1,6 @@
 #include "CustomRankManager.h"
 #include "CustomRankScorer.h"
+#include <document-manager/DocumentManager.h>
 
 namespace
 {
@@ -29,8 +30,12 @@ private:
 namespace sf1r
 {
 
-CustomRankManager::CustomRankManager(const std::string& dbPath)
+CustomRankManager::CustomRankManager(
+    const std::string& dbPath,
+    const DocumentManager* docManager
+)
     : db_(dbPath)
+    , docManager_(docManager)
 {
 }
 
@@ -61,10 +66,35 @@ CustomRankScorer* CustomRankManager::getScorer(const std::string& query)
 {
     CustomRankValue customValue;
 
-    if (!db_.get(query, customValue) || customValue.empty())
+    if (! db_.get(query, customValue))
+        return NULL;
+
+    removeDeletedDocs_(customValue.topIds);
+
+    if (customValue.empty())
         return NULL;
 
     return new CustomRankScorer(customValue);
+}
+
+void CustomRankManager::removeDeletedDocs_(std::vector<docid_t>& docIds)
+{
+    if (! docManager_)
+        return;
+
+    const std::size_t size = docIds.size();
+    std::size_t j = 0;
+
+    for (std::size_t i = 0; i < size; ++i)
+    {
+        if (! docManager_->isDeleted(docIds[i]))
+        {
+            docIds[j] = docIds[i];
+            ++j;
+        }
+    }
+
+    docIds.resize(j);
 }
 
 bool CustomRankManager::getQueries(std::vector<std::string>& queries)
