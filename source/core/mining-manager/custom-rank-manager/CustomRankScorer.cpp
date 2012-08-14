@@ -4,13 +4,13 @@
 namespace sf1r
 {
 
-CustomRankScorer::CustomRankScorer(const CustomRankValue& customValue)
+CustomRankScorer::CustomRankScorer(const CustomRankDocId& customValue)
     : sortCustomValue_(customValue)
 {
-    const CustomRankValue::DocIdList& topIds = customValue.topIds;
+    const CustomRankDocId::DocIdList& topIds = customValue.topIds;
     std::size_t relativeScore = topIds.size();
 
-    for (CustomRankValue::DocIdList::const_iterator it = topIds.begin();
+    for (CustomRankDocId::DocIdList::const_iterator it = topIds.begin();
         it != topIds.end(); ++it)
     {
         scoreMap_[*it] = CUSTOM_RANK_BASE_SCORE + relativeScore;

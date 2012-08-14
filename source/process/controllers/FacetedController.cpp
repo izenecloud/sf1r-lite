@@ -654,15 +654,13 @@ void FacetedController::get_merchant_score()
 void FacetedController::set_custom_rank()
 {
     std::string query;
-    std::vector<std::string> topDocIdList;
-    std::vector<std::string> excludeDocIdList;
+    CustomRankDocStr customDocStr;
 
     if (requireKeywords_(query) &&
-        getDocIdList_(Keys::top_docid_list, topDocIdList) &&
-        getDocIdList_(Keys::exclude_docid_list, excludeDocIdList))
+        getDocIdList_(Keys::top_docid_list, customDocStr.topIds) &&
+        getDocIdList_(Keys::exclude_docid_list, customDocStr.excludeIds))
     {
-        if (! miningSearchService_->setCustomRank(query,
-            topDocIdList, excludeDocIdList))
+        if (! miningSearchService_->setCustomRank(query, customDocStr))
         {
             response().addError("Failed to set custom rank.");
         }

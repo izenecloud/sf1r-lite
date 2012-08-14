@@ -1,5 +1,6 @@
 #include "CustomRankManager.h"
 #include "CustomRankScorer.h"
+#include "CustomDocIdConverter.h"
 #include <document-manager/DocumentManager.h>
 
 namespace
@@ -12,7 +13,7 @@ public:
 
     void operator()(
         const std::string& key,
-        const sf1r::CustomRankValue& value
+        const sf1r::CustomRankDocStr& value
     )
     {
         if (! value.empty())
@@ -32,9 +33,11 @@ namespace sf1r
 
 CustomRankManager::CustomRankManager(
     const std::string& dbPath,
+    CustomDocIdConverter& docIdConverter,
     const DocumentManager* docManager
 )
     : db_(dbPath)
+    , docIdConverter_(docIdConverter)
     , docManager_(docManager)
 {
 }
@@ -46,35 +49,36 @@ void CustomRankManager::flush()
 
 bool CustomRankManager::setCustomValue(
     const std::string& query,
-    const CustomRankValue& customValue
+    const CustomRankDocStr& customDocStr
 )
 {
-    return db_.update(query, customValue);
+    return db_.update(query, customDocStr);
 }
 
 bool CustomRankManager::getCustomValue(
     const std::string& query,
-    CustomRankValue& customValue
+    CustomRankDocId& customDocId
 )
 {
-    customValue.clear();
+    CustomRankDocStr customDocStr;
 
-    return db_.get(query, customValue);
+    return db_.get(query, customDocStr) &&
+           docIdConverter_.convert(customDocStr, customDocId);
 }
 
 CustomRankScorer* CustomRankManager::getScorer(const std::string& query)
 {
-    CustomRankValue customValue;
+    CustomRankDocId customDocId;
 
-    if (! db_.get(query, customValue))
+    if (! getCustomValue(query, customDocId))
         return NULL;
 
-    removeDeletedDocs_(customValue.topIds);
+    removeDeletedDocs_(customDocId.topIds);
 
-    if (customValue.empty())
+    if (customDocId.empty())
         return NULL;
 
-    return new CustomRankScorer(customValue);
+    return new CustomRankScorer(customDocId);
 }
 
 void CustomRankManager::removeDeletedDocs_(std::vector<docid_t>& docIds)

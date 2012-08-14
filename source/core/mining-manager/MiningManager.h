@@ -17,6 +17,7 @@
 
 #include "group-manager/PropValueTable.h" // pvid_t
 #include "summarization-submanager/Summarization.h" //Summarization
+#include "custom-rank-manager/CustomRankValue.h"
 #include "merchant-score-manager/MerchantScore.h"
 
 #include <common/ResultType.h>
@@ -89,6 +90,7 @@ class SearchManager;
 class MultiDocSummarizationSubManager;
 class MerchantScoreManager;
 class CustomRankManager;
+class CustomDocIdConverter;
 class ProductRankerFactory;
 
 namespace sim
@@ -262,8 +264,7 @@ public:
 
     bool setCustomRank(
         const std::string& query,
-        const std::vector<std::string>& topDocIdList,
-        const std::vector<std::string>& excludeDocIdList
+        const CustomRankDocStr& customDocStr
     );
 
     bool getCustomRank(
@@ -429,11 +430,6 @@ private:
             const std::vector<std::string>& groupPath
     ) const;
 
-    bool convertDocIdList_(
-        const std::vector<std::string>& strList,
-        std::vector<docid_t>& idList
-    );
-
     bool getDocList_(
         const std::vector<docid_t>& docIdList,
         std::vector<Document>& docList
@@ -516,6 +512,9 @@ private:
 
     /** Merchant Score */
     MerchantScoreManager* merchantScoreManager_;
+
+    /** Doc Id Converter for Custom Docs */
+    CustomDocIdConverter* customDocIdConverter_;
 
     /** Custom Rank Manager */
     CustomRankManager* customRankManager_;

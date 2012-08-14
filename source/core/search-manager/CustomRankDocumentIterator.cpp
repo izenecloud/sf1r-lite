@@ -7,12 +7,12 @@ namespace
 
 using namespace sf1r;
 
-FilterDocumentIterator* createFilterDocIterator(const CustomRankValue::DocIdList& docIdList)
+FilterDocumentIterator* createFilterDocIterator(const CustomRankDocId::DocIdList& docIdList)
 {
     boost::shared_ptr<izenelib::am::EWAHBoolArray<uint32_t> > docIdSet(
         new izenelib::am::EWAHBoolArray<uint32_t>());
 
-    for (CustomRankValue::DocIdList::const_iterator it = docIdList.begin();
+    for (CustomRankDocId::DocIdList::const_iterator it = docIdList.begin();
         it != docIdList.end(); ++it)
     {
         docIdSet->set(*it);
@@ -33,7 +33,7 @@ CustomRankDocumentIterator::CustomRankDocumentIterator(CustomRankScorer* customR
     : customRankScorer_(customRankScorer)
     , defaultScoreDocIterator_(NULL)
 {
-    const CustomRankValue& sortCustomValue =
+    const CustomRankDocId& sortCustomValue =
         customRankScorer_->getSortCustomValue();
 
     if (! sortCustomValue.topIds.empty())
