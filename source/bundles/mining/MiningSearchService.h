@@ -12,6 +12,7 @@
 #include <query-manager/ActionItem.h>
 #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
 #include <mining-manager/summarization-submanager/Summarization.h>
+#include <mining-manager/custom-rank-manager/CustomRankValue.h>
 #include <idmlib/tdt/tdt_types.h>
 #include <boost/shared_ptr.hpp>
 
@@ -133,14 +134,12 @@ public:
     /**
      * Set custom ranking for @p query.
      * @param query user query
-     * @param topDocIdList doc id list for top ranking docs
-     * @param excludeDocIdList doc id list for docs to exclude
+     * @param customDocStr custom rankings
      * @return true for success, false for failure
      */
     bool setCustomRank(
         const std::string& query,
-        const std::vector<std::string>& topDocIdList,
-        const std::vector<std::string>& excludeDocIdList
+        const CustomRankDocStr& customDocStr
     );
 
     /**

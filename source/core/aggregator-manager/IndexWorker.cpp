@@ -654,6 +654,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     bool ret = updateDoc_(document, indexDocument, oldIndexDocument, timestamp, updateType, true);
     if (ret)
     {
+        searchWorker_->clearSearchCache();
         doMining_();
     }
 
