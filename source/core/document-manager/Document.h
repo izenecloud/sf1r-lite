@@ -46,14 +46,7 @@ public:
 
     PropertyValue& property(const std::string& propertyName)
     {
-        static PropertyValue not_found;
-        property_iterator found = findProperty(propertyName);
-        if (found != propertyEnd())
-        {
-            return found->second;
-        }
-
-        return not_found;
+        return propertyMap_[propertyName];
     }
     const PropertyValue& property(const std::string& propertyName) const
     {
