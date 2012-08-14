@@ -1553,13 +1553,16 @@ bool MiningManager::getDocList_(
     {
         docid_t docId = *it;
 
-        if (! document_manager_->getDocument(docId, doc))
+        if (document_manager_->getDocument(docId, doc))
         {
-            LOG(WARNING) << "in getDocList_(), docid_t " << docId << " does not exist";
-            continue;
+            document_manager_->getRTypePropertiesForDocument(docId, doc);
+            docList.push_back(doc);
         }
-
-        docList.push_back(doc);
+        else
+        {
+            LOG(WARNING) << "in getDocList_(), docid_t " << docId
+                         << " does not exist";
+        }
     }
 
     return true;
