@@ -125,6 +125,8 @@ int ImageProcessTask::doJobs(const MSG& msg)
     {
         while(ifs.good()){
             getline(ifs,line);
+            if(line.empty())
+                continue;
             if(_stop)
                 return 0;
 

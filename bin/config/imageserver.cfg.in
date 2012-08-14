@@ -1,16 +1,23 @@
-# Log Server Configuration
+# Image Server Configuration
 #
 host=localhost
+# the image color compute thread num
+
 process.computethread=8
 
+# the rpc param for the image server.
 rpc.port=18821
 rpc.thread_num=10
 rpc.request_queue_size=32768
+# the tfs nameserver
 image_fileserver.ns=172.16.0.168:8108
+# rpc upload request will be saved to this log file
 image_upload_log=./image_upload_log
 
 storage.base_dir=image_server_storage
+# the result db of image color
 storage.img_color.dbname=imgcolor.db
-
+# the location of the image files
 storage.img_file_fullpath=/opt/se/b5m/images
+# the location of the SCD files that you want to compute the image color in the scd fils.
 storage.scd_file_fullpath=~/scd

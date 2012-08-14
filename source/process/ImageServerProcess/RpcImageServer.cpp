@@ -241,6 +241,7 @@ void RpcImageServer::exportimage(const std::string& log_file, const std::string&
                 ofs.close();
                 LOG(WARNING) << "export failed (save data to out file error) : " << e.what() << ",file: " << file_name << std::endl;
             }
+            delete[] buffer;
         }
         else
         {
