@@ -570,9 +570,10 @@ bool DocumentManager::getRawTextOfOneDocument(
     }
     else
     {
-        PropertyValue& propValue = document.property(propertyName);
-        if (izenelib::util::UString* pCast = get<izenelib::util::UString>(&propValue))
-            std::swap(rawText, *pCast);
+        PropertyValue propValue;
+        if(document.getProperty(propertyName,propValue))
+            if (izenelib::util::UString* pCast = get<izenelib::util::UString>(&propValue))
+                std::swap(rawText, *pCast);
     }
 
     if (rawText.empty())
