@@ -693,7 +693,7 @@ bool  SearchWorker::getResultItem(
             {
                 documentManager_->getRawTextOfOneDocument(
                     dit->first,
-                    docs[ii],
+                    docs[dit->second],
                     actionItem.displayPropertyList_[i].propertyString_,
                     propertyOption,
                     queryTerms,
