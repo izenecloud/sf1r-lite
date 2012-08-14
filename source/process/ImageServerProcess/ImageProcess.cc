@@ -418,7 +418,7 @@ const char *getColorText(int index)
 bool getImageColor(char *imgdata, unsigned int imgsize,int *indexCollection,int count)
 {
     static int load_failed = 0;
-    CvMat mat = cvMat( 100, 100, CV_8UC1, imgdata);
+    CvMat mat = cvMat( 1, imgsize, CV_8UC1, imgdata);
     IplImage* srcOrig = cvDecodeImage( &mat, CV_LOAD_IMAGE_COLOR);
     if(srcOrig == NULL)
     {

@@ -1,6 +1,7 @@
 # Log Server Configuration
 #
 host=localhost
+process.computethread=8
 
 rpc.port=18821
 rpc.thread_num=10
