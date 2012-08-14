@@ -17,6 +17,7 @@ public:
     {
         METHOD_TEST = 0,
         METHOD_GET_IMAGE_COLOR,
+        METHOD_COMPUTE_IMAGE_COLOR,
         METHOD_UPLOAD_IMAGE,
         METHOD_DELETE_IMAGE,
         METHOD_EXPORT_IMAGE,
@@ -34,6 +35,15 @@ class GetImageColorRequest : public RpcRequestRequestT<ImageColorData, ImageServ
 public:
     GetImageColorRequest()
         : RpcRequestRequestT<ImageColorData, ImageServerRequest>(METHOD_GET_IMAGE_COLOR)
+    {
+    }
+};
+
+class ComputeImageColorRequest : public RpcRequestRequestT<ComputeImageColorData, ImageServerRequest>
+{
+public:
+    ComputeImageColorRequest()
+        : RpcRequestRequestT<ComputeImageColorData, ImageServerRequest>(METHOD_COMPUTE_IMAGE_COLOR)
     {
     }
 };

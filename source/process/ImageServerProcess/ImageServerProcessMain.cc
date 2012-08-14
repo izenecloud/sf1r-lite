@@ -124,7 +124,8 @@ void readFiles(const char *dirPath)
                     SCD_TYPE scd_type=checkSCDType(file->d_name);
                     if(scd_type==INSERT_SCD||scd_type==UPDATE_SCD){
                         Request *req=new Request;
-                        req->filePath=std::string(filepath);
+                        req->filePath = std::string(filepath);
+                        req->filetype = FILE_SCD;
                         LOG(INFO) << "scd file is processing:" << filepath << endl;
                         MSG msg(req);
                         if(!ImageProcessTask::instance()->put(msg)){ 

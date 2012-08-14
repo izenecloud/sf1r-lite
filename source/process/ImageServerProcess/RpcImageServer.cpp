@@ -1,6 +1,7 @@
 #include "RpcImageServer.h"
 #include "ImageServerCfg.h"
 #include "ImageProcess.h"
+#include "ImageProcessTask.h"
 #include <image-manager/ImageServerStorage.h>
 #include <image-manager/ImageServerRequest.h>
 #include "errno.h"
@@ -179,6 +180,24 @@ void RpcImageServer::dispatch(msgpack::rpc::request req)
                     reqdata.img_log_file, reqdata.out_dir);
 
         }
+        else if(method == ImageServerRequest::method_names[ImageServerRequest::METHOD_COMPUTE_IMAGE_COLOR])
+        {
+            msgpack::type::tuple<ComputeImageColorData> params;
+            req.params().convert(&params);
+            ComputeImageColorData& reqdata = params.get<0>();
+
+            Request *image_computereq = new Request;
+            image_computereq->filePath = reqdata.filepath;
+            image_computereq->filetype = reqdata.filetype;
+            LOG(INFO) << "got image file color computing request:" << reqdata.filepath << endl;
+            MSG msg(image_computereq);
+            reqdata.success = true;
+            if(!ImageProcessTask::instance()->put(msg)){ 
+                LOG(ERROR) << "failed to enqueue fileName:" << reqdata.filepath << endl;
+                reqdata.success = false;
+            }
+            req.result(reqdata);
+        }
         else
         {
             req.error(msgpack::rpc::NO_METHOD_ERROR);
@@ -227,9 +246,14 @@ void RpcImageServer::exportimage(const std::string& log_file, const std::string&
         {
             LOG(WARNING) << "export failed (download error): " << file_name << std::endl;
         }
+        boost::this_thread::interruption_point();
     }
 
     ifs.close();
+    }
+    catch(boost::thread_interrupted& )
+    {
+        ifs.close();
     }
     catch(std::exception& e)
     {

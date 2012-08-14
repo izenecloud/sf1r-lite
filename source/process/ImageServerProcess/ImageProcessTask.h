@@ -35,11 +35,11 @@ private:
     static void *compute(void *arg);
     static void *write_result(void *arg);
     int doJobs(const MSG& msg);
-    int doCompute(const std::string& img_file);
+    int doCompute(const std::string& img_file, bool islocal);
     int doWriteResultToDB(const std::pair<std::string, std::string>& result);
 private:
     MessageQueue<MSG> msg_queue_;
-    MessageQueue<std::string> compute_queue_;
+    MessageQueue<std::pair<std::string, bool> > compute_queue_;
     MessageQueue<std::pair<std::string, std::string> >  db_result_queue_;
     bool _stop;
     pthread_t io_threadId_;

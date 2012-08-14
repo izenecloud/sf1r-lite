@@ -17,6 +17,14 @@ struct ImageColorData : public RpcServerRequestData
     MSGPACK_DEFINE(success, img_file, result_img_color)
 };
 
+struct ComputeImageColorData : public RpcServerRequestData
+{
+    bool success;
+    std::string filepath;
+    int  filetype;
+    MSGPACK_DEFINE(success, filepath, filetype)
+};
+
 struct UploadImageData : public RpcServerRequestData
 {
     bool success;

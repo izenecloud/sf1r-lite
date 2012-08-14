@@ -87,47 +87,73 @@ int ImageProcessTask::doJobs(const MSG& msg)
     std::string pictureTag("<Picture>");
     std::string colorTag("<Color>");
     int num = 0;
-    while(ifs.good()){
-        getline(ifs,line);
-        line.erase(0,line.find_first_not_of(" "));
-        line.erase(line.find_last_not_of(" ")+1);
-        if(line.size()>0){
-            if((line.compare(0,pictureTag.size(),pictureTag))==0){
-                std::string picFilePath;
-                if(line.at(0)=='/'){
-                    picFilePath=std::string(line.c_str()+pictureTag.size()+1);
-                }else{
-                    picFilePath=std::string(line.c_str()+pictureTag.size());
-                }
-                picFilePath.erase(0,picFilePath.find_first_not_of(" "));
-                picFilePath.erase(picFilePath.find_last_not_of(" ")+1);
-                if(_stop)
-                    return 0;
-
-                std::string ret;
-                if(ImageServerStorage::get()->GetImageColor(picFilePath, ret) && !ret.empty())
-                {
-                    if(++num%10000 == 0)
-                    {
-                        LOG(INFO) << "doJobs find exist image color in db: " << num << std::endl;
+    if(msg->filetype == FILE_SCD)
+    {
+        while(ifs.good()){
+            getline(ifs,line);
+            line.erase(0,line.find_first_not_of(" "));
+            line.erase(line.find_last_not_of(" ")+1);
+            if(line.size()>0){
+                if((line.compare(0,pictureTag.size(),pictureTag))==0){
+                    std::string picFilePath;
+                    if(line.at(0)=='/'){
+                        picFilePath=std::string(line.c_str()+pictureTag.size()+1);
+                    }else{
+                        picFilePath=std::string(line.c_str()+pictureTag.size());
                     }
-                    continue;
+                    picFilePath.erase(0,picFilePath.find_first_not_of(" "));
+                    picFilePath.erase(picFilePath.find_last_not_of(" ")+1);
+                    if(_stop)
+                        return 0;
+
+                    std::string ret;
+                    if(ImageServerStorage::get()->GetImageColor(picFilePath, ret) && !ret.empty())
+                    {
+                        if(++num%10000 == 0)
+                        {
+                            LOG(INFO) << "doJobs find exist image color in db: " << num << std::endl;
+                        }
+                        continue;
+                    }
+                    bool islocal = !(picFilePath.find("/") == std::string::npos);
+                    compute_queue_.push(std::make_pair(picFilePath, islocal));
                 }
-                compute_queue_.push(picFilePath);
             }
+        }
+    }
+    else if(msg->filetype == FILE_LIST)
+    {
+        while(ifs.good()){
+            getline(ifs,line);
+            if(_stop)
+                return 0;
+
+            std::string picFilePath = line;
+            std::string ret;
+            if(ImageServerStorage::get()->GetImageColor(picFilePath, ret) && !ret.empty())
+            {
+                if(++num%10000 == 0)
+                {
+                    LOG(INFO) << "doJobs find exist image color in db: " << num << std::endl;
+                }
+                continue;
+            }
+            bool islocal = !(picFilePath.find("/") == std::string::npos);
+            compute_queue_.push(std::make_pair(picFilePath, islocal));
         }
     }
     ifs.close();
     return 0;
 }
-int ImageProcessTask::doCompute(const std::string& img_file)
+
+int ImageProcessTask::doCompute(const std::string& img_file, bool islocal)
 {
     static int num = 0;
     int indexCollection[COLOR_RET_NUM];
     std::string full_img_path;
     bool ret;
     //RECORD_TIME_START(ONEJOB);
-    if(img_file_dir_.empty())
+    if(!islocal)
     {
         // using tfs file
         full_img_path = img_file;
@@ -142,6 +168,7 @@ int ImageProcessTask::doCompute(const std::string& img_file)
         {
             LOG(INFO) << "Download Image data failed imagePath=" << img_file << std::endl;
         }
+        delete[] imgdata;
     }
     else
     {
@@ -228,7 +255,7 @@ void *ImageProcessTask::compute(void *arg)
 {
     ImageProcessTask *task=(ImageProcessTask*)arg;
     bool flag;
-    std::string img_file;
+    std::pair<std::string, bool> img_file;
     while(!task->_stop){
         flag=false;
         while(!task->compute_queue_.popNonBlocking(img_file)){
@@ -239,7 +266,7 @@ void *ImageProcessTask::compute(void *arg)
             usleep(100000);
         }
         if(!flag){
-            task->doCompute(img_file);
+            task->doCompute(img_file.first, img_file.second);
         }
     }
     while(task->compute_queue_.popNonBlocking(img_file)){
