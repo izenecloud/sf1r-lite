@@ -17,6 +17,7 @@
 namespace sf1r
 {
 class CustomRankScorer;
+class CustomDocIdConverter;
 class DocumentManager;
 
 class CustomRankManager
@@ -28,6 +29,7 @@ public:
      */
     CustomRankManager(
         const std::string& dbPath,
+        CustomDocIdConverter& docIdConverter,
         const DocumentManager* docManager = NULL
     );
 
@@ -36,23 +38,23 @@ public:
     /**
      * Set the customized value for @p query.
      * @param query user query
-     * @param customRankValue the value to customize
+     * @param customDocStr the value to customize
      * @return true for success, false for failure
      */
     bool setCustomValue(
         const std::string& query,
-        const CustomRankValue& customValue
+        const CustomRankDocStr& customDocStr
     );
 
     /**
      * get the value which is customized for @p query.
      * @param query user query
-     * @param customValue the customized value
+     * @param customDocId the customized value
      * @return true for success, false for failure
      */
     bool getCustomValue(
         const std::string& query,
-        CustomRankValue& customValue
+        CustomRankDocId& customDocId
     );
 
     /**
@@ -76,9 +78,10 @@ private:
 
 private:
     /** key: query */
-    typedef SDBWrapper<std::string, CustomRankValue> DBType;
-
+    typedef SDBWrapper<std::string, CustomRankDocStr> DBType;
     DBType db_;
+
+    CustomDocIdConverter& docIdConverter_;
 
     const DocumentManager* docManager_;
 };

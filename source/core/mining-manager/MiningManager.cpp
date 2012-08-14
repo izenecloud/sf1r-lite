@@ -32,6 +32,7 @@
 
 #include "group-label-logger/GroupLabelLogger.h"
 #include "merchant-score-manager/MerchantScoreManager.h"
+#include "custom-rank-manager/CustomDocIdConverter.h"
 #include "custom-rank-manager/CustomRankManager.h"
 #include "product-ranker/ProductRankerFactory.h"
 
@@ -113,6 +114,7 @@ MiningManager::MiningManager(
     , groupManager_(NULL)
     , attrManager_(NULL)
     , merchantScoreManager_(NULL)
+    , customDocIdConverter_(NULL)
     , customRankManager_(NULL)
     , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
@@ -127,6 +129,7 @@ MiningManager::~MiningManager()
     if (kpe_analyzer_) delete kpe_analyzer_;
     if (productRankerFactory_) delete productRankerFactory_;
     if (customRankManager_) delete customRankManager_;
+    if (customDocIdConverter_) delete customDocIdConverter_;
     if (merchantScoreManager_) delete merchantScoreManager_;
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
@@ -422,14 +425,19 @@ bool MiningManager::open()
         /** product ranking */
         if (mining_schema_.product_ranking_config.isEnable)
         {
-            // custom rank manager
+            // custom doc id converter & rank manager
             if (customRankManager_) delete customRankManager_;
+            if (customDocIdConverter_) delete customDocIdConverter_;
+
+            customDocIdConverter_ = new CustomDocIdConverter(*idManager_);
 
             const bfs::path customRankDir = bfs::path(prefix_path) / "custom_rank";
             bfs::create_directories(customRankDir);
 
             const std::string customRankPath = (customRankDir / "custom.db").string();
-            customRankManager_ = new CustomRankManager(customRankPath,
+            customRankManager_ = new CustomRankManager(
+                customRankPath,
+                *customDocIdConverter_,
                 document_manager_.get());
 
             // product ranker factory
@@ -1483,16 +1491,15 @@ bool MiningManager::setMerchantScore(const MerchantStrScoreMap& merchantScoreMap
 
 bool MiningManager::setCustomRank(
     const std::string& query,
-    const std::vector<std::string>& topDocIdList,
-    const std::vector<std::string>& excludeDocIdList
+    const CustomRankDocStr& customDocStr
 )
 {
-    CustomRankValue customValue;
+    CustomRankDocId customDocId;
 
-    return customRankManager_ &&
-           convertDocIdList_(topDocIdList, customValue.topIds) &&
-           convertDocIdList_(excludeDocIdList, customValue.excludeIds) &&
-           customRankManager_->setCustomValue(query, customValue);
+    return customDocIdConverter_ &&
+           customDocIdConverter_->convert(customDocStr, customDocId) &&
+           customRankManager_ &&
+           customRankManager_->setCustomValue(query, customDocStr);
 }
 
 bool MiningManager::getCustomRank(
@@ -1501,44 +1508,18 @@ bool MiningManager::getCustomRank(
     std::vector<Document>& excludeDocList
 )
 {
-    CustomRankValue customValue;
+    CustomRankDocId customDocId;
 
     return customRankManager_ &&
-           customRankManager_->getCustomValue(query, customValue) &&
-           getDocList_(customValue.topIds, topDocList) &&
-           getDocList_(customValue.excludeIds, excludeDocList);
+           customRankManager_->getCustomValue(query, customDocId) &&
+           getDocList_(customDocId.topIds, topDocList) &&
+           getDocList_(customDocId.excludeIds, excludeDocList);
 }
 
 bool MiningManager::getCustomQueries(std::vector<std::string>& queries)
 {
-    if (customRankManager_)
-        return customRankManager_->getQueries(queries);
-
-    return false;
-}
-
-bool MiningManager::convertDocIdList_(
-    const std::vector<std::string>& strList,
-    std::vector<docid_t>& idList
-)
-{
-    for (std::vector<std::string>::const_iterator it = strList.begin();
-        it != strList.end(); ++it)
-    {
-        const std::string& strId = *it;
-        uint128_t convertId = Utilities::md5ToUint128(strId);
-        docid_t docId = 0;
-
-        if (! idManager_->getDocIdByDocName(convertId, docId, false))
-        {
-            LOG(WARNING) << "in convertDocIdList_(), DOCID " << strId << " does not exist";
-            return false;
-        }
-
-        idList.push_back(docId);
-    }
-
-    return true;
+    return customRankManager_ &&
+           customRankManager_->getQueries(queries);
 }
 
 bool MiningManager::getDocList_(
@@ -1553,13 +1534,16 @@ bool MiningManager::getDocList_(
     {
         docid_t docId = *it;
 
-        if (! document_manager_->getDocument(docId, doc))
+        if (document_manager_->getDocument(docId, doc))
         {
-            LOG(WARNING) << "in getDocList_(), docid_t " << docId << " does not exist";
-            continue;
+            document_manager_->getRTypePropertiesForDocument(docId, doc);
+            docList.push_back(doc);
         }
-
-        docList.push_back(doc);
+        else
+        {
+            LOG(WARNING) << "in getDocList_(), docid_t " << docId
+                         << " does not exist";
+        }
     }
 
     return true;

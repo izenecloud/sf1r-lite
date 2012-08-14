@@ -10,22 +10,31 @@
 
 #include <common/inttypes.h>
 #include <vector>
+#include <string>
 #include <boost/serialization/access.hpp>
 
 namespace sf1r
 {
 
+template <typename DocIdT>
 struct CustomRankValue
 {
-    typedef std::vector<docid_t> DocIdList;
+    typedef std::vector<DocIdT> DocIdList;
 
     DocIdList topIds;
 
     DocIdList excludeIds;
 
-    void clear();
+    void clear()
+    {
+        topIds.clear();
+        excludeIds.clear();
+    }
 
-    bool empty() const;
+    bool empty() const
+    {
+        return topIds.empty() && excludeIds.empty();
+    }
 
     template <class Archive>
     void serialize(Archive& ar, const unsigned int version)
@@ -34,6 +43,12 @@ struct CustomRankValue
         ar & excludeIds;
     }
 };
+
+/// CustomRankValue doc id version
+typedef CustomRankValue<docid_t> CustomRankDocId;
+
+/// CustomRankValue doc string version
+typedef CustomRankValue<std::string> CustomRankDocStr;
 
 } // namespace sf1r
 

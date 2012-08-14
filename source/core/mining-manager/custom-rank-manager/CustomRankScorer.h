@@ -26,7 +26,7 @@ public:
         CUSTOM_RANK_BASE_SCORE = 100
     };
 
-    CustomRankScorer(const CustomRankValue& customValue);
+    CustomRankScorer(const CustomRankDocId& customValue);
 
     /**
      * get the score of @p docId.
@@ -45,13 +45,13 @@ public:
         return 0;
     }
 
-    const CustomRankValue& getSortCustomValue() const
+    const CustomRankDocId& getSortCustomValue() const
     {
         return sortCustomValue_;
     }
 
 private:
-    CustomRankValue sortCustomValue_;
+    CustomRankDocId sortCustomValue_;
 
     typedef std::map<docid_t, score_t> ScoreMap;
     ScoreMap scoreMap_;

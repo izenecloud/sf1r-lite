@@ -7,9 +7,12 @@
 
 #include <mining-manager/custom-rank-manager/CustomRankManager.h>
 #include <mining-manager/custom-rank-manager/CustomRankScorer.h>
+#include <mining-manager/custom-rank-manager/CustomDocIdConverter.h>
+#include <common/Utilities.h>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/lexical_cast.hpp>
 #include "../recommend-manager/test_util.h"
 
 namespace bfs = boost::filesystem;
@@ -19,6 +22,25 @@ namespace
 {
 const std::string TEST_DIR = "custom_rank_test";
 const std::string DB_NAME = "db.bin";
+const std::string ID_DIR = "doc_id";
+const std::string ID_NAME = "did";
+
+void insertDocIds(
+    izenelib::ir::idmanager::IDManager& idManager,
+    int startId,
+    int endId
+)
+{
+    for (int curId = startId; curId <= endId; ++curId)
+    {
+        std::string docStr = boost::lexical_cast<std::string>(curId);
+        uint128_t convertId = Utilities::md5ToUint128(docStr);
+        docid_t docId = 0;
+
+        BOOST_REQUIRE(! idManager.getDocIdByDocName(convertId, docId, true));
+        BOOST_REQUIRE_EQUAL(docId, curId);
+    }
+}
 
 void checkEmpty(
     CustomRankManager& customRankManager,
@@ -27,7 +49,7 @@ void checkEmpty(
 {
     BOOST_TEST_MESSAGE("check empty, query: " << query);
 
-    CustomRankValue customValue;
+    CustomRankDocId customValue;
     BOOST_CHECK(customRankManager.getCustomValue(query, customValue));
 
     BOOST_CHECK(customValue.topIds.empty());
@@ -47,7 +69,7 @@ void checkSet(
 {
     BOOST_TEST_MESSAGE("check set, query: " << query);
 
-    CustomRankValue customValue;
+    CustomRankDocStr customValue;
     split_str_to_items(topIdListStr, customValue.topIds);
     split_str_to_items(excludeIdListStr, customValue.excludeIds);
 
@@ -64,11 +86,11 @@ void checkGet(
 {
     BOOST_TEST_MESSAGE("check get, query: " << query);
 
-    CustomRankValue goldCustomValue;
+    CustomRankDocId goldCustomValue;
     split_str_to_items(topIdListStr, goldCustomValue.topIds);
     split_str_to_items(excludeIdListStr, goldCustomValue.excludeIds);
 
-    CustomRankValue customValue;
+    CustomRankDocId customValue;
     BOOST_CHECK(customRankManager.getCustomValue(query, customValue));
 
     BOOST_CHECK_EQUAL_COLLECTIONS(customValue.topIds.begin(), customValue.topIds.end(),
@@ -81,7 +103,7 @@ void checkGet(
     BOOST_REQUIRE(scorer.get() != NULL);
 
     std::size_t docNum = goldCustomValue.topIds.size();
-    for (CustomRankValue::DocIdList::const_iterator it = goldCustomValue.topIds.begin();
+    for (CustomRankDocId::DocIdList::const_iterator it = goldCustomValue.topIds.begin();
         it != goldCustomValue.topIds.end(); ++it)
     {
         score_t score = scorer->getScore(*it);
@@ -90,10 +112,10 @@ void checkGet(
         --docNum;
     }
 
-    CustomRankValue::DocIdList zeroScoreDocIdList;
+    CustomRankDocId::DocIdList zeroScoreDocIdList;
     split_str_to_items(zeroScoreDocIdListStr, zeroScoreDocIdList);
 
-    for (CustomRankValue::DocIdList::const_iterator it = zeroScoreDocIdList.begin();
+    for (CustomRankDocId::DocIdList::const_iterator it = zeroScoreDocIdList.begin();
         it != zeroScoreDocIdList.end(); ++it)
     {
         score_t score = scorer->getScore(*it);
@@ -114,11 +136,19 @@ BOOST_AUTO_TEST_CASE(testNormalCase)
     bfs::path dbPath = dir / DB_NAME;
     std::string dbPathStr = dbPath.string();
 
+    bfs::path idDir = dir / ID_DIR;
+    bfs::create_directory(idDir);
+    bfs::path idPath = idDir / ID_NAME;
+    izenelib::ir::idmanager::IDManager idManager(idPath.string());
+    insertDocIds(idManager, 1, 200);
+
+    CustomDocIdConverter docIdConverter(idManager);
+
     std::string query1("aaa");
     std::string query2("bbb");
 
     {
-        CustomRankManager customRankManager(dbPathStr);
+        CustomRankManager customRankManager(dbPathStr, docIdConverter);
 
         checkEmpty(customRankManager, query1);
 
@@ -130,7 +160,7 @@ BOOST_AUTO_TEST_CASE(testNormalCase)
 
     {
         BOOST_TEST_MESSAGE("reset instance");
-        CustomRankManager customRankManager(dbPathStr);
+        CustomRankManager customRankManager(dbPathStr, docIdConverter);
 
         checkGet(customRankManager, query1, "1 2 3", "101 102", "4 5 6");
         checkEmpty(customRankManager, query2);
