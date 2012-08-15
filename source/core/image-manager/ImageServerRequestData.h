@@ -28,7 +28,7 @@ struct ComputeImageColorData : public RpcServerRequestData
 struct UploadImageData : public RpcServerRequestData
 {
     bool success;
-    int  param_type;  // indicate the img_file param to stand for the file path or the real image data.
+    int  param_type;  // indicate the img_file param to stand for the file path(0) or the real image data(1).
     std::string img_file;
     MSGPACK_DEFINE(success, param_type, img_file)
 };

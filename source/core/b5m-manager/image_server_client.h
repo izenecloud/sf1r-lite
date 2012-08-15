@@ -7,7 +7,6 @@
 #include <boost/regex.hpp>
 #include <sf1r-net/RpcServerConnectionConfig.h>
 #include <sf1r-net/RpcServerConnection.h>
-#include "b5m_types.h"
 
 namespace sf1r {
     class ImageServerClient {
@@ -15,6 +14,8 @@ namespace sf1r {
         static bool Init(const RpcServerConnectionConfig& config);
         static bool Test();
         static bool GetImageColor(const std::string& img_file, string& ret_color);
+        static bool UploadImageFile(const std::string& img_file, string& ret_file_name);
+        static bool UploadImageData(const std::string& img_data, string& ret_file_name);
     };
 
 }

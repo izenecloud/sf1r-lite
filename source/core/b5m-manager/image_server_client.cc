@@ -1,6 +1,4 @@
 #include "image_server_client.h"
-#include "b5m_types.h"
-#include "b5m_helper.h"
 #include <common/Utilities.h>
 #include <image-manager/ImageServerRequest.h>
 #include <am/sequence_file/ssfr.h>
@@ -44,3 +42,28 @@ bool ImageServerClient::GetImageColor(const std::string& img_file, string& ret_c
     return rsp.success;
 }
 
+bool ImageServerClient::UploadImageFile(const std::string& img_file, string& ret_file_name)
+{
+    RpcServerConnection& conn = RpcServerConnection::instance();
+    UploadImageRequest req;    
+    req.param_.img_file = img_file;
+    req.param_.param_type = 0;
+
+    sf1r::UploadImageData rsp;
+    conn.syncRequest(req, rsp);
+    ret_file_name = rsp.img_file;
+    return rsp.success;
+}
+
+bool ImageServerClient::UploadImageData(const std::string& img_data, string& ret_file_name)
+{
+    RpcServerConnection& conn = RpcServerConnection::instance();
+    UploadImageRequest req;    
+    req.param_.img_file = img_data;
+    req.param_.param_type = 1;
+
+    sf1r::UploadImageData rsp;
+    conn.syncRequest(req, rsp);
+    ret_file_name = rsp.img_file;
+    return rsp.success;
+}
