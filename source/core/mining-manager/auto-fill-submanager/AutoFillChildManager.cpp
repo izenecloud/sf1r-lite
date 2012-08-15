@@ -439,17 +439,17 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
                     newValue.getValueType(str);
                     string strA=newValue.strValue_;
                     string strB = strT;
-                    //boost::algorithm::replace_all(strA, " ", "");
-                   // boost::algorithm::replace_all(strB, " ", "");
-                    //transform(strA.begin(), strA.end(), strA.begin(), ::tolower);
-                   // transform(strB.begin(), strB.end(), strB.begin(), ::tolower);
+                    boost::algorithm::replace_all(strA, " ", "");
+                    boost::algorithm::replace_all(strB, " ", "");
+                    transform(strA.begin(), strA.end(), strA.begin(), ::tolower);
+                    transform(strB.begin(), strB.end(), strB.begin(), ::tolower);
                     if(strA == strB)
                     {
                         FREQ_TYPE freq_new = freq + *(FREQ_TYPE*)(str + *(uint32_t*)str - FREQ_TYPE_LEN  - UINT32_LEN);
 
                         *(FREQ_TYPE*)(str + *(uint32_t*)str - FREQ_TYPE_LEN  - UINT32_LEN) = freq_new;
                         *(uint32_t*)(str + *(uint32_t*)str - UINT32_LEN) = HitNum;
-                        //buildTopNDbTable(value, offset);
+                        buildTopNDbTable(value, offset);
                         if(!dbTable_.add_item(pinyin, value));
                         //			return false;
                         break;
@@ -464,7 +464,7 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
                     std::string newValueStr;
                     newValue.toString(newValueStr);
                     value.append(newValueStr);
-                    //buildTopNDbTable(value, offset);
+                    buildTopNDbTable(value, offset);
                     if(!dbTable_.add_item(pinyin, value));
                     //		return false;
                 }
