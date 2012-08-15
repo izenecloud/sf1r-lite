@@ -37,9 +37,9 @@ uint32_t CollectionProductDataSource::GetMaxDocId() const
     return document_manager_->getMaxDocId();
 }
 
-bool CollectionProductDataSource::GetDocument(uint32_t docid, PMDocumentType& doc)
+bool CollectionProductDataSource::GetDocument(uint32_t docid, PMDocumentType& doc, bool force)
 {
-    return document_manager_->getDocument(docid, doc);
+    return document_manager_->getDocument(docid, doc, force);
 }
 
 void CollectionProductDataSource::GetRTypePropertiesForDocument(uint32_t docid, PMDocumentType& doc)
