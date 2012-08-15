@@ -11,13 +11,26 @@
 
 namespace sf1r
 {
-
+typedef uint32_t FREQ_TYPE;
+/*  struct QueryType
+  {
+std::string strQuery_;
+FREQ_TYPE freq_;
+  };
+*/
+struct QueryType
+{
+    std::string strQuery_;
+    FREQ_TYPE freq_;
+    uint32_t HitNum_;
+};
 class LogAnalysis
 {
 
 public:
 
     static void getRecentKeywordList(const std::string& collectionName, uint32_t limit, std::vector<izenelib::util::UString>& recentKeywords);
+    static void getRecentKeywordFreqList(const std::string& collectionName, uint32_t limit, std::vector<QueryType>& queryList);
 
 
 private:

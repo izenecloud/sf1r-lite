@@ -13,7 +13,7 @@ class UserQuery : public RDbRecordBase
 
 public:
 
-    enum Column { Query, Collection, HitDocsNum, PageStart, PageCount, SessionId, Duration, TimeStamp, EoC };
+    enum Column { Query, Collection, HitDocsNum, PageStart, PageCount, SessionId, Duration, TimeStamp,count,EoC };//Count
 
     static const char* ColumnName[EoC];
 
@@ -24,14 +24,15 @@ public:
     DEFINE_RDB_RECORD_COMMON_ROUTINES(UserQuery)
 
     UserQuery() : RDbRecordBase(),
-            queryPresent_(false),
-            collectionPresent_(false),
-            hitDocsNumPresent_(false),
-            pageStartPresent_(false),
-            pageCountPresent_(false),
-            sessionIdPresent_(false),
-            durationPresent_(false),
-            timeStampPresent_(false) {}
+        queryPresent_(false),
+        collectionPresent_(false),
+        hitDocsNumPresent_(false),
+        pageStartPresent_(false),
+        pageCountPresent_(false),
+        sessionIdPresent_(false),
+        durationPresent_(false),
+        timeStampPresent_(false),
+        countPresent_(false) {}//countPresent_(false)
 
     ~UserQuery() {}
 
@@ -151,7 +152,7 @@ public:
     {
         return timeStamp_;
     }
-
+     
     inline void setTimeStamp( const boost::posix_time::ptime & timeStamp )
     {
         timeStamp_ = timeStamp;
@@ -162,6 +163,22 @@ public:
     {
         return timeStampPresent_;
     }
+ 
+    inline const uint32_t getCount( ) const
+    {
+        return count_;
+    }
+    inline void setCount( const uint32_t count )
+    {
+        count_ = count;
+        countPresent_ = true;
+    }
+
+    inline bool hasCount() const
+    {
+        return countPresent_;
+    }
+    /* */
 
     void save( std::map<std::string, std::string> & rawdata );
 
@@ -192,6 +209,12 @@ private:
 
     boost::posix_time::ptime timeStamp_;
     bool timeStampPresent_;
+
+    size_t count_;
+    bool countPresent_;
+
+//  size_t count_;
+//  bool countPresent_;
 };
 
 }

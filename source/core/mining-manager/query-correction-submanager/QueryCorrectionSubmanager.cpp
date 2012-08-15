@@ -26,9 +26,9 @@ boost::shared_ptr<EkQueryCorrection> QueryCorrectionSubmanager::ekmgr_;
 boost::unordered_map<std::string, izenelib::util::UString> QueryCorrectionSubmanager::global_inject_data_;
 
 QueryCorrectionSubmanager::QueryCorrectionSubmanager(
-    const string& queryDataPath,
-    bool enableEK,
-    bool enableChn,
+    const string& queryDataPath, 
+    bool enableEK, 
+    bool enableChn, 
     int ed)
     : queryDataPath_(queryDataPath)
     , enableEK_(enableEK), enableChn_(enableChn)
@@ -170,7 +170,7 @@ QueryCorrectionSubmanager::~QueryCorrectionSubmanager()
 }
 
 bool QueryCorrectionSubmanager::getRefinedToken_(
-        const izenelib::util::UString& token,
+        const izenelib::util::UString& token, 
         izenelib::util::UString& result)
 {
     if (enableChn_)
@@ -200,8 +200,8 @@ bool QueryCorrectionSubmanager::getRefinedToken_(
 
 //The public interface, when user input wrong query, given the correct refined query.
 bool QueryCorrectionSubmanager::getRefinedQuery(
-        const izenelib::util::UString& queryUString,
-        izenelib::util::UString& refinedQueryUString)
+        const UString& queryUString, 
+        UString& refinedQueryUString)
 {
     if (queryUString.empty() || !activate_)
     {
@@ -233,6 +233,7 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
 
     typedef boost::tokenizer<boost::char_separator<char> > tokenizers;
     boost::char_separator<char> sep;
+    //tokenizers sep;
 
     std::string queryStr;
     queryUString.convertString(queryStr, izenelib::util::UString::UTF_8);
@@ -279,10 +280,23 @@ bool QueryCorrectionSubmanager::getPinyin(
         std::vector<izenelib::util::UString>& pinyin)
 {
     std::vector<std::string> result_list;
-    if(enableChn_ && cmgr_)
+    cmgr_->GetPinyin(hanzi, result_list);
+    for (uint32_t i=0;i<result_list.size();i++)
     {
-        cmgr_->GetPinyin(hanzi, result_list);
+        boost::algorithm::replace_all(result_list[i], ",", "");
+        pinyin.push_back(izenelib::util::UString(result_list[i], izenelib::util::UString::UTF_8));
     }
+
+    return pinyin.size() > 0;
+}
+//author wang qian
+
+bool QueryCorrectionSubmanager::getPinyin2(
+        const izenelib::util::UString& hanzi,
+        std::vector<izenelib::util::UString>& pinyin)
+{
+    std::vector<std::string> result_list;
+    cmgr_->GetPinyin2(hanzi, result_list);
     for (uint32_t i=0;i<result_list.size();i++)
     {
         boost::algorithm::replace_all(result_list[i], ",", "");
@@ -292,17 +306,40 @@ bool QueryCorrectionSubmanager::getPinyin(
     return pinyin.size() > 0;
 }
 
+bool QueryCorrectionSubmanager::getRelativeList(const izenelib::util::UString& hanzi,std::vector<std::pair<izenelib::util::UString,uint32_t> >& ResultList)
+{
+      
+    cmgr_->GetRelativeList(hanzi, ResultList);
+
+
+    return ResultList.size() > 0;
+}
+bool QueryCorrectionSubmanager::getRelativeList(const izenelib::util::UString& hanzi,std::vector<izenelib::util::UString>& ResultList)
+{
+    std::vector<std::pair<izenelib::util::UString,uint32_t> > ResultListTemp;
+    bool ret;
+    ret = getRelativeList(hanzi , ResultListTemp);
+     if(!ResultListTemp.empty())
+     {
+       for (uint32_t j = 0; j <ResultListTemp.size(); j++)
+       { 
+        
+         ResultList.push_back(ResultListTemp[j].first);
+       }
+     }
+    return ret;
+}
+//....
 void QueryCorrectionSubmanager::updateCogramAndDict(
-        const std::list<QueryLogType>& queryList,
+        const std::list<QueryLogType>& queryList, 
         const std::list<PropertyLabelType>& labelList)
 {
     DLOG(INFO) << "updateCogramAndDict..." << endl;
-    if(enableChn_ && cmgr_)
-        cmgr_->Update(queryList, labelList);
+    cmgr_->Update(queryList, labelList);
 }
 
 void QueryCorrectionSubmanager::Inject(
-        const izenelib::util::UString& query,
+        const izenelib::util::UString& query, 
         const izenelib::util::UString& result)
 {
     std::string str_query;

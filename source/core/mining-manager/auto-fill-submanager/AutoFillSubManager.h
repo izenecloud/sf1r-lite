@@ -1,87 +1,57 @@
 /*!
- \file      AutoFillSubmanager.h
- \author    Jinglei&&Kevin
- \brief     AutoFillSubManager will get the search keyword list which match the prefix of the keyword user typed.
- */
-#if !defined(_AUTO_FILL_SUBMANAGER_)
-#define _AUTO_FILL_SUBMANAGER_
-
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <string.h>
-#include <boost/tuple/tuple.hpp>
-#include <util/ThreadModel.h>
-#include <util/ustring/UString.h>
-
-#include <boost/filesystem.hpp>
-#include <boost/thread/shared_mutex.hpp>
-#include <util/singleton.h>
-#include <idmlib/util/directory_switcher.h>
+ \file      AutoFillSubManager.h
+ \author    Hongliang.Zhao&&Qiang.Wang
+ \brief     AutoFillSubManager will get the search item list which match the prefix of the keyword user typed.
+ \dat	    2012-07-26
+*/
+#include "AutoFillChildManager.h"
 
 namespace sf1r
 {
-/**
- * @brief AutoFillSubManager handles the autoFill request from user.
- * 1. Auto-fill sub-manager uses inverted structure that based on B-Tree to index
- *    the rank sensitive results for given prefixes.
- * 2. It could handle large data and give a fast overall auto-completion speed based
- *    on the incremental caching of B-Tree.
- * It contains 2 main interfaces.
- * buildIndex  : To build the index.
- * getAutoFillList : To get the list of matched items for a given prefix.
- */
-class  WordCompletionTable;
-class AutoFillSubManager
-{
-    //freq, df, text
+
+class AutoFillSubManager: public boost::noncopyable
+{   
     typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> ItemValueType;
     typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
-    typedef WordCompletionTable Trie_;
 
+    AutoFillChildManager Child1,Child2;
 public:
-    explicit AutoFillSubManager();
-    ~AutoFillSubManager();
+    AutoFillSubManager()
+    {
+       Child2.setSource(true);
+    }
 
-private:
-    DISALLOW_COPY_AND_ASSIGN(AutoFillSubManager);
+    ~AutoFillSubManager()
+    {    	
 
-    std::string fillSupportPath_;
-    std::string triePath_;
-    /**
-     * @brief the returned number of items.
-     */
-    uint32_t top_;
-    /**
-     * @brief the timePeriodfor update query Log.
-     */
-    uint32_t queryUpdateTime_;
-    Trie_* autoFillTrie_;
-    boost::shared_mutex mutex_;
-    idmlib::util::DirectorySwitcher* dir_switcher_;
+    }
+     
+    bool Init(const std::string& fillSupportPath)
+    {    
+         bool ret1 = Child1.Init(fillSupportPath + "/child1");
+         bool ret2 = Child2.Init(fillSupportPath + "/child2");
+         return ret1&&ret2;
+    }
 
-public:
-    bool Init(const std::string& fillSupportPath, uint32_t top = 10, uint32_t queryUpdateTime = 24);
+    bool buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList)//empty, because it will auto update each 24hours,don't need rebuild for all  
+    {   
+         return true;
+    }
+    bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)//自动填充
+    {    
+         std::vector<std::pair<izenelib::util::UString,uint32_t> > list2;
+         bool ret1 = Child1.getAutoFillList(query,list);
+         bool ret2 = Child2.getAutoFillList(query,list);
+         return ret1&&ret2;
+    }
 
-    /**
-     * @brief build the B-tree index for the collection and query log.
-     * @param queryList The recent queries got from query log.
-     */
-    bool buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList);
-
-    /**
-     * @brief Get the autocompletion list for a give query.
-     * @param query The given query from BA.
-     * @param list The returned autocompletion result for the query string.
-     */
-    bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
-
-private:
-    void updateTrie(Trie_* trie, const izenelib::util::UString& key , const ItemValueType& value);
-
-    void buildTrieItem(Trie_* trie, const ItemValueType& item);
-    void buildTrieItem(Trie_* trie, const izenelib::util::UString& key, const ItemValueType& item);
+    void setCollectionName(const std::string& collectionName)
+    {  
+         Child1.setCollectionName(collectionName);
+         Child2.setCollectionName(collectionName);
+    }
 
 };
-} // end - namespace sf1r
-#endif // _AUTO_FILL_SUBMANAGER_
+
+
+}
