@@ -52,7 +52,9 @@ public:
         isSnippetOn_(false),
         isSummaryOn_(false),
         summarySentenceNum_(0),
-        isHighlightOn_(false) {};
+        isHighlightOn_(false),
+        isSplitPropertyValue_(false)
+    {}
 
     DisplayProperty(const std::string& obj) :
         isSnippetOn_(false),
@@ -60,8 +62,9 @@ public:
         summarySentenceNum_(0),
         summaryPropertyAlias_(),
         isHighlightOn_(false),
-        propertyString_(obj) {};
-
+        isSplitPropertyValue_(false),
+        propertyString_(obj)
+    {}
 
     void print(std::ostream& out = std::cout) const
     {
@@ -70,6 +73,7 @@ public:
         ss << "Class DisplayProperty" << endl;
         ss << "---------------------------------" << endl;
         ss << "Property : " << propertyString_ << endl;
+        ss << "isSplitPropertyValue_ : " << isSplitPropertyValue_ << endl;
         ss << "isHighlightOn_ : " << isHighlightOn_ << endl;
         ss << "isSnippetOn_   : " << isSnippetOn_   << endl;
         ss << "isSummaryOn_   : " << isSummaryOn_   << endl;
@@ -105,13 +109,24 @@ public:
     bool            isHighlightOn_;
 
     ///
+    /// @brief a flag variable, true for splitting property value into multiple values,
+    /// mainly for properties configured in <Group> or <Attr>.
+    ///
+    bool            isSplitPropertyValue_;
+
+    ///
     /// @brief analyzed query string of specific property
     ///
     std::string     propertyString_;
 
-    DATA_IO_LOAD_SAVE(DisplayProperty, & isSnippetOn_ & isSummaryOn_ & summarySentenceNum_ & summaryPropertyAlias_ & isHighlightOn_ & propertyString_);
+    DATA_IO_LOAD_SAVE(DisplayProperty,
+        & isSnippetOn_ & isSummaryOn_ & summarySentenceNum_
+        & summaryPropertyAlias_ & isHighlightOn_ & isSplitPropertyValue_
+        & propertyString_);
 
-    MSGPACK_DEFINE(isSnippetOn_, isSummaryOn_, summarySentenceNum_, summaryPropertyAlias_, isHighlightOn_, propertyString_);
+    MSGPACK_DEFINE(isSnippetOn_, isSummaryOn_, summarySentenceNum_,
+        summaryPropertyAlias_, isHighlightOn_, isSplitPropertyValue_,
+        propertyString_);
 
 private:
     friend class boost::serialization::access;
@@ -123,6 +138,7 @@ private:
         ar & summarySentenceNum_;
         ar & summaryPropertyAlias_;
         ar & isHighlightOn_;
+        ar & isSplitPropertyValue_;
         ar & propertyString_;
     }
 }; // end - class DisplayProperty
@@ -133,6 +149,7 @@ inline bool operator==(const DisplayProperty& a, const DisplayProperty& b)
         && a.isSummaryOn_ == b.isSummaryOn_
         && a.summarySentenceNum_ == b.summarySentenceNum_
         && a.isHighlightOn_ == b.isHighlightOn_
+        && a.isSplitPropertyValue_ == b.isSplitPropertyValue_
         && a.propertyString_ == b.propertyString_
         && a.summaryPropertyAlias_ == b.summaryPropertyAlias_;
 } // end - operator==()
