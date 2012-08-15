@@ -34,7 +34,7 @@ public:
 
     uint32_t GetMaxDocId() const;
 
-    bool GetDocument(uint32_t docid, PMDocumentType& doc);
+    bool GetDocument(uint32_t docid, PMDocumentType& doc, bool force = false);
 
     void GetRTypePropertiesForDocument(uint32_t docid, PMDocumentType& doc);
 

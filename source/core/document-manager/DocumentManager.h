@@ -139,12 +139,14 @@ public:
     /**
      * @brief gets one document by id
      * @param docId document id
+     * @param forceget used by mergedocument during indexing: a deleted 
+     *              document will be merged if that doc is going to be inserted again
      * @param[out] document returned document, it will not be touched if
      *                      returning \c false
      * @return \c true if the document existed, and \a document has set to the
      *         correct value, \c false otherwise.
      */
-    bool getDocument(docid_t docId, Document& document);
+    bool getDocument(docid_t docId, Document& document, bool forceget = false);
 
     bool getDocuments(
             const std::vector<unsigned int>& ids,
@@ -395,6 +397,7 @@ private:
     static const std::string PROPERTY_LENGTH_FILE;
     static const std::string PROPERTY_BLOCK_SUFFIX;
     static unsigned int CACHE_SIZE;
+friend class IndexWorker;
 };
 
 } // end - namespace sf1r

@@ -280,10 +280,10 @@ bool DocumentManager::getPropertyValue(
     return true;
 }
 
-bool DocumentManager::getDocument(docid_t docId, Document& document)
+bool DocumentManager::getDocument(docid_t docId, Document& document, bool forceget)
 {
     CREATE_SCOPED_PROFILER ( getDocument, "DocumentManager", "DocumentManager::getDocument");
-    return !isDeleted(docId) && propertyValueTable_->get(docId, document);
+    return (forceget | !isDeleted(docId) ) && propertyValueTable_->get(docId, document);
 }
 
 void DocumentManager::getRTypePropertiesForDocument(docid_t docId, Document& document)

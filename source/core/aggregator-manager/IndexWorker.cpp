@@ -1058,8 +1058,8 @@ bool IndexWorker::updateDoc_(
     prepareIndexRTypeProperties_(document.getId(), indexDocument);
     if (hooker_)
     {
-        if (!hooker_->HookUpdate(document, indexDocument, timestamp))
-            return false;
+        ///Notice: the success of HookUpdate will not affect following update
+        hooker_->HookUpdate(document, indexDocument, timestamp);
     }
 
     if (immediately)
@@ -1090,8 +1090,7 @@ bool IndexWorker::doUpdateDoc_(
     case GENERAL:
     {
         uint32_t oldId = indexDocument.getOldId();
-        if (!mergeDocument_(oldId, document, indexDocument, true))
-            return false;
+        mergeDocument_(oldId, document, indexDocument, true);
 
         if (!documentManager_->removeDocument(oldId))
         {
@@ -1118,8 +1117,7 @@ bool IndexWorker::doUpdateDoc_(
     case REPLACE:
     {
         uint32_t oldId = indexDocument.getOldId();
-        if (!mergeDocument_(oldId, document, indexDocument, false))
-            return false;
+        mergeDocument_(oldId, document, indexDocument, false);
 
         return documentManager_->updateDocument(document);
     }
@@ -1142,7 +1140,7 @@ void IndexWorker::flushUpdateBuffer_()
             uint32_t oldId = it->first;
             if (!mergeDocument_(oldId, updateData.get<1>(), updateData.get<2>(), true))
             {
-                updateData.get<0>() = UNKNOWN;
+                //updateData.get<0>() = UNKNOWN;
                 break;
             }
             documentManager_->removeDocument(oldId);
@@ -1452,7 +1450,7 @@ bool IndexWorker::mergeDocument_(
     ///We need to retrieve old document, and then merge them with new document data
     docid_t newId = doc.getId();
     Document oldDoc;
-    if (!documentManager_->getDocument(oldId, oldDoc))
+    if (!documentManager_->getDocument(oldId, oldDoc, true))
     {
         return false;
     }
@@ -1464,9 +1462,17 @@ bool IndexWorker::mergeDocument_(
             ///When new doc has same properties with old doc
             ///override content of old doc
             if (it->second == doc.property(it->first)) continue;
-            const izenelib::util::UString& newPropValue = doc.property(it->first).get<izenelib::util::UString>();
-            if (newPropValue.empty()) continue;
-            it->second = newPropValue;
+            if(boost::find_first(it->first,DocumentManager::PROPERTY_BLOCK_SUFFIX))
+            {
+                ///such properties are not UString type, so boost::get<> will throw exception
+                it->second.swap(doc.property(it->first));
+            }
+            else
+            {
+                const izenelib::util::UString& newPropValue = doc.property(it->first).get<izenelib::util::UString>();
+                if (newPropValue.empty()) continue;
+                it->second = newPropValue;
+            }
         }
         else if (generateIndexDoc)
         {
