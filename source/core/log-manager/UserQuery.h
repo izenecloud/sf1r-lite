@@ -13,7 +13,7 @@ class UserQuery : public RDbRecordBase
 
 public:
 
-    enum Column { Query, Collection, HitDocsNum, PageStart, PageCount, SessionId, Duration, TimeStamp,count,EoC };//Count
+    enum Column { Query, Collection, HitDocsNum, PageStart, PageCount, SessionId, Duration, TimeStamp,EoC };//Count
 
     static const char* ColumnName[EoC];
 
@@ -31,9 +31,7 @@ public:
         pageCountPresent_(false),
         sessionIdPresent_(false),
         durationPresent_(false),
-        timeStampPresent_(false),
-        countPresent_(false) {}//countPresent_(false)
-
+        timeStampPresent_(false) {}
     ~UserQuery() {}
 
     inline const std::string & getQuery() const
@@ -171,14 +169,8 @@ public:
     inline void setCount( const uint32_t count )
     {
         count_ = count;
-        countPresent_ = true;
     }
 
-    inline bool hasCount() const
-    {
-        return countPresent_;
-    }
-    /* */
 
     void save( std::map<std::string, std::string> & rawdata );
 
@@ -211,10 +203,6 @@ private:
     bool timeStampPresent_;
 
     size_t count_;
-    bool countPresent_;
-
-//  size_t count_;
-//  bool countPresent_;
 };
 
 }
