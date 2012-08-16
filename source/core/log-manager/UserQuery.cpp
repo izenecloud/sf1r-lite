@@ -9,10 +9,10 @@ namespace sf1r
 {
 
 const char* UserQuery::ColumnName[EoC] = { "query", "collection", "hit_docs_num", \
-        "page_start", "page_count", "session_id", "duration" , "TimeStamp","count"
+        "page_start", "page_count", "session_id", "duration" , "TimeStamp"
                                          };
 //Count
-const char* UserQuery::ColumnMeta[EoC] = { "Text", "TEXT", "integer", "integer", "integer", "TEXT", "CHAR(15)", "CHAR(22)","integer"};
+const char* UserQuery::ColumnMeta[EoC] = { "Text", "TEXT", "integer", "integer", "integer", "TEXT", "CHAR(15)", "CHAR(22)"};
 //integer
 const char* UserQuery::TableName = "user_queries";
 
@@ -35,8 +35,6 @@ void UserQuery::save( std::map<std::string, std::string> & rawdata )
         rawdata[ ColumnName[Duration] ] = to_simple_string(getDuration());
     if (hasTimeStamp() )
         rawdata[ ColumnName[TimeStamp] ] = to_iso_string(getTimeStamp());
-    if (hasCount() )
-        rawdata[ ColumnName[count] ]     = boost::lexical_cast<string>(getCount());
     //
 }
 
@@ -76,8 +74,7 @@ void UserQuery::load( const std::map<std::string, std::string> & rawdata )
         {
             setTimeStamp(from_iso_string(it->second));
         }
-
-        else if (it->first == ColumnName[count])
+        else if (it->first == "count")
         {
             //std::cout<<"count"<<it->second<<end;
             //setCount(boost::lexical_cast<uint32_t>(it->second));
