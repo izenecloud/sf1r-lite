@@ -65,7 +65,8 @@ private:
     ::izenelib::driver::Response& response_;
     IndexSearchService* indexSearchService_;
     MiningSearchService* miningSearchService_;
-    IndexBundleSchema indexSchema_;
+    const IndexBundleSchema& indexSchema_;
+    const MiningSchema& miningSchema_;
 
     GetDocumentsByIdsActionItem actionItem_;
 
