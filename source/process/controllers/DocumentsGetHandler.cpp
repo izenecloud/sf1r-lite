@@ -39,6 +39,7 @@ DocumentsGetHandler::DocumentsGetHandler(
     , indexSearchService_(collectionHandler.indexSearchService_)
     , miningSearchService_(collectionHandler.miningSearchService_)
     , indexSchema_(collectionHandler.indexSchema_)
+    , miningSchema_(collectionHandler.miningSchema_)
     , actionItem_()
 {
     actionItem_.env_.encodingType_ = "UTF-8";
@@ -401,7 +402,7 @@ bool DocumentsGetHandler::doGet()
         return false;
     }
 
-    DocumentsRenderer renderer;
+    DocumentsRenderer renderer(miningSchema_);
     renderer.renderDocuments(
             actionItem_.displayPropertyList_,
             result,

@@ -25,7 +25,7 @@ namespace sf1r
  */
 void split_group_path(
     const izenelib::util::UString& src,
-    std::vector<vector<izenelib::util::UString> >& groupPaths
+    std::vector<std::vector<izenelib::util::UString> >& groupPaths
 );
 
 typedef std::pair<

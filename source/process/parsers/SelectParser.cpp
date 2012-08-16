@@ -147,7 +147,7 @@ bool SelectParser::parse(const Value& select)
             properties_[i].propertyString_ = asString(currentProperty[Keys::property]);
             properties_[i].isHighlightOn_ = asBool(currentProperty[Keys::highlight]);
             properties_[i].isSplitPropertyValue_ =
-                asBool(currentProperty[Keys::is_split_property_value]);
+                asBool(currentProperty[Keys::split_property_value]);
             properties_[i].isSummaryOn_ = asBool(currentProperty[Keys::summary]);
             if (properties_[i].isSummaryOn_)
             {

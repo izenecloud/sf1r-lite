@@ -5,6 +5,7 @@
  * @author Ian Yang
  * @date Created <2010-06-11 13:01:17>
  */
+#include "SplitPropValueRenderer.h"
 #include <util/driver/Renderer.h>
 
 #include <common/ResultType.h>
@@ -14,56 +15,60 @@
 #include <string>
 #include <vector>
 
-namespace sf1r {
+namespace sf1r
+{
 class DisplayProperty;
-using namespace izenelib;
-using namespace izenelib::driver;
+class MiningSchema;
+
 /**
  * @brief Render documents in response
  *
  * Dummy token @@ALL@@ is removed from ACL_ALLOW.
  */
-class DocumentsRenderer : public driver::Renderer
+class DocumentsRenderer : public izenelib::driver::Renderer
 {
 public:
-    static const izenelib::util::UString::EncodingType kEncoding;
+    SplitPropValueRenderer splitRenderer_;
+
+    DocumentsRenderer(const MiningSchema& miningSchema, int topKNum = 0);
 
     void renderDocuments(
         const std::vector<DisplayProperty>& propertyList,
         const RawTextResultFromMIA& result,
-        Value& resources
+        izenelib::driver::Value& resources
     );
 
     void renderDocuments(
         const std::vector<DisplayProperty>& propertyList,
         const KeywordSearchResult& searchResult,
-        Value& resources
+        izenelib::driver::Value& resources
     );
 
     void renderRelatedQueries(const KeywordSearchResult& miaResult,
-                              Value& relatedQueries);
+                              izenelib::driver::Value& relatedQueries);
 
 //     void renderPopularQueries(const KeywordSearchResult& miaResult,
-//                               Value& popularQueries);
+//                               izenelib::driver::Value& popularQueries);
 //
 //     void renderRealTimeQueries(const KeywordSearchResult& miaResult,
-//                                Value& realTimeQueries);
+//                                izenelib::driver::Value& realTimeQueries);
 
     void renderTaxonomy(const KeywordSearchResult& miaResult,
-                        Value& taxonomy);
+                        izenelib::driver::Value& taxonomy);
 
     void renderNameEntity(const KeywordSearchResult& miaResult,
-                          Value& nameEntity);
+                          izenelib::driver::Value& nameEntity);
 
     void renderFaceted(const KeywordSearchResult& miaResult,
-                          Value& facetedEntity);
+                          izenelib::driver::Value& facetedEntity);
 
     void renderGroup(const KeywordSearchResult& miaResult,
-                          Value& groupResult);
+                          izenelib::driver::Value& groupResult);
 
     void renderAttr(const KeywordSearchResult& miaResult,
-                          Value& attrResult);
+                          izenelib::driver::Value& attrResult);
 
+private:
     int TOP_K_NUM;
 };
 
