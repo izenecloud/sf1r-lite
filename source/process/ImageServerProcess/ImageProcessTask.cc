@@ -165,12 +165,12 @@ int ImageProcessTask::doCompute(const std::string& img_file, bool islocal)
         if(ret)
         {
             ret = getImageColor(imgdata, imgsize, indexCollection, COLOR_RET_NUM);
+            delete[] imgdata;
         }
         else
         {
             LOG(INFO) << "Download Image data failed imagePath=" << img_file << std::endl;
         }
-        delete[] imgdata;
     }
     else
     {

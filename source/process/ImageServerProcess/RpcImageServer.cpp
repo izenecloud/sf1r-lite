@@ -86,23 +86,34 @@ void RpcImageServer::dispatch(msgpack::rpc::request req)
             if(!reqdata.success)
             {
                 // try to recalculate the color
-                std::string picFilePath = ImageServerCfg::get()->getImageFilePath() + "/" + reqdata.img_file;
-                int indexCollection[COLOR_RET_NUM];
-                bool ret = getImageColor(picFilePath.c_str(), indexCollection, COLOR_RET_NUM);
-                if(ret){
-                    std::ostringstream oss;
-                    for(std::size_t i = 0; i < COLOR_RET_NUM - 1; ++i)
-                    {
-                        oss << indexCollection[i] << ",";
-                    }
-                    oss << indexCollection[COLOR_RET_NUM - 1]; 
+                //std::string picFilePath = ImageServerCfg::get()->getImageFilePath() + "/" + reqdata.img_file;
+                char* data = NULL;
+                std::size_t datasize = 0;
+                if(ImageServerStorage::get()->DownloadImageData(reqdata.img_file, data, datasize))
+                {
+                    int indexCollection[COLOR_RET_NUM];
+                    bool ret = getImageColor(data, datasize, indexCollection, COLOR_RET_NUM);
+                    if(ret){
+                        std::ostringstream oss;
+                        for(std::size_t i = 0; i < COLOR_RET_NUM - 1; ++i)
+                        {
+                            oss << indexCollection[i] << ",";
+                        }
+                        oss << indexCollection[COLOR_RET_NUM - 1]; 
 
-                    reqdata.success = ImageServerStorage::get()->SetImageColor(reqdata.img_file, oss.str());
-                    reqdata.result_img_color = oss.str();
-                    //LOG(INFO) << "got request image color for fileName=" << reqdata.img_file << "result:" <<
-                    //   oss.str() << std::endl;
-                }else{
-                    LOG(WARNING) << "getImageColor failed imagePath=" << reqdata.img_file << std::endl;
+                        reqdata.success = ImageServerStorage::get()->SetImageColor(reqdata.img_file, oss.str());
+                        reqdata.result_img_color = oss.str();
+                        //LOG(INFO) << "got request image color for fileName=" << reqdata.img_file << "result:" <<
+                        //   oss.str() << std::endl;
+                    }else{
+                        LOG(WARNING) << "getImageColor failed imagePath=" << reqdata.img_file << std::endl;
+                        reqdata.success = false;
+                    }
+                    delete[] data;
+                }
+                else
+                {
+                    LOG(INFO) << "getImage data failed while get image color imagePath=" << reqdata.img_file << std::endl;
                     reqdata.success = false;
                 }
             }
