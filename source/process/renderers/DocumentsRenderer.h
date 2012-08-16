@@ -25,17 +25,17 @@ using namespace izenelib::driver;
  */
 class DocumentsRenderer : public driver::Renderer
 {
+public:
     static const izenelib::util::UString::EncodingType kEncoding;
 
-public:
     void renderDocuments(
-        const std::vector<DisplayProperty> propertyList,
+        const std::vector<DisplayProperty>& propertyList,
         const RawTextResultFromMIA& result,
         Value& resources
     );
 
     void renderDocuments(
-        const std::vector<DisplayProperty> propertyList,
+        const std::vector<DisplayProperty>& propertyList,
         const KeywordSearchResult& searchResult,
         Value& resources
     );

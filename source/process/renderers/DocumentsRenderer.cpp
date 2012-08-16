@@ -19,6 +19,50 @@ using driver::Keys;
 const izenelib::util::UString::EncodingType DocumentsRenderer::kEncoding =
     izenelib::util::UString::UTF_8;
 
+template <class DocumentResultsType>
+void renderPropertyList(
+    const std::vector<DisplayProperty>& propertyList,
+    const DocumentResultsType& docResults,
+    std::size_t column,
+    Value& newResource
+)
+{
+    // full text and snippet properties
+    std::size_t summaryIndex = 0;
+    std::string propertyValueBuffer;
+
+    for (std::size_t p = 0; p < propertyList.size(); ++p)
+    {
+        const std::string& propertyName = propertyList[p].propertyString_;
+
+        docResults.snippetTextOfDocumentInPage_[p][column].convertString(
+            propertyValueBuffer, DocumentsRenderer::kEncoding
+        );
+
+        // remove dummy token @@ALL@@ from result
+        if (propertyName == "ACL_ALLOW" && propertyValueBuffer == "@@ALL@@")
+        {
+            propertyValueBuffer = "";
+        }
+
+        newResource[propertyName] = propertyValueBuffer;
+
+        if (propertyList[p].isSummaryOn_)
+        {
+            BOOST_ASSERT(summaryIndex < docResults.rawTextOfSummaryInPage_.size());
+
+            docResults.rawTextOfSummaryInPage_[summaryIndex][column].convertString(
+                propertyValueBuffer, DocumentsRenderer::kEncoding
+            );
+
+            const std::string& summaryPropertyName =
+                propertyList[p].summaryPropertyAlias_;
+
+            newResource[summaryPropertyName] = propertyValueBuffer;
+            ++summaryIndex;
+        }
+    }
+}
 
 /**
  * @brief Render documents in response
@@ -26,7 +70,7 @@ const izenelib::util::UString::EncodingType DocumentsRenderer::kEncoding =
  * Dummy token @@ALL@@ is removed from ACL_ALLOW.
  */
 void DocumentsRenderer::renderDocuments(
-    const std::vector<DisplayProperty> propertyList,
+    const std::vector<DisplayProperty>& propertyList,
     const RawTextResultFromMIA& result,
     Value& resources
 )
@@ -42,37 +86,8 @@ void DocumentsRenderer::renderDocuments(
 
         newResource[Keys::_id] = widList[i];
 
-        // full text and snippet properties
-        std::size_t summaryIndex = 0;
-        std::string propertyValueBuffer;
-        for (std::size_t p = 0; p < propertyList.size(); ++p)
-        {
-            const std::string& propertyName = propertyList[p].propertyString_;
+        renderPropertyList(propertyList, result, i, newResource);
 
-            result.snippetTextOfDocumentInPage_[p][i].convertString(
-                propertyValueBuffer, kEncoding
-            );
-
-            // remove dummy token @@ALL@@ from result
-            if (propertyName == "ACL_ALLOW" && propertyValueBuffer == "@@ALL@@")
-            {
-                propertyValueBuffer = "";
-            }
-
-            newResource[propertyName] = propertyValueBuffer;
-
-            if (propertyList[p].isSummaryOn_)
-            {
-                BOOST_ASSERT(summaryIndex < result.rawTextOfSummaryInPage_.size());
-                result.rawTextOfSummaryInPage_[summaryIndex][i].convertString(
-                    propertyValueBuffer, kEncoding
-                );
-                const std::string& summaryPropertyName =
-                    propertyList[p].summaryPropertyAlias_;
-                newResource[summaryPropertyName] = propertyValueBuffer;
-                ++summaryIndex;
-            }
-        }
         if (result.numberOfDuplicatedDocs_.size()
             == widList.size())
         {
@@ -95,7 +110,7 @@ void DocumentsRenderer::renderDocuments(
  * Dummy token @@ALL@@ is removed from ACL_ALLOW.
  */
 void DocumentsRenderer::renderDocuments(
-    const std::vector<DisplayProperty> propertyList,
+    const std::vector<DisplayProperty>& propertyList,
     const KeywordSearchResult& searchResult,
     Value& resources
 )
@@ -121,37 +136,7 @@ void DocumentsRenderer::renderDocuments(
             newResource[Keys::_custom_rank] = searchResult.topKCustomRankScoreList_[indexInTopK];
         }
 
-        // full text and snippet properties
-        std::size_t summaryIndex = 0;
-        std::string propertyValueBuffer;
-        for (std::size_t p = 0; p < propertyList.size(); ++p)
-        {
-            const std::string& propertyName = propertyList[p].propertyString_;
-
-            searchResult.snippetTextOfDocumentInPage_[p][i].convertString(
-                propertyValueBuffer, kEncoding
-            );
-
-            // remove dummy token @@ALL@@ from result
-            if (propertyName == "ACL_ALLOW" && propertyValueBuffer == "@@ALL@@")
-            {
-                propertyValueBuffer = "";
-            }
-
-            newResource[propertyName] = propertyValueBuffer;
-
-            if (propertyList[p].isSummaryOn_)
-            {
-                BOOST_ASSERT(summaryIndex < searchResult.rawTextOfSummaryInPage_.size());
-                searchResult.rawTextOfSummaryInPage_[summaryIndex][i].convertString(
-                    propertyValueBuffer, kEncoding
-                );
-                const std::string& summaryPropertyName =
-                    propertyList[p].summaryPropertyAlias_;
-                newResource[summaryPropertyName] = propertyValueBuffer;
-                ++summaryIndex;
-            }
-        }
+        renderPropertyList(propertyList, searchResult, i, newResource);
 
         if (searchResult.numberOfDuplicatedDocs_.size()
             == searchResult.topKDocs_.size())
