@@ -214,6 +214,8 @@ public:
     void updateFromSCD();
     void SaveSCDLog();
     void LoadSCDLog();
+public:
+    static std::string system_resource_path_;
 };
 } // end - namespace sf1r
 #endif // _AUTO_FILL_SUBMANAGER_
