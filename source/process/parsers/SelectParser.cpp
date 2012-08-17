@@ -40,6 +40,8 @@ const std::string SelectParser::kDefaultSummaryPropertySuffix = ".summary";
  * - @b summary_property_alias (@c String): Alias of the extra summary
  *   property. By default, the name is original property name plus suffix
  *   @ref kDefaultSummaryPropertySuffix.
+ * - @b split_property_value (@c Bool = @c false): Whether split the property
+ *   value into multiple values.
  *
  * Specially, if the item is of type String, it is considered as an Object with
  * only one key @b property with the specified value. I.e., \c "title" is
@@ -54,6 +56,33 @@ const std::string SelectParser::kDefaultSummaryPropertySuffix = ".summary";
  *
  * If ACL_ALLOW and ACL_DENY exist in document schema, the two fields are added
  * so that they are always returned in response.
+ *
+ * If @b split_property_value is specified as @c yes,@n
+ * - if the @b property is configured in @c <MiningBundle><Schema><Group>,@n
+ * given the original property value such as:
+ * @code
+ * "数码>手机通讯>手机,苹果商城>iPhone"
+ * @endcode
+ * the splitted property value would be:
+ * @code
+ * [
+ *   ["数码", "手机通讯", "手机"],
+ *   ["苹果商城", "iPhone"],
+ * ]
+ * @endcode
+ * - if the @b property is configured in @c <MiningBundle><Schema><Attr>,@n
+ * given the original property value such as:
+ * @code
+ * "领子:圆领,尺码:S|M|L|XL"
+ * @endcode
+ * the splitted property value would be:
+ * @code
+ * [
+ *   {"attr_name": "领子", "attr_values": ["圆领"]},
+ *   {"attr_name": "尺码", "attr_values": ["S", "M", "L", "XL"]}
+ * ]
+ * @endcode
+ * - in other cases, the property value would not be splitted.
  */
 bool SelectParser::parse(const Value& select)
 {
@@ -117,6 +146,8 @@ bool SelectParser::parse(const Value& select)
         {
             properties_[i].propertyString_ = asString(currentProperty[Keys::property]);
             properties_[i].isHighlightOn_ = asBool(currentProperty[Keys::highlight]);
+            properties_[i].isSplitPropertyValue_ =
+                asBool(currentProperty[Keys::split_property_value]);
             properties_[i].isSummaryOn_ = asBool(currentProperty[Keys::summary]);
             if (properties_[i].isSummaryOn_)
             {

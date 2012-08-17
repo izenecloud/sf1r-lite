@@ -14,6 +14,8 @@ using namespace izenelib::util;
 using namespace izenelib::am;
 namespace sf1r
 {
+std::string AutoFillChildManager::system_resource_path_;
+
 AutoFillChildManager::AutoFillChildManager()
 {
     isUpdating_ = false;
@@ -118,17 +120,17 @@ bool AutoFillChildManager::Init(const std::string& fillSupportPath)
     delete [] s;
     SCDDIC_ = rootdir + "/collection/" + collectionName_ + "/scd/autofill";//TODO
 
-    /*string dictionaryFile = SF1Config::get()->laDictionaryPath_;
+    std::string dictionaryFile = system_resource_path_;
     if(dictionaryFile.rfind("/") != dictionaryFile.length()-1)
     {
-        dictionaryFile += "/QUERYNORMALIZE";
+        dictionaryFile += "/qn/QUERYNORMALIZE";
     }
     else
     {
-        dictionaryFile += "QUERYNORMALIZE";
-    }*/ //use SF1Config cause the complie wrong of test/"
-
-    QN_->load("../b5m/QUERYNORMALIZE");
+        dictionaryFile += "qn/QUERYNORMALIZE";
+    }//use SF1Config cause the complie wrong of test/"
+    
+    QN_->load(dictionaryFile);
     bool leveldbBuild = false;
     try
     {
@@ -168,7 +170,7 @@ bool AutoFillChildManager::Init(const std::string& fillSupportPath)
 
     std::string temp = fillSupportPath + "/AutoFill.log";
     out.open(temp.c_str(), ios::out);
-
+    //out<<dictionaryFile<<endl;
     if(!openDB(leveldbPath_, ItemdbPath_))
         return false;
 

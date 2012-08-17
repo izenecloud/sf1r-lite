@@ -5,20 +5,85 @@
  * @date Created <2010-06-11 13:03:57>
  */
 #include "DocumentsRenderer.h"
-
 #include <common/Keys.h>
-
 #include <query-manager/ActionItem.h>
 
 #include <boost/assert.hpp>
 
+namespace
+{
+const izenelib::util::UString::EncodingType kEncoding =
+    izenelib::util::UString::UTF_8;
+}
+
 namespace sf1r {
 
+using namespace izenelib::driver;
 using driver::Keys;
 
-const izenelib::util::UString::EncodingType DocumentsRenderer::kEncoding =
-    izenelib::util::UString::UTF_8;
+template <class DocumentResultsType>
+void renderPropertyList(
+    SplitPropValueRenderer& splitRenderer,
+    const std::vector<DisplayProperty>& propertyList,
+    const DocumentResultsType& docResults,
+    std::size_t column,
+    Value& newResource
+)
+{
+    // full text and snippet properties
+    std::size_t summaryIndex = 0;
+    std::string propertyValueBuffer;
 
+    for (std::size_t p = 0; p < propertyList.size(); ++p)
+    {
+        const std::string& propertyName = propertyList[p].propertyString_;
+
+        const izenelib::util::UString& snippetText =
+            docResults.snippetTextOfDocumentInPage_[p][column];
+
+        if (propertyList[p].isSplitPropertyValue_)
+        {
+            splitRenderer.renderPropValue(
+                propertyName, snippetText, newResource[propertyName]
+            );
+        }
+        else
+        {
+            snippetText.convertString(
+                propertyValueBuffer, kEncoding
+            );
+
+            // remove dummy token @@ALL@@ from result
+            if (propertyName == "ACL_ALLOW" && propertyValueBuffer == "@@ALL@@")
+            {
+                propertyValueBuffer = "";
+            }
+
+            newResource[propertyName] = propertyValueBuffer;
+        }
+
+        if (propertyList[p].isSummaryOn_)
+        {
+            BOOST_ASSERT(summaryIndex < docResults.rawTextOfSummaryInPage_.size());
+
+            docResults.rawTextOfSummaryInPage_[summaryIndex][column].convertString(
+                propertyValueBuffer, kEncoding
+            );
+
+            const std::string& summaryPropertyName =
+                propertyList[p].summaryPropertyAlias_;
+
+            newResource[summaryPropertyName] = propertyValueBuffer;
+            ++summaryIndex;
+        }
+    }
+}
+
+DocumentsRenderer::DocumentsRenderer(const MiningSchema& miningSchema, int topKNum)
+    : splitRenderer_(miningSchema)
+    , TOP_K_NUM(topKNum)
+{
+}
 
 /**
  * @brief Render documents in response
@@ -26,9 +91,9 @@ const izenelib::util::UString::EncodingType DocumentsRenderer::kEncoding =
  * Dummy token @@ALL@@ is removed from ACL_ALLOW.
  */
 void DocumentsRenderer::renderDocuments(
-    const std::vector<DisplayProperty> propertyList,
+    const std::vector<DisplayProperty>& propertyList,
     const RawTextResultFromMIA& result,
-    Value& resources
+    izenelib::driver::Value& resources
 )
 {
     std::vector<sf1r::wdocid_t> widList;
@@ -42,37 +107,9 @@ void DocumentsRenderer::renderDocuments(
 
         newResource[Keys::_id] = widList[i];
 
-        // full text and snippet properties
-        std::size_t summaryIndex = 0;
-        std::string propertyValueBuffer;
-        for (std::size_t p = 0; p < propertyList.size(); ++p)
-        {
-            const std::string& propertyName = propertyList[p].propertyString_;
+        renderPropertyList(splitRenderer_, propertyList,
+            result, i, newResource);
 
-            result.snippetTextOfDocumentInPage_[p][i].convertString(
-                propertyValueBuffer, kEncoding
-            );
-
-            // remove dummy token @@ALL@@ from result
-            if (propertyName == "ACL_ALLOW" && propertyValueBuffer == "@@ALL@@")
-            {
-                propertyValueBuffer = "";
-            }
-
-            newResource[propertyName] = propertyValueBuffer;
-
-            if (propertyList[p].isSummaryOn_)
-            {
-                BOOST_ASSERT(summaryIndex < result.rawTextOfSummaryInPage_.size());
-                result.rawTextOfSummaryInPage_[summaryIndex][i].convertString(
-                    propertyValueBuffer, kEncoding
-                );
-                const std::string& summaryPropertyName =
-                    propertyList[p].summaryPropertyAlias_;
-                newResource[summaryPropertyName] = propertyValueBuffer;
-                ++summaryIndex;
-            }
-        }
         if (result.numberOfDuplicatedDocs_.size()
             == widList.size())
         {
@@ -95,9 +132,9 @@ void DocumentsRenderer::renderDocuments(
  * Dummy token @@ALL@@ is removed from ACL_ALLOW.
  */
 void DocumentsRenderer::renderDocuments(
-    const std::vector<DisplayProperty> propertyList,
+    const std::vector<DisplayProperty>& propertyList,
     const KeywordSearchResult& searchResult,
-    Value& resources
+    izenelib::driver::Value& resources
 )
 {
     std::string strBuffer;
@@ -121,37 +158,8 @@ void DocumentsRenderer::renderDocuments(
             newResource[Keys::_custom_rank] = searchResult.topKCustomRankScoreList_[indexInTopK];
         }
 
-        // full text and snippet properties
-        std::size_t summaryIndex = 0;
-        std::string propertyValueBuffer;
-        for (std::size_t p = 0; p < propertyList.size(); ++p)
-        {
-            const std::string& propertyName = propertyList[p].propertyString_;
-
-            searchResult.snippetTextOfDocumentInPage_[p][i].convertString(
-                propertyValueBuffer, kEncoding
-            );
-
-            // remove dummy token @@ALL@@ from result
-            if (propertyName == "ACL_ALLOW" && propertyValueBuffer == "@@ALL@@")
-            {
-                propertyValueBuffer = "";
-            }
-
-            newResource[propertyName] = propertyValueBuffer;
-
-            if (propertyList[p].isSummaryOn_)
-            {
-                BOOST_ASSERT(summaryIndex < searchResult.rawTextOfSummaryInPage_.size());
-                searchResult.rawTextOfSummaryInPage_[summaryIndex][i].convertString(
-                    propertyValueBuffer, kEncoding
-                );
-                const std::string& summaryPropertyName =
-                    propertyList[p].summaryPropertyAlias_;
-                newResource[summaryPropertyName] = propertyValueBuffer;
-                ++summaryIndex;
-            }
-        }
+        renderPropertyList(splitRenderer_, propertyList,
+            searchResult, i, newResource);
 
         if (searchResult.numberOfDuplicatedDocs_.size()
             == searchResult.topKDocs_.size())
@@ -198,7 +206,7 @@ void DocumentsRenderer::renderDocuments(
 
 void DocumentsRenderer::renderRelatedQueries(
     const KeywordSearchResult& miaResult,
-    Value& relatedQueries
+    izenelib::driver::Value& relatedQueries
 )
 {
     std::string convertBuffer;
@@ -211,7 +219,7 @@ void DocumentsRenderer::renderRelatedQueries(
 
 // void DocumentsRenderer::renderPopularQueries(
 //     const KeywordSearchResult& miaResult,
-//     Value& popularQueries
+//     izenelib::driver::Value& popularQueries
 // )
 // {
 //     std::string convertBuffer;
@@ -225,7 +233,7 @@ void DocumentsRenderer::renderRelatedQueries(
 //
 // void DocumentsRenderer::renderRealTimeQueries(
 //     const KeywordSearchResult& miaResult,
-//     Value& realTimeQueries
+//     izenelib::driver::Value& realTimeQueries
 // )
 // {
 //     std::string convertBuffer;
@@ -238,7 +246,7 @@ void DocumentsRenderer::renderRelatedQueries(
 
 void DocumentsRenderer::renderTaxonomy(
     const KeywordSearchResult& miaResult,
-    Value& taxonomy
+    izenelib::driver::Value& taxonomy
 )
 {
     if (miaResult.taxonomyString_.empty())
@@ -273,7 +281,7 @@ void DocumentsRenderer::renderTaxonomy(
 
 void DocumentsRenderer::renderNameEntity(
     const KeywordSearchResult& miaResult,
-    Value& nameEntity
+    izenelib::driver::Value& nameEntity
 )
 {
     std::string convertBuffer;
@@ -301,7 +309,7 @@ void DocumentsRenderer::renderNameEntity(
 
 void DocumentsRenderer::renderFaceted(
     const KeywordSearchResult& miaResult,
-    Value& faceted)
+    izenelib::driver::Value& faceted)
 {
   const std::list<sf1r::faceted::OntologyRepItem>& item_list = miaResult.onto_rep_.item_list;
   if( item_list.empty())
@@ -344,7 +352,7 @@ void DocumentsRenderer::renderFaceted(
 
 void DocumentsRenderer::renderGroup(
     const KeywordSearchResult& miaResult,
-    Value& groupResult
+    izenelib::driver::Value& groupResult
 )
 {
     const std::list<sf1r::faceted::OntologyRepItem>& item_list = miaResult.groupRep_.stringGroupRep_;
@@ -389,7 +397,7 @@ void DocumentsRenderer::renderGroup(
 
 void DocumentsRenderer::renderAttr(
     const KeywordSearchResult& miaResult,
-    Value& attrResult
+    izenelib::driver::Value& attrResult
 )
 {
     const std::list<sf1r::faceted::OntologyRepItem>& item_list = miaResult.attrRep_.item_list;
