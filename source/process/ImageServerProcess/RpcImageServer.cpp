@@ -226,51 +226,69 @@ void RpcImageServer::dispatch(msgpack::rpc::request req)
 
 void RpcImageServer::exportimage(const std::string& log_file, const std::string& outdir)
 {
+    size_t total_export = 0;
+    size_t failed_cnt = 0;
     ifstream ifs;
+    ofstream export_log;
+    struct timeval tv_start, tv_end;
     try
     {
-    ifs.open(log_file.c_str(), ifstream::in);
+        ifs.open(log_file.c_str(), ifstream::in);
+        export_log.open((outdir + "/" + std::string("export.log")).c_str(), ofstream::app);
 
-    while(ifs.good())
-    {
-        char file_name[TFS_FILE_LEN];
-        ifs.getline(file_name, TFS_FILE_LEN);
-        char* buffer = NULL;
-        std::size_t buf_size = 0;
-        bool ret = ImageServerStorage::get()->DownloadImageData(file_name, buffer, buf_size);
-        if(ret)
+        gettimeofday(&tv_start, NULL);
+        export_log << " === export start: " << tv_start.tv_sec << " === " << std::endl;
+        while(ifs.good())
         {
-            ofstream ofs;
-            try
+            ++total_export;
+            char file_name[TFS_FILE_LEN];
+            ifs.getline(file_name, TFS_FILE_LEN);
+            char* buffer = NULL;
+            std::size_t buf_size = 0;
+            bool ret = ImageServerStorage::get()->DownloadImageData(file_name, buffer, buf_size);
+            if(ret)
             {
-                ofs.open((outdir + "/" + file_name).c_str(), ofstream::trunc);
-                ofs.write(buffer, buf_size);
-                ofs.close();
+                ofstream ofs;
+                try
+                {
+                    ofs.open((outdir + "/" + file_name).c_str(), ofstream::trunc);
+                    ofs.write(buffer, buf_size);
+                }
+                catch(std::exception& e)
+                {
+                    ++failed_cnt;
+                    export_log << "export failed (save data to out file error) : " << e.what() << ",file: " << file_name << std::endl;
+                }
+                if(ofs.is_open())
+                    ofs.close();
+                delete[] buffer;
             }
-            catch(std::exception& e)
+            else
             {
-                ofs.close();
-                LOG(WARNING) << "export failed (save data to out file error) : " << e.what() << ",file: " << file_name << std::endl;
+                ++failed_cnt;
+                export_log << "export failed (download error): " << file_name << std::endl;
             }
-            delete[] buffer;
+            boost::this_thread::interruption_point();
         }
-        else
-        {
-            LOG(WARNING) << "export failed (download error): " << file_name << std::endl;
-        }
-        boost::this_thread::interruption_point();
-    }
-
-    ifs.close();
     }
     catch(boost::thread_interrupted& )
     {
-        ifs.close();
+        LOG(INFO) << "exporting aborted. " << std::endl;
     }
     catch(std::exception& e)
     {
-        ifs.close();
         LOG(WARNING) << "exception while exporting: " << e.what() << std::endl;
+    }
+    if(ifs.is_open())
+    {
+        ifs.close();
+    }
+    if(export_log.is_open())
+    {
+        export_log << "export finished, total export : " << total_export << ", failed: " << failed_cnt << std::endl;
+        gettimeofday(&tv_end, NULL);
+        export_log << " === export end: " << tv_end.tv_sec << " === " << std::endl;
+        export_log.close();
     }
     is_exporting_ = false;
 }
