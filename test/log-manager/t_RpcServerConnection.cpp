@@ -64,7 +64,6 @@ BOOST_AUTO_TEST_CASE(expectHostResolveError)
 
     typedef std::runtime_error ExceptionType;
     BOOST_CHECK_THROW(connection_.syncRequest(method, param, result), ExceptionType);
-    BOOST_CHECK_THROW(connection_.asynRequest(method, param), ExceptionType);
 }
 
 BOOST_AUTO_TEST_CASE(expectTimeOutError)
