@@ -219,7 +219,11 @@ class ImageProcess: public Fastcgipp::Request<char>
         try
         {
             image.read(imgdata);
-            image.scale(zoom_param);
+            // only zoom out not zoom in.
+            if(Geometry(zoom_param) <= image.size())
+            {
+                image.scale(zoom_param);
+            }
             image.write(&zoomed_imgdata);
         }
         catch( Magick::Exception &e)
