@@ -1148,8 +1148,6 @@ bool IndexWorker::insertDoc_(
     if (hooker_)
     {
         ///TODO compatibility issue:
-        ///timestamp
-        if (-1 != timestamp) timestamp *= 1000000;
         if (!hooker_->HookInsert(document, indexDocument, timestamp))
             return false;
     }
