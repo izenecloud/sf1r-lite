@@ -149,7 +149,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
 
     uint32_t fromid = index_document.getOldId(); //oldid
     PMDocumentType from;
-    if (!data_source_->GetDocument(fromid, from))
+    if (!data_source_->GetDocument(fromid, from,true))
     {
         inhook_ = false;
         return false;
