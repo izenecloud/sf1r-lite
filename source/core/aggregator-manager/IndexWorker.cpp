@@ -707,13 +707,15 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
         if(documentManager_->getPropertyValue(docid, propname, oldvalue))
         {
             tempPropertyConfig.propertyName_ = propname;
-            IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
-            bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
+            //IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+            DocumentSchema::const_iterator iter = bundleConfig_->documentSchema_.find(tempPropertyConfig);
+
+            bool isInSchema = (iter != bundleConfig_->documentSchema_.end());
             int inplace_type = 0;
             // determine how to do the inplace operation by different property type.
-            if(isIndexSchema)
+            if(isInSchema)
             {
-                switch(iter->getType())
+                switch(iter->propertyType_)
                 {
                 case INT8_PROPERTY_TYPE:
                 case INT16_PROPERTY_TYPE:
@@ -737,7 +739,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                     break;
                 default:
                     {
-                        LOG(INFO) << "property type: " << iter->getType() << " does not support the inplace update." << std::endl;
+                        LOG(INFO) << "property type: " << iter->propertyType_ << " does not support the inplace update." << std::endl;
                         return false;
                     }
                 }
