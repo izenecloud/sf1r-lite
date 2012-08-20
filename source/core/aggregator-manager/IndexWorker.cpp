@@ -672,6 +672,130 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     return ret;
 }
 
+bool IndexWorker::updateDocumentInplace(const Value& request)
+{
+    docid_t docid;
+    uint128_t num_docid = Utilities::md5ToUint128(asString(request[DOCID]));
+    if (!idManager_->getDocIdByDocName(num_docid, docid, false))
+    {
+        LOG(WARNING) << "updating in place error, document not exist, DOCID: " << asString(request[DOCID]) << std::endl;
+        return false;
+    }
+    // get the update property detail
+    Value update_detail = request["update"];
+    Value::ArrayType* update_propertys = update_detail.getPtr<Value::ArrayType>();
+    if (update_propertys == NULL || update_propertys->size() == 0)
+    {
+        LOG(WARNING) << "updating in place error, detail property empty." << std::endl;
+        return false;
+    }
+
+    Value new_document;
+    new_document[DOCID] = asString(request[DOCID]);
+
+    typedef Value::ArrayType::iterator iterator;
+    for (iterator it = update_propertys->begin(); it != update_propertys->end(); ++it)
+    {
+        if(!it->hasKey("property") || !it->hasKey("op") || !it->hasKey("opvalue"))
+            return false;
+
+        std::string propname = asString((*it)["property"]);
+        std::string op = asString((*it)["op"]);
+        std::string opvalue = asString((*it)["opvalue"]);
+        PropertyValue oldvalue;
+        // get old property first, if old property not exist, inplace update will fail.
+        if(documentManager_->getPropertyValue(docid, propname, oldvalue))
+        {
+            tempPropertyConfig.propertyName_ = propname;
+            IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+            bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
+            int inplace_type = 0;
+            // determine how to do the inplace operation by different property type.
+            if(isIndexSchema)
+            {
+                switch(iter->getType())
+                {
+                case INT8_PROPERTY_TYPE:
+                case INT16_PROPERTY_TYPE:
+                case INT32_PROPERTY_TYPE:
+                case INT64_PROPERTY_TYPE:
+                case DATETIME_PROPERTY_TYPE:
+                    {
+                        inplace_type = 0;
+                        break;
+                    }
+                case FLOAT_PROPERTY_TYPE:
+                    {
+                        inplace_type = 1;
+                        break;
+                    }
+                case DOUBLE_PROPERTY_TYPE:
+                    {
+                        inplace_type = 2;
+                        break;
+                    }
+                    break;
+                default:
+                    {
+                        LOG(INFO) << "property type: " << iter->getType() << " does not support the inplace update." << std::endl;
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                LOG(INFO) << "property : " << propname << " does not support the inplace update." << std::endl;
+                return false;
+            }
+
+            try
+            {
+                std::string new_propvalue;
+                if(op == "add")
+                {
+                    if(inplace_type == 0 )
+                    {
+                        int64_t newv = boost::lexical_cast<int64_t>(oldvalue) + boost::lexical_cast<int64_t>(opvalue);
+                        new_propvalue = boost::lexical_cast<std::string>(newv);
+                    }
+                    else if(inplace_type == 1)
+                    {
+                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<float>(oldvalue) +
+                                boost::lexical_cast<float>(opvalue));
+                    }
+                    else if(inplace_type == 2)
+                    {
+                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<double>(oldvalue) + boost::lexical_cast<double>(opvalue));
+                    }
+                    else
+                    {
+                        assert(false);
+                    }
+                }
+                else
+                {
+                    LOG(INFO) << "not supported update method inplace. method: "  << op << std::endl;
+                    return false;
+                }
+                new_document[propname] = new_propvalue;
+            }
+            catch(std::runtime_error& e)
+            {
+                LOG(WARNING) << "do inplace update failed. " << e.what() << endl;
+                return false;
+            }
+        }
+        else
+        {
+            LOG(INFO) << "update property not found in document, property: " << propname << std::endl;
+            return false;
+        }
+    }
+
+    // do the common update.
+    return updateDocument(new_document);
+}
+
 bool IndexWorker::destroyDocument(const Value& documentValue)
 {
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());

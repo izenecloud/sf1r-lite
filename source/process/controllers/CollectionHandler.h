@@ -50,6 +50,7 @@ public:
     void similar_to_image(::izenelib::driver::Request& request, ::izenelib::driver::Response& response);
     bool create(const ::izenelib::driver::Value& document);
     bool update(const ::izenelib::driver::Value& document);
+    bool update_inplace(const ::izenelib::driver::Value& request);
     bool destroy(const ::izenelib::driver::Value& document);
 
     //////////////////////////////////////////

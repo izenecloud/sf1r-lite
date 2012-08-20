@@ -45,6 +45,7 @@ public:
     void similar_to_image();
     void create();
     void update();
+    void update_inplace();
     void destroy();
     void get_topic();
     void get_topic_with_sim();

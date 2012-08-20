@@ -37,6 +37,7 @@ public:
     bool createDocument(const ::izenelib::driver::Value& documentValue);
 
     bool updateDocument(const ::izenelib::driver::Value& documentValue);
+    bool updateDocumentInplace(const ::izenelib::driver::Value& request);
 
     bool destroyDocument(const ::izenelib::driver::Value& documentValue);
 

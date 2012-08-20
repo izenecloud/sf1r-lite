@@ -418,6 +418,20 @@ void initializeDriverRouter(::izenelib::driver::Router& router, IService* servic
         );
         updateHandler.release();
 
+        handler_ptr update_inplace_Handler(
+            new handler_type(
+                documents,
+                &DocumentsController::update_inplace
+            )
+        );
+
+        router.map(
+            controllerName,
+            "update_inplace",
+            update_inplace_Handler.get()
+        );
+        update_inplace_Handler.release();
+
         handler_ptr visitHandler(
             new handler_type(
                 documents,
