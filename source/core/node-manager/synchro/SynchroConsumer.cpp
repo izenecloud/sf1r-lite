@@ -5,6 +5,7 @@
 
 #include <glog/logging.h>
 #include <sstream>
+#include <unistd.h> // sleep
 
 using namespace sf1r;
 
@@ -180,7 +181,7 @@ bool SynchroConsumer::synchronize()
     {
         // timeout?
         LOG(INFO) << SYNCHRO_CONSUMER << " sleeping for " << step << " seconds ...";
-        boost::this_thread::sleep(boost::posix_time::seconds(step));
+        ::sleep(step);
 
         std::string data;
         if (zookeeper_->getZNodeData(consumerNodePath_, data))

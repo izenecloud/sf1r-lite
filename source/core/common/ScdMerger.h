@@ -306,6 +306,8 @@ public:
                         SCDDoc& scd_doc = *(*doc_iter);
                         Document doc = getDoc_(scd_doc);
                         ValueType output_doc_value;
+                        int pstatus_doc_value = -2;
+                        ValueType doc_value;
                         for(PropertyConfigList::iterator pci_it = property_config_list.begin(); pci_it!=property_config_list.end();++pci_it)
                         {
                             const std::string& pname = pci_it->property_name;
@@ -313,7 +315,7 @@ public:
                             ValueType value(doc, type);
                             if(pname!="DOCID")
                             {
-                                value = output_doc_value;
+                                value = doc_value;
                             }
                             izenelib::util::UString pvalue;
                             if(!value.doc.getProperty(pname, pvalue)) continue;
@@ -344,21 +346,32 @@ public:
                                     pstatus = 0;
                                 }
                             }
+                            if(pname=="DOCID")
+                            {
+                                pstatus_doc_value = pstatus;
+                            }
+                            //std::string sss;
+                            //pvalue.convertString(sss, izenelib::util::UString::UTF_8);
+                            //if(pname=="uuid")
+                            //{
+                                //LOG(INFO)<<pname<<","<<sss<<" position_map end "<<pstatus_doc_value<<","<<pstatus<<std::endl;
+                            //}
                             //std::cout<<"pstatus"<<pstatus<<std::endl;
                             //PositionMap::iterator mit = position_map.find(id);
                             if(pstatus<0)
                             {
-#ifdef MERGER_DEBUG
-                                std::string sss;
-                                pvalue.convertString(sss, izenelib::util::UString::UTF_8);
-                                if(sss=="403ec13d9939290d24c308b3da250658" && pname=="uuid")
-                                {
-                                    LOG(INFO)<<pname<<","<<sss<<" position_map end"<<std::endl;
-                                }
-#endif
                                 if(pci_it->output_if_no_position)
                                 {
                                     output_value = value;
+                                }
+                                else if(pstatus_doc_value>=0)
+                                {
+                                    ValueType empty_value;
+                                    config.merge_function(empty_value, value);
+                                    empty_value.swap(value);
+                                    value.type = DELETE_SCD;
+                                    output_value = value;
+                                    LOG(INFO)<<"XXX"<<std::endl;
                                 }
                                 else
                                 {
@@ -367,6 +380,7 @@ public:
                             }
                             else
                             {
+                                if(pname!="DOCID" && pstatus_doc_value==0) continue;
                                 cache_iterator cit = config.cache.find(id);
                                 //ValueType init_value;
                                 //ValueType* p_output = NULL;
@@ -429,6 +443,10 @@ public:
                                     //empty_value.swap(value);
                                     config.cache.insert(std::make_pair(id, value));
                                 }
+                            }
+                            if(pname=="DOCID")
+                            {
+                                doc_value = value;
                             }
                             if(!output_value.empty())
                             {
