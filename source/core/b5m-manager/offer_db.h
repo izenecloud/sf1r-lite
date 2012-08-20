@@ -118,6 +118,42 @@ namespace sf1r {
             return true;
         }
 
+        bool load_text(const std::string& path, boost::unordered_set<uint128_t>& pid_changed_oid, bool text = true)
+        {
+            LOG(INFO)<<"loading text "<<path<<std::endl;
+            std::ifstream ifs(path.c_str());
+            std::string line;
+            uint32_t i = 0;
+            while( getline(ifs,line))
+            {
+                ++i;
+                if(i%100000==0)
+                {
+                    LOG(INFO)<<"loading "<<i<<" item"<<std::endl;
+                }
+                boost::algorithm::trim(line);
+                std::vector<std::string> vec;
+                boost::algorithm::split(vec, line, boost::is_any_of(","));
+                if(vec.size()<3) continue;
+                const std::string& soid = vec[0];
+                const std::string& spid = vec[1];
+                const std::string& old_spid = vec[2];
+                KeyType ioid = B5MHelper::StringToUint128(soid);
+                ValueType ipid = B5MHelper::StringToUint128(spid);
+                insert_(ioid, ipid, text);
+                if(!old_spid.empty())
+                {
+                    ValueType old_ipid = B5MHelper::StringToUint128(old_spid);
+                    if(old_ipid!=ipid)
+                    {
+                        pid_changed_oid.insert(ioid);
+                    }
+                }
+            }
+            ifs.close();
+            return true;
+        }
+
         bool insert(const KeyType& key, const ValueType& value)
         {
             return insert_(key, value, true);

@@ -22,6 +22,7 @@ public:
     virtual uint32_t GetMaxDocId() const { return 0; }
 
     virtual bool GetDocument(uint32_t docid, PMDocumentType& doc) { return false; }
+    virtual void GetDocumentA(uint32_t docid, PMDocumentType& doc) { }
 
     virtual void GetRTypePropertiesForDocument(uint32_t docid, PMDocumentType& doc) {}
 
