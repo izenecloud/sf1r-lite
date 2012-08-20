@@ -184,6 +184,9 @@ void B5mpProcessor::ProductOutput_(Document& doc, int& type)
         }
 
         type = DELETE_SCD;
+    }
+    if(type==DELETE_SCD)
+    {
         doc.clearExceptDOCID();
     }
 }

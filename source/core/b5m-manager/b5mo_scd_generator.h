@@ -14,7 +14,7 @@ namespace sf1r {
             LogServerConnectionConfig* config);
 
 
-        bool Generate(const std::string& mdb_instance);
+        bool Generate(const std::string& mdb_instance, const std::string& last_mdb_instance);
 
 
     private:

@@ -17,6 +17,7 @@
 #include <b5m-manager/offer_db.h>
 #include <b5m-manager/history_db_helper.h>
 #include <b5m-manager/psm_indexer.h>
+#include <b5m-manager/cmatch_generator.h>
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
 
@@ -37,6 +38,7 @@ int main(int ac, char** av)
         ("complete-match,M", "attribute complete matching")
         ("similarity-match,I", "title based similarity matching")
         ("ticket-match", "ticket matching")
+        ("cmatch-generate", "match to cmatch")
         ("b5mo-generate", "generate b5mo scd")
         ("uue-generate", "generate uue")
         ("b5mp-generate", "generate b5mp scd")
@@ -387,6 +389,18 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
+    if(vm.count("cmatch-generate"))
+    {
+        if( !odb || mdb_instance.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        CMatchGenerator generator(odb.get());
+        if(!generator.Generate(mdb_instance))
+        {
+            return EXIT_FAILURE;
+        }
+    }
     if(vm.count("b5mo-generate"))
     {
         if( !odb || mdb_instance.empty())
@@ -394,7 +408,7 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
         B5moScdGenerator generator(odb.get(), historydb.get(), logserver_config.get());
-        if(!generator.Generate(mdb_instance))
+        if(!generator.Generate(mdb_instance, last_mdb_instance))
         {
             return EXIT_FAILURE;
         }
