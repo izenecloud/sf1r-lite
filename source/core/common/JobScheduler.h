@@ -46,6 +46,8 @@ public:
 
     void removeTask(const std::string& collection);
 
+    void setCapacity(std::size_t capacity);
+
 private:
     void runAsynchronousTasks_();
 
