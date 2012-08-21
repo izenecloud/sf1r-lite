@@ -44,7 +44,8 @@ void StringGroupLabel::getTargetValueIds_(const GroupParam::GroupPathVec& labelP
             ustrPath.push_back(izenelib::util::UString(*nodeIt, izenelib::util::UString::UTF_8));
         }
 
-        PropValueTable::pvid_t targetId = propValueTable_.propValueId(ustrPath);
+        PropValueTable::pvid_t targetId =
+            propValueTable_.propValueId(ustrPath, false);
         targetValueIds_.push_back(targetId);
     }
 }

@@ -11,21 +11,15 @@
 #include "AttrTable.h"
 #include "../faceted-submanager/faceted_types.h"
 #include "../faceted-submanager/ontology_rep.h"
-#include "../group-manager/PropSharedLockInserter.h"
 
 #include <vector>
 
 NS_FACETED_BEGIN
 
-class AttrCounter : public PropSharedLockInserter
+class AttrCounter
 {
 public:
     AttrCounter(const AttrTable& attrTable);
-
-    virtual void insertSharedLock(SharedLockSet& lockSet) const
-    {
-        lockSet.insert(&attrTable_);
-    }
 
     void addDoc(docid_t doc);
 

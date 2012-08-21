@@ -51,8 +51,6 @@ GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) cons
             return NULL;
     }
 
-    groupFilter->lockShared();
-
     return groupFilter.release();
 }
 

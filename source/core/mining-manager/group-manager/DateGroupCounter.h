@@ -32,7 +32,6 @@ public:
     virtual void addDoc(docid_t doc);
     virtual void getGroupRep(GroupRep& groupRep);
     virtual void getStringRep(GroupRep::StringGroupRep& strRep, int level) const;
-    virtual void insertSharedLock(SharedLockSet& lockSet) const;
 
 private:
     const DateGroupTable& dateTable_;
@@ -168,21 +167,6 @@ void DateGroupCounter<SubGroupCounter>::getStringRep(GroupRep::StringGroupRep& s
         strRep.push_back(faceted::OntologyRepItem(level, dateUStr, 0, subCounter.count_));
         subCounter.groupCounter_->getStringRep(strRep, level+1);
     }
-}
-
-template<typename CounterType>
-void DateGroupCounter<CounterType>::insertSharedLock(SharedLockSet& lockSet) const
-{
-    lockSet.insert(&dateTable_);
-}
-
-template<>
-void DateGroupCounter<SubGroupCounter>::insertSharedLock(SharedLockSet& lockSet) const
-{
-    lockSet.insert(&dateTable_);
-
-    // insert lock for SubGroupCounter
-    initSubCounterPair_.second.groupCounter_->insertSharedLock(lockSet);
 }
 
 NS_FACETED_END

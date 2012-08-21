@@ -76,9 +76,14 @@ public:
     /**
      * Get property value id.
      * @param path the path of property value, from root node to leaf node
+     * @param isLock whether need to create a read lock, if the caller has
+     * already created one, this parameter should be false to avoid
+     * duplicate lock.
      * @return value id, if @p path is not inserted before, 0 is returned
      */
-    pvid_t propValueId(const std::vector<izenelib::util::UString>& path) const;
+    pvid_t propValueId(
+        const std::vector<izenelib::util::UString>& path,
+        bool isLock = true) const;
 
     /**
      * Given value id @p pvId, get its path from root node to leaf node.

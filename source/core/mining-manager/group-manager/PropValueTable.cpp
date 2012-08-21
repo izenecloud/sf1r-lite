@@ -121,9 +121,16 @@ PropValueTable::pvid_t PropValueTable::insertPropValueId(const std::vector<izene
     return pvId;
 }
 
-PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::util::UString>& path) const
+PropValueTable::pvid_t PropValueTable::propValueId(
+    const std::vector<izenelib::util::UString>& path,
+    bool isLock) const
 {
-    ScopedReadLock lock(mutex_);
+    ScopedReadLock lock(mutex_, boost::defer_lock);
+
+    if (isLock)
+    {
+        lock.lock();
+    }
 
     pvid_t pvId = 0;
 
