@@ -24,7 +24,7 @@ class ProductPriceTrend
     typedef std::map<std::string, std::vector<TPCBTree *> > TPCStorage;
 
     typedef std::pair<ProductPriceType, std::map<std::string, std::string> > PropItemType;
-    typedef boost::unordered_map<uint128_t, PropItemType, boost::hash<uint128_t>, std::equal_to<uint128_t>, boost::fast_pool_allocator<uint128_t> > PropMapType;
+    typedef boost::unordered_map<uint128_t, PropItemType, boost::hash<uint128_t>, std::equal_to<uint128_t> > PropMapType;
 
 public:
     ProductPriceTrend(
