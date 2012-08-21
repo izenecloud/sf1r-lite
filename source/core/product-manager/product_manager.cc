@@ -9,6 +9,7 @@
 
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
+#include <document-manager/DocumentManager.h>
 
 #include <common/ScdWriter.h>
 #include <common/Utilities.h>
@@ -632,23 +633,17 @@ bool ProductManager::MigratePriceHistory(
 
 bool ProductManager::GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const
 {
-    PMDocumentType::property_const_iterator it = doc.findProperty(config_.date_property_name);
-    if (it == doc.propertyEnd())
+    boost::shared_ptr<NumericPropertyTableBase>& date_table
+        = document_manager_->getNumericPropertyTable(config_.date_property_name);
+
+    if (date_table && date_table->getInt64Value(doc.getId(), timestamp))
     {
-        return false;
+        timestamp *= 1000000; // convert seconds to microseconds
+        return true;
     }
-    const UString& time_ustr = it->second.get<UString>();
-    std::string time_str;
-    time_ustr.convertString(time_str, UString::UTF_8);
-    try
-    {
-        timestamp = Utilities::createTimeStamp(boost::posix_time::from_iso_string(time_str.insert(8, 1, 'T')));
-    }
-    catch (const std::exception& ex)
-    {
-        return false;
-    }
-    return true;
+
+    timestamp = Utilities::createTimeStamp();
+    return false;
 }
 
 bool ProductManager::GetGroupProperties_(const PMDocumentType& doc, std::map<std::string, std::string>& group_prop_map) const
