@@ -13,23 +13,20 @@
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
 
-#include <util/ThreadModel.h>
-#include <util/ustring/UString.h>
-#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <log-manager/LogAnalysis.h>
-#include <idmlib/util/directory_switcher.h>
+#include <configuration-manager/CollectionPath.h>
+
 #include <am/leveldb/Table.h>
 #include <am/succinct/wat_array/wat_array.hpp>
 
 #include <ir/id_manager/IDManager.h>
 #include <util/cronexpression.h>
+#include <util/ThreadModel.h>
+#include <util/ustring/UString.h>
 
 #include <vector>
 #include <list>
-#include <iostream>
 #include <fstream>
-#include <algorithm>
-#include <ctime>
 
 namespace izenelib{namespace am{
 class QueryNormalize;
@@ -65,11 +62,10 @@ class AutoFillChildManager: public boost::noncopyable
     string AutofillPath_;
     string leveldbPath_;
     string SCDDIC_;
-    //string BtriePath_;
     string ItemPath_;
     string ItemdbPath_;
     fstream out;// for log
-    std::vector<string> SCDHaveDone;
+    std::vector<string> SCDHaveDone_;
     string SCDLogPath_;
 
     std::string cronJobName_;
@@ -170,11 +166,11 @@ class AutoFillChildManager: public boost::noncopyable
     IDManger *idManager_;
 
 public:
-    AutoFillChildManager();
+    AutoFillChildManager(bool fromSCD = false);
 
     ~AutoFillChildManager();
 
-    bool Init(const std::string& fillSupportPath, const std::string& collectionName,  const string& cronExpression);
+    bool Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression, const string& instanceName);
     bool InitWhileHaveLeveldb();
     bool RealInit();
     bool InitFromSCD();
@@ -198,10 +194,9 @@ public:
 
     void buildWat_array(bool _fromleveldb);
     void updateAutoFill();
-    void setSource(bool fromSCD);
 
     bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
-    bool buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList);
+    bool buildIndex(const std::list<ItemValueType>& queryList);
     void updateFromLog();
     void updateFromSCD();
     void SaveSCDLog();

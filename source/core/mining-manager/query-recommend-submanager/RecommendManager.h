@@ -13,6 +13,7 @@
 
 #include <configuration-manager/MiningConfig.h>
 #include <configuration-manager/MiningSchema.h>
+#include <configuration-manager/CollectionPath.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <am/sequence_file/SequenceFile.hpp>
@@ -61,8 +62,8 @@ class RecommendManager
 
 public:
     RecommendManager(
-            const std::string& path,
             const std::string& collection_name,
+            const CollectionPath& collectionPath,
             const MiningSchema& mining_schema,
             const MiningConfig& mining_config,
             const boost::shared_ptr<DocumentManager>& documentManager,
@@ -142,10 +143,9 @@ private:
             std::deque<izenelib::util::UString>& queries);
 
 private:
-
-    std::string path_;
     bool isOpen_;
     std::string collection_name_;
+    CollectionPath collectionPath_;
     MiningSchema mining_schema_;
     MiningConfig mining_config_;
     INFO_TYPE info_;

@@ -5,6 +5,7 @@
  \dat	    2012-07-26
 */
 #include "AutoFillChildManager.h"
+#include <boost/scoped_ptr.hpp>
 
 namespace sf1r
 {
@@ -14,11 +15,12 @@ class AutoFillSubManager: public boost::noncopyable
     typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> ItemValueType;
     typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
 
-    AutoFillChildManager Child1,Child2;
+    boost::scoped_ptr<AutoFillChildManager> Child1_,Child2_;
 public:
     AutoFillSubManager()
     {
-       Child2.setSource(true);
+        Child1_.reset(new AutoFillChildManager(false));
+        Child2_.reset(new AutoFillChildManager(true));
     }
 
     ~AutoFillSubManager()
@@ -26,10 +28,10 @@ public:
 
     }
      
-    bool Init(const std::string& fillSupportPath, const std::string& collectionName, const string& cronExpression)
+    bool Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression)
     {    
-         bool ret1 = Child1.Init(fillSupportPath + "/child1", collectionName, cronExpression);
-         bool ret2 = Child2.Init(fillSupportPath + "/child2", collectionName, cronExpression);
+         bool ret1 = Child1_->Init(collectionPath, collectionName, cronExpression, "child1");
+         bool ret2 = Child2_->Init(collectionPath, collectionName, cronExpression, "child2" );
          return ret1&&ret2;
     }
 
@@ -39,9 +41,8 @@ public:
     }
     bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)//自动填充
     {    
-         std::vector<std::pair<izenelib::util::UString,uint32_t> > list2;
-         bool ret1 = Child1.getAutoFillList(query,list);
-         bool ret2 = Child2.getAutoFillList(query,list);
+         bool ret1 = Child1_->getAutoFillList(query,list);
+         bool ret2 = Child2_->getAutoFillList(query,list);
          return ret1&&ret2;
     }
 

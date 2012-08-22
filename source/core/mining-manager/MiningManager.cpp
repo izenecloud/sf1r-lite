@@ -88,7 +88,7 @@ std::string MiningManager::system_working_path_;
 
 MiningManager::MiningManager(
         const std::string& collectionDataPath,
-        const std::string& queryDataPath,
+        const CollectionPath& collectionPath,
         const boost::shared_ptr<DocumentManager>& documentManager,
         const boost::shared_ptr<IndexManager>& index_manager,
         const boost::shared_ptr<SearchManager>& searchManager,
@@ -98,7 +98,8 @@ MiningManager::MiningManager(
         const MiningConfig& miningConfig,
         const MiningSchema& miningSchema)
     : collectionDataPath_(collectionDataPath)
-    , queryDataPath_(queryDataPath)
+    , queryDataPath_(collectionPath.getQueryDataPath())
+    , collectionPath_(collectionPath)
     , collectionName_(collectionName)
     , documentSchema_(documentSchema)
     , miningConfig_(miningConfig)
@@ -243,7 +244,7 @@ bool MiningManager::open()
 
         qcManager_.reset(new QueryCorrectionSubmanager(queryDataPath_, miningConfig_.query_correction_param.enableEK,
                          miningConfig_.query_correction_param.enableCN));
-        rmDb_.reset(new RecommendManager(queryDataPath_, collectionName_, mining_schema_, miningConfig_, document_manager_,
+        rmDb_.reset(new RecommendManager(collectionName_, collectionPath_, mining_schema_, miningConfig_, document_manager_,
                                          qcManager_, analyzer_, logdays));
 
         if(!rmDb_->open())
