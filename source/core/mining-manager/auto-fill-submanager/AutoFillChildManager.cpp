@@ -164,7 +164,6 @@ bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std:
     else
 	out<<"wrong cronStr"<<endl;
 
-    //out<<dictionaryFile<<endl;
     if(!openDB(leveldbPath_, ItemdbPath_))
         return false;
 
@@ -635,7 +634,7 @@ bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString&
                     else
                         iter++;
                 }
-                query.KeepOrderDuplicateFilter(list);//不匹配的过滤；
+                query.KeepOrderDuplicateFilter(list);
             }
         }
         else
@@ -815,8 +814,8 @@ void AutoFillChildManager::updateAutoFill()
 {
     if (cronExpression_.matches_now())
     {
-	out<<"do one Update"<<endl;
-	boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+        out<<"do one Update"<<endl;
+        boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
         {
@@ -824,7 +823,7 @@ void AutoFillChildManager::updateAutoFill()
             return;
         }
 
-	isUpdating_ = true;
+        isUpdating_ = true;
         if(!fromSCD_)
         {
             updateFromLog();
@@ -836,8 +835,6 @@ void AutoFillChildManager::updateAutoFill()
         isUpdating_Wat_ = false;
         isUpdating_ = false;
     }
-    else
-	out<<"pass one Update"<<endl;
 }
 
 void AutoFillChildManager::updateFromLog()
@@ -869,8 +866,7 @@ void AutoFillChildManager::updateFromLog()
     isUpdating_Wat_ = true;
     LoadItem();
     wa_.Clear();
-    buildWat_array(false);//xxx build new Itemdb_ when build new
-
+    buildWat_array(false);
 }
 
 bool AutoFillChildManager::buildIndex(const std::list<ItemValueType>& queryList)
