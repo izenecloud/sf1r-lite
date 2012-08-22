@@ -29,7 +29,7 @@ RecommendManager::RecommendManager(
         const std::string& path,
         const std::string& collection_name,
         const MiningSchema& mining_schema,
-	const MiningConfig& mining_config,
+        const MiningConfig& mining_config,
         const boost::shared_ptr<DocumentManager>& documentManager,
         boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
         idmlib::util::IDMAnalyzer* analyzer,

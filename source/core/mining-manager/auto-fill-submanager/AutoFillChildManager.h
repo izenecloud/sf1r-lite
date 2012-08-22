@@ -10,31 +10,18 @@
 
 #include "word_leveldb_table.hpp"
 
-#include <boost/tuple/tuple.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/filesystem.hpp>
 
 #include <util/ThreadModel.h>
 #include <util/ustring/UString.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <util/filesystem.h>
-#include <util/functional.h>
 #include <log-manager/LogAnalysis.h>
-#include <util/singleton.h>
 #include <idmlib/util/directory_switcher.h>
 #include <am/leveldb/Table.h>
 #include <am/succinct/wat_array/wat_array.hpp>
-//#include <am/trie/b_trie.hpp>
 
-#include <process/common/XmlConfigParser.h>
-
-#include <am/vsynonym/QueryNormalize.h>
-#include <am/range/AmIterator.h>
 #include <ir/id_manager/IDManager.h>
-#include <log-manager/LogManager.h>
-#include <log-manager/UserQuery.h>
 #include <util/cronexpression.h>
 
 #include <vector>
@@ -43,9 +30,10 @@
 #include <fstream>
 #include <algorithm>
 #include <ctime>
-#include <string.h>
-#include <assert.h>
-#include <signal.h>
+
+namespace izenelib{namespace am{
+class QueryNormalize;
+}}
 
 namespace sf1r
 {
@@ -54,8 +42,6 @@ namespace sf1r
 #define FREQ_TYPE_LEN sizeof(uint32_t)
 #define HITNUM_LEN sizeof(uint32_t)
 #define TOPN_LEN sizeof(uint32_t)
-
-class  WordLevelDBTable;
 
 class AutoFillChildManager: public boost::noncopyable
 {
@@ -88,7 +74,7 @@ class AutoFillChildManager: public boost::noncopyable
 
     std::string cronJobName_;
     boost::thread updateThread_;
-     boost::mutex buildCollectionMutex_;
+    boost::mutex buildCollectionMutex_;
     izenelib::util::CronExpression cronExpression_;
 
     struct ItemType

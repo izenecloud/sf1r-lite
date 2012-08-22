@@ -1,16 +1,17 @@
 #include "AutoFillChildManager.h"
+#include <log-manager/UserQuery.h>
+
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem.hpp>
-#include <util/singleton.h>
+
 #include <idmlib/util/directory_switcher.h>
+#include <am/vsynonym/QueryNormalize.h>
+
 #include <dirent.h>
 #include <stdlib.h>
-#include <util/driver/Controller.h>
 #include <util/scheduler.h>
 
 using namespace std;
 using namespace izenelib::util;
-using namespace izenelib::am;
 namespace sf1r
 {
 std::string AutoFillChildManager::system_resource_path_;
@@ -25,7 +26,7 @@ AutoFillChildManager::AutoFillChildManager()
     updatelogdays_ = 1;
     alllogdays_ =  80;
     topN_ =  10;
-    QN_ = new QueryNormalize();
+    QN_ = new izenelib::am::QueryNormalize();
 }
 
 AutoFillChildManager::~AutoFillChildManager()
