@@ -29,6 +29,7 @@ RecommendManager::RecommendManager(
         const std::string& path,
         const std::string& collection_name,
         const MiningSchema& mining_schema,
+	const MiningConfig& mining_config,
         const boost::shared_ptr<DocumentManager>& documentManager,
         boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
         idmlib::util::IDMAnalyzer* analyzer,
@@ -38,6 +39,7 @@ RecommendManager::RecommendManager(
     , isOpen_(false)
     , collection_name_(collection_name)
     , mining_schema_(mining_schema)
+    , mining_config_(mining_config)
     , info_(0)
     , serInfo_(path_+"/ser_info")
     , document_manager_(documentManager)
@@ -101,8 +103,7 @@ bool RecommendManager::open()
     {
         //TODO
     }
-    autofill_->setCollectionName(collection_name_);
-    if(!autofill_->Init(path_+"/autofill")) return false;
+    if(!autofill_->Init(path_+"/autofill", collection_name_, mining_config_.autofill_param.cron)) return false;
     isOpen_ = true;
     return true;
 }

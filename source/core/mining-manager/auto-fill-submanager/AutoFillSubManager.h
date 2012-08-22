@@ -26,10 +26,10 @@ public:
 
     }
      
-    bool Init(const std::string& fillSupportPath)
+    bool Init(const std::string& fillSupportPath, const std::string& collectionName, const string& cronExpression)
     {    
-         bool ret1 = Child1.Init(fillSupportPath + "/child1");
-         bool ret2 = Child2.Init(fillSupportPath + "/child2");
+         bool ret1 = Child1.Init(fillSupportPath + "/child1", collectionName, cronExpression);
+         bool ret2 = Child2.Init(fillSupportPath + "/child2", collectionName, cronExpression);
          return ret1&&ret2;
     }
 
@@ -43,12 +43,6 @@ public:
          bool ret1 = Child1.getAutoFillList(query,list);
          bool ret2 = Child2.getAutoFillList(query,list);
          return ret1&&ret2;
-    }
-
-    void setCollectionName(const std::string& collectionName)
-    {  
-         Child1.setCollectionName(collectionName);
-         Child2.setCollectionName(collectionName);
     }
 
 };

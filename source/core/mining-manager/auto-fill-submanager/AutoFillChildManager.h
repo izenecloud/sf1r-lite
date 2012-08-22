@@ -27,11 +27,15 @@
 #include <am/leveldb/Table.h>
 #include <am/succinct/wat_array/wat_array.hpp>
 //#include <am/trie/b_trie.hpp>
+
+#include <process/common/XmlConfigParser.h>
+
 #include <am/vsynonym/QueryNormalize.h>
 #include <am/range/AmIterator.h>
 #include <ir/id_manager/IDManager.h>
 #include <log-manager/LogManager.h>
 #include <log-manager/UserQuery.h>
+#include <util/cronexpression.h>
 
 #include <vector>
 #include <list>
@@ -82,11 +86,15 @@ class AutoFillChildManager: public boost::noncopyable
     std::vector<string> SCDHaveDone;
     string SCDLogPath_;
 
+    std::string cronJobName_;
+    boost::thread updateThread_;
+     boost::mutex buildCollectionMutex_;
+    izenelib::util::CronExpression cronExpression_;
+
     struct ItemType
     {
         uint64_t offset_;
         std::string strItem_;
-
         inline bool operator > (const ItemType other) const
         {
             return strItem_ > other.strItem_ ;
@@ -180,7 +188,7 @@ public:
 
     ~AutoFillChildManager();
 
-    bool Init(const std::string& fillSupportPath= "");
+    bool Init(const std::string& fillSupportPath, const std::string& collectionName,  const string& cronExpression);
     bool InitWhileHaveLeveldb();
     bool RealInit();
     bool InitFromSCD();
@@ -203,14 +211,12 @@ public:
     bool getAutoFillListFromDbTable(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
     void buildWat_array(bool _fromleveldb);
-    void updateAutoFill(uint32_t days);
-    void setCollectionName(const std::string& collectionName);
+    void updateAutoFill();
     void setSource(bool fromSCD);
-    void doUpdate_Thread();
 
     bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
     bool buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList);
-    void updateFromLog(uint32_t days);
+    void updateFromLog();
     void updateFromSCD();
     void SaveSCDLog();
     void LoadSCDLog();

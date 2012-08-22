@@ -1,13 +1,12 @@
 #include "AutoFillChildManager.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/thread/shared_mutex.hpp>
 #include <util/singleton.h>
 #include <idmlib/util/directory_switcher.h>
 #include <dirent.h>
 #include <stdlib.h>
-#include <process/common/XmlConfigParser.h>
 #include <util/driver/Controller.h>
+#include <util/scheduler.h>
 
 using namespace std;
 using namespace izenelib::util;
@@ -26,13 +25,13 @@ AutoFillChildManager::AutoFillChildManager()
     updatelogdays_ = 1;
     alllogdays_ =  80;
     topN_ =  10;
-    updateMin_ = 30;
-    updateHour_ = 2;
     QN_ = new QueryNormalize();
 }
 
 AutoFillChildManager::~AutoFillChildManager()
 {
+    if(!cronJobName_.empty())
+        izenelib::util::Scheduler::removeJob(cronJobName_);
     closeDB();
     delete QN_;
 }
@@ -87,24 +86,21 @@ void AutoFillChildManager::LoadItem()
     }
 }
 
-void AutoFillChildManager::setCollectionName(const std::string& collectionName)
-{
-    collectionName_ = collectionName;
-}
-
 void AutoFillChildManager::setSource(bool fromSCD)
 {
     fromSCD_ = fromSCD;
 }
 
-bool AutoFillChildManager::Init(const std::string& fillSupportPath)
+bool AutoFillChildManager::Init(const std::string& fillSupportPath, const std::string& collectionName, const string& cronExpression)
 {
     AutofillPath_ = fillSupportPath;
+    collectionName_ = collectionName;
+    cronJobName_ = "Autofill-cron-" + collectionName_;
     if (!boost::filesystem::is_directory(AutofillPath_))
     {
         boost::filesystem::create_directories(AutofillPath_);
     }
-
+    boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
     leveldbPath_ = fillSupportPath + "/leveldb";
     ItemdbPath_ = fillSupportPath + "/itemdb";
     string IDPath = AutofillPath_ + "/id/";
@@ -128,8 +124,8 @@ bool AutoFillChildManager::Init(const std::string& fillSupportPath)
     else
     {
         dictionaryFile += "qn/QUERYNORMALIZE";
-    }//use SF1Config cause the complie wrong of test/"
-    
+    }
+
     QN_->load(dictionaryFile);
     bool leveldbBuild = false;
     try
@@ -170,6 +166,21 @@ bool AutoFillChildManager::Init(const std::string& fillSupportPath)
 
     std::string temp = fillSupportPath + "/AutoFill.log";
     out.open(temp.c_str(), ios::out);
+
+    if (cronExpression_.setExpression(cronExpression))
+    {
+	bool result = izenelib::util::Scheduler::addJob(cronJobName_,
+                                                        60*1000, // each minute
+                                                        0, // start from now
+                                                        boost::bind(&AutoFillChildManager::updateAutoFill, this));
+	if (! result)
+	{
+	     LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: ";
+    	}
+    }
+    else
+	out<<"wrong cronStr"<<endl;
+
     //out<<dictionaryFile<<endl;
     if(!openDB(leveldbPath_, ItemdbPath_))
         return false;
@@ -197,8 +208,8 @@ bool AutoFillChildManager::InitWhileHaveLeveldb()
     isUpdating_Wat_ = true;
     buildWat_array(true);
     isUpdating_Wat_ = false;
-    boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
-    boost::thread thrd(f);
+   // boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
+    //boost::thread thrd(f);
     return true;
 }
 
@@ -280,8 +291,8 @@ bool AutoFillChildManager::InitFromSCD()
         LoadSCDLog();
     }
     //updateFromSCD();
-    boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
-    boost::thread thrd(f);
+    //boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
+    //boost::thread thrd(f);
     return true;
 }
 
@@ -374,8 +385,8 @@ bool AutoFillChildManager::InitFromLog()
     }
     std::list<PropertyLabelType> labelList;
     buildIndex(querylist, labelList);
-    boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
-    boost::thread thrd(f);
+    //boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
+    //boost::thread thrd(f);
     return true;
 }
 
@@ -399,7 +410,7 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
         FREQ_TYPE freq = (*it).freq_;
         uint32_t HitNum = (*it).HitNum_;
         std::string strT=(*it).strQuery_;
-        QN_->query_Normalize(strT);
+        QN_->query_Normalize(strT);//xxx
         izenelib::util::UString UStringQuery_(strT,izenelib::util::UString::UTF_8);
         QueryCorrectionSubmanager::getInstance().getRelativeList(UStringQuery_, pinyins);
         std::vector<izenelib::util::UString>::const_iterator itv;
@@ -832,26 +843,40 @@ bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetS
     return true;
 }
 
-void AutoFillChildManager::updateAutoFill(uint32_t days)
+void AutoFillChildManager::updateAutoFill()
 {
-    isUpdating_ = true;
-    if(!fromSCD_)
+    if (cronExpression_.matches_now())
     {
-        updateFromLog(days);
+	out<<"do one Update"<<endl;
+	boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+
+        if (lock.owns_lock() == false)
+        {
+            LOG(INFO) << "Is initing ";
+            return;
+        }
+
+	isUpdating_ = true;
+        if(!fromSCD_)
+        {
+            updateFromLog();
+        }
+        else
+        {
+            updateFromSCD();
+        }
+        isUpdating_Wat_ = false;
+        isUpdating_ = false;
     }
     else
-    {
-        updateFromSCD();
-    }
-    isUpdating_Wat_ = false;
-    isUpdating_ = false;
+	out<<"pass one Update"<<endl;
 }
 
-void AutoFillChildManager::updateFromLog(uint32_t days)
+void AutoFillChildManager::updateFromLog()
 {
 
     boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
-    boost::posix_time::ptime p = time_now - boost::gregorian::days(days);
+    boost::posix_time::ptime p = time_now - boost::gregorian::days(updatelogdays_);
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
 
@@ -880,7 +905,7 @@ void AutoFillChildManager::updateFromLog(uint32_t days)
 
 }
 
-void AutoFillChildManager::doUpdate_Thread()
+/*void AutoFillChildManager::doUpdate_Thread()//xxx
 {
     uint32_t x,h,m;
     bool inited = false;
@@ -891,17 +916,18 @@ void AutoFillChildManager::doUpdate_Thread()
         m=x%3600/60;
         if(h == updateHour_ && m >= updateMin_ && m < (updateMin_ + 15) && inited == true)
         {
-            updateAutoFill(updatelogdays_);
+            updateAutoFill(updatelogdays_);//1
             out<<"finish one update at:"<<h<<":"<<m<<endl;
-            sleep(900);
+
+            //xxxsleep(900);
         }
         else
         {
             inited = true;
-            sleep(120);
+            sleep(900);
         }
     }
-}
+}*/
 
 bool AutoFillChildManager::buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList)
 {

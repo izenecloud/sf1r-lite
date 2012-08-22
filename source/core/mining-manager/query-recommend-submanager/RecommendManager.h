@@ -64,7 +64,8 @@ public:
             const std::string& path,
             const std::string& collection_name,
             const MiningSchema& mining_schema,
-            const boost::shared_ptr<DocumentManager>& documentManager,
+	    const MiningConfig& mining_config,
+	    const boost::shared_ptr<DocumentManager>& documentManager,
             boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
             idmlib::util::IDMAnalyzer* analyzer,
             uint32_t logdays);
@@ -146,6 +147,7 @@ private:
     bool isOpen_;
     std::string collection_name_;
     MiningSchema mining_schema_;
+    MiningConfig mining_config_;
     INFO_TYPE info_;
     izenelib::am::tc_hash<bool, INFO_TYPE > serInfo_;
     boost::shared_ptr<DocumentManager> document_manager_;
