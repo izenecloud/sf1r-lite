@@ -92,6 +92,7 @@
           <!-- Specify multiple index directory to support backup and directory rotating -->
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
           <TaxonomyPara topdocnum="100" levels="3" perlevelnum="8" candlabelnum="250" enablenec="n" maxpeopnum="20" maxlocnum="20" maxorgnum="20"/>
+          <AutofillPara cron="30 2 * * *"/>
           <RecommendPara recommendnum="9" cron="0 2 * * *"/>
           <SimilarityPara docnumlimit="100" termnumlimit="400000" enableesa="n"/>
           <ClassificationPara customizetraining="n" trainingencoding="UTF-8"/>
