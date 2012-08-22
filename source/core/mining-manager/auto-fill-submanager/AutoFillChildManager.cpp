@@ -96,7 +96,10 @@ bool AutoFillChildManager::Init(const std::string& fillSupportPath, const std::s
 {
     AutofillPath_ = fillSupportPath;
     collectionName_ = collectionName;
-    cronJobName_ = "Autofill-cron-" + collectionName_;
+    if(!fromSCD_)
+    	cronJobName_ = "Autofill-cron-child1" + collectionName_;
+    else
+	cronJobName_ = "Autofill-cron-child2" + collectionName_;
     if (!boost::filesystem::is_directory(AutofillPath_))
     {
         boost::filesystem::create_directories(AutofillPath_);
@@ -182,7 +185,6 @@ bool AutoFillChildManager::Init(const std::string& fillSupportPath, const std::s
     else
 	out<<"wrong cronStr"<<endl;
 
-    //out<<dictionaryFile<<endl;
     if(!openDB(leveldbPath_, ItemdbPath_))
         return false;
 
@@ -209,8 +211,6 @@ bool AutoFillChildManager::InitWhileHaveLeveldb()
     isUpdating_Wat_ = true;
     buildWat_array(true);
     isUpdating_Wat_ = false;
-   // boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
-    //boost::thread thrd(f);
     return true;
 }
 
@@ -291,9 +291,6 @@ bool AutoFillChildManager::InitFromSCD()
     {
         LoadSCDLog();
     }
-    //updateFromSCD();
-    //boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
-    //boost::thread thrd(f);
     return true;
 }
 
@@ -386,8 +383,6 @@ bool AutoFillChildManager::InitFromLog()
     }
     std::list<PropertyLabelType> labelList;
     buildIndex(querylist, labelList);
-    //boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
-    //boost::thread thrd(f);
     return true;
 }
 
@@ -668,7 +663,7 @@ bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString&
                     else
                         iter++;
                 }
-                query.KeepOrderDuplicateFilter(list);//不匹配的过滤；
+                query.KeepOrderDuplicateFilter(list);
             }
         }
         else
@@ -869,8 +864,6 @@ void AutoFillChildManager::updateAutoFill()
         isUpdating_Wat_ = false;
         isUpdating_ = false;
     }
-    else
-	out<<"pass one Update"<<endl;
 }
 
 void AutoFillChildManager::updateFromLog()
@@ -902,33 +895,8 @@ void AutoFillChildManager::updateFromLog()
     isUpdating_Wat_ = true;
     LoadItem();
     wa_.Clear();
-    buildWat_array(false);//xxx build new Itemdb_ when build new
-
+    buildWat_array(false);
 }
-
-/*void AutoFillChildManager::doUpdate_Thread()//xxx
-{
-    uint32_t x,h,m;
-    bool inited = false;
-    while(1)
-    {
-        x=time(NULL);
-        h=(x/3600%24+8)%24;
-        m=x%3600/60;
-        if(h == updateHour_ && m >= updateMin_ && m < (updateMin_ + 15) && inited == true)
-        {
-            updateAutoFill(updatelogdays_);//1
-            out<<"finish one update at:"<<h<<":"<<m<<endl;
-
-            //xxxsleep(900);
-        }
-        else
-        {
-            inited = true;
-            sleep(900);
-        }
-    }
-}*/
 
 bool AutoFillChildManager::buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList)
 {
