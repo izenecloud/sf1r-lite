@@ -167,7 +167,9 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
     map<string, map<string, TPCQueue> > tpc_cache;
     for (uint32_t i = 0; i < row_list.size(); i++)
     {
-        const PropItemType& prop_item = prop_map_.find(row_list[i].getDocId())->second;
+        PropMapType::const_iterator prop_map_it = prop_map_.find(row_list[i].getDocId());
+        if(prop_map_it == prop_map_.end()) continue;
+        const PropItemType& prop_item = prop_map_it->second;
         const pair<time_t, ProductPrice>& price_record = row_list[i].getPriceHistory()[0];
         const ProductPriceType& old_price = price_record.second.value.first;
         float price_cut = old_price == 0 ? 0 : 1 - prop_item.first / old_price;
