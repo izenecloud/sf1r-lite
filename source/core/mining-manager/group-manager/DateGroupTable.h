@@ -48,6 +48,11 @@ public:
     bool open();
     bool flush();
 
+    /**
+     * Clear the table to empty.
+     */
+    void clear();
+
     const std::string& propName() const { return propName_; }
 
     std::size_t docIdNum() const { return dateValueTable_.indexTable_.size(); }
@@ -68,10 +73,10 @@ public:
 
 private:
     /** directory path */
-    std::string dirPath_;
+    const std::string dirPath_;
 
     /** property name */
-    std::string propName_;
+    const std::string propName_;
 
     /** mapping from doc id to a list of date values */
     DateValueTable dateValueTable_;

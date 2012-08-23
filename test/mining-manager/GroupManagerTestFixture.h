@@ -58,6 +58,8 @@ public:
 
     void resetGroupManager();
 
+    void configGroupPropRebuild();
+
     void createDocument(int num);
 
     void checkGetGroupRep();

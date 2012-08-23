@@ -54,6 +54,11 @@ public:
     bool open();
     bool flush();
 
+    /**
+     * Clear the table to empty.
+     */
+    void clear();
+
     const std::string& propName() const { return propName_; }
 
     std::size_t docIdNum() const { return valueIdTable_.indexTable_.size(); }
@@ -149,10 +154,10 @@ private:
 
 private:
     /** directory path */
-    std::string dirPath_;
+    const std::string dirPath_;
 
     /** property name */
-    std::string propName_;
+    const std::string propName_;
 
     /** mapping from value id to value string */
     std::vector<izenelib::util::UString> propStrVec_;

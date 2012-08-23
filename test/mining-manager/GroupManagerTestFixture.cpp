@@ -365,6 +365,15 @@ void GroupManagerTestFixture::resetGroupManager()
     BOOST_CHECK(groupManager_->open());
 }
 
+void GroupManagerTestFixture::configGroupPropRebuild()
+{
+    for (GroupConfigMap::iterator it = groupConfigMap_.begin();
+        it != groupConfigMap_.end(); ++it)
+    {
+        it->second.forceRebuild = true;
+    }
+}
+
 void GroupManagerTestFixture::createDocument(int num)
 {
     int lastDocId = 0;

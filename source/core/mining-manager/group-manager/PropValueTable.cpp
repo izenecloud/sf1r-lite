@@ -188,16 +188,29 @@ bool PropValueTable::flush()
 {
     ScopedWriteLock lock(mutex_);
 
-    if (!saveParentId_(dirPath_, propName_ + SUFFIX_PARENT_STR) ||
-        !save_container_febird(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) ||
-        !save_container_febird(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) ||
-        !save_container_febird(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) ||
-        !save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_))
-    {
-        return false;
-    }
+    return saveParentId_(dirPath_, propName_ + SUFFIX_PARENT_STR) &&
+           save_container_febird(dirPath_, propName_ + SUFFIX_PROP_STR, propStrVec_, savePropStrNum_) &&
+           save_container_febird(dirPath_, propName_ + SUFFIX_PARENT_ID, parentIdVec_, saveParentIdNum_) &&
+           save_container_febird(dirPath_, propName_ + SUFFIX_INDEX_ID, valueIdTable_.indexTable_, saveIndexNum_) &&
+           save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, valueIdTable_.multiValueTable_, saveValueNum_);
+}
 
-    return true;
+void PropValueTable::clear()
+{
+    ScopedWriteLock lock(mutex_);
+
+    propStrVec_.resize(1);
+    savePropStrNum_ = 0;
+
+    parentIdVec_.resize(1);
+    saveParentIdNum_ = 0;
+
+    childMapTable_.clear();
+    childMapTable_.resize(1);
+
+    valueIdTable_.clear();
+    saveIndexNum_ = 0;
+    saveValueNum_ = 0;
 }
 
 bool PropValueTable::saveParentId_(const std::string& dirPath, const std::string& fileName) const

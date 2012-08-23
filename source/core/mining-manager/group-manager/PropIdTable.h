@@ -21,6 +21,9 @@ struct PropIdTable
 {
     PropIdTable();
 
+    /// clear the table to empty.
+    void clear();
+
     class PropIdList;
 
     void getIdList(docid_t docId, PropIdList& propIdList) const;
@@ -90,6 +93,13 @@ template <typename valueid_t, typename index_t>
 PropIdTable<valueid_t, index_t>::PropIdTable()
     : indexTable_(1) // doc id 0 is reserved for an empty doc
 {
+}
+
+template <typename valueid_t, typename index_t>
+void PropIdTable<valueid_t, index_t>::clear()
+{
+    indexTable_.resize(1);
+    multiValueTable_.clear();
 }
 
 template <typename valueid_t, typename index_t>
