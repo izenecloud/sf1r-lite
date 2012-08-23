@@ -14,11 +14,17 @@ headers:
   - controllers/ProductController.h
   - controllers/SynonymController.h
   - controllers/CollectionController.h
+  - controllers/QueryNormalizeController.h
 
 controllers:
   AutoFillController: ~
 
   QueryCorrectionController: ~
+
+  QueryNormalizeController:
+    actions:
+      - add_Query
+      - delete_Query
 
   CommandsController:
     actions:
@@ -84,9 +90,6 @@ controllers:
       - manmade
       - set_merchant_score
       - get_merchant_score
-      - set_custom_rank
-      - get_custom_rank
-      - get_custom_query
 
   TopicController:
     actions:
