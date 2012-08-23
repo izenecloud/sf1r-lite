@@ -1,38 +1,33 @@
 #include "AutoFillChildManager.h"
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/thread/shared_mutex.hpp>
-#include <util/singleton.h>
-#include <idmlib/util/directory_switcher.h>
-#include <dirent.h>
-#include <stdlib.h>
-#include <process/common/XmlConfigParser.h>
-#include <util/driver/Controller.h>
 
-using namespace std;
-using namespace izenelib::util;
-using namespace izenelib::am;
+#include <log-manager/UserQuery.h>
+#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
+
+#include <idmlib/util/directory_switcher.h>
+#include <am/vsynonym/QueryNormalize.h>
+#include <util/scheduler.h>
+
 namespace sf1r
 {
 std::string AutoFillChildManager::system_resource_path_;
 
-AutoFillChildManager::AutoFillChildManager()
+AutoFillChildManager::AutoFillChildManager(bool fromSCD)
+    : fromSCD_(fromSCD)
 {
     isUpdating_ = false;
     isUpdating_Wat_ = false;
     isIniting_ = false;
-    fromSCD_ = false;
 
     updatelogdays_ = 1;
     alllogdays_ =  80;
     topN_ =  10;
-    updateMin_ = 30;
-    updateHour_ = 2;
-    QN_ = new QueryNormalize();
+    QN_ = new izenelib::am::QueryNormalize();
 }
 
 AutoFillChildManager::~AutoFillChildManager()
 {
+    if(!cronJobName_.empty())
+        izenelib::util::Scheduler::removeJob(cronJobName_);
     closeDB();
     delete QN_;
 }
@@ -87,38 +82,22 @@ void AutoFillChildManager::LoadItem()
     }
 }
 
-void AutoFillChildManager::setCollectionName(const std::string& collectionName)
+bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression, const string& instanceName)
 {
+    AutofillPath_ = collectionPath.getQueryDataPath() + "/autofill" + "/"+instanceName;
     collectionName_ = collectionName;
-}
-
-void AutoFillChildManager::setSource(bool fromSCD)
-{
-    fromSCD_ = fromSCD;
-}
-
-bool AutoFillChildManager::Init(const std::string& fillSupportPath)
-{
-    AutofillPath_ = fillSupportPath;
+    cronJobName_ = "Autofill-cron-" + collectionName_ + "-" + instanceName;
     if (!boost::filesystem::is_directory(AutofillPath_))
     {
         boost::filesystem::create_directories(AutofillPath_);
     }
-
-    leveldbPath_ = fillSupportPath + "/leveldb";
-    ItemdbPath_ = fillSupportPath + "/itemdb";
+    boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+    leveldbPath_ = AutofillPath_ + "/leveldb";
+    ItemdbPath_ = AutofillPath_ + "/itemdb";
     string IDPath = AutofillPath_ + "/id/";
     ItemPath_ = leveldbPath_ + "/Itemlist.list";
     SCDLogPath_=AutofillPath_ +"/SCDLog";
-    char* s = new char[512];
-    if(!getcwd(s, 512))
-    {
-        LOG(ERROR)<<"get root dir error"<<endl;
-        return false;
-    }
-    string rootdir(s);
-    delete [] s;
-    SCDDIC_ = rootdir + "/collection/" + collectionName_ + "/scd/autofill";//TODO
+    SCDDIC_ = collectionPath.getScdPath() + "autofill";
 
     std::string dictionaryFile = system_resource_path_;
     if(dictionaryFile.rfind("/") != dictionaryFile.length()-1)
@@ -128,8 +107,8 @@ bool AutoFillChildManager::Init(const std::string& fillSupportPath)
     else
     {
         dictionaryFile += "qn/QUERYNORMALIZE";
-    }//use SF1Config cause the complie wrong of test/"
-    
+    }
+
     QN_->load(dictionaryFile);
     bool leveldbBuild = false;
     try
@@ -168,9 +147,23 @@ bool AutoFillChildManager::Init(const std::string& fillSupportPath)
 
     idManager_ = new IDManger(IDPath);
 
-    std::string temp = fillSupportPath + "/AutoFill.log";
+    std::string temp = AutofillPath_ + "/AutoFill.log";
     out.open(temp.c_str(), ios::out);
-    //out<<dictionaryFile<<endl;
+
+    if (cronExpression_.setExpression(cronExpression))
+    {
+	bool result = izenelib::util::Scheduler::addJob(cronJobName_,
+                                                        60*1000, // each minute
+                                                        0, // start from now
+                                                        boost::bind(&AutoFillChildManager::updateAutoFill, this));
+	if (! result)
+	     LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
+        else
+	     LOG(INFO) << "create cron job : " << cronJobName_<<" expression: "<<cronExpression;
+    }
+    else
+	out<<"wrong cronStr"<<endl;
+
     if(!openDB(leveldbPath_, ItemdbPath_))
         return false;
 
@@ -197,8 +190,6 @@ bool AutoFillChildManager::InitWhileHaveLeveldb()
     isUpdating_Wat_ = true;
     buildWat_array(true);
     isUpdating_Wat_ = false;
-    boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
-    boost::thread thrd(f);
     return true;
 }
 
@@ -242,7 +233,7 @@ void AutoFillChildManager::LoadSCDLog()
         {
             std::string temp;
             getline(in, temp);
-            SCDHaveDone.push_back(temp);
+            SCDHaveDone_.push_back(temp);
         }
         in.close();
     }
@@ -255,12 +246,12 @@ void AutoFillChildManager::LoadSCDLog()
 void AutoFillChildManager::SaveSCDLog()
 {
     fstream out1;
-    if(!SCDHaveDone.empty())
+    if(!SCDHaveDone_.empty())
     {
         out1.open(SCDLogPath_.c_str(), ios::out);
         if(out1.is_open())
         {
-            for(vector<string>::iterator it =SCDHaveDone.begin(); it != SCDHaveDone.end(); it++)
+            for(vector<string>::iterator it =SCDHaveDone_.begin(); it != SCDHaveDone_.end(); it++)
             {
                 out1<<(*it)<<endl;
             }
@@ -279,50 +270,24 @@ bool AutoFillChildManager::InitFromSCD()
     {
         LoadSCDLog();
     }
-    //updateFromSCD();
-    boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
-    boost::thread thrd(f);
     return true;
 }
 
 void AutoFillChildManager::updateFromSCD()
 {
-    vector<string> files;
-    DIR* dp;
-    dirent *d;
-    dp = opendir(SCDDIC_.c_str());
-    if(dp == NULL)
+    std::list<ItemValueType> querylist;
+    const bfs::directory_iterator kItrEnd;
+	
+    for (bfs::directory_iterator itr(SCDDIC_); itr != kItrEnd; ++itr)
     {
-        return;
-    }
-    else
-    {
-        while ((d = readdir(dp)) != NULL)
+        if (bfs::is_regular_file(itr->status()))
         {
-            if (!string(d->d_name).compare(".") || !string(d->d_name).compare(".."))
-                continue;
-            string filename = string(d->d_name);
-            int len = filename.length();
-            if(filename[len - 1] == 'D' && filename[len -2] == 'C' && filename[len - 3] == 'S')
-            {
-                vector<string>::iterator result = find(SCDHaveDone.begin( ), SCDHaveDone.end( ), filename);
-                if(result == SCDHaveDone.end())
-                {
-                    files.push_back(filename);
-                    SCDHaveDone.push_back(filename);
-                }
-            }
-        }
-        vector<string>::const_iterator it;
-        list<ItemValueType> querylist;
-        for(it = files.begin(); it != files.end(); it++)
-        {
-            ifstream in;
-            string filename = SCDDIC_ + "/" + *it;
-            in.open(filename.c_str(), ios::in);
-
+            std::string fileName = itr->path().string();
+            std::ifstream in;
+            in.open(fileName.c_str(), ios::in);
             if (in.good())
             {
+                SCDHaveDone_.push_back(fileName);
                 std::string temp;
                 string title = "<Title>";
                 while(!in.eof())
@@ -335,7 +300,6 @@ void AutoFillChildManager::updateFromSCD()
                     }
                 }
                 in.close();
-
             }
             else
             {
@@ -344,10 +308,27 @@ void AutoFillChildManager::updateFromSCD()
                 return;
             }
         }
-        std::list<PropertyLabelType> labelList;
-        buildIndex(querylist, labelList);
+    }
+    if(!querylist.empty())
+    {
+        buildIndex(querylist);
         SaveSCDLog();
-        return;
+
+        bfs::path bkDir = bfs::path(SCDDIC_) / "backup";
+        bfs::create_directory(bkDir);
+		
+        for (std::vector<std::string>::iterator scd_it = SCDHaveDone_.begin(); scd_it != SCDHaveDone_.end(); ++scd_it)
+        {
+            try
+            {
+                bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
+            }
+            catch (bfs::filesystem_error& e)
+            {
+                LOG(WARNING) << "exception in rename file " << *scd_it << ": " << e.what();
+            }
+        }
+		
     }
 }
 
@@ -372,10 +353,7 @@ bool AutoFillChildManager::InitFromLog()
         izenelib::util::UString UStringQuery_(it->getQuery(),izenelib::util::UString::UTF_8);
         querylist.push_back(boost::make_tuple(it->getCount(), it->getHitDocsNum(), UStringQuery_));
     }
-    std::list<PropertyLabelType> labelList;
-    buildIndex(querylist, labelList);
-    boost::function0<void> f =  boost::bind(&AutoFillChildManager::doUpdate_Thread, this);
-    boost::thread thrd(f);
+    buildIndex(querylist);
     return true;
 }
 
@@ -399,7 +377,7 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
         FREQ_TYPE freq = (*it).freq_;
         uint32_t HitNum = (*it).HitNum_;
         std::string strT=(*it).strQuery_;
-        QN_->query_Normalize(strT);
+        QN_->query_Normalize(strT);//xxx
         izenelib::util::UString UStringQuery_(strT,izenelib::util::UString::UTF_8);
         QueryCorrectionSubmanager::getInstance().getRelativeList(UStringQuery_, pinyins);
         std::vector<izenelib::util::UString>::const_iterator itv;
@@ -656,7 +634,7 @@ bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString&
                     else
                         iter++;
                 }
-                query.KeepOrderDuplicateFilter(list);//不匹配的过滤；
+                query.KeepOrderDuplicateFilter(list);
             }
         }
         else
@@ -832,26 +810,38 @@ bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetS
     return true;
 }
 
-void AutoFillChildManager::updateAutoFill(uint32_t days)
+void AutoFillChildManager::updateAutoFill()
 {
-    isUpdating_ = true;
-    if(!fromSCD_)
+    if (cronExpression_.matches_now())
     {
-        updateFromLog(days);
+        out<<"do one Update"<<endl;
+        boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+
+        if (lock.owns_lock() == false)
+        {
+            LOG(INFO) << "Is initing ";
+            return;
+        }
+
+        isUpdating_ = true;
+        if(!fromSCD_)
+        {
+            updateFromLog();
+        }
+        else
+        {
+            updateFromSCD();
+        }
+        isUpdating_Wat_ = false;
+        isUpdating_ = false;
     }
-    else
-    {
-        updateFromSCD();
-    }
-    isUpdating_Wat_ = false;
-    isUpdating_ = false;
 }
 
-void AutoFillChildManager::updateFromLog(uint32_t days)
+void AutoFillChildManager::updateFromLog()
 {
 
     boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
-    boost::posix_time::ptime p = time_now - boost::gregorian::days(days);
+    boost::posix_time::ptime p = time_now - boost::gregorian::days(updatelogdays_);
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
 
@@ -876,34 +866,10 @@ void AutoFillChildManager::updateFromLog(uint32_t days)
     isUpdating_Wat_ = true;
     LoadItem();
     wa_.Clear();
-    buildWat_array(false);//xxx build new Itemdb_ when build new
-
+    buildWat_array(false);
 }
 
-void AutoFillChildManager::doUpdate_Thread()
-{
-    uint32_t x,h,m;
-    bool inited = false;
-    while(1)
-    {
-        x=time(NULL);
-        h=(x/3600%24+8)%24;
-        m=x%3600/60;
-        if(h == updateHour_ && m >= updateMin_ && m < (updateMin_ + 15) && inited == true)
-        {
-            updateAutoFill(updatelogdays_);
-            out<<"finish one update at:"<<h<<":"<<m<<endl;
-            sleep(900);
-        }
-        else
-        {
-            inited = true;
-            sleep(120);
-        }
-    }
-}
-
-bool AutoFillChildManager::buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList)
+bool AutoFillChildManager::buildIndex(const std::list<ItemValueType>& queryList)
 {
     QueryType Query;
     std::list<QueryType> queryLists;

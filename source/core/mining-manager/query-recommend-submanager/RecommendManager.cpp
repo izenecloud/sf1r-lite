@@ -26,28 +26,30 @@
 using namespace sf1r;
 
 RecommendManager::RecommendManager(
-        const std::string& path,
         const std::string& collection_name,
+        const CollectionPath& collectionPath,
         const MiningSchema& mining_schema,
+        const MiningConfig& mining_config,
         const boost::shared_ptr<DocumentManager>& documentManager,
         boost::shared_ptr<QueryCorrectionSubmanager> query_correction,
         idmlib::util::IDMAnalyzer* analyzer,
         uint32_t logdays
 )
-    : path_(path)
-    , isOpen_(false)
+    : isOpen_(false)
     , collection_name_(collection_name)
+    , collectionPath_(collectionPath)
     , mining_schema_(mining_schema)
+    , mining_config_(mining_config)
     , info_(0)
-    , serInfo_(path_+"/ser_info")
+    , serInfo_(collectionPath.getQueryDataPath()+"/ser_info")
     , document_manager_(documentManager)
     , recommend_db_(NULL), concept_id_manager_(NULL)
     , autofill_(new AutoFillSubManager())
     , query_correction_(query_correction)
     , analyzer_(analyzer)
     , logdays_(logdays)
-    , dir_switcher_(path)
-    , max_docid_(0), max_docid_file_(path+"/max_id")
+    , dir_switcher_(collectionPath.getQueryDataPath())
+    , max_docid_(0), max_docid_file_(collectionPath.getQueryDataPath()+"/max_id")
 {
     open();
 }
@@ -101,8 +103,7 @@ bool RecommendManager::open()
     {
         //TODO
     }
-    autofill_->setCollectionName(collection_name_);
-    if(!autofill_->Init(path_+"/autofill")) return false;
+    if(!autofill_->Init(collectionPath_, collection_name_, mining_config_.autofill_param.cron)) return false;
     isOpen_ = true;
     return true;
 }

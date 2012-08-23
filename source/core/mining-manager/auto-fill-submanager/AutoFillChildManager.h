@@ -10,38 +10,27 @@
 
 #include "word_leveldb_table.hpp"
 
-#include <boost/tuple/tuple.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/filesystem.hpp>
 
-#include <util/ThreadModel.h>
-#include <util/ustring/UString.h>
-#include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <util/filesystem.h>
-#include <util/functional.h>
 #include <log-manager/LogAnalysis.h>
-#include <util/singleton.h>
-#include <idmlib/util/directory_switcher.h>
+#include <configuration-manager/CollectionPath.h>
+
 #include <am/leveldb/Table.h>
 #include <am/succinct/wat_array/wat_array.hpp>
-//#include <am/trie/b_trie.hpp>
-#include <am/vsynonym/QueryNormalize.h>
-#include <am/range/AmIterator.h>
+
 #include <ir/id_manager/IDManager.h>
-#include <log-manager/LogManager.h>
-#include <log-manager/UserQuery.h>
+#include <util/cronexpression.h>
+#include <util/ThreadModel.h>
+#include <util/ustring/UString.h>
 
 #include <vector>
 #include <list>
-#include <iostream>
 #include <fstream>
-#include <algorithm>
-#include <ctime>
-#include <string.h>
-#include <assert.h>
-#include <signal.h>
+
+namespace izenelib{namespace am{
+class QueryNormalize;
+}}
 
 namespace sf1r
 {
@@ -50,8 +39,6 @@ namespace sf1r
 #define FREQ_TYPE_LEN sizeof(uint32_t)
 #define HITNUM_LEN sizeof(uint32_t)
 #define TOPN_LEN sizeof(uint32_t)
-
-class  WordLevelDBTable;
 
 class AutoFillChildManager: public boost::noncopyable
 {
@@ -75,18 +62,21 @@ class AutoFillChildManager: public boost::noncopyable
     string AutofillPath_;
     string leveldbPath_;
     string SCDDIC_;
-    //string BtriePath_;
     string ItemPath_;
     string ItemdbPath_;
     fstream out;// for log
-    std::vector<string> SCDHaveDone;
+    std::vector<string> SCDHaveDone_;
     string SCDLogPath_;
+
+    std::string cronJobName_;
+    boost::thread updateThread_;
+    boost::mutex buildCollectionMutex_;
+    izenelib::util::CronExpression cronExpression_;
 
     struct ItemType
     {
         uint64_t offset_;
         std::string strItem_;
-
         inline bool operator > (const ItemType other) const
         {
             return strItem_ > other.strItem_ ;
@@ -176,11 +166,11 @@ class AutoFillChildManager: public boost::noncopyable
     IDManger *idManager_;
 
 public:
-    AutoFillChildManager();
+    AutoFillChildManager(bool fromSCD = false);
 
     ~AutoFillChildManager();
 
-    bool Init(const std::string& fillSupportPath= "");
+    bool Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression, const string& instanceName);
     bool InitWhileHaveLeveldb();
     bool RealInit();
     bool InitFromSCD();
@@ -203,14 +193,11 @@ public:
     bool getAutoFillListFromDbTable(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
     void buildWat_array(bool _fromleveldb);
-    void updateAutoFill(uint32_t days);
-    void setCollectionName(const std::string& collectionName);
-    void setSource(bool fromSCD);
-    void doUpdate_Thread();
+    void updateAutoFill();
 
     bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
-    bool buildIndex(const std::list<ItemValueType>& queryList, const std::list<PropertyLabelType>& labelList);
-    void updateFromLog(uint32_t days);
+    bool buildIndex(const std::list<ItemValueType>& queryList);
+    void updateFromLog();
     void updateFromSCD();
     void SaveSCDLog();
     void LoadSCDLog();

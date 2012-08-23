@@ -52,7 +52,11 @@ ProductManager::ProductManager(
         else
             std::cerr << "Error: Price trend has not been properly initialized" << std::endl;
     }
-
+    ///UpdateTPC_ in ProductPriceTrend::Update might be pretty slow due to 
+    ///the performance of Cassandra. Without setting the capacity of jobScheduler,
+    ///the data within jobScheduler will be accumulated so that the memory will be
+    ///occupied a lot
+    jobScheduler_.setCapacity(100000);
 //     if (!config_.backup_path.empty())
 //     {
 //         backup_ = new ProductBackup(config_.backup_path);
@@ -121,9 +125,9 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
                 docid.convertString(docid_str, UString::UTF_8);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
                 uint128_t num_docid = Utilities::md5ToUint128(docid_str);
-//              std::map<std::string, std::string> group_prop_map;
-//              GetGroupProperties_(doc, group_prop_map);
-//              task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, num_docid, price, timestamp, group_prop_map);
+                //std::map<std::string, std::string> group_prop_map;
+                //GetGroupProperties_(doc, group_prop_map);
+                //task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, num_docid, price, timestamp, group_prop_map);
                 task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, num_docid, price, timestamp);
                 jobScheduler_.addTask(task);
             }
@@ -175,10 +179,10 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             docid.convertString(docid_str, UString::UTF_8);
             if (timestamp == -1) GetTimestamp_(to, timestamp);
             uint128_t num_docid = Utilities::md5ToUint128(docid_str);
-//          std::map<std::string, std::string> group_prop_map;
-//          GetGroupProperties_(to, group_prop_map);
-//          task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, num_docid, to_price, timestamp, group_prop_map);
-            task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, num_docid, to_price, timestamp);
+            std::map<std::string, std::string> group_prop_map;
+            GetGroupProperties_(to, group_prop_map);
+            task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, num_docid, to_price, timestamp, group_prop_map);
+            //task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, num_docid, to_price, timestamp);
             jobScheduler_.addTask(task);
         }
     }

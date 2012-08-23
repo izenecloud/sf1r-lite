@@ -73,6 +73,9 @@
             </xs:simpleType>
         </xs:attribute>
     </xs:complexType>
+    <xs:complexType name="AutofillParaType">
+        <xs:attribute name="cron" type="xs:string" use="required" />
+    </xs:complexType>
     <xs:complexType name="RecommendParaType">
         <xs:attribute name="cron" type="xs:string" use="required" />
         <xs:attribute name="recommendnum" use="required">
@@ -159,6 +162,7 @@
                             <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
                             <xs:element name="DocumentMiningPara" type="DocumentMiningParaType" minOccurs="0"/>
                             <xs:element name="TaxonomyPara" type="TaxonomyParaType" minOccurs="1"/>
+                            <xs:element name="AutofillPara" type="AutofillParaType" minOccurs="1"/>
                             <xs:element name="RecommendPara" type="RecommendParaType" minOccurs="1"/>
                             <xs:element name="SimilarityPara" type="SimilarityParaType" minOccurs="1"/>
                             <xs:element name="ClassificationPara" type="ClassificationParaType" minOccurs="1"/>

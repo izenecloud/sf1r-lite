@@ -85,6 +85,24 @@ public:
     std::string cron;
 };
 
+/**
+  * @brief   the parameters for autofill
+  */
+class AutofillPara
+{
+
+private:
+    friend class boost::serialization::access;
+
+    template <typename Archive>
+    void serialize( Archive & ar, const unsigned int version )
+    {
+        ar & cron ;
+    }
+public:
+    std::string cron;
+};
+
 
 /**
   * @brief   the parameters for query recommend
@@ -222,6 +240,7 @@ private:
     void serialize( Archive & ar, const unsigned int version )
     {
         ar & taxonomy_param;
+        ar & autofill_param;
         ar & recommend_param;
         ar & similarity_param;
         ar & dc_param;
@@ -233,6 +252,7 @@ public:
 
     TaxonomyPara taxonomy_param;
     DocumentMiningPara dcmin_param;
+    AutofillPara autofill_param;
     RecommendPara recommend_param;
     SimilarityPara similarity_param;
 

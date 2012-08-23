@@ -25,6 +25,7 @@
 #include <query-manager/SearchKeywordOperation.h>
 #include <configuration-manager/MiningConfig.h>
 #include <configuration-manager/MiningSchema.h>
+#include <configuration-manager/CollectionPath.h>
 #include <ir/id_manager/IDManager.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
@@ -127,7 +128,8 @@ public:
      * @param idManager used for generating term Ids.
      * @param docIdManager used for generating docIds in parsing the SCD file.
      */
-    MiningManager(const std::string& collectionDataPath, const std::string& queryDataPath,
+    MiningManager(const std::string& collectionDataPath, 
+                  const CollectionPath& collectionPath,
                   const boost::shared_ptr<DocumentManager>& documentManager,
                   const boost::shared_ptr<IndexManager>& index_manager,
                   const boost::shared_ptr<SearchManager>& searchManager,
@@ -447,6 +449,8 @@ private:
     /** Global variables */
     std::string collectionDataPath_;
     std::string queryDataPath_;
+    CollectionPath collectionPath_;
+
     std::string collectionName_;
     const DocumentSchema& documentSchema_;
 

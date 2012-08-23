@@ -1490,6 +1490,10 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     params.Get<uint32_t>("TaxonomyPara/maxpeopnum", mining_config.taxonomy_param.max_peopnum);
     params.Get<uint32_t>("TaxonomyPara/maxlocnum", mining_config.taxonomy_param.max_locnum);
     params.Get<uint32_t>("TaxonomyPara/maxorgnum", mining_config.taxonomy_param.max_orgnum);
+
+    //for autofill
+    params.GetString("AutofillPara/cron", mining_config.autofill_param.cron);
+
     //for recommend
     params.Get<uint32_t>("RecommendPara/recommendnum", mining_config.recommend_param.recommend_num);
     params.GetString("RecommendPara/cron", mining_config.recommend_param.cron);
