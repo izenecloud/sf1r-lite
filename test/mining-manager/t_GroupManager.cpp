@@ -26,7 +26,10 @@ BOOST_FIXTURE_TEST_CASE(checkGroupRep, sf1r::GroupManagerTestFixture)
     BOOST_TEST_MESSAGE("create group index 2nd time");
     createDocument(1000);
     checkGetGroupRep();
+}
 
+BOOST_FIXTURE_TEST_CASE(mergeGroupRep, sf1r::GroupManagerTestFixture)
+{
     checkGroupRepMerge();
 }
 

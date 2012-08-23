@@ -10,7 +10,6 @@
 #include "DateGroupLabel.h"
 #include "DateStrParser.h"
 #include "PropSharedLockSet.h"
-#include <configuration-manager/GroupConfig.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 
 #include <limits>
@@ -117,37 +116,13 @@ bool convertRangeLabel(const std::string& src, NumericRangeGroupLabel::NumericRa
 NS_FACETED_BEGIN
 
 GroupCounterLabelBuilder::GroupCounterLabelBuilder(
-        const std::vector<GroupConfig>& groupConfigs,
+        const GroupConfigMap& groupConfigMap,
         const GroupManager* groupManager,
         NumericPropertyTableBuilder* numericTableBuilder)
-    : groupConfigs_(groupConfigs)
+    : groupConfigMap_(groupConfigMap)
     , groupManager_(groupManager)
     , numericTableBuilder_(numericTableBuilder)
 {
-}
-
-PropertyDataType GroupCounterLabelBuilder::getPropertyType_(const std::string& prop) const
-{
-    for (std::vector<GroupConfig>::const_iterator it = groupConfigs_.begin();
-        it != groupConfigs_.end(); ++it)
-    {
-        if (it->propName == prop)
-            return it->propType;
-    }
-
-    return UNKNOWN_DATA_PROPERTY_TYPE;
-}
-
-const GroupConfig* GroupCounterLabelBuilder::getGroupConfig_(const std::string& prop) const
-{
-    for (std::vector<GroupConfig>::const_iterator it = groupConfigs_.begin();
-        it != groupConfigs_.end(); ++it)
-    {
-        if (it->propName == prop)
-            return &(*it);
-    }
-
-    return NULL;
 }
 
 GroupCounter* GroupCounterLabelBuilder::createGroupCounter(
@@ -187,34 +162,35 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter_(
     PropSharedLockSet& sharedLockSet,
     GroupCounter* subCounter) const
 {
-    GroupCounter* counter = NULL;
-    const std::string& prop = groupPropParam.property_;
+    const std::string& propName = groupPropParam.property_;
+    GroupConfigMap::const_iterator it = groupConfigMap_.find(propName);
 
-    PropertyDataType type = getPropertyType_(prop);
-    switch(type)
+    if (it == groupConfigMap_.end())
     {
-    case STRING_PROPERTY_TYPE:
-        counter = createStringCounter_(prop, sharedLockSet, subCounter);
-        break;
+        LOG(ERROR) << "the property " << propName
+                   << " must be configured as group property";
+        return NULL;
+    }
 
-    case INT32_PROPERTY_TYPE:
-    case FLOAT_PROPERTY_TYPE:
-    case INT8_PROPERTY_TYPE:
-    case INT16_PROPERTY_TYPE:
-    case INT64_PROPERTY_TYPE:
-    case DOUBLE_PROPERTY_TYPE:
-         counter = createNumericCounter_(prop, subCounter);
-         break;
+    const GroupConfig& groupConfig = it->second;
+    GroupCounter* counter = NULL;
 
-    case DATETIME_PROPERTY_TYPE:
-         counter = createDateCounter_(prop, groupPropParam.unit_,
+    if (groupConfig.isStringType())
+    {
+        counter = createStringCounter_(propName, sharedLockSet, subCounter);
+    }
+    else if (groupConfig.isNumericType())
+    {
+        counter = createNumericCounter_(propName, subCounter);
+    }
+    else if (groupConfig.isDateTimeType())
+    {
+        counter = createDateCounter_(propName, groupPropParam.unit_,
             sharedLockSet, subCounter);
-         break;
-
-    default:
-        LOG(ERROR) << "unsupported type " << type
-                   << " for group property " << prop;
-        break;
+    }
+    else
+    {
+        LOG(ERROR) << "group count is not supported for property " << propName;
     }
 
     return counter;
@@ -279,8 +255,10 @@ GroupCounter* GroupCounterLabelBuilder::createNumericCounter_(
 
 GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter_(const std::string& prop) const
 {
-    const GroupConfig* groupConfig = getGroupConfig_(prop);
-    if (!groupConfig || !groupConfig->isNumericType())
+    GroupConfigMap::const_iterator it = groupConfigMap_.find(prop);
+
+    if (it == groupConfigMap_.end() ||
+        !it->second.isNumericType())
     {
         LOG(ERROR) << "property " << prop
                    << " must be configured as numeric type for range group";
@@ -336,33 +314,34 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(
     const GroupParam::GroupLabelParam& labelParam,
     PropSharedLockSet& sharedLockSet)
 {
+    const std::string& propName = labelParam.first;
+    GroupConfigMap::const_iterator it = groupConfigMap_.find(propName);
+
+    if (it == groupConfigMap_.end())
+    {
+        LOG(ERROR) << "the property " << propName
+                   << " must be configured as group property";
+        return NULL;
+    }
+
+    const GroupConfig& groupConfig = it->second;
     GroupLabel* label = NULL;
 
-    const std::string& propName = labelParam.first;
-    PropertyDataType type = getPropertyType_(propName);
-    switch(type)
+    if (groupConfig.isStringType())
     {
-    case STRING_PROPERTY_TYPE:
         label = createStringLabel_(labelParam, sharedLockSet);
-        break;
-
-    case INT32_PROPERTY_TYPE:
-    case FLOAT_PROPERTY_TYPE:
-    case INT8_PROPERTY_TYPE:
-    case INT16_PROPERTY_TYPE:
-    case INT64_PROPERTY_TYPE:
-    case DOUBLE_PROPERTY_TYPE:
+    }
+    else if (groupConfig.isNumericType())
+    {
         label = createNumericRangeLabel_(labelParam);
-        break;
-
-    case DATETIME_PROPERTY_TYPE:
+    }
+    else if (groupConfig.isDateTimeType())
+    {
         label = createDateLabel_(labelParam, sharedLockSet);
-        break;
-
-    default:
-        LOG(ERROR) << "unsupported type " << type
-                   << " for group property " << propName;
-        break;
+    }
+    else
+    {
+        LOG(ERROR) << "group label is not supported for property " << propName;
     }
 
     return label;

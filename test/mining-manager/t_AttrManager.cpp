@@ -248,8 +248,8 @@ private:
 
     void createGroupRep_(faceted::OntologyRep& attrRep)
     {
-        const vector<GroupConfig> emptyGroupConfigs;
-        faceted::GroupFilterBuilder filterBuilder(emptyGroupConfigs, NULL, attrManager_, NULL);
+        const GroupConfigMap emptyGroupConfigMap;
+        faceted::GroupFilterBuilder filterBuilder(emptyGroupConfigMap, NULL, attrManager_, NULL);
         faceted::GroupParam groupParam;
         groupParam.isAttrGroup_ = true;
 

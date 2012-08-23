@@ -5,7 +5,6 @@
 #include <mining-manager/group-manager/GroupManager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
-#include <configuration-manager/GroupConfig.h>
 
 #include <util/ustring/UString.h>
 
@@ -345,7 +344,7 @@ GroupManagerTestFixture::GroupManagerTestFixture()
         ENCODING_TYPE,
         2000);
 
-    numericTableBuilder_ = new NumericPropertyTableBuilderStub(groupConfigs_);
+    numericTableBuilder_ = new NumericPropertyTableBuilderStub(groupConfigMap_);
 
     resetGroupManager();
 }
@@ -361,8 +360,9 @@ void GroupManagerTestFixture::resetGroupManager()
 {
     delete groupManager_;
 
-    groupManager_ = new faceted::GroupManager(documentManager_, groupPath_);
-    BOOST_CHECK(groupManager_->open(groupConfigs_));
+    groupManager_ = new faceted::GroupManager(
+        groupConfigMap_, *documentManager_, groupPath_);
+    BOOST_CHECK(groupManager_->open());
 }
 
 void GroupManagerTestFixture::createDocument(int num)
@@ -507,28 +507,28 @@ void GroupManagerTestFixture::initConfig_()
     config3.propertyType_ = STRING_PROPERTY_TYPE;
     schema_.insert(config3);
     propNames_.push_back(config3.propertyName_);
-    groupConfigs_.push_back(GroupConfig(config3.propertyName_, config3.propertyType_));
+    groupConfigMap_[config3.propertyName_] = GroupConfig(config3.propertyType_);
 
     PropertyConfigBase config4;
     config4.propertyName_ = PROP_NAME_GROUP_DATETIME;
     config4.propertyType_ = DATETIME_PROPERTY_TYPE;
     schema_.insert(config4);
     propNames_.push_back(config4.propertyName_);
-    groupConfigs_.push_back(GroupConfig(config4.propertyName_, config4.propertyType_));
+    groupConfigMap_[config4.propertyName_] = GroupConfig(config4.propertyType_);
 
     PropertyConfigBase config5;
     config5.propertyName_ = PROP_NAME_GROUP_INT;
     config5.propertyType_ = INT32_PROPERTY_TYPE;
     schema_.insert(config5);
     propNames_.push_back(config5.propertyName_);
-    groupConfigs_.push_back(GroupConfig(config5.propertyName_, config5.propertyType_));
+    groupConfigMap_[config5.propertyName_] = GroupConfig(config5.propertyType_);
 
     PropertyConfigBase config6;
     config6.propertyName_ = PROP_NAME_GROUP_FLOAT;
     config6.propertyType_ = FLOAT_PROPERTY_TYPE;
     schema_.insert(config6);
     propNames_.push_back(config6.propertyName_);
-    groupConfigs_.push_back(GroupConfig(config6.propertyName_, config6.propertyType_));
+    groupConfigMap_[config6.propertyName_] = GroupConfig(config6.propertyType_);
 }
 
 void GroupManagerTestFixture::checkCollection_()
@@ -572,7 +572,8 @@ void GroupManagerTestFixture::createGroupRep_(
     faceted::GroupRep& groupRep
 )
 {
-    faceted::GroupFilterBuilder filterBuilder(groupConfigs_, groupManager_, NULL, numericTableBuilder_);
+    faceted::GroupFilterBuilder filterBuilder(
+        groupConfigMap_, groupManager_, NULL, numericTableBuilder_);
     faceted::GroupParam groupParam;
     for (vector<string>::const_iterator it = propNames_.begin();
         it != propNames_.end(); ++it)

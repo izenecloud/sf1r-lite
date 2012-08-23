@@ -1722,7 +1722,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 throw XmlConfigParserException("The type of property ["+property_name+"] in <Group> is unknown.");
             }
 
-            GroupConfig groupConfig(property_name, property_type);
+            GroupConfig groupConfig(property_type);
 
             if (groupConfig.isNumericType())
             {
@@ -1743,10 +1743,10 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string, int, float or datetime type.");
             }
 
-            mining_schema.group_properties.push_back(groupConfig);
+            mining_schema.group_config_map[property_name] = groupConfig;
 
             LOG(INFO) << "group property: " << property_name
-                << ", type: " << property_type;
+                      << ", type: " << property_type;
         }
         mining_schema.group_enable = true;
     }
@@ -1850,7 +1850,7 @@ void CollectionConfig::parseProductRankingNode(const ticpp::Element* productRank
     productRankingConfig.isEnable = true;
     getAttribute(productRankingNode, "debug", productRankingConfig.isDebug, false);
 
-    const std::vector<GroupConfig>& groupProps = miningSchema.group_properties;
+    const GroupConfigMap& groupConfigMap = miningSchema.group_config_map;
     const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
     std::string propName;
 
@@ -1858,7 +1858,7 @@ void CollectionConfig::parseProductRankingNode(const ticpp::Element* productRank
     if (subNode)
     {
         getAttribute(subNode, "name", propName);
-        checkStringGroupProperty(propName, groupProps);
+        checkStringGroupProperty(propName, groupConfigMap);
         productRankingConfig.merchantPropName = propName;
     }
 
@@ -1866,7 +1866,7 @@ void CollectionConfig::parseProductRankingNode(const ticpp::Element* productRank
     if (subNode)
     {
         getAttribute(subNode, "name", propName);
-        checkStringGroupProperty(propName, groupProps);
+        checkStringGroupProperty(propName, groupConfigMap);
         productRankingConfig.categoryPropName = propName;
     }
 
@@ -1879,21 +1879,24 @@ void CollectionConfig::parseProductRankingNode(const ticpp::Element* productRank
     }
 }
 
-void CollectionConfig::checkStringGroupProperty(const std::string& propName, const std::vector<GroupConfig>& groupProps)
+void CollectionConfig::checkStringGroupProperty(const std::string& propName, const GroupConfigMap& groupConfigMap)
 {
-    for (std::vector<GroupConfig>::const_iterator it = groupProps.begin();
-        it != groupProps.end(); ++it)
-    {
-        if (it->propName == propName)
-        {
-            if (it->isStringType())
-                return;
+    GroupConfigMap::const_iterator it = groupConfigMap.find(propName);
 
-            throw XmlConfigParserException("Property [" + propName + "] in <ProductRanking> is not string type.");
-        }
+    if (it == groupConfigMap.end())
+    {
+        throw XmlConfigParserException(
+            "Property [" + propName +
+            "] in <ProductRanking> is not configured in <Group>.");
     }
 
-    throw XmlConfigParserException("Property [" + propName + "] in <ProductRanking> is not configured in <Group>.");
+    const GroupConfig& groupConfig = it->second;
+    if (! groupConfig.isStringType())
+    {
+        throw XmlConfigParserException(
+            "Property [" + propName +
+            "] in <ProductRanking> is not string type.");
+    }
 }
 
 void CollectionConfig::checkNumericFilterProperty(const std::string& propName, const IndexBundleSchema& indexSchema)

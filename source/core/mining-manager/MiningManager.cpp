@@ -332,8 +332,10 @@ bool MiningManager::open()
             if (groupManager_) delete groupManager_;
             std::string groupPath = prefix_path + "/group";
 
-            groupManager_ = new faceted::GroupManager(document_manager_.get(), groupPath);
-            if (! groupManager_->open(mining_schema_.group_properties))
+            groupManager_ = new faceted::GroupManager(
+                mining_schema_.group_config_map,
+                *document_manager_, groupPath);
+            if (! groupManager_->open())
             {
                 std::cerr << "open GROUP failed" << std::endl;
                 return false;
@@ -356,7 +358,9 @@ bool MiningManager::open()
 
         if (groupManager_ || attrManager_)
         {
-            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(mining_schema_.group_properties,
+            faceted::GroupFilterBuilder* filterBuilder =
+                new faceted::GroupFilterBuilder(
+                    mining_schema_.group_config_map,
                     groupManager_,
                     attrManager_,
                     searchManager_.get());
@@ -377,13 +381,13 @@ bool MiningManager::open()
                 return false;
             }
 
-            for (std::vector<GroupConfig>::const_iterator it = mining_schema_.group_properties.begin();
-                    it != mining_schema_.group_properties.end(); ++it)
+            for (GroupConfigMap::const_iterator it = mining_schema_.group_config_map.begin();
+                    it != mining_schema_.group_config_map.end(); ++it)
             {
-                if (! it->isStringType())
+                if (! it->second.isStringType())
                     continue;
 
-                const std::string& propName = it->propName;
+                const std::string& propName = it->first;
                 if (!groupLabelLoggerMap_[propName])
                 {
                     std::auto_ptr<GroupLabelLogger> loggerPtr(new GroupLabelLogger(logPath, propName));

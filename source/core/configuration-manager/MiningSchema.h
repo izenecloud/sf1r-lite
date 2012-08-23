@@ -8,7 +8,6 @@
 
 #include <stdint.h>
 #include <string>
-#include <map>
 #include <boost/serialization/access.hpp>
 
 namespace sf1r
@@ -23,7 +22,7 @@ public:
             , sim_enable(false), sim_properties()
             , dc_enable(false), dc_properties()
             , faceted_enable(false), faceted_properties()
-            , group_enable(false), group_properties()
+            , group_enable(false), group_config_map()
             , attr_enable(false), attr_property()
             , ise_enable(false), ise_property()
             , recommend_tg(false), recommend_querylog(true), recommend_properties()
@@ -43,7 +42,7 @@ private:
         ar & dupd_enable & dupd_fp_only & dupd_properties;
         ar & sim_enable & sim_properties;
         ar & dc_enable & dc_properties & faceted_enable & faceted_properties;
-        ar & group_enable & group_properties;
+        ar & group_enable & group_config_map;
         ar & attr_enable & attr_property;
         ar & product_ranking_config;
         ar & tdt_enable;
@@ -66,7 +65,7 @@ public:
     bool faceted_enable;
     std::vector<std::string> faceted_properties;
     bool group_enable;
-    std::vector<GroupConfig> group_properties;
+    GroupConfigMap group_config_map;
     bool attr_enable;
     AttrConfig attr_property;
 

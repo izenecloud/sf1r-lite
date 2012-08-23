@@ -10,13 +10,13 @@
 
 #include "GroupParam.h"
 #include <common/type_defs.h> // PropertyDataType
+#include <configuration-manager/GroupConfig.h>
 
 #include <vector>
 #include <string>
 
 namespace sf1r
 {
-class GroupConfig;
 class NumericPropertyTableBuilder;
 }
 
@@ -31,7 +31,7 @@ class GroupCounterLabelBuilder
 {
 public:
     GroupCounterLabelBuilder(
-        const std::vector<GroupConfig>& groupConfigs,
+        const GroupConfigMap& groupConfigMap,
         const GroupManager* groupManager,
         NumericPropertyTableBuilder* numericTableBuilder);
 
@@ -44,9 +44,6 @@ public:
         PropSharedLockSet& sharedLockSet);
 
 private:
-    PropertyDataType getPropertyType_(const std::string& prop) const;
-    const GroupConfig* getGroupConfig_(const std::string& prop) const;
-
     GroupCounter* createValueCounter_(
         const GroupPropParam& groupPropParam,
         PropSharedLockSet& sharedLockSet,
@@ -82,7 +79,7 @@ private:
         PropSharedLockSet& sharedLockSet) const;
 
 private:
-    const std::vector<GroupConfig>& groupConfigs_;
+    const GroupConfigMap& groupConfigMap_;
     const GroupManager* groupManager_;
     NumericPropertyTableBuilder* numericTableBuilder_;
 };
