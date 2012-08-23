@@ -201,7 +201,7 @@ public:
     void updateFromSCD();
     void SaveSCDLog();
     void LoadSCDLog();
-    void dealWirhSimlar(std::vector<std::pair<string,string> >& SimlarList);
+    void dealWithSimilar(std::vector<std::pair<string,string> >& SimlarList);
 public:
     static std::string system_resource_path_;
 };
