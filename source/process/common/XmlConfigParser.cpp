@@ -2227,6 +2227,7 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
     bool bRange = false;
     bool bStoreDocLen = true;
     float rankWeight = 0.0f;
+    bool rtype = false;
 
     // read XML
     //
@@ -2238,6 +2239,7 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
     getAttribute(indexing, "doclen", bStoreDocLen, false);
     getAttribute(indexing, "tokenizer", tokenizers, false);
     getAttribute_FloatType(indexing, "rankweight", rankWeight, false);
+    getAttribute(indexing, "rtype", rtype, false);
 
     downCase(analyzer);
     downCase(tokenizers);
@@ -2269,6 +2271,13 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
     {
         stringstream msg;
         msg << propertyConfig.getName() << "\": an \"analyzer\" is required as a pair of the tokenizer";
+        throw XmlConfigParserException(msg.str());
+    }
+
+    if(!analyzer.empty() && rtype)
+    {
+        stringstream msg;
+        msg << propertyConfig.getName() << "\": an \"rtype\" can not have any analyzer.";
         throw XmlConfigParserException(msg.str());
     }
 
@@ -2314,6 +2323,7 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
     propertyConfig.setIsStoreDocLen(bStoreDocLen);
     propertyConfig.setAnalysisInfo(analysisInfo);
     propertyConfig.setRankWeight(rankWeight);
+    propertyConfig.setRType(rtype);
 
     // push to the list of all analysis Information in the configuration file.
     SF1Config::get()->analysisPairList_.insert(analysisInfo);

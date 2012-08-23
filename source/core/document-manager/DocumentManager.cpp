@@ -17,6 +17,7 @@
 #include <common/SFLogger.h>
 #include <common/NumericPropertyTable.h>
 #include <common/NumericRangePropertyTable.h>
+#include <common/RTypeStringPropTable.h>
 #include <la/analyzer/MultiLanguageAnalyzer.h>
 #include <am/sequence_file/ssfr.h>
 
@@ -75,6 +76,10 @@ DocumentManager::DocumentManager(
         if (it->isIndex() && !it->isAnalyzed() && it->getIsFilter() && !it->getIsMultiValue())
         {
             initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
+        }
+        else if(it->isRTypeString())
+        {
+            initRTypeStringPropTable(it->getName());
         }
     }
 }
@@ -264,6 +269,15 @@ bool DocumentManager::getPropertyValue(
         return true;
     }
 
+    RTypeStringPropTableMap::const_iterator rtype_table_cit = rtype_string_proptable_.find(*realPropertyName);
+    if( rtype_table_cit != rtype_string_proptable_.end() )
+    {
+        std::string tempStr;
+        rtype_table_cit->second->getRTypeString(docId, tempStr);
+        result = izenelib::util::UString(tempStr, encodingType_);
+        return true;
+    }
+
     if (documentCache_.getValue(docId, doc))
     {
         result = doc.property(*realPropertyName);
@@ -294,6 +308,13 @@ void DocumentManager::getRTypePropertiesForDocument(docid_t docId, Document& doc
         std::string tempStr;
         if (it->second->getStringValue(docId, tempStr))
             document.property(it->first) = izenelib::util::UString(tempStr, encodingType_);
+    }
+    for(RTypeStringPropTableMap::const_iterator cit = rtype_string_proptable_.begin();
+        cit != rtype_string_proptable_.end(); ++cit)
+    {
+        std::string tempStr;
+        if(cit->second->getRTypeString(docId, tempStr))
+            document.property(cit->first) = izenelib::util::UString(tempStr, encodingType_);
     }
 }
 
@@ -559,6 +580,7 @@ bool DocumentManager::getRawTextOfOneDocument(
 {
     rawText.clear();
     NumericPropertyTableMap::const_iterator it = numericPropertyTables_.find(propertyName);
+    RTypeStringPropTableMap::const_iterator rtype_table_cit = rtype_string_proptable_.find(propertyName);
     if (it != numericPropertyTables_.end())
     {
         std::string tempStr;
@@ -566,6 +588,12 @@ bool DocumentManager::getRawTextOfOneDocument(
         {
 //          return false;
         }
+        rawText = izenelib::util::UString(tempStr, encodingType_);
+    }
+    else if( rtype_table_cit != rtype_string_proptable_.end() )
+    {
+        std::string tempStr;
+        rtype_table_cit->second->getRTypeString(docId, tempStr);
         rawText = izenelib::util::UString(tempStr, encodingType_);
     }
     else
@@ -774,6 +802,28 @@ void DocumentManager::initNumericPropertyTable_(
     numericPropertyTable->init(path_ + propertyName + ".rtype_data");
 }
 
+boost::shared_ptr<RTypeStringPropTable>& DocumentManager::getRTypeStringPropTable(const std::string& propertyName)
+{
+    static boost::shared_ptr<RTypeStringPropTable> emptyPropertyTable;
+    RTypeStringPropTableMap::iterator it = rtype_string_proptable_.find(propertyName);
+    if (it != rtype_string_proptable_.end())
+        return it->second;
+    else
+        return emptyPropertyTable;
+}
+
+void DocumentManager::initRTypeStringPropTable(
+        const std::string& propertyName)
+{
+    if (rtype_string_proptable_.find(propertyName) != rtype_string_proptable_.end())
+        return;
+
+    boost::shared_ptr<RTypeStringPropTable>& rtype_string_prop = rtype_string_proptable_[propertyName];
+    rtype_string_prop.reset(new RTypeStringPropTable(STRING_PROPERTY_TYPE));
+    rtype_string_prop->init(path_ + propertyName + ".rtypestring_data");
+}
+
+
 void DocumentManager::moveRTypeValues(docid_t oldId, docid_t newId)
 {
     for (NumericPropertyTableMap::iterator it = numericPropertyTables_.begin();
@@ -781,11 +831,21 @@ void DocumentManager::moveRTypeValues(docid_t oldId, docid_t newId)
     {
         it->second->copyValue(oldId, newId);
     }
+    for(RTypeStringPropTableMap::iterator rtype_it = rtype_string_proptable_.begin();
+        rtype_it != rtype_string_proptable_.end(); ++rtype_it)
+    {
+        rtype_it->second->copyValue(oldId, newId);
+    }
 }
 
 DocumentManager::NumericPropertyTableMap& DocumentManager::getNumericPropertyTableMap()
 {
     return numericPropertyTables_;
+}
+
+DocumentManager::RTypeStringPropTableMap& DocumentManager::getRTypeStringPropTableMap()
+{
+    return rtype_string_proptable_;
 }
 
 }

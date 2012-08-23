@@ -28,6 +28,11 @@ MiningTaskService::~MiningTaskService()
     izenelib::util::Scheduler::removeJob(cronJobName_);
 }
 
+void MiningTaskService::AddRebuildRTypeGroup(const std::string& propname)
+{
+    miningManager_->AddRebuildRTypeGroup(propname);
+}
+
 void MiningTaskService::DoMiningCollection()
 {
     miningManager_->DoMiningCollection();

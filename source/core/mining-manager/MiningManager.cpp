@@ -579,6 +579,7 @@ bool MiningManager::DoMiningCollection()
             {
                 bool b = document_manager_->getDocument(docid, doc);
                 if (!b) continue;
+                document_manager_->getRTypePropertiesForDocument(docid, doc);
                 Document::property_iterator property_it = doc.propertyBegin();
                 while (property_it != doc.propertyEnd())
                 {
@@ -699,6 +700,15 @@ bool MiningManager::DoMiningCollection()
         summarizationManager_->EvaluateSummarization();
     }
     return true;
+}
+
+void MiningManager::AddRebuildRTypeGroup(const std::string& property_name)
+{
+    //do group
+    if (mining_schema_.group_enable)
+    {
+        groupManager_->add_reprocessRTypeGroup(property_name);
+    }
 }
 
 void MiningManager::onIndexUpdated(size_t docNum)

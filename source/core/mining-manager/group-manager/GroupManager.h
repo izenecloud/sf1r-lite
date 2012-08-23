@@ -14,12 +14,14 @@
 #include <configuration-manager/GroupConfig.h>
 
 #include <vector>
+#include <set>
 #include <string>
 #include <map>
 
 namespace sf1r
 {
 class DocumentManager;
+class RTypeStringPropTable;
 }
 
 NS_FACETED_BEGIN
@@ -46,6 +48,7 @@ public:
      * @return true for success, false for failure
      */
     bool processCollection();
+    bool add_reprocessRTypeGroup(const std::string& propname);
 
     const PropValueTable* getPropValueTable(const std::string& propName) const
     {
@@ -95,7 +98,8 @@ private:
     void buildStrPropForDoc_(
             docid_t docId,
             const std::string& propName,
-            PropValueTable& pvTable);
+            PropValueTable& pvTable,
+            boost::shared_ptr<RTypeStringPropTable> rtype_string_prop);
 
     void buildDatePropForCollection_(DateGroupTable& dateTable);
     void buildDatePropForDoc_(
@@ -110,6 +114,7 @@ private:
 
     StrPropMap strPropMap_;
     DatePropMap datePropMap_;
+    std::set<std::string> waiting_rebuild_group_;
 };
 
 NS_FACETED_END

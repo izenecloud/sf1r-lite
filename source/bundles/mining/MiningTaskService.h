@@ -20,6 +20,8 @@ public:
 
     void DoContinue();
 
+    void AddRebuildRTypeGroup(const std::string& propname);
+
     MiningBundleConfiguration* getMiningBundleConfig(){ return bundleConfig_; }
 
 private:

@@ -58,6 +58,7 @@ enum DMOptionFlag
 class SnippetGeneratorSubManager;
 class Highlighter;
 class DocContainer;
+class RTypeStringPropTable;
 
 class DocumentManager
 {
@@ -67,6 +68,7 @@ class DocumentManager
 public:
     typedef Document DocumentType;
     typedef std::map<std::string, boost::shared_ptr<NumericPropertyTableBase> > NumericPropertyTableMap;
+    typedef std::map<std::string, boost::shared_ptr<RTypeStringPropTable> > RTypeStringPropTableMap;
     /**
      * @brief initializes manager with @a path as working directory.
      *
@@ -265,10 +267,16 @@ public:
     bool getDeletedDocIdList(std::vector<docid_t>& docid_list);
 
     boost::shared_ptr<NumericPropertyTableBase>& getNumericPropertyTable(const std::string& propertyName);
+    boost::shared_ptr<RTypeStringPropTable>& getRTypeStringPropTable(const std::string& propertyName);
 
     void moveRTypeValues(docid_t oldId, docid_t newId);
 
     NumericPropertyTableMap& getNumericPropertyTableMap();
+    RTypeStringPropTableMap& getRTypeStringPropTableMap();
+    izenelib::util::UString::EncodingType& getEncondingType()
+    {
+        return encodingType_;
+    }
 
 private:
     bool loadDelFilter_();
@@ -343,6 +351,9 @@ private:
             PropertyDataType propertyType,
             bool isRange);
 
+    void initRTypeStringPropTable(
+            const std::string& propertyName);
+
 private:
     /// @brief path for the index property file
     std::string path_;
@@ -353,6 +364,7 @@ private:
     DocContainer* propertyValueTable_;
 
     NumericPropertyTableMap numericPropertyTables_;
+    RTypeStringPropTableMap rtype_string_proptable_;
 
     /// @brief The delete flag filter
     DelFilterType delfilter_;

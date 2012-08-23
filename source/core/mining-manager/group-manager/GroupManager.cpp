@@ -4,6 +4,7 @@
 #include <mining-manager/util/FSUtil.hpp>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningException.hpp>
+#include <common/RTypeStringPropTable.h>
 
 #include <iostream>
 #include <cassert>
@@ -122,6 +123,15 @@ bool GroupManager::createDateGroupTable_(const std::string& propName)
     return true;
 }
 
+bool GroupManager::add_reprocessRTypeGroup(const std::string& propname)
+{
+    if(waiting_rebuild_group_.find(propname) != waiting_rebuild_group_.end())
+        return true;
+    LOG(INFO) << propname << " will be rebuilded rtype group index.";
+    waiting_rebuild_group_.insert(propname);
+    return true;
+}
+
 bool GroupManager::processCollection()
 {
     LOG(INFO) << "start building group index data...";
@@ -129,6 +139,14 @@ bool GroupManager::processCollection()
     for (StrPropMap::iterator it = strPropMap_.begin();
         it != strPropMap_.end(); ++it)
     {
+        const std::string& propName = it->second.propName();
+        // find the property value in the rtype string first.
+        std::set<std::string>::const_iterator prop_it = waiting_rebuild_group_.find(propName);
+        if(prop_it != waiting_rebuild_group_.end())
+        {
+            it->second.clear();
+        }
+
         buildStrPropForCollection_(it->second);
     }
 
@@ -138,6 +156,7 @@ bool GroupManager::processCollection()
         buildDatePropForCollection_(it->second);
     }
 
+    waiting_rebuild_group_.clear();
     LOG(INFO) << "finished building group index data";
     return true;
 }
@@ -145,6 +164,9 @@ bool GroupManager::processCollection()
 void GroupManager::buildStrPropForCollection_(PropValueTable& pvTable)
 {
     const std::string& propName = pvTable.propName();
+
+    // find the property value in the rtype string first.
+    boost::shared_ptr<RTypeStringPropTable> rtype_string_prop = documentManager_->getRTypeStringPropTable(propName);
 
     const docid_t startDocId = pvTable.docIdNum();
     const docid_t endDocId = documentManager_->getMaxDocId();
@@ -166,7 +188,7 @@ void GroupManager::buildStrPropForCollection_(PropValueTable& pvTable)
             std::cout << "\rinserting doc id: " << docId << "\t" << std::flush;
         }
 
-        buildStrPropForDoc_(docId, propName, pvTable);
+        buildStrPropForDoc_(docId, propName, pvTable, rtype_string_prop);
     }
     std::cout << "\rinserting doc id: " << endDocId << "\t" << std::endl;
 
@@ -179,35 +201,42 @@ void GroupManager::buildStrPropForCollection_(PropValueTable& pvTable)
 void GroupManager::buildStrPropForDoc_(
         docid_t docId,
         const std::string& propName,
-        PropValueTable& pvTable)
+        PropValueTable& pvTable,
+        boost::shared_ptr<RTypeStringPropTable> rtype_string_prop)
 {
     std::vector<PropValueTable::pvid_t> propIdList;
     Document doc;
-
-    if (documentManager_->getDocument(docId, doc))
+    izenelib::util::UString propValue;
+    if(rtype_string_prop)
+    {
+        std::string s_propvalue;
+        rtype_string_prop->getRTypeString(docId, s_propvalue);
+        propValue = UString(s_propvalue, documentManager_->getEncondingType());
+    }
+    else if (documentManager_->getDocument(docId, doc))
     {
         Document::property_iterator it = doc.findProperty(propName);
         if (it != doc.propertyEnd())
         {
-            const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
-            std::vector<vector<izenelib::util::UString> > groupPaths;
-            split_group_path(propValue, groupPaths);
-
-            try
-            {
-                for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
-                        pathIt != groupPaths.end(); ++pathIt)
-                {
-                    PropValueTable::pvid_t pvId = pvTable.insertPropValueId(*pathIt);
-                    propIdList.push_back(pvId);
-                }
-            }
-            catch (MiningException& e)
-            {
-                LOG(ERROR) << "exception: " << e.what()
-                           << ", doc id: " << docId;
-            }
+            propValue = it->second.get<izenelib::util::UString>();
         }
+    }
+    std::vector<vector<izenelib::util::UString> > groupPaths;
+    split_group_path(propValue, groupPaths);
+
+    try
+    {
+        for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
+            pathIt != groupPaths.end(); ++pathIt)
+        {
+            PropValueTable::pvid_t pvId = pvTable.insertPropValueId(*pathIt);
+            propIdList.push_back(pvId);
+        }
+    }
+    catch (MiningException& e)
+    {
+        LOG(ERROR) << "exception: " << e.what()
+            << ", doc id: " << docId;
     }
 
     try

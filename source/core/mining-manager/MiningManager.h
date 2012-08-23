@@ -31,6 +31,7 @@
 #include <boost/thread/mutex.hpp>
 #include <string>
 #include <map>
+#include <set>
 
 
 namespace izenelib
@@ -143,6 +144,7 @@ public:
     bool DoMiningCollection();
 
     void DoContinue();
+    void AddRebuildRTypeGroup(const std::string& property_name);
     /**
      * @brief The online querying interface.
      */
