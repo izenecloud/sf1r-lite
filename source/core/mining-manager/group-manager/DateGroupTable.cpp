@@ -45,6 +45,15 @@ bool DateGroupTable::flush()
            save_container_febird(dirPath_, propName_ + SUFFIX_VALUE_ID, dateValueTable_.multiValueTable_, saveValueNum_);
 }
 
+void DateGroupTable::clear()
+{
+    ScopedWriteLock lock(mutex_);
+
+    dateValueTable_.clear();
+    saveIndexNum_ = 0;
+    saveValueNum_ = 0;
+}
+
 void DateGroupTable::reserveDocIdNum(std::size_t num)
 {
     ScopedWriteLock lock(mutex_);

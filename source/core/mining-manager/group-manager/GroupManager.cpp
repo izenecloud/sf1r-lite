@@ -2,13 +2,10 @@
 #include "DateStrParser.h"
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/util/FSUtil.hpp>
-#include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningException.hpp>
 
 #include <iostream>
 #include <cassert>
-
-#include <glog/logging.h>
 
 using namespace sf1r::faceted;
 
@@ -20,15 +17,17 @@ const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UStr
 }
 
 GroupManager::GroupManager(
-        DocumentManager* documentManager,
-        const std::string& dirPath)
-    : documentManager_(documentManager)
+    const GroupConfigMap& groupConfigMap,
+    DocumentManager& documentManager,
+    const std::string& dirPath)
+    : groupConfigMap_(groupConfigMap)
+    , documentManager_(documentManager)
     , dirPath_(dirPath)
     , dateStrParser_(*DateStrParser::get())
 {
 }
 
-bool GroupManager::open(const std::vector<GroupConfig>& configVec)
+bool GroupManager::open()
 {
     strPropMap_.clear();
     datePropMap_.clear();
@@ -45,26 +44,20 @@ bool GroupManager::open(const std::vector<GroupConfig>& configVec)
 
     LOG(INFO) << "Start loading group directory: " << dirPath_;
 
-    for (std::vector<GroupConfig>::const_iterator it = configVec.begin();
-        it != configVec.end(); ++it)
+    for (GroupConfigMap::const_iterator it = groupConfigMap_.begin();
+        it != groupConfigMap_.end(); ++it)
     {
-        bool result = false;
-        const std::string& propName = it->propName;
+        bool result = true;
+        const std::string& propName = it->first;
+        const GroupConfig& groupConfig = it->second;
 
-        switch (it->propType)
+        if (groupConfig.isStringType())
         {
-        case STRING_PROPERTY_TYPE:
             result = createPropValueTable_(propName);
-            break;
-
-        case DATETIME_PROPERTY_TYPE:
+        }
+        else if (groupConfig.isDateTimeType())
+        {
             result = createDateGroupTable_(propName);
-            break;
-
-        default:
-            // ignore other types
-            result = true;
-            break;
         }
 
         if (!result)
@@ -129,84 +122,45 @@ bool GroupManager::processCollection()
     for (StrPropMap::iterator it = strPropMap_.begin();
         it != strPropMap_.end(); ++it)
     {
-        buildStrPropForCollection_(it->second);
+        buildCollection_(it->second);
     }
 
     for (DatePropMap::iterator it = datePropMap_.begin();
         it != datePropMap_.end(); ++it)
     {
-        buildDatePropForCollection_(it->second);
+        buildCollection_(it->second);
     }
 
     LOG(INFO) << "finished building group index data";
     return true;
 }
 
-void GroupManager::buildStrPropForCollection_(PropValueTable& pvTable)
-{
-    const std::string& propName = pvTable.propName();
-
-    const docid_t startDocId = pvTable.docIdNum();
-    const docid_t endDocId = documentManager_->getMaxDocId();
-    assert(startDocId && "docid 0 should have been reserved in PropValueTable constructor");
-
-    if (startDocId > endDocId)
-        return;
-
-    LOG(INFO) << "start building property: " << propName
-                << ", start doc id: " << startDocId
-                << ", end doc id: " << endDocId;
-
-    pvTable.reserveDocIdNum(endDocId + 1);
-
-    for (docid_t docId = startDocId; docId <= endDocId; ++docId)
-    {
-        if (docId % 100000 == 0)
-        {
-            std::cout << "\rinserting doc id: " << docId << "\t" << std::flush;
-        }
-
-        buildStrPropForDoc_(docId, propName, pvTable);
-    }
-    std::cout << "\rinserting doc id: " << endDocId << "\t" << std::endl;
-
-    if (!pvTable.flush())
-    {
-        LOG(ERROR) << "PropValueTable::flush() failed, property name: " << propName;
-    }
-}
-
-void GroupManager::buildStrPropForDoc_(
+void GroupManager::buildDoc_(
         docid_t docId,
         const std::string& propName,
         PropValueTable& pvTable)
 {
     std::vector<PropValueTable::pvid_t> propIdList;
-    Document doc;
+    izenelib::util::UString propValue;
 
-    if (documentManager_->getDocument(docId, doc))
+    if (documentManager_.getPropertyValue(docId, propName, propValue))
     {
-        Document::property_iterator it = doc.findProperty(propName);
-        if (it != doc.propertyEnd())
-        {
-            const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
-            std::vector<vector<izenelib::util::UString> > groupPaths;
-            split_group_path(propValue, groupPaths);
+        std::vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(propValue, groupPaths);
 
-            try
+        try
+        {
+            for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
+                pathIt != groupPaths.end(); ++pathIt)
             {
-                for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
-                        pathIt != groupPaths.end(); ++pathIt)
-                {
-                    PropValueTable::pvid_t pvId = pvTable.insertPropValueId(*pathIt);
-                    propIdList.push_back(pvId);
-                }
+                PropValueTable::pvid_t pvId = pvTable.insertPropValueId(*pathIt);
+                propIdList.push_back(pvId);
             }
-            catch (MiningException& e)
-            {
-                LOG(ERROR) << "exception: " << e.what()
-                           << ", doc id: " << docId;
-            }
+        }
+        catch (MiningException& e)
+        {
+            LOG(ERROR) << "exception: " << e.what()
+                       << ", doc id: " << docId;
         }
     }
 
@@ -221,77 +175,37 @@ void GroupManager::buildStrPropForDoc_(
     }
 }
 
-void GroupManager::buildDatePropForCollection_(DateGroupTable& dateTable)
-{
-    const std::string& propName = dateTable.propName();
-
-    const docid_t startDocId = dateTable.docIdNum();
-    const docid_t endDocId = documentManager_->getMaxDocId();
-    assert(startDocId && "docid 0 should have been reserved in DateGroupTable constructor");
-
-    if (startDocId > endDocId)
-        return;
-
-    LOG(INFO) << "start building property: " << propName
-                << ", start doc id: " << startDocId
-                << ", end doc id: " << endDocId;
-
-    dateTable.reserveDocIdNum(endDocId + 1);
-
-    for (docid_t docId = startDocId; docId <= endDocId; ++docId)
-    {
-        if (docId % 100000 == 0)
-        {
-            std::cout << "\rinserting doc id: " << docId << "\t" << std::flush;
-        }
-
-        buildDatePropForDoc_(docId, propName, dateTable);
-    }
-    std::cout << "\rinserting doc id: " << endDocId << "\t" << std::endl;
-
-    if (!dateTable.flush())
-    {
-        LOG(ERROR) << "DateGroupTable::flush() failed, property name: " << propName;
-    }
-}
-
-void GroupManager::buildDatePropForDoc_(
-    docid_t docId,
-    const std::string& propName,
-    DateGroupTable& dateTable
-)
+void GroupManager::buildDoc_(
+        docid_t docId,
+        const std::string& propName,
+        DateGroupTable& dateTable)
 {
     DateGroupTable::DateSet dateSet;
-    Document doc;
+    izenelib::util::UString propValue;
 
-    if (documentManager_->getDocument(docId, doc))
+    if (documentManager_.getPropertyValue(docId, propName, propValue))
     {
-        Document::property_iterator it = doc.findProperty(propName);
-        if (it != doc.propertyEnd())
+        std::vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(propValue, groupPaths);
+
+        DateGroupTable::date_t dateValue;
+        std::string dateStr;
+        std::string errorMsg;
+
+        for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
+            pathIt != groupPaths.end(); ++pathIt)
         {
-            const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
-            std::vector<vector<izenelib::util::UString> > groupPaths;
-            split_group_path(propValue, groupPaths);
+            if (pathIt->empty())
+                continue;
 
-            DateGroupTable::date_t dateValue;
-            std::string dateStr;
-            std::string errorMsg;
-
-            for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
-                pathIt != groupPaths.end(); ++pathIt)
+            pathIt->front().convertString(dateStr, ENCODING_TYPE);
+            if (dateStrParser_.scdStrToDate(dateStr, dateValue, errorMsg))
             {
-                if (pathIt->empty())
-                    continue;
-
-                pathIt->front().convertString(dateStr, ENCODING_TYPE);
-                if (dateStrParser_.scdStrToDate(dateStr, dateValue, errorMsg))
-                {
-                    dateSet.insert(dateValue);
-                }
-                else
-                {
-                    LOG(WARNING) << errorMsg;
-                }
+                dateSet.insert(dateValue);
+            }
+            else
+            {
+                LOG(WARNING) << errorMsg;
             }
         }
     }
@@ -305,4 +219,14 @@ void GroupManager::buildDatePropForDoc_(
         LOG(ERROR) << "exception: " << e.what()
                    << ", doc id: " << docId;
     }
+}
+
+bool GroupManager::isRebuildProp_(const std::string& propName) const
+{
+    GroupConfigMap::const_iterator it = groupConfigMap_.find(propName);
+
+    if (it != groupConfigMap_.end())
+        return it->second.isRebuild();
+
+    return false;
 }

@@ -18,7 +18,6 @@ NS_FACETED_BEGIN
 GroupFilter::GroupFilter(const GroupParam& groupParam)
     : groupParam_(groupParam)
     , attrCounter_(NULL)
-    , isSharedLocked_(false)
 {
 }
 
@@ -43,8 +42,6 @@ GroupFilter::~GroupFilter()
     attrLabels_.clear();
 
     delete attrCounter_;
-
-    unlockShared_();
 }
 
 bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
@@ -60,12 +57,11 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
         const std::string& propName = it->property_;
         if (groupCounterMap.find(propName) == groupCounterMap.end())
         {
-            GroupCounter* counter = builder.createGroupCounter(*it);
+            GroupCounter* counter = builder.createGroupCounter(*it, sharedLockSet_);
             if (counter)
             {
                 groupCounterMap[propName] = counter;
                 groupCounters_.push_back(counter);
-                counter->insertSharedLock(sharedLockSet_);
             }
             else
             {
@@ -84,7 +80,7 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
         labelIt != labels.end(); ++labelIt)
     {
         const std::string& propName = labelIt->first;
-        GroupLabel* label = builder.createGroupLabel(*labelIt);
+        GroupLabel* label = builder.createGroupLabel(*labelIt, sharedLockSet_);
         if (label)
         {
             GroupCounterMap::iterator counterIt = groupCounterMap.find(propName);
@@ -94,7 +90,6 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
             }
 
             groupLabels_.push_back(label);
-            label->insertSharedLock(sharedLockSet_);
         }
         else
         {
@@ -108,10 +103,14 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
 
 bool GroupFilter::initAttr(const AttrTable& attrTable)
 {
+    if (! groupParam_.isAttrEmpty())
+    {
+        sharedLockSet_.insertSharedLock(&attrTable);
+    }
+
     if (groupParam_.isAttrGroup_)
     {
         attrCounter_ = new AttrCounter(attrTable);
-        attrCounter_->insertSharedLock(sharedLockSet_);
     }
 
     const GroupParam::AttrLabelMap& labels = groupParam_.attrLabels_;
@@ -122,7 +121,6 @@ bool GroupFilter::initAttr(const AttrTable& attrTable)
             labelIt->first, labelIt->second);
 
         attrLabels_.push_back(label);
-        label->insertSharedLock(sharedLockSet_);
     }
 
     return true;
@@ -223,29 +221,6 @@ void GroupFilter::getGroupRep(
     }
 
     LOG(INFO) << "GroupFilter::getGroupRep() costs " << timer.elapsed() << " seconds";
-}
-
-void GroupFilter::lockShared()
-{
-    isSharedLocked_ = true;
-
-    for (PropSharedLockInserter::SharedLockSet::const_iterator it = sharedLockSet_.begin();
-        it != sharedLockSet_.end(); ++it)
-    {
-        (*it)->lockShared();
-    }
-}
-
-void GroupFilter::unlockShared_()
-{
-    if (! isSharedLocked_)
-        return;
-
-    for (PropSharedLockInserter::SharedLockSet::const_iterator it = sharedLockSet_.begin();
-        it != sharedLockSet_.end(); ++it)
-    {
-        (*it)->unlockShared();
-    }
 }
 
 NS_FACETED_END

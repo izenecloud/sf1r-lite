@@ -12,6 +12,7 @@
 #include <search-manager/NumericPropertyTableBuilder.h>
 #include <common/type_defs.h> // PropertyDataType
 #include <common/PropertyValue.h>
+#include <configuration-manager/GroupConfig.h>
 
 #include <vector>
 #include <string>
@@ -25,7 +26,7 @@ class GroupConfig;
 class NumericPropertyTableBuilderStub : public NumericPropertyTableBuilder
 {
 public:
-    NumericPropertyTableBuilderStub(const std::vector<GroupConfig>& groupConfigs);
+    NumericPropertyTableBuilderStub(const GroupConfigMap& groupConfigMap);
 
     boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(const std::string& propertyName);
 
@@ -47,7 +48,7 @@ private:
     );
 
 private:
-    const std::vector<GroupConfig>& groupConfigs_;
+    const GroupConfigMap& groupConfigMap_;
     unsigned int lastDocId_;
 
     template <typename T>
