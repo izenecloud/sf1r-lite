@@ -64,7 +64,7 @@ public:
 
     void checkGetGroupRep();
 
-    void checkGroupRepMerge();
+    static void checkGroupRepMerge();
 
 private:
     void initConfig_();

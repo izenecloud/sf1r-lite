@@ -53,9 +53,9 @@ BOOST_FIXTURE_TEST_CASE(rebuildGroupData, sf1r::GroupManagerTestFixture)
     checkGetGroupRep();
 }
 
-BOOST_FIXTURE_TEST_CASE(mergeGroupRep, sf1r::GroupManagerTestFixture)
+BOOST_AUTO_TEST_CASE(mergeGroupRep)
 {
-    checkGroupRepMerge();
+    sf1r::GroupManagerTestFixture::checkGroupRepMerge();
 }
 
 BOOST_AUTO_TEST_SUITE_END() 
