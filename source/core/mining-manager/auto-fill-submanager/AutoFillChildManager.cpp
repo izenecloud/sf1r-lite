@@ -18,8 +18,8 @@ AutoFillChildManager::AutoFillChildManager(bool fromSCD)
     isUpdating_Wat_ = false;
     isIniting_ = false;
 
-    updatelogdays_ = 1;
-    alllogdays_ =  80;
+    updatelogdays_ = 100;
+    alllogdays_ =  100;
     topN_ =  10;
     QN_ = new izenelib::am::QueryNormalize();
 }
@@ -297,10 +297,10 @@ void AutoFillChildManager::updateFromSCD()
                 SCDHaveDone_.push_back(fileName);
                 std::string temp;
                 string title = "<Title>";
-                //int count=0;
-                while(in.eof())//!count<3000
+                //int count=0;//
+                while(!in.eof())//
                 {
-                    //count++;
+                    //count++;//
                     getline(in, temp);
                     if(temp.substr(0, title.size()) == title)
                     {
@@ -319,7 +319,8 @@ void AutoFillChildManager::updateFromSCD()
         }
     }
     if(!querylist.empty())
-    {
+    { 
+        LoadItem();
         buildIndex(querylist);
         SaveSCDLog();
 
@@ -1029,9 +1030,10 @@ void AutoFillChildManager::updateFromLog()
         TempQuery.HitNum_ = it->getHitDocsNum();
         querylist.push_back(TempQuery );
     }
+    LoadItem();
     buildDbIndex(querylist);
     isUpdating_Wat_ = true;
-    LoadItem();
+  
     wa_.Clear();
     buildWat_array(false);
 }
