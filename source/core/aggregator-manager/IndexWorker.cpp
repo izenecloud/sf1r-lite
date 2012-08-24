@@ -1474,12 +1474,6 @@ bool IndexWorker::prepareDocument_(
                         std::string fieldValue;
                         propertyValueU.convertString(fieldValue, encoding);
                         rtypeprop->updateRTypeString(docId, fieldValue);
-
-                        if(!insert)
-                        {
-                            // if any rtype string property updated, rebuild group needed
-                            miningTaskService_->AddRebuildRTypeGroup(fieldStr);
-                        }
                     }
                     else
                     {

@@ -52,7 +52,6 @@ public:
     PropValueTable(const PropValueTable& table);
 
     bool open();
-    void clear();
     bool flush();
 
     const std::string& propName() const { return propName_; }

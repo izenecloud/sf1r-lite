@@ -703,15 +703,6 @@ bool MiningManager::DoMiningCollection()
     return true;
 }
 
-void MiningManager::AddRebuildRTypeGroup(const std::string& property_name)
-{
-    //do group
-    if (mining_schema_.group_enable)
-    {
-        groupManager_->add_reprocessRTypeGroup(property_name);
-    }
-}
-
 void MiningManager::onIndexUpdated(size_t docNum)
 {
     if (ctrManager_)

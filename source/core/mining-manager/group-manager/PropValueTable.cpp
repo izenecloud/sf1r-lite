@@ -10,7 +10,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/system/error_code.hpp>
 
 #include <glog/logging.h>
 
@@ -144,36 +143,6 @@ PropValueTable::pvid_t PropValueTable::propValueId(const std::vector<izenelib::u
     }
 
     return pvId;
-}
-
-void PropValueTable::clear()
-{
-    ScopedWriteLock lock(mutex_);
-
-    boost::system::error_code err;
-    boost::filesystem::path filePath(dirPath_);
-    boost::filesystem::path filePath_del;
-    filePath_del = filePath / (propName_ + SUFFIX_PROP_STR);
-    boost::filesystem::remove(filePath_del, err);
-    filePath_del = filePath / (propName_ + SUFFIX_PARENT_ID);
-    boost::filesystem::remove(filePath_del, err);
-    filePath_del = filePath / (propName_ + SUFFIX_INDEX_ID);
-    boost::filesystem::remove(filePath_del, err);
-    filePath_del = filePath / (propName_ + SUFFIX_VALUE_ID);
-    boost::filesystem::remove(filePath_del, err);
-    propStrVec_.clear();
-    propStrVec_.resize(1);
-    parentIdVec_.clear();
-    parentIdVec_.resize(1);
-    childMapTable_.clear();
-    childMapTable_.resize(1);
-    valueIdTable_.indexTable_.clear();
-    valueIdTable_.indexTable_.resize(1);
-    valueIdTable_.multiValueTable_.clear();
-    savePropStrNum_ = 0;
-    saveParentIdNum_ = 0;
-    saveIndexNum_ = 0;
-    saveValueNum_ = 0;
 }
 
 bool PropValueTable::open()
