@@ -1717,6 +1717,8 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     if (task_node)
     {
         Iterator<Element> it("Property");
+        const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
+
         for (it = it.begin(task_node); it != it.end(); ++it)
         {
             const ticpp::Element* propNode = it.Get();
@@ -1730,21 +1732,27 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             GroupConfig groupConfig(property_type);
             getAttribute(propNode, "rebuild", groupConfig.isConfigAsRebuild, false);
 
+            PropertyConfig propConfig;
+            propConfig.setName(property_name);
+            IndexBundleSchema::const_iterator propIt = indexSchema.find(propConfig);
+            if (propIt != indexSchema.end())
+            {
+                groupConfig.isRTypeStr = propIt->isRTypeString();
+            }
+
             if (groupConfig.isNumericType())
             {
-                const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
-                PropertyConfig p;
-                p.setName(property_name);
-                IndexBundleSchema::const_iterator propIt = indexSchema.find(p);
-                if (propIt == indexSchema.end()
-                        || !propIt->isIndex() || !propIt->getIsFilter())
+                if (propIt == indexSchema.end() ||
+                    !propIt->isIndex() ||
+                    !propIt->getIsFilter())
                 {
                     throw XmlConfigParserException("As property ["+property_name+"] in <Group> is int or float type, "
                             "it needs to be configured as a filter property like below:\n"
                             "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
                 }
             }
-            else if (!groupConfig.isStringType() && !groupConfig.isDateTimeType())
+            else if (!groupConfig.isStringType() &&
+                     !groupConfig.isDateTimeType())
             {
                 throw XmlConfigParserException("Property ["+property_name+"] in <Group> is not string, int, float or datetime type.");
             }
@@ -1753,7 +1761,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
             LOG(INFO) << "group property: " << property_name
                       << ", type: " << property_type
-                      << ", rebuild: " << groupConfig.isConfigAsRebuild;
+                      << ", isRebuild: " << groupConfig.isRebuild();
         }
         mining_schema.group_enable = true;
     }

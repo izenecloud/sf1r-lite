@@ -23,14 +23,20 @@ public:
     /// <Group><Property ... rebuild="y"/>
     bool isConfigAsRebuild;
 
+    /// true when configured like this:
+    /// <IndexBundle><Schema><Indexing ... rtype="y"/>
+    bool isRTypeStr;
+
     GroupConfig()
         : propType(UNKNOWN_DATA_PROPERTY_TYPE)
         , isConfigAsRebuild(false)
+        , isRTypeStr(false)
     {}
 
     GroupConfig(PropertyDataType type)
         : propType(type)
         , isConfigAsRebuild(false)
+        , isRTypeStr(false)
     {}
 
     bool isStringType() const
@@ -57,7 +63,7 @@ public:
     /// GroupManager::processCollection() is called
     bool isRebuild() const
     {
-        return isConfigAsRebuild;
+        return isConfigAsRebuild || isRTypeStr;
     }
 
 private:
