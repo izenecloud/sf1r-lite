@@ -73,13 +73,14 @@ DocumentManager::DocumentManager(
     for (IndexBundleSchema::const_iterator it = indexSchema_.begin();
             it != indexSchema_.end(); ++it)
     {
-        if (it->isIndex() && !it->isAnalyzed() && it->getIsFilter() && !it->getIsMultiValue())
-        {
-            initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
-        }
-        else if(it->isRTypeString())
+        if(it->isRTypeString())
         {
             initRTypeStringPropTable(it->getName());
+        }
+        else if (it->isIndex() && !it->isAnalyzed() &&
+                 it->getIsFilter() && !it->getIsMultiValue())
+        {
+            initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
         }
     }
 }
