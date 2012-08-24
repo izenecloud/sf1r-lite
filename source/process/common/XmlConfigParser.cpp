@@ -1715,7 +1715,8 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         Iterator<Element> it("Property");
         for (it = it.begin(task_node); it != it.end(); ++it)
         {
-            getAttribute(it.Get(), "name", property_name);
+            const ticpp::Element* propNode = it.Get();
+            getAttribute(propNode, "name", property_name);
             bool gottype = collectionMeta.getPropertyType(property_name, property_type);
             if (!gottype)
             {
@@ -1723,6 +1724,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
 
             GroupConfig groupConfig(property_type);
+            getAttribute(propNode, "rebuild", groupConfig.isConfigAsRebuild, false);
 
             if (groupConfig.isNumericType())
             {
@@ -1746,7 +1748,8 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             mining_schema.group_config_map[property_name] = groupConfig;
 
             LOG(INFO) << "group property: " << property_name
-                      << ", type: " << property_type;
+                      << ", type: " << property_type
+                      << ", rebuild: " << groupConfig.isConfigAsRebuild;
         }
         mining_schema.group_enable = true;
     }

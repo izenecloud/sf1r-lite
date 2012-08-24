@@ -370,7 +370,7 @@ void GroupManagerTestFixture::configGroupPropRebuild()
     for (GroupConfigMap::iterator it = groupConfigMap_.begin();
         it != groupConfigMap_.end(); ++it)
     {
-        it->second.forceRebuild = true;
+        it->second.isConfigAsRebuild = true;
     }
 }
 

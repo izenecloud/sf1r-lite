@@ -19,18 +19,18 @@ public:
     /// property type
     PropertyDataType propType;
 
-    /// whether force to rebuild when each time
-    /// GroupManager::processCollection() is called
-    bool forceRebuild;
+    /// true when configured like this:
+    /// <Group><Property ... rebuild="y"/>
+    bool isConfigAsRebuild;
 
     GroupConfig()
         : propType(UNKNOWN_DATA_PROPERTY_TYPE)
-        , forceRebuild(false)
+        , isConfigAsRebuild(false)
     {}
 
     GroupConfig(PropertyDataType type)
         : propType(type)
-        , forceRebuild(false)
+        , isConfigAsRebuild(false)
     {}
 
     bool isStringType() const
@@ -57,7 +57,7 @@ public:
     /// GroupManager::processCollection() is called
     bool isRebuild() const
     {
-        return forceRebuild;
+        return isConfigAsRebuild;
     }
 
 private:
