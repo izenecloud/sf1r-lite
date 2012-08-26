@@ -15,6 +15,7 @@
 #include <b5m-manager/log_server_handler.h>
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
+#include <b5m-manager/brand_db.h>
 #include <b5m-manager/history_db_helper.h>
 #include <b5m-manager/psm_indexer.h>
 #include <b5m-manager/cmatch_generator.h>
@@ -51,6 +52,7 @@ int main(int ac, char** av)
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("pdb", po::value<std::string>(), "specify product db path")
         ("odb", po::value<std::string>(), "specify offer db path")
+        ("bdb", po::value<std::string>(), "specify brand db path")
         ("historydb", po::value<std::string>(), "specify offer history db path")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
         ("scd-path,S", po::value<std::string>(), "specify scd path")
@@ -94,6 +96,7 @@ int main(int ac, char** av)
     std::string output_match;
     std::string knowledge_dir;
     boost::shared_ptr<OfferDb> odb;
+    boost::shared_ptr<BrandDb> bdb;
     boost::shared_ptr<B5MHistoryDBHelper> historydb;
 
     boost::shared_ptr<LogServerConnectionConfig> logserver_config;
@@ -157,6 +160,11 @@ int main(int ac, char** av)
         std::string odb_path = vm["odb"].as<std::string>();
         std::cout << "odb path: " << odb_path <<std::endl;
         odb.reset(new OfferDb(odb_path));
+    } 
+    if (vm.count("bdb")) {
+        std::string bdb_path = vm["bdb"].as<std::string>();
+        std::cout << "bdb path: " << bdb_path <<std::endl;
+        bdb.reset(new BrandDb(bdb_path));
     } 
     if (vm.count("historydb")) {
         std::string hdb_path = vm["historydb"].as<std::string>();
@@ -253,7 +261,7 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
         LOG(INFO)<<"raw generator, mode: "<<mode<<std::endl;
-        RawScdGenerator generator(odb.get(), historydb.get(), mode, logserver_config.get(), imgserver_config.get());
+        RawScdGenerator generator(odb.get(), mode, imgserver_config.get());
         if(!mobile_source.empty())
         {
             if(boost::filesystem::exists(mobile_source))
@@ -407,7 +415,7 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5moScdGenerator generator(odb.get(), historydb.get(), logserver_config.get());
+        B5moScdGenerator generator(odb.get());
         if(!generator.Generate(mdb_instance, last_mdb_instance))
         {
             return EXIT_FAILURE;
@@ -431,7 +439,7 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5mpProcessor processor(historydb.get(), mdb_instance, last_mdb_instance, logserver_config.get());
+        B5mpProcessor processor(mdb_instance, last_mdb_instance, bdb.get());
         if(!processor.Generate())
         {
             std::cout<<"b5mp processor failed"<<std::endl;
@@ -444,7 +452,7 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5mcScdGenerator generator(odb.get());
+        B5mcScdGenerator generator(odb.get(), bdb.get());
         if(!generator.Generate(scd_path, mdb_instance))
         {
             return EXIT_FAILURE;

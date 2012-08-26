@@ -3,7 +3,7 @@
 using namespace sf1r;
 
 ProductProperty::ProductProperty()
-:itemcount(0)
+:itemcount(0), independent(false)
 {
 }
 
@@ -36,6 +36,7 @@ bool ProductProperty::Parse(const Document& doc)
         LOG(ERROR)<<"parse doc error"<<std::endl;
         return false;
     }
+    SetIndependent();
     //LOG(INFO)<<"find oid "<<oid<<std::endl;
     UString usource;
     UString uprice;
@@ -93,8 +94,28 @@ void ProductProperty::Set(Document& doc) const
     }
  
     doc.property("itemcount") = itemcount;
+    if(independent)
+    {
+        doc.property("independent") = (int64_t)1;
+    }
+    else
+    {
+        doc.property("independent") = (int64_t)0;
+    }
     doc.eraseProperty("uuid");
     doc.eraseProperty("olduuid");
+}
+
+void ProductProperty::SetIndependent()
+{
+    if(itemcount==1 && pid==oid)
+    {
+        independent = true;
+    }
+    else
+    {
+        independent = false;
+    }
 }
 
 std::string ProductProperty::GetSourceString() const
@@ -144,6 +165,7 @@ ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
         old_offerids.insert(*oit);
     }
     itemcount+=other.itemcount;
+    SetIndependent();
     return *this;
 }
 

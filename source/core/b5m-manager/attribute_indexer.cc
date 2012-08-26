@@ -1355,7 +1355,7 @@ void AttributeIndexer::BuildProductDocuments_()
         UString nav(snav, UString::UTF_8);
         id_manager_->Set(nav, aid);
         UString category, attrib_name, attrib_value;
-        std::cout<<"snav : "<<snav<<std::endl;
+        //std::cout<<"snav : "<<snav<<std::endl;
         SplitAttribRep(nav, category, attrib_name, attrib_value);
         std::vector<AttribId> aid_list;
         index_->get(attrib_value, aid_list);

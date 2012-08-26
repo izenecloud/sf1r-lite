@@ -28,12 +28,15 @@ namespace sf1r {
         int64_t itemcount;
         UString oid;
         OfferIdSetType  old_offerids;
+        bool independent;
 
         ProductProperty();
 
         bool Parse(const Document& doc);
 
         void Set(Document& doc) const;
+
+        void SetIndependent();
 
 
         std::string GetSourceString() const;

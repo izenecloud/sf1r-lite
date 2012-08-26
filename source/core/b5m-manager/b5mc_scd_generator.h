@@ -4,11 +4,12 @@
 #include <string>
 #include <vector>
 #include "offer_db.h"
+#include "brand_db.h"
 
 namespace sf1r {
     class B5mcScdGenerator {
     public:
-        B5mcScdGenerator(OfferDb* odb);
+        B5mcScdGenerator(OfferDb* odb, BrandDb* bdb);
 
         bool Generate(const std::string& scd_path, const std::string& mdb_instance);
 
@@ -19,6 +20,7 @@ namespace sf1r {
 
     private:
         OfferDb* odb_;
+        BrandDb* bdb_;
     };
 
 }
