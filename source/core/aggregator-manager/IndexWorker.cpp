@@ -9,6 +9,7 @@
 #include <mining-manager/MiningManager.h>
 #include <common/NumericPropertyTable.h>
 #include <common/NumericRangePropertyTable.h>
+#include <common/RTypeStringPropTable.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <log-manager/ProductCount.h>
@@ -672,6 +673,132 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     return ret;
 }
 
+bool IndexWorker::updateDocumentInplace(const Value& request)
+{
+    docid_t docid;
+    uint128_t num_docid = Utilities::md5ToUint128(asString(request[DOCID]));
+    if (!idManager_->getDocIdByDocName(num_docid, docid, false))
+    {
+        LOG(WARNING) << "updating in place error, document not exist, DOCID: " << asString(request[DOCID]) << std::endl;
+        return false;
+    }
+    // get the update property detail
+    Value update_detail = request["update"];
+    Value::ArrayType* update_propertys = update_detail.getPtr<Value::ArrayType>();
+    if (update_propertys == NULL || update_propertys->size() == 0)
+    {
+        LOG(WARNING) << "updating in place error, detail property empty." << std::endl;
+        return false;
+    }
+
+    Value new_document;
+    new_document[DOCID] = asString(request[DOCID]);
+
+    typedef Value::ArrayType::iterator iterator;
+    for (iterator it = update_propertys->begin(); it != update_propertys->end(); ++it)
+    {
+        if(!it->hasKey("property") || !it->hasKey("op") || !it->hasKey("opvalue"))
+            return false;
+
+        std::string propname = asString((*it)["property"]);
+        std::string op = asString((*it)["op"]);
+        std::string opvalue = asString((*it)["opvalue"]);
+        PropertyValue oldvalue;
+        // get old property first, if old property not exist, inplace update will fail.
+        if(documentManager_->getPropertyValue(docid, propname, oldvalue))
+        {
+            tempPropertyConfig.propertyName_ = propname;
+            //IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+            DocumentSchema::const_iterator iter = bundleConfig_->documentSchema_.find(tempPropertyConfig);
+
+            bool isInSchema = (iter != bundleConfig_->documentSchema_.end());
+            int inplace_type = 0;
+            // determine how to do the inplace operation by different property type.
+            if(isInSchema)
+            {
+                switch(iter->propertyType_)
+                {
+                case INT8_PROPERTY_TYPE:
+                case INT16_PROPERTY_TYPE:
+                case INT32_PROPERTY_TYPE:
+                case INT64_PROPERTY_TYPE:
+                case DATETIME_PROPERTY_TYPE:
+                    {
+                        inplace_type = 0;
+                        break;
+                    }
+                case FLOAT_PROPERTY_TYPE:
+                    {
+                        inplace_type = 1;
+                        break;
+                    }
+                case DOUBLE_PROPERTY_TYPE:
+                    {
+                        inplace_type = 2;
+                        break;
+                    }
+                    break;
+                default:
+                    {
+                        LOG(INFO) << "property type: " << iter->propertyType_ << " does not support the inplace update." << std::endl;
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                LOG(INFO) << "property : " << propname << " does not support the inplace update." << std::endl;
+                return false;
+            }
+
+            try
+            {
+                std::string new_propvalue;
+                if(op == "add")
+                {
+                    if(inplace_type == 0 )
+                    {
+                        int64_t newv = boost::lexical_cast<int64_t>(oldvalue) + boost::lexical_cast<int64_t>(opvalue);
+                        new_propvalue = boost::lexical_cast<std::string>(newv);
+                    }
+                    else if(inplace_type == 1)
+                    {
+                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<float>(oldvalue) +
+                                boost::lexical_cast<float>(opvalue));
+                    }
+                    else if(inplace_type == 2)
+                    {
+                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<double>(oldvalue) + boost::lexical_cast<double>(opvalue));
+                    }
+                    else
+                    {
+                        assert(false);
+                    }
+                }
+                else
+                {
+                    LOG(INFO) << "not supported update method inplace. method: "  << op << std::endl;
+                    return false;
+                }
+                new_document[propname] = new_propvalue;
+            }
+            catch(std::runtime_error& e)
+            {
+                LOG(WARNING) << "do inplace update failed. " << e.what() << endl;
+                return false;
+            }
+        }
+        else
+        {
+            LOG(INFO) << "update property not found in document, property: " << propname << std::endl;
+            return false;
+        }
+    }
+
+    // do the common update.
+    return updateDocument(new_document);
+}
+
 bool IndexWorker::destroyDocument(const Value& documentValue)
 {
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
@@ -1024,8 +1151,6 @@ bool IndexWorker::insertDoc_(
     if (hooker_)
     {
         ///TODO compatibility issue:
-        ///timestamp
-        if (-1 != timestamp) timestamp *= 1000000;
         if (!hooker_->HookInsert(document, indexDocument, timestamp))
             return false;
     }
@@ -1271,6 +1396,7 @@ bool IndexWorker::prepareDocument_(
     SCDDoc::iterator p = doc.begin();
     bool dateExistInSCD = false;
 
+
     for (; p != doc.end(); p++)
     {
         const std::string& fieldStr = p->first;
@@ -1341,30 +1467,41 @@ bool IndexWorker::prepareDocument_(
             {
             case STRING_PROPERTY_TYPE:
                 {
-                    PropertyValue propData(propertyValueU);
-                    document.property(fieldStr).swap(propData);
-                    analysisInfo.clear();
-                    analysisInfo = iter->getAnalysisInfo();
-                    if (!analysisInfo.analyzerId_.empty())
+                    if(iter->isRTypeString())
                     {
-                        CREATE_SCOPED_PROFILER (prepare_summary, "IndexWorker", "IndexWorker::prepareDocument_::Summary");
-                        unsigned int numOfSummary = 0;
-                        if ((iter->getIsSnippet() || iter->getIsSummary()))
+                        boost::shared_ptr<RTypeStringPropTable>& rtypeprop = documentManager_->getRTypeStringPropTable(iter->getName());
+                        izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
+                        std::string fieldValue;
+                        propertyValueU.convertString(fieldValue, encoding);
+                        rtypeprop->updateRTypeString(docId, fieldValue);
+                    }
+                    else
+                    {
+                        PropertyValue propData(propertyValueU);
+                        document.property(fieldStr).swap(propData);
+                        analysisInfo.clear();
+                        analysisInfo = iter->getAnalysisInfo();
+                        if (!analysisInfo.analyzerId_.empty())
                         {
-                            if (iter->getIsSummary())
+                            CREATE_SCOPED_PROFILER (prepare_summary, "IndexWorker", "IndexWorker::prepareDocument_::Summary");
+                            unsigned int numOfSummary = 0;
+                            if ((iter->getIsSnippet() || iter->getIsSummary()))
                             {
-                                numOfSummary = iter->getSummaryNum();
-                                if (numOfSummary <= 0)
-                                    numOfSummary = 1; //atleast one sentence required for summary
-                            }
+                                if (iter->getIsSummary())
+                                {
+                                    numOfSummary = iter->getSummaryNum();
+                                    if (numOfSummary <= 0)
+                                        numOfSummary = 1; //atleast one sentence required for summary
+                                }
 
-                            if (!makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
+                                if (!makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
                                         numOfSummary, sentenceOffsetList))
-                            {
-                                LOG(ERROR) << "Make Sentence Blocks Failes ";
+                                {
+                                    LOG(ERROR) << "Make Sentence Blocks Failes ";
+                                }
+                                PropertyValue propData(sentenceOffsetList);
+                                document.property(fieldStr + ".blocks").swap(propData);
                             }
-                            PropertyValue propData(sentenceOffsetList);
-                            document.property(fieldStr + ".blocks").swap(propData);
                         }
                     }
                     prepareIndexDocumentStringProperty_(docId, *p, iter, indexDocument);
@@ -1674,8 +1811,26 @@ bool IndexWorker::prepareIndexRTypeProperties_(
     CREATE_PROFILER (pid_float, "IndexWorker", "IndexWorker::prepareIndexDocument_::FLOAT");
     CREATE_PROFILER (pid_int64, "IndexWorker", "IndexWorker::prepareIndexDocument_::INT64");
 
-    DocumentManager::NumericPropertyTableMap& numericPropertyTables = documentManager_->getNumericPropertyTableMap();
     IndexerPropertyConfig indexerPropertyConfig;
+
+    DocumentManager::RTypeStringPropTableMap& rtype_string_proptable = documentManager_->getRTypeStringPropTableMap();
+    for(DocumentManager::RTypeStringPropTableMap::const_iterator rtype_it = rtype_string_proptable.begin();
+        rtype_it != rtype_string_proptable.end(); ++rtype_it)
+    {
+        tempPropertyConfig.propertyName_ = rtype_it->first;
+        IndexBundleSchema::iterator index_it = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+        if(index_it == bundleConfig_->indexSchema_.end())
+            continue;
+        FieldPair prop_pair;
+        std::string s_propvalue;
+        rtype_it->second->getRTypeString(docId, s_propvalue);
+        prop_pair.first = rtype_it->first;
+        prop_pair.second = UString(s_propvalue, bundleConfig_->encoding_);
+
+        prepareIndexDocumentStringProperty_(docId, prop_pair, index_it, indexDocument);
+    }
+
+    DocumentManager::NumericPropertyTableMap& numericPropertyTables = documentManager_->getNumericPropertyTableMap();
     bool ret = false;
     for (DocumentManager::NumericPropertyTableMap::const_iterator it = numericPropertyTables.begin();
             it != numericPropertyTables.end(); ++it)
@@ -2048,6 +2203,9 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
         IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
 
         if (iter == bundleConfig_->indexSchema_.end())
+            continue;
+
+        if( iter->isRTypeString() )
             continue;
 
         if (iter->isIndex())

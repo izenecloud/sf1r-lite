@@ -472,6 +472,63 @@ void DocumentsController::update()
 }
 
 /**
+ * @brief Action @b update in place. Update a document and write to SCD in specific collection, call index command to apply the changes.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Update document in this collection.
+ * - @b resource* (@c Object): specify the docid and the update operation.
+ * - @b DOCID(@c String)  DOCID is required, which is a unique document identifier specified by
+ *   client.
+ * - @b update (@c Array): specify the detail update content.
+ *   Each element is a update operation for the specify property.
+ *   - @b op (@c String) What the operation will be done on the given property. 
+ *   - @b property (@c String) property name that would apply the change. 
+ *   - @b opvalue (@c String) the operation value.
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ *
+
+ * @section response
+ *
+ * No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "resource": {
+ *     "DOCID": "post.1",
+ *     "update": [
+ *     { "op": "add/sub", "property":"price", "opvalue": "10" },
+ *     { "op": "add/sub", "property":"count", "opvalue": "2" }
+ *     ]
+ *   }
+ * }
+ * @endcode
+ */
+void DocumentsController::update_inplace()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
+    bool requestSent = collectionHandler_->update_inplace(
+        request()[Keys::resource]
+    );
+
+    if (!requestSent)
+    {
+        response().addError(
+            "Request Failed."
+        );
+        return;
+    }
+}
+
+
+/**
  * @brief Action @b destroy. Destroy a document and write to SCD in specific collection, call index command to apply the changes.
  *
  * @section request

@@ -88,7 +88,7 @@ std::string MiningManager::system_working_path_;
 
 MiningManager::MiningManager(
         const std::string& collectionDataPath,
-        const std::string& queryDataPath,
+        const CollectionPath& collectionPath,
         const boost::shared_ptr<DocumentManager>& documentManager,
         const boost::shared_ptr<IndexManager>& index_manager,
         const boost::shared_ptr<SearchManager>& searchManager,
@@ -98,7 +98,8 @@ MiningManager::MiningManager(
         const MiningConfig& miningConfig,
         const MiningSchema& miningSchema)
     : collectionDataPath_(collectionDataPath)
-    , queryDataPath_(queryDataPath)
+    , queryDataPath_(collectionPath.getQueryDataPath())
+    , collectionPath_(collectionPath)
     , collectionName_(collectionName)
     , documentSchema_(documentSchema)
     , miningConfig_(miningConfig)
@@ -243,7 +244,7 @@ bool MiningManager::open()
 
         qcManager_.reset(new QueryCorrectionSubmanager(queryDataPath_, miningConfig_.query_correction_param.enableEK,
                          miningConfig_.query_correction_param.enableCN));
-        rmDb_.reset(new RecommendManager(queryDataPath_, collectionName_, mining_schema_, document_manager_,
+        rmDb_.reset(new RecommendManager(collectionName_, collectionPath_, mining_schema_, miningConfig_, document_manager_,
                                          qcManager_, analyzer_, logdays));
 
         if(!rmDb_->open())
@@ -332,8 +333,10 @@ bool MiningManager::open()
             if (groupManager_) delete groupManager_;
             std::string groupPath = prefix_path + "/group";
 
-            groupManager_ = new faceted::GroupManager(document_manager_.get(), groupPath);
-            if (! groupManager_->open(mining_schema_.group_properties))
+            groupManager_ = new faceted::GroupManager(
+                mining_schema_.group_config_map,
+                *document_manager_, groupPath);
+            if (! groupManager_->open())
             {
                 std::cerr << "open GROUP failed" << std::endl;
                 return false;
@@ -356,7 +359,9 @@ bool MiningManager::open()
 
         if (groupManager_ || attrManager_)
         {
-            faceted::GroupFilterBuilder* filterBuilder = new faceted::GroupFilterBuilder(mining_schema_.group_properties,
+            faceted::GroupFilterBuilder* filterBuilder =
+                new faceted::GroupFilterBuilder(
+                    mining_schema_.group_config_map,
                     groupManager_,
                     attrManager_,
                     searchManager_.get());
@@ -377,13 +382,13 @@ bool MiningManager::open()
                 return false;
             }
 
-            for (std::vector<GroupConfig>::const_iterator it = mining_schema_.group_properties.begin();
-                    it != mining_schema_.group_properties.end(); ++it)
+            for (GroupConfigMap::const_iterator it = mining_schema_.group_config_map.begin();
+                    it != mining_schema_.group_config_map.end(); ++it)
             {
-                if (! it->isStringType())
+                if (! it->second.isStringType())
                     continue;
 
-                const std::string& propName = it->propName;
+                const std::string& propName = it->first;
                 if (!groupLabelLoggerMap_[propName])
                 {
                     std::auto_ptr<GroupLabelLogger> loggerPtr(new GroupLabelLogger(logPath, propName));
@@ -579,6 +584,7 @@ bool MiningManager::DoMiningCollection()
             {
                 bool b = document_manager_->getDocument(docid, doc);
                 if (!b) continue;
+                document_manager_->getRTypePropertiesForDocument(docid, doc);
                 Document::property_iterator property_it = doc.propertyBegin();
                 while (property_it != doc.propertyEnd())
                 {

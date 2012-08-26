@@ -92,14 +92,17 @@ bool PriceHistoryRow::insert(const string& name, const string& value)
         cerr << "Bad insert!" << endl;
         return false;
     }
-    priceHistory_.push_back(std::make_pair(deserializeLong(name), Utilities::fromBytes<ProductPrice>(value)));
+    const time_t& timestamp = deserializeLong(name);
+    if (timestamp > 0) // XXX should be deleted after Cassandra migration
+        priceHistory_.push_back(std::make_pair(timestamp, Utilities::fromBytes<ProductPrice>(value)));
     return true;
 }
 
 void PriceHistoryRow::insert(time_t timestamp, ProductPrice price)
 {
     clear();
-    priceHistory_.push_back(std::make_pair(timestamp, price));
+    if (timestamp > 0) // XXX should be deleted after Cassandra migration
+        priceHistory_.push_back(std::make_pair(timestamp, price));
 }
 
 void PriceHistoryRow::resetHistory(uint32_t index, time_t timestamp, ProductPrice price)

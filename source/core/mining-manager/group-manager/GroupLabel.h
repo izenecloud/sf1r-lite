@@ -10,11 +10,10 @@
 
 #include "../faceted-submanager/faceted_types.h"
 #include "GroupCounter.h"
-#include "PropSharedLockInserter.h"
 
 NS_FACETED_BEGIN
 
-class GroupLabel : public PropSharedLockInserter
+class GroupLabel
 {
 public:
     GroupLabel() : counter_(NULL) {}

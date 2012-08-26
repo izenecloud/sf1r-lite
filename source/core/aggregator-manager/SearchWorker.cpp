@@ -81,7 +81,8 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
     {
         if (idManager_->getDocIdByDocName(Utilities::md5ToUint128(*it), internalId, false))
         {
-            idList.push_back(internalId);
+            if(!documentManager_->isDeleted(internalId))
+                idList.push_back(internalId);
         }
     }
 

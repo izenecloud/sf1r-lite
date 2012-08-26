@@ -6,6 +6,7 @@
 #include <boost/thread.hpp>
 #include <glog/logging.h>
 #include <sstream>
+#include <unistd.h> // sleep
 
 using namespace sf1r;
 
@@ -90,10 +91,18 @@ bool SynchroProducer::wait(int timeout)
     int step = 1;
     int waited = 0;
     LOG(INFO) << SYNCHRO_PRODUCER << " waiting for consumer (timeout: " << timeout << ")";
+
+    // in order to fix the bug https://ssl.izenesoft.cn/bug/show_bug.cgi?id=88,
+    // in below while loops, ::sleep() is called instead of
+    // boost::this_thread::sleep(), that's because on some platforms, it's
+    // found that boost::this_thread::sleep() returns immediately.
+    // reference: https://svn.boost.org/trac/boost/ticket/5034
+
     while (!watchedConsumer_)
     {
         LOG(INFO) << SYNCHRO_PRODUCER << " sleeping for " << step << " seconds ...";
-        boost::this_thread::sleep(boost::posix_time::seconds(step));
+        //boost::this_thread::sleep(boost::posix_time::seconds(step));
+        ::sleep(step);
         waited += step;
         if (waited >= timeout)
         {
@@ -107,7 +116,8 @@ bool SynchroProducer::wait(int timeout)
     {
         LOG(INFO) << SYNCHRO_PRODUCER << " is synchronizing, "
                   << "sleeping for 1 second ...";
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
+        //boost::this_thread::sleep(boost::posix_time::seconds(1));
+        ::sleep(1);
     }
 
     return result_on_consumed_;

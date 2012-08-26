@@ -19,6 +19,7 @@
 #include <configuration-manager/CollectionParameterConfig.h>
 #include <configuration-manager/CassandraStorageConfig.h>
 #include <configuration-manager/LogServerConnectionConfig.h>
+#include <configuration-manager/GroupConfig.h>
 #include <mining-manager/faceted-submanager/ontology_rep_item.h>
 #include <core/common/TermTypeDetector.h>
 
@@ -777,7 +778,7 @@ private:
     /// @param productRankingNode Pointer to the Element
     void parseProductRankingNode(const ticpp::Element* productRankingNode, CollectionMeta& collectionMeta);
 
-    void checkStringGroupProperty(const std::string& propName, const std::vector<GroupConfig>& groupProps);
+    void checkStringGroupProperty(const std::string& propName, const GroupConfigMap& groupConfigMap);
     void checkNumericFilterProperty(const std::string& propName, const IndexBundleSchema& indexSchema);
 
     /// @brief                  Parse <RecommendBundle> <Parameter>

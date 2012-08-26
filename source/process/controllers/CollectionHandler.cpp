@@ -94,6 +94,13 @@ bool CollectionHandler::update(const ::izenelib::driver::Value& document)
     return true;
 }
 
+bool CollectionHandler::update_inplace(const ::izenelib::driver::Value& request)
+{
+    task_type task = boost::bind(&IndexTaskService::updateDocumentInplace, indexTaskService_, request);
+    JobScheduler::get()->addTask(task, collection_);
+    return true;
+}
+
 bool CollectionHandler::destroy(const ::izenelib::driver::Value& document)
 {
     task_type task = boost::bind(&IndexTaskService::destroyDocument, indexTaskService_, document);

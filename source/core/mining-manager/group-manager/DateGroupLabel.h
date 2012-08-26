@@ -29,11 +29,6 @@ public:
 
     virtual bool test(docid_t doc) const;
 
-    virtual void insertSharedLock(SharedLockSet& lockSet) const
-    {
-        lockSet.insert(&dateTable_);
-    }
-
 private:
     const DateGroupTable& dateTable_;
 

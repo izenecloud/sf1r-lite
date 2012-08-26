@@ -151,8 +151,6 @@ AttrTable::nid_t AttrTable::insertNameId(const izenelib::util::UString& name)
 
 AttrTable::nid_t AttrTable::nameId(const izenelib::util::UString& name) const
 {
-    ScopedReadLock lock(mutex_);
-
     nid_t nameId = 0;
 
     std::map<izenelib::util::UString, nid_t>::const_iterator it = nameStrMap_.find(name);
@@ -205,8 +203,6 @@ AttrTable::vid_t AttrTable::insertValueId(nid_t nameId, const izenelib::util::US
 
 AttrTable::vid_t AttrTable::valueId(nid_t nameId, const izenelib::util::UString& value) const
 {
-    ScopedReadLock lock(mutex_);
-
     assert(nameId < valueStrTable_.size());
     vid_t valueId = 0;
     const ValueStrMap& valueStrMap = valueStrTable_[nameId];

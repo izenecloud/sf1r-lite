@@ -13,11 +13,11 @@ IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collection
     , bUnigramSearchMode_(false)
     , indexMultilangGranularity_(la::FIELD_LEVEL)
     , isAutoRebuild_(false)
+    , enable_parallel_searching_(false)
     , isMasterAggregator_(false)
     , isWorkerNode_(false)
     , encoding_(izenelib::util::UString::UNKNOWN)
     , wildcardType_("unigram")
-    , enable_parallel_searching_(false)
 {}
 
 void IndexBundleConfiguration::setSchema(const DocumentSchema& documentSchema)

@@ -74,13 +74,6 @@ public:
     nid_t insertNameId(const izenelib::util::UString& name);
 
     /**
-     * Get attribute name id.
-     * @param name attribute name string
-     * @return name id, if @p name is not inserted before, 0 is returned
-     */
-    nid_t nameId(const izenelib::util::UString& name) const;
-
-    /**
      * Insert attribute value id.
      * @param nameId the attribute name id
      * @param value attribute value string
@@ -91,14 +84,6 @@ public:
      * different @p nameId must return different value id
      */
     vid_t insertValueId(nid_t nameId, const izenelib::util::UString& value);
-
-    /**
-     * Get attribute value id.
-     * @param nameId the attribute name id
-     * @param value attribute value string
-     * @return value id, if @p value is not inserted before, 0 is returned
-     */
-    vid_t valueId(nid_t nameId, const izenelib::util::UString& value) const;
 
     /**
      * @attention before calling below public functions,
@@ -116,6 +101,21 @@ public:
     const izenelib::util::UString& nameStr(nid_t nameId) const { return nameStrVec_[nameId]; }
 
     const izenelib::util::UString& valueStr(vid_t valueId) const { return valueStrVec_[valueId]; }
+
+    /**
+     * Get attribute name id.
+     * @param name attribute name string
+     * @return name id, if @p name is not inserted before, 0 is returned
+     */
+    nid_t nameId(const izenelib::util::UString& name) const;
+
+    /**
+     * Get attribute value id.
+     * @param nameId the attribute name id
+     * @param value attribute value string
+     * @return value id, if @p value is not inserted before, 0 is returned
+     */
+    vid_t valueId(nid_t nameId, const izenelib::util::UString& value) const;
 
     /**
      * Get the name id of value id @p valueId.

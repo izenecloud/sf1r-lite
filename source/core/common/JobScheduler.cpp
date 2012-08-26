@@ -43,6 +43,11 @@ void JobScheduler::addTask(task_type task, const std::string& collection)
     asynchronousTasks_.push(taskCollectionPair);
 }
 
+void JobScheduler::setCapacity(std::size_t capacity)
+{
+    asynchronousTasks_.resize(capacity);
+}
+
 void JobScheduler::runAsynchronousTasks_()
 {
     try

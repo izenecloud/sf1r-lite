@@ -64,6 +64,10 @@ bool IndexTaskService::updateDocument(const Value& documentValue)
 {
     return indexWorker_->updateDocument(documentValue);
 }
+bool IndexTaskService::updateDocumentInplace(const Value& request)
+{
+    return indexWorker_->updateDocumentInplace(request);
+}
 
 bool IndexTaskService::destroyDocument(const Value& documentValue)
 {

@@ -39,8 +39,6 @@ private:
 
     std::string getCurrentCollectionDataPath_() const;
 
-    std::string getQueryDataPath_() const;
-
 public:
     MiningBundleActivator();
     virtual ~MiningBundleActivator();

@@ -11,6 +11,7 @@
 #include <mining-manager/group-manager/GroupParam.h>
 #include <mining-manager/group-manager/GroupRep.h>
 #include <configuration-manager/PropertyConfig.h>
+#include <configuration-manager/GroupConfig.h>
 
 #include <string>
 #include <vector>
@@ -21,7 +22,6 @@ namespace sf1r
 
 class NumericPropertyTableBuilderStub;
 class DocumentManager;
-class GroupConfig;
 
 namespace faceted
 {
@@ -58,11 +58,13 @@ public:
 
     void resetGroupManager();
 
+    void configGroupPropRebuild();
+
     void createDocument(int num);
 
     void checkGetGroupRep();
 
-    void checkGroupRepMerge();
+    static void checkGroupRepMerge();
 
 private:
     void initConfig_();
@@ -94,9 +96,9 @@ private:
     ) const;
 
 protected:
-    set<PropertyConfig, PropertyComp> schema_;
+    std::set<PropertyConfig, PropertyComp> schema_;
     std::vector<std::string> propNames_;
-    std::vector<GroupConfig> groupConfigs_;
+    GroupConfigMap groupConfigMap_;
 
     DocumentManager* documentManager_;
     std::vector<DocInput> docInputVec_;

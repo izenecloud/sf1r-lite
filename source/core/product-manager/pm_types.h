@@ -30,6 +30,6 @@ struct ProductEditOption
 
 }
 
-MAKE_MEMCPY_TYPE(sf1r::TPCQueue)
+//MAKE_MEMCPY_TYPE(sf1r::TPCQueue)
 
 #endif

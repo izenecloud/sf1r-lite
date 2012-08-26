@@ -128,12 +128,6 @@ std::string MiningBundleActivator::getCollectionDataPath_() const
     return config_->collPath_.getCollectionDataPath();
 }
 
-std::string MiningBundleActivator::getQueryDataPath_() const
-{
-    return config_->collPath_.getQueryDataPath();
-}
-
-
 boost::shared_ptr<MiningManager>
 MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) const
 {
@@ -144,7 +138,7 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
     ret.reset(
             new MiningManager(
                 dir,
-                getQueryDataPath_(),
+                config_->collPath_,
                 indexService->searchWorker_->documentManager_,
                 indexService->searchWorker_->indexManager_,
                 indexService->searchWorker_->searchManager_,
