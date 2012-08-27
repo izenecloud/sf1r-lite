@@ -21,15 +21,14 @@ void renderUStrValue(
 
 SplitPropValueRenderer::SplitPropValueRenderer(const MiningSchema& miningSchema)
 {
-    const std::vector<GroupConfig>& groupConfigs =
-        miningSchema.group_properties;
+    const GroupConfigMap& groupConfigMap = miningSchema.group_config_map;
 
-    for (std::vector<GroupConfig>::const_iterator it = groupConfigs.begin();
-        it != groupConfigs.end(); ++it)
+    for (GroupConfigMap::const_iterator it = groupConfigMap.begin();
+        it != groupConfigMap.end(); ++it)
     {
-        if (it->isStringType())
+        if (it->second.isStringType())
         {
-            groupStrProps_.insert(it->propName);
+            groupStrProps_.insert(it->first);
         }
     }
 

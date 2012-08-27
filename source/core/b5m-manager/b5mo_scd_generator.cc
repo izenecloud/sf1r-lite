@@ -17,10 +17,8 @@
 
 using namespace sf1r;
 
-B5moScdGenerator::B5moScdGenerator(OfferDb* odb,
-    B5MHistoryDBHelper* hdb,
-    LogServerConnectionConfig* config)
-:odb_(odb), historydb_(hdb), log_server_cfg_(config)
+B5moScdGenerator::B5moScdGenerator(OfferDb* odb)
+:odb_(odb)
 {
 }
 
@@ -35,33 +33,33 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
             return false;
         }
     }
-    if(historydb_)
-    {
-        if(!historydb_->is_open())
-        {
-            if(!historydb_->open())
-            {
-                LOG(ERROR)<<"B5MHistoryDBHelper open fail"<<std::endl;
-                return false;
-            }
-        }
-    }
-    else
-    {
-        if(log_server_cfg_ == NULL)
-            return false;
-        // use logserver instead of local history 
-        if(!LogServerClient::Init(*log_server_cfg_))
-        {
-            LOG(ERROR) << "Log Server Init failed." << std::endl;
-            return false;
-        }
-        if(!LogServerClient::Test())
-        {
-            LOG(ERROR) << "log server test failed" << std::endl;
-            return false;
-        }
-    }
+    //if(historydb_)
+    //{
+        //if(!historydb_->is_open())
+        //{
+            //if(!historydb_->open())
+            //{
+                //LOG(ERROR)<<"B5MHistoryDBHelper open fail"<<std::endl;
+                //return false;
+            //}
+        //}
+    //}
+    //else
+    //{
+        //if(log_server_cfg_ == NULL)
+            //return false;
+        //// use logserver instead of local history 
+        //if(!LogServerClient::Init(*log_server_cfg_))
+        //{
+            //LOG(ERROR) << "Log Server Init failed." << std::endl;
+            //return false;
+        //}
+        //if(!LogServerClient::Test())
+        //{
+            //LOG(ERROR) << "log server test failed" << std::endl;
+            //return false;
+        //}
+    //}
 
     boost::unordered_set<uint128_t> pid_changed_oid;
 
@@ -127,8 +125,8 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
                 odb_->insert(sdocid, spid);
             }
             doc.property("uuid") = UString(spid, UString::UTF_8);
-            std::string olduuid;
-            doc.getString("olduuid", olduuid);
+            //std::string olduuid;
+            //doc.getString("olduuid", olduuid);
 
             uint128_t oid = B5MHelper::StringToUint128(sdocid);
             if(!pid_changed_oid.empty())
@@ -142,56 +140,56 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
             }
             else if(scd_type==UPDATE_SCD)
             {
-                if(!soldpid.empty() && soldpid != spid)
-                {
-                    if(olduuid.empty())
-                    {
-                        olduuid = soldpid;
-                    }
-                    else
-                    {
-                        olduuid += "," + soldpid;
-                    }
-                    LOG(INFO)<<"offer's pid has changed from " << soldpid << " to " << spid << std::endl;
-                    doc.property("olduuid") = UString(olduuid, UString::UTF_8);
-                    if(historydb_)
-                    {
-                        historydb_->offer_insert(sdocid, soldpid);
-                        historydb_->pd_insert(soldpid, sdocid);
-                    }
-                    else
-                    {
-                        LogServerClient::AddOldUUID(sdocid, soldpid);
-                        LogServerClient::AddOldDocId(soldpid, sdocid);
-                    }
-                }
+                //if(!soldpid.empty() && soldpid != spid)
+                //{
+                    //if(olduuid.empty())
+                    //{
+                        //olduuid = soldpid;
+                    //}
+                    //else
+                    //{
+                        //olduuid += "," + soldpid;
+                    //}
+                    //LOG(INFO)<<"offer's pid has changed from " << soldpid << " to " << spid << std::endl;
+                    //doc.property("olduuid") = UString(olduuid, UString::UTF_8);
+                    //if(historydb_)
+                    //{
+                        //historydb_->offer_insert(sdocid, soldpid);
+                        //historydb_->pd_insert(soldpid, sdocid);
+                    //}
+                    //else
+                    //{
+                        //LogServerClient::AddOldUUID(sdocid, soldpid);
+                        //LogServerClient::AddOldDocId(soldpid, sdocid);
+                    //}
+                //}
                 b5mo_u.Append(doc);
             }
             else if(scd_type==DELETE_SCD)
             {
                 b5mo_d.Append(doc);
-                if(historydb_)
-                {
-                    std::set<std::string> s_oldpids;
-                    historydb_->pd_remove_offerid(spid, sdocid);
-                    // delete the offerid from all its history product ids
-                    historydb_->offer_get(sdocid, s_oldpids);
-                    std::set<std::string>::iterator it = s_oldpids.begin();
-                    std::set<std::string>::iterator it_end = s_oldpids.end();
-                    while(it != it_end)
-                    {
-                        if((*it).empty()) continue;
-                        historydb_->pd_remove_offerid(*it, sdocid);
-                        ++it;
-                    }
-                }
-                else
-                {
-                    std::vector<std::string> s_oldpids;
-                    LogServerClient::GetOldUUIDList(sdocid, s_oldpids);
-                    s_oldpids.push_back(spid);
-                    LogServerClient::DelOldDocId(s_oldpids, sdocid);
-                }
+                //if(historydb_)
+                //{
+                    //std::set<std::string> s_oldpids;
+                    //historydb_->pd_remove_offerid(spid, sdocid);
+                    //// delete the offerid from all its history product ids
+                    //historydb_->offer_get(sdocid, s_oldpids);
+                    //std::set<std::string>::iterator it = s_oldpids.begin();
+                    //std::set<std::string>::iterator it_end = s_oldpids.end();
+                    //while(it != it_end)
+                    //{
+                        //if((*it).empty()) continue;
+                        //historydb_->pd_remove_offerid(*it, sdocid);
+                        //++it;
+                    //}
+                //}
+                //else
+                //{
+                    //std::vector<std::string> s_oldpids;
+                    //LogServerClient::GetOldUUIDList(sdocid, s_oldpids);
+                    //s_oldpids.push_back(spid);
+                    //LogServerClient::DelOldDocId(s_oldpids, sdocid);
+                //}
             }
         }
     }
@@ -256,17 +254,17 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
     {
         LOG(WARNING)<<"odb flush error"<<std::endl;
     }
-    if(historydb_)
-    {
-        if(!historydb_->flush())
-        {
-            LOG(WARNING)<<"B5MHistoryDBHelper flush error"<<std::endl;
-        }
-    }
-    else
-    {
-        LogServerClient::Flush();
-    }
+    //if(historydb_)
+    //{
+        //if(!historydb_->flush())
+        //{
+            //LOG(WARNING)<<"B5MHistoryDBHelper flush error"<<std::endl;
+        //}
+    //}
+    //else
+    //{
+        //LogServerClient::Flush();
+    //}
  
     b5mo_i.Close();
     b5mo_u.Close();

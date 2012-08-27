@@ -9,7 +9,7 @@
 #define SF1R_GROUP_FILTER_H
 
 #include "../faceted-submanager/faceted_types.h"
-#include "PropSharedLockInserter.h"
+#include "PropSharedLockSet.h"
 
 NS_FACETED_BEGIN
 
@@ -41,9 +41,6 @@ public:
      * @return true for success, false for failure
      */
     bool initAttr(const AttrTable& attrTable);
-
-    /** lock shared data */
-    void lockShared();
 
     /**
      * Check whether doc belongs to the labels in @c groupParam_.
@@ -83,10 +80,7 @@ private:
     AttrCounter* attrCounter_;
 
     /** a set of shared locks */
-    PropSharedLockInserter::SharedLockSet sharedLockSet_;
-
-    /** whether @c lockShared() is called */
-    bool isSharedLocked_;
+    PropSharedLockSet sharedLockSet_;
 };
 
 NS_FACETED_END

@@ -321,6 +321,7 @@ void RecommendManager::RebuildForRecommend(
         {
             bool b = document_manager_->getDocument(docid, doc);
             if (!b) continue;
+            document_manager_->getRTypePropertiesForDocument(docid, doc);
             Document::property_iterator property_it = doc.propertyBegin();
             while (property_it != doc.propertyEnd())
             {

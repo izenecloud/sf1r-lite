@@ -6,30 +6,12 @@ namespace
 {
 const char* NUMERIC_RANGE_DELIMITER = "-";
 
+using namespace sf1r;
 using namespace sf1r::faceted;
-
-typedef std::vector<sf1r::GroupConfig> GroupConfigVec;
-typedef GroupConfigVec::const_iterator GroupConfigIter;
-
-GroupConfigIter findGroupConfig(
-    const GroupConfigVec& groupConfigs,
-    const std::string& propName
-)
-{
-    GroupConfigIter it = groupConfigs.begin();
-
-    for (; it != groupConfigs.end(); ++it)
-    {
-        if (it->propName == propName)
-            break;
-    }
-
-    return it;
-}
 
 bool checkGroupPropParam(
     const GroupPropParam& param,
-    const GroupConfigVec& configs,
+    const GroupConfigMap& configMap,
     std::string& message
 )
 {
@@ -43,21 +25,23 @@ bool checkGroupPropParam(
         return false;
     }
 
-    GroupConfigIter configIt = findGroupConfig(configs, propName);
-    if (configIt == configs.end())
+    GroupConfigMap::const_iterator configIt = configMap.find(propName);
+    if (configIt == configMap.end())
     {
         message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
         return false;
     }
+    const GroupConfig& groupConfig = configIt->second;
 
     if (! subPropName.empty())
     {
-        GroupConfigIter subConfigIt = findGroupConfig(configs, subPropName);
-        if (subConfigIt == configs.end())
+        GroupConfigMap::const_iterator subConfigIt = configMap.find(subPropName);
+        if (subConfigIt == configMap.end())
         {
             message = "property " + subPropName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
             return false;
         }
+        const GroupConfig& subConfig = subConfigIt->second;
 
         if (subPropName == propName)
         {
@@ -65,7 +49,7 @@ bool checkGroupPropParam(
             return false;
         }
 
-        if (subConfigIt->isDateTimeType())
+        if (subConfig.isDateTimeType())
         {
             message = "request[group][sub_property] does not support datetime property " + subPropName;
             return false;
@@ -80,21 +64,21 @@ bool checkGroupPropParam(
             return false;
         }
 
-        if (! configIt->isNumericType())
+        if (! groupConfig.isNumericType())
         {
             message = "property type of " + propName + " should be int or float when request[group][range] is true.";
             return false;
         }
     }
 
-    if (!configIt->isDateTimeType() &&
+    if (!groupConfig.isDateTimeType() &&
         !unit.empty())
     {
         message = "as property type of " + propName + " is not datetime, request[group][unit] should be empty.";
         return false;
     }
 
-    if (configIt->isDateTimeType())
+    if (groupConfig.isDateTimeType())
     {
         if (unit.empty())
         {
@@ -201,18 +185,18 @@ bool GroupParam::checkGroupParam_(const MiningSchema& miningSchema, std::string&
         return false;
     }
 
-    return checkGroupProps_(miningSchema.group_properties, message) &&
-           checkGroupLabels_(miningSchema.group_properties, message);
+    return checkGroupProps_(miningSchema.group_config_map, message) &&
+           checkGroupLabels_(miningSchema.group_config_map, message);
 }
 
-bool GroupParam::checkGroupProps_(const std::vector<GroupConfig>& groupConfigs, std::string& message) const
+bool GroupParam::checkGroupProps_(const GroupConfigMap& groupConfigMap, std::string& message) const
 {
     for (std::vector<GroupPropParam>::const_iterator paramIt = groupProps_.begin();
         paramIt != groupProps_.end(); ++paramIt)
     {
         const std::string& propName = paramIt->property_;
 
-        if (! checkGroupPropParam(*paramIt, groupConfigs, message))
+        if (! checkGroupPropParam(*paramIt, groupConfigMap, message))
             return false;
 
         if (paramIt->isRange_ && isRangeLabel_(propName))
@@ -225,21 +209,22 @@ bool GroupParam::checkGroupProps_(const std::vector<GroupConfig>& groupConfigs, 
     return true;
 }
 
-bool GroupParam::checkGroupLabels_(const std::vector<GroupConfig>& groupConfigs, std::string& message) const
+bool GroupParam::checkGroupLabels_(const GroupConfigMap& groupConfigMap, std::string& message) const
 {
     for (GroupLabelMap::const_iterator labelIt = groupLabels_.begin();
         labelIt != groupLabels_.end(); ++labelIt)
     {
         const std::string& propName = labelIt->first;
 
-        GroupConfigIter configIt = findGroupConfig(groupConfigs, propName);
-        if (configIt == groupConfigs.end())
+        GroupConfigMap::const_iterator configIt = groupConfigMap.find(propName);
+        if (configIt == groupConfigMap.end())
         {
             message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
             return false;
         }
+        const GroupConfig& groupConfig = configIt->second;
 
-        if (configIt->isDateTimeType() &&
+        if (groupConfig.isDateTimeType() &&
             !checkDateLabel(labelIt->second, message))
         {
             return false;

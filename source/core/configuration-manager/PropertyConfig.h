@@ -70,6 +70,7 @@ public:
         , bRange_(false)
         , bStoreDocLen_(false)
         , rankWeight_(0.0f)
+        , brtype_(false)
     {}
 
     PropertyConfig(const PropertyConfigBase& base)
@@ -85,6 +86,7 @@ public:
         , bRange_(false)
         , bStoreDocLen_(false)
         , rankWeight_(0.0f)
+        , brtype_(false)
     {}
 
 public:
@@ -196,6 +198,15 @@ public:
     inline sf1r::PropertyDataType getType() const
     {
         return propertyType_;
+    }
+
+    inline bool isRTypeString() const
+    {
+        return (propertyType_ == STRING_PROPERTY_TYPE) && brtype_ && !isAnalyzed();
+    }
+    inline void setRType(bool rtype) 
+    {
+        brtype_ = rtype;
     }
 
     inline bool isNumericType() const
@@ -457,6 +468,7 @@ public:
         swap(analysisInfo_, rhs.analysisInfo_);
         swap(rankWeight_, rhs.rankWeight_);
         swap(subProperties_,rhs.subProperties_);
+        swap(brtype_, rhs.brtype_);
     }
 
 private:
@@ -483,6 +495,7 @@ private:
         ar & analysisInfo_;
         ar & rankWeight_;
         ar & subProperties_;
+        ar & brtype_;
     }
 
 public:
@@ -529,6 +542,9 @@ public:
 
     /// @brief If this property is virtual, it has several sub properties
     std::vector<std::string> subProperties_;
+
+    /// @brief If this property is rtype string. rtype string can update efficient.
+    bool brtype_;
 };
 
 struct PropertyComp

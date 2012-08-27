@@ -853,6 +853,7 @@ bool OntologyManager::ProcessCollectionSimple_(bool rebuild)
         }
         bool b = document_manager_->getDocument(docid, doc);
         if (!b) continue;
+        document_manager_->getRTypePropertiesForDocument(docid, doc);
 //     std::cout<<"Processing docid: "<<docid<<std::endl;
         Document::property_iterator property_it = doc.findProperty("DOCID");
         if (property_it!=doc.propertyEnd())

@@ -9,6 +9,7 @@
 #include <mining-manager/MiningManager.h>
 #include <common/NumericPropertyTable.h>
 #include <common/NumericRangePropertyTable.h>
+#include <common/RTypeStringPropTable.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
 #include <log-manager/ProductCount.h>
@@ -707,13 +708,15 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
         if(documentManager_->getPropertyValue(docid, propname, oldvalue))
         {
             tempPropertyConfig.propertyName_ = propname;
-            IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
-            bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
+            //IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+            DocumentSchema::const_iterator iter = bundleConfig_->documentSchema_.find(tempPropertyConfig);
+
+            bool isInSchema = (iter != bundleConfig_->documentSchema_.end());
             int inplace_type = 0;
             // determine how to do the inplace operation by different property type.
-            if(isIndexSchema)
+            if(isInSchema)
             {
-                switch(iter->getType())
+                switch(iter->propertyType_)
                 {
                 case INT8_PROPERTY_TYPE:
                 case INT16_PROPERTY_TYPE:
@@ -737,7 +740,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                     break;
                 default:
                     {
-                        LOG(INFO) << "property type: " << iter->getType() << " does not support the inplace update." << std::endl;
+                        LOG(INFO) << "property type: " << iter->propertyType_ << " does not support the inplace update." << std::endl;
                         return false;
                     }
                 }
@@ -1393,6 +1396,7 @@ bool IndexWorker::prepareDocument_(
     SCDDoc::iterator p = doc.begin();
     bool dateExistInSCD = false;
 
+
     for (; p != doc.end(); p++)
     {
         const std::string& fieldStr = p->first;
@@ -1463,30 +1467,41 @@ bool IndexWorker::prepareDocument_(
             {
             case STRING_PROPERTY_TYPE:
                 {
-                    PropertyValue propData(propertyValueU);
-                    document.property(fieldStr).swap(propData);
-                    analysisInfo.clear();
-                    analysisInfo = iter->getAnalysisInfo();
-                    if (!analysisInfo.analyzerId_.empty())
+                    if(iter->isRTypeString())
                     {
-                        CREATE_SCOPED_PROFILER (prepare_summary, "IndexWorker", "IndexWorker::prepareDocument_::Summary");
-                        unsigned int numOfSummary = 0;
-                        if ((iter->getIsSnippet() || iter->getIsSummary()))
+                        boost::shared_ptr<RTypeStringPropTable>& rtypeprop = documentManager_->getRTypeStringPropTable(iter->getName());
+                        izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
+                        std::string fieldValue;
+                        propertyValueU.convertString(fieldValue, encoding);
+                        rtypeprop->updateRTypeString(docId, fieldValue);
+                    }
+                    else
+                    {
+                        PropertyValue propData(propertyValueU);
+                        document.property(fieldStr).swap(propData);
+                        analysisInfo.clear();
+                        analysisInfo = iter->getAnalysisInfo();
+                        if (!analysisInfo.analyzerId_.empty())
                         {
-                            if (iter->getIsSummary())
+                            CREATE_SCOPED_PROFILER (prepare_summary, "IndexWorker", "IndexWorker::prepareDocument_::Summary");
+                            unsigned int numOfSummary = 0;
+                            if ((iter->getIsSnippet() || iter->getIsSummary()))
                             {
-                                numOfSummary = iter->getSummaryNum();
-                                if (numOfSummary <= 0)
-                                    numOfSummary = 1; //atleast one sentence required for summary
-                            }
+                                if (iter->getIsSummary())
+                                {
+                                    numOfSummary = iter->getSummaryNum();
+                                    if (numOfSummary <= 0)
+                                        numOfSummary = 1; //atleast one sentence required for summary
+                                }
 
-                            if (!makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
+                                if (!makeSentenceBlocks_(propertyValueU, iter->getDisplayLength(),
                                         numOfSummary, sentenceOffsetList))
-                            {
-                                LOG(ERROR) << "Make Sentence Blocks Failes ";
+                                {
+                                    LOG(ERROR) << "Make Sentence Blocks Failes ";
+                                }
+                                PropertyValue propData(sentenceOffsetList);
+                                document.property(fieldStr + ".blocks").swap(propData);
                             }
-                            PropertyValue propData(sentenceOffsetList);
-                            document.property(fieldStr + ".blocks").swap(propData);
                         }
                     }
                     prepareIndexDocumentStringProperty_(docId, *p, iter, indexDocument);
@@ -1796,8 +1811,26 @@ bool IndexWorker::prepareIndexRTypeProperties_(
     CREATE_PROFILER (pid_float, "IndexWorker", "IndexWorker::prepareIndexDocument_::FLOAT");
     CREATE_PROFILER (pid_int64, "IndexWorker", "IndexWorker::prepareIndexDocument_::INT64");
 
-    DocumentManager::NumericPropertyTableMap& numericPropertyTables = documentManager_->getNumericPropertyTableMap();
     IndexerPropertyConfig indexerPropertyConfig;
+
+    DocumentManager::RTypeStringPropTableMap& rtype_string_proptable = documentManager_->getRTypeStringPropTableMap();
+    for(DocumentManager::RTypeStringPropTableMap::const_iterator rtype_it = rtype_string_proptable.begin();
+        rtype_it != rtype_string_proptable.end(); ++rtype_it)
+    {
+        tempPropertyConfig.propertyName_ = rtype_it->first;
+        IndexBundleSchema::iterator index_it = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+        if(index_it == bundleConfig_->indexSchema_.end())
+            continue;
+        FieldPair prop_pair;
+        std::string s_propvalue;
+        rtype_it->second->getRTypeString(docId, s_propvalue);
+        prop_pair.first = rtype_it->first;
+        prop_pair.second = UString(s_propvalue, bundleConfig_->encoding_);
+
+        prepareIndexDocumentStringProperty_(docId, prop_pair, index_it, indexDocument);
+    }
+
+    DocumentManager::NumericPropertyTableMap& numericPropertyTables = documentManager_->getNumericPropertyTableMap();
     bool ret = false;
     for (DocumentManager::NumericPropertyTableMap::const_iterator it = numericPropertyTables.begin();
             it != numericPropertyTables.end(); ++it)
@@ -2170,6 +2203,9 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
         IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
 
         if (iter == bundleConfig_->indexSchema_.end())
+            continue;
+
+        if( iter->isRTypeString() )
             continue;
 
         if (iter->isIndex())

@@ -255,7 +255,7 @@
     <xs:element name="Group">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
+                <xs:element name="Property" type="GroupPropertyType" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -284,6 +284,11 @@
         <xs:complexType>
         </xs:complexType>
     </xs:element>
+
+    <xs:complexType name="GroupPropertyType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="rebuild" type="YesNoType" use="optional"/>
+    </xs:complexType>
 
     <xs:complexType name="ExcludeType">
         <xs:attribute name="name" type="xs:string" use="optional"/>

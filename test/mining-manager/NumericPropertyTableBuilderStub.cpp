@@ -1,6 +1,5 @@
 #include "NumericPropertyTableBuilderStub.h"
 #include <document-manager/Document.h>
-#include <configuration-manager/GroupConfig.h>
 #include <common/NumericPropertyTable.h>
 
 #include <glog/logging.h>
@@ -46,16 +45,16 @@ void insertPropertyMap(
 namespace sf1r
 {
 
-NumericPropertyTableBuilderStub::NumericPropertyTableBuilderStub(const std::vector<GroupConfig>& groupConfigs)
-    : groupConfigs_(groupConfigs)
+NumericPropertyTableBuilderStub::NumericPropertyTableBuilderStub(const GroupConfigMap& groupConfigMap)
+    : groupConfigMap_(groupConfigMap)
     , lastDocId_(0)
 {
     // insert property value for doc id 0
-    for (std::vector<GroupConfig>::const_iterator it = groupConfigs_.begin();
-        it != groupConfigs_.end(); ++it)
+    for (GroupConfigMap::const_iterator it = groupConfigMap_.begin();
+        it != groupConfigMap_.end(); ++it)
     {
-        const std::string& propName = it->propName;
-        PropertyDataType propType = it->propType;
+        const std::string& propName = it->first;
+        PropertyDataType propType = it->second.propType;
 
         insertProperty_(propName, propType, NULL);
     }
@@ -63,12 +62,10 @@ NumericPropertyTableBuilderStub::NumericPropertyTableBuilderStub(const std::vect
 
 PropertyDataType NumericPropertyTableBuilderStub::getPropertyType_(const std::string& prop) const
 {
-    for (std::vector<GroupConfig>::const_iterator it = groupConfigs_.begin();
-        it != groupConfigs_.end(); ++it)
-    {
-        if (it->propName == prop)
-            return it->propType;
-    }
+    GroupConfigMap::const_iterator it = groupConfigMap_.find(prop);
+
+    if (it != groupConfigMap_.end())
+        return it->second.propType;
 
     return UNKNOWN_DATA_PROPERTY_TYPE;
 }
@@ -116,11 +113,11 @@ bool NumericPropertyTableBuilderStub::insertDocument(const Document& doc)
     }
     ++lastDocId_;
 
-    for (std::vector<GroupConfig>::const_iterator it = groupConfigs_.begin();
-        it != groupConfigs_.end(); ++it)
+    for (GroupConfigMap::const_iterator it = groupConfigMap_.begin();
+        it != groupConfigMap_.end(); ++it)
     {
-        const std::string& propName = it->propName;
-        PropertyDataType propType = it->propType;
+        const std::string& propName = it->first;
+        PropertyDataType propType = it->second.propType;
         const PropertyValue pv = doc.property(propName);
 
         if (!insertProperty_(propName, propType, &pv))

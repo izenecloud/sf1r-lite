@@ -9,12 +9,12 @@
 #define SF1R_GROUP_FILTER_BUILDER_H
 
 #include "../faceted-submanager/faceted_types.h"
+#include <configuration-manager/GroupConfig.h>
 
 #include <vector>
 
 namespace sf1r
 {
-class GroupConfig;
 class NumericPropertyTableBuilder;
 }
 
@@ -30,7 +30,7 @@ class GroupFilterBuilder
 {
 public:
     GroupFilterBuilder(
-        const std::vector<GroupConfig>& groupConfigs,
+        const GroupConfigMap& groupConfigMap,
         const GroupManager* groupManager,
         const AttrManager* attrManager,
         NumericPropertyTableBuilder* numericTableBuilder);
@@ -45,7 +45,7 @@ public:
     GroupFilter* createFilter(const GroupParam& groupParam) const;
 
 private:
-    const std::vector<GroupConfig>& groupConfigs_;
+    const GroupConfigMap& groupConfigMap_;
     const GroupManager* groupManager_;
     const AttrTable* attrTable_;
     NumericPropertyTableBuilder* numericTableBuilder_;

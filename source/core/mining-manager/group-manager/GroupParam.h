@@ -9,6 +9,7 @@
 #define SF1R_GROUP_PARAM_H
 
 #include "../faceted-submanager/faceted_types.h"
+#include <configuration-manager/GroupConfig.h>
 
 #include <util/izene_serialization.h>
 #include <3rdparty/msgpack/msgpack.hpp>
@@ -23,7 +24,6 @@
 namespace sf1r
 {
 class MiningSchema;
-class GroupConfig;
 }
 
 NS_FACETED_BEGIN
@@ -107,8 +107,8 @@ struct GroupParam
 
 private:
     bool checkGroupParam_(const MiningSchema& miningSchema, std::string& message) const;
-    bool checkGroupProps_(const std::vector<GroupConfig>& groupConfigs, std::string& message) const;
-    bool checkGroupLabels_(const std::vector<GroupConfig>& groupConfigs, std::string& message) const;
+    bool checkGroupProps_(const GroupConfigMap& groupConfigMap, std::string& message) const;
+    bool checkGroupLabels_(const GroupConfigMap& groupConfigMap, std::string& message) const;
     bool checkAttrParam_(const MiningSchema& miningSchema, std::string& message) const;
     bool isRangeLabel_(const std::string& propName) const;
 };

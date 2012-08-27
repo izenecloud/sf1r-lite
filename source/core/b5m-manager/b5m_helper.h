@@ -156,6 +156,12 @@ namespace sf1r {
         {
             return mdb_instance+"/po_map";
         }
+
+        static std::string GetBrandPropertyName()
+        {
+            static std::string p("Brand");
+            return p;
+        }
     };
 
 }

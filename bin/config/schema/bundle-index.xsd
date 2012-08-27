@@ -228,6 +228,7 @@
             <xs:attribute name="doclen" type="YesNoType" use="optional"/>
             <xs:attribute name="rankweight" type="xs:float" use="optional"/>
             <xs:attribute name="tokenizer" use="optional"/>
+            <xs:attribute name="rtype" type="YesNoType" use="optional"/>
         </xs:complexType>
     </xs:element>
 

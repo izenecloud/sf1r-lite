@@ -5,7 +5,6 @@
 #include "GroupManager.h"
 #include "../attr-manager/AttrManager.h"
 #include "../attr-manager/AttrTable.h"
-#include <configuration-manager/GroupConfig.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 
 #include <memory> // auto_ptr
@@ -14,11 +13,11 @@
 NS_FACETED_BEGIN
 
 GroupFilterBuilder::GroupFilterBuilder(
-        const std::vector<GroupConfig>& groupConfigs,
+        const GroupConfigMap& groupConfigMap,
         const GroupManager* groupManager,
         const AttrManager* attrManager,
         NumericPropertyTableBuilder* numericTableBuilder)
-    : groupConfigs_(groupConfigs)
+    : groupConfigMap_(groupConfigMap)
     , groupManager_(groupManager)
     , attrTable_(attrManager ? &attrManager->getAttrTable() : NULL)
     , numericTableBuilder_(numericTableBuilder)
@@ -34,7 +33,8 @@ GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) cons
 
     if (!groupParam.isGroupEmpty())
     {
-        GroupCounterLabelBuilder builder(groupConfigs_, groupManager_, numericTableBuilder_);
+        GroupCounterLabelBuilder builder(
+            groupConfigMap_, groupManager_, numericTableBuilder_);
         if (!groupFilter->initGroup(builder))
             return NULL;
     }
@@ -50,8 +50,6 @@ GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) cons
         if (!groupFilter->initAttr(*attrTable_))
             return NULL;
     }
-
-    groupFilter->lockShared();
 
     return groupFilter.release();
 }

@@ -16,8 +16,8 @@
 using namespace sf1r;
 
 
-B5mcScdGenerator::B5mcScdGenerator(OfferDb* odb)
-:odb_(odb)
+B5mcScdGenerator::B5mcScdGenerator(OfferDb* odb, BrandDb* bdb)
+:odb_(odb), bdb_(bdb)
 {
 }
 
@@ -44,7 +44,18 @@ void B5mcScdGenerator::Process_(Document& doc, int& type)
 
         }
         //keep the non-exist oid comment
-        doc.property("uuid") = izenelib::util::UString(spid, izenelib::util::UString::UTF_8);
+        izenelib::util::UString upid(spid, izenelib::util::UString::UTF_8);
+        doc.property("uuid") = upid;
+        if(upid.length()>0 && bdb_!=NULL)
+        {
+            uint128_t pid = B5MHelper::UStringToUint128(upid);
+            izenelib::util::UString brand;
+            bdb_->get(pid, brand);
+            if(brand.length()>0)
+            {
+                doc.property(B5MHelper::GetBrandPropertyName()) = brand;
+            }
+        }
     }
 }
 
@@ -56,6 +67,17 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
         {
             LOG(ERROR)<<"odb open fail"<<std::endl;
             return false;
+        }
+    }
+    if(bdb_!=NULL)
+    {
+        if(!bdb_->is_open())
+        {
+            if(!bdb_->open())
+            {
+                LOG(ERROR)<<"bdb open error"<<std::endl;
+                return false;
+            }
         }
     }
     ScdMerger::PropertyConfig config;
@@ -71,3 +93,4 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
     merger.Output();
     return true;
 }
+
