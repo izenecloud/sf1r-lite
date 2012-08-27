@@ -145,7 +145,7 @@ bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std:
         LOG(ERROR)<<"Path does not exist. Path "<<leveldbPath_;
     }
 
-    idManager_ = new IDManger(IDPath);
+    idManager_.reset(new IDManger(IDPath));
    
     std::string temp = AutofillPath_ + "/AutoFill.log";
     out.open(temp.c_str(), ios::out);

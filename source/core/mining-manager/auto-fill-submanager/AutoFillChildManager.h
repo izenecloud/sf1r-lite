@@ -12,6 +12,7 @@
 
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <log-manager/LogAnalysis.h>
 #include <configuration-manager/CollectionPath.h>
@@ -163,7 +164,7 @@ class AutoFillChildManager: public boost::noncopyable
     WordLevelDBTable dbItem_;
     wat_array::WatArray wa_;
     std::vector<ItemType> ItemVector_;
-    IDManger *idManager_;
+    boost::scoped_ptr<IDManger> idManager_;
 
 public:
     AutoFillChildManager(bool fromSCD = false);
