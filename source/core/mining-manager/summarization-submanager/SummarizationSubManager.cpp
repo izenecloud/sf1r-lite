@@ -74,6 +74,10 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
+    string OpPath=schema_.scoreSCDPath;
+    Ng=new Ngram(OpPath);
+    Op=new OpinionsManager(OpPath);
+    Op->setSigma(4,-4,0.5,100);
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
@@ -191,6 +195,8 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_coll(key_ustr);
     corpus_->start_new_doc(); // XXX
 
+    std::vector<std::string> Z;
+
     for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
             it != comment_cache_item.end(); ++it)
     {
@@ -209,6 +215,9 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
         const UString& content = it->second.first;
         UString sentence;
+        string strcontent;
+        content.convertString(strcontent, UString::UTF_8);
+        Z.push_back(strcontent);
         std::size_t startPos = 0;
         while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
         {
@@ -230,6 +239,9 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_sent();
     corpus_->start_new_doc();
     corpus_->start_new_coll();
+ 
+    Op->setComment(Z);
+    Op->get();
 
     std::map<UString, std::vector<std::pair<double, UString> > > summaries;
 //#define DEBUG_SUMMARIZATION

@@ -9,7 +9,7 @@
 #include <3rdparty/am/stx/btree_map.h>
 
 #include <boost/shared_ptr.hpp>
-
+#include "comment.h"
 namespace idmlib
 {
 namespace util
@@ -48,6 +48,8 @@ public:
     bool GetSummarizationByRawKey(
             const izenelib::util::UString& rawKey,
             Summarization& result);
+    OpinionsManager* Op;
+    Ngram* Ng;
 
 private:
     bool DoEvaluateSummarization_(
