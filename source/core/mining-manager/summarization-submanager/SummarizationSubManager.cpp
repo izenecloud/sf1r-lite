@@ -77,7 +77,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     string OpPath=schema_.scoreSCDPath;
     Ng=new Ngram(OpPath);
     Op=new OpinionsManager(OpPath);
-    Op->setSigma(4,-4,0.5,100);
+    Op->setSigma(-8, -6, 0.6, 100);
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
@@ -136,6 +136,9 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     {
         score_scd_writer_.reset(new ScdWriter(schema_.scoreSCDPath, UPDATE_SCD));
     }
+
+    // Init Ngram
+    Ng->LoadFile();
 
     {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
