@@ -18,6 +18,8 @@ class GroupLabel
 public:
     GroupLabel() : counter_(NULL) {}
 
+    virtual ~GroupLabel() {}
+
     void setCounter(GroupCounter* counter) { counter_ = counter; }
 
     GroupCounter* getCounter() { return counter_; }

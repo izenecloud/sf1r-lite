@@ -16,6 +16,8 @@ NS_FACETED_BEGIN
 class GroupCounter
 {
 public:
+    virtual ~GroupCounter() {}
+
     virtual GroupCounter* clone() const = 0;
 
     virtual void addDoc(docid_t doc) = 0;
