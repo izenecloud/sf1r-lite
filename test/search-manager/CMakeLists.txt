@@ -71,6 +71,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     t_OrderedPhraseDocumentIterator.cpp
     t_FilterDocumentIterator.cpp
     t_AllDocumentIterator.cpp
+    t_CustomRanker.cpp
   )
   TARGET_LINK_LIBRARIES(t_search_manager
     ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
@@ -80,17 +81,5 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
   ADD_TEST(search_manager "${SF1RENGINE_ROOT}/testbin/t_search_manager")
-
-  ##
-  # test custom ranker, not boost unit test
-  ADD_EXECUTABLE(test_custom_ranker
-      test_CustomRanker.cpp
-  )
-  TARGET_LINK_LIBRARIES(test_custom_ranker
-    ${libs}
-  )
-  SET_TARGET_PROPERTIES(test_custom_ranker PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-  )
 
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
