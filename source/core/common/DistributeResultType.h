@@ -176,6 +176,8 @@ public:
     /// Total number of result documents
     std::size_t totalCount_;
 
+    /// counter result list
+    std::map<std::string,uint32_t> counterResults_;
     /// A list of ranked docId. First docId gets high rank score.
     std::vector<docid_t> topKDocs_;
 
@@ -236,7 +238,7 @@ public:
 
     MSGPACK_DEFINE(
         distSearchInfo_, rawQueryString_, encodingType_, collectionName_, analyzedQuery_,
-        queryTermIdList_, totalCount_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
+        queryTermIdList_, totalCount_, counterResults_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
         topKCustomRankScoreList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_,
         onto_rep_, groupRep_, attrRep_);
 };

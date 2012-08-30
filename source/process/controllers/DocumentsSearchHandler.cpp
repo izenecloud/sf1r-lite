@@ -113,6 +113,7 @@ void DocumentsSearchHandler::search()
                 renderDocuments(searchResult);
                 renderMiningResult(searchResult);
                 renderRangeResult(searchResult);
+                renderCountResult(searchResult);
                 renderRefinedQuery();
             }
 
@@ -185,6 +186,7 @@ void DocumentsSearchHandler::search()
                         renderDocuments(rawTextResult);
                         renderMiningResult(searchResult);
                         renderRangeResult(searchResult);
+                        renderCountResult(searchResult);
                         renderRefinedQuery();
                     }
                     else
@@ -432,6 +434,10 @@ bool DocumentsSearchHandler::parse()
     swap(
         actionItem_.searchPropertyList_,
         searchParser.mutableProperties()
+    );
+    swap(
+        actionItem_.counterList_,
+        searchParser.mutableCounterList()
     );
     actionItem_.languageAnalyzerInfo_ = searchParser.analyzerInfo();
     actionItem_.rankingType_ = searchParser.rankingModel();
@@ -720,6 +726,17 @@ void DocumentsSearchHandler::renderRangeResult(
         Value& range = response_[Keys::range];
         range[Keys::min] = searchResult.propertyRange_.lowValue_;
         range[Keys::max] = searchResult.propertyRange_.highValue_;
+    }
+}
+
+void DocumentsSearchHandler::renderCountResult(
+    const KeywordSearchResult& searchResult
+)
+{
+    std::map<std::string, unsigned>::const_iterator cit = searchResult.counterResults_.begin();
+    for (; cit != searchResult.counterResults_.end(); ++cit)
+    {
+        response_[Keys::count][cit->first] = cit->second;
     }
 }
 

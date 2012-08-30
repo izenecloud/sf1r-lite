@@ -114,7 +114,6 @@ public:
     {
         return logKeywords_;
     }
-
     std::vector<std::string>& mutableProperties()
     {
         return properties_;
@@ -122,6 +121,14 @@ public:
     const std::vector<std::string>& properties() const
     {
         return properties_;
+    }
+    std::vector<std::string>& mutableCounterList()
+    {
+        return countList_;
+    }
+    const std::vector<std::string>& counterList() const
+    {
+        return countList_;
     }
 
     RankingType::TextRankingType rankingModel() const
@@ -156,6 +163,7 @@ private:
     faceted::GroupParam::AttrLabelMap attrLabels_;
     bool logKeywords_;
     std::vector<std::string> properties_;
+    std::vector<std::string> countList_;
     RankingType::TextRankingType rankingModel_;
     SearchingModeInfo searchingModeInfo_;
     LanguageAnalyzerInfo analyzerInfo_;

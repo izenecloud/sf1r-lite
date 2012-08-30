@@ -237,6 +237,7 @@ void SearchWorker::makeQueryIdentity(
         identity.rankingType = item.rankingType_;
         identity.laInfo = item.languageAnalyzerInfo_;
         identity.properties = item.searchPropertyList_;
+        identity.counterList = item.counterList_;
         identity.sortInfo = item.sortPriorityList_;
         identity.filterInfo = item.filteringList_;
         identity.groupParam = item.groupParam_;
@@ -247,6 +248,8 @@ void SearchWorker::makeQueryIdentity(
         identity.distActionType = distActionType;
         std::sort(identity.properties.begin(),
                 identity.properties.end());
+        std::sort(identity.counterList.begin(),
+                identity.counterList.end());
         break;
     }
 }
@@ -361,6 +364,7 @@ bool SearchWorker::getSearchResult_(
                 resultItem.attrRep_,
                 resultItem.propertyRange_,
                 resultItem.distSearchInfo_,
+                resultItem.counterResults_,
                 TOP_K_NUM,
                 KNN_TOP_K_NUM,
                 KNN_DIST,
@@ -391,6 +395,7 @@ bool SearchWorker::getSearchResult_(
                     resultItem.attrRep_,
                     resultItem.propertyRange_,
                     resultItem.distSearchInfo_,
+                    resultItem.counterResults_,
                     TOP_K_NUM,
                     KNN_TOP_K_NUM,
                     KNN_DIST,

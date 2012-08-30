@@ -147,6 +147,8 @@ bool DocumentsController::checkCollectionService(std::string& error)
  * - @b range (@c Object): Property value range.
  *   - @b max (@c Float): Maximum value
  *   - @b min (@c Float): Minimum value
+ * - @b count (@c Map): COUNT value map for Properties. Key refers to property name,
+ *    value refers to COUNT value of this property.
  * - @b name_entity (@c Array): Every item represents one type of name
  *   entity. The item has following fields.
  *   - @b type (@c String): Name entity type.

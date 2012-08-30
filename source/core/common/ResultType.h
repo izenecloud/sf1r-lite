@@ -284,6 +284,8 @@ public:
     /// Total number of result documents
     std::size_t totalCount_;
 
+    std::map<std::string,uint32_t> counterResults_;
+
     /// A list of ranked docId. First docId gets high rank score.
     std::vector<docid_t> topKDocs_;
 
@@ -448,6 +450,7 @@ public:
         analyzedQuery_ = result.analyzedQuery_;
         queryTermIdList_ = result.queryTermIdList_;
         totalCount_ = result.totalCount_;
+        counterResults_ = result.counterResults_;
         topKDocs_ = result.topKDocs_;
         topKWorkerIds_ = result.topKWorkerIds_;
         topKtids_ = result.topKtids_;
@@ -470,6 +473,7 @@ public:
         analyzedQuery_.swap(result.analyzedQuery_);
         queryTermIdList_.swap(result.queryTermIdList_);
         totalCount_ = result.totalCount_;
+        counterResults_.swap(result.counterResults_);
         topKDocs_.swap(result.topKDocs_);
         topKWorkerIds_.swap(result.topKWorkerIds_);
         topKtids_.swap(result.topKtids_);
@@ -493,6 +497,7 @@ public:
         analyzedQuery_.swap(other.analyzedQuery_);
         queryTermIdList_.swap(other.queryTermIdList_);
         swap(totalCount_, other.totalCount_);
+        counterResults_.swap(other.counterResults_);
         topKDocs_.swap(other.topKDocs_);
         topKWorkerIds_.swap(other.topKWorkerIds_);
         topKtids_.swap(other.topKtids_);
@@ -534,7 +539,7 @@ public:
 
     MSGPACK_DEFINE(
             rawQueryString_, encodingType_, collectionName_, analyzedQuery_,
-            queryTermIdList_, totalCount_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
+            queryTermIdList_, totalCount_, counterResults_, topKDocs_, topKWorkerIds_, topKtids_, topKRankScoreList_,
             topKCustomRankScoreList_, propertyRange_, start_, count_, pageOffsetList_, propertyQueryTermList_, fullTextOfDocumentInPage_,
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             numberOfDuplicatedDocs_, numberOfSimilarDocs_, docCategories_,

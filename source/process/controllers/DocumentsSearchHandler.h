@@ -106,6 +106,7 @@ private:
     );
     void renderMiningResult(const KeywordSearchResult& miaResult);
     void renderRangeResult(const KeywordSearchResult& searchResult);
+    void renderCountResult(const KeywordSearchResult& searchResult);
     void renderRefinedQuery();
 
     bool validateSearchResult(const KeywordSearchResult& siaResult);

@@ -469,7 +469,12 @@ public:
     ///
     /// @brief a list of filtering option.
     ///
-    std::vector<QueryFiltering::FilteringType>  filteringList_;
+    std::vector<QueryFiltering::FilteringType> filteringList_;
+
+    ///
+    /// @brief a list of counters
+    ///
+    std::vector<std::string> counterList_;
 
     ///
     /// @brief property name for getting its property value range.
@@ -480,10 +485,6 @@ public:
     /// @brief group filter parameter
     ///
     faceted::GroupParam groupParam_;
-
-    ///
-    /// @brief a list of property query terms.
-    ///
 
     ///
     /// @brief custom ranking information
@@ -500,12 +501,12 @@ public:
 
     DATA_IO_LOAD_SAVE(KeywordSearchActionItem, & env_ & refinedQueryString_ & collectionName_
              & rankingType_ & searchingMode_ & pageInfo_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
-             & displayPropertyList_ & sortPriorityList_ & filteringList_ & rangePropertyName_ & groupParam_
+             & displayPropertyList_ & sortPriorityList_ & filteringList_ & counterList_ & rangePropertyName_ & groupParam_
              & strExp_ & paramConstValueMap_ & paramPropertyValueMap_);
 
     /// msgpack serializtion
     MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, languageAnalyzerInfo_,
-            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_,
+            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_, counterList_,
             rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_);
 
 private:
@@ -527,6 +528,7 @@ private:
         ar & displayPropertyList_;
         ar & sortPriorityList_;
         ar & filteringList_;
+        ar & counterList_;
         ar & rangePropertyName_;
         ar & groupParam_;
         ar & strExp_;
