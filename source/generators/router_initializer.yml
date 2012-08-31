@@ -45,6 +45,7 @@ controllers:
       - search
       - create
       - update
+      - update_inplace      
       - destroy
       - similar_to
       - duplicate_with
