@@ -708,13 +708,14 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
         if(documentManager_->getPropertyValue(docid, propname, oldvalue))
         {
             tempPropertyConfig.propertyName_ = propname;
-            //IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
-            DocumentSchema::const_iterator iter = bundleConfig_->documentSchema_.find(tempPropertyConfig);
+            IndexBundleSchema::const_iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+            //DocumentSchema::const_iterator iter = bundleConfig_->documentSchema_.find(tempPropertyConfig);
 
-            bool isInSchema = (iter != bundleConfig_->documentSchema_.end());
+            //Numeric property should not be range type
+            bool isValidProperty = (iter != bundleConfig_->indexSchema_.end() && !iter->bRange_);
             int inplace_type = 0;
             // determine how to do the inplace operation by different property type.
-            if(isInSchema)
+            if(isValidProperty)
             {
                 switch(iter->propertyType_)
                 {
@@ -754,21 +755,26 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
             try
             {
                 std::string new_propvalue;
+                std::string oldvalue_str;
+                izenelib::util::UString& propertyValueU = oldvalue.get<izenelib::util::UString>();
+                propertyValueU.convertString(oldvalue_str, izenelib::util::UString::UTF_8);
+                ///if a numeric property does not contain valid value, suppose it to be zero
+                if(oldvalue_str.empty()) oldvalue_str = "0";
                 if(op == "add")
                 {
                     if(inplace_type == 0 )
                     {
-                        int64_t newv = boost::lexical_cast<int64_t>(oldvalue) + boost::lexical_cast<int64_t>(opvalue);
+                        int64_t newv = boost::lexical_cast<int64_t>(oldvalue_str) + boost::lexical_cast<int64_t>(opvalue);
                         new_propvalue = boost::lexical_cast<std::string>(newv);
                     }
                     else if(inplace_type == 1)
                     {
-                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<float>(oldvalue) +
+                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<float>(oldvalue_str) +
                                 boost::lexical_cast<float>(opvalue));
                     }
                     else if(inplace_type == 2)
                     {
-                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<double>(oldvalue) + boost::lexical_cast<double>(opvalue));
+                        new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<double>(oldvalue_str) + boost::lexical_cast<double>(opvalue));
                     }
                     else
                     {
@@ -782,7 +788,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                 }
                 new_document[propname] = new_propvalue;
             }
-            catch(std::runtime_error& e)
+            catch(boost::bad_lexical_cast& e)
             {
                 LOG(WARNING) << "do inplace update failed. " << e.what() << endl;
                 return false;
