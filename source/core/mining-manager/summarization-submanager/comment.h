@@ -12,6 +12,7 @@
 #include <ctime>
 #include <string>
 #include <util/PriorityQueue.h>
+#include <queue>
 
 using std::string;
 using std::vector;
@@ -23,6 +24,7 @@ namespace sf1r
 class OpinionsManager
 {
 public:
+
     typedef std::vector< std::string > SentenceContainerT;
     typedef std::vector< std::string > WordSegContainerT;
     typedef std::pair<std::string, int> WordFreqPairT;
@@ -39,17 +41,23 @@ public:
     typedef std::vector< std::string > NgramPhraseT;
     typedef std::vector< NgramPhraseT > NgramPhraseContainerT;
     typedef std::vector< NgramPhraseT > OpinionContainerT;
-    typedef std::vector< std::pair< NgramPhraseT, double> > OpinionCandidateContainerT;
+    typedef std::pair< NgramPhraseT, double > OpinionCandidateT;
+    typedef std::vector< OpinionCandidateT > OpinionCandidateContainerT;
 
     OpinionsManager(const string& colPath);//string enc,string cate,string posDelimiter,
     ~OpinionsManager();
+    void setComment(const SentenceContainerT& Z_);
+    std::vector<std::string> get();
+    void setWindowsize(int C);
+    void setSigma(double SigmaRep_,double SigmaRead_,double SigmaSim_,double SigmaLength_);
+    void setEncoding(izenelib::util::UString::EncodingType encoding);
+
+private:
+
+
     void beginSeg(const string& inSentence, string& outSentence);
     void stringToWordVector(const std::string& Mi, WordSegContainerT& words);
     void WordVectorToString(std::string& Mi, const WordSegContainerT& words);
-    void setWindowsize(int C);
-    void setComment(const SentenceContainerT& Z_);
-    void setSigma(double SigmaRep_,double SigmaRead_,double SigmaSim_,double SigmaLength_);
-    void setEncoding(izenelib::util::UString::EncodingType encoding);
     //score
     //double ScoreRep(const WordSegContainerT& M);
     //double ScoreRep(const std::string& Mi);
@@ -89,7 +97,6 @@ public:
     void GenerateCandidates(const NgramPhraseT& phrase, OpinionCandidateContainerT& candList, 
         const BigramPhraseContainerT& seedBigrams);
     //OpinionContainerT getMicroOpinions(const OpinionCandidateContainerT& candList);
-    std::vector<std::string> get();
     std::vector<std::pair<std::string,double> > changeForm(const OpinionCandidateContainerT& candList);
    
     //std::vector<std::string> PingZhuang( std::vector<std::vector<std::string> > candString);
@@ -114,9 +121,11 @@ private:
             return (o1.second < o2.second);
         }
     };
+    typedef std::priority_queue<double>  CandidateSrepQueueT;
 
 
     double SigmaRep;
+    CandidateSrepQueueT SigmaRep_dynamic;
     double SigmaRead;
     double SigmaSim;
     double SigmaLength;

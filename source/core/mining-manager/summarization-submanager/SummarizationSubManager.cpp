@@ -77,7 +77,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     string OpPath=schema_.scoreSCDPath;
     Ng=new Ngram(OpPath);
     Op=new OpinionsManager(OpPath);
-    Op->setSigma(-8, -6, 0.6, 100);
+    Op->setSigma(-4, -6, 0.5, 60);
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
@@ -158,9 +158,9 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             Summarization summarization(commentCacheItem);
             if (DoEvaluateSummarization_(summarization, key, commentCacheItem))
             {
-                if (++count % 10000 == 0)
+                if (++count % 1000 == 0)
                 {
-                    LOG(INFO) << "Evaluating summarization: " << count;
+                    LOG(INFO) << "=========== Evaluating summarization count: " << count << "============";
                 }
             }
         }
