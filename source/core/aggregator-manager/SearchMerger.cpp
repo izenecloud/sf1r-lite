@@ -75,7 +75,6 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
     mergeResult.analyzedQuery_ = result0.analyzedQuery_;
     mergeResult.queryTermIdList_ = result0.queryTermIdList_;
     mergeResult.propertyQueryTermList_ = result0.propertyQueryTermList_;
-
     mergeResult.totalCount_ = 0;
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
@@ -100,6 +99,11 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
             rangeHigh = wResult.propertyRange_.highValue_;
         }
         mergeResult.groupRep_.merge(wResult.groupRep_);
+        std::map<std::string,unsigned>::const_iterator cit = wResult.counterResults_.begin();
+        for(; cit != wResult.counterResults_.end(); ++cit)
+        {
+            mergeResult.counterResults_[cit->first] += cit->second;
+        }
     }
     mergeResult.propertyRange_.lowValue_ = rangeLow;
     mergeResult.propertyRange_.highValue_ = rangeHigh;

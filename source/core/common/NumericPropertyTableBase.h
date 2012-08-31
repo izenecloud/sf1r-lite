@@ -27,6 +27,8 @@ public:
     virtual std::size_t size() const = 0;
     virtual void flush() = 0;
 
+    virtual bool isValid(std::size_t pos) const { return false; }
+
     virtual bool getInt32Value(std::size_t pos, int32_t& value) const = 0;
     virtual bool getFloatValue(std::size_t pos, float& value) const = 0;
     virtual bool getInt64Value(std::size_t pos, int64_t& value) const = 0;

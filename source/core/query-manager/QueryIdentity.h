@@ -41,6 +41,8 @@ struct QueryIdentity
     /// @brief searched properties concatenated.
     std::vector<std::string> properties;
 
+    std::vector<std::string> counterList;
+
     std::vector<std::pair<std::string , bool> > sortInfo;
 
     std::vector<QueryFiltering::FilteringType> filterInfo;
@@ -73,6 +75,7 @@ struct QueryIdentity
             && userId == other.userId
             && laInfo == other.laInfo
             && properties == other.properties
+            && counterList == other.counterList
             && sortInfo == other.sortInfo
             && filterInfo == other.filterInfo
             && groupParam == other.groupParam
@@ -90,7 +93,7 @@ struct QueryIdentity
     }
 
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
-            & properties & sortInfo & filterInfo & groupParam & rangeProperty
+            & properties & counterList & sortInfo & filterInfo & groupParam & rangeProperty
             & strExp & paramConstValueMap & paramPropertyValueMap & simHash
             & start & distActionType);
 };

@@ -30,6 +30,10 @@ using driver::Keys;
  *   name. If this is not specified, all indexed properties are used. Valid
  *   properties can be check though schema/get (see SchemaController::get() ).
  *   All index names (the @b name field in every index) can be used.
+ * - @b count (@c Array): Which properties the COUNT() is performed in. Every item
+ *   can be an Object or an String. If it is an Object, the \b property field is
+ *   used as the property name, otherwise, the String itself is used as property
+ *   name. Valid properties should have numeric type.
  * - @b taxonomy_label (@c String): Only get documents in the specified
  *   label. It cannot be used with @b name_entity_type and @b name_entity_item
  *   together.
@@ -97,6 +101,9 @@ using driver::Keys;
  *   "in": [
  *     {"property": "title"},
  *     {"property": "content"}
+ *   ],
+ *   "count": [
+ *     {"property": "visitation"},
  *   ],
  *   "ranking_model": "plm",
  *   "searching_mode": {
@@ -206,6 +213,57 @@ bool SearchParser::parse(const Value& search)
         error() = "Require list of properties in which search is performed.";
         return false;
     }
+
+    // counter list properties
+    const Value& countNode = search[Keys::count];
+    if (! nullValue(countNode))
+    {
+        if (countNode.type() == Value::kArrayType)
+        {
+            countList_.resize(countNode.size());
+            for (std::size_t i = 0; i < countList_.size(); ++i)
+            {
+                const Value& currentProperty = countNode(i);
+                if (currentProperty.type() == Value::kObjectType)
+                {
+                    countList_[i] = asString(currentProperty[Keys::property]);
+                }
+                else
+                {
+                    countList_[i] = asString(currentProperty);
+                }
+
+                if (countList_[i].empty())
+                {
+                    error() = "Failed to parse properties in count.";
+                    return false;
+                }
+
+                // validation
+                PropertyConfig propertyConfig;
+                propertyConfig.setName(countList_[i]);
+                if (!getPropertyConfig(indexSchema_,propertyConfig))
+                {
+                    error() = "Unknown property in count/in: " +
+                              propertyConfig.getName();
+                    return false;
+                }
+
+                if (!propertyConfig.bIndex_ ||!propertyConfig.bFilter_ || !propertyConfig.isNumericType())
+                {
+                    error() = "Counted property should be numeric filter type: " +
+                                propertyConfig.getName();
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            error() = "Count must be an array";
+            return false;
+        }
+    }
+
 
     // La
     const Value& analyzer = search[Keys::analyzer];

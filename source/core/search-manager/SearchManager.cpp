@@ -150,6 +150,7 @@ struct SearchThreadParam
     faceted::OntologyRep attrRep_thread;
     boost::shared_ptr<HitQueue>* scoreItemQueue;
     DistKeywordSearchInfo* distSearchInfo;
+    std::map<std::string, unsigned int> counterResults_thread;
     int heapSize;
     std::size_t docid_start;
     std::size_t docid_num_byeachthread;
@@ -169,6 +170,7 @@ bool SearchManager::search(
         faceted::OntologyRep& attrRep,
         sf1r::PropertyRange& propertyRange,
         DistKeywordSearchInfo& distSearchInfo,
+        std::map<std::string, unsigned int>& counterResults,        
         uint32_t topK,
         uint32_t knnTopK,
         uint32_t knnDist,
@@ -277,6 +279,7 @@ bool SearchManager::search(
             attrRep,
             scoreItemQueue[0],
             distSearchInfo,
+            counterResults,
             heapSize,
             0,
             (std::size_t)maxDocId,
@@ -308,6 +311,7 @@ bool SearchManager::search(
 
         propertyRange = searchparams[0].propertyRange;
         totalCount = searchparams[0].totalCount_thread;
+        counterResults = searchparams[0].counterResults_thread;
         // merging the result;
         float lowValue = (std::numeric_limits<float>::max) ();
         float highValue = - lowValue;
@@ -329,6 +333,12 @@ bool SearchManager::search(
             {
                 propertyRange.highValue_ = max(highValue, propertyRange.highValue_);
                 propertyRange.lowValue_ = min(lowValue, propertyRange.lowValue_);
+            }
+
+            std::map<std::string,unsigned>::iterator cit = searchparams[i].counterResults_thread.begin();
+            for(; cit != searchparams[i].counterResults_thread.end(); ++cit)
+            {
+                counterResults[cit->first] += cit->second;
             }
         }
     }
@@ -412,7 +422,7 @@ void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam,
         pParam->ret = doSearchInThread(*(pParam->actionOperation),
             pParam->totalCount_thread, pParam->propertyRange, pParam->start,
             pParam->pSorter, pParam->customRanker, pParam->groupRep_thread, pParam->attrRep_thread,
-            *(pParam->scoreItemQueue), *(pParam->distSearchInfo), pParam->heapSize,
+            *(pParam->scoreItemQueue), *(pParam->distSearchInfo), pParam->counterResults_thread, pParam->heapSize,
             pParam->docid_start, pParam->docid_num_byeachthread, pParam->docid_nextstart_inc, true);
     }
     ++(*finishedJobs);
@@ -437,6 +447,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         faceted::OntologyRep& attrRep,
         boost::shared_ptr<HitQueue>& scoreItemQueue_orig,
         DistKeywordSearchInfo& distSearchInfo,
+        std::map<std::string, unsigned int>& counterResults,
         int heapSize,
         std::size_t docid_start,
         std::size_t docid_num_byeachthread,
@@ -678,6 +689,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     }
     std::size_t totalCount;
     sf1r::PropertyRange propertyRange = propertyRange_orig;
+
     try
     {
         bool ret = doSearch_(
@@ -693,6 +705,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             pDocIterator.get(),
             groupFilter.get(),
             scoreItemQueue.get(),
+            counterResults,
             heapSize,
             docid_start,
             docid_num_byeachthread,
@@ -736,6 +749,7 @@ bool SearchManager::doSearch_(
         CombinedDocumentIterator* pDocIterator,
         faceted::GroupFilter* groupFilter,
         HitQueue* scoreItemQueue,
+        std::map<std::string, unsigned>& counterResults,
         int heapSize,
         std::size_t docid_start,
         std::size_t docid_num_byeachthread,
@@ -744,9 +758,10 @@ bool SearchManager::doSearch_(
 CREATE_PROFILER( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
 CREATE_PROFILER( inserttoqueue, "SearchManager", "doSearch_: overall time for inserting to result queue");
 CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall time for scoring customized score for a doc");
+    typedef boost::shared_ptr<NumericPropertyTableBase> NumericPropertyTablePtr;
     totalCount = 0;
     const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
-    boost::shared_ptr<NumericPropertyTableBase> rangePropertyTable;
+    NumericPropertyTablePtr rangePropertyTable;
     float lowValue = (std::numeric_limits<float>::max) ();
     float highValue = - lowValue;
 
@@ -758,6 +773,20 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
     if ( pScoreDocIterator && pSorter )
     {
         requireScorer = pSorter->requireScorer();
+    }
+
+    std::vector<NumericPropertyTablePtr> counterTables;
+    std::vector<uint32_t> counterValues;
+    unsigned counterSize = actionOperation.actionItem_.counterList_.size();
+    unsigned ii = 0;
+    if(counterSize)
+    {
+        counterTables.resize(counterSize);
+        counterValues.resize(counterSize,0);
+        for(; ii < counterSize; ++ii)
+        {
+            counterTables[ii] = documentManagerPtr_->getNumericPropertyTable(actionOperation.actionItem_.counterList_[ii]);
+        }
     }
 
     if(docid_start > 0)
@@ -785,6 +814,16 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
                 {
                     highValue = docPropertyValue;
                 }
+            }
+        }
+
+        /// COUNT(PropertyName)  semantics
+        if (counterSize)
+        {
+            for(ii = 0; ii < counterSize;++ii)
+            {
+                if(counterTables[ii]->isValid(curDocId))
+                    ++counterValues[ii];
             }
         }
 
@@ -822,6 +861,13 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
     {
         propertyRange.highValue_ = highValue;
         propertyRange.lowValue_ = lowValue;
+    }
+    if (counterSize)
+    {
+        for(ii = 0; ii < counterSize; ++ii)
+        {
+            counterResults[actionOperation.actionItem_.counterList_[ii]] = counterValues[ii];
+        }
     }
     return true;
 }

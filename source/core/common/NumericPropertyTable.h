@@ -65,6 +65,14 @@ public:
         if (ofs) save_(ofs);
     }
 
+    bool isValid(std::size_t pos) const
+    {
+        ReadLock lock(mutex_);
+        if (pos >= data_.size() || data_[pos] == invalidValue_)
+            return false;
+        return true;
+    }
+
     bool getInt32Value(std::size_t pos, int32_t& value) const
     {
         ReadLock lock(mutex_);

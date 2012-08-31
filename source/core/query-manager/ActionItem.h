@@ -86,38 +86,38 @@ public:
     ///
     /// @brief a flag variable if snippet option is turned on in the query.
     ///
-    bool            isSnippetOn_;
+    bool isSnippetOn_;
 
     ///
     /// @brief a flag variable if summary option is turned on in the query.
     ///
-    bool            isSummaryOn_;
+    bool isSummaryOn_;
 
     ///
     /// @brief the number of summary sentences. It only affects if isSummaryOn_ is true.
     ///
-    size_t          summarySentenceNum_;
+    size_t summarySentenceNum_;
 
     /// @brief Summary is returned as another property. This field
     /// customized the name of that property. If it is empty, the name is
     /// determined by application.
-    std::string     summaryPropertyAlias_;
+    std::string summaryPropertyAlias_;
 
     ///
     /// @brief a flag variable if highlight option is turned on in the query.
     ///
-    bool            isHighlightOn_;
+    bool isHighlightOn_;
 
     ///
     /// @brief a flag variable, true for splitting property value into multiple values,
     /// mainly for properties configured in <Group> or <Attr>.
     ///
-    bool            isSplitPropertyValue_;
+    bool isSplitPropertyValue_;
 
     ///
     /// @brief analyzed query string of specific property
     ///
-    std::string     propertyString_;
+    std::string propertyString_;
 
     DATA_IO_LOAD_SAVE(DisplayProperty,
         & isSnippetOn_ & isSummaryOn_ & summarySentenceNum_
@@ -183,46 +183,46 @@ public:
     ///
     /// @brief a flag if current query should be logged.
     ///
-    bool            isLogging_;
+    bool isLogging_;
 
     ///
     /// @brief encoding type string.
     ///
-    std::string     encodingType_;
+    std::string encodingType_;
 
     ///
     /// @brief a query string. The encoding type of query string
     ///        and result XML will follow encodingType_.
     ///
-    std::string     queryString_;
+    std::string queryString_;
 
     ///
     /// @brief the expanded query string.
     ///
-    std::string     expandedQueryString_;
+    std::string expandedQueryString_;
 
     ///
     /// @brief a user id. The user id is accompanied with the query string
     ///          in a search request.
     ///
-    std::string     userID_;
+    std::string userID_;
 
     ///
     /// @brief a string value of selected taxonomy label. It is used
     ///        only in Label Click Query.
     ///
-    std::string     taxonomyLabel_;
+    std::string taxonomyLabel_;
 
     /// @brief Name entity item name
-    std::string     nameEntityItem_;
+    std::string nameEntityItem_;
 
     /// @brief Name entity item type
-    std::string     nameEntityType_;
+    std::string nameEntityType_;
 
     ///
     /// @brief ip address of requester.
     ///
-    std::string     ipAddress_;
+    std::string ipAddress_;
 
     DATA_IO_LOAD_SAVE(RequesterEnvironment,
             & isLogging_ & encodingType_ & queryString_ & expandedQueryString_
@@ -261,79 +261,6 @@ inline bool operator==(
         && a.taxonomyLabel_ == b.taxonomyLabel_
         && a.ipAddress_ == b.ipAddress_;
 }
-
-///
-/// @brief This class stores auto fill list information.
-///
-class AutoFillActionItem
-{
-public:
-
-    ///
-    /// @brief environment value of requester
-    /// @see RequesterEnvironment
-    ///
-    RequesterEnvironment                    env_;
-
-    ///
-    /// @brief an auto fill string list which is stored with recommended terms by analyzing the queryString.
-    ///
-    std::vector<izenelib::util::UString>    autoFillList_;
-
-    DATA_IO_LOAD_SAVE(AutoFillActionItem, & env_ & autoFillList_)
-}; // end - class AutoFillActionItem
-
-///
-/// @brief This class has information how to process when User starts indexing.
-///
-class IndexCommandActionItem
-{
-public:
-    ///
-    /// @brief an environment variable of requester.
-    /// @see RequesterEnvironment
-    ///
-    RequesterEnvironment        env_;
-
-    ///
-    /// @Number of documents which are going to be indexed.
-    ///
-    uint32_t                    numOfDocs_;
-
-    ///
-    /// @brief a list of collection name to be indexed.
-    ///
-    std::vector<std::string>    collectionNameList_;
-
-    DATA_IO_LOAD_SAVE(IndexCommandActionItem, & env_ & numOfDocs_ & collectionNameList_)
-
-    MSGPACK_DEFINE(env_, numOfDocs_, collectionNameList_);
-}; // end - class IndexCommandActionItem
-
-
-
-///
-/// @brief This class has information how to process when User optimizes indexing.
-///
-class OptimizeIndexCommandActionItem
-{
-public:
-    ///
-    /// @brief an environment variable of requester.
-    /// @see RequesterEnvironment
-    ///
-    RequesterEnvironment        env_;
-
-    ///
-    /// @brief a list of collection name to be optimized.
-    ///
-    std::vector<std::string>    collectionNameList_;
-
-    DATA_IO_LOAD_SAVE(OptimizeIndexCommandActionItem, & env_ & collectionNameList_)
-
-    MSGPACK_DEFINE(env_, collectionNameList_);
-}; // end - class IndexCommandActionItem
-
 
 ///
 /// @brief This class has information to process keyword searching.
@@ -485,100 +412,101 @@ public:
     /// @brief an environment variable of requester.
     /// @see RequesterEnvironment
     ///
-    RequesterEnvironment                        env_;
+    RequesterEnvironment env_;
 
     ///
     /// @brief a string of corrected query. It will be filled by query-correction-sub-manager
     ///        if it needs to be modified.
     ///
-    izenelib::util::UString                     refinedQueryString_;
+    izenelib::util::UString refinedQueryString_;
 
     ///
     /// @brief a collection name.
     ///
-    std::string                                 collectionName_;
+    std::string collectionName_;
 
     ///
     /// @brief ranking type of the query. BM25, KL and PLM can be used.
     ///
-    RankingType::TextRankingType                rankingType_;
+    RankingType::TextRankingType rankingType_;
 
     ///
     /// @brief searching mode of the query. AND, OR, VERBOSE and KNN can be used.
     ///
-    SearchingModeInfo            searchingMode_;
+    SearchingModeInfo searchingMode_;
 
     ///
     /// @brief page information of current result page.
     /// @see PageInfo
     ///
-    PageInfo                                    pageInfo_;
+    PageInfo pageInfo_;
 
     ///
     /// @brief This contains how to analyze input query string.
     ///
-    LanguageAnalyzerInfo                        languageAnalyzerInfo_;
+    LanguageAnalyzerInfo languageAnalyzerInfo_;
 
     ///
     /// @brief a list of properties which are the target of searching.
     ///
-    std::vector<std::string>                    searchPropertyList_;
+    std::vector<std::string> searchPropertyList_;
 
     ///
     /// @brief a flag if duplicated documents are removed in the result.
     ///
-    bool                                        removeDuplicatedDocs_;
+    bool removeDuplicatedDocs_;
 
     ///
     /// @brief a list of property which are the target of display in the result.
     ///
-    std::vector<DisplayProperty>                displayPropertyList_;
+    std::vector<DisplayProperty> displayPropertyList_;
 
     ///
     /// @brief a list of sort methods. The less the index of a sort item in  the list, the more it has priority.
     ///
-    SortPriorityList                            sortPriorityList_;
+    SortPriorityList sortPriorityList_;
 
     ///
     /// @brief a list of filtering option.
     ///
-    std::vector<QueryFiltering::FilteringType>  filteringList_;
+    std::vector<QueryFiltering::FilteringType> filteringList_;
+
+    ///
+    /// @brief a list of counters
+    ///
+    std::vector<std::string> counterList_;
 
     ///
     /// @brief property name for getting its property value range.
     ///
-    std::string                                 rangePropertyName_;
+    std::string rangePropertyName_;
 
     ///
     /// @brief group filter parameter
     ///
-    faceted::GroupParam                         groupParam_;
-
-    ///
-    /// @brief a list of property query terms.
-    ///
+    faceted::GroupParam groupParam_;
 
     ///
     /// @brief custom ranking information
     ///
-    std::string                                 strExp_;
-    std::map<std::string, double>               paramConstValueMap_;
-    std::map<std::string, std::string>          paramPropertyValueMap_;
+    std::string strExp_;
+    std::map<std::string, double> paramConstValueMap_;
+    std::map<std::string, std::string> paramPropertyValueMap_;
 
     ///
     /// @brief custom ranking information(2)
     /// Avoid a second parsing by passing a reference to CustomRanker object.
     /// TODO, abandon this, serialization needed for remoted call
-    boost::shared_ptr<CustomRanker>             customRanker_;
+    boost::shared_ptr<CustomRanker> customRanker_;
 
     DATA_IO_LOAD_SAVE(KeywordSearchActionItem, & env_ & refinedQueryString_ & collectionName_
              & rankingType_ & searchingMode_ & pageInfo_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
-             & displayPropertyList_ & sortPriorityList_ & filteringList_ & rangePropertyName_ & groupParam_
+             & displayPropertyList_ & sortPriorityList_ & filteringList_ & counterList_ & rangePropertyName_ & groupParam_
              & strExp_ & paramConstValueMap_ & paramPropertyValueMap_);
 
     /// msgpack serializtion
     MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, languageAnalyzerInfo_,
-            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_,
+            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_, counterList_,
             rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_);
 
 private:
@@ -600,6 +528,7 @@ private:
         ar & displayPropertyList_;
         ar & sortPriorityList_;
         ar & filteringList_;
+        ar & counterList_;
         ar & rangePropertyName_;
         ar & groupParam_;
         ar & strExp_;
@@ -616,29 +545,29 @@ class GetDocumentsByIdsActionItem
 {
 public:
     /// @brief an environment value of requester.
-    RequesterEnvironment                        env_;
+    RequesterEnvironment env_;
 
     /// @brief This contains how to analyze input query string.
-    LanguageAnalyzerInfo                        languageAnalyzerInfo_;
+    LanguageAnalyzerInfo languageAnalyzerInfo_;
 
     /// @brief Collection name.
-    std::string                                 collectionName_;
+    std::string collectionName_;
 
     /// @brief List of display properties which is shown in the result.
-    std::vector<DisplayProperty>                displayPropertyList_;
+    std::vector<DisplayProperty> displayPropertyList_;
 
     /// @brief Internal document id list.
-    std::vector<wdocid_t>                       idList_;
+    std::vector<wdocid_t> idList_;
 
     /// @brief User specified DOCID list.
-    std::vector<std::string>                    docIdList_;
+    std::vector<std::string> docIdList_;
 
     /// @brief Property name, and values list
-    std::string                                 propertyName_;
-    std::vector<PropertyValue>                  propertyValueList_;
+    std::string propertyName_;
+    std::vector<PropertyValue> propertyValueList_;
 
     /// @brief filtering options
-    std::vector<QueryFiltering::FilteringType>  filteringList_;
+    std::vector<QueryFiltering::FilteringType> filteringList_;
 
     DATA_IO_LOAD_SAVE(
         GetDocumentsByIdsActionItem,
@@ -702,64 +631,6 @@ public:
 
     MSGPACK_DEFINE(queryString_, propName_, groupPath_);
 };
-
-///
-/// @brief This class has information to start mining.
-///
-class MiningCommandActionItem
-{
-public:
-
-    ///
-    /// @brief an environment variable of requester.
-    ///
-    RequesterEnvironment        env_;
-
-    ///
-    /// @brief the number of documents to be mining.
-    ///
-    size_t                      numOfDocs_;
-
-    ///
-    /// @brief a list of collection name which should be mined.
-    ///
-    std::vector<std::string>    collectionNameList_;
-
-    DATA_IO_LOAD_SAVE(MiningCommandActionItem, & env_ & numOfDocs_ & collectionNameList_)
-
-    MSGPACK_DEFINE(env_, numOfDocs_, collectionNameList_);
-
-}; // end - class MiningCommandActionItem
-
-///
-/// @brief this class contains information to process Recent Keyword Query.
-///
-class RecentKeywordActionItem
-{
-public:
-    ///
-    /// @brief an environment variable of requster.
-    ///
-    RequesterEnvironment                                env_;
-
-    ///
-    /// @brief this object contains two information. one is a target collection name.
-    ///        And the other name is the number of requested recent keyword list.
-    ///
-    std::vector< std::pair<std::string , size_t> >      collectionNameKeywordNoList_;
-
-    ///
-    /// @brief a list of recent keyword list.
-    /// @details
-    /// First index means collection index which is the same order of
-    /// collectionNameKeywordNoList_
-    ///
-    std::vector<std::vector<izenelib::util::UString> >  recentKeywordList_;
-
-    DATA_IO_LOAD_SAVE(RecentKeywordActionItem, & env_ & collectionNameKeywordNoList_ & recentKeywordList_);
-
-    MSGPACK_DEFINE(env_, collectionNameKeywordNoList_, recentKeywordList_);
-}; // end - class RecentKeywordActionItem
 
 } // end - namespace sf1r
 
