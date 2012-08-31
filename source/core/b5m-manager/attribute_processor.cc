@@ -147,19 +147,19 @@ bool AttributeProcessor::BuildAttributeId_()
                 if(attrib_value_list.size()!=1) continue; //ignore empty value attrib and multi value attribs
                 izenelib::util::UString attrib_value = attrib_value_list[0];
                 izenelib::util::UString attrib_name = attrib_list[i].first;
-                std::string san;
-                attrib_name.convertString(san, UString::UTF_8);
-                //LOG(INFO)<<"san before "<<san<<std::endl;
-                if(boost::algorithm::ends_with(san, "型号"))
-                {
-                    san = "型号";
-                }
-                if(boost::algorithm::ends_with(san, "品牌")&&!boost::algorithm::starts_with(san, "品牌"))
-                {
-                    san = "型号";
-                }
-                //LOG(INFO)<<"san after "<<san<<std::endl;
-                attrib_name = UString(san, UString::UTF_8);
+                //std::string san;
+                //attrib_name.convertString(san, UString::UTF_8);
+                ////LOG(INFO)<<"san before "<<san<<std::endl;
+                //if(boost::algorithm::ends_with(san, "型号"))
+                //{
+                    //san = "型号";
+                //}
+                //if(boost::algorithm::ends_with(san, "品牌")&&!boost::algorithm::starts_with(san, "品牌"))
+                //{
+                    //san = "型号";
+                //}
+                ////LOG(INFO)<<"san after "<<san<<std::endl;
+                //attrib_name = UString(san, UString::UTF_8);
                 if(attrib_value.length()==0 || attrib_value.length()>30) continue;
                 std::string name_rep = GetAttribRep_(category, attrib_name);
                 uint32_t name_id = GetNameId_(category, attrib_name);
@@ -218,36 +218,36 @@ uint32_t AttributeProcessor::GetAid_(const UString& category, const UString& att
     attrib_name.convertString(sname, UString::UTF_8);
     std::string svalue;
     attrib_value.convertString(svalue, UString::UTF_8);
-    std::vector<std::string> value_vec;
-    boost::algorithm::split(value_vec, svalue, boost::algorithm::is_any_of(" "));
-    if(value_vec.size()>1 && sname!="型号")
-    {
-        svalue = value_vec[0];
-    }
-    boost::algorithm::replace_all(svalue, " ", "");
-    std::size_t kpos = svalue.find("(");
-    if(kpos!=std::string::npos)
-    {
-        svalue = svalue.substr(0, kpos);
-    }
-    kpos = svalue.find("（");
-    if(kpos!=std::string::npos)
-    {
-        svalue = svalue.substr(0, kpos);
-    }
-    if(true)
-    {
-        kpos = svalue.find("单机");
-        if(kpos!=std::string::npos)
-        {
-            svalue = svalue.substr(0, kpos);
-        }
-        kpos = svalue.find("套机");
-        if(kpos!=std::string::npos)
-        {
-            svalue = svalue.substr(0, kpos);
-        }
-    }
+    //std::vector<std::string> value_vec;
+    //boost::algorithm::split(value_vec, svalue, boost::algorithm::is_any_of(" "));
+    //if(value_vec.size()>1 && sname!="型号")
+    //{
+        //svalue = value_vec[0];
+    //}
+    //boost::algorithm::replace_all(svalue, " ", "");
+    //std::size_t kpos = svalue.find("(");
+    //if(kpos!=std::string::npos)
+    //{
+        //svalue = svalue.substr(0, kpos);
+    //}
+    //kpos = svalue.find("（");
+    //if(kpos!=std::string::npos)
+    //{
+        //svalue = svalue.substr(0, kpos);
+    //}
+    //if(true)
+    //{
+        //kpos = svalue.find("单机");
+        //if(kpos!=std::string::npos)
+        //{
+            //svalue = svalue.substr(0, kpos);
+        //}
+        //kpos = svalue.find("套机");
+        //if(kpos!=std::string::npos)
+        //{
+            //svalue = svalue.substr(0, kpos);
+        //}
+    //}
     std::vector<std::string> vec;
     boost::algorithm::split(vec, svalue, boost::algorithm::is_any_of("/"));
     std::vector<UString> values;
