@@ -501,6 +501,7 @@ bool OpinionsManager::GenCandidateWord(WordSegContainerT& top_wordlist)
 
     //LOG(INFO) << "total words: " << orig_wordlist.size() << std::endl;
 
+    WordFreqMapT  word_freq_records;
     string wordTemp="";
     WordSegContainerT::iterator it = orig_wordlist.begin();
     WordSegContainerT::iterator it_end = orig_wordlist.end();
@@ -512,27 +513,27 @@ bool OpinionsManager::GenCandidateWord(WordSegContainerT& top_wordlist)
         if(!wordTemp.empty() && wordTemp != "，" 
             && wordTemp != "。" && wordTemp != "！" )
         {
-            if(word_freq_records_.find(wordTemp) == word_freq_records_.end())
+            if(word_freq_records.find(wordTemp) == word_freq_records.end())
             {
-                word_freq_records_[wordTemp] = 1;
+                word_freq_records[wordTemp] = 1;
             }
             else
             {
-                word_freq_records_[wordTemp] += 1;
+                word_freq_records[wordTemp] += 1;
             }
         }
     }
 
-    //LOG(INFO) << "total different words: " << word_freq_records_.size() << std::endl;
+    //LOG(INFO) << "total different words: " << word_freq_records.size() << std::endl;
     WordPriorityQueue_  topk_words;
-    topk_words.Init(min((size_t)400, word_freq_records_.size()));
+    topk_words.Init(min((size_t)400, word_freq_records.size()));
     bool need_add_single = false;
-    if(word_freq_records_.size() < 400)
+    if(word_freq_records.size() < 400)
     {
         need_add_single = true;
     }
-    WordFreqMapT::const_iterator cit = word_freq_records_.begin();
-    while(cit != word_freq_records_.end())
+    WordFreqMapT::const_iterator cit = word_freq_records.begin();
+    while(cit != word_freq_records.end())
     {
         if(cit->second > 1 || need_add_single)
         {
@@ -824,38 +825,46 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
     double score = Score(phrase);
     OpinionCandidateContainerT::iterator it = candList.begin();
     bool can_insert = true;
-    bool first_replace = true;
+    bool is_larger_replace_exist = false;
 
-    while( it != candList.end() )
+    size_t start = 0;
+    size_t remove_end = candList.size();
+    while( start < remove_end )
     {
-        if(Sim(phrase, (*it).first) > SigmaSim)
+        if(Sim(phrase, candList[start].first) > SigmaSim)
         {
             can_insert = false;
-            if(score > (*it).second)
+            if(score > candList[start].second)
             {
-                if(!first_replace)
-                {
-                    //out << "similarity removed: " << getSentence(phrase) << "," << 
-                    //    getSentence((*it).first) << "," << Sim(phrase, (*it).first) << endl;
-                    it = candList.erase(it);
-                    continue;
-                }
-                else
-                {
-                    //out << "similarity replaced: " << getSentence(phrase) << "," << 
-                    //    getSentence((*it).first) << "," << Sim(phrase, (*it).first) << endl;
-                    *it = std::make_pair(phrase, score);
-                    first_replace = false;
-                }
-                // do not return, relpace all similarity to get higher score for them.
-                //return;
+                //out << "similarity removed: " << getSentence(phrase) << "," << 
+                //    getSentence((*it).first) << "," << Sim(phrase, (*it).first) << endl;
+                //  swap the similarity to the end.
+                OpinionCandidateT temp = candList[remove_end - 1];
+                candList[remove_end - 1] = candList[start];
+                candList[start] = temp;
+                --remove_end;
+                continue;
             }
             else
             {
-                return;
+                is_larger_replace_exist = true;
             }
         }
-        ++it;
+        ++start;
+    }
+    if(!can_insert && (remove_end < candList.size()))
+    {
+        if(is_larger_replace_exist)
+        {
+            // just remove all similarity. Because a larger already in the candidate.
+            candList.erase(candList.begin() + remove_end, candList.end());
+        }
+        else
+        {
+            // replace the similarity with current.
+            candList[remove_end] = std::make_pair(phrase, score);
+            candList.erase(candList.begin() + remove_end + 1, candList.end());
+        }
     }
     if(can_insert && phrase.size() > 2)
     {
@@ -977,7 +986,6 @@ std::vector<std::string> OpinionsManager::get()
     //}
     //std::cout << "ngram finished...." << std::endl;
 
-    word_freq_records_.clear();
     word_freq_insentence_.clear();
     cached_pmimodified_.clear();
     cached_srep.clear();

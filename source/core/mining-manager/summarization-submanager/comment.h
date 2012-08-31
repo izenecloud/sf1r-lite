@@ -137,7 +137,6 @@ private:
     Ngram* Ngram_;
     fstream out;
     int windowsize;
-    WordFreqMapT  word_freq_records_;
     CachedStorageT cached_srep;
     CachedStorageT cached_sread;
     WordPossibilityMapT word_freq_insentence_;
