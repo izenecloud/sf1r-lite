@@ -109,6 +109,7 @@ namespace sf1r {
                 LOG(ERROR)<<"fujimap build error"<<std::endl;
                 return false;
             }
+            db_->save(db_path_.c_str());
             id_manager_->flush();
             return true;
         }
