@@ -157,19 +157,7 @@ public:
     {
         WriteLock lock(mutex_);
         if (pos >= data_.size())
-        {
-            std::size_t capacity = data_.capacity();
-            if (pos >= capacity)
-            {
-                do
-                {
-                    capacity <<= 1;
-                }
-                while (pos >= capacity);
-                data_.reserve(capacity);
-            }
             data_.resize(pos + 1, invalidValue_);
-        }
 
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
@@ -178,19 +166,7 @@ public:
     {
         WriteLock lock(mutex_);
         if (pos >= data_.size())
-        {
-            std::size_t capacity = data_.capacity();
-            if (pos >= capacity)
-            {
-                do
-                {
-                    capacity <<= 1;
-                }
-                while (pos >= capacity);
-                data_.reserve(capacity);
-            }
             data_.resize(pos + 1, invalidValue_);
-        }
 
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
@@ -199,19 +175,7 @@ public:
     {
         WriteLock lock(mutex_);
         if (pos >= data_.size())
-        {
-            std::size_t capacity = data_.capacity();
-            if (pos >= capacity)
-            {
-                do
-                {
-                    capacity <<= 1;
-                }
-                while (pos >= capacity);
-                data_.reserve(capacity);
-            }
             data_.resize(pos + 1, invalidValue_);
-        }
 
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
@@ -220,19 +184,7 @@ public:
     {
         WriteLock lock(mutex_);
         if (pos >= data_.size())
-        {
-            std::size_t capacity = data_.capacity();
-            if (pos >= capacity)
-            {
-                do
-                {
-                    capacity <<= 1;
-                }
-                while (pos >= capacity);
-                data_.reserve(capacity);
-            }
             data_.resize(pos + 1, invalidValue_);
-        }
 
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
@@ -241,19 +193,7 @@ public:
     {
         WriteLock lock(mutex_);
         if (pos >= data_.size())
-        {
-            std::size_t capacity = data_.capacity();
-            if (pos >= capacity)
-            {
-                do
-                {
-                    capacity <<= 1;
-                }
-                while (pos >= capacity);
-                data_.reserve(capacity);
-            }
             data_.resize(pos + 1, invalidValue_);
-        }
 
         try
         {
@@ -271,19 +211,7 @@ public:
     {
         WriteLock lock(mutex_);
         if (pos >= data_.size())
-        {
-            std::size_t capacity = data_.capacity();
-            if (pos >= capacity)
-            {
-                do
-                {
-                    capacity <<= 1;
-                }
-                while (pos >= capacity);
-                data_.reserve(capacity);
-            }
             data_.resize(pos + 1, invalidValue_);
-        }
 
         data_[pos] = value;
         dirty_ = true;
@@ -296,19 +224,7 @@ public:
             return;
 
         if (to >= data_.size())
-        {
-            std::size_t capacity = data_.capacity();
-            if (to >= capacity)
-            {
-                do
-                {
-                    capacity <<= 1;
-                }
-                while (to >= capacity);
-                data_.reserve(capacity);
-            }
             data_.resize(to + 1, invalidValue_);
-        }
 
         data_[to] = data_[from];
         dirty_ = true;
