@@ -7,6 +7,7 @@
 #define OPINION_NGRAM_MIN  2
 #define MIN_SEED_BIGRAM   50
 #define REFINE_THRESHOLD  4
+#define MAX_SEED_BIGRAM_IN_SINGLE_COMMENT  200
 
 using namespace std;
 using namespace cma;
@@ -454,6 +455,15 @@ static bool FilterBigramByCounter(int filter_counter, const OpinionsManager::Wor
     return false;
 }
 
+bool OpinionsManager::FilterBigramByPossib(double possib, const OpinionsManager::BigramPhraseT& bigram)
+{
+    if(IsCommentSplitStr(bigram.first))
+        return false;
+    if(Possib(bigram.first + bigram.second) > possib)
+        return false;
+    return true;
+}
+
 bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
 {
     // first , get all the frequency in overall and filter the low frequency phrase.
@@ -463,6 +473,8 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
     WordFreqMapT  word_freq_records;
     for(size_t i = 0; i < orig_comments_.size(); i++)
     {
+        int bigram_start = (int)resultList.size();
+        int bigram_num_insingle_comment = 0;  // splitter is excluded
         for(size_t j = 0; j < orig_comments_[i].size() - 1; j++)
         {
             if(!IsAllChineseStr(orig_comments_[i][j]))
@@ -497,8 +509,27 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
                 }
 
                 resultList.push_back(std::make_pair(bigram_words[0], bigram_words[1]));
-                //out << "add seed bigram: "<< bigram_words[0] << "," << bigram_words[1] << endl;
+                ++bigram_num_insingle_comment;
             }
+        }
+        if(bigram_num_insingle_comment > MAX_SEED_BIGRAM_IN_SINGLE_COMMENT)
+        {
+            out << "seed bigram is too much in phrase: "<< getSentence(orig_comments_[i]) << endl;
+            WordPriorityQueue_  topk_seedbigram;
+            topk_seedbigram.Init(MAX_SEED_BIGRAM_IN_SINGLE_COMMENT);
+            for(int start = bigram_start; start < resultList.size(); ++start)
+            {
+                std::string bigram_str = resultList[start].first + resultList[start].second;
+                if(IsAllChineseStr(bigram_str))
+                    topk_seedbigram.insert(std::make_pair(bigram_str, Possib(bigram_str)));
+            }
+            double possib_threshold = topk_seedbigram.top().second;
+            out << "bigram filter possibility: "<< possib_threshold << endl;
+            BigramPhraseContainerT::iterator bigram_it = std::remove_if(resultList.begin() + bigram_start,
+                resultList.end(),
+                boost::bind(&OpinionsManager::FilterBigramByPossib, this, possib_threshold, _1));
+            out << "bigram filter num: "<< bigram_it - resultList.end() << endl;
+            resultList.erase(bigram_it, resultList.end());
         }
         // push splitter at the end of each sentence to avoid the opinion cross two different sentence.
         resultList.push_back(std::make_pair(".", "."));
@@ -561,38 +592,13 @@ void OpinionsManager::RefineCandidateNgram(OpinionCandidateContainerT& candList)
     for(size_t index = 0; index < candList.size(); ++index)
     {
         bool need_refine = false;
-        cma::Sentence single_sen(getSentence(candList[index].first).c_str());
-        int ret;
-        ret = analyzer_->runWithSentence(single_sen);
-        assert(ret == 1);
-        int best = single_sen.getOneBestIndex();
-        if(single_sen.getCount(best) <= 1)
+        const NgramPhraseT& cand_phrase = candList[index].first;
+        double max_possib = 0;
+        for(size_t j = 0; j < cand_phrase.size() - 1; ++j)
         {
-            // remove this
-            need_refine = true;
+            max_possib = max(max_possib, Possib(cand_phrase[j] + cand_phrase[j + 1]));
         }
-        else
-        {
-            //
-            //bool has_adj = false;
-            //bool has_noun = false;
-            double max_possib = 0;
-            for(int i = 0; i < single_sen.getCount(best); i++)
-            {
-                max_possib = max(max_possib, Possib(single_sen.getLexicon(best, i)));
-                //int pos = single_sen.getPOS(best, i);
-                ////
-                //if(isAdjective(pos))
-                //{
-                //    has_adj = true;
-                //}
-                //else if(isNoun(pos))
-                //{
-                //    has_noun = true;
-                //}
-            }
-            need_refine = (max_possib < REFINE_THRESHOLD) /*|| (!has_adj && !has_noun)*/;
-        }
+        need_refine = (max_possib < REFINE_THRESHOLD);
         if(need_refine)
         {
             out << "candidate refined: " << getSentence(candList[index].first) << endl;
@@ -679,7 +685,6 @@ void OpinionsManager::GetOrigCommentsByBriefOpinion(std::vector< std::pair<std::
         }
         ++it;
     }
-
 }
 
 void OpinionsManager::recompute_srep(std::vector<std::pair<std::string, double> >& candList)
@@ -688,7 +693,8 @@ void OpinionsManager::recompute_srep(std::vector<std::pair<std::string, double> 
     // meaningful sentence to avoid the bad sentence with good bigrams.
     for(size_t i = 0; i < candList.size(); i++)
     {
-        candList[i].second = SrepSentence(candList[i].first);
+        if(candList[i].second >= SigmaRep)
+            candList[i].second = SrepSentence(candList[i].first);
     }
 }
 
@@ -728,21 +734,22 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
         out << "str:" << candOpinionString[i].first << ",score:" << candOpinionString[i].second << endl;
     }
 
-    recompute_srep(candOpinionString);
-    out << "after recompute_srep: candidates are " << endl;
-    for(size_t i = 0; i < candOpinionString.size(); ++i)
-    {
-        out << "str:" << candOpinionString[i].first << ",score:" << candOpinionString[i].second << endl;
-    }
-
     if(need_orig_comment_phrase)
     {
         // get orig_comment from the candidate opinions.
         GetOrigCommentsByBriefOpinion(candOpinionString);
     }
 
+    recompute_srep(candOpinionString);
+
+    out << "after recompute_srep: candidates are " << endl;
+    for(size_t i = 0; i < candOpinionString.size(); ++i)
+    {
+        out << "str:" << candOpinionString[i].first << ",score:" << candOpinionString[i].second << endl;
+    }
+
     sort(candOpinionString.begin(), candOpinionString.end(), seedPairCmp2);
-    size_t result_num = min((size_t)SigmaLength, candOpinionString.size());
+    size_t result_num = min((size_t)SigmaLength, min(2*orig_comments_.size(), candOpinionString.size()));
     for(size_t i = 0; i < result_num; ++i)
     {
         final_result.push_back(candOpinionString[i].first);
@@ -896,8 +903,11 @@ void OpinionsManager::changeForm(const OpinionCandidateContainerT& candList, std
     string temp;
     for(size_t i = 0; i < candList.size(); i++)
     {
-        WordVectorToString(temp, candList[i].first);
-        newForm.push_back(std::make_pair(temp, candList[i].second));
+        if(candList[i].second >= SigmaRep)
+        {
+            WordVectorToString(temp, candList[i].first);
+            newForm.push_back(std::make_pair(temp, candList[i].second));
+        }
     }
 }
 

@@ -118,6 +118,7 @@ private:
     std::string getSentence(const WordSegContainerT& candVector);
     bool IsNeedFilte(const std::string& teststr);
     void GetOrigCommentsByBriefOpinion(std::vector< std::pair<std::string, double> >& candOpinionString);
+    bool FilterBigramByPossib(double possib, const OpinionsManager::BigramPhraseT& bigram);
 
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<WordFreqPairT>
