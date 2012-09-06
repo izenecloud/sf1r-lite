@@ -9,7 +9,7 @@
 #include <3rdparty/am/stx/btree_map.h>
 
 #include <boost/shared_ptr.hpp>
-#include "comment.h"
+
 namespace idmlib
 {
 namespace util
@@ -27,6 +27,7 @@ class ScdWriter;
 class SummarizationStorage;
 class CommentCacheStorage;
 class Corpus;
+class OpinionsManager;
 
 class MultiDocSummarizationSubManager
 {
@@ -48,8 +49,6 @@ public:
     bool GetSummarizationByRawKey(
             const izenelib::util::UString& rawKey,
             Summarization& result);
-    OpinionsManager* Op;
-    Ngram* Ng;
 
 private:
     bool DoEvaluateSummarization_(
@@ -76,6 +75,7 @@ private:
     SummarizationStorage* summarization_storage_;
 
     Corpus* corpus_;
+    OpinionsManager* Op;
 };
 
 }

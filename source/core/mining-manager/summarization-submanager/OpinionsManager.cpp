@@ -1,4 +1,4 @@
-#include "comment.h"
+#include "OpinionsManager.h"
 #include <icma/icma.h>
 #include <glog/logging.h>
 #include <math.h>   
@@ -517,7 +517,7 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
             out << "seed bigram is too much in phrase: "<< getSentence(orig_comments_[i]) << endl;
             WordPriorityQueue_  topk_seedbigram;
             topk_seedbigram.Init(MAX_SEED_BIGRAM_IN_SINGLE_COMMENT);
-            for(int start = bigram_start; start < resultList.size(); ++start)
+            for(int start = bigram_start; start < (int)resultList.size(); ++start)
             {
                 std::string bigram_str = resultList[start].first + resultList[start].second;
                 if(IsAllChineseStr(bigram_str))
