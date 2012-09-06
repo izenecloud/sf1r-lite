@@ -99,7 +99,7 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${Thrift_LIBS}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
-)
+  )
 
 FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   febird
@@ -127,55 +127,55 @@ TARGET_LINK_LIBRARIES(LogServerProcess
   ${Glog_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
-)
+  )
 
 IF(OpenCV_FOUND)
 
-    IF(NOT $ENV{TBLIB_ROOT} STREQUAL "")
-        MESSAGE("============ OpenCV and TFS client found, The ImageServerProcess will be builded. ==============")
+  IF(NOT $ENV{TBLIB_ROOT} STREQUAL "")
+    MESSAGE("============ OpenCV and TFS client found, The ImageServerProcess will be builded. ==============")
 
-        INCLUDE_DIRECTORIES(
-            $ENV{TBLIB_ROOT}/include
-            $ENV{TBLIB_ROOT}/include/tbsys
-            $ENV{TBLIB_ROOT}/include/tbnet
-            $ENV{HOME}/tfs_bin/include
-            )
+    INCLUDE_DIRECTORIES(
+      $ENV{TBLIB_ROOT}/include
+      $ENV{TBLIB_ROOT}/include/tbsys
+      $ENV{TBLIB_ROOT}/include/tbnet
+      $ENV{HOME}/tfs_bin/include
+      )
 
-        FILE(GLOB image_server_process_SRC
-            "ImageServerProcess/*.cc" 
-            "ImageServerProcess/*.cpp" 
-            "common/ProcessOptions.cpp" 
-            "common/OnSignal.cpp" 
-            )
-        ADD_EXECUTABLE(ImageServerProcess ${image_server_process_SRC})
+    FILE(GLOB image_server_process_SRC
+      "ImageServerProcess/*.cc"
+      "ImageServerProcess/*.cpp"
+      "common/ProcessOptions.cpp"
+      "common/OnSignal.cpp"
+      )
+    ADD_EXECUTABLE(ImageServerProcess ${image_server_process_SRC})
 
-        TARGET_LINK_LIBRARIES(ImageServerProcess
-            sf1r_common
-            ${izenelib_LIBRARIES}
-            sf1r_image_manager
-            ${OpenCV_LIBS}
+    TARGET_LINK_LIBRARIES(ImageServerProcess
+      sf1r_common
+      ${izenelib_LIBRARIES}
+      sf1r_image_manager
+      ${OpenCV_LIBS}
 
-            #external
-            ${Boost_LIBRARIES}
-            ${Glog_LIBRARIES}
-            ${TokyoCabinet_LIBRARIES}
-            ${CMAKE_THREAD_LIBS_INIT}
-            $ENV{TBLIB_ROOT}/lib/libtbnet.so
-            $ENV{TBLIB_ROOT}/lib/libtbsys.so
-            $ENV{HOME}/tfs_bin/lib/libtfsclient.so
-            )
+      #external
+      ${Boost_LIBRARIES}
+      ${Glog_LIBRARIES}
+      ${TokyoCabinet_LIBRARIES}
+      ${CMAKE_THREAD_LIBS_INIT}
+      $ENV{TBLIB_ROOT}/lib/libtbnet.so
+      $ENV{TBLIB_ROOT}/lib/libtbsys.so
+      $ENV{HOME}/tfs_bin/lib/libtfsclient.so
+      )
 
-        INSTALL(TARGETS
-            ImageServerProcess
-            RUNTIME DESTINATION bin
-            COMPONENT sf1r_apps)
-    ENDIF()
+    INSTALL(TARGETS
+      ImageServerProcess
+      RUNTIME DESTINATION bin
+      COMPONENT sf1r_apps)
+  ENDIF()
 ELSE(OpenCV_FOUND)
-    MESSAGE("!!!!!!! OpenCV not found, the ImageServerProcess target will not be builded. !!!!!!!!!!!!!")
+  MESSAGE("!!!!!!! OpenCV not found, the ImageServerProcess target will not be builded. !!!!!!!!!!!!!")
 ENDIF(OpenCV_FOUND)
 
 INSTALL(TARGETS
-    CobraProcess
-    LogServerProcess
-    RUNTIME DESTINATION bin
-    COMPONENT sf1r_apps)
+  CobraProcess
+  LogServerProcess
+  RUNTIME DESTINATION bin
+  COMPONENT sf1r_apps)

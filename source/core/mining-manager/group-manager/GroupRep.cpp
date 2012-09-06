@@ -290,7 +290,7 @@ void GroupRep::mergeNumericRangeGroup(const GroupRep& other)
 void GroupRep::toOntologyRepItemList()
 {
     for (GroupRep::NumericGroupRep::const_iterator it = numericGroupRep_.begin();
-        it != numericGroupRep_.end(); ++it)
+            it != numericGroupRep_.end(); ++it)
     {
         izenelib::util::UString propName(it->first, izenelib::util::UString::UTF_8);
         stringGroupRep_.push_back(faceted::OntologyRepItem(0, propName, 0, 0));
@@ -299,7 +299,7 @@ void GroupRep::toOntologyRepItemList()
         izenelib::util::UString ustr;
 
         for (list<pair<double, unsigned int> >::const_iterator lit = it->second.begin();
-            lit != it->second.end(); ++lit)
+                lit != it->second.end(); ++lit)
         {
             formatNumericToUStr(lit->first, ustr);
             stringGroupRep_.push_back(faceted::OntologyRepItem(1, ustr, 0, lit->second));
@@ -317,7 +317,7 @@ string GroupRep::ToString() const
 {
     stringstream ss;
     for (StringGroupRep::const_iterator it = stringGroupRep_.begin();
-        it != stringGroupRep_.end(); ++it)
+            it != stringGroupRep_.end(); ++it)
     {
         OntologyRepItem item = *it;
         string str;

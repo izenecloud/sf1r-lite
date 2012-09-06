@@ -18,11 +18,12 @@ INCLUDE_DIRECTORIES(
   ${Glog_INCLUDE_DIRS}
   ${xml2_INCLUDE_DIRS}
   ${sqlite3_INCLUDE_DIRS}
+  ${Thrift_INCLUDE_DIR}
   )
 
 ADD_EXECUTABLE(LicenseFileGenerator
-    license-file-generator/LicenseFileGenerator.cpp
-    )
+  license-file-generator/LicenseFileGenerator.cpp
+  )
 
 TARGET_LINK_LIBRARIES(LicenseFileGenerator
   sf1r_configuration_manager
@@ -56,11 +57,11 @@ TARGET_LINK_LIBRARIES(LicenseFileGenerator
   ${MYSQL_LIBRARIES}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
-)
+  )
 
 ADD_EXECUTABLE(CassandraTool
-    cassandra/CassandraTools.cpp
-    )
+  cassandra/CassandraTools.cpp
+  )
 
 TARGET_LINK_LIBRARIES(CassandraTool
   sf1r_configuration_manager
@@ -94,8 +95,8 @@ TARGET_LINK_LIBRARIES(CassandraTool
   ${MYSQL_LIBRARIES}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
-)
+  )
 
 SET_TARGET_PROPERTIES(CassandraTool PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/tool
-)
+  RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/tool
+  )

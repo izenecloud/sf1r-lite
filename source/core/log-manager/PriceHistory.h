@@ -80,7 +80,7 @@ public:
 
     bool getSlice(PriceHistoryRow& row, const std::string& start = "", const std::string& finish = "", int32_t count = 100, bool reversed = false);
 
-    bool deleteRow(const std::string& key);
+    bool deleteRow(const uint128_t& key, time_t timestamp = -2);
 
     bool getCount(int32_t& count, const std::string& key, const std::string& start = "", const std::string& finish = "") const;
 
@@ -99,6 +99,13 @@ public:
             const std::vector<uint128_t>& key_list,
             const std::string& start = "",
             const std::string& finish = "");
+
+    bool deleteMultiSlice(
+            const std::vector<uint128_t>& key_list,
+            const std::string& start = "",
+            const std::string& finish = "",
+            int32_t count = 100,
+            bool reversed = false);
 
 public:
     bool is_enabled;
@@ -134,7 +141,6 @@ public:
     static const int32_t cf_row_cache_keys_to_save;
     static const std::map<std::string, std::string> cf_compression_options;
     static const double cf_bloom_filter_fp_chance;
-
 };
 
 }

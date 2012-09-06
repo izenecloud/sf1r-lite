@@ -276,6 +276,93 @@ bool PriceHistory::getMultiCount(
     return true;
 }
 
+bool PriceHistory::deleteMultiSlice(
+        const vector<uint128_t>& key_list,
+        const string& start,
+        const string& finish,
+        int32_t count,
+        bool reversed)
+{
+    if (!is_enabled) return false;
+    try
+    {
+        ColumnParent col_parent;
+        col_parent.__set_column_family(cf_name);
+
+        SlicePredicate pred;
+        pred.__isset.slice_range = true;
+        pred.slice_range.__set_start(start);
+        pred.slice_range.__set_finish(finish);
+        pred.slice_range.__set_count(count);
+        pred.slice_range.__set_reversed(reversed);
+
+        vector<string> str_key_list;
+        str_key_list.reserve(key_list.size());
+        for (uint32_t i = 0; i < key_list.size(); i++)
+        {
+            str_key_list.push_back(Utilities::toBytes(key_list[i]));
+        }
+
+        map<string, vector<ColumnOrSuperColumn> > raw_column_map;
+        CassandraConnection::instance().getCassandraClient(keyspace_name_)->getMultiSlice(
+                raw_column_map,
+                str_key_list,
+                col_parent,
+                pred);
+
+        map<string, map<string, vector<Mutation> > > mutation_map;
+        time_t timestamp = Utilities::createTimeStamp();
+        for (map<string, vector<ColumnOrSuperColumn> >::const_iterator mit = raw_column_map.begin();
+                mit != raw_column_map.end(); ++mit)
+        {
+            if (mit->second.empty()) continue;
+            vector<Mutation>& mutation_list = mutation_map[mit->first][cf_name];
+            mutation_list.push_back(Mutation());
+            Mutation& mut = mutation_list.back();
+            mut.__isset.deletion = true;
+            Deletion& del = mut.deletion;
+            del.__set_timestamp(timestamp);
+            del.__isset.predicate = true;
+            SlicePredicate& pred = del.predicate;
+            pred.__isset.column_names = true;
+            for (vector<ColumnOrSuperColumn>::const_iterator vit = mit->second.begin();
+                    vit != mit->second.end(); ++vit)
+            {
+                pred.column_names.push_back(vit->column.name);
+            }
+        }
+
+        CassandraConnection::instance().getCassandraClient(keyspace_name_)->batchMutate(mutation_map);
+
+        // FIXME: Deletion does not yet support SliceRange predicates until Cassandra 1.1.4.
+        // SlicePredicate pred;
+        // pred.__isset.slice_range = true;
+        // pred.slice_range.__set_start(start);
+        // pred.slice_range.__set_finish(finish);
+        // pred.slice_range.__set_count(count);
+        // pred.slice_range.__set_reversed(reversed);
+
+        // map<string, map<string, vector<Mutation> > > mutation_map;
+        // time_t timestamp = Utilities::createTimeStamp();
+        // for (vector<uint128_t>::const_iterator vit = key_list.begin();
+        //         vit != key_list.end(); ++vit)
+        // {
+        //     vector<Mutation>& mutation_list = mutation_map[Utilities::toBytes(*vit)][cf_name];
+        //     mutation_list.push_back(Mutation());
+        //     Mutation& mut = mutation_list.back();
+        //     mut.__isset.deletion = true;
+        //     Deletion& del = mut.deletion;
+        //     del.__set_predicate(pred);
+        //     del.__set_timestamp(timestamp);
+        // }
+
+        // CassandraConnection::instance().getCassandraClient(keyspace_name_)->batchMutate(mutation_map);
+    }
+    CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
+
+    return true;
+}
+
 bool PriceHistory::updateRow(const PriceHistoryRow& row) const
 {
     if (!is_enabled || row.docId_ == 0) return false;
@@ -398,15 +485,18 @@ bool PriceHistory::getSlice(PriceHistoryRow& row, const string& start, const str
     return true;
 }
 
-bool PriceHistory::deleteRow(const std::string& key)
+bool PriceHistory::deleteRow(const uint128_t& key, time_t timestamp)
 {
-    if (!is_enabled || key.empty()) return false;
+    if (!is_enabled) return false;
     try
     {
         ColumnPath col_path;
         col_path.__set_column_family(cf_name);
+        if (timestamp != -2)
+            col_path.__set_column(serializeLong(timestamp));
+
         CassandraConnection::instance().getCassandraClient(keyspace_name_)->remove(
-                key,
+                Utilities::toBytes(key),
                 col_path);
     }
     CATCH_CASSANDRA_EXCEPTION("[CassandraConnection] error:");
