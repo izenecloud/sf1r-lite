@@ -77,7 +77,26 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     string OpPath=schema_.scoreSCDPath;
     Ng=new Ngram(OpPath);
     Op=new OpinionsManager(OpPath);
-    Op->setSigma(-4, -6, 0.5, 60);
+    Op->setSigma(0.1, -6, 0.5, 20);
+    LOG(INFO) << "============= test opinion extraction =========" << endl;
+    ////////////////////////
+    ifstream infile;
+    infile.open("/home/vincentlee/workspace/sf1/opinion_test_data.txt", ios::in);
+    std::vector<std::string> Z;
+    while(infile.good())
+    {
+        std::string line_comment;
+        getline(infile, line_comment);
+        if(line_comment.empty())
+        {
+            continue;
+        }
+        Z.push_back(line_comment);
+    }
+    infile.close();
+    //Ng->AppendSentence(Z);
+    Op->setComment(Z);
+    Op->getOpinion();
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
@@ -85,6 +104,8 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
     delete summarization_storage_;
     delete comment_cache_storage_;
     delete corpus_;
+    delete Ng;
+    delete Op;
 }
 
 void MultiDocSummarizationSubManager::EvaluateSummarization()
@@ -136,9 +157,6 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     {
         score_scd_writer_.reset(new ScdWriter(schema_.scoreSCDPath, UPDATE_SCD));
     }
-
-    // Init Ngram
-    Ng->LoadFile();
 
     {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
@@ -244,7 +262,7 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_coll();
  
     Op->setComment(Z);
-    Op->get();
+    Op->getOpinion();
 
     std::map<UString, std::vector<std::pair<double, UString> > > summaries;
 //#define DEBUG_SUMMARIZATION

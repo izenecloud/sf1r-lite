@@ -111,6 +111,15 @@ public:
         }
     }
 
+    void AppendSentence(std::vector<std::string> orig_text)
+    {
+        for(size_t i = 0; i < orig_text.size(); ++i)
+        {   
+            const std::string& temp = orig_text[i];
+            GetAndCompute(temp);
+        }
+    }
+
     void LoadFile()
     {
         if(!need_rebuild)

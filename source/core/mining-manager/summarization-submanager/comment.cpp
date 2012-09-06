@@ -1,12 +1,15 @@
 #include "comment.h"
+#include <icma/icma.h>
 #include <glog/logging.h>
 #include <math.h>   
 
 #define VERY_LOW  -50
-#define OPINION_NGRAM_MAX  10
 #define OPINION_NGRAM_MIN  2
+#define MIN_SEED_BIGRAM   50
+#define REFINE_THRESHOLD  4
 
 using namespace std;
+using namespace cma;
 
 typedef std::pair<std::string,int> seedPairT;
 typedef std::pair<std::string, double> seedPair2T;
@@ -30,47 +33,88 @@ struct seedPairCmp2 {
 
 namespace sf1r
 {
-    static const UCS2Char  en_dou(','), en_ju('.'), en_gantan('!'), en_wen('?');
+    static const UCS2Char  en_dou(','), en_ju('.'), en_gantan('!'), en_wen('?'), en_mao(':');
     //static const UCS2Char  ch_ju('。'), ch_dou('，'), ch_gantan('！'), ch_wen('？');
-    static const UCS2Char  ch_ju(0x3002), ch_dou(0xff0c), ch_gantan(0xff01), ch_wen(0xff1f);
+    static const UCS2Char  ch_ju(0x3002), ch_dou(0xff0c), ch_gantan(0xff01), ch_wen(0xff1f), ch_mao(0xff1a), ch_dun(0x3001);
+    // 全角标点符号等
+    inline bool IsFullWidthChar(UCS2Char c)
+    {
+        return c >= 0xff00 && c <= 0xffef;
+    }
+
+    inline bool IsCJKSymbols(UCS2Char c)
+    {
+        return c >= 0x3000 && c <= 0x303f;
+    }
+
     inline bool IsCommentSplitChar(UCS2Char c)
     {
-        return c == en_dou || c == en_ju || c==en_gantan || c==en_wen ||
-            c==ch_ju || c==ch_dou || c==ch_gantan || c==ch_wen;
+        return c == en_dou || c == en_ju || c==en_gantan || c==en_wen || c==en_mao ||
+            IsFullWidthChar(c) || IsCJKSymbols(c);
     }
+
     inline bool IsNeedIgnoreChar(UCS2Char c)
     {
         if(IsCommentSplitChar(c))
             return false;
-        return !izenelib::util::UString::isThisChineseChar(c);
+        return !izenelib::util::UString::isThisChineseChar(c) &&
+            !izenelib::util::UString::isThisDigitChar(c) &&
+            !izenelib::util::UString::isThisAlphaChar(c);
+    }
+
+    inline bool IsCommentSplitStr(const std::string& str, izenelib::util::UString::EncodingType encoding = UString::UTF_8)
+    {
+        if(str == "." || str == "," || str == "!" || str == "?" || str == ":" ||
+            str == "。" || str == "，" ||str == "！" || str == "？" || str == "：" ||
+            str == "、" )
+            return true;
+        UString ustr(str, encoding);
+        for(size_t i = 0; i < ustr.length(); ++i)
+        {
+            if(IsCommentSplitChar(ustr[i]))
+                return true;
+        }
+        return false;
+    }
+
+    inline bool IsAllChineseStr(const std::string& str, UString::EncodingType encoding = UString::UTF_8)
+    {
+        UString ustr(str, encoding);
+        for(size_t i = 0; i < ustr.length(); ++i)
+        {
+            if(!izenelib::util::UString::isThisChineseChar(ustr[i]))
+                return false;
+        }
+        return true;
     }
 
 OpinionsManager::OpinionsManager(const string& colPath)
 {
-    /*
-    factory = CMA_Factory::instance();
-    knowledge = factory->createKnowledge();
-    knowledge->loadModel( enc.data(), cate.data() );
-    analyzer = factory->createAnalyzer();
-    analyzer->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
-    analyzer->setOption(Analyzer::OPTION_ANALYSIS_TYPE,77);
-    analyzer->setKnowledge(knowledge);
-    analyzer->setPOSDelimiter(posDelimiter.data());
-    */
-    Ngram_= new Ngram(colPath);
+    knowledge_ = CMA_Factory::instance()->createKnowledge();
+    knowledge_->loadModel( "utf8","/home/vincentlee/workspace/sf1/icma/db/icwb/utf8");
+    assert(knowledge_->isSupportPOS());
+    analyzer_ = CMA_Factory::instance()->createAnalyzer();
+    //analyzer->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
+    //analyzer->setOption(Analyzer::OPTION_ANALYSIS_TYPE,77);
+    analyzer_->setKnowledge(knowledge_);
+    //analyzer->setPOSDelimiter(posDelimiter.data());
+    //Ngram_= new Ngram(colPath);
     string logpath=colPath+"/OpinionsManager.log";
     out.open(logpath.c_str(), ios::out);
-    windowsize = 4;
+    windowsize = 3;
     encodingType_ = UString::UTF_8;
+    SigmaRep = 0.1;
+    SigmaRead = -6;
+    SigmaSim = 0.5;
+    SigmaLength = 30;
 }
 
 OpinionsManager::~OpinionsManager()
 {
     out.close();
-    //delete factory;
-    //delete knowledge;
-    //delete analyzer;
-    delete Ngram_;
+    delete knowledge_;
+    delete analyzer_;
+    //delete Ngram_;
 }
 
 void OpinionsManager::setWindowsize(int C)
@@ -83,18 +127,35 @@ void OpinionsManager::setEncoding(izenelib::util::UString::EncodingType encoding
     encodingType_ = encoding;
 }
 
+void OpinionsManager::setFilterStr(const std::vector<std::string>& filter_strs)
+{
+    filter_strs_ = filter_strs;
+}
+
 void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
 {
     Z.clear();
+    orig_comments_.clear();
     out << "----- original comment (only Chinese) start-----" << endl;
     for(size_t i = 0; i < in_sentences.size(); i++)
     { 
         izenelib::util::UString ustr(in_sentences[i], encodingType_);
-        izenelib::util::UString::iterator uend = std::remove_if(ustr.begin(), ustr.end(), IsNotChineseChar);
+        izenelib::util::UString::iterator uend = std::remove_if(ustr.begin(), ustr.end(), IsNeedIgnoreChar);
         if(uend == ustr.begin())
             continue;
-        ustr.assign(ustr.begin(), uend);
+        ustr.erase(uend, ustr.end());
         Z.push_back("");
+        ustr.convertString(Z[Z.size() - 1], encodingType_);
+        WordSegContainerT allwords;
+        stringToWordVector(Z[Z.size() - 1], allwords);
+        orig_comments_.push_back(allwords);
+        // remove splitter in the sentence, avoid the impact on the srep by them.
+        //
+        uend = std::remove_if(ustr.begin(), ustr.end(), IsCommentSplitChar);
+        if(uend == ustr.begin())
+            continue;
+        ustr.erase(uend, ustr.end());
+        Z[Z.size() - 1] = "";
         ustr.convertString(Z[Z.size() - 1], encodingType_);
         out << Z[Z.size() - 1] << endl;
     }
@@ -114,14 +175,14 @@ void OpinionsManager::setSigma(double SigmaRep_,double SigmaRead_,double SigmaSi
     out<<"SigmaLength:"<<SigmaLength<<endl;
 }
 
-void OpinionsManager::beginSeg(const string& inSentence, string& outSentence)
-{
-    char* charOut = NULL;
-    analyzer->runWithStream(inSentence.c_str(),charOut);
-    string outString(charOut);
-    outSentence=outString;
-
-}
+//void OpinionsManager::beginSeg(const string& inSentence, string& outSentence)
+//{
+//    char* charOut = NULL;
+//    analyzer->runWithStream(inSentence.c_str(),charOut);
+//    string outString(charOut);
+//    outSentence=outString;
+//
+//}
 
 void OpinionsManager::stringToWordVector(const std::string& Mi, SentenceContainerT& words)
 {
@@ -146,29 +207,34 @@ void OpinionsManager::WordVectorToString(std::string& Mi,const WordSegContainerT
     }
 }
 
-//score
-//double OpinionsManager::ScoreRep(const WordSegContainerT& M)
-//{
-//    double Srep=0;
-//    for(size_t i=0; i<M.size(); i++)
-//    {
-//        Srep+=ScoreRep(M[i]);
-//    }
-//    return Srep;
-//}
-//
-//double OpinionsManager::ScoreRep(const std::string& Mi)
-//{
-//    WordSegContainerT words;
-//    stringToWordVector(Mi,words);
-//    return Srep(words);
-//}
+double OpinionsManager::SrepSentence(const std::string& phrase_str)
+{
+    // do not use cache. cache is computed by single words.
+    WordSegContainerT words;
+    cma::Sentence single_sen(phrase_str.c_str());
+    analyzer_->runWithSentence(single_sen);
+    int best = single_sen.getOneBestIndex();
+    for(int i = 0; i < single_sen.getCount(best); i++)
+    {
+        words.push_back(single_sen.getLexicon(best, i));
+    }
+
+    size_t n = words.size();
+    double sigmaPMI = 0;
+    for(size_t i = 0; i < n; i++)
+    {
+        sigmaPMI += PMIlocal(words, i, windowsize*2);
+        // if(windowsize==6)
+        // {out<<"PMI:"<<PMIlocal(words,i,windowsize)<<endl;}
+    }
+    sigmaPMI /= double(n);
+    return sigmaPMI;
+}
 
 double OpinionsManager::Srep(const WordSegContainerT& words)
 {
     if(words.empty())
         return (double)VERY_LOW;
-
 
     std::string phrase;
     WordVectorToString(phrase, words);
@@ -188,77 +254,17 @@ double OpinionsManager::Srep(const WordSegContainerT& words)
     }
     sigmaPMI /= double(n);
 
-    if(words.size() == 2 && sigmaPMI < SigmaRep)
-        sigmaPMI = SigmaRep + 0.01;
+    //if(words.size() == 2 && sigmaPMI < SigmaRep)
+    //    sigmaPMI = SigmaRep + 0.01;
 
     cached_srep[phrase] = sigmaPMI;
 
     return sigmaPMI;
 }
 
-//double OpinionsManager::ScoreRead(const NgramPhraseT& M)
-//{
-//    double Sread=0;
-//    for(size_t i=0; i<M.size(); i++)
-//    {
-//        Sread+=ScoreRead(M[i]);
-//    }
-//    return Sread;
-//}
-//
-//double OpinionsManager::ScoreRead(const std::string& Mi)
-//{
-//    SentenceContainerT words;
-//    stringToWordVector(Mi,words);
-//    return Sread(words);
-//}
-
-double OpinionsManager::Sread(const NgramPhraseT& words)
-{
-    std::string phrase;
-    WordVectorToString(phrase, words);
-    CachedStorageT::iterator it = cached_sread.find(phrase);
-    if(it != cached_sread.end())
-    {
-        return it->second;
-    }
-    double possiblity=1;
-    int K=0;
-    for(size_t i = 1; i < words.size(); i++)
-    {
-        if(i==1)
-        {
-            possiblity *= Ngram_->Possiblity(words[1], words[0]);
-            K += 1;
-        }
-        else
-        {
-            possiblity *= Ngram_->Possiblity(words[i], words[i-1], words[i-2]);
-            K += 1;
-        }
-        /*
-           else
-           {
-           possiblity *= Ngram_->Possiblity(words[i], words[i-1], words[i-2], words[i-3]);
-
-           K += 1;
-           }
-           */
-
-    }
-    double score = log(possiblity) / log(double(2)) / K;
-    assert(score < 0);
-    if(score < (double)VERY_LOW*(double)words.size())
-        score = (double)VERY_LOW*(double)words.size();
-    //if(score > VERY_LOW*words.size())
-    //    LOG(INFO) << "sread is greate than VERY_LOW. " << phrase << "," << score << endl;
-    cached_sread[phrase] = score;
-    return score;
-}
-
 double OpinionsManager::Score(const NgramPhraseT& words)
 {
-    return /*Sread(words) +*/ Srep(words) /*+ 0.25*words.size()*/;
+    return  Srep(words) /*+ 0.25*words.size()*/;
 }
 
 double OpinionsManager::Sim(const std::string& Mi, const std::string& Mj)
@@ -319,73 +325,8 @@ double OpinionsManager::Sim(const NgramPhraseT& wordsi, const NgramPhraseT& word
             }
         }
     }
-    return double(same)/double(sizei + sizej - same);//Jaccard similarity
+    return double(same)/min(double(sizei), double(sizej));//Jaccard similarity
 }
-
-//double OpinionsManager::getMScore(const WordSegContainerT& M)
-//{
-//    return ScoreRep(M)+ScoreRead(M);
-//}
-
-//subject
-//bool OpinionsManager::SubjectLength(const SentenceContainerT& M)
-//{
-//    int Length=0;
-//    for(size_t i=0; i<M.size(); i++)
-//    {
-//        Length+=M[i].length();
-//    }
-//    return Length<SigmaLength;
-//}
-//
-//bool OpinionsManager::SubjectRead(const std::string& Mi)
-//{
-//    return ScoreRead(Mi)>SigmaRead;
-//}
-//bool OpinionsManager::SubjectRead(const SentenceContainerT& M)
-//{
-//    for(size_t i=0; i<M.size(); i++)
-//    {
-//        if(!SubjectRead(M[i]))
-//        {
-//            return false;
-//        }
-//    }
-//    return true;
-//}
-//bool OpinionsManager::SubjectRep(const std::string& Mi)
-//{
-//    return ScoreRep(Mi)>SigmaRep;
-//}
-//bool OpinionsManager::SubjectRep(const SentenceContainerT& M)
-//{
-//    for(size_t i=0; i<M.size(); i++)
-//    {
-//        if(!SubjectRep(M[i]))
-//        {
-//            return false;
-//        }
-//    }
-//    return true;
-//}
-//bool OpinionsManager::SubjectSim(const SentenceContainerT& M)
-//{
-//    for(size_t i=0; i<M.size()-1; i++)
-//    {
-//        for(size_t j=i+1; j<M.size(); j++)
-//        {
-//            if(Sim(M[i],M[j])<SigmaSim)
-//            {
-//                return false;
-//            }
-//        }
-//    }
-//    return true;
-//}
-//bool OpinionsManager::Subject(const SentenceContainerT& M)
-//{
-//    return SubjectLength(M)&&SubjectRead(M)&&SubjectRep(M)&&SubjectSim(M);
-//}
 
 //rep
 double OpinionsManager::PMIlocal(const WordSegContainerT& words,
@@ -416,27 +357,26 @@ double OpinionsManager::PMImodified(const std::string& Wi, const std::string& Wj
     }
     int s = Z.size();
     double ret  = log( ( Possib(Wi,Wj) * CoOccurring(Wi,Wj,C) ) * 
-        max(double(s), 10 + Z.size()*0.5) / ( Possib(Wi)*Possib(Wj) ) ) / log(2);
+        double(s) / ( Possib(Wi)*Possib(Wj) ) ) / log(2);
     if(ret < (double)VERY_LOW)
     {
         cached_pmimodified_[Wi][Wj] = (double)VERY_LOW;
         return (double)VERY_LOW;
     }
-    //LOG(INFO) << "PMImodified greate than VERY_LOW: " << Wi << "," << Wj << "," << ret;
     cached_pmimodified_[Wi][Wj] = ret;
     return ret;
 }
 
 double OpinionsManager::CoOccurring(const std::string& Wi, const std::string& Wj, int C)
 {
-    int Poss=0;
+    int Poss = 0;
     for(size_t j = 0; j < Z.size(); j++)
     {
         if(CoOccurringInOneSentence(Wi, Wj, C, Z[j]))
            Poss++; 
     }
 
-    return Poss;
+    return Poss*Poss;
 }
 
 bool OpinionsManager::CoOccurringInOneSentence(const std::string& Wi,
@@ -452,7 +392,7 @@ bool OpinionsManager::CoOccurringInOneSentence(const std::string& Wi,
         size_t locj = ustr.find(uwj, max((int)loci - C, 0));
         if(locj != UString::npos && abs((int)locj - (int)loci) <= int(C + uwi.size() + uwj.size()))
             return true;
-        loci = ustr.find(uwi, loci + 1);
+        loci = ustr.find(uwi, loci + uwi.size());
     }
     return false;
 }
@@ -491,107 +431,269 @@ double OpinionsManager::Possib(const std::string& Wi)
     return Poss;
 }
 
-bool OpinionsManager::GenCandidateWord(WordSegContainerT& top_wordlist)
+bool OpinionsManager::IsNeedFilte(const std::string& teststr)
 {
-    WordSegContainerT orig_wordlist;
-    for(size_t j = 0; j < Z.size(); j++)
+    for(size_t i = 0; i < filter_strs_.size(); ++i)
     {
-        stringToWordVector(Z[j], orig_wordlist);
+        if(teststr.find(filter_strs_[i]) != std::string::npos)
+            return true;
     }
+    return false;
+}
 
-    //LOG(INFO) << "total words: " << orig_wordlist.size() << std::endl;
-
-    WordFreqMapT  word_freq_records;
-    string wordTemp="";
-    WordSegContainerT::iterator it = orig_wordlist.begin();
-    WordSegContainerT::iterator it_end = orig_wordlist.end();
-
-    // count frequency.
-    for(; it != it_end; ++it)
+static bool FilterBigramByCounter(int filter_counter, const OpinionsManager::WordFreqMapT& word_freq_records,
+    const OpinionsManager::BigramPhraseT& bigram)
+{
+    if(IsCommentSplitStr(bigram.first))
+        return false;
+    OpinionsManager::WordFreqMapT::const_iterator it = word_freq_records.find(bigram.first + bigram.second);
+    if(it != word_freq_records.end())
     {
-        wordTemp = (*it);
-        if(!wordTemp.empty() && wordTemp != "，" 
-            && wordTemp != "。" && wordTemp != "！" )
+        return (int)it->second < filter_counter;
+    }
+    return false;
+}
+
+bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
+{
+    // first , get all the frequency in overall and filter the low frequency phrase.
+    //
+    std::vector<string> bigram_words;
+    bigram_words.resize(2);
+    WordFreqMapT  word_freq_records;
+    for(size_t i = 0; i < orig_comments_.size(); i++)
+    {
+        for(size_t j = 0; j < orig_comments_[i].size() - 1; j++)
         {
-            if(word_freq_records.find(wordTemp) == word_freq_records.end())
+            if(!IsAllChineseStr(orig_comments_[i][j]))
             {
-                word_freq_records[wordTemp] = 1;
+                bigram_words[0] = bigram_words[1] = ".";
+                resultList.push_back(std::make_pair(bigram_words[0], bigram_words[1]));
+                continue;
             }
-            else
+            if(!IsAllChineseStr(orig_comments_[i][j + 1]))
             {
-                word_freq_records[wordTemp] += 1;
+                // last before the splitter. we can pass it.
+                continue;
+            }
+
+            bigram_words[0] = orig_comments_[i][j];
+            bigram_words[1] = orig_comments_[i][j + 1];
+            if(IsNeedFilte(bigram_words[0] + bigram_words[1]))
+            {
+                continue;
+            }
+            if( (Srep(bigram_words) >= SigmaRep) )
+            {
+
+                string tmpstr = bigram_words[0] + bigram_words[1];
+                if(word_freq_records.find(tmpstr) == word_freq_records.end())
+                {
+                    word_freq_records[tmpstr] = 1;
+                }
+                else
+                {
+                    word_freq_records[tmpstr] += 1;
+                }
+
+                resultList.push_back(std::make_pair(bigram_words[0], bigram_words[1]));
+                //out << "add seed bigram: "<< bigram_words[0] << "," << bigram_words[1] << endl;
             }
         }
+        // push splitter at the end of each sentence to avoid the opinion cross two different sentence.
+        resultList.push_back(std::make_pair(".", "."));
     }
 
-    //LOG(INFO) << "total different words: " << word_freq_records.size() << std::endl;
+    // get the top-k bigram counter, and filter the seed bigram by this counter.
     WordPriorityQueue_  topk_words;
-    topk_words.Init(min((size_t)400, word_freq_records.size()));
-    bool need_add_single = false;
-    if(word_freq_records.size() < 400)
-    {
-        need_add_single = true;
-    }
+    topk_words.Init(min(MIN_SEED_BIGRAM*SigmaLength, (double)word_freq_records.size()/2));
+
     WordFreqMapT::const_iterator cit = word_freq_records.begin();
     while(cit != word_freq_records.end())
     {
-        if(cit->second > 1 || need_add_single)
+        if((int)cit->second > 2)
         {
-            topk_words.insert(std::make_pair(cit->first, cit->second));
+            topk_words.insert(std::make_pair(cit->first, (int)cit->second));
         }
         ++cit;
     }
 
-    size_t count = topk_words.size();
-    top_wordlist.resize(count);
-    //LOG(INFO) << "top k words: " << count << std::endl;
+    out << "=== total different bigram:" << word_freq_records.size() << endl;
+    int filter_counter = 3;
+    if(topk_words.size() > 1)
+        filter_counter = max(topk_words.top().second, filter_counter);
+    out << "===== filter counter is: "<< filter_counter << endl;
+    BigramPhraseContainerT::iterator bigram_it = std::remove_if(resultList.begin(), resultList.end(),
+       boost::bind(FilterBigramByCounter, filter_counter, boost::cref(word_freq_records), _1));
+    resultList.erase(bigram_it, resultList.end());
+    out << "===== after filter, seed bigram size: "<< resultList.size() << endl;
+    ///test opinion result
+    //
 
-    for (size_t i = 0; i < count; ++i)
-    {
-        const WordFreqPairT& item = topk_words.pop();
-        //LOG(INFO) << "top " << i << " , " << item.first << ", cnt:" << item.second << std::endl;
-        top_wordlist[count - i - 1] = item.first;
-    }
-
+    //ifstream infile;
+    //infile.open("/home/vincentlee/workspace/sf1/opinion_result.txt", ios::in);
+    //while(infile.good())
+    //{
+    //    std::string opinion_phrase;
+    //    getline(infile, opinion_phrase);
+    //    WordSegContainerT  words;
+    //    stringToWordVector(opinion_phrase, words);
+    //    LOG(INFO) << "phrase: " << getSentence(words) << ", srep:" << Srep(words) << endl;
+    //}
     return true;
 }
 
-bool OpinionsManager::GenSeedBigramList(const WordSegContainerT& CandidateWord,
-    BigramPhraseContainerT& resultList)
-{
-    if (CandidateWord.empty())
-    {return true;}
+//static inline bool isAdjective(int pos)
+//{
+//    return pos >=1 && pos <= 4 ;
+//}
+//
+//static inline bool isNoun(int pos)
+//{
+//    return (pos >= 19 && pos <= 25) || pos == 29;
+//}
 
-    std::vector<string> bigram_words;
-    bigram_words.resize(2);
-    for(size_t i = 0; i < CandidateWord.size(); i++)
+void OpinionsManager::RefineCandidateNgram(OpinionCandidateContainerT& candList)
+{
+    // refine the candidate.
+    // we assume that a candidate ngram should has at least one or two frequency bigram .
+    // and more, we can assume at least one noun phrase or adjective phrase should exist. 
+    for(size_t index = 0; index < candList.size(); ++index)
     {
-        for(size_t j = 0; j < CandidateWord.size(); j++)
+        bool need_refine = false;
+        cma::Sentence single_sen(getSentence(candList[index].first).c_str());
+        int ret;
+        ret = analyzer_->runWithSentence(single_sen);
+        assert(ret == 1);
+        int best = single_sen.getOneBestIndex();
+        if(single_sen.getCount(best) <= 1)
         {
-            if(i != j)
+            // remove this
+            need_refine = true;
+        }
+        else
+        {
+            //
+            //bool has_adj = false;
+            //bool has_noun = false;
+            double max_possib = 0;
+            for(int i = 0; i < single_sen.getCount(best); i++)
             {
-                bigram_words[0] = CandidateWord[i];
-                bigram_words[1] = CandidateWord[j];
-                if( (Sread(bigram_words) >= SigmaRead) && 
-                    (Srep(bigram_words) >= SigmaRep) )
-                {
-                    resultList.push_back(std::make_pair(CandidateWord[i],CandidateWord[j]));
-                    //LOG(INFO) << "add seed bigram: "<< CandidateWord[i] << "," << CandidateWord[j] << endl;
-                }
-                else if (Srep(bigram_words) < SigmaRep &&
-                    Sread(bigram_words) >= SigmaRead)
-                {
-                    out << "low srep bigram: " << getSentence(bigram_words) << ",score:" << Srep(bigram_words) << endl;
-                }
+                max_possib = max(max_possib, Possib(single_sen.getLexicon(best, i)));
+                //int pos = single_sen.getPOS(best, i);
+                ////
+                //if(isAdjective(pos))
+                //{
+                //    has_adj = true;
+                //}
+                //else if(isNoun(pos))
+                //{
+                //    has_noun = true;
+                //}
             }
+            need_refine = (max_possib < REFINE_THRESHOLD) /*|| (!has_adj && !has_noun)*/;
+        }
+        if(need_refine)
+        {
+            out << "candidate refined: " << getSentence(candList[index].first) << endl;
+            candList[index].second = SigmaRep - 1;
         }
     }
-    //LOG(INFO) << "seed bigram size: "<< resultList.size() << endl;
-    return true;
+}
+
+void OpinionsManager::GetOrigCommentsByBriefOpinion(std::vector< std::pair<std::string, double> >& candOpinionString)
+{
+    WordFreqMapT all_orig_split_comments;
+    for(size_t i = 0; i < orig_comments_.size(); i++)
+    {
+        WordSegContainerT  split_comment;
+        for(size_t j = 0; j < orig_comments_[i].size(); j++)
+        {
+            if(IsCommentSplitStr(orig_comments_[i][j]))
+            {
+                if(!split_comment.empty())
+                {
+                    all_orig_split_comments[getSentence(split_comment)] += 1;
+                    split_comment.clear();
+                }
+            }
+            else
+            {
+                split_comment.push_back(orig_comments_[i][j]);
+            }
+        }
+        if(!split_comment.empty())
+        {
+            all_orig_split_comments[getSentence(split_comment)] += 1;
+        }
+    }
+    WordPossibilityMapT  orig_comment_opinion;
+
+    for(size_t i = 0; i < candOpinionString.size(); i++)
+    {
+        // find the shortest original comment.
+        std::string shortest_orig;
+        std::string& brief_opinion = candOpinionString[i].first;
+        int cnt = 0;
+        WordFreqMapT::iterator it = all_orig_split_comments.begin();
+        while(it != all_orig_split_comments.end())
+        {
+            if((*it).first.find(brief_opinion) != std::string::npos)
+            {
+                cnt += it->second;
+                if( shortest_orig.empty() )
+                {
+                    shortest_orig = it->first;
+                }
+                else if(SrepSentence(it->first) > SrepSentence(shortest_orig))
+                {
+                    shortest_orig = it->first;
+                }
+            }
+            ++it;
+        }
+        if(!shortest_orig.empty())
+        {
+            if(orig_comment_opinion.find(shortest_orig) == orig_comment_opinion.end())
+            {
+                orig_comment_opinion[shortest_orig] = candOpinionString[i].second * cnt * brief_opinion.size() / shortest_orig.size();
+            }
+            else
+            {
+                orig_comment_opinion[shortest_orig] = max(orig_comment_opinion[shortest_orig], candOpinionString[i].second * cnt * brief_opinion.size() / shortest_orig.size());
+            }
+        }
+        else
+        {
+            LOG(INFO) << "no orig_comment found:" << brief_opinion << endl;
+        }
+    }
+    candOpinionString.clear();
+    WordPossibilityMapT::iterator it = orig_comment_opinion.begin();
+    while(it != orig_comment_opinion.end())
+    {
+        if(it->second >= SigmaRep )
+        {
+            if(SrepSentence(it->first) >= SigmaRep)
+                candOpinionString.push_back(std::make_pair(it->first, it->second));
+        }
+        ++it;
+    }
+
+}
+
+void OpinionsManager::recompute_srep(std::vector<std::pair<std::string, double> >& candList)
+{
+    // compute the srep in sentence. This can get better score for the 
+    // meaningful sentence to avoid the bad sentence with good bigrams.
+    for(size_t i = 0; i < candList.size(); i++)
+    {
+        candList[i].second = SrepSentence(candList[i].first);
+    }
 }
 
 bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bigramlist, 
-    SentenceContainerT& final_result)
+    bool need_orig_comment_phrase, SentenceContainerT& final_result)
 {
     if (seed_bigramlist.empty())
     {return true;}
@@ -609,205 +711,44 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
 
     for(size_t i = 0; i < seedGrams.size(); i++)
     {
-        GenerateCandidates(seedGrams[i], candList, seed_bigramlist);
+        GenerateCandidates(seedGrams[i], candList, seed_bigramlist, i);
     }
 
     std::cout << "\r candList.size() = "<< candList.size();
 
-    std::vector<std::pair<std::string, double> > candString = changeForm(candList);
-    sort(candString.begin(), candString.end(), seedPairCmp2);
-    out << "before pingzhuang: candidates are " << endl;
-    for(size_t i = 0; i < candString.size(); ++i)
+    if(candList.size() > SigmaLength/2)
+        RefineCandidateNgram(candList);
+
+    std::vector<std::pair<std::string, double> > candOpinionString;
+    changeForm(candList, candOpinionString);
+
+    out << "before recompute_srep: candidates are " << endl;
+    for(size_t i = 0; i < candOpinionString.size(); ++i)
     {
-        out << "str:" << candString[i].first << ",score:" << candString[i].second << endl;
+        out << "str:" << candOpinionString[i].first << ",score:" << candOpinionString[i].second << endl;
     }
 
-    final_result = PingZhuang(candString);
+    recompute_srep(candOpinionString);
+    out << "after recompute_srep: candidates are " << endl;
+    for(size_t i = 0; i < candOpinionString.size(); ++i)
+    {
+        out << "str:" << candOpinionString[i].first << ",score:" << candOpinionString[i].second << endl;
+    }
+
+    if(need_orig_comment_phrase)
+    {
+        // get orig_comment from the candidate opinions.
+        GetOrigCommentsByBriefOpinion(candOpinionString);
+    }
+
+    sort(candOpinionString.begin(), candOpinionString.end(), seedPairCmp2);
+    size_t result_num = min((size_t)SigmaLength, candOpinionString.size());
+    for(size_t i = 0; i < result_num; ++i)
+    {
+        final_result.push_back(candOpinionString[i].first);
+    }
     return true;
 }
-
-OpinionsManager::SentenceContainerT OpinionsManager::PingZhuang(std::vector<std::pair<std::string,double> >&  candString)
-{
-    SentenceContainerT tingyongList;
-    tingyongList.push_back("那就是");
-    tingyongList.push_back("看上去");
-    tingyongList.push_back("看起来");
-    tingyongList.push_back("因为");
-    tingyongList.push_back("虽然");
-    tingyongList.push_back("但是");
-    tingyongList.push_back("而且");
-    tingyongList.push_back("虽然");
-    tingyongList.push_back("就是");
-    tingyongList.push_back("不但");
-    tingyongList.push_back("还是");
-    tingyongList.push_back("结果");
-    tingyongList.push_back("但");
-    tingyongList.push_back("就");
-    tingyongList.push_back("如果");
-    tingyongList.push_back("另外");
-
-    //out<<"pingzhuang"<<endl;
-    SentenceContainerT result;
-    for(size_t i=0;i<Z.size();i++)
-    {
-        string thisString=Z[i];
-
-        boost::algorithm::replace_all(thisString, " ", ",");
-
-        boost::algorithm::replace_all(thisString, "。", ",");
-        boost::algorithm::replace_all(thisString, "，", ",");
-        boost::algorithm::replace_all(thisString, "！", ",");
-        string restString=thisString;
-        string todoString;
-        int pos=restString.find(",");
-        //out<<"i"<<i<<endl;
-        while(restString.find(",")!=string::npos)
-        {
-            todoString=restString.substr(0,pos);
-            restString=restString.substr(pos+1);
-            double score=0;
-            std::vector<std::pair<std::string,double> > numList;
-            for(size_t j=0;j<candString.size();j++)
-            {  
-                // out<<"j"<<j<<endl;
-                if(todoString.find(candString[j].first)!=string::npos)
-                {
-                    score+=candString[j].second;
-
-                    numList.push_back(candString[j]);
-                    // break;
-                }
-
-            }
-            if(score>0.3)
-            {
-                for(size_t j=0;j<tingyongList.size();j++)
-                { 
-                    if(todoString.substr(0,tingyongList[j].length())==tingyongList[j])
-                    {  
-                        todoString=todoString.substr(tingyongList[j].length());
-                    }
-                }
-                result.push_back(todoString);//去除 虽然  但是 而且 就是 不但 但 还是
-                for(size_t j=0;j<numList.size();j++)
-                { 
-                    candString.erase(find(candString.begin(),candString.end(),numList[j]));
-                }
-            }
-            pos=restString.find(",");
-        }
-    }
-    return result;
-}
-
-/*
-   SentenceContainerT OpinionsManager::PingZhuang( std::vector<SentenceContainerT > candString)
-   {
-   SentenceContainerT n;
-   if(candString.empty())
-   {return n;}
-   out<<"PingZhuang"<<endl;
-   setWindowsize(3);
-   SentenceContainerT candVector;
-   SentenceContainerT sentence;
-//candVector.push_back(candString[0]);
-candVector=candString[0];
-candString.erase(find(candString.begin(),candString.end(),candString[0]));
-out<<"ready"<<endl;
-while(!candString.empty())
-{   //out<<"candVector:";
-for (size_t j=0; j<candVector.size(); j++)
-{
-// out<<candVector[j];
-}
-//out<<endl;
-
-for(size_t i=0;i<candString.size();i++)
-{
-//out<<"add";
-for (size_t j=0; j<candString[i].size(); j++)
-{
-//  out<<candString[i][j];
-}
-//out<<endl;
-if(add(candVector,candString[i]))
-{  
-candString.erase(find(candString.begin(),candString.end(),candString[i]));
-//out<<"success"<<endl;
-for (size_t j=0; j<candVector.size(); j++)
-{
-// out<<candVector[j];
-}
-//out<<endl;
-break;
-}
-else
-{
-if(i==candString.size()-1)
-{
-sentence.push_back(getSentence(candVector));
-
-candVector.clear();
-//candVector.push_back(candString[0]);
-candVector=candString[0];
-candString.erase(find(candString.begin(),candString.end(),candString[0]));
-break;
-}
-}
-}
-
-} 
-setWindowsize(3);  
-return sentence; 
-
-
-}
-*/
-bool OpinionsManager::add(SentenceContainerT& candVector, const SentenceContainerT& candString)
-{
-    int score1=0,score2=0;
-    //out<<"add"<<endl;
-
-    SentenceContainerT testVector1=candVector;
-    //testVector.push_back(candString);
-    testVector1.insert(testVector1.end(),candString.begin(),candString.end());
-    //out<<"Srep"<<Srep(testVector1)<<endl;
-    //out<<"Sread"<<Sread(testVector1)<<endl;
-    if((Srep(testVector1)>SigmaRep-0.25*testVector1.size()&&Sread(testVector1)>SigmaRead-0.25*testVector1.size())&&Srep(testVector1)>SigmaRep)
-    {
-        score1=Score(testVector1);
-        // return true;
-    }
-
-
-
-    SentenceContainerT testVector2=candVector;
-    //testVector.push_back(candString);
-    testVector2.insert(testVector2.begin(),candString.begin(),candString.end());
-    //out<<"Srep"<<Srep(testVector2)<<endl;
-    //out<<"Sread"<<Sread(testVector2)<<endl;
-    if((Srep(testVector2)>SigmaRep-0.25*testVector2.size()&&Sread(testVector2)>SigmaRead-0.25*testVector2.size())&&Srep(testVector2)>SigmaRep)
-    {
-        score2=Score(testVector2);
-        // return true;
-    }
-    if(score1==0&&score2==0)
-    {return false;}
-    else
-    {
-        if(score1>score2)
-        {
-            candVector.insert(candVector.end(),candString.begin(),candString.end());
-        }
-        else
-        {
-            candVector.insert(candVector.begin(),candString.begin(),candString.end());
-        }
-        return true;
-    }
-
-}
-
 
 std::string OpinionsManager::getSentence(const WordSegContainerT& candVector)
 {
@@ -836,17 +777,18 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
             can_insert = false;
             if(score > candList[start].second)
             {
-                //out << "similarity removed: " << getSentence(phrase) << "," << 
-                //    getSentence((*it).first) << "," << Sim(phrase, (*it).first) << endl;
                 //  swap the similarity to the end.
                 OpinionCandidateT temp = candList[remove_end - 1];
                 candList[remove_end - 1] = candList[start];
+                //out << "similarity need removed: " << getSentence(candList[remove_end - 1].first) << endl;
                 candList[start] = temp;
                 --remove_end;
+
                 continue;
             }
             else
             {
+                //out << "similarity larger is exist: " << getSentence(candList[start].first) << ",srep:" << candList[start].second << endl;
                 is_larger_replace_exist = true;
             }
         }
@@ -864,16 +806,20 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
             // replace the similarity with current.
             candList[remove_end] = std::make_pair(phrase, score);
             candList.erase(candList.begin() + remove_end + 1, candList.end());
+            //out << "similarity replaced by: " << getSentence(phrase) << endl;
         }
     }
-    if(can_insert && phrase.size() > 2)
+    if(can_insert && score >= SigmaRep && phrase.size() > OPINION_NGRAM_MIN)
     {
+        //out << "new added: " << getSentence(phrase) <<  endl;
         if(candList.size() > SigmaLength)
         {
             if(score < SigmaRep_dynamic.top())
+            {
+                //out << "ignored by full size and low than the smallest: " << getSentence(phrase) << ", " << SigmaRep_dynamic.top() << endl;
                 return;
+            }
         }
-        //out << "new added: " << getSentence(phrase) <<  endl;
         candList.push_back(std::make_pair(phrase, score));
     }
     SigmaRep_dynamic.push(score);
@@ -902,37 +848,36 @@ void OpinionsManager::Merge(NgramPhraseT& phrase, const BigramPhraseT& bigram)
 }
 
 OpinionsManager::BigramPhraseContainerT OpinionsManager::GetJoinList(const NgramPhraseT& phrase,
-    const BigramPhraseContainerT& BigramList)
+    const BigramPhraseContainerT& bigramlist, int current_merge_pos)
 {
     BigramPhraseContainerT resultList;
-    for(size_t i = 0; i < BigramList.size(); i++)
+    if( (size_t)current_merge_pos >= bigramlist.size() - 1 )
+        return resultList;
+    if(phrase[phrase.size() - 1] == bigramlist[current_merge_pos + 1].first)
     {
-        if(phrase[phrase.size()-1] == BigramList[i].first)
-        {
-            resultList.push_back( BigramList[i] );
-        }
+        resultList.push_back( bigramlist[current_merge_pos + 1] );
     }
     return resultList;
 }
 
 void OpinionsManager::GenerateCandidates(const NgramPhraseT& phrase, 
     OpinionCandidateContainerT& candList, 
-    const BigramPhraseContainerT& seedBigrams)
+    const BigramPhraseContainerT& seedBigrams, int current_merge_pos)
 {
-    //if(candList.size() > SigmaLength)
-    //{
-    //    SigmaRep = SigmaRep_dynamic.top();
-    //}
-    if (phrase.size() > OPINION_NGRAM_MAX || Sread(phrase) < SigmaRead || 
-        (phrase.size() > OPINION_NGRAM_MIN && Srep(phrase) < SigmaRep ))
+    if( (size_t)current_merge_pos >= seedBigrams.size() - 1 )
+        return;
+    if ( (phrase.size() > OPINION_NGRAM_MIN) && ( Srep(phrase) < SigmaRep ) )
     {   
         return;
     }
 
-    ValidCandidateAndUpdate(phrase, candList);
+    if( phrase.size() > OPINION_NGRAM_MIN)
+    {
+        ValidCandidateAndUpdate(phrase, candList);
+    }
 
     // find the overlap bigram to prepare combining them.
-    BigramPhraseContainerT joinList = GetJoinList(phrase, seedBigrams);
+    BigramPhraseContainerT joinList = GetJoinList(phrase, seedBigrams, current_merge_pos);
     for (size_t j = 0; j < joinList.size(); j++)
     {
         BigramPhraseT&  bigram = joinList[j];
@@ -941,69 +886,37 @@ void OpinionsManager::GenerateCandidates(const NgramPhraseT& phrase,
             NgramPhraseT new_phrase = phrase;
             Merge(new_phrase, bigram);
             //out << "new phrase generated: " << getSentence(new_phrase) << ",srep:" << Srep(new_phrase) << endl; 
-            GenerateCandidates(new_phrase, candList, seedBigrams);
+            GenerateCandidates(new_phrase, candList, seedBigrams, current_merge_pos + 1);
         }
     }
 }
 
-std::vector<std::pair<std::string,double> > OpinionsManager::changeForm(const OpinionCandidateContainerT& candList)
+void OpinionsManager::changeForm(const OpinionCandidateContainerT& candList, std::vector<std::pair<std::string,double> >& newForm)
 { 
-    std::vector<std::pair<std::string, double> > newForm;
     string temp;
     for(size_t i = 0; i < candList.size(); i++)
     {
         WordVectorToString(temp, candList[i].first);
         newForm.push_back(std::make_pair(temp, candList[i].second));
     }
-    return newForm;
 }
 
-//OpinionsManager::OpinionContainerT OpinionsManager::getMicroOpinions(const OpinionCandidateContainerT& candList)
-//{
-//    std::vector<SentenceContainerT > MicroOpinions;
-//    sort(candList.begin(), candList.end());
-//    int length=0;
-//    size_t i=0;
-//    while(length<SigmaLength&&i<candList.size())
-//    {
-//        length+=candList[i].first.size();//TODO length()
-//        i++;
-//        MicroOpinions.push_back(candList[i].first);
-//    }
-//    return MicroOpinions;
-//}
-
-std::vector<std::string> OpinionsManager::get()
-{  
-    //std::cout << "begin do opinion mining...." << std::endl;
-    //try
-    //{
-    //    Ngram_->LoadFile();
-    //}
-    //catch(std::exception& e)
-    //{
-    //    std::cout << e.what() << endl;
-    //}
-    //std::cout << "ngram finished...." << std::endl;
-
+std::vector<std::string> OpinionsManager::getOpinion(bool need_orig_comment_phrase)
+{
     word_freq_insentence_.clear();
     cached_pmimodified_.clear();
     cached_srep.clear();
-    // sread can be reuse in different comment.
-    //cached_sread.clear();
+    SigmaRep_dynamic = CandidateSrepQueueT();
 
-    WordSegContainerT wordlist;
-    GenCandidateWord(wordlist);
     BigramPhraseContainerT seed_bigramlist;
-    GenSeedBigramList(wordlist, seed_bigramlist);
+    GenSeedBigramList(seed_bigramlist);
     std::vector<std::string> final_result;
-    GetFinalMicroOpinion( seed_bigramlist, final_result);
+    GetFinalMicroOpinion( seed_bigramlist, need_orig_comment_phrase, final_result);
     if(!final_result.empty())
     {
         // string temp;
         for(size_t i = 0; i < final_result.size(); i++)
         {
-            // WordVectorToString(temp,result[i]);
             out << "MicroOpinions:" << final_result[i] << endl;
         }
         out<<"-------------Opinion finished---------------"<<endl;
