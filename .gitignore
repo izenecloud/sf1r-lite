@@ -58,3 +58,4 @@ scripts/tmp
 nbproject
 *.kdev4
 callgrind
+*.bak

@@ -49,6 +49,52 @@ static int save_stats_by_overall();
 static int save_stats_by_storage_ip();
 static int add_to_storage_stat(int storage_i, const int result, const int time_used);
 
+bool read_file_data(const char* local_file, char* buf, size_t bufsize)
+{
+    int fd;
+    if (NULL == local_file)
+    {
+        return false;
+    }
+    else if ((fd = ::open(local_file, O_RDONLY)) < 0)
+    {
+        printf("open local file %s fail: %s", local_file, strerror(errno));
+        return false;
+    }
+    else
+    {
+        int64_t read_len = 0;
+        while (true)
+        {
+            if ((read_len = ::read(fd, buf, bufsize)) < 0)
+            {
+                if (EAGAIN == errno)
+                {
+                    continue;
+                }
+                printf("read local file %s fail, error: %s", local_file, strerror(errno));
+                ::close(fd);
+                return false;
+            }
+            if (0 == read_len)
+            {
+                assert(bufsize == 0);
+                break;
+            }
+
+            buf += read_len;
+            bufsize -= read_len;
+            if (bufsize == 0)
+            {
+                break;
+            }
+            assert(bufsize > 0);
+        }
+    }
+    ::close(fd);
+    return true;
+}
+
 bool write_dir(const std::string& dir)
 {
     std::string file_id;
@@ -91,7 +137,17 @@ bool write_dir(const std::string& dir)
 
                 gettimeofday(&tv_start, NULL);
 
-                result = ImageServerClient::UploadImageFile(filepath, file_id) ? 0:-1;
+                // read file content.
+                char* filedata = new char[sb.st_size];
+                if(!read_file_data(filepath.c_str(), filedata, sb.st_size))
+                {
+                    result = -1;
+                }
+                else
+                {
+                    result = ImageServerClient::UploadImageData(std::string(filedata, sb.st_size), file_id) ? 0:-1;
+                }
+                delete[] filedata;
                 gettimeofday(&tv_end, NULL);
                 time_used = TIME_SUB_MS(tv_end, tv_start);
                 add_to_storage_stat(0, result, time_used);
