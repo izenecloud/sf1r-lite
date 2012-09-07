@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include "OpinionsManager.h"
 
 using izenelib::util::UString;
 using namespace izenelib::ir::indexmanager;
@@ -74,6 +75,28 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
+    string OpPath=schema_.scoreSCDPath;
+    Op=new OpinionsManager(OpPath);
+    Op->setSigma(0.1, -6, 0.5, 20);
+    //LOG(INFO) << "============= test opinion extraction =========" << endl;
+    //////////////////////////
+    //ifstream infile;
+    //infile.open("/home/vincentlee/workspace/sf1/opinion_test_data.txt", ios::in);
+    //std::vector<std::string> Z;
+    //while(infile.good())
+    //{
+    //    std::string line_comment;
+    //    getline(infile, line_comment);
+    //    if(line_comment.empty())
+    //    {
+    //        continue;
+    //    }
+    //    Z.push_back(line_comment);
+    //}
+    //infile.close();
+    ////Ng->AppendSentence(Z);
+    //Op->setComment(Z);
+    //Op->getOpinion();
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
@@ -81,6 +104,7 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
     delete summarization_storage_;
     delete comment_cache_storage_;
     delete corpus_;
+    delete Op;
 }
 
 void MultiDocSummarizationSubManager::EvaluateSummarization()
@@ -133,6 +157,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         score_scd_writer_.reset(new ScdWriter(schema_.scoreSCDPath, UPDATE_SCD));
     }
 
+    if (!schema_.opinionSCDPath.empty())
+    {
+        opinion_scd_writer_.reset(new ScdWriter(schema_.opinionSCDPath, UPDATE_SCD));
+    }
+
     {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
@@ -149,12 +178,12 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             }
 
             Summarization summarization(commentCacheItem);
-            if (DoEvaluateSummarization_(summarization, key, commentCacheItem))
+            DoEvaluateSummarization_(summarization, key, commentCacheItem);
+            
+            DoOpinionExtraction(key, commentCacheItem);
+            if (++count % 1000 == 0)
             {
-                if (++count % 10000 == 0)
-                {
-                    LOG(INFO) << "Evaluating summarization: " << count;
-                }
+                LOG(INFO) << "====== Evaluating summarization and opinion count: " << count << "=======" << std::endl;
             }
         }
         summarization_storage_->Flush();
@@ -165,9 +194,53 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         score_scd_writer_->Close();
         score_scd_writer_.reset();
     }
+    if (opinion_scd_writer_)
+    {
+        opinion_scd_writer_->Close();
+        opinion_scd_writer_.reset();
+    }
 
     comment_cache_storage_->ClearDirtyKey();
     LOG(INFO) << "Finish evaluating summarization.";
+}
+
+void MultiDocSummarizationSubManager::DoOpinionExtraction(
+        const KeyType& key,
+        const CommentCacheItemType& comment_cache_item)
+{
+    std::vector<std::string> Z;
+
+    for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
+            it != comment_cache_item.end(); ++it)
+    {
+        const UString& content = it->second.first;
+        string strcontent;
+        content.convertString(strcontent, UString::UTF_8);
+        Z.push_back(strcontent);
+    }
+ 
+    Op->setComment(Z);
+    std::vector<std::string> product_opinions = Op->getOpinion();
+    if(!product_opinions.empty())
+    {
+        std::string final_opinion_str = product_opinions[0];
+        for(size_t i = 1; i < product_opinions.size(); ++i)
+        {
+            final_opinion_str += "," + product_opinions[i];
+        }
+
+        std::string key_str;
+        key_str = Utilities::uint128ToUuid(key);
+        UString key_ustr(key_str, UString::UTF_8);
+
+        if (opinion_scd_writer_)
+        {
+            Document doc;
+            doc.property("DOCID") = key_ustr;
+            doc.property(schema_.opinionPropName) = UString(final_opinion_str, UString::UTF_8);
+            opinion_scd_writer_->Append(doc);
+        }
+    }
 }
 
 bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
@@ -230,7 +303,7 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_sent();
     corpus_->start_new_doc();
     corpus_->start_new_coll();
-
+ 
     std::map<UString, std::vector<std::pair<double, UString> > > summaries;
 //#define DEBUG_SUMMARIZATION
 #ifdef DEBUG_SUMMARIZATION
