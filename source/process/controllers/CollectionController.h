@@ -36,6 +36,9 @@ public:
     void create_collection();
 
     void delete_collection();
+
+    void set_kv();
+    void get_kv();
 };
 
 /// @}

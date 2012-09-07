@@ -120,6 +120,7 @@ typedef idmlib::util::ContainerSwitch<idmlib::tdt::Storage> TdtStorageType;
 typedef idmlib::sim::TermSimilarityTable<uint32_t> SimTableType;
 typedef idmlib::sim::SimOutputCollector<SimTableType> SimCollectorType;
 typedef idmlib::sim::TermSimilarity<SimCollectorType, uint32_t, uint32_t, uint32_t> TermSimilarityType;
+typedef izenelib::am::leveldb::Table<std::string, std::string> KVSubManager;
 public:
     /**
      * @brief The constructor of MiningManager.
@@ -307,6 +308,10 @@ public:
             uint32_t knnTopK,
             uint32_t knnDist,
             uint32_t start);
+
+    bool SetKV(const std::string& key, const std::string& value);
+
+    bool GetKV(const std::string& key, std::string& value);
 
     void close();
 
@@ -533,6 +538,10 @@ private:
     /** SUMMARIZATION */
     std::string summarization_path_;
     MultiDocSummarizationSubManager* summarizationManager_;
+
+    /** KV */
+    std::string kv_path_;
+    KVSubManager* kvManager_;
 };
 
 }

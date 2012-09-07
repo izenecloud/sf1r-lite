@@ -184,6 +184,9 @@ public:
         const std::string& collection,
         const izenelib::util::UString& rawKey, 
         Summarization& result);
+
+    bool SetKV(const std::string& key, const std::string& value);
+    bool GetKV(const std::string& key, std::string& value);
 private:
     MiningBundleConfiguration* bundleConfig_;
     boost::shared_ptr<MiningManager> miningManager_;

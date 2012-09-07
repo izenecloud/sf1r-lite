@@ -326,4 +326,13 @@ bool MiningSearchService::GetSummarizationByRawKey(
     return miningManager_->GetSummarizationByRawKey(rawKey,result);
 }
 
+bool MiningSearchService::SetKV(const std::string& key, const std::string& value)
+{
+    return miningManager_->SetKV(key, value);
+}
+bool MiningSearchService::GetKV(const std::string& key, std::string& value)
+{
+    return miningManager_->GetKV(key, value);
+}
+
 }

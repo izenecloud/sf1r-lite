@@ -142,3 +142,6 @@ controllers:
       - stop_collection
       - create_collection
       - delete_collection
+      - set_kv
+      - get_kv
+

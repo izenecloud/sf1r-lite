@@ -120,6 +120,7 @@ MiningManager::MiningManager(
     , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
+    , kvManager_(NULL)
 {
 }
 
@@ -136,6 +137,7 @@ MiningManager::~MiningManager()
     if (attrManager_) delete attrManager_;
     if (tdt_storage_) delete tdt_storage_;
     if (summarizationManager_) delete summarizationManager_;
+    if (kvManager_) delete kvManager_;
     close();
 }
 
@@ -485,6 +487,17 @@ bool MiningManager::open()
            {
                //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
            }
+        }
+
+        /** KV */
+        kv_path_ = prefix_path + "/kv";
+        boost::filesystem::create_directories(kv_path_);
+        kvManager_ = new KVSubManager(kv_path_);
+        if(!kvManager_->open())
+        {
+            std::cerr<<"kv manager open fail"<<std::endl;
+            delete kvManager_;
+            kvManager_ = NULL;
         }
     }
     catch (NotEnoughMemoryException& ex)
@@ -1664,6 +1677,31 @@ bool MiningManager::GetKNNListBySignature(
     if (signature.empty()) return false;
 
     return dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
+}
+
+bool MiningManager::SetKV(const std::string& key, const std::string& value)
+{
+    if(kvManager_)
+    {
+        kvManager_->update(key, value);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool MiningManager::GetKV(const std::string& key, std::string& value)
+{
+    if(kvManager_)
+    {
+        return kvManager_->get(key, value);
+    }
+    else
+    {
+        return false;
+    }
 }
 
 bool MiningManager::doTgInfoInit_()

@@ -6,10 +6,12 @@
  */
 
 #include "CollectionController.h"
+#include "CollectionHandler.h"
 #include "process/common/XmlSchema.h"
 
 #include <process/common/CollectionManager.h>
 #include <process/common/XmlConfigParser.h>
+#include <bundles/mining/MiningSearchService.h>
 
 #include <iostream>
 #include <fstream>
@@ -272,6 +274,101 @@ void CollectionController::delete_collection(){
             bf::remove_all(collection_dir);
     }
     cout<<"deleted collection: "<<collection<<endl;
+}
+
+/**
+ * @brief Action @b set_kv.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b key* (@c String): key.
+ * - @b value* (@c String): value.
+ *
+ * @section response
+ *
+ * - No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "collection": "b5mp",
+ *   "key": "x",
+ *   "value": "y"
+ * }
+ * @endcode
+ *
+ */
+void CollectionController::set_kv()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    std::string key = asString(request()[Keys::key]);
+    std::string value = asString(request()[Keys::value]);
+    if (collection.empty() || key.empty() || value.empty())
+    {
+        response().addError("Require field collection,key,value in request.");
+        return;
+    }
+    CollectionHandler* handler = CollectionManager::get()->findHandler(collection);
+    if(handler==NULL)
+    {
+        response().addError("collection not found");
+        return;
+    }
+    if(!handler->miningSearchService_->SetKV(key, value))
+    {
+        response().addError("set kv fail");
+        return;
+    }
+}
+
+/**
+ * @brief Action @b get_kv.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b key* (@c String): key.
+ *
+ * @section response
+ *
+ * - @b value (@c String): return value
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "collection": "b5mp",
+ *   "key": "x",
+ * }
+ * @endcode
+ *
+ */
+void CollectionController::get_kv()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    std::string key = asString(request()[Keys::key]);
+    if (collection.empty() || key.empty())
+    {
+        response().addError("Require field collection,key in request.");
+        return;
+    }
+    CollectionHandler* handler = CollectionManager::get()->findHandler(collection);
+    if(handler==NULL)
+    {
+        response().addError("collection not found");
+        return;
+    }
+    std::string value;
+    if(handler->miningSearchService_->GetKV(key, value))
+    {
+        response()[Keys::value] = value;
+    }
 }
 
 } //namespace sf1r
