@@ -5,9 +5,9 @@
 
 #define VERY_LOW  -50
 #define OPINION_NGRAM_MIN  2
-#define MIN_SEED_BIGRAM   50
+#define MAX_SEED_BIGRAM_RATIO   50
 #define REFINE_THRESHOLD  4
-#define MAX_SEED_BIGRAM_IN_SINGLE_COMMENT  200
+#define MAX_SEED_BIGRAM_IN_SINGLE_COMMENT  100
 
 using namespace std;
 using namespace cma;
@@ -34,7 +34,8 @@ struct seedPairCmp2 {
 
 namespace sf1r
 {
-    static const UCS2Char  en_dou(','), en_ju('.'), en_gantan('!'), en_wen('?'), en_mao(':');
+    static const UCS2Char  en_dou(','), en_ju('.'), en_gantan('!'),
+                 en_wen('?'), en_mao(':'), en_space(' ');
     //static const UCS2Char  ch_ju('。'), ch_dou('，'), ch_gantan('！'), ch_wen('？');
     static const UCS2Char  ch_ju(0x3002), ch_dou(0xff0c), ch_gantan(0xff01), ch_wen(0xff1f), ch_mao(0xff1a), ch_dun(0x3001);
     // 全角标点符号等
@@ -50,7 +51,8 @@ namespace sf1r
 
     inline bool IsCommentSplitChar(UCS2Char c)
     {
-        return c == en_dou || c == en_ju || c==en_gantan || c==en_wen || c==en_mao ||
+        return c == en_dou || c == en_ju || c==en_gantan || 
+            c==en_wen || c==en_mao || c == en_space ||
             IsFullWidthChar(c) || IsCJKSymbols(c);
     }
 
@@ -65,7 +67,7 @@ namespace sf1r
 
     inline bool IsCommentSplitStr(const std::string& str, izenelib::util::UString::EncodingType encoding = UString::UTF_8)
     {
-        if(str == "." || str == "," || str == "!" || str == "?" || str == ":" ||
+        if(str == "." || str == "," || str == "!" || str == "?" || str == ":" || str == " " ||
             str == "。" || str == "，" ||str == "！" || str == "？" || str == "：" ||
             str == "、" )
             return true;
@@ -135,11 +137,20 @@ void OpinionsManager::setFilterStr(const std::vector<std::string>& filter_strs)
 
 void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
 {
+    pmi_cache_hit_num_ = 0;
+    word_cache_hit_num_ = 0;
+    cached_word_insentence_.clear();
+    cached_pmimodified_.clear();
+    cached_srep.clear();
+    SigmaRep_dynamic = CandidateSrepQueueT();
     Z.clear();
     orig_comments_.clear();
-    out << "----- original comment (only Chinese) start-----" << endl;
+
+    out << "----- original comment start-----" << endl;
     for(size_t i = 0; i < in_sentences.size(); i++)
     { 
+        if(Z.size() >= MAX_COMMENT_NUM)
+            break;
         izenelib::util::UString ustr(in_sentences[i], encodingType_);
         izenelib::util::UString::iterator uend = std::remove_if(ustr.begin(), ustr.end(), IsNeedIgnoreChar);
         if(uend == ustr.begin())
@@ -156,11 +167,23 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
         if(uend == ustr.begin())
             continue;
         ustr.erase(uend, ustr.end());
+
+        for(size_t j = 0; j < ustr.length(); j++)
+        {  
+            string strseg;
+            string bigramstr;
+            ustr.substr(j, 1).convertString(strseg, encodingType_);
+            cached_word_insentence_[strseg].set(Z.size() - 1);
+            ustr.substr(j, 2).convertString(bigramstr, encodingType_);
+            cached_word_insentence_[bigramstr].set(Z.size() - 1);
+        }
+
         Z[Z.size() - 1] = "";
         ustr.convertString(Z[Z.size() - 1], encodingType_);
         out << Z[Z.size() - 1] << endl;
     }
     out << "----- original comment end-----" << endl;
+    out << "----- total comment num : " << Z.size() << endl;
     out.flush();
 }
 
@@ -242,6 +265,7 @@ double OpinionsManager::Srep(const WordSegContainerT& words)
     CachedStorageT::iterator it = cached_srep.find(phrase);
     if(it != cached_srep.end())
     {
+        pmi_cache_hit_num_++;
         return it->second;
     }
 
@@ -353,6 +377,7 @@ double OpinionsManager::PMImodified(const std::string& Wi, const std::string& Wj
         WordPossibilityMapT::iterator pit = join_it->second.find(Wj);
         if(pit != join_it->second.end())
         {
+            pmi_cache_hit_num_++;
             return pit->second;
         }
     }
@@ -373,6 +398,15 @@ double OpinionsManager::CoOccurring(const std::string& Wi, const std::string& Wj
     int Poss = 0;
     for(size_t j = 0; j < Z.size(); j++)
     {
+        if(cached_word_insentence_.find(Wi) != cached_word_insentence_.end()
+            && cached_word_insentence_.find(Wj) != cached_word_insentence_.end())
+        {
+            if(!cached_word_insentence_[Wi].test(j) || !cached_word_insentence_[Wj].test(j))
+            {
+                word_cache_hit_num_++;
+                continue;
+            }
+        }
         if(CoOccurringInOneSentence(Wi, Wj, C, Z[j]))
            Poss++; 
     }
@@ -401,24 +435,58 @@ bool OpinionsManager::CoOccurringInOneSentence(const std::string& Wi,
 double OpinionsManager::Possib(const std::string& Wi, const std::string& Wj)
 {
     int Poss=0;
+    bool wi_need_find = true;
+    bool wj_need_find = true;
+    if(cached_word_insentence_.find(Wi) != cached_word_insentence_.end())
+    {
+        word_cache_hit_num_++;
+        wi_need_find = false;
+    }
+    if(cached_word_insentence_.find(Wj) != cached_word_insentence_.end())
+    {
+        word_cache_hit_num_++;
+        wj_need_find = false;
+    }
+    if(wi_need_find || wj_need_find)
+    {
+        for(size_t j = 0; j < Z.size(); j++)
+        {
+            if(wi_need_find)
+            {
+                size_t loci = Z[j].find(Wi);
+                if(loci != string::npos )
+                {
+                    cached_word_insentence_[Wi].set(j);
+                }
+            }
+            if(wj_need_find)
+            {
+                size_t locj = Z[j].find(Wj);
+                if( locj != string::npos )
+                {
+                    cached_word_insentence_[Wj].set(j);
+                }
+            }
+        }
+    }
     for(size_t j = 0; j < Z.size(); j++)
     {
-        size_t loci = Z[j].find(Wi);
-        size_t locj = Z[j].find(Wj);
-        if( locj != string::npos && loci != string::npos )
+        if( cached_word_insentence_[Wi].test(j) && cached_word_insentence_[Wj].test(j))
         {
             Poss++;
         }
     }
+
     return Poss;
 }
 
 double OpinionsManager::Possib(const std::string& Wi)
 {
     int Poss=0;
-    if(word_freq_insentence_.find(Wi) != word_freq_insentence_.end())
+    if(cached_word_insentence_.find(Wi) != cached_word_insentence_.end())
     {
-        return word_freq_insentence_[Wi];
+        word_cache_hit_num_++;
+        return cached_word_insentence_[Wi].count();
     }
     for(size_t j = 0; j < Z.size(); j++)
     {
@@ -426,9 +494,9 @@ double OpinionsManager::Possib(const std::string& Wi)
         if( loc != string::npos )
         {
             Poss++;
+            cached_word_insentence_[Wi].set(j);
         }
     }
-    word_freq_insentence_[Wi] = Poss;
     return Poss;
 }
 
@@ -495,7 +563,7 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
             {
                 continue;
             }
-            if( (Srep(bigram_words) >= SigmaRep) )
+            //if( (Srep(bigram_words) >= SigmaRep) )
             {
 
                 string tmpstr = bigram_words[0] + bigram_words[1];
@@ -512,6 +580,7 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
                 ++bigram_num_insingle_comment;
             }
         }
+        // refine the seed bigram in a very long single comment.
         if(bigram_num_insingle_comment > MAX_SEED_BIGRAM_IN_SINGLE_COMMENT)
         {
             out << "seed bigram is too much in phrase: "<< getSentence(orig_comments_[i]) << endl;
@@ -537,7 +606,7 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
 
     // get the top-k bigram counter, and filter the seed bigram by this counter.
     WordPriorityQueue_  topk_words;
-    topk_words.Init(min(MIN_SEED_BIGRAM*SigmaLength, (double)word_freq_records.size()/2));
+    topk_words.Init(min(MAX_SEED_BIGRAM_RATIO*SigmaLength, (double)word_freq_records.size()/2));
 
     WordFreqMapT::const_iterator cit = word_freq_records.begin();
     while(cit != word_freq_records.end())
@@ -558,6 +627,10 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
        boost::bind(FilterBigramByCounter, filter_counter, boost::cref(word_freq_records), _1));
     resultList.erase(bigram_it, resultList.end());
     out << "===== after filter, seed bigram size: "<< resultList.size() << endl;
+
+    if(resultList.size() > MAX_SEED_BIGRAM_RATIO*SigmaLength)
+    {
+    }
     ///test opinion result
     //
 
@@ -715,16 +788,23 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
         seedGrams.push_back(phrase);
     }
 
+    struct timeval starttime, endtime;
+    gettimeofday(&starttime, NULL);
+
     for(size_t i = 0; i < seedGrams.size(); i++)
     {
         GenerateCandidates(seedGrams[i], candList, seed_bigramlist, i);
     }
 
+    gettimeofday(&endtime, NULL);
+    int64_t interval = (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_usec - starttime.tv_usec)/1000;
+    if(interval > 10)
+        out << "gen candidate used more than 10ms " << interval << endl;
+
     std::cout << "\r candList.size() = "<< candList.size();
 
     if(candList.size() > SigmaLength/2)
         RefineCandidateNgram(candList);
-
     std::vector<std::pair<std::string, double> > candOpinionString;
     changeForm(candList, candOpinionString);
 
@@ -739,7 +819,6 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
         // get orig_comment from the candidate opinions.
         GetOrigCommentsByBriefOpinion(candOpinionString);
     }
-
     recompute_srep(candOpinionString);
 
     out << "after recompute_srep: candidates are " << endl;
@@ -913,13 +992,17 @@ void OpinionsManager::changeForm(const OpinionCandidateContainerT& candList, std
 
 std::vector<std::string> OpinionsManager::getOpinion(bool need_orig_comment_phrase)
 {
-    word_freq_insentence_.clear();
-    cached_pmimodified_.clear();
-    cached_srep.clear();
-    SigmaRep_dynamic = CandidateSrepQueueT();
+    struct timeval starttime, endtime;
+    gettimeofday(&starttime, NULL);
 
     BigramPhraseContainerT seed_bigramlist;
     GenSeedBigramList(seed_bigramlist);
+
+    gettimeofday(&endtime, NULL);
+    int64_t interval = (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_usec - starttime.tv_usec)/1000;
+    if(interval > 10)
+        out << "gen seed bigram used more than 10ms " << interval << endl;
+
     std::vector<std::string> final_result;
     GetFinalMicroOpinion( seed_bigramlist, need_orig_comment_phrase, final_result);
     if(!final_result.empty())
@@ -932,6 +1015,7 @@ std::vector<std::string> OpinionsManager::getOpinion(bool need_orig_comment_phra
         out<<"-------------Opinion finished---------------"<<endl;
         out.flush();
     }
+    out << "word/pmi cache hit ratio: " << word_cache_hit_num_ << "," << pmi_cache_hit_num_ << endl;
     return final_result;
 }
 

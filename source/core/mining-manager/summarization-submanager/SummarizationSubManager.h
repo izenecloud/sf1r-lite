@@ -56,6 +56,10 @@ private:
             const KeyType& key,
             const CommentCacheItemType& comment_cache_item);
 
+    void DoOpinionExtraction(
+        const KeyType& key,
+        const CommentCacheItemType& comment_cache_item);
+
     uint32_t GetLastDocid_() const;
 
     void SetLastDocid_(uint32_t docid) const;
@@ -68,6 +72,7 @@ private:
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<ScdWriter> score_scd_writer_;
+    boost::shared_ptr<ScdWriter> opinion_scd_writer_;
 
     idmlib::util::IDMAnalyzer* analyzer_;
 

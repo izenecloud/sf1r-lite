@@ -1,5 +1,5 @@
-#ifndef SF1R_MINING_MANAGER_SUMMARIZATION_COMMENT_H
-#define SF1R_MINING_MANAGER_SUMMARIZATION_COMMENT_H
+#ifndef SF1R_MINING_MANAGER_SUMMARIZATION_OPINIONMANAGER_H
+#define SF1R_MINING_MANAGER_SUMMARIZATION_OPINIONMANAGER_H
 
 #include <icma/icma.h>
 
@@ -13,6 +13,9 @@
 #include <string>
 #include <util/PriorityQueue.h>
 #include <queue>
+#include <bitset>
+
+#define MAX_COMMENT_NUM  10000
 
 using std::string;
 using std::vector;
@@ -61,6 +64,7 @@ public:
     // record how many sentences the word appeared in.
     typedef boost::unordered_map<std::string, CustomInt> WordFreqMapT;
 
+    typedef boost::unordered_map<std::string, std::bitset<MAX_COMMENT_NUM> >  WordInSentenceMapT;
     typedef boost::unordered_map<std::string, double> WordPossibilityMapT;
     typedef boost::unordered_map<std::string, WordPossibilityMapT> WordJoinPossibilityMapT;
 
@@ -148,14 +152,15 @@ private:
     fstream out;
     int windowsize;
     CachedStorageT cached_srep;
-    WordPossibilityMapT word_freq_insentence_;
+    WordInSentenceMapT  cached_word_insentence_;
     izenelib::util::UString::EncodingType encodingType_;
     WordJoinPossibilityMapT  cached_pmimodified_;
     OriginalCommentContainerT orig_comments_;
     WordSegContainerT  filter_strs_;
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
-
+    size_t word_cache_hit_num_;
+    size_t pmi_cache_hit_num_;
 };
 
 };

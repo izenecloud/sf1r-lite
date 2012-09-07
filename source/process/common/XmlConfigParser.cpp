@@ -1668,10 +1668,24 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.summarization_schema.scorePropName = property_name;
             }
         }
+
+
         ticpp::Element* scoreSCDPath_node = getUniqChildElement(task_node, "ScoreSCDPath", false);
         if (scoreSCDPath_node)
         {
             getAttribute(scoreSCDPath_node, "path", mining_schema.summarization_schema.scoreSCDPath);
+        }
+
+        ticpp::Element* opinionSCDPath_node = getUniqChildElement(task_node, "OpinionSCDPath", false);
+        if (opinionSCDPath_node)
+        {
+            getAttribute(opinionSCDPath_node, "path", mining_schema.summarization_schema.opinionSCDPath);
+        }
+
+        ticpp::Element* opinionProp_node = getUniqChildElement(task_node, "OpinionProperty", false);
+        if (opinionProp_node)
+        {
+            getAttribute(opinionProp_node, "name", mining_schema.summarization_schema.opinionPropName);
         }
         mining_schema.summarization_enable = true;
     }

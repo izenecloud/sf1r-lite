@@ -157,6 +157,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         score_scd_writer_.reset(new ScdWriter(schema_.scoreSCDPath, UPDATE_SCD));
     }
 
+    if (!schema_.opinionSCDPath.empty())
+    {
+        opinion_scd_writer_.reset(new ScdWriter(schema_.opinionSCDPath, UPDATE_SCD));
+    }
+
     {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
@@ -173,12 +178,12 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             }
 
             Summarization summarization(commentCacheItem);
-            if (DoEvaluateSummarization_(summarization, key, commentCacheItem))
+            DoEvaluateSummarization_(summarization, key, commentCacheItem);
+            
+            DoOpinionExtraction(key, commentCacheItem);
+            if (++count % 1000 == 0)
             {
-                if (++count % 1000 == 0)
-                {
-                    LOG(INFO) << "=========== Evaluating summarization count: " << count << "============";
-                }
+                LOG(INFO) << "====== Evaluating summarization and opinion count: " << count << "=======" << std::endl;
             }
         }
         summarization_storage_->Flush();
@@ -189,9 +194,53 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         score_scd_writer_->Close();
         score_scd_writer_.reset();
     }
+    if (opinion_scd_writer_)
+    {
+        opinion_scd_writer_->Close();
+        opinion_scd_writer_.reset();
+    }
 
     comment_cache_storage_->ClearDirtyKey();
     LOG(INFO) << "Finish evaluating summarization.";
+}
+
+void MultiDocSummarizationSubManager::DoOpinionExtraction(
+        const KeyType& key,
+        const CommentCacheItemType& comment_cache_item)
+{
+    std::vector<std::string> Z;
+
+    for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
+            it != comment_cache_item.end(); ++it)
+    {
+        const UString& content = it->second.first;
+        string strcontent;
+        content.convertString(strcontent, UString::UTF_8);
+        Z.push_back(strcontent);
+    }
+ 
+    Op->setComment(Z);
+    std::vector<std::string> product_opinions = Op->getOpinion();
+    if(!product_opinions.empty())
+    {
+        std::string final_opinion_str = product_opinions[0];
+        for(size_t i = 1; i < product_opinions.size(); ++i)
+        {
+            final_opinion_str += "," + product_opinions[i];
+        }
+
+        std::string key_str;
+        key_str = Utilities::uint128ToUuid(key);
+        UString key_ustr(key_str, UString::UTF_8);
+
+        if (opinion_scd_writer_)
+        {
+            Document doc;
+            doc.property("DOCID") = key_ustr;
+            doc.property(schema_.opinionPropName) = UString(final_opinion_str, UString::UTF_8);
+            opinion_scd_writer_->Append(doc);
+        }
+    }
 }
 
 bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
@@ -215,8 +264,6 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_coll(key_ustr);
     corpus_->start_new_doc(); // XXX
 
-    std::vector<std::string> Z;
-
     for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
             it != comment_cache_item.end(); ++it)
     {
@@ -235,9 +282,6 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
 
         const UString& content = it->second.first;
         UString sentence;
-        string strcontent;
-        content.convertString(strcontent, UString::UTF_8);
-        Z.push_back(strcontent);
         std::size_t startPos = 0;
         while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
         {
@@ -260,9 +304,6 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     corpus_->start_new_doc();
     corpus_->start_new_coll();
  
-    Op->setComment(Z);
-    Op->getOpinion();
-
     std::map<UString, std::vector<std::pair<double, UString> > > summaries;
 //#define DEBUG_SUMMARIZATION
 #ifdef DEBUG_SUMMARIZATION
