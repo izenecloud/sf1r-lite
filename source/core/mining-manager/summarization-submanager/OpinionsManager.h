@@ -78,7 +78,7 @@ public:
     typedef std::pair< NgramPhraseT, double > OpinionCandidateT;
     typedef std::vector< OpinionCandidateT > OpinionCandidateContainerT;
 
-    OpinionsManager(const string& colPath);//string enc,string cate,string posDelimiter,
+    OpinionsManager(const string& colPath, const std::string& dictpath);//string enc,string cate,string posDelimiter,
     ~OpinionsManager();
     void setComment(const SentenceContainerT& Z_);
     std::vector<std::string> getOpinion(bool need_orig_comment_phrase = true);

@@ -91,11 +91,11 @@ namespace sf1r
         return true;
     }
 
-OpinionsManager::OpinionsManager(const string& colPath)
+OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictpath)
 {
     knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel( "utf8","/home/vincentlee/workspace/sf1/icma/db/icwb/utf8");
-    assert(knowledge_->isSupportPOS());
+    knowledge_->loadModel( "utf8", dictpath.c_str());
+    //assert(knowledge_->isSupportPOS());
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     //analyzer->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
     //analyzer->setOption(Analyzer::OPTION_ANALYSIS_TYPE,77);
@@ -146,7 +146,7 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
     Z.clear();
     orig_comments_.clear();
 
-    out << "----- original comment start-----" << endl;
+    //out << "----- original comment start-----" << endl;
     for(size_t i = 0; i < in_sentences.size(); i++)
     { 
         if(Z.size() >= MAX_COMMENT_NUM)
@@ -180,9 +180,9 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
 
         Z[Z.size() - 1] = "";
         ustr.convertString(Z[Z.size() - 1], encodingType_);
-        out << Z[Z.size() - 1] << endl;
+        //out << Z[Z.size() - 1] << endl;
     }
-    out << "----- original comment end-----" << endl;
+    //out << "----- original comment end-----" << endl;
     out << "----- total comment num : " << Z.size() << endl;
     out.flush();
 }
@@ -583,7 +583,7 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
         // refine the seed bigram in a very long single comment.
         if(bigram_num_insingle_comment > MAX_SEED_BIGRAM_IN_SINGLE_COMMENT)
         {
-            out << "seed bigram is too much in phrase: "<< getSentence(orig_comments_[i]) << endl;
+            //out << "seed bigram is too much in phrase: "<< getSentence(orig_comments_[i]) << endl;
             WordPriorityQueue_  topk_seedbigram;
             topk_seedbigram.Init(MAX_SEED_BIGRAM_IN_SINGLE_COMMENT);
             for(int start = bigram_start; start < (int)resultList.size(); ++start)
@@ -593,11 +593,11 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
                     topk_seedbigram.insert(std::make_pair(bigram_str, Possib(bigram_str)));
             }
             double possib_threshold = topk_seedbigram.top().second;
-            out << "bigram filter possibility: "<< possib_threshold << endl;
+            //out << "bigram filter possibility: "<< possib_threshold << endl;
             BigramPhraseContainerT::iterator bigram_it = std::remove_if(resultList.begin() + bigram_start,
                 resultList.end(),
                 boost::bind(&OpinionsManager::FilterBigramByPossib, this, possib_threshold, _1));
-            out << "bigram filter num: "<< bigram_it - resultList.end() << endl;
+            //out << "bigram filter num: "<< bigram_it - resultList.end() << endl;
             resultList.erase(bigram_it, resultList.end());
         }
         // push splitter at the end of each sentence to avoid the opinion cross two different sentence.
@@ -618,11 +618,11 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
         ++cit;
     }
 
-    out << "=== total different bigram:" << word_freq_records.size() << endl;
+    //out << "=== total different bigram:" << word_freq_records.size() << endl;
     int filter_counter = 3;
     if(topk_words.size() > 1)
         filter_counter = max(topk_words.top().second, filter_counter);
-    out << "===== filter counter is: "<< filter_counter << endl;
+    //out << "===== filter counter is: "<< filter_counter << endl;
     BigramPhraseContainerT::iterator bigram_it = std::remove_if(resultList.begin(), resultList.end(),
        boost::bind(FilterBigramByCounter, filter_counter, boost::cref(word_freq_records), _1));
     resultList.erase(bigram_it, resultList.end());
@@ -674,7 +674,7 @@ void OpinionsManager::RefineCandidateNgram(OpinionCandidateContainerT& candList)
         need_refine = (max_possib < REFINE_THRESHOLD);
         if(need_refine)
         {
-            out << "candidate refined: " << getSentence(candList[index].first) << endl;
+            //out << "candidate refined: " << getSentence(candList[index].first) << endl;
             candList[index].second = SigmaRep - 1;
         }
     }
@@ -798,8 +798,8 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
 
     gettimeofday(&endtime, NULL);
     int64_t interval = (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_usec - starttime.tv_usec)/1000;
-    if(interval > 10)
-        out << "gen candidate used more than 10ms " << interval << endl;
+    if(interval > 10000)
+        out << "gen candidate used more than 10000ms " << interval << endl;
 
     std::cout << "\r candList.size() = "<< candList.size();
 
@@ -808,11 +808,11 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
     std::vector<std::pair<std::string, double> > candOpinionString;
     changeForm(candList, candOpinionString);
 
-    out << "before recompute_srep: candidates are " << endl;
-    for(size_t i = 0; i < candOpinionString.size(); ++i)
-    {
-        out << "str:" << candOpinionString[i].first << ",score:" << candOpinionString[i].second << endl;
-    }
+    //out << "before recompute_srep: candidates are " << endl;
+    //for(size_t i = 0; i < candOpinionString.size(); ++i)
+    //{
+    //    out << "str:" << candOpinionString[i].first << ",score:" << candOpinionString[i].second << endl;
+    //}
 
     if(need_orig_comment_phrase)
     {
@@ -821,11 +821,11 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
     }
     recompute_srep(candOpinionString);
 
-    out << "after recompute_srep: candidates are " << endl;
-    for(size_t i = 0; i < candOpinionString.size(); ++i)
-    {
-        out << "str:" << candOpinionString[i].first << ",score:" << candOpinionString[i].second << endl;
-    }
+    //out << "after recompute_srep: candidates are " << endl;
+    //for(size_t i = 0; i < candOpinionString.size(); ++i)
+    //{
+    //    out << "str:" << candOpinionString[i].first << ",score:" << candOpinionString[i].second << endl;
+    //}
 
     sort(candOpinionString.begin(), candOpinionString.end(), seedPairCmp2);
     size_t result_num = min((size_t)SigmaLength, min(2*orig_comments_.size(), candOpinionString.size()));
@@ -1000,19 +1000,19 @@ std::vector<std::string> OpinionsManager::getOpinion(bool need_orig_comment_phra
 
     gettimeofday(&endtime, NULL);
     int64_t interval = (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_usec - starttime.tv_usec)/1000;
-    if(interval > 10)
-        out << "gen seed bigram used more than 10ms " << interval << endl;
+    if(interval > 1000)
+        out << "gen seed bigram used more than 1000ms " << interval << endl;
 
     std::vector<std::string> final_result;
     GetFinalMicroOpinion( seed_bigramlist, need_orig_comment_phrase, final_result);
     if(!final_result.empty())
     {
         // string temp;
-        for(size_t i = 0; i < final_result.size(); i++)
-        {
-            out << "MicroOpinions:" << final_result[i] << endl;
-        }
-        out<<"-------------Opinion finished---------------"<<endl;
+        //for(size_t i = 0; i < final_result.size(); i++)
+        //{
+        //    out << "MicroOpinions:" << final_result[i] << endl;
+        //}
+        //out<<"-------------Opinion finished---------------"<<endl;
         out.flush();
     }
     out << "word/pmi cache hit ratio: " << word_cache_hit_num_ << "," << pmi_cache_hit_num_ << endl;

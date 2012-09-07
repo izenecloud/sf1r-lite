@@ -228,6 +228,7 @@
                 <xs:element ref="ScoreSCDPath" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="OpinionProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="OpinionSCDPath" minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="dictpath" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -244,6 +245,11 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="dictpath">
+        <xs:complexType>
+            <xs:attribute name="path" type="xs:string" use="required" />
+        </xs:complexType>
+    </xs:element>
     <xs:element name="DocumentClassification">
         <xs:complexType>
             <xs:sequence>

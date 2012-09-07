@@ -1687,6 +1687,13 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         {
             getAttribute(opinionProp_node, "name", mining_schema.summarization_schema.opinionPropName);
         }
+
+        ticpp::Element* dictpath_node = getUniqChildElement(task_node, "dictpath", false);
+        if (dictpath_node)
+        {
+            getAttribute(dictpath_node, "path", mining_schema.summarization_schema.dictpath);
+        }
+
         mining_schema.summarization_enable = true;
     }
 

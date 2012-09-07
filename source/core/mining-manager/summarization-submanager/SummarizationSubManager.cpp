@@ -75,8 +75,9 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
-    string OpPath=schema_.scoreSCDPath;
-    Op=new OpinionsManager(OpPath);
+    string OpPath = schema_.scoreSCDPath;
+    //Op=new OpinionsManager(OpPath, "/home/vincentlee/workspace/sf1/icma/db/icwb/utf8");
+    Op=new OpinionsManager(OpPath, schema_.dictpath);
     Op->setSigma(0.1, -6, 0.5, 20);
     //LOG(INFO) << "============= test opinion extraction =========" << endl;
     //////////////////////////
