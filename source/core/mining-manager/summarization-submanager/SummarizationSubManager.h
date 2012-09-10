@@ -57,6 +57,7 @@ private:
             const CommentCacheItemType& comment_cache_item);
 
     void DoOpinionExtraction(
+        Summarization& summarization,
         const KeyType& key,
         const CommentCacheItemType& comment_cache_item);
 

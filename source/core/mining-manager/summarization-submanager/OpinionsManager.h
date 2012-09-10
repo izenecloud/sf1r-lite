@@ -56,23 +56,23 @@ public:
         int inner_;
     };
     // store single comment and split string.
-    typedef std::vector< std::string > OriginalCommentT;
+    typedef std::vector< UString > OriginalCommentT;
     typedef std::vector< OriginalCommentT > OriginalCommentContainerT;
-    typedef std::vector< std::string > SentenceContainerT;
-    typedef std::vector< std::string > WordSegContainerT;
-    typedef std::pair<std::string, int> WordFreqPairT;
+    typedef std::vector< UString > SentenceContainerT;
+    typedef std::vector< UString > WordSegContainerT;
+    typedef std::pair<UString, int> WordFreqPairT;
     // record how many sentences the word appeared in.
-    typedef boost::unordered_map<std::string, CustomInt> WordFreqMapT;
+    typedef boost::unordered_map<UString, CustomInt> WordFreqMapT;
 
-    typedef boost::unordered_map<std::string, std::bitset<MAX_COMMENT_NUM> >  WordInSentenceMapT;
-    typedef boost::unordered_map<std::string, double> WordPossibilityMapT;
-    typedef boost::unordered_map<std::string, WordPossibilityMapT> WordJoinPossibilityMapT;
+    typedef boost::unordered_map<UString, std::bitset<MAX_COMMENT_NUM> >  WordInSentenceMapT;
+    typedef boost::unordered_map<UString, double> WordPossibilityMapT;
+    typedef boost::unordered_map<UString, WordPossibilityMapT> WordJoinPossibilityMapT;
 
-    typedef std::map<std::string, double>  CachedStorageT;
+    typedef std::map<UString, double>  CachedStorageT;
 
-    typedef std::pair< std::string, std::string > BigramPhraseT;
+    typedef std::pair< UString, UString > BigramPhraseT;
     typedef std::vector< BigramPhraseT > BigramPhraseContainerT;
-    typedef std::vector< std::string > NgramPhraseT;
+    typedef std::vector< UString > NgramPhraseT;
     typedef std::vector< NgramPhraseT > NgramPhraseContainerT;
     typedef std::vector< NgramPhraseT > OpinionContainerT;
     typedef std::pair< NgramPhraseT, double > OpinionCandidateT;
@@ -81,48 +81,48 @@ public:
     OpinionsManager(const string& colPath, const std::string& dictpath);//string enc,string cate,string posDelimiter,
     ~OpinionsManager();
     void setComment(const SentenceContainerT& Z_);
-    std::vector<std::string> getOpinion(bool need_orig_comment_phrase = true);
+    std::vector< std::pair<double, UString> > getOpinion(bool need_orig_comment_phrase = true);
 
     void setWindowsize(int C);
     void setSigma(double SigmaRep_,double SigmaRead_,double SigmaSim_,double SigmaLength_);
     void setEncoding(izenelib::util::UString::EncodingType encoding);
-    void setFilterStr(const std::vector<std::string>& filter_strs);
+    void setFilterStr(const std::vector<UString>& filter_strs);
     void CleanCacheData();
 
 private:
-    void recompute_srep(std::vector< std::pair<std::string, double> >& candList);
+    void recompute_srep(std::vector< std::pair<double, UString> >& candList);
     void RefineCandidateNgram(OpinionCandidateContainerT& candList);
-    void stringToWordVector(const std::string& Mi, WordSegContainerT& words);
-    void WordVectorToString(std::string& Mi, const WordSegContainerT& words);
-    double Sim(const std::string& Mi, const std::string& Mj);
+    void stringToWordVector(const UString& Mi, WordSegContainerT& words);
+    void WordVectorToString(UString& Mi, const WordSegContainerT& words);
+    double Sim(const UString& Mi, const UString& Mj);
     double Sim(const NgramPhraseT& wordsi, const NgramPhraseT& wordsj);
     double Srep(const NgramPhraseT& words);
-    double SrepSentence(const std::string& phrase_str);
+    double SrepSentence(const UString& phrase_str);
     double Score(const NgramPhraseT& words);
     //rep
     double PMIlocal(const WordSegContainerT& words, const int& offset, int C=3);
-    double PMImodified(const std::string& Wi, const std::string& Wj, int C=3);
-    double Possib(const std::string& Wi, const std::string& Wj);
-    double Possib(const std::string& Wi);
-    double CoOccurring(const std::string&Wi, const std::string& Wj,int C=3);
-    bool CoOccurringInOneSentence(const std::string& Wi,
-        const std::string& Wj, int C, const std::string& sentence);
+    double PMImodified(const UString& Wi, const UString& Wj, int C=3);
+    double Possib(const UString& Wi, const UString& Wj);
+    double Possib(const UString& Wi);
+    double CoOccurring(const UString& Wi, const UString& Wj,int C=3);
+    bool CoOccurringInOneSentence(const UString& Wi,
+        const UString& Wj, int C, const UString& sentence);
     //algorithm
     bool GenCandidateWord(WordSegContainerT& wordlist);
     bool GenSeedBigramList(BigramPhraseContainerT& result_list);
     bool GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bigramlist,
-       bool need_orig_comment_phrase, SentenceContainerT& final_result);
+       bool need_orig_comment_phrase, std::vector< std::pair<double, UString> >& final_result);
     void ValidCandidateAndUpdate(const NgramPhraseT& phrase, OpinionCandidateContainerT& candList);
     bool NotMirror(const WordSegContainerT& phrase, const BigramPhraseT& bigram);
     void Merge(NgramPhraseT& phrase, const BigramPhraseT& bigram);
     BigramPhraseContainerT GetJoinList(const WordSegContainerT& phrase, const BigramPhraseContainerT& BigramList, int current_merge_pos);
     void GenerateCandidates(const NgramPhraseT& phrase, OpinionCandidateContainerT& candList, 
         const BigramPhraseContainerT& seedBigrams, int current_merge_pos);
-    void changeForm(const OpinionCandidateContainerT& candList, std::vector<std::pair<std::string,double> >& newForm);
+    void changeForm(const OpinionCandidateContainerT& candList, std::vector<std::pair<double, UString> >& newForm);
    
     std::string getSentence(const WordSegContainerT& candVector);
-    bool IsNeedFilte(const std::string& teststr);
-    void GetOrigCommentsByBriefOpinion(std::vector< std::pair<std::string, double> >& candOpinionString);
+    bool IsNeedFilte(const UString& teststr);
+    void GetOrigCommentsByBriefOpinion(std::vector< std::pair<double, UString> >& candOpinionString);
     bool FilterBigramByPossib(double possib, const OpinionsManager::BigramPhraseT& bigram);
 
 private:

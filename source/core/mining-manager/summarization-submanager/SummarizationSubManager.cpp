@@ -181,7 +181,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             Summarization summarization(commentCacheItem);
             DoEvaluateSummarization_(summarization, key, commentCacheItem);
             
-            //DoOpinionExtraction(key, commentCacheItem);
+            //DoOpinionExtraction(summarization, key, commentCacheItem);
             if (++count % 1000 == 0)
             {
                 LOG(INFO) << "====== Evaluating summarization and opinion count: " << count << "=======" << std::endl;
@@ -206,28 +206,27 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 }
 
 void MultiDocSummarizationSubManager::DoOpinionExtraction(
+        Summarization& summarization,
         const KeyType& key,
         const CommentCacheItemType& comment_cache_item)
 {
-    std::vector<std::string> Z;
+    std::vector<UString> Z;
 
     for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
             it != comment_cache_item.end(); ++it)
     {
-        const UString& content = it->second.first;
-        string strcontent;
-        content.convertString(strcontent, UString::UTF_8);
-        Z.push_back(strcontent);
+        Z.push_back(it->second.first);
     }
  
     Op->setComment(Z);
-    std::vector<std::string> product_opinions = Op->getOpinion();
+    std::vector< std::pair<double, UString> > product_opinions = Op->getOpinion();
     if(!product_opinions.empty())
     {
-        std::string final_opinion_str = product_opinions[0];
+        UString final_opinion_str = product_opinions[0].second;
         for(size_t i = 1; i < product_opinions.size(); ++i)
         {
-            final_opinion_str += "," + product_opinions[i];
+            final_opinion_str.append( UString(",", UString::UTF_8) );
+            final_opinion_str.append(product_opinions[i].second);
         }
 
         std::string key_str;
@@ -238,9 +237,12 @@ void MultiDocSummarizationSubManager::DoOpinionExtraction(
         {
             Document doc;
             doc.property("DOCID") = key_ustr;
-            doc.property(schema_.opinionPropName) = UString(final_opinion_str, UString::UTF_8);
+            doc.property(schema_.opinionPropName) = final_opinion_str;
             opinion_scd_writer_->Append(doc);
         }
+
+        summarization.updateProperty("overview", product_opinions);
+        summarization_storage_->Update(key, summarization);
     }
 }
 
