@@ -181,7 +181,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             Summarization summarization(commentCacheItem);
             DoEvaluateSummarization_(summarization, key, commentCacheItem);
             
-            DoOpinionExtraction(key, commentCacheItem);
+            //DoOpinionExtraction(key, commentCacheItem);
             if (++count % 1000 == 0)
             {
                 LOG(INFO) << "====== Evaluating summarization and opinion count: " << count << "=======" << std::endl;

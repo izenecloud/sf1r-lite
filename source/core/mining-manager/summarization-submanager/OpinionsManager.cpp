@@ -135,7 +135,7 @@ void OpinionsManager::setFilterStr(const std::vector<std::string>& filter_strs)
     filter_strs_ = filter_strs;
 }
 
-void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
+void OpinionsManager::CleanCacheData()
 {
     pmi_cache_hit_num_ = 0;
     word_cache_hit_num_ = 0;
@@ -145,7 +145,11 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
     SigmaRep_dynamic = CandidateSrepQueueT();
     Z.clear();
     orig_comments_.clear();
+}
 
+void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
+{
+    CleanCacheData();
     //out << "----- original comment start-----" << endl;
     for(size_t i = 0; i < in_sentences.size(); i++)
     { 
@@ -744,7 +748,7 @@ void OpinionsManager::GetOrigCommentsByBriefOpinion(std::vector< std::pair<std::
         }
         else
         {
-            LOG(INFO) << "no orig_comment found:" << brief_opinion << endl;
+            out << "no orig_comment found:" << brief_opinion << endl;
         }
     }
     candOpinionString.clear();
@@ -1007,15 +1011,15 @@ std::vector<std::string> OpinionsManager::getOpinion(bool need_orig_comment_phra
     GetFinalMicroOpinion( seed_bigramlist, need_orig_comment_phrase, final_result);
     if(!final_result.empty())
     {
-        // string temp;
-        //for(size_t i = 0; i < final_result.size(); i++)
-        //{
-        //    out << "MicroOpinions:" << final_result[i] << endl;
-        //}
-        //out<<"-------------Opinion finished---------------"<<endl;
+        for(size_t i = 0; i < final_result.size(); i++)
+        {
+            out << "MicroOpinions:" << final_result[i] << endl;
+        }
+        out<<"-------------Opinion finished---------------"<<endl;
         out.flush();
     }
     out << "word/pmi cache hit ratio: " << word_cache_hit_num_ << "," << pmi_cache_hit_num_ << endl;
+    CleanCacheData();
     return final_result;
 }
 

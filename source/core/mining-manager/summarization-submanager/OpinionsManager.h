@@ -87,6 +87,7 @@ public:
     void setSigma(double SigmaRep_,double SigmaRead_,double SigmaSim_,double SigmaLength_);
     void setEncoding(izenelib::util::UString::EncodingType encoding);
     void setFilterStr(const std::vector<std::string>& filter_strs);
+    void CleanCacheData();
 
 private:
     void recompute_srep(std::vector< std::pair<std::string, double> >& candList);
