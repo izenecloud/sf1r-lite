@@ -1694,6 +1694,12 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             getAttribute(dictpath_node, "path", mining_schema.summarization_schema.dictpath);
         }
 
+        ticpp::Element* opinion_workingpath_node = getUniqChildElement(task_node, "OpinionWorkingPath", false);
+        if (opinion_workingpath_node)
+        {
+            getAttribute(opinion_workingpath_node, "path", mining_schema.summarization_schema.opinionWorkingPath);
+        }
+
         mining_schema.summarization_enable = true;
     }
 

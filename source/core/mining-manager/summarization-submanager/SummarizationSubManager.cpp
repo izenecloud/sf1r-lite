@@ -75,29 +75,27 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
-    string OpPath = schema_.scoreSCDPath;
+    string OpPath = schema_.opinionWorkingPath;
     //Op=new OpinionsManager(OpPath, "/home/vincentlee/workspace/sf1/icma/db/icwb/utf8");
-    Op=new OpinionsManager(OpPath, schema_.dictpath);
+    Op = new OpinionsManager(OpPath, schema_.dictpath);
     Op->setSigma(0.1, -6, 0.5, 20);
-    //LOG(INFO) << "============= test opinion extraction =========" << endl;
     //////////////////////////
-    //ifstream infile;
-    //infile.open("/home/vincentlee/workspace/sf1/opinion_test_data.txt", ios::in);
-    //std::vector<std::string> Z;
-    //while(infile.good())
-    //{
-    //    std::string line_comment;
-    //    getline(infile, line_comment);
-    //    if(line_comment.empty())
-    //    {
-    //        continue;
-    //    }
-    //    Z.push_back(line_comment);
-    //}
-    //infile.close();
-    ////Ng->AppendSentence(Z);
-    //Op->setComment(Z);
-    //Op->getOpinion();
+    // set filter to filter some too common phrase
+    ifstream infile;
+    infile.open((OpPath + "/opinion_filter_data.txt").c_str(), ios::in);
+    std::vector<UString> filters;
+    while(infile.good())
+    {
+        std::string line;
+        getline(infile, line);
+        if(line.empty())
+        {
+            continue;
+        }
+        filters.push_back(UString(line, UString::UTF_8));
+    }
+    infile.close();
+    Op->setFilterStr(filters);
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()

@@ -23,6 +23,7 @@ public:
     std::string opinionSCDPath;
     std::string opinionPropName;
     std::string dictpath;
+    std::string opinionWorkingPath;
 
     friend class boost::serialization::access;
 
@@ -37,6 +38,7 @@ public:
         ar & opinionSCDPath;
         ar & opinionPropName;
         ar & dictpath;
+        ar & opinionWorkingPath;
     }
 };
 

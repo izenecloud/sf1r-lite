@@ -55,24 +55,25 @@ public:
         }
         int inner_;
     };
+    typedef UString WordStrType;
     // store single comment and split string.
-    typedef std::vector< UString > OriginalCommentT;
+    typedef std::vector< WordStrType > OriginalCommentT;
     typedef std::vector< OriginalCommentT > OriginalCommentContainerT;
-    typedef std::vector< UString > SentenceContainerT;
-    typedef std::vector< UString > WordSegContainerT;
-    typedef std::pair<UString, int> WordFreqPairT;
+    typedef std::vector< WordStrType > SentenceContainerT;
+    typedef std::vector< WordStrType > WordSegContainerT;
+    typedef std::pair<WordStrType, int> WordFreqPairT;
     // record how many sentences the word appeared in.
-    typedef boost::unordered_map<UString, CustomInt> WordFreqMapT;
+    typedef boost::unordered_map<WordStrType, CustomInt> WordFreqMapT;
 
-    typedef boost::unordered_map<UString, std::bitset<MAX_COMMENT_NUM> >  WordInSentenceMapT;
-    typedef boost::unordered_map<UString, double> WordPossibilityMapT;
-    typedef boost::unordered_map<UString, WordPossibilityMapT> WordJoinPossibilityMapT;
+    typedef boost::unordered_map<WordStrType, std::bitset<MAX_COMMENT_NUM> >  WordInSentenceMapT;
+    typedef boost::unordered_map<WordStrType, double> WordPossibilityMapT;
+    typedef boost::unordered_map<WordStrType, WordPossibilityMapT> WordJoinPossibilityMapT;
 
-    typedef std::map<UString, double>  CachedStorageT;
+    typedef std::map<WordStrType, double>  CachedStorageT;
 
-    typedef std::pair< UString, UString > BigramPhraseT;
+    typedef std::pair< WordStrType, WordStrType > BigramPhraseT;
     typedef std::vector< BigramPhraseT > BigramPhraseContainerT;
-    typedef std::vector< UString > NgramPhraseT;
+    typedef std::vector< WordStrType > NgramPhraseT;
     typedef std::vector< NgramPhraseT > NgramPhraseContainerT;
     typedef std::vector< NgramPhraseT > OpinionContainerT;
     typedef std::pair< NgramPhraseT, double > OpinionCandidateT;
@@ -81,32 +82,32 @@ public:
     OpinionsManager(const string& colPath, const std::string& dictpath);//string enc,string cate,string posDelimiter,
     ~OpinionsManager();
     void setComment(const SentenceContainerT& Z_);
-    std::vector< std::pair<double, UString> > getOpinion(bool need_orig_comment_phrase = true);
+    std::vector< std::pair<double, WordStrType> > getOpinion(bool need_orig_comment_phrase = true);
 
     void setWindowsize(int C);
     void setSigma(double SigmaRep_,double SigmaRead_,double SigmaSim_,double SigmaLength_);
     void setEncoding(izenelib::util::UString::EncodingType encoding);
-    void setFilterStr(const std::vector<UString>& filter_strs);
+    void setFilterStr(const std::vector<WordStrType>& filter_strs);
     void CleanCacheData();
 
 private:
     void recompute_srep(std::vector< std::pair<double, UString> >& candList);
     void RefineCandidateNgram(OpinionCandidateContainerT& candList);
-    void stringToWordVector(const UString& Mi, WordSegContainerT& words);
-    void WordVectorToString(UString& Mi, const WordSegContainerT& words);
-    double Sim(const UString& Mi, const UString& Mj);
+    void stringToWordVector(const WordStrType& Mi, WordSegContainerT& words);
+    void WordVectorToString(WordStrType& Mi, const WordSegContainerT& words);
+    double Sim(const WordStrType& Mi, const WordStrType& Mj);
     double Sim(const NgramPhraseT& wordsi, const NgramPhraseT& wordsj);
     double Srep(const NgramPhraseT& words);
     double SrepSentence(const UString& phrase_str);
     double Score(const NgramPhraseT& words);
     //rep
     double PMIlocal(const WordSegContainerT& words, const int& offset, int C=3);
-    double PMImodified(const UString& Wi, const UString& Wj, int C=3);
-    double Possib(const UString& Wi, const UString& Wj);
-    double Possib(const UString& Wi);
-    double CoOccurring(const UString& Wi, const UString& Wj,int C=3);
-    bool CoOccurringInOneSentence(const UString& Wi,
-        const UString& Wj, int C, const UString& sentence);
+    double PMImodified(const WordStrType& Wi, const WordStrType& Wj, int C=3);
+    double Possib(const WordStrType& Wi, const WordStrType& Wj);
+    double Possib(const WordStrType& Wi);
+    double CoOccurring(const WordStrType& Wi, const WordStrType& Wj,int C=3);
+    bool CoOccurringInOneSentence(const WordStrType& Wi,
+        const WordStrType& Wj, int C, const WordStrType& sentence);
     //algorithm
     bool GenCandidateWord(WordSegContainerT& wordlist);
     bool GenSeedBigramList(BigramPhraseContainerT& result_list);
@@ -118,10 +119,10 @@ private:
     BigramPhraseContainerT GetJoinList(const WordSegContainerT& phrase, const BigramPhraseContainerT& BigramList, int current_merge_pos);
     void GenerateCandidates(const NgramPhraseT& phrase, OpinionCandidateContainerT& candList, 
         const BigramPhraseContainerT& seedBigrams, int current_merge_pos);
-    void changeForm(const OpinionCandidateContainerT& candList, std::vector<std::pair<double, UString> >& newForm);
+    void changeForm(const OpinionCandidateContainerT& candList, std::vector<std::pair<double, WordStrType> >& newForm);
    
     std::string getSentence(const WordSegContainerT& candVector);
-    bool IsNeedFilte(const UString& teststr);
+    bool IsNeedFilter(const WordStrType& teststr);
     void GetOrigCommentsByBriefOpinion(std::vector< std::pair<double, UString> >& candOpinionString);
     bool FilterBigramByPossib(double possib, const OpinionsManager::BigramPhraseT& bigram);
 
