@@ -18,11 +18,12 @@ public:
     std::string docidPropName;
     std::string uuidPropName;
     std::string contentPropName;
+    std::string advantagePropName;
+    std::string disadvantagePropName;
     std::string scorePropName;
     std::string scoreSCDPath;
     std::string opinionSCDPath;
     std::string opinionPropName;
-    std::string dictpath;
     std::string opinionWorkingPath;
 
     friend class boost::serialization::access;
@@ -37,7 +38,6 @@ public:
         ar & scoreSCDPath;
         ar & opinionSCDPath;
         ar & opinionPropName;
-        ar & dictpath;
         ar & opinionWorkingPath;
     }
 };

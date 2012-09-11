@@ -8,15 +8,28 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <boost/tuple/tuple.hpp>
 
 namespace sf1r
 {
 
 typedef uint128_t KeyType;
 typedef izenelib::util::UString ContentType;
+typedef izenelib::util::UString AdvantageType;
+typedef izenelib::util::UString DisadvantageType;
 typedef float ScoreType;
 
-typedef std::map<uint32_t, std::pair<ContentType, ScoreType> > CommentCacheItemType;
+//struct CommentSummaryT
+//{
+//    ContentType content;
+//    //AdvantageType advantage;
+//    //DisadvantageType disadvantage;
+//    ScoreType  score;
+//};
+//typedef std::pair<ContentType, ScoreType> CommentSummaryT;
+typedef boost::tuple<ContentType, AdvantageType, DisadvantageType, ScoreType> CommentSummaryT;
+
+typedef std::map<uint32_t, CommentSummaryT > CommentCacheItemType;
 
 }
 

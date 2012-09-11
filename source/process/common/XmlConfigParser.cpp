@@ -1656,6 +1656,33 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
         }
         {
+            Iterator<Element> it("AdvantageProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("AdvantageProperty ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_schema.advantagePropName = property_name;
+            }
+        }
+        {
+            Iterator<Element> it("DisadvantageProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("DisadvantageProperty ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_schema.disadvantagePropName = property_name;
+            }
+        }
+ 
+        {
             Iterator<Element> it("ScoreProperty");
             for (it = it.begin(task_node); it != it.end(); it++)
             {
@@ -1686,12 +1713,6 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         if (opinionProp_node)
         {
             getAttribute(opinionProp_node, "name", mining_schema.summarization_schema.opinionPropName);
-        }
-
-        ticpp::Element* dictpath_node = getUniqChildElement(task_node, "dictpath", false);
-        if (dictpath_node)
-        {
-            getAttribute(dictpath_node, "path", mining_schema.summarization_schema.dictpath);
         }
 
         ticpp::Element* opinion_workingpath_node = getUniqChildElement(task_node, "OpinionWorkingPath", false);

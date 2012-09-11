@@ -100,7 +100,8 @@ public:
 
     ~CommentCacheStorage();
 
-    void AppendUpdate(const KeyType& key, uint32_t docid, const ContentType& content, const ScoreType& score);
+    void AppendUpdate(const KeyType& key, uint32_t docid, const ContentType& content,
+       const AdvantageType& advantage, const DisadvantageType& disadvantage, const ScoreType& score);
 
     void ExpelUpdate(const KeyType& key, uint32_t docid);
 

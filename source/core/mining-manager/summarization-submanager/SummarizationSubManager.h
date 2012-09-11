@@ -101,6 +101,8 @@ private:
     {
         KeyType key;
         std::vector< std::pair<double, izenelib::util::UString> >  result_opinions;
+        std::vector< std::pair<double, izenelib::util::UString> >  result_advantage;
+        std::vector< std::pair<double, izenelib::util::UString> >  result_disadvantage;
         Summarization summarization;
     };
     std::queue< WaitingComputeCommentItem >  waiting_opinion_comments_;

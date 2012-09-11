@@ -114,13 +114,23 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
         if (cit == doc.propertyEnd()) continue;
 
+        Document::property_const_iterator ait = doc.findProperty(schema_.advantagePropName);
+        if (cit == doc.propertyEnd()) continue;
+
+        Document::property_const_iterator dit = doc.findProperty(schema_.disadvantagePropName);
+        if (cit == doc.propertyEnd()) continue;
+
         const UString& key = kit->second.get<UString>();
         if (key.empty()) continue;
         const UString& content = cit->second.get<UString>();
 
+        const AdvantageType& advantage = ait->second.get<AdvantageType>();
+        const DisadvantageType& disadvantage = dit->second.get<DisadvantageType>();
+
         score = 0.0f;
         numericPropertyTable->getFloatValue(i, score);
-        comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content, score);
+        comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,
+           advantage, disadvantage, score);
 
         if (++count % 100000 == 0)
         {
@@ -176,7 +186,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     //    log_path.push_back('a' + i);
     //    boost::filesystem::path p(log_path);
     //    boost::filesystem::create_directory(p);
-    //    Ops_.push_back(new OpinionsManager( log_path, schema_.dictpath));
+
+    //    std::string cma_path;
+    //    LAPool::getInstance()->get_cma_path(cma_path);
+
+    //    Ops_.push_back(new OpinionsManager( log_path, cma_path));
     //    Ops_.back()->setSigma(0.1, -6, 0.5, 20);
     //    //////////////////////////
     //    Ops_.back()->setFilterStr(filters);
@@ -273,22 +287,35 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
             continue;
 
         std::vector<UString> Z;
+        std::vector<UString> advantage_comments;
+        std::vector<UString> disadvantage_comments;
         Z.reserve(opinion_data.cached_comments.size());
+        advantage_comments.reserve(opinion_data.cached_comments.size());
+        disadvantage_comments.reserve(opinion_data.cached_comments.size());
         for (CommentCacheItemType::const_iterator it = opinion_data.cached_comments.begin();
             it != opinion_data.cached_comments.end(); ++it)
         {
-            Z.push_back(it->second.first);
+            Z.push_back((it->second).get<0>());
+            advantage_comments.push_back(it->second.get<1>());
+            disadvantage_comments.push_back(it->second.get<2>());
         }
 
         Op->setComment(Z);
         std::vector< std::pair<double, UString> > product_opinions = Op->getOpinion();
+        Op->setComment(advantage_comments);
+        std::vector< std::pair<double, UString> > advantage_opinions = Op->getOpinion();
+        Op->setComment(disadvantage_comments);
+        std::vector< std::pair<double, UString> > disadvantage_opinions = Op->getOpinion();
         if(!product_opinions.empty())
         {
-            boost::unique_lock<boost::mutex> g(opinion_results_lock_);
             OpinionResultItem item;
             item.key = opinion_data.key;
             item.result_opinions = product_opinions;
-            item.summarization = opinion_data.summarization;
+            item.result_advantage = advantage_opinions;
+            item.result_disadvantage = disadvantage_opinions;
+
+            item.summarization.swap(opinion_data.summarization);
+            boost::unique_lock<boost::mutex> g(opinion_results_lock_);
             opinion_results_.push(item);
             opinion_results_cond_.notify_one();
         }
@@ -304,11 +331,11 @@ void MultiDocSummarizationSubManager::DoOpinionExtraction(
     const KeyType& key,
     const CommentCacheItemType& comment_cache_item)
 {
-    boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
     WaitingComputeCommentItem item;
     item.key = key;
     item.cached_comments = comment_cache_item;
-    item.summarization = summarization;
+    item.summarization.swap(summarization);
+    boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
     waiting_opinion_comments_.push(item);
     waiting_opinion_cond_.notify_one();
 }
@@ -328,7 +355,7 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
                 all_finished = true;
                 for(size_t i = 0; i < opinion_compute_threads_.size(); ++i)
                 {
-                    if(!opinion_compute_threads_[i]->timed_join(boost::posix_time::millisec(10)))
+                    if(!opinion_compute_threads_[i]->timed_join(boost::posix_time::millisec(1)))
                     {
                         // not finished
                         all_finished = false;
@@ -370,6 +397,8 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
             }
 
             result.summarization.updateProperty("overview", result.result_opinions);
+            result.summarization.updateProperty("advantage", result.result_advantage);
+            result.summarization.updateProperty("disadvantage", result.result_disadvantage);
             summarization_storage_->Update(result.key, result.summarization);
 
             if (++count % 1000 == 0)
@@ -404,10 +433,10 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
             it != comment_cache_item.end(); ++it)
     {
-        if (it->second.second)
+        if (it->second.get<3>())
         {
             ++count;
-            total_score += it->second.second;
+            total_score += (it->second).get<3>();
         }
 
         // Limit the max count of sentences to be summarized
@@ -417,7 +446,7 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         // XXX
         // corpus_->start_new_doc();
 
-        const UString& content = it->second.first;
+        const UString& content = (it->second).get<0>();
         UString sentence;
         std::size_t startPos = 0;
         while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
