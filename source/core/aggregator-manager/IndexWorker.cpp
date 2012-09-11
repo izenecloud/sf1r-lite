@@ -383,6 +383,17 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
     }
 
+    if (requireBackup_(currTotalSCDSize))
+    {
+        ///When index can support binlog, this step is not necessary
+        ///It means when work under realtime mode, the benefits of reduced merging
+        ///caused by frequently updating can not be achieved if Backup is required
+        index_mode_selector.ForceCommit();
+        if (!backup_())
+            return false;
+        totalSCDSizeSinceLastBackup_ = 0;
+    }
+
     return true;
 }
 
