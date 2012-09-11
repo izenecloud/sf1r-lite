@@ -24,6 +24,8 @@
 #include <algorithm>
 #include "OpinionsManager.h"
 
+#define OPINION_COMPUTE_THREAD_NUM 4
+
 using izenelib::util::UString;
 using namespace izenelib::ir::indexmanager;
 namespace bfs = boost::filesystem;
@@ -75,27 +77,6 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
-    string OpPath = schema_.opinionWorkingPath;
-    //Op=new OpinionsManager(OpPath, "/home/vincentlee/workspace/sf1/icma/db/icwb/utf8");
-    Op = new OpinionsManager(OpPath, schema_.dictpath);
-    Op->setSigma(0.1, -6, 0.5, 20);
-    //////////////////////////
-    // set filter to filter some too common phrase
-    ifstream infile;
-    infile.open((OpPath + "/opinion_filter_data.txt").c_str(), ios::in);
-    std::vector<UString> filters;
-    while(infile.good())
-    {
-        std::string line;
-        getline(infile, line);
-        if(line.empty())
-        {
-            continue;
-        }
-        filters.push_back(UString(line, UString::UTF_8));
-    }
-    infile.close();
-    Op->setFilterStr(filters);
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
@@ -103,7 +84,6 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
     delete summarization_storage_;
     delete comment_cache_storage_;
     delete corpus_;
-    delete Op;
 }
 
 void MultiDocSummarizationSubManager::EvaluateSummarization()
@@ -162,6 +142,51 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     }
 
     {
+        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+        can_quit_compute_ = false;
+    }
+
+    string OpPath = schema_.opinionWorkingPath;
+    std::vector<UString> filters;
+    try
+    {
+        ifstream infile;
+        infile.open((OpPath + "/opinion_filter_data.txt").c_str(), ios::in);
+        while(infile.good())
+        {
+            std::string line;
+            getline(infile, line);
+            if(line.empty())
+            {
+                continue;
+            }
+            filters.push_back(UString(line, UString::UTF_8));
+        }
+        infile.close();
+    }
+    catch(...)
+    {
+        LOG(ERROR) << "read opinion filter file error" << endl;
+    }
+
+    //for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
+    //{
+    //    std::string log_path = OpPath;
+    //    log_path += "/opinion-log-";
+    //    log_path.push_back('a' + i);
+    //    boost::filesystem::path p(log_path);
+    //    boost::filesystem::create_directory(p);
+    //    Ops_.push_back(new OpinionsManager( log_path, schema_.dictpath));
+    //    Ops_.back()->setSigma(0.1, -6, 0.5, 20);
+    //    //////////////////////////
+    //    Ops_.back()->setFilterStr(filters);
+
+    //    opinion_compute_threads_.push_back(new boost::thread(&MultiDocSummarizationSubManager::DoComputeOpinion,
+    //                this, Ops_[i]));
+    //}
+
+    LOG(INFO) << "====== Evaluating summarization begin ======" << std::endl;
+    {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyEnd;
         for (uint32_t count = 0; dirtyKeyIt != dirtyKeyEnd; ++dirtyKeyIt)
@@ -182,11 +207,29 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             //DoOpinionExtraction(summarization, key, commentCacheItem);
             if (++count % 1000 == 0)
             {
-                LOG(INFO) << "====== Evaluating summarization and opinion count: " << count << "=======" << std::endl;
+                std::cout << "\r === Evaluating summarization and opinion count: " << count << " ===";
             }
         }
+
+        {
+            boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+            can_quit_compute_ = true;
+            waiting_opinion_cond_.notify_all();
+        }
+
+        //DoWriteOpinionResult();
+
         summarization_storage_->Flush();
     } //Destroy dirtyKeyIterator before clearing dirtyKeyDB
+
+    //LOG(INFO) << "====== Evaluating summarization end ======" << std::endl;
+    //for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
+    //{
+    //    delete opinion_compute_threads_[i];
+    //    delete Ops_[i];
+    //}
+    //Ops_.clear();
+    //opinion_compute_threads_.clear();
 
     if (score_scd_writer_)
     {
@@ -199,48 +242,141 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         opinion_scd_writer_.reset();
     }
 
+
     comment_cache_storage_->ClearDirtyKey();
     LOG(INFO) << "Finish evaluating summarization.";
 }
 
-void MultiDocSummarizationSubManager::DoOpinionExtraction(
-        Summarization& summarization,
-        const KeyType& key,
-        const CommentCacheItemType& comment_cache_item)
+void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
 {
-    std::vector<UString> Z;
-
-    for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
-            it != comment_cache_item.end(); ++it)
+    LOG(INFO) << "opinion compute thread started : " << (long)pthread_self() << endl;
+    int count = 0;
+    while(true)
     {
-        Z.push_back(it->second.first);
+        assert(Op != NULL);
+        WaitingComputeCommentItem opinion_data;
+        {
+            boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+            while(waiting_opinion_comments_.empty())
+            {
+                if(can_quit_compute_)
+                {
+                    LOG(INFO) << "!!!---compute thread:" << (long)pthread_self() << " finished. ---!!!" << endl;
+                    return;
+                }
+                waiting_opinion_cond_.wait(g);
+            }
+            opinion_data = waiting_opinion_comments_.front();
+            waiting_opinion_comments_.pop();
+        }
+        if(opinion_data.cached_comments.empty())
+            continue;
+
+        std::vector<UString> Z;
+        Z.reserve(opinion_data.cached_comments.size());
+        for (CommentCacheItemType::const_iterator it = opinion_data.cached_comments.begin();
+            it != opinion_data.cached_comments.end(); ++it)
+        {
+            Z.push_back(it->second.first);
+        }
+
+        Op->setComment(Z);
+        std::vector< std::pair<double, UString> > product_opinions = Op->getOpinion();
+        if(!product_opinions.empty())
+        {
+            boost::unique_lock<boost::mutex> g(opinion_results_lock_);
+            OpinionResultItem item;
+            item.key = opinion_data.key;
+            item.result_opinions = product_opinions;
+            item.summarization = opinion_data.summarization;
+            opinion_results_.push(item);
+            opinion_results_cond_.notify_one();
+        }
+        if (++count % 100 == 0)
+        {
+            cout << "\r == thread:" << (long)pthread_self() << " computing opinion count: " << count << " ===";
+        }
     }
- 
-    Op->setComment(Z);
-    std::vector< std::pair<double, UString> > product_opinions = Op->getOpinion();
-    if(!product_opinions.empty())
+}
+
+void MultiDocSummarizationSubManager::DoOpinionExtraction(
+    Summarization& summarization,
+    const KeyType& key,
+    const CommentCacheItemType& comment_cache_item)
+{
+    boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+    WaitingComputeCommentItem item;
+    item.key = key;
+    item.cached_comments = comment_cache_item;
+    item.summarization = summarization;
+    waiting_opinion_comments_.push(item);
+    waiting_opinion_cond_.notify_one();
+}
+
+void MultiDocSummarizationSubManager::DoWriteOpinionResult()
+{
+    int count = 0;
+    while(true)
     {
-        UString final_opinion_str = product_opinions[0].second;
-        for(size_t i = 1; i < product_opinions.size(); ++i)
+        bool all_finished = false;
+        OpinionResultItem result;
         {
-            final_opinion_str.append( UString(",", UString::UTF_8) );
-            final_opinion_str.append(product_opinions[i].second);
+            boost::unique_lock<boost::mutex> g(opinion_results_lock_);
+            while(opinion_results_.empty())
+            {
+                // check if all thread finished.
+                all_finished = true;
+                for(size_t i = 0; i < opinion_compute_threads_.size(); ++i)
+                {
+                    if(!opinion_compute_threads_[i]->timed_join(boost::posix_time::millisec(10)))
+                    {
+                        // not finished
+                        all_finished = false;
+                        break;
+                    }
+                }
+                if(!all_finished)
+                {
+                    opinion_results_cond_.timed_wait(g, boost::posix_time::millisec(5000));
+                }
+                else
+                {
+                    LOG(INFO) << "opinion result write finished." << endl;
+                    return;
+                }
+            }
+            result = opinion_results_.front();
+            opinion_results_.pop();
         }
-
-        std::string key_str;
-        key_str = Utilities::uint128ToUuid(key);
-        UString key_ustr(key_str, UString::UTF_8);
-
-        if (opinion_scd_writer_)
+        if(!result.result_opinions.empty())
         {
-            Document doc;
-            doc.property("DOCID") = key_ustr;
-            doc.property(schema_.opinionPropName) = final_opinion_str;
-            opinion_scd_writer_->Append(doc);
-        }
+            UString final_opinion_str = result.result_opinions[0].second;
+            for(size_t i = 1; i < result.result_opinions.size(); ++i)
+            {
+                final_opinion_str.append( UString(",", UString::UTF_8) );
+                final_opinion_str.append(result.result_opinions[i].second);
+            }
 
-        summarization.updateProperty("overview", product_opinions);
-        summarization_storage_->Update(key, summarization);
+            std::string key_str;
+            key_str = Utilities::uint128ToUuid(result.key);
+            UString key_ustr(key_str, UString::UTF_8);
+
+            if (opinion_scd_writer_)
+            {
+                Document doc;
+                doc.property("DOCID") = key_ustr;
+                doc.property(schema_.opinionPropName) = final_opinion_str;
+                opinion_scd_writer_->Append(doc);
+            }
+
+            result.summarization.updateProperty("overview", result.result_opinions);
+            summarization_storage_->Update(result.key, result.summarization);
+
+            if (++count % 1000 == 0)
+            {
+                cout << "\r== write opinion count: " << count << " ====";
+            }
+        }
     }
 }
 

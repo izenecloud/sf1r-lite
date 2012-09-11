@@ -2,6 +2,7 @@
 #include <icma/icma.h>
 #include <glog/logging.h>
 #include <math.h>   
+#include <boost/lexical_cast.hpp>
 
 #define VERY_LOW  -50
 #define OPINION_NGRAM_MIN  2
@@ -97,7 +98,7 @@ OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictp
     analyzer_->setKnowledge(knowledge_);
     //analyzer->setPOSDelimiter(posDelimiter.data());
     //Ngram_= new Ngram(colPath);
-    string logpath=colPath+"/OpinionsManager.log";
+    string logpath = colPath + "/OpinionsManager.log";
     out.open(logpath.c_str(), ios::out);
     windowsize = 3;
     encodingType_ = UString::UTF_8;
@@ -800,7 +801,7 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
     if(interval > 10000)
         out << "gen candidate used more than 10000ms " << interval << endl;
 
-    std::cout << "\r candList.size() = "<< candList.size();
+    //std::cout << "\r candList.size() = "<< candList.size();
 
     if(candList.size() > SigmaLength/2)
         RefineCandidateNgram(candList);

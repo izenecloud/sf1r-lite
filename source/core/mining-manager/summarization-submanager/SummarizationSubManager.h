@@ -7,8 +7,9 @@
 #include <query-manager/QueryTypeDef.h>
 
 #include <3rdparty/am/stx/btree_map.h>
-
+#include <queue>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
 
 namespace idmlib
 {
@@ -56,10 +57,14 @@ private:
             const KeyType& key,
             const CommentCacheItemType& comment_cache_item);
 
+    void DoComputeOpinion(OpinionsManager* Op);
+
     void DoOpinionExtraction(
         Summarization& summarization,
         const KeyType& key,
         const CommentCacheItemType& comment_cache_item);
+
+    void DoWriteOpinionResult();
 
     uint32_t GetLastDocid_() const;
 
@@ -81,7 +86,27 @@ private:
     SummarizationStorage* summarization_storage_;
 
     Corpus* corpus_;
-    OpinionsManager* Op;
+    std::vector<OpinionsManager*> Ops_;
+    boost::mutex  waiting_opinion_lock_;
+    boost::mutex  opinion_results_lock_;
+    boost::condition_variable  waiting_opinion_cond_;
+    boost::condition_variable  opinion_results_cond_;
+    struct WaitingComputeCommentItem
+    {
+        KeyType key;
+        CommentCacheItemType cached_comments;
+        Summarization summarization;
+    };
+    struct OpinionResultItem
+    {
+        KeyType key;
+        std::vector< std::pair<double, izenelib::util::UString> >  result_opinions;
+        Summarization summarization;
+    };
+    std::queue< WaitingComputeCommentItem >  waiting_opinion_comments_;
+    std::queue< OpinionResultItem >  opinion_results_;
+    std::vector<boost::thread*>  opinion_compute_threads_;
+    bool  can_quit_compute_;
 };
 
 }
