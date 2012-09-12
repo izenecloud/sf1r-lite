@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   ScdIndex.h
  * Author: Paolo D'Apice
  *
@@ -8,56 +8,67 @@
 #ifndef SCDINDEX_H
 #define	SCDINDEX_H
 
+#include "ScdParser.h"
 #include "ScdIndexSerializer.h"
 #include <util/ustring/UString.h>
 #include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/serialization/map.hpp>
 
-namespace scd { 
+namespace scd {
 
 namespace mi = boost::multi_index;
 
 /// Traits for the SCD document.
 struct DocumentTraits {
-    typedef typename izenelib::util::UString docid_type;
+    typedef std::string name_type;
+    typedef izenelib::util::UString value_type;
     typedef long offset_type;
 };
 
 /**
  * @brief SCD document.
- * Each SCD document is identified by its DOCID and has an offset 
+ * Each SCD document is identified by its DOCID and has an offset
  * within the SCD file.
  */
 template <typename traits = DocumentTraits>
 struct Document {
-    typedef typename traits::docid_type docid_type;
+    typedef typename traits::name_type name_type;
+    typedef typename traits::value_type value_type;
     typedef typename traits::offset_type offset_type;
 
-    docid_type id;
     offset_type offset;
-    
-    Document() {}
-    Document(const docid_type& docid, const offset_type os) : id(docid), offset(os) {}
+    std::map<name_type, value_type> properties; // TODO: unordered map
 
-    // TODO: properties
-    
+    Document() {}
+    Document(const offset_type o, SCDDocPtr doc) : offset(o) {
+        for (SCDDoc::iterator it = doc->begin(); it != doc->end(); ++it) {
+            properties.insert(std::make_pair(it->first, it->second));
+        }
+    }
+
+    inline value_type id() const {
+        return properties.at("DOCID");
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const Document& d) {
-        os << d.id << "->" << d.offset;
+        os << d.id() << " @ " << d.offset;
         return os;
     }
 
     bool operator==(const Document& d) const {
-        return id == d.id and offset == d.offset;
+        return offset == d.offset and properties.size() == d.properties.size()
+           and std::equal(properties.begin(), properties.end(), d.properties.begin());
     }
-    
+
 private: // serialization
     friend class boost::serialization::access;
 
     template <typename Archive>
     void serialize(Archive& ar, const unsigned version) {
-        ar & id;
         ar & offset;
+        ar & properties;
     }
 };
 
@@ -74,18 +85,18 @@ class ScdIndex {
         mi::indexed_by<
             mi::ordered_unique< // TODO: hashed_unique
                 mi::tag<docid>,
-                BOOST_MULTI_INDEX_MEMBER(Document<>, Document<>::docid_type, id)
+                BOOST_MULTI_INDEX_CONST_MEM_FUN(Document<>, Document<>::value_type, id)
             >
         >
     > ScdIndexContainer;
 
     /// DOCID index.
     typedef mi::index<ScdIndexContainer, docid>::type DocidIndex;
-    
+
 public:
     /// DOCID iterator
     typedef DocidIndex::iterator docid_iterator;
-    
+
     ScdIndex() {}
     ~ScdIndex() {}
 
@@ -100,7 +111,7 @@ public:
     size_t size() const {
         return container.size();
     }
-    
+
     /// Retrieve tagged content.
     template <typename Tag, typename Type>
     typename mi::index<ScdIndexContainer, Tag>::type::iterator
@@ -108,7 +119,7 @@ public:
         // get a reference to the index tagged by Tag
         const typename mi::index<ScdIndexContainer, Tag>::type& index = container.get<Tag>();
         return index.find(key);
-    } 
+    }
 
     /// Retrieve tagged begin iterator.
     template <typename Tag>
@@ -116,8 +127,8 @@ public:
     begin() const {
         const typename mi::index<ScdIndexContainer, Tag>::type& index = container.get<Tag>();
         return index.begin();
-    } 
-    
+    }
+
     /// Retrieve tagged end iterator.
     template <typename Tag>
     typename mi::index<ScdIndexContainer, Tag>::type::iterator
@@ -125,9 +136,9 @@ public:
         const typename mi::index<ScdIndexContainer, Tag>::type& index = container.get<Tag>();
         return index.end();
     }
-    
+
 public: // serialization
-    
+
     /// Save index to file.
     void save(const std::string& filename) const {
         serializer(filename, container);
@@ -135,7 +146,7 @@ public: // serialization
 
     /// Load index from file.
     void load(const std::string& filename) {
-        deserializer(filename, container);        
+        deserializer(filename, container);
     }
 
 private:

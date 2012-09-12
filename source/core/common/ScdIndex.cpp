@@ -5,6 +5,7 @@
  * Created on September 11, 2012, 11:39 AM
  */
 
+#undef NDEBUG
 #include "ScdIndex.h"
 #include "ScdParser.h"
 #include <glog/logging.h>
@@ -29,7 +30,7 @@ ScdIndex::build(const std::string& path) {
         
         DLOG(INFO) << "got document '" << doc->at(0).second << "' @ " << it.getOffset();
 
-        index->container.insert(scd::Document<>(doc->at(0).second, it.getOffset()));
+        index->container.insert(scd::Document<>(it.getOffset(), doc));
         LOG_EVERY_N(INFO, log_interval) << "Saved " << google::COUNTER << " documents ...";
     }
     
