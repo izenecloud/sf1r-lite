@@ -14,9 +14,9 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 
-namespace mi = boost::multi_index;
-
 namespace scd { 
+
+namespace mi = boost::multi_index;
 
 /// Traits for the SCD document.
 struct DocumentTraits {
@@ -87,6 +87,14 @@ public:
     typedef DocidIndex::iterator docid_iterator;
     
     ScdIndex() {}
+    ~ScdIndex() {}
+
+    /**
+     * Build an index on an SCD file.
+     * @param path The full path to the SCD file.
+     * @return A pointer to an instance of ScdIndex.
+     */
+    static ScdIndex* build(const std::string& path);
 
     /// @return The size of the index.
     size_t size() const {
@@ -118,10 +126,6 @@ public:
         return index.end();
     }
     
-    void insert(const Document<>& document) {
-        container.insert(document);
-    } 
-
 public: // serialization
     
     /// Save index to file.

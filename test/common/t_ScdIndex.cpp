@@ -8,17 +8,18 @@
 #include <boost/test/unit_test.hpp>
 
 #include "ScdBuilder.h"
-#include "common/ScdIndexer.h"
+#include "common/ScdIndex.h"
 #include <boost/filesystem.hpp>
 
 namespace fs = boost::filesystem;
 
 struct TestFixture {
-    TestFixture() : filename("test.scd") {}
-    fs::path createScd(const std::string& name, const unsigned size) const {
-        fs::path path= createTempDir(name)/filename;
+    TestFixture() {}
+    fs::path createScd(const std::string& dir, const std::string& name, 
+            const unsigned size, const unsigned start = 1) const {
+        fs::path path = createTempDir(dir)/name;
         ScdBuilder scd(path);
-        for (unsigned i = 1; i <= size; ++i) {
+        for (unsigned i = start; i < start + size; ++i) {
             scd("DOCID") << i;
             scd("Title") << "Title " << i;
             scd("Content") << "Content " << i;
@@ -34,24 +35,23 @@ struct TestFixture {
 private:
     fs::path createTempDir(const std::string& name) const {
         fs::path dir = fs::temp_directory_path()/name;
-        fs::remove_all(dir);
         fs::create_directories(dir);
-        BOOST_REQUIRE(fs::is_empty(dir));
         return dir;
     }
-    std::string filename;
 };
 
 #define DOCID(X) izenelib::util::UString((#X), izenelib::util::UString::UTF_8)
 
 BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     const unsigned DOC_NUM = 10;
-    fs::path path = createScd("index", DOC_NUM);
+    fs::path path = createScd("index", "test.scd", DOC_NUM);
     
     // build index
-    ScdIndexer indexer;
-    BOOST_REQUIRE_MESSAGE(indexer.build(path.string()), "Indexing failed");
-    const scd::ScdIndex& expected = indexer.getIndex();
+    scd::ScdIndex* index;
+    BOOST_REQUIRE_NO_THROW(index = scd::ScdIndex::build(path.string()));
+
+    // using const reference
+    const scd::ScdIndex& expected = *index;
     BOOST_CHECK_EQUAL(DOC_NUM, expected.size());
     std::copy(expected.begin<scd::docid>(), expected.end<scd::docid>(), 
               std::ostream_iterator<scd::Document<> >(std::cout, "\n"));
@@ -77,24 +77,40 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
 }
 
 BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
-    const unsigned DOC_NUM = 10;
-    fs::path path = createScd("index", DOC_NUM);
+    fs::path path_a = createScd("serialization", "a.scd", 5);
+    fs::path path_b = createScd("serialization", "b.scd", 3, 5);
 
-    ScdIndexer indexer;
-    BOOST_REQUIRE_MESSAGE(indexer.build(path.string()), "Indexing failed");
-    const scd::ScdIndex& index = indexer.getIndex();
+    scd::ScdIndex* index = scd::ScdIndex::build(path_a.string());
     
     // save to file
     fs::path saved = tempFile("saved");
-    index.save(saved.string());
+    index->save(saved.string());
     BOOST_CHECK(fs::exists(saved));
     
     // load from file
     {
         scd::ScdIndex loaded;
         loaded.load(saved.string());
-        BOOST_CHECK_EQUAL(index.size(), loaded.size());
-        BOOST_CHECK(std::equal(index.begin<scd::docid>(), index.end<scd::docid>(), 
+        BOOST_CHECK_EQUAL(index->size(), loaded.size());
+        BOOST_CHECK(std::equal(index->begin<scd::docid>(), index->end<scd::docid>(), 
                                loaded.begin<scd::docid>()));
     }
+
+    // loading from file _replaces_ existing content.
+    {
+        scd::ScdIndex* index_b = scd::ScdIndex::build(path_b.string());
+        fs::path saved_b = tempFile("saved-b");
+        index_b->save(saved_b.string());
+
+        index->load(saved_b.string());
+        std::copy(index->begin<scd::docid>(), index->end<scd::docid>(), 
+                  std::ostream_iterator<scd::Document<> >(std::cout, "\n"));
+
+        BOOST_CHECK_EQUAL(index->size(), index_b->size());
+        BOOST_CHECK(std::equal(index->begin<scd::docid>(), index->end<scd::docid>(), 
+                               index_b->begin<scd::docid>()));
+        delete index_b;
+    }
+    
+    delete index;
 }
