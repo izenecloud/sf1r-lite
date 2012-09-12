@@ -6,6 +6,7 @@
 
 #define VERY_LOW  -50
 #define OPINION_NGRAM_MIN  2
+#define OPINION_NGRAM_MAX  30
 #define MAX_SEED_BIGRAM_RATIO   50
 #define REFINE_THRESHOLD  4
 #define MAX_SEED_BIGRAM_IN_SINGLE_COMMENT  100
@@ -686,9 +687,12 @@ void OpinionsManager::GetOrigCommentsByBriefOpinion(std::vector< std::pair<doubl
             {
                 if(!split_comment.empty())
                 {
-                    WordStrType tmpstr;
-                    WordVectorToString(tmpstr, split_comment);
-                    all_orig_split_comments[tmpstr] += 1;
+                    if(split_comment.size() < OPINION_NGRAM_MAX)
+                    {
+                        WordStrType tmpstr;
+                        WordVectorToString(tmpstr, split_comment);
+                        all_orig_split_comments[tmpstr] += 1;
+                    }
                     split_comment.clear();
                 }
             }
@@ -955,6 +959,8 @@ void OpinionsManager::GenerateCandidates(const NgramPhraseT& phrase,
     const BigramPhraseContainerT& seedBigrams, int current_merge_pos)
 {
     if( (size_t)current_merge_pos >= seedBigrams.size() - 1 )
+        return;
+    if( phrase.size() > OPINION_NGRAM_MAX )
         return;
     WordStrType phrasestr;
     WordVectorToString(phrasestr, phrase);
