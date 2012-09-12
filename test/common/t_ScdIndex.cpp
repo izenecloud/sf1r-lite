@@ -47,33 +47,33 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     fs::path path = createScd("index", "test.scd", DOC_NUM);
     
     // build index
-    scd::ScdIndex* index;
-    BOOST_REQUIRE_NO_THROW(index = scd::ScdIndex::build(path.string()));
+    scd::ScdIndex* indexptr;
+    BOOST_REQUIRE_NO_THROW(indexptr = scd::ScdIndex::build(path.string()));
 
     // using const reference
-    const scd::ScdIndex& expected = *index;
-    BOOST_CHECK_EQUAL(DOC_NUM, expected.size());
-    std::copy(expected.begin<scd::docid>(), expected.end<scd::docid>(), 
+    const scd::ScdIndex& index = *indexptr;
+    BOOST_CHECK_EQUAL(DOC_NUM, index.size());
+    std::copy(index.begin<scd::docid>(), index.end<scd::docid>(), 
               std::ostream_iterator<scd::Document<> >(std::cout, "\n"));
     
     // query: hit
-    BOOST_CHECK_EQUAL(  0, expected.find<scd::docid>(DOCID(1))->offset);
-    BOOST_CHECK_EQUAL( 50, expected.find<scd::docid>(DOCID(2))->offset);
-    BOOST_CHECK_EQUAL( 93, expected.find<scd::docid>(DOCID(3))->offset);
-    BOOST_CHECK_EQUAL(136, expected.find<scd::docid>(DOCID(4))->offset);
-    BOOST_CHECK_EQUAL(179, expected.find<scd::docid>(DOCID(5))->offset);
-    BOOST_CHECK_EQUAL(222, expected.find<scd::docid>(DOCID(6))->offset);
-    BOOST_CHECK_EQUAL(265, expected.find<scd::docid>(DOCID(7))->offset);
-    BOOST_CHECK_EQUAL(308, expected.find<scd::docid>(DOCID(8))->offset);
-    BOOST_CHECK_EQUAL(351, expected.find<scd::docid>(DOCID(9))->offset);
-    BOOST_CHECK_EQUAL(394, expected.find<scd::docid>(DOCID(10))->offset);
+    BOOST_CHECK_EQUAL(  0, index.find<scd::docid>(DOCID(1))->offset);
+    BOOST_CHECK_EQUAL( 50, index.find<scd::docid>(DOCID(2))->offset);
+    BOOST_CHECK_EQUAL( 93, index.find<scd::docid>(DOCID(3))->offset);
+    BOOST_CHECK_EQUAL(136, index.find<scd::docid>(DOCID(4))->offset);
+    BOOST_CHECK_EQUAL(179, index.find<scd::docid>(DOCID(5))->offset);
+    BOOST_CHECK_EQUAL(222, index.find<scd::docid>(DOCID(6))->offset);
+    BOOST_CHECK_EQUAL(265, index.find<scd::docid>(DOCID(7))->offset);
+    BOOST_CHECK_EQUAL(308, index.find<scd::docid>(DOCID(8))->offset);
+    BOOST_CHECK_EQUAL(351, index.find<scd::docid>(DOCID(9))->offset);
+    BOOST_CHECK_EQUAL(394, index.find<scd::docid>(DOCID(10))->offset);
 
     // query: miss
-    scd::ScdIndex::docid_iterator end = expected.end<scd::docid>();
-    BOOST_CHECK(end == expected.find<scd::docid>(DOCID(0)));
-    BOOST_CHECK(end == expected.find<scd::docid>(DOCID(11)));
+    scd::ScdIndex::docid_iterator end = index.end<scd::docid>();
+    BOOST_CHECK(end == index.find<scd::docid>(DOCID(0)));
+    BOOST_CHECK(end == index.find<scd::docid>(DOCID(11)));
 
-    delete index;
+    delete indexptr;
 }
 
 BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
