@@ -57,6 +57,7 @@ void IndexModeSelector::ForceCommit()
     if(index_manager_->isRealTime())
     {
         index_manager_->flush();
+        index_manager_->deletebinlog();
     }
 }
 

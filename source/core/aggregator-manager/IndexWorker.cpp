@@ -222,6 +222,14 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     IndexModeSelector index_mode_selector(indexManager_, threshold, max_realtime_msize);
     index_mode_selector.TrySetIndexMode(indexProgress_.totalFileSize_);
 
+    if(!indexManager_->isRealTime())
+    {
+        indexManager_->setIndexMode("realtime");
+        indexManager_->flush();
+        indexManager_->deletebinlog();
+        indexManager_->setIndexMode("default");
+    }
+
     {
         DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
         if (!dirGuard)
@@ -373,7 +381,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         REPORT_PROFILE_TO_FILE("PerformanceIndexResult.SIAProcess")
         LOG(INFO) << "End BuildCollection: ";
         LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
-
     }
 
     if (requireBackup_(currTotalSCDSize))
