@@ -43,47 +43,58 @@ private:
 };
 
 #define DOCID(X) izenelib::util::UString((#X), izenelib::util::UString::UTF_8)
-#define GET(index, tag, value, field) scd::get<tag>(index, value)->field
 
 BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     const unsigned DOC_NUM = 10;
     fs::path path = createScd("index", DOC_NUM);
-
+    
     // build index
     ScdIndexer indexer;
     BOOST_REQUIRE_MESSAGE(indexer.build(path.string()), "Indexing failed");
-    BOOST_CHECK_EQUAL(DOC_NUM, indexer.size());
     const scd::ScdIndex& expected = indexer.getIndex();
-//    std::copy(expected.begin(), expected.end(), 
-//              std::ostream_iterator<scd::Document<> >(std::cout, "\n"));
+    BOOST_CHECK_EQUAL(DOC_NUM, expected.size());
+    std::copy(expected.begin<scd::docid>(), expected.end<scd::docid>(), 
+              std::ostream_iterator<scd::Document<> >(std::cout, "\n"));
     
     // query: hit
-    BOOST_CHECK_EQUAL(  0, GET(expected, scd::docid, DOCID(1), offset));
-    BOOST_CHECK_EQUAL( 50, GET(expected, scd::docid, DOCID(2), offset));
-    BOOST_CHECK_EQUAL( 93, GET(expected, scd::docid, DOCID(3), offset));
-    BOOST_CHECK_EQUAL(136, GET(expected, scd::docid, DOCID(4), offset));
-    BOOST_CHECK_EQUAL(179, GET(expected, scd::docid, DOCID(5), offset));
-    BOOST_CHECK_EQUAL(222, GET(expected, scd::docid, DOCID(6), offset));
-    BOOST_CHECK_EQUAL(265, GET(expected, scd::docid, DOCID(7), offset));
-    BOOST_CHECK_EQUAL(308, GET(expected, scd::docid, DOCID(8), offset));
-    BOOST_CHECK_EQUAL(351, GET(expected, scd::docid, DOCID(9), offset));
-    BOOST_CHECK_EQUAL(394, GET(expected, scd::docid, DOCID(10), offset));
+    BOOST_CHECK_EQUAL(  0, expected.find<scd::docid>(DOCID(1))->offset);
+    BOOST_CHECK_EQUAL( 50, expected.find<scd::docid>(DOCID(2))->offset);
+    BOOST_CHECK_EQUAL( 93, expected.find<scd::docid>(DOCID(3))->offset);
+    BOOST_CHECK_EQUAL(136, expected.find<scd::docid>(DOCID(4))->offset);
+    BOOST_CHECK_EQUAL(179, expected.find<scd::docid>(DOCID(5))->offset);
+    BOOST_CHECK_EQUAL(222, expected.find<scd::docid>(DOCID(6))->offset);
+    BOOST_CHECK_EQUAL(265, expected.find<scd::docid>(DOCID(7))->offset);
+    BOOST_CHECK_EQUAL(308, expected.find<scd::docid>(DOCID(8))->offset);
+    BOOST_CHECK_EQUAL(351, expected.find<scd::docid>(DOCID(9))->offset);
+    BOOST_CHECK_EQUAL(394, expected.find<scd::docid>(DOCID(10))->offset);
 
     // query: miss
-    BOOST_CHECK(expected.end() == scd::get<scd::docid>(expected, DOCID(0)));
-    BOOST_CHECK(expected.end() == scd::get<scd::docid>(expected, DOCID(11)));
+    scd::ScdIndex::docid_iterator end = expected.end<scd::docid>();
+    BOOST_CHECK(end == expected.find<scd::docid>(DOCID(0)));
+    BOOST_CHECK(end == expected.find<scd::docid>(DOCID(11)));
+
+    delete index;
+}
+
+BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
+    const unsigned DOC_NUM = 10;
+    fs::path path = createScd("index", DOC_NUM);
+
+    ScdIndexer indexer;
+    BOOST_REQUIRE_MESSAGE(indexer.build(path.string()), "Indexing failed");
+    const scd::ScdIndex& index = indexer.getIndex();
     
     // save to file
     fs::path saved = tempFile("saved");
-    indexer.save(saved.string());
+    index.save(saved.string());
     BOOST_CHECK(fs::exists(saved));
     
     // load from file
     {
-        ScdIndexer si;
-        si.load(saved.string());
-        BOOST_CHECK_EQUAL(indexer.size(), si.size());
-        const scd::ScdIndex& loaded = si.getIndex();
-        BOOST_CHECK(std::equal(expected.begin(), expected.end(), loaded.begin()));
+        scd::ScdIndex loaded;
+        loaded.load(saved.string());
+        BOOST_CHECK_EQUAL(index.size(), loaded.size());
+        BOOST_CHECK(std::equal(index.begin<scd::docid>(), index.end<scd::docid>(), 
+                               loaded.begin<scd::docid>()));
     }
 }

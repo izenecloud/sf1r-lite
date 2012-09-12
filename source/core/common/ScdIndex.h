@@ -8,16 +8,12 @@
 #ifndef SCDINDEX_H
 #define	SCDINDEX_H
 
+#include "ScdIndexSerializer.h"
 #include <util/ustring/UString.h>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 
-namespace ba = boost::archive;
 namespace mi = boost::multi_index;
 
 namespace scd { 
@@ -55,7 +51,7 @@ struct Document {
         return id == d.id and offset == d.offset;
     }
     
-private:
+private: // serialization
     friend class boost::serialization::access;
 
     template <typename Archive>
@@ -68,57 +64,81 @@ private:
 /// Tag for DOCID property.
 struct docid {};
 
-/// Multi-indexed container.
-typedef boost::multi_index_container <
-    Document<>,
-    mi::indexed_by<
-        mi::ordered_unique< // TODO: hashed_unique
-            mi::tag<docid>,
-            BOOST_MULTI_INDEX_MEMBER(Document<>, Document<>::docid_type, id)
+/**
+ * @brief SCD multi-index container
+ */
+class ScdIndex {
+    /// Multi-indexed container.
+    typedef boost::multi_index_container <
+        Document<>,
+        mi::indexed_by<
+            mi::ordered_unique< // TODO: hashed_unique
+                mi::tag<docid>,
+                BOOST_MULTI_INDEX_MEMBER(Document<>, Document<>::docid_type, id)
+            >
         >
-    >
-> ScdIndex;
+    > ScdIndexContainer;
 
-/// Save a MultiIndexContainer into an Output Archive.
-template <typename OutputArchive>
-struct save_impl {
-    template <typename MultiIndexContainer>
-    void operator()(const std::string& filename, const MultiIndexContainer& container) const {
-        std::ofstream os(filename.c_str());
-        OutputArchive oa(os);
-        oa << container;
+    /// DOCID index.
+    typedef mi::index<ScdIndexContainer, docid>::type DocidIndex;
+    
+public:
+    /// DOCID iterator
+    typedef DocidIndex::iterator docid_iterator;
+    
+    ScdIndex() {}
+
+    /// @return The size of the index.
+    size_t size() const {
+        return container.size();
     }
-};
+    
+    /// Retrieve tagged content.
+    template <typename Tag, typename Type>
+    typename mi::index<ScdIndexContainer, Tag>::type::iterator
+    find(const Type& key) const {
+        // get a reference to the index tagged by Tag
+        const typename mi::index<ScdIndexContainer, Tag>::type& index = container.get<Tag>();
+        return index.find(key);
+    } 
 
-/// Load a MultiIndexContainer from an Output Archive.
-template <typename InputArchive>
-struct load_impl {
-    template <typename MultiIndexContainer>
-    void operator()(const std::string& filename, MultiIndexContainer& container) const {
-        std::ifstream is(filename.c_str());
-        InputArchive ia(is);
-        ia >> container;
+    /// Retrieve tagged begin iterator.
+    template <typename Tag>
+    typename mi::index<ScdIndexContainer, Tag>::type::iterator
+    begin() const {
+        const typename mi::index<ScdIndexContainer, Tag>::type& index = container.get<Tag>();
+        return index.begin();
+    } 
+    
+    /// Retrieve tagged end iterator.
+    template <typename Tag>
+    typename mi::index<ScdIndexContainer, Tag>::type::iterator
+    end() const {
+        const typename mi::index<ScdIndexContainer, Tag>::type& index = container.get<Tag>();
+        return index.end();
     }
+    
+    void insert(const Document<>& document) {
+        container.insert(document);
+    } 
+
+public: // serialization
+    
+    /// Save index to file.
+    void save(const std::string& filename) const {
+        serializer(filename, container);
+    }
+
+    /// Load index from file.
+    void load(const std::string& filename) {
+        deserializer(filename, container);        
+    }
+
+private:
+    ScdIndexContainer container;
+    save_txt serializer;
+    load_txt deserializer;
 };
-
-/// Retrieve a document by its DOCID.
-template <typename Tag, typename MultiIndexContainer>
-typename mi::index<MultiIndexContainer, Tag>::type::iterator
-get(const MultiIndexContainer& container, const DocumentTraits::docid_type& key) {
-    // get a reference to the index tagged by Tag
-    const typename mi::index<MultiIndexContainer, Tag>::type& index = mi::get<Tag>(container);
-    return index.find(key);
-}
-
-/// Function object loading from a text archive.
-const load_impl<ba::text_iarchive> load;
-/// Function object saving into a text archive.
-const save_impl<ba::text_oarchive> save;
-
-/// Function object loading from a binary archive.
-const load_impl<ba::binary_iarchive> load_bin;
-/// Function object saving into a binary archive.
-const save_impl<ba::binary_oarchive> save_bin;
 
 } /* namespace scd */
 

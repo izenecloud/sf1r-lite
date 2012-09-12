@@ -21,17 +21,13 @@ public:
 
     bool build(const std::string& path);
     
-    void save(const std::string& file) const {
-        scd::save(file, index);
-    }    
-
-    void load(const std::string& file) {
-        scd::load(file, index);
-    }
-    
-    size_t size() const {
-        return index.size();
-    }
+//    void save(const std::string& file) const {
+//        index.save(file);
+//    }    
+//
+//    void load(const std::string& file) {
+//        index.load(file);
+//    }
     
     const scd::ScdIndex& getIndex() const {
         return index;
