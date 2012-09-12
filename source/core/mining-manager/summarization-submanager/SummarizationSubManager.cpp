@@ -122,8 +122,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
         const UString& key = kit->second.get<UString>();
         if (key.empty()) continue;
-        const UString& content = cit->second.get<UString>();
 
+        const ContentType& content = cit->second.get<UString>();
         const AdvantageType& advantage = ait->second.get<AdvantageType>();
         const DisadvantageType& disadvantage = dit->second.get<DisadvantageType>();
 
@@ -236,7 +236,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         summarization_storage_->Flush();
     } //Destroy dirtyKeyIterator before clearing dirtyKeyDB
 
-    //LOG(INFO) << "====== Evaluating summarization end ======" << std::endl;
+    LOG(INFO) << "====== Evaluating summarization end ======" << std::endl;
     //for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
     //{
     //    delete opinion_compute_threads_[i];
@@ -295,9 +295,9 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
         for (CommentCacheItemType::const_iterator it = opinion_data.cached_comments.begin();
             it != opinion_data.cached_comments.end(); ++it)
         {
-            Z.push_back((it->second).get<0>());
-            advantage_comments.push_back(it->second.get<1>());
-            disadvantage_comments.push_back(it->second.get<2>());
+            Z.push_back((it->second).content);
+            advantage_comments.push_back(it->second.advantage);
+            disadvantage_comments.push_back(it->second.disadvantage);
         }
 
         Op->setComment(Z);
@@ -433,10 +433,10 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
             it != comment_cache_item.end(); ++it)
     {
-        if (it->second.get<3>())
+        if (it->second.score)
         {
             ++count;
-            total_score += (it->second).get<3>();
+            total_score += (it->second).score;
         }
 
         // Limit the max count of sentences to be summarized
@@ -446,7 +446,7 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         // XXX
         // corpus_->start_new_doc();
 
-        const UString& content = (it->second).get<0>();
+        const UString& content = (it->second).content;
         UString sentence;
         std::size_t startPos = 0;
         while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
