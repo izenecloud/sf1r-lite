@@ -551,9 +551,9 @@ bool OpinionsManager::IsBeginBigram(const WordStrType& bigram)
     }
     if(training_data_->Freq_Begin(bigram) >= 4)
     {
-        string tmpstr;
-        bigram.convertString(tmpstr, encodingType_);
-        out << "begin bigram find in training_data_ : " << tmpstr << endl; 
+        //string tmpstr;
+        //bigram.convertString(tmpstr, encodingType_);
+        //out << "begin bigram find in training_data_ : " << tmpstr << endl; 
         return true;
     }
     return false;
@@ -567,9 +567,9 @@ bool OpinionsManager::IsEndBigram(const WordStrType& bigram)
     }
     if(training_data_->Freq_End(bigram) >= 4)
     {
-        string tmpstr;
-        bigram.convertString(tmpstr, encodingType_);
-        out << "end bigram find in training_data_ : " << tmpstr << endl; 
+        //string tmpstr;
+        //bigram.convertString(tmpstr, encodingType_);
+        //out << "end bigram find in training_data_ : " << tmpstr << endl; 
         return true;
     }
     return false;
@@ -881,12 +881,15 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
     std::vector<std::pair<double, UString> > candOpinionString;
     changeForm(candList, candOpinionString);
 
-    out << "before recompute_srep: candidates are " << endl;
-    for(size_t i = 0; i < candOpinionString.size(); ++i)
+    if(candOpinionString.size() > 0)
     {
-        std::string tmpstr;
-        candOpinionString[i].second.convertString(tmpstr, encodingType_);
-        out << "str:" << tmpstr << ",score:" << candOpinionString[i].first << endl;
+        out << "before recompute_srep: candidates are " << endl;
+        for(size_t i = 0; i < candOpinionString.size(); ++i)
+        {
+            std::string tmpstr;
+            candOpinionString[i].second.convertString(tmpstr, encodingType_);
+            out << "str:" << tmpstr << ",score:" << candOpinionString[i].first << endl;
+        }
     }
 
     if(need_orig_comment_phrase)
