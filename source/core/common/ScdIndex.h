@@ -8,102 +8,16 @@
 #ifndef SCDINDEX_H
 #define	SCDINDEX_H
 
-#include "ScdParser.h"
+#include "ScdIndexDocument.h"
 #include "ScdIndexSerializer.h"
-#include <util/ustring/UString.h>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/ordered_index.hpp>
-#include <boost/serialization/map.hpp>
-#include <glog/logging.h>
 
 namespace scd {
 
 namespace mi = boost::multi_index;
-
-namespace {
-
-/// Default traits for the SCD document.
-struct DocumentTraits {
-    typedef std::string name_type;
-    typedef izenelib::util::UString value_type;
-    typedef long offset_type;
-};
-
-/**
- * @brief SCD document.
- * Each SCD document is identified by its DOCID and has an offset
- * within the SCD file.
- */
-template <typename Docid, typename Property, typename traits = DocumentTraits>
-struct Document {
-    /// Type of property names.
-    typedef typename traits::name_type name_type;
-    /// Type of property values.
-    typedef typename traits::value_type value_type;
-    /// Type of offset values.
-    typedef typename traits::offset_type offset_type;
-
-    /// Docid name (e.g. 'DOCID').
-    static const name_type docid_name;
-    /// Property name (e.g. 'uuid').
-    static const name_type property_name;
-    
-    offset_type offset;
-    std::map<name_type, value_type> properties; // TODO: unordered map
-
-    Document() {}
-
-    Document(const offset_type o, SCDDocPtr doc) : offset(o) {
-        for (SCDDoc::iterator it = doc->begin(); it != doc->end(); ++it) {
-            // store only indexed properties
-            if (it->first == docid_name or it->first == property_name)
-                properties.insert(std::make_pair(it->first, it->second));
-        }
-        CHECK_EQ(2, properties.size()) << "Wrong number of properties: " << properties.size();
-    }
-
-    inline value_type docid() const {
-        return properties.at(docid_name);
-    }
-
-    inline value_type property() const {
-        return properties.at(property_name);
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const Document& d) {
-        os << '<' << docid_name << '>' << d.docid() << " @ " << d.offset 
-           << ": <" << property_name << '>' << d.property();
-        return os;
-    }
-
-    bool operator==(const Document& d) const {
-        return offset == d.offset and properties.size() == d.properties.size()
-           and std::equal(properties.begin(), properties.end(), d.properties.begin());
-    }
-
-private: // serialization
-    friend class boost::serialization::access;
-
-    template <typename Archive>
-    void serialize(Archive& ar, const unsigned version) {
-        ar & offset;
-        ar & properties;
-    }
-};
-
-// set Document::docid_name
-template <typename Docid, typename Property, typename traits>
-const typename Document<Docid, Property, traits>::name_type
-Document<Docid, Property, traits>::docid_name(Docid::value);
-
-// set Document::property_name
-template <typename Docid, typename Property, typename traits>
-const typename Document<Docid, Property, traits>::name_type
-Document<Docid, Property, traits>::property_name(Property::value);
-
-} /* unnamed namespace */
 
 /// Create a new property tag.
 #define SCD_INDEX_PROPERTY_TAG(tag_name, tag_value) \
