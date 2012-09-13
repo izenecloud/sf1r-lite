@@ -179,25 +179,25 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         LOG(ERROR) << "read opinion filter file error" << endl;
     }
 
-    //for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
-    //{
-    //    std::string log_path = OpPath;
-    //    log_path += "/opinion-log-";
-    //    log_path.push_back('a' + i);
-    //    boost::filesystem::path p(log_path);
-    //    boost::filesystem::create_directory(p);
+    for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
+    {
+        std::string log_path = OpPath;
+        log_path += "/opinion-log-";
+        log_path.push_back('a' + i);
+        boost::filesystem::path p(log_path);
+        boost::filesystem::create_directory(p);
 
-    //    std::string cma_path;
-    //    LAPool::getInstance()->get_cma_path(cma_path);
+        std::string cma_path;
+        LAPool::getInstance()->get_cma_path(cma_path);
 
-    //    Ops_.push_back(new OpinionsManager( log_path, cma_path));
-    //    Ops_.back()->setSigma(0.1, -6, 0.5, 20);
-    //    //////////////////////////
-    //    Ops_.back()->setFilterStr(filters);
+        Ops_.push_back(new OpinionsManager( log_path, cma_path, OpPath));
+        Ops_.back()->setSigma(0.1, -6, 0.5, 20);
+        //////////////////////////
+        Ops_.back()->setFilterStr(filters);
 
-    //    opinion_compute_threads_.push_back(new boost::thread(&MultiDocSummarizationSubManager::DoComputeOpinion,
-    //                this, Ops_[i]));
-    //}
+        opinion_compute_threads_.push_back(new boost::thread(&MultiDocSummarizationSubManager::DoComputeOpinion,
+                    this, Ops_[i]));
+    }
 
     LOG(INFO) << "====== Evaluating summarization begin ======" << std::endl;
     {
@@ -218,7 +218,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             Summarization summarization(commentCacheItem);
             DoEvaluateSummarization_(summarization, key, commentCacheItem);
             
-            //DoOpinionExtraction(summarization, key, commentCacheItem);
+            DoOpinionExtraction(summarization, key, commentCacheItem);
             if (++count % 1000 == 0)
             {
                 std::cout << "\r === Evaluating summarization and opinion count: " << count << " ===";
@@ -231,19 +231,19 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             waiting_opinion_cond_.notify_all();
         }
 
-        //DoWriteOpinionResult();
+        DoWriteOpinionResult();
 
         summarization_storage_->Flush();
     } //Destroy dirtyKeyIterator before clearing dirtyKeyDB
 
     LOG(INFO) << "====== Evaluating summarization end ======" << std::endl;
-    //for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
-    //{
-    //    delete opinion_compute_threads_[i];
-    //    delete Ops_[i];
-    //}
-    //Ops_.clear();
-    //opinion_compute_threads_.clear();
+    for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
+    {
+        delete opinion_compute_threads_[i];
+        delete Ops_[i];
+    }
+    Ops_.clear();
+    opinion_compute_threads_.clear();
 
     if (score_scd_writer_)
     {
@@ -414,12 +414,7 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
         const KeyType& key,
         const CommentCacheItemType& comment_cache_item)
 {
-    if (!summarization_storage_->IsRebuildSummarizeRequired(key, summarization))
-        return false;
-
 #define MAX_SENT_COUNT 1000
-
-    ilplib::langid::Analyzer* langIdAnalyzer = LAPool::getInstance()->getLangId();
 
     ScoreType total_score = 0;
     uint32_t count = 0;
@@ -427,8 +422,6 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
     std::string key_str;
     key_str = Utilities::uint128ToUuid(key);
     UString key_ustr(key_str, UString::UTF_8);
-    corpus_->start_new_coll(key_ustr);
-    corpus_->start_new_doc(); // XXX
 
     for (CommentCacheItemType::const_iterator it = comment_cache_item.begin();
             it != comment_cache_item.end(); ++it)
@@ -438,92 +431,23 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             ++count;
             total_score += (it->second).score;
         }
+    }
+    if (count)
+    {
+        std::vector<std::pair<double, UString> > score_list(1);
+        double avg_score = (double)total_score / (double)count;
+        score_list[0].first = avg_score;
+        summarization.updateProperty("avg_score", score_list);
 
-        // Limit the max count of sentences to be summarized
-        if (corpus_->nsents() >= MAX_SENT_COUNT)
-            continue;
-
-        // XXX
-        // corpus_->start_new_doc();
-
-        const UString& content = (it->second).content;
-        UString sentence;
-        std::size_t startPos = 0;
-        while (std::size_t len = langIdAnalyzer->sentenceLength(content, startPos))
+        if (score_scd_writer_)
         {
-            sentence.assign(content, startPos, len);
-
-            corpus_->start_new_sent(sentence);
-
-            std::vector<UString> word_list;
-            analyzer_->GetStringList(sentence, word_list);
-            for (std::vector<UString>::const_iterator wit = word_list.begin();
-                    wit != word_list.end(); ++wit)
-            {
-                corpus_->add_word(*wit);
-            }
-
-            startPos += len;
+            Document doc;
+            doc.property("DOCID") = key_ustr;
+            doc.property(schema_.scorePropName) = UString(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
+            score_scd_writer_->Append(doc);
         }
     }
-    corpus_->start_new_sent();
-    corpus_->start_new_doc();
-    corpus_->start_new_coll();
- 
-    std::map<UString, std::vector<std::pair<double, UString> > > summaries;
-//#define DEBUG_SUMMARIZATION
-#ifdef DEBUG_SUMMARIZATION
-    std::cout << "Begin evaluating: " << key_str << std::endl;
-#endif
-    //if (content_list.size() < 2000 && corpus_->ntotal() < 100000)
-    {
-        //SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_RI);
-    }
-    //else
-    {
-        SPLM::generateSummary(summaries, *corpus_, SPLM::SPLM_NONE);
-    }
-#ifdef DEBUG_SUMMARIZATION
-    std::cout << "End evaluating: " << key_str << std::endl;
-#endif
-
-    //XXX store the generated summary list
-    std::vector<std::pair<double, UString> >& summary_list = summaries[key_ustr];
-    bool ret = !summary_list.empty();
-
-    if (ret)
-    {
-        if (count)
-        {
-            std::vector<std::pair<double, UString> > score_list(1);
-            double avg_score = (double)total_score / (double)count;
-            score_list[0].first = avg_score;
-            summarization.updateProperty("avg_score", score_list);
-
-            if (score_scd_writer_)
-            {
-                Document doc;
-                doc.property("DOCID") = key_ustr;
-                doc.property(schema_.scorePropName) = UString(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
-                score_scd_writer_->Append(doc);
-            }
-        }
-
-#ifdef DEBUG_SUMMARIZATION
-        for (uint32_t i = 0; i < summary_list.size(); i++)
-        {
-            std::string sent;
-            summary_list[i].second.convertString(sent, UString::UTF_8);
-            std::cout << "\t" << sent << std::endl;
-        }
-#endif
-        summarization.updateProperty("overview", summary_list);
-
-        summarization_storage_->Update(key, summarization);
-    }
-    corpus_->reset();
-
-    return ret;
+    return true;
 }
 
 bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(

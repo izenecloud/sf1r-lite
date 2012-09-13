@@ -546,7 +546,7 @@ bool OpinionsManager::IsBeginBigram(const WordStrType& bigram)
 {
     if(begin_bigrams_.find(bigram) != begin_bigrams_.end())
     {
-        if(begin_bigrams_[bigram] >= 2)
+        if(begin_bigrams_[bigram] > 2)
             return true;
     }
     if(training_data_->Freq_Begin(bigram) >= 4)
@@ -562,7 +562,7 @@ bool OpinionsManager::IsEndBigram(const WordStrType& bigram)
 {
     if(end_bigrams_.find(bigram) != end_bigrams_.end())
     {
-        if(end_bigrams_[bigram] >= 2)
+        if(end_bigrams_[bigram] > 2)
             return true;
     }
     if(training_data_->Freq_End(bigram) >= 4)
