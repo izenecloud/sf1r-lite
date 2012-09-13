@@ -22,7 +22,9 @@ namespace scd {
 
 namespace mi = boost::multi_index;
 
-/// Traits for the SCD document.
+namespace {
+
+/// Default traits for the SCD document.
 struct DocumentTraits {
     typedef std::string name_type;
     typedef izenelib::util::UString value_type;
@@ -34,7 +36,7 @@ struct DocumentTraits {
  * Each SCD document is identified by its DOCID and has an offset
  * within the SCD file.
  */
-template <typename Property, typename traits = DocumentTraits>
+template <typename Docid, typename Property, typename traits = DocumentTraits>
 struct Document {
     /// Type of property names.
     typedef typename traits::name_type name_type;
@@ -43,6 +45,11 @@ struct Document {
     /// Type of offset values.
     typedef typename traits::offset_type offset_type;
 
+    /// Docid name (e.g. 'DOCID').
+    static const name_type docid_name;
+    /// Property name (e.g. 'uuid').
+    static const name_type property_name;
+    
     offset_type offset;
     std::map<name_type, value_type> properties; // TODO: unordered map
 
@@ -50,21 +57,24 @@ struct Document {
 
     Document(const offset_type o, SCDDocPtr doc) : offset(o) {
         for (SCDDoc::iterator it = doc->begin(); it != doc->end(); ++it) {
-            properties.insert(std::make_pair(it->first, it->second));
+            // store only indexed properties
+            if (it->first == docid_name or it->first == property_name)
+                properties.insert(std::make_pair(it->first, it->second));
         }
+        CHECK_EQ(2, properties.size()) << "Wrong number of properties: " << properties.size();
     }
 
-    inline value_type id() const {
-        return properties.at("DOCID"); // TODO: template
+    inline value_type docid() const {
+        return properties.at(docid_name);
     }
 
     inline value_type property() const {
-        static const name_type name(Property::value);
-        return properties.at(name);
+        return properties.at(property_name);
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Document& d) {
-        os << d.id() << " @ " << d.offset << ": " << d.property();
+        os << '<' << docid_name << '>' << d.docid() << " @ " << d.offset 
+           << ": <" << property_name << '>' << d.property();
         return os;
     }
 
@@ -83,28 +93,43 @@ private: // serialization
     }
 };
 
-/// Tag for DOCID property.
-struct docid {};
+// set Document::docid_name
+template <typename Docid, typename Property, typename traits>
+const typename Document<Docid, Property, traits>::name_type
+Document<Docid, Property, traits>::docid_name(Docid::value);
+
+// set Document::property_name
+template <typename Docid, typename Property, typename traits>
+const typename Document<Docid, Property, traits>::name_type
+Document<Docid, Property, traits>::property_name(Property::value);
+
+} /* unnamed namespace */
 
 /// Create a new property tag.
 #define SCD_INDEX_PROPERTY_TAG(tag_name, tag_value) \
     struct tag_name { static const char value[]; }; \
     const char tag_name::value[] = tag_value;
 
+/// Tag for DOCID property.
+SCD_INDEX_PROPERTY_TAG(docid, "DOCID");
+
 /**
  * @brief SCD multi-index container
+ * This class wraps a container with two indeces:
+ * - unique index on the Docid tag
+ * - non-unique index on the Property tag
  */
-template <typename Property>
-class ScdIndex {
-    typedef Document<Property> document_type; // TODO: template
-
+template <typename Property, typename Docid = docid>
+struct ScdIndex {
+    typedef Document<Docid, Property> document_type;
+private:
     /// Multi-indexed container.
     typedef boost::multi_index_container <
         document_type,
         mi::indexed_by<
             mi::ordered_unique< // TODO: hashed_unique (serialization!)
-                mi::tag<docid>,
-                BOOST_MULTI_INDEX_CONST_MEM_FUN(document_type, typename document_type::value_type, id)
+                mi::tag<Docid>,
+                BOOST_MULTI_INDEX_CONST_MEM_FUN(document_type, typename document_type::value_type, docid)
             >,
             mi::ordered_non_unique<
                 mi::tag<Property>,
@@ -115,7 +140,7 @@ class ScdIndex {
     > ScdIndexContainer;
 
     /// DOCID index.
-    typedef typename mi::index<ScdIndexContainer, docid>::type DocidIndex;
+    typedef typename mi::index<ScdIndexContainer, Docid>::type DocidIndex;
     /// Property index.
     typedef typename mi::index<ScdIndexContainer, Property>::type PropertyIndex;
 
@@ -133,7 +158,7 @@ public:
      * @param path The full path to the SCD file.
      * @return A pointer to an instance of ScdIndex.
      */
-    static ScdIndex<Property>* build(const std::string& path);
+    static ScdIndex<Property, Docid>* build(const std::string& path);
 
     /// @return The size of the index.
     size_t size() const {
@@ -191,16 +216,16 @@ private:
     load_txt deserializer;
 };
 
-template<typename Property>
-ScdIndex<Property>*
-ScdIndex<Property>::build(const std::string& path) {
+template<typename Property, typename Docid>
+ScdIndex<Property, Docid>*
+ScdIndex<Property, Docid>::build(const std::string& path) {
     static ScdParser parser;
     typedef ScdParser::iterator iterator;
 
     CHECK(parser.load(path)) << "Cannot load file: " << path;
     LOG(INFO) << "Building index on: " << path << " ...";
 
-    ScdIndex<Property>* index = new ScdIndex;
+    ScdIndex<Property, Docid>* index = new ScdIndex;
     iterator end = parser.end();
     for (iterator it = parser.begin(); it != end; ++it) {
         SCDDocPtr doc = *it;
@@ -208,7 +233,7 @@ ScdIndex<Property>::build(const std::string& path) {
 
         DLOG(INFO) << "got document '" << doc->at(0).second << "' @ " << it.getOffset();
 
-        index->container.insert(scd::Document<Property>(it.getOffset(), doc));
+        index->container.insert(document_type(it.getOffset(), doc));
         LOG_EVERY_N(INFO, 100) << "Saved " << google::COUNTER << " documents ...";
     }
 
