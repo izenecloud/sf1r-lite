@@ -10,6 +10,7 @@
 #include "ScdBuilder.h"
 #include "common/ScdIndex.h"
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace fs = boost::filesystem;
 
@@ -21,8 +22,11 @@ struct TestFixture {
         ScdBuilder scd(path);
         for (unsigned i = start; i < start + size; ++i) {
             scd("DOCID") << i;
-            scd("Title") << "Title " << i;
-            scd("Content") << "Content A";
+            if (i > (start+size)/2)
+                scd("Title") << "Title T";
+            else 
+                scd("Title") << "Title " << i;
+            scd("Content") << "Content " << i;
         }        
         return path;
     }
@@ -40,7 +44,7 @@ private:
     }
 };
 
-#define DOCID(X) izenelib::util::UString((#X), izenelib::util::UString::UTF_8)
+#define UString(X) izenelib::util::UString((X), izenelib::util::UString::UTF_8)
 
 SCD_INDEX_PROPERTY_TAG(Title, "Title")
 
@@ -64,39 +68,35 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     std::copy(index.begin<Title>(), index.end<Title>(), 
               std::ostream_iterator<scd::Document<Title> >(std::cout, "\n"));
 
-    // query: hit
-    BOOST_CHECK_EQUAL(  0, index.find<scd::docid>(DOCID(1))->offset);
-    BOOST_CHECK_EQUAL( 50, index.find<scd::docid>(DOCID(2))->offset);
-    BOOST_CHECK_EQUAL( 93, index.find<scd::docid>(DOCID(3))->offset);
-    BOOST_CHECK_EQUAL(136, index.find<scd::docid>(DOCID(4))->offset);
-    BOOST_CHECK_EQUAL(179, index.find<scd::docid>(DOCID(5))->offset);
-    BOOST_CHECK_EQUAL(222, index.find<scd::docid>(DOCID(6))->offset);
-    BOOST_CHECK_EQUAL(265, index.find<scd::docid>(DOCID(7))->offset);
-    BOOST_CHECK_EQUAL(308, index.find<scd::docid>(DOCID(8))->offset);
-    BOOST_CHECK_EQUAL(351, index.find<scd::docid>(DOCID(9))->offset);
-    BOOST_CHECK_EQUAL(394, index.find<scd::docid>(DOCID(10))->offset);
-    BOOST_CHECK_EQUAL(1, index.count<scd::docid>(DOCID(1)));
+    // expected values
+    long offsets[] = { 0, 50, 93, 136, 179, 222, 265, 308, 351, 394 };
 
-    BOOST_CHECK_EQUAL(  0, index.find<Title>(DOCID(Title 1))->offset);
-    BOOST_CHECK_EQUAL( 50, index.find<Title>(DOCID(Title 2))->offset);
-    BOOST_CHECK_EQUAL( 93, index.find<Title>(DOCID(Title 3))->offset);
-    BOOST_CHECK_EQUAL(136, index.find<Title>(DOCID(Title 4))->offset);
-    BOOST_CHECK_EQUAL(179, index.find<Title>(DOCID(Title 5))->offset);
-    BOOST_CHECK_EQUAL(222, index.find<Title>(DOCID(Title 6))->offset);
-    BOOST_CHECK_EQUAL(265, index.find<Title>(DOCID(Title 7))->offset);
-    BOOST_CHECK_EQUAL(308, index.find<Title>(DOCID(Title 8))->offset);
-    BOOST_CHECK_EQUAL(351, index.find<Title>(DOCID(Title 9))->offset);
-    BOOST_CHECK_EQUAL(394, index.find<Title>(DOCID(Title 10))->offset);
-    BOOST_CHECK_EQUAL(1, index.count<Title>(DOCID(Title 1)));
+    // query: hit
+    for (size_t i = 0; i < DOC_NUM; ++i) {
+        std::string id = boost::lexical_cast<std::string>(i+1);
+        BOOST_CHECK_EQUAL(offsets[i], index.find<scd::docid>(UString(id))->offset);
+        BOOST_CHECK_EQUAL(1, index.count<scd::docid>(UString(id)));
+    }
+    for (size_t i = 0; i < DOC_NUM/2; ++i) {
+        std::string title = "Title " + boost::lexical_cast<std::string>(i+1);
+        BOOST_CHECK_EQUAL(offsets[i], index.find<Title>(UString(title))->offset);
+        BOOST_CHECK_EQUAL(1, index.count<Title>(UString(title))); 
+    }
+    BOOST_CHECK_EQUAL(5, index.count<Title>(UString("Title T"))); 
+    scd::ScdIndex<Title>::property_iterator it = index.find<Title>(UString("Title T"));
+    for (size_t i = DOC_NUM/2; i < DOC_NUM; ++i) {
+        BOOST_CHECK_EQUAL(offsets[i], (it++)->offset);
+    }
+    BOOST_CHECK(index.end<Title>() == it);
     
     // query: miss
     scd::ScdIndex<Title>::docid_iterator docid_end = index.end<scd::docid>();
-    BOOST_CHECK(docid_end == index.find<scd::docid>(DOCID(0)));
-    BOOST_CHECK(docid_end == index.find<scd::docid>(DOCID(11)));
+    BOOST_CHECK(docid_end == index.find<scd::docid>(UString("0")));
+    BOOST_CHECK(docid_end == index.find<scd::docid>(UString("11")));
 
     scd::ScdIndex<Title>::property_iterator property_end = index.end<Title>();
-    BOOST_CHECK(property_end == index.find<Title>(DOCID(Title 0)));
-    BOOST_CHECK(property_end == index.find<Title>(DOCID(Title 11)));
+    BOOST_CHECK(property_end == index.find<Title>(UString("Title 0")));
+    BOOST_CHECK(property_end == index.find<Title>(UString("Title 11")));
 
     delete indexptr;
 }
