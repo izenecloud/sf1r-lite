@@ -19,7 +19,7 @@ AutoFillChildManager::AutoFillChildManager(bool fromSCD)
     isIniting_ = false;
 
     updatelogdays_ = 1;
-    alllogdays_ =  80;
+    alllogdays_ =  120;
     topN_ =  10;
     QN_ = new izenelib::am::QueryNormalize();
 }
@@ -794,6 +794,8 @@ bool AutoFillChildManager::getAutoFillList(const izenelib::util::UString& query,
     std::string strquery;
     query.convertString(strquery, izenelib::util::UString::UTF_8);
     QN_->query_Normalize(strquery);
+    if(strquery.empty())
+        return true;
     izenelib::util::UString  queryLow(strquery, izenelib::util::UString::UTF_8);
 
     if(!isIniting_)
