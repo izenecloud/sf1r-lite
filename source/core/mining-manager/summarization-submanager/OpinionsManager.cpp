@@ -1,4 +1,5 @@
 #include "OpinionsManager.h"
+#include "OpinionTraining.h"
 #include <icma/icma.h>
 #include <glog/logging.h>
 #include <math.h>   
@@ -10,6 +11,7 @@
 #define MAX_SEED_BIGRAM_RATIO   50
 #define REFINE_THRESHOLD  4
 #define MAX_SEED_BIGRAM_IN_SINGLE_COMMENT  100
+#define RUBBISH_COMMENT_THRESHOLD  0.3
 
 using namespace std;
 using namespace cma;
@@ -88,7 +90,8 @@ struct seedPairCmp2 {
         return true;
     }
 
-OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictpath)
+OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictpath,
+    const string& training_data_path)
 {
     knowledge_ = CMA_Factory::instance()->createKnowledge();
     knowledge_->loadModel( "utf8", dictpath.c_str());
@@ -98,7 +101,8 @@ OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictp
     //analyzer->setOption(Analyzer::OPTION_ANALYSIS_TYPE,77);
     analyzer_->setKnowledge(knowledge_);
     //analyzer->setPOSDelimiter(posDelimiter.data());
-    //Ngram_= new Ngram(colPath);
+    training_data_ = new OpinionTraining(training_data_path);
+    training_data_->LoadFile();
     string logpath = colPath + "/OpinionsManager.log";
     out.open(logpath.c_str(), ios::out);
     windowsize = 3;
@@ -144,6 +148,14 @@ void OpinionsManager::CleanCacheData()
     orig_comments_.clear();
 }
 
+bool OpinionsManager::IsRubbishComment(const WordSegContainerT& words)
+{
+    std::set<WordStrType> diff_words;
+    for(size_t i = 0; i < words.size(); ++i)
+        diff_words.insert(words[i]);
+    return (double)diff_words.size()/(double)words.size() < RUBBISH_COMMENT_THRESHOLD;
+}
+
 void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
 {
     CleanCacheData();
@@ -156,10 +168,16 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
         if(uend == ustr.begin())
             continue;
         ustr.erase(uend, ustr.end());
-        Z.push_back(ustr);
         WordSegContainerT allwords;
         stringToWordVector(ustr, allwords);
+
+        if(IsRubbishComment(allwords))
+        {
+            out << "rubbish comment filtered: " << getSentence(allwords) << endl;
+            continue;
+        }
         orig_comments_.push_back(allwords);
+        Z.push_back(ustr);
         // remove splitter in the sentence, avoid the impact on the srep by them.
         //
         uend = std::remove_if(ustr.begin(), ustr.end(), IsCommentSplitChar);
@@ -524,6 +542,39 @@ bool OpinionsManager::FilterBigramByPossib(double possib, const OpinionsManager:
     return true;
 }
 
+bool OpinionsManager::IsBeginBigram(const WordStrType& bigram)
+{
+    if(begin_bigrams_.find(bigram) != begin_bigrams_.end())
+    {
+        if(begin_bigrams_[bigram] >= 2)
+            return true;
+    }
+    if(training_data_->Freq_Begin(bigram) >= 4)
+    {
+        string tmpstr;
+        bigram.convertString(tmpstr, encodingType_);
+        out << "begin bigram find in training_data_ : " << tmpstr << endl; 
+        return true;
+    }
+    return false;
+}
+bool OpinionsManager::IsEndBigram(const WordStrType& bigram)
+{
+    if(end_bigrams_.find(bigram) != end_bigrams_.end())
+    {
+        if(end_bigrams_[bigram] >= 2)
+            return true;
+    }
+    if(training_data_->Freq_End(bigram) >= 4)
+    {
+        string tmpstr;
+        bigram.convertString(tmpstr, encodingType_);
+        out << "end bigram find in training_data_ : " << tmpstr << endl; 
+        return true;
+    }
+    return false;
+}
+
 bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
 {
     // first , get all the frequency in overall and filter the low frequency phrase.
@@ -535,6 +586,8 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
     {
         int bigram_start = (int)resultList.size();
         int bigram_num_insingle_comment = 0;  // splitter is excluded
+        bool is_begin_bigram = true;
+        WordStrType tmp_end_bigram;
         for(size_t j = 0; j < orig_comments_[i].size() - 1; j++)
         {
             if(!IsAllChineseStr(orig_comments_[i][j]))
@@ -557,6 +610,12 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
             {
                 continue;
             }
+            if(is_begin_bigram)
+            {
+                begin_bigrams_[tmpstr] += 1;
+                is_begin_bigram = false;
+            }
+            tmp_end_bigram = tmpstr;
             //if( (Srep(bigram_words) >= SigmaRep) )
             {
                 if(word_freq_records.find(tmpstr) == word_freq_records.end())
@@ -572,6 +631,7 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
                 ++bigram_num_insingle_comment;
             }
         }
+        end_bigrams_[tmp_end_bigram] += 1;
         // refine the seed bigram in a very long single comment.
         if(bigram_num_insingle_comment > MAX_SEED_BIGRAM_IN_SINGLE_COMMENT)
         {
@@ -797,7 +857,16 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
 
     for(size_t i = 0; i < seedGrams.size(); i++)
     {
-        GenerateCandidates(seedGrams[i], candList, seed_bigramlist, i);
+        WordStrType phrasestr;
+        WordVectorToString(phrasestr, seedGrams[i]);
+        if(IsBeginBigram(phrasestr))
+        {
+            GenerateCandidates(seedGrams[i], candList, seed_bigramlist, i);
+        }
+        else
+        {
+            //out << "seed bigram not begin : " << getSentence(seedGrams[i]) << endl;
+        }
     }
 
     gettimeofday(&endtime, NULL);
@@ -812,11 +881,13 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
     std::vector<std::pair<double, UString> > candOpinionString;
     changeForm(candList, candOpinionString);
 
-    //out << "before recompute_srep: candidates are " << endl;
-    //for(size_t i = 0; i < candOpinionString.size(); ++i)
-    //{
-    //    out << "str:" << candOpinionString[i].first << ",score:" << candOpinionString[i].second << endl;
-    //}
+    out << "before recompute_srep: candidates are " << endl;
+    for(size_t i = 0; i < candOpinionString.size(); ++i)
+    {
+        std::string tmpstr;
+        candOpinionString[i].second.convertString(tmpstr, encodingType_);
+        out << "str:" << tmpstr << ",score:" << candOpinionString[i].first << endl;
+    }
 
     if(need_orig_comment_phrase)
     {
@@ -855,6 +926,16 @@ std::string OpinionsManager::getSentence(const WordSegContainerT& candVector)
 void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase, 
     OpinionCandidateContainerT& candList)
 {
+    WordStrType end_bigram_str = phrase[phrase.size() - 2];
+    end_bigram_str.append(phrase[phrase.size() - 1]);
+    if(!IsEndBigram(end_bigram_str))
+    {
+        //string end_str;
+        //end_bigram_str.convertString(end_str, UString::UTF_8);
+        //out << "not end bigram : " << end_str << endl;
+        return;
+    }
+
     double score = Score(phrase);
     OpinionCandidateContainerT::iterator it = candList.begin();
     bool can_insert = true;
@@ -966,7 +1047,7 @@ void OpinionsManager::GenerateCandidates(const NgramPhraseT& phrase,
     WordVectorToString(phrasestr, phrase);
     if(IsNeedFilter(phrasestr))
     {
-        out << "candidate filtered by configure : " << getSentence(phrase) << endl;
+        //out << "candidate filtered by configure : " << getSentence(phrase) << endl;
         return;
     }
     if ( (phrase.size() > OPINION_NGRAM_MIN) && ( Srep(phrase) < SigmaRep ) )

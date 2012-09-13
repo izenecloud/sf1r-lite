@@ -25,6 +25,7 @@ class cma::Knowledge;
 
 namespace sf1r
 {
+class OpinionTraining;
 
 class OpinionsManager
 {
@@ -79,7 +80,8 @@ public:
     typedef std::pair< NgramPhraseT, double > OpinionCandidateT;
     typedef std::vector< OpinionCandidateT > OpinionCandidateContainerT;
 
-    OpinionsManager(const string& colPath, const std::string& dictpath);//string enc,string cate,string posDelimiter,
+    OpinionsManager(const string& colPath, const std::string& dictpath,
+        const string& training_data_path);//string enc,string cate,string posDelimiter,
     ~OpinionsManager();
     void setComment(const SentenceContainerT& Z_);
     std::vector< std::pair<double, WordStrType> > getOpinion(bool need_orig_comment_phrase = true);
@@ -126,6 +128,9 @@ private:
     void GetOrigCommentsByBriefOpinion(std::vector< std::pair<double, UString> >& candOpinionString);
     bool FilterBigramByPossib(double possib, const OpinionsManager::BigramPhraseT& bigram);
 
+    bool IsBeginBigram(const WordStrType& bigram);
+    bool IsEndBigram(const WordStrType& bigram);
+    bool IsRubbishComment(const WordSegContainerT& words);
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<WordFreqPairT>
     {
@@ -163,6 +168,9 @@ private:
     cma::Knowledge* knowledge_;
     size_t word_cache_hit_num_;
     size_t pmi_cache_hit_num_;
+    OpinionTraining* training_data_;
+    WordFreqMapT begin_bigrams_;
+    WordFreqMapT end_bigrams_;
 };
 
 };
