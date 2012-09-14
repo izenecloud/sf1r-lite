@@ -72,9 +72,11 @@ public:
     /**
      * Build an index on an SCD file.
      * @param path The full path to the SCD file.
+     * @param log_count Print a log line every \c log_count documents.
      * @return A pointer to an instance of ScdIndex.
      */
-    static ScdIndex<Property, Docid>* build(const std::string& path);
+    static ScdIndex<Property, Docid>* build(const std::string& path, 
+            const unsigned log_count = 1e4);
 
     /// @return The size of the index.
     size_t size() const {
@@ -173,7 +175,7 @@ private:
 
 template<typename Property, typename Docid>
 ScdIndex<Property, Docid>*
-ScdIndex<Property, Docid>::build(const std::string& path) {
+ScdIndex<Property, Docid>::build(const std::string& path, const unsigned log_count) {
     static ScdParser parser;
     typedef ScdParser::iterator iterator;
 
@@ -182,14 +184,15 @@ ScdIndex<Property, Docid>::build(const std::string& path) {
 
     ScdIndex<Property, Docid>* index = new ScdIndex;
     iterator end = parser.end();
-    for (iterator it = parser.begin(); it != end; ++it) {
+    unsigned count = 1;
+    for (iterator it = parser.begin(); it != end; ++it, ++count) {
         SCDDocPtr doc = *it;
         CHECK(doc) << "Document is null";
 
         DLOG(INFO) << "got document '" << doc->at(0).second << "' @ " << it.getOffset();
 
         index->container.insert(document_type(it.getOffset(), doc));
-        LOG_EVERY_N(INFO, 100) << "Saved " << google::COUNTER << " documents ...";
+        LOG_IF(INFO, count % log_count == 0) << "Saved " << count << " documents ...";
     }
 
     LOG(INFO) << "Indexed " << index->size() << " documents.";
