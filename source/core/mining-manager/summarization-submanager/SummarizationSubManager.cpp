@@ -25,6 +25,7 @@
 #include "OpinionsManager.h"
 
 #define OPINION_COMPUTE_THREAD_NUM 4
+#define OPINION_COMPUTE_QUEUE_SIZE 200
 
 using izenelib::util::UString;
 using namespace izenelib::ir::indexmanager;
@@ -336,6 +337,8 @@ void MultiDocSummarizationSubManager::DoOpinionExtraction(
     item.cached_comments = comment_cache_item;
     item.summarization.swap(summarization);
     boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+    while(waiting_opinion_comments_.size() > OPINION_COMPUTE_QUEUE_SIZE)
+        waiting_opinion_cond_.timed_wait(g, boost::posix_time::millisec(500));
     waiting_opinion_comments_.push(item);
     waiting_opinion_cond_.notify_one();
 }
