@@ -75,17 +75,20 @@ public:
         {
             outlog.open(path.c_str(), ios::app);
         }
-    };
+    }
     ~OpinionTraining()
     {
         dbTable_OpinionTraining_begin.close();
         dbTable_OpinionTraining_end.close();
         outlog.close();
-    };
+    }
     void GetAndCompute(const std::string& content)
     {
-        string temp = content;
         UString ucontent(content, UString::UTF_8);
+        GetAndCompute(ucontent);
+    }
+    void GetAndCompute(const UString& ucontent)
+    {
         size_t start = 0;
         size_t end = 0;
         while( end < ucontent.length() )
@@ -104,12 +107,18 @@ public:
         }
     }
 
-    void AppendSentence(std::vector<std::string> orig_text)
+    void AppendSentence(const std::vector<std::string>& orig_text)
     {
         for(size_t i = 0; i < orig_text.size(); ++i)
         {   
-            const std::string& temp = orig_text[i];
-            GetAndCompute(temp);
+            GetAndCompute(orig_text[i]);
+        }
+    }
+    void AppendSentence(const std::vector<UString>& orig_text)
+    {
+        for(size_t i = 0; i < orig_text.size(); ++i)
+        {   
+            GetAndCompute(orig_text[i]);
         }
     }
 
@@ -154,21 +163,25 @@ public:
                     getline(in, temp);
                     if(temp.find(Content) != std::string::npos)
                     {
+                        count++;
                         GetAndCompute(temp.substr(Content.size()));
                     }
                     else if(temp.find(Advantage) != std::string::npos)
                     {
+                        count++;
                         GetAndCompute(temp.substr(Advantage.size()));
                     }
                     else if(temp.find(Disadvantage) != std::string::npos)
                     {   
+                        count++;
                         GetAndCompute(temp.substr(Disadvantage.size()));
                     }
-                    count++;
                     if(count % 10000 == 0)
                     {
                         std::cout << "\r == training processed " << count << " doc. ==";
                     }
+                    if(count > 30000000)
+                        break;
                 }
                 in.close();
             }

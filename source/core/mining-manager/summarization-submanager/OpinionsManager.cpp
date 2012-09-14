@@ -118,7 +118,7 @@ OpinionsManager::~OpinionsManager()
     out.close();
     delete knowledge_;
     delete analyzer_;
-    //delete Ngram_;
+    delete training_data_;
 }
 
 void OpinionsManager::setWindowsize(int C)
@@ -146,6 +146,8 @@ void OpinionsManager::CleanCacheData()
     SigmaRep_dynamic = CandidateSrepQueueT();
     Z.clear();
     orig_comments_.clear();
+    begin_bigrams_.clear();
+    end_bigrams_.clear();
 }
 
 bool OpinionsManager::IsRubbishComment(const WordSegContainerT& words)
@@ -163,6 +165,8 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
     { 
         if(Z.size() >= MAX_COMMENT_NUM)
             break;
+        // not thread-safe to append to leveldb, so disable dynamic append.
+        //training_data_->AppendSentence(in_sentences);
         WordStrType ustr = in_sentences[i];
         WordStrType::iterator uend = std::remove_if(ustr.begin(), ustr.end(), IsNeedIgnoreChar);
         if(uend == ustr.begin())
@@ -206,15 +210,6 @@ void OpinionsManager::setSigma(double SigmaRep_,double SigmaRead_,double SigmaSi
     out<<"SigmaSim:"<<SigmaSim<<endl;
     out<<"SigmaLength:"<<SigmaLength<<endl;
 }
-
-//void OpinionsManager::beginSeg(const string& inSentence, string& outSentence)
-//{
-//    char* charOut = NULL;
-//    analyzer->runWithStream(inSentence.c_str(),charOut);
-//    string outString(charOut);
-//    outSentence=outString;
-//
-//}
 
 void OpinionsManager::stringToWordVector(const WordStrType& ustr, SentenceContainerT& words)
 {
@@ -549,15 +544,13 @@ bool OpinionsManager::IsBeginBigram(const WordStrType& bigram)
         if(begin_bigrams_[bigram] > 2)
             return true;
     }
-    if(training_data_->Freq_Begin(bigram) >= 4)
+    if(training_data_->Freq_Begin(bigram) > 5)
     {
-        //string tmpstr;
-        //bigram.convertString(tmpstr, encodingType_);
-        //out << "begin bigram find in training_data_ : " << tmpstr << endl; 
         return true;
     }
     return false;
 }
+
 bool OpinionsManager::IsEndBigram(const WordStrType& bigram)
 {
     if(end_bigrams_.find(bigram) != end_bigrams_.end())
@@ -565,11 +558,8 @@ bool OpinionsManager::IsEndBigram(const WordStrType& bigram)
         if(end_bigrams_[bigram] > 2)
             return true;
     }
-    if(training_data_->Freq_End(bigram) >= 4)
+    if(training_data_->Freq_End(bigram) > 5)
     {
-        //string tmpstr;
-        //bigram.convertString(tmpstr, encodingType_);
-        //out << "end bigram find in training_data_ : " << tmpstr << endl; 
         return true;
     }
     return false;
