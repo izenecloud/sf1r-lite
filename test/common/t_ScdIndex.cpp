@@ -8,6 +8,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "ScdBuilder.h"
+#include "Timer.hpp"
 #include "common/ScdIndex.h"
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -18,6 +19,8 @@ struct TestFixture {
     TestFixture() {}
     fs::path createScd(const std::string& dir, const std::string& name,
             const unsigned size, const unsigned start = 1) const {
+        std::cout << "Creating temporary SCD file with " 
+                  << size << " documents ..." << std::endl;
         fs::path path = createTempDir(dir)/name;
         ScdBuilder scd(path);
         for (unsigned i = start; i < start + size; ++i) {
@@ -65,7 +68,7 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     // using const reference
     const ScdIndex& index = *indexptr;
     BOOST_CHECK_EQUAL(DOC_NUM, index.size());
-
+#ifdef DEBUG_OUTPUT
     std::cout << "Index by DOCID: " << std::endl;
     std::copy(index.begin(), index.end(),
               std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
@@ -73,7 +76,7 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     std::cout << "Index by Title: " << std::endl;
     std::copy(index.begin<Title>(), index.end<Title>(),
               std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
-
+#endif
     // expected values
     long offsets[] = { 0, 50, 93, 136, 179, 222, 265, 308, 351, 394 };
 
@@ -95,9 +98,11 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     // copy to vector and sort for comparison
     std::vector<ScdIndex::document_type> documents(range.first, range.second);
     std::sort(documents.begin(), documents.end(), compare);
+#ifdef DEBUG_OUTPUT
     std::cout << "documents with Title = \"" << UString("Title T") << "\"" << std::endl;
     std::copy(documents.begin(), documents.end(),
               std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
+#endif
     for (size_t i = DOC_NUM/2, j = 0; i < DOC_NUM; ++i, ++j) {
         BOOST_CHECK_EQUAL(offsets[i], documents[j].offset);
     }
@@ -116,7 +121,7 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
 
 BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
     fs::path path_a = createScd("serialization", "a.scd", 5);
-    fs::path path_b = createScd("serialization", "b.scd", 3, 5);
+    fs::path path_b = createScd("serialization", "b.scd", 3, 6);
 
     ScdIndex* index = ScdIndex::build(path_a.string());
 
@@ -142,9 +147,10 @@ BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
         index_b->save(saved_b.string());
 
         index->load(saved_b.string());
+#ifdef DEBUG_OUTPUT
         std::copy(index->begin(), index->end(),
                   std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
-
+#endif
         BOOST_CHECK_EQUAL(index->size(), index_b->size());
         for (ScdIndex::docid_iterator it = index->begin(); it != index->end(); ++it) {
             BOOST_CHECK(*it == *index_b->find(it->docid));
@@ -153,4 +159,47 @@ BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
     }
 
     delete index;
+}
+
+SCD_INDEX_PROPERTY_TAG(uuid)
+
+BOOST_FIXTURE_TEST_CASE(test_performance, TestFixture) {
+#if 1
+    fs::path path = createScd("serialization", "temp.scd", 21e5);
+#else
+    typedef scd::ScdIndex<Title> ScdIndex;
+    fs::path path = "/home/paolo/tmp/B-00-201207282137-29781-U-C.SCD";
+    BOOST_REQUIRE(fs::exists(path));
+#endif
+
+    Timer timer;
+
+    timer.tic();    
+    ScdIndex* index = ScdIndex::build(path.string(), 2.5e4);
+    timer.toc();
+    std::cout << "Indexing time: " << timer.seconds() << " seconds\n";
+    
+    // save to file
+    fs::path saved = tempFile("saved");
+    timer.tic();
+    index->save(saved.string());
+    timer.toc();
+    std::cout << "Serialization time: " << timer.seconds() << " seconds\n";
+    BOOST_CHECK(fs::exists(saved));
+    std::cout << "Archive size: " << fs::file_size(saved)/1024 << " KiB\n";
+    // load from file
+    {
+        ScdIndex loaded;
+        timer.tic();
+        loaded.load(saved.string());
+        timer.toc();
+        std::cout << "Deserialization time: " << timer.seconds() << " seconds\n";
+        BOOST_CHECK_EQUAL(index->size(), loaded.size());
+        timer.tic();
+        for (ScdIndex::docid_iterator it = index->begin(); it != index->end(); ++it) {
+            BOOST_CHECK(*it == *loaded.find(it->docid));
+        }
+        timer.toc();
+        std::cout << "Checking time: " << timer.seconds() << " seconds\n";
+    }
 }
