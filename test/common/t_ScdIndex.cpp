@@ -63,7 +63,7 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     BOOST_CHECK_EQUAL(DOC_NUM, index.size());
 
     std::cout << "Index by DOCID: " << std::endl;
-    std::copy(index.begin<scd::docid>(), index.end<scd::docid>(),
+    std::copy(index.begin(), index.end(),
               std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
 
     std::cout << "Index by property: " << std::endl;
@@ -76,8 +76,8 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     // query: hit
     for (size_t i = 0; i < DOC_NUM; ++i) {
         std::string id = boost::lexical_cast<std::string>(i+1);
-        BOOST_CHECK_EQUAL(offsets[i], index.find<scd::docid>(UString(id))->offset);
-        BOOST_CHECK_EQUAL(1, index.count<scd::docid>(UString(id)));
+        BOOST_CHECK_EQUAL(offsets[i], index.find(UString(id))->offset);
+        BOOST_CHECK_EQUAL(1, index.count(UString(id)));
     }
     for (size_t i = 0; i < DOC_NUM/2; ++i) {
         std::string title = "Title " + boost::lexical_cast<std::string>(i+1);
@@ -92,9 +92,9 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     BOOST_CHECK(index.end<Title>() == it);
 
     // query: miss
-    ScdIndex::docid_iterator docid_end = index.end<scd::docid>();
-    BOOST_CHECK(docid_end == index.find<scd::docid>(UString("0")));
-    BOOST_CHECK(docid_end == index.find<scd::docid>(UString("11")));
+    ScdIndex::docid_iterator docid_end = index.end();
+    BOOST_CHECK(docid_end == index.find(UString("0")));
+    BOOST_CHECK(docid_end == index.find(UString("11")));
 
     ScdIndex::property_iterator property_end = index.end<Title>();
     BOOST_CHECK(property_end == index.find<Title>(UString("Title 0")));
@@ -130,7 +130,7 @@ BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
         index_b->save(saved_b.string());
 
         index->load(saved_b.string());
-        std::copy(index->begin<scd::docid>(), index->end<scd::docid>(),
+        std::copy(index->begin(), index->end(),
                   std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
 
         BOOST_CHECK_EQUAL(index->size(), index_b->size());

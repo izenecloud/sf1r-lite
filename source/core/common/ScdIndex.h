@@ -79,6 +79,8 @@ public:
         return container.size();
     }
 
+    /* templates functions in case we have multiple indexed properties */
+
     /// Count tagged elements.
     template <typename Tag, typename Type>
     size_t count(const Type& key) const {
@@ -112,7 +114,34 @@ public:
         return index.end();
     }
 
-public: // serialization
+    /* 
+     * without C++0x cannot use default template values, 
+     * so let's define here some specializations
+     */
+    
+    /// Count documents.
+    template <typename Type>
+    size_t count(const Type& key) const {
+        return mi::get<Docid>(container).count(key);
+    }
+
+    /// Retrieve a document.
+    template <typename Type>
+    docid_iterator find(const Type& key) const {
+        return mi::get<Docid>(container).find(key);
+    }
+    
+    /// Retrieve document begin iterator.
+    docid_iterator begin() const {
+        return mi::get<Docid>(container).begin();
+    }
+    
+    /// Retrieve document end iterator.
+    docid_iterator end() const {
+        return mi::get<Docid>(container).end();
+    }
+    
+public: /* serialization */
 
     /// Save index to file.
     void save(const std::string& filename) const {
