@@ -180,7 +180,7 @@ public:
                     {
                         std::cout << "\r == training processed " << count << " doc. ==";
                     }
-                    if(count > 30000000)
+                    if(count > 10000000)
                         break;
                 }
                 in.close();

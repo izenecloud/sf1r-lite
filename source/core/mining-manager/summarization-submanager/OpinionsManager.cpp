@@ -108,7 +108,7 @@ OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictp
     windowsize = 3;
     encodingType_ = UString::UTF_8;
     SigmaRep = 0.1;
-    SigmaRead = -6;
+    SigmaRead = 5;
     SigmaSim = 0.5;
     SigmaLength = 30;
 }
@@ -302,7 +302,7 @@ double OpinionsManager::Sim(const WordStrType& Mi, const WordStrType& Mj)
 
     WordSegContainerT wordsi, wordsj;
     stringToWordVector(Mi, wordsi);
-    stringToWordVector(Mi, wordsj);
+    stringToWordVector(Mj, wordsj);
     return Sim(wordsi, wordsj);
 }
 
@@ -350,7 +350,7 @@ double OpinionsManager::Sim(const NgramPhraseT& wordsi, const NgramPhraseT& word
             }
         }
     }
-    return double(same)/min(double(sizei), double(sizej));//Jaccard similarity
+    return double(same)/(double(sizei) + double(sizej) - double(same));//Jaccard similarity
 }
 
 //rep
@@ -544,7 +544,7 @@ bool OpinionsManager::IsBeginBigram(const WordStrType& bigram)
         if(begin_bigrams_[bigram] > 2)
             return true;
     }
-    if(training_data_->Freq_Begin(bigram) > 5)
+    if(training_data_->Freq_Begin(bigram) > SigmaRead)
     {
         return true;
     }
@@ -558,7 +558,7 @@ bool OpinionsManager::IsEndBigram(const WordStrType& bigram)
         if(end_bigrams_[bigram] > 2)
             return true;
     }
-    if(training_data_->Freq_End(bigram) > 5)
+    if(training_data_->Freq_End(bigram) > SigmaRead)
     {
         return true;
     }
@@ -662,7 +662,7 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
     }
 
     //out << "=== total different bigram:" << word_freq_records.size() << endl;
-    int filter_counter = 3;
+    int filter_counter = 2;
     if(topk_words.size() > 1)
         filter_counter = max(topk_words.top().second, filter_counter);
     //out << "===== filter counter is: "<< filter_counter << endl;
@@ -807,8 +807,61 @@ void OpinionsManager::GetOrigCommentsByBriefOpinion(std::vector< std::pair<doubl
     {
         if(it->second >= SigmaRep && !IsNeedFilter(it->first))
         {
-            if(SrepSentence(it->first) >= SigmaRep)
-                candOpinionString.push_back(std::make_pair(it->second, it->first));
+            double score = SrepSentence(it->first);
+            if(score >= SigmaRep)
+            {
+                // find similarity
+                bool can_insert = true;
+                bool is_larger_replace_exist = false;
+
+                size_t start = 0;
+                size_t remove_end = candOpinionString.size();
+                while( start < remove_end )
+                {
+                    if(Sim(it->first, candOpinionString[start].second) > SigmaSim)
+                    {
+                        can_insert = false;
+                        if(score > candOpinionString[start].first)
+                        {
+                            //  swap the similarity to the end.
+                            std::pair<double, UString> temp = candOpinionString[remove_end - 1];
+                            candOpinionString[remove_end - 1] = candOpinionString[start];
+                            candOpinionString[start] = temp;
+                            std::string removed_str;
+                            candOpinionString[remove_end - 1].second.convertString(removed_str, encodingType_);
+                            out << "similarity sentence removed: " << removed_str << endl;
+                            --remove_end;
+                            continue;
+                        }
+                        else
+                        {
+                            is_larger_replace_exist = true;
+                            std::string removed_str;
+                            it->first.convertString(removed_str, encodingType_);
+                            out << "similarity sentence not added: " << removed_str << endl;
+                        }
+                    }
+                    ++start;
+                }
+                if(!can_insert && (remove_end < candOpinionString.size()))
+                {
+                    if(is_larger_replace_exist)
+                    {
+                        // just remove all similarity. Because a larger already in the candidate.
+                        candOpinionString.erase(candOpinionString.begin() + remove_end, candOpinionString.end());
+                    }
+                    else
+                    {
+                        // replace the similarity with current.
+                        candOpinionString[remove_end] = std::make_pair(it->second, it->first);
+                        candOpinionString.erase(candOpinionString.begin() + remove_end + 1, candOpinionString.end());
+                    }
+                }
+                if(can_insert)
+                {
+                    candOpinionString.push_back(std::make_pair(it->second, it->first));
+                }
+            }
         }
         ++it;
     }

@@ -191,7 +191,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         LAPool::getInstance()->get_cma_path(cma_path);
 
         Ops_.push_back(new OpinionsManager( log_path, cma_path, OpPath));
-        Ops_.back()->setSigma(0.1, -6, 0.5, 20);
+        Ops_.back()->setSigma(0.1, 5, 0.6, 20);
         //////////////////////////
         Ops_.back()->setFilterStr(filters);
 
