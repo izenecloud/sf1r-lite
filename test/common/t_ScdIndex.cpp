@@ -50,6 +50,10 @@ SCD_INDEX_PROPERTY_TAG(Title, "Title")
 
 typedef scd::ScdIndex<Title> ScdIndex;
 
+bool compare(const ScdIndex::document_type& a, const ScdIndex::document_type& b) {
+    return a.offset < b.offset;
+}
+
 BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     const unsigned DOC_NUM = 10;
     fs::path path = createScd("index", "test.scd", DOC_NUM);
@@ -66,7 +70,7 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     std::copy(index.begin(), index.end(),
               std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
 
-    std::cout << "Index by property: " << std::endl;
+    std::cout << "Index by Title: " << std::endl;
     std::copy(index.begin<Title>(), index.end<Title>(),
               std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
 
@@ -84,12 +88,19 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
         BOOST_CHECK_EQUAL(offsets[i], index.find<Title>(UString(title))->offset);
         BOOST_CHECK_EQUAL(1, index.count<Title>(UString(title)));
     }
+
+    // multiple values, unsorted
     BOOST_CHECK_EQUAL(5, index.count<Title>(UString("Title T")));
-    scd::ScdIndex<Title>::property_iterator it = index.find<Title>(UString("Title T"));
-    for (size_t i = DOC_NUM/2; i < DOC_NUM; ++i) {
-        BOOST_CHECK_EQUAL(offsets[i], (it++)->offset);
+    ScdIndex::property_range range = index.equal_range<Title>(UString("Title T"));
+    // copy to vector and sort for comparison
+    std::vector<ScdIndex::document_type> documents(range.first, range.second);
+    std::sort(documents.begin(), documents.end(), compare);
+    std::cout << "documents with Title = \"" << UString("Title T") << "\"" << std::endl;
+    std::copy(documents.begin(), documents.end(),
+              std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
+    for (size_t i = DOC_NUM/2, j = 0; i < DOC_NUM; ++i, ++j) {
+        BOOST_CHECK_EQUAL(offsets[i], documents[j].offset);
     }
-    BOOST_CHECK(index.end<Title>() == it);
 
     // query: miss
     ScdIndex::docid_iterator docid_end = index.end();
@@ -119,8 +130,9 @@ BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
         ScdIndex loaded;
         loaded.load(saved.string());
         BOOST_CHECK_EQUAL(index->size(), loaded.size());
-        BOOST_CHECK(std::equal(index->begin<scd::docid>(), index->end<scd::docid>(),
-                               loaded.begin<scd::docid>()));
+        for (ScdIndex::docid_iterator it = index->begin(); it != index->end(); ++it) {
+            BOOST_CHECK(*it == *loaded.find(it->docid));
+        }
     }
 
     // loading from file _replaces_ existing content.
@@ -134,8 +146,9 @@ BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
                   std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
 
         BOOST_CHECK_EQUAL(index->size(), index_b->size());
-        BOOST_CHECK(std::equal(index->begin<scd::docid>(), index->end<scd::docid>(),
-                               index_b->begin<scd::docid>()));
+        for (ScdIndex::docid_iterator it = index->begin(); it != index->end(); ++it) {
+            BOOST_CHECK(*it == *index_b->find(it->docid));
+        }
         delete index_b;
     }
 

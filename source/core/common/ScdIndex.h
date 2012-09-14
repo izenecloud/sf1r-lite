@@ -41,11 +41,11 @@ private:
     typedef boost::multi_index_container <
         document_type,
         mi::indexed_by<
-            mi::ordered_unique< // TODO: hashed_unique (serialization!)
+            mi::hashed_unique<
                 mi::tag<Docid>,
                 BOOST_MULTI_INDEX_MEMBER(document_type, typename document_type::value_type, docid)
             >,
-            mi::ordered_non_unique<
+            mi::hashed_non_unique<
                 mi::tag<Property>,
                 BOOST_MULTI_INDEX_MEMBER(document_type, typename document_type::value_type, property)
             >
@@ -63,6 +63,8 @@ public:
     typedef typename DocidIndex::iterator docid_iterator;
     /// Property iterator.
     typedef typename PropertyIndex::iterator property_iterator;
+    /// Property range
+    typedef typename std::pair<property_iterator, property_iterator> property_range;
 
     ScdIndex() {}
     ~ScdIndex() {}
@@ -96,6 +98,16 @@ public:
         // get a reference to the index tagged by Tag
         const typename mi::index<ScdIndexContainer, Tag>::type& index = mi::get<Tag>(container);
         return index.find(key);
+    }
+
+    /// Retrieve tagged content range.
+    template <typename Tag, typename Type>
+    std::pair<typename mi::index<ScdIndexContainer, Tag>::type::iterator,
+              typename mi::index<ScdIndexContainer, Tag>::type::iterator>
+    equal_range(const Type& key) const {
+        // get a reference to the index tagged by Tag
+        const typename mi::index<ScdIndexContainer, Tag>::type& index = mi::get<Tag>(container);
+        return index.equal_range(key); 
     }
 
     /// Retrieve tagged begin iterator.
