@@ -46,7 +46,7 @@ private:
 
 #define UString(X) izenelib::util::UString((X), izenelib::util::UString::UTF_8)
 
-SCD_INDEX_PROPERTY_TAG(Title, "Title")
+SCD_INDEX_PROPERTY_TAG(Title)
 
 typedef scd::ScdIndex<Title> ScdIndex;
 

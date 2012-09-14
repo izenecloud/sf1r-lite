@@ -20,12 +20,12 @@ namespace scd {
 namespace mi = boost::multi_index;
 
 /// Create a new property tag.
-#define SCD_INDEX_PROPERTY_TAG(tag_name, tag_value) \
+#define SCD_INDEX_PROPERTY_TAG(tag_name) \
     struct tag_name { static const char value[]; }; \
-    const char tag_name::value[] = tag_value;
+    const char tag_name::value[] = #tag_name;
 
 /// Tag for DOCID property.
-SCD_INDEX_PROPERTY_TAG(docid, "DOCID");
+SCD_INDEX_PROPERTY_TAG(DOCID);
 
 /**
  * @brief SCD multi-index container
@@ -33,7 +33,7 @@ SCD_INDEX_PROPERTY_TAG(docid, "DOCID");
  * - unique index on the Docid tag
  * - non-unique index on the Property tag
  */
-template <typename Property, typename Docid = docid>
+template <typename Property, typename Docid = DOCID>
 struct ScdIndex {
     typedef Document<Docid, Property> document_type;
 private:
