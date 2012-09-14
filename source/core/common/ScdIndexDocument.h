@@ -35,36 +35,32 @@ struct Document {
     typedef typename traits::offset_type offset_type;
 
     offset_type offset;
-    std::map<name_type, value_type> properties; // TODO: unordered map
+    value_type docid;
+    value_type property;
 
     Document() {}
 
     Document(const offset_type o, SCDDocPtr doc) : offset(o) {
         for (SCDDoc::iterator it = doc->begin(); it != doc->end(); ++it) {
             // store only indexed properties
-            if (it->first == docid_name or it->first == property_name)
-                properties.insert(std::make_pair(it->first, it->second));
+            if (it->first == docid_name) {
+                docid = it->second;
+            } else if (it->first == property_name) {
+                property = it->second;
+            }
         }
-        CHECK_EQ(2, properties.size()) << "Wrong number of properties: " << properties.size();
-    }
-
-    inline value_type docid() const {
-        return properties.at(docid_name);
-    }
-
-    inline value_type property() const {
-        return properties.at(property_name);
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Document& d) {
-        os << '<' << docid_name << '>' << d.docid() << " @ " << d.offset
-           << ": <" << property_name << '>' << d.property();
+        os << '<' << docid_name << '>' << d.docid << " @ " << d.offset
+           << ": <" << property_name << '>' << d.property;
         return os;
     }
 
     bool operator==(const Document& d) const {
-        return offset == d.offset and properties.size() == d.properties.size()
-           and std::equal(properties.begin(), properties.end(), d.properties.begin());
+        return offset == d.offset
+           and docid == d.docid
+           and property == d.property;
     }
 
 private: // serialization
@@ -73,7 +69,8 @@ private: // serialization
     template <typename Archive>
     void serialize(Archive& ar, const unsigned version) {
         ar & offset;
-        ar & properties;
+        ar & docid;
+        ar & property;
     }
 
 private:

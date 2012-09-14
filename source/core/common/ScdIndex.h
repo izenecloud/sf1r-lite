@@ -12,7 +12,7 @@
 #include "ScdIndexSerializer.h"
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 
 namespace scd {
@@ -43,11 +43,11 @@ private:
         mi::indexed_by<
             mi::ordered_unique< // TODO: hashed_unique (serialization!)
                 mi::tag<Docid>,
-                BOOST_MULTI_INDEX_CONST_MEM_FUN(document_type, typename document_type::value_type, docid)
+                BOOST_MULTI_INDEX_MEMBER(document_type, typename document_type::value_type, docid)
             >,
             mi::ordered_non_unique<
                 mi::tag<Property>,
-                BOOST_MULTI_INDEX_CONST_MEM_FUN(document_type, typename document_type::value_type, property)
+                BOOST_MULTI_INDEX_MEMBER(document_type, typename document_type::value_type, property)
             >
             // TODO: more properties?
         >
