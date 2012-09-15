@@ -169,8 +169,8 @@ public: /* serialization */
 
 private:
     ScdIndexContainer container;
-    save_bin serializer;
-    load_bin deserializer;
+    save_gz serializer;
+    load_gz deserializer;
 };
 
 template<typename Property, typename Docid>
