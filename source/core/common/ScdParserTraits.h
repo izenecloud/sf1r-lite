@@ -10,10 +10,16 @@
 
 #include <util/ustring/UString.h>
 
-///We use std::string as propertyName, UString as propertyValue right now
-typedef std::pair<std::string, izenelib::util::UString> FieldPair;
+// We use std::string as propertyName, UString as propertyValue.
+typedef std::string PropertyNameType;
+typedef izenelib::util::UString PropertyValueType;
+
+typedef std::pair<PropertyNameType, PropertyValueType> FieldPair;
 typedef std::vector<FieldPair> SCDDoc;
 typedef boost::shared_ptr<SCDDoc> SCDDocPtr;
-typedef std::pair<izenelib::util::UString, unsigned> DocIdPair;
+
+typedef long offset_type; //< Type of offset values.
+
+typedef std::pair<izenelib::util::UString, unsigned> DocIdPair; // should this be long instead of unsigned?
 
 #endif /* SCD_PARSER_TRAITS_H */

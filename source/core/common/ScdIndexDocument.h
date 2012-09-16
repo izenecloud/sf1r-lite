@@ -6,35 +6,28 @@
  */
 
 #ifndef SCDINDEXDOCUMENT_H
-#define	SCDINDEXDOCUMENT_H
+#define SCDINDEXDOCUMENT_H
 
-#include "ScdParser.h"
+#include "ScdParserTraits.h"
 #include <glog/logging.h>
 
 namespace scd {
 
 /**
  * @brief SCD document.
- * Each SCD document is identified by its DOCID and has an offset
+ * Each SCD document is identified by its Docid tag and has an offset
  * within the SCD file.
  */
 template <typename Docid, typename Property>
 struct Document {
-    /// Type of offset values (defined by ScdParser).
-    typedef long offset_type;
-    /// Type of property names (defined by ScdParser).
-    typedef std::string name_type;
-    /// Type of property values (defined by ScdParser).
-    typedef izenelib::util::UString value_type;
-
     /// Type of docid values.
     typedef typename Docid::type docid_type;
     /// Type of property values.
     typedef typename Property::type property_type;
 
     offset_type offset;
-    value_type docid;
-    value_type property;
+    docid_type docid;
+    property_type property;
 
     Document() {}
 
@@ -42,9 +35,9 @@ struct Document {
         for (SCDDoc::iterator it = doc->begin(); it != doc->end(); ++it) {
             // store only indexed properties
             if (it->first == docid_name) {
-                docid = it->second;
+                docid = Docid::convert(it->second);
             } else if (it->first == property_name) {
-                property = it->second;
+                property = Property::convert(it->second);
             }
         }
     }
@@ -61,7 +54,7 @@ struct Document {
            and property == d.property;
     }
 
-private: // serialization
+private: // TODO move to serialization header
     friend class boost::serialization::access;
 
     template <typename Archive>
@@ -73,21 +66,21 @@ private: // serialization
 
 private:
     /// Docid name (e.g. 'DOCID').
-    static const name_type docid_name;
+    static const PropertyNameType docid_name;
     /// Property name (e.g. 'uuid').
-    static const name_type property_name;
+    static const PropertyNameType property_name;
 };
 
 // set Document::docid_name
 template <typename Docid, typename Property>
-const typename Document<Docid, Property>::name_type
-Document<Docid, Property>::docid_name(Docid::value);
+const PropertyNameType
+Document<Docid, Property>::docid_name(Docid::name);
 
 // set Document::property_name
 template <typename Docid, typename Property>
-const typename Document<Docid, Property>::name_type
-Document<Docid, Property>::property_name(Property::value);
+const PropertyNameType
+Document<Docid, Property>::property_name(Property::name);
 
 } /* namespace scd */
 
-#endif	/* SCDINDEXDOCUMENT_H */
+#endif /* SCDINDEXDOCUMENT_H */

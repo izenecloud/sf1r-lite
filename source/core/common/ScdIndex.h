@@ -6,10 +6,12 @@
  */
 
 #ifndef SCDINDEX_H
-#define	SCDINDEX_H
+#define SCDINDEX_H
 
+#include "ScdIndexTag.h"
 #include "ScdIndexDocument.h"
 #include "ScdIndexSerializer.h"
+#include "ScdParser.h"
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
@@ -19,14 +21,6 @@ namespace scd {
 
 namespace mi = boost::multi_index;
 
-/// Create a new property tag.
-#define SCD_INDEX_PROPERTY_TAG(tag_name) \
-    struct tag_name { static const char value[]; }; \
-    const char tag_name::value[] = #tag_name;
-
-/// Tag for DOCID property.
-SCD_INDEX_PROPERTY_TAG(DOCID);
-
 /**
  * @brief SCD multi-index container
  * This class wraps a container with two indeces:
@@ -35,6 +29,7 @@ SCD_INDEX_PROPERTY_TAG(DOCID);
  */
 template <typename Property, typename Docid = DOCID>
 struct ScdIndex {
+    /// Alias for the actual type.
     typedef Document<Docid, Property> document_type;
 private:
     /// Multi-indexed container.
@@ -43,11 +38,11 @@ private:
         mi::indexed_by<
             mi::hashed_unique<
                 mi::tag<Docid>,
-                BOOST_MULTI_INDEX_MEMBER(document_type, typename document_type::value_type, docid)
+                BOOST_MULTI_INDEX_MEMBER(document_type, typename document_type::docid_type, docid)
             >,
             mi::hashed_non_unique<
                 mi::tag<Property>,
-                BOOST_MULTI_INDEX_MEMBER(document_type, typename document_type::value_type, property)
+                BOOST_MULTI_INDEX_MEMBER(document_type, typename document_type::property_type, property)
             >
             // TODO: more properties?
         >
@@ -75,7 +70,7 @@ public:
      * @param log_count Print a log line every \c log_count documents.
      * @return A pointer to an instance of ScdIndex.
      */
-    static ScdIndex<Property, Docid>* build(const std::string& path, 
+    static ScdIndex<Property, Docid>* build(const std::string& path,
             const unsigned log_count = 1e4);
 
     /// @return The size of the index.
@@ -109,7 +104,7 @@ public:
     equal_range(const Type& key) const {
         // get a reference to the index tagged by Tag
         const typename mi::index<ScdIndexContainer, Tag>::type& index = mi::get<Tag>(container);
-        return index.equal_range(key); 
+        return index.equal_range(key);
     }
 
     /// Retrieve tagged begin iterator.
@@ -128,33 +123,31 @@ public:
         return index.end();
     }
 
-    /* 
-     * without C++0x cannot use default template values, 
+    /*
+     * without C++0x cannot use default template values,
      * so let's define here some specializations
      */
-    
+
     /// Count documents.
-    template <typename Type>
-    size_t count(const Type& key) const {
+    size_t count(const typename Docid::type& key) const {
         return mi::get<Docid>(container).count(key);
     }
 
     /// Retrieve a document.
-    template <typename Type>
-    docid_iterator find(const Type& key) const {
+    docid_iterator find(const typename Docid::type& key) const {
         return mi::get<Docid>(container).find(key);
     }
-    
+
     /// Retrieve document begin iterator.
     docid_iterator begin() const {
         return mi::get<Docid>(container).begin();
     }
-    
+
     /// Retrieve document end iterator.
     docid_iterator end() const {
         return mi::get<Docid>(container).end();
     }
-    
+
 public: /* serialization */
 
     /// Save index to file.
@@ -202,4 +195,4 @@ ScdIndex<Property, Docid>::build(const std::string& path, const unsigned log_cou
 
 } /* namespace scd */
 
-#endif	/* SCDINDEX_H */
+#endif /* SCDINDEX_H */

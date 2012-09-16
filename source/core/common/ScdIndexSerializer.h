@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   ScdIndexSerializer.h
  * Author: Paolo D'Apice
  *
