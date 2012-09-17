@@ -359,7 +359,9 @@ double OpinionsManager::PMIlocal(const WordSegContainerT& words,
 {
     double Spmi = 0;
     int size = words.size();
-    for(int i = max(0, offset - C); i < min(size, offset + C); i++)
+    int start = max(0, offset - C);
+    int end = min(size, offset + C);
+    for(int i = start; i < end; i++)
     {
         if(i != offset)
         {
@@ -424,8 +426,8 @@ bool OpinionsManager::CoOccurringInOneSentence(const WordStrType& Wi,
     size_t loci = ustr.find(uwi);
     while(loci != UString::npos)
     {
-        size_t locj = ustr.find(uwj, max((int)loci - C, 0));
-        if(locj != UString::npos && abs((int)locj - (int)loci) <= int(C + uwi.size() + uwj.size()))
+        size_t locj = ustr.substr(max((int)loci - C, 0), (size_t)2*C + uwi.size()).find(uwj);
+        if(locj != UString::npos /* && abs((int)locj - (int)loci) <= int(C + uwi.size() + uwj.size())*/ )
             return true;
         loci = ustr.find(uwi, loci + uwi.size());
     }
@@ -935,6 +937,7 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
         }
     }
 
+    gettimeofday(&starttime, NULL);
     if(need_orig_comment_phrase)
     {
         // get orig_comment from the candidate opinions.
@@ -942,6 +945,10 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
     }
     recompute_srep(candOpinionString);
 
+    gettimeofday(&endtime, NULL);
+    interval = (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_usec - starttime.tv_usec)/1000;
+    if(interval > 10)
+        out << "get origin comment time: " << interval << endl;
     //out << "after recompute_srep: candidates are " << endl;
     //for(size_t i = 0; i < candOpinionString.size(); ++i)
     //{
@@ -1011,6 +1018,15 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
                 is_larger_replace_exist = true;
             }
         }
+        // if any low score item remove them.
+        if(candList.size() > SigmaLength*2 && candList[start].second < SigmaRep_dynamic.top())
+        {
+            OpinionCandidateT temp = candList[remove_end - 1];
+            candList[remove_end - 1] = candList[start];
+            candList[start] = temp;
+            --remove_end;
+            continue;
+        }
         ++start;
     }
     if(!can_insert && (remove_end < candList.size()))
@@ -1042,6 +1058,8 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
         candList.push_back(std::make_pair(phrase, score));
     }
     SigmaRep_dynamic.push(score);
+    while(SigmaRep_dynamic.size() > SigmaLength*2)
+        SigmaRep_dynamic.pop();
 }
 
 bool OpinionsManager::NotMirror(const NgramPhraseT& phrase, const BigramPhraseT& bigram)
