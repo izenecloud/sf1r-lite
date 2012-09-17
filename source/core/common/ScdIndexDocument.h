@@ -13,26 +13,24 @@
 
 namespace scd {
 
-/// Default traits for the SCD document.
-struct DocumentTraits {
-    typedef std::string name_type;
-    typedef izenelib::util::UString value_type;
-    typedef long offset_type;
-};
-
 /**
  * @brief SCD document.
  * Each SCD document is identified by its DOCID and has an offset
  * within the SCD file.
  */
-template <typename Docid, typename Property, typename traits = DocumentTraits>
+template <typename Docid, typename Property>
 struct Document {
-    /// Type of property names.
-    typedef typename traits::name_type name_type;
+    /// Type of offset values (defined by ScdParser).
+    typedef long offset_type;
+    /// Type of property names (defined by ScdParser).
+    typedef std::string name_type;
+    /// Type of property values (defined by ScdParser).
+    typedef izenelib::util::UString value_type;
+
+    /// Type of docid values.
+    typedef typename Docid::type docid_type;
     /// Type of property values.
-    typedef typename traits::value_type value_type;
-    /// Type of offset values.
-    typedef typename traits::offset_type offset_type;
+    typedef typename Property::type property_type;
 
     offset_type offset;
     value_type docid;
@@ -81,14 +79,14 @@ private:
 };
 
 // set Document::docid_name
-template <typename Docid, typename Property, typename traits>
-const typename Document<Docid, Property, traits>::name_type
-Document<Docid, Property, traits>::docid_name(Docid::value);
+template <typename Docid, typename Property>
+const typename Document<Docid, Property>::name_type
+Document<Docid, Property>::docid_name(Docid::value);
 
 // set Document::property_name
-template <typename Docid, typename Property, typename traits>
-const typename Document<Docid, Property, traits>::name_type
-Document<Docid, Property, traits>::property_name(Property::value);
+template <typename Docid, typename Property>
+const typename Document<Docid, Property>::name_type
+Document<Docid, Property>::property_name(Property::value);
 
 } /* namespace scd */
 
