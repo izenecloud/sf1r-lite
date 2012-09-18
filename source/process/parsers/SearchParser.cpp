@@ -323,6 +323,10 @@ bool SearchParser::parse(const Value& search)
         {
             searchingModeInfo_.mode_ = SearchingMode::KNN;
         }
+        else if (mode == "suffix")
+        {
+            searchingModeInfo_.mode_ = SearchingMode::SUFFIX_MATCH;
+        }
         else
         {
             warning() = "Unknown searchingMode. Default searching mode is used.";

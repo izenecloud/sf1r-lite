@@ -225,6 +225,9 @@ void SearchWorker::makeQueryIdentity(
     case SearchingMode::KNN:
         miningManager_->GetSignatureForQuery(item, identity.simHash);
         break;
+    case SearchingMode::SUFFIX_MATCH:
+        identity.query = item.env_.queryString_;
+        break;
     default:
         identity.query = item.env_.queryString_;
         identity.expandedQueryString = item.env_.expandedQueryString_;
@@ -354,6 +357,17 @@ bool SearchWorker::getSearchResult_(
             return true;
         }
     }
+    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
+    {
+        if (!miningManager_->GetLongestSuffixMatch(
+                    identity.query,
+                    resultItem.topKDocs_,
+                    resultItem.topKRankScoreList_,
+                    resultItem.totalCount_))
+        {
+            return true;
+        }
+    }
     else if (!searchManager_->search(
                 actionOperation,
                 resultItem.topKDocs_,
@@ -369,8 +383,7 @@ bool SearchWorker::getSearchResult_(
                 KNN_TOP_K_NUM,
                 KNN_DIST,
                 topKStart,
-                bundleConfig_->enable_parallel_searching_
-                ))
+                bundleConfig_->enable_parallel_searching_))
     {
         std::string newQuery;
 
@@ -400,8 +413,7 @@ bool SearchWorker::getSearchResult_(
                     KNN_TOP_K_NUM,
                     KNN_DIST,
                     topKStart,
-                    bundleConfig_->enable_parallel_searching_
-                    ))
+                    bundleConfig_->enable_parallel_searching_))
         {
             return true;
         }
@@ -409,8 +421,11 @@ bool SearchWorker::getSearchResult_(
 
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
-    if (actionItem.searchingMode_.mode_ != SearchingMode::KNN)
+    if (actionItem.searchingMode_.mode_ != SearchingMode::KNN
+            && actionItem.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH)
+    {
         removeDuplicateDocs(actionItem, resultItem);
+    }
 
     // For non-distributed search, it's necessary to adjust "start_" and "count_"
     // For distributed search, they would be adjusted in IndexSearchService::getSearchResult()
@@ -530,7 +545,8 @@ bool SearchWorker::buildQuery(
         ResultItemT& resultItem,
         PersonalSearchInfo& personalSearchInfo)
 {
-    if (actionOperation.actionItem_.searchingMode_.mode_== SearchingMode::KNN)
+    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN
+            || actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
         return true;
 
     CREATE_PROFILER ( constructQueryTree, "IndexSearchService", "processGetSearchResults: build query tree");
@@ -623,7 +639,7 @@ bool  SearchWorker::getResultItem(
             queryTerms,
             actionItem.languageAnalyzerInfo_.useOriginalKeyword_
     );
- 
+
     //analyze_(actionItem.env_.queryString_, queryTerms);
 
     // propertyOption
@@ -634,7 +650,7 @@ bool  SearchWorker::getResultItem(
         queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.nameEntityItem_, encodingType));
 
     ///get documents at first, so that those documents will all exist in cache.
-    ///To be optimized !!!: 
+    ///To be optimized !!!:
     ///summary/snipet/highlight should utlize the extracted documents object, instead of get once more
     ///ugly design currently
     std::map<docid_t, int> doc_idx_map;
@@ -652,7 +668,7 @@ bool  SearchWorker::getResultItem(
     if(!documentManager_->getDocuments(ids, docs))
     {
         ///Whenever any document could not be retrieved, return false
-        resultItem.error_ = "Error : Cannot get document data";    
+        resultItem.error_ = "Error : Cannot get document data";
         return false;
     }
 

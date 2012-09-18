@@ -36,6 +36,8 @@
 #include "custom-rank-manager/CustomRankManager.h"
 #include "product-ranker/ProductRankerFactory.h"
 
+#include "suffix-match-manager/SuffixMatchManager.hpp"
+
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
 
@@ -489,6 +491,13 @@ bool MiningManager::open()
            }
         }
 
+        /** Suffix Match */
+        if (mining_schema_.suffix_match_enable)
+        {
+            suffix_match_path_ = prefix_path + "/suffix_match";
+            suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property, document_manager_);
+        }
+
         /** KV */
         kv_path_ = prefix_path + "/kv";
         boost::filesystem::create_directories(kv_path_);
@@ -717,6 +726,13 @@ bool MiningManager::DoMiningCollection()
     {
         summarizationManager_->EvaluateSummarization();
     }
+
+    // do SuffixMatch
+    if (mining_schema_.suffix_match_enable)
+    {
+        suffixMatchManager_->buildCollection();
+    }
+
     return true;
 }
 
@@ -1677,6 +1693,20 @@ bool MiningManager::GetKNNListBySignature(
     if (signature.empty()) return false;
 
     return dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
+}
+
+bool MiningManager::GetLongestSuffixMatch(
+        const std::string& query,
+        std::vector<uint32_t>& docIdList,
+        std::vector<float>& rankScoreList,
+        std::size_t& totalCount)
+{
+    if (!mining_schema_.suffix_match_enable || !suffixMatchManager_)
+        return false;
+
+    izenelib::util::UString queryU(query, izenelib::util::UString::UTF_8);
+    totalCount = suffixMatchManager_->longestSuffixMatch(queryU, 1, docIdList, rankScoreList) > 0;
+    return true;
 }
 
 bool MiningManager::SetKV(const std::string& key, const std::string& value)

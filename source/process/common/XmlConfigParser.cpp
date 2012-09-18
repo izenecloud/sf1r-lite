@@ -1681,7 +1681,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.summarization_schema.disadvantagePropName = property_name;
             }
         }
- 
+
         {
             Iterator<Element> it("ScoreProperty");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -1899,6 +1899,20 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         {
             mining_schema.recommend_querylog = true;
         }
+    }
+
+    task_node = getUniqChildElement(mining_schema_node, "SuffixMatch", false);
+    mining_schema.suffix_match_enable = false;
+    if (task_node)
+    {
+        getAttribute(task_node, "property", property_name);
+        bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+        if (!gottype || property_type != STRING_PROPERTY_TYPE)
+        {
+            throw XmlConfigParserException("Property ["+property_name+"] used in SuffixMatch is not string type.");
+        }
+        mining_schema.suffix_match_property = property_name;
+        mining_schema.suffix_match_enable = true;
     }
 }
 
