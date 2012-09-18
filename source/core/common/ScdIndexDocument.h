@@ -9,6 +9,8 @@
 #define SCDINDEXDOCUMENT_H
 
 #include "ScdParserTraits.h"
+#include <boost/mpl/integral_c.hpp>
+#include <boost/mpl/plus.hpp>
 #include <glog/logging.h>
 
 namespace scd {
@@ -58,7 +60,10 @@ private: // TODO move to serialization header
     friend class boost::serialization::access;
 
     template <typename Archive>
-    void serialize(Archive& ar, const unsigned version) {
+    void serialize(Archive& ar, const unsigned int version) {
+        if (version != Version::value) {
+            throw std::runtime_error("version mismatch");
+        }
         ar & offset;
         ar & docid;
         ar & property;
@@ -69,6 +74,15 @@ private:
     static const PropertyNameType docid_name;
     /// Property name (e.g. 'uuid').
     static const PropertyNameType property_name;
+public:
+    /// Serialization version.
+    typedef boost::mpl::integral_c<
+                unsigned,
+                boost::mpl::plus<
+                    boost::mpl::int_<Docid::hash>,
+                    boost::mpl::int_<Property::hash>
+                >::value
+            > Version;
 };
 
 // set Document::docid_name
@@ -82,5 +96,17 @@ const PropertyNameType
 Document<Docid, Property>::property_name(Property::name);
 
 } /* namespace scd */
+
+namespace boost { namespace serialization {
+
+    /// Define version using tag hashes.
+    template <typename Docid, typename Property>
+    struct version<scd::Document<Docid, Property> >{
+        typedef mpl::int_<scd::Document<Docid, Property>::Version::value> type;
+        typedef mpl::integral_c_tag tag;
+        BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value);
+    };
+
+}} /* namespace boost::serialization */
 
 #endif /* SCDINDEXDOCUMENT_H */

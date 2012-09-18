@@ -70,10 +70,10 @@ DOCID(const unsigned in) {
     return str2uint(boost::lexical_cast<std::string>(in));
 }
 
-//SCD_INDEX_PROPERTY_TAG(Title, std::string);
 SCD_INDEX_PROPERTY_TAG(Title);
+SCD_INDEX_PROPERTY_TAG(Content);
 
-typedef scd::ScdIndex<Title, scd::DOCID> ScdIndex;
+typedef scd::ScdIndex<Title> ScdIndex;
 
 bool compare(const ScdIndex::document_type& a, const ScdIndex::document_type& b) {
     return a.offset < b.offset;
@@ -170,6 +170,14 @@ BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
         for (ScdIndex::docid_iterator it = index->begin(); it != index->end(); ++it) {
             BOOST_CHECK(*it == *loaded.find(it->docid));
         }
+    }
+
+    // version mismatch
+    {
+        scd::ScdIndex<Content> loaded;
+        //std::cout << "content version: " << scd::ScdIndex<Content>::VERSION << std::endl;
+        //std::cout << "Title   version: " << ScdIndex::VERSION << std::endl;
+        BOOST_CHECK_THROW(loaded.load(saved.string()), std::exception);
     }
 
     // loading from file _replaces_ existing content.

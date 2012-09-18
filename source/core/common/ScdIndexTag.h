@@ -25,6 +25,7 @@
             return parsed; \
         } \
         static const char name[]; \
+        static const int hash = sizeof(#tag_name); \
     }; \
     const char tag_name::name[] = #tag_name
 
@@ -41,6 +42,7 @@
             return type_converter(parsed); \
         } \
         static const char name[]; \
+        static const int hash = sizeof(#tag_name); \
     }; \
     const char tag_name::name[] = #tag_name
 
