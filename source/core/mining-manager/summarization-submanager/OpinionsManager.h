@@ -14,6 +14,7 @@
 #include <util/PriorityQueue.h>
 #include <queue>
 #include <bitset>
+#include <boost/dynamic_bitset.hpp>
 #include <am/succinct/wat_array/wat_array.hpp>
 
 #define MAX_COMMENT_NUM  10000
@@ -67,7 +68,7 @@ public:
     // record how many sentences the word appeared in.
     typedef boost::unordered_map<WordStrType, CustomInt> WordFreqMapT;
 
-    typedef boost::unordered_map<WordStrType, std::bitset<MAX_COMMENT_NUM> >  WordInSentenceMapT;
+    typedef boost::unordered_map<WordStrType, boost::dynamic_bitset<> >  WordInSentenceMapT;
     typedef boost::unordered_map<WordStrType, double> WordPossibilityMapT;
     typedef boost::unordered_map<WordStrType, WordPossibilityMapT> WordJoinPossibilityMapT;
 
@@ -94,6 +95,7 @@ public:
     void CleanCacheData();
 
 private:
+    void RecordCoOccurrence(const WordStrType& s, size_t& curren_offset);
     void AppendStringToIDArray(const WordStrType& s, std::vector<uint64_t>& word_ids);
     void recompute_srep(std::vector< std::pair<double, UString> >& candList);
     void RefineCandidateNgram(OpinionCandidateContainerT& candList);
@@ -162,6 +164,7 @@ private:
     int windowsize;
     CachedStorageT cached_srep;
     WordInSentenceMapT  cached_word_insentence_;
+    WordInSentenceMapT  cached_word_inngram_;
     izenelib::util::UString::EncodingType encodingType_;
     WordJoinPossibilityMapT  cached_pmimodified_;
     OriginalCommentContainerT orig_comments_;

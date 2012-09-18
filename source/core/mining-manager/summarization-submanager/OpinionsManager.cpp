@@ -141,6 +141,7 @@ void OpinionsManager::CleanCacheData()
     pmi_cache_hit_num_ = 0;
     word_cache_hit_num_ = 0;
     cached_word_insentence_.clear();
+    cached_word_inngram_.clear();
     cached_pmimodified_.clear();
     cached_srep.clear();
     SigmaRep_dynamic = CandidateSrepQueueT();
@@ -169,10 +170,36 @@ void OpinionsManager::AppendStringToIDArray(const WordStrType& s, std::vector<ui
     }
 }
 
+void OpinionsManager::RecordCoOccurrence(const WordStrType& s, size_t& curren_offset)
+{
+    if(s.length() <= (size_t)windowsize)
+    {
+        for(size_t j = 0; j < s.length(); ++j)
+        {
+            cached_word_inngram_[s.substr(j, 1)].resize(curren_offset + 1);
+            cached_word_inngram_[s.substr(j, 1)].set(curren_offset);
+        }
+        ++curren_offset;
+    }
+    else
+    {
+        for(size_t i = 0; i < s.length() - (size_t)windowsize; ++i)
+        {
+            for(size_t j = i; j <= (size_t)windowsize; ++j)
+            {
+                cached_word_inngram_[s.substr(j, 1)].resize(curren_offset + 1);
+                cached_word_inngram_[s.substr(j, 1)].set(curren_offset);
+            }
+            ++curren_offset;
+        }
+    }
+}
+
 void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
 {
     CleanCacheData();
     std::vector<uint64_t>  word_ids;
+    size_t curren_offset = 0;
     for(size_t i = 0; i < in_sentences.size(); i++)
     { 
         if(Z.size() >= MAX_COMMENT_NUM)
@@ -204,14 +231,17 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
             sentence_offset_.push_back(0);
         else
             sentence_offset_.push_back(ustr.length() + sentence_offset_.back());
-        AppendStringToIDArray(ustr, word_ids);
+        //AppendStringToIDArray(ustr, word_ids);
+        RecordCoOccurrence(ustr, curren_offset);
         for(size_t j = 0; j < ustr.length(); j++)
         {  
+            cached_word_insentence_[ustr.substr(j, 1)].resize(Z.size());
             cached_word_insentence_[ustr.substr(j, 1)].set(Z.size() - 1);
+            cached_word_insentence_[ustr.substr(j, 2)].resize(Z.size());
             cached_word_insentence_[ustr.substr(j, 2)].set(Z.size() - 1);
         }
     }
-    wa_.Init(word_ids);
+    //wa_.Init(word_ids);
     out << "----- total comment num : " << Z.size() << endl;
     out.flush();
 }
@@ -432,19 +462,32 @@ double OpinionsManager::PMImodified(const WordStrType& Wi, const WordStrType& Wj
 double OpinionsManager::CoOccurring(const WordStrType& Wi, const WordStrType& Wj, int C)
 {
     int Poss = 0;
-    for(size_t j = 0; j < Z.size(); j++)
+    if(Wi.length() == Wj.length() && Wi.length() == 1)
     {
-        if(cached_word_insentence_.find(Wi) != cached_word_insentence_.end()
-            && cached_word_insentence_.find(Wj) != cached_word_insentence_.end())
+        if(cached_word_inngram_.find(Wi) == cached_word_inngram_.end())
+            return 0;
+        if(cached_word_inngram_.find(Wj) == cached_word_inngram_.end())
+            return 0;
+        boost::dynamic_bitset<>  result = cached_word_inngram_[Wi];
+        result &= cached_word_inngram_[Wj];
+        Poss = result.count();
+    }
+    else
+    {
+        for(size_t j = 0; j < Z.size(); j++)
         {
-            if(!cached_word_insentence_[Wi].test(j) || !cached_word_insentence_[Wj].test(j))
+            if(cached_word_insentence_.find(Wi) != cached_word_insentence_.end()
+                && cached_word_insentence_.find(Wj) != cached_word_insentence_.end())
             {
-                word_cache_hit_num_++;
-                continue;
+                if(!cached_word_insentence_[Wi].test(j) || !cached_word_insentence_[Wj].test(j))
+                {
+                    word_cache_hit_num_++;
+                    continue;
+                }
             }
+            if(CoOccurringInOneSentence(Wi, Wj, C, j))
+                Poss++; 
         }
-        if(CoOccurringInOneSentence(Wi, Wj, C, j))
-           Poss++; 
     }
 
     return Poss*Poss;
@@ -453,19 +496,19 @@ double OpinionsManager::CoOccurring(const WordStrType& Wi, const WordStrType& Wj
 bool OpinionsManager::CoOccurringInOneSentence(const WordStrType& Wi,
     const WordStrType& Wj, int C, int sentence_index)
 {
-    if(Wi.length() == Wj.length() && Wi.length() == 1)
-    {
-        //use the Wavelet array 
-        uint64_t prev_occur_num = wa_.Rank( Wi[0], sentence_offset_[sentence_index]);
-        uint64_t untilnow_occur_num = wa_.Rank( Wi[0], sentence_offset_[sentence_index + 1]);
-        for(uint64_t i = prev_occur_num + 1; i <= untilnow_occur_num; ++i)
-        {
-            uint64_t loc = wa_.Select( Wi[0], i);
-            if(wa_.FreqRange(Wj[0], Wj[0] + 1, max((int64_t)loc - C, (int64_t)0), loc + C + 1) > 0)
-                return true;
-        }
-        return false;
-    }
+    //if(Wi.length() == Wj.length() && Wi.length() == 1)
+    //{
+    //    //use the Wavelet array 
+    //    uint64_t prev_occur_num = wa_.Rank( Wi[0], sentence_offset_[sentence_index]);
+    //    uint64_t untilnow_occur_num = wa_.Rank( Wi[0], sentence_offset_[sentence_index + 1]);
+    //    for(uint64_t i = prev_occur_num + 1; i <= untilnow_occur_num; ++i)
+    //    {
+    //        uint64_t loc = wa_.Select( Wi[0], i);
+    //        if(wa_.FreqRange(Wj[0], Wj[0] + 1, max((int64_t)loc - C, (int64_t)0), loc + C + 1) > 0)
+    //            return true;
+    //    }
+    //    return false;
+    //}
     const UString& ustr = Z[sentence_index];
     const UString& uwi = Wi;
     const UString& uwj = Wj;
@@ -505,6 +548,7 @@ double OpinionsManager::Possib(const WordStrType& Wi, const WordStrType& Wj)
                 size_t loci = Z[j].find(Wi);
                 if(loci != WordStrType::npos )
                 {
+                    cached_word_insentence_[Wi].resize(j + 1);
                     cached_word_insentence_[Wi].set(j);
                 }
             }
@@ -513,6 +557,7 @@ double OpinionsManager::Possib(const WordStrType& Wi, const WordStrType& Wj)
                 size_t locj = Z[j].find(Wj);
                 if( locj != WordStrType::npos )
                 {
+                    cached_word_insentence_[Wi].resize(j + 1);
                     cached_word_insentence_[Wj].set(j);
                 }
             }
@@ -525,7 +570,9 @@ double OpinionsManager::Possib(const WordStrType& Wi, const WordStrType& Wj)
             Poss++;
         }
     }
-
+    //std::bitset<MAX_COMMENT_NUM> result = cached_word_insentence_[Wi];
+    //result &= cached_word_insentence_[Wj];
+    //return result.count();
     return Poss;
 }
 
@@ -543,6 +590,7 @@ double OpinionsManager::Possib(const WordStrType& Wi)
         if( loc != WordStrType::npos )
         {
             Poss++;
+            cached_word_insentence_[Wi].resize(j + 1);
             cached_word_insentence_[Wi].set(j);
         }
     }
