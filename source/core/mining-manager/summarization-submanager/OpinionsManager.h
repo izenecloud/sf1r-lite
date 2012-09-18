@@ -14,6 +14,7 @@
 #include <util/PriorityQueue.h>
 #include <queue>
 #include <bitset>
+#include <am/succinct/wat_array/wat_array.hpp>
 
 #define MAX_COMMENT_NUM  10000
 
@@ -93,6 +94,7 @@ public:
     void CleanCacheData();
 
 private:
+    void AppendStringToIDArray(const WordStrType& s, std::vector<uint64_t>& word_ids);
     void recompute_srep(std::vector< std::pair<double, UString> >& candList);
     void RefineCandidateNgram(OpinionCandidateContainerT& candList);
     void stringToWordVector(const WordStrType& Mi, WordSegContainerT& words);
@@ -109,7 +111,7 @@ private:
     double Possib(const WordStrType& Wi);
     double CoOccurring(const WordStrType& Wi, const WordStrType& Wj,int C=3);
     bool CoOccurringInOneSentence(const WordStrType& Wi,
-        const WordStrType& Wj, int C, const WordStrType& sentence);
+        const WordStrType& Wj, int C,  int sentence_index);
     //algorithm
     bool GenCandidateWord(WordSegContainerT& wordlist);
     bool GenSeedBigramList(BigramPhraseContainerT& result_list);
@@ -171,6 +173,8 @@ private:
     OpinionTraining* training_data_;
     WordFreqMapT begin_bigrams_;
     WordFreqMapT end_bigrams_;
+    wat_array::WatArray wa_;
+    std::vector<int>  sentence_offset_;
 };
 
 };

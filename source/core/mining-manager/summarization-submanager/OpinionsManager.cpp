@@ -148,6 +148,8 @@ void OpinionsManager::CleanCacheData()
     orig_comments_.clear();
     begin_bigrams_.clear();
     end_bigrams_.clear();
+    wa_.Clear();
+    sentence_offset_.clear();
 }
 
 bool OpinionsManager::IsRubbishComment(const WordSegContainerT& words)
@@ -158,9 +160,19 @@ bool OpinionsManager::IsRubbishComment(const WordSegContainerT& words)
     return (double)diff_words.size()/(double)words.size() < RUBBISH_COMMENT_THRESHOLD;
 }
 
+void OpinionsManager::AppendStringToIDArray(const WordStrType& s, std::vector<uint64_t>& word_ids)
+{
+    for(size_t i = 0; i < s.length(); ++i)
+    {
+        uint64_t id = s[i];
+        word_ids.push_back(id);
+    }
+}
+
 void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
 {
     CleanCacheData();
+    std::vector<uint64_t>  word_ids;
     for(size_t i = 0; i < in_sentences.size(); i++)
     { 
         if(Z.size() >= MAX_COMMENT_NUM)
@@ -181,20 +193,25 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
             continue;
         }
         orig_comments_.push_back(allwords);
-        Z.push_back(ustr);
         // remove splitter in the sentence, avoid the impact on the srep by them.
         //
         uend = std::remove_if(ustr.begin(), ustr.end(), IsCommentSplitChar);
         if(uend == ustr.begin())
             continue;
         ustr.erase(uend, ustr.end());
+        Z.push_back(ustr);
+        if(sentence_offset_.empty())
+            sentence_offset_.push_back(0);
+        else
+            sentence_offset_.push_back(ustr.length() + sentence_offset_.back());
+        AppendStringToIDArray(ustr, word_ids);
         for(size_t j = 0; j < ustr.length(); j++)
         {  
             cached_word_insentence_[ustr.substr(j, 1)].set(Z.size() - 1);
             cached_word_insentence_[ustr.substr(j, 2)].set(Z.size() - 1);
         }
-        Z[Z.size() - 1] = ustr;
     }
+    wa_.Init(word_ids);
     out << "----- total comment num : " << Z.size() << endl;
     out.flush();
 }
@@ -383,13 +400,30 @@ double OpinionsManager::PMImodified(const WordStrType& Wi, const WordStrType& Wj
             return pit->second;
         }
     }
-    int s = Z.size();
-    double ret  = log( ( Possib(Wi,Wj) * CoOccurring(Wi,Wj,C) ) * 
-        double(s) / ( Possib(Wi)*Possib(Wj) ) ) / log(2);
-    if(ret < (double)VERY_LOW)
+    join_it = cached_pmimodified_.find(Wj);
+    if( join_it != cached_pmimodified_.end() )
     {
-        cached_pmimodified_[Wi][Wj] = (double)VERY_LOW;
-        return (double)VERY_LOW;
+        WordPossibilityMapT::iterator pit = join_it->second.find(Wi);
+        if(pit != join_it->second.end())
+        {
+            pmi_cache_hit_num_++;
+            return pit->second;
+        }
+    }
+
+    int s = Z.size();
+    double possib_i = Possib(Wi);
+    double possib_j = Possib(Wj);
+    double joinpossib = Possib(Wi, Wj);
+    double ret = VERY_LOW;
+    if(joinpossib > 1)
+    {
+        ret  = log( ( joinpossib * CoOccurring(Wi,Wj,C) ) * 
+            double(s) / ( possib_i*possib_j ) ) / log(2);
+        if(ret < (double)VERY_LOW)
+        {
+            ret = (double)VERY_LOW;
+        }
     }
     cached_pmimodified_[Wi][Wj] = ret;
     return ret;
@@ -409,7 +443,7 @@ double OpinionsManager::CoOccurring(const WordStrType& Wi, const WordStrType& Wj
                 continue;
             }
         }
-        if(CoOccurringInOneSentence(Wi, Wj, C, Z[j]))
+        if(CoOccurringInOneSentence(Wi, Wj, C, j))
            Poss++; 
     }
 
@@ -417,19 +451,32 @@ double OpinionsManager::CoOccurring(const WordStrType& Wi, const WordStrType& Wj
 }
 
 bool OpinionsManager::CoOccurringInOneSentence(const WordStrType& Wi,
-    const WordStrType& Wj, int C, const WordStrType& sentence)
+    const WordStrType& Wj, int C, int sentence_index)
 {
-    const UString& ustr = sentence;
+    if(Wi.length() == Wj.length() && Wi.length() == 1)
+    {
+        //use the Wavelet array 
+        uint64_t prev_occur_num = wa_.Rank( Wi[0], sentence_offset_[sentence_index]);
+        uint64_t untilnow_occur_num = wa_.Rank( Wi[0], sentence_offset_[sentence_index + 1]);
+        for(uint64_t i = prev_occur_num + 1; i <= untilnow_occur_num; ++i)
+        {
+            uint64_t loc = wa_.Select( Wi[0], i);
+            if(wa_.FreqRange(Wj[0], Wj[0] + 1, max((int64_t)loc - C, (int64_t)0), loc + C + 1) > 0)
+                return true;
+        }
+        return false;
+    }
+    const UString& ustr = Z[sentence_index];
     const UString& uwi = Wi;
     const UString& uwj = Wj;
 
     size_t loci = ustr.find(uwi);
     while(loci != UString::npos)
     {
-        size_t locj = ustr.substr(max((int)loci - C, 0), (size_t)2*C + uwi.size()).find(uwj);
-        if(locj != UString::npos /* && abs((int)locj - (int)loci) <= int(C + uwi.size() + uwj.size())*/ )
+        size_t locj = ustr.substr(max((int)loci - C, 0), (size_t)2*C + uwi.length()).find(uwj);
+        if(locj != UString::npos /* && abs((int)locj - (int)loci) <= int(C + uwi.length() + uwj.length())*/ )
             return true;
-        loci = ustr.find(uwi, loci + uwi.size());
+        loci = ustr.find(uwi, loci + uwi.length());
     }
     return false;
 }
@@ -789,11 +836,11 @@ void OpinionsManager::GetOrigCommentsByBriefOpinion(std::vector< std::pair<doubl
         {
             if(orig_comment_opinion.find(shortest_orig) == orig_comment_opinion.end())
             {
-                orig_comment_opinion[shortest_orig] = candOpinionString[i].first* cnt * brief_opinion.size() / shortest_orig.size();
+                orig_comment_opinion[shortest_orig] = candOpinionString[i].first* cnt * brief_opinion.length() / shortest_orig.length();
             }
             else
             {
-                orig_comment_opinion[shortest_orig] = max(orig_comment_opinion[shortest_orig], candOpinionString[i].first* cnt * brief_opinion.size() / shortest_orig.size());
+                orig_comment_opinion[shortest_orig] = max(orig_comment_opinion[shortest_orig], candOpinionString[i].first* cnt * brief_opinion.length() / shortest_orig.length());
             }
         }
         else
