@@ -12,6 +12,7 @@
 #include "common/ScdIndex.h"
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/scoped_ptr.hpp>
 
 namespace fs = boost::filesystem;
 
@@ -60,26 +61,63 @@ private:
     }
 };
 
+/// Helper function for creating UString objects.
 inline izenelib::util::UString
 USTRING(const std::string& in) {
     return izenelib::util::UString(in, izenelib::util::UString::UTF_8);
 }
 
+/// Helper function for creating uint128 objects for the scd::DOCID tag.
 inline uint128
 DOCID(const unsigned in) {
     return str2uint(boost::lexical_cast<std::string>(in));
 }
 
-SCD_INDEX_PROPERTY_TAG(Title);
-SCD_INDEX_PROPERTY_TAG(Content);
+namespace test {
 
-typedef scd::ScdIndex<Title> ScdIndex;
+// Let's define some tags in the test namespace.
+SCD_INDEX_PROPERTY_TAG(Title);                  //< 'Title' tag (default type).
+SCD_INDEX_PROPERTY_TAG(Content);                //< 'Content' tag (default type).
+SCD_INDEX_PROPERTY_TAG_TYPED(Price, float);     //< 'Price' tag.
 
-bool compare(const ScdIndex::document_type& a, const ScdIndex::document_type& b) {
+} /* namespace test */
+
+namespace scd {
+/// Converter specialization for the float type.
+/// Remember: this must be in the scd namespace!
+template<>
+struct Converter<float> {
+    float operator()(const PropertyValueType& in) const {
+        std::string str;
+        in.convertString(str, izenelib::util::UString::UTF_8);
+        return boost::lexical_cast<float>(str);
+    }
+};
+} /* namespace scd */
+
+/* Test tag values. */
+BOOST_AUTO_TEST_CASE(test_tag) {
+    BOOST_CHECK_EQUAL("DOCID", scd::DOCID::name());
+    BOOST_CHECK_EQUAL(6, scd::DOCID::hash_type::value);
+
+    BOOST_CHECK_EQUAL("Content", test::Content::name());
+    BOOST_CHECK_EQUAL(8, test::Content::hash_type::value);
+
+    BOOST_CHECK_EQUAL("Price", test::Price::name());
+    BOOST_CHECK_EQUAL(1.2f, test::Price::convert(USTRING("1.2")));
+}
+
+/// Comparator used for sorting SCD documents by offset.
+template <typename Index>
+bool offset_sorter(const typename Index::document_type& a,
+                   const typename Index::document_type& b) {
     return a.offset < b.offset;
 }
 
+/* Test indexing and document retrieval. */
 BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
+    typedef scd::ScdIndex<test::Title> ScdIndex;
+
     const unsigned DOC_NUM = 10;
     fs::path path = createScd("test_index.scd", DOC_NUM);
 
@@ -96,13 +134,13 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
               std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
 
     std::cout << " * Index by Title: " << std::endl;
-    std::copy(index.begin<Title>(), index.end<Title>(),
+    std::copy(index.begin<test::Title>(), index.end<test::Title>(),
               std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
 #endif
     // expected values
     const long offsets[] = { 0, 50, 93, 136, 179, 222, 265, 308, 351, 394 };
     const ScdIndex::docid_iterator docid_end = index.end();
-    const ScdIndex::property_iterator title_end = index.end<Title>();
+    const ScdIndex::property_iterator title_end = index.end<test::Title>();
 
     // query by DOCID: hit
     for (size_t i = 1; i <= DOC_NUM; ++i) {
@@ -116,19 +154,19 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     // single value
     for (size_t i = 1; i <= DOC_NUM; i += 2) {
         const izenelib::util::UString title = USTRING("Title " + boost::lexical_cast<std::string>(i));
-        const ScdIndex::property_iterator& it = index.find<Title>(title);
+        const ScdIndex::property_iterator& it = index.find<test::Title>(title);
         BOOST_CHECK(it != title_end);
         BOOST_CHECK_EQUAL(offsets[i-1], it->offset);
-        BOOST_CHECK_EQUAL(1, index.count<Title>(title));
+        BOOST_CHECK_EQUAL(1, index.count<test::Title>(title));
     }
     // multiple values
     {
         const izenelib::util::UString title = USTRING("Title T");
-        BOOST_CHECK_EQUAL(5, index.count<Title>(title));
-        ScdIndex::property_range range = index.equal_range<Title>(title);
+        BOOST_CHECK_EQUAL(5, index.count<test::Title>(title));
+        ScdIndex::property_range range = index.equal_range<test::Title>(title);
         // copy to vector and sort for comparison
         std::vector<ScdIndex::document_type> documents(range.first, range.second);
-        std::sort(documents.begin(), documents.end(), compare);
+        std::sort(documents.begin(), documents.end(), offset_sorter<ScdIndex>);
 #if DEBUG_OUTPUT
         std::cout << " * Documents with Title = '" << title << "'" << std::endl;
         std::copy(documents.begin(), documents.end(),
@@ -143,19 +181,25 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     BOOST_CHECK(docid_end == index.find(DOCID(0)));
     BOOST_CHECK(docid_end == index.find(DOCID(11)));
     // query by Title: miss
-    BOOST_CHECK(title_end == index.find<Title>(USTRING("Title 0")));
-    BOOST_CHECK(title_end == index.find<Title>(USTRING("Title 11")));
+    BOOST_CHECK(title_end == index.find<test::Title>(USTRING("Title 0")));
+    BOOST_CHECK(title_end == index.find<test::Title>(USTRING("Title 11")));
 
     delete indexptr;
 }
 
+/* Test serialization. */
 BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
+    typedef scd::ScdIndex<test::Title> ScdIndex;
+    typedef boost::scoped_ptr<ScdIndex> ScdIndexPtr;
+
     const unsigned NUM_DOC_A = 10;
     const unsigned NUM_DOC_B = 8;
     fs::path path_a = createScd("test_serialization_a.scd", NUM_DOC_A);
     fs::path path_b = createScd("test_serialization_b.scd", NUM_DOC_B, NUM_DOC_A + 1);
 
-    ScdIndex* index = ScdIndex::build(path_a.string());
+    // use smart pointer
+    ScdIndexPtr index(ScdIndex::build(path_a.string()));
+    BOOST_CHECK_EQUAL(12, ScdIndex::document_type::Version::value);
 
     // save to file
     fs::path saved = tempFile("saved-a");
@@ -174,9 +218,8 @@ BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
 
     // version mismatch
     {
-        scd::ScdIndex<Content> loaded;
-        //std::cout << "content version: " << scd::ScdIndex<Content>::VERSION << std::endl;
-        //std::cout << "Title   version: " << ScdIndex::VERSION << std::endl;
+        scd::ScdIndex<test::Content> loaded;
+        BOOST_CHECK_EQUAL(14, scd::ScdIndex<test::Content>::document_type::Version::value);
         BOOST_CHECK_THROW(loaded.load(saved.string()), std::exception);
     }
 
@@ -188,7 +231,7 @@ BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
                   std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
 #endif
 
-        ScdIndex* index_b = ScdIndex::build(path_b.string());
+        ScdIndexPtr index_b(ScdIndex::build(path_b.string()));
         fs::path saved_b = tempFile("saved-b");
         index_b->save(saved_b.string());
 
@@ -202,12 +245,10 @@ BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
         for (ScdIndex::docid_iterator it = index->begin(); it != index->end(); ++it) {
             BOOST_CHECK(*it == *index_b->find(it->docid));
         }
-        delete index_b;
     }
-
-    delete index;
 }
 
+/* Test uin128 wrapper type. */
 BOOST_AUTO_TEST_CASE(test_uint) {
     { // docid as izenelib::util::UString
         const izenelib::util::UString docid = USTRING("f1667c41c7028665c198066b786bd149");
@@ -221,6 +262,7 @@ BOOST_AUTO_TEST_CASE(test_uint) {
 #endif
         BOOST_CHECK_EQUAL(docid, unpacked);
     }
+
     { // docid as std::string
         const std::string docid = "f1667c41c7028665c198066b786bd149";
 
@@ -240,49 +282,53 @@ BOOST_AUTO_TEST_CASE(test_uint) {
 
 #if TEST_SCD_INDEX_PERFORMANCE
 namespace test {
-SCD_INDEX_PROPERTY_TAG(DOCID);
-SCD_INDEX_PROPERTY_TAG_TYPED(uuid, uint128, str2uint);
+SCD_INDEX_PROPERTY_TAG_TYPED(uuid, uint128); //< 'uuid' tag.
 }
+
+/* Index and serialize a _big_ SCD file. */
 BOOST_FIXTURE_TEST_CASE(test_performance, TestFixture) {
 #if 1
+    // create a sample SCD file as defined in the fixture.
+    typedef scd::ScdIndex<test::Title> ScdIndex;
     fs::path path = createScd("test_performance.scd", 21e5);
 #else
+    // load a real SCD file
     typedef scd::ScdIndex<test::uuid, scd::DOCID> ScdIndex;
     fs::path path = "/home/paolo/tmp/B-00-201207282137-29781-U-C.SCD";
     BOOST_REQUIRE(fs::exists(path));
 #endif
 
+    // measure elapsed time between a tic() and a toc()
     Timer timer;
 
     timer.tic();
-    ScdIndex* index = ScdIndex::build(path.string(), 2.5e4);
+    boost::scoped_ptr<ScdIndex> index(ScdIndex::build(path.string(), 2.5e4));
     timer.toc();
-    std::cout << "Indexing time: " << timer.seconds() << " seconds\n";
+    std::cout << "\nIndexing time:\n\t" << timer.seconds() << " seconds" << std::endl;
 
     // save to file
     fs::path saved = tempFile("saved");
     timer.tic();
     index->save(saved.string());
     timer.toc();
-    std::cout << "Serialization time: " << timer.seconds() << " seconds\n";
+    std::cout << "Serialization time:\n\t" << timer.seconds() << " seconds" << std::endl;
     BOOST_CHECK(fs::exists(saved));
-    std::cout << "Archive size: " << fs::file_size(saved)/1024 << " KiB\n";
+    std::cout << "Archive size:\n\t" << fs::file_size(saved)/1024 << " KiB" << std::endl;
+
     // load from file
     {
         ScdIndex loaded;
         timer.tic();
         loaded.load(saved.string());
         timer.toc();
-        std::cout << "Deserialization time: " << timer.seconds() << " seconds\n";
+        std::cout << "Deserialization time:\n\t" << timer.seconds() << " seconds" << std::endl;
         BOOST_CHECK_EQUAL(index->size(), loaded.size());
         timer.tic();
         for (ScdIndex::docid_iterator it = index->begin(); it != index->end(); ++it) {
             BOOST_CHECK(*it == *loaded.find(it->docid));
         }
         timer.toc();
-        std::cout << "Checking time: " << timer.seconds() << " seconds\n";
+        std::cout << "Checking time:\n\t" << timer.seconds() << " seconds" << std::endl;
     }
-
-    delete index;
 }
 #endif

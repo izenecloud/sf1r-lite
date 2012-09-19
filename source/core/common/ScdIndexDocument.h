@@ -36,17 +36,18 @@ struct Document {
     Document(const offset_type o, SCDDocPtr doc) : offset(o) {
         for (SCDDoc::iterator it = doc->begin(); it != doc->end(); ++it) {
             // store only indexed properties
-            if (it->first == Docid::name) {
+            if (it->first == Docid::name()) {
                 docid = Docid::convert(it->second);
-            } else if (it->first == Property::name) {
+            } else if (it->first == Property::name()) {
                 property = Property::convert(it->second);
             }
         }
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Document& d) {
-        os << '<' << Docid::name << '>' << d.docid << " @ " << d.offset
-           << ": <" << Property::name << '>' << d.property;
+        os << "@" << d.offset
+           << "\t<" << Docid::name() << '>' << d.docid
+           << "\t<" << Property::name() << '>' << d.property;
         return os;
     }
 
@@ -60,8 +61,8 @@ struct Document {
     typedef boost::mpl::integral_c<
                 unsigned,
                 boost::mpl::plus<
-                    boost::mpl::int_<Docid::hash>,
-                    boost::mpl::int_<Property::hash>
+                    boost::mpl::int_<Docid::hash_type::value>,
+                    boost::mpl::int_<Property::hash_type::value>
                 >::value
             > Version;
 };
