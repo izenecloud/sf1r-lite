@@ -83,6 +83,9 @@
           <ScoreProperty name="Score"/>
           <ScoreSCDPath path="@SF1RENGINE_ROOT@/bin/collection/chinese-wiki/scd/score"/>
         </Summarization-->
+        <SuffixMatch>
+          <Property name="Title"/>
+        </SuffixMatch>
       </Schema>
     </MiningBundle>
 
