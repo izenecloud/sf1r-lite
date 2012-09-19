@@ -64,14 +64,13 @@ void SuffixMatchManager::buildCollection()
         new_fmi->addDoc(text.data(), text.length());
 
     }
-
     LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
+
+    LOG(INFO) << "building fm-index";
     new_fmi->build();
 
     {
         WriteLock lock(mutex_);
-
-        LOG(INFO) << "building fm-index";
         fmi_.reset(new_fmi);
     }
 
@@ -87,7 +86,6 @@ size_t SuffixMatchManager::longestSuffixMatch(const izenelib::util::UString& pat
 
     {
         ReadLock lock(mutex_);
-
         if ((max_match = fmi_->longestSuffixMatch(pattern.data(), pattern.length(), match_ranges)) == 0)
             return 0;
 
