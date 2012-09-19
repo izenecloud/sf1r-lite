@@ -2,6 +2,7 @@
 #include <document-manager/DocumentManager.h>
 
 #include <boost/filesystem.hpp>
+#include <glog/logging.h>
 
 namespace sf1r
 {
@@ -44,8 +45,12 @@ void SuffixMatchManager::buildCollection()
         new_fmi->setOrigText(orig_text);
     }
 
-    for (size_t i = last_docid + 1; i < document_manager_->getMaxDocId(); ++i)
+    for (size_t i = last_docid + 1; i <= document_manager_->getMaxDocId(); ++i)
     {
+        if (i % 100000 == 0)
+        {
+            LOG(INFO) << "inserted docs: " << i;
+        }
         Document doc;
         document_manager_->getDocument(i, doc);
         Document::property_const_iterator it = doc.findProperty(property_);
@@ -59,9 +64,14 @@ void SuffixMatchManager::buildCollection()
         new_fmi->addDoc(text.data(), text.length());
 
     }
+
+    LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
     new_fmi->build();
 
     {
+        WriteLock lock(mutex_);
+
+        LOG(INFO) << "building fm-index";
         fmi_.reset(new_fmi);
     }
 
@@ -73,11 +83,16 @@ size_t SuffixMatchManager::longestSuffixMatch(const izenelib::util::UString& pat
 {
     std::vector<std::pair<size_t, size_t> >match_ranges;
     std::vector<size_t> doclen_list;
+    size_t max_match;
 
-    size_t max_match = fmi_->longestSuffixMatch(pattern.data(), pattern.length(), match_ranges);
-    if (!max_match) return 0;
+    {
+        ReadLock lock(mutex_);
 
-    fmi_->getMatchedDocIdList(match_ranges, max_docs, docid_list, doclen_list);
+        if ((max_match = fmi_->longestSuffixMatch(pattern.data(), pattern.length(), match_ranges)) == 0)
+            return 0;
+
+        fmi_->getMatchedDocIdList(match_ranges, max_docs, docid_list, doclen_list);
+    }
 
     score_list.resize(doclen_list.size());
     for (size_t i = 0; i < doclen_list.size(); ++i)

@@ -2,6 +2,7 @@
 #include <am/succinct/fm-index/fm_index.hpp>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 namespace sf1r
 {
@@ -31,6 +32,12 @@ private:
     size_t last_doc_id_;
 
     boost::shared_ptr<FMIndexType> fmi_;
+
+    typedef boost::shared_mutex MutexType;
+    typedef boost::shared_lock<MutexType> ReadLock;
+    typedef boost::unique_lock<MutexType> WriteLock;
+
+    mutable MutexType mutex_;
 };
 
 }

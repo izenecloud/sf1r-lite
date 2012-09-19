@@ -1905,7 +1905,9 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     mining_schema.suffix_match_enable = false;
     if (task_node)
     {
-        getAttribute(task_node, "property", property_name);
+        Iterator<Element> it("Property");
+        it = it.begin(task_node);
+        getAttribute(it.Get(), "name", property_name);
         bool gottype = collectionMeta.getPropertyType(property_name, property_type);
         if (!gottype || property_type != STRING_PROPERTY_TYPE)
         {
