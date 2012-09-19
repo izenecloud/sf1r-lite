@@ -341,82 +341,85 @@ bool SearchWorker::getSearchResult_(
         topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
     }
 
-    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN)
+    switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
+    case SearchingMode::KNN:
         if (identity.simHash.empty())
             miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
-        if (!miningManager_->GetKNNListBySignature(
-                    identity.simHash,
-                    resultItem.topKDocs_,
-                    resultItem.topKRankScoreList_,
-                    resultItem.totalCount_,
-                    KNN_TOP_K_NUM,
-                    KNN_DIST,
-                    topKStart))
+        if (!miningManager_->GetKNNListBySignature(identity.simHash,
+                                                   resultItem.topKDocs_,
+                                                   resultItem.topKRankScoreList_,
+                                                   resultItem.totalCount_,
+                                                   KNN_TOP_K_NUM,
+                                                   KNN_DIST,
+                                                   topKStart))
         {
             return true;
         }
-    }
-    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
-    {
-        if (!miningManager_->GetLongestSuffixMatch(
-                    identity.query,
-                    resultItem.topKDocs_,
-                    resultItem.topKRankScoreList_,
-                    resultItem.totalCount_))
-        {
-            return true;
-        }
-    }
-    else if (!searchManager_->search(
-                actionOperation,
-                resultItem.topKDocs_,
-                resultItem.topKRankScoreList_,
-                resultItem.topKCustomRankScoreList_,
-                resultItem.totalCount_,
-                resultItem.groupRep_,
-                resultItem.attrRep_,
-                resultItem.propertyRange_,
-                resultItem.distSearchInfo_,
-                resultItem.counterResults_,
-                TOP_K_NUM,
-                KNN_TOP_K_NUM,
-                KNN_DIST,
-                topKStart,
-                bundleConfig_->enable_parallel_searching_))
-    {
-        std::string newQuery;
+        break;
 
-        if (!bundleConfig_->bTriggerQA_)
-            return true;
-        assembleDisjunction(keywords, newQuery);
-
-        actionOperation.actionItem_.env_.queryString_ = newQuery;
-        resultItem.propertyQueryTermList_.clear();
-        if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+    case SearchingMode::SUFFIX_MATCH:
+        if (!miningManager_->GetLongestSuffixMatch(actionOperation.actionItem_.env_.queryString_,
+                                                   actionOperation.actionItem_.searchingMode_.lucky_,
+                                                   resultItem.topKDocs_,
+                                                   resultItem.topKRankScoreList_,
+                                                   resultItem.totalCount_))
         {
             return true;
         }
 
-        if (!searchManager_->search(
-                    actionOperation,
-                    resultItem.topKDocs_,
-                    resultItem.topKRankScoreList_,
-                    resultItem.topKCustomRankScoreList_,
-                    resultItem.totalCount_,
-                    resultItem.groupRep_,
-                    resultItem.attrRep_,
-                    resultItem.propertyRange_,
-                    resultItem.distSearchInfo_,
-                    resultItem.counterResults_,
-                    TOP_K_NUM,
-                    KNN_TOP_K_NUM,
-                    KNN_DIST,
-                    topKStart,
-                    bundleConfig_->enable_parallel_searching_))
+        break;
+
+    default:
+        if (!searchManager_->search(actionOperation,
+                                    resultItem.topKDocs_,
+                                    resultItem.topKRankScoreList_,
+                                    resultItem.topKCustomRankScoreList_,
+                                    resultItem.totalCount_,
+                                    resultItem.groupRep_,
+                                    resultItem.attrRep_,
+                                    resultItem.propertyRange_,
+                                    resultItem.distSearchInfo_,
+                                    resultItem.counterResults_,
+                                    TOP_K_NUM,
+                                    KNN_TOP_K_NUM,
+                                    KNN_DIST,
+                                    topKStart,
+                                    bundleConfig_->enable_parallel_searching_))
         {
-            return true;
+            std::string newQuery;
+
+            if (!bundleConfig_->bTriggerQA_)
+                return true;
+            assembleDisjunction(keywords, newQuery);
+
+            actionOperation.actionItem_.env_.queryString_ = newQuery;
+            resultItem.propertyQueryTermList_.clear();
+            if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+            {
+                return true;
+            }
+
+            if (!searchManager_->search(actionOperation,
+                                        resultItem.topKDocs_,
+                                        resultItem.topKRankScoreList_,
+                                        resultItem.topKCustomRankScoreList_,
+                                        resultItem.totalCount_,
+                                        resultItem.groupRep_,
+                                        resultItem.attrRep_,
+                                        resultItem.propertyRange_,
+                                        resultItem.distSearchInfo_,
+                                        resultItem.counterResults_,
+                                        TOP_K_NUM,
+                                        KNN_TOP_K_NUM,
+                                        KNN_DIST,
+                                        topKStart,
+                                        bundleConfig_->enable_parallel_searching_))
+            {
+                return true;
+            }
         }
+        break;
     }
 
     // todo, remove duplication globally over all nodes?

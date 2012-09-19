@@ -312,6 +312,7 @@ public:
 
     bool GetLongestSuffixMatch(
             const std::string& query,
+            uint32_t max_docs,
             std::vector<uint32_t>& docIdList,
             std::vector<float>& rankScoreList,
             std::size_t& totalCount);

@@ -29,48 +29,48 @@ namespace sf1r {
 ///
 class PageInfo
 {
-    public:
+public:
 
-        ///
-        /// @brief start index of result documents to send
-        ///
-        unsigned start_;
+    ///
+    /// @brief start index of result documents to send
+    ///
+    unsigned start_;
 
-        ///
-        /// @brief document count to send
-        ///
-        unsigned count_;
+    ///
+    /// @brief document count to send
+    ///
+    unsigned count_;
 
-        ///
-        /// @brief a constructor
-        ///
-        explicit PageInfo()
-            : start_(0), count_(0)
-        {}
+    ///
+    /// @brief a constructor
+    ///
+    explicit PageInfo()
+        : start_(0), count_(0)
+    {}
 
-        ///
-        /// @brief clear member variables
-        ///
-        void clear()
-        {
-            start_ = 0;
-            count_ = 0;
-        }
+    ///
+    /// @brief clear member variables
+    ///
+    void clear()
+    {
+        start_ = 0;
+        count_ = 0;
+    }
 
-        unsigned topKStart(unsigned topKNum) const
-        {
-            return Utilities::roundDown(start_, topKNum);
-        }
+    unsigned topKStart(unsigned topKNum) const
+    {
+        return Utilities::roundDown(start_, topKNum);
+    }
 
-        DATA_IO_LOAD_SAVE(PageInfo, &start_&count_);
-        template<class Archive>
-            void serialize(Archive& ar, const unsigned int version)
-            {
-                ar & start_;
-                ar & count_;
-            }
+    DATA_IO_LOAD_SAVE(PageInfo, &start_&count_);
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        ar & start_;
+        ar & count_;
+    }
 
-        MSGPACK_DEFINE(start_,count_);
+    MSGPACK_DEFINE(start_,count_);
 };
 
 inline bool operator==(const PageInfo& a, const PageInfo& b)
@@ -83,43 +83,43 @@ inline bool operator==(const PageInfo& a, const PageInfo& b)
 ///
 class LanguageAnalyzerInfo
 {
-    public:
-        ///
-        /// @brief a flag if appling LA.
-        ///
-        bool applyLA_;
+public:
+    ///
+    /// @brief a flag if appling LA.
+    ///
+    bool applyLA_;
 
-        ///
-        /// @brief a flag if using original keyword.
-        ///
-        bool useOriginalKeyword_;
+    ///
+    /// @brief a flag if using original keyword.
+    ///
+    bool useOriginalKeyword_;
 
-        ///
-        /// @brief a flag if processing synonym extention while la.
-        ///
-        bool synonymExtension_;
+    ///
+    /// @brief a flag if processing synonym extention while la.
+    ///
+    bool synonymExtension_;
 
-        /// @brief a constructor
-        LanguageAnalyzerInfo(void);
+    /// @brief a constructor
+    LanguageAnalyzerInfo(void);
 
-        /// @brief clear member variables
-        void clear(void);
+    /// @brief clear member variables
+    void clear(void);
 
-        DATA_IO_LOAD_SAVE(LanguageAnalyzerInfo, &applyLA_&useOriginalKeyword_&synonymExtension_)
+    DATA_IO_LOAD_SAVE(LanguageAnalyzerInfo, &applyLA_&useOriginalKeyword_&synonymExtension_)
 
-        MSGPACK_DEFINE(applyLA_,useOriginalKeyword_,synonymExtension_);
+    MSGPACK_DEFINE(applyLA_,useOriginalKeyword_,synonymExtension_);
 
-    private:
-            // Log : 2009.09.08
-            // ---------------------------------------
-            friend class boost::serialization::access;
-            template<class Archive>
-                void serialize(Archive& ar, const unsigned int version)
-                {
-                    ar & applyLA_;
-                    ar & useOriginalKeyword_;
-                    ar & synonymExtension_;
-                }
+private:
+    // Log : 2009.09.08
+    // ---------------------------------------
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        ar & applyLA_;
+        ar & useOriginalKeyword_;
+        ar & synonymExtension_;
+    }
 };
 
 inline bool operator==(const LanguageAnalyzerInfo& a,
@@ -135,37 +135,40 @@ inline bool operator==(const LanguageAnalyzerInfo& a,
 ///
 class SearchingModeInfo
 {
-    public:
-        ///
-        /// @brief search mode type.
-        ///
-        SearchingMode::SearchingModeType mode_;
+public:
+    ///
+    /// @brief search mode type.
+    ///
+    SearchingMode::SearchingModeType mode_;
 
-        float threshold_;
+    float threshold_;
 
-        bool useOriginalQuery_;
+    uint32_t lucky_;
 
-        /// @brief a constructor
-        SearchingModeInfo(void);
+    bool useOriginalQuery_;
 
-        /// @brief clear member variables
-        void clear(void);
+    /// @brief a constructor
+    SearchingModeInfo(void);
 
-        DATA_IO_LOAD_SAVE(SearchingModeInfo, &mode_&threshold_&useOriginalQuery_)
+    /// @brief clear member variables
+    void clear(void);
 
-        MSGPACK_DEFINE(mode_,threshold_,useOriginalQuery_);
+    DATA_IO_LOAD_SAVE(SearchingModeInfo, & mode_ & threshold_ & lucky_ & useOriginalQuery_)
 
-    private:
-            // Log : 2009.09.08
-            // ---------------------------------------
-            friend class boost::serialization::access;
-            template<class Archive>
-                void serialize(Archive& ar, const unsigned int version)
-                {
-                    ar & mode_;
-                    ar & threshold_;
-                    ar & useOriginalQuery_;
-                }
+    MSGPACK_DEFINE(mode_, threshold_, lucky_, useOriginalQuery_);
+
+private:
+    // Log : 2009.09.08
+    // ---------------------------------------
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        ar & mode_;
+        ar & threshold_;
+        ar & lucky_;
+        ar & useOriginalQuery_;
+    }
 };
 
 inline bool operator==(const SearchingModeInfo& a,
@@ -173,6 +176,7 @@ inline bool operator==(const SearchingModeInfo& a,
 {
     return a.mode_ == b.mode_
         && a.threshold_ == b.threshold_
+        && a.lucky_ == b.lucky_
         && a.useOriginalQuery_ == b.useOriginalQuery_;
 }
 

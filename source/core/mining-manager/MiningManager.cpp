@@ -1697,6 +1697,7 @@ bool MiningManager::GetKNNListBySignature(
 
 bool MiningManager::GetLongestSuffixMatch(
         const std::string& query,
+        uint32_t max_docs,
         std::vector<uint32_t>& docIdList,
         std::vector<float>& rankScoreList,
         std::size_t& totalCount)
@@ -1705,7 +1706,7 @@ bool MiningManager::GetLongestSuffixMatch(
         return false;
 
     izenelib::util::UString queryU(query, izenelib::util::UString::UTF_8);
-    totalCount = suffixMatchManager_->longestSuffixMatch(queryU, 1, docIdList, rankScoreList) > 0;
+    totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList) > 0;
     return true;
 }
 
