@@ -307,14 +307,14 @@ double OpinionsManager::Srep(const WordSegContainerT& words)
     if(words.empty())
         return (double)VERY_LOW;
 
-    WordStrType phrase;
-    WordVectorToString(phrase, words);
-    CachedStorageT::iterator it = cached_srep.find(phrase);
-    if(it != cached_srep.end())
-    {
-        pmi_cache_hit_num_++;
-        return it->second;
-    }
+    //WordStrType phrase;
+    //WordVectorToString(phrase, words);
+    //CachedStorageT::iterator it = cached_srep.find(phrase);
+    //if(it != cached_srep.end())
+    //{
+    //    pmi_cache_hit_num_++;
+    //    return it->second;
+    //}
 
     size_t n = words.size();
     double sigmaPMI = 0;
@@ -325,12 +325,7 @@ double OpinionsManager::Srep(const WordSegContainerT& words)
         // {out<<"PMI:"<<PMIlocal(words,i,windowsize)<<endl;}
     }
     sigmaPMI /= double(n);
-
-    //if(words.size() == 2 && sigmaPMI < SigmaRep)
-    //    sigmaPMI = SigmaRep + 0.01;
-
-    cached_srep[phrase] = sigmaPMI;
-
+    //cached_srep[phrase] = sigmaPMI;
     return sigmaPMI;
 }
 
@@ -468,9 +463,14 @@ double OpinionsManager::CoOccurring(const WordStrType& Wi, const WordStrType& Wj
             return 0;
         if(cached_word_inngram_.find(Wj) == cached_word_inngram_.end())
             return 0;
-        boost::dynamic_bitset<>  result = cached_word_inngram_[Wi];
-        result &= cached_word_inngram_[Wj];
-        Poss = result.count();
+        const boost::dynamic_bitset<>&  wi_bitmap = cached_word_inngram_[Wi];
+        const boost::dynamic_bitset<>&  wj_bitmap = cached_word_inngram_[Wj];
+        size_t minsize = min(wi_bitmap.size(), wj_bitmap.size());
+        for(size_t i = 0; i < minsize; ++i)
+        {
+            if(wi_bitmap[i] == 1 && 1 == wj_bitmap[i])
+                Poss++;
+        }
     }
     else
     {
@@ -479,6 +479,8 @@ double OpinionsManager::CoOccurring(const WordStrType& Wi, const WordStrType& Wj
             if(cached_word_insentence_.find(Wi) != cached_word_insentence_.end()
                 && cached_word_insentence_.find(Wj) != cached_word_insentence_.end())
             {
+                cached_word_insentence_[Wi].resize(Z.size() + 1);
+                cached_word_insentence_[Wj].resize(Z.size() + 1);
                 if(!cached_word_insentence_[Wi].test(j) || !cached_word_insentence_[Wj].test(j))
                 {
                     word_cache_hit_num_++;
@@ -541,6 +543,8 @@ double OpinionsManager::Possib(const WordStrType& Wi, const WordStrType& Wj)
     }
     if(wi_need_find || wj_need_find)
     {
+        cached_word_insentence_[Wi].resize(Z.size() + 1);
+        cached_word_insentence_[Wj].resize(Z.size() + 1);
         for(size_t j = 0; j < Z.size(); j++)
         {
             if(wi_need_find)
@@ -548,7 +552,6 @@ double OpinionsManager::Possib(const WordStrType& Wi, const WordStrType& Wj)
                 size_t loci = Z[j].find(Wi);
                 if(loci != WordStrType::npos )
                 {
-                    cached_word_insentence_[Wi].resize(j + 1);
                     cached_word_insentence_[Wi].set(j);
                 }
             }
@@ -557,7 +560,6 @@ double OpinionsManager::Possib(const WordStrType& Wi, const WordStrType& Wj)
                 size_t locj = Z[j].find(Wj);
                 if( locj != WordStrType::npos )
                 {
-                    cached_word_insentence_[Wi].resize(j + 1);
                     cached_word_insentence_[Wj].set(j);
                 }
             }
@@ -1274,6 +1276,12 @@ std::vector<std::pair<double, UString> > OpinionsManager::getOpinion(bool need_o
         out.flush();
     }
     out << "word/pmi cache hit ratio: " << word_cache_hit_num_ << "," << pmi_cache_hit_num_ << endl;
+
+    gettimeofday(&endtime, NULL);
+    interval = (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_usec - starttime.tv_usec)/1000;
+    if(interval > 10)
+        out << "get opinion time(ms):" << interval << endl;
+
     CleanCacheData();
     return final_result;
 }
