@@ -98,7 +98,13 @@ size_t SuffixMatchManager::longestSuffixMatch(const izenelib::util::UString& pat
         score_list[i] = float(max_match) / float(doclen_list[i]);
     }
 
-    return max_match;
+    size_t total_match = 0;
+    for (size_t i = 0; i < match_ranges.size(); ++i)
+    {
+        total_match += match_ranges[i].second - match_ranges[i].first;
+    }
+
+    return total_match;
 }
 
 }

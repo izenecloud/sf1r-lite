@@ -1706,8 +1706,7 @@ bool MiningManager::GetLongestSuffixMatch(
         return false;
 
     izenelib::util::UString queryU(query, izenelib::util::UString::UTF_8);
-    suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
-    totalCount = docIdList.size();
+    totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
     return true;
 }
 
