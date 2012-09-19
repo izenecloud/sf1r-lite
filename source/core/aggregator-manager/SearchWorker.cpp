@@ -225,6 +225,9 @@ void SearchWorker::makeQueryIdentity(
     case SearchingMode::KNN:
         miningManager_->GetSignatureForQuery(item, identity.simHash);
         break;
+    case SearchingMode::SUFFIX_MATCH:
+        identity.query = item.env_.queryString_;
+        break;
     default:
         identity.query = item.env_.queryString_;
         identity.expandedQueryString = item.env_.expandedQueryString_;
@@ -338,79 +341,94 @@ bool SearchWorker::getSearchResult_(
         topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
     }
 
-    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN)
+    switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
+    case SearchingMode::KNN:
         if (identity.simHash.empty())
             miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
-        if (!miningManager_->GetKNNListBySignature(
-                    identity.simHash,
-                    resultItem.topKDocs_,
-                    resultItem.topKRankScoreList_,
-                    resultItem.totalCount_,
-                    KNN_TOP_K_NUM,
-                    KNN_DIST,
-                    topKStart))
+        if (!miningManager_->GetKNNListBySignature(identity.simHash,
+                                                   resultItem.topKDocs_,
+                                                   resultItem.topKRankScoreList_,
+                                                   resultItem.totalCount_,
+                                                   KNN_TOP_K_NUM,
+                                                   KNN_DIST,
+                                                   topKStart))
         {
             return true;
         }
-    }
-    else if (!searchManager_->search(
-                actionOperation,
-                resultItem.topKDocs_,
-                resultItem.topKRankScoreList_,
-                resultItem.topKCustomRankScoreList_,
-                resultItem.totalCount_,
-                resultItem.groupRep_,
-                resultItem.attrRep_,
-                resultItem.propertyRange_,
-                resultItem.distSearchInfo_,
-                resultItem.counterResults_,
-                TOP_K_NUM,
-                KNN_TOP_K_NUM,
-                KNN_DIST,
-                topKStart,
-                bundleConfig_->enable_parallel_searching_
-                ))
-    {
-        std::string newQuery;
+        break;
 
-        if (!bundleConfig_->bTriggerQA_)
-            return true;
-        assembleDisjunction(keywords, newQuery);
-
-        actionOperation.actionItem_.env_.queryString_ = newQuery;
-        resultItem.propertyQueryTermList_.clear();
-        if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+    case SearchingMode::SUFFIX_MATCH:
+        if (!miningManager_->GetLongestSuffixMatch(actionOperation.actionItem_.env_.queryString_,
+                                                   actionOperation.actionItem_.searchingMode_.lucky_,
+                                                   resultItem.topKDocs_,
+                                                   resultItem.topKRankScoreList_,
+                                                   resultItem.totalCount_))
         {
             return true;
         }
 
-        if (!searchManager_->search(
-                    actionOperation,
-                    resultItem.topKDocs_,
-                    resultItem.topKRankScoreList_,
-                    resultItem.topKCustomRankScoreList_,
-                    resultItem.totalCount_,
-                    resultItem.groupRep_,
-                    resultItem.attrRep_,
-                    resultItem.propertyRange_,
-                    resultItem.distSearchInfo_,
-                    resultItem.counterResults_,
-                    TOP_K_NUM,
-                    KNN_TOP_K_NUM,
-                    KNN_DIST,
-                    topKStart,
-                    bundleConfig_->enable_parallel_searching_
-                    ))
+        break;
+
+    default:
+        if (!searchManager_->search(actionOperation,
+                                    resultItem.topKDocs_,
+                                    resultItem.topKRankScoreList_,
+                                    resultItem.topKCustomRankScoreList_,
+                                    resultItem.totalCount_,
+                                    resultItem.groupRep_,
+                                    resultItem.attrRep_,
+                                    resultItem.propertyRange_,
+                                    resultItem.distSearchInfo_,
+                                    resultItem.counterResults_,
+                                    TOP_K_NUM,
+                                    KNN_TOP_K_NUM,
+                                    KNN_DIST,
+                                    topKStart,
+                                    bundleConfig_->enable_parallel_searching_))
         {
-            return true;
+            std::string newQuery;
+
+            if (!bundleConfig_->bTriggerQA_)
+                return true;
+            assembleDisjunction(keywords, newQuery);
+
+            actionOperation.actionItem_.env_.queryString_ = newQuery;
+            resultItem.propertyQueryTermList_.clear();
+            if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+            {
+                return true;
+            }
+
+            if (!searchManager_->search(actionOperation,
+                                        resultItem.topKDocs_,
+                                        resultItem.topKRankScoreList_,
+                                        resultItem.topKCustomRankScoreList_,
+                                        resultItem.totalCount_,
+                                        resultItem.groupRep_,
+                                        resultItem.attrRep_,
+                                        resultItem.propertyRange_,
+                                        resultItem.distSearchInfo_,
+                                        resultItem.counterResults_,
+                                        TOP_K_NUM,
+                                        KNN_TOP_K_NUM,
+                                        KNN_DIST,
+                                        topKStart,
+                                        bundleConfig_->enable_parallel_searching_))
+            {
+                return true;
+            }
         }
+        break;
     }
 
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
-    if (actionItem.searchingMode_.mode_ != SearchingMode::KNN)
+    if (actionItem.searchingMode_.mode_ != SearchingMode::KNN
+            && actionItem.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH)
+    {
         removeDuplicateDocs(actionItem, resultItem);
+    }
 
     // For non-distributed search, it's necessary to adjust "start_" and "count_"
     // For distributed search, they would be adjusted in IndexSearchService::getSearchResult()
@@ -530,7 +548,8 @@ bool SearchWorker::buildQuery(
         ResultItemT& resultItem,
         PersonalSearchInfo& personalSearchInfo)
 {
-    if (actionOperation.actionItem_.searchingMode_.mode_== SearchingMode::KNN)
+    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN
+            || actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
         return true;
 
     CREATE_PROFILER ( constructQueryTree, "IndexSearchService", "processGetSearchResults: build query tree");
@@ -623,7 +642,7 @@ bool  SearchWorker::getResultItem(
             queryTerms,
             actionItem.languageAnalyzerInfo_.useOriginalKeyword_
     );
- 
+
     //analyze_(actionItem.env_.queryString_, queryTerms);
 
     // propertyOption
@@ -634,7 +653,7 @@ bool  SearchWorker::getResultItem(
         queryTerms.insert(queryTerms.begin(), UString(actionItem.env_.nameEntityItem_, encodingType));
 
     ///get documents at first, so that those documents will all exist in cache.
-    ///To be optimized !!!: 
+    ///To be optimized !!!:
     ///summary/snipet/highlight should utlize the extracted documents object, instead of get once more
     ///ugly design currently
     std::map<docid_t, int> doc_idx_map;
@@ -652,7 +671,7 @@ bool  SearchWorker::getResultItem(
     if(!documentManager_->getDocuments(ids, docs))
     {
         ///Whenever any document could not be retrieved, return false
-        resultItem.error_ = "Error : Cannot get document data";    
+        resultItem.error_ = "Error : Cannot get document data";
         return false;
     }
 

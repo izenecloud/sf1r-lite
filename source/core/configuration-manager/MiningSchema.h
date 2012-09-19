@@ -17,16 +17,17 @@ class MiningSchema
 {
 public:
     MiningSchema()
-            : tg_enable(false), tg_kpe_only(false), tg_properties()
-            , dupd_enable(false), dupd_fp_only(false), dupd_properties()
-            , sim_enable(false), sim_properties()
-            , dc_enable(false), dc_properties()
-            , faceted_enable(false), faceted_properties()
-            , group_enable(false), group_config_map()
-            , attr_enable(false), attr_property()
-            , ise_enable(false), ise_property()
-            , recommend_tg(false), recommend_querylog(true), recommend_properties()
-            , summarization_enable(false),summarization_schema()
+        : tg_enable(false), tg_kpe_only(false)
+        , dupd_enable(false), dupd_fp_only(false)
+        , sim_enable(false)
+        , dc_enable(false)
+        , faceted_enable(false)
+        , group_enable(false)
+        , attr_enable(false), attr_property()
+        , ise_enable(false)
+        , recommend_tg(false), recommend_querylog(true)
+        , summarization_enable(false), summarization_schema()
+        , suffix_match_enable(false)
     {
     }
     ~MiningSchema() {}
@@ -36,7 +37,7 @@ private:
     friend class boost::serialization::access;
 
     template <typename Archive>
-    void serialize( Archive & ar, const unsigned int version )
+    void serialize(Archive & ar, const unsigned int version)
     {
         ar & tg_enable & tg_kpe_only & tg_properties;
         ar & dupd_enable & dupd_fp_only & dupd_properties;
@@ -49,23 +50,30 @@ private:
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
         ar & summarization_enable & summarization_schema;
+        ar & suffix_match_enable & suffix_match_property;
     }
 
 public:
     bool tg_enable;
     bool tg_kpe_only;
     std::vector<std::string> tg_properties;
+
     bool dupd_enable;
     bool dupd_fp_only;
     std::vector<std::string> dupd_properties;
+
     bool sim_enable;
     std::vector<std::string> sim_properties;
+
     bool dc_enable;
     std::vector<std::string> dc_properties;
+
     bool faceted_enable;
     std::vector<std::string> faceted_properties;
+
     bool group_enable;
     GroupConfigMap group_config_map;
+
     bool attr_enable;
     AttrConfig attr_property;
 
@@ -82,6 +90,9 @@ public:
 
     bool summarization_enable;
     SummarizeConfig summarization_schema;
+
+    bool suffix_match_enable;
+    std::string suffix_match_property;
 };
 
 } // namespace

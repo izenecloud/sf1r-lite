@@ -33,8 +33,8 @@ FILE(GLOB_RECURSE product_SRC "product-manager/*.cc")
 FILE(GLOB b5m_SRC "b5m-manager/*.cc")
 FILE(GLOB sf1r_net_SRC "sf1r-net/*.cpp")
 
-FILE(GLOB image_SRC 
-    "image-manager/*.cc" 
+FILE(GLOB image_SRC
+    "image-manager/*.cc"
     "image-manager/*.cpp")
 
 
@@ -71,6 +71,7 @@ FILE(GLOB mining_SRC
   "mining-manager/merchant-score-manager/*.cpp"
   "mining-manager/product-ranker/*.cpp"
   "mining-manager/custom-rank-manager/*.cpp"
+  "mining-manager/suffix-match-manager/*.cpp"
 )
 
 ADD_DEFINITIONS("-fno-strict-aliasing")
