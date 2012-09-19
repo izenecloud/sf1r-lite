@@ -36,17 +36,17 @@ struct Document {
     Document(const offset_type o, SCDDocPtr doc) : offset(o) {
         for (SCDDoc::iterator it = doc->begin(); it != doc->end(); ++it) {
             // store only indexed properties
-            if (it->first == docid_name) {
+            if (it->first == Docid::name) {
                 docid = Docid::convert(it->second);
-            } else if (it->first == property_name) {
+            } else if (it->first == Property::name) {
                 property = Property::convert(it->second);
             }
         }
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Document& d) {
-        os << '<' << docid_name << '>' << d.docid << " @ " << d.offset
-           << ": <" << property_name << '>' << d.property;
+        os << '<' << Docid::name << '>' << d.docid << " @ " << d.offset
+           << ": <" << Property::name << '>' << d.property;
         return os;
     }
 
@@ -56,13 +56,6 @@ struct Document {
            and property == d.property;
     }
 
-private:
-    /// Docid name (e.g. 'DOCID').
-    static const PropertyNameType docid_name;
-    /// Property name (e.g. 'uuid').
-    static const PropertyNameType property_name;
-
-public:
     /// Serialization version.
     typedef boost::mpl::integral_c<
                 unsigned,
@@ -72,16 +65,6 @@ public:
                 >::value
             > Version;
 };
-
-// set Document::docid_name
-template <typename Docid, typename Property>
-const PropertyNameType
-Document<Docid, Property>::docid_name(Docid::name);
-
-// set Document::property_name
-template <typename Docid, typename Property>
-const PropertyNameType
-Document<Docid, Property>::property_name(Property::name);
 
 } /* namespace scd */
 
