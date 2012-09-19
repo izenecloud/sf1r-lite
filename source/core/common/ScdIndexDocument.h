@@ -56,24 +56,12 @@ struct Document {
            and property == d.property;
     }
 
-private: // TODO move to serialization header
-    friend class boost::serialization::access;
-
-    template <typename Archive>
-    void serialize(Archive& ar, const unsigned int version) {
-        if (version != Version::value) {
-            throw std::runtime_error("version mismatch");
-        }
-        ar & offset;
-        ar & docid;
-        ar & property;
-    }
-
 private:
     /// Docid name (e.g. 'DOCID').
     static const PropertyNameType docid_name;
     /// Property name (e.g. 'uuid').
     static const PropertyNameType property_name;
+
 public:
     /// Serialization version.
     typedef boost::mpl::integral_c<
@@ -96,17 +84,5 @@ const PropertyNameType
 Document<Docid, Property>::property_name(Property::name);
 
 } /* namespace scd */
-
-namespace boost { namespace serialization {
-
-    /// Define version using tag hashes.
-    template <typename Docid, typename Property>
-    struct version<scd::Document<Docid, Property> >{
-        typedef mpl::int_<scd::Document<Docid, Property>::Version::value> type;
-        typedef mpl::integral_c_tag tag;
-        BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value);
-    };
-
-}} /* namespace boost::serialization */
 
 #endif /* SCDINDEXDOCUMENT_H */

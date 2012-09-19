@@ -18,6 +18,29 @@
 #include <boost/iostreams/filter/bzip2.hpp>
 #include <fstream>
 
+namespace boost { namespace serialization {
+
+    /// Define version using tag hashes.
+    template <typename Docid, typename Property>
+    struct version<scd::Document<Docid, Property> >{
+        typedef mpl::int_<scd::Document<Docid, Property>::Version::value> type;
+        typedef mpl::integral_c_tag tag;
+        BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value);
+    };
+
+    /// Serialize an SCD document.
+    template <typename Archive, typename Docid, typename Property>
+    void serialize(Archive& ar, scd::Document<Docid,Property>& doc, const unsigned int version) {
+        if (version != scd::Document<Docid,Property>::Version::value) {
+            throw std::runtime_error("version mismatch");
+        }
+        ar & doc.offset;
+        ar & doc.docid;
+        ar & doc.property;
+    }
+
+}} /* namespace boost::serialization */
+
 namespace scd {
 
 namespace ba = boost::archive;
