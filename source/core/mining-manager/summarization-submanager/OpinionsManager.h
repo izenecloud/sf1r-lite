@@ -68,7 +68,8 @@ public:
     // record how many sentences the word appeared in.
     typedef boost::unordered_map<WordStrType, CustomInt> WordFreqMapT;
 
-    typedef boost::unordered_map<WordStrType, boost::dynamic_bitset<> >  WordInSentenceMapT;
+    typedef boost::unordered_map<WordStrType, std::vector<uint32_t> >  WordInSentenceMapT;
+    typedef std::vector< std::vector<uint32_t> >  SingleWordInNgramT;
     typedef boost::unordered_map<WordStrType, double> WordPossibilityMapT;
     typedef boost::unordered_map<WordStrType, WordPossibilityMapT> WordJoinPossibilityMapT;
 
@@ -164,7 +165,7 @@ private:
     int windowsize;
     CachedStorageT cached_srep;
     WordInSentenceMapT  cached_word_insentence_;
-    WordInSentenceMapT  cached_word_inngram_;
+    SingleWordInNgramT  cached_word_inngram_;
     izenelib::util::UString::EncodingType encodingType_;
     WordJoinPossibilityMapT  cached_pmimodified_;
     OriginalCommentContainerT orig_comments_;

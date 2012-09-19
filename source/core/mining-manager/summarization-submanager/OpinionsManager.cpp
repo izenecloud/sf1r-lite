@@ -90,6 +90,61 @@ struct seedPairCmp2 {
         return true;
     }
 
+inline uint32_t FindInsertionPos(const std::vector<uint32_t>& wi_pos, 
+    const std::vector<uint32_t>& wj_pos, std::vector<uint32_t>& ret_pos)
+{
+    size_t index_i = 0;
+    size_t index_j = 0;
+    while(index_i < wi_pos.size() && index_j < wj_pos.size())
+    {
+        uint32_t pos_i = wi_pos[index_i];
+        uint32_t pos_j = wj_pos[index_j];
+        if(pos_i > pos_j)
+        {
+            index_j++;
+        }
+        else if(pos_i < pos_j)
+        {
+            index_i++;
+        }
+        else
+        {
+            ret_pos.push_back(pos_i);
+            index_i++;
+            index_j++;
+        }
+    }
+    return ret_pos.size();
+}
+
+inline uint32_t FindInsertionPos(const std::vector<uint32_t>& wi_pos, 
+    const std::vector<uint32_t>& wj_pos)
+{
+    size_t index_i = 0;
+    size_t index_j = 0;
+    uint32_t posnum = 0;
+    while(index_i < wi_pos.size() && index_j < wj_pos.size())
+    {
+        uint32_t pos_i = wi_pos[index_i];
+        uint32_t pos_j = wj_pos[index_j];
+        if(pos_i > pos_j)
+        {
+            index_j++;
+        }
+        else if(pos_i < pos_j)
+        {
+            index_i++;
+        }
+        else
+        {
+            posnum++;
+            index_i++;
+            index_j++;
+        }
+    }
+    return posnum;
+}
+
 OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictpath,
     const string& training_data_path)
 {
@@ -176,8 +231,7 @@ void OpinionsManager::RecordCoOccurrence(const WordStrType& s, size_t& curren_of
     {
         for(size_t j = 0; j < s.length(); ++j)
         {
-            cached_word_inngram_[s.substr(j, 1)].resize(curren_offset + 1);
-            cached_word_inngram_[s.substr(j, 1)].set(curren_offset);
+            cached_word_inngram_[s[j]].push_back(curren_offset);
         }
         ++curren_offset;
     }
@@ -187,8 +241,7 @@ void OpinionsManager::RecordCoOccurrence(const WordStrType& s, size_t& curren_of
         {
             for(size_t j = i; j <= (size_t)windowsize; ++j)
             {
-                cached_word_inngram_[s.substr(j, 1)].resize(curren_offset + 1);
-                cached_word_inngram_[s.substr(j, 1)].set(curren_offset);
+                cached_word_inngram_[s[j]].push_back(curren_offset);
             }
             ++curren_offset;
         }
@@ -200,6 +253,15 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
     CleanCacheData();
     std::vector<uint64_t>  word_ids;
     size_t curren_offset = 0;
+    cached_word_insentence_.rehash( min((size_t)65536*2, in_sentences.size()*100) );
+    cached_word_insentence_.max_load_factor(0.6);
+    cached_word_inngram_.reserve( 65536 );
+    cached_pmimodified_.rehash( min((size_t)65536*2, in_sentences.size()*100) );
+    cached_pmimodified_.max_load_factor(0.6);
+    begin_bigrams_.rehash( in_sentences.size() * 10);
+    begin_bigrams_.max_load_factor(0.6);
+    end_bigrams_.rehash( in_sentences.size() * 10);
+    end_bigrams_.max_load_factor(0.6);
     for(size_t i = 0; i < in_sentences.size(); i++)
     { 
         if(Z.size() >= MAX_COMMENT_NUM)
@@ -235,10 +297,8 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
         RecordCoOccurrence(ustr, curren_offset);
         for(size_t j = 0; j < ustr.length(); j++)
         {  
-            cached_word_insentence_[ustr.substr(j, 1)].resize(Z.size());
-            cached_word_insentence_[ustr.substr(j, 1)].set(Z.size() - 1);
-            cached_word_insentence_[ustr.substr(j, 2)].resize(Z.size());
-            cached_word_insentence_[ustr.substr(j, 2)].set(Z.size() - 1);
+            cached_word_insentence_[ustr.substr(j, 1)].push_back(Z.size() - 1);
+            cached_word_insentence_[ustr.substr(j, 2)].push_back(Z.size() - 1);
         }
     }
     //wa_.Init(word_ids);
@@ -450,6 +510,11 @@ double OpinionsManager::PMImodified(const WordStrType& Wi, const WordStrType& Wj
             ret = (double)VERY_LOW;
         }
     }
+    if(cached_pmimodified_[Wi].size() == 0)
+    {
+        cached_pmimodified_[Wi].rehash( min((size_t)65536*2, Z.size()*100) );
+        cached_pmimodified_[Wi].max_load_factor(0.6);
+    }
     cached_pmimodified_[Wi][Wj] = ret;
     return ret;
 }
@@ -459,35 +524,36 @@ double OpinionsManager::CoOccurring(const WordStrType& Wi, const WordStrType& Wj
     int Poss = 0;
     if(Wi.length() == Wj.length() && Wi.length() == 1)
     {
-        if(cached_word_inngram_.find(Wi) == cached_word_inngram_.end())
+        if(cached_word_inngram_[Wi[0]].empty())
             return 0;
-        if(cached_word_inngram_.find(Wj) == cached_word_inngram_.end())
+        if(cached_word_inngram_[Wj[0]].empty())
             return 0;
-        const boost::dynamic_bitset<>&  wi_bitmap = cached_word_inngram_[Wi];
-        const boost::dynamic_bitset<>&  wj_bitmap = cached_word_inngram_[Wj];
-        size_t minsize = min(wi_bitmap.size(), wj_bitmap.size());
-        for(size_t i = 0; i < minsize; ++i)
-        {
-            if(wi_bitmap[i] == 1 && 1 == wj_bitmap[i])
-                Poss++;
-        }
+        const std::vector<uint32_t>&  wi_pos = cached_word_inngram_[Wi[0]];
+        const std::vector<uint32_t>&  wj_pos = cached_word_inngram_[Wj[0]];
+        Poss = FindInsertionPos(wi_pos, wj_pos);
     }
     else
     {
-        for(size_t j = 0; j < Z.size(); j++)
+        std::vector<uint32_t> all_possible_sentence;
+        if(cached_word_insentence_.find(Wi) != cached_word_insentence_.end()
+            && cached_word_insentence_.find(Wj) != cached_word_insentence_.end())
         {
-            if(cached_word_insentence_.find(Wi) != cached_word_insentence_.end()
-                && cached_word_insentence_.find(Wj) != cached_word_insentence_.end())
+            const std::vector<uint32_t>& wi_pos = cached_word_insentence_[Wi];
+            const std::vector<uint32_t>& wj_pos = cached_word_insentence_[Wj];
+            FindInsertionPos(wi_pos, wj_pos, all_possible_sentence);
+            if(all_possible_sentence.empty())
             {
-                cached_word_insentence_[Wi].resize(Z.size() + 1);
-                cached_word_insentence_[Wj].resize(Z.size() + 1);
-                if(!cached_word_insentence_[Wi].test(j) || !cached_word_insentence_[Wj].test(j))
-                {
-                    word_cache_hit_num_++;
-                    continue;
-                }
+                return 0;
             }
-            if(CoOccurringInOneSentence(Wi, Wj, C, j))
+        }
+        else
+        {
+            for(size_t i = 0; i < Z.size(); ++i)
+                all_possible_sentence.push_back(i);
+        }
+        for(size_t j = 0; j < all_possible_sentence.size(); j++)
+        {
+            if(CoOccurringInOneSentence(Wi, Wj, C, all_possible_sentence[j]))
                 Poss++; 
         }
     }
@@ -498,19 +564,6 @@ double OpinionsManager::CoOccurring(const WordStrType& Wi, const WordStrType& Wj
 bool OpinionsManager::CoOccurringInOneSentence(const WordStrType& Wi,
     const WordStrType& Wj, int C, int sentence_index)
 {
-    //if(Wi.length() == Wj.length() && Wi.length() == 1)
-    //{
-    //    //use the Wavelet array 
-    //    uint64_t prev_occur_num = wa_.Rank( Wi[0], sentence_offset_[sentence_index]);
-    //    uint64_t untilnow_occur_num = wa_.Rank( Wi[0], sentence_offset_[sentence_index + 1]);
-    //    for(uint64_t i = prev_occur_num + 1; i <= untilnow_occur_num; ++i)
-    //    {
-    //        uint64_t loc = wa_.Select( Wi[0], i);
-    //        if(wa_.FreqRange(Wj[0], Wj[0] + 1, max((int64_t)loc - C, (int64_t)0), loc + C + 1) > 0)
-    //            return true;
-    //    }
-    //    return false;
-    //}
     const UString& ustr = Z[sentence_index];
     const UString& uwi = Wi;
     const UString& uwj = Wj;
@@ -543,8 +596,6 @@ double OpinionsManager::Possib(const WordStrType& Wi, const WordStrType& Wj)
     }
     if(wi_need_find || wj_need_find)
     {
-        cached_word_insentence_[Wi].resize(Z.size() + 1);
-        cached_word_insentence_[Wj].resize(Z.size() + 1);
         for(size_t j = 0; j < Z.size(); j++)
         {
             if(wi_need_find)
@@ -552,7 +603,7 @@ double OpinionsManager::Possib(const WordStrType& Wi, const WordStrType& Wj)
                 size_t loci = Z[j].find(Wi);
                 if(loci != WordStrType::npos )
                 {
-                    cached_word_insentence_[Wi].set(j);
+                    cached_word_insentence_[Wi].push_back(j);
                 }
             }
             if(wj_need_find)
@@ -560,21 +611,14 @@ double OpinionsManager::Possib(const WordStrType& Wi, const WordStrType& Wj)
                 size_t locj = Z[j].find(Wj);
                 if( locj != WordStrType::npos )
                 {
-                    cached_word_insentence_[Wj].set(j);
+                    cached_word_insentence_[Wj].push_back(j);
                 }
             }
         }
     }
-    for(size_t j = 0; j < Z.size(); j++)
-    {
-        if( cached_word_insentence_[Wi].test(j) && cached_word_insentence_[Wj].test(j))
-        {
-            Poss++;
-        }
-    }
-    //std::bitset<MAX_COMMENT_NUM> result = cached_word_insentence_[Wi];
-    //result &= cached_word_insentence_[Wj];
-    //return result.count();
+    const std::vector<uint32_t>& wi_pos = cached_word_insentence_[Wi];
+    const std::vector<uint32_t>& wj_pos = cached_word_insentence_[Wj];
+    Poss = FindInsertionPos(wi_pos, wj_pos);
     return Poss;
 }
 
@@ -584,7 +628,7 @@ double OpinionsManager::Possib(const WordStrType& Wi)
     if(cached_word_insentence_.find(Wi) != cached_word_insentence_.end())
     {
         word_cache_hit_num_++;
-        return cached_word_insentence_[Wi].count();
+        return cached_word_insentence_[Wi].size();
     }
     for(size_t j = 0; j < Z.size(); j++)
     {
@@ -592,8 +636,7 @@ double OpinionsManager::Possib(const WordStrType& Wi)
         if( loc != WordStrType::npos )
         {
             Poss++;
-            cached_word_insentence_[Wi].resize(j + 1);
-            cached_word_insentence_[Wi].set(j);
+            cached_word_insentence_[Wi].push_back(j);
         }
     }
     return Poss;
