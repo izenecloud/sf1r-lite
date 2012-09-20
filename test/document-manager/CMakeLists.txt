@@ -14,8 +14,8 @@ INCLUDE_DIRECTORIES(
 
 # sequences is important for some linker
 # if a dpendes b, a must precede b
+# for some other linker it is exactly the opposite :(
 SET(libs
-
   sf1r_query_manager
   sf1r_directory_manager
   sf1r_document_manager
@@ -31,6 +31,7 @@ SET(libs
   sf1r_node_manager
   sf1r_common
 
+  ${Boost_LIBRARIES}
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}
