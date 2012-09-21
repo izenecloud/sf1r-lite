@@ -23,6 +23,7 @@
 #include <iostream>
 #include <algorithm>
 #include "OpinionsManager.h"
+#include <am/succinct/wat_array/wat_array.hpp>
 
 #define OPINION_COMPUTE_THREAD_NUM 4
 #define OPINION_COMPUTE_QUEUE_SIZE 200
@@ -222,7 +223,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             DoOpinionExtraction(summarization, key, commentCacheItem);
             if (++count % 1000 == 0)
             {
-                std::cout << "\r === Evaluating summarization and opinion count: " << count << " ===";
+                std::cout << "\r === Evaluating summarization and opinion count: " << count << " ===" << std::flush;
             }
         }
 
@@ -322,7 +323,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
         }
         if (++count % 100 == 0)
         {
-            cout << "\r == thread:" << (long)pthread_self() << " computing opinion count: " << count << " ===";
+            cout << "\r == thread:" << (long)pthread_self() << " computing opinion count: " << count << " ===" << std::flush;
         }
     }
 }
@@ -406,7 +407,7 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
 
             if (++count % 1000 == 0)
             {
-                cout << "\r== write opinion count: " << count << " ====";
+                cout << "\r== write opinion count: " << count << " ====" << std::flush;
             }
         }
     }

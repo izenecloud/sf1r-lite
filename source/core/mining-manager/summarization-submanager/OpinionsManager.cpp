@@ -15,7 +15,15 @@
 
 using namespace std;
 using namespace cma;
+using namespace succinct::fm_index;
 
+//static std::vector<uint32_t> result;
+//static uint64_t total_times2 = 0;
+//static uint64_t total_times3 = 0;
+//static uint64_t total_times4 = 0;
+//static int64_t total_gencandtime1 = 0;
+//static int64_t total_gencandtime2 = 0;
+//static int64_t total_gencandtime3 = 0;
 namespace sf1r
 {
 
@@ -166,6 +174,7 @@ OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictp
     SigmaRead = 5;
     SigmaSim = 0.5;
     SigmaLength = 30;
+
 }
 
 OpinionsManager::~OpinionsManager()
@@ -195,11 +204,13 @@ void OpinionsManager::CleanCacheData()
 {
     pmi_cache_hit_num_ = 0;
     word_cache_hit_num_ = 0;
+    valid_cache_hit_num_ = 0;
     cached_word_insentence_.clear();
     cached_word_inngram_.clear();
     cached_pmimodified_.clear();
     cached_srep.clear();
     SigmaRep_dynamic = CandidateSrepQueueT();
+    SigmaRep_dynamic.push(SigmaRep);
     Z.clear();
     orig_comments_.clear();
     begin_bigrams_.clear();
@@ -216,11 +227,11 @@ bool OpinionsManager::IsRubbishComment(const WordSegContainerT& words)
     return (double)diff_words.size()/(double)words.size() < RUBBISH_COMMENT_THRESHOLD;
 }
 
-void OpinionsManager::AppendStringToIDArray(const WordStrType& s, std::vector<uint64_t>& word_ids)
+void OpinionsManager::AppendStringToIDArray(const WordStrType& s, std::vector<uint32_t>& word_ids)
 {
     for(size_t i = 0; i < s.length(); ++i)
     {
-        uint64_t id = s[i];
+        uint32_t id = s[i];
         word_ids.push_back(id);
     }
 }
@@ -231,7 +242,8 @@ void OpinionsManager::RecordCoOccurrence(const WordStrType& s, size_t& curren_of
     {
         for(size_t j = 0; j < s.length(); ++j)
         {
-            cached_word_inngram_[s[j]].push_back(curren_offset);
+            if(cached_word_inngram_[s[j]].empty() || cached_word_inngram_[s[j]].back() != curren_offset)
+                cached_word_inngram_[s[j]].push_back(curren_offset);
         }
         ++curren_offset;
     }
@@ -241,7 +253,8 @@ void OpinionsManager::RecordCoOccurrence(const WordStrType& s, size_t& curren_of
         {
             for(size_t j = i; j <= (size_t)windowsize; ++j)
             {
-                cached_word_inngram_[s[j]].push_back(curren_offset);
+                if(cached_word_inngram_[s[j]].empty() || cached_word_inngram_[s[j]].back() != curren_offset)
+                    cached_word_inngram_[s[j]].push_back(curren_offset);
             }
             ++curren_offset;
         }
@@ -251,11 +264,15 @@ void OpinionsManager::RecordCoOccurrence(const WordStrType& s, size_t& curren_of
 void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
 {
     CleanCacheData();
-    std::vector<uint64_t>  word_ids;
+
+    struct timeval starttime, endtime;
+    gettimeofday(&starttime, NULL);
+
+    std::vector<uint32_t>  word_ids;
     size_t curren_offset = 0;
     cached_word_insentence_.rehash( min((size_t)65536*2, in_sentences.size()*100) );
     cached_word_insentence_.max_load_factor(0.6);
-    cached_word_inngram_.reserve( 65536 );
+    cached_word_inngram_.resize( 65536 );
     cached_pmimodified_.rehash( min((size_t)65536*2, in_sentences.size()*100) );
     cached_pmimodified_.max_load_factor(0.6);
     begin_bigrams_.rehash( in_sentences.size() * 10);
@@ -289,11 +306,6 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
             continue;
         ustr.erase(uend, ustr.end());
         Z.push_back(ustr);
-        if(sentence_offset_.empty())
-            sentence_offset_.push_back(0);
-        else
-            sentence_offset_.push_back(ustr.length() + sentence_offset_.back());
-        //AppendStringToIDArray(ustr, word_ids);
         RecordCoOccurrence(ustr, curren_offset);
         for(size_t j = 0; j < ustr.length(); j++)
         {  
@@ -301,8 +313,27 @@ void OpinionsManager::setComment(const SentenceContainerT& in_sentences)
             cached_word_insentence_[ustr.substr(j, 2)].push_back(Z.size() - 1);
         }
     }
+    //std::vector<uint32_t> long_vec;
+    //sentence_offset_.resize(65536);
+    //sentence_offset_[0] = 0;
+    //for(size_t i = 0; i < cached_word_inngram_.size(); ++i)
+    //{
+    //    for(size_t j = 0; j < cached_word_inngram_[i].size(); ++j)
+    //    {
+    //        long_vec.push_back(cached_word_inngram_[i][j]);
+    //    }
+    //    sentence_offset_[i + 1] = sentence_offset_[i] + cached_word_inngram_[i].size();
+    //}
+
+    //wavelet_ = new WaveletTreeHuffman<uint32_t>(WaveletTreeHuffman<uint32_t>::getAlphabetNum(&long_vec[0], long_vec.size()));
+    //wavelet_->build(&long_vec[0], long_vec.size());
+
     //wa_.Init(word_ids);
     out << "----- total comment num : " << Z.size() << endl;
+    gettimeofday(&endtime, NULL);
+    int64_t interval = (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_usec - starttime.tv_usec)/1000;
+    if(interval > 10)
+        out << "set comment time(ms):" << interval << endl;
     out.flush();
 }
 
@@ -367,25 +398,32 @@ double OpinionsManager::Srep(const WordSegContainerT& words)
     if(words.empty())
         return (double)VERY_LOW;
 
-    //WordStrType phrase;
-    //WordVectorToString(phrase, words);
-    //CachedStorageT::iterator it = cached_srep.find(phrase);
-    //if(it != cached_srep.end())
-    //{
-    //    pmi_cache_hit_num_++;
-    //    return it->second;
-    //}
+ 
+    WordStrType phrase;
+    WordVectorToString(phrase, words);
+    CachedStorageT::iterator it = cached_srep.find(phrase);
+    if(it != cached_srep.end())
+    {
+        pmi_cache_hit_num_++;
+        return it->second;
+    }
 
+    //struct timeval starttime, endtime;
+    //int64_t interval;
+    //gettimeofday(&starttime, NULL);
     size_t n = words.size();
     double sigmaPMI = 0;
     for(size_t i = 0; i < n; i++)
     {
         sigmaPMI += PMIlocal(words, i, windowsize);
-        // if(windowsize==6)
-        // {out<<"PMI:"<<PMIlocal(words,i,windowsize)<<endl;}
     }
     sigmaPMI /= double(n);
-    //cached_srep[phrase] = sigmaPMI;
+    cached_srep[phrase] = sigmaPMI;
+    //gettimeofday(&endtime, NULL);
+    //interval = (endtime.tv_sec - starttime.tv_sec)*1000000 + (endtime.tv_usec - starttime.tv_usec);
+    //total_gencandtime1 += interval;
+    //if(interval > 1000)
+    //    out << "compute srep >100us 2: " << interval << endl;
     return sigmaPMI;
 }
 
@@ -410,7 +448,6 @@ double OpinionsManager::Sim(const WordStrType& Mi, const WordStrType& Mj)
 
 double OpinionsManager::Sim(const NgramPhraseT& wordsi, const NgramPhraseT& wordsj)
 {
-    //out<<endl;
     size_t sizei = wordsi.size();
     size_t sizej = wordsj.size();
     size_t same = 0;
@@ -515,6 +552,7 @@ double OpinionsManager::PMImodified(const WordStrType& Wi, const WordStrType& Wj
         cached_pmimodified_[Wi].rehash( min((size_t)65536*2, Z.size()*100) );
         cached_pmimodified_[Wi].max_load_factor(0.6);
     }
+
     cached_pmimodified_[Wi][Wj] = ret;
     return ret;
 }
@@ -531,6 +569,41 @@ double OpinionsManager::CoOccurring(const WordStrType& Wi, const WordStrType& Wj
         const std::vector<uint32_t>&  wi_pos = cached_word_inngram_[Wi[0]];
         const std::vector<uint32_t>&  wj_pos = cached_word_inngram_[Wj[0]];
         Poss = FindInsertionPos(wi_pos, wj_pos);
+        //std::vector< std::pair<size_t, size_t> > range;
+        //range.push_back(std::make_pair(sentence_offset_[Wi[0]], sentence_offset_[Wi[0] + 1]));
+        //range.push_back(std::make_pair(sentence_offset_[Wj[0]], sentence_offset_[Wj[0] + 1]));
+
+        //result.clear();
+        //result.reserve(max(cached_word_inngram_[Wi[0]].size(), cached_word_inngram_[Wj[0]].size()));
+        //wavelet_->intersect(range, 0, result);
+        //Poss = result.size();
+        //std::vector<uint32_t> result2;
+        //if(FindInsertionPos(wi_pos, wj_pos, result2) != Poss)
+        //{
+        //    out << "intersection mismatch: " << Poss << "," << FindInsertionPos(wi_pos, wj_pos) << endl;
+        //    for(size_t i = 0; i < wi_pos.size(); ++i)
+        //    {
+        //        out << wi_pos[i] << ","; 
+        //    }
+        //    out << endl;
+        //    for(size_t i = 0; i < wj_pos.size(); ++i)
+        //    {
+        //        out << wj_pos[i] << ","; 
+        //    }
+        //    out << endl;
+        //    std::sort(result.begin(), result.end());
+        //    for(size_t i = 0; i < result.size(); ++i)
+        //    {
+        //        out << result[i] << ",";
+        //    }
+        //    out << endl;
+        //    for(size_t i = 0; i < result2.size(); ++i)
+        //    {
+        //        out << result2[i] << ",";
+        //    }
+        //    out << endl;
+        //    out.flush();
+        //}
     }
     else
     {
@@ -1040,6 +1113,10 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
     struct timeval starttime, endtime;
     gettimeofday(&starttime, NULL);
 
+    cached_valid_ngrams_.rehash(seedGrams.size() * 2);
+    cached_valid_ngrams_.max_load_factor(0.8);
+    cached_srep.rehash(seedGrams.size() * 2);
+    cached_srep.max_load_factor(0.8);
     for(size_t i = 0; i < seedGrams.size(); i++)
     {
         WordStrType phrasestr;
@@ -1056,8 +1133,8 @@ bool OpinionsManager::GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bi
 
     gettimeofday(&endtime, NULL);
     int64_t interval = (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_usec - starttime.tv_usec)/1000;
-    if(interval > 10000)
-        out << "gen candidate used more than 10000ms " << interval << endl;
+    if(interval > 1000)
+        out << "gen candidate used more than 1000ms " << interval << endl;
 
     //std::cout << "\r candList.size() = "<< candList.size();
 
@@ -1119,17 +1196,28 @@ std::string OpinionsManager::getSentence(const WordSegContainerT& candVector)
 void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase, 
     OpinionCandidateContainerT& candList)
 {
+    WordStrType phrasestr;
+    WordVectorToString(phrasestr, phrase);
+    if(cached_valid_ngrams_.find(phrasestr) != cached_valid_ngrams_.end())
+    {
+        valid_cache_hit_num_++;
+        return;
+    }
+
+    cached_valid_ngrams_[phrasestr] = 1;
+    double score = Score(phrase);
+    if(score < SigmaRep_dynamic.top())
+    {
+        return;
+    }
+
     WordStrType end_bigram_str = phrase[phrase.size() - 2];
     end_bigram_str.append(phrase[phrase.size() - 1]);
     if(!IsEndBigram(end_bigram_str))
     {
-        //string end_str;
-        //end_bigram_str.convertString(end_str, UString::UTF_8);
-        //out << "not end bigram : " << end_str << endl;
         return;
     }
 
-    double score = Score(phrase);
     OpinionCandidateContainerT::iterator it = candList.begin();
     bool can_insert = true;
     bool is_larger_replace_exist = false;
@@ -1147,9 +1235,11 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
                 OpinionCandidateT temp = candList[remove_end - 1];
                 candList[remove_end - 1] = candList[start];
                 //out << "similarity need removed: " << getSentence(candList[remove_end - 1].first) << endl;
+                WordStrType removed_phrasestr;
+                WordVectorToString(removed_phrasestr, candList[remove_end - 1].first);
+                cached_valid_ngrams_[removed_phrasestr] = 1;
                 candList[start] = temp;
                 --remove_end;
-
                 continue;
             }
             else
@@ -1163,6 +1253,9 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
         {
             OpinionCandidateT temp = candList[remove_end - 1];
             candList[remove_end - 1] = candList[start];
+            WordStrType removed_phrasestr;
+            WordVectorToString(removed_phrasestr, candList[remove_end - 1].first);
+            cached_valid_ngrams_[removed_phrasestr] = 1;
             candList[start] = temp;
             --remove_end;
             continue;
@@ -1187,14 +1280,6 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
     if(can_insert && score >= SigmaRep && phrase.size() > OPINION_NGRAM_MIN)
     {
         //out << "new added: " << getSentence(phrase) <<  endl;
-        if(candList.size() > SigmaLength)
-        {
-            if(score < SigmaRep_dynamic.top())
-            {
-                //out << "ignored by full size and low than the smallest: " << getSentence(phrase) << ", " << SigmaRep_dynamic.top() << endl;
-                return;
-            }
-        }
         candList.push_back(std::make_pair(phrase, score));
     }
     SigmaRep_dynamic.push(score);
@@ -1204,6 +1289,7 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
 
 bool OpinionsManager::NotMirror(const NgramPhraseT& phrase, const BigramPhraseT& bigram)
 {
+
     if(phrase.size() > 3)
     {
         WordStrType phrasestr;
@@ -1302,8 +1388,8 @@ std::vector<std::pair<double, UString> > OpinionsManager::getOpinion(bool need_o
 
     gettimeofday(&endtime, NULL);
     int64_t interval = (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_usec - starttime.tv_usec)/1000;
-    if(interval > 1000)
-        out << "gen seed bigram used more than 1000ms " << interval << endl;
+    if(interval > 100)
+        out << "gen seed bigram used more than 100ms " << interval << endl;
 
     std::vector< std::pair< double, UString> > final_result;
     GetFinalMicroOpinion( seed_bigramlist, need_orig_comment_phrase, final_result);
@@ -1318,7 +1404,7 @@ std::vector<std::pair<double, UString> > OpinionsManager::getOpinion(bool need_o
         out<<"-------------Opinion finished---------------"<<endl;
         out.flush();
     }
-    out << "word/pmi cache hit ratio: " << word_cache_hit_num_ << "," << pmi_cache_hit_num_ << endl;
+    out << "word/pmi/valid cache hit ratio: " << word_cache_hit_num_ << "," << pmi_cache_hit_num_ << "," << valid_cache_hit_num_ << endl;
 
     gettimeofday(&endtime, NULL);
     interval = (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_usec - starttime.tv_usec)/1000;
@@ -1326,6 +1412,7 @@ std::vector<std::pair<double, UString> > OpinionsManager::getOpinion(bool need_o
         out << "get opinion time(ms):" << interval << endl;
 
     CleanCacheData();
+    //delete wavelet_;
     return final_result;
 }
 

@@ -16,6 +16,7 @@
 #include <bitset>
 #include <boost/dynamic_bitset.hpp>
 #include <am/succinct/wat_array/wat_array.hpp>
+#include <am/succinct/fm-index/wavelet_tree_huffman.hpp>
 
 #define MAX_COMMENT_NUM  10000
 
@@ -73,7 +74,7 @@ public:
     typedef boost::unordered_map<WordStrType, double> WordPossibilityMapT;
     typedef boost::unordered_map<WordStrType, WordPossibilityMapT> WordJoinPossibilityMapT;
 
-    typedef std::map<WordStrType, double>  CachedStorageT;
+    typedef boost::unordered_map<WordStrType, double>  CachedStorageT;
 
     typedef std::pair< WordStrType, WordStrType > BigramPhraseT;
     typedef std::vector< BigramPhraseT > BigramPhraseContainerT;
@@ -97,7 +98,7 @@ public:
 
 private:
     void RecordCoOccurrence(const WordStrType& s, size_t& curren_offset);
-    void AppendStringToIDArray(const WordStrType& s, std::vector<uint64_t>& word_ids);
+    void AppendStringToIDArray(const WordStrType& s, std::vector<uint32_t>& word_ids);
     void recompute_srep(std::vector< std::pair<double, UString> >& candList);
     void RefineCandidateNgram(OpinionCandidateContainerT& candList);
     void stringToWordVector(const WordStrType& Mi, WordSegContainerT& words);
@@ -174,11 +175,15 @@ private:
     cma::Knowledge* knowledge_;
     size_t word_cache_hit_num_;
     size_t pmi_cache_hit_num_;
+    size_t valid_cache_hit_num_;
     OpinionTraining* training_data_;
     WordFreqMapT begin_bigrams_;
     WordFreqMapT end_bigrams_;
+    WordFreqMapT cached_valid_ngrams_;
     wat_array::WatArray wa_;
     std::vector<int>  sentence_offset_;
+
+    succinct::fm_index::WaveletTree<uint32_t>* wavelet_;
 };
 
 };
