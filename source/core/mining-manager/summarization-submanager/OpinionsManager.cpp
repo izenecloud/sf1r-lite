@@ -208,6 +208,7 @@ void OpinionsManager::CleanCacheData()
     cached_word_insentence_.clear();
     cached_word_inngram_.clear();
     cached_pmimodified_.clear();
+    cached_valid_ngrams_.clear();
     cached_srep.clear();
     SigmaRep_dynamic = CandidateSrepQueueT();
     SigmaRep_dynamic.push(SigmaRep);
