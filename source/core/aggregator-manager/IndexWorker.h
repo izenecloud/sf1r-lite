@@ -127,7 +127,12 @@ private:
     bool insertDoc_(
             Document& document,
             IndexerDocument& indexDocument,
-            time_t timestamp);
+            time_t timestamp,
+            bool immediately = false);
+
+    bool doInsertDoc_(
+            Document& document,
+            IndexerDocument& indexDocument);
 
     bool updateDoc_(
             Document& document,

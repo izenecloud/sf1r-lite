@@ -46,7 +46,7 @@ namespace
 const char* SCD_BACKUP_DIR = "backup";
 const std::string DOCID("DOCID");
 const std::string DATE("DATE");
-const size_t UPDATE_BUFFER_CAPACITY = 65536;
+const size_t UPDATE_BUFFER_CAPACITY = 8192;
 PropertyConfig tempPropertyConfig;
 }
 
@@ -551,7 +551,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType))
         return false;
 
-    bool ret = insertDoc_(document, indexDocument, timestamp);
+    bool ret = insertDoc_(document, indexDocument, timestamp, true);
     if (ret)
     {
         doMining_();
@@ -1155,7 +1155,8 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
 bool IndexWorker::insertDoc_(
         Document& document,
         IndexerDocument& indexDocument,
-        time_t timestamp)
+        time_t timestamp,
+        bool immediately)
 {
     CREATE_PROFILER(proDocumentIndexing, "IndexWorker", "IndexWorker : InsertDocument")
     CREATE_PROFILER(proIndexing, "IndexWorker", "IndexWorker : indexing")
@@ -1167,6 +1168,25 @@ bool IndexWorker::insertDoc_(
         if (!hooker_->HookInsert(document, indexDocument, timestamp))
             return false;
     }
+    if (immediately)
+        return doInsertDoc_(document, indexDocument);
+	
+    ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
+    UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
+    updateData.get<0>() = INSERT;
+    updateData.get<1>().swap(document);
+    updateData.get<2>().swap(indexDocument);
+    if (updateBuffer_.size() >= UPDATE_BUFFER_CAPACITY)
+    {
+        flushUpdateBuffer_();
+    }
+    return true;
+}
+
+bool IndexWorker::doInsertDoc_(
+        Document& document,
+        IndexerDocument& indexDocument)
+{
     START_PROFILER(proDocumentIndexing);
     if (documentManager_->insertDocument(document))
     {
@@ -1191,7 +1211,7 @@ bool IndexWorker::updateDoc_(
 {
     CREATE_SCOPED_PROFILER (proDocumentUpdating, "IndexWorker", "IndexWorker::UpdateDocument");
     if (INSERT == updateType)
-        return insertDoc_(document, indexDocument, timestamp);
+        return insertDoc_(document, indexDocument, timestamp, immediately);
 
     prepareIndexRTypeProperties_(document.getId(), indexDocument);
     if (hooker_)
@@ -1204,7 +1224,7 @@ bool IndexWorker::updateDoc_(
         return doUpdateDoc_(document, indexDocument, oldIndexDocument, updateType);
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
-    UpdateBufferDataType& updateData = updateBuffer_[indexDocument.getOldId()];
+    UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
     updateData.get<0>() = updateType;
     updateData.get<1>().swap(document);
     updateData.get<2>().swap(indexDocument);
@@ -1304,9 +1324,23 @@ void IndexWorker::flushUpdateBuffer_()
         UpdateBufferDataType& updateData = it->second;
         switch (updateData.get<0>())
         {
+        case INSERT:
+        {
+            if(documentManager_->insertDocument(updateData.get<1>()))
+            {
+                indexManager_->insertDocument(updateData.get<2>());
+                indexStatus_.numDocs_ = indexManager_->numDocs();
+            }
+            else
+                LOG(ERROR) << "Document Insert Failed in SDB. " << updateData.get<1>().property("DOCID");
+            break;
+        }
         case GENERAL:
         {
-            indexManager_->updateDocument(updateData.get<2>());
+            if(documentManager_->insertDocument(updateData.get<1>()))
+                indexManager_->updateDocument(updateData.get<2>());
+            else
+                LOG(ERROR) << "Document Insert Failed in SDB. " << updateData.get<1>().property("DOCID");
             break;
         }
 
@@ -1318,15 +1352,6 @@ void IndexWorker::flushUpdateBuffer_()
         default:
             break;
         }
-    }
-
-    for (UpdateBufferType::iterator it = updateBuffer_.begin();
-            it != updateBuffer_.end(); ++it)
-    {
-        UpdateBufferDataType& updateData = it->second;
-        if (GENERAL == updateData.get<0>())
-            if (!documentManager_->insertDocument(updateData.get<1>()))
-                LOG(ERROR) << "Document Insert Failed in SDB. " << updateData.get<1>().property("DOCID");
     }
 
     UpdateBufferType().swap(updateBuffer_);
