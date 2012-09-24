@@ -42,7 +42,7 @@ const char* SCD_DELIM = "<USERID>";
 
 const char* PROP_USERID = "USERID";
 const char* PROP_ITEMID = "ITEMID";
-const char* PROP_ORDERID = "order_id";
+const char* PROP_ORDERID = "ORDERID";
 const char* PROP_DATE = "DATE";
 const char* PROP_QUANTITY = "quantity";
 const char* PROP_PRICE = "price";
@@ -197,7 +197,6 @@ bool doc2Order(
     for (SCDDoc::const_iterator it = doc.begin(); it != doc.end(); ++it)
     {
         const std::string& propName = it->first;
-        std::string propValue;
         it->second.convertString(docMap[propName], DEFAULT_ENCODING);
     }
 
