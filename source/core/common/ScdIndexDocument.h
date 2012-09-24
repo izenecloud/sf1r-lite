@@ -44,6 +44,9 @@ struct Document {
         }
     }
 
+    Document(const offset_type o, const docid_type& id, const property_type& p)
+            : offset(o), docid(id), property(p) {}
+
     friend std::ostream& operator<<(std::ostream& os, const Document& d) {
         os << "@" << d.offset
            << "\t<" << Docid::name() << '>' << d.docid
