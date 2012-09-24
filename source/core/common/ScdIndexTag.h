@@ -67,8 +67,8 @@ struct TagType {
 
 namespace scd {
 
-/// Default tag for DOCID property.
-SCD_INDEX_PROPERTY_TAG_TYPED(DOCID, uint128);
+SCD_INDEX_PROPERTY_TAG_TYPED(DOCID, uint128); //< Default tag for 'DOCID' property.
+SCD_INDEX_PROPERTY_TAG_TYPED(uuid, uint128);  //< Default tag for 'uuid' property.
 
 /// Converter specialization for the uint128.
 template<>
