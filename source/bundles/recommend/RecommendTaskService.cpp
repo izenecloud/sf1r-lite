@@ -675,8 +675,7 @@ bool RecommendTaskService::saveOrder_(
     orderManager_.addOrder(itemIdVec);
 
     if (purchaseManager_.addPurchaseItem(userIdStr, itemIdVec, matrix) &&
-        insertPurchaseCounter_(orderItemVec, itemIdVec) &&
-        insertOrderDB_(userIdStr, orderIdStr, orderItemVec, itemIdVec))
+        insertPurchaseCounter_(orderItemVec, itemIdVec))
     {
         return true;
     }
@@ -685,49 +684,6 @@ bool RecommendTaskService::saveOrder_(
                << ", order id: " << orderIdStr
                << ", item num: " << itemIdVec.size();
     return false;
-}
-
-bool RecommendTaskService::insertOrderDB_(
-    const std::string& userIdStr,
-    const std::string& orderIdStr,
-    const OrderItemVec& orderItemVec,
-    const std::vector<itemid_t>& itemIdVec
-)
-{
-    assert(orderItemVec.empty() == false);
-
-    ItemIdSet recItemSet;
-    if (! visitManager_.getRecommendItemSet(userIdStr, recItemSet))
-    {
-        LOG(ERROR) << "error in VisitManager::getRecItemSet(), user id: " << userIdStr;
-        return false;
-    }
-
-    OrderLogger& orderLogger = OrderLogger::instance();
-    ItemLogger& itemLogger = ItemLogger::instance();
-    int orderId = 0;
-    if (! orderLogger.insertOrder(orderIdStr, bundleConfig_.collectionName_,
-                                  userIdStr, orderItemVec[0].dateStr_, orderId))
-    {
-        return false;
-    }
-
-    bool result = true;
-    const unsigned int itemNum = orderItemVec.size();
-    for (unsigned int i = 0; i < itemNum; ++i)
-    {
-        itemid_t itemId = itemIdVec[i];
-        bool isRecItem = (recItemSet.find(itemId) != recItemSet.end());
-        const RecommendTaskService::OrderItem& orderItem = orderItemVec[i];
-
-        if (! itemLogger.insertItem(orderId, orderItem.itemIdStr_,
-                                    orderItem.price_, orderItem.quantity_, isRecItem))
-        {
-            result = false;
-        }
-    }
-
-    return result;
 }
 
 bool RecommendTaskService::insertPurchaseCounter_(

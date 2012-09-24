@@ -230,16 +230,6 @@ private:
         RecommendMatrix* matrix
     );
 
-    /**
-     * insert the order items as DB records.
-     */
-    bool insertOrderDB_(
-        const std::string& userIdStr,
-        const std::string& orderIdStr,
-        const OrderItemVec& orderItemVec,
-        const std::vector<itemid_t>& itemIdVec
-    );
-
     bool insertPurchaseCounter_(
         const OrderItemVec& orderItemVec,
         const std::vector<itemid_t>& itemIdVec
