@@ -231,7 +231,7 @@ int main(int argc, char **argv)
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("imgserver-config", po::value<std::string>(), "image server config string")
+        ("imgserver-config", po::value<std::string>(), "image server config string(ip|port)")
         ("localimagepath", po::value<std::string>(), "specify the root path of local image that need to be uploaded.")
     ;
     po::variables_map vm;
