@@ -8,25 +8,24 @@
 #ifndef SCDINDEXTAG_H
 #define SCDINDEXTAG_H
 
-#include "uint128.h"
 #include "ScdParserTraits.h"
-#include <boost/mpl/int.hpp>
 
 namespace scd {
 
 /// Conversion function object declaration.
 template <typename Type> struct Converter;
 
-/// Default implementation as the identity function.
-template <>
-struct Converter<PropertyValueType> {
-    inline PropertyValueType operator()(const PropertyValueType& in) const {
-        return in;
+/// Converter specialization for the default type std::string.
+template <> struct Converter<std::string> {
+    inline std::string operator()(const PropertyValueType& in) const {
+        std::string str;
+        in.convertString(str, izenelib::util::UString::UTF_8);
+        return str;
     }
 };
 
 /// Base tag type.
-template <class Derived, typename Type = PropertyValueType, typename TypeConverter = Converter<Type> >
+template <class Derived, typename Type = std::string, typename TypeConverter = Converter<Type> >
 struct TagType {
     typedef Type type;
 
@@ -50,33 +49,12 @@ struct TagType {
 #define SCD_INDEX_PROPERTY_TAG(tag_name) \
     struct tag_name : scd::TagType<tag_name> { \
         static inline const char* name() { return #tag_name; } \
-        typedef boost::mpl::int_< sizeof(#tag_name) >::type hash_type; \
-    }
-
-/**
- * @brief Create a new property tag with a specific type.
- *
- * A conversion function object in the scd namespace is needed in order to
- * properly convert the PropertyValueType value (returned by the parser).
- */
-#define SCD_INDEX_PROPERTY_TAG_TYPED(tag_name, tag_type) \
-    struct tag_name : scd::TagType<tag_name, tag_type> { \
-        static inline const char* name() { return #tag_name; } \
-        typedef boost::mpl::int_< sizeof(#tag_name) >::type hash_type; \
     }
 
 namespace scd {
 
-SCD_INDEX_PROPERTY_TAG_TYPED(DOCID, uint128); //< Default tag for 'DOCID' property.
-SCD_INDEX_PROPERTY_TAG_TYPED(uuid, uint128);  //< Default tag for 'uuid' property.
-
-/// Converter specialization for the uint128.
-template<>
-struct Converter<uint128> {
-    inline uint128 operator()(const PropertyValueType& in) const {
-        return str2uint(in);
-    }
-};
+SCD_INDEX_PROPERTY_TAG(DOCID); //< Default tag for 'DOCID' property.
+SCD_INDEX_PROPERTY_TAG(uuid);  //< Default tag for 'uuid' property.
 
 } /* namespace scd */
 

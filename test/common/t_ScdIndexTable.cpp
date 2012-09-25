@@ -8,9 +8,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
 
-#define private public
 #include "common/ScdIndexTable.h"
-#undef private
+#include "common/ScdIndexTag.h"
 
 namespace fs = boost::filesystem;
 
@@ -23,9 +22,9 @@ fs::path temporaryFile(const std::string& name, bool deleteFlag = true) {
 #define print(X) std::cout << X << std::endl
 
 BOOST_AUTO_TEST_CASE(basic) {
-    typedef scd::leveldb::DOCID DOCID;
-    typedef scd::leveldb::uuid uuid;
-    typedef scd::leveldb::ScdIndexTable<uuid, DOCID> ScdIndexTable;
+    typedef scd::DOCID DOCID;
+    typedef scd::uuid uuid;
+    typedef scd::ScdIndexTable<uuid, DOCID> ScdIndexTable;
     typedef scd::Document<DOCID, uuid> Document;
 
     fs::path docidDatabase = temporaryFile("scd-docid"),
@@ -36,7 +35,7 @@ BOOST_AUTO_TEST_CASE(basic) {
     std::vector<offset_type> offsets;
 
     // get
-    BOOST_CHECK(not table.getByDocid("1", offset));
+    BOOST_CHECK(not table.getByDocid("1", &offset));
     BOOST_CHECK(not table.getByProperty("42", offsets));
 
     // insert
@@ -44,7 +43,7 @@ BOOST_AUTO_TEST_CASE(basic) {
     print("After insert:");
     table.dump();
 
-    BOOST_CHECK(table.getByDocid("1", offset));
+    BOOST_CHECK(table.getByDocid("1", &offset));
     BOOST_CHECK_EQUAL(0l, offset);
 
     BOOST_CHECK(table.getByProperty("42", offsets));
@@ -56,7 +55,7 @@ BOOST_AUTO_TEST_CASE(basic) {
     print("After insert:");
     table.dump();
 
-    BOOST_CHECK(table.getByDocid("1", offset));
+    BOOST_CHECK(table.getByDocid("1", &offset));
     BOOST_CHECK_EQUAL(4l, offset);
 
     BOOST_CHECK(table.getByProperty("71", offsets));
@@ -72,7 +71,7 @@ BOOST_AUTO_TEST_CASE(basic) {
     print("After insert:");
     table.dump();
 
-    BOOST_CHECK(table.getByDocid("2", offset));
+    BOOST_CHECK(table.getByDocid("2", &offset));
     BOOST_CHECK_EQUAL(12l, offset);
 
     BOOST_CHECK(table.getByProperty("71", offsets));

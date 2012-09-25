@@ -9,7 +9,6 @@
 #define SCDINDEX_TABLE_H
 
 #include "ScdIndexDocument.h"
-#include "ScdIndexLeveldbTags.h"
 #include "ScdIndexTableSerializer.h"
 #include <3rdparty/am/leveldb/db.h>
 #include <3rdparty/am/leveldb/write_batch.h>
@@ -18,7 +17,6 @@
 #include <glog/logging.h>
 
 namespace scd {
-namespace leveldb {
 
 namespace ldb = ::leveldb;
 
@@ -40,26 +38,24 @@ public:
     /// Destructor.
     ~ScdIndexTable() {}
 
-private:
-
     /// Create a new record.
     void insert(const Document<Docid, Property>& document) {
-        ldb::Status status = insertDocid(document.docid, document.offset);
+        ldb::Status status = insertDocid(document.docid, &document.offset);
         CHECK(status.ok()) << "Cannot insert docid '" << document.docid << "': "
                            << status.ToString();
-        status = insertProperty(document.property, document.offset);
+        status = insertProperty(document.property, &document.offset);
         CHECK(status.ok()) << "Cannot insert property '" << document.property << "': "
                            << status.ToString();
     }
 
     /// Retrieve file offset of a document.
-    bool getByDocid(const typename Docid::type& key, offset_type& offset) const {
+    bool getByDocid(const typename Docid::type& key, offset_type* offset) const {
         std::string value;
         ldb::Status status = docidDb->Get(ldb::ReadOptions(), key, &value);
         if (status.IsNotFound()) return false;
         CHECK(status.ok()) << "Cannot retrieve value for docid '" << key << "': "
                            << status.ToString();
-        offset = boost::lexical_cast<offset_type>(value);
+        *offset = boost::lexical_cast<offset_type>(value);
         return true;
     }
 
@@ -97,7 +93,6 @@ private:
     }
 
 private:
-
     /// Open a leveldb database.
     ldb::DB* openDatabase(const std::string& filename) const {
         ldb::DB* ptr;
@@ -111,16 +106,16 @@ private:
 
     /// Insert a new pair (docid, offset).
     inline ldb::Status
-    insertDocid(const typename Docid::type& docid, const offset_type offset) {
-        return docidDb->Put(ldb::WriteOptions(), docid, boost::lexical_cast<std::string>(offset));
+    insertDocid(const typename Docid::type& docid, const offset_type* offset) {
+        return docidDb->Put(ldb::WriteOptions(), docid, boost::lexical_cast<std::string>(*offset));
     }
 
     /// Insert a new pair (property, list<offset>).
     inline ldb::Status
-    insertProperty(const typename Property::type& property, const offset_type offset) {
+    insertProperty(const typename Property::type& property, const offset_type* offset) {
         std::vector<offset_type> offsets;
         getByProperty(property, offsets);
-        offsets.push_back(offset);
+        offsets.push_back(*offset);
 
         std::string value;
         save(offsets, value);
@@ -132,6 +127,6 @@ private:
     load_bin load; //< vector deserializer
 };
 
-}} /* namespace scd::leveldb */
+} /* namespace scd */
 
 #endif /* SCDINDEX_TABLE_H */

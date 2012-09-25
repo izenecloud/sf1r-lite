@@ -13,12 +13,7 @@
 #include <sstream>
 #include <vector>
 
-namespace boost { namespace serialization {
-
-}} /* namespace boost::serialization */
-
 namespace scd {
-namespace leveldb {
 
 namespace ba = boost::archive;
 
@@ -50,6 +45,6 @@ typedef load_impl<ba::binary_iarchive> load_bin;
 /// Function object saving into a binary archive.
 typedef save_impl<ba::binary_oarchive> save_bin;
 
-}} /* namespace scd::leveldb */
+} /* namespace scd */
 
 #endif /* SCDINDEX_TABLE_SERIALIZER_H */

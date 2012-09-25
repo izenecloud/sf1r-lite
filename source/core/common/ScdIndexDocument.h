@@ -9,8 +9,6 @@
 #define SCDINDEXDOCUMENT_H
 
 #include "ScdParserTraits.h"
-#include <boost/mpl/integral_c.hpp>
-#include <boost/mpl/plus.hpp>
 #include <glog/logging.h>
 
 namespace scd {
@@ -59,15 +57,6 @@ struct Document {
            and docid == d.docid
            and property == d.property;
     }
-
-    /// Serialization version.
-    typedef boost::mpl::integral_c<
-                unsigned,
-                boost::mpl::plus<
-                    boost::mpl::int_<Docid::hash_type::value>,
-                    boost::mpl::int_<Property::hash_type::value>
-                >::value
-            > Version;
 };
 
 } /* namespace scd */
