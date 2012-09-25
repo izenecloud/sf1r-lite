@@ -32,6 +32,8 @@ public:
     void start_collection();
 
     void stop_collection();
+    
+    void rebuild_collection();
 
     void create_collection();
 
