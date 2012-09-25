@@ -23,6 +23,7 @@ namespace fs = boost::filesystem;
 struct TestFixture {
     fs::path tmpdir;
     TestFixture() {
+        // TODO: sistemare questo che è un po' brutto
         tmpdir = createTempDir("scd-index");
         BOOST_REQUIRE(fs::exists(tmpdir));
     }
@@ -69,27 +70,7 @@ namespace test {
 SCD_INDEX_PROPERTY_TAG(Title);
 }
 
-/* Test indexing and document retrieval. */
-BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
-    typedef scd::ScdIndex<test::Title> ScdIndex;
-
-    const unsigned DOC_NUM = 10;
-    fs::path path = createScd("test_index.scd", DOC_NUM);
-    fs::path dir1 = createTempDir("scd-index/docid", true);
-    fs::path dir2 = createTempDir("scd-index/title", true);
-
-    // build index
-    boost::scoped_ptr<ScdIndex> indexptr(ScdIndex::build(path.string(), dir1.string(), dir2.string()));
-
-    // using const reference
-    const ScdIndex& index = *indexptr;
-#if DEBUG_OUTPUT
-    indexptr->dump();
-#endif
-
-    // expected values
-    const long expected[] = { 0, 101, 195, 289, 383, 477, 571, 665, 759, 853 };
-
+void doTest(const scd::ScdIndex<test::Title>& index, const size_t DOC_NUM, const long* expected) {
     // query by DOCID: hit
     for (size_t i = 1; i <= DOC_NUM; ++i) {
         const std::string id = DOCID(i);
@@ -131,150 +112,85 @@ BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     }
 }
 
-#if 0
-/* Test serialization. */
-BOOST_FIXTURE_TEST_CASE(test_serialization, TestFixture) {
+/* Test indexing and document retrieval. */
+BOOST_FIXTURE_TEST_CASE(test_index, TestFixture) {
     typedef scd::ScdIndex<test::Title> ScdIndex;
-    typedef boost::scoped_ptr<ScdIndex> ScdIndexPtr;
 
-    const unsigned NUM_DOC_A = 10;
-    const unsigned NUM_DOC_B = 8;
-    fs::path path_a = createScd("test_serialization_a.scd", NUM_DOC_A);
-    fs::path path_b = createScd("test_serialization_b.scd", NUM_DOC_B, NUM_DOC_A + 1);
+    const size_t DOC_NUM = 10;
+    fs::path path = createScd("test_index.scd", DOC_NUM);
+    fs::path dir1 = createTempDir("scd-index/docid", true);
+    fs::path dir2 = createTempDir("scd-index/title", true);
 
-    // use smart pointer
-    ScdIndexPtr index(ScdIndex::build(path_a.string()));
-    BOOST_CHECK_EQUAL(12, ScdIndex::document_type::Version::value);
+    // expected values
+    const long expected[] = { 0, 101, 195, 289, 383, 477, 571, 665, 759, 853 };
 
-    // save to file
-    fs::path saved = tempFile("saved-a");
-    index->save(saved.string());
-    BOOST_CHECK(fs::exists(saved));
+    // build index
+    ScdIndex* indexptr = ScdIndex::build(path.string(), dir1.string(), dir2.string());
+    BOOST_REQUIRE(fs::exists(dir1) and fs::is_directory(dir1) and not fs::is_empty(dir1));
+    BOOST_REQUIRE(fs::exists(dir2) and fs::is_directory(dir2) and not fs::is_empty(dir2));
+#if DEBUG_OUTPUT
+    indexptr->dump();
+#endif
+
+    // perform test
+    doTest(*indexptr, DOC_NUM, expected);
 
     // load from file
     {
-        ScdIndex loaded;
-        loaded.load(saved.string());
-        BOOST_CHECK_EQUAL(index->size(), loaded.size());
-        for (ScdIndex::docid_iterator it = index->begin(); it != index->end(); ++it) {
-            BOOST_CHECK(*it == *loaded.find(it->docid));
-        }
+        boost::scoped_ptr<ScdIndex> loaded(ScdIndex::load(dir1.string(), dir2.string()));
+        // perform the same test
+        doTest(*loaded, DOC_NUM, expected);
     }
 
-    // version mismatch
-    {
-        scd::ScdIndex<test::Content> loaded;
-        BOOST_CHECK_EQUAL(14, scd::ScdIndex<test::Content>::document_type::Version::value);
-        BOOST_CHECK_THROW(loaded.load(saved.string()), std::exception);
-    }
-
-    // loading from file _replaces_ existing content.
-    {
-#if DEBUG_OUTPUT
-        std::cout << " * Before load:" << std::endl;
-        std::copy(index->begin(), index->end(),
-                  std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
-#endif
-
-        ScdIndexPtr index_b(ScdIndex::build(path_b.string()));
-        fs::path saved_b = tempFile("saved-b");
-        index_b->save(saved_b.string());
-
-        index->load(saved_b.string());
-#if DEBUG_OUTPUT
-        std::cout << " * After load:" << std::endl;
-        std::copy(index->begin(), index->end(),
-                  std::ostream_iterator<ScdIndex::document_type>(std::cout, "\n"));
-#endif
-        BOOST_CHECK_EQUAL(index->size(), index_b->size());
-        for (ScdIndex::docid_iterator it = index->begin(); it != index->end(); ++it) {
-            BOOST_CHECK(*it == *index_b->find(it->docid));
-        }
-    }
+    // close db
+    delete indexptr;
 }
-
-/* Test uin128 wrapper type. */
-BOOST_AUTO_TEST_CASE(test_uint) {
-    { // docid as izenelib::util::UString
-        const izenelib::util::UString docid = USTRING("f1667c41c7028665c198066b786bd149");
-
-        const uint128 packed = str2uint(docid);
-        const izenelib::util::UString unpacked = USTRING(uint2str(packed));
-#if DEBUG_OUTPUT
-        std::cout << "docid : " << docid << " -> " << sizeof(docid) << std::endl;
-        std::cout << "pack  : " << packed << " -> " << sizeof(packed) << std::endl;
-        std::cout << "unpack: " << unpacked << " -> " << sizeof(docid) << std::endl;
-#endif
-        BOOST_CHECK_EQUAL(docid, unpacked);
-    }
-
-    { // docid as std::string
-        const std::string docid = "f1667c41c7028665c198066b786bd149";
-
-        const uint128 packed = str2uint(docid);
-        const std::string unpacked = uint2str(packed);
-#if DEBUG_OUTPUT
-        std::cout << "docid : " << docid << " -> " << sizeof(docid) << std::endl;
-        std::cout << "pack  : " << packed << " -> " << sizeof(packed) << std::endl;
-        std::cout << "unpack: " << unpacked << " -> " << sizeof(docid) << std::endl;
-#endif
-        BOOST_CHECK_EQUAL(docid, unpacked);
-    }
- }
 
 /* enable performance test on a big SCD */
 #define TEST_SCD_INDEX_PERFORMANCE 0
 
 #if TEST_SCD_INDEX_PERFORMANCE
-namespace test {
-SCD_INDEX_PROPERTY_TAG_TYPED(uuid, uint128); //< 'uuid' tag.
-}
-
 /* Index and serialize a _big_ SCD file. */
 BOOST_FIXTURE_TEST_CASE(test_performance, TestFixture) {
-#if 1
+    typedef scd::ScdIndex<> ScdIndex;
+#if 0
     // create a sample SCD file as defined in the fixture.
-    typedef scd::ScdIndex<test::Title> ScdIndex;
     fs::path path = createScd("test_performance.scd", 21e5);
 #else
     // load a real SCD file
-    typedef scd::ScdIndex<test::uuid, scd::DOCID> ScdIndex;
-    fs::path path = "/home/paolo/tmp/B-00-201207282137-29781-U-C.SCD";
+    fs::path path = "/home/paolo/tmp/B-00-201209051302-28047-I-C.SCD";
+    //fs::path path = "/home/paolo/tmp/B-00-201207282137-29781-U-C.SCD";
     BOOST_REQUIRE(fs::exists(path));
 #endif
+    fs::path dir1 = createTempDir("scd-index/docid", true);
+    fs::path dir2 = createTempDir("scd-index/uuid", true);
 
     // measure elapsed time between a tic() and a toc()
     Timer timer;
 
-    timer.tic();
-    boost::scoped_ptr<ScdIndex> index(ScdIndex::build(path.string(), 2.5e4));
-    timer.toc();
-    std::cout << "\nIndexing time:\n\t" << timer.seconds() << " seconds" << std::endl;
-
-    // save to file
-    fs::path saved = tempFile("saved");
-    timer.tic();
-    index->save(saved.string());
-    timer.toc();
-    std::cout << "Serialization time:\n\t" << timer.seconds() << " seconds" << std::endl;
-    BOOST_CHECK(fs::exists(saved));
-    std::cout << "Archive size:\n\t" << fs::file_size(saved)/1024 << " KiB" << std::endl;
-
-    // load from file
+    // build index
     {
-        ScdIndex loaded;
         timer.tic();
-        loaded.load(saved.string());
+        boost::scoped_ptr<ScdIndex> index(ScdIndex::build(path.string(), dir1.string(), dir2.string(), 2.5e4));
         timer.toc();
-        std::cout << "Deserialization time:\n\t" << timer.seconds() << " seconds" << std::endl;
-        BOOST_CHECK_EQUAL(index->size(), loaded.size());
+        std::cout << "\nIndexing time:\n\t" << timer.seconds() << " seconds" << std::endl;
+    }
+
+    // load index
+    {
+        timer.tic();
+        boost::scoped_ptr<ScdIndex> loaded(ScdIndex::load(dir1.string(), dir2.string()));
+        timer.toc();
+        std::cout << "Loading time:\n\t" << timer.seconds() << " seconds" << std::endl;
+#if 0
+        // TODO traversal using iterators?
         timer.tic();
         for (ScdIndex::docid_iterator it = index->begin(); it != index->end(); ++it) {
             BOOST_CHECK(*it == *loaded.find(it->docid));
         }
         timer.toc();
         std::cout << "Checking time:\n\t" << timer.seconds() << " seconds" << std::endl;
+#endif
     }
 }
-#endif
 #endif

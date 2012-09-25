@@ -1,12 +1,12 @@
 /*
- * File:   ScdIndexTableSerializer.h
+ * File:   ScdIndexLeveldbSerializer.h
  * Author: Paolo D'Apice
  *
  * Created on September 24, 2012, 5:07 PM
  */
 
-#ifndef SCDINDEX_TABLE_SERIALIZER_H
-#define SCDINDEX_TABLE_SERIALIZER_H
+#ifndef SCDINDEX_LEVELDB_SERIALIZER_H
+#define SCDINDEX_LEVELDB_SERIALIZER_H
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -47,4 +47,4 @@ typedef save_impl<ba::binary_oarchive> save_bin;
 
 } /* namespace scd */
 
-#endif /* SCDINDEX_TABLE_SERIALIZER_H */
+#endif /* SCDINDEX_LEVELDB_SERIALIZER_H */

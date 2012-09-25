@@ -1,15 +1,15 @@
 /*
- * File:   ScdIndexTable.h
+ * File:   ScdIndexLeveldb.h
  * Author: Paolo D'Apice
  *
  * Created on September 24, 2012, 10:18 AM
  */
 
-#ifndef SCDINDEX_TABLE_H
-#define SCDINDEX_TABLE_H
+#ifndef SCDINDEX_LEVELDB_H
+#define SCDINDEX_LEVELDB_H
 
 #include "ScdIndexDocument.h"
-#include "ScdIndexTableSerializer.h"
+#include "ScdIndexLeveldbSerializer.h"
 #include <3rdparty/am/leveldb/db.h>
 #include <3rdparty/am/leveldb/write_batch.h>
 #include <boost/lexical_cast.hpp>
@@ -24,19 +24,19 @@ namespace ldb = ::leveldb;
  * @brief leveldb adapter to be used for storing ScdIndex.
  */
 template <typename Property, typename Docid>
-class ScdIndexTable {
+class ScdIndexLeveldb {
     boost::scoped_ptr<ldb::DB> docidDb;
     boost::scoped_ptr<ldb::DB> propertyDb;
 
 public:
     /// Create a new table.
-    ScdIndexTable(const std::string& docidDatabase, const std::string& propertyDatabase) {
-        docidDb.reset(openDatabase(docidDatabase));
-        propertyDb.reset(openDatabase(propertyDatabase));
+    ScdIndexLeveldb(const std::string& docidDatabase, const std::string& propertyDatabase, const bool create) {
+        docidDb.reset(openDatabase(docidDatabase, create));
+        propertyDb.reset(openDatabase(propertyDatabase, create));
     }
 
     /// Destructor.
-    ~ScdIndexTable() {}
+    ~ScdIndexLeveldb() {}
 
     /// Create a new record.
     void insert(const Document<Docid, Property>& document) {
@@ -94,13 +94,14 @@ public:
 
 private:
     /// Open a leveldb database.
-    ldb::DB* openDatabase(const std::string& filename) const {
+    ldb::DB* openDatabase(const std::string& filename, bool create) const {
         ldb::DB* ptr;
         ldb::Options options;
-        options.create_if_missing = true;
-        options.error_if_exists = true;
+        options.error_if_exists = create;
+        options.create_if_missing = create;
         ldb::Status status = ldb::DB::Open(options, filename, &ptr);
-        CHECK(status.ok()) << "Cannot create database to: " << filename;
+        CHECK(status.ok()) << "Cannot create database to '" << filename << "': "
+                           << status.ToString();
         return ptr;
     }
 
@@ -129,4 +130,4 @@ private:
 
 } /* namespace scd */
 
-#endif /* SCDINDEX_TABLE_H */
+#endif /* SCDINDEX_LEVELDB_H */

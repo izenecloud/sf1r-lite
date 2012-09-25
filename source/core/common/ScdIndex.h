@@ -9,7 +9,7 @@
 #define SCDINDEX_H
 
 #include "ScdIndexDocument.h"
-#include "ScdIndexTable.h"
+#include "ScdIndexLeveldb.h"
 #include "ScdIndexTag.h"
 #include "ScdParser.h"
 
@@ -27,14 +27,6 @@ public:
     /// Alias for the actual type.
     typedef Document<Docid, Property> document_type;
 
-    /**
-     * Create a new index with the given leveldb databases.
-     * @param path1 Path to the Docid leveldb database.
-     * @param path2 Path to the Property leveldb database.
-     */
-    ScdIndex(const std::string& path1, const std::string& path2)
-            : container(path1, path2) {}
-
     /// Destructor.
     ~ScdIndex() {}
 
@@ -50,6 +42,13 @@ public:
             const std::string& path1,
             const std::string& path2,
             const unsigned flush_count = 1e4);
+
+    /**
+     * Load an existing index with the given leveldb databases.
+     * @param path1 Path to the Docid leveldb database.
+     * @param path2 Path to the Property leveldb database.
+     */
+    static ScdIndex<Property, Docid>* load(const std::string& path1, const std::string path2);
 
     /// Get the offset of the document having the given Docid.
     bool find(const typename Docid::type& key, offset_type* offset) const {
@@ -67,7 +66,10 @@ public:
     }
 
 private:
-    ScdIndexTable<Property, Docid> container;
+    ScdIndex(const std::string& path1, const std::string& path2, const bool create)
+            : container(path1, path2, create) {}
+
+    ScdIndexLeveldb<Property, Docid> container;
 };
 
 template<typename Property, typename Docid>
@@ -82,7 +84,7 @@ ScdIndex<Property, Docid>::build(const std::string& path,
     CHECK(parser.load(path)) << "Cannot load file: " << path;
     LOG(INFO) << "Building index on: " << path << " ...";
 
-    ScdIndex<Property, Docid>* index = new ScdIndex(path1, path2);
+    ScdIndex<Property, Docid>* index = new ScdIndex(path1, path2, true);
     iterator end = parser.end();
     unsigned count = 1;
     for (iterator it = parser.begin(); it != end; ++it, ++count) {
@@ -99,6 +101,12 @@ ScdIndex<Property, Docid>::build(const std::string& path,
     }
     LOG(INFO) << "Indexed " << (count - 1) << " documents.";
     return index;
+}
+
+template<typename Property, typename Docid>
+ScdIndex<Property, Docid>*
+ScdIndex<Property, Docid>::load(const std::string& path1, const std::string path2) {
+    return new ScdIndex(path1, path2, false);
 }
 
 } /* namespace scd */
