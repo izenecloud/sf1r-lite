@@ -9,6 +9,7 @@
 #define SCDINDEXTAG_H
 
 #include "ScdParserTraits.h"
+#include "Utilities.h"
 
 namespace scd {
 
@@ -51,11 +52,36 @@ struct TagType {
         static inline const char* name() { return #tag_name; } \
     }
 
+/**
+ * @brief Create a new property tag with a specific type.
+ *
+ * A conversion function object in the scd namespace is needed in order to
+ * properly convert the PropertyValueType value (returned by the parser).
+ */
+#define SCD_INDEX_PROPERTY_TAG_TYPED(tag_name, tag_type) \
+    struct tag_name : scd::TagType<tag_name, tag_type> { \
+        static inline const char* name() { return #tag_name; } \
+    }
+
 namespace scd {
 
-SCD_INDEX_PROPERTY_TAG(DOCID); //< Default tag for 'DOCID' property.
-SCD_INDEX_PROPERTY_TAG(uuid);  //< Default tag for 'uuid' property.
+SCD_INDEX_PROPERTY_TAG_TYPED(DOCID, uint128_t); //< Default tag for 'DOCID' property.
+SCD_INDEX_PROPERTY_TAG_TYPED(uuid, uint128_t);  //< Default tag for 'uuid' property.
+
+/// Converter specialization for the uint128_t.
+template<>
+struct Converter<uint128_t> {
+    inline uint128_t operator()(const PropertyValueType& in) const {
+        return sf1r::Utilities::md5ToUint128(in);
+    }
+};
 
 } /* namespace scd */
+
+// operator<< should be in the global namespace
+std::ostream& operator<<(std::ostream& os, const uint128_t& in) {
+    os << sf1r::Utilities::uint128ToMD5(in);
+    return os;
+}
 
 #endif /* SCDINDEXTAG_H */
