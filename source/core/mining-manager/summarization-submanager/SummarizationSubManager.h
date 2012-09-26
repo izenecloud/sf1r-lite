@@ -10,6 +10,7 @@
 #include <queue>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+#include "OpinionsClassficationManager.h"
 
 namespace idmlib
 {
@@ -87,6 +88,7 @@ private:
 
     Corpus* corpus_;
     std::vector<OpinionsManager*> Ops_;
+    OpinionsClassficationManager* Opc_;
     boost::mutex  waiting_opinion_lock_;
     boost::mutex  opinion_results_lock_;
     boost::condition_variable  waiting_opinion_cond_;
