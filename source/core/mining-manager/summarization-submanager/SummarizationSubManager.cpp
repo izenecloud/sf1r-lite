@@ -78,11 +78,10 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , comment_cache_storage_(new CommentCacheStorage(homePath))
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
-    
 {
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
-    Opc_=new OpinionsClassficationManager(cma_path, schema_.opinionWorkingPath);
+    Opc_ = new OpinionsClassificationManager(cma_path, schema_.opinionWorkingPath);
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
@@ -130,23 +129,22 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         if (key.empty()) continue;
 
         ContentType content ;//= cit->second.get<UString>();
-            
+
         //const AdvantageType& advantage = ait->second.get<AdvantageType>();
         //const DisadvantageType& disadvantage = dit->second.get<DisadvantageType>();
         UString  us(cit->second.get<UString>());
         string str;
         us.convertString(str, izenelib::util::UString::UTF_8);
         std::pair<UString,UString> advantagepair=Opc_->test(str);
-            //
-       
+
         AdvantageType advantage=advantagepair.first;
-        
+
         DisadvantageType disadvantage=advantagepair.second;
-        
+
         score = 0.0f;
         numericPropertyTable->getFloatValue(i, score);
         comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,
-           advantage, disadvantage, score);
+                advantage, disadvantage, score);
 
         if (++count % 100000 == 0)
         {
@@ -173,12 +171,12 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     }
 
     string OpPath = schema_.opinionWorkingPath;
- 
+
     std::vector<UString> filters;
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
     LOG(INFO)<<"OpPath"<<OpPath<<endl;
-    
+
     try
     {
         ifstream infile;
@@ -212,7 +210,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         LAPool::getInstance()->get_cma_path(cma_path);
 
         Ops_.push_back(new OpinionsManager( log_path, cma_path, OpPath));
-        
+
         Ops_.back()->setSigma(0.1, 5, 0.6, 20);
         //////////////////////////
         Ops_.back()->setFilterStr(filters);
@@ -239,7 +237,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
             Summarization summarization(commentCacheItem);
             DoEvaluateSummarization_(summarization, key, commentCacheItem);
-            
+
             DoOpinionExtraction(summarization, key, commentCacheItem);
             if (++count % 1000 == 0)
             {
@@ -308,19 +306,19 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
         if(opinion_data.cached_comments.empty())
             continue;
 
-       // std::vector<UString> Z;
+        // std::vector<UString> Z;
         std::vector<UString> advantage_comments;
         std::vector<UString> disadvantage_comments;
         //Z.reserve(opinion_data.cached_comments.size());
         advantage_comments.reserve(opinion_data.cached_comments.size());
         disadvantage_comments.reserve(opinion_data.cached_comments.size());
         for (CommentCacheItemType::const_iterator it = opinion_data.cached_comments.begin();
-            it != opinion_data.cached_comments.end(); ++it)
+                it != opinion_data.cached_comments.end(); ++it)
         {
-           
-             //Z.push_back((it->second).content);
-              advantage_comments.push_back(it->second.advantage);
-              disadvantage_comments.push_back(it->second.disadvantage);
+
+            //Z.push_back((it->second).content);
+            advantage_comments.push_back(it->second.advantage);
+            disadvantage_comments.push_back(it->second.disadvantage);
         }
 
         //Op->setComment(Z);
@@ -329,13 +327,12 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
         std::vector< std::pair<double, UString> > advantage_opinions = Op->getOpinion();
         Op->setComment(disadvantage_comments);
         std::vector< std::pair<double, UString> > disadvantage_opinions = Op->getOpinion();
-        if((!product_opinions.empty())||(!advantage_opinions.empty())||(disadvantage_opinions.empty()))
+        if((!advantage_opinions.empty())||(!disadvantage_opinions.empty()))
         {
             OpinionResultItem item;
             item.key = opinion_data.key;
-            std::vector< std::pair<double, UString> > temp= advantage_opinions;
-            temp.insert(temp.end(),advantage_opinions.begin(),advantage_opinions.end());
-            item.result_opinions =temp;
+
+
             item.result_advantage = advantage_opinions;
             item.result_disadvantage = disadvantage_opinions;
 
@@ -352,9 +349,9 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
 }
 
 void MultiDocSummarizationSubManager::DoOpinionExtraction(
-    Summarization& summarization,
-    const KeyType& key,
-    const CommentCacheItemType& comment_cache_item)
+        Summarization& summarization,
+        const KeyType& key,
+        const CommentCacheItemType& comment_cache_item)
 {
     WaitingComputeCommentItem item;
     item.key = key;
@@ -402,28 +399,31 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
             result = opinion_results_.front();
             opinion_results_.pop();
         }
-        if(!result.result_opinions.empty())
+        if((!result.result_advantage.empty())||(!result.result_advantage.empty()))
         {
-            UString final_opinion_str = result.result_opinions[0].second;
-            for(size_t i = 1; i < result.result_opinions.size(); ++i)
+            if(!result.result_advantage.empty())
             {
-                final_opinion_str.append( UString(",", UString::UTF_8) );
-                final_opinion_str.append(result.result_opinions[i].second);
+                UString final_opinion_str = result.result_advantage[0].second;
+                for(size_t i = 1; i < result.result_advantage.size(); ++i)
+                {
+                    final_opinion_str.append( UString(",", UString::UTF_8) );
+                    final_opinion_str.append(result.result_advantage[i].second);
+                }
+
+                std::string key_str;
+                key_str = Utilities::uint128ToUuid(result.key);
+                UString key_ustr(key_str, UString::UTF_8);
+
+                if (opinion_scd_writer_)
+                {
+                    Document doc;
+                    doc.property("DOCID") = key_ustr;
+                    doc.property(schema_.opinionPropName) = final_opinion_str;
+                    opinion_scd_writer_->Append(doc);
+                }
             }
 
-            std::string key_str;
-            key_str = Utilities::uint128ToUuid(result.key);
-            UString key_ustr(key_str, UString::UTF_8);
-
-            if (opinion_scd_writer_)
-            {
-                Document doc;
-                doc.property("DOCID") = key_ustr;
-                doc.property(schema_.opinionPropName) = final_opinion_str;
-                opinion_scd_writer_->Append(doc);
-            }
-
-            result.summarization.updateProperty("overview", result.result_opinions);
+            // result.summarization.updateProperty("overview", result.result_opinions);
             result.summarization.updateProperty("advantage", result.result_advantage);
             result.summarization.updateProperty("disadvantage", result.result_disadvantage);
             summarization_storage_->Update(result.key, result.summarization);

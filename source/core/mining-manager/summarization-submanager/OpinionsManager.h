@@ -18,7 +18,7 @@
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <am/succinct/fm-index/wavelet_tree_huffman.hpp>
 
-#define MAX_COMMENT_NUM  10000
+#define MAX_COMMENT_NUM  15000
 
 using std::string;
 using std::vector;
@@ -59,6 +59,21 @@ public:
         }
         int inner_;
     };
+    struct CommentScoreT
+    {
+        double srep_score;
+        double occurrence_num;
+        CommentScoreT()
+            :srep_score(0),
+            occurrence_num(0)
+        {
+        }
+        CommentScoreT(double score, double num)
+            :srep_score(score),
+            occurrence_num(num)
+        {
+        }
+    };
     typedef UString WordStrType;
     // store single comment and split string.
     typedef std::vector< WordStrType > OriginalCommentT;
@@ -83,6 +98,8 @@ public:
     typedef std::vector< NgramPhraseT > OpinionContainerT;
     typedef std::pair< NgramPhraseT, double > OpinionCandidateT;
     typedef std::vector< OpinionCandidateT > OpinionCandidateContainerT;
+    typedef std::pair<CommentScoreT, UString> OpinionCandStringT;
+    typedef std::vector< OpinionCandStringT > OpinionCandStringContainerT;
 
     OpinionsManager(const string& colPath, const std::string& dictpath,
         const string& training_data_path);//string enc,string cate,string posDelimiter,
@@ -99,12 +116,13 @@ public:
 private:
     void RecordCoOccurrence(const WordStrType& s, size_t& curren_offset);
     void AppendStringToIDArray(const WordStrType& s, std::vector<uint32_t>& word_ids);
-    void recompute_srep(std::vector< std::pair<double, UString> >& candList);
+    void recompute_srep(OpinionCandStringContainerT& candList);
     void RefineCandidateNgram(OpinionCandidateContainerT& candList);
     void stringToWordVector(const WordStrType& Mi, WordSegContainerT& words);
     void WordVectorToString(WordStrType& Mi, const WordSegContainerT& words);
     double Sim(const WordStrType& Mi, const WordStrType& Mj);
     double Sim(const NgramPhraseT& wordsi, const NgramPhraseT& wordsj);
+    double SimSentence(const WordStrType& sentence_i, const WordStrType& sentence_j);
     double Srep(const NgramPhraseT& words);
     double SrepSentence(const UString& phrase_str);
     double Score(const NgramPhraseT& words);
@@ -120,18 +138,18 @@ private:
     bool GenCandidateWord(WordSegContainerT& wordlist);
     bool GenSeedBigramList(BigramPhraseContainerT& result_list);
     bool GetFinalMicroOpinion(const BigramPhraseContainerT& seed_bigramlist,
-       bool need_orig_comment_phrase, std::vector< std::pair<double, UString> >& final_result);
+       bool need_orig_comment_phrase, std::vector< std::pair<double, WordStrType> >& final_result);
     void ValidCandidateAndUpdate(const NgramPhraseT& phrase, OpinionCandidateContainerT& candList);
     bool NotMirror(const WordSegContainerT& phrase, const BigramPhraseT& bigram);
     void Merge(NgramPhraseT& phrase, const BigramPhraseT& bigram);
     BigramPhraseContainerT GetJoinList(const WordSegContainerT& phrase, const BigramPhraseContainerT& BigramList, int current_merge_pos);
     void GenerateCandidates(const NgramPhraseT& phrase, OpinionCandidateContainerT& candList, 
         const BigramPhraseContainerT& seedBigrams, int current_merge_pos);
-    void changeForm(const OpinionCandidateContainerT& candList, std::vector<std::pair<double, WordStrType> >& newForm);
+    void changeForm(const OpinionCandidateContainerT& candList, OpinionCandStringContainerT& newForm);
    
     std::string getSentence(const WordSegContainerT& candVector);
     bool IsNeedFilter(const WordStrType& teststr);
-    void GetOrigCommentsByBriefOpinion(std::vector< std::pair<double, UString> >& candOpinionString);
+    void GetOrigCommentsByBriefOpinion(OpinionCandStringContainerT& candOpinionString);
     bool FilterBigramByPossib(double possib, const OpinionsManager::BigramPhraseT& bigram);
 
     bool IsBeginBigram(const WordStrType& bigram);

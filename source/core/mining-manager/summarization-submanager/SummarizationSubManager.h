@@ -10,7 +10,7 @@
 #include <queue>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
-#include "OpinionsClassficationManager.h"
+#include "OpinionsClassificationManager.h"
 
 namespace idmlib
 {
@@ -61,9 +61,9 @@ private:
     void DoComputeOpinion(OpinionsManager* Op);
 
     void DoOpinionExtraction(
-        Summarization& summarization,
-        const KeyType& key,
-        const CommentCacheItemType& comment_cache_item);
+            Summarization& summarization,
+            const KeyType& key,
+            const CommentCacheItemType& comment_cache_item);
 
     void DoWriteOpinionResult();
 
@@ -88,7 +88,7 @@ private:
 
     Corpus* corpus_;
     std::vector<OpinionsManager*> Ops_;
-    OpinionsClassficationManager* Opc_;
+    OpinionsClassificationManager* Opc_;
     boost::mutex  waiting_opinion_lock_;
     boost::mutex  opinion_results_lock_;
     boost::condition_variable  waiting_opinion_cond_;
