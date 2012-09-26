@@ -406,7 +406,7 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
            if(!result.result_advantage.empty()) 
            {
             UString final_opinion_str = result.result_advantage[0].second;
-            for(size_t i = 1; i < result.result_opinions.size(); ++i)
+            for(size_t i = 1; i < result.result_advantage.size(); ++i)
             {
                 final_opinion_str.append( UString(",", UString::UTF_8) );
                 final_opinion_str.append(result.result_advantage[i].second);
