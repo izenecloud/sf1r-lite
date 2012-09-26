@@ -162,11 +162,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
         if (cit == doc.propertyEnd()) continue;
 
-        Document::property_const_iterator ait = doc.findProperty(schema_.advantagePropName);
-        if (cit == doc.propertyEnd()) continue;
+        //Document::property_const_iterator ait = doc.findProperty(schema_.advantagePropName);
+        //if (cit == doc.propertyEnd()) continue;
 
-        Document::property_const_iterator dit = doc.findProperty(schema_.disadvantagePropName);
-        if (cit == doc.propertyEnd()) continue;
+        //Document::property_const_iterator dit = doc.findProperty(schema_.disadvantagePropName);
+        //if (cit == doc.propertyEnd()) continue;
 
         const UString& key = kit->second.get<UString>();
         if (key.empty()) continue;

@@ -636,10 +636,8 @@ int OpinionsClassificationManager::dealwithWordPair(string wordpair,bool& revers
 }
 int OpinionsClassificationManager::getResult(string Sentence)
 {
-
     vector<string> wordvec=SegQuery(Sentence);
     int reverse=1;
-    bool  ret;
     //reverseDeal(wordvec,reverse);
     int score=0;
     vector<string> temp;
@@ -734,19 +732,16 @@ int OpinionsClassificationManager::getResult(string Sentence)
     if((score>0))
     {
         log<<"优点"<<endl;
-        ret= true;
     }
     else
     {
         if(score==0)
         {
             log<<"无法评价！"<<endl;
-            ret=false;
         }
         else
         {
             log<<"缺点"<<endl;
-            ret=false;
         }
     }
     log<<"未识别"<<temp.size()<<endl;
