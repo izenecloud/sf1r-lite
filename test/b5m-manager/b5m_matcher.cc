@@ -1,7 +1,9 @@
 #include <b5m-manager/raw_scd_generator.h>
 #include <b5m-manager/attribute_indexer.h>
+#include <b5m-manager/product_matcher.h>
 #include <b5m-manager/category_scd_spliter.h>
 #include <b5m-manager/b5mo_scd_generator.h>
+#include <b5m-manager/b5mo_processor.h>
 #include <b5m-manager/log_server_client.h>
 #include <b5m-manager/image_server_client.h>
 #include <b5m-manager/uue_generator.h>
@@ -33,6 +35,8 @@ int main(int ac, char** av)
         ("help", "produce help message")
         ("raw-generate", "generate standard raw scd")
         ("attribute-index,A", "build attribute index")
+        ("product-train", "do product training")
+        ("product-match", "do product matching test")
         ("b5m-match,B", "make b5m matching")
         ("psm-index", "psm index")
         ("psm-match", "psm match")
@@ -67,6 +71,7 @@ int main(int ac, char** av)
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
         ("dictionary", po::value<std::string>(), "specify dictionary path")
         ("mobile-source", po::value<std::string>(), "specify mobile source list file")
+        ("human-match", po::value<std::string>(), "specify human edit match file")
         ("logserver-config,L", po::value<std::string>(), "log server config string")
         ("imgserver-config,L", po::value<std::string>(), "image server config string")
         ("exclude,E", "do not generate non matched categories")
@@ -105,6 +110,7 @@ int main(int ac, char** av)
     std::string category_regex;
     std::string dictionary;
     std::string mobile_source;
+    std::string human_match;
     std::string cma_path = IZENECMA_KNOWLEDGE ;
     std::string work_dir;
     std::string name;
@@ -234,6 +240,10 @@ int main(int ac, char** av)
     {
         mobile_source = vm["mobile-source"].as<std::string>();
     }
+    if(vm.count("human-match"))
+    {
+        human_match = vm["human-match"].as<std::string>();
+    }
     if(vm.count("work-dir"))
     {
         work_dir = vm["work-dir"].as<std::string>();
@@ -317,6 +327,42 @@ int main(int ac, char** av)
         //{
             //return EXIT_FAILURE;
         //}
+    } 
+    if (vm.count("product-train")) {
+        if( knowledge_dir.empty()||scd_path.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        if(mode>2)//re-train
+        {
+            ProductMatcher::Clear(knowledge_dir);
+        }
+        ProductMatcher matcher(knowledge_dir);
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open())
+        {
+            return EXIT_FAILURE;
+        }
+        if(!matcher.Index(scd_path))
+        {
+            return EXIT_FAILURE;
+        }
+    } 
+    if (vm.count("product-match")) {
+        if( knowledge_dir.empty()||scd_path.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ProductMatcher matcher(knowledge_dir);
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open())
+        {
+            return EXIT_FAILURE;
+        }
+        if(!matcher.DoMatch(scd_path))
+        {
+            return EXIT_FAILURE;
+        }
     } 
     if(vm.count("b5m-match"))
     {
@@ -409,7 +455,7 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
-    if(vm.count("b5mo-generate"))
+    if(vm.count("b5mo-generate") && scd_path.empty())
     {
         if( !odb || mdb_instance.empty())
         {
@@ -420,6 +466,34 @@ int main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
+    }
+    if(vm.count("b5mo-generate") && !scd_path.empty())
+    {
+        if( scd_path.empty() || !odb || mdb_instance.empty() || knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        LOG(INFO)<<"b5mo generator, mode: "<<mode<<std::endl;
+        boost::shared_ptr<ProductMatcher> matcher(new ProductMatcher(knowledge_dir));
+        matcher->SetCmaPath(cma_path);
+        B5moProcessor processor(odb.get(), matcher.get(), mode, imgserver_config.get());
+        if(!mobile_source.empty())
+        {
+            if(boost::filesystem::exists(mobile_source))
+            {
+                LOG(INFO)<<"b5mo processor loading mobile source "<<mobile_source<<std::endl;
+                processor.LoadMobileSource(mobile_source);
+            }
+        }
+        if(!human_match.empty() && boost::filesystem::exists(human_match))
+        {
+            processor.SetHumanMatchFile(human_match);
+        }
+        if(!processor.Generate(scd_path, mdb_instance, last_mdb_instance))
+        {
+            return EXIT_FAILURE;
+        }
+        LOG(INFO)<<"b5mo processor successfully"<<std::endl;
     }
     if(vm.count("uue-generate"))
     {
