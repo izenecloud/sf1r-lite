@@ -28,31 +28,31 @@ using std::vector;
 namespace sf1r
 {
 
-class OpinionsClassficationManager
-{   
+class OpinionsClassificationManager
+{
     typedef izenelib::am::leveldb::Table<std::string, int> LevelDBType;
-    LevelDBType*                dbTable;
-    vector<pair<string,bool> >  trainData;
-    vector<string>              badData;
-    vector<string>              goodData;
-    list<string>                wordList;
-    vector<string>              goodWord;    //好
-    vector<string>              badWord;     //差
-    vector<string>              reverseWord; //不
-    vector<string>              reverseData;
-    vector<string>              posData;
-    vector<string>              pairWord;    //性价比
-    vector<pair<string,string> >  goodPair;  //性价比 高
-    vector<pair<string,string> >  badPair;   //价格 高
-    list<pair<string,string> >    pairList;
-    vector<string>              goodWordUseful;
-    vector<string>              badWordUseful;
-    vector<string>              goodWordSelfLearn;
-    vector<string>              badWordSelfLearn;
-    vector<string>              WordSelfLearn;
-    double                         accu;
-    int                            cutoff;
-    fstream                        log;
+    LevelDBType*                 dbTable;
+    vector<pair<string,bool> >   trainData;
+    vector<string>               badData;
+    vector<string>               goodData;
+    list<string>                 wordList;
+    vector<string>               goodWord;    //好
+    vector<string>               badWord;     //差
+    vector<string>               reverseWord; //不
+    vector<string>               reverseData;
+    vector<string>               posData;
+    vector<string>               pairWord;    //性价比
+    vector<pair<string,string> > goodPair;  //性价比 高
+    vector<pair<string,string> > badPair;   //价格 高
+    list<pair<string,string> >   pairList;
+    vector<string>               goodWordUseful;
+    vector<string>               badWordUseful;
+    vector<string>               goodWordSelfLearn;
+    vector<string>               badWordSelfLearn;
+    vector<string>               WordSelfLearn;
+    double                       accu;
+    int                          cutoff;
+    fstream                      log;
     Knowledge*                   knowledge;
     Analyzer*                    analyzer;
     CMA_Factory*                 factory;
@@ -60,8 +60,8 @@ class OpinionsClassficationManager
     string                       IndexPath;
     string                       dictPath;
 public:
-    OpinionsClassficationManager(string cma_path,string path);
-    ~OpinionsClassficationManager();
+    OpinionsClassificationManager(string cma_path,string path);
+    ~OpinionsClassificationManager();
     void  getWordFromTrainData();
     void  ClassfyWord(string word);
     void  ClassfyWordVector();
