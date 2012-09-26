@@ -43,11 +43,16 @@ namespace sf1r {
     public:
         typedef uint128_t KeyType;
         typedef uint128_t ValueType;
+        typedef uint32_t FlagType;
         //typedef boost::unordered_map<KeyType, ValueType, uint128_hash > DbType;
         typedef izenelib::am::succinct::fujimap::Fujimap<KeyType, ValueType> DbType;
+        typedef izenelib::am::succinct::fujimap::Fujimap<KeyType, FlagType> FlagDbType;
         OfferDb(const std::string& path)
-        : path_(path), db_path_(path+"/db"), text_path_(path+"/text"), tmp_path_(path+"/tmp")
-        , db_(NULL), is_open_(false), has_modify_(false)
+        : path_(path)
+          , db_path_(path+"/db"), text_path_(path+"/text"), tmp_path_(path+"/tmp")
+          , flag_db_path_(path+"/flag_db"), flag_tmp_path_(path+"/flag_tmp")
+          , db_(NULL), flag_db_(NULL)
+          , is_open_(false), has_modify_(false)
         {
         }
 
@@ -56,6 +61,10 @@ namespace sf1r {
             if(db_!=NULL)
             {
                 delete db_;
+            }
+            if(flag_db_!=NULL)
+            {
+                delete flag_db_;
             }
             text_.close();
         }
@@ -76,6 +85,13 @@ namespace sf1r {
             db_ = new DbType(tmp_path_.c_str());
             db_->initFP(32);
             db_->initTmpN(30000000);
+            if(boost::filesystem::exists(flag_tmp_path_))
+            {
+                boost::filesystem::remove_all(flag_tmp_path_);
+            }
+            flag_db_ = new FlagDbType(flag_tmp_path_.c_str());
+            flag_db_->initFP(32);
+            flag_db_->initTmpN(30000000);
             if(boost::filesystem::exists(db_path_))
             {
                 db_->load(db_path_.c_str());
@@ -85,6 +101,10 @@ namespace sf1r {
                 LOG(INFO)<<"db empty, loading text"<<std::endl;
                 load_text(text_path_, false);
                 if(!flush()) return false;
+            }
+            if(boost::filesystem::exists(flag_db_path_))
+            {
+                flag_db_->load(flag_db_path_.c_str());
             }
             text_.open(text_path_.c_str(), std::ios::out | std::ios::app);
             is_open_ = true;
@@ -164,6 +184,32 @@ namespace sf1r {
             return insert(B5MHelper::StringToUint128(soid), B5MHelper::StringToUint128(spid));
         }
 
+        void insert_flag(const std::string& soid, const FlagType& flag)
+        {
+            flag_db_->setInteger(B5MHelper::StringToUint128(soid), flag);
+            has_modify_ = true;
+        }
+
+        void clear_all_flag()
+        {
+            if(flag_db_!=NULL)
+            {
+                delete flag_db_;
+            }
+            if(boost::filesystem::exists(flag_tmp_path_))
+            {
+                boost::filesystem::remove_all(flag_tmp_path_);
+            }
+            if(boost::filesystem::exists(flag_db_path_))
+            {
+                boost::filesystem::remove_all(flag_db_path_);
+            }
+            flag_db_ = new FlagDbType(flag_tmp_path_.c_str());
+            flag_db_->initFP(32);
+            flag_db_->initTmpN(30000000);
+            has_modify_ = true;
+        }
+
         bool get(const KeyType& key, ValueType& value) const
         {
             value = db_->getInteger(key);
@@ -179,6 +225,16 @@ namespace sf1r {
             uint128_t pid;
             if(!get(B5MHelper::StringToUint128(soid), pid)) return false;
             spid = B5MHelper::Uint128ToString(pid);
+            return true;
+        }
+
+        bool get_flag(const std::string& key, FlagType& flag) const
+        {
+            flag = flag_db_->getInteger(B5MHelper::StringToUint128(key));
+            if(flag==(FlagType)izenelib::am::succinct::fujimap::NOTFOUND)
+            {
+                return false;
+            }
             return true;
         }
 
@@ -210,6 +266,13 @@ namespace sf1r {
                 }
                 boost::filesystem::remove_all(db_path_);
                 db_->save(db_path_.c_str());
+                if(flag_db_->build()==-1)
+                {
+                    LOG(ERROR)<<"fujimap build error"<<std::endl;
+                    return false;
+                }
+                boost::filesystem::remove_all(flag_db_path_);
+                flag_db_->save(flag_db_path_.c_str());
                 has_modify_ = false;
             }
             else
@@ -242,7 +305,10 @@ namespace sf1r {
         std::string db_path_;
         std::string text_path_;
         std::string tmp_path_;
+        std::string flag_db_path_;
+        std::string flag_tmp_path_;
         DbType* db_;
+        FlagDbType* flag_db_;
         std::ofstream text_;
         bool is_open_;
         bool has_modify_;

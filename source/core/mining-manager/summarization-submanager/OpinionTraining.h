@@ -178,7 +178,7 @@ public:
                     }
                     if(count % 10000 == 0)
                     {
-                        std::cout << "\r == training processed " << count << " doc. ==";
+                        std::cout << "\r == training processed " << count << " doc. ==" << std::flush;
                     }
                     if(count > 10000000)
                         break;

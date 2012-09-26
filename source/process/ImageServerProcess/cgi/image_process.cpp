@@ -238,6 +238,12 @@ class ImageProcess: public Fastcgipp::Request<char>
             error_log( "Unknown exception!" );
             return true;
         }
+        if(zoomed_imgdata.data() == NULL)
+        {
+            out << "Status: 500 Internal Server Error\r\n\r\n";
+            error_log( "zoomed image data is null!" );
+            return true;
+        }
 
         out << "Content-Type: text/plain\r\nContent-Length: " << zoomed_imgdata.length() << "\r\n\r\n";
         out.dump((const char*)zoomed_imgdata.data(), zoomed_imgdata.length());

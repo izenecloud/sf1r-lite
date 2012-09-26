@@ -12,7 +12,7 @@
 #include <process/common/CollectionManager.h>
 #include <process/common/XmlConfigParser.h>
 #include <bundles/mining/MiningSearchService.h>
-
+#include <common/CollectionTask.h>
 #include <iostream>
 #include <fstream>
 
@@ -98,6 +98,45 @@ void CollectionController::stop_collection()
     CollectionManager::get()->stopCollection(collection);
 }
 
+/**
+ * @brief Action @b rebuild_collection. To clear these deleted Document;
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ * - No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "collection": "chwiki"
+ * }
+ * @endcode
+ *
+ */
+void CollectionController::rebuild_collection()
+{
+     std::string collection = asString(request()[Keys::collection]);
+    if (collection.empty())
+    {
+        response().addError("Require field collection in request.");
+        return;
+    }
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+
+    boost::shared_ptr<RebuildTask> task(new RebuildTask(collection));
+    task->doTask();
+}
 /**
  * @brief Action @b create_collection.
  *

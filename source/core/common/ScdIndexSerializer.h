@@ -25,7 +25,7 @@ namespace boost { namespace serialization {
     struct version<scd::Document<Docid, Property> >{
         typedef mpl::int_<scd::Document<Docid, Property>::Version::value> type;
         typedef mpl::integral_c_tag tag;
-        BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value);
+        BOOST_STATIC_CONSTANT(int, value = version::type::value);
     };
 
     /// Serialize an SCD document.
