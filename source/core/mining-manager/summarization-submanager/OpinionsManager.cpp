@@ -166,11 +166,13 @@ OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictp
     SigmaRead = 5;
     SigmaSim = 0.5;
     SigmaLength = 30;
+    Opc_ = new OpinionsClassficationManager(dictpath,colPath);
 }
 
 OpinionsManager::~OpinionsManager()
 {
-    out.close();
+    out.close(); 
+    delete Opc_;
     delete knowledge_;
     delete analyzer_;
     delete training_data_;

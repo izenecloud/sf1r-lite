@@ -16,7 +16,7 @@
 #include <bitset>
 #include <boost/dynamic_bitset.hpp>
 #include <am/succinct/wat_array/wat_array.hpp>
-
+#include "OpinionsClassficationManager.h"
 #define MAX_COMMENT_NUM  10000
 
 using std::string;
@@ -94,7 +94,7 @@ public:
     void setEncoding(izenelib::util::UString::EncodingType encoding);
     void setFilterStr(const std::vector<WordStrType>& filter_strs);
     void CleanCacheData();
-
+    OpinionsClassficationManager*  Opc_;
 private:
     void RecordCoOccurrence(const WordStrType& s, size_t& curren_offset);
     void AppendStringToIDArray(const WordStrType& s, std::vector<uint64_t>& word_ids);
@@ -136,6 +136,7 @@ private:
     bool IsBeginBigram(const WordStrType& bigram);
     bool IsEndBigram(const WordStrType& bigram);
     bool IsRubbishComment(const WordSegContainerT& words);
+    
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<WordFreqPairT>
     {
@@ -179,6 +180,7 @@ private:
     WordFreqMapT end_bigrams_;
     wat_array::WatArray wa_;
     std::vector<int>  sentence_offset_;
+    
 };
 
 };
