@@ -62,11 +62,22 @@ bool ProductProperty::Parse(const Document& doc)
     split_attr_pair(uattribute, attrib_list);
     for(std::size_t i=0;i<attrib_list.size();i++)
     {
-        const std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
+        std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
+        std::vector<std::string> attrib_value_str_list;
+        //do duplicate remove
+        boost::unordered_set<std::string> value_set;
+        for(uint32_t j=0;j<attrib_value_list.size();j++)
+        {
+            std::string svalue;
+            attrib_value_list[j].convertString(svalue, UString::UTF_8);
+            if(value_set.find(svalue)!=value_set.end()) continue;
+            attrib_value_str_list.push_back(svalue);
+            value_set.insert(svalue);
+        }
         izenelib::util::UString attrib_name = attrib_list[i].first;
         std::string sname;
         attrib_name.convertString(sname, UString::UTF_8);
-        attribute[sname] = attrib_value_list;
+        attribute[sname] = attrib_value_str_list;
     }
  
     return true;
@@ -144,16 +155,14 @@ izenelib::util::UString ProductProperty::GetAttributeUString() const
         }
         result += oit->first+":";
         std::string svalue;
-        const std::vector<UString>& value_list = oit->second;
+        const std::vector<std::string>& value_list = oit->second;
         for(uint32_t i=0;i<value_list.size();i++)
         {
-            std::string this_value;
-            value_list[i].convertString(this_value, UString::UTF_8);
             if(!svalue.empty())
             {
                 svalue+="|";
             }
-            svalue+=this_value;
+            svalue+=value_list[i];
         }
         result+=svalue;
     }

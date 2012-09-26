@@ -20,7 +20,7 @@ namespace sf1r {
         //typedef std::map<std::string, int32_t> SourceMap;
         typedef boost::unordered_set<std::string> SourceType;
         typedef izenelib::util::UString UString;
-        typedef std::map<std::string, std::vector<UString> > AttributeType;
+        typedef std::map<std::string, std::vector<std::string> > AttributeType;
 
         UString pid;
         ProductPrice price;
