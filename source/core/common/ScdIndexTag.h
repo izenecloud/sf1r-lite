@@ -69,8 +69,7 @@ SCD_INDEX_PROPERTY_TAG_TYPED(DOCID, uint128_t); //< Default tag for 'DOCID' prop
 SCD_INDEX_PROPERTY_TAG_TYPED(uuid, uint128_t);  //< Default tag for 'uuid' property.
 
 /// Converter specialization for the uint128_t.
-template<>
-struct Converter<uint128_t> {
+template<> struct Converter<uint128_t> {
     inline uint128_t operator()(const PropertyValueType& in) const {
         return sf1r::Utilities::md5ToUint128(in);
     }

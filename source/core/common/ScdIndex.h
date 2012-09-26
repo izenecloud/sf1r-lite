@@ -8,9 +8,9 @@
 #ifndef SCDINDEX_H
 #define SCDINDEX_H
 
-#include "ScdIndexDocument.h"
-#include "ScdIndexLeveldb.h"
 #include "ScdIndexTag.h"
+#include "ScdIndexLeveldb.h"
+#include "ScdIndexDocument.h"
 #include "ScdParser.h"
 
 namespace scd {
@@ -24,8 +24,10 @@ namespace scd {
 template <typename Property = uuid, typename Docid = DOCID>
 class ScdIndex {
 public:
-    /// Alias for the actual type.
-    typedef Document<Docid, Property> document_type;
+    typedef Document<Docid, Property> DocumentType; //< The actual document type.
+
+    typedef typename Docid::type DocidType;          //< The actual Docid type.
+    typedef typename Property::type PropertyType;    //< The actual Property type
 
     /// Destructor.
     ~ScdIndex() {}
@@ -41,35 +43,36 @@ public:
     static ScdIndex<Property, Docid>* build(const std::string& scdpath,
             const std::string& path1,
             const std::string& path2,
-            const unsigned flush_count = 1e4);
+            const unsigned flush_count = 1e5);
 
     /**
      * Load an existing index with the given leveldb databases.
      * @param path1 Path to the Docid leveldb database.
      * @param path2 Path to the Property leveldb database.
      */
-    static ScdIndex<Property, Docid>* load(const std::string& path1, const std::string path2);
+    static ScdIndex<Property, Docid>* load(const std::string& path1, const std::string& path2);
+
+    /// @return The number of stored documents.
+    size_t size() const {
+        return container.size();
+    }
 
     /// Get the offset of the document having the given Docid.
-    bool find(const typename Docid::type& key, offset_type* offset) const {
+    bool getOffset(const DocidType& key, offset_type& offset) const {
         return container.getByDocid(key, offset);
     }
 
     /// Get the offset of the documents having the given Property.
-    bool find(const typename Property::type& key, std::vector<offset_type>& offsets) const {
+    bool getOffsetList(const PropertyType& key, std::vector<offset_type>& offsets) const {
         return container.getByProperty(key, offsets);
-    }
-
-    // for tests only
-    void dump() const {
-        container.dump();
     }
 
 private:
     ScdIndex(const std::string& path1, const std::string& path2, const bool create)
             : container(path1, path2, create) {}
 
-    ScdIndexLeveldb<Property, Docid> container;
+    typedef ScdIndexLeveldb<Docid, Property> ContainerType; //< The actual container type.
+    ContainerType container;
 };
 
 template<typename Property, typename Docid>
@@ -92,20 +95,21 @@ ScdIndex<Property, Docid>::build(const std::string& path,
         CHECK(doc) << "Document is null";
 
         DLOG(INFO) << "got document '" << doc->at(0).second << "' @ " << it.getOffset();
-        index->container.insert(document_type(it.getOffset(), doc));
+        index->container.insert(DocumentType(it.getOffset(), doc), true);
 
         if (count % flush_count == 0) {
-            // TODO flush to leveldb
+            index->container.flush();
             LOG(INFO) << "Saved " << count << " documents ...";
         }
     }
+    index->container.flush();
     LOG(INFO) << "Indexed " << (count - 1) << " documents.";
     return index;
 }
 
 template<typename Property, typename Docid>
 ScdIndex<Property, Docid>*
-ScdIndex<Property, Docid>::load(const std::string& path1, const std::string path2) {
+ScdIndex<Property, Docid>::load(const std::string& path1, const std::string& path2) {
     return new ScdIndex(path1, path2, false);
 }
 

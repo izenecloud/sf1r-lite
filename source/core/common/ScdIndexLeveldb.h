@@ -25,29 +25,26 @@ namespace scd {
  */
 template <typename Docid, typename Property>
 class ScdIndexLeveldb {
-    typedef std::vector<offset_type> offset_list;
-    typedef izenelib::am::leveldb::Table<typename Docid::type, offset_type> DocidTable;
-    typedef izenelib::am::leveldb::Table<typename Property::type, offset_list> PropertyTable;
+    typedef std::vector<offset_type> offset_list; // TODO: std::list
+    typedef Document<Docid, Property> DocumentType;
 
-public:
+    typedef typename Docid::type DocidType;
+    typedef typename Property::type PropertyType;
+
+    typedef izenelib::am::leveldb::Table<DocidType, offset_type> DocidTable;
+    typedef izenelib::am::leveldb::Table<PropertyType, offset_list> PropertyTable;
+
     typedef izenelib::am::AMIterator<DocidTable> DocidIterator;       //< Iterator on Docid tag.
     typedef izenelib::am::AMIterator<PropertyTable> PropertyIterator; //< Iterator on Property tag.
 
+public:
     /// Open the two leveldb tables associated to tags
-    ScdIndexLeveldb(const std::string& docidDatabase, const std::string& propertyDatabase, const bool create) {
-        // TODO
-        //options.error_if_exists = create;
-        //options.create_if_missing = create;
-
-        docidTable.reset(new DocidTable(docidDatabase));
-        CHECK(docidTable->open()) << "Cannot open database: " << docidDatabase;
-
-        propertyTable.reset(new PropertyTable(propertyDatabase));
-        CHECK(propertyTable->open()) << "Cannot open database: " << propertyDatabase;
-    }
+    ScdIndexLeveldb(const std::string& docidDatabase,
+            const std::string& propertyDatabase,
+            const bool create);
 
     /// Destructor.
-    ~ScdIndexLeveldb() {}
+    ~ScdIndexLeveldb();
 
     /// Query for Docid table size.
     size_t size() const {
@@ -55,24 +52,27 @@ public:
     }
 
     /// Insert a new document.
-    void insert(const Document<Docid, Property>& document) {
-        bool status = docidTable->insert(document.docid, document.offset);
-        CHECK(status) << "Cannot insert docid '" << document.docid << "'";
-
-        status = insertProperty(document.property, document.offset);
-        CHECK(status) << "Cannot insert property '" << document.property << "'";
+    void insert(const DocumentType& document, const bool batch = false) {
+        if (batch)
+            insertBatch(document);
+        else
+            insertDocument(document);
     }
 
+    /// Writes any pending batch operation.
+    void flush();
+
     /// Retrieve file offset of a document.
-    bool getByDocid(const typename Docid::type& key, offset_type& offset) const {
+    bool getByDocid(const DocidType& key, offset_type& offset) const {
         return docidTable->get(key, offset);
     }
 
     /// Retrieve file offset of documents containing the given property.
-    bool getByProperty(const typename Property::type& key, offset_list& offsets) const {
+    bool getByProperty(const PropertyType& key, offset_list& offsets) const {
         return propertyTable->get(key, offsets);
     }
 
+protected:
     /// @return begin iterator on Docid.
     DocidIterator begin() const {
         return DocidIterator(*docidTable);
@@ -92,9 +92,8 @@ public:
     PropertyIterator pend() const {
         return PropertyIterator();
     }
-
-public:
-    /// Test only: dump content to output stream.
+#if DEBUG_OUTPUT
+    /// Dump content to output stream.
     void dump(std::ostream& os = std::cout) const {
         os << "* by docid:" << std::endl;
         for (DocidIterator it = begin(), iend = end(); it != iend; ++it) {
@@ -111,20 +110,107 @@ public:
         }
     }
 
+    /// Dump buffer content to output stream.
+    void dumpBuffer(std::ostream& os = std::cout) const {
+        os << "* docid buffer:" << std::endl;
+        typedef std::pair<DocidType, offset_type> docid_pair;
+        BOOST_FOREACH(const docid_pair& pair, docidBuffer) {
+            os << pair.first << " -> "  << pair.second << std::endl;
+        }
+
+        os << "* property buffer:" << std::endl;
+        typedef std::pair<PropertyType, offset_list> property_pair;
+        BOOST_FOREACH(const property_pair& pair, propertyBuffer) {
+            os << pair.first << " -> [";
+            BOOST_FOREACH(const offset_type& offset, pair.second) {
+                os << " " << offset << " ";
+            }
+            os << "]" << std::endl;
+        }
+    }
+#endif
 private:
-    /// Insert a new pair (property, list<offset>).
-    inline bool
-    insertProperty(const typename Property::type& property, const offset_type& offset) {
+    /// Directly insert a new document.
+    inline void insertDocument(const DocumentType& document) {
+        bool status = docidTable->insert(document.docid, document.offset);
+        //CHECK(status) << "Cannot insert docid: " << document.docid;
+        CHECK(status) << "Cannot insert docid";
+
+        status = insertProperty(document.property, document.offset);
+        //CHECK(status) << "Cannot insert property: " << document.property;
+        CHECK(status) << "Cannot insert property";
+    }
+
+    /// Insert a new property.
+    inline bool insertProperty(const PropertyType& property, const offset_type& offset) {
         offset_list offsets;
         getByProperty(property, offsets);
         offsets.push_back(offset);
         return propertyTable->insert(property, offsets);
     }
 
+    /// Insert a new property.
+    inline bool insertProperty(const PropertyType& property, const offset_list& offsets) {
+        // FIXME!!!
+        offset_list stored;
+        getByProperty(property, stored);
+        std::copy(offsets.begin(), offsets.end(), std::back_inserter(stored));
+        return propertyTable->insert(property, stored);
+    }
+
+    /// Buffer insertion of a new document until flush().
+    inline void insertBatch(const DocumentType& document) {
+        using std::make_pair;
+        docidBuffer.insert(make_pair(document.docid, document.offset));
+        propertyBuffer[document.property].push_back(document.offset);
+    }
+
 private:
     boost::scoped_ptr<DocidTable> docidTable;
     boost::scoped_ptr<PropertyTable> propertyTable;
+
+    std::map<DocidType, offset_type> docidBuffer;
+    std::map<PropertyType, offset_list> propertyBuffer;
 };
+
+template <typename Docid, typename Property>
+ScdIndexLeveldb<Docid, Property>::ScdIndexLeveldb(const std::string& docidDatabase,
+        const std::string& propertyDatabase, const bool create) {
+    // TODO
+    //options.error_if_exists = create;
+    //options.create_if_missing = create;
+
+    docidTable.reset(new DocidTable(docidDatabase));
+    CHECK(docidTable->open()) << "Cannot open database: " << docidDatabase;
+
+    propertyTable.reset(new PropertyTable(propertyDatabase));
+    CHECK(propertyTable->open()) << "Cannot open database: " << propertyDatabase;
+}
+
+template <typename Docid, typename Property>
+ScdIndexLeveldb<Docid, Property>::~ScdIndexLeveldb() {
+    if (not docidBuffer.empty() or not propertyBuffer.empty())
+        flush(); // XXX corretto?
+}
+
+template <typename Docid, typename Property>
+void ScdIndexLeveldb<Docid, Property>::flush() {
+    bool status;
+    // TODO leveldb batch
+    typedef std::pair<DocidType, offset_type> docid_pair;
+    BOOST_FOREACH(const docid_pair& pair, docidBuffer) {
+        status = docidTable->insert(pair.first, pair.second);
+        CHECK(status) << "Cannot insert batch docid";
+    }
+    docidBuffer.clear();
+
+    typedef std::pair<PropertyType, offset_list> property_pair;
+    BOOST_FOREACH(const property_pair& pair, propertyBuffer) {
+        status = insertProperty(pair.first, pair.second);
+        CHECK(status) << "Cannot insert batch property";
+    }
+    propertyBuffer.clear();
+}
 
 } /* namespace scd */
 
