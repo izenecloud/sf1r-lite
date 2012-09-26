@@ -49,6 +49,49 @@ bool CheckParentKeyLogFormat(
     return (first == DOCID && second == parent_key_name);
 }
 
+vector<std::pair<double,UString> > SegmentToSentece(UString Segment)
+{
+    vector<std::pair<double,UString> > Sentence;
+    string temp ;
+    Segment.convertString(temp, izenelib::util::UString::UTF_8);
+    string dot=",";
+    size_t templen = 0;
+  
+    while(!temp.empty())
+    {
+        size_t len1 = temp.find(",");
+        size_t len2 = temp.find(".");
+        if(len1 != string::npos || len2 != string::npos)
+        {
+            if(len1 == string::npos)
+            {
+                templen = len2;
+            }
+            else if(len2 == string::npos)
+            {
+                templen = len1;
+            }
+            else
+            {
+                templen = min(len1,len2);
+            }
+            if(temp.substr(0,templen).length()>0)
+            {
+                Sentence.push_back(std::make_pair(1.0,UString(temp.substr(0,templen), UString::UTF_8)) );
+            }
+            temp = temp.substr(templen + dot.length());
+        }
+        else
+        {   
+            if(temp.length()>0)
+            {
+               Sentence.push_back(std::make_pair(1.0,UString(temp, UString::UTF_8)));
+            }
+            break;
+        }
+    }
+    return Sentence;
+}
 struct IsParentKeyFilterProperty
 {
     const std::string& parent_key_property;
@@ -319,6 +362,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
             //Z.push_back((it->second).content);
             advantage_comments.push_back(it->second.advantage);
             disadvantage_comments.push_back(it->second.disadvantage);
+            
         }
 
         //Op->setComment(Z);
@@ -327,6 +371,27 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
         std::vector< std::pair<double, UString> > advantage_opinions = Op->getOpinion();
         Op->setComment(disadvantage_comments);
         std::vector< std::pair<double, UString> > disadvantage_opinions = Op->getOpinion();
+        if(advantage_opinions.empty()&&(!advantage_comments.empty()))
+        {
+            for(unsigned i=0;i<min(advantage_comments.size(),5);i++)
+            {
+                 std::vector< std::pair<double, UString> > temp=SegmentToSentece(advantage_comments[i]);
+                 advantage_opinions.insert(advantage_opinions.end(),temp.begin(),temp.end());
+                 if(advantage_opinions.size()>5)
+                    break;
+            }
+        }
+        if(disadvantage_opinions.empty()&&(!disadvantage_comments.empty()))
+        {
+            for(unsigned i=0;i<min(disadvantage_comments.size(),5);i++)
+            {
+                 std::vector< std::pair<double, UString> > temp=SegmentToSentece(disadvantage_comments[i]);
+                 disadvantage_opinions.insert(disadvantage_opinions.end(),temp.begin(),temp.end());
+                 if(disadvantage_opinions.size()>5)
+                    break;
+            }
+        }
+        
         if((!advantage_opinions.empty())||(!disadvantage_opinions.empty()))
         {
             OpinionResultItem item;
