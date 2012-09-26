@@ -914,33 +914,30 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
         resultList.push_back(std::make_pair(".", "."));
     }
 
-    // get the top-k bigram counter, and filter the seed bigram by this counter.
-    WordPriorityQueue_  topk_words;
-    topk_words.Init(min(MAX_SEED_BIGRAM_RATIO*SigmaLength, (double)word_freq_records.size()/2));
-
-    WordFreqMapT::const_iterator cit = word_freq_records.begin();
-    while(cit != word_freq_records.end())
-    {
-        if((int)cit->second > 2)
-        {
-            topk_words.insert(std::make_pair(cit->first, (int)cit->second));
-        }
-        ++cit;
-    }
-
-    //out << "=== total different bigram:" << word_freq_records.size() << endl;
     int filter_counter = 2;
-    if(topk_words.size() > 1)
-        filter_counter = max(topk_words.top().second, filter_counter);
-    //out << "===== filter counter is: "<< filter_counter << endl;
-    BigramPhraseContainerT::iterator bigram_it = std::remove_if(resultList.begin(), resultList.end(),
-       boost::bind(FilterBigramByCounter, filter_counter, boost::cref(word_freq_records), _1));
-    resultList.erase(bigram_it, resultList.end());
-    out << "===== after filter, seed bigram size: "<< resultList.size() << endl;
-
     if(resultList.size() > MAX_SEED_BIGRAM_RATIO*SigmaLength)
     {
+        // get the top-k bigram counter, and filter the seed bigram by this counter.
+        WordPriorityQueue_  topk_words;
+        topk_words.Init(min(MAX_SEED_BIGRAM_RATIO*SigmaLength, (double)word_freq_records.size()/2));
+
+        WordFreqMapT::const_iterator cit = word_freq_records.begin();
+        while(cit != word_freq_records.end())
+        {
+            if((int)cit->second > 2)
+            {
+                topk_words.insert(std::make_pair(cit->first, (int)cit->second));
+            }
+            ++cit;
+        }
+        if(topk_words.size() > 1)
+            filter_counter = max(topk_words.top().second, filter_counter);
     }
+    //out << "===== filter counter is: "<< filter_counter << endl;
+    BigramPhraseContainerT::iterator bigram_it = std::remove_if(resultList.begin(), resultList.end(),
+        boost::bind(FilterBigramByCounter, filter_counter, boost::cref(word_freq_records), _1));
+    resultList.erase(bigram_it, resultList.end());
+    out << "===== after filter, seed bigram size: "<< resultList.size() << endl;
     ///test opinion result
     //
 
