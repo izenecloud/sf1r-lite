@@ -68,7 +68,7 @@ void AutoFillChildManager::LoadItem()
             ItemType item;
             std::string temp;
             getline(in, temp);
-            if(!temp.empty() && temp[0] != ' ')
+            //if(!temp.empty() && temp[0] != ' ')
             {
                 item.strItem_=temp;
                 item.offset_ = 0;
