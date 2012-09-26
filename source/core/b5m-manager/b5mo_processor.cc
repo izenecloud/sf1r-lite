@@ -135,7 +135,7 @@ void B5moProcessor::Process(Document& doc, int& type)
             {
                 spid = sdocid; //get matched pid fail
             }
-            //odb_->insert(soid, spid);
+            odb_->insert(soid, spid);
         }
         if(old_spid!=spid)
         {
