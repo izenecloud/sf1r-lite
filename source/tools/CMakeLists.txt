@@ -63,38 +63,55 @@ ADD_EXECUTABLE(CassandraTool
   cassandra/CassandraTools.cpp
   )
 
-TARGET_LINK_LIBRARIES(CassandraTool
-  sf1r_configuration_manager
-  sf1r_la_manager
-  sf1r_query_manager
-  sf1r_log_manager
-  sf1r_license_manager
-  ${izenelib_LIBRARIES}
+SET(EXTERNAL_LIBS
   ${Boost_LIBRARIES}
-  sf1r_product_manager
-  sf1r_search_manager
-  sf1r_directory_manager
-  sf1r_mining_manager
-  sf1r_index_manager
-  sf1r_ranking_manager
-  sf1r_document_manager
-  sf1r_node_manager
-  sf1r_common
-  ${idmlib_LIBRARIES}
-  ${imllib_LIBRARIES}
-  ${ilplib_LIBRARIES}
-  ${wisekma_LIBRARIES}
-  ${izenecma_LIBRARIES}
-  ${izenejma_LIBRARIES}
-  ${xml2_LIBRARIES}
-
-  #external
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
   ${sqlite3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
+  ${xml2_LIBRARIES}
+  )
+
+SET(IZENE_LIBS
+  ${idmlib_LIBRARIES}
+  ${ilplib_LIBRARIES}
+  ${wisekma_LIBRARIES}
+  ${izenecma_LIBRARIES}
+  ${izenejma_LIBRARIES}
+  ${imllib_LIBRARIES}
+  ${izenelib_LIBRARIES}
+  )
+
+SET(SF1_LIBS
+  sf1r_search_manager
+  sf1r_ranking_manager
+  sf1r_query_manager
+  sf1r_mining_manager
+  sf1r_log_manager
+  sf1r_product_manager
+  sf1r_node_manager
+  sf1r_license_manager
+  sf1r_la_manager
+
+  # duplicated in order to solve linker error
+  sf1r_search_manager
+  sf1r_mining_manager
+  sf1r_ranking_manager
+  sf1r_query_manager
+
+  sf1r_index_manager
+  sf1r_document_manager
+  sf1r_directory_manager
+  sf1r_configuration_manager
+  sf1r_common
+  )
+
+TARGET_LINK_LIBRARIES(CassandraTool
+  ${SF1_LIBS}
+  ${IZENE_LIBS}
+  ${EXTERNAL_LIBS}
   )
 
 SET_TARGET_PROPERTIES(CassandraTool PROPERTIES

@@ -50,6 +50,9 @@ acl purge {
      if (req.url ~ "^/image.cgi") {
          unset req.http.cookie;
      }
+     if (req.url ~ "^/image/") {
+         unset req.http.cookie;
+     }
      if (req.http.Authorization || req.http.Cookie) {
          /* Not cacheable by default */
          return (pass);
@@ -101,7 +104,7 @@ sub vcl_pass {
 #     if (!beresp.cacheable) {
 #         return (pass);
 #     }
-     if( (req.request == "GET" || req.request == "HEAD") && (req.url ~ "^/image.cgi") ) {
+     if( (req.request == "GET" || req.request == "HEAD") && (req.url ~ "^/image.cgi" || req.url ~ "^/image/") ) {
          set beresp.ttl = 7d;
          if(beresp.status == 404) {
              set beresp.ttl = 0s;

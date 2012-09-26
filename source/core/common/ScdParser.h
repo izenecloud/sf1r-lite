@@ -1,9 +1,8 @@
 #ifndef __SCD__PARSER__H__
 #define __SCD__PARSER__H__
 
-#include <util/ustring/UString.h>
+#include "ScdParserTraits.h"
 #include <util/streambuf.h>
-
 #include <am/3rdparty/rde_hash.h>
 
 #include <boost/shared_ptr.hpp>
@@ -13,12 +12,6 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-
-///We use std::string as propertyName, UString as propertyValue right now
-typedef std::pair<std::string, izenelib::util::UString> FieldPair;
-typedef std::vector<FieldPair> SCDDoc;
-typedef boost::shared_ptr<SCDDoc> SCDDocPtr;
-typedef std::pair<izenelib::util::UString, unsigned> DocIdPair;
 
 enum SCD_TYPE
 {

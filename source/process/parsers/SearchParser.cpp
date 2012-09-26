@@ -296,9 +296,10 @@ bool SearchParser::parse(const Value& search)
         }
     }
 
+    searchingModeInfo_.clear();
+
     //search mode
     const Value& searching_mode = search[Keys::searching_mode];
-    searchingModeInfo_.mode_ = SearchingMode::DefaultSearchingMode;
     if ( searching_mode.hasKey(Keys::mode) )
     {
         Value::StringType mode = asString(searching_mode[Keys::mode]);
@@ -323,16 +324,19 @@ bool SearchParser::parse(const Value& search)
         {
             searchingModeInfo_.mode_ = SearchingMode::KNN;
         }
+        else if (mode == "suffix")
+        {
+            searchingModeInfo_.mode_ = SearchingMode::SUFFIX_MATCH;
+        }
         else
         {
             warning() = "Unknown searchingMode. Default searching mode is used.";
         }
 
-        searchingModeInfo_.threshold_ = 0.0F;
-        if( searching_mode.hasKey(Keys::threshold) )
+        if (searching_mode.hasKey(Keys::threshold))
         {
             float threshold = (float)asDouble(searching_mode[Keys::threshold]);
-            if(threshold < 1)
+            if (threshold < 1)
             {
                 searchingModeInfo_.threshold_ = threshold;
             }
@@ -342,8 +346,20 @@ bool SearchParser::parse(const Value& search)
             }
         }
 
-        searchingModeInfo_.useOriginalQuery_ = true;
-        if( searching_mode.hasKey(Keys::original_query) )
+        if (searching_mode.hasKey(Keys::lucky))
+        {
+            uint32_t lucky = asUint(searching_mode[Keys::lucky]);
+            if (lucky <= 100)
+            {
+                searchingModeInfo_.lucky_ = lucky;
+            }
+            else
+            {
+                warning() = "Threshold is invalid. Warning: lucky must be not greater than than 100";
+            }
+        }
+
+        if (searching_mode.hasKey(Keys::original_query))
         {
             searchingModeInfo_.useOriginalQuery_ = asBool(searching_mode[Keys::original_query]);
         }

@@ -93,6 +93,7 @@ class MerchantScoreManager;
 class CustomRankManager;
 class CustomDocIdConverter;
 class ProductRankerFactory;
+class SuffixMatchManager;
 
 namespace sim
 {
@@ -128,7 +129,7 @@ public:
      * @param idManager used for generating term Ids.
      * @param docIdManager used for generating docIds in parsing the SCD file.
      */
-    MiningManager(const std::string& collectionDataPath, 
+    MiningManager(const std::string& collectionDataPath,
                   const CollectionPath& collectionPath,
                   const boost::shared_ptr<DocumentManager>& documentManager,
                   const boost::shared_ptr<IndexManager>& index_manager,
@@ -302,12 +303,19 @@ public:
 
     bool GetKNNListBySignature(
             const std::vector<uint64_t>& signature,
-            std::vector<unsigned int>& docIdList,
+            std::vector<uint32_t>& docIdList,
             std::vector<float>& rankScoreList,
             std::size_t& totalCount,
             uint32_t knnTopK,
             uint32_t knnDist,
             uint32_t start);
+
+    bool GetLongestSuffixMatch(
+            const std::string& query,
+            uint32_t max_docs,
+            std::vector<uint32_t>& docIdList,
+            std::vector<float>& rankScoreList,
+            std::size_t& totalCount);
 
     bool SetKV(const std::string& key, const std::string& value);
 
@@ -538,6 +546,10 @@ private:
     /** SUMMARIZATION */
     std::string summarization_path_;
     MultiDocSummarizationSubManager* summarizationManager_;
+
+    /** Suffix Match */
+    std::string suffix_match_path_;
+    SuffixMatchManager* suffixMatchManager_;
 
     /** KV */
     std::string kv_path_;

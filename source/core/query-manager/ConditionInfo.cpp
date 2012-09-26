@@ -1,5 +1,5 @@
 ///
-/// @file   ConditionInfo.cpp 
+/// @file   ConditionInfo.cpp
 /// @brief  Source file of Condition informative classes.
 /// @author Dohyun Yun
 /// @date   2008-06-05
@@ -13,9 +13,9 @@ using namespace std;
 
 namespace sf1r {
 
-LanguageAnalyzerInfo::LanguageAnalyzerInfo(void): 
-    applyLA_(false), 
-    useOriginalKeyword_(false), 
+LanguageAnalyzerInfo::LanguageAnalyzerInfo(void):
+    applyLA_(false),
+    useOriginalKeyword_(false),
     synonymExtension_(false)
 {
 }
@@ -30,6 +30,7 @@ void LanguageAnalyzerInfo::clear(void)
 SearchingModeInfo::SearchingModeInfo(void):
     mode_(SearchingMode::DefaultSearchingMode),
     threshold_(0.0F),
+    lucky_(1),
     useOriginalQuery_(true)
 {
 }
@@ -38,6 +39,7 @@ void SearchingModeInfo::clear(void)
 {
     mode_ = SearchingMode::DefaultSearchingMode;
     threshold_ = 0.0F;
+    lucky_ = 1;
     useOriginalQuery_ = true;
 }
 

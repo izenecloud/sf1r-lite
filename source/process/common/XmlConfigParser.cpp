@@ -1656,6 +1656,33 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
         }
         {
+            Iterator<Element> it("AdvantageProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("AdvantageProperty ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_schema.advantagePropName = property_name;
+            }
+        }
+        {
+            Iterator<Element> it("DisadvantageProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("DisadvantageProperty ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_schema.disadvantagePropName = property_name;
+            }
+        }
+
+        {
             Iterator<Element> it("ScoreProperty");
             for (it = it.begin(task_node); it != it.end(); it++)
             {
@@ -1668,11 +1695,32 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.summarization_schema.scorePropName = property_name;
             }
         }
+
+
         ticpp::Element* scoreSCDPath_node = getUniqChildElement(task_node, "ScoreSCDPath", false);
         if (scoreSCDPath_node)
         {
             getAttribute(scoreSCDPath_node, "path", mining_schema.summarization_schema.scoreSCDPath);
         }
+
+        ticpp::Element* opinionSCDPath_node = getUniqChildElement(task_node, "OpinionSCDPath", false);
+        if (opinionSCDPath_node)
+        {
+            getAttribute(opinionSCDPath_node, "path", mining_schema.summarization_schema.opinionSCDPath);
+        }
+
+        ticpp::Element* opinionProp_node = getUniqChildElement(task_node, "OpinionProperty", false);
+        if (opinionProp_node)
+        {
+            getAttribute(opinionProp_node, "name", mining_schema.summarization_schema.opinionPropName);
+        }
+
+        ticpp::Element* opinion_workingpath_node = getUniqChildElement(task_node, "OpinionWorkingPath", false);
+        if (opinion_workingpath_node)
+        {
+            getAttribute(opinion_workingpath_node, "path", mining_schema.summarization_schema.opinionWorkingPath);
+        }
+
         mining_schema.summarization_enable = true;
     }
 
@@ -1851,6 +1899,22 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         {
             mining_schema.recommend_querylog = true;
         }
+    }
+
+    task_node = getUniqChildElement(mining_schema_node, "SuffixMatch", false);
+    mining_schema.suffix_match_enable = false;
+    if (task_node)
+    {
+        Iterator<Element> it("Property");
+        it = it.begin(task_node);
+        getAttribute(it.Get(), "name", property_name);
+        bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+        if (!gottype || property_type != STRING_PROPERTY_TYPE)
+        {
+            throw XmlConfigParserException("Property ["+property_name+"] used in SuffixMatch is not string type.");
+        }
+        mining_schema.suffix_match_property = property_name;
+        mining_schema.suffix_match_enable = true;
     }
 }
 

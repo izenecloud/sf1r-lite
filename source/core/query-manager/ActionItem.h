@@ -431,7 +431,7 @@ public:
     RankingType::TextRankingType rankingType_;
 
     ///
-    /// @brief searching mode of the query. AND, OR, VERBOSE and KNN can be used.
+    /// @brief searching mode of the query. AND, OR, VERBOSE, KNN and SUFFIX_MATCH can be used.
     ///
     SearchingModeInfo searchingMode_;
 

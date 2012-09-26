@@ -2,7 +2,7 @@
 
 #include <log-manager/UserQuery.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-
+#include <boost/algorithm/string/trim.hpp>
 #include <idmlib/util/directory_switcher.h>
 #include <am/vsynonym/QueryNormalize.h>
 #include <util/scheduler.h>
@@ -19,7 +19,7 @@ AutoFillChildManager::AutoFillChildManager(bool fromSCD)
     isIniting_ = false;
 
     updatelogdays_ = 1;
-    alllogdays_ =  80;
+    alllogdays_ =  120;
     topN_ =  10;
     QN_ = new izenelib::am::QueryNormalize();
 }
@@ -40,11 +40,13 @@ void AutoFillChildManager::SaveItem()
         out1.open(ItemPath_.c_str(), ios::out);
         if(out1.is_open())
         {
-            out1<<ItemVector_.size()<<endl;
             std::vector<ItemType>::iterator it;
             for(it = ItemVector_.begin(); it != ItemVector_.end(); it++)
             {
-                out1<<(*it).strItem_<<endl;
+                if(!((*it).strItem_).empty() && (((*it).strItem_)[0] != ' '))
+                {
+                    out1<<(*it).strItem_<<endl;
+                }
             }
             out1.close();
         }
@@ -61,18 +63,17 @@ void AutoFillChildManager::LoadItem()
     in.open(ItemPath_.c_str(), ios::in);
     if(in.is_open())
     {
-        uint32_t size;
-        std::string sizestr;
-        getline(in, sizestr);
-        size = boost::lexical_cast<uint32_t>(sizestr);
-        for(uint32_t k = 0; k < size; k++)
+        while(!in.eof())
         {
             ItemType item;
             std::string temp;
             getline(in, temp);
-            item.strItem_=temp;
-            item.offset_ = 0;
-            ItemVector_.push_back(item);
+            //if(!temp.empty() && temp[0] != ' ')
+            {
+                item.strItem_=temp;
+                item.offset_ = 0;
+                ItemVector_.push_back(item);
+            }
         }
         in.close();
     }
@@ -188,6 +189,7 @@ bool AutoFillChildManager::InitWhileHaveLeveldb()
 {
     std::string IDPath = AutofillPath_ + "/id/";
     LoadItem();
+    buildItemVector();//erase same;
     isUpdating_Wat_ = true;
     buildWat_array(true);
     isUpdating_Wat_ = false;
@@ -282,7 +284,7 @@ void AutoFillChildManager::updateFromSCD()
    
      if (!boost::filesystem::is_directory(SCDDIC_))
      {
-                return;
+          return;
      }
 	
     for (bfs::directory_iterator itr(SCDDIC_); itr != kItrEnd; ++itr)
@@ -385,11 +387,11 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
         std::vector<izenelib::util::UString> pinyins;
         FREQ_TYPE freq = (*it).freq_;
         uint32_t HitNum = (*it).HitNum_;
-        std::string strT=(*it).strQuery_;
-        
+        std::string strT=(*it).strQuery_;       
+        boost::algorithm::trim(strT);
+
         std::transform(strT.begin(), strT.end(), strT.begin(), ::tolower);
         izenelib::util::UString UStringQuery(strT,izenelib::util::UString::UTF_8);
-        UStringQuery=izenelib::util::Algorithm<izenelib::util::UString>::trim2(UStringQuery);
         QueryCorrectionSubmanager::getInstance().getRelativeList(UStringQuery, pinyins);
         std::vector<izenelib::util::UString>::const_iterator itv;
         bool Similar;
@@ -794,6 +796,8 @@ bool AutoFillChildManager::getAutoFillList(const izenelib::util::UString& query,
     std::string strquery;
     query.convertString(strquery, izenelib::util::UString::UTF_8);
     QN_->query_Normalize(strquery);
+    if(strquery.empty())
+        return true;
     izenelib::util::UString  queryLow(strquery, izenelib::util::UString::UTF_8);
 
     if(!isIniting_)
@@ -935,6 +939,7 @@ void AutoFillChildManager::updateFromLog()
         querylist.push_back(TempQuery );
     }
     LoadItem();
+    buildItemVector();//erase same
     buildDbIndex(querylist);
     isUpdating_Wat_ = true;
     wa_.Clear();

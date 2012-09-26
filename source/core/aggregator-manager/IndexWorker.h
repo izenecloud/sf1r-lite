@@ -68,6 +68,17 @@ public:
 
     ~IndexWorker();
 
+    void setManager_test(boost::shared_ptr<IDManager> idManager,
+        boost::shared_ptr<DocumentManager> documentManager,
+        boost::shared_ptr<IndexManager> indexManager,
+        boost::shared_ptr<LAManager> laManager)
+    {
+        idManager_ = idManager;
+        documentManager_ = documentManager;
+        indexManager_ = indexManager;
+        laManager_ = laManager;
+    }
+
 public:
     virtual bool bindCallProxy(CallProxyType& proxy)
     {
@@ -127,7 +138,12 @@ private:
     bool insertDoc_(
             Document& document,
             IndexerDocument& indexDocument,
-            time_t timestamp);
+            time_t timestamp,
+            bool immediately = false);
+
+    bool doInsertDoc_(
+            Document& document,
+            IndexerDocument& indexDocument);
 
     bool updateDoc_(
             Document& document,
