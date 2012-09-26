@@ -23,8 +23,11 @@
 using std::string;
 using std::vector;
 
-class cma::Analyzer;
-class cma::Knowledge;
+namespace cma
+{
+class Analyzer;
+class Knowledge;
+}
 
 namespace sf1r
 {
