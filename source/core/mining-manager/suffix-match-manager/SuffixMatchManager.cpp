@@ -38,7 +38,7 @@ void SuffixMatchManager::buildCollection()
 {
     FMIndexType* new_fmi = new FMIndexType(32);
 
-    size_t last_docid = fmi_->docCount();
+    size_t last_docid = fmi_ ? fmi_->docCount() : 0;
     if (last_docid)
     {
         std::vector<uint16_t> orig_text;
