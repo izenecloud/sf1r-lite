@@ -787,23 +787,33 @@ vector<string> SegmentToSentece(string Segment)
 {
     vector<string> Sentence;
     string temp = Segment;
-    string dot="，";
+    string dot=",";
     size_t templen = 0;
-    boost::algorithm::replace_all(temp,"！","，");
-    boost::algorithm::replace_all(temp,"。","，");
-    boost::algorithm::replace_all(temp,"～","，");
-    boost::algorithm::replace_all(temp,"?","，");
-    boost::algorithm::replace_all(temp,"？","，");
-    boost::algorithm::replace_all(temp,".","，");
-    boost::algorithm::replace_all(temp,"!","，");
-    boost::algorithm::replace_all(temp,"~","，");
-    boost::algorithm::replace_all(temp,":","，");
-    boost::algorithm::replace_all(temp,"：","，");
-    boost::algorithm::replace_all(temp,",","，");
-    boost::algorithm::replace_all(temp," ","，");
+    boost::algorithm::replace_all(temp,"！",",");
+    boost::algorithm::replace_all(temp,"。",",");
+    boost::algorithm::replace_all(temp,"～",",");
+    boost::algorithm::replace_all(temp,"?",",");
+    boost::algorithm::replace_all(temp,"？",",");
+    boost::algorithm::replace_all(temp,".",",");
+    boost::algorithm::replace_all(temp,"!",",");
+    boost::algorithm::replace_all(temp,"~",",");
+    boost::algorithm::replace_all(temp,":",",");
+    boost::algorithm::replace_all(temp,"：",",");
+    boost::algorithm::replace_all(temp,",",",");
+    boost::algorithm::replace_all(temp," ",",");
+    boost::algorithm::replace_all(temp,";",",");
+    boost::algorithm::replace_all(temp,"；",",");
+    boost::algorithm::replace_all(temp,"，",",");
+   
+    for(unsigned i=0;i<temp.length();i++)
+    {
+       if(temp[i]=='\n')
+       {     temp[i]=',';}
+    }
+    /**/
     while(!temp.empty())
     {
-        size_t len1 = temp.find("，");
+        size_t len1 = temp.find(",");
         size_t len2 = temp.find("。");
         if(len1 != string::npos || len2 != string::npos)
         {
@@ -840,7 +850,8 @@ std::pair<UString,UString> OpinionsClassificationManager::test(string Segment)
 
     vector<string> Sentence=SegmentToSentece(Segment);
     log<<"Sentence"<<Sentence.size()<<endl;
-
+    if(Segment.length()<200)
+    {
     for(unsigned i=0;i<Sentence.size();i++)
     {
         log<<Sentence[i]<<"  ";
@@ -857,6 +868,7 @@ std::pair<UString,UString> OpinionsClassificationManager::test(string Segment)
             }
         }
         // log<<getResult(Sentence[i])<<" "<<endl;
+    }
     }
     UString Uadvantage(advantage, izenelib::util::UString::UTF_8);
     UString Udisadvantag(disadvantage, izenelib::util::UString::UTF_8);

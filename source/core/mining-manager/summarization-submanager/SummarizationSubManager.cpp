@@ -75,7 +75,7 @@ vector<std::pair<double,UString> > SegmentToSentece(UString Segment)
             {
                 templen = min(len1,len2);
             }
-            if(temp.substr(0,templen).length()>0)
+            if(temp.substr(0,templen).length()>0&&temp.substr(0,templen).length()<14)
             {
                 Sentence.push_back(std::make_pair(1.0,UString(temp.substr(0,templen), UString::UTF_8)) );
             }
@@ -83,7 +83,7 @@ vector<std::pair<double,UString> > SegmentToSentece(UString Segment)
         }
         else
         {   
-            if(temp.length()>0)
+            if(temp.length()>0&&temp.length()<14)
             {
                Sentence.push_back(std::make_pair(1.0,UString(temp, UString::UTF_8)));
             }
@@ -366,21 +366,31 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
         }
 
         //Op->setComment(Z);
+       
         std::vector< std::pair<double, UString> > product_opinions;// = Op->getOpinion();
         Op->setComment(advantage_comments);
         std::vector< std::pair<double, UString> > advantage_opinions = Op->getOpinion();
         Op->setComment(disadvantage_comments);
         std::vector< std::pair<double, UString> > disadvantage_opinions = Op->getOpinion();
+        
         if(advantage_opinions.empty()&&(!advantage_comments.empty()))
         {
             for(unsigned i=0;i<min(advantage_comments.size(),5);i++)
-            {
+            {   /*
                  std::vector< std::pair<double, UString> > temp=SegmentToSentece(advantage_comments[i]);
+                 for(unsigned i=0;i<=min(5-advantage_opinions.size(),temp.size());i++)
+                 {
+                    advantage_opinions.push_back(temp[i]);
+                 }
+                */
+                 std::vector< std::pair<double, UString> > temp=SegmentToSentece(advantage_comments[i]);
+                  
                  advantage_opinions.insert(advantage_opinions.end(),temp.begin(),temp.end());
-                 if(advantage_opinions.size()>5)
-                    break;
+                 if(advantage_opinions.size()>=5)
+                     break;
             }
         }
+        
         if(disadvantage_opinions.empty()&&(!disadvantage_comments.empty()))
         {
             for(unsigned i=0;i<min(disadvantage_comments.size(),5);i++)
