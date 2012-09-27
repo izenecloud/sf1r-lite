@@ -31,6 +31,12 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND AND Boost_SERIALIZATION_FOUND
   )
   TARGET_LINK_LIBRARIES(t_ScdIndex ${libs})
 
+  ADD_EXECUTABLE(t_ScdIndexLeveldb
+    Runner.cpp
+    t_ScdIndexLeveldb.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_ScdIndexLeveldb ${libs})
+
   ADD_EXECUTABLE(t_ClickCounterDB
     Runner.cpp
     t_ClickCounterDB.cpp

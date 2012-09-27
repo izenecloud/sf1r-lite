@@ -8,25 +8,25 @@
 #ifndef SCDINDEXTAG_H
 #define SCDINDEXTAG_H
 
-#include "uint128.h"
 #include "ScdParserTraits.h"
-#include <boost/mpl/int.hpp>
+#include "Utilities.h"
 
 namespace scd {
 
 /// Conversion function object declaration.
 template <typename Type> struct Converter;
 
-/// Default implementation as the identity function.
-template <>
-struct Converter<PropertyValueType> {
-    inline PropertyValueType operator()(const PropertyValueType& in) const {
-        return in;
+/// Converter specialization for the default type std::string.
+template <> struct Converter<std::string> {
+    inline std::string operator()(const PropertyValueType& in) const {
+        std::string str;
+        in.convertString(str, izenelib::util::UString::UTF_8);
+        return str;
     }
 };
 
 /// Base tag type.
-template <class Derived, typename Type = PropertyValueType, typename TypeConverter = Converter<Type> >
+template <class Derived, typename Type = std::string, typename TypeConverter = Converter<Type> >
 struct TagType {
     typedef Type type;
 
@@ -45,12 +45,11 @@ struct TagType {
 } /* namespace scd */
 
 /**
- * @brief Create a new property tag.
+ * @brief Create a new property tag using default type.
  */
 #define SCD_INDEX_PROPERTY_TAG(tag_name) \
     struct tag_name : scd::TagType<tag_name> { \
         static inline const char* name() { return #tag_name; } \
-        typedef boost::mpl::int_< sizeof(#tag_name) >::type hash_type; \
     }
 
 /**
@@ -62,22 +61,26 @@ struct TagType {
 #define SCD_INDEX_PROPERTY_TAG_TYPED(tag_name, tag_type) \
     struct tag_name : scd::TagType<tag_name, tag_type> { \
         static inline const char* name() { return #tag_name; } \
-        typedef boost::mpl::int_< sizeof(#tag_name) >::type hash_type; \
     }
 
 namespace scd {
 
-/// Default tag for DOCID property.
-SCD_INDEX_PROPERTY_TAG_TYPED(DOCID, uint128);
+SCD_INDEX_PROPERTY_TAG_TYPED(DOCID, uint128_t); //< Default tag for 'DOCID' property.
+SCD_INDEX_PROPERTY_TAG_TYPED(uuid, uint128_t);  //< Default tag for 'uuid' property.
 
-/// Converter specialization for the uint128.
-template<>
-struct Converter<uint128> {
-    inline uint128 operator()(const PropertyValueType& in) const {
-        return str2uint(in);
+/// Converter specialization for the uint128_t.
+template<> struct Converter<uint128_t> {
+    inline uint128_t operator()(const PropertyValueType& in) const {
+        return sf1r::Utilities::md5ToUint128(in);
     }
 };
 
 } /* namespace scd */
+
+// operator<< should be in the global namespace
+std::ostream& operator<<(std::ostream& os, const uint128_t& in) {
+    os << sf1r::Utilities::uint128ToMD5(in);
+    return os;
+}
 
 #endif /* SCDINDEXTAG_H */
