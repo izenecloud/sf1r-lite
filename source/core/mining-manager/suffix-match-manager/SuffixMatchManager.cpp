@@ -14,7 +14,6 @@ SuffixMatchManager::SuffixMatchManager(
     : fm_index_path_(homePath + "/" + property + ".fm_idx")
     , property_(property)
     , document_manager_(document_manager)
-    , fmi_(new FMIndexType(32))
 {
     if (!boost::filesystem::exists(homePath))
     {
@@ -23,7 +22,11 @@ SuffixMatchManager::SuffixMatchManager(
     else
     {
         std::ifstream ifs(fm_index_path_.c_str());
-        if (ifs) fmi_->load(ifs);
+        if (ifs)
+        {
+            fmi_.reset(new FMIndexType(32));
+            fmi_->load(ifs);
+        }
     }
 }
 
@@ -80,6 +83,8 @@ void SuffixMatchManager::buildCollection()
 
 size_t SuffixMatchManager::longestSuffixMatch(const izenelib::util::UString& pattern, size_t max_docs, std::vector<uint32_t>& docid_list, std::vector<float>& score_list) const
 {
+    if (!fmi_) return 0;
+
     std::vector<std::pair<size_t, size_t> >match_ranges;
     std::vector<size_t> doclen_list;
     size_t max_match;
