@@ -45,7 +45,7 @@ struct TagType {
 } /* namespace scd */
 
 /**
- * @brief Create a new property tag.
+ * @brief Create a new property tag using default type.
  */
 #define SCD_INDEX_PROPERTY_TAG(tag_name) \
     struct tag_name : scd::TagType<tag_name> { \

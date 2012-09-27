@@ -37,10 +37,8 @@ public:
     typedef izenelib::am::AMIterator<DocidTable> DocidIterator;       //< Iterator on Docid tag.
     typedef izenelib::am::AMIterator<PropertyTable> PropertyIterator; //< Iterator on Property tag.
 
-    /// Open the two leveldb tables associated to tags
-    ScdIndexLeveldb(const std::string& docidDatabase,
-            const std::string& propertyDatabase,
-            const bool create);
+    /// Open the two leveldb tables associated to tags.
+    ScdIndexLeveldb(const std::string& docidDatabase, const std::string& propertyDatabase, const bool);
 
     /// Destructor.
     ~ScdIndexLeveldb();
@@ -133,11 +131,9 @@ private:
     /// Directly insert a new document.
     void insertDocument(const DocumentType& document) {
         bool status = docidTable->insert(document.docid, document.offset);
-        //CHECK(status) << "Cannot insert docid: " << document.docid;
         CHECK(status) << "Cannot insert docid";
 
         status = insertProperty(document.property, document.offset);
-        //CHECK(status) << "Cannot insert property: " << document.property;
         CHECK(status) << "Cannot insert property";
     }
 
@@ -151,7 +147,6 @@ private:
 
     /// Insert a new property.
     bool insertProperty(const PropertyType& property, const offset_list& offsets) {
-        // FIXME!!!
         offset_list stored;
         getByProperty(property, stored);
         std::copy(offsets.begin(), offsets.end(), std::back_inserter(stored));
@@ -176,7 +171,7 @@ private:
 template <typename Docid, typename Property>
 ScdIndexLeveldb<Docid, Property>::ScdIndexLeveldb(const std::string& docidDatabase,
         const std::string& propertyDatabase, const bool create) {
-    // TODO
+    // TODO: how to set leveldb options?
     //options.error_if_exists = create;
     //options.create_if_missing = create;
 
@@ -190,13 +185,13 @@ ScdIndexLeveldb<Docid, Property>::ScdIndexLeveldb(const std::string& docidDataba
 template <typename Docid, typename Property>
 ScdIndexLeveldb<Docid, Property>::~ScdIndexLeveldb() {
     if (not docidBuffer.empty() or not propertyBuffer.empty())
-        flush(); // XXX corretto?
+        flush();
 }
 
 template <typename Docid, typename Property>
 void ScdIndexLeveldb<Docid, Property>::flush() {
     bool status;
-    // TODO leveldb batch
+
     typedef std::pair<DocidType, offset_type> docid_pair;
     BOOST_FOREACH(const docid_pair& pair, docidBuffer) {
         status = docidTable->insert(pair.first, pair.second);

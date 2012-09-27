@@ -17,9 +17,10 @@ namespace scd {
 
 /**
  * @brief SCD multi-index container
- * This class wraps a container with two indeces:
- * - unique index on the Docid tag
- * - non-unique index on the Property tag
+ * This class wraps a container with two indeces allowing to retrieve
+ * document offsets within an SCD file:
+ * - unique index on the specified Docid tag (default to 'DOCID')
+ * - non-unique index on the scpecified Property tag (default to 'uuid')
  */
 template <typename Property = uuid, typename Docid = DOCID>
 class ScdIndex {
@@ -57,7 +58,9 @@ public:
      * @param path1 Path to the Docid leveldb database.
      * @param path2 Path to the Property leveldb database.
      */
-    static ScdIndex<Property, Docid>* load(const std::string& path1, const std::string& path2);
+    static ScdIndex<Property, Docid>* load(const std::string& path1, const std::string& path2) {
+        return new ScdIndex(path1, path2, false);
+    }
 
     /// @return The number of stored documents.
     size_t size() const {
@@ -95,6 +98,7 @@ public:
     }
 
 private:
+    /// Constructor.
     ScdIndex(const std::string& path1, const std::string& path2, const bool create)
             : container(path1, path2, create) {}
 };
@@ -129,12 +133,6 @@ ScdIndex<Property, Docid>::build(const std::string& path,
     index->container.flush();
     LOG(INFO) << "Indexed " << (count - 1) << " documents.";
     return index;
-}
-
-template<typename Property, typename Docid>
-ScdIndex<Property, Docid>*
-ScdIndex<Property, Docid>::load(const std::string& path1, const std::string& path2) {
-    return new ScdIndex(path1, path2, false);
 }
 
 } /* namespace scd */
