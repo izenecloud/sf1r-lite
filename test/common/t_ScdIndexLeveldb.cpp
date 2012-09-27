@@ -5,8 +5,8 @@
  * Created on September 24, 2012, 10:18 AM
  */
 
+#include "ScdIndexUtils.hpp"
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
 
 /* enable print to stdout */
 #define DEBUG_OUTPUT 0
@@ -16,22 +16,14 @@
 #undef protected
 #include "common/ScdIndexTag.h"
 
-namespace fs = boost::filesystem;
-
-fs::path temporaryFile(const std::string& name, bool deleteFlag = true) {
-    fs::path file = fs::temp_directory_path()/name;
-    if (deleteFlag) fs::remove_all(file);
-    return file;
-}
-
 #define print(X) std::cout << X << std::endl
 
 BOOST_AUTO_TEST_CASE(basic) {
     typedef scd::ScdIndexLeveldb<scd::DOCID, scd::uuid> ScdIndexLeveldb;
     typedef scd::Document<scd::DOCID, scd::uuid> Document;
 
-    fs::path docidDatabase = temporaryFile("scd-docid"),
-             propertyDatabase = temporaryFile("scd-uuid");
+    fs::path docidDatabase = test::createTempFile("scd-docid"),
+             propertyDatabase = test::createTempFile("scd-uuid");
     ScdIndexLeveldb table(docidDatabase.string(), propertyDatabase.string(), true);
 
     offset_type offset;
@@ -85,6 +77,7 @@ BOOST_AUTO_TEST_CASE(basic) {
     table.dumpBuffer();
 #endif
 
+    // flush
     table.flush();
 #if DEBUG_OUTPUT
     print("After flush:");
