@@ -129,6 +129,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 {
+    delete Opc_;
     delete summarization_storage_;
     delete comment_cache_storage_;
     delete corpus_;
