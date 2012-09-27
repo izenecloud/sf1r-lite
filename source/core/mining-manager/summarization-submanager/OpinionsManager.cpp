@@ -1295,7 +1295,6 @@ void OpinionsManager::ValidCandidateAndUpdate(const NgramPhraseT& phrase,
         return;
     }
 
-    OpinionCandidateContainerT::iterator it = candList.begin();
     bool can_insert = true;
     bool is_larger_replace_exist = false;
 
