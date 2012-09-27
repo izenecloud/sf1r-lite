@@ -93,6 +93,26 @@ BOOST_AUTO_TEST_CASE(test_index) {
         BOOST_CHECK_EQUAL(index->size(), loaded->size());
         // perform the same test
         doTest(*loaded, expected);
+
+        // docid traversal
+        for (ScdIndex::DocidIterator i = index->begin(), j = loaded->begin(), end = index->end();
+                i != end; ++i, ++j) {
+            BOOST_CHECK(i->first == j->first);
+            BOOST_CHECK(i->second == j->second);
+        }
+
+        // property traversal
+        for (ScdIndex::PropertyIterator i = index->pbegin(), j = loaded->pbegin(), end = index->pend();
+                i != end; ++i, ++j) {
+            BOOST_CHECK(i->first == j->first);
+            const offset_list& oi = i->second;
+            const offset_list& oj = j->second;
+            BOOST_CHECK_EQUAL(oi.size(), oj.size());
+            for (offset_list::const_iterator ii = oi.begin(), jj = oj.begin();
+                    ii != oi.end(); ++ii, ++jj) {
+                BOOST_CHECK_EQUAL(*ii, *jj);
+            }
+        }
     }
 
     // close db
@@ -130,13 +150,25 @@ BOOST_AUTO_TEST_CASE(test_performance) {
         timer.toc();
         std::cout << "\nIndexing time:\n\t" << timer.seconds() << " seconds" << std::endl;
     }
+
     // load index
     {
         timer.tic();
         boost::scoped_ptr<ScdIndex> loaded(ScdIndex::load(dir1.string(), dir2.string()));
         timer.toc();
         std::cout << "Loading time:\n\t" << timer.seconds() << " seconds" << std::endl;
+
+        timer.tic();
+        for (ScdIndex::DocidIterator i = loaded->begin(), end = loaded->end(); i != end; ++i);
+        timer.toc();
+        std::cout << "Docid traversal time:\n\t" << timer.seconds() << " seconds" << std::endl;
+
+        timer.tic();
+        for (ScdIndex::PropertyIterator i = loaded->pbegin(), end = loaded->pend(); i != end; ++i);
+        timer.toc();
+        std::cout << "Property traversal time:\n\t" << timer.seconds() << " seconds" << std::endl;
     }
+
     // check size
     test::databaseSize(dir1, dir2);
 }

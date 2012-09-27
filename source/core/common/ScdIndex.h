@@ -23,11 +23,18 @@ namespace scd {
  */
 template <typename Property = uuid, typename Docid = DOCID>
 class ScdIndex {
+    typedef ScdIndexLeveldb<Docid, Property> ContainerType; //< The actual container type.
+
+    ContainerType container;
+
 public:
     typedef Document<Docid, Property> DocumentType; //< The actual document type.
 
     typedef typename Docid::type DocidType;          //< The actual Docid type.
     typedef typename Property::type PropertyType;    //< The actual Property type
+
+    typedef typename ContainerType::DocidIterator DocidIterator;       //< Iterator on Docid values.
+    typedef typename ContainerType::PropertyIterator PropertyIterator; //< Iterator on Property values.
 
     /// Destructor.
     ~ScdIndex() {}
@@ -67,12 +74,29 @@ public:
         return container.getByProperty(key, offsets);
     }
 
+    /// @return begin iterator on Docid.
+    DocidIterator begin() const {
+        return container.begin();
+    }
+
+    /// @return end iterator on Docid.
+    DocidIterator end() const {
+        return container.end();
+    }
+
+    /// @return begin iterator on Property.
+    PropertyIterator pbegin() const {
+        return container.pbegin();
+    }
+
+    /// @return end iterator on Property.
+    PropertyIterator pend() const {
+        return container.pend();
+    }
+
 private:
     ScdIndex(const std::string& path1, const std::string& path2, const bool create)
             : container(path1, path2, create) {}
-
-    typedef ScdIndexLeveldb<Docid, Property> ContainerType; //< The actual container type.
-    ContainerType container;
 };
 
 template<typename Property, typename Docid>

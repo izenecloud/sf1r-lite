@@ -25,7 +25,6 @@ namespace scd {
  */
 template <typename Docid, typename Property>
 class ScdIndexLeveldb {
-    typedef std::vector<offset_type> offset_list; // TODO: std::list
     typedef Document<Docid, Property> DocumentType;
 
     typedef typename Docid::type DocidType;
@@ -34,10 +33,10 @@ class ScdIndexLeveldb {
     typedef izenelib::am::leveldb::Table<DocidType, offset_type> DocidTable;
     typedef izenelib::am::leveldb::Table<PropertyType, offset_list> PropertyTable;
 
+public:
     typedef izenelib::am::AMIterator<DocidTable> DocidIterator;       //< Iterator on Docid tag.
     typedef izenelib::am::AMIterator<PropertyTable> PropertyIterator; //< Iterator on Property tag.
 
-public:
     /// Open the two leveldb tables associated to tags
     ScdIndexLeveldb(const std::string& docidDatabase,
             const std::string& propertyDatabase,
@@ -72,7 +71,6 @@ public:
         return propertyTable->get(key, offsets);
     }
 
-protected:
     /// @return begin iterator on Docid.
     DocidIterator begin() const {
         return DocidIterator(*docidTable);
@@ -92,6 +90,8 @@ protected:
     PropertyIterator pend() const {
         return PropertyIterator();
     }
+
+protected:
 #if DEBUG_OUTPUT
     /// Dump content to output stream.
     void dump(std::ostream& os = std::cout) const {
@@ -131,7 +131,7 @@ protected:
 #endif
 private:
     /// Directly insert a new document.
-    inline void insertDocument(const DocumentType& document) {
+    void insertDocument(const DocumentType& document) {
         bool status = docidTable->insert(document.docid, document.offset);
         //CHECK(status) << "Cannot insert docid: " << document.docid;
         CHECK(status) << "Cannot insert docid";
@@ -142,7 +142,7 @@ private:
     }
 
     /// Insert a new property.
-    inline bool insertProperty(const PropertyType& property, const offset_type& offset) {
+    bool insertProperty(const PropertyType& property, const offset_type& offset) {
         offset_list offsets;
         getByProperty(property, offsets);
         offsets.push_back(offset);
@@ -150,7 +150,7 @@ private:
     }
 
     /// Insert a new property.
-    inline bool insertProperty(const PropertyType& property, const offset_list& offsets) {
+    bool insertProperty(const PropertyType& property, const offset_list& offsets) {
         // FIXME!!!
         offset_list stored;
         getByProperty(property, stored);
@@ -159,7 +159,7 @@ private:
     }
 
     /// Buffer insertion of a new document until flush().
-    inline void insertBatch(const DocumentType& document) {
+    void insertBatch(const DocumentType& document) {
         using std::make_pair;
         docidBuffer.insert(make_pair(document.docid, document.offset));
         propertyBuffer[document.property].push_back(document.offset);

@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE(basic) {
     ScdIndexLeveldb table(docidDatabase.string(), propertyDatabase.string(), true);
 
     offset_type offset;
-    std::vector<offset_type> offsets;
+    offset_list offsets;
 
     // get
     BOOST_REQUIRE_EQUAL(0, table.size());
@@ -103,4 +103,28 @@ BOOST_AUTO_TEST_CASE(basic) {
     BOOST_CHECK_EQUAL(2, offsets.size());
     BOOST_CHECK_EQUAL(0, offsets[0]);
     BOOST_CHECK_EQUAL(45, offsets[1]);
+
+    // Docid iterator
+    const scd::DOCID::type expected_id[] = { 1, 2, 3, 5 };
+    const offset_type expected_offset[] = { 4, 12, 35, 45 };
+    int j = 0;
+    for (ScdIndexLeveldb::DocidIterator it = table.begin(); it != table.end(); ++it, ++j) {
+        BOOST_CHECK(expected_id[j] == it->first);
+        BOOST_CHECK(expected_offset[j] == it->second);
+    }
+
+    // Property iterator
+    const scd::uuid::type expected_uuid[] = { 42, 45, 71 };
+    offset_list l1, l2, l3;
+    l1.push_back(0); l1.push_back(45);
+    l2.push_back(35);
+    l3.push_back(4); l3.push_back(12);
+    const offset_list expected_list[] = { l1, l2, l3 };
+    j = 0;
+    for (ScdIndexLeveldb::PropertyIterator it = table.pbegin(); it != table.pend(); ++it, ++j) {
+        BOOST_CHECK(expected_uuid[j] == it->first);
+        BOOST_CHECK_EQUAL(expected_list[j].size(), it->second.size());
+        for (unsigned i = 0; i < expected_list[j].size(); ++i)
+            BOOST_CHECK_EQUAL(expected_list[j][i], it->second[i]);
+    }
 }
