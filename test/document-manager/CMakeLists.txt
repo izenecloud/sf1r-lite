@@ -1,5 +1,6 @@
 INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/core/
+  ${CMAKE_SOURCE_DIR}/bundles/
   ${izenelib_INCLUDE_DIRS}
   ${ilplib_INCLUDE_DIRS}
   ${idmlib_INCLUDE_DIRS}
@@ -30,6 +31,12 @@ SET(libs
   sf1r_ranking_manager
   sf1r_node_manager
   sf1r_common
+  
+  sf1r_bundle_index
+  sf1r_aggregator_manager
+  sf1r_bundle_mining
+  sf1r_bundle_recommend
+  sf1r_recommend_manager
 
   ${Boost_LIBRARIES}
   ${ilplib_LIBRARIES}

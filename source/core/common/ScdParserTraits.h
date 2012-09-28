@@ -19,6 +19,7 @@ typedef std::vector<FieldPair> SCDDoc;
 typedef boost::shared_ptr<SCDDoc> SCDDocPtr;
 
 typedef long offset_type; //< Type of offset values.
+typedef std::vector<offset_type> offset_list;
 
 typedef std::pair<izenelib::util::UString, unsigned> DocIdPair; // should this be long instead of unsigned?
 

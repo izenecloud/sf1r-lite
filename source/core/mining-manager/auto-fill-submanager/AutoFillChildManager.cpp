@@ -824,7 +824,7 @@ void AutoFillChildManager::buildWat_array(bool _fromleveldb)
     std::string itemValue, value, IDstring;
     uint64_t ID = 0;
     uint32_t offsettmp = 0;
-    if(!_fromleveldb)
+    //if(!_fromleveldb)
         dbItem_.clear();
     for(it = ItemVector_.begin(); it != ItemVector_.end(); it++)
     {
@@ -850,7 +850,7 @@ void AutoFillChildManager::buildWat_array(bool _fromleveldb)
         }
         (*it).offset_ = offsettmp;
         offsettmp += count;
-        if(!_fromleveldb)
+        //if(!_fromleveldb)
         {
             string offsetstring = boost::lexical_cast<string>((*it).offset_) + "/" + boost::lexical_cast<string>(count);
             //dbItem_.delete_item(itemValue);

@@ -12,6 +12,7 @@
 #include <node-manager/SearchNodeManager.h>
 #include <node-manager/RecommendNodeManager.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
+#include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
 #include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
 #include <common/OnSignal.h>
 #include <common/XmlConfigParser.h>
@@ -144,6 +145,7 @@ void CobraProcess::initQuery()
     QueryCorrectionSubmanager::system_working_path_ = SF1Config::get()->getWorkingDir();
     QueryCorrectionSubmanager::getInstance();
     AutoFillChildManager::system_resource_path_ = SF1Config::get()->getResourceDir();
+    OpinionsClassificationManager::system_resource_path_ = SF1Config::get()->getResourceDir();
 }
 
 bool CobraProcess::initLicenseManager()

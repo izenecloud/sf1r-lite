@@ -9,8 +9,6 @@
 #define SCDINDEXDOCUMENT_H
 
 #include "ScdParserTraits.h"
-#include <boost/mpl/integral_c.hpp>
-#include <boost/mpl/plus.hpp>
 #include <glog/logging.h>
 
 namespace scd {
@@ -22,17 +20,14 @@ namespace scd {
  */
 template <typename Docid, typename Property>
 struct Document {
-    /// Type of docid values.
-    typedef typename Docid::type docid_type;
-    /// Type of property values.
-    typedef typename Property::type property_type;
+    typedef typename Docid::type docid_type;       //< Type of docid value.
+    typedef typename Property::type property_type; //< Type of property value.
 
-    offset_type offset;
-    docid_type docid;
-    property_type property;
+    offset_type offset;     //< Offset in SCD file.
+    docid_type docid;       //< Document unique id.
+    property_type property; //< Document indexed property.
 
-    Document() {}
-
+    /// Create a new document using ScdParser iterator value.
     Document(const offset_type o, SCDDocPtr doc) : offset(o) {
         for (SCDDoc::iterator it = doc->begin(); it != doc->end(); ++it) {
             // store only indexed properties
@@ -43,6 +38,10 @@ struct Document {
             }
         }
     }
+
+    /// Create a new document.
+    Document(const offset_type o, const docid_type& id, const property_type& p)
+            : offset(o), docid(id), property(p) {}
 
     friend std::ostream& operator<<(std::ostream& os, const Document& d) {
         os << "@" << d.offset
@@ -56,15 +55,6 @@ struct Document {
            and docid == d.docid
            and property == d.property;
     }
-
-    /// Serialization version.
-    typedef boost::mpl::integral_c<
-                unsigned,
-                boost::mpl::plus<
-                    boost::mpl::int_<Docid::hash_type::value>,
-                    boost::mpl::int_<Property::hash_type::value>
-                >::value
-            > Version;
 };
 
 } /* namespace scd */

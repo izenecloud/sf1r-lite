@@ -75,7 +75,6 @@ public:
 
     virtual void startTask();
 
-private:
     void doTask();
 
 private:

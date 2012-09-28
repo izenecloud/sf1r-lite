@@ -1,4 +1,5 @@
 #include "product_db.h"
+#include <mining-manager/util/split_ustr.h>
 #include <sstream>
 using namespace sf1r;
 
@@ -40,10 +41,10 @@ bool ProductProperty::Parse(const Document& doc)
     //LOG(INFO)<<"find oid "<<oid<<std::endl;
     UString usource;
     UString uprice;
-    UString uoldofferids;
+    UString uattribute;
     doc.getProperty("Source", usource);
     doc.getProperty("Price", uprice);
-    doc.getProperty("OldOfferIds", uoldofferids);
+    doc.getProperty("Attribute", uattribute);
     price.Parse(uprice);
     if(usource.length()>0)
     {
@@ -57,17 +58,26 @@ bool ProductProperty::Parse(const Document& doc)
             source.insert(s_vector[i]);
         }
     }
-    if(uoldofferids.length()>0)
+    std::vector<AttrPair> attrib_list;
+    split_attr_pair(uattribute, attrib_list);
+    for(std::size_t i=0;i<attrib_list.size();i++)
     {
-        std::string sold_offerids;
-        uoldofferids.convertString(sold_offerids, UString::UTF_8);
-        std::vector<std::string> s_vector;
-        boost::algorithm::split( s_vector, sold_offerids, boost::algorithm::is_any_of(",") );
-        for(uint32_t i=0;i<s_vector.size();i++)
+        std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
+        std::vector<std::string> attrib_value_str_list;
+        //do duplicate remove
+        boost::unordered_set<std::string> value_set;
+        for(uint32_t j=0;j<attrib_value_list.size();j++)
         {
-            if(s_vector[i].empty()) continue;
-            old_offerids.insert(s_vector[i]);
+            std::string svalue;
+            attrib_value_list[j].convertString(svalue, UString::UTF_8);
+            if(value_set.find(svalue)!=value_set.end()) continue;
+            attrib_value_str_list.push_back(svalue);
+            value_set.insert(svalue);
         }
+        izenelib::util::UString attrib_name = attrib_list[i].first;
+        std::string sname;
+        attrib_name.convertString(sname, UString::UTF_8);
+        attribute[sname] = attrib_value_str_list;
     }
  
     return true;
@@ -87,10 +97,11 @@ void ProductProperty::Set(Document& doc) const
     {
         doc.property("Source") = usource;
     }
-    izenelib::util::UString uoldofferids = GetOldOfferIdsUString();
-    if(!uoldofferids.empty())
+
+    UString uattribute = GetAttributeUString();
+    if(!uattribute.empty())
     {
-        doc.property("OldOfferIds") = uoldofferids;
+        doc.property("Attribute") = uattribute;
     }
  
     doc.property("itemcount") = itemcount;
@@ -103,7 +114,6 @@ void ProductProperty::Set(Document& doc) const
         doc.property("independent") = (int64_t)0;
     }
     doc.eraseProperty("uuid");
-    doc.eraseProperty("olduuid");
 }
 
 void ProductProperty::SetIndependent()
@@ -134,22 +144,30 @@ izenelib::util::UString ProductProperty::GetSourceUString() const
     return izenelib::util::UString(GetSourceString(), izenelib::util::UString::UTF_8);
 }
 
-std::string ProductProperty::GetOldOfferIdsString() const
+izenelib::util::UString ProductProperty::GetAttributeUString() const
 {
     std::string result;
-    for(OfferIdSetType::const_iterator it = old_offerids.begin(); it != old_offerids.end(); ++it)
+    for(AttributeType::const_iterator oit = attribute.begin(); oit!=attribute.end(); ++oit)
     {
-        if(!result.empty()) result+=",";
-        result += *it;
+        if(!result.empty())
+        {
+            result += ",";
+        }
+        result += oit->first+":";
+        std::string svalue;
+        const std::vector<std::string>& value_list = oit->second;
+        for(uint32_t i=0;i<value_list.size();i++)
+        {
+            if(!svalue.empty())
+            {
+                svalue+="|";
+            }
+            svalue+=value_list[i];
+        }
+        result+=svalue;
     }
-    return result;
+    return izenelib::util::UString(result, izenelib::util::UString::UTF_8);
 }
-
-izenelib::util::UString ProductProperty::GetOldOfferIdsUString() const
-{
-    return izenelib::util::UString(GetOldOfferIdsString(), izenelib::util::UString::UTF_8);
-}
-
 
 ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
 {
@@ -160,9 +178,9 @@ ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
     {
         source.insert(*oit);
     }
-    for(OfferIdSetType::const_iterator oit = other.old_offerids.begin(); oit!=other.old_offerids.end(); ++oit)
+    for(AttributeType::const_iterator oit = other.attribute.begin(); oit!=other.attribute.end(); ++oit)
     {
-        old_offerids.insert(*oit);
+        attribute[oit->first] = oit->second;
     }
     itemcount+=other.itemcount;
     SetIndependent();
@@ -205,11 +223,6 @@ std::string ProductProperty::ToString() const
     std::stringstream ss;
     ss<<"pid:"<<spid<<",itemcount:"<<itemcount<<",price:"<<price.ToString()<<",source:";
     for(SourceType::const_iterator it = source.begin(); it!=source.end(); ++it)
-    {
-        ss<<"["<<*it<<"]";
-    }
-    ss << ", old_offerids:";
-    for(OfferIdSetType::const_iterator it = old_offerids.begin(); it != old_offerids.end(); ++it)
     {
         ss<<"["<<*it<<"]";
     }
