@@ -62,8 +62,11 @@ bool CustomRankManager::getCustomValue(
 {
     CustomRankDocStr customDocStr;
 
-    return db_.get(query, customDocStr) &&
-           docIdConverter_.convert(customDocStr, customDocId);
+    if (! db_.get(query, customDocStr))
+        return false;
+
+    docIdConverter_.convert(customDocStr, customDocId);
+    return true;
 }
 
 CustomRankScorer* CustomRankManager::getScorer(const std::string& query)

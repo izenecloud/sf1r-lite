@@ -12,14 +12,14 @@ bool CustomDocIdConverter::convert(
 {
     izenelib::util::ClockTimer timer;
 
-    bool result = convertDocIdList_(customDocStr.topIds, customDocId.topIds) &&
-                  convertDocIdList_(customDocStr.excludeIds, customDocId.excludeIds);
+    bool topResult = convertDocIdList_(customDocStr.topIds, customDocId.topIds);
+    bool excludeResult = convertDocIdList_(customDocStr.excludeIds, customDocId.excludeIds);
 
     LOG(INFO) << "top num: " << customDocId.topIds.size()
               << ", exclude num: " << customDocId.excludeIds.size()
               << ", id conversion costs: " << timer.elapsed() << " seconds";
 
-    return result;
+    return topResult && excludeResult;
 }
 
 bool CustomDocIdConverter::convertDocIdList_(
@@ -28,17 +28,22 @@ bool CustomDocIdConverter::convertDocIdList_(
 )
 {
     docid_t docId = 0;
+    bool result = true;
 
     for (std::vector<std::string>::const_iterator it = docStrList.begin();
         it != docStrList.end(); ++it)
     {
-        if (! convertDocId_(*it, docId))
-            return false;
-
-        docIdList.push_back(docId);
+        if (convertDocId_(*it, docId))
+        {
+            docIdList.push_back(docId);
+        }
+        else
+        {
+            result = false;
+        }
     }
 
-    return true;
+    return result;
 }
 
 bool CustomDocIdConverter::convertDocId_(

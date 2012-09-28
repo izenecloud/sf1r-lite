@@ -260,10 +260,7 @@ bool MiningSearchService::setCustomRank(
 {
     bool result = miningManager_->setCustomRank(query, customDocStr);
 
-    if (result)
-    {
-        searchWorker_->clearSearchCache();
-    }
+    searchWorker_->clearSearchCache();
 
     return result;
 }

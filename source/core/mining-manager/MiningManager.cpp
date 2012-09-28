@@ -1531,10 +1531,13 @@ bool MiningManager::setCustomRank(
 {
     CustomRankDocId customDocId;
 
-    return customDocIdConverter_ &&
-           customDocIdConverter_->convert(customDocStr, customDocId) &&
-           customRankManager_ &&
-           customRankManager_->setCustomValue(query, customDocStr);
+    bool convertResult = customDocIdConverter_ &&
+        customDocIdConverter_->convert(customDocStr, customDocId);
+
+    bool setResult = customRankManager_ &&
+        customRankManager_->setCustomValue(query, customDocStr);
+
+    return convertResult && setResult;
 }
 
 bool MiningManager::getCustomRank(
