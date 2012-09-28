@@ -10,12 +10,23 @@
 
 #include "Command.hpp"
 #include "ScdBuilder.h"
+#include "common/ScdParserTraits.h"
 #include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/test/test_tools.hpp>
 #include <iostream>
 
 namespace fs = boost::filesystem;
+
+/// Print an SCD document.
+std::ostream& operator<<(std::ostream& os, const SCDDoc& doc) {
+    BOOST_FOREACH(const FieldPair& pair, doc) {
+        os << '<' << pair.first << '>' << pair.second << '\n';
+    }
+    return os;
+}
 
 namespace test {
 
@@ -35,6 +46,23 @@ fs::path createTempFile(const std::string& name) {
     return file;
 }
 
+inline std::string getDocid(unsigned in) {
+    return boost::str(boost::format("%032d") % in);
+}
+
+inline std::string getUuid(unsigned in) {
+    return boost::str(boost::format("%032d") % (in*in/2));
+}
+
+inline std::string getTitle(unsigned in) {
+    std::string title("Title ");
+    if (in % 2 == 0)
+        title.append("T");
+    else
+        title.append(boost::lexical_cast<std::string>(in));
+    return title;
+}
+
 /// Create a sample SCD file.
 fs::path createScd(const std::string& name,
         const unsigned size, const unsigned start = 1) {
@@ -50,12 +78,9 @@ fs::path createScd(const std::string& name,
 
     ScdBuilder scd(file);
     for (unsigned i = start; i < start + size; ++i) {
-        scd("DOCID") << boost::format("%032d") % i;
-        if (i % 2 == 0)
-            scd("Title") << "Title T";
-        else
-            scd("Title") << "Title " << i;
-        scd("uuid") << boost::format("%032d") % (i*i/2);
+        scd("DOCID") << getDocid(i);
+        scd("Title") << getTitle(i);
+        scd("uuid") << getUuid(i);
     }
     BOOST_REQUIRE(fs::exists(file));
     return file;

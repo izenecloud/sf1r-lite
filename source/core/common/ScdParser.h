@@ -21,9 +21,14 @@ enum SCD_TYPE
     DELETE_SCD
 };
 
+namespace scd {
+    class ScdIndexIterator;
+}
 
 class ScdParser
 {
+    friend class scd::ScdIndexIterator;
+
     /// @brief  Reads a document from the loaded SCD file, when given a DOCID value.
     //          prerequisites: SCD file must be loaded by load(), and getDocIdList() must be called.
     bool getDoc(const izenelib::util::UString & docId, SCDDoc& doc);
