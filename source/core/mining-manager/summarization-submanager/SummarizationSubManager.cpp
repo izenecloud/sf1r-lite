@@ -75,7 +75,7 @@ vector<std::pair<double,UString> > SegmentToSentece(UString Segment)
             {
                 templen = min(len1,len2);
             }
-            if(temp.substr(0,templen).length()>0&&temp.substr(0,templen).length()<22)
+            if(temp.substr(0,templen).length()>0&&temp.substr(0,templen).length()<28)
             {
                 Sentence.push_back(std::make_pair(1.0,UString(temp.substr(0,templen), UString::UTF_8)) );
             }
@@ -83,7 +83,7 @@ vector<std::pair<double,UString> > SegmentToSentece(UString Segment)
         }
         else
         {   
-            if(temp.length()>0&&temp.length()<22)
+            if(temp.length()>0&&temp.length()<28)
             {
                Sentence.push_back(std::make_pair(1.0,UString(temp, UString::UTF_8)));
             }
@@ -182,9 +182,16 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         std::pair<UString,UString> advantagepair=Opc_->test(str);
 
         AdvantageType advantage=advantagepair.first;
-        advantage.append(ait->second.get<AdvantageType>());
         DisadvantageType disadvantage=advantagepair.second;
-        disadvantage.append(dit->second.get<DisadvantageType>());
+        UString  usa(ait->second.get<AdvantageType>());
+        usa.convertString(str, izenelib::util::UString::UTF_8);
+        advantagepair=Opc_->test(str);
+        advantage.append(advantagepair.first);
+       
+        UString  usd(dit->second.get<DisadvantageType>());
+        usd.convertString(str, izenelib::util::UString::UTF_8);
+        advantagepair=Opc_->test(str);
+        disadvantage.append(advantagepair.second);
         score = 0.0f;
         numericPropertyTable->getFloatValue(i, score);
         comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,

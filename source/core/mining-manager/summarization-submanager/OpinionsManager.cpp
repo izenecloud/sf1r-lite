@@ -919,7 +919,7 @@ bool OpinionsManager::GenSeedBigramList(BigramPhraseContainerT& resultList)
     {
         // get the top-k bigram counter, and filter the seed bigram by this counter.
         WordPriorityQueue_  topk_words;
-        topk_words.Init(min(MAX_SEED_BIGRAM_RATIO*SigmaLength, (double)word_freq_records.size()/2));
+        topk_words.Init(min(MAX_SEED_BIGRAM_RATIO*SigmaLength, (double)word_freq_records.size()/4));
 
         WordFreqMapT::const_iterator cit = word_freq_records.begin();
         while(cit != word_freq_records.end())
