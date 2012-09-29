@@ -528,7 +528,7 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc)
     if(readLen)
     {
         buffer_->consume(readLen);
-        prevOffset_ += readLen;
+        prevOffset_ += readLen - docDelimiter_.size();
         doc_.reset(getDoc());
         operator+=(start_doc);
     }
@@ -553,7 +553,7 @@ ScdParser::iterator::iterator(ScdParser* pScdParser, unsigned int start_doc, con
     if(readLen)
     {
         buffer_->consume(readLen);
-        prevOffset_ += readLen;
+        prevOffset_ += readLen - docDelimiter_.size();
         doc_.reset(getDoc());
         operator+=(start_doc);
     }

@@ -213,6 +213,8 @@ BOOST_AUTO_TEST_CASE(testIterator)
         }
     }
 
+    const long offsets[] = { 0, 43, 86 };
+
     BOOST_CHECK(parser.load(scdPath.string()));
 
     std::string docid("DOCID");
@@ -242,6 +244,9 @@ BOOST_AUTO_TEST_CASE(testIterator)
     // <Content>
     BOOST_CHECK((*doc)[2].first == content);
     BOOST_CHECK_EQUAL(contentUStr, (*doc)[2].second);
+
+    // check offset
+    BOOST_CHECK_EQUAL(offsets[docNum], doc_iter.getOffset());
 
     ++docNum;
     }
