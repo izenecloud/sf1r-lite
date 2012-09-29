@@ -11,58 +11,77 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
-#define DOCID(in) sf1r::Utilities::md5ToUint128(boost::str(boost::format("%032d") % in));
-#define TITLE(in) boost::str(boost::format("Title %d") % in)
+#define USTRING(in) izenelib::util::UString((in), izenelib::util::UString::UTF_8)
+#define DOCID(in) sf1r::Utilities::md5ToUint128(test::getDocid(in))
+
+#define PRINT(what) std::cout << what << std::endl
 
 namespace test {
 SCD_INDEX_PROPERTY_TAG(Title);
 }
 
-void doTest(const scd::ScdIndex<test::Title>& index, const long* expected) {
+void checkDoc(const SCDDoc& doc, size_t i) {
+    BOOST_CHECK_EQUAL("DOCID", doc[0].first);
+    BOOST_CHECK_EQUAL(USTRING(test::getDocid(i)), doc[0].second);
+
+    BOOST_CHECK_EQUAL("Title", doc[1].first);
+    BOOST_CHECK_EQUAL(USTRING(test::getTitle(i)), doc[1].second);
+
+    BOOST_CHECK_EQUAL("uuid", doc[2].first);
+    BOOST_CHECK_EQUAL(USTRING(test::getUuid(i)), doc[2].second);
+}
+
+void doTest(scd::ScdIndex<test::Title>& index) {
     typedef scd::ScdIndex<test::Title> ScdIndex;
     const size_t numdoc = index.size();
+    const ScdIndex::iterator end;
 
     // query by DOCID: hit
     for (size_t i = 1; i <= numdoc; ++i) {
         const ScdIndex::DocidType id = DOCID(i);
-        long offset;
-        BOOST_REQUIRE(index.getOffset(id, offset));
-        BOOST_CHECK_EQUAL(expected[i-1], offset);
+
+        ScdIndex::iterator it = index.findDoc(id);
+        BOOST_CHECK(it != end);
+        //PRINT(*it);
+        checkDoc(*it, i);
+        BOOST_CHECK(++it == end);
     }
 
     // query by Title: hit
     // single value
     for (size_t i = 1; i <= numdoc; i += 2) {
-        const ScdIndex::PropertyType title(TITLE(i));
-        std::vector<offset_type> offsets;
-        BOOST_REQUIRE(index.getOffsetList(title, offsets));
-        BOOST_CHECK_EQUAL(1, offsets.size());
-        BOOST_CHECK_EQUAL(expected[i-1], offsets[0]);
+        const ScdIndex::PropertyType title(test::getTitle(i));
+
+        ScdIndex::iterator it = index.find(title);
+        BOOST_CHECK(it != end);
+        //PRINT(*it);
+        checkDoc(*it, i);
+        BOOST_CHECK(++it == end);
     }
 
     // multiple values
     {
         const ScdIndex::PropertyType title("Title T");
-        std::vector<offset_type> offsets;
-        BOOST_REQUIRE(index.getOffsetList(title, offsets));
-        BOOST_CHECK_EQUAL(5, offsets.size());
-        for (size_t i = 1, j = 0; i <= numdoc; i += 2, ++j) {
-            BOOST_CHECK_EQUAL(expected[i], offsets[j]);
+
+        ScdIndex::iterator it = index.find(title);
+        for (size_t j = 2; j < numdoc; j += 2, ++it) {
+            BOOST_CHECK(it != end);
+            //PRINT(*it);
+            checkDoc(*it, j);
         }
+        BOOST_CHECK(++it == end);
     }
 
     // query by DOCID: miss
     {
-        long offset;
-        BOOST_CHECK(not index.getOffset(ScdIndex::DocidType(0), offset));
-        BOOST_CHECK(not index.getOffset(ScdIndex::DocidType(11), offset));
+        BOOST_CHECK(index.findDoc(DOCID(0)) == end);
+        BOOST_CHECK(index.findDoc(DOCID(11)) == end);
     }
 
     // query by Title: miss
     {
-        std::vector<offset_type> offsets;
-        BOOST_CHECK(not index.getOffsetList(ScdIndex::PropertyType("Title 0"), offsets));
-        BOOST_CHECK(not index.getOffsetList(ScdIndex::PropertyType("Title 11"), offsets));
+        BOOST_CHECK(index.find("Title 0") == end);
+        BOOST_CHECK(index.find("Title 11") == end);
     }
 }
 
@@ -75,9 +94,6 @@ BOOST_AUTO_TEST_CASE(test_index) {
     fs::path dir1 = test::createTempDir("scd-index/docid", true);
     fs::path dir2 = test::createTempDir("scd-index/title", true);
 
-    // expected values
-    const long expected[] = { 0, 101, 195, 289, 383, 477, 571, 665, 759, 853 };
-
     // build index
     ScdIndex* index = ScdIndex::build(path.string(), dir1.string(), dir2.string());
     BOOST_REQUIRE(fs::exists(dir1) and fs::is_directory(dir1) and not fs::is_empty(dir1));
@@ -85,34 +101,14 @@ BOOST_AUTO_TEST_CASE(test_index) {
     BOOST_CHECK_EQUAL(DOC_NUM, index->size());
 
     // perform test
-    doTest(*index, expected);
+    doTest(*index);
 
     // load from file
     {
-        boost::scoped_ptr<ScdIndex> loaded(ScdIndex::load(dir1.string(), dir2.string()));
+        boost::scoped_ptr<ScdIndex> loaded(ScdIndex::load(path.string(), dir1.string(), dir2.string()));
         BOOST_CHECK_EQUAL(index->size(), loaded->size());
         // perform the same test
-        doTest(*loaded, expected);
-
-        // docid traversal
-        for (ScdIndex::DocidIterator i = index->begin(), j = loaded->begin(), end = index->end();
-                i != end; ++i, ++j) {
-            BOOST_CHECK(i->first == j->first);
-            BOOST_CHECK(i->second == j->second);
-        }
-
-        // property traversal
-        for (ScdIndex::PropertyIterator i = index->pbegin(), j = loaded->pbegin(), end = index->pend();
-                i != end; ++i, ++j) {
-            BOOST_CHECK(i->first == j->first);
-            const offset_list& oi = i->second;
-            const offset_list& oj = j->second;
-            BOOST_CHECK_EQUAL(oi.size(), oj.size());
-            for (offset_list::const_iterator ii = oi.begin(), jj = oj.begin();
-                    ii != oi.end(); ++ii, ++jj) {
-                BOOST_CHECK_EQUAL(*ii, *jj);
-            }
-        }
+        doTest(*loaded);
     }
 
     // close db
@@ -154,19 +150,9 @@ BOOST_AUTO_TEST_CASE(test_performance) {
     // load index
     {
         timer.tic();
-        boost::scoped_ptr<ScdIndex> loaded(ScdIndex::load(dir1.string(), dir2.string()));
+        boost::scoped_ptr<ScdIndex> loaded(ScdIndex::load(path.string(), dir1.string(), dir2.string()));
         timer.toc();
         std::cout << "Loading time:\n\t" << timer.seconds() << " seconds" << std::endl;
-
-        timer.tic();
-        for (ScdIndex::DocidIterator i = loaded->begin(), end = loaded->end(); i != end; ++i);
-        timer.toc();
-        std::cout << "Docid traversal time:\n\t" << timer.seconds() << " seconds" << std::endl;
-
-        timer.tic();
-        for (ScdIndex::PropertyIterator i = loaded->pbegin(), end = loaded->pend(); i != end; ++i);
-        timer.toc();
-        std::cout << "Property traversal time:\n\t" << timer.seconds() << " seconds" << std::endl;
     }
 
     // check size

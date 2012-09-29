@@ -8,9 +8,10 @@
 #ifndef SCDINDEX_H
 #define SCDINDEX_H
 
-#include "ScdIndexTag.h"
-#include "ScdIndexLeveldb.h"
 #include "ScdIndexDocument.h"
+#include "ScdIndexIterator.h"
+#include "ScdIndexLeveldb.h"
+#include "ScdIndexTag.h"
 #include "ScdParser.h"
 
 namespace scd {
@@ -26,6 +27,7 @@ template <typename Property = uuid, typename Docid = DOCID>
 class ScdIndex {
     typedef ScdIndexLeveldb<Docid, Property> ContainerType; //< The actual container type.
 
+    ScdParser parser;
     ContainerType container;
 
 public:
@@ -34,8 +36,7 @@ public:
     typedef typename Docid::type DocidType;          //< The actual Docid type.
     typedef typename Property::type PropertyType;    //< The actual Property type
 
-    typedef typename ContainerType::DocidIterator DocidIterator;       //< Iterator on Docid values.
-    typedef typename ContainerType::PropertyIterator PropertyIterator; //< Iterator on Property values.
+    typedef ScdIndexIterator iterator;
 
     /// Destructor.
     ~ScdIndex() {}
@@ -55,46 +56,35 @@ public:
 
     /**
      * Load an existing index with the given leveldb databases.
+     * @param scdpath The full path to the SCD file.
      * @param path1 Path to the Docid leveldb database.
      * @param path2 Path to the Property leveldb database.
      */
-    static ScdIndex<Property, Docid>* load(const std::string& path1, const std::string& path2) {
-        return new ScdIndex(path1, path2, false);
-    }
+    static ScdIndex<Property, Docid>* load(const std::string& scdpath,
+            const std::string& path1,
+            const std::string& path2);
 
     /// @return The number of stored documents.
     size_t size() const {
         return container.size();
     }
 
-    /// Get the offset of the document having the given Docid.
-    bool getOffset(const DocidType& key, offset_type& offset) const {
-        return container.getByDocid(key, offset);
+    /// @return An iterator to the document having the given Docid.
+    ScdIndexIterator findDoc(const DocidType& key) {
+        offset_type offset;
+        bool found = container.getByDocid(key, offset);
+        if (found)
+            return ScdIndexIterator(&parser, offset);
+        return ScdIndexIterator();
     }
 
-    /// Get the offset of the documents having the given Property.
-    bool getOffsetList(const PropertyType& key, std::vector<offset_type>& offsets) const {
-        return container.getByProperty(key, offsets);
-    }
-
-    /// @return begin iterator on Docid.
-    DocidIterator begin() const {
-        return container.begin();
-    }
-
-    /// @return end iterator on Docid.
-    DocidIterator end() const {
-        return container.end();
-    }
-
-    /// @return begin iterator on Property.
-    PropertyIterator pbegin() const {
-        return container.pbegin();
-    }
-
-    /// @return end iterator on Property.
-    PropertyIterator pend() const {
-        return container.pend();
+    /// @return An iterator to the documents having the requested property value.
+    ScdIndexIterator find(const PropertyType& key) {
+        offset_list offsets;
+        bool found = container.getByProperty(key, offsets);
+        if (found)
+            return ScdIndexIterator(&parser, offsets);
+        return ScdIndexIterator();
     }
 
 private:
@@ -109,16 +99,14 @@ ScdIndex<Property, Docid>::build(const std::string& path,
         const std::string& path1,
         const std::string& path2,
         const unsigned flush_count) {
-    static ScdParser parser;
-    typedef ScdParser::iterator iterator;
-
-    CHECK(parser.load(path)) << "Cannot load file: " << path;
+    ScdIndex<Property, Docid>* index = new ScdIndex(path1, path2, true);
+    CHECK(index->parser.load(path)) << "Cannot load file: " << path;
     LOG(INFO) << "Building index on: " << path << " ...";
 
-    ScdIndex<Property, Docid>* index = new ScdIndex(path1, path2, true);
-    iterator end = parser.end();
+    typedef ScdParser::iterator iterator;
+    iterator end = index->parser.end();
     unsigned count = 1;
-    for (iterator it = parser.begin(); it != end; ++it, ++count) {
+    for (iterator it = index->parser.begin(); it != end; ++it, ++count) {
         SCDDocPtr doc = *it;
         CHECK(doc) << "Document is null";
 
@@ -132,6 +120,17 @@ ScdIndex<Property, Docid>::build(const std::string& path,
     }
     index->container.flush();
     LOG(INFO) << "Indexed " << (count - 1) << " documents.";
+    return index;
+}
+
+template<typename Property, typename Docid>
+ScdIndex<Property, Docid>*
+ScdIndex<Property, Docid>::load(const std::string& path,
+        const std::string& path1,
+        const std::string& path2) {
+    ScdIndex<Property, Docid>* index = new ScdIndex(path1, path2, false);
+    CHECK(index->parser.load(path)) << "Cannot load file: " << path;
+    LOG(INFO) << "Loaded index for: " << path << " ...";
     return index;
 }
 
