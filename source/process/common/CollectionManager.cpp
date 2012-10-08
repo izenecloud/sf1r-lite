@@ -160,17 +160,28 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
     return true;
 }
 
-void CollectionManager::stopCollection(const std::string& collectionName)
+bool CollectionManager::stopCollection(const std::string& collectionName, bool clear)
 {
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
 
     JobScheduler::get()->removeTask(collectionName);
 
+    CollectionPath cpath;
     handler_const_iterator iter = collectionHandlers_.find(collectionName);
     if(iter != collectionHandlers_.end())
     {
-        delete iter->second;
+        CollectionHandler* handler = iter->second;
+        IndexSearchService* is = handler->indexSearchService_;
+        if(is==NULL) return false;
+        const IndexBundleConfiguration* ibc = is->getBundleConfig();
+        if(ibc==NULL) return false;
+        cpath = ibc->collPath_;
+        delete handler;
         collectionHandlers_.erase(collectionName);
+    }
+    else
+    {
+        return false;
     }
 
     std::string bundleName = "IndexBundle-" + collectionName;
@@ -210,6 +221,22 @@ void CollectionManager::stopCollection(const std::string& collectionName)
     {
         collectionMetaMap.erase(findIt);
     }
+    if(clear)
+    {
+        std::string collection_data = cpath.getCollectionDataPath();
+        std::string query_data = cpath.getQueryDataPath();
+        try
+        {
+            boost::filesystem::remove_all(collection_data);
+            boost::filesystem::remove_all(query_data);
+        }
+        catch(std::exception& ex)
+        {
+            std::cerr<<"clear collection "<<collectionName<<" error: "<<ex.what()<<std::endl;
+            return false;
+        }
+    }
+    return true;
 }
 
 void CollectionManager::deleteCollection(const std::string& collectionName)

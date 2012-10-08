@@ -85,6 +85,11 @@ void CollectionController::start_collection()
 void CollectionController::stop_collection()
 {
     std::string collection = asString(request()[Keys::collection]);
+    bool clear = false;
+    if(!izenelib::driver::nullValue( request()[Keys::clear] ) )
+    {
+        clear = asBool(request()[Keys::clear]);
+    }
     if (collection.empty())
     {
         response().addError("Require field collection in request.");
@@ -95,7 +100,7 @@ void CollectionController::stop_collection()
         response().addError("Collection access denied");
         return;
     }
-    CollectionManager::get()->stopCollection(collection);
+    CollectionManager::get()->stopCollection(collection, clear);
 }
 
 /**
@@ -314,6 +319,7 @@ void CollectionController::delete_collection(){
     }
     cout<<"deleted collection: "<<collection<<endl;
 }
+
 
 /**
  * @brief Action @b set_kv.
