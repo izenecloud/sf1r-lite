@@ -106,11 +106,13 @@ void B5moProcessor::Process(Document& doc, int& type)
     if(type!=DELETE_SCD)
     {
         std::string spid;
-        bool got_pid = false;
+        UString ptitle;
+        UString category;
+        doc.getProperty(B5MHelper::GetSPTPropertyName(), ptitle);
+        doc.getProperty("Category", category);
         bool is_human_edit = false;
         if(odb_->get(sdocid, spid)) 
         {
-            got_pid = true;
             OfferDb::FlagType flag = 0;
             odb_->get_flag(sdocid, flag);
             if(flag==1)
@@ -119,26 +121,40 @@ void B5moProcessor::Process(Document& doc, int& type)
             }
         }
         std::string old_spid = spid;
-        if(!got_pid || (mode_>1&&!is_human_edit)) //not got pid or re-match(not human edit)
+        bool need_do_match = false;
+        if(is_human_edit)
+        {
+            need_do_match = false;
+        }
+        else if(mode_>1)
+        {
+            need_do_match = true;
+        }
+        else if(spid.empty()||ptitle.empty())
+        {
+            need_do_match = true;
+        }
+        if(need_do_match)
         {
             ProductMatcher::Product product;
-            if(matcher_->GetMatched(doc, product))
+            if(!category.empty()&&matcher_->GetMatched(doc, product))
             {
+                doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
                 spid = product.spid;
                 UString title;
                 doc.getProperty("Title", title);
                 std::string stitle;
                 title.convertString(stitle, UString::UTF_8);
-                match_ofs_<<sdocid<<","<<spid<<","<<stitle<<","<<product.stitle<<std::endl;
+                match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
             }
             else
             {
                 spid = sdocid; //get matched pid fail
             }
-            odb_->insert(sdocid, spid);
         }
         if(old_spid!=spid)
         {
+            odb_->insert(sdocid, spid);
             cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
         }
         doc.property("uuid") = UString(spid, UString::UTF_8);

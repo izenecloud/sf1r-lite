@@ -37,7 +37,7 @@ namespace sf1r {
         typedef std::pair<PidType, double> PidPair;
         typedef std::vector<PidPair> PidList;
         typedef uint64_t CAttribId;
-        typedef std::map<CAttribId, PidList> A2PMap;
+        typedef std::map<AttribId, PidList> A2PMap;
         typedef std::set<uint32_t> CidSet;
         ProductMatcher(const std::string& path);
         ~ProductMatcher();
@@ -54,14 +54,17 @@ namespace sf1r {
 
     private:
         uint32_t GetCategoryId_(const UString& category);
+        AttribId GenAID_(const UString& category, const std::vector<UString>& value_list, AttribId& aid);
         CAttribId GetCAID_(AttribId aid, const UString& category);
         CAttribId GetCAID_(AttribId aid);
-        void GetAttribIdSet(const izenelib::util::UString& value, std::set<AttribId>& aid_set);
+        void GetAttribIdSet(const UString& category, const izenelib::util::UString& value, std::set<AttribId>& aid_set);
         void NormalizeText_(const izenelib::util::UString& text, izenelib::util::UString& ntext);
         void Analyze_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
         void AnalyzeChar_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
         void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
+
+        UString GetAttribRep_(const UString& category, const UString& text);
 
 
     private:

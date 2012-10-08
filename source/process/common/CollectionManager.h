@@ -49,7 +49,7 @@ public:
             const std::string& configFileName,
             bool fixBasePath = false);
 
-    void stopCollection(const std::string& collectionName);
+    bool stopCollection(const std::string& collectionName, bool clear = false);
 
     void deleteCollection(const std::string& collectionName);
 
