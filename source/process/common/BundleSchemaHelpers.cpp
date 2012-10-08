@@ -55,7 +55,7 @@ void getDefaultSearchPropertyNames(
     for (iterator it = schema.begin();
          it != schema.end(); ++it)
     {
-        if (it->bIndex_&&it->subProperties_.empty())
+        if (it->bIndex_&&it->subProperties_.empty()&&(!it->isRTypeString())&&(it->getType() == STRING_PROPERTY_TYPE))
         {
             result.push_back(it->propertyName_);
         }
