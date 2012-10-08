@@ -139,6 +139,10 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
             //value.doc = another_value.doc;
             value.doc.copyPropertiesFromDocument(another_value.doc, true);
         }
+        else
+        {
+            value.doc.copyPropertiesFromDocument(another_value.doc, false);
+        }
         value.type = UPDATE_SCD;
     }
     else
@@ -171,6 +175,13 @@ void B5mpProcessor::ProductOutput_(Document& doc, int& type)
     doc.eraseProperty("OID");
     int64_t itemcount = 0;
     doc.getProperty("itemcount", itemcount);
+    UString ptitle;
+    doc.getProperty(B5MHelper::GetSPTPropertyName(), ptitle);
+    if(!ptitle.empty())
+    {
+        doc.property("Title") = ptitle;
+        doc.eraseProperty(B5MHelper::GetSPTPropertyName());
+    }
 
     //UString docid;
     //std::string docid_s;

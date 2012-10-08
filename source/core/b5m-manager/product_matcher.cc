@@ -206,27 +206,11 @@ bool ProductMatcher::Index(const std::string& scd_path)
         for(std::size_t i=0;i<my_attrib_list.size();i++)
         {
             const std::vector<UString>& value = my_attrib_list[i].second;
-            bool find_my_aid = false;
-            AttribId my_aid = 0;
-            for(std::size_t j=0;j<value.size();j++)
-            {
-                if(aid_manager_->getDocIdByDocName(value[j], my_aid))
-                {
-                    find_my_aid = true;
-                    break;
-                }
-            }
-            if(!find_my_aid)
-            {
-                ++aid;
-                my_aid = aid;
-            }
-            for(std::size_t j=0;j<value.size();j++)
-            {
-                aid_manager_->Set(value[j], my_aid);
-            }
-            CAttribId caid = GetCAID_(my_aid);
-            CAttribId caidc = GetCAID_(my_aid, category);
+            AttribId my_aidc = GenAID_(category, value, aid);
+            UString empty_category;
+            AttribId my_aid = GenAID_(empty_category, value, aid);
+            //CAttribId caid = GetCAID_(my_aid);
+            //CAttribId caidc = GetCAID_(my_aid, category);
 #ifdef B5M_DEBUG
             //std::cout<<"before a2p insert "<<caid<<" : "<<a2p_[caid].size()<<std::endl;
             //std::cout<<"before a2pc insert "<<caidc<<" : "<<a2p_[caidc].size()<<std::endl;
@@ -236,8 +220,10 @@ bool ProductMatcher::Index(const std::string& scd_path)
             //}
             //std::cout<<"a2pc inserting "<<caidc<<" : "<<piid<<","<<weight<<std::endl;
 #endif
-            a2p_[caid].push_back(std::make_pair(piid, weight));
-            a2p_[caidc].push_back(std::make_pair(piid, weight));
+            //a2p_[caid].push_back(std::make_pair(piid, weight));
+            //a2p_[caidc].push_back(std::make_pair(piid, weight));
+            a2p_[my_aidc].push_back(std::make_pair(piid, weight));
+            a2p_[my_aid].push_back(std::make_pair(piid, weight));
         }
     }
     std::string cidset_path = path_+"/cid_set";
@@ -319,6 +305,16 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
     doc.getProperty("Category", category);
     doc.getProperty("Title", text);
     if(text.empty()) return false;
+
+    UString udocid;
+    doc.getProperty("DOCID", udocid);
+    std::string sdocid;
+    udocid.convertString(sdocid, UString::UTF_8);
+    if(sdocid=="d50b08b1530d0fde3ceb177c4c74c931")
+    {
+        std::cout<<"!!!!!!!!!!!find debug"<<std::endl;
+    }
+
     //std::string stext;
     //text.convertString(stext, UString::UTF_8);
     //std::string scategory;
@@ -376,7 +372,20 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
         }
     }
     std::set<AttribId> aid_set;
-    GetAttribIdSet(text, aid_set);
+    GetAttribIdSet(category, text, aid_set);
+    if(sdocid=="d50b08b1530d0fde3ceb177c4c74c931")
+    {
+        std::cout<<"!!!!show debug aid"<<std::endl;
+        for(std::set<AttribId>::iterator ait = aid_set.begin(); ait!=aid_set.end(); ++ait)
+        {
+            AttribId aid = *ait;
+            UString name;
+            aid_manager_->getDocNameByDocId(aid, name);
+            std::string sname;
+            name.convertString(sname, UString::UTF_8);
+            std::cout<<"XXX "<<aid<<","<<sname<<std::endl;
+        }
+    }
     if(aid_set.empty()) return false;
     
     typedef std::map<PidType, double> PidMap;
@@ -385,15 +394,15 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
     {
         AttribId aid = *it;
         CAttribId caid = 0;
-        if(category.empty())
-        {
-            caid = GetCAID_(aid);
-        }
-        else
-        {
-            caid = GetCAID_(aid, category);
-        }
-        A2PMap::iterator pit = a2p_.find(caid);
+        //if(category.empty())
+        //{
+            //caid = GetCAID_(aid);
+        //}
+        //else
+        //{
+            //caid = GetCAID_(aid, category);
+        //}
+        A2PMap::iterator pit = a2p_.find(aid);
         if(pit!=a2p_.end())
         {
             PidList& plist = pit->second;
@@ -456,6 +465,35 @@ bool ProductMatcher::GetProductInfo(const PidType& pid, Product& product)
 uint32_t ProductMatcher::GetCategoryId_(const UString& category)
 {
     return izenelib::util::HashFunction<UString>::generateHash32(category);
+}
+
+AttribId ProductMatcher::GenAID_(const UString& category, const std::vector<UString>& value, AttribId& aid)
+{
+    bool find_my_aid = false;
+    AttribId my_aid = 0;
+    std::vector<UString> rep_list(value.size());
+    for(std::size_t i=0;i<value.size();i++)
+    {
+        rep_list[i] = GetAttribRep_(category, value[i]);
+    }
+    for(std::size_t i=0;i<rep_list.size();i++)
+    {
+        if(aid_manager_->getDocIdByDocName(rep_list[i], my_aid))
+        {
+            find_my_aid = true;
+            break;
+        }
+    }
+    if(!find_my_aid)
+    {
+        ++aid;
+        my_aid = aid;
+    }
+    for(std::size_t i=0;i<rep_list.size();i++)
+    {
+        aid_manager_->Set(rep_list[i], my_aid);
+    }
+    return my_aid;
 }
 
 uint64_t ProductMatcher::GetCAID_(AttribId aid, const UString& category)
@@ -551,12 +589,19 @@ void ProductMatcher::AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const ize
     //}
 }
 
+UString ProductMatcher::GetAttribRep_(const UString& category, const UString& text)
+{
+    UString rep = category;
+    rep.append(UString("|", UString::UTF_8));
+    rep.append(text);
+    return rep;
+}
 
-void ProductMatcher::GetAttribIdSet(const izenelib::util::UString& value, std::set<AttribId>& aid_set)
+void ProductMatcher::GetAttribIdSet(const UString& category, const izenelib::util::UString& value, std::set<AttribId>& aid_set)
 {
     static const uint32_t n = 10;
     static const uint32_t max_ngram_len = 20;
-    static const uint32_t max_unmatch_count = 1;
+    static const uint32_t max_unmatch_count = 3;
     std::vector<izenelib::util::UString> termstr_list;
     AnalyzeChar_(value, termstr_list); //convert to lower case
     std::size_t index = 0;
@@ -581,7 +626,8 @@ void ProductMatcher::GetAttribIdSet(const izenelib::util::UString& value, std::s
             if(ngram.length()>max_ngram_len) break;
             std::vector<AttribId> aid_list;
             AttribId aid = 0;
-            if(aid_manager_->getDocIdByDocName(ngram, aid))
+            UString rep = GetAttribRep_(category, ngram);
+            if(aid_manager_->getDocIdByDocName(rep, aid))
             {
                 inc_len = len+1;
                 attrib_ngram = ngram;

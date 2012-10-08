@@ -162,6 +162,12 @@ namespace sf1r {
             static std::string p("Brand");
             return p;
         }
+
+        static std::string GetSPTPropertyName()
+        {
+            static std::string p("SPTitle");
+            return p;
+        }
     };
 
 }
