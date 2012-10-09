@@ -122,14 +122,10 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
-    std::string cma_path;
-    LAPool::getInstance()->get_cma_path(cma_path);
-    Opc_ = new OpinionsClassificationManager(cma_path, schema_.opinionWorkingPath);
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 {
-    delete Opc_;
     delete summarization_storage_;
     delete comment_cache_storage_;
     delete corpus_;
@@ -151,6 +147,9 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key), i);
     }
 
+    std::string cma_path;
+    LAPool::getInstance()->get_cma_path(cma_path);
+    Opc_ = new OpinionsClassificationManager(cma_path, schema_.opinionWorkingPath);
     float score;
     boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = document_manager_->getNumericPropertyTable(schema_.scorePropName);
     for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
@@ -203,6 +202,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         }
     }
 
+    delete Opc_;
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush(true);
 
@@ -224,8 +224,6 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     string OpPath = schema_.opinionWorkingPath;
 
     std::vector<UString> filters;
-    std::string cma_path;
-    LAPool::getInstance()->get_cma_path(cma_path);
     LOG(INFO)<<"OpPath"<<OpPath<<endl;
 
     try
