@@ -97,10 +97,19 @@ size_t SuffixMatchManager::longestSuffixMatch(const izenelib::util::UString& pat
         fmi_->getMatchedDocIdList(match_ranges, max_docs, docid_list, doclen_list);
     }
 
-    score_list.resize(doclen_list.size());
-    for (size_t i = 0; i < doclen_list.size(); ++i)
+    std::vector<std::pair<float, uint32_t> > res_list(docid_list.size());
+    for (size_t i = 0; i < res_list.size(); ++i)
     {
-        score_list[i] = float(max_match) / float(doclen_list[i]);
+        res_list[i].first = float(max_match) / float(doclen_list[i]);
+        res_list[i].second = docid_list[i];
+    }
+    std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<float, uint32_t> >());
+
+    score_list.resize(doclen_list.size());
+    for (size_t i = 0; i < res_list.size(); ++i)
+    {
+        docid_list[i] = res_list[i].second;
+        score_list[i] = res_list[i].first;
     }
 
     size_t total_match = 0;
