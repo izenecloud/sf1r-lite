@@ -36,6 +36,7 @@ class MultiDocSummarizationSubManager
 public:
     MultiDocSummarizationSubManager(
             const std::string& homePath,
+            const std::string& collectionName,
             SummarizeConfig schema,
             boost::shared_ptr<DocumentManager> document_manager,
             boost::shared_ptr<IndexManager> index_manager,
@@ -74,7 +75,9 @@ private:
 private:
     std::string last_docid_path_;
 
+    std::string collectionName_;
     SummarizeConfig schema_;
+
 
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;

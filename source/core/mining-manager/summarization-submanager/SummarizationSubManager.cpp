@@ -24,6 +24,7 @@
 #include <algorithm>
 #include "OpinionsManager.h"
 #include <am/succinct/wat_array/wat_array.hpp>
+#include <node-manager/synchro/SynchroFactory.h>
 
 #define OPINION_COMPUTE_THREAD_NUM 4
 #define OPINION_COMPUTE_QUEUE_SIZE 200
@@ -109,11 +110,13 @@ struct IsParentKeyFilterProperty
 
 MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& homePath,
+        const std::string& collectionName,
         SummarizeConfig schema,
         boost::shared_ptr<DocumentManager> document_manager,
         boost::shared_ptr<IndexManager> index_manager,
         idmlib::util::IDMAnalyzer* analyzer)
     : last_docid_path_(homePath + "/last_docid.txt")
+    , collectionName_(collectionName)
     , schema_(schema)
     , document_manager_(document_manager)
     , index_manager_(index_manager)
@@ -163,10 +166,13 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         if (cit == doc.propertyEnd()) continue;
 
         Document::property_const_iterator ait = doc.findProperty(schema_.advantagePropName);
-        if (cit == doc.propertyEnd()) continue;
+        if (ait == doc.propertyEnd()) continue;
 
         Document::property_const_iterator dit = doc.findProperty(schema_.disadvantagePropName);
-        if (cit == doc.propertyEnd()) continue;
+        if (dit == doc.propertyEnd()) continue;
+
+        Document::property_const_iterator title_it = doc.findProperty(schema_.titlePropName);
+        if (title_it == doc.propertyEnd()) continue;
 
         const UString& key = kit->second.get<UString>();
         if (key.empty()) continue;
@@ -182,15 +188,32 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
         AdvantageType advantage=advantagepair.first;
         DisadvantageType disadvantage=advantagepair.second;
+
+        UString  us_title(title_it->second.get<UString>());
+        us_title.convertString(str, izenelib::util::UString::UTF_8);
+        advantagepair = Opc_->test(str);
+        if(advantage.find(advantagepair.first) == UString::npos)
+        {
+            advantage.append(advantagepair.first);
+        }
+        if(disadvantage.find(advantagepair.second) == UString::npos)
+        {
+            disadvantage.append(advantagepair.second);
+        }
+
         UString  usa(ait->second.get<AdvantageType>());
         usa.convertString(str, izenelib::util::UString::UTF_8);
         advantagepair=Opc_->test(str);
-        advantage.append(advantagepair.first);
+        if(advantage.find(advantagepair.first) == UString::npos)
+        {
+            advantage.append(advantagepair.first);
+        }
        
         UString  usd(dit->second.get<DisadvantageType>());
         usd.convertString(str, izenelib::util::UString::UTF_8);
         advantagepair=Opc_->test(str);
-        disadvantage.append(advantagepair.second);
+        if(disadvantage.find(advantagepair.second) == UString::npos)
+            disadvantage.append(advantagepair.second);
         score = 0.0f;
         numericPropertyTable->getFloatValue(i, score);
         comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,
@@ -206,22 +229,18 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush(true);
 
-    if (!schema_.scoreSCDPath.empty())
-    {
-        score_scd_writer_.reset(new ScdWriter(schema_.scoreSCDPath, UPDATE_SCD));
-    }
+    string OpPath = schema_.opinionWorkingPath;
+    boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
+    boost::filesystem::create_directory(generated_scds_path);
 
-    if (!schema_.opinionSCDPath.empty())
-    {
-        opinion_scd_writer_.reset(new ScdWriter(schema_.opinionSCDPath, UPDATE_SCD));
-    }
+    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), UPDATE_SCD));
+    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), UPDATE_SCD));
 
     {
         boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
         can_quit_compute_ = false;
     }
 
-    string OpPath = schema_.opinionWorkingPath;
 
     std::vector<UString> filters;
     LOG(INFO)<<"OpPath"<<OpPath<<endl;
@@ -325,8 +344,23 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         opinion_scd_writer_.reset();
     }
 
-
     comment_cache_storage_->ClearDirtyKey();
+
+    SynchroData syncData;
+    syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+    syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+    syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
+
+    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
+    if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+    {
+        syncProducer->wait();
+    }
+    else
+    {
+        LOG(WARNING) << "produce syncData error";
+    }
+
     LOG(INFO) << "Finish evaluating summarization.";
 }
 

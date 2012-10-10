@@ -1681,6 +1681,19 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.summarization_schema.disadvantagePropName = property_name;
             }
         }
+        {
+            Iterator<Element> it("TitleProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+                if (!gottype || property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("TitleProperty ["+property_name+"] used in Summarization is not string type.");
+                }
+                mining_schema.summarization_schema.titlePropName = property_name;
+            }
+        }
 
         {
             Iterator<Element> it("ScoreProperty");
@@ -1697,18 +1710,6 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
 
 
-        ticpp::Element* scoreSCDPath_node = getUniqChildElement(task_node, "ScoreSCDPath", false);
-        if (scoreSCDPath_node)
-        {
-            getAttribute(scoreSCDPath_node, "path", mining_schema.summarization_schema.scoreSCDPath);
-        }
-
-        ticpp::Element* opinionSCDPath_node = getUniqChildElement(task_node, "OpinionSCDPath", false);
-        if (opinionSCDPath_node)
-        {
-            getAttribute(opinionSCDPath_node, "path", mining_schema.summarization_schema.opinionSCDPath);
-        }
-
         ticpp::Element* opinionProp_node = getUniqChildElement(task_node, "OpinionProperty", false);
         if (opinionProp_node)
         {
@@ -1721,6 +1722,11 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             getAttribute(opinion_workingpath_node, "path", mining_schema.summarization_schema.opinionWorkingPath);
         }
 
+        ticpp::Element* opinion_syncid_node = getUniqChildElement(task_node, "OpinionSyncId", false);
+        if (opinion_syncid_node)
+        {
+            getAttribute(opinion_syncid_node, "name", mining_schema.summarization_schema.opinionSyncId);
+        }
         mining_schema.summarization_enable = true;
     }
 
