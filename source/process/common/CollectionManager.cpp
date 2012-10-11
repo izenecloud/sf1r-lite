@@ -225,10 +225,12 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
     {
         std::string collection_data = cpath.getCollectionDataPath();
         std::string query_data = cpath.getQueryDataPath();
+        std::string scd_data = cpath.getScdPath()+"/index/*.SCD";
         try
         {
             boost::filesystem::remove_all(collection_data);
             boost::filesystem::remove_all(query_data);
+            boost::filesystem::remove_all(scd_data);
         }
         catch(std::exception& ex)
         {
