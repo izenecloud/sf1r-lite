@@ -243,6 +243,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
 
     std::vector<UString> filters;
+    std::vector<UString> synonym_strs;
     LOG(INFO)<<"OpPath"<<OpPath<<endl;
 
     try
@@ -266,6 +267,28 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         LOG(ERROR) << "read opinion filter file error" << endl;
     }
 
+    try
+    {
+        ifstream infile;
+        infile.open((OpPath + "/opinion_synonym_data.txt").c_str(), ios::in);
+        while(infile.good())
+        {
+            std::string line;
+            getline(infile, line);
+            if(line.empty())
+            {
+                continue;
+            }
+            synonym_strs.push_back(UString(line, UString::UTF_8));
+        }
+        infile.close();
+    }
+    catch(...)
+    {
+        LOG(ERROR) << "read opinion synonym file error" << endl;
+    }
+
+
     for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
     {
         std::string log_path = OpPath;
@@ -282,6 +305,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         Ops_.back()->setSigma(0.1, 5, 0.6, 20);
         //////////////////////////
         Ops_.back()->setFilterStr(filters);
+        Ops_.back()->setSynonymWord(synonym_strs);
 
         opinion_compute_threads_.push_back(new boost::thread(&MultiDocSummarizationSubManager::DoComputeOpinion,
                     this, Ops_[i]));
