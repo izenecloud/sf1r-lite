@@ -226,11 +226,11 @@
                 <xs:element name="ContentProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="AdvantageProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="DisadvantageProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="TitleProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="ScoreProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
-                <xs:element ref="ScoreSCDPath" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="OpinionProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
-                <xs:element ref="OpinionSCDPath" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="OpinionWorkingPath" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="OpinionSyncId" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -242,22 +242,15 @@
             </xs:sequence>
         </xs:complexType>
     </xs:element>
-
-    <xs:element name="ScoreSCDPath">
-        <xs:complexType>
-            <xs:attribute name="path" type="xs:string" use="required" />
-        </xs:complexType>
-    </xs:element>
-
-    <xs:element name="OpinionSCDPath">
-        <xs:complexType>
-            <xs:attribute name="path" type="xs:string" use="required" />
-        </xs:complexType>
-    </xs:element>
-
     <xs:element name="OpinionWorkingPath">
         <xs:complexType>
             <xs:attribute name="path" type="xs:string" use="required" />
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="OpinionSyncId">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required" />
         </xs:complexType>
     </xs:element>
 

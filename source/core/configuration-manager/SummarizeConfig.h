@@ -20,11 +20,11 @@ public:
     std::string contentPropName;
     std::string advantagePropName;
     std::string disadvantagePropName;
+    std::string titlePropName;
     std::string scorePropName;
-    std::string scoreSCDPath;
-    std::string opinionSCDPath;
     std::string opinionPropName;
     std::string opinionWorkingPath;
+    std::string opinionSyncId;
 
     friend class boost::serialization::access;
 
@@ -34,11 +34,13 @@ public:
         ar & docidPropName;
         ar & uuidPropName;
         ar & contentPropName;
+        ar & advantagePropName;
+        ar & disadvantagePropName;
+        ar & titlePropName;
         ar & scorePropName;
-        ar & scoreSCDPath;
-        ar & opinionSCDPath;
         ar & opinionPropName;
         ar & opinionWorkingPath;
+        ar & opinionSyncId;
     }
 };
 

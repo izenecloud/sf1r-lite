@@ -114,6 +114,7 @@ public:
     void setSigma(double SigmaRep_,double SigmaRead_,double SigmaSim_,double SigmaLength_);
     void setEncoding(izenelib::util::UString::EncodingType encoding);
     void setFilterStr(const std::vector<WordStrType>& filter_strs);
+    void setSynonymWord(WordSegContainerT& synonyms);
     void CleanCacheData();
 
 private:
@@ -203,6 +204,7 @@ private:
     WordFreqMapT cached_valid_ngrams_;
     wat_array::WatArray wa_;
     std::vector<int>  sentence_offset_;
+    std::map<WordStrType, WordStrType> synonym_map_;
 
     succinct::fm_index::WaveletTree<uint32_t>* wavelet_;
 };

@@ -99,6 +99,11 @@ private:
                 break;
             }
         }
+        ///Fixme!
+        ///COUNT(Property) will be refreshed from search cache
+        ///This is a temporary solution before we exactly know the rule for evicting search
+        ///cache periodically
+        if(key.counterList.size() > 0 ) check = true;
 
         if (check){
             return (std::time(NULL) - timestamp) > refreshInterval_;

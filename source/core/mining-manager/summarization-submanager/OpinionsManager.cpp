@@ -4,6 +4,7 @@
 #include <glog/logging.h>
 #include <math.h>   
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
 #define VERY_LOW  -50
 #define OPINION_NGRAM_MIN  2
@@ -198,6 +199,21 @@ void OpinionsManager::setEncoding(izenelib::util::UString::EncodingType encoding
 void OpinionsManager::setFilterStr(const WordSegContainerT& filter_strs)
 {
     filter_strs_ = filter_strs;
+}
+
+void OpinionsManager::setSynonymWord(WordSegContainerT& synonyms)
+{
+    synonym_map_.clear();
+    // each line seperated by ', ' is synonym words.
+    for(size_t i = 0; i < synonyms.size(); ++i)
+    {
+        WordSegContainerT synonym_vec;
+        boost::algorithm::split(synonym_vec, synonyms[i], boost::is_any_of(","));
+        for(size_t j = 0; j < synonym_vec.size(); ++j)
+        {
+            synonym_map_[synonym_vec[j]] = synonym_vec[0];
+        }
+    }
 }
 
 void OpinionsManager::CleanCacheData()
@@ -454,24 +470,37 @@ double OpinionsManager::SimSentence(const WordStrType& sentence_i, const WordStr
     {
         return 0.9;
     }
+
     WordSegContainerT wordsi, wordsj;
-    stringToWordVector(sentence_i, wordsi);
-    stringToWordVector(sentence_j, wordsj);
+    std::string phrase_str;
+    sentence_i.convertString(phrase_str, encodingType_);
+    cma::Sentence single_sen_i(phrase_str.c_str());
+    analyzer_->runWithSentence(single_sen_i);
+    int best = single_sen_i.getOneBestIndex();
+    for(int i = 0; i < single_sen_i.getCount(best); i++)
+    {
+        wordsi.push_back(WordStrType(single_sen_i.getLexicon(best, i), encodingType_));
+        if(synonym_map_.find(wordsi.back()) != synonym_map_.end())
+            wordsi.back() = synonym_map_[wordsi.back()];
+    }
+
+    phrase_str.clear();
+    sentence_j.convertString(phrase_str, encodingType_);
+    cma::Sentence single_sen_j(phrase_str.c_str());
+    analyzer_->runWithSentence(single_sen_j);
+    best = single_sen_j.getOneBestIndex();
+    for(int i = 0; i < single_sen_j.getCount(best); i++)
+    {
+        wordsj.push_back(WordStrType(single_sen_j.getLexicon(best, i), encodingType_));
+        if(synonym_map_.find(wordsj.back()) != synonym_map_.end())
+            wordsj.back() = synonym_map_[wordsj.back()];
+    }
+
     size_t sizei = wordsi.size();
     size_t sizej = wordsj.size();
     size_t same = 0;
-    if( sizei <= 2 && sizej <= 2 )
-    {
 
-        for(size_t i = 0; i < sizei && i < sizej; i++)
-            if(wordsi[i] == wordsj[i])
-            {
-                same++;
-            }
-        return double(same)/double(sizei + sizej - same);
-    }
-
-    int total_diff_size = 0;
+    size_t total_diff_size = 0;
     std::map< WordStrType, int >  words_hash;
     for(size_t i = 0; i < sizei; ++i)
     {
@@ -495,7 +524,7 @@ double OpinionsManager::SimSentence(const WordStrType& sentence_i, const WordStr
         }
     }
     total_diff_size += words_hash_diff.size();
-    return double(same)/(total_diff_size - double(same));//Jaccard similarity
+    return double(same)/min(total_diff_size, min(sizei, sizej));//Jaccard similarity
 }
 
 double OpinionsManager::Sim(const NgramPhraseT& wordsi, const NgramPhraseT& wordsj)
@@ -1066,6 +1095,10 @@ void OpinionsManager::GetOrigCommentsByBriefOpinion(OpinionCandStringContainerT&
                         shortest_orig = it->first;
                 }
             }
+            //else if(SimSentence(brief_opinion, it->first) > 0.6)
+            //{
+            //    cnt += it->second;
+            //}
             ++it;
         }
         if(!shortest_orig.empty())

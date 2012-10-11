@@ -46,12 +46,13 @@ SearchManagerPostProcessor::~SearchManagerPostProcessor()
 }
 
 bool SearchManagerPostProcessor::rerank(
-    const KeywordSearchActionItem& actionItem, 
-    KeywordSearchResult& resultItem)
+        const KeywordSearchActionItem& actionItem,
+        KeywordSearchResult& resultItem)
 {
-    if (productRankerFactory_ &&
-        resultItem.topKCustomRankScoreList_.empty() &&
-        isProductRanking(actionItem))
+    if (actionItem.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH
+            && productRankerFactory_
+            && resultItem.topKCustomRankScoreList_.empty()
+            && isProductRanking(actionItem))
     {
         izenelib::util::ClockTimer timer;
 
