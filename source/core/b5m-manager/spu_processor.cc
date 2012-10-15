@@ -66,7 +66,7 @@ bool SpuProcessor::Upgrade()
     config.output_dir = dir_;
     config.property_name = "DOCID";
     config.merge_function = boost::bind(&SpuProcessor::Merge_, this, _1, _2);
-    //config.output_function = boost::bind(&SpuProcessor::Process_, this, _1, _2);
+    config.output_function = ScdMerger::GetDefaultOutputFunction(false);
     config.output_if_no_position = true;
     ScdMerger merger;
     merger.AddPropertyConfig(config);

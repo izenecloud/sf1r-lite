@@ -71,6 +71,20 @@ int main(int ac, char** av)
 
     b5m_msgbuf msg;
     b5m_msgbuf result_msg;
+    while(true)
+    {
+        msg.clear();
+        result_msg.clear();
+        result=msgrcv(qid, &msg, length, 0, IPC_NOWAIT);
+        if(result<0)
+        {
+            break;
+        }
+        else
+        {
+            std::cerr<<"ignoring "<<msg.cmd<<std::endl;
+        }
+    }
     //msg.mtype = mtype;
     //char cmd[] = "--product-train -K \"./T/P\" -S ./T";
     //strcpy(msg.cmd, cmd);
@@ -111,7 +125,15 @@ int main(int ac, char** av)
             dav[i] = new char[strlen(s)+1];
             strcpy(dav[i], s);
         }
-        int status = do_main(dac, dav);
+        int status = 1;//default to fail
+        try{
+            status = do_main(dac, dav);
+        }
+        catch(std::exception& ex)
+        {
+            status = 1;
+            std::cerr<<"do_main exception: "<<ex.what()<<std::endl;
+        }
         for(int i=0;i<dac;i++)
         {
             delete[] dav[i];
@@ -134,7 +156,7 @@ int main(int ac, char** av)
         if((result=msgsnd(qid,&result_msg,length,0))==-1)
         {
             std::cerr<<"result msg send error"<<std::endl;
-            return EXIT_FAILURE;
+            continue;
         }
     }
     return EXIT_SUCCESS;
