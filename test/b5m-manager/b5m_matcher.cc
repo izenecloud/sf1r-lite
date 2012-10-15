@@ -12,6 +12,7 @@
 #include <b5m-manager/ticket_matcher.h>
 #include <b5m-manager/uue_worker.h>
 #include <b5m-manager/b5mp_processor.h>
+#include <b5m-manager/spu_processor.h>
 #include <b5m-manager/b5m_mode.h>
 #include <b5m-manager/b5mc_scd_generator.h>
 #include <b5m-manager/log_server_handler.h>
@@ -23,12 +24,123 @@
 #include <b5m-manager/cmatch_generator.h>
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
 
 using namespace sf1r;
 namespace po = boost::program_options;
 
+struct b5m_msgbuf {
+    long mtype;
+    char cmd[500];
+    void clear()
+    {
+        for(int i=0;i<500;i++)
+        {
+            cmd[i] = '\0';
+        }
+    }
+};
+int do_main(int ac, char** av);
 
 int main(int ac, char** av)
+{
+    char* program_path = av[0];
+    boost::filesystem::path p(program_path);
+    p = p.parent_path();
+    p /= "daemon";
+    if(!boost::filesystem::exists(p))
+    {
+        std::cerr<<"daemon file not exists"<<std::endl;
+        return EXIT_FAILURE;
+    }
+    std::cout<<"daemon file:"<<p.string()<<std::endl;
+    key_t msgkey = ftok(p.string().c_str(), 0);
+    int qid;
+    if( (qid=msgget(msgkey, IPC_CREAT | 0660)) == -1 )
+    {
+        std::cerr<<"open msg queue error"<<std::endl;
+        return EXIT_FAILURE;
+    }
+    //std::cerr<<"sizeof "<<sizeof(b5m_msgbuf)<<","<<sizeof(long)<<std::endl;
+    int length = sizeof(b5m_msgbuf)-sizeof(long);
+    int result = 0;
+    int mtype = 1;
+
+    b5m_msgbuf msg;
+    b5m_msgbuf result_msg;
+    //msg.mtype = mtype;
+    //char cmd[] = "--product-train -K \"./T/P\" -S ./T";
+    //strcpy(msg.cmd, cmd);
+    //if((result=msgsnd(qid,&msg,length,0))==-1)
+    //{
+        //std::cerr<<"msg send error"<<std::endl;
+        //return EXIT_FAILURE;
+    //}
+
+    //return EXIT_SUCCESS;
+    while(true)
+    {
+        msg.clear();
+        result_msg.clear();
+        result=msgrcv(qid, &msg, length, mtype, 0);
+        if(result==-1)
+        {
+            std::cerr<<"msg rcv error"<<std::endl;
+            continue;
+        }
+        std::string cmd_str(msg.cmd);
+        boost::algorithm::trim(cmd_str);
+        std::cout<<"cmd string:"<<cmd_str<<std::endl;
+        std::cout<<"start task:"<<msg.cmd<<std::endl;
+        std::vector<std::string> args = po::split_unix(msg.cmd);
+        if(args.empty()) continue;
+        //for(uint32_t i=0;i<args.size();i++)
+        //{
+            //std::cout<<"arg:"<<args[i]<<std::endl;
+        //}
+        int dac = args.size()+1;
+        char** dav = new char*[dac];
+        dav[0] = new char[strlen(program_path)+1];
+        strcpy(dav[0], program_path);
+        for(int i=1;i<dac;i++)
+        {
+            const char* s = args[i-1].c_str();
+            dav[i] = new char[strlen(s)+1];
+            strcpy(dav[i], s);
+        }
+        int status = do_main(dac, dav);
+        for(int i=0;i<dac;i++)
+        {
+            delete[] dav[i];
+        }
+        delete[] dav;
+        if(status>0)
+        {
+            std::cerr<<msg.cmd<<" return status fail "<<status<<std::endl;
+            result_msg.mtype = 2;
+            char str[] = "fail";
+            strcpy(result_msg.cmd, str);
+        }
+        else
+        {
+            std::cerr<<"task:"<<msg.cmd<<" finished"<<std::endl;
+            result_msg.mtype = 2;
+            char str[] = "succ";
+            strcpy(result_msg.cmd, str);
+        }
+        if((result=msgsnd(qid,&result_msg,length,0))==-1)
+        {
+            std::cerr<<"result msg send error"<<std::endl;
+            return EXIT_FAILURE;
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+int do_main(int ac, char** av)
 {
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -48,6 +160,7 @@ int main(int ac, char** av)
         ("uue-generate", "generate uue")
         ("b5mp-generate", "generate b5mp scd")
         ("b5mc-generate", "generate b5mc scd")
+        ("spu-process", "process and merge all spus")
         ("logserver-update", "update logserver")
         ("match-test,T", "b5m matching test")
         ("mdb-instance", po::value<std::string>(), "specify mdb instance")
@@ -66,6 +179,7 @@ int main(int ac, char** av)
         ("b5mp", po::value<std::string>(), "specify b5mp scd path")
         ("b5mc", po::value<std::string>(), "specify b5mc scd path")
         ("uue", po::value<std::string>(), "uue path")
+        ("spu", po::value<std::string>(), "spu path")
         ("category-regex,R", po::value<std::string>(), "specify category regex string")
         ("output-match,O", po::value<std::string>(), "specify output match path")
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
@@ -114,6 +228,7 @@ int main(int ac, char** av)
     std::string cma_path = IZENECMA_KNOWLEDGE ;
     std::string work_dir;
     std::string name;
+    std::string spu;
     bool test_flag = false;
     bool force_flag = false;
     if (vm.count("mdb-instance")) {
@@ -147,6 +262,9 @@ int main(int ac, char** av)
     } 
     if (vm.count("uue")) {
         uue = vm["uue"].as<std::string>();
+    } 
+    if (vm.count("spu")) {
+        spu = vm["spu"].as<std::string>();
     } 
     if (vm.count("output-match")) {
         output_match = vm["output-match"].as<std::string>();
@@ -360,6 +478,18 @@ int main(int ac, char** av)
             return EXIT_FAILURE;
         }
         if(!matcher.DoMatch(scd_path))
+        {
+            return EXIT_FAILURE;
+        }
+    } 
+    if (vm.count("spu-process")) {
+        if(spu.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        SpuProcessor processor(spu);
+
+        if(!processor.Upgrade())
         {
             return EXIT_FAILURE;
         }

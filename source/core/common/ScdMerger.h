@@ -1,3 +1,5 @@
+#ifndef SF1R_COMMON_SCDMERGER_H_
+#define SF1R_COMMON_SCDMERGER_H_
 #include <types.h>
 #include <algorithm>
 #include <am/succinct/fujimap/fujimap.hpp>
@@ -571,27 +573,5 @@ private:
 
 }
 
-//int main(int argc, char** argv)
-//{
-    //std::string scdPath = argv[1];
-    //std::string properties = argv[2];
-    //std::string output_dir = argv[3];
-    //bool i_only = true;
-    //if(argc>=5)
-    //{
-        //std::string ionlyp = argv[4];
-        //if(ionlyp == "--gen-all")
-        //{
-            //i_only = false;
-        //}
-    //}
-    //std::cout<<"argc : "<<argc<<std::endl;
-    //std::vector<std::string> p_vector;
-    //boost::algorithm::split( p_vector, properties, boost::algorithm::is_any_of(",") );
-    //ScdMerger merger("./scd_merger_workdir", p_vector);
-    //merger.Merge(scdPath, output_dir, i_only);
-    //bfs::remove_all("./scd_merger_workdir");
-//}
-
-
+#endif
 
