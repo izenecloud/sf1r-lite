@@ -220,9 +220,14 @@ class ImageProcess: public Fastcgipp::Request<char>
         {
             image.read(imgdata);
             // only zoom out not zoom in.
-            if(Geometry(zoom_param) <= image.size())
+            Geometry zoom_param_geo(zoom_param); 
+            if(zoom_param_geo <= image.size())
             {
-                image.scale(zoom_param);
+                if(zoom_param_geo.width() == 0)
+                    zoom_param_geo.width(image.columns());
+                if(zoom_param_geo.height() == 0)
+                    zoom_param_geo.height(image.rows());
+                image.scale(zoom_param_geo);
             }
             image.write(&zoomed_imgdata);
         }

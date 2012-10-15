@@ -524,7 +524,7 @@ double OpinionsManager::SimSentence(const WordStrType& sentence_i, const WordStr
         }
     }
     total_diff_size += words_hash_diff.size();
-    return double(same)/min(total_diff_size, min(sizei, sizej));//Jaccard similarity
+    return double(same)/total_diff_size;//Jaccard similarity
 }
 
 double OpinionsManager::Sim(const NgramPhraseT& wordsi, const NgramPhraseT& wordsj)
