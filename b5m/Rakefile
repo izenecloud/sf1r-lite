@@ -1,3 +1,8 @@
+require 'sys/proctable'
+require 'fileutils'
+
+include Sys
+
 desc 'start daemon'
 task :start do
   dir = File.expand_path(File.dirname(__FILE__))
@@ -5,7 +10,7 @@ task :start do
   pid_file = File.join(dir, "daemon.pid")
   if File.file?(pid_file)
     puts "daemon running"
-    return
+    exit
   end
   log_file = File.join(dir, "daemon.log")
   cmd += " > #{log_file} 2>&1"
@@ -17,6 +22,7 @@ task :start do
   File.open(pid_file, 'w') do |f|
     f.puts pid
   end
+  puts "daemon start at pid #{pid}"
 end
 
 desc 'stop daemon'
@@ -24,9 +30,16 @@ task :stop do
   dir = File.expand_path(File.dirname(__FILE__))
   pid_file = File.join(dir, "daemon.pid")
   if File.file?(pid_file)
-     puts "Shutting down daemon"
-     pid = File.read(pid_file).to_i
-     Process.kill 9, pid
+    puts "Shutting down daemon"
+    pid = File.read(pid_file).to_i
+    ProcTable.ps do |p|
+      if p.ppid==pid
+        Process.kill 9, p.pid
+        puts "killed #{p.pid}"
+      end
+    end
+    Process.kill 9, pid
+    puts "killed #{pid}"
   else
     puts "daemon not running"
   end
