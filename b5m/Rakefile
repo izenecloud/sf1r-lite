@@ -38,8 +38,12 @@ task :stop do
         puts "killed #{p.pid}"
       end
     end
-    Process.kill 9, pid
-    puts "killed #{pid}"
+    ProcTable.ps do |p|
+      if p.pid==pid
+        Process.kill 9, p.pid
+        puts "killed #{p.pid}"
+      end
+    end
   else
     puts "daemon not running"
   end
