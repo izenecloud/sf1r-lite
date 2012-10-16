@@ -1,0 +1,41 @@
+desc 'start daemon'
+task :start do
+  dir = File.expand_path(File.dirname(__FILE__))
+  cmd = File.join(dir, "b5m_matcher")
+  pid_file = File.join(dir, "daemon.pid")
+  if File.file?(pid_file)
+    puts "daemon running"
+    return
+  end
+  log_file = File.join(dir, "daemon.log")
+  cmd += " > #{log_file} 2>&1"
+
+  pid = fork do
+    exec(cmd)
+  end
+  Process.detach(pid)
+  File.open(pid_file, 'w') do |f|
+    f.puts pid
+  end
+end
+
+desc 'stop daemon'
+task :stop do
+  dir = File.expand_path(File.dirname(__FILE__))
+  pid_file = File.join(dir, "daemon.pid")
+  if File.file?(pid_file)
+     puts "Shutting down daemon"
+     pid = File.read(pid_file).to_i
+     Process.kill 9, pid
+  else
+    puts "daemon not running"
+  end
+  File.file?(pid_file) && File.delete(pid_file)
+end
+
+desc 'restart daemon'
+task :restart do
+  ["stop", "start"].each do |t|
+    Rake::Task[t].execute
+  end
+end
