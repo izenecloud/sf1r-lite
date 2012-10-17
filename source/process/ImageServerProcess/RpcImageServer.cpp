@@ -157,7 +157,10 @@ void RpcImageServer::dispatch(msgpack::rpc::request req)
             }
             else
             {
-                LOG(WARNING) << "file upload failed: " << reqdata.img_file << std::endl;
+                if(reqdata.param_type == 0)
+                    LOG(WARNING) << "file upload failed: " << reqdata.img_file << std::endl;
+                else
+                    LOG(WARNING) << "image data upload failed: " << std::endl;
             }
             reqdata.img_file = ret_file;
             req.result(reqdata);
