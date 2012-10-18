@@ -155,6 +155,14 @@ bool ProductMatcher::Index(const std::string& scd_path)
         {
             continue;
         }
+        double price = 0.0;
+        UString uprice;
+        if(doc.getProperty("Price", uprice))
+        {
+            ProductPrice pp;
+            pp.Parse(uprice);
+            pp.GetMid(price);
+        }
         PidType piid = products_.size();
         std::string aid_str;
         uint32_t cid = GetCategoryId_(category);
@@ -172,8 +180,9 @@ bool ProductMatcher::Index(const std::string& scd_path)
         Product product;
         product.spid = soid;
         product.stitle = stitle;
+        product.price = price;
         products_.push_back(product);
-        //logger_<<"[BPD][Title]"<<stitle<<std::endl;
+        //std::cerr<<"[SPU][Title]"<<stitle<<std::endl;
         std::vector<AttrPair> attrib_list;
         std::vector<std::pair<UString, std::vector<UString> > > my_attrib_list;
         split_attr_pair(attrib_ustr, attrib_list);
@@ -188,16 +197,26 @@ bool ProductMatcher::Index(const std::string& scd_path)
             std::string svalue;
             attrib_value.convertString(svalue, izenelib::util::UString::UTF_8);
             boost::algorithm::split(value_list, svalue, boost::algorithm::is_any_of("/"));
-            if(value_list.size()!=2)
-            {
-                value_list.resize(1);
-                value_list[0] = svalue;
-            }
+            //if(value_list.size()!=2)
+            //{
+                //value_list.resize(1);
+                //value_list[0] = svalue;
+            //}
             std::vector<UString> my_value_list;
             for(std::size_t j=0;j<value_list.size();j++)
             {
-                boost::algorithm::to_lower(value_list[j]);
-                my_value_list.push_back(UString(value_list[j], UString::UTF_8));
+                UString value(value_list[j], UString::UTF_8);
+                std::vector<izenelib::util::UString> termstr_list;
+                AnalyzeChar_(value, termstr_list);
+                value.clear();
+                for(uint32_t t=0;t<termstr_list.size();t++)
+                {
+                    value.append(termstr_list[t]);
+                }
+                my_value_list.push_back(value);
+
+                //boost::algorithm::to_lower(value_list[j]);
+                //my_value_list.push_back(UString(value_list[j], UString::UTF_8));
             }
             my_attrib_list.push_back(std::make_pair(attrib_name, my_value_list));
         }
@@ -302,6 +321,14 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
 {
     UString category;
     UString text;
+    double price = 0.0;
+    UString uprice;
+    if(doc.getProperty("Price", uprice))
+    {
+        ProductPrice pp;
+        pp.Parse(uprice);
+        pp.GetMid(price);
+    }
     doc.getProperty("Category", category);
     doc.getProperty("Title", text);
     if(text.empty()) return false;
@@ -310,10 +337,10 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
     doc.getProperty("DOCID", udocid);
     std::string sdocid;
     udocid.convertString(sdocid, UString::UTF_8);
-    if(sdocid=="d50b08b1530d0fde3ceb177c4c74c931")
-    {
-        std::cout<<"!!!!!!!!!!!find debug"<<std::endl;
-    }
+    //if(sdocid=="d50b08b1530d0fde3ceb177c4c74c931")
+    //{
+        //std::cout<<"!!!!!!!!!!!find debug"<<std::endl;
+    //}
 
     //std::string stext;
     //text.convertString(stext, UString::UTF_8);
@@ -373,19 +400,19 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
     }
     std::set<AttribId> aid_set;
     GetAttribIdSet(category, text, aid_set);
-    if(sdocid=="d50b08b1530d0fde3ceb177c4c74c931")
-    {
-        std::cout<<"!!!!show debug aid"<<std::endl;
-        for(std::set<AttribId>::iterator ait = aid_set.begin(); ait!=aid_set.end(); ++ait)
-        {
-            AttribId aid = *ait;
-            UString name;
-            aid_manager_->getDocNameByDocId(aid, name);
-            std::string sname;
-            name.convertString(sname, UString::UTF_8);
-            std::cout<<"XXX "<<aid<<","<<sname<<std::endl;
-        }
-    }
+    //if(sdocid=="519baafcfd00cc09e6b4fc51e4a40c98")
+    //{
+        //std::cout<<"!!!!show debug aid"<<std::endl;
+        //for(std::set<AttribId>::iterator ait = aid_set.begin(); ait!=aid_set.end(); ++ait)
+        //{
+            //AttribId aid = *ait;
+            //UString name;
+            //aid_manager_->getDocNameByDocId(aid, name);
+            //std::string sname;
+            //name.convertString(sname, UString::UTF_8);
+            //std::cout<<"XXX "<<aid<<","<<sname<<std::endl;
+        //}
+    //}
     if(aid_set.empty()) return false;
     
     typedef std::map<PidType, double> PidMap;
@@ -393,7 +420,7 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
     for(std::set<AttribId>::iterator it = aid_set.begin();it!=aid_set.end();it++)
     {
         AttribId aid = *it;
-        CAttribId caid = 0;
+        //CAttribId caid = 0;
         //if(category.empty())
         //{
             //caid = GetCAID_(aid);
@@ -435,11 +462,40 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
             PidType pid = it->first;
             Product this_product;
             GetProductInfo(pid, this_product);
+            if(price>0.0&&this_product.price>0.0)
+            {
+                if(!PriceMatch_(price, this_product.price))
+                {
+                    continue;
+                }
+            }
             double str_sim = StringSimilarity::Sim(text, UString(this_product.stitle, UString::UTF_8));
+            if(sdocid=="519baafcfd00cc09e6b4fc51e4a40c98")
+            {
+                std::cerr<<"sim with "<<this_product.stitle<<" : "<<str_sim<<std::endl;
+            }
+            if(price>0.0&&this_product.price>0.0)
+            {
+                if(!PriceMatch_(price, this_product.price))
+                {
+                    std::cerr<<"price not match"<<std::endl;
+                    continue;
+                }
+            }
 #ifdef B5M_DEBUG
             std::cout<<"sim with "<<pid<<","<<this_product.stitle<<" : "<<str_sim<<std::endl;
 #endif
             product_candidate.push_back(std::make_pair(str_sim, this_product));
+        }
+        else
+        {
+            PidType pid = it->first;
+            Product this_product;
+            GetProductInfo(pid, this_product);
+            if(sdocid=="519baafcfd00cc09e6b4fc51e4a40c98")
+            {
+                std::cerr<<"unmatch with "<<this_product.stitle<<" : "<<it->second<<std::endl;
+            }
         }
     }
     if(!product_candidate.empty())
@@ -460,6 +516,13 @@ bool ProductMatcher::GetProductInfo(const PidType& pid, Product& product)
         return true;
     }
     return false;
+}
+bool ProductMatcher::PriceMatch_(double p1, double p2)
+{
+    static double min_ratio = 0.25;
+    static double max_ratio = 3;
+    double ratio = p1/p2;
+    return (ratio>=min_ratio)&&(ratio<=max_ratio);
 }
 
 uint32_t ProductMatcher::GetCategoryId_(const UString& category)
@@ -492,6 +555,9 @@ AttribId ProductMatcher::GenAID_(const UString& category, const std::vector<UStr
     for(std::size_t i=0;i<rep_list.size();i++)
     {
         aid_manager_->Set(rep_list[i], my_aid);
+        //std::string svalue;
+        //rep_list[i].convertString(svalue, UString::UTF_8);
+        //std::cerr<<"[ATTR]"<<svalue<<","<<my_aid<<std::endl;
     }
     return my_aid;
 }

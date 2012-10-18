@@ -26,11 +26,12 @@ namespace sf1r {
         {
             std::string spid;
             std::string stitle;
+            double price;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle;
+                ar & spid & stitle & price;
             }
         };
         typedef uint32_t PidType;
@@ -53,6 +54,7 @@ namespace sf1r {
         { cma_path_ = path; }
 
     private:
+        bool PriceMatch_(double p1, double p2);
         uint32_t GetCategoryId_(const UString& category);
         AttribId GenAID_(const UString& category, const std::vector<UString>& value_list, AttribId& aid);
         CAttribId GetCAID_(AttribId aid, const UString& category);
