@@ -24,7 +24,7 @@ SuffixMatchManager::SuffixMatchManager(
         std::ifstream ifs(fm_index_path_.c_str());
         if (ifs)
         {
-            fmi_.reset(new FMIndexType(32));
+            fmi_.reset(new FMIndexType);
             fmi_->load(ifs);
         }
     }
@@ -36,7 +36,7 @@ SuffixMatchManager::~SuffixMatchManager()
 
 void SuffixMatchManager::buildCollection()
 {
-    FMIndexType* new_fmi = new FMIndexType(32);
+    FMIndexType* new_fmi = new FMIndexType;
 
     size_t last_docid = fmi_ ? fmi_->docCount() : 0;
     if (last_docid)
