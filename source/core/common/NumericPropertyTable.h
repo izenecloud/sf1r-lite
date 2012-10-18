@@ -310,6 +310,26 @@ inline bool NumericPropertyTable<float>::getStringValue(std::size_t pos, std::st
     return true;
 }
 
+template <>
+inline bool NumericPropertyTable<int8_t>::setStringValue(std::size_t pos, const std::string& value)	
+{
+    WriteLock lock(mutex_);
+    if (pos >= data_.size())
+        data_.resize(pos + 1, invalidValue_);
+
+    try
+    {
+        data_[pos] = boost::numeric_cast<int8_t>(boost::lexical_cast<int32_t>(value));
+        dirty_ = true;
+    }
+    catch (const boost::bad_lexical_cast &)
+    {
+        return false;
+    }
+    return true;
+}
+
+
 }
 
 #endif
