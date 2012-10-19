@@ -223,14 +223,33 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
     }
     if(clear)
     {
+        namespace bfs = boost::filesystem;
         std::string collection_data = cpath.getCollectionDataPath();
         std::string query_data = cpath.getQueryDataPath();
-        std::string scd_data = cpath.getScdPath()+"/index/*.SCD";
+        std::string scd_dir = cpath.getScdPath()+"/index";
         try
         {
             boost::filesystem::remove_all(collection_data);
             boost::filesystem::remove_all(query_data);
-            boost::filesystem::remove_all(scd_data);
+            std::vector<std::string> scd_list;
+            ScdParser::getScdList(scd_dir, scd_list);
+            bfs::path bk_dir = bfs::path(scd_dir) / "backup";
+            bfs::create_directory(bk_dir);
+
+            LOG(INFO) << "moving " << scd_list.size() << " SCD files to directory " << bk_dir;
+            for(uint32_t i=0;i<scd_list.size();i++)
+            {
+                bfs::path dest = bk_dir / bfs::path(scd_list[i]).filename();
+                if(bfs::exists(dest))
+                {
+                    LOG(WARNING) << "dest in rename file " << scd_list[i] << " exists, delete it"<<std::endl;
+                    bfs::remove_all(scd_list[i]);
+                }
+                else
+                {
+                    bfs::rename(scd_list[i], dest);
+                }
+            }
         }
         catch(std::exception& ex)
         {
