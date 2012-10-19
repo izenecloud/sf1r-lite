@@ -1035,7 +1035,7 @@ bool IndexWorker::insertOrUpdateSCD_(
         // interrupt when closing the process
         boost::this_thread::interruption_point();
     } // end of for loop for all documents
-    if (!isInsert) flushUpdateBuffer_();
+    flushUpdateBuffer_();
     searchWorker_->reset_all_property_cache();
     return true;
 }
