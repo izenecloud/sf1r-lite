@@ -297,6 +297,16 @@ inline bool NumericPropertyTable<int64_t>::getStringValue(std::size_t pos, std::
 }
 
 template <>
+inline bool NumericPropertyTable<int8_t>::getStringValue(std::size_t pos, std::string& value) const
+{
+    ReadLock lock(mutex_);
+    if (pos >= data_.size() || data_[pos] == invalidValue_)
+        return false;
+    value = boost::lexical_cast<std::string>(boost::numeric_cast<int32_t>(data_[pos]));
+    return true;
+}
+
+template <>
 inline bool NumericPropertyTable<float>::getStringValue(std::size_t pos, std::string& value) const
 {
     ReadLock lock(mutex_);
