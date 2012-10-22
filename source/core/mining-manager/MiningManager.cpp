@@ -495,7 +495,8 @@ bool MiningManager::open()
         if (mining_schema_.suffix_match_enable)
         {
             suffix_match_path_ = prefix_path + "/suffix_match";
-            suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property, document_manager_);
+            suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property,
+               mining_schema_.suffix_match_tokenize_dicpath, document_manager_);
         }
 
         /** KV */
@@ -1709,7 +1710,8 @@ bool MiningManager::GetLongestSuffixMatch(
         return false;
 
     izenelib::util::UString queryU(query, izenelib::util::UString::UTF_8);
-    totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+    //totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+    totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
     return true;
 }
 

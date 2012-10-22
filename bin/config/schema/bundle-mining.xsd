@@ -239,9 +239,17 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="TokenizeDictionary" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
+
+    <xs:element name="TokenizeDictionary">
+        <xs:complexType>
+            <xs:attribute name="path" type="xs:string" use="required" />
+        </xs:complexType>
+    </xs:element>
+
     <xs:element name="OpinionWorkingPath">
         <xs:complexType>
             <xs:attribute name="path" type="xs:string" use="required" />
