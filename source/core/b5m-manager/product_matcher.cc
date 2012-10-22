@@ -21,7 +21,8 @@ using namespace idmlib::sim;
 //#define B5M_DEBUG
 
 ProductMatcher::ProductMatcher(const std::string& path)
-:path_(path), is_open_(false), aid_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL)
+:path_(path), is_open_(false), aid_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL),
+ test_docid_("7238062f3efd300c0c5084f36d37597d")
 {
 }
 
@@ -69,6 +70,11 @@ bool ProductMatcher::Open()
         izenelib::am::ssf::Util<>::Load(products_path, products_);
         std::string a2p_path = path_+"/a2p";
         izenelib::am::ssf::Util<>::Load(a2p_path, a2p_);
+        std::string category_group_file = path_+"/category_group";
+        if(boost::filesystem::exists(category_group_file))
+        {
+            LoadCategoryGroup(category_group_file);
+        }
         is_open_ = true;
     }
     return true;
@@ -83,13 +89,47 @@ void ProductMatcher::Clear(const std::string& path)
     runtime_path.push_back("cid_set");
     runtime_path.push_back("products");
     runtime_path.push_back("a2p");
+    runtime_path.push_back("category_group");
 
     for(uint32_t i=0;i<runtime_path.size();i++)
     {
         boost::filesystem::remove_all(path+"/"+runtime_path[i]);
     }
 }
+void ProductMatcher::InsertCategoryGroup(const std::vector<std::string>& group)
+{
+    if(group.size()<2) return;
+    std::string s = group[0];
+    for(uint32_t i=1;i<group.size();i++)
+    {
+        category_group_[group[i]] = s;
+    }
+}
 
+void ProductMatcher::LoadCategoryGroup(const std::string& file)
+{
+    category_group_.clear();
+    std::ifstream ifs(file.c_str());
+    std::string line;
+    std::vector<std::string> group;
+    while( getline(ifs, line))
+    {
+        boost::algorithm::trim(line);
+        if(line.empty()&&!group.empty())
+        {
+            InsertCategoryGroup(group);
+            group.resize(0);
+        }
+        if(!line.empty())
+        {
+            group.push_back(line);
+        }
+    }
+    if(!group.empty())
+    {
+        InsertCategoryGroup(group);
+    }
+}
 
 bool ProductMatcher::Index(const std::string& scd_path)
 {
@@ -155,6 +195,16 @@ bool ProductMatcher::Index(const std::string& scd_path)
         {
             continue;
         }
+        //convert category
+        std::string scategory;
+        category.convertString(scategory, UString::UTF_8);
+        CategoryGroup::const_iterator it = category_group_.find(scategory);
+        if(it!=category_group_.end())
+        {
+            //std::cerr<<"category convert "<<scategory<<" -> "<<it->second<<std::endl;
+            scategory = it->second;
+            category = UString(scategory, UString::UTF_8);
+        }
         double price = 0.0;
         UString uprice;
         if(doc.getProperty("Price", uprice))
@@ -218,7 +268,45 @@ bool ProductMatcher::Index(const std::string& scd_path)
                 //boost::algorithm::to_lower(value_list[j]);
                 //my_value_list.push_back(UString(value_list[j], UString::UTF_8));
             }
-            my_attrib_list.push_back(std::make_pair(attrib_name, my_value_list));
+            if(!my_attrib_list.empty())
+            {
+                const std::vector<UString>& last_value = my_attrib_list.back().second;
+                std::vector<std::string> s_last_value(last_value.size());
+                for(uint32_t j=0;j<last_value.size();j++)
+                {
+                    last_value[j].convertString(s_last_value[j], UString::UTF_8);
+                }
+                std::vector<UString> tmp;
+                for(uint32_t j=0;j<my_value_list.size();j++)
+                {
+                    std::string s_my_value;
+                    my_value_list[j].convertString(s_my_value, UString::UTF_8);
+                    for(uint32_t k=0;k<s_last_value.size();k++)
+                    {
+                        if(boost::algorithm::starts_with(s_my_value, s_last_value[k]))
+                        {
+                            //std::cout<<"before "<<s_my_value<<std::endl;
+                            s_my_value = s_my_value.substr(s_last_value[k].size());
+                            //std::cout<<"after "<<s_my_value<<std::endl;
+                            break;
+                        }
+                    }
+                    if(!s_my_value.empty())
+                    {
+                        tmp.push_back(UString(s_my_value, UString::UTF_8));
+                    }
+                }
+                tmp.swap(my_value_list);
+            }
+            if(!my_value_list.empty())
+            {
+                my_attrib_list.push_back(std::make_pair(attrib_name, my_value_list));
+            }
+        }
+        if(my_attrib_list.size()<2)
+        {
+            //std::cerr<<"igore: "<<stitle<<std::endl;
+            continue;
         }
         uint32_t attrib_count = my_attrib_list.size();
         double weight = 1.0/attrib_count;
@@ -251,9 +339,32 @@ bool ProductMatcher::Index(const std::string& scd_path)
     izenelib::am::ssf::Util<>::Save(products_path, products_);
     std::string a2p_path = path_+"/a2p";
     izenelib::am::ssf::Util<>::Save(a2p_path, a2p_);
+    WriteCategoryGroup_();
+    
     return true;
 }
 
+void ProductMatcher::WriteCategoryGroup_()
+{
+    std::map<std::string, std::vector<std::string> > tmp;
+    for(CategoryGroup::const_iterator it = category_group_.begin(); it!=category_group_.end(); ++it)
+    {
+        tmp[it->second].push_back(it->first);
+    }
+    std::string category_group_file = path_+"/category_group";
+    std::ofstream ofs(category_group_file.c_str());
+    for(std::map<std::string, std::vector<std::string> >::iterator it = tmp.begin();it!=tmp.end();++it)
+    {
+        ofs<<it->first<<std::endl;
+        std::sort(it->second.begin(), it->second.end());
+        for(uint32_t i=0;i<it->second.size();i++)
+        {
+            ofs<<it->second[i]<<std::endl;
+        }
+        ofs<<std::endl;
+    }
+    ofs.close();
+}
 
 bool ProductMatcher::DoMatch(const std::string& scd_path)
 {
@@ -337,20 +448,20 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
     doc.getProperty("DOCID", udocid);
     std::string sdocid;
     udocid.convertString(sdocid, UString::UTF_8);
-    //if(sdocid=="d50b08b1530d0fde3ceb177c4c74c931")
-    //{
-        //std::cout<<"!!!!!!!!!!!find debug"<<std::endl;
-    //}
 
-    //std::string stext;
-    //text.convertString(stext, UString::UTF_8);
-    //std::string scategory;
-    //category.convertString(scategory, UString::UTF_8);
-    //std::cout<<"text : "<<stext<<std::endl;
+    std::string stext;
+    text.convertString(stext, UString::UTF_8);
+    std::string scategory;
+    category.convertString(scategory, UString::UTF_8);
+    CategoryGroup::const_iterator it = category_group_.find(scategory);
+    if(it!=category_group_.end())
+    {
+        //std::cerr<<"category convert "<<scategory<<" -> "<<it->second<<std::endl;
+        scategory = it->second;
+        category = UString(scategory, UString::UTF_8);
+    }
     if(!category.empty())
     {
-        std::string scategory;
-        category.convertString(scategory, UString::UTF_8);
         if(boost::algorithm::starts_with(scategory, "书籍/杂志/报纸"))
         {
             std::string nattrib_name = "isbn";
@@ -400,19 +511,21 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
     }
     std::set<AttribId> aid_set;
     GetAttribIdSet(category, text, aid_set);
-    //if(sdocid=="519baafcfd00cc09e6b4fc51e4a40c98")
-    //{
-        //std::cout<<"!!!!show debug aid"<<std::endl;
-        //for(std::set<AttribId>::iterator ait = aid_set.begin(); ait!=aid_set.end(); ++ait)
-        //{
-            //AttribId aid = *ait;
-            //UString name;
-            //aid_manager_->getDocNameByDocId(aid, name);
-            //std::string sname;
-            //name.convertString(sname, UString::UTF_8);
-            //std::cout<<"XXX "<<aid<<","<<sname<<std::endl;
-        //}
-    //}
+    if(sdocid==test_docid_)
+    {
+        std::cout<<"!!!!show debug aid"<<std::endl;
+        std::cout<<"text:"<<stext<<std::endl;
+        std::cout<<"category:"<<scategory<<std::endl;
+        for(std::set<AttribId>::iterator ait = aid_set.begin(); ait!=aid_set.end(); ++ait)
+        {
+            AttribId aid = *ait;
+            UString name;
+            aid_manager_->getDocNameByDocId(aid, name);
+            std::string sname;
+            name.convertString(sname, UString::UTF_8);
+            std::cout<<"XXX "<<aid<<","<<sname<<std::endl;
+        }
+    }
     if(aid_set.empty()) return false;
     
     typedef std::map<PidType, double> PidMap;
@@ -470,7 +583,7 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
                 }
             }
             double str_sim = StringSimilarity::Sim(text, UString(this_product.stitle, UString::UTF_8));
-            if(sdocid=="519baafcfd00cc09e6b4fc51e4a40c98")
+            if(sdocid==test_docid_)
             {
                 std::cerr<<"sim with "<<this_product.stitle<<" : "<<str_sim<<std::endl;
             }
@@ -492,7 +605,7 @@ bool ProductMatcher::GetMatched(const Document& doc, Product& product)
             PidType pid = it->first;
             Product this_product;
             GetProductInfo(pid, this_product);
-            if(sdocid=="519baafcfd00cc09e6b4fc51e4a40c98")
+            if(sdocid==test_docid_)
             {
                 std::cerr<<"unmatch with "<<this_product.stitle<<" : "<<it->second<<std::endl;
             }
@@ -667,7 +780,7 @@ void ProductMatcher::GetAttribIdSet(const UString& category, const izenelib::uti
 {
     static const uint32_t n = 10;
     static const uint32_t max_ngram_len = 20;
-    static const uint32_t max_unmatch_count = 3;
+    static const uint32_t max_unmatch_count = 8;
     std::vector<izenelib::util::UString> termstr_list;
     AnalyzeChar_(value, termstr_list); //convert to lower case
     std::size_t index = 0;
