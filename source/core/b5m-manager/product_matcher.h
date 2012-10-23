@@ -22,15 +22,17 @@ namespace sf1r {
 
     public:
         typedef izenelib::util::UString UString;
+        typedef boost::unordered_map<std::string, std::string> CategoryGroup;
         struct Product
         {
             std::string spid;
             std::string stitle;
+            double price;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle;
+                ar & spid & stitle & price;
             }
         };
         typedef uint32_t PidType;
@@ -44,6 +46,8 @@ namespace sf1r {
         bool IsOpen() const;
         bool Open();
         static void Clear(const std::string& path);
+        void LoadCategoryGroup(const std::string& file);
+        void InsertCategoryGroup(const std::vector<std::string>& group);
         bool Index(const std::string& scd_path);
         bool GetMatched(const Document& doc, Product& product);
         bool GetProductInfo(const PidType& pid, Product& product);
@@ -53,6 +57,7 @@ namespace sf1r {
         { cma_path_ = path; }
 
     private:
+        bool PriceMatch_(double p1, double p2);
         uint32_t GetCategoryId_(const UString& category);
         AttribId GenAID_(const UString& category, const std::vector<UString>& value_list, AttribId& aid);
         CAttribId GetCAID_(AttribId aid, const UString& category);
@@ -65,12 +70,14 @@ namespace sf1r {
         void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
         UString GetAttribRep_(const UString& category, const UString& text);
+        void WriteCategoryGroup_();
 
 
     private:
         std::string path_;
         bool is_open_;
         std::string cma_path_;
+        CategoryGroup category_group_;
         CidSet cid_set_;
         AttributeIdManager* aid_manager_;
         A2PMap a2p_;
@@ -78,6 +85,7 @@ namespace sf1r {
         std::ofstream logger_;
         idmlib::util::IDMAnalyzer* analyzer_;
         idmlib::util::IDMAnalyzer* char_analyzer_;
+        std::string test_docid_;
     };
 }
 

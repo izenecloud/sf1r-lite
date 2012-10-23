@@ -102,17 +102,18 @@ BOOST_AUTO_TEST_CASE(test_index) {
 
     // perform test
     doTest(*index);
+    size_t size = index->size();
+    // close db
+    delete index;
 
     // load from file
     {
         boost::scoped_ptr<ScdIndex> loaded(ScdIndex::load(path.string(), dir1.string(), dir2.string()));
-        BOOST_CHECK_EQUAL(index->size(), loaded->size());
+        BOOST_CHECK_EQUAL(size, loaded->size());
         // perform the same test
         doTest(*loaded);
     }
 
-    // close db
-    delete index;
 
     test::databaseSize(dir1, dir2);
 }
