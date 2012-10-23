@@ -61,6 +61,10 @@ using driver::Keys;
  *   or in the form of "101-", meaning all values not less than 101.@n
  *   For the property type of datetime, in @b value[0], you could specify a string of year, month or day.@n
  *   For example, "2012" means the year of 2012, "2012-07" means the month of 2012 July, "2012-07-06" means the day of 2012 July 6th.
+ *   - @b auto_select_limit (@c Uint = 1): when @b value is an empty array, the top labels would be selected automatically.@n
+ *   You could specify this parameter as how many top labels need to be selected automatically.@n
+ *   The selected top labels are returned as @b top_group_label in search response.@n
+ *   This feature only supports the property type of string.
  * - @b attr_label (@c Array): Get documents in the specified attribute labels. Each label consists of an attribute name and value.@n
  *   You could specify multiple labels, for example, there are 4 labels named as "A1", "A2", "B1", "B2".@n
  *   If the attribute name of label "A1" and "A2" is "A", while the attribute name of label "B1" and "B2" is "B",@n
@@ -370,23 +374,29 @@ bool SearchParser::parse(const Value& search)
 
 bool SearchParser::parseGroupLabel_(const Value& search)
 {
-    const Value& groupNode = search[Keys::group_label];
+    const Value& groupLabelArray = search[Keys::group_label];
 
-    if (nullValue(groupNode))
+    if (nullValue(groupLabelArray))
         return true;
 
-    if (groupNode.type() != Value::kArrayType)
+    if (groupLabelArray.type() != Value::kArrayType)
     {
         error() = "Require an array for group labels.";
         return false;
     }
 
-    for (std::size_t i = 0; i < groupNode.size(); ++i)
+    for (std::size_t i = 0; i < groupLabelArray.size(); ++i)
     {
-        const Value& groupPair = groupNode(i);
-        std::string propName = asString(groupPair[Keys::property]);
+        const Value& groupLabelElem = groupLabelArray(i);
+        std::string propName = asString(groupLabelElem[Keys::property]);
 
-        const Value& pathNode = groupPair[Keys::value];
+        if (propName.empty())
+        {
+            error() = "Must specify both property name and array of value path for group label";
+            return false;
+        }
+
+        const Value& pathNode = groupLabelElem[Keys::value];
         faceted::GroupParam::GroupPath groupPath;
         if (pathNode.type() == Value::kArrayType)
         {
@@ -401,14 +411,26 @@ bool SearchParser::parseGroupLabel_(const Value& search)
                 groupPath.push_back(nodeValue);
             }
         }
-
-        if (propName.empty() || groupPath.empty())
+        else if (pathNode.type() != Value::kNullType)
         {
-            error() = "Must specify both property name and array of value path for group label";
+            error() = "Require an array for request[search][group_label][value]";
             return false;
         }
 
-        groupLabels_[propName].push_back(groupPath);
+        if (groupPath.empty())
+        {
+            int limit = asUintOr(groupLabelElem[Keys::auto_select_limit], 1);
+            if (limit == 0)
+            {
+                error() = "Must specify a positive value for 'auto_select_limit'";
+                return false;
+            }
+            groupLabelAutoSelectLimits_[propName] = limit;
+        }
+        else
+        {
+            groupLabels_[propName].push_back(groupPath);
+        }
     }
 
     return true;

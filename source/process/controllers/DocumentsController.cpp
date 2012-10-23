@@ -179,6 +179,14 @@ bool DocumentsController::checkCollectionService(std::string& error)
  *     a label for an attribute value. The item has following fields.
  *     - @b label (@c String): Name of this label, it represents an attribute value.
  *     - @b document_count (@c Uint): Number of result documents in this label.
+ * - @b top_group_label (@c Array): Every item represents the auto selected group
+ *   labels for one property.@n
+ *   This would be returned only when @b request["search"]["group_label"]["value"]
+ *   is an empty array.
+ *   - @b group_property (@c String): Property name.
+ *   - @b group_label (@c Array): An array of auto selected group labels.@n
+ *     Each element is a group label, which is a @c String array of the path from
+ *     root to leaf node.
  *
  * @section example
  *

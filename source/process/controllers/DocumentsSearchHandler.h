@@ -119,6 +119,12 @@ private:
 
     void addAclFilters();
 
+    /**
+     * preprocess the search request @c actionItem_,
+     * also update @p searchResult if necessary.
+     */
+    void preprocess(KeywordSearchResult& searchResult);
+
 private:
     ::izenelib::driver::Request& request_;
     ::izenelib::driver::Response& response_;

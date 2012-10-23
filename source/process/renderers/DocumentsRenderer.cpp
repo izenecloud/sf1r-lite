@@ -433,4 +433,35 @@ void DocumentsRenderer::renderAttr(
     }
 }
 
+void DocumentsRenderer::renderTopGroupLabel(const KeywordSearchResult& miaResult,
+                                            izenelib::driver::Value& renderValue)
+{
+    using faceted::GroupParam;
+
+    const GroupParam::GroupLabelMap& topLabels = miaResult.autoSelectGroupLabels_;
+    if (topLabels.empty())
+        return;
+
+    for (GroupParam::GroupLabelMap::const_iterator labelIt = topLabels.begin();
+         labelIt != topLabels.end(); ++labelIt)
+    {
+        Value& propValue = renderValue();
+        propValue[Keys::group_property] = labelIt->first;
+
+        Value& labelValue = propValue[Keys::group_label];
+        const GroupParam::GroupPathVec& pathVec = labelIt->second;
+
+        for (GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();
+             pathIt != pathVec.end(); ++pathIt)
+        {
+            Value& pathValue = labelValue();
+            for (GroupParam::GroupPath::const_iterator nodeIt = pathIt->begin();
+                 nodeIt != pathIt->end(); ++nodeIt)
+            {
+                pathValue() = *nodeIt;
+            }
+        }
+    }
+}
+
 } // namespace sf1r
