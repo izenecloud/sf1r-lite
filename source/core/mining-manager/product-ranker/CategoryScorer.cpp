@@ -2,7 +2,6 @@
 #include "../group-manager/PropValueTable.h"
 #include "../group-label-logger/GroupLabelLogger.h"
 #include <search-manager/SearchManager.h>
-#include <mining-manager/group-manager/GroupParam.h>
 #include <common/NumericPropertyTableBase.h>
 
 #include <glog/logging.h>

@@ -42,7 +42,6 @@ SuffixMatchManager::~SuffixMatchManager()
 void SuffixMatchManager::buildCollection()
 {
     FMIndexType* new_fmi = new FMIndexType();
-
     size_t last_docid = fmi_ ? fmi_->docCount() : 0;
     if (last_docid)
     {

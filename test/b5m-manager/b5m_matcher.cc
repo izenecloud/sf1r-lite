@@ -28,9 +28,14 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/trie_policy.hpp>
+#include <ext/pb_ds/tag_and_trait.hpp>
+#include <stack>
 
 using namespace sf1r;
 namespace po = boost::program_options;
+namespace pbds = __gnu_pbds;
 
 struct b5m_msgbuf {
     long mtype;
@@ -47,6 +52,10 @@ int do_main(int ac, char** av);
 
 int main(int ac, char** av)
 {
+    if(ac>1)
+    {
+        return do_main(ac, av);
+    }
     char* program_path = av[0];
     boost::filesystem::path p(program_path);
     p = p.parent_path();
@@ -202,7 +211,7 @@ int do_main(int ac, char** av)
         ("b5mc", po::value<std::string>(), "specify b5mc scd path")
         ("uue", po::value<std::string>(), "uue path")
         ("spu", po::value<std::string>(), "spu path")
-        ("category-regex,R", po::value<std::string>(), "specify category regex string")
+        ("category-group", po::value<std::string>(), "specify category group file")
         ("output-match,O", po::value<std::string>(), "specify output match path")
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
         ("dictionary", po::value<std::string>(), "specify dictionary path")
@@ -216,6 +225,7 @@ int do_main(int ac, char** av)
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
         ("test", "specify test flag")
         ("force", "specify force flag")
+        ("trie", "do trie test")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -243,7 +253,7 @@ int do_main(int ac, char** av)
     boost::shared_ptr<LogServerConnectionConfig> logserver_config;
     boost::shared_ptr<RpcServerConnectionConfig> imgserver_config;
     std::string synonym_file;
-    std::string category_regex;
+    std::string category_group;
     std::string dictionary;
     std::string mobile_source;
     std::string human_match;
@@ -363,10 +373,10 @@ int do_main(int ac, char** av)
         synonym_file = vm["synonym"].as<std::string>();
         std::cout<< "synonym file set to "<<synonym_file<<std::endl;
     }
-    if(vm.count("category-regex"))
+    if(vm.count("category-group"))
     {
-        category_regex = vm["category-regex"].as<std::string>();
-        std::cout<< "category_regex set to "<<category_regex<<std::endl;
+        category_group = vm["category-group"].as<std::string>();
+        std::cout<< "category_group set to "<<category_group<<std::endl;
     }
     if(vm.count("cma-path"))
     {
@@ -482,6 +492,10 @@ int do_main(int ac, char** av)
         if(!matcher.Open())
         {
             return EXIT_FAILURE;
+        }
+        if(!category_group.empty()&&boost::filesystem::exists(category_group))
+        {
+            matcher.LoadCategoryGroup(category_group);
         }
         if(!matcher.Index(scd_path))
         {
@@ -695,6 +709,49 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
+    }
+    if(vm.count("trie"))
+    {
+        typedef izenelib::util::UString UString;
+        //typedef pbds::trie_string_access_traits<> cmp_fn;
+        //typedef pbds::pat_trie_tag tag_type;
+        //typedef pbds::trie<std::string, UString, cmp_fn, tag_type, pbds::trie_prefix_search_node_update> TrieType;
+        typedef pbds::trie<std::string, std::string> TrieType;
+        TrieType t;
+        t["a"] = "qwe";
+        t["as"] = "asd";
+        //t["421"] = "zxc";
+        for(TrieType::const_iterator it = t.begin();it!=t.end();it++)
+        {
+            std::cout<<it->first<<","<<it->second<<std::endl;
+        }
+        std::cout<<"nodes:"<<std::endl;
+        const TrieType::e_access_traits& at = t.get_e_access_traits();
+        typedef TrieType::e_access_traits::const_iterator e_iterator;
+        typedef TrieType::const_node_iterator node_iterator;
+        std::stack<node_iterator> stack;
+        stack.push(t.node_begin());
+        while(!stack.empty())
+        {
+            node_iterator it = stack.top();
+            stack.pop();
+            std::pair<e_iterator, e_iterator> e_pair = it.valid_prefix();
+            std::cout<<"ready to output"<<std::endl;
+            for(e_iterator eit = e_pair.first; eit!=e_pair.second;++eit)
+            {
+                std::cout<<"eit:"<<*eit<<","<<stack.size()<<std::endl;
+            }
+            std::cout<<"it has "<<it.num_children()<<" children"<<std::endl;
+            for(std::size_t i=0;i<it.num_children();i++)
+            {
+                stack.push(it.get_child(i));
+            }
+        }
+        //node_iterator nit = t.node_begin();
+        //std::cout<<nit.num_children()<<std::endl;
+        //nit = nit.get_child(0);
+        //std::cout<<(*nit)->first<<std::endl;
+        std::cout<<"nodes end"<<std::endl;
     }
     //if(vm.count("match-test"))
     //{

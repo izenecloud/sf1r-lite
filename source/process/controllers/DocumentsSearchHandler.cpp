@@ -13,6 +13,7 @@
 #include <bundles/mining/MiningSearchService.h>
 
 #include "DocumentsSearchHandler.h"
+#include "GroupLabelPreProcessor.h"
 
 #include <parsers/SelectParser.h>
 #include <parsers/FilteringParser.h>
@@ -91,6 +92,7 @@ void DocumentsSearchHandler::search()
     {
         addAclFilters();
         KeywordSearchResult searchResult;
+        preprocess(searchResult);
 
         int topKStart = actionItem_.pageInfo_.topKStart(TOP_K_NUM);
 
@@ -428,6 +430,10 @@ bool DocumentsSearchHandler::parse()
         searchParser.mutableGroupLabels()
     );
     swap(
+        actionItem_.groupParam_.autoSelectLimits_,
+        searchParser.mutableGroupLabelAutoSelectLimits()
+    );
+    swap(
         actionItem_.groupParam_.attrLabels_,
         searchParser.mutableAttrLabels()
     );
@@ -714,6 +720,11 @@ void DocumentsSearchHandler::renderMiningResult(
             miaResult,
             response_[Keys::attr]
         );
+
+        renderer_.renderTopGroupLabel(
+            miaResult,
+            response_[Keys::top_group_label]
+        );
     }
 }
 
@@ -806,6 +817,12 @@ void DocumentsSearchHandler::addAclFilters()
 
         izenelib::util::swapBack(actionItem_.filteringList_, filter);
     }
+}
+
+void DocumentsSearchHandler::preprocess(KeywordSearchResult& searchResult)
+{
+    GroupLabelPreProcessor processor(miningSearchService_);
+    processor.process(actionItem_, searchResult);
 }
 
 namespace detail

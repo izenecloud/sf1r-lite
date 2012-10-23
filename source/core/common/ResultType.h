@@ -20,6 +20,7 @@
 #include <mining-manager/taxonomy-generation-submanager/TgTypes.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/group-manager/GroupRep.h>
+#include <mining-manager/group-manager/GroupParam.h>
 #include <idmlib/concept-clustering/cc_types.h>
 // #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
 #include <util/ustring/UString.h>
@@ -259,6 +260,10 @@ public:
         ss << "attrRep_ : " <<endl;
         ss << attrRep_.ToString();
 
+        using namespace faceted;
+        ss << "autoSelectGroupLabels_:" << endl;
+        ss << autoSelectGroupLabels_ << endl;
+
         ss << "Finish time : " << std::ctime(&timeStamp_) << endl;
 
         ss << "===================================" << endl;
@@ -397,6 +402,9 @@ public:
     // a list, each element is a label array for an attribute name
     sf1r::faceted::OntologyRep attrRep_;
 
+    // auto selected top group labels
+    sf1r::faceted::GroupParam::GroupLabelMap autoSelectGroupLabels_;
+
     /// A list of related query string.
     std::deque<izenelib::util::UString> relatedQueryList_;
 
@@ -523,6 +531,7 @@ public:
         onto_rep_.swap(other.onto_rep_);
         groupRep_.swap(other.groupRep_);
         attrRep_.swap(other.attrRep_);
+        autoSelectGroupLabels_.swap(other.autoSelectGroupLabels_);
         relatedQueryList_.swap(other.relatedQueryList_);
         rqScore_.swap(other.rqScore_);
         swap(timeStamp_, other.timeStamp_);
@@ -535,7 +544,7 @@ public:
 //          &start_&count_&propertyQueryTermList_&fullTextOfDocumentInPage_
 //          &snippetTextOfDocumentInPage_&rawTextOfSummaryInPage_
 //          &errno_&error_
-//          &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&relatedQueryList_&rqScore_)
+//          &numberOfDuplicatedDocs_&numberOfSimilarDocs_&docCategories_&imgs_&taxonomyString_&numOfTGDocs_&taxonomyLevel_&tgDocIdList_&neList_&onto_rep_&groupRep_&attrRep_&autoSelectGroupLabels_&relatedQueryList_&rqScore_)
 
     MSGPACK_DEFINE(
             rawQueryString_, encodingType_, collectionName_, analyzedQuery_,
@@ -544,7 +553,7 @@ public:
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             numberOfDuplicatedDocs_, numberOfSimilarDocs_, docCategories_,
             tg_input, taxonomyString_, numOfTGDocs_, taxonomyLevel_, tgDocIdList_,
-            neList_, onto_rep_, groupRep_, attrRep_, relatedQueryList_, rqScore_, timeStamp_);
+            neList_, onto_rep_, groupRep_, attrRep_, autoSelectGroupLabels_, relatedQueryList_, rqScore_, timeStamp_);
 };
 
 

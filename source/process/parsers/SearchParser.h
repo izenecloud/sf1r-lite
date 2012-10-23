@@ -101,6 +101,15 @@ public:
         return groupLabels_;
     }
 
+    faceted::GroupParam::AutoSelectLimitMap& mutableGroupLabelAutoSelectLimits()
+    {
+        return groupLabelAutoSelectLimits_;
+    }
+    const faceted::GroupParam::AutoSelectLimitMap& groupLabelAutoSelectLimits() const
+    {
+        return groupLabelAutoSelectLimits_;
+    }
+
     faceted::GroupParam::AttrLabelMap& mutableAttrLabels()
     {
         return attrLabels_;
@@ -159,8 +168,11 @@ private:
     std::string taxonomyLabel_;
     std::string nameEntityType_;
     std::string nameEntityItem_;
+
     faceted::GroupParam::GroupLabelMap groupLabels_;
+    faceted::GroupParam::AutoSelectLimitMap groupLabelAutoSelectLimits_;
     faceted::GroupParam::AttrLabelMap attrLabels_;
+
     bool logKeywords_;
     std::vector<std::string> properties_;
     std::vector<std::string> countList_;

@@ -68,6 +68,9 @@ public:
     void renderAttr(const KeywordSearchResult& miaResult,
                           izenelib::driver::Value& attrResult);
 
+    void renderTopGroupLabel(const KeywordSearchResult& miaResult,
+                             izenelib::driver::Value& renderValue);
+
 private:
     int TOP_K_NUM;
 };
