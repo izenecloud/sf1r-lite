@@ -157,6 +157,7 @@ bool write_dir(const std::string& dir)
                         cout << e.what() << endl;
                         gettimeofday(&tv_end, NULL);
                         cout << "time: " << TIME_SUB_MS(tv_end, tv_start) << endl;
+                        delete[] filedata;
                         continue;
                     }
                 }
