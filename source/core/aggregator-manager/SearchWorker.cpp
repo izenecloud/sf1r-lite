@@ -227,6 +227,8 @@ void SearchWorker::makeQueryIdentity(
         break;
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
+        identity.usefuzzy = item.searchingMode_.usefuzzy_;
+        identity.lucky = item.searchingMode_.lucky_;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -360,8 +362,9 @@ bool SearchWorker::getSearchResult_(
 
     case SearchingMode::SUFFIX_MATCH:
         if(actionOperation.actionItem_.searchingMode_.lucky_ < 
-            topKStart + actionOperation.actionItem_.pageInfo_.count_)
-            actionOperation.actionItem_.searchingMode_.lucky_ = topKStart + actionOperation.actionItem_.pageInfo_.count_;
+           actionOperation.actionItem_.pageInfo_.start_ + actionOperation.actionItem_.pageInfo_.count_)
+            actionOperation.actionItem_.searchingMode_.lucky_ = actionOperation.actionItem_.pageInfo_.start_
+                + actionOperation.actionItem_.pageInfo_.count_;
         if (!miningManager_->GetSuffixMatch(actionOperation.actionItem_.env_.queryString_,
                                                    actionOperation.actionItem_.searchingMode_.lucky_,
                                                    actionOperation.actionItem_.searchingMode_.usefuzzy_,
