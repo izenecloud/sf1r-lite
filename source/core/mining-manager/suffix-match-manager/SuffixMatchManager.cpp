@@ -1,8 +1,10 @@
 #include "SuffixMatchManager.hpp"
 #include <document-manager/DocumentManager.h>
-
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
+#include <icma/icma.h>
+
+using namespace cma;
 
 namespace sf1r
 {
@@ -10,9 +12,11 @@ namespace sf1r
 SuffixMatchManager::SuffixMatchManager(
         const std::string& homePath,
         const std::string& property,
+        const std::string& dicpath,
         boost::shared_ptr<DocumentManager>& document_manager)
     : fm_index_path_(homePath + "/" + property + ".fm_idx")
     , property_(property)
+    , tokenize_dicpath_(dicpath)
     , document_manager_(document_manager)
 {
     if (!boost::filesystem::exists(homePath))
@@ -24,10 +28,11 @@ SuffixMatchManager::SuffixMatchManager(
         std::ifstream ifs(fm_index_path_.c_str());
         if (ifs)
         {
-            fmi_.reset(new FMIndexType);
+            fmi_.reset(new FMIndexType());
             fmi_->load(ifs);
         }
     }
+    buildTokenizeDic();
 }
 
 SuffixMatchManager::~SuffixMatchManager()
@@ -36,8 +41,7 @@ SuffixMatchManager::~SuffixMatchManager()
 
 void SuffixMatchManager::buildCollection()
 {
-    FMIndexType* new_fmi = new FMIndexType;
-
+    FMIndexType* new_fmi = new FMIndexType();
     size_t last_docid = fmi_ ? fmi_->docCount() : 0;
     if (last_docid)
     {
@@ -119,6 +123,105 @@ size_t SuffixMatchManager::longestSuffixMatch(const izenelib::util::UString& pat
     }
 
     return total_match;
+}
+
+size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString& pattern_orig, size_t max_docs, std::vector<uint32_t>& docid_list, std::vector<float>& score_list) const
+{
+    if(!analyzer_) return 0;
+
+    std::vector<std::pair<size_t, size_t> > match_ranges_list;
+    std::vector<size_t> doclen_list;
+    std::vector<double> max_match_list;
+    std::vector<std::pair<double, uint32_t> > res_list;
+
+    // tokenize the pattern.
+    izenelib::util::UString pattern = pattern_orig;
+    Algorithm<UString>::to_lower(pattern);
+    string pattern_str;
+    pattern.convertString(pattern_str, UString::UTF_8);
+    LOG(INFO) << " original query string:" << pattern_str;
+
+    Sentence pattern_sentence(pattern_str.c_str());
+    analyzer_->runWithSentence(pattern_sentence);
+    std::vector< UString > all_sub_strpatterns;
+    int best = pattern_sentence.getOneBestIndex();
+    LOG(INFO) << "query tokenize by maxprefix match: ";
+    for(int i = 0; i < pattern_sentence.getCount(best); i++)
+    {
+        printf("%s, ", pattern_sentence.getLexicon(best, i));
+        all_sub_strpatterns.push_back(UString(pattern_sentence.getLexicon(best, i), UString::UTF_8));
+    }
+    printf("\n");
+
+    if(!fmi_) return 0;
+    {
+        ReadLock lock(mutex_);
+        for(size_t i = 0; i < all_sub_strpatterns.size(); ++i)
+        {
+            if(all_sub_strpatterns[i].empty())
+                continue;
+            std::pair<size_t, size_t> sub_match_range;
+            size_t matched = fmi_->backwardSearch(all_sub_strpatterns[i].data(), 
+                all_sub_strpatterns[i].length(), sub_match_range);
+            if(matched == all_sub_strpatterns[i].length())
+            {
+                match_ranges_list.push_back(sub_match_range);
+                max_match_list.push_back((double)matched);
+            }
+        }
+
+        if(match_ranges_list.size() == 1)
+        {
+            fmi_->getMatchedDocIdList(match_ranges_list[0], max_docs, docid_list, doclen_list);
+            res_list.resize(docid_list.size());
+            for (size_t i = 0; i < res_list.size(); ++i)
+            {
+                res_list[i].first = double(max_match_list[0]) / double(doclen_list[i]);
+                res_list[i].second = docid_list[i];
+            }
+        }
+        else
+        {
+            fmi_->getMatchedTopKDocIdList(match_ranges_list, 
+                max_match_list, max_docs, res_list, doclen_list);
+        }
+    }
+
+    std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
+    score_list.resize(doclen_list.size());
+    docid_list.resize(doclen_list.size());
+    for (size_t i = 0; i < res_list.size(); ++i)
+    {
+        docid_list[i] = res_list[i].second;
+        score_list[i] = res_list[i].first;
+    }
+
+    size_t total_match = 0;
+    for (size_t i = 0; i < match_ranges_list.size(); ++i)
+    {
+        total_match += match_ranges_list[i].second - match_ranges_list[i].first;
+    }
+
+    return total_match;
+}
+
+void SuffixMatchManager::buildTokenizeDic()
+{
+    knowledge_ = CMA_Factory::instance()->createKnowledge();
+    knowledge_->loadModel( "utf8", tokenize_dicpath_.c_str(), false);
+    analyzer_ = CMA_Factory::instance()->createAnalyzer();
+    analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
+    // using the maxprefix analyzer
+    analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE, 100);
+    analyzer_->setKnowledge(knowledge_);
+    LOG(INFO) << "load dictionary knowledge finished." << endl;
+
+    //izenelib::util::UString testustr("佳能(Canon)test non 单子不存在exist字典(6666) EOS 60D单反套机(EF-S 18-135mm f/3.5-5.6IS）单反镜头单子不存在", UString::UTF_8);
+    //Algorithm<UString>::to_lower(testustr);
+    //string teststr;
+    //testustr.convertString(teststr, UString::UTF_8);
+    //Sentence tests(teststr.c_str());
+    //analyzer_->runWithSentence(tests);
 }
 
 }

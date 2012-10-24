@@ -1921,6 +1921,17 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         }
         mining_schema.suffix_match_property = property_name;
         mining_schema.suffix_match_enable = true;
+
+        ticpp::Element* subNode = getUniqChildElement(task_node, "TokenizeDictionary", true);
+        if (subNode)
+        {
+            getAttribute(subNode, "path", property_name);
+            mining_schema.suffix_match_tokenize_dicpath = property_name;
+        }
+        else
+        {
+            throw XmlConfigParserException("["+property_name+"] used in SuffixMatch is missing.");
+        }
     }
 }
 

@@ -50,7 +50,7 @@ private:
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
         ar & summarization_enable & summarization_schema;
-        ar & suffix_match_enable & suffix_match_property;
+        ar & suffix_match_enable & suffix_match_property & suffix_match_tokenize_dicpath;
     }
 
 public:
@@ -93,6 +93,7 @@ public:
 
     bool suffix_match_enable;
     std::string suffix_match_property;
+    std::string suffix_match_tokenize_dicpath;
 };
 
 } // namespace

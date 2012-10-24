@@ -71,6 +71,11 @@ struct GroupParam
     /** selected group labels */
     GroupLabelMap groupLabels_;
 
+    /** property name => at most how many group labels are auto selected */
+    typedef std::map<std::string, int> AutoSelectLimitMap;
+    /** group labels to auto select */
+    AutoSelectLimitMap autoSelectLimits_;
+
     /** true for need doc counts for each attribute value */
     bool isAttrGroup_;
 
@@ -109,12 +114,14 @@ private:
     bool checkGroupParam_(const MiningSchema& miningSchema, std::string& message) const;
     bool checkGroupProps_(const GroupConfigMap& groupConfigMap, std::string& message) const;
     bool checkGroupLabels_(const GroupConfigMap& groupConfigMap, std::string& message) const;
+    bool checkAutoSelectLimits_(const GroupConfigMap& groupConfigMap, std::string& message) const;
     bool checkAttrParam_(const MiningSchema& miningSchema, std::string& message) const;
     bool isRangeLabel_(const std::string& propName) const;
 };
 
 bool operator==(const GroupParam& a, const GroupParam& b);
 std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam);
+std::ostream& operator<<(std::ostream& out, const GroupParam::GroupLabelMap& groupLabelMap);
 
 NS_FACETED_END
 

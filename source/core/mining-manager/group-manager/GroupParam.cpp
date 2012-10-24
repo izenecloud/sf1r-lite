@@ -160,7 +160,8 @@ bool GroupParam::isEmpty() const
 
 bool GroupParam::isGroupEmpty() const
 {
-    return groupProps_.empty() && groupLabels_.empty();
+    return groupProps_.empty() && groupLabels_.empty() &&
+        autoSelectLimits_.empty();
 }
 
 bool GroupParam::isAttrEmpty() const
@@ -186,7 +187,8 @@ bool GroupParam::checkGroupParam_(const MiningSchema& miningSchema, std::string&
     }
 
     return checkGroupProps_(miningSchema.group_config_map, message) &&
-           checkGroupLabels_(miningSchema.group_config_map, message);
+           checkGroupLabels_(miningSchema.group_config_map, message) &&
+           checkAutoSelectLimits_(miningSchema.group_config_map, message);
 }
 
 bool GroupParam::checkGroupProps_(const GroupConfigMap& groupConfigMap, std::string& message) const
@@ -222,11 +224,35 @@ bool GroupParam::checkGroupLabels_(const GroupConfigMap& groupConfigMap, std::st
             message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
             return false;
         }
-        const GroupConfig& groupConfig = configIt->second;
 
+        const GroupConfig& groupConfig = configIt->second;
         if (groupConfig.isDateTimeType() &&
             !checkDateLabel(labelIt->second, message))
         {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool GroupParam::checkAutoSelectLimits_(const GroupConfigMap& groupConfigMap, std::string& message) const
+{
+    for (AutoSelectLimitMap::const_iterator limitIt = autoSelectLimits_.begin();
+        limitIt != autoSelectLimits_.end(); ++limitIt)
+    {
+        const std::string& propName = limitIt->first;
+
+        GroupConfigMap::const_iterator configIt = groupConfigMap.find(propName);
+        if (configIt == groupConfigMap.end())
+        {
+            message = "property " + propName + " should be configured in <MiningBundle>::<Schema>::<Group>.";
+            return false;
+        }
+
+        if (! configIt->second.isStringType())
+        {
+            message = "the feature of auto selected label does not support the property '" + propName + "' other than string type";
             return false;
         }
     }
@@ -272,6 +298,7 @@ bool operator==(const GroupParam& a, const GroupParam& b)
 {
     return a.groupProps_ == b.groupProps_ &&
            a.groupLabels_ == b.groupLabels_ &&
+           a.autoSelectLimits_ == b.autoSelectLimits_ &&
            a.isAttrGroup_ == b.isAttrGroup_ &&
            a.attrGroupNum_ == b.attrGroupNum_ &&
            a.attrLabels_ == b.attrLabels_;
@@ -285,24 +312,17 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
         out << groupParam.groupProps_[i];
     }
 
-    out << "groupLabels_: ";
-    for (GroupParam::GroupLabelMap::const_iterator labelIt = groupParam.groupLabels_.begin();
-        labelIt != groupParam.groupLabels_.end(); ++labelIt)
-    {
-        const std::string& propName = labelIt->first;
-        const GroupParam::GroupPathVec& pathVec = labelIt->second;
+    out << "groupLabels_:" << std::endl;
+    out << groupParam.groupLabels_ << std::endl;
 
-        for (GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();
-            pathIt != pathVec.end(); ++pathIt)
-        {
-            out << "\t" << propName << ": ";
-            for (GroupParam::GroupPath::const_iterator nodeIt = pathIt->begin();
-                nodeIt != pathIt->end(); ++nodeIt)
-            {
-                out << *nodeIt << ", ";
-            }
-            out << std::endl;
-        }
+    out << "autoSelectLimits_:" << std::endl;
+    for (GroupParam::AutoSelectLimitMap::const_iterator limitIt = groupParam.autoSelectLimits_.begin();
+         limitIt != groupParam.autoSelectLimits_.end(); ++limitIt)
+    {
+        const std::string& propName = limitIt->first;
+        int limit = limitIt->second;
+        out << "property " << propName
+            << ", limit " << limit << " auto selected labels" << std::endl;
     }
 
     out << "isAttrGroup_: " << groupParam.isAttrGroup_ << std::endl;
@@ -310,18 +330,44 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
 
     out << "attrLabels_: ";
     for (GroupParam::AttrLabelMap::const_iterator labelIt = groupParam.attrLabels_.begin();
-        labelIt != groupParam.attrLabels_.end(); ++labelIt)
+         labelIt != groupParam.attrLabels_.end(); ++labelIt)
     {
         const std::string& attrName = labelIt->first;
         const GroupParam::AttrValueVec& valueVec = labelIt->second;
 
         out << "\t" << attrName << ": ";
         for (GroupParam::AttrValueVec::const_iterator valueIt = valueVec.begin();
-            valueIt != valueVec.end(); ++valueIt)
+             valueIt != valueVec.end(); ++valueIt)
         {
             out << *valueIt << ", ";
         }
         out << std::endl;
+    }
+
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const GroupParam::GroupLabelMap& groupLabelMap)
+{
+    for (GroupParam::GroupLabelMap::const_iterator labelIt = groupLabelMap.begin();
+         labelIt != groupLabelMap.end(); ++labelIt)
+    {
+        const std::string& propName = labelIt->first;
+        const GroupParam::GroupPathVec& pathVec = labelIt->second;
+
+        for (GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();
+             pathIt != pathVec.end(); ++pathIt)
+        {
+            out << "property " << propName << ", "
+                << pathIt->size() << " labels" << std::endl;
+
+            for (GroupParam::GroupPath::const_iterator nodeIt = pathIt->begin();
+                 nodeIt != pathIt->end(); ++nodeIt)
+            {
+                out << *nodeIt << ", ";
+            }
+            out << std::endl;
+        }
     }
 
     return out;
