@@ -359,8 +359,11 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::SUFFIX_MATCH:
-        if (!miningManager_->GetLongestSuffixMatch(actionOperation.actionItem_.env_.queryString_,
+        if (!miningManager_->GetSuffixMatch(actionOperation.actionItem_.env_.queryString_,
                                                    actionOperation.actionItem_.searchingMode_.lucky_,
+                                                   actionOperation.actionItem_.searchingMode_.usefuzzy_,
+                                                   topKStart,
+                                                   KNN_TOP_K_NUM,
                                                    resultItem.topKDocs_,
                                                    resultItem.topKRankScoreList_,
                                                    resultItem.totalCount_))

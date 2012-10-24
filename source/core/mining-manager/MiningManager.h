@@ -310,9 +310,12 @@ public:
             uint32_t knnDist,
             uint32_t start);
 
-    bool GetLongestSuffixMatch(
+    bool GetSuffixMatch(
             const std::string& query,
             uint32_t max_docs,
+            bool use_fuzzy,
+            uint32_t start,
+            uint32_t topk,
             std::vector<uint32_t>& docIdList,
             std::vector<float>& rankScoreList,
             std::size_t& totalCount);

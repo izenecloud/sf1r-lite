@@ -367,6 +367,11 @@ bool SearchParser::parse(const Value& search)
         {
             searchingModeInfo_.useOriginalQuery_ = asBool(searching_mode[Keys::original_query]);
         }
+
+        if (searching_mode.hasKey(Keys::use_fuzzy))
+        {
+            searchingModeInfo_.usefuzzy_ = asBool(searching_mode[Keys::use_fuzzy]);
+        }
     }
 
     return true;
