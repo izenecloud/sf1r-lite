@@ -133,6 +133,8 @@ bool write_dir(const std::string& dir)
                     filepath.find(".bmp") == std::string::npos )
                     continue;
 
+                if( sb.st_size == 0 )
+                    continue;
                 total_count++;
 
                 gettimeofday(&tv_start, NULL);
@@ -145,7 +147,18 @@ bool write_dir(const std::string& dir)
                 }
                 else
                 {
-                    result = ImageServerClient::UploadImageData(std::string(filedata, sb.st_size), file_id) ? 0:-1;
+                    try
+                    {
+                        result = ImageServerClient::UploadImageData(std::string(filedata, sb.st_size), file_id) ? 0:-1;
+                    }
+                    catch(std::exception& e)
+                    {
+                        cout << "upload caught exception." << endl;
+                        cout << e.what() << endl;
+                        gettimeofday(&tv_end, NULL);
+                        cout << "time: " << TIME_SUB_MS(tv_end, tv_start) << endl;
+                        continue;
+                    }
                 }
                 delete[] filedata;
                 gettimeofday(&tv_end, NULL);
@@ -165,8 +178,8 @@ bool write_dir(const std::string& dir)
                         filepath.c_str(), result);
                     fflush(fpFail);
                     fflush(fpSuccess);
-                    if(total_count - success_count > 100)
-                        exit(-1);
+                    //if(total_count - success_count > 100)
+                    //    exit(-1);
                 }
 
                 if (total_count % 100 == 0)
