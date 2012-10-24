@@ -10,6 +10,7 @@
 #include <b5m-manager/complete_matcher.h>
 #include <b5m-manager/similarity_matcher.h>
 #include <b5m-manager/ticket_matcher.h>
+#include <b5m-manager/ticket_processor.h>
 #include <b5m-manager/uue_worker.h>
 #include <b5m-manager/b5mp_processor.h>
 #include <b5m-manager/spu_processor.h>
@@ -36,13 +37,14 @@
 using namespace sf1r;
 namespace po = boost::program_options;
 namespace pbds = __gnu_pbds;
+#define MSG_LEN 1000
 
 struct b5m_msgbuf {
     long mtype;
-    char cmd[500];
+    char cmd[MSG_LEN];
     void clear()
     {
-        for(int i=0;i<500;i++)
+        for(int i=0;i<MSG_LEN;i++)
         {
             cmd[i] = '\0';
         }
@@ -186,6 +188,7 @@ int do_main(int ac, char** av)
         ("complete-match,M", "attribute complete matching")
         ("similarity-match,I", "title based similarity matching")
         ("ticket-match", "ticket matching")
+        ("ticket-generate", "do directly ticket matching")
         ("cmatch-generate", "match to cmatch")
         ("b5mo-generate", "generate b5mo scd")
         ("uue-generate", "generate uue")
@@ -595,6 +598,20 @@ int do_main(int ac, char** av)
         matcher.SetPidDictionary(dictionary);
         matcher.Index(scd_path, knowledge_dir);
     }
+    if(vm.count("ticket-generate"))
+    {
+        if( scd_path.empty() || mdb_instance.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        TicketProcessor processor;
+        processor.SetCmaPath(cma_path);
+        if(!processor.Generate(scd_path, mdb_instance))
+        {
+            std::cout<<"ticket generator fail"<<std::endl;
+            return EXIT_FAILURE;
+        }
+    }
     if(vm.count("ticket-match"))
     {
         if( scd_path.empty() || knowledge_dir.empty())
@@ -726,7 +743,7 @@ int do_main(int ac, char** av)
             std::cout<<it->first<<","<<it->second<<std::endl;
         }
         std::cout<<"nodes:"<<std::endl;
-        const TrieType::e_access_traits& at = t.get_e_access_traits();
+        //const TrieType::e_access_traits& at = t.get_e_access_traits();
         typedef TrieType::e_access_traits::const_iterator e_iterator;
         typedef TrieType::const_node_iterator node_iterator;
         std::stack<node_iterator> stack;
