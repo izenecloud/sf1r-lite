@@ -1704,7 +1704,6 @@ bool MiningManager::GetSuffixMatch(
         uint32_t max_docs,
         bool use_fuzzy,
         uint32_t start,
-        uint32_t topk,
         std::vector<uint32_t>& docIdList,
         std::vector<float>& rankScoreList,
         std::size_t& totalCount)
@@ -1718,7 +1717,7 @@ bool MiningManager::GetSuffixMatch(
     else
     {
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
-        max_docs = topk + start;
+        max_docs = max_docs + start;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
         docIdList.erase(docIdList.begin(), docIdList.begin() + start);
         rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
