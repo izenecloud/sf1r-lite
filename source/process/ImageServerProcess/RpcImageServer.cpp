@@ -123,6 +123,7 @@ void RpcImageServer::dispatch(msgpack::rpc::request req)
         {
             struct timeval tv_start, tv_end;
             gettimeofday(&tv_start, NULL);
+            LOG(INFO) << "get upload request : " << tv_start.tv_sec << endl;
             msgpack::type::tuple<UploadImageData> params;
             req.params().convert(&params);
             UploadImageData& reqdata = params.get<0>();
@@ -168,12 +169,13 @@ void RpcImageServer::dispatch(msgpack::rpc::request req)
                 else
                     LOG(WARNING) << "image data upload failed: " << std::endl;
             }
+            reqdata.img_file = ret_file;
+            req.result(reqdata);
             gettimeofday(&tv_end, NULL);
+            LOG(INFO) << "finish upload request : " << tv_end.tv_sec << endl;
             interval = tv_end.tv_sec - tv_start.tv_sec;
             if( interval > 1)
                 LOG(WARNING) << "upload time total larger than 1s : " << interval << endl;
-            reqdata.img_file = ret_file;
-            req.result(reqdata);
         }
         else if (method == ImageServerRequest::method_names[ImageServerRequest::METHOD_DELETE_IMAGE])
         {
