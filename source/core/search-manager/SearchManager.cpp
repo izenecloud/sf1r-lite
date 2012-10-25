@@ -696,7 +696,6 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             actionOperation,
             totalCount,
             propertyRange,
-            start,
             rankQueryProperties,
             propertyRankers,
             pSorter.get(),
@@ -706,7 +705,6 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             groupFilter.get(),
             scoreItemQueue.get(),
             counterResults,
-            heapSize,
             docid_start,
             docid_num_byeachthread,
             docid_nextstart_inc);
@@ -740,7 +738,6 @@ bool SearchManager::doSearch_(
         const SearchKeywordOperation& actionOperation,
         std::size_t& totalCount,
         sf1r::PropertyRange& propertyRange,
-        uint32_t start,
         const std::vector<RankQueryProperty>& rankQueryProperties,
         const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
         Sorter* pSorter,
@@ -750,7 +747,6 @@ bool SearchManager::doSearch_(
         faceted::GroupFilter* groupFilter,
         HitQueue* scoreItemQueue,
         std::map<std::string, unsigned>& counterResults,
-        int heapSize,
         std::size_t docid_start,
         std::size_t docid_num_byeachthread,
         std::size_t docid_nextstart_inc)
