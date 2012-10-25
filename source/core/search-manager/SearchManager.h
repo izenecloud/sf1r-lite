@@ -47,6 +47,7 @@ class SearchThreadParam;
 class SearchManagerPreProcessor;
 class SearchManagerPostProcessor;
 class CustomRankManager;
+class ScoreDocEvaluator;
 
 namespace faceted
 {
@@ -120,13 +121,9 @@ private:
             const SearchKeywordOperation& actionOperation,
             std::size_t& totalCount,
             sf1r::PropertyRange& propertyRange,
-            const std::vector<RankQueryProperty>& rankQueryProperties,
-            const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
-            Sorter* pSorter,
-            CustomRankerPtr customRanker,
-            DocumentIterator* pScoreDocIterator,
             CombinedDocumentIterator* pDocIterator,
             faceted::GroupFilter* groupFilter,
+            ScoreDocEvaluator& scoreDocEvaluator,
             HitQueue* scoreItemQueue,
             std::map<std::string, unsigned int>& counterResults,
             std::size_t docid_start,

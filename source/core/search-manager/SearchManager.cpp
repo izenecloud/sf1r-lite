@@ -25,6 +25,7 @@
 #include "CustomRankDocumentIterator.h"
 #include "SearchManagerPreProcessor.h"
 #include "SearchManagerPostProcessor.h"
+#include "ScoreDocEvaluator.h"
 
 #include <util/swap.h>
 #include <util/get.h>
@@ -690,19 +691,20 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     std::size_t totalCount;
     sf1r::PropertyRange propertyRange = propertyRange_orig;
 
+    ScoreDocEvaluator scoreDocEvaluator(
+        pScoreDocIterator, pSorter.get(),
+        rankQueryProperties, propertyRankers,
+        customRanker);
+
     try
     {
         bool ret = doSearch_(
             actionOperation,
             totalCount,
             propertyRange,
-            rankQueryProperties,
-            propertyRankers,
-            pSorter.get(),
-            customRanker,
-            pScoreDocIterator,
             pDocIterator.get(),
             groupFilter.get(),
+            scoreDocEvaluator,
             scoreItemQueue.get(),
             counterResults,
             docid_start,
@@ -738,13 +740,9 @@ bool SearchManager::doSearch_(
         const SearchKeywordOperation& actionOperation,
         std::size_t& totalCount,
         sf1r::PropertyRange& propertyRange,
-        const std::vector<RankQueryProperty>& rankQueryProperties,
-        const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
-        Sorter* pSorter,
-        CustomRankerPtr customRanker,
-        DocumentIterator* pScoreDocIterator,
         CombinedDocumentIterator* pDocIterator,
         faceted::GroupFilter* groupFilter,
+        ScoreDocEvaluator& scoreDocEvaluator,
         HitQueue* scoreItemQueue,
         std::map<std::string, unsigned>& counterResults,
         std::size_t docid_start,
@@ -753,7 +751,6 @@ bool SearchManager::doSearch_(
 {
 CREATE_PROFILER( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
 CREATE_PROFILER( inserttoqueue, "SearchManager", "doSearch_: overall time for inserting to result queue");
-CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall time for scoring customized score for a doc");
     typedef boost::shared_ptr<NumericPropertyTableBase> NumericPropertyTablePtr;
     totalCount = 0;
     const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
@@ -764,11 +761,6 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
     if (!rangePropertyName.empty())
     {
         rangePropertyTable = documentManagerPtr_->getNumericPropertyTable(rangePropertyName);
-    }
-    bool requireScorer = false;
-    if ( pScoreDocIterator && pSorter )
-    {
-        requireScorer = pSorter->requireScorer();
     }
 
     std::vector<NumericPropertyTablePtr> counterTables;
@@ -826,19 +818,11 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         ScoreDoc scoreItem(curDocId);
 
         START_PROFILER( computerankscore )
-        ++totalCount;
 
-        scoreItem.score = requireScorer ? pScoreDocIterator->score(
-                rankQueryProperties, propertyRankers) : 1.0;
+        ++totalCount;
+        scoreDocEvaluator.evaluate(scoreItem);
 
         STOP_PROFILER( computerankscore )
-
-        START_PROFILER( computecustomrankscore )
-        if (customRanker)
-        {
-            scoreItem.custom_score = customRanker->evaluate(scoreItem.docId);
-        }
-        STOP_PROFILER( computecustomrankscore )
 
         START_PROFILER( inserttoqueue )
         scoreItemQueue->insert(scoreItem);
