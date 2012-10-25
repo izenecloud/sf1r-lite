@@ -82,10 +82,11 @@
           <ContentProperty name="Content"/>
           <ScoreProperty name="Score"/>
           <ScoreSCDPath path="@SF1RENGINE_ROOT@/bin/collection/chinese-wiki/scd/score"/>
-        </Summarization-->
+        </Summarization
         <SuffixMatch>
           <Property name="Title"/>
-        </SuffixMatch>
+          <TokenizeDictionary path="@SF1RENGINE_ROOT@/icma/db/icwb/utf8/fmindex_dic" />
+        </SuffixMatch>-->
       </Schema>
     </MiningBundle>
 
