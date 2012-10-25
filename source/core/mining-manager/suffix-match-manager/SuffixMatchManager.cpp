@@ -3,6 +3,7 @@
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <icma/icma.h>
+#include <la-manager/LAPool.h>
 
 using namespace cma;
 
@@ -222,8 +223,13 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
 
 void SuffixMatchManager::buildTokenizeDic()
 {
+    std::string cma_path;
+    LAPool::getInstance()->get_cma_path(cma_path);
+    boost::filesystem::path cma_fmindex_dic(cma_path);
+    cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
+    LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
     knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel( "utf8", tokenize_dicpath_.c_str(), false);
+    knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
     // using the maxprefix analyzer
