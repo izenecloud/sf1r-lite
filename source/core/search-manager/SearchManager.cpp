@@ -7,6 +7,7 @@
 #include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
+#include <mining-manager/group-manager/PropSharedLockSet.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/product-ranker/ProductRankerFactory.h>
 #include <mining-manager/product-ranker/ProductRanker.h>
@@ -674,8 +675,9 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
 
     STOP_PROFILER( preparerank )
 
-    boost::shared_ptr<faceted::GroupFilter> groupFilter;
-    sf1r::faceted::GroupParam gp = actionOperation.actionItem_.groupParam_;
+    faceted::PropSharedLockSet propSharedLockSet;
+    boost::scoped_ptr<faceted::GroupFilter> groupFilter;
+    faceted::GroupParam gp = actionOperation.actionItem_.groupParam_;
     if (groupFilterBuilder_)
     {
         if(is_parallel)
@@ -686,7 +688,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             gp.attrGroupNum_ = 0;
         }
         groupFilter.reset(
-            groupFilterBuilder_->createFilter(gp));
+            groupFilterBuilder_->createFilter(gp, propSharedLockSet));
     }
     std::size_t totalCount;
     sf1r::PropertyRange propertyRange = propertyRange_orig;
