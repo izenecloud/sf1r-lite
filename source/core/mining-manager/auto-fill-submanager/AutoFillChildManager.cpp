@@ -427,7 +427,6 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
 
             if(value.length() == 0)
             {
-                assert(minToNFreq.length() == TOPN_LEN);
                 ValueType newValue;
                 std::string value, firstvalue;
                 firstvalue = "0000";

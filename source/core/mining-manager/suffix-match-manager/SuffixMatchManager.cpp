@@ -3,6 +3,7 @@
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <icma/icma.h>
+#include <la-manager/LAPool.h>
 
 using namespace cma;
 
@@ -67,7 +68,9 @@ void SuffixMatchManager::buildCollection()
             continue;
         }
 
-        const izenelib::util::UString& text = it->second.get<UString>();
+        izenelib::util::UString text = it->second.get<UString>();
+        Algorithm<UString>::to_lower(text);
+        text = Algorithm<UString>::trim(text);
         new_fmi->addDoc(text.data(), text.length());
 
     }
@@ -144,14 +147,24 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
     Sentence pattern_sentence(pattern_str.c_str());
     analyzer_->runWithSentence(pattern_sentence);
     std::vector< UString > all_sub_strpatterns;
-    int best = pattern_sentence.getOneBestIndex();
-    LOG(INFO) << "query tokenize by maxprefix match: ";
-    for(int i = 0; i < pattern_sentence.getCount(best); i++)
+    LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
+    for(int i = 0; i < pattern_sentence.getCount(0); i++)
     {
-        printf("%s, ", pattern_sentence.getLexicon(best, i));
-        all_sub_strpatterns.push_back(UString(pattern_sentence.getLexicon(best, i), UString::UTF_8));
+        printf("%s, ", pattern_sentence.getLexicon(0, i));
+        all_sub_strpatterns.push_back(UString(pattern_sentence.getLexicon(0, i), UString::UTF_8));
     }
     printf("\n");
+
+    size_t match_dic_pattern_num = all_sub_strpatterns.size();
+
+    LOG(INFO) << "query tokenize by maxprefix match in bigram: ";
+    for(int i = 0; i < pattern_sentence.getCount(1); i++)
+    {
+        printf("%s, ", pattern_sentence.getLexicon(1, i));
+        all_sub_strpatterns.push_back(UString(pattern_sentence.getLexicon(1, i), UString::UTF_8));
+    }
+    printf("\n");
+
 
     if(!fmi_) return 0;
     {
@@ -166,7 +179,10 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
             if(matched == all_sub_strpatterns[i].length())
             {
                 match_ranges_list.push_back(sub_match_range);
-                max_match_list.push_back((double)matched);
+                if(i < match_dic_pattern_num)
+                    max_match_list.push_back((double)2.0);
+                else
+                    max_match_list.push_back((double)1.0);
             }
         }
 
@@ -207,8 +223,13 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
 
 void SuffixMatchManager::buildTokenizeDic()
 {
+    std::string cma_path;
+    LAPool::getInstance()->get_cma_path(cma_path);
+    boost::filesystem::path cma_fmindex_dic(cma_path);
+    cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
+    LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
     knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel( "utf8", tokenize_dicpath_.c_str(), false);
+    knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
     // using the maxprefix analyzer
@@ -222,6 +243,17 @@ void SuffixMatchManager::buildTokenizeDic()
     //testustr.convertString(teststr, UString::UTF_8);
     //Sentence tests(teststr.c_str());
     //analyzer_->runWithSentence(tests);
+    //for(int i = 0; i < tests.getCount(0); i++)
+    //{
+    //    printf("%s, ", tests.getLexicon(0, i));
+    //}
+    //printf("\n");
+    //printf("non dictionary bigram: \n");
+    //for(int i = 0; i < tests.getCount(1); i++)
+    //{
+    //    printf("%s, ", tests.getLexicon(1, i));
+    //}
+    //printf("\n");
 }
 
 }

@@ -1699,9 +1699,11 @@ bool MiningManager::GetKNNListBySignature(
     return dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
 }
 
-bool MiningManager::GetLongestSuffixMatch(
+bool MiningManager::GetSuffixMatch(
         const std::string& query,
         uint32_t max_docs,
+        bool use_fuzzy,
+        uint32_t start,
         std::vector<uint32_t>& docIdList,
         std::vector<float>& rankScoreList,
         std::size_t& totalCount)
@@ -1710,8 +1712,15 @@ bool MiningManager::GetLongestSuffixMatch(
         return false;
 
     izenelib::util::UString queryU(query, izenelib::util::UString::UTF_8);
-    //totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
-    totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+    if(!use_fuzzy)
+        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+    else
+    {
+        LOG(INFO) << "suffix searching using fuzzy mode " << endl;
+        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+        docIdList.erase(docIdList.begin(), docIdList.begin() + start);
+        rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
+    }
     return true;
 }
 
