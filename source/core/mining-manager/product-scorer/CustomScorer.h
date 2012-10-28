@@ -12,8 +12,8 @@
  * @date Created 2012-10-26
  */
 
-#ifndef SF1R_PRODUCT_SCORE_SUM_H
-#define SF1R_PRODUCT_SCORE_SUM_H
+#ifndef SF1R_CUSTOM_SCORER_H
+#define SF1R_CUSTOM_SCORER_H
 
 #include "ProductScorer.h"
 #include <vector>
@@ -36,4 +36,4 @@ private:
 
 } // namespace sf1r
 
-#endif // SF1R_PRODUCT_SCORE_SUM_H
+#endif // SF1R_CUSTOM_SCORER_H

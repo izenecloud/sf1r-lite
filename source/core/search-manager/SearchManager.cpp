@@ -13,6 +13,7 @@
 #include <mining-manager/product-ranker/ProductRanker.h>
 #include <mining-manager/custom-rank-manager/CustomRankManager.h>
 #include <mining-manager/custom-rank-manager/CustomRankScorer.h>
+#include <mining-manager/product-scorer/ProductScorerFactory.h>
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
@@ -64,6 +65,7 @@ SearchManager::SearchManager(
     , queryBuilder_()
     , filter_hook_(0)
     , customRankManager_(NULL)
+    , productScorerFactory_(NULL)
     , threadpool_(0)
     , preprocessor_(new SearchManagerPreProcessor())
     , postprocessor_(new SearchManagerPostProcessor())
@@ -111,6 +113,11 @@ void SearchManager::setProductRankerFactory(ProductRankerFactory* productRankerF
 void SearchManager::setCustomRankManager(CustomRankManager* customRankManager)
 {
     customRankManager_ = customRankManager;
+}
+
+void SearchManager::setProductScorerFactory(ProductScorerFactory* productScorerFactory)
+{
+    productScorerFactory_ = productScorerFactory;
 }
 
 void SearchManager::reset_all_property_cache()
@@ -496,6 +503,8 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     const bool isFilterQuery =
         actionOperation.rawQueryTree_->type_ == QueryTree::FILTER_QUERY;
 
+    const std::string& query = actionOperation.actionItem_.env_.queryString_;
+
     try
     {
         if (filter_hook_)
@@ -572,8 +581,6 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     DocumentIterator* pScoreDocIterator = scoreDocIterPtr.get();
     if (isFilterQuery == false)
     {
-        const std::string& query = actionOperation.actionItem_.env_.queryString_;
-
         pScoreDocIterator = combineCustomDocIterator_(
             query, pSorter, scoreDocIterPtr.release());
 
@@ -696,7 +703,8 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     ScoreDocEvaluator scoreDocEvaluator(
         pScoreDocIterator, pSorter.get(),
         rankQueryProperties, propertyRankers,
-        customRanker);
+        customRanker, query,
+        productScorerFactory_, propSharedLockSet);
 
     try
     {

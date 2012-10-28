@@ -9,8 +9,11 @@
 #define SF1R_SCORE_DOC_EVALUATOR_H
 
 #include "CustomRanker.h"
+#include <mining-manager/product-scorer/ProductScorer.h>
 #include <vector>
+#include <string>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 namespace sf1r
 {
@@ -18,7 +21,10 @@ class DocumentIterator;
 class Sorter;
 class RankQueryProperty;
 class PropertyRanker;
+class ProductScorerFactory;
 struct ScoreDoc;
+
+namespace faceted { class PropSharedLockSet; }
 
 class ScoreDocEvaluator
 {
@@ -28,7 +34,10 @@ public:
         Sorter* sorter,
         const std::vector<RankQueryProperty>& rankQueryProps,
         const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers,
-        CustomRankerPtr customRanker);
+        CustomRankerPtr customRanker,
+        const std::string& query,
+        ProductScorerFactory* productScorerFactory,
+        faceted::PropSharedLockSet& propSharedLockSet);
 
     void evaluate(ScoreDoc& scoreDoc);
 
@@ -40,6 +49,8 @@ private:
     const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers_;
 
     CustomRankerPtr customRanker_;
+
+    boost::scoped_ptr<ProductScorer> productScorer_;
 };
 
 } // namespace sf1r

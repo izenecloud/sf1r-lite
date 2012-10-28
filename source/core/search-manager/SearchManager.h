@@ -48,6 +48,7 @@ class SearchManagerPreProcessor;
 class SearchManagerPostProcessor;
 class CustomRankManager;
 class ScoreDocEvaluator;
+class ProductScorerFactory;
 
 namespace faceted
 {
@@ -113,6 +114,8 @@ public:
     void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
 
     void setCustomRankManager(CustomRankManager* customRankManager);
+
+    void setProductScorerFactory(ProductScorerFactory* productScorerFactory);
 
     QueryBuilder* getQueryBuilder() { return queryBuilder_.get(); }
 
@@ -204,6 +207,7 @@ private:
 
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
     CustomRankManager* customRankManager_;
+    ProductScorerFactory* productScorerFactory_;
 
     boost::threadpool::pool  threadpool_;
     SearchManagerPreProcessor*  preprocessor_;
