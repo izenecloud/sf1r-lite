@@ -10,6 +10,8 @@
 #include <process/common/CollectionManager.h>
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/index/IndexSearchService.h>
+#include <bundles/mining/MiningSearchService.h>
+#include <core/mining-manager/MiningManager.h>
 #include <bundles/recommend/RecommendTaskService.h>
 #include <aggregator-manager/SearchAggregator.h>
 #include <mining-manager/MiningQueryLogHandler.h>
@@ -60,6 +62,25 @@ void CommandsController::index()
     indexRecommend_();
 }
 
+void CommandsController::mining_create_index()
+{
+     MiningSearchService* miningSearchService = collectionHandler_->miningSearchService_;
+     if (miningSearchService)
+     {
+         boost::shared_ptr<MiningManager> miningManager = miningSearchService->GetMiningManager();
+         miningManager->buildCollection();//add document count...
+     }
+}
+void CommandsController::mining_search()
+{
+    MiningSearchService* miningSearchService = collectionHandler_->miningSearchService_;
+    if (miningSearchService)
+    {
+         boost::shared_ptr<MiningManager> miningManager = miningSearchService->GetMiningManager();
+         Value::StringType query = asString(request()[Keys::MiningQuery]);
+         miningManager->SearchCollection(query);//add document count...
+    }
+}
 void CommandsController::indexSearch_()
 {
     IndexTaskService* taskService = collectionHandler_->indexTaskService_;

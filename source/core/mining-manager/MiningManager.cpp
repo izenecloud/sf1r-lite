@@ -37,6 +37,7 @@
 #include "product-ranker/ProductRankerFactory.h"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
+#include "suffix-match-manager/IncrementalManager.hpp"
 
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
@@ -55,6 +56,7 @@
 
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
+#include <la-manager/LAManager.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -92,24 +94,28 @@ MiningManager::MiningManager(
         const std::string& collectionDataPath,
         const CollectionPath& collectionPath,
         const boost::shared_ptr<DocumentManager>& documentManager,
+        const boost::shared_ptr<LAManager>& laManager,
         const boost::shared_ptr<IndexManager>& index_manager,
         const boost::shared_ptr<SearchManager>& searchManager,
         const boost::shared_ptr<IDManager>& idManager,
         const std::string& collectionName,
         const DocumentSchema& documentSchema,
         const MiningConfig& miningConfig,
-        const MiningSchema& miningSchema)
+        const MiningSchema& miningSchema,
+        const IndexBundleSchema& indexSchema)
     : collectionDataPath_(collectionDataPath)
     , queryDataPath_(collectionPath.getQueryDataPath())
     , collectionPath_(collectionPath)
     , collectionName_(collectionName)
     , documentSchema_(documentSchema)
-    , miningConfig_(miningConfig)
+    , miningConfig_(miningConfig) 
+    , indexSchema_ (indexSchema)
     , mining_schema_(miningSchema)
     , analyzer_(NULL)
     , c_analyzer_(NULL)
     , kpe_analyzer_(NULL)
     , document_manager_(documentManager)
+    , laManager_(laManager)
     , index_manager_(index_manager)
     , searchManager_(searchManager)
     , tgInfo_(NULL)
@@ -122,6 +128,7 @@ MiningManager::MiningManager(
     , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
+    , incrementalManager_(NULL)
     , kvManager_(NULL)
 {
 }
@@ -497,6 +504,10 @@ bool MiningManager::open()
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property,
                mining_schema_.suffix_match_tokenize_dicpath, document_manager_);
+
+            incrementalManager_ = new IncrementalManager(suffix_match_path_, mining_schema_.suffix_match_property, 
+                document_manager_, idManager_, laManager_, indexSchema_);
+            incrementalManager_->init_();
         }
 
         /** KV */
@@ -735,6 +746,37 @@ bool MiningManager::DoMiningCollection()
     }
 
     return true;
+}
+void MiningManager::buildCollection()
+{
+    if (mining_schema_.suffix_match_enable)
+    {
+        incrementalManager_->createIndex_();
+    }
+}
+
+void MiningManager::SearchCollection(const std::string query)
+{
+    std::vector<docid_t> resultList;
+    std::vector<float> ResultListSimilarity;
+    incrementalManager_->search_(query, resultList, ResultListSimilarity);
+    PropertyValue result;
+    uint32_t k = 0;
+    for (std::vector<docid_t>::iterator i = resultList.begin(); i != resultList.end(); ++i)
+    {
+        if (k > 6)
+        {
+            cout<<"..................................."<<endl;
+            break;
+        }
+        cout<<"[DocId]: "<<*i<<endl;
+        document_manager_->getPropertyValue(*i, "Title", result);
+
+        std::string oldvalue_str;
+        izenelib::util::UString& propertyValueU = result.get<izenelib::util::UString>();
+        propertyValueU.convertString(oldvalue_str, izenelib::util::UString::UTF_8);
+        cout<<"[Title]: "<<oldvalue_str<<" [Score]: "<<ResultListSimilarity[k++]<<endl;
+   }
 }
 
 void MiningManager::onIndexUpdated(size_t docNum)
