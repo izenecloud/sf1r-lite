@@ -29,9 +29,13 @@
 #include <list>
 #include <fstream>
 
-namespace izenelib{namespace am{
+namespace izenelib
+{
+namespace am
+{
 class QueryNormalize;
-}}
+}
+}
 
 namespace sf1r
 {
@@ -74,18 +78,18 @@ class AutoFillChildManager: public boost::noncopyable
     boost::mutex buildCollectionMutex_;
     izenelib::util::CronExpression cronExpression_;
     struct PrefixQueryType
-    {       
-         string query_;
-         string prefix_;
-         FREQ_TYPE freq_;
-         uint32_t hitnum_;
-         void init(string query,string prefix,FREQ_TYPE freq,uint32_t hitnum)
-         { 
-         query_=query;
-         prefix_=prefix;
-         freq_=freq;
-         hitnum_=hitnum;
-         }
+    {
+        string query_;
+        string prefix_;
+        FREQ_TYPE freq_;
+        uint32_t hitnum_;
+        void init(string query,string prefix,FREQ_TYPE freq,uint32_t hitnum)
+        {
+            query_=query;
+            prefix_=prefix;
+            freq_=freq;
+            hitnum_=hitnum;
+        }
         inline bool operator > (const PrefixQueryType other) const
         {
             return prefix_> other.prefix_ ;
@@ -101,11 +105,11 @@ class AutoFillChildManager: public boost::noncopyable
         }
         QueryType  getQueryType()
         {
-         QueryType ret;
-         ret.strQuery_=query_;
-         ret.freq_=freq_;
-         ret.HitNum_=hitnum_;
-         return ret;
+            QueryType ret;
+            ret.strQuery_=query_;
+            ret.freq_=freq_;
+            ret.HitNum_=hitnum_;
+            return ret;
         };
     };
     struct ItemType
@@ -194,11 +198,11 @@ class AutoFillChildManager: public boost::noncopyable
         }
         QueryType  getQueryType()
         {
-         QueryType ret;
-         ret.strQuery_=strValue_;
-         ret.freq_=freq_;
-         ret.HitNum_=HitNum_;
-         return ret;
+            QueryType ret;
+            ret.strQuery_=strValue_;
+            ret.freq_=freq_;
+            ret.HitNum_=HitNum_;
+            return ret;
         };
     };
     QueryNormalize* QN_;
