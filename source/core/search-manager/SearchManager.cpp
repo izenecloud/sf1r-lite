@@ -12,7 +12,6 @@
 #include <mining-manager/product-ranker/ProductRankerFactory.h>
 #include <mining-manager/product-ranker/ProductRanker.h>
 #include <mining-manager/custom-rank-manager/CustomRankManager.h>
-#include <mining-manager/custom-rank-manager/CustomRankScorer.h>
 #include <mining-manager/product-scorer/ProductScorerFactory.h>
 #include <common/SFLogger.h>
 
@@ -887,21 +886,22 @@ DocumentIterator* SearchManager::combineCustomDocIterator_(
     if (customRankManager_ &&
         pSorter && pSorter->requireScorer())
     {
-        CustomRankScorer* customRankScorer =
-            customRankManager_->getScorer(query);
-
-        if (customRankScorer)
+        CustomRankDocId customDocId;
+        if (!customRankManager_->getCustomValue(query, customDocId) ||
+            customDocId.empty())
         {
-            DocumentIterator* pCustomDocIter =
-                new CustomRankDocumentIterator(customRankScorer);
-
-            if (originDocIterator)
-            {
-                pCustomDocIter->add(originDocIterator);
-            }
-
-            return pCustomDocIter;
+            return originDocIterator;
         }
+
+        DocumentIterator* pCustomDocIter =
+            new CustomRankDocumentIterator(customDocId);
+
+        if (originDocIterator)
+        {
+            pCustomDocIter->add(originDocIterator);
+        }
+
+        return pCustomDocIter;
     }
 
     return originDocIterator;

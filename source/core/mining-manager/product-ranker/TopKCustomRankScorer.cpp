@@ -1,5 +1,12 @@
 #include "TopKCustomRankScorer.h"
-#include "../custom-rank-manager/CustomRankScorer.h"
+
+namespace
+{
+/**
+ * all custom scores should be larger than this value.
+ */
+sf1r::score_t CUSTOM_RANK_BASE_SCORE = 100;
+}
 
 namespace sf1r
 {
@@ -19,7 +26,7 @@ void TopKCustomRankScorer::pushScore(
     {
         score_t score = 0;
 
-        if (it->relevanceScore_ > CustomRankScorer::CUSTOM_RANK_BASE_SCORE)
+        if (it->relevanceScore_ > CUSTOM_RANK_BASE_SCORE)
         {
             score = it->relevanceScore_;
         }
