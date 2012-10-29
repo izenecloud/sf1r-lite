@@ -73,7 +73,41 @@ class AutoFillChildManager: public boost::noncopyable
     boost::thread updateThread_;
     boost::mutex buildCollectionMutex_;
     izenelib::util::CronExpression cronExpression_;
+    struct PrefixQueryType
+    {       
+         string query_;
+         string prefix_;
+         FREQ_TYPE freq_;
+         uint32_t hitnum_;
+         void init(string query,string prefix,FREQ_TYPE freq,uint32_t hitnum)
+         { 
+         query_=query;
+         prefix_=prefix;
+         freq_=freq;
+         hitnum_=hitnum;
+         }
+        inline bool operator > (const PrefixQueryType other) const
+        {
+            return prefix_> other.prefix_ ;
+        }
 
+        inline bool operator < (const PrefixQueryType other) const
+        {
+            return prefix_ < other.prefix_;
+        }
+        inline bool operator == (const PrefixQueryType other) const
+        {
+            return prefix_ == other.prefix_;
+        }
+        QueryType  getQueryType()
+        {
+         QueryType ret;
+         ret.strQuery_=query_;
+         ret.freq_=freq_;
+         ret.HitNum_=hitnum_;
+         return ret;
+        };
+    };
     struct ItemType
     {
         uint64_t offset_;
@@ -158,6 +192,14 @@ class AutoFillChildManager: public boost::noncopyable
         {
             str = boost::lexical_cast<string>(HitNum_) + "/" + strValue_;
         }
+        QueryType  getQueryType()
+        {
+         QueryType ret;
+         ret.strQuery_=strValue_;
+         ret.freq_=freq_;
+         ret.HitNum_=HitNum_;
+         return ret;
+        };
     };
     QueryNormalize* QN_;
     WordLevelDBTable dbTable_;
@@ -203,6 +245,9 @@ public:
     void SaveSCDLog();
     void LoadSCDLog();
     void dealWithSimilar(std::vector<std::pair<string,string> >& SimlarList);
+    void buildDbIndexForEach( std::pair<std::string,std::vector<QueryType> > eachprefix,    std::vector<std::pair<string,string> >& similarList);
+    void buildDbIndexForEveryThousand(vector<PrefixQueryType> thousandpair ,   std::vector<std::pair<string,string> >& similarList);
+    std::vector<QueryType> valueToQueryTypeVector(string value);
 public:
     static std::string system_resource_path_;
 };
