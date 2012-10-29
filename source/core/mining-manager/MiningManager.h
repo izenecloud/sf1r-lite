@@ -93,6 +93,7 @@ class MerchantScoreManager;
 class CustomRankManager;
 class CustomDocIdConverter;
 class ProductRankerFactory;
+class ProductScorerFactory;
 class SuffixMatchManager;
 
 namespace sim
@@ -365,6 +366,8 @@ public:
         return groupManager_;
     }
 
+    const faceted::PropValueTable* GetPropValueTable(const std::string& propName) const;
+
     GroupLabelLogger* GetGroupLabelLogger(const std::string& propName)
     {
         return groupLabelLoggerMap_[propName];
@@ -373,6 +376,11 @@ public:
     const MerchantScoreManager* GetMerchantScoreManager() const
     {
         return merchantScoreManager_;
+    }
+
+    CustomRankManager* GetCustomRankManager()
+    {
+        return customRankManager_;
     }
 
     boost::shared_ptr<SearchManager>& GetSearchManager()
@@ -538,6 +546,9 @@ private:
 
     /** Product Ranking */
     ProductRankerFactory* productRankerFactory_;
+
+    /** Product Score */
+    ProductScorerFactory* productScorerFactory_;
 
     /** TDT */
     std::string tdt_path_;

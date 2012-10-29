@@ -20,6 +20,8 @@ class RankQueryProperty;
 class PropertyRanker;
 class CustomRankManager;
 class GroupLabelLogger;
+class ProductRankingConfig;
+class MiningManager;
 
 namespace faceted
 {
@@ -31,9 +33,8 @@ class ProductScorerFactory
 {
 public:
     ProductScorerFactory(
-        CustomRankManager* customRankManager,
-        GroupLabelLogger* categoryClickLogger,
-        const faceted::PropValueTable* categoryValueTable);
+        const ProductRankingConfig& config,
+        MiningManager& miningManager);
 
     ProductScorer* createScorer(
         const std::string& query,

@@ -3,9 +3,11 @@
 #include "CustomScorer.h"
 #include "CategoryScorer.h"
 #include "RelevanceScorer.h"
+#include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../group-label-logger/GroupLabelLogger.h"
 #include "../group-manager/PropSharedLockSet.h"
+#include <configuration-manager/ProductRankingConfig.h>
 #include <memory> // auto_ptr
 
 using namespace sf1r;
@@ -20,13 +22,15 @@ const score_t kTopLabelLimit = 9;
 }
 
 ProductScorerFactory::ProductScorerFactory(
-    CustomRankManager* customRankManager,
-    GroupLabelLogger* categoryClickLogger,
-    const faceted::PropValueTable* categoryValueTable)
-    : customRankManager_(customRankManager)
-    , categoryClickLogger_(categoryClickLogger)
-    , categoryValueTable_(categoryValueTable)
+    const ProductRankingConfig& config,
+    MiningManager& miningManager)
+    : customRankManager_(miningManager.GetCustomRankManager())
+    , categoryClickLogger_(NULL)
+    , categoryValueTable_(NULL)
 {
+    const std::string& categoryProp = config.categoryPropName;
+    categoryClickLogger_ = miningManager.GetGroupLabelLogger(categoryProp);
+    categoryValueTable_ = miningManager.GetPropValueTable(categoryProp);
 }
 
 ProductScorer* ProductScorerFactory::createScorer(
