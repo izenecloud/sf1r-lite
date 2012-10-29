@@ -7,7 +7,7 @@
 #include <util/get.h>
 #include <util/ClockTimer.h>
 #include <fstream>
-
+#include <algorithm> // to_lower
 
 namespace sf1r {
 
@@ -316,6 +316,33 @@ void SearchManagerPreProcessor::PreparePropertyTermIndex(
             termIndexMaps[i][termIt->first] = index++;
         }
     }
+}
+
+bool SearchManagerPreProcessor::isProductRanking(const KeywordSearchActionItem& actionItem) const
+{
+    SearchingMode::SearchingModeType searchMode =
+        actionItem.searchingMode_.mode_;
+
+    if (searchMode == SearchingMode::KNN ||
+        searchMode == SearchingMode::SUFFIX_MATCH)
+        return false;
+
+    typedef KeywordSearchActionItem::SortPriorityList SortPriorityList;
+    const SortPriorityList& sortPropertyList = actionItem.sortPriorityList_;
+
+    if (sortPropertyList.empty())
+        return true;
+
+    for (SortPriorityList::const_iterator it = sortPropertyList.begin();
+         it != sortPropertyList.end(); ++it)
+    {
+        std::string fieldName = it->first;
+        boost::to_lower(fieldName);
+        if (fieldName == RANK_PROPERTY)
+            return true;
+    }
+
+    return false;
 }
 
 }

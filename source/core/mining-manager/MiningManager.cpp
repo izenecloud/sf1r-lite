@@ -34,7 +34,6 @@
 #include "merchant-score-manager/MerchantScoreManager.h"
 #include "custom-rank-manager/CustomDocIdConverter.h"
 #include "custom-rank-manager/CustomRankManager.h"
-#include "product-ranker/ProductRankerFactory.h"
 #include "product-scorer/ProductScorerFactory.h"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
@@ -120,7 +119,6 @@ MiningManager::MiningManager(
     , merchantScoreManager_(NULL)
     , customDocIdConverter_(NULL)
     , customRankManager_(NULL)
-    , productRankerFactory_(NULL)
     , productScorerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
@@ -134,7 +132,6 @@ MiningManager::~MiningManager()
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
     if (productScorerFactory_) delete productScorerFactory_;
-    if (productRankerFactory_) delete productRankerFactory_;
     if (customRankManager_) delete customRankManager_;
     if (customDocIdConverter_) delete customDocIdConverter_;
     if (merchantScoreManager_) delete merchantScoreManager_;

@@ -9,8 +9,6 @@
 #include <mining-manager/group-manager/GroupFilter.h>
 #include <mining-manager/group-manager/PropSharedLockSet.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-#include <mining-manager/product-ranker/ProductRankerFactory.h>
-#include <mining-manager/product-ranker/ProductRanker.h>
 #include <mining-manager/custom-rank-manager/CustomRankManager.h>
 #include <mining-manager/product-scorer/ProductScorerFactory.h>
 #include <common/SFLogger.h>
@@ -25,7 +23,6 @@
 #include "CombinedDocumentIterator.h"
 #include "CustomRankDocumentIterator.h"
 #include "SearchManagerPreProcessor.h"
-#include "SearchManagerPostProcessor.h"
 #include "ScoreDocEvaluator.h"
 
 #include <util/swap.h>
@@ -67,7 +64,6 @@ SearchManager::SearchManager(
     , productScorerFactory_(NULL)
     , threadpool_(0)
     , preprocessor_(new SearchManagerPreProcessor())
-    , postprocessor_(new SearchManagerPostProcessor())
 {
     collectionName_ = config->collectionName_;
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
@@ -101,12 +97,6 @@ SearchManager::~SearchManager()
     if (pSorterCache_)
         delete pSorterCache_;
     delete preprocessor_;
-    delete postprocessor_;
-}
-
-void SearchManager::setProductRankerFactory(ProductRankerFactory* productRankerFactory)
-{
-    postprocessor_->productRankerFactory_ = productRankerFactory;
 }
 
 void SearchManager::setCustomRankManager(CustomRankManager* customRankManager)
@@ -139,11 +129,6 @@ void SearchManager::setMiningManager(
 boost::shared_ptr<NumericPropertyTableBase>& SearchManager::createPropertyTable(const std::string& propertyName)
 {
    return preprocessor_->createPropertyTable(propertyName, pSorterCache_);
-}
-
-bool SearchManager::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
-{
-    return postprocessor_->rerank(actionItem, resultItem);
 }
 
 struct SearchThreadParam
@@ -699,11 +684,19 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     std::size_t totalCount;
     sf1r::PropertyRange propertyRange = propertyRange_orig;
 
+    ProductScorer* productScorer = NULL;
+    if (productScorerFactory_ && !customRanker &&
+        preprocessor_->isProductRanking(actionOperation.actionItem_))
+    {
+        productScorer = productScorerFactory_->createScorer(
+            query, propSharedLockSet,
+            pScoreDocIterator, rankQueryProperties, propertyRankers);
+    }
+
     ScoreDocEvaluator scoreDocEvaluator(
         pScoreDocIterator, pSorter.get(),
         rankQueryProperties, propertyRankers,
-        customRanker, query,
-        productScorerFactory_, propSharedLockSet);
+        customRanker, productScorer);
 
     try
     {

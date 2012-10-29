@@ -19,7 +19,6 @@ namespace sf1r
 {
 
 class PropertyRanker;
-class ProductRankerFactory;
 class SortPropertyCache;
 class Sorter;
 class NumericPropertyTableBase;
@@ -92,6 +91,7 @@ private:
             const std::vector<std::string>& indexPropertyList,
             std::vector<std::map<termid_t, unsigned> >& termIndexMaps);
 
+    bool isProductRanking(const KeywordSearchActionItem& actionItem) const;
 };
 
 } // end of sf1r

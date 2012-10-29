@@ -1931,14 +1931,10 @@ void CollectionConfig::parseProductRankingNode(const ticpp::Element* productRank
 
     MiningSchema& miningSchema = collectionMeta.miningBundleConfig_->mining_schema_;
     ProductRankingConfig& productRankingConfig = miningSchema.product_ranking_config;
-
     productRankingConfig.isEnable = true;
-    getAttribute(productRankingNode, "debug", productRankingConfig.isDebug, false);
 
     const GroupConfigMap& groupConfigMap = miningSchema.group_config_map;
-    const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
     std::string propName;
-
     ticpp::Element* subNode = getUniqChildElement(productRankingNode, "MerchantProperty", false);
     if (subNode)
     {
@@ -1953,14 +1949,6 @@ void CollectionConfig::parseProductRankingNode(const ticpp::Element* productRank
         getAttribute(subNode, "name", propName);
         checkStringGroupProperty(propName, groupConfigMap);
         productRankingConfig.categoryPropName = propName;
-    }
-
-    Iterator<Element> it("CategoryScoreProperty");
-    for (it = it.begin(productRankingNode); it != it.end(); ++it)
-    {
-        getAttribute(it.Get(), "name", propName);
-        checkNumericFilterProperty(propName, indexSchema);
-        productRankingConfig.categoryScorePropNames.push_back(propName);
     }
 }
 
@@ -1982,22 +1970,6 @@ void CollectionConfig::checkStringGroupProperty(const std::string& propName, con
             "Property [" + propName +
             "] in <ProductRanking> is not string type.");
     }
-}
-
-void CollectionConfig::checkNumericFilterProperty(const std::string& propName, const IndexBundleSchema& indexSchema)
-{
-    PropertyConfig p;
-    p.setName(propName);
-
-    IndexBundleSchema::const_iterator propIt = indexSchema.find(p);
-
-    if (propIt != indexSchema.end() && propIt->isIndex() &&
-        propIt->getIsFilter() && propIt->isNumericType())
-    {
-        return;
-    }
-
-    throw XmlConfigParserException("Property [" + propName + "] in <ProductRanking> is not numeric filter property.");
 }
 
 void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)

@@ -92,7 +92,6 @@ class MultiDocSummarizationSubManager;
 class MerchantScoreManager;
 class CustomRankManager;
 class CustomDocIdConverter;
-class ProductRankerFactory;
 class ProductScorerFactory;
 class SuffixMatchManager;
 
@@ -356,16 +355,6 @@ public:
 
     void onIndexUpdated(size_t docNum);
 
-    const MiningSchema& GetMiningSchema() const
-    {
-        return mining_schema_;
-    }
-
-    const faceted::GroupManager* GetGroupManager() const
-    {
-        return groupManager_;
-    }
-
     const faceted::PropValueTable* GetPropValueTable(const std::string& propName) const;
 
     GroupLabelLogger* GetGroupLabelLogger(const std::string& propName)
@@ -543,9 +532,6 @@ private:
 
     /** Custom Rank Manager */
     CustomRankManager* customRankManager_;
-
-    /** Product Ranking */
-    ProductRankerFactory* productRankerFactory_;
 
     /** Product Score */
     ProductScorerFactory* productScorerFactory_;

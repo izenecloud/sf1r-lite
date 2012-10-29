@@ -42,10 +42,8 @@ class MultiPropertyScorer;
 class WANDDocumentIterator;
 class CombinedDocumentIterator;
 class HitQueue;
-class ProductRankerFactory;
 class SearchThreadParam;
 class SearchManagerPreProcessor;
-class SearchManagerPostProcessor;
 class CustomRankManager;
 class ScoreDocEvaluator;
 class ProductScorerFactory;
@@ -96,8 +94,6 @@ public:
             uint32_t start = 0,
             bool enable_parallel_searching = false);
 
-    bool rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
-
     void reset_all_property_cache();
 
     void set_filter_hook(filter_hook_t filter_hook)
@@ -110,8 +106,6 @@ public:
     void setMiningManager(boost::shared_ptr<MiningManager> miningManagerPtr);
 
     boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(const std::string& propertyName);
-
-    void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
 
     void setCustomRankManager(CustomRankManager* customRankManager);
 
@@ -211,7 +205,6 @@ private:
 
     boost::threadpool::pool  threadpool_;
     SearchManagerPreProcessor*  preprocessor_;
-    SearchManagerPostProcessor*  postprocessor_;
 };
 
 } // end - namespace sf1r

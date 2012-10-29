@@ -4,7 +4,6 @@
 #include "ScoreDoc.h"
 #include <ranking-manager/RankQueryProperty.h>
 #include <ranking-manager/PropertyRanker.h>
-#include <mining-manager/product-scorer/ProductScorerFactory.h>
 
 using namespace sf1r;
 
@@ -29,22 +28,14 @@ ScoreDocEvaluator::ScoreDocEvaluator(
     const std::vector<RankQueryProperty>& rankQueryProps,
     const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers,
     CustomRankerPtr customRanker,
-    const std::string& query,
-    ProductScorerFactory* productScorerFactory,
-    faceted::PropSharedLockSet& propSharedLockSet)
+    ProductScorer* productScorer)
     : isNeedScore_(checkNeedScore(scoreDocIterator, sorter))
     , scoreDocIterator_(scoreDocIterator)
     , rankQueryProps_(rankQueryProps)
     , propRankers_(propRankers)
     , customRanker_(customRanker)
+    , productScorer_(productScorer)
 {
-    if (isNeedScore_ && productScorerFactory)
-    {
-        productScorer_.reset(
-            productScorerFactory->createScorer(query, propSharedLockSet,
-                                               scoreDocIterator_,
-                                               rankQueryProps_, propRankers_));
-    }
 }
 
 void ScoreDocEvaluator::evaluate(ScoreDoc& scoreDoc)

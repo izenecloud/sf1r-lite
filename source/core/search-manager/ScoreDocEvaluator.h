@@ -11,7 +11,6 @@
 #include "CustomRanker.h"
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include <vector>
-#include <string>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
@@ -21,10 +20,7 @@ class DocumentIterator;
 class Sorter;
 class RankQueryProperty;
 class PropertyRanker;
-class ProductScorerFactory;
 struct ScoreDoc;
-
-namespace faceted { class PropSharedLockSet; }
 
 class ScoreDocEvaluator
 {
@@ -35,9 +31,7 @@ public:
         const std::vector<RankQueryProperty>& rankQueryProps,
         const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers,
         CustomRankerPtr customRanker,
-        const std::string& query,
-        ProductScorerFactory* productScorerFactory,
-        faceted::PropSharedLockSet& propSharedLockSet);
+        ProductScorer* productScorer);
 
     void evaluate(ScoreDoc& scoreDoc);
 
