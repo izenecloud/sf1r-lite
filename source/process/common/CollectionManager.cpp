@@ -230,7 +230,7 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
         try
         {
             boost::filesystem::remove_all(collection_data);
-            boost::filesystem::remove_all(query_data);
+            //boost::filesystem::remove_all(query_data);
             std::vector<std::string> scd_list;
             ScdParser::getScdList(scd_dir, scd_list);
             bfs::path bk_dir = bfs::path(scd_dir) / "backup";
