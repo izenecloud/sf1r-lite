@@ -222,6 +222,8 @@ void SearchWorker::makeQueryIdentity(
         break;
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
+        identity.usefuzzy = item.searchingMode_.usefuzzy_;
+        identity.lucky = item.searchingMode_.lucky_;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -354,8 +356,10 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::SUFFIX_MATCH:
-        if (!miningManager_->GetLongestSuffixMatch(actionOperation.actionItem_.env_.queryString_,
+        if (!miningManager_->GetSuffixMatch(actionOperation.actionItem_.env_.queryString_,
                                                    actionOperation.actionItem_.searchingMode_.lucky_,
+                                                   actionOperation.actionItem_.searchingMode_.usefuzzy_,
+                                                   topKStart,
                                                    resultItem.topKDocs_,
                                                    resultItem.topKRankScoreList_,
                                                    resultItem.totalCount_))

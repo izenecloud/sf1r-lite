@@ -353,19 +353,24 @@ bool SearchParser::parse(const Value& search)
         if (searching_mode.hasKey(Keys::lucky))
         {
             uint32_t lucky = asUint(searching_mode[Keys::lucky]);
-            if (lucky <= 100)
+            if (lucky <= 1000)
             {
                 searchingModeInfo_.lucky_ = lucky;
             }
             else
             {
-                warning() = "Threshold is invalid. Warning: lucky must be not greater than than 100";
+                warning() = "Threshold is invalid. Warning: lucky must be not greater than than 1000";
             }
         }
 
         if (searching_mode.hasKey(Keys::original_query))
         {
             searchingModeInfo_.useOriginalQuery_ = asBool(searching_mode[Keys::original_query]);
+        }
+
+        if (searching_mode.hasKey(Keys::use_fuzzy))
+        {
+            searchingModeInfo_.usefuzzy_ = asBool(searching_mode[Keys::use_fuzzy]);
         }
     }
 

@@ -499,7 +499,8 @@ bool MiningManager::open()
         if (mining_schema_.suffix_match_enable)
         {
             suffix_match_path_ = prefix_path + "/suffix_match";
-            suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property, document_manager_);
+            suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property,
+               mining_schema_.suffix_match_tokenize_dicpath, document_manager_);
         }
 
         /** KV */
@@ -1702,9 +1703,11 @@ bool MiningManager::GetKNNListBySignature(
     return dupManager_->getKNNListBySignature(signature, knnTopK, start, knnDist, docIdList, rankScoreList, totalCount);
 }
 
-bool MiningManager::GetLongestSuffixMatch(
+bool MiningManager::GetSuffixMatch(
         const std::string& query,
         uint32_t max_docs,
+        bool use_fuzzy,
+        uint32_t start,
         std::vector<uint32_t>& docIdList,
         std::vector<float>& rankScoreList,
         std::size_t& totalCount)
@@ -1713,7 +1716,15 @@ bool MiningManager::GetLongestSuffixMatch(
         return false;
 
     izenelib::util::UString queryU(query, izenelib::util::UString::UTF_8);
-    totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+    if(!use_fuzzy)
+        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+    else
+    {
+        LOG(INFO) << "suffix searching using fuzzy mode " << endl;
+        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+        docIdList.erase(docIdList.begin(), docIdList.begin() + start);
+        rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
+    }
     return true;
 }
 
