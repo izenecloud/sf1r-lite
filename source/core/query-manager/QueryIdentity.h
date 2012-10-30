@@ -66,10 +66,6 @@ struct QueryIdentity
     /// action type of distributed search
     int8_t distActionType;
 
-    bool usefuzzy;
-
-    uint32_t lucky;
-
     inline bool operator==(const QueryIdentity& other) const
     {
         return rankingType == other.rankingType
@@ -88,9 +84,7 @@ struct QueryIdentity
             && paramConstValueMap == other.paramConstValueMap
             && paramPropertyValueMap == other.paramPropertyValueMap
             && start == other.start
-            && distActionType == other.distActionType
-            && usefuzzy == other.usefuzzy
-            && lucky == other.lucky ;
+            && distActionType == other.distActionType;
     }
 
     inline bool operator!=(const QueryIdentity& other) const
@@ -101,7 +95,7 @@ struct QueryIdentity
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
             & properties & counterList & sortInfo & filterInfo & groupParam & rangeProperty
             & strExp & paramConstValueMap & paramPropertyValueMap & simHash
-            & start & distActionType & usefuzzy & lucky);
+            & start & distActionType);
 };
 
 } // namespace sf1r
