@@ -507,7 +507,7 @@ bool MiningManager::open()
 
             incrementalManager_ = new IncrementalManager(suffix_match_path_, mining_schema_.suffix_match_property, 
                 document_manager_, idManager_, laManager_, indexSchema_);
-            incrementalManager_->init_();
+            //incrementalManager_->init_();
         }
 
         /** KV */

@@ -26,6 +26,7 @@ namespace sf1r
 		pForwardIndex_  = NULL;
 		pIncrementIndex_ = NULL;
 		DocNumber_ = 0;
+		doc_file_path_ = path;
 	}
 
 	bool IndexBarral::buildIndex_(docid_t docId, std::string& text)
@@ -76,6 +77,11 @@ namespace sf1r
 		pMainBerral_ =  NULL;
 		pTmpBerral_ = NULL;
 		property_ = property;
+		isInitIndex_ = true;
+		isMergeToFm_ = false;
+		tmpdata = 1000000;
+		isAddingIndex_ = false;
+		index_path_ = path;
 	}
 
  	bool IncrementalManager::search_(const std::string& query, std::vector<docid_t>& resultList, std::vector<float> &ResultListSimilarity)
@@ -88,7 +94,7 @@ namespace sf1r
 		{
 			{
 				izenelib::util::ClockTimer timer;
-				ScopedReadLock lock(mutex_);
+				
 				izenelib::util::UString utext(query, izenelib::util::UString::UTF_8);
  				AnalysisInfo analysisInfo;
  				analysisInfo.analyzerId_ = "la_sia";
@@ -117,15 +123,19 @@ namespace sf1r
  					cout<<*ittmp<<" ";
  				}
  				cout<<endl;
- 				if (pMainBerral_ != NULL)
+ 				if (pMainBerral_ != NULL && isInitIndex_ == false)
  				{
 					pMainBerral_->getResult_(termidList, resultList, ResultListSimilarity);
-					cout<<"search ResulList number:"<<resultList.size()<<endl;
+
  				}
- 				if (pTmpBerral_ != NULL)
- 				{
- 					pTmpBerral_->getResult_(termidList, resultList, ResultListSimilarity);
+ 				if (pTmpBerral_ != NULL && isAddingIndex_ == false)
+ 				{ 
+ 					{
+ 						ScopedReadLock lock(mutex_);
+ 						pTmpBerral_->getResult_(termidList, resultList, ResultListSimilarity);
+ 					}
  				}
+ 				cout<<"search ResulList number:"<<resultList.size()<<endl;
  				//ResultListSimilarity.clear();
  				/*for (std::vector<uint32_t>::iterator i = resultList.begin(); i != resultList.end(); ++i)
  				{
@@ -146,16 +156,27 @@ namespace sf1r
 		return true;
 	}
 
-	void IncrementalManager::createIndex_()
+	void IncrementalManager::doCreateIndex_()
 	{
-		cout<<"getMaxDocId.............."<<document_manager_->getMaxDocId()<<endl;
+		if (BerralNum_ == 0)
+		{
+			init_();
+		}
+
 		uint32_t i = 0;
+		if (isInitIndex_ == true)
+		{
+			isAddingIndex_ = false;
+		}
+		else
+			isAddingIndex_ = true;
+
 		for ( i = last_docid_; i <= document_manager_->getMaxDocId(); ++i)
     	{
         	if (i % 100000 == 0)
         	{
             	LOG(INFO) << "inserted docs: " << i;
-            	if (i == 500000)
+            	if (i == tmpdata)
             	{
             		break;
             	}
@@ -169,13 +190,29 @@ namespace sf1r
         	text.convertString(textStr, izenelib::util::UString::UTF_8);
 
         	index_(i, textStr);
-        	
+
         	last_docid_++;
     	}
     	izenelib::util::ClockTimer timer;
     	LOG(INFO) <<"begin prepare_index_....."<<endl;
     	prepare_index_();
+    	isInitIndex_ = false;// first time init over;
+    	isAddingIndex_= false;
     	LOG(INFO) <<"prepare_index_ total elapsed:"<<timer.elapsed()<<" seconds"<<endl;
     	pMainBerral_->print();
+    	tmpdata += 500000;	
 	}
+
+	void IncrementalManager::createIndex_()
+	{
+		string name = "createIndex_";
+		//cout<<"getMaxDocId.............."<<document_manager_->getMaxDocId()<<endl;
+		task_type task = boost::bind(&IncrementalManager::doCreateIndex_, this);
+    	JobScheduler::get()->addTask(task, name);
+	}
+
+	/*void void IncrementalManager::mergeIndex() //merge tmpBerral to MainBerral...
+	{
+
+	}*/
 }
