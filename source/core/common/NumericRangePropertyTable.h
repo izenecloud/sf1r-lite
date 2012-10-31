@@ -423,7 +423,6 @@ inline bool NumericRangePropertyTable<int8_t>::getStringValue(std::size_t pos, s
         return false;
 
     static std::stringstream ss;
-    ss << fixed << setprecision(2);
     const value_type& data = data_[pos];
     if (data.first == data.second)
     {

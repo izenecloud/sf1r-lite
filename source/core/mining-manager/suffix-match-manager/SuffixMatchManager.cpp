@@ -199,6 +199,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
                 res_list[i].first = double(max_match_list[0]) / double(doclen_list[i]);
                 res_list[i].second = docid_list[i];
             }
+            std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
         }
         else
         {
@@ -207,7 +208,6 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
         }
     }
 
-    std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
     score_list.resize(doclen_list.size());
     docid_list.resize(doclen_list.size());
     for (size_t i = 0; i < res_list.size(); ++i)
