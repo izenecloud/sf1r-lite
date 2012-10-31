@@ -2,7 +2,6 @@
 #include "ProductScoreSum.h"
 #include "CustomScorer.h"
 #include "CategoryScorer.h"
-#include "RelevanceScorer.h"
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../group-label-logger/GroupLabelLogger.h"
@@ -36,9 +35,7 @@ ProductScorerFactory::ProductScorerFactory(
 ProductScorer* ProductScorerFactory::createScorer(
     const std::string& query,
     faceted::PropSharedLockSet& propSharedLockSet,
-    DocumentIterator* scoreDocIterator,
-    const std::vector<RankQueryProperty>& rankQueryProps,
-    const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers)
+    ProductScorer* relevanceScorer)
 {
     std::auto_ptr<ProductScoreSum> scoreSum(new ProductScoreSum);
     ProductScorer* scorer = NULL;
@@ -53,10 +50,9 @@ ProductScorer* ProductScorerFactory::createScorer(
         scoreSum->addScorer(scorer);
     }
 
-    if ((scorer = createRelevanceScorer_(scoreDocIterator,
-                                         rankQueryProps, propRankers)))
+    if (relevanceScorer)
     {
-        scoreSum->addScorer(scorer);
+        scoreSum->addScorer(relevanceScorer);
     }
 
     return scoreSum.release();
@@ -96,12 +92,4 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
     }
 
     return NULL;
-}
-
-ProductScorer* ProductScorerFactory::createRelevanceScorer_(
-    DocumentIterator* scoreDocIterator,
-    const std::vector<RankQueryProperty>& rankQueryProps,
-    const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers)
-{
-    return new RelevanceScorer(scoreDocIterator, rankQueryProps, propRankers);
 }

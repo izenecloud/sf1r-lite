@@ -201,7 +201,6 @@ private:
 
     boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
     CustomRankManager* customRankManager_;
-    ProductScorerFactory* productScorerFactory_;
 
     boost::threadpool::pool  threadpool_;
     SearchManagerPreProcessor*  preprocessor_;

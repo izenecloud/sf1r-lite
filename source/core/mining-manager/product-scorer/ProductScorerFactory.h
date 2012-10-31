@@ -9,15 +9,10 @@
 #define SF1R_PRODUCT_SCORER_FACTORY_H
 
 #include <string>
-#include <vector>
-#include <boost/shared_ptr.hpp>
 
 namespace sf1r
 {
 class ProductScorer;
-class DocumentIterator;
-class RankQueryProperty;
-class PropertyRanker;
 class CustomRankManager;
 class GroupLabelLogger;
 class ProductRankingConfig;
@@ -36,12 +31,19 @@ public:
         const ProductRankingConfig& config,
         MiningManager& miningManager);
 
+    /**
+     * create the @c ProductScorer instance, it sums up weighted scores
+     * from @c CustomScorer, @c CategoryScorer, and @p relevanceScorer, etc.
+     * @param query used to create @c CustomScorer and @c CategoryScorer.
+     * @param propSharedLockSet used to concurrently access category data
+     *        by @c CategoryScorer.
+     * @param relevanceScorer if not NULL, it would be added into return value.
+     * @return the @c ProductScorer instance, it should be deleted by caller.
+     */
     ProductScorer* createScorer(
         const std::string& query,
         faceted::PropSharedLockSet& propSharedLockSet,
-        DocumentIterator* scoreDocIterator,
-        const std::vector<RankQueryProperty>& rankQueryProps,
-        const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers);
+        ProductScorer* relevanceScorer);
 
 private:
     ProductScorer* createCustomScorer_(const std::string& query);
@@ -49,11 +51,6 @@ private:
     ProductScorer* createCategoryScorer_(
         const std::string& query,
         faceted::PropSharedLockSet& propSharedLockSet);
-
-    ProductScorer* createRelevanceScorer_(
-        DocumentIterator* scoreDocIterator,
-        const std::vector<RankQueryProperty>& rankQueryProps,
-        const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers);
 
 private:
     CustomRankManager* customRankManager_;

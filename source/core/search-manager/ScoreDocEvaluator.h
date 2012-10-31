@@ -10,41 +10,25 @@
 
 #include "CustomRanker.h"
 #include <mining-manager/product-scorer/ProductScorer.h>
-#include <vector>
-#include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
 namespace sf1r
 {
-class DocumentIterator;
-class Sorter;
-class RankQueryProperty;
-class PropertyRanker;
 struct ScoreDoc;
 
 class ScoreDocEvaluator
 {
 public:
     ScoreDocEvaluator(
-        DocumentIterator* scoreDocIterator,
-        Sorter* sorter,
-        const std::vector<RankQueryProperty>& rankQueryProps,
-        const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers,
-        CustomRankerPtr customRanker,
-        ProductScorer* productScorer);
+        ProductScorer* productScorer,
+        CustomRankerPtr customRanker);
 
     void evaluate(ScoreDoc& scoreDoc);
 
 private:
-    const bool isNeedScore_;
-
-    DocumentIterator* scoreDocIterator_;
-    const std::vector<RankQueryProperty>& rankQueryProps_;
-    const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers_;
+    boost::scoped_ptr<ProductScorer> productScorer_;
 
     CustomRankerPtr customRanker_;
-
-    boost::scoped_ptr<ProductScorer> productScorer_;
 };
 
 } // namespace sf1r
