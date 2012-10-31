@@ -19,6 +19,8 @@ SuffixMatchManager::SuffixMatchManager(
     , property_(property)
     , tokenize_dicpath_(dicpath)
     , document_manager_(document_manager)
+    , analyzer_(NULL)
+    , knowledge_(NULL)
 {
     if (!boost::filesystem::exists(homePath))
     {
@@ -38,6 +40,8 @@ SuffixMatchManager::SuffixMatchManager(
 
 SuffixMatchManager::~SuffixMatchManager()
 {
+    if(analyzer_) delete analyzer_;
+    if(knowledge_) delete knowledge_;
 }
 
 void SuffixMatchManager::buildCollection()
