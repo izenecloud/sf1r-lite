@@ -4,19 +4,7 @@
 #include <icma/icma.h>
 
 #include "Ngram.h"
-#include <vector>
-#include <list>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-#include <ctime>
-#include <string>
 #include <util/PriorityQueue.h>
-#include <queue>
-#include <bitset>
-#include <boost/dynamic_bitset.hpp>
-#include <am/succinct/wat_array/wat_array.hpp>
-#include <am/succinct/fm-index/wavelet_tree_huffman.hpp>
 
 #define MAX_COMMENT_NUM  15000
 
@@ -147,10 +135,10 @@ private:
     bool NotMirror(const WordSegContainerT& phrase, const BigramPhraseT& bigram);
     void Merge(NgramPhraseT& phrase, const BigramPhraseT& bigram);
     BigramPhraseContainerT GetJoinList(const WordSegContainerT& phrase, const BigramPhraseContainerT& BigramList, int current_merge_pos);
-    void GenerateCandidates(const NgramPhraseT& phrase, OpinionCandidateContainerT& candList, 
+    void GenerateCandidates(const NgramPhraseT& phrase, OpinionCandidateContainerT& candList,
         const BigramPhraseContainerT& seedBigrams, int current_merge_pos);
     void changeForm(const OpinionCandidateContainerT& candList, OpinionCandStringContainerT& newForm);
-   
+
     std::string getSentence(const WordSegContainerT& candVector);
     bool IsNeedFilter(const WordStrType& teststr);
     void GetOrigCommentsByBriefOpinion(OpinionCandStringContainerT& candOpinionString);
@@ -202,11 +190,8 @@ private:
     WordFreqMapT begin_bigrams_;
     WordFreqMapT end_bigrams_;
     WordFreqMapT cached_valid_ngrams_;
-    wat_array::WatArray wa_;
     std::vector<int>  sentence_offset_;
     std::map<WordStrType, WordStrType> synonym_map_;
-
-    succinct::fm_index::WaveletTree<uint32_t>* wavelet_;
 };
 
 };

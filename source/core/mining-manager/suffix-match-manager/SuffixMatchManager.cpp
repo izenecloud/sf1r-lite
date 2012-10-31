@@ -174,8 +174,8 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
             if(all_sub_strpatterns[i].empty())
                 continue;
             std::pair<size_t, size_t> sub_match_range;
-            size_t matched = fmi_->backwardSearch(all_sub_strpatterns[i].data(), 
-                all_sub_strpatterns[i].length(), sub_match_range);
+            size_t matched = fmi_->backwardSearch(all_sub_strpatterns[i].data(),
+                    all_sub_strpatterns[i].length(), sub_match_range);
             if(matched == all_sub_strpatterns[i].length())
             {
                 match_ranges_list.push_back(sub_match_range);
@@ -198,8 +198,8 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
         }
         else
         {
-            fmi_->getMatchedTopKDocIdList(match_ranges_list, 
-                max_match_list, max_docs, res_list, doclen_list);
+            fmi_->getMatchedTopKDocIdList(match_ranges_list,
+                    max_match_list, max_docs, res_list, doclen_list);
         }
     }
 
