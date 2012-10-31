@@ -122,6 +122,7 @@ MiningManager::MiningManager(
     , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
+    , suffixMatchManager_(NULL)
     , kvManager_(NULL)
 {
 }
@@ -139,6 +140,7 @@ MiningManager::~MiningManager()
     if (attrManager_) delete attrManager_;
     if (tdt_storage_) delete tdt_storage_;
     if (summarizationManager_) delete summarizationManager_;
+    if (suffixMatchManager_) delete suffixMatchManager_;
     if (kvManager_) delete kvManager_;
     close();
 }
