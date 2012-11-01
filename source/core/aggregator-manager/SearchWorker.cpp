@@ -363,6 +363,7 @@ bool SearchWorker::getSearchResult_(
                                                    actionOperation.actionItem_.searchingMode_.lucky_,
                                                    actionOperation.actionItem_.searchingMode_.usefuzzy_,
                                                    topKStart,
+                                                   actionOperation.actionItem_.searchingMode_.filterstr_,
                                                    resultItem.topKDocs_,
                                                    resultItem.topKRankScoreList_,
                                                    resultItem.totalCount_))
