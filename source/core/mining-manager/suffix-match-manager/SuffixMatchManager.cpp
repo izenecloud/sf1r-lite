@@ -326,6 +326,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
         }
         else if(!filter_str.empty())
         {
+            std::vector< std::pair<size_t, size_t> > filter_range_list;
             std::pair<size_t, size_t> filter_range;
             bool ret = fmi_->getFilterRange(filter_str, filter_range);
             if(!ret)
@@ -333,8 +334,10 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
                 LOG(INFO) << "filter not found.";
                 return 0;
             }
+
             LOG(INFO) << "filter string range is : " << filter_range.first << ", " << filter_range.second; 
-            fmi_->getMatchedTopKDocIdListByFilter(filter_range, match_ranges_list, 
+            filter_range_list.push_back(filter_range);
+            fmi_->getMatchedTopKDocIdListByFilter(filter_range_list, match_ranges_list, 
                 max_match_list, max_docs, res_list, doclen_list);
         }
         else
