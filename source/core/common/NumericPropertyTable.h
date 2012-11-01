@@ -321,7 +321,7 @@ inline bool NumericPropertyTable<float>::getStringValue(std::size_t pos, std::st
 }
 
 template <>
-inline bool NumericPropertyTable<int8_t>::setStringValue(std::size_t pos, const std::string& value)	
+inline bool NumericPropertyTable<int8_t>::setStringValue(std::size_t pos, const std::string& value)
 {
     WriteLock lock(mutex_);
     if (pos >= data_.size())
