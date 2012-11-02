@@ -779,7 +779,6 @@ private:
     void parseProductRankingNode(const ticpp::Element* productRankingNode, CollectionMeta& collectionMeta);
 
     void checkStringGroupProperty(const std::string& propName, const GroupConfigMap& groupConfigMap);
-    void checkNumericFilterProperty(const std::string& propName, const IndexBundleSchema& indexSchema);
 
     /// @brief                  Parse <RecommendBundle> <Parameter>
     /// @param recParamNode           Pointer to the Element

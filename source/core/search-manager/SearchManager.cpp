@@ -7,11 +7,10 @@
 #include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
+#include <mining-manager/group-manager/PropSharedLockSet.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-#include <mining-manager/product-ranker/ProductRankerFactory.h>
-#include <mining-manager/product-ranker/ProductRanker.h>
 #include <mining-manager/custom-rank-manager/CustomRankManager.h>
-#include <mining-manager/custom-rank-manager/CustomRankScorer.h>
+#include <mining-manager/product-scorer/ProductScorerFactory.h>
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
@@ -24,7 +23,7 @@
 #include "CombinedDocumentIterator.h"
 #include "CustomRankDocumentIterator.h"
 #include "SearchManagerPreProcessor.h"
-#include "SearchManagerPostProcessor.h"
+#include "ScoreDocEvaluator.h"
 
 #include <util/swap.h>
 #include <util/get.h>
@@ -64,7 +63,6 @@ SearchManager::SearchManager(
     , customRankManager_(NULL)
     , threadpool_(0)
     , preprocessor_(new SearchManagerPreProcessor())
-    , postprocessor_(new SearchManagerPostProcessor())
 {
     collectionName_ = config->collectionName_;
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
@@ -98,17 +96,16 @@ SearchManager::~SearchManager()
     if (pSorterCache_)
         delete pSorterCache_;
     delete preprocessor_;
-    delete postprocessor_;
-}
-
-void SearchManager::setProductRankerFactory(ProductRankerFactory* productRankerFactory)
-{
-    postprocessor_->productRankerFactory_ = productRankerFactory;
 }
 
 void SearchManager::setCustomRankManager(CustomRankManager* customRankManager)
 {
     customRankManager_ = customRankManager;
+}
+
+void SearchManager::setProductScorerFactory(ProductScorerFactory* productScorerFactory)
+{
+    preprocessor_->productScorerFactory_ = productScorerFactory;
 }
 
 void SearchManager::reset_all_property_cache()
@@ -131,11 +128,6 @@ void SearchManager::setMiningManager(
 boost::shared_ptr<NumericPropertyTableBase>& SearchManager::createPropertyTable(const std::string& propertyName)
 {
    return preprocessor_->createPropertyTable(propertyName, pSorterCache_);
-}
-
-bool SearchManager::rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
-{
-    return postprocessor_->rerank(actionItem, resultItem);
 }
 
 struct SearchThreadParam
@@ -570,7 +562,8 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     DocumentIterator* pScoreDocIterator = scoreDocIterPtr.get();
     if (isFilterQuery == false)
     {
-        const std::string& query = actionOperation.actionItem_.env_.queryString_;
+        const std::string& query =
+            actionOperation.actionItem_.env_.queryString_;
 
         pScoreDocIterator = combineCustomDocIterator_(
             query, pSorter, scoreDocIterPtr.release());
@@ -673,8 +666,9 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
 
     STOP_PROFILER( preparerank )
 
-    boost::shared_ptr<faceted::GroupFilter> groupFilter;
-    sf1r::faceted::GroupParam gp = actionOperation.actionItem_.groupParam_;
+    faceted::PropSharedLockSet propSharedLockSet;
+    boost::scoped_ptr<faceted::GroupFilter> groupFilter;
+    faceted::GroupParam gp = actionOperation.actionItem_.groupParam_;
     if (groupFilterBuilder_)
     {
         if(is_parallel)
@@ -685,10 +679,17 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             gp.attrGroupNum_ = 0;
         }
         groupFilter.reset(
-            groupFilterBuilder_->createFilter(gp));
+            groupFilterBuilder_->createFilter(gp, propSharedLockSet));
     }
     std::size_t totalCount;
     sf1r::PropertyRange propertyRange = propertyRange_orig;
+
+    ProductScorer* productScorer = preprocessor_->createProductScorer(
+        actionOperation.actionItem_, pSorter,
+        pScoreDocIterator, rankQueryProperties, propertyRankers,
+        propSharedLockSet);
+
+    ScoreDocEvaluator scoreDocEvaluator(productScorer, customRanker);
 
     try
     {
@@ -696,17 +697,11 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             actionOperation,
             totalCount,
             propertyRange,
-            start,
-            rankQueryProperties,
-            propertyRankers,
-            pSorter.get(),
-            customRanker,
-            pScoreDocIterator,
             pDocIterator.get(),
             groupFilter.get(),
+            scoreDocEvaluator,
             scoreItemQueue.get(),
             counterResults,
-            heapSize,
             docid_start,
             docid_num_byeachthread,
             docid_nextstart_inc);
@@ -740,24 +735,17 @@ bool SearchManager::doSearch_(
         const SearchKeywordOperation& actionOperation,
         std::size_t& totalCount,
         sf1r::PropertyRange& propertyRange,
-        uint32_t start,
-        const std::vector<RankQueryProperty>& rankQueryProperties,
-        const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
-        Sorter* pSorter,
-        CustomRankerPtr customRanker,
-        DocumentIterator* pScoreDocIterator,
         CombinedDocumentIterator* pDocIterator,
         faceted::GroupFilter* groupFilter,
+        ScoreDocEvaluator& scoreDocEvaluator,
         HitQueue* scoreItemQueue,
         std::map<std::string, unsigned>& counterResults,
-        int heapSize,
         std::size_t docid_start,
         std::size_t docid_num_byeachthread,
         std::size_t docid_nextstart_inc)
 {
 CREATE_PROFILER( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
 CREATE_PROFILER( inserttoqueue, "SearchManager", "doSearch_: overall time for inserting to result queue");
-CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall time for scoring customized score for a doc");
     typedef boost::shared_ptr<NumericPropertyTableBase> NumericPropertyTablePtr;
     totalCount = 0;
     const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
@@ -768,11 +756,6 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
     if (!rangePropertyName.empty())
     {
         rangePropertyTable = documentManagerPtr_->getNumericPropertyTable(rangePropertyName);
-    }
-    bool requireScorer = false;
-    if ( pScoreDocIterator && pSorter )
-    {
-        requireScorer = pSorter->requireScorer();
     }
 
     std::vector<NumericPropertyTablePtr> counterTables;
@@ -830,19 +813,11 @@ CREATE_PROFILER( computecustomrankscore, "SearchManager", "doSearch_: overall ti
         ScoreDoc scoreItem(curDocId);
 
         START_PROFILER( computerankscore )
-        ++totalCount;
 
-        scoreItem.score = requireScorer ? pScoreDocIterator->score(
-                rankQueryProperties, propertyRankers) : 1.0;
+        ++totalCount;
+        scoreDocEvaluator.evaluate(scoreItem);
 
         STOP_PROFILER( computerankscore )
-
-        START_PROFILER( computecustomrankscore )
-        if (customRanker)
-        {
-            scoreItem.custom_score = customRanker->evaluate(scoreItem.docId);
-        }
-        STOP_PROFILER( computecustomrankscore )
 
         START_PROFILER( inserttoqueue )
         scoreItemQueue->insert(scoreItem);
@@ -897,21 +872,22 @@ DocumentIterator* SearchManager::combineCustomDocIterator_(
     if (customRankManager_ &&
         pSorter && pSorter->requireScorer())
     {
-        CustomRankScorer* customRankScorer =
-            customRankManager_->getScorer(query);
-
-        if (customRankScorer)
+        CustomRankDocId customDocId;
+        if (!customRankManager_->getCustomValue(query, customDocId) ||
+            customDocId.empty())
         {
-            DocumentIterator* pCustomDocIter =
-                new CustomRankDocumentIterator(customRankScorer);
-
-            if (originDocIterator)
-            {
-                pCustomDocIter->add(originDocIterator);
-            }
-
-            return pCustomDocIter;
+            return originDocIterator;
         }
+
+        DocumentIterator* pCustomDocIter =
+            new CustomRankDocumentIterator(customDocId);
+
+        if (originDocIterator)
+        {
+            pCustomDocIter->add(originDocIterator);
+        }
+
+        return pCustomDocIter;
     }
 
     return originDocIterator;
