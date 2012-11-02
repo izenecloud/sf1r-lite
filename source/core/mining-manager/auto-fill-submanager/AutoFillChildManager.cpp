@@ -508,7 +508,7 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
     }
 
     buildDbIndexForEveryThousand(thousandpair,similarList);
-    //  thousandpair.clear();
+    thousandpair.clear();
     dealWithSimilar(similarList);
     buildItemVector();
     return true;
@@ -549,8 +549,9 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
     std::vector<QueryType>  sameprefix=eachprefix.second;
 
     pinyin=eachprefix.first;
-    //cout<<"pinyin:"<<pinyin<<"  "<<eachprefix.second.size()<<endl;
     /*
+    cout<<"pinyin:"<<pinyin<<"  "<<eachprefix.second.size()<<endl;
+    
     for(unsigned i=0;i<sameprefix.size();i++)
     {
 
@@ -558,7 +559,7 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
     }
 
      cout<<endl;
-     */
+    */
     buildItemList(pinyin);
     //izenelib::util::UString NoSpace=izenelib::util::Algorithm<izenelib::util::UString>::trim((*itv));
     //NoSpace.convertString(nospacepinyin, izenelib::util::UString::UTF_8);
@@ -594,6 +595,21 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
     sameprefix.insert(sameprefix.end(),havedone.begin(),havedone.end());
     sort( sameprefix.begin(),sameprefix.end(),d1);
     sameprefix.erase(std::unique(sameprefix.begin(), sameprefix.end(),d2), sameprefix.end());
+    
+    vector<QueryTypeToDeleteDup> qtddvec;
+     for(unsigned i=0;i<sameprefix.size();i++)
+     {   QueryTypeToDeleteDup qtdd;
+         qtdd.initfrom(sameprefix[i]);
+         qtddvec.push_back(qtdd);
+     }
+     sort( qtddvec.begin(),qtddvec.end());
+     qtddvec.erase(std::unique(qtddvec.begin(), qtddvec.end()), qtddvec.end());
+     sameprefix.clear();
+     for(unsigned i=0;i<qtddvec.size();i++)
+     {
+         sameprefix.push_back(qtddvec[i].qt_);
+     }
+    
     sort( sameprefix.begin(),sameprefix.end());
     value="";
     for(unsigned i=0; i<sameprefix.size(); i++)
@@ -605,7 +621,7 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
         //dbTable_.delete_item(pinyin);
         if(check)
         {
-            boost::algorithm::replace_all(strT,withspacepinyin,nospacepinyin);
+           // boost::algorithm::replace_all(strT,withspacepinyin,nospacepinyin);
         }
         if(value.length() == 0)
         {
@@ -975,7 +991,6 @@ bool AutoFillChildManager::getAutoFillList(const izenelib::util::UString& query,
             return getAutoFillListFromWat(queryLow, list);
     }
     else
-
     {
         if( isUpdating_Wat_)
         {

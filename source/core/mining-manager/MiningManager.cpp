@@ -122,6 +122,7 @@ MiningManager::MiningManager(
     , productScorerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
+    , suffixMatchManager_(NULL)
     , kvManager_(NULL)
 {
 }
@@ -139,6 +140,7 @@ MiningManager::~MiningManager()
     if (attrManager_) delete attrManager_;
     if (tdt_storage_) delete tdt_storage_;
     if (summarizationManager_) delete summarizationManager_;
+    if (suffixMatchManager_) delete suffixMatchManager_;
     if (kvManager_) delete kvManager_;
     close();
 }
@@ -501,6 +503,14 @@ bool MiningManager::open()
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property,
                mining_schema_.suffix_match_tokenize_dicpath, document_manager_);
+            std::vector<std::string> group_filter_props;
+            GroupConfigMap::const_iterator it = mining_schema_.group_config_map.begin();
+            while(it != mining_schema_.group_config_map.end())
+            {
+                group_filter_props.push_back(it->first);
+                ++it;
+            }
+            suffixMatchManager_->setGroupFilterProperty(group_filter_props);
         }
 
         /** KV */
@@ -1708,6 +1718,7 @@ bool MiningManager::GetSuffixMatch(
         uint32_t max_docs,
         bool use_fuzzy,
         uint32_t start,
+        const std::string& filterstr,
         std::vector<uint32_t>& docIdList,
         std::vector<float>& rankScoreList,
         std::size_t& totalCount)
@@ -1721,7 +1732,8 @@ bool MiningManager::GetSuffixMatch(
     else
     {
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
-        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, 
+            rankScoreList, UString(filterstr, UString::UTF_8));
         docIdList.erase(docIdList.begin(), docIdList.begin() + start);
         rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
     }
