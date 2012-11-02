@@ -499,14 +499,14 @@ bool MiningManager::open()
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property,
                mining_schema_.suffix_match_tokenize_dicpath, document_manager_);
-            std::vector<std::string> group_filter_props;
-            GroupConfigMap::const_iterator it = mining_schema_.group_config_map.begin();
-            while(it != mining_schema_.group_config_map.end())
-            {
-                group_filter_props.push_back(it->first);
-                ++it;
-            }
-            suffixMatchManager_->setGroupFilterProperty(group_filter_props);
+            //std::vector<std::string> group_filter_props;
+            //GroupConfigMap::const_iterator it = mining_schema_.group_config_map.begin();
+            //while(it != mining_schema_.group_config_map.end())
+            //{
+            //    group_filter_props.push_back(it->first);
+            //    ++it;
+            //}
+            //suffixMatchManager_->setGroupFilterProperty(group_filter_props);
         }
 
         /** KV */
