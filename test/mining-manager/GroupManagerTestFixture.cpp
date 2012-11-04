@@ -5,6 +5,7 @@
 #include <mining-manager/group-manager/GroupManager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
+#include <mining-manager/group-manager/PropSharedLockSet.h>
 
 #include <util/ustring/UString.h>
 
@@ -600,7 +601,10 @@ void GroupManagerTestFixture::createGroupRep_(
     }
     groupParam.groupLabels_ = labels;
 
-    faceted::GroupFilter* filter = filterBuilder.createFilter(groupParam);
+    faceted::PropSharedLockSet propSharedLockSet;
+    faceted::GroupFilter* filter =
+        filterBuilder.createFilter(groupParam, propSharedLockSet);
+
     for (vector<unsigned int>::const_iterator it = docIdList_.begin();
         it != docIdList_.end(); ++it)
     {

@@ -19,6 +19,8 @@ SuffixMatchManager::SuffixMatchManager(
     , property_(property)
     , tokenize_dicpath_(dicpath)
     , document_manager_(document_manager)
+    , analyzer_(NULL)
+    , knowledge_(NULL)
 {
     if (!boost::filesystem::exists(homePath))
     {
@@ -38,6 +40,8 @@ SuffixMatchManager::SuffixMatchManager(
 
 SuffixMatchManager::~SuffixMatchManager()
 {
+    if(analyzer_) delete analyzer_;
+    if(knowledge_) delete knowledge_;
 }
 
 void SuffixMatchManager::buildCollection()
@@ -174,8 +178,8 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
             if(all_sub_strpatterns[i].empty())
                 continue;
             std::pair<size_t, size_t> sub_match_range;
-            size_t matched = fmi_->backwardSearch(all_sub_strpatterns[i].data(), 
-                all_sub_strpatterns[i].length(), sub_match_range);
+            size_t matched = fmi_->backwardSearch(all_sub_strpatterns[i].data(),
+                    all_sub_strpatterns[i].length(), sub_match_range);
             if(matched == all_sub_strpatterns[i].length())
             {
                 match_ranges_list.push_back(sub_match_range);
@@ -195,15 +199,15 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
                 res_list[i].first = double(max_match_list[0]) / double(doclen_list[i]);
                 res_list[i].second = docid_list[i];
             }
+            std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
         }
         else
         {
-            fmi_->getMatchedTopKDocIdList(match_ranges_list, 
-                max_match_list, max_docs, res_list, doclen_list);
+            fmi_->getMatchedTopKDocIdList(match_ranges_list,
+                    max_match_list, max_docs, res_list, doclen_list);
         }
     }
 
-    std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
     score_list.resize(doclen_list.size());
     docid_list.resize(doclen_list.size());
     for (size_t i = 0; i < res_list.size(); ++i)

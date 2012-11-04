@@ -250,7 +250,14 @@ bool MiningSearchService::setTopGroupLabel(
     const std::vector<std::vector<std::string> >& groupLabels
 )
 {
-    return miningManager_->setTopGroupLabel(query, propName, groupLabels);
+    bool result = miningManager_->setTopGroupLabel(query,
+                                                   propName, groupLabels);
+    if (result)
+    {
+        searchWorker_->clearSearchCache();
+    }
+
+    return result;
 }
 
 bool MiningSearchService::setCustomRank(

@@ -1,23 +1,60 @@
 #include "SearchManagerPreProcessor.h"
 #include "Sorter.h"
 #include "NumericPropertyTableBuilder.h"
+#include "DocumentIterator.h"
+#include <ranking-manager/RankQueryProperty.h>
+#include <ranking-manager/PropertyRanker.h>
+#include <mining-manager/product-scorer/RelevanceScorer.h>
+#include <mining-manager/product-scorer/ProductScorerFactory.h>
 
 #include <mining-manager/MiningManager.h>
 #include <common/SFLogger.h>
 #include <util/get.h>
 #include <util/ClockTimer.h>
 #include <fstream>
+#include <algorithm> // to_lower
 
-
-namespace sf1r {
+using namespace sf1r;
 
 const std::string RANK_PROPERTY("_rank");
 const std::string DATE_PROPERTY("date");
 const std::string CUSTOM_RANK_PROPERTY("custom_rank");
 const std::string CTR_PROPERTY("_ctr");
 
+namespace
+{
+
+bool isNeedScore(
+    DocumentIterator* scoreDocIterator,
+    boost::shared_ptr<Sorter> sorter)
+{
+    return scoreDocIterator &&
+        sorter && sorter->requireScorer();
+}
+
+bool isSortByRankProp(
+    const KeywordSearchActionItem::SortPriorityList& sortPriorityList)
+{
+    if (sortPriorityList.empty())
+        return true;
+
+    for (KeywordSearchActionItem::SortPriorityList::const_iterator it =
+             sortPriorityList.begin(); it != sortPriorityList.end(); ++it)
+    {
+        std::string propName = it->first;
+        boost::to_lower(propName);
+        if (propName == RANK_PROPERTY)
+            return true;
+    }
+
+    return false;
+}
+
+}
+
 SearchManagerPreProcessor::SearchManagerPreProcessor()
     : schemaMap_()
+    , productScorerFactory_(NULL)
 {
 }
 
@@ -318,4 +355,42 @@ void SearchManagerPreProcessor::PreparePropertyTermIndex(
     }
 }
 
+ProductScorer* SearchManagerPreProcessor::createProductScorer(
+    const KeywordSearchActionItem& actionItem,
+    boost::shared_ptr<Sorter> sorter,
+    DocumentIterator* scoreDocIterator,
+    const std::vector<RankQueryProperty>& rankQueryProps,
+    const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers,
+    faceted::PropSharedLockSet& propSharedLockSet)
+{
+    if (!isNeedScore(scoreDocIterator, sorter))
+        return NULL;
+
+    ProductScorer* relevanceScorer = new RelevanceScorer(scoreDocIterator,
+                                                         rankQueryProps,
+                                                         propRankers);
+
+    if (!isProductRanking_(actionItem))
+        return relevanceScorer;
+
+    const std::string& query = actionItem.env_.queryString_;
+    return productScorerFactory_->createScorer(query,
+                                               propSharedLockSet,
+                                               relevanceScorer);
+}
+
+bool SearchManagerPreProcessor::isProductRanking_(
+    const KeywordSearchActionItem& actionItem) const
+{
+    if (productScorerFactory_ == NULL)
+        return false;
+
+    SearchingMode::SearchingModeType searchMode =
+        actionItem.searchingMode_.mode_;
+
+    if (searchMode == SearchingMode::KNN ||
+        searchMode == SearchingMode::SUFFIX_MATCH)
+        return false;
+
+    return isSortByRankProp(actionItem.sortPriorityList_);
 }

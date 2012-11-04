@@ -1,6 +1,6 @@
 /**
  * @file CustomRankDocumentIterator.h
- * @brief an ORDocumentIterator which could iterate customized docs. 
+ * @brief an ORDocumentIterator which could iterate customized docs.
  * @author Jun Jiang <jun.jiang@izenesoft.com>
  * @date Created 2012-07-19
  */
@@ -9,16 +9,15 @@
 #define SF1R_CUSTOM_RANK_DOCUMENT_ITERATOR_H
 
 #include "ORDocumentIterator.h"
-#include <boost/scoped_ptr.hpp>
+#include <mining-manager/custom-rank-manager/CustomRankValue.h>
 
 namespace sf1r
 {
-class CustomRankScorer;
 
 class CustomRankDocumentIterator : public ORDocumentIterator
 {
 public:
-    CustomRankDocumentIterator(CustomRankScorer* customRankScorer);
+    CustomRankDocumentIterator(CustomRankDocId& customRankDocId);
 
     virtual void add(DocumentIterator* pDocIterator);
 
@@ -28,7 +27,6 @@ public:
     );
 
 private:
-    boost::scoped_ptr<CustomRankScorer> customRankScorer_;
     DocumentIterator* defaultScoreDocIterator_;
 };
 

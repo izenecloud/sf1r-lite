@@ -147,8 +147,6 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         if (resultItem.topKDocs_.empty())
             return true;
 
-        searchManager_->rerank(actionItem, resultItem);
-
         if (! getSummaryMiningResult_(actionItem, resultItem, false))
             return false;
 
@@ -160,9 +158,6 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     else
     {
         STOP_PROFILER( cacheoverhead )
-
-        // the cached search results require to be reranked
-        searchManager_->rerank(actionItem, resultItem);
 
         resultItem.setStartCount(actionItem.pageInfo_);
         resultItem.adjustStartCount(topKStart);
@@ -227,8 +222,6 @@ void SearchWorker::makeQueryIdentity(
         break;
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
-        identity.usefuzzy = item.searchingMode_.usefuzzy_;
-        identity.lucky = item.searchingMode_.lucky_;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -365,6 +358,7 @@ bool SearchWorker::getSearchResult_(
                                                    actionOperation.actionItem_.searchingMode_.lucky_,
                                                    actionOperation.actionItem_.searchingMode_.usefuzzy_,
                                                    topKStart,
+                                                   actionOperation.actionItem_.searchingMode_.filterstr_,
                                                    resultItem.topKDocs_,
                                                    resultItem.topKRankScoreList_,
                                                    resultItem.totalCount_))

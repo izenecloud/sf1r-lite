@@ -42,11 +42,11 @@ class MultiPropertyScorer;
 class WANDDocumentIterator;
 class CombinedDocumentIterator;
 class HitQueue;
-class ProductRankerFactory;
 class SearchThreadParam;
 class SearchManagerPreProcessor;
-class SearchManagerPostProcessor;
 class CustomRankManager;
+class ScoreDocEvaluator;
+class ProductScorerFactory;
 
 namespace faceted
 {
@@ -94,8 +94,6 @@ public:
             uint32_t start = 0,
             bool enable_parallel_searching = false);
 
-    bool rerank(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
-
     void reset_all_property_cache();
 
     void set_filter_hook(filter_hook_t filter_hook)
@@ -109,9 +107,9 @@ public:
 
     boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(const std::string& propertyName);
 
-    void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
-
     void setCustomRankManager(CustomRankManager* customRankManager);
+
+    void setProductScorerFactory(ProductScorerFactory* productScorerFactory);
 
     QueryBuilder* getQueryBuilder() { return queryBuilder_.get(); }
 
@@ -120,17 +118,11 @@ private:
             const SearchKeywordOperation& actionOperation,
             std::size_t& totalCount,
             sf1r::PropertyRange& propertyRange,
-            uint32_t start,
-            const std::vector<RankQueryProperty>& rankQueryProperties,
-            const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers,
-            Sorter* pSorter,
-            CustomRankerPtr customRanker,
-            DocumentIterator* pScoreDocIterator,
             CombinedDocumentIterator* pDocIterator,
             faceted::GroupFilter* groupFilter,
+            ScoreDocEvaluator& scoreDocEvaluator,
             HitQueue* scoreItemQueue,
             std::map<std::string, unsigned int>& counterResults,
-            int heapSize,
             std::size_t docid_start,
             std::size_t docid_num_byeachthread,
             std::size_t docid_nextstart_inc);
@@ -212,7 +204,6 @@ private:
 
     boost::threadpool::pool  threadpool_;
     SearchManagerPreProcessor*  preprocessor_;
-    SearchManagerPostProcessor*  postprocessor_;
 };
 
 } // end - namespace sf1r
