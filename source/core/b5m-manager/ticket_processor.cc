@@ -144,7 +144,7 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
     LOG(INFO)<<"match result size "<<match_result.size()<<std::endl;
     std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
     B5MHelper::PrepareEmptyDir(output_dir);
-    ScdWriter writer(output_dir, INSERT_SCD);
+    ScdWriter writer(output_dir, UPDATE_SCD);
 
     for(uint32_t i=0;i<scd_list.size();i++)
     {
