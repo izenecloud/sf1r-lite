@@ -27,6 +27,7 @@ public:
             boost::shared_ptr<DocumentManager>& document_manager);
 
     ~SuffixMatchManager();
+    void setGroupFilterProperty(std::vector<std::string>& propertys);
 
     void buildCollection();
     void buildTokenizeDic();
@@ -34,12 +35,17 @@ public:
     size_t longestSuffixMatch(const izenelib::util::UString& pattern, size_t max_docs, std::vector<uint32_t>& docid_list, std::vector<float>& score_list) const;
     size_t AllPossibleSuffixMatch(const izenelib::util::UString& pattern,
         size_t max_docs, std::vector<uint32_t>& docid_list,
-        std::vector<float>& score_list) const;
+        std::vector<float>& score_list, const izenelib::util::UString& filter_str = izenelib::util::UString()) const;
 
 
 private:
+    void loadFilterInvertedData(std::vector< FMIndexType::FilterItemT >& filter_inverted_data);
+    void saveFilterInvertedData(const std::vector< FMIndexType::FilterItemT >& filter_inverted_data) const;
+
+    std::string data_root_path_;
     std::string fm_index_path_;
     std::string property_;
+    std::vector<std::string>  group_property_list_;
     std::string tokenize_dicpath_;
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;
