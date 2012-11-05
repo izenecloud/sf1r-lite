@@ -31,36 +31,33 @@ namespace sf1r
 class OpinionsClassificationManager
 {
     typedef izenelib::am::leveldb::Table<std::string, int> LevelDBType;
-    LevelDBType*                 dbTable;
-    vector<pair<string,bool> >   trainData;
-    vector<string>               badData;
-    vector<string>               goodData;
-    list<string>                 wordList;
-    vector<string>               goodWord;    //好
-    vector<string>               badWord;     //差
-    vector<string>               reverseWord; //不
-    vector<string>               reverseData;
-    vector<string>               posData;
-    vector<string>               pairWord;    //性价比
-    vector<pair<string,string> > goodPair;  //性价比 高
-    vector<pair<string,string> > badPair;   //价格 高
-    list<pair<string,string> >   pairList;
-    vector<string>               goodWordUseful;
-    vector<string>               badWordUseful;
-    vector<string>               goodWordSelfLearn;
-    vector<string>               badWordSelfLearn;
-    vector<string>               WordSelfLearn;
-    double                       accu;
-    int                          cutoff;
-    fstream                      log;
-    Knowledge*                   knowledge;
-    Analyzer*                    analyzer;
-    CMA_Factory*                 factory;
-    string                       modelPath;
-    string                       IndexPath;
-    string                       dictPath;
+    LevelDBType* dbTable_;
+    vector<pair<string,bool> > trainData_;
+    vector<string> badData_;
+    vector<string> goodData_;
+    list<string> wordList_;
+    vector<string> goodWord_;    //好
+    vector<string> badWord_;     //差
+    vector<string> reverseWord_; //不
+    vector<string> reverseData_;
+    vector<string> pairWord_;    //性价比
+    vector<pair<string,string> > goodPair_;  //性价比 高
+    vector<pair<string,string> > badPair_;   //价格 高
+    list<pair<string,string> > pairList_;
+    vector<string> goodWordUseful_;
+    vector<string> badWordUseful_;
+    vector<string> wordSelfLearn_;
+    double accu_;
+    int cutoff_;
+    fstream log_;
+    Knowledge* knowledge_;
+    Analyzer* analyzer_;
+    CMA_Factory* factory_;
+    string modelPath_;
+    string indexPath_;
+    string dictPath_;
 public:
-    OpinionsClassificationManager(string cma_path,string path);
+    OpinionsClassificationManager(const string& cma_path,const string& path);
     ~OpinionsClassificationManager();
     void  getWordFromTrainData();
     void  ClassfyWord(string word);
@@ -75,16 +72,16 @@ public:
     double PMI(string word1,string word2);
     void  ClassfyPair(pair<string,string> p);
     void  ClassfyPairVector(vector<pair<string,string> > p);
-    int  getResult(string Sentence);
+    int getResult(const string& Sentence);
     bool  include(pair<string,string> wordpair,vector<pair<string,string> >& pairvec);
     bool  include(string word,vector<string>& strvec);
-    std::pair<UString,UString>  test(string Segment);
+    std::pair<UString,UString> test(const string& Segment);
     void  load(vector<string>& vec,string pathname);
     void  load(vector<pair<string,string> >& vec,string pathname);
     void  loadAll(string path);
     void  save(vector<string>& vec,string pathname);
     void  save(vector<pair<string,string> >& vec,string pathname);
-    void  saveSeclect(vector<string>& vec,string pathname);
+    void  saveSelect(vector<string>& vec,string pathname);
     void  saveAll(string path);
     void  sort();
     void  insert(string word,int good);
