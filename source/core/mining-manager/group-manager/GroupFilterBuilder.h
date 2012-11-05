@@ -25,6 +25,7 @@ class AttrManager;
 class GroupFilter;
 class AttrTable;
 class GroupParam;
+class PropSharedLockSet;
 
 class GroupFilterBuilder
 {
@@ -42,7 +43,9 @@ public:
      *         if @p groupParam.empty() is true, that is, it's not necessary
      *         to do group filter, NULL is returned.
      */
-    GroupFilter* createFilter(const GroupParam& groupParam) const;
+    GroupFilter* createFilter(
+        const GroupParam& groupParam,
+        PropSharedLockSet& sharedLockSet) const;
 
 private:
     const GroupConfigMap& groupConfigMap_;

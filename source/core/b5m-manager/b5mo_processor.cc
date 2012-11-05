@@ -137,6 +137,17 @@ void B5moProcessor::Process(Document& doc, int& type)
         if(need_do_match)
         {
             ProductMatcher::Product product;
+            if(category.empty())
+            {
+                if(matcher_->GetCategory(doc, category))
+                {
+                    doc.property("Category") = category;
+                }
+                else
+                {
+                    category.clear();
+                }
+            }
             if(!category.empty()&&matcher_->GetMatched(doc, product))
             {
                 doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);

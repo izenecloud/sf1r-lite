@@ -1,5 +1,4 @@
 #include "CustomRankManager.h"
-#include "CustomRankScorer.h"
 #include "CustomDocIdConverter.h"
 #include <document-manager/DocumentManager.h>
 
@@ -66,22 +65,11 @@ bool CustomRankManager::getCustomValue(
         return false;
 
     docIdConverter_.convert(customDocStr, customDocId);
-    return true;
-}
-
-CustomRankScorer* CustomRankManager::getScorer(const std::string& query)
-{
-    CustomRankDocId customDocId;
-
-    if (! getCustomValue(query, customDocId))
-        return NULL;
 
     removeDeletedDocs_(customDocId.topIds);
+    removeDeletedDocs_(customDocId.excludeIds);
 
-    if (customDocId.empty())
-        return NULL;
-
-    return new CustomRankScorer(customDocId);
+    return true;
 }
 
 void CustomRankManager::removeDeletedDocs_(std::vector<docid_t>& docIds)
@@ -90,18 +78,18 @@ void CustomRankManager::removeDeletedDocs_(std::vector<docid_t>& docIds)
         return;
 
     const std::size_t size = docIds.size();
-    std::size_t j = 0;
+    std::size_t newSize = 0;
 
     for (std::size_t i = 0; i < size; ++i)
     {
         if (! docManager_->isDeleted(docIds[i]))
         {
-            docIds[j] = docIds[i];
-            ++j;
+            docIds[newSize] = docIds[i];
+            ++newSize;
         }
     }
 
-    docIds.resize(j);
+    docIds.resize(newSize);
 }
 
 bool CustomRankManager::getQueries(std::vector<std::string>& queries)

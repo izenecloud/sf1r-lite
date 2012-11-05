@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <cmath>
 #include <idmlib/util/svm.h>
-#include <idmlib/similarity/string_similarity.h>
 #include <util/functional.h>
 using namespace sf1r;
 using namespace idmlib::sim;
@@ -1028,7 +1027,8 @@ void AttributeIndexer::ProductMatchingSVM()
                     //if(om<=0.0 || pm<=0.0) continue;
                     //double ratio = om/pm;
                     //if(ratio<invert_price_ratio || ratio>price_ratio) continue;
-                    double str_sim = StringSimilarity::Sim(title, product_doc.property["Title"]);
+                    //double str_sim = StringSimilarity::Sim(title, product_doc.property["Title"]);
+                    double str_sim = string_similarity_.Sim(title, product_doc.property["Title"]);
                     //double str_sim = ss_list[pindex]->Sim(title);
                     match_list.push_back(std::make_pair(pindex, str_sim));
 

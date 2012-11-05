@@ -147,8 +147,6 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         if (resultItem.topKDocs_.empty())
             return true;
 
-        searchManager_->rerank(actionItem, resultItem);
-
         if (! getSummaryMiningResult_(actionItem, resultItem, false))
             return false;
 
@@ -160,9 +158,6 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     else
     {
         STOP_PROFILER( cacheoverhead )
-
-        // the cached search results require to be reranked
-        searchManager_->rerank(actionItem, resultItem);
 
         resultItem.setStartCount(actionItem.pageInfo_);
         resultItem.adjustStartCount(topKStart);

@@ -34,7 +34,7 @@
 #include "merchant-score-manager/MerchantScoreManager.h"
 #include "custom-rank-manager/CustomDocIdConverter.h"
 #include "custom-rank-manager/CustomRankManager.h"
-#include "product-ranker/ProductRankerFactory.h"
+#include "product-scorer/ProductScorerFactory.h"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 
@@ -119,7 +119,7 @@ MiningManager::MiningManager(
     , merchantScoreManager_(NULL)
     , customDocIdConverter_(NULL)
     , customRankManager_(NULL)
-    , productRankerFactory_(NULL)
+    , productScorerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
@@ -132,7 +132,7 @@ MiningManager::~MiningManager()
     if (analyzer_) delete analyzer_;
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
-    if (productRankerFactory_) delete productRankerFactory_;
+    if (productScorerFactory_) delete productScorerFactory_;
     if (customRankManager_) delete customRankManager_;
     if (customDocIdConverter_) delete customDocIdConverter_;
     if (merchantScoreManager_) delete merchantScoreManager_;
@@ -409,18 +409,21 @@ bool MiningManager::open()
             }
         }
 
+        const ProductRankingConfig& productRankingConfig =
+            mining_schema_.product_ranking_config;
+
         /** merchant score */
-        if (!mining_schema_.product_ranking_config.merchantPropName.empty() && groupManager_)
+        if (!productRankingConfig.merchantPropName.empty() && groupManager_)
         {
             if (merchantScoreManager_) delete merchantScoreManager_;
 
             const bfs::path scoreDir = bfs::path(prefix_path) / "merchant_score";
             bfs::create_directories(scoreDir);
 
-            const std::string& merchantProp = mining_schema_.product_ranking_config.merchantPropName;
+            const std::string& merchantProp = productRankingConfig.merchantPropName;
             faceted::PropValueTable* merchantValueTable = groupManager_->getPropValueTable(merchantProp);
 
-            const std::string& categoryProp = mining_schema_.product_ranking_config.categoryPropName;
+            const std::string& categoryProp = productRankingConfig.categoryPropName;
             faceted::PropValueTable* categoryValueTable = groupManager_->getPropValueTable(categoryProp);
 
             merchantScoreManager_ = new MerchantScoreManager(merchantValueTable, categoryValueTable);
@@ -434,7 +437,7 @@ bool MiningManager::open()
         }
 
         /** product ranking */
-        if (mining_schema_.product_ranking_config.isEnable)
+        if (productRankingConfig.isEnable)
         {
             // custom doc id converter & rank manager
             if (customRankManager_) delete customRankManager_;
@@ -451,13 +454,14 @@ bool MiningManager::open()
                 *customDocIdConverter_,
                 document_manager_.get());
 
-            // product ranker factory
-            if (productRankerFactory_) delete productRankerFactory_;
+            // product scorer factory
+            if (productScorerFactory_) delete productScorerFactory_;
 
-            productRankerFactory_ = new ProductRankerFactory(this);
+            productScorerFactory_ = new ProductScorerFactory(
+                productRankingConfig, *this);
 
             searchManager_->setCustomRankManager(customRankManager_);
-            searchManager_->setProductRankerFactory(productRankerFactory_);
+            searchManager_->setProductScorerFactory(productScorerFactory_);
         }
 
         /** tdt **/
@@ -1784,4 +1788,12 @@ void MiningManager::doTgInfoRelease_()
         delete tgInfo_;
         tgInfo_ = NULL;
     }
+}
+
+const faceted::PropValueTable* MiningManager::GetPropValueTable(const std::string& propName) const
+{
+    if (! groupManager_)
+        return NULL;
+
+    return groupManager_->getPropValueTable(propName);
 }

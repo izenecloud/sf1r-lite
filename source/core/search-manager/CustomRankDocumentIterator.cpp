@@ -1,17 +1,18 @@
 #include "CustomRankDocumentIterator.h"
 #include "FilterDocumentIterator.h"
-#include <mining-manager/custom-rank-manager/CustomRankScorer.h>
+#include <algorithm> // sort
 
 namespace
 {
 
 using namespace sf1r;
 
-FilterDocumentIterator* createFilterDocIterator(const CustomRankDocId::DocIdList& docIdList)
+FilterDocumentIterator* createFilterDocIterator(CustomRankDocId::DocIdList& docIdList)
 {
     boost::shared_ptr<izenelib::am::EWAHBoolArray<uint32_t> > docIdSet(
         new izenelib::am::EWAHBoolArray<uint32_t>());
 
+    std::sort(docIdList.begin(), docIdList.end());
     for (CustomRankDocId::DocIdList::const_iterator it = docIdList.begin();
         it != docIdList.end(); ++it)
     {
@@ -29,25 +30,21 @@ FilterDocumentIterator* createFilterDocIterator(const CustomRankDocId::DocIdList
 namespace sf1r
 {
 
-CustomRankDocumentIterator::CustomRankDocumentIterator(CustomRankScorer* customRankScorer)
-    : customRankScorer_(customRankScorer)
-    , defaultScoreDocIterator_(NULL)
+CustomRankDocumentIterator::CustomRankDocumentIterator(CustomRankDocId& customRankDocId)
+    : defaultScoreDocIterator_(NULL)
 {
-    const CustomRankDocId& sortCustomValue =
-        customRankScorer_->getSortCustomValue();
-
-    if (! sortCustomValue.topIds.empty())
+    if (! customRankDocId.topIds.empty())
     {
         FilterDocumentIterator* includeDocIter =
-            createFilterDocIterator(sortCustomValue.topIds);
+            createFilterDocIterator(customRankDocId.topIds);
 
         ORDocumentIterator::add(includeDocIter);
     }
 
-    if (! sortCustomValue.excludeIds.empty())
+    if (! customRankDocId.excludeIds.empty())
     {
         FilterDocumentIterator* excludeDocIter =
-            createFilterDocIterator(sortCustomValue.excludeIds);
+            createFilterDocIterator(customRankDocId.excludeIds);
 
         excludeDocIter->setNot(true);
         ORDocumentIterator::add(excludeDocIter);
@@ -66,12 +63,12 @@ double CustomRankDocumentIterator::score(
     const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers
 )
 {
-    double result = customRankScorer_->getScore(currDoc_);
+    double result = 0;
 
-    if (result == 0 && defaultScoreDocIterator_)
+    if (defaultScoreDocIterator_)
     {
-        result = defaultScoreDocIterator_->score(
-            rankQueryProperties, propertyRankers);
+        result = defaultScoreDocIterator_->score(rankQueryProperties,
+                                                 propertyRankers);
     }
 
     return result;
