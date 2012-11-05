@@ -710,7 +710,7 @@ int OpinionsClassificationManager::getResult(const string& Sentence)
                 log_<<wordpair<<"+1";
                 score+=reverse;
                 j++;
-                goodWordUseful_.push_back(wordpair);
+                //goodWordUseful_.push_back(wordpair);
             }
 
             else
@@ -720,7 +720,7 @@ int OpinionsClassificationManager::getResult(const string& Sentence)
                     log_<<wordpair<<"-1";
                     score-=reverse;
                     j++;
-                    badWordUseful_.push_back(wordpair);
+                   // badWordUseful_.push_back(wordpair);
                 }
                 else
                 {
@@ -739,7 +739,7 @@ int OpinionsClassificationManager::getResult(const string& Sentence)
                             log_<<wordvec[j]<<"+1";
                             score+=reverse;
 
-                            goodWordUseful_.push_back(wordvec[j]);
+                           // goodWordUseful_.push_back(wordvec[j]);
                         }
                         else
                         {
@@ -749,7 +749,7 @@ int OpinionsClassificationManager::getResult(const string& Sentence)
                                 log_<<wordvec[j]<<"-1";
                                 score-=reverse;
 
-                                badWordUseful_.push_back(wordvec[j]);
+                              //  badWordUseful_.push_back(wordvec[j]);
                             }
                             else
                             {
