@@ -16,7 +16,6 @@
 
 namespace sf1r
 {
-class CustomRankScorer;
 class CustomDocIdConverter;
 class DocumentManager;
 
@@ -56,15 +55,6 @@ public:
         const std::string& query,
         CustomRankDocId& customDocId
     );
-
-    /**
-     * get the scorer which is customized for @p query.
-     * @param query user query
-     * @return the scorer, it would be NULL if no doc id list
-     *         is customized for @p query.
-     * @attention the caller is responsible to delete the scorer.
-     */
-    CustomRankScorer* getScorer(const std::string& query);
 
     /**
      * get the @p queries which have been customized by @c setCustomValue() with

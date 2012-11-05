@@ -12,6 +12,7 @@
 #include <am/sequence_file/ssfr.h>
 #include <am/leveldb/Table.h>
 #include <idmlib/util/idm_analyzer.h>
+#include <idmlib/similarity/string_similarity.h>
 
 namespace sf1r {
 
@@ -158,6 +159,7 @@ namespace sf1r {
         std::vector<ProductDocument> product_list_;
         boost::unordered_set<AttribNameId> filter_anid_;
         boost::unordered_set<std::string> filter_attrib_name_;
+        idmlib::sim::StringSimilarity string_similarity_;
     };
 }
 

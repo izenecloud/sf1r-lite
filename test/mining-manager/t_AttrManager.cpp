@@ -12,6 +12,7 @@
 #include <mining-manager/group-manager/GroupParam.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
+#include <mining-manager/group-manager/PropSharedLockSet.h>
 #include <mining-manager/group-manager/GroupRep.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/GroupConfig.h>
@@ -253,7 +254,10 @@ private:
         faceted::GroupParam groupParam;
         groupParam.isAttrGroup_ = true;
 
-        faceted::GroupFilter* filter = filterBuilder.createFilter(groupParam);
+        faceted::PropSharedLockSet propSharedLockSet;
+        faceted::GroupFilter* filter =
+            filterBuilder.createFilter(groupParam, propSharedLockSet);
+
         for (vector<unsigned int>::const_iterator it = docIdList_.begin();
             it != docIdList_.end(); ++it)
         {

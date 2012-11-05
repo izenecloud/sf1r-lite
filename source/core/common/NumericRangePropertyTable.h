@@ -31,6 +31,20 @@ bool convert(const std::string& pattern, T& result)
     return true;
 }
 
+template <>
+bool convert<int8_t>(const std::string& pattern, int8_t& result)
+{
+    try
+    {
+        result = boost::numeric_cast<int8_t>(boost::lexical_cast<int32_t>(pattern));
+    }
+    catch (const boost::bad_lexical_cast &)
+    {
+        return false;
+    }
+    return true;
+}
+
 template <class T>
 bool split_numeric(const std::string& pattern, std::pair<T, T>& result)
 {
@@ -395,6 +409,28 @@ inline bool NumericRangePropertyTable<float>::getStringValue(std::size_t pos, st
     else
     {
         ss << data.first << "-" << data.second;
+    }
+    value = ss.str();
+    ss.str(std::string());
+    return true;
+}
+
+template <>
+inline bool NumericRangePropertyTable<int8_t>::getStringValue(std::size_t pos, std::string& value) const
+{
+    ReadLock lock(mutex_);
+    if (pos >= data_.size() || data_[pos] == invalidValue_)
+        return false;
+
+    static std::stringstream ss;
+    const value_type& data = data_[pos];
+    if (data.first == data.second)
+    {
+        ss << boost::numeric_cast<int32_t>(data.first);
+    }
+    else
+    {
+        ss << boost::numeric_cast<int32_t>(data.first) << "-" << boost::numeric_cast<int32_t>(data.second);
     }
     value = ss.str();
     ss.str(std::string());

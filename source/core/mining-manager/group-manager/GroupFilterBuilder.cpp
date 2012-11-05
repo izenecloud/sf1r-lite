@@ -3,6 +3,7 @@
 #include "GroupParam.h"
 #include "GroupCounterLabelBuilder.h"
 #include "GroupManager.h"
+#include "PropSharedLockSet.h"
 #include "../attr-manager/AttrManager.h"
 #include "../attr-manager/AttrTable.h"
 #include <search-manager/NumericPropertyTableBuilder.h>
@@ -24,7 +25,9 @@ GroupFilterBuilder::GroupFilterBuilder(
 {
 }
 
-GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) const
+GroupFilter* GroupFilterBuilder::createFilter(
+    const GroupParam& groupParam,
+    PropSharedLockSet& sharedLockSet) const
 {
     if (groupParam.isEmpty())
         return NULL;
@@ -35,7 +38,7 @@ GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) cons
     {
         GroupCounterLabelBuilder builder(
             groupConfigMap_, groupManager_, numericTableBuilder_);
-        if (!groupFilter->initGroup(builder))
+        if (!groupFilter->initGroup(builder, sharedLockSet))
             return NULL;
     }
 
@@ -47,7 +50,7 @@ GroupFilter* GroupFilterBuilder::createFilter(const GroupParam& groupParam) cons
             return NULL;
         }
 
-        if (!groupFilter->initAttr(*attrTable_))
+        if (!groupFilter->initAttr(*attrTable_, sharedLockSet))
             return NULL;
     }
 

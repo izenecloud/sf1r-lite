@@ -14,16 +14,22 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <algorithm>
+#include <vector>
 
 namespace sf1r
 {
 
-class PropertyRanker;
-class ProductRankerFactory;
 class SortPropertyCache;
 class Sorter;
 class NumericPropertyTableBase;
 class MiningManager;
+class DocumentIterator;
+class RankQueryProperty;
+class PropertyRanker;
+class ProductScorerFactory;
+class ProductScorer;
+
+namespace faceted { class PropSharedLockSet; }
 
 class SearchManagerPreProcessor
 {
@@ -34,6 +40,7 @@ private:
     ~SearchManagerPreProcessor();
 
     boost::unordered_map<std::string, PropertyConfig> schemaMap_;
+    ProductScorerFactory* productScorerFactory_;
 
     boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(
             const std::string& propertyName,
@@ -92,6 +99,15 @@ private:
             const std::vector<std::string>& indexPropertyList,
             std::vector<std::map<termid_t, unsigned> >& termIndexMaps);
 
+    ProductScorer* createProductScorer(
+        const KeywordSearchActionItem& actionItem,
+        boost::shared_ptr<Sorter> sorter,
+        DocumentIterator* scoreDocIterator,
+        const std::vector<RankQueryProperty>& rankQueryProps,
+        const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers,
+        faceted::PropSharedLockSet& propSharedLockSet);
+
+    bool isProductRanking_(const KeywordSearchActionItem& actionItem) const;
 };
 
 } // end of sf1r

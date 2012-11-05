@@ -300,9 +300,7 @@
             <xs:sequence>
                 <xs:element name="MerchantProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="CategoryProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
-                <xs:element name="CategoryScoreProperty" type="PropertyType" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
-            <xs:attribute name="debug" type="YesNoType" use="optional"/>
         </xs:complexType>
     </xs:element>
 

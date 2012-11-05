@@ -105,7 +105,9 @@ sub vcl_pass {
 #         return (pass);
 #     }
      if( (req.request == "GET" || req.request == "HEAD") && (req.url ~ "^/image.cgi" || req.url ~ "^/image/") ) {
-         set beresp.ttl = 7d;
+         if(beresp.status == 200 || beresp.status == 302) {
+             set beresp.ttl = 1h;
+         }
          if(beresp.status == 404) {
              set beresp.ttl = 0s;
          }

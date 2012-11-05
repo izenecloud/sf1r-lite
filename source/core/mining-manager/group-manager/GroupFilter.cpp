@@ -5,6 +5,7 @@
 #include "GroupLabel.h"
 #include "GroupCounterLabelBuilder.h"
 #include "GroupRep.h"
+#include "PropSharedLockSet.h"
 #include "../faceted-submanager/ontology_rep.h"
 #include "../attr-manager/AttrTable.h"
 #include "../attr-manager/AttrCounter.h"
@@ -44,7 +45,9 @@ GroupFilter::~GroupFilter()
     delete attrCounter_;
 }
 
-bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
+bool GroupFilter::initGroup(
+    GroupCounterLabelBuilder& builder,
+    PropSharedLockSet& sharedLockSet)
 {
     // map from prop name to GroupCounter instance
     typedef std::map<std::string, GroupCounter*> GroupCounterMap;
@@ -57,7 +60,7 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
         const std::string& propName = it->property_;
         if (groupCounterMap.find(propName) == groupCounterMap.end())
         {
-            GroupCounter* counter = builder.createGroupCounter(*it, sharedLockSet_);
+            GroupCounter* counter = builder.createGroupCounter(*it, sharedLockSet);
             if (counter)
             {
                 groupCounterMap[propName] = counter;
@@ -80,7 +83,7 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
         labelIt != labels.end(); ++labelIt)
     {
         const std::string& propName = labelIt->first;
-        GroupLabel* label = builder.createGroupLabel(*labelIt, sharedLockSet_);
+        GroupLabel* label = builder.createGroupLabel(*labelIt, sharedLockSet);
         if (label)
         {
             GroupCounterMap::iterator counterIt = groupCounterMap.find(propName);
@@ -101,12 +104,11 @@ bool GroupFilter::initGroup(GroupCounterLabelBuilder& builder)
     return true;
 }
 
-bool GroupFilter::initAttr(const AttrTable& attrTable)
+bool GroupFilter::initAttr(
+    const AttrTable& attrTable,
+    PropSharedLockSet& sharedLockSet)
 {
-    if (! groupParam_.isAttrEmpty())
-    {
-        sharedLockSet_.insertSharedLock(&attrTable);
-    }
+    sharedLockSet.insertSharedLock(&attrTable);
 
     if (groupParam_.isAttrGroup_)
     {

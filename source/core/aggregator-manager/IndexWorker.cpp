@@ -1574,7 +1574,7 @@ bool IndexWorker::prepareDocument_(
                 {
                     izenelib::util::UString dateStr;
                     time_t ts = Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
-                    boost::shared_ptr<NumericPropertyTableBase>& datePropertyTable = documentManager_->getNumericPropertyTable(dateProperty_.getName());
+                    boost::shared_ptr<NumericPropertyTableBase>& datePropertyTable = documentManager_->getNumericPropertyTable(iter->getName());
                     datePropertyTable->setInt64Value(docId, ts);
                 }
                 else

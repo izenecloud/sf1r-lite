@@ -93,7 +93,7 @@ class MultiDocSummarizationSubManager;
 class MerchantScoreManager;
 class CustomRankManager;
 class CustomDocIdConverter;
-class ProductRankerFactory;
+class ProductScorerFactory;
 class SuffixMatchManager;
 class IncrementalManager;
 
@@ -323,6 +323,7 @@ public:
             uint32_t max_docs,
             bool use_fuzzy,
             uint32_t start,
+            const std::string& filterstr,
             std::vector<uint32_t>& docIdList,
             std::vector<float>& rankScoreList,
             std::size_t& totalCount);
@@ -365,15 +366,7 @@ public:
 
     void onIndexUpdated(size_t docNum);
 
-    const MiningSchema& GetMiningSchema() const
-    {
-        return mining_schema_;
-    }
-
-    const faceted::GroupManager* GetGroupManager() const
-    {
-        return groupManager_;
-    }
+    const faceted::PropValueTable* GetPropValueTable(const std::string& propName) const;
 
     GroupLabelLogger* GetGroupLabelLogger(const std::string& propName)
     {
@@ -383,6 +376,11 @@ public:
     const MerchantScoreManager* GetMerchantScoreManager() const
     {
         return merchantScoreManager_;
+    }
+
+    CustomRankManager* GetCustomRankManager()
+    {
+        return customRankManager_;
     }
 
     boost::shared_ptr<SearchManager>& GetSearchManager()
@@ -548,8 +546,8 @@ private:
     /** Custom Rank Manager */
     CustomRankManager* customRankManager_;
 
-    /** Product Ranking */
-    ProductRankerFactory* productRankerFactory_;
+    /** Product Score */
+    ProductScorerFactory* productScorerFactory_;
 
     /** TDT */
     std::string tdt_path_;

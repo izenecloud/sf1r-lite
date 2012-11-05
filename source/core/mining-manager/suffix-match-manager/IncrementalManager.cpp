@@ -27,19 +27,15 @@ namespace sf1r
 		pIncrementIndex_ = NULL;
 		DocNumber_ = 0;
 		doc_file_path_ = path;
+		isAddedIndex_ = false;
 	}
 
 	bool IndexBarral::buildIndex_(docid_t docId, std::string& text)
 	{
  		izenelib::util::UString utext(text, izenelib::util::UString::UTF_8);
- 
- 		PropertyConfig tempPropertyConfig;
-		tempPropertyConfig.propertyName_ = "Title";
-		IndexBundleSchema::iterator iter = indexSchema_.find(tempPropertyConfig);
 
 		AnalysisInfo analysisInfo;
-        analysisInfo.analyzerId_ = "la_sia";
-        
+        analysisInfo.analyzerId_ = "la_sia";    
  		LAInput laInput;
  		laInput.setDocId(docId);
  		if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
@@ -52,11 +48,8 @@ namespace sf1r
  			termidList.push_back((*it).termid_);
  			posList.push_back((*it).wordOffset_);
  		}
-
  		pForwardIndex_->addDocForwardIndex_(docId, termidList, posList);
-
- 		pIncrementIndex_->addIndex_(docId, termidList , posList);
- 		
+        pIncrementIndex_->addIndex_(docId, termidList , posList);
  		return true;
  	}
 
@@ -72,14 +65,15 @@ namespace sf1r
 	, indexSchema_(indexSchema)
 	{
 		BerralNum_ = 0;
-		last_docid_ = 1;
+		last_docid_ = 0;
 		IndexedDocNum_ = 0;
 		pMainBerral_ =  NULL;
 		pTmpBerral_ = NULL;
 		property_ = property;
 		isInitIndex_ = true;
 		isMergeToFm_ = false;
-		tmpdata = 1000000;
+		isStartFromLocal_ = false;
+		tmpdata = 600000;
 		isAddingIndex_ = false;
 		index_path_ = path;
 	}
@@ -125,19 +119,22 @@ namespace sf1r
  				cout<<endl;
  				if (pMainBerral_ != NULL && isInitIndex_ == false)
  				{
-					pMainBerral_->getResult_(termidList, resultList, ResultListSimilarity);
-
+ 					{
+ 						ScopedReadLock lock(mutex_);
+						pMainBerral_->getResult_(termidList, resultList, ResultListSimilarity);
+					}
  				}
  				if (pTmpBerral_ != NULL && isAddingIndex_ == false)
  				{ 
  					{
+ 						cout<<"get temp"<<endl;
  						ScopedReadLock lock(mutex_);
  						pTmpBerral_->getResult_(termidList, resultList, ResultListSimilarity);
  					}
  				}
  				cout<<"search ResulList number:"<<resultList.size()<<endl;
- 				//ResultListSimilarity.clear();
- 				/*for (std::vector<uint32_t>::iterator i = resultList.begin(); i != resultList.end(); ++i)
+ 				/*ResultListSimilarity.clear();
+ 				for (std::vector<uint32_t>::iterator i = resultList.begin(); i != resultList.end(); ++i)
  				{
  					PropertyValue result;
  					document_manager_->getPropertyValue(*i, "Title", result);
@@ -160,7 +157,10 @@ namespace sf1r
 	{
 		if (BerralNum_ == 0)
 		{
+			LOG(INFO) << "Loading incremental index......"<<endl;
+			startIncrementalManager();
 			init_();
+			LOG(INFO) << "Loading Finished"<<endl;
 		}
 
 		uint32_t i = 0;
@@ -171,12 +171,13 @@ namespace sf1r
 		else
 			isAddingIndex_ = true;
 
-		for ( i = last_docid_; i <= document_manager_->getMaxDocId(); ++i)
-    	{
-        	if (i % 100000 == 0)
+		tmpdata = (500000 + last_docid_);
+		for(i = last_docid_ + 1; i <= document_manager_->getMaxDocId(); i++)
+		{
+			if (i % 100000 == 0)
         	{
             	LOG(INFO) << "inserted docs: " << i;
-            	if (i == tmpdata)
+            	if (i == tmpdata || i == tmpdata+1 || i== tmpdata-1)
             	{
             		break;
             	}
@@ -184,15 +185,18 @@ namespace sf1r
         	Document doc;
         	document_manager_->getDocument(i, doc);
         	Document::property_const_iterator it = doc.findProperty(property_);
-
-        	const izenelib::util::UString& text = it->second.get<UString>();
+        	if (it == doc.propertyEnd())
+        	{
+        		last_docid_++;
+        		continue;
+        	}
+        	const izenelib::util::UString& text = it->second.get<UString>();//text.length();
         	std::string textStr;
         	text.convertString(textStr, izenelib::util::UString::UTF_8);
-
         	index_(i, textStr);
 
         	last_docid_++;
-    	}
+		}
     	izenelib::util::ClockTimer timer;
     	LOG(INFO) <<"begin prepare_index_....."<<endl;
     	prepare_index_();
@@ -200,19 +204,58 @@ namespace sf1r
     	isAddingIndex_= false;
     	LOG(INFO) <<"prepare_index_ total elapsed:"<<timer.elapsed()<<" seconds"<<endl;
     	pMainBerral_->print();
-    	tmpdata += 500000;	
+    	if(pTmpBerral_) pTmpBerral_->print(); 
 	}
 
 	void IncrementalManager::createIndex_()
 	{
+		cout<<"document_manager_->getMaxDocId()"<<document_manager_->getMaxDocId()<<endl;
 		string name = "createIndex_";
-		//cout<<"getMaxDocId.............."<<document_manager_->getMaxDocId()<<endl;
 		task_type task = boost::bind(&IncrementalManager::doCreateIndex_, this);
     	JobScheduler::get()->addTask(task, name);
 	}
 
-	/*void void IncrementalManager::mergeIndex() //merge tmpBerral to MainBerral...
+	void IncrementalManager::mergeIndex()
 	{
+		if (pMainBerral_ != NULL && pTmpBerral_ != NULL)
+		{
+			//if ((pMainBerral_->getForwardIndex()->getIndexCount_() + pTmpBerral_->getForwardIndex()->getIndexCount_()) <= MAX_INCREMENT_DOC)
+			{
+				std::vector<IndexItem>::const_iterator i = (*(pTmpBerral_->getForwardIndex()->getIndexItem_())).begin();
+				for ( ; i != (*(pTmpBerral_->getForwardIndex()->getIndexItem_())).end(); ++i)
+				{
+					pMainBerral_->getForwardIndex()->addIndexItem_(*i);
+				}
+			}
 
-	}*/
+			for (std::set<std::pair<uint32_t, uint32_t>, pairLess>::const_iterator it = (*(pTmpBerral_->getIncrementIndex()->gettermidList_())).begin()
+					; it != (*(pTmpBerral_->getIncrementIndex()->gettermidList_())).end()
+					; ++it)
+			{
+				pMainBerral_->getIncrementIndex()->addTerm_(*it, (*(pTmpBerral_->getIncrementIndex()->getdocidLists_()))[(*it).second]);////xxx
+			}
+			prepare_index_();
+			delete_AllIndexFile();
+			string file = ".tmp";
+			pMainBerral_->save_(file);
+			delete pTmpBerral_;
+			pTmpBerral_ = NULL;
+			saveLastDocid_();
+			string tmpName = pMainBerral_->getForwardIndex()->getPath() + file;
+			string fileName = pMainBerral_->getForwardIndex()->getPath();
+
+			boost::filesystem::path path(tmpName);
+			boost::filesystem::path path1(fileName);
+			boost::filesystem::rename(path, path1);
+
+			string tmpName1 = pMainBerral_->getIncrementIndex()->getPath() + file;
+			string fileName2 = pMainBerral_->getIncrementIndex()->getPath();
+
+			boost::filesystem::path path2(tmpName1);
+			boost::filesystem::path path3(fileName2);
+			boost::filesystem::rename(path2, path3);
+			pMainBerral_->resetStatus();
+			pMainBerral_->print();
+		}
+	}
 }

@@ -214,7 +214,7 @@ int do_main(int ac, char** av)
         ("b5mc", po::value<std::string>(), "specify b5mc scd path")
         ("uue", po::value<std::string>(), "uue path")
         ("spu", po::value<std::string>(), "spu path")
-        ("category-group", po::value<std::string>(), "specify category group file")
+        //("category-group", po::value<std::string>(), "specify category group file")
         ("output-match,O", po::value<std::string>(), "specify output match path")
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
         ("dictionary", po::value<std::string>(), "specify dictionary path")
@@ -229,6 +229,8 @@ int do_main(int ac, char** av)
         ("test", "specify test flag")
         ("force", "specify force flag")
         ("trie", "do trie test")
+        ("cr-train", "do category recognizer training")
+        ("cr", "do category recognizer")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -256,7 +258,7 @@ int do_main(int ac, char** av)
     boost::shared_ptr<LogServerConnectionConfig> logserver_config;
     boost::shared_ptr<RpcServerConnectionConfig> imgserver_config;
     std::string synonym_file;
-    std::string category_group;
+    //std::string category_group;
     std::string dictionary;
     std::string mobile_source;
     std::string human_match;
@@ -376,11 +378,11 @@ int do_main(int ac, char** av)
         synonym_file = vm["synonym"].as<std::string>();
         std::cout<< "synonym file set to "<<synonym_file<<std::endl;
     }
-    if(vm.count("category-group"))
-    {
-        category_group = vm["category-group"].as<std::string>();
-        std::cout<< "category_group set to "<<category_group<<std::endl;
-    }
+    //if(vm.count("category-group"))
+    //{
+        //category_group = vm["category-group"].as<std::string>();
+        //std::cout<< "category_group set to "<<category_group<<std::endl;
+    //}
     if(vm.count("cma-path"))
     {
         cma_path = vm["cma-path"].as<std::string>();
@@ -496,10 +498,10 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        if(!category_group.empty()&&boost::filesystem::exists(category_group))
-        {
-            matcher.LoadCategoryGroup(category_group);
-        }
+        //if(!category_group.empty()&&boost::filesystem::exists(category_group))
+        //{
+            //matcher.LoadCategoryGroup(category_group);
+        //}
         if(!matcher.Index(scd_path))
         {
             return EXIT_FAILURE;
@@ -723,6 +725,40 @@ int do_main(int ac, char** av)
         }
         LogServerHandler handler(*logserver_config);
         if(!handler.Generate(mdb_instance))
+        {
+            return EXIT_FAILURE;
+        }
+    }
+    if(vm.count("cr-train"))
+    {
+        if( knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ProductMatcher matcher(knowledge_dir);
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open())
+        {
+            return EXIT_FAILURE;
+        }
+        if(!matcher.IndexCR())
+        {
+            return EXIT_FAILURE;
+        }
+    }
+    if(vm.count("cr"))
+    {
+        if( scd_path.empty() || knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ProductMatcher matcher(knowledge_dir);
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open())
+        {
+            return EXIT_FAILURE;
+        }
+        if(!matcher.DoCR(scd_path))
         {
             return EXIT_FAILURE;
         }
