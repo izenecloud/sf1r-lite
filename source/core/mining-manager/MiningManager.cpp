@@ -1774,7 +1774,8 @@ bool MiningManager::GetSuffixMatch(
     else
     {
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
-        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, 
+            rankScoreList, UString(filterstr, UString::UTF_8));
         docIdList.erase(docIdList.begin(), docIdList.begin() + start);
         rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
     }
