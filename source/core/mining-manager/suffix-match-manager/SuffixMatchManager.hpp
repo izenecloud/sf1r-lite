@@ -14,6 +14,11 @@ namespace sf1r
 {
 
 class DocumentManager;
+class FilterManager;
+namespace faceted
+{
+    class GroupManager;
+}
 
 class SuffixMatchManager
 {
@@ -24,7 +29,8 @@ public:
             const std::string& homePath,
             const std::string& property,
             const std::string& dicpath,
-            boost::shared_ptr<DocumentManager>& document_manager);
+            boost::shared_ptr<DocumentManager>& document_manager,
+            faceted::GroupManager* groupmanager);
 
     ~SuffixMatchManager();
     void setGroupFilterProperty(std::vector<std::string>& propertys);
@@ -39,8 +45,6 @@ public:
 
 
 private:
-    void loadFilterInvertedData(std::vector< FMIndexType::FilterItemT >& filter_inverted_data);
-    void saveFilterInvertedData(const std::vector< FMIndexType::FilterItemT >& filter_inverted_data) const;
 
     std::string data_root_path_;
     std::string fm_index_path_;
@@ -60,6 +64,7 @@ private:
     typedef boost::unique_lock<MutexType> WriteLock;
 
     mutable MutexType mutex_;
+    boost::shared_ptr<FilterManager>  filter_manager_;
 };
 
 }
