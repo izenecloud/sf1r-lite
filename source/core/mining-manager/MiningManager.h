@@ -315,7 +315,7 @@ public:
             uint32_t max_docs,
             bool use_fuzzy,
             uint32_t start,
-            const std::string& filterstr,
+            const std::vector<QueryFiltering::FilteringType>& filter_param,
             std::vector<uint32_t>& docIdList,
             std::vector<float>& rankScoreList,
             std::size_t& totalCount);

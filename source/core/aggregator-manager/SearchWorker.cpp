@@ -222,6 +222,7 @@ void SearchWorker::makeQueryIdentity(
         break;
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
+        identity.filterInfo = item.filteringList_;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -358,7 +359,7 @@ bool SearchWorker::getSearchResult_(
                                                    actionOperation.actionItem_.searchingMode_.lucky_,
                                                    actionOperation.actionItem_.searchingMode_.usefuzzy_,
                                                    topKStart,
-                                                   actionOperation.actionItem_.searchingMode_.filterstr_,
+                                                   actionOperation.actionItem_.filteringList_,
                                                    resultItem.topKDocs_,
                                                    resultItem.topKRankScoreList_,
                                                    resultItem.totalCount_))
