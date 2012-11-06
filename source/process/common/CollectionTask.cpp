@@ -9,7 +9,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 namespace bfs = boost::filesystem;
-namespace bfs3 = boost::filesystem3;
 
 namespace sf1r
 {
@@ -81,7 +80,6 @@ void RebuildTask::doTask()
         bfs::remove_all(collDir+"-backup");
         bfs::rename(collDir, collDir+"-backup");
         try {
-            //bfs3::copy_directory(rebuildCollDir, collDir);
             bfs::rename(rebuildCollDir, collDir);
         }
         catch (const std::exception& e) {
