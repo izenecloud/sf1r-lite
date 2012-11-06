@@ -1,32 +1,26 @@
 #ifndef SF1R_MINING_MANAGER_SUMMARIZATION_CLASSFICATION_OPINIONMANAGER_H
 #define SF1R_MINING_MANAGER_SUMMARIZATION_CLASSFICATION_OPINIONMANAGER_H
 
-#include <icma/icma.h>
-
-#include <string.h>
-//#include <icma/icma.h>
 #include <boost/tuple/tuple.hpp>
 #include <boost/function.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread/shared_mutex.hpp>
-#include <mining-manager/auto-fill-submanager/word_leveldb_table.hpp>
+#include <am/leveldb/Table.h>
+#include <util/ustring/UString.h>
 #include <icma/icma.h>
-#include <string.h>
+#include <string>
 #include <iostream>
-
-
-using namespace cma;
-//using namespace crfsgd;
-using namespace std;
-
-using std::string;
-using std::vector;
-
 
 namespace sf1r
 {
+
+using namespace cma;
+using namespace std;
+using std::string;
+using std::vector;
+using izenelib::util::UString;
 
 class OpinionsClassificationManager
 {
@@ -59,33 +53,33 @@ class OpinionsClassificationManager
 public:
     OpinionsClassificationManager(const string& cma_path,const string& path);
     ~OpinionsClassificationManager();
-    void  getWordFromTrainData();
-    void  ClassfyWord(string word);
-    void  ClassfyWordVector();
-    bool  isreverse(string word);
-    void  reverseDeal(vector<string>& wordvec,bool& good);
-    void  insertWord(string word,bool good);
-    vector<string> SegQuery(const std::string& query);
-    vector<string> SegWord(const std::string& Word);
-    void  getPairFromTrainData();
-    void  inserPair(string word1,string word2,bool good);
-    double PMI(string word1,string word2);
-    void  ClassfyPair(pair<string,string> p);
-    void  ClassfyPairVector(vector<pair<string,string> > p);
-    int getResult(const string& Sentence);
-    bool  include(pair<string,string> wordpair,vector<pair<string,string> >& pairvec);
-    bool  include(string word,vector<string>& strvec);
-    std::pair<UString,UString> test(const string& Segment);
-    void  load(vector<string>& vec,string pathname);
-    void  load(vector<pair<string,string> >& vec,string pathname);
-    void  loadAll(string path);
-    void  save(vector<string>& vec,string pathname);
-    void  save(vector<pair<string,string> >& vec,string pathname);
-    void  saveSelect(vector<string>& vec,string pathname);
-    void  saveAll(string path);
-    void  sort();
-    void  insert(string word,int good);
-    int  dealwithWordPair(string wordpair,bool& reverse);
+    void GetWordFromTrainData();
+    void ClassifyWord(const string& word);
+    void ClassifyWordVector();
+    bool IsReverse(const string& word);
+    void ReverseDeal(vector<string>& wordvec,bool& good);
+    void InsertWord(const string& word,bool good);
+    void SegQuery(const std::string& query, vector<string>& ret);
+    void SegWord(const std::string& Word, vector<string>& ret );
+    void GetPairFromTrainData();
+    void InsertPair(const string& word1,const string& word2,bool good);
+    double PMI(const string& word1,const string& word2);
+    void ClassifyPair(const pair<string,string>& p);
+    void ClassifyPairVector(const vector<pair<string,string> >& p);
+    int GetResult(const string& Sentence);
+    bool Include(const pair<string,string>& wordpair,const vector<pair<string,string> >& pairvec);
+    bool Include(const string& word, const vector<string>& strvec);
+    void Classify(const string& Segment, std::pair<UString,UString>&result);
+    void Load(const string& pathname, vector<string>& vec);
+    void Load(const string& pathname, vector<pair<string,string> >& vec);
+    void LoadAll(const string& path);
+    void Save(const string& pathname, vector<string>& vec);
+    void Save(const string& pathname, vector<pair<string,string> >& vec);
+    void SaveSelect(const string& pathname, vector<string>& vec);
+    void SaveAll(const string& path);
+    void Sort();
+    void Insert(const string& word,int good);
+    int DealwithWordPair(const string& wordpair,bool& reverse);
 public:
     static std::string system_resource_path_;
 };
