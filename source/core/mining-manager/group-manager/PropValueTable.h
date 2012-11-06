@@ -45,6 +45,9 @@ public:
     /** mapping from value id to the map of child values */
     typedef std::vector<PropStrMap> ChildMapTable;
 
+    /** mapping from value id to parent value id */
+    typedef std::vector<pvid_t> ParentIdTable;
+
     typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t> > ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
 
@@ -112,6 +115,8 @@ public:
 
     const ChildMapTable& childMapTable() const { return childMapTable_; }
 
+    const ParentIdTable& parentIdTable() const { return parentIdVec_; }
+
     /**
      * Get the first property value id for @p docId.
      * @return the first value id, if @p docId has no value ids, 0 is returned.
@@ -165,7 +170,7 @@ private:
     unsigned int savePropStrNum_;
 
     /** mapping from value id to parent value id */
-    std::vector<pvid_t> parentIdVec_;
+    ParentIdTable parentIdVec_;
     /** the number of elements in @c parentIdVec_ saved in file */
     unsigned int saveParentIdNum_;
 

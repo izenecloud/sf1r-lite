@@ -14,12 +14,12 @@
 #define SF1R_CATEGORY_SCORER_H
 
 #include "ProductScorer.h"
+#include "../group-manager/PropValueTable.h"
 #include <vector>
 #include <map>
 
 namespace sf1r
 {
-namespace faceted { class PropValueTable; }
 
 class CategoryScorer : public ProductScorer
 {
@@ -32,6 +32,7 @@ public:
 
 private:
     const faceted::PropValueTable& categoryValueTable_;
+    const faceted::PropValueTable::ParentIdTable& parentIdTable_;
 
     typedef std::map<category_id_t, score_t> CategoryScores;
     CategoryScores categoryScores_;
