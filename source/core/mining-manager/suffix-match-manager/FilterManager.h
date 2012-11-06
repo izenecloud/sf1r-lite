@@ -119,6 +119,7 @@ public:
     void buildGroupFilterData(uint32_t last_docid, uint32_t max_docid, std::vector< std::string >& propertys,
         std::vector<StrFilterItemMapT>& group_filter_data);
     FilterIdRange getGroupFilterIdRange(const std::string& property, const izenelib::util::UString& grouppath);
+    izenelib::util::UString FormatGroupPath(std::vector<izenelib::util::UString>& groupPath) const;
 
     FilterIdRange getPriceFilterIdRange();
     
@@ -135,6 +136,7 @@ private:
     typedef std::map<float, FilterIdRange> NumberIdMapT;
     typedef std::map<std::string, StrIdMapT> StrPropertyIdMapT;
     typedef std::map<std::string, NumberIdMapT> NumPropertyIdMapT;
+
     void mapGroupFilterToFilterId(GroupNode* node, const StrFilterItemMapT& group_filter_data,
         StrIdMapT& filterids);
     static void printNode(GroupNode* node, size_t level, const StrIdMapT& filterids, const std::vector<FilterDocListT>& inverted_data)

@@ -139,11 +139,16 @@ void FilterManager::buildGroupFilterData(uint32_t last_docid, uint32_t max_docid
             {
                 std::vector< izenelib::util::UString > groupPath;
                 pvt->propValuePath(propids[k], groupPath);
-                StrFilterKeyT groupstr;
+                if(groupPath.empty())
+                    continue;
                 GroupNode* curgroup = property_root_nodes[j];
-                for(size_t k = 0; k < groupPath.size(); ++k)
+                StrFilterKeyT groupstr = groupPath[0];
+                curgroup->appendChild(groupstr);
+                curgroup = curgroup->getChild(groupstr);
+                assert(curgroup);
+                for(size_t k = 1; k < groupPath.size(); ++k)
                 {
-                    groupstr.append(groupPath[k].append(UString(">", UString::UTF_8)));
+                    groupstr.append(UString(">", UString::UTF_8)).append(groupPath[k]);
                     curgroup->appendChild(groupstr);
                     curgroup = curgroup->getChild(groupstr);
                     assert(curgroup);
@@ -174,7 +179,7 @@ void FilterManager::buildGroupFilterData(uint32_t last_docid, uint32_t max_docid
         GroupNode* cur_property_group = property_root_nodes[j];
         StrIdMapT& gfilterids = strtype_filterids_[propertys[j]];
         mapGroupFilterToFilterId(cur_property_group, group_filter_data[j], gfilterids);        
-        //printNode(property_root_nodes[j], 0, gfilterids, all_inverted_filter_data_);
+        printNode(property_root_nodes[j], 0, gfilterids, all_inverted_filter_data_);
     }
     delete group_root;
 }
@@ -313,6 +318,19 @@ void FilterManager::loadFilterId(const std::vector<std::string> propertys)
             }
         }
     }
+}
+
+izenelib::util::UString FilterManager::FormatGroupPath(std::vector<izenelib::util::UString>& groupPath) const
+{
+    izenelib::util::UString groupstr;
+    if(groupPath.empty())
+        return groupstr;
+    groupstr = groupPath[0];
+    for(size_t k = 1; k < groupPath.size(); ++k)
+    {
+        groupstr.append(UString(">", UString::UTF_8)).append(groupPath[k]);
+    }
+    return groupstr;
 }
 
 FilterManager::FilterIdRange FilterManager::getGroupFilterIdRange(const std::string& property, const izenelib::util::UString& grouppath)
