@@ -1,5 +1,9 @@
+#ifndef SF1R_MINING_SUFFIX_MATCHMANAGER_H_
+#define SF1R_MINING_SUFFIX_MATCHMANAGER_H_
+
 #include <common/type_defs.h>
 #include <am/succinct/fm-index/fm_index.hpp>
+#include <query-manager/ActionItem.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
@@ -41,10 +45,13 @@ public:
     size_t longestSuffixMatch(const izenelib::util::UString& pattern, size_t max_docs, std::vector<uint32_t>& docid_list, std::vector<float>& score_list) const;
     size_t AllPossibleSuffixMatch(const izenelib::util::UString& pattern,
         size_t max_docs, std::vector<uint32_t>& docid_list,
-        std::vector<float>& score_list, const izenelib::util::UString& filter_str = izenelib::util::UString()) const;
+        std::vector<float>& score_list, const std::vector<QueryFiltering::FilteringType>& filter_param) const;
 
 
 private:
+
+    bool getAllFilterRangeFromFilterParam(const std::vector<QueryFiltering::FilteringType>& filter_param,
+        std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
 
     std::string data_root_path_;
     std::string fm_index_path_;
@@ -68,3 +75,5 @@ private:
 };
 
 }
+
+#endif

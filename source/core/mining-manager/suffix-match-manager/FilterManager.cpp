@@ -65,7 +65,7 @@ uint32_t FilterManager::loadGroupFilterInvertedData(const std::vector<std::strin
         }
         else
         {
-            LOG(INFO) << "propterty:" << propterty << ", no inverted file found!";
+            LOG(INFO) << "propterty:" << property << ", no inverted file found!";
         }
     }
     return max_docid;
@@ -115,14 +115,14 @@ void FilterManager::buildGroupFilterData(uint32_t last_docid, uint32_t max_docid
 {
     if(groupManager_ == NULL)
         return;
-    group_root_ = new GroupNode(UString("root", UString::UTF_8));
+    GroupNode* group_root = new GroupNode(UString("root", UString::UTF_8));
     std::vector<GroupNode*> property_root_nodes;
     group_filter_data.resize(propertys.size());
     // the relationship between group node need rebuild from docid = 1.
     for(size_t j = 0; j < propertys.size(); ++j)
     {
-        group_root_->appendChild(UString(propertys[j], UString::UTF_8));
-        property_root_nodes.push_back(group_root_->getChild(UString(propertys[j], UString::UTF_8)));
+        group_root->appendChild(UString(propertys[j], UString::UTF_8));
+        property_root_nodes.push_back(group_root->getChild(UString(propertys[j], UString::UTF_8)));
 
         faceted::PropValueTable* pvt = groupManager_->getPropValueTable(propertys[j]);
         if(pvt == NULL)
@@ -148,10 +148,10 @@ void FilterManager::buildGroupFilterData(uint32_t last_docid, uint32_t max_docid
                     curgroup = curgroup->getChild(groupstr);
                     assert(curgroup);
                 }
-                std::string outstr;
-                groupstr.convertString(outstr, UString::UTF_8);
                 if(propids.size() > 1)
                 {
+                    std::string outstr;
+                    groupstr.convertString(outstr, UString::UTF_8);
                     LOG(INFO) << "the docid belong two different leaf group ";
                     LOG(INFO) << docid << ", " << outstr;
                 }
@@ -176,7 +176,7 @@ void FilterManager::buildGroupFilterData(uint32_t last_docid, uint32_t max_docid
         mapGroupFilterToFilterId(cur_property_group, group_filter_data[j], gfilterids);        
         //printNode(property_root_nodes[j], 0, gfilterids, all_inverted_filter_data_);
     }
-    delete group_root_;
+    delete group_root;
 }
 
 void FilterManager::mapGroupFilterToFilterId(GroupNode* node, const StrFilterItemMapT& group_filter_data,

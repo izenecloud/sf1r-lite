@@ -163,7 +163,6 @@ private:
     }
 
 
-    GroupNode* group_root_;
     faceted::GroupManager* groupManager_;
     std::string data_root_path_;
     // property=>(GroupPath/Attribute =>filterid)
