@@ -308,26 +308,26 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(const std::vector<Quer
             catch (const boost::bad_get &)
             {
                 LOG(INFO) << "get filter string failed. boost::bad_get.";
-                return false;
+                continue;
             }
             if(filterid_range.start == filterid_range.end)
             {
                 LOG(INFO) << "filter id range not found. " << filterstr;
-                return false;
+                continue;
             }
 
             bool ret = fmi_->getFilterRange(std::make_pair(filterid_range.start, filterid_range.end), filter_range);
             if(!ret)
             {
                 LOG(INFO) << "get filter DocArray range failed.";
-                return false;
+                continue;
             }
 
             LOG(INFO) << "filter DocArray range is : " << filter_range.first << ", " << filter_range.second; 
             filter_range_list.push_back(filter_range);
         }
     }
-    return true;
+    return filter_range_list.size() > 0;
 }
 
 void SuffixMatchManager::buildTokenizeDic()
