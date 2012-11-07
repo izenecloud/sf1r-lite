@@ -223,6 +223,8 @@ void SearchWorker::makeQueryIdentity(
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
         identity.filterInfo = item.filteringList_;
+        identity.sortInfo = item.sortPriorityList_;
+        identity.strExp = item.strExp_;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -355,14 +357,15 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::SUFFIX_MATCH:
-        if (!miningManager_->GetSuffixMatch(actionOperation.actionItem_.env_.queryString_,
-                                                   actionOperation.actionItem_.searchingMode_.lucky_,
-                                                   actionOperation.actionItem_.searchingMode_.usefuzzy_,
-                                                   topKStart,
-                                                   actionOperation.actionItem_.filteringList_,
-                                                   resultItem.topKDocs_,
-                                                   resultItem.topKRankScoreList_,
-                                                   resultItem.totalCount_))
+        if (!miningManager_->GetSuffixMatch(actionOperation,
+                                            actionOperation.actionItem_.searchingMode_.lucky_,
+                                            actionOperation.actionItem_.searchingMode_.usefuzzy_,
+                                            topKStart,
+                                            actionOperation.actionItem_.filteringList_,
+                                            resultItem.topKDocs_,
+                                            resultItem.topKRankScoreList_,
+                                            resultItem.topKCustomRankScoreList_,
+                                            resultItem.totalCount_))
         {
             return true;
         }

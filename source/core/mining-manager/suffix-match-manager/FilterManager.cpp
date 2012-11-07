@@ -1,6 +1,7 @@
 #include "FilterManager.h"
 #include "../group-manager/PropValueTable.h" // pvid_t
 #include "../group-manager/GroupManager.h"
+#include "../attr-manager/AttrManager.h"
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <iostream>
@@ -12,6 +13,7 @@ namespace sf1r
 
 FilterManager::FilterManager(faceted::GroupManager* g, const std::string& rootpath)
     :groupManager_(g),
+    attrManager_(NULL),
     data_root_path_(rootpath)
 {
 }
@@ -23,6 +25,16 @@ FilterManager::~FilterManager()
 faceted::GroupManager* FilterManager::getGroupManager() const 
 {
     return groupManager_;
+}
+
+void FilterManager::setAttrManager(faceted::AttrManager* attr)
+{
+    attrManager_ = attr;
+}
+
+faceted::AttrManager* FilterManager::getAttrManager()
+{
+    return attrManager_;
 }
 
 uint32_t FilterManager::loadGroupFilterInvertedData(const std::vector<std::string>& propertys, std::vector<StrFilterItemMapT>& group_filter_data)
@@ -153,13 +165,13 @@ void FilterManager::buildGroupFilterData(uint32_t last_docid, uint32_t max_docid
                     curgroup = curgroup->getChild(groupstr);
                     assert(curgroup);
                 }
-                if(propids.size() > 1)
-                {
-                    std::string outstr;
-                    groupstr.convertString(outstr, UString::UTF_8);
-                    LOG(INFO) << "the docid belong two different leaf group ";
-                    LOG(INFO) << docid << ", " << outstr;
-                }
+                //if(propids.size() > 1)
+                //{
+                //    std::string outstr;
+                //    groupstr.convertString(outstr, UString::UTF_8);
+                //    LOG(INFO) << "the docid belong two different leaf group ";
+                //    LOG(INFO) << docid << ", " << outstr;
+                //}
                 if(docid <= last_docid)
                     continue;
                 StrFilterItemMapT::iterator it = group_filter_data[j].find(groupstr);

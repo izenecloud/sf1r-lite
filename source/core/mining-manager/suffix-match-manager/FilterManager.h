@@ -8,6 +8,7 @@ namespace sf1r
 namespace faceted
 {
 class GroupManager;
+class AttrManager;
 }
 
 class GroupNode
@@ -121,6 +122,9 @@ public:
     FilterIdRange getGroupFilterIdRange(const std::string& property, const izenelib::util::UString& grouppath);
     izenelib::util::UString FormatGroupPath(std::vector<izenelib::util::UString>& groupPath) const;
 
+    void setAttrManager(faceted::AttrManager* attr);
+    faceted::AttrManager* getAttrManager();
+    
     FilterIdRange getPriceFilterIdRange();
     
     std::vector<FilterDocListT>& getAllFilterInvertedData();
@@ -166,6 +170,7 @@ private:
 
 
     faceted::GroupManager* groupManager_;
+    faceted::AttrManager* attrManager_;
     std::string data_root_path_;
     // property=>(GroupPath/Attribute =>filterid)
     StrPropertyIdMapT  strtype_filterids_;
