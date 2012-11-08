@@ -227,6 +227,7 @@ void SearchWorker::makeQueryIdentity(
         identity.strExp = item.strExp_;
         identity.paramConstValueMap = item.paramConstValueMap_;
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
+        identity.groupParam = item.groupParam_;
         break;
     default:
         identity.query = item.env_.queryString_;

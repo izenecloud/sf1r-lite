@@ -240,6 +240,19 @@ void FilterManager::mapGroupFilterToFilterId(GroupNode* node, const StrFilterIte
         filterids[node->node_name_].end = all_inverted_filter_data_.size();
     }
 }
+
+izenelib::util::UString FilterManager::FormatGroupPath(std::vector<std::string>& groupPath) const
+{
+    izenelib::util::UString groupstr;
+    if(groupPath.empty())
+        return groupstr;
+    std::string group_tmpstr = groupPath[0];
+    for(size_t k = 1; k < groupPath.size(); ++k)
+    {
+        group_tmpstr += ">" + groupPath[k];
+    }
+    return UString(group_tmpstr, UString::UTF_8);
+}
 izenelib::util::UString FilterManager::FormatGroupPath(std::vector<izenelib::util::UString>& groupPath) const
 {
     izenelib::util::UString groupstr;
@@ -432,11 +445,13 @@ void FilterManager::buildNumberFilterData(uint32_t last_docid, uint32_t max_doci
                 continue;
             numberkey_low = formatNumberFilter(property, original_key.first);
             numberkey_high = formatNumberFilter(property, original_key.second);
-            if(numberkey_high - numberkey_low > 1000)
+            NumFilterKeyT inc = 1;
+            if(numberkey_high - numberkey_low > 100)
             {
-                LOG(INFO) << "the number range is too larger, just pick some interval to build. " << numberkey_low << "," << numberkey_high << endl;  
+                // too larger interval. just pick some.
+                inc = (numberkey_high - numberkey_low)/100;
             }
-            for(NumFilterKeyT numberkey = numberkey_low; numberkey <= numberkey_high; ++numberkey)
+            for(NumFilterKeyT numberkey = numberkey_low; numberkey <= numberkey_high;)
             {
                 NumFilterItemMapT::iterator it = num_filter_data[j].find(numberkey);
                 if(it != num_filter_data[j].end())
@@ -449,6 +464,11 @@ void FilterManager::buildNumberFilterData(uint32_t last_docid, uint32_t max_doci
                     item.push_back(docid);
                     possible_keys.push_back(numberkey);
                 }
+                // make sure the numberkey_high is added to index.
+                if(numberkey == numberkey_high || numberkey + inc <= numberkey_high)
+                    numberkey += inc;
+                else
+                    numberkey = numberkey_high;
             }
         }
         // sort possible_keys in asc order
@@ -602,13 +622,13 @@ void FilterManager::buildAttrFilterData(uint32_t last_docid, uint32_t max_docid,
             faceted::AttrTable::nid_t attrnid = attr_table.valueId2NameId(attrvids[k]);
             StrFilterKeyT attrstr = FormatAttrPath(attr_table.nameStr(attrnid),
                 attr_table.valueStr(attrvids[k]));
-            if(attrvids.size() > 1)
-            {
-                std::string outstr;
-                attrstr.convertString(outstr, UString::UTF_8);
-                LOG(INFO) << "the docid has two different attribute";
-                LOG(INFO) << docid << ", " << outstr;
-            }
+            //if(attrvids.size() > 1)
+            //{
+            //    std::string outstr;
+            //    attrstr.convertString(outstr, UString::UTF_8);
+            //    LOG(INFO) << "the docid has two different attribute";
+            //    LOG(INFO) << docid << ", " << outstr;
+            //}
             StrFilterItemMapT::iterator it = attr_filter_data[0].find(attrstr);
             if(it != attr_filter_data[0].end())
             {
@@ -644,6 +664,12 @@ void FilterManager::mapAttrFilterToFilterId(const StrFilterItemMapT& attr_filter
 
         ++cit;
     }
+}
+
+izenelib::util::UString FilterManager::FormatAttrPath(const std::string& attrname,
+    const std::string& attrvalue) const
+{
+    return UString(attrname + ":" + attrvalue, UString::UTF_8);
 }
 
 izenelib::util::UString FilterManager::FormatAttrPath(const izenelib::util::UString& attrname,

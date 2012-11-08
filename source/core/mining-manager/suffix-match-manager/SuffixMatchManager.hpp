@@ -4,6 +4,7 @@
 #include <common/type_defs.h>
 #include <am/succinct/fm-index/fm_index.hpp>
 #include <query-manager/ActionItem.h>
+#include <mining-manager/group-manager/GroupParam.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
@@ -51,11 +52,17 @@ public:
     size_t longestSuffixMatch(const izenelib::util::UString& pattern, size_t max_docs, std::vector<uint32_t>& docid_list, std::vector<float>& score_list) const;
     size_t AllPossibleSuffixMatch(const izenelib::util::UString& pattern,
         size_t max_docs, std::vector<uint32_t>& docid_list,
-        std::vector<float>& score_list, const std::vector<QueryFiltering::FilteringType>& filter_param) const;
+        std::vector<float>& score_list,
+        const std::vector<QueryFiltering::FilteringType>& filter_param,
+        const faceted::GroupParam& group_param) const;
 
 
 private:
 
+    bool getAllFilterRangeFromGroupLable(const faceted::GroupParam& group_param,
+        std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
+    bool getAllFilterRangeFromAttrLable(const faceted::GroupParam& group_param,
+        std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
     bool getAllFilterRangeFromFilterParam(const std::vector<QueryFiltering::FilteringType>& filter_param,
         std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
 

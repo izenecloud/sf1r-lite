@@ -502,7 +502,8 @@ bool MiningManager::open()
         {
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property,
-               mining_schema_.suffix_match_tokenize_dicpath, document_manager_, groupManager_);
+               mining_schema_.suffix_match_tokenize_dicpath, document_manager_, groupManager_,
+               attrManager_, searchManager_.get());
             //std::vector<std::string> group_filter_props;
             //GroupConfigMap::const_iterator it = mining_schema_.group_config_map.begin();
             //while(it != mining_schema_.group_config_map.end())
@@ -1734,7 +1735,7 @@ bool MiningManager::GetSuffixMatch(
     {
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, 
-            rankScoreList, filter_param);
+            rankScoreList, filter_param, actionOperation.actionItem_.groupParam_);
 
         searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
             rankScoreList, customRankScoreList);

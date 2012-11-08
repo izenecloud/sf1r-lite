@@ -128,11 +128,14 @@ public:
     void buildGroupFilterData(uint32_t last_docid, uint32_t max_docid, const std::vector< std::string >& propertys,
         std::vector<StrFilterItemMapT>& group_filter_data);
     izenelib::util::UString FormatGroupPath(std::vector<izenelib::util::UString>& groupPath) const;
+    izenelib::util::UString FormatGroupPath(std::vector<std::string>& groupPath) const;
 
     void buildAttrFilterData(uint32_t last_docid, uint32_t max_docid, const std::vector<std::string>& propertys,
         std::vector<StrFilterItemMapT>& attr_filter_data);
     izenelib::util::UString FormatAttrPath(const izenelib::util::UString& attrname,
         const izenelib::util::UString& attrvalue) const;
+    izenelib::util::UString FormatAttrPath(const std::string& attrname,
+        const std::string& attrvalue) const;
 
     void buildNumberFilterData(uint32_t last_docid, uint32_t max_docid, const std::vector< std::string >& propertys,
         std::vector<NumFilterItemMapT>& num_filter_data);
