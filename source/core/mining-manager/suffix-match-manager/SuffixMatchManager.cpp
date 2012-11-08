@@ -303,15 +303,25 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
         else if(!filter_param.empty() || !group_param.isEmpty())
         {
             std::vector<FMIndexType::FilterRangeT> filter_range_list;
-            bool ret = getAllFilterRangeFromGroupLable(group_param, filter_range_list);
-            if(!ret)
-                return 0;
-            ret = getAllFilterRangeFromAttrLable(group_param, filter_range_list);
-            if(!ret)
-                return 0;
-            ret = getAllFilterRangeFromFilterParam(filter_param, filter_range_list);
-            if(!ret)
-                return 0;
+            bool ret = true;
+            if(!group_param.isGroupEmpty())
+            {
+                ret = getAllFilterRangeFromGroupLable(group_param, filter_range_list);
+                if(!ret)
+                    return 0;
+            }
+            if(!group_param.isGroupEmpty())
+            {
+                ret = getAllFilterRangeFromAttrLable(group_param, filter_range_list);
+                if(!ret)
+                    return 0;
+            }
+            if(!filter_param.empty())
+            {
+                ret = getAllFilterRangeFromFilterParam(filter_param, filter_range_list);
+                if(!ret)
+                    return 0;
+            }
             fmi_->getMatchedTopKDocIdListByFilter(filter_range_list, match_ranges_list, 
                 max_match_list, max_docs, res_list, doclen_list);
         }
@@ -456,10 +466,12 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(const std::vector<Quer
                             break;
                         float filter_num_2 = filtertype.values_[1].get<float>();
                         FilterManager::FilterIdRange tmp_range;
-                        tmp_range = filter_manager_->getNumFilterIdRangeSmaller(filtertype.property_, filter_num);
-                        filterid_range = filter_manager_->getNumFilterIdRangeLarger(filtertype.property_, filter_num_2);
-                        filterid_range.start = min(filterid_range.start, tmp_range.start);
-                        filterid_range.end = max(filterid_range.end, tmp_range.end);
+                        tmp_range = filter_manager_->getNumFilterIdRangeSmaller(filtertype.property_,
+                            max(filter_num, filter_num_2));
+                        filterid_range = filter_manager_->getNumFilterIdRangeLarger(filtertype.property_,
+                            min(filter_num, filter_num_2));
+                        filterid_range.start = max(filterid_range.start, tmp_range.start);
+                        filterid_range.end = min(filterid_range.end, tmp_range.end);
                     }
                     else
                     {
