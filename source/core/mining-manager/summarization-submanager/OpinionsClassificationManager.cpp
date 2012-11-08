@@ -1,10 +1,11 @@
-using namespace std;
 #include "OpinionsClassificationManager.h"
+
+using namespace std;
 typedef izenelib::am::leveldb::Table<std::string, int> LevelDBType;
+
 namespace sf1r
 {
-
-std::pair<int,int>  getActualNumber(int k)
+std::pair<int,int> getActualNumber(int k)
 {
     return  std::make_pair(k/100000,k%100000);
 }
@@ -13,7 +14,7 @@ int getStoreNumber(int a,int b)
     return  a*100000+b;
 }
 
-boost::tuple<int,int,int>  getActualNumberTuple(int k)
+boost::tuple<int,int,int> getActualNumberTuple(int k)
 {
     return  boost::make_tuple(k/1000000,(k/1000)%1000,k%1000);
 }
@@ -22,58 +23,51 @@ int getStoreNumberTuple(int a,int b,int c)
     return  a*1000000+b*1000+c;
 }
 
-
-
-
-
 std::string OpinionsClassificationManager::system_resource_path_;
-OpinionsClassificationManager::OpinionsClassificationManager(string cma_path,string path)
+OpinionsClassificationManager::OpinionsClassificationManager(const string& cma_path,const string& path)
+    :modelPath_(cma_path)
+    ,indexPath_(path)
 {
-    // cma_path="/home/lscm/codebase/icma/db/icwb/utf8";
-    IndexPath=path;
-    modelPath= cma_path;
-    //dictPath=path.substr(0,path.find_last_of("/"));
-    dictPath=system_resource_path_+"/opinion";
-    factory = CMA_Factory::instance();
-    knowledge = factory->createKnowledge();
-    knowledge->loadModel( "utf8", modelPath.data() );
-    analyzer = factory->createAnalyzer();
-    analyzer->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
-    analyzer->setOption(Analyzer::OPTION_ANALYSIS_TYPE,77);
-    analyzer->setKnowledge(knowledge);
-    analyzer->setPOSDelimiter("/");
+    dictPath_=system_resource_path_+"/opinion";
+    factory_ = CMA_Factory::instance();
+    knowledge_ = factory_->createKnowledge();
+    knowledge_->loadModel( "utf8", modelPath_.data() );
+    analyzer_ = factory_->createAnalyzer();
+    analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
+    analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE,77);
+    analyzer_->setKnowledge(knowledge_);
+    analyzer_->setPOSDelimiter("/");
     string logpath=path+"/OpinionsClassificationManager.log";
-    log.open(logpath.c_str(),ios::out);
-    dbTable=new LevelDBType(path+"/leveldb");
-    log<<" open"<<dbTable->open()<<endl;
-    loadAll(dictPath);
-    sort();
-
+    log_.open(logpath.c_str(),ios::out);
+    dbTable_=new LevelDBType(path+"/leveldb");
+    log_<<" open"<<dbTable_->open()<<endl;
+    LoadAll(dictPath_);
+    Sort();
 }
 
 OpinionsClassificationManager::~OpinionsClassificationManager()
 {
-    saveAll(IndexPath);
-    log.close();
-    dbTable->close();
-    delete knowledge;
-    delete analyzer;
-    delete dbTable;
-};
-
-void OpinionsClassificationManager::loadAll(string path)
-{
-
-    log<<"start!"<<endl;
-    load(goodWord,path+"/goodWord");
-    load(badWord,path+"/badWord");
-    load(reverseWord,path+"/reverseWord");
-    load(goodPair,path+"/goodPair");
-    load(badPair,path+"/badPair");
+    SaveAll(indexPath_);
+    log_.close();
+    dbTable_->close();
+    delete knowledge_;
+    delete analyzer_;
+    delete dbTable_;
 }
-void OpinionsClassificationManager::load(vector<string>& vec,string pathname)
+
+void OpinionsClassificationManager::LoadAll(const string& path)
 {
 
+    log_<<"start!"<<endl;
+    Load(path+"/goodWord", goodWord_);
+    Load(path+"/badWord", badWord_);
+    Load(path+"/reverseWord", reverseWord_);
+    Load(path+"/goodPair", goodPair_);
+    Load(path+"/badPair", badPair_);
+}
+
+void OpinionsClassificationManager::Load(const string& pathname, vector<string>& vec)
+{
     ifstream in;
     in.open(pathname.c_str(), ios::in);
     if(in.is_open())
@@ -91,7 +85,8 @@ void OpinionsClassificationManager::load(vector<string>& vec,string pathname)
         LOG(ERROR)<<"Load "<<pathname<<" error!"<<endl;
     }
 }
-void OpinionsClassificationManager::load(vector<pair<string,string> >& vec,string pathname)
+
+void OpinionsClassificationManager::Load(const string& pathname, vector<pair<string,string> >& vec)
 {
     ifstream in;
     in.open(pathname.c_str(), ios::in);
@@ -102,7 +97,10 @@ void OpinionsClassificationManager::load(vector<pair<string,string> >& vec,strin
             std::string temp;
             getline(in, temp);
             size_t templen = temp.find(" ");
-            if(templen== string::npos){break;}
+            if(templen== string::npos)
+            {
+                break;
+            }
             vec.push_back(make_pair(temp.substr(0,templen),temp.substr(templen+1)));
         }
         in.close();
@@ -112,35 +110,38 @@ void OpinionsClassificationManager::load(vector<pair<string,string> >& vec,strin
         LOG(ERROR)<<"Load "<<pathname<<" error!"<<endl;
     }
 }
-void  OpinionsClassificationManager::save(vector<string>& vec,string pathname)
+
+void OpinionsClassificationManager::Save(const string& pathname,  vector<string>& vec)
 {
     ofstream out;
     out.open(pathname.c_str(), ios::out);
-    for(unsigned  i=0;i<vec.size();i++)
+    for(unsigned  i=0; i<vec.size(); i++)
     {
         out<<vec[i]<<endl;
     }
     out.close();
 }
-void  OpinionsClassificationManager::save(vector<pair<string,string> >& vec,string pathname)
+
+void OpinionsClassificationManager::Save(const string& pathname, vector<pair<string,string> >& vec)
 {
     ofstream out;
     out.open(pathname.c_str(), ios::out);
-    for(unsigned  i=0;i<vec.size();i++)
+    for(unsigned  i=0; i<vec.size(); i++)
     {
         out<<vec[i].first<<"  "<<vec[i].second<<endl;
     }
     out.close();
 }
-void  OpinionsClassificationManager::saveSeclect(vector<string>& vec,string pathname)
+
+void OpinionsClassificationManager::SaveSelect(const string& pathname, vector<string>& vec)
 {
     ofstream out;
     out.open(pathname.c_str(), ios::out);
     int goodnum,badnum,storenum,uncommentnum;
-    for(unsigned  i=0;i<vec.size();i++)
+    for(unsigned  i=0; i<vec.size(); i++)
     {
 
-        if(dbTable->get(vec[i], storenum))
+        if(dbTable_->get(vec[i], storenum))
         {
             boost::tuple<int,int,int> p=getActualNumberTuple(storenum);
             goodnum=p.get<0>();
@@ -150,7 +151,8 @@ void  OpinionsClassificationManager::saveSeclect(vector<string>& vec,string path
             {
 
                 if(goodnum<2*badnum)
-                {   out<<vec[i]<<endl;
+                {
+                    out<<vec[i]<<endl;
                     //out<<goodnum<<"  "<<badnum<<" "<<uncommentnum<<endl;
                 }
             }
@@ -160,23 +162,22 @@ void  OpinionsClassificationManager::saveSeclect(vector<string>& vec,string path
     }
     out.close();
 }
-void  OpinionsClassificationManager::saveAll(string path)
-{
-    sort();
-    save( goodWordUseful,path+"/goodWordUseful");
-    save( badWordUseful,path+"/badWordUseful");
-    saveSeclect( WordSelfLearn,path+"/WordSelfLearn");
 
+void  OpinionsClassificationManager::SaveAll(const string& path)
+{
+    Sort();
+    Save( path+"/goodWordUseful", goodWordUseful_);
+    Save( path+"/badWordUseful", badWordUseful_);
+    SaveSelect( path+"/WordSelfLearn", wordSelfLearn_);
 }
-vector<string> OpinionsClassificationManager::SegQuery(const std::string& query)
-{
 
-    const char* result = analyzer->runWithString(query.data());
+void OpinionsClassificationManager::SegQuery(const std::string& query, vector<string>& ret)
+{
+    const char* result = analyzer_->runWithString(query.data());
     string res(result);
-    //log<<res<<"  ";
+    //log_<<res<<"  ";
     string temp=res;
     size_t templen = temp.find(" ");
-    vector<string> ret;
     while(templen!= string::npos)
     {
         if(templen!=0)
@@ -192,64 +193,59 @@ vector<string> OpinionsClassificationManager::SegQuery(const std::string& query)
     {
         ret.push_back(temp);
     }
-    return ret;
-
 }
-vector<string> OpinionsClassificationManager::SegWord(const std::string& Word)
+
+void OpinionsClassificationManager::SegWord(const std::string& Word, vector<string>& result )
 {
     izenelib::util::UString UWord(Word, izenelib::util::UString::UTF_8);
     size_t len = UWord.length();
 
-    vector<string> result;
     int k=0;
     for(unsigned  i = 0; i < len; i++)
     {
         string str;
         if(!UWord.isChineseChar(i))
         {
-
             if(UWord.isChineseChar(i-1))
             {
                 k=i;
             }
-
-
         }
         else
         {
             if(!UWord.isChineseChar(i-1))
             {
                 UWord.substr(k,i-k).convertString(str, izenelib::util::UString::UTF_8);
-                vector<string> temp=SegQuery(str);
+                vector<string> temp;
+                SegQuery(str, temp);
                 result.insert(result.end(),temp.begin(),temp.end());
             }
-
             UWord.substr(i,1).convertString(str, izenelib::util::UString::UTF_8);
-
         }
-
         result.push_back(str);
     }
-    return result;
     //分词//TODO
 }
-void OpinionsClassificationManager::getWordFromTrainData()
+
+void OpinionsClassificationManager::GetWordFromTrainData()
 {
-    for(unsigned  i=0;i<trainData.size();i++)
+    for(unsigned  i=0; i<trainData_.size(); i++)
     {
-        vector<string> wordvec=SegQuery(trainData[i].first);
-        bool good=trainData[i].second;
-        reverseDeal(wordvec,good);
-        for(unsigned  j=0;j<wordvec.size();j++)
+        vector<string> wordvec;
+        SegQuery(trainData_[i].first, wordvec);
+        bool good=trainData_[i].second;
+        ReverseDeal(wordvec,good);
+        for(unsigned  j=0; j<wordvec.size(); j++)
         {
-            insertWord(wordvec[j],good);
+            InsertWord(wordvec[j],good);
         }
     }
 }
-bool OpinionsClassificationManager::isreverse(string word)
+
+bool OpinionsClassificationManager::IsReverse(const string& word)
 {
-    vector<string>::iterator it=find(reverseWord.begin(),reverseWord.end(),word); //查找3
-    if ( it == reverseWord.end() )
+    vector<string>::const_iterator it=find(reverseWord_.begin(),reverseWord_.end(),word); //查找3
+    if ( it == reverseWord_.end() )
     {
         return false;
     }
@@ -258,11 +254,12 @@ bool OpinionsClassificationManager::isreverse(string word)
         return true;
     }
 }
-void OpinionsClassificationManager::reverseDeal(vector<string>& wordvec,bool& good)
+
+void OpinionsClassificationManager::ReverseDeal(vector<string>& wordvec,bool& good)
 {
-    for(vector<string>::iterator it=wordvec.begin();it!=wordvec.end();it++)
+    for(vector<string>::iterator it=wordvec.begin(); it!=wordvec.end(); it++)
     {
-        if(isreverse((*it)))
+        if(IsReverse((*it)))
         {
             good=!good;                                //不得不
             it=wordvec.erase(it);
@@ -274,22 +271,27 @@ void OpinionsClassificationManager::reverseDeal(vector<string>& wordvec,bool& go
 
     }
 }
-void OpinionsClassificationManager::insertWord(string word,bool good)
+
+void OpinionsClassificationManager::InsertWord(const string& word,bool good)
 {
     int storenum;
     int goodnum;
     int badnum;
-    if(dbTable->get(word, storenum))
+    if(dbTable_->get(word, storenum))
     {
         std::pair<int,int> p=getActualNumber(storenum);
         goodnum=p.first;
         badnum=p.second;
         if(good)
-        {goodnum++;}
+        {
+            goodnum++;
+        }
         else
-        {badnum++;}
+        {
+            badnum++;
+        }
         storenum=getStoreNumber(goodnum,badnum);
-        dbTable->del(word);
+        dbTable_->del(word);
     }
     else
     {
@@ -304,66 +306,70 @@ void OpinionsClassificationManager::insertWord(string word,bool good)
             badnum=1;
         }
         storenum=getStoreNumber(goodnum,badnum);
-        wordList.push_back(word);
+        wordList_.push_back(word);
     }
-    dbTable->insert(word, storenum);
+    dbTable_->insert(word, storenum);
 }
-void  OpinionsClassificationManager::ClassfyWord(string word)
+
+void  OpinionsClassificationManager::ClassifyWord(const string& word)
 {
     int storenum;
     int goodnum;
     int badnum;
-    if(dbTable->get(word, storenum))
+    if(dbTable_->get(word, storenum))
     {
         std::pair<int,int> p=getActualNumber(storenum);
         goodnum=p.first;
         badnum=p.second;
-        if(  (goodnum+badnum)>cutoff)
+        if(  (goodnum+badnum)>cutoff_)
         {
             double possibility=double(goodnum)/(goodnum+badnum);
-            if(possibility>accu)
+            if(possibility>accu_)
             {
-                goodWord.push_back(word);
+                goodWord_.push_back(word);
 
             }
             else
             {
-                if( (1-possibility)>accu)
+                if( (1-possibility)>accu_)
                 {
-                    badWord.push_back(word);
+                    badWord_.push_back(word);
                 }
                 else
                 {
-                    pairWord.push_back(word);
+                    pairWord_.push_back(word);
                 }
             }
         }
     }
 };
-void  OpinionsClassificationManager::ClassfyWordVector()
+
+void OpinionsClassificationManager::ClassifyWordVector()
 {
-    for(list<string>::iterator it=wordList.begin();it!=wordList.end();it++)
+    for(list<string>::iterator it=wordList_.begin(); it!=wordList_.end(); it++)
     {
-        ClassfyWord((*it));
+        ClassifyWord((*it));
     }
 }
-void OpinionsClassificationManager::getPairFromTrainData()
+
+void OpinionsClassificationManager::GetPairFromTrainData()
 {
-    for(unsigned  i=0;i<trainData.size();i++)
+    for(unsigned  i=0; i<trainData_.size(); i++)
     {
-        vector<string> wordvec=SegQuery(trainData[i].first);
-        bool good=trainData[i].second;
-        reverseDeal(wordvec,good);
-        for(unsigned  j=0;j<wordvec.size()-1;j++)
+        vector<string> wordvec;
+        SegQuery(trainData_[i].first, wordvec);
+        bool good=trainData_[i].second;
+        ReverseDeal(wordvec,good);
+        for(unsigned  j=0; j<wordvec.size()-1; j++)
         {
-            if(find(pairWord.begin(),pairWord.end(),wordvec[j])!=pairWord.end())
+            if(find(pairWord_.begin(),pairWord_.end(),wordvec[j])!=pairWord_.end())
             {
 
-                for(unsigned  k=j+1;k<wordvec.size();k++)
+                for(unsigned  k=j+1; k<wordvec.size(); k++)
                 {
-                    if(find(pairWord.begin(),pairWord.end(),wordvec[k])!=pairWord.end())
+                    if(find(pairWord_.begin(),pairWord_.end(),wordvec[k])!=pairWord_.end())
                     {
-                        inserPair(wordvec[j],wordvec[k],good);
+                        InsertPair(wordvec[j],wordvec[k],good);
                     }
                 }
             }
@@ -371,20 +377,21 @@ void OpinionsClassificationManager::getPairFromTrainData()
     }
 }
 
-void OpinionsClassificationManager::inserPair(string word1,string word2,bool good)
+void OpinionsClassificationManager::InsertPair(const string& w1,const string& w2,bool good)
 {
     int storenum;
     int goodnum;
     int badnum;
     string word;
     bool ok;
-    if(dbTable->get(word1+word2, storenum))
+    string word1 = w1, word2 = w2;
+    if(dbTable_->get(word1+word2, storenum))
     {
         word=word1+word2;
     }
     else
     {
-        if(dbTable->get(word2+word1, storenum))
+        if(dbTable_->get(word2+word1, storenum))
         {
             word=word1;
             word1=word2;
@@ -402,9 +409,13 @@ void OpinionsClassificationManager::inserPair(string word1,string word2,bool goo
         goodnum=p.first;
         badnum=p.second;
         if(good)
-        {goodnum++;}
+        {
+            goodnum++;
+        }
         else
-        {badnum++;}
+        {
+            badnum++;
+        }
         storenum=getStoreNumber(goodnum,badnum);
     }
     else
@@ -420,39 +431,37 @@ void OpinionsClassificationManager::inserPair(string word1,string word2,bool goo
             badnum=1;
         }
         storenum=getStoreNumber(goodnum,badnum);
-        pairList.push_back(std::make_pair(word1,word2));
+        pairList_.push_back(std::make_pair(word1,word2));
     }
-    dbTable->insert(word, storenum);
+    dbTable_->insert(word, storenum);
 }
 
-
-
-double  OpinionsClassificationManager::PMI(string word1,string word2)
+double  OpinionsClassificationManager::PMI(const string& word1,const string& word2)
 {
     int storenum=0,storenum1=0,storenum2=0;
     int goodnum=0,goodnum1=0,goodnum2=0;
     int badnum=0,badnum1=0,badnum2=0;
     string word=word1+word2;
     double pmigood,pmibad;
-    if(dbTable->get(word1, storenum1))
+    if(dbTable_->get(word1, storenum1))
     {
         std::pair<int,int> p=getActualNumber(storenum1);
         goodnum1=p.first;
         badnum1=p.second;
     }
-    if(dbTable->get(word2, storenum2))
+    if(dbTable_->get(word2, storenum2))
     {
         std::pair<int,int> p=getActualNumber(storenum2);
         goodnum2=p.first;
         badnum2=p.second;
     }
-    if(dbTable->get(word, storenum))
+    if(dbTable_->get(word, storenum))
     {
         std::pair<int,int> p=getActualNumber(storenum);
         goodnum=p.first;
         badnum=p.second;
     }
-    if(goodnum+badnum<cutoff)
+    if(goodnum+badnum<cutoff_)
     {
         return 0.5;
     }
@@ -462,56 +471,54 @@ double  OpinionsClassificationManager::PMI(string word1,string word2)
         pmibad=double(badnum)/(badnum1*badnum2);
         return  pmigood/(pmigood+pmibad);
     }
-  /**/
+    /**/
 
 }
-void  OpinionsClassificationManager::ClassfyPair(pair<string,string> p)
+void OpinionsClassificationManager::ClassifyPair(const pair<string,string>& p)
 {
-
-
     double possibility=PMI(p.first,p.second);
-    if(possibility>accu)
+    if(possibility>accu_)
     {
-        goodPair.push_back(p);
+        goodPair_.push_back(p);
 
     }
     else
     {
-        if( (1-possibility)>accu)
+        if( (1-possibility)>accu_)
         {
-            badPair.push_back(p);
+            badPair_.push_back(p);
         }
-
     }
 }
 
-void  OpinionsClassificationManager::ClassfyPairVector(vector<pair<string,string> > p)
+void OpinionsClassificationManager::ClassifyPairVector(const vector<pair<string,string> >& p)
 {
-    for(list<pair<string,string> >::iterator it=pairList.begin();it!=pairList.end();it++)
+    for(list<pair<string,string> >::iterator it=pairList_.begin(); it!=pairList_.end(); it++)
     {
-        ClassfyPair((*it));
+        ClassifyPair((*it));
     }
 }
 
-void  OpinionsClassificationManager::sort()
+void  OpinionsClassificationManager::Sort()
 {
-    std::sort(goodWord.begin(),goodWord.end());
-    std::sort(badWord.begin(),badWord.end());
-    std::sort(reverseWord.begin(),reverseWord.end());
+    std::sort(goodWord_.begin(),goodWord_.end());
+    std::sort(badWord_.begin(),badWord_.end());
+    std::sort(reverseWord_.begin(),reverseWord_.end());
 }
 
-bool  OpinionsClassificationManager::include(string word,vector<string>& strvec)
-{/*
-    vector<string>::iterator it=find(strvec.begin(),strvec.end(),word);
-    if ( it == strvec.end() )
-    {
-    return false;
-    }
-    else
-    {
-    return true;
-    }
-    */
+bool  OpinionsClassificationManager::Include(const string& word, const vector<string>& strvec)
+{
+    /*
+       vector<string>::iterator it=find(strvec.begin(),strvec.end(),word);
+       if ( it == strvec.end() )
+       {
+       return false;
+       }
+       else
+       {
+       return true;
+       }
+       */
     int front=0;
     int end=strvec.size()-1;
     int mid=(front+end)/2;
@@ -522,14 +529,19 @@ bool  OpinionsClassificationManager::include(string word,vector<string>& strvec)
         mid=front + (end - front)/2;
     }
     if(strvec[mid]!=word)
-    {return false;}
-    else{return true;}
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 
 }
 
-bool  OpinionsClassificationManager::include(pair<string,string> wordpair,vector<pair<string,string> >& pairvec)
+bool  OpinionsClassificationManager::Include(const pair<string,string>& wordpair, const vector<pair<string,string> >& pairvec)
 {
-    vector<pair<string,string> >::iterator it=find(pairvec.begin(),pairvec.end(),wordpair);
+    vector<pair<string,string> >::const_iterator it=find(pairvec.begin(),pairvec.end(),wordpair);
     if ( it == pairvec.end() )
     {
         return false;
@@ -540,78 +552,94 @@ bool  OpinionsClassificationManager::include(pair<string,string> wordpair,vector
     }
 }
 
-void OpinionsClassificationManager::insert(string word,int cat)
+void OpinionsClassificationManager::Insert(const string& word,int cat)
 {
     int storenum=0;
     int goodnum=0;
     int uncommentnum=0;
     int badnum=0;
-    if(dbTable->get(word, storenum))
+    if(dbTable_->get(word, storenum))
     {
         boost::tuple<int,int,int> p=getActualNumberTuple(storenum);
         goodnum=p.get<0>();
         badnum=p.get<1>();
         uncommentnum=p.get<2>();
         if(cat==0)
-        {goodnum++;}
+        {
+            goodnum++;
+        }
         if(cat==1)
-        {badnum++;}
+        {
+            badnum++;
+        }
         if(cat==2)
-        {uncommentnum++;}
+        {
+            uncommentnum++;
+        }
         storenum=getStoreNumberTuple(goodnum,badnum,uncommentnum);
-        dbTable->del(word);
+        dbTable_->del(word);
     }
     else
     {
         if(cat==0)
-        {goodnum++;}
+        {
+            goodnum++;
+        }
         if(cat==1)
-        {badnum++;}
+        {
+            badnum++;
+        }
         if(cat==2)
-        {uncommentnum++;}
+        {
+            uncommentnum++;
+        }
         storenum=getStoreNumberTuple(goodnum,badnum,uncommentnum);
-        WordSelfLearn.push_back(word);
+        wordSelfLearn_.push_back(word);
     }
-    dbTable->insert(word, storenum);
+    dbTable_->insert(word, storenum);
 }
-int OpinionsClassificationManager::dealwithWordPair(string wordpair,bool& reverse)
+int OpinionsClassificationManager::DealwithWordPair(const string& wordpair,bool& reverse)
 {
-    vector<string> charvec=SegWord(wordpair);
+    vector<string> charvec;
+    SegWord(wordpair, charvec);
     string tempword="";
     int k=0;
     int score=0;
-    //log<<"wordpair"<<wordpair<<endl;
-    for(unsigned i=charvec.size();i>1;i--)
+    //log_<<"wordpair"<<wordpair<<endl;
+    for(unsigned i=charvec.size(); i>1; i--)
     {
         tempword="";
-        for(unsigned j=0;j<i;j++)
+        for(unsigned j=0; j<i; j++)
         {
             tempword+=charvec[j];
 
         }
-        if(tempword.length()==0){break;}
-        if(include(tempword,reverseWord))
+        if(tempword.length()==0)
+        {
+            break;
+        }
+        if(Include(tempword,reverseWord_))
         {
             reverse=!reverse;
-            log<<tempword<<"reverse";
+            log_<<tempword<<"reverse";
             k=i;
             break;
         }
         else
         {
-            if(include(tempword,goodWord))
+            if(Include(tempword,goodWord_))
             {
                 score++;
-                log<<tempword<<"+1";
+                log_<<tempword<<"+1";
                 k=i;
                 break;
             }
             else
             {
-                if(include(tempword,badWord))
+                if(Include(tempword,badWord_))
                 {
                     score--;
-                    log<<tempword<<"-1";
+                    log_<<tempword<<"-1";
                     k=i;
                     break;
                 }
@@ -622,28 +650,32 @@ int OpinionsClassificationManager::dealwithWordPair(string wordpair,bool& revers
     k++;
     tempword="";
 
-    for(unsigned i=k;i<charvec.size();i++)
+    for(unsigned i=k; i<charvec.size(); i++)
     {
         tempword+=charvec[k];
     }
     if(tempword.length()<=1)
-    {return score;}
+    {
+        return score;
+    }
     else
     {
-        score+=dealwithWordPair(tempword,reverse);
+        score+=DealwithWordPair(tempword,reverse);
         return score;
     }
 }
-int OpinionsClassificationManager::getResult(string Sentence)
+
+int OpinionsClassificationManager::GetResult(const string& Sentence)
 {
-    vector<string> wordvec=SegQuery(Sentence);
+    vector<string> wordvec;
+    SegQuery(Sentence, wordvec);
     int reverse=1;
     //reverseDeal(wordvec,reverse);
     int score=0;
     vector<string> temp;
-    log<<reverse<<"  ";
+    log_<<reverse<<"  ";
     int reversenum=0;
-    for(unsigned j=0;j<wordvec.size();j++)
+    for(unsigned j=0; j<wordvec.size(); j++)
     {
         string wordpair;
         if(j<wordvec.size()-1)
@@ -654,9 +686,9 @@ int OpinionsClassificationManager::getResult(string Sentence)
         {
             wordpair=wordvec[j];
         }
-        if(include(wordpair,reverseWord))
+        if(Include(wordpair,reverseWord_))
         {
-            log<<wordpair<<"(-1)*(";
+            log_<<wordpair<<"(-1)*(";
             reverse=-reverse;
             j++;
             reversenum++;
@@ -664,28 +696,28 @@ int OpinionsClassificationManager::getResult(string Sentence)
         }
         else
         {
-            if(include(wordpair,goodWord))
+            if(Include(wordpair,goodWord_))
             {
-                log<<wordpair<<"+1";
+                log_<<wordpair<<"+1";
                 score+=reverse;
                 j++;
-                goodWordUseful.push_back(wordpair);
+                //goodWordUseful_.push_back(wordpair);
             }
 
             else
             {
-                if(include(wordpair,badWord))
+                if(Include(wordpair,badWord_))
                 {
-                    log<<wordpair<<"-1";
+                    log_<<wordpair<<"-1";
                     score-=reverse;
                     j++;
-                    badWordUseful.push_back(wordpair);
+                   // badWordUseful_.push_back(wordpair);
                 }
                 else
                 {
-                    if(include(wordvec[j],reverseWord))
+                    if(Include(wordvec[j],reverseWord_))
                     {
-                        log<<wordvec[j]<<"(-1)*(";
+                        log_<<wordvec[j]<<"(-1)*(";
                         reverse=-reverse;
 
                         reversenum++;
@@ -693,26 +725,26 @@ int OpinionsClassificationManager::getResult(string Sentence)
                     }
                     else
                     {
-                        if(include(wordvec[j],goodWord))
+                        if(Include(wordvec[j],goodWord_))
                         {
-                            log<<wordvec[j]<<"+1";
+                            log_<<wordvec[j]<<"+1";
                             score+=reverse;
 
-                            goodWordUseful.push_back(wordvec[j]);
+                           // goodWordUseful_.push_back(wordvec[j]);
                         }
                         else
                         {
 
-                            if(include(wordvec[j],badWord))
+                            if(Include(wordvec[j],badWord_))
                             {
-                                log<<wordvec[j]<<"-1";
+                                log_<<wordvec[j]<<"-1";
                                 score-=reverse;
 
-                                badWordUseful.push_back(wordvec[j]);
+                              //  badWordUseful_.push_back(wordvec[j]);
                             }
                             else
                             {
-                                log<<wordvec[j]<<"0";
+                                log_<<wordvec[j]<<"0";
                                 temp.push_back(wordvec[j]);
                             }
                         }
@@ -721,30 +753,30 @@ int OpinionsClassificationManager::getResult(string Sentence)
 
                 }
 
-                // score+=dealwithWordPair(wordvec[j],reverse);
+                // score+=DealwithWordPair(wordvec[j],reverse);
             }
         }
     }
-    for(int j=0;j<reversenum;j++)
+    for(int j=0; j<reversenum; j++)
     {
-        log<<")";
+        log_<<")";
     }
     if((score>0))
     {
-        log<<"优点"<<endl;
+        log_<<"优点"<<endl;
     }
     else
     {
         if(score==0)
         {
-            log<<"无法评价！"<<endl;
+            log_<<"无法评价！"<<endl;
         }
         else
         {
-            log<<"缺点"<<endl;
+            log_<<"缺点"<<endl;
         }
     }
-    log<<"未识别"<<temp.size()<<endl;
+    log_<<"未识别"<<temp.size()<<endl;
     /*
        if(score>0)
        {
@@ -775,12 +807,8 @@ int OpinionsClassificationManager::getResult(string Sentence)
     return score;
 }
 
-
-
-
-vector<string> SegmentToSentece(string Segment)
+void SegmentToSentece(const string& Segment, vector<string>& Sentence)
 {
-    vector<string> Sentence;
     string temp = Segment;
     string dot=",";
     size_t templen = 0;
@@ -799,11 +827,13 @@ vector<string> SegmentToSentece(string Segment)
     boost::algorithm::replace_all(temp,";",",");
     boost::algorithm::replace_all(temp,"；",",");
     boost::algorithm::replace_all(temp,"，",",");
-   
-    for(unsigned i=0;i<temp.length();i++)
+
+    for(unsigned i=0; i<temp.length(); i++)
     {
-       if(temp[i]=='\n')
-       {     temp[i]=',';}
+        if(temp[i]=='\n')
+        {
+            temp[i]=',';
+        }
     }
     /**/
     while(!temp.empty())
@@ -833,44 +863,42 @@ vector<string> SegmentToSentece(string Segment)
             break;
         }
     }
-    return Sentence;
 }
-std::pair<UString,UString> OpinionsClassificationManager::test(string Segment)
+
+void OpinionsClassificationManager::Classify(const string& Segment, std::pair<UString,UString>& result)
 {
-    log<<"test"<<endl;
+    log_<<"test"<<endl;
     //cout<<Segment<<endl;
-    log<<Segment<<endl;
+    log_<<Segment<<endl;
     string advantage="";
     string disadvantage="";
 
-    vector<string> Sentence=SegmentToSentece(Segment);
-    log<<"Sentence"<<Sentence.size()<<endl;
+    vector<string> Sentence;
+    SegmentToSentece(Segment, Sentence);
+    log_<<"Sentence"<<Sentence.size()<<endl;
     if(Segment.length()<200)
     {
-    for(unsigned i=0;i<Sentence.size();i++)
-    {
-        log<<Sentence[i]<<"  ";
-        int score=getResult(Sentence[i]);
-        if(score>0)
+        for(unsigned i=0; i<Sentence.size(); i++)
         {
-            advantage=advantage+Sentence[i]+",";
-        }
-        else
-        {
-            if(score<0)
+            log_<<Sentence[i]<<"  ";
+            int score=GetResult(Sentence[i]);
+            if(score>0)
             {
-                disadvantage=disadvantage+Sentence[i]+",";
+                advantage=advantage+Sentence[i]+",";
             }
+            else
+            {
+                if(score<0)
+                {
+                    disadvantage=disadvantage+Sentence[i]+",";
+                }
+            }
+            // log_<<GetResult(Sentence[i])<<" "<<endl;
         }
-        // log<<getResult(Sentence[i])<<" "<<endl;
     }
-    }
-    UString Uadvantage(advantage, izenelib::util::UString::UTF_8);
-    UString Udisadvantag(disadvantage, izenelib::util::UString::UTF_8);
-    /*  */
-    return std::make_pair(Uadvantage,Udisadvantag);
+    result.first = UString(advantage, izenelib::util::UString::UTF_8);
+    result.second = UString(disadvantage, izenelib::util::UString::UTF_8);
 }
 
+}
 
-
-};

@@ -379,6 +379,18 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
                                                relevanceScorer);
 }
 
+ProductScorer* SearchManagerPreProcessor::createProductScorer(
+    const KeywordSearchActionItem& actionItem,
+    boost::shared_ptr<Sorter> sorter,
+    faceted::PropSharedLockSet& propSharedLockSet)
+{
+    if (!isProductRanking_(actionItem))
+        return NULL;
+    const std::string& query = actionItem.env_.queryString_;
+    return productScorerFactory_->createScorer(query,
+                                               propSharedLockSet, NULL);
+}
+
 bool SearchManagerPreProcessor::isProductRanking_(
     const KeywordSearchActionItem& actionItem) const
 {
@@ -388,8 +400,8 @@ bool SearchManagerPreProcessor::isProductRanking_(
     SearchingMode::SearchingModeType searchMode =
         actionItem.searchingMode_.mode_;
 
-    if (searchMode == SearchingMode::KNN ||
-        searchMode == SearchingMode::SUFFIX_MATCH)
+    if (searchMode == SearchingMode::KNN /*||
+        searchMode == SearchingMode::SUFFIX_MATCH*/)
         return false;
 
     return isSortByRankProp(actionItem.sortPriorityList_);

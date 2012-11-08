@@ -114,59 +114,59 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
 
   MACRO_SET_BUILD_TYPES(
     RelWithDebInfo
-    "-fopenmp -O2 -g -Wno-deprecated -DNDEBUG"
+    "-march=native -mtune=native -fopenmp -O2 -g -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during Release with Debug Info builds."
 
     Release
-    "-fopenmp -O3 -Wno-deprecated -DNDEBUG"
+    "-march=native -mtune=native -fopenmp -O3 -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during release builds"
 
     MinSizeRel
-    "-fopenmp -Os -Wno-deprecated -DNDEBUG"
+    "-march=native -mtune=native -fopenmp -Os -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during release minsize builds."
 
     Debug
-    "-fopenmp -g -O0 -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated"
+    "-march=native -mtune=native -fopenmp -g -O0 -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated"
     "Flags used by the compiler during debug builds."
 
     Profile
-    "-fopenmp -g3 -fno-inline -ftest-coverage -fprofile-arcs -Wno-deprecated"
+    "-march=native -mtune=native -fopenmp -g3 -fno-inline -ftest-coverage -fprofile-arcs -Wno-deprecated"
     "Profile build type"
 
     SF1DEBUG
-    "-fopenmp -O3 -g -Wno-deprecated -DSF1_DEBUG"
+    "-march=native -mtune=native -fopenmp -O3 -g -Wno-deprecated -DSF1_DEBUG"
     "Sf1 Debug build type"
 
     SF1TIMECHECK
-    "-fopenmp -O3 -DNDEBUG -g -Wno-deprecated -DSF1_TIME_CHECK"
+    "-march=native -mtune=native -fopenmp -O3 -DNDEBUG -g -Wno-deprecated -DSF1_TIME_CHECK"
     "Sf1 time check build type"
 
     SF1PCHECK
-    "-fopenmp -O3 -Wno-deprecated -DNDEBUG -DSF1_TIME_CHECK"
+    "-march=native -mtune=native -fopenmp -O3 -Wno-deprecated -DNDEBUG -DSF1_TIME_CHECK"
     "Sf1 performance check build type"
 
     COBRARELWITHDEBINFO
-    "-O2 -g -Wno-deprecated -DNDEBUG"
+    "-march=native -mtune=native -O2 -g -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during Release with Debug Info builds for Cobra."
 
     COBRARELEASE
-    "-O3 -Wno-deprecated -DNDEBUG"
+    "-march=native -mtune=native -O3 -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during release builds [CORBAR]"
 
     COBRADEBUG
-    "-O0 -DDEBUG -g -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated"
+    "-march=native -mtune=native -O0 -DDEBUG -g -fno-reorder-blocks -fno-schedule-insns -fno-inline -Wno-deprecated"
     "Flags used by the compiler during debug builds.[CORBAR]"
 
     COBRARESTRICTRELEASE
-    "-O3 -g -Wno-deprecated -DNDEBUG -DCOBRA_RESTRICT "
+    "-march=native -mtune=native -O3 -g -Wno-deprecated -DNDEBUG -DCOBRA_RESTRICT "
     "Flags used by the compiler during debug builds.[CORBAR]"
 
     COBRARESTRICT
-    "-O2 -g -Wno-deprecated -DCOBRA_RESTRICT "
+    "-march=native -mtune=native -O2 -g -Wno-deprecated -DCOBRA_RESTRICT "
     "Flags used by the compiler during debug builds.[CORBAR]"
 
     COBRASF1TIMECHECK
-    "-O3 -DDEBUG -g  -Wno-deprecated -DSF1_TIME_CHECK "
+    "-march=native -mtune=native -O3 -DDEBUG -g  -Wno-deprecated -DSF1_TIME_CHECK "
     "Sf1 time check build type"
     )
 ENDIF (CMAKE_COMPILER_IS_GNUCXX)

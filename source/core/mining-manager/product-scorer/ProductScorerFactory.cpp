@@ -40,20 +40,27 @@ ProductScorer* ProductScorerFactory::createScorer(
     std::auto_ptr<ProductScoreSum> scoreSum(new ProductScoreSum);
     ProductScorer* scorer = NULL;
 
+    bool isany = false;
     if ((scorer = createCustomScorer_(query)))
     {
         scoreSum->addScorer(scorer);
+        isany = true;
     }
 
     if ((scorer = createCategoryScorer_(query, propSharedLockSet)))
     {
         scoreSum->addScorer(scorer);
+        isany = true;
     }
 
     if (relevanceScorer)
     {
         scoreSum->addScorer(relevanceScorer);
+        isany = true;
     }
+
+    if(!isany)
+        return NULL;
 
     return scoreSum.release();
 }

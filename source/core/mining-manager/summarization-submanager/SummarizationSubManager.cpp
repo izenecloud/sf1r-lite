@@ -50,9 +50,8 @@ bool CheckParentKeyLogFormat(
     return (first == DOCID && second == parent_key_name);
 }
 
-vector<std::pair<double,UString> > SegmentToSentece(UString Segment)
+void SegmentToSentece(const UString& Segment, vector<std::pair<double,UString> >& Sentence)
 {
-    vector<std::pair<double,UString> > Sentence;
     string temp ;
     Segment.convertString(temp, izenelib::util::UString::UTF_8);
     string dot=",";
@@ -91,8 +90,8 @@ vector<std::pair<double,UString> > SegmentToSentece(UString Segment)
             break;
         }
     }
-    return Sentence;
 }
+
 struct IsParentKeyFilterProperty
 {
     const std::string& parent_key_property;
@@ -181,17 +180,18 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
         //const AdvantageType& advantage = ait->second.get<AdvantageType>();
         //const DisadvantageType& disadvantage = dit->second.get<DisadvantageType>();
-        UString  us(cit->second.get<UString>());
+        UString us(cit->second.get<UString>());
         string str;
         us.convertString(str, izenelib::util::UString::UTF_8);
-        std::pair<UString,UString> advantagepair=Opc_->test(str);
+        std::pair<UString,UString> advantagepair;
+        Opc_->Classify(str,advantagepair);
 
         AdvantageType advantage=advantagepair.first;
         DisadvantageType disadvantage=advantagepair.second;
 
-        UString  us_title(title_it->second.get<UString>());
+        UString us_title(title_it->second.get<UString>());
         us_title.convertString(str, izenelib::util::UString::UTF_8);
-        advantagepair = Opc_->test(str);
+        Opc_->Classify(str,advantagepair);
         if(advantage.find(advantagepair.first) == UString::npos)
         {
             advantage.append(advantagepair.first);
@@ -203,7 +203,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
         UString  usa(ait->second.get<AdvantageType>());
         usa.convertString(str, izenelib::util::UString::UTF_8);
-        advantagepair=Opc_->test(str);
+        Opc_->Classify(str,advantagepair);
         if(advantage.find(advantagepair.first) == UString::npos)
         {
             advantage.append(advantagepair.first);
@@ -211,7 +211,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
        
         UString  usd(dit->second.get<DisadvantageType>());
         usd.convertString(str, izenelib::util::UString::UTF_8);
-        advantagepair=Opc_->test(str);
+        Opc_->Classify(str,advantagepair);
         if(disadvantage.find(advantagepair.second) == UString::npos)
             disadvantage.append(advantagepair.second);
         score = 0.0f;
@@ -447,8 +447,8 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
                     advantage_opinions.push_back(temp[i]);
                  }
                 */
-                 std::vector< std::pair<double, UString> > temp=SegmentToSentece(advantage_comments[i]);
-                  
+                 std::vector< std::pair<double, UString> > temp;
+                 SegmentToSentece(advantage_comments[i], temp);
                  advantage_opinions.insert(advantage_opinions.end(),temp.begin(),temp.end());
                  if(advantage_opinions.size()>=5)
                      break;
@@ -459,7 +459,8 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
         {
             for(unsigned i=0;i<min(disadvantage_comments.size(),5);i++)
             {
-                 std::vector< std::pair<double, UString> > temp=SegmentToSentece(disadvantage_comments[i]);
+                 std::vector< std::pair<double, UString> > temp;
+                 SegmentToSentece(disadvantage_comments[i], temp);
                  disadvantage_opinions.insert(disadvantage_opinions.end(),temp.begin(),temp.end());
                  if(disadvantage_opinions.size()>5)
                     break;

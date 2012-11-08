@@ -311,13 +311,14 @@ public:
             uint32_t start);
 
     bool GetSuffixMatch(
-            const std::string& query,
+            const SearchKeywordOperation& actionOperation,
             uint32_t max_docs,
             bool use_fuzzy,
             uint32_t start,
-            const std::string& filterstr,
+            const std::vector<QueryFiltering::FilteringType>& filter_param,
             std::vector<uint32_t>& docIdList,
             std::vector<float>& rankScoreList,
+            std::vector<float>& customRankScoreList,
             std::size_t& totalCount);
 
     bool SetKV(const std::string& key, const std::string& value);

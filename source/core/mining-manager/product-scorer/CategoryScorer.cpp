@@ -1,5 +1,4 @@
 #include "CategoryScorer.h"
-#include "../group-manager/PropValueTable.h"
 
 using namespace sf1r;
 
@@ -18,6 +17,7 @@ CategoryScorer::CategoryScorer(
     const std::vector<category_id_t>& topLabels)
     : ProductScorer(kCategoryScoreWeight)
     , categoryValueTable_(categoryValueTable)
+    , parentIdTable_(categoryValueTable.parentIdTable())
 {
     score_t score = 1;
 
@@ -31,11 +31,16 @@ CategoryScorer::CategoryScorer(
 
 score_t CategoryScorer::score(docid_t docId)
 {
-    category_id_t catId = categoryValueTable_.getFirstValueId(docId);
-    CategoryScores::const_iterator it = categoryScores_.find(catId);
+    CategoryScores::const_iterator endIt = categoryScores_.end();
 
-    if (it == categoryScores_.end())
-        return 0;
+    for (category_id_t catId = categoryValueTable_.getFirstValueId(docId);
+         catId; catId = parentIdTable_[catId])
+    {
+        CategoryScores::const_iterator it = categoryScores_.find(catId);
 
-    return it->second;
+        if (it != endIt)
+            return it->second;
+    }
+
+    return 0;
 }
