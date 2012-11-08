@@ -22,7 +22,9 @@ class FilterManager;
 namespace faceted
 {
     class GroupManager;
+    class AttrManager;
 }
+class NumericPropertyTableBuilder;
 
 class SuffixMatchManager
 {
@@ -34,10 +36,14 @@ public:
             const std::string& property,
             const std::string& dicpath,
             boost::shared_ptr<DocumentManager>& document_manager,
-            faceted::GroupManager* groupmanager);
+            faceted::GroupManager* groupmanager,
+            faceted::AttrManager* attrmanager,
+            NumericPropertyTableBuilder* numeric_tablebuilder);
 
     ~SuffixMatchManager();
     void setGroupFilterProperty(std::vector<std::string>& propertys);
+    void setAttrFilterProperty(std::vector<std::string>& propertys);
+    void setNumberFilterProperty(std::vector<std::string>& propertys);
 
     void buildCollection();
     void buildTokenizeDic();
@@ -57,6 +63,8 @@ private:
     std::string fm_index_path_;
     std::string property_;
     std::vector<std::string>  group_property_list_;
+    std::vector<std::string>  attr_property_list_;
+    std::set<std::string>  number_property_list_;
     std::string tokenize_dicpath_;
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;

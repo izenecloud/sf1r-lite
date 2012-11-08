@@ -17,7 +17,9 @@ SuffixMatchManager::SuffixMatchManager(
         const std::string& property,
         const std::string& dicpath,
         boost::shared_ptr<DocumentManager>& document_manager,
-        faceted::GroupManager* groupmanager)
+        faceted::GroupManager* groupmanager,
+        faceted::AttrManager* attrmanager,
+        NumericPropertyTableBuilder* numeric_tablebuilder)
     : fm_index_path_(homePath + "/" + property + ".fm_idx")
     , property_(property)
     , tokenize_dicpath_(dicpath)
@@ -28,7 +30,8 @@ SuffixMatchManager::SuffixMatchManager(
     data_root_path_ = homePath;
     if(groupmanager)
     {
-        filter_manager_.reset(new FilterManager(groupmanager, data_root_path_));
+        filter_manager_.reset(new FilterManager(groupmanager, data_root_path_,
+                attrmanager, numeric_tablebuilder));
     }
 
     if (!boost::filesystem::exists(homePath))
@@ -45,6 +48,13 @@ SuffixMatchManager::SuffixMatchManager(
         }
     }
     buildTokenizeDic();
+    number_property_list_.insert("Score");
+    number_property_list_.insert("Price");
+    std::vector<std::string > number_property_list;
+    number_property_list.insert(number_property_list.end(), number_property_list_.begin(), number_property_list_.end());
+    setNumberFilterProperty(number_property_list);
+    attr_property_list_.push_back("Attribute");
+    setAttrFilterProperty(attr_property_list_);
 }
 
 SuffixMatchManager::~SuffixMatchManager()
@@ -63,18 +73,42 @@ void SuffixMatchManager::setGroupFilterProperty(std::vector<std::string>& proper
     }
 }
 
+void SuffixMatchManager::setAttrFilterProperty(std::vector<std::string>& propertys)
+{
+    attr_property_list_.swap(propertys);
+    if(filter_manager_)
+    {
+        WriteLock lock(mutex_);
+        filter_manager_->loadFilterId(attr_property_list_);
+    }
+}
+
+void SuffixMatchManager::setNumberFilterProperty(std::vector<std::string>& propertys)
+{
+    if(filter_manager_)
+    {
+        WriteLock lock(mutex_);
+        filter_manager_->loadFilterId(propertys);
+    }
+    number_property_list_.insert(propertys.begin(), propertys.end());
+}
+
 void SuffixMatchManager::buildCollection()
 {
     std::vector<FilterManager::StrFilterItemMapT> filter_map;
+    std::vector<FilterManager::StrFilterItemMapT> attr_filter_map;
+    std::vector<FilterManager::NumFilterItemMapT> num_filter_map;
     FMIndexType* new_fmi = new FMIndexType();
     // do filter building only when filter is enable.
     FilterManager* new_filter_manager = NULL;
     if(filter_manager_)
     {
-        new_filter_manager = new FilterManager(filter_manager_->getGroupManager(), data_root_path_);
+        new_filter_manager = new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
+            filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder());
     }
     size_t last_docid = fmi_ ? fmi_->docCount() : 0;
     uint32_t max_group_docid = 0;
+    uint32_t max_attr_docid = 0;
     if (last_docid)
     {
         LOG(INFO) << "start rebuilding in fm-index";
@@ -84,19 +118,33 @@ void SuffixMatchManager::buildCollection()
         fmi_->reconstructText(del_docid_list, orig_text);
         new_fmi->setOrigText(orig_text);
         if(new_filter_manager)
-            max_group_docid = new_filter_manager->loadGroupFilterInvertedData(group_property_list_, filter_map);
+        {
+            max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, filter_map);
+            max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
+        }
     }
 
-    LOG(INFO) << "building group filter in fm-index, start from:" << max_group_docid;
+    LOG(INFO) << "building filter data in fm-index, start from:" << max_group_docid;
+    std::vector<std::string > number_property_list;
+    number_property_list.insert(number_property_list.end(), number_property_list_.begin(), number_property_list_.end());
     if(new_filter_manager)
     {
         new_filter_manager->buildGroupFilterData(max_group_docid, document_manager_->getMaxDocId(),
             group_property_list_, filter_map);
-        new_filter_manager->saveGroupFilterInvertedData(group_property_list_, filter_map);
+        new_filter_manager->saveStrFilterInvertedData(group_property_list_, filter_map);
+
+        new_filter_manager->buildAttrFilterData(max_attr_docid, document_manager_->getMaxDocId(),
+            attr_property_list_, attr_filter_map);
+        new_filter_manager->saveStrFilterInvertedData(attr_property_list_, attr_filter_map);
+
+        new_filter_manager->buildNumberFilterData(0, document_manager_->getMaxDocId(),
+            number_property_list, num_filter_map);
         new_fmi->setAdditionFilterData(new_filter_manager->getAllFilterInvertedData());
         filter_map.clear();
+        attr_filter_map.clear();
+        num_filter_map.clear();
     }
-    LOG(INFO) << "building group filter finished";
+    LOG(INFO) << "building filter data finished";
 
     for (size_t i = last_docid + 1; i <= document_manager_->getMaxDocId(); ++i)
     {
@@ -293,6 +341,7 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(const std::vector<Quer
     for(size_t j = 0; j < filter_param.size(); ++j)
     {
         const QueryFiltering::FilteringType& filtertype = filter_param[j];
+        bool is_number_filter = number_property_list_.find(filtertype.property_) != number_property_list_.end();
         for(size_t k = 0; k < filtertype.values_.size(); ++k)
         {
             FMIndexType::FilterRangeT filter_range;
@@ -300,17 +349,59 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(const std::vector<Quer
             std::string filterstr;
             try
             {
-                filterstr = filtertype.values_[k].get<std::string>();
-                LOG(INFO) << "filter range by : " << filterstr;
-                filterid_range = filter_manager_->getGroupFilterIdRange(filtertype.property_,
-                    UString(filterstr, UString::UTF_8));
+                if(is_number_filter)
+                {
+                    float filter_num = filtertype.values_[k].get<float>();
+                    LOG(INFO) << "filter num by : " << filter_num;
+                    if(filtertype.operation_ == QueryFiltering::LESS_THAN_EQUAL)
+                    {
+                        filterid_range = filter_manager_->getNumFilterIdRangeSmaller(filtertype.property_, filter_num);
+                    }
+                    else if(filtertype.operation_ == QueryFiltering::GREATER_THAN_EQUAL)
+                    {
+                        filterid_range = filter_manager_->getNumFilterIdRangeLarger(filtertype.property_, filter_num);
+                    }
+                    else if(filtertype.operation_ == QueryFiltering::RANGE)
+                    {
+                        assert(filtertype.values_.size() == 2);
+                        if(k >= 1)
+                            break;
+                        float filter_num_2 = filtertype.values_[1].get<float>();
+                        FilterManager::FilterIdRange tmp_range;
+                        tmp_range = filter_manager_->getNumFilterIdRangeSmaller(filtertype.property_, filter_num);
+                        filterid_range = filter_manager_->getNumFilterIdRangeLarger(filtertype.property_, filter_num_2);
+                        filterid_range.start = min(filterid_range.start, tmp_range.start);
+                        filterid_range.end = max(filterid_range.end, tmp_range.end);
+                    }
+                    else
+                    {
+                        LOG(WARNING) << "not support filter operation for number property in fuzzy searching.";
+                        return false;
+                    }
+                }
+                else
+                {
+                    filterstr = filtertype.values_[k].get<std::string>();
+                    LOG(INFO) << "filter range by : " << filterstr;
+
+                    if(filtertype.operation_ == QueryFiltering::EQUAL || filtertype.operation_ == QueryFiltering::INCLUDE)
+                    {
+                        filterid_range = filter_manager_->getStrFilterIdRange(filtertype.property_,
+                            UString(filterstr, UString::UTF_8));
+                    }
+                    else
+                    {
+                        LOG(WARNING) << "not support filter operation for string property in fuzzy searching.";
+                        return false;
+                    }
+                }
             }
             catch (const boost::bad_get &)
             {
                 LOG(INFO) << "get filter string failed. boost::bad_get.";
                 continue;
             }
-            if(filterid_range.start == filterid_range.end)
+            if(filterid_range.start >= filterid_range.end)
             {
                 LOG(INFO) << "filter id range not found. " << filterstr;
                 continue;
