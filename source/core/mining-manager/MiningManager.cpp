@@ -253,7 +253,7 @@ bool MiningManager::open()
         rmDb_.reset(new RecommendManager(collectionName_, collectionPath_, mining_schema_, miningConfig_, document_manager_,
                                          qcManager_, analyzer_, logdays));
 
-        if(!rmDb_->open())
+        if (!rmDb_->open())
         {
             std::cerr<<"open query recommend manager failed"<<std::endl;
             rmDb_->close();
@@ -506,7 +506,7 @@ bool MiningManager::open()
                attrManager_, searchManager_.get());
             //std::vector<std::string> group_filter_props;
             //GroupConfigMap::const_iterator it = mining_schema_.group_config_map.begin();
-            //while(it != mining_schema_.group_config_map.end())
+            //while (it != mining_schema_.group_config_map.end())
             //{
             //    group_filter_props.push_back(it->first);
             //    ++it;
@@ -518,7 +518,7 @@ bool MiningManager::open()
         kv_path_ = prefix_path + "/kv";
         boost::filesystem::create_directories(kv_path_);
         kvManager_ = new KVSubManager(kv_path_);
-        if(!kvManager_->open())
+        if (!kvManager_->open())
         {
             std::cerr<<"kv manager open fail"<<std::endl;
             delete kvManager_;
@@ -712,7 +712,7 @@ bool MiningManager::DoMiningCollection()
             //         boost::gregorian::date end = boost::gregorian::from_string("2011-03-31");
             //         std::vector<izenelib::util::UString> topic_list;
             //         GetTdtInTimeRange(start, end, topic_list);
-            //         for(uint32_t i=0;i<topic_list.size();i++)
+            //         for (uint32_t i=0;i<topic_list.size();i++)
             //         {
             //             std::string str;
             //             topic_list[i].convertString(str, izenelib::util::UString::UTF_8);
@@ -933,7 +933,7 @@ bool MiningManager::getSimilarImageDocIdList(
 
 // void MiningManager::getMiningStatus(Status& status)
 // {
-//     if(status_)
+//     if (status_)
 //     {
 //         status = *status_;
 //     }
@@ -1010,7 +1010,7 @@ bool MiningManager::getDuplicateDocIdList(uint32_t docId, std::vector<
 
 bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* pIndexReader, const std::vector<std::string>& property_names)
 {
-//   if(pIndexReader->maxDoc()> similarityIndex_->GetMaxDocId())
+//   if (pIndexReader->maxDoc()> similarityIndex_->GetMaxDocId())
     if (true)
     {
         std::cout << "Start to compute similarity index, please wait..."<< std::endl;
@@ -1682,7 +1682,7 @@ bool MiningManager::GetSummarizationByRawKey(
         const izenelib::util::UString& rawKey,
         Summarization& result)
 {
-    if(!summarizationManager_) return false;
+    if (!summarizationManager_) return false;
     return summarizationManager_->GetSummarizationByRawKey(rawKey,result);
 }
 
@@ -1729,16 +1729,18 @@ bool MiningManager::GetSuffixMatch(
         return false;
 
     izenelib::util::UString queryU(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
-    if(!use_fuzzy)
+    if (!use_fuzzy)
         totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
     else
     {
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
-        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, 
-            rankScoreList, filter_param, actionOperation.actionItem_.groupParam_);
+        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                queryU, max_docs,
+                docIdList, rankScoreList,
+                filter_param, actionOperation.actionItem_.groupParam_);
 
         searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
-            rankScoreList, customRankScoreList);
+                                                    rankScoreList, customRankScoreList);
 
         docIdList.erase(docIdList.begin(), docIdList.begin() + start);
         rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
@@ -1749,7 +1751,7 @@ bool MiningManager::GetSuffixMatch(
 
 bool MiningManager::SetKV(const std::string& key, const std::string& value)
 {
-    if(kvManager_)
+    if (kvManager_)
     {
         kvManager_->update(key, value);
         return true;
@@ -1762,7 +1764,7 @@ bool MiningManager::SetKV(const std::string& key, const std::string& value)
 
 bool MiningManager::GetKV(const std::string& key, std::string& value)
 {
-    if(kvManager_)
+    if (kvManager_)
     {
         return kvManager_->get(key, value);
     }

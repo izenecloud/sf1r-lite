@@ -29,7 +29,7 @@ SuffixMatchManager::SuffixMatchManager(
     , knowledge_(NULL)
 {
     data_root_path_ = homePath;
-    if(groupmanager)
+    if (groupmanager)
     {
         filter_manager_.reset(new FilterManager(groupmanager, data_root_path_,
                 attrmanager, numeric_tablebuilder));
@@ -62,14 +62,14 @@ SuffixMatchManager::SuffixMatchManager(
 
 SuffixMatchManager::~SuffixMatchManager()
 {
-    if(analyzer_) delete analyzer_;
-    if(knowledge_) delete knowledge_;
+    if (analyzer_) delete analyzer_;
+    if (knowledge_) delete knowledge_;
 }
 
 void SuffixMatchManager::setGroupFilterProperty(std::vector<std::string>& propertys)
 {
     group_property_list_.swap(propertys);
-    if(filter_manager_)
+    if (filter_manager_)
     {
         WriteLock lock(mutex_);
         filter_manager_->loadFilterId(group_property_list_);
@@ -79,7 +79,7 @@ void SuffixMatchManager::setGroupFilterProperty(std::vector<std::string>& proper
 void SuffixMatchManager::setAttrFilterProperty(std::vector<std::string>& propertys)
 {
     attr_property_list_.swap(propertys);
-    if(filter_manager_)
+    if (filter_manager_)
     {
         WriteLock lock(mutex_);
         filter_manager_->loadFilterId(attr_property_list_);
@@ -88,7 +88,7 @@ void SuffixMatchManager::setAttrFilterProperty(std::vector<std::string>& propert
 
 void SuffixMatchManager::setNumberFilterProperty(std::vector<std::string>& propertys)
 {
-    if(filter_manager_)
+    if (filter_manager_)
     {
         WriteLock lock(mutex_);
         filter_manager_->loadFilterId(propertys);
@@ -104,10 +104,10 @@ void SuffixMatchManager::buildCollection()
     FMIndexType* new_fmi = new FMIndexType();
     // do filter building only when filter is enable.
     FilterManager* new_filter_manager = NULL;
-    if(filter_manager_)
+    if (filter_manager_)
     {
         new_filter_manager = new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
-            filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder());
+                                               filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder());
     }
     size_t last_docid = fmi_ ? fmi_->docCount() : 0;
     uint32_t max_group_docid = 0;
@@ -120,7 +120,7 @@ void SuffixMatchManager::buildCollection()
         document_manager_->getDeletedDocIdList(del_docid_list);
         fmi_->reconstructText(del_docid_list, orig_text);
         new_fmi->setOrigText(orig_text);
-        if(new_filter_manager)
+        if (new_filter_manager)
         {
             max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, filter_map);
             max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
@@ -130,18 +130,18 @@ void SuffixMatchManager::buildCollection()
     LOG(INFO) << "building filter data in fm-index, start from:" << max_group_docid;
     std::vector<std::string > number_property_list;
     number_property_list.insert(number_property_list.end(), number_property_list_.begin(), number_property_list_.end());
-    if(new_filter_manager)
+    if (new_filter_manager)
     {
         new_filter_manager->buildGroupFilterData(max_group_docid, document_manager_->getMaxDocId(),
-            group_property_list_, filter_map);
+                                                 group_property_list_, filter_map);
         new_filter_manager->saveStrFilterInvertedData(group_property_list_, filter_map);
 
         new_filter_manager->buildAttrFilterData(max_attr_docid, document_manager_->getMaxDocId(),
-            attr_property_list_, attr_filter_map);
+                                                attr_property_list_, attr_filter_map);
         new_filter_manager->saveStrFilterInvertedData(attr_property_list_, attr_filter_map);
 
         new_filter_manager->buildNumberFilterData(0, document_manager_->getMaxDocId(),
-            number_property_list, num_filter_map);
+                                                  number_property_list, num_filter_map);
         new_fmi->setAdditionFilterData(new_filter_manager->getAllFilterInvertedData());
         filter_map.clear();
         attr_filter_map.clear();
@@ -187,7 +187,11 @@ void SuffixMatchManager::buildCollection()
     LOG(INFO) << "building fm-index finished";
 }
 
-size_t SuffixMatchManager::longestSuffixMatch(const izenelib::util::UString& pattern, size_t max_docs, std::vector<uint32_t>& docid_list, std::vector<float>& score_list) const
+size_t SuffixMatchManager::longestSuffixMatch(
+        const izenelib::util::UString& pattern,
+        size_t max_docs,
+        std::vector<uint32_t>& docid_list,
+        std::vector<float>& score_list) const
 {
     if (!fmi_) return 0;
 
@@ -227,13 +231,15 @@ size_t SuffixMatchManager::longestSuffixMatch(const izenelib::util::UString& pat
     return total_match;
 }
 
-size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString& pattern_orig,
-    size_t max_docs,
-    std::vector<uint32_t>& docid_list, std::vector<float>& score_list,
-    const std::vector<QueryFiltering::FilteringType>& filter_param,
-    const GroupParam& group_param) const
+size_t SuffixMatchManager::AllPossibleSuffixMatch(
+        const izenelib::util::UString& pattern_orig,
+        size_t max_docs,
+        std::vector<uint32_t>& docid_list,
+        std::vector<float>& score_list,
+        const std::vector<QueryFiltering::FilteringType>& filter_param,
+        const GroupParam& group_param) const
 {
-    if(!analyzer_) return 0;
+    if (!analyzer_) return 0;
 
     std::vector<std::pair<size_t, size_t> > match_ranges_list;
     std::vector<size_t> doclen_list;
@@ -251,7 +257,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
     analyzer_->runWithSentence(pattern_sentence);
     std::vector< UString > all_sub_strpatterns;
     LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
-    for(int i = 0; i < pattern_sentence.getCount(0); i++)
+    for (int i = 0; i < pattern_sentence.getCount(0); i++)
     {
         printf("%s, ", pattern_sentence.getLexicon(0, i));
         all_sub_strpatterns.push_back(UString(pattern_sentence.getLexicon(0, i), UString::UTF_8));
@@ -261,35 +267,37 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
     size_t match_dic_pattern_num = all_sub_strpatterns.size();
 
     LOG(INFO) << "query tokenize by maxprefix match in bigram: ";
-    for(int i = 0; i < pattern_sentence.getCount(1); i++)
+    for (int i = 0; i < pattern_sentence.getCount(1); i++)
     {
         printf("%s, ", pattern_sentence.getLexicon(1, i));
         all_sub_strpatterns.push_back(UString(pattern_sentence.getLexicon(1, i), UString::UTF_8));
     }
     printf("\n");
 
+    match_ranges_list.reserve(all_sub_strpatterns.size());
+    max_match_list.reserve(all_sub_strpatterns.size());
 
-    if(!fmi_) return 0;
+    if (!fmi_) return 0;
     {
         ReadLock lock(mutex_);
-        for(size_t i = 0; i < all_sub_strpatterns.size(); ++i)
+        for (size_t i = 0; i < all_sub_strpatterns.size(); ++i)
         {
-            if(all_sub_strpatterns[i].empty())
+            if (all_sub_strpatterns[i].empty())
                 continue;
             std::pair<size_t, size_t> sub_match_range;
             size_t matched = fmi_->backwardSearch(all_sub_strpatterns[i].data(),
                     all_sub_strpatterns[i].length(), sub_match_range);
-            if(matched == all_sub_strpatterns[i].length())
+            if (matched == all_sub_strpatterns[i].length())
             {
                 match_ranges_list.push_back(sub_match_range);
-                if(i < match_dic_pattern_num)
+                if (i < match_dic_pattern_num)
                     max_match_list.push_back((double)2.0);
                 else
                     max_match_list.push_back((double)1.0);
             }
         }
 
-        if(match_ranges_list.size() == 1)
+        if (match_ranges_list.size() == 1)
         {
             fmi_->getMatchedDocIdList(match_ranges_list[0], max_docs, docid_list, doclen_list);
             res_list.resize(docid_list.size());
@@ -300,35 +308,27 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
             }
             std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
         }
-        else if(!filter_param.empty() || !group_param.isEmpty())
-        {
-            std::vector<FMIndexType::FilterRangeT> filter_range_list;
-            bool ret = true;
-            if(!group_param.isGroupEmpty())
-            {
-                ret = getAllFilterRangeFromGroupLable(group_param, filter_range_list);
-                if(!ret)
-                    return 0;
-            }
-            if(!group_param.isGroupEmpty())
-            {
-                ret = getAllFilterRangeFromAttrLable(group_param, filter_range_list);
-                if(!ret)
-                    return 0;
-            }
-            if(!filter_param.empty())
-            {
-                ret = getAllFilterRangeFromFilterParam(filter_param, filter_range_list);
-                if(!ret)
-                    return 0;
-            }
-            fmi_->getMatchedTopKDocIdListByFilter(filter_range_list, match_ranges_list, 
-                max_match_list, max_docs, res_list, doclen_list);
-        }
         else
         {
-            fmi_->getMatchedTopKDocIdList(match_ranges_list,
-                    max_match_list, max_docs, res_list, doclen_list);
+            std::vector<FMIndexType::FilterRangeT> filter_range_list;
+            if (!group_param.isGroupEmpty())
+            {
+                if (!getAllFilterRangeFromGroupLable(group_param, filter_range_list))
+                    return 0;
+            }
+            if (!group_param.isAttrEmpty())
+            {
+                if (!getAllFilterRangeFromAttrLable(group_param, filter_range_list))
+                    return 0;
+            }
+            if (!filter_param.empty())
+            {
+                if (!getAllFilterRangeFromFilterParam(filter_param, filter_range_list))
+                    return 0;
+            }
+
+            fmi_->getTopKDocIdListByFilter(filter_range_list, match_ranges_list, max_match_list,
+                                           max_docs, res_list, doclen_list);
         }
     }
 
@@ -349,127 +349,128 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(const izenelib::util::UString&
     return total_match;
 }
 
-bool SuffixMatchManager::getAllFilterRangeFromAttrLable(const GroupParam& group_param,
-    std::vector<FMIndexType::FilterRangeT>& filter_range_list) const
+bool SuffixMatchManager::getAllFilterRangeFromAttrLable(
+        const GroupParam& group_param,
+        std::vector<FMIndexType::FilterRangeT>& filter_range_list) const
 {
-    if(filter_manager_ == NULL || attr_property_list_.empty())
+    if (filter_manager_ == NULL || attr_property_list_.empty())
     {
         LOG(INFO) << "no filter support.";
         return false;
     }
-    GroupParam::AttrLabelMap::const_iterator cit = group_param.attrLabels_.begin();
-    while(cit != group_param.attrLabels_.end())
+
+    FMIndexType::FilterRangeT filter_range;
+    FilterManager::FilterIdRange filterid_range;
+
+    for (GroupParam::AttrLabelMap::const_iterator cit = group_param.attrLabels_.begin();
+            cit != group_param.attrLabels_.end(); ++cit)
     {
-        std::vector<std::string> attr_values = cit->second;
-        for(size_t i = 0; i < attr_values.size(); ++i)
+        const std::vector<std::string>& attr_values = cit->second;
+        for (size_t i = 0; i < attr_values.size(); ++i)
         {
-            FMIndexType::FilterRangeT filter_range;
-            FilterManager::FilterIdRange filterid_range;
             UString attr_filterstr = filter_manager_->FormatAttrPath(UString(cit->first, UString::UTF_8),
-               UString(attr_values[i], UString::UTF_8));
+                    UString(attr_values[i], UString::UTF_8));
             filterid_range = filter_manager_->getStrFilterIdRange(attr_property_list_.back(), attr_filterstr);
-            if(filterid_range.start >= filterid_range.end)
+            if (filterid_range.start >= filterid_range.end)
             {
-                LOG(INFO) << "attribute filter id range not found. " << attr_filterstr;
+                LOG(WARNING) << "attribute filter id range not found. " << attr_filterstr;
                 continue;
             }
-            bool ret = fmi_->getFilterRange(std::make_pair(filterid_range.start, filterid_range.end), filter_range);
-            if(!ret)
+            if (!fmi_->getFilterRange(std::make_pair(filterid_range.start, filterid_range.end), filter_range))
             {
-                LOG(INFO) << "get filter DocArray range failed.";
+                LOG(WARNING) << "get filter DocArray range failed.";
                 continue;
             }
 
-            LOG(INFO) << "attribute filter DocArray range is : " << filter_range.first << ", " << filter_range.second; 
+            LOG(INFO) << "attribute filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
             filter_range_list.push_back(filter_range);
         }
-        ++cit;
     }
     return true;
 }
 
 bool SuffixMatchManager::getAllFilterRangeFromGroupLable(const GroupParam& group_param,
-    std::vector<FMIndexType::FilterRangeT>& filter_range_list) const
+        std::vector<FMIndexType::FilterRangeT>& filter_range_list) const
 {
-    if(filter_manager_ == NULL)
+    if (filter_manager_ == NULL)
     {
         LOG(INFO) << "no filter support.";
         return false;
     }
-    GroupParam::GroupLabelMap::const_iterator cit = group_param.groupLabels_.begin();
-    while(cit != group_param.groupLabels_.end())
+
+    FMIndexType::FilterRangeT filter_range;
+    FilterManager::FilterIdRange filterid_range;
+
+    for (GroupParam::GroupLabelMap::const_iterator cit = group_param.groupLabels_.begin();
+            cit != group_param.groupLabels_.end(); ++cit)
     {
-        GroupParam::GroupPathVec group_values = cit->second;
-        for(size_t i = 0; i < group_values.size(); ++i)
+        const GroupParam::GroupPathVec& group_values = cit->second;
+        for (size_t i = 0; i < group_values.size(); ++i)
         {
-            FMIndexType::FilterRangeT filter_range;
-            FilterManager::FilterIdRange filterid_range;
             UString group_filterstr = filter_manager_->FormatGroupPath(group_values[i]);
             filterid_range = filter_manager_->getStrFilterIdRange(cit->first, group_filterstr);
-            if(filterid_range.start >= filterid_range.end)
+            if (filterid_range.start >= filterid_range.end)
             {
-                LOG(INFO) << "group label filter id range not found. " << group_filterstr;
+                LOG(WARNING) << "group label filter id range not found. " << group_filterstr;
                 continue;
             }
-            bool ret = fmi_->getFilterRange(std::make_pair(filterid_range.start, filterid_range.end), filter_range);
-            if(!ret)
+            if (!fmi_->getFilterRange(std::make_pair(filterid_range.start, filterid_range.end), filter_range))
             {
-                LOG(INFO) << "get filter DocArray range failed.";
+                LOG(WARNING) << "get filter DocArray range failed.";
                 continue;
             }
 
-            LOG(INFO) << "group label filter DocArray range is : " << filter_range.first << ", " << filter_range.second; 
+            LOG(INFO) << "group label filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
             filter_range_list.push_back(filter_range);
         }
-        ++cit;
     }
     return true;
 }
 
 
-bool SuffixMatchManager::getAllFilterRangeFromFilterParam(const std::vector<QueryFiltering::FilteringType>& filter_param,
-    std::vector<FMIndexType::FilterRangeT>& filter_range_list) const
+bool SuffixMatchManager::getAllFilterRangeFromFilterParam(
+        const std::vector<QueryFiltering::FilteringType>& filter_param,
+        std::vector<FMIndexType::FilterRangeT>& filter_range_list) const
 {
-    if(filter_manager_ == NULL)
+    if (filter_manager_ == NULL)
     {
         LOG(INFO) << "no filter support.";
         return false;
     }
 
-    for(size_t j = 0; j < filter_param.size(); ++j)
+    FMIndexType::FilterRangeT filter_range;
+    FilterManager::FilterIdRange filterid_range;
+
+    for (size_t j = 0; j < filter_param.size(); ++j)
     {
         const QueryFiltering::FilteringType& filtertype = filter_param[j];
         bool is_number_filter = number_property_list_.find(filtertype.property_) != number_property_list_.end();
-        for(size_t k = 0; k < filtertype.values_.size(); ++k)
+        for (size_t k = 0; k < filtertype.values_.size(); ++k)
         {
-            FMIndexType::FilterRangeT filter_range;
-            FilterManager::FilterIdRange filterid_range;
-            std::string filterstr;
             try
             {
-                if(is_number_filter)
+                if (is_number_filter)
                 {
                     float filter_num = filtertype.values_[k].get<float>();
                     LOG(INFO) << "filter num by : " << filter_num;
-                    if(filtertype.operation_ == QueryFiltering::LESS_THAN_EQUAL)
+                    if (filtertype.operation_ == QueryFiltering::LESS_THAN_EQUAL)
                     {
                         filterid_range = filter_manager_->getNumFilterIdRangeSmaller(filtertype.property_, filter_num);
                     }
-                    else if(filtertype.operation_ == QueryFiltering::GREATER_THAN_EQUAL)
+                    else if (filtertype.operation_ == QueryFiltering::GREATER_THAN_EQUAL)
                     {
                         filterid_range = filter_manager_->getNumFilterIdRangeLarger(filtertype.property_, filter_num);
                     }
-                    else if(filtertype.operation_ == QueryFiltering::RANGE)
+                    else if (filtertype.operation_ == QueryFiltering::RANGE)
                     {
                         assert(filtertype.values_.size() == 2);
-                        if(k >= 1)
-                            break;
+                        if (k >= 1) break;
                         float filter_num_2 = filtertype.values_[1].get<float>();
                         FilterManager::FilterIdRange tmp_range;
                         tmp_range = filter_manager_->getNumFilterIdRangeSmaller(filtertype.property_,
-                            max(filter_num, filter_num_2));
+                                max(filter_num, filter_num_2));
                         filterid_range = filter_manager_->getNumFilterIdRangeLarger(filtertype.property_,
-                            min(filter_num, filter_num_2));
+                                min(filter_num, filter_num_2));
                         filterid_range.start = max(filterid_range.start, tmp_range.start);
                         filterid_range.end = min(filterid_range.end, tmp_range.end);
                     }
@@ -481,18 +482,23 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(const std::vector<Quer
                 }
                 else
                 {
-                    filterstr = filtertype.values_[k].get<std::string>();
+                    const std::string& filterstr = filtertype.values_[k].get<std::string>();
                     LOG(INFO) << "filter range by : " << filterstr;
 
-                    if(filtertype.operation_ == QueryFiltering::EQUAL || filtertype.operation_ == QueryFiltering::INCLUDE)
+                    if (filtertype.operation_ == QueryFiltering::EQUAL || filtertype.operation_ == QueryFiltering::INCLUDE)
                     {
                         filterid_range = filter_manager_->getStrFilterIdRange(filtertype.property_,
-                            UString(filterstr, UString::UTF_8));
+                                UString(filterstr, UString::UTF_8));
+                        if (filterid_range.start >= filterid_range.end)
+                        {
+                            LOG(WARNING) << "filter id range not found. " << filterstr;
+                            continue;
+                        }
                     }
                     else
                     {
                         LOG(WARNING) << "not support filter operation for string property in fuzzy searching.";
-                        return false;
+                        continue;
                     }
                 }
             }
@@ -501,20 +507,14 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(const std::vector<Quer
                 LOG(INFO) << "get filter string failed. boost::bad_get.";
                 continue;
             }
-            if(filterid_range.start >= filterid_range.end)
+
+            if (!fmi_->getFilterRange(std::make_pair(filterid_range.start, filterid_range.end), filter_range))
             {
-                LOG(INFO) << "filter id range not found. " << filterstr;
+                LOG(WARNING) << "get filter DocArray range failed.";
                 continue;
             }
 
-            bool ret = fmi_->getFilterRange(std::make_pair(filterid_range.start, filterid_range.end), filter_range);
-            if(!ret)
-            {
-                LOG(INFO) << "get filter DocArray range failed.";
-                continue;
-            }
-
-            LOG(INFO) << "filter DocArray range is : " << filter_range.first << ", " << filter_range.second; 
+            LOG(INFO) << "filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
             filter_range_list.push_back(filter_range);
         }
     }
@@ -543,13 +543,13 @@ void SuffixMatchManager::buildTokenizeDic()
     //testustr.convertString(teststr, UString::UTF_8);
     //Sentence tests(teststr.c_str());
     //analyzer_->runWithSentence(tests);
-    //for(int i = 0; i < tests.getCount(0); i++)
+    //for (int i = 0; i < tests.getCount(0); i++)
     //{
     //    printf("%s, ", tests.getLexicon(0, i));
     //}
     //printf("\n");
     //printf("non dictionary bigram: \n");
-    //for(int i = 0; i < tests.getCount(1); i++)
+    //for (int i = 0; i < tests.getCount(1); i++)
     //{
     //    printf("%s, ", tests.getLexicon(1, i));
     //}

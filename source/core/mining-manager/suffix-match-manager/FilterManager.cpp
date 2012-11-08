@@ -25,7 +25,7 @@ FilterManager::~FilterManager()
 {
 }
 
-faceted::GroupManager* FilterManager::getGroupManager() const 
+faceted::GroupManager* FilterManager::getGroupManager() const
 {
     return groupManager_;
 }
@@ -86,7 +86,7 @@ uint32_t FilterManager::loadStrFilterInvertedData(const std::vector<std::string>
     return max_docid;
 }
 
-void FilterManager::saveStrFilterInvertedData(const std::vector<std::string>& propertys, 
+void FilterManager::saveStrFilterInvertedData(const std::vector<std::string>& propertys,
     const std::vector<StrFilterItemMapT>& str_filter_data) const
 {
     assert(str_filter_data.size() == propertys.size());
@@ -143,7 +143,7 @@ FilterManager::FilterIdRange FilterManager::getStrFilterIdRange(const std::strin
     return id_cit->second;
 }
 
-// the last_docid means where the last indexing end for. We just build the 
+// the last_docid means where the last indexing end for. We just build the
 // inverted data begin from last_docid+1.
 void FilterManager::buildGroupFilterData(uint32_t last_docid, uint32_t max_docid,
     const std::vector< std::string >& propertys,
@@ -206,7 +206,7 @@ void FilterManager::buildGroupFilterData(uint32_t last_docid, uint32_t max_docid
                 }
                 else
                 {
-                    // new group 
+                    // new group
                     FilterDocListT& item = group_filter_data[j][groupstr];
                     item.push_back(docid);
                 }
@@ -215,7 +215,7 @@ void FilterManager::buildGroupFilterData(uint32_t last_docid, uint32_t max_docid
         // map the group filter string to filter id.
         GroupNode* cur_property_group = property_root_nodes[j];
         StrIdMapT& gfilterids = strtype_filterids_[propertys[j]];
-        mapGroupFilterToFilterId(cur_property_group, group_filter_data[j], gfilterids);        
+        mapGroupFilterToFilterId(cur_property_group, group_filter_data[j], gfilterids);
         printNode(property_root_nodes[j], 0, gfilterids, all_inverted_filter_data_);
     }
     delete group_root;
@@ -241,7 +241,7 @@ void FilterManager::mapGroupFilterToFilterId(GroupNode* node, const StrFilterIte
     }
 }
 
-izenelib::util::UString FilterManager::FormatGroupPath(std::vector<std::string>& groupPath) const
+izenelib::util::UString FilterManager::FormatGroupPath(const std::vector<std::string>& groupPath) const
 {
     izenelib::util::UString groupstr;
     if(groupPath.empty())
@@ -253,7 +253,7 @@ izenelib::util::UString FilterManager::FormatGroupPath(std::vector<std::string>&
     }
     return UString(group_tmpstr, UString::UTF_8);
 }
-izenelib::util::UString FilterManager::FormatGroupPath(std::vector<izenelib::util::UString>& groupPath) const
+izenelib::util::UString FilterManager::FormatGroupPath(const std::vector<izenelib::util::UString>& groupPath) const
 {
     izenelib::util::UString groupstr;
     if(groupPath.empty())
@@ -475,7 +475,7 @@ void FilterManager::buildNumberFilterData(uint32_t last_docid, uint32_t max_doci
         std::sort(possible_keys.begin(), possible_keys.end(), std::less<NumFilterKeyT>());
         // map the number filter to filter id.
         NumberIdMapT& num_filterids = numbertype_filterids_[property];
-        mapNumberFilterToFilterId(num_filter_data[j], num_filterids);        
+        mapNumberFilterToFilterId(num_filter_data[j], num_filterids);
     }
     LOG(INFO) << "finish building number filter data.";
 
@@ -526,7 +526,7 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRange(const std::strin
         // no such property.
         return empty_range;
     }
-    
+
     std::map<std::string, std::vector<NumFilterKeyT> >::const_iterator possible_cit = num_possible_keys_.find(property);
     if(possible_cit == num_possible_keys_.end())
         return empty_range;
@@ -546,7 +546,7 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRange(const std::strin
             return empty_range;
     }
 
-    // find a nearest key 
+    // find a nearest key
     NumFilterKeyT destkey = numkey;
     int start = 0;
     int end = (int)possible_keys.size() - 1;
@@ -644,7 +644,7 @@ void FilterManager::buildAttrFilterData(uint32_t last_docid, uint32_t max_docid,
     }
     // map the attribute filter string to filter id.
     StrIdMapT& filterids = strtype_filterids_[property];
-    mapAttrFilterToFilterId(attr_filter_data[0], filterids);        
+    mapAttrFilterToFilterId(attr_filter_data[0], filterids);
     LOG(INFO) << "finish building attribute filter data.";
 }
 
@@ -680,5 +680,3 @@ izenelib::util::UString FilterManager::FormatAttrPath(const izenelib::util::UStr
 }
 
 }
-
-
