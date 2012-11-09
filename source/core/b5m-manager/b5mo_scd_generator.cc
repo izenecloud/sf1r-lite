@@ -140,56 +140,11 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
             }
             else if(scd_type==UPDATE_SCD)
             {
-                //if(!soldpid.empty() && soldpid != spid)
-                //{
-                    //if(olduuid.empty())
-                    //{
-                        //olduuid = soldpid;
-                    //}
-                    //else
-                    //{
-                        //olduuid += "," + soldpid;
-                    //}
-                    //LOG(INFO)<<"offer's pid has changed from " << soldpid << " to " << spid << std::endl;
-                    //doc.property("olduuid") = UString(olduuid, UString::UTF_8);
-                    //if(historydb_)
-                    //{
-                        //historydb_->offer_insert(sdocid, soldpid);
-                        //historydb_->pd_insert(soldpid, sdocid);
-                    //}
-                    //else
-                    //{
-                        //LogServerClient::AddOldUUID(sdocid, soldpid);
-                        //LogServerClient::AddOldDocId(soldpid, sdocid);
-                    //}
-                //}
                 b5mo_u.Append(doc);
             }
             else if(scd_type==DELETE_SCD)
             {
                 b5mo_d.Append(doc);
-                //if(historydb_)
-                //{
-                    //std::set<std::string> s_oldpids;
-                    //historydb_->pd_remove_offerid(spid, sdocid);
-                    //// delete the offerid from all its history product ids
-                    //historydb_->offer_get(sdocid, s_oldpids);
-                    //std::set<std::string>::iterator it = s_oldpids.begin();
-                    //std::set<std::string>::iterator it_end = s_oldpids.end();
-                    //while(it != it_end)
-                    //{
-                        //if((*it).empty()) continue;
-                        //historydb_->pd_remove_offerid(*it, sdocid);
-                        //++it;
-                    //}
-                //}
-                //else
-                //{
-                    //std::vector<std::string> s_oldpids;
-                    //LogServerClient::GetOldUUIDList(sdocid, s_oldpids);
-                    //s_oldpids.push_back(spid);
-                    //LogServerClient::DelOldDocId(s_oldpids, sdocid);
-                //}
             }
         }
     }
