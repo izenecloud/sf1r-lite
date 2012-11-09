@@ -27,9 +27,7 @@ public:
 
     void index();
 
-    void mining_search();
-
-    void mining_create_index();
+    void mining();
 
     void index_query_log();
 
