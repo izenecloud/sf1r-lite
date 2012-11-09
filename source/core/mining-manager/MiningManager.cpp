@@ -37,6 +37,7 @@
 #include "product-scorer/ProductScorerFactory.h"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
+#include "suffix-match-manager/IncrementalManager.hpp"
 
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
@@ -55,6 +56,7 @@
 
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
+#include <la-manager/LAManager.h>
 
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
@@ -92,24 +94,28 @@ MiningManager::MiningManager(
         const std::string& collectionDataPath,
         const CollectionPath& collectionPath,
         const boost::shared_ptr<DocumentManager>& documentManager,
+        const boost::shared_ptr<LAManager>& laManager,
         const boost::shared_ptr<IndexManager>& index_manager,
         const boost::shared_ptr<SearchManager>& searchManager,
         const boost::shared_ptr<IDManager>& idManager,
         const std::string& collectionName,
         const DocumentSchema& documentSchema,
         const MiningConfig& miningConfig,
-        const MiningSchema& miningSchema)
+        const MiningSchema& miningSchema,
+        const IndexBundleSchema& indexSchema)
     : collectionDataPath_(collectionDataPath)
     , queryDataPath_(collectionPath.getQueryDataPath())
     , collectionPath_(collectionPath)
     , collectionName_(collectionName)
     , documentSchema_(documentSchema)
-    , miningConfig_(miningConfig)
+    , miningConfig_(miningConfig) 
+    , indexSchema_ (indexSchema)
     , mining_schema_(miningSchema)
     , analyzer_(NULL)
     , c_analyzer_(NULL)
     , kpe_analyzer_(NULL)
     , document_manager_(documentManager)
+    , laManager_(laManager)
     , index_manager_(index_manager)
     , searchManager_(searchManager)
     , tgInfo_(NULL)
@@ -123,6 +129,7 @@ MiningManager::MiningManager(
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
+    , incrementalManager_(NULL)
     , kvManager_(NULL)
 {
 }
@@ -141,6 +148,7 @@ MiningManager::~MiningManager()
     if (tdt_storage_) delete tdt_storage_;
     if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
+    if (incrementalManager_) delete incrementalManager_;
     if (kvManager_) delete kvManager_;
     close();
 }
@@ -253,7 +261,7 @@ bool MiningManager::open()
         rmDb_.reset(new RecommendManager(collectionName_, collectionPath_, mining_schema_, miningConfig_, document_manager_,
                                          qcManager_, analyzer_, logdays));
 
-        if (!rmDb_->open())
+        if(!rmDb_->open())
         {
             std::cerr<<"open query recommend manager failed"<<std::endl;
             rmDb_->close();
@@ -498,7 +506,7 @@ bool MiningManager::open()
         }
 
         /** Suffix Match */
-        if (mining_schema_.suffixmatch_schema.suffix_match_enable)
+      if (mining_schema_.suffixmatch_schema.suffix_match_enable)
         {
             LOG(INFO) << "suffix match enabled.";
             suffix_match_path_ = prefix_path + "/suffix_match";
@@ -518,13 +526,16 @@ bool MiningManager::open()
                 number_amp_list.push_back(number_config_list[i].amplification);
             }
             suffixMatchManager_->setNumberFilterProperty(number_props, number_amp_list);
+
+            incrementalManager_ = new IncrementalManager(suffix_match_path_, mining_schema_.suffixmatch_schema.suffix_match_property, 
+                document_manager_, idManager_, laManager_, indexSchema_);
         }
 
         /** KV */
         kv_path_ = prefix_path + "/kv";
         boost::filesystem::create_directories(kv_path_);
         kvManager_ = new KVSubManager(kv_path_);
-        if (!kvManager_->open())
+        if(!kvManager_->open())
         {
             std::cerr<<"kv manager open fail"<<std::endl;
             delete kvManager_;
@@ -718,7 +729,7 @@ bool MiningManager::DoMiningCollection()
             //         boost::gregorian::date end = boost::gregorian::from_string("2011-03-31");
             //         std::vector<izenelib::util::UString> topic_list;
             //         GetTdtInTimeRange(start, end, topic_list);
-            //         for (uint32_t i=0;i<topic_list.size();i++)
+            //         for(uint32_t i=0;i<topic_list.size();i++)
             //         {
             //             std::string str;
             //             topic_list[i].convertString(str, izenelib::util::UString::UTF_8);
@@ -756,6 +767,37 @@ bool MiningManager::DoMiningCollection()
     }
 
     return true;
+}
+void MiningManager::buildCollection()
+{
+    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
+    {
+        incrementalManager_->createIndex_();
+    }
+}
+
+void MiningManager::SearchCollection(const std::string query)
+{
+    std::vector<docid_t> resultList;
+    std::vector<float> ResultListSimilarity;
+    incrementalManager_->fuzzySearch_(query, resultList, ResultListSimilarity);
+    PropertyValue result;
+    uint32_t k = 0;
+    for (std::vector<docid_t>::iterator i = resultList.begin(); i != resultList.end(); ++i)
+    {
+        if (k > 6)
+        {
+            cout<<"..................................."<<endl;
+            break;
+        }
+        cout<<"[DocId]: "<<*i<<endl;
+        document_manager_->getPropertyValue(*i, "Title", result);
+
+        std::string oldvalue_str;
+        izenelib::util::UString& propertyValueU = result.get<izenelib::util::UString>();
+        propertyValueU.convertString(oldvalue_str, izenelib::util::UString::UTF_8);
+        cout<<"[Title]: "<<oldvalue_str<<" [Score]: "<<ResultListSimilarity[k++]<<endl;
+   }
 }
 
 void MiningManager::onIndexUpdated(size_t docNum)
@@ -939,7 +981,7 @@ bool MiningManager::getSimilarImageDocIdList(
 
 // void MiningManager::getMiningStatus(Status& status)
 // {
-//     if (status_)
+//     if(status_)
 //     {
 //         status = *status_;
 //     }
@@ -1016,7 +1058,7 @@ bool MiningManager::getDuplicateDocIdList(uint32_t docId, std::vector<
 
 bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* pIndexReader, const std::vector<std::string>& property_names)
 {
-//   if (pIndexReader->maxDoc()> similarityIndex_->GetMaxDocId())
+//   if(pIndexReader->maxDoc()> similarityIndex_->GetMaxDocId())
     if (true)
     {
         std::cout << "Start to compute similarity index, please wait..."<< std::endl;
@@ -1688,7 +1730,7 @@ bool MiningManager::GetSummarizationByRawKey(
         const izenelib::util::UString& rawKey,
         Summarization& result)
 {
-    if (!summarizationManager_) return false;
+    if(!summarizationManager_) return false;
     return summarizationManager_->GetSummarizationByRawKey(rawKey,result);
 }
 
@@ -1770,7 +1812,7 @@ bool MiningManager::SetKV(const std::string& key, const std::string& value)
 
 bool MiningManager::GetKV(const std::string& key, std::string& value)
 {
-    if (kvManager_)
+    if(kvManager_)
     {
         return kvManager_->get(key, value);
     }

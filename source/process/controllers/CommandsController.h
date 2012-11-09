@@ -27,6 +27,10 @@ public:
 
     void index();
 
+    void mining_search();
+
+    void mining_create_index();
+
     void index_query_log();
 
     void optimize_index();
