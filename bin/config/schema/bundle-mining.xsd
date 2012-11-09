@@ -240,6 +240,7 @@
             <xs:sequence>
                 <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="TokenizeDictionary" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="FilterProperty" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -249,6 +250,14 @@
             <xs:attribute name="path" type="xs:string" use="required" />
         </xs:complexType>
     </xs:element>
+    <xs:element name="FilterProperty">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="filtertype" type="xs:string" use="required" />
+            <xs:attribute name="amplification" type="xs:integer" use="optional" />
+        </xs:complexType>
+    </xs:element>
+
 
     <xs:element name="OpinionWorkingPath">
         <xs:complexType>

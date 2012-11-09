@@ -498,20 +498,26 @@ bool MiningManager::open()
         }
 
         /** Suffix Match */
-        if (mining_schema_.suffix_match_enable)
+        if (mining_schema_.suffixmatch_schema.suffix_match_enable)
         {
+            LOG(INFO) << "suffix match enabled.";
             suffix_match_path_ = prefix_path + "/suffix_match";
-            suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property,
-               mining_schema_.suffix_match_tokenize_dicpath, document_manager_, groupManager_,
-               attrManager_, searchManager_.get());
-            //std::vector<std::string> group_filter_props;
-            //GroupConfigMap::const_iterator it = mining_schema_.group_config_map.begin();
-            //while (it != mining_schema_.group_config_map.end())
-            //{
-            //    group_filter_props.push_back(it->first);
-            //    ++it;
-            //}
-            //suffixMatchManager_->setGroupFilterProperty(group_filter_props);
+            suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
+                mining_schema_.suffixmatch_schema.suffix_match_property,
+                mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
+                document_manager_, groupManager_, attrManager_, searchManager_.get());
+            // reading suffix config and load filter data here.
+            suffixMatchManager_->setGroupFilterProperty(mining_schema_.suffixmatch_schema.group_filter_properties);
+            suffixMatchManager_->setAttrFilterProperty(mining_schema_.suffixmatch_schema.attr_filter_properties);
+            std::vector<std::string> number_props;
+            std::vector<int32_t> number_amp_list;
+            const std::vector<NumberFilterConfig>& number_config_list = mining_schema_.suffixmatch_schema.number_filter_properties;
+            for(size_t i = 0; i < number_config_list.size(); ++i)
+            {
+                number_props.push_back(number_config_list[i].property);
+                number_amp_list.push_back(number_config_list[i].amplification);
+            }
+            suffixMatchManager_->setNumberFilterProperty(number_props, number_amp_list);
         }
 
         /** KV */
@@ -744,7 +750,7 @@ bool MiningManager::DoMiningCollection()
     }
 
     // do SuffixMatch
-    if (mining_schema_.suffix_match_enable)
+    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
     {
         suffixMatchManager_->buildCollection();
     }
@@ -1725,7 +1731,7 @@ bool MiningManager::GetSuffixMatch(
         std::vector<float>& customRankScoreList,
         std::size_t& totalCount)
 {
-    if (!mining_schema_.suffix_match_enable || !suffixMatchManager_)
+    if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
 
     izenelib::util::UString queryU(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);

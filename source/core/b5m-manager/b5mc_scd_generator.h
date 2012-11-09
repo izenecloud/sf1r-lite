@@ -16,7 +16,6 @@ namespace sf1r {
 
     private:
 
-        void Process_(Document& doc, int& type);
 
     private:
         OfferDb* odb_;

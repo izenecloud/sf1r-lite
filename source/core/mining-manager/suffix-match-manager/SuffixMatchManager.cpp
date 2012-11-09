@@ -29,12 +29,6 @@ SuffixMatchManager::SuffixMatchManager(
     , knowledge_(NULL)
 {
     data_root_path_ = homePath;
-    if (groupmanager)
-    {
-        filter_manager_.reset(new FilterManager(groupmanager, data_root_path_,
-                attrmanager, numeric_tablebuilder));
-    }
-
     if (!boost::filesystem::exists(homePath))
     {
         boost::filesystem::create_directories(homePath);
@@ -49,15 +43,9 @@ SuffixMatchManager::SuffixMatchManager(
         }
     }
     buildTokenizeDic();
-    // reading suffix config and load filter data here.
-    //
-    //number_property_list_.insert("Score");
-    //number_property_list_.insert("Price");
-    //std::vector<std::string > number_property_list;
-    //number_property_list.insert(number_property_list.end(), number_property_list_.begin(), number_property_list_.end());
-    //setNumberFilterProperty(number_property_list);
-    //attr_property_list_.push_back("Attribute");
-    //setAttrFilterProperty(attr_property_list_);
+
+    filter_manager_.reset(new FilterManager(groupmanager, data_root_path_,
+            attrmanager, numeric_tablebuilder));
 }
 
 SuffixMatchManager::~SuffixMatchManager()
@@ -86,14 +74,23 @@ void SuffixMatchManager::setAttrFilterProperty(std::vector<std::string>& propert
     }
 }
 
-void SuffixMatchManager::setNumberFilterProperty(std::vector<std::string>& propertys)
+void SuffixMatchManager::setNumberFilterProperty(std::vector<std::string>& propertys, std::vector<int32_t>& num_amp_list)
 {
+    assert(propertys.size() == num_amp_list.size());
+    std::map<std::string, int32_t> num_amp_map;
+    for(size_t i = 0; i < propertys.size(); ++i)
+    {
+        num_amp_map[propertys[i]] = num_amp_list[i];
+    }
+
     if (filter_manager_)
     {
         WriteLock lock(mutex_);
         filter_manager_->loadFilterId(propertys);
+        filter_manager_->setNumberAmp(num_amp_map);
     }
     number_property_list_.insert(propertys.begin(), propertys.end());
+    
 }
 
 void SuffixMatchManager::buildCollection()
@@ -108,6 +105,7 @@ void SuffixMatchManager::buildCollection()
     {
         new_filter_manager = new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
                                                filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder());
+        new_filter_manager->setNumberAmp(filter_manager_->getNumberAmp());
     }
     size_t last_docid = fmi_ ? fmi_->docCount() : 0;
     uint32_t max_group_docid = 0;
@@ -262,7 +260,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         printf("%s, ", pattern_sentence.getLexicon(0, i));
         all_sub_strpatterns.push_back(UString(pattern_sentence.getLexicon(0, i), UString::UTF_8));
     }
-    printf("\n");
+    cout << endl;
 
     size_t match_dic_pattern_num = all_sub_strpatterns.size();
 
@@ -272,7 +270,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         printf("%s, ", pattern_sentence.getLexicon(1, i));
         all_sub_strpatterns.push_back(UString(pattern_sentence.getLexicon(1, i), UString::UTF_8));
     }
-    printf("\n");
+    cout << endl;
 
     match_ranges_list.reserve(all_sub_strpatterns.size());
     max_match_list.reserve(all_sub_strpatterns.size());
@@ -280,6 +278,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     if (!fmi_) return 0;
     {
         ReadLock lock(mutex_);
+        LOG(INFO) << "query tokenize match ranges are: ";
         for (size_t i = 0; i < all_sub_strpatterns.size(); ++i)
         {
             if (all_sub_strpatterns[i].empty())
@@ -287,6 +286,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             std::pair<size_t, size_t> sub_match_range;
             size_t matched = fmi_->backwardSearch(all_sub_strpatterns[i].data(),
                     all_sub_strpatterns[i].length(), sub_match_range);
+            cout << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
             if (matched == all_sub_strpatterns[i].length())
             {
                 match_ranges_list.push_back(sub_match_range);
@@ -489,11 +489,6 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(
                     {
                         filterid_range = filter_manager_->getStrFilterIdRange(filtertype.property_,
                                 UString(filterstr, UString::UTF_8));
-                        if (filterid_range.start >= filterid_range.end)
-                        {
-                            LOG(WARNING) << "filter id range not found. " << filterstr;
-                            continue;
-                        }
                     }
                     else
                     {
@@ -505,6 +500,12 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(
             catch (const boost::bad_get &)
             {
                 LOG(INFO) << "get filter string failed. boost::bad_get.";
+                continue;
+            }
+
+            if (filterid_range.start >= filterid_range.end)
+            {
+                LOG(WARNING) << "filter id range not found. ";
                 continue;
             }
 
