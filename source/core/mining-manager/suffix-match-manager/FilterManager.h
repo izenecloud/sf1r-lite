@@ -148,11 +148,13 @@ public:
 
     void clearFilterId();
     void saveFilterId();
-    void loadFilterId(const std::vector<std::string> propertys);
+    void loadFilterId(const std::vector<std::string>& propertys);
 
     faceted::GroupManager* getGroupManager() const; 
     faceted::AttrManager* getAttrManager() const;
     NumericPropertyTableBuilder* getNumericTableBuilder() const;
+    void setNumberAmp(const std::map<std::string, int32_t>& num_property_amp_list);
+    const std::map<std::string, int32_t>& getNumberAmp();
 
 private:
     typedef std::map<izenelib::util::UString, FilterIdRange> StrIdMapT;
@@ -202,6 +204,7 @@ private:
     // property=>(Price/Score=>filterid)
     NumPropertyIdMapT numbertype_filterids_;
     std::map<std::string, std::vector<NumFilterKeyT> > num_possible_keys_;
+    std::map<std::string, int32_t > num_amp_map_;
 
     std::vector< FilterDocListT > all_inverted_filter_data_;
 };

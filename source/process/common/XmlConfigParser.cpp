@@ -1908,7 +1908,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     }
 
     task_node = getUniqChildElement(mining_schema_node, "SuffixMatch", false);
-    mining_schema.suffix_match_enable = false;
+    mining_schema.suffixmatch_schema.suffix_match_enable = false;
     if (task_node)
     {
         Iterator<Element> it("Property");
@@ -1919,18 +1919,85 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         {
             throw XmlConfigParserException("Property ["+property_name+"] used in SuffixMatch is not string type.");
         }
-        mining_schema.suffix_match_property = property_name;
-        mining_schema.suffix_match_enable = true;
+        mining_schema.suffixmatch_schema.suffix_match_property = property_name;
+        mining_schema.suffixmatch_schema.suffix_match_enable = true;
 
         ticpp::Element* subNode = getUniqChildElement(task_node, "TokenizeDictionary", true);
         if (subNode)
         {
             getAttribute(subNode, "path", property_name);
-            mining_schema.suffix_match_tokenize_dicpath = property_name;
+            mining_schema.suffixmatch_schema.suffix_match_tokenize_dicpath = property_name;
         }
         else
         {
             throw XmlConfigParserException("["+property_name+"] used in SuffixMatch is missing.");
+        }
+
+        Iterator<Element> filterit("FilterProperty");
+        const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
+        for (filterit = filterit.begin(task_node); filterit != filterit.end(); ++filterit)
+        {
+            const ticpp::Element* propNode = filterit.Get();
+            getAttribute(propNode, "name", property_name);
+            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+            if (!gottype)
+            {
+                throw XmlConfigParserException("The type of property ["+property_name+"] in <SuffixMatch> is unknown.");
+            }
+
+            std::string type;
+            getAttribute(propNode, "filtertype", type);
+
+            int32_t amplification = 1;
+            getAttribute(propNode, "amplification", amplification, false);
+
+            if(type == "group")
+            {
+                GroupConfigMap::const_iterator cit = mining_schema.group_config_map.find(property_name);
+                if(cit == mining_schema.group_config_map.end())
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> must be one of item configured in <Group> if it has type group.");
+                }
+                mining_schema.suffixmatch_schema.group_filter_properties.push_back(property_name);
+            }
+            else if(type == "attribute")
+            {
+                if( property_name != mining_schema.attr_property.propName)
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> must be one of item configured in <Attr> if it has type attribute.");
+                }
+                mining_schema.suffixmatch_schema.attr_filter_properties.push_back(property_name);
+            }
+            else if(type == "number")
+            {
+                PropertyConfig propConfig;
+                propConfig.setName(property_name);
+                IndexBundleSchema::const_iterator propIt = indexSchema.find(propConfig);
+
+                NumberFilterConfig number_filterconfig(property_type);
+                number_filterconfig.property = property_name;
+                number_filterconfig.amplification = amplification;
+                if (number_filterconfig.isNumericType())
+                {
+                    if (propIt == indexSchema.end() ||
+                        !propIt->isIndex() ||
+                        !propIt->getIsFilter())
+                    {
+                        throw XmlConfigParserException("As property ["+property_name+"] in <SuffixMatch> is int or float type, "
+                            "it needs to be configured as a filter property like below:\n"
+                            "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
+                    }
+                    mining_schema.suffixmatch_schema.number_filter_properties.push_back(number_filterconfig);
+                }
+                else
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not int, float type.");
+                }
+            }
+            else 
+            {
+                throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> unknown filter type.");
+            }
         }
     }
 }

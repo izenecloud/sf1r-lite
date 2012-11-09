@@ -334,7 +334,7 @@ void FilterManager::saveFilterId()
     }
 }
 
-void FilterManager::loadFilterId(const std::vector<std::string> propertys)
+void FilterManager::loadFilterId(const std::vector<std::string>& propertys)
 {
     for(size_t i = 0; i < propertys.size(); ++i)
     {
@@ -401,14 +401,10 @@ void FilterManager::loadFilterId(const std::vector<std::string> propertys)
 FilterManager::NumFilterKeyT FilterManager::formatNumberFilter(const std::string& property,
     float filter_num, bool tofloor) const
 {
-    // need add config for each property to get the amplification
-    if(property == "Score")
+    std::map<std::string, int32_t>::const_iterator cit = num_amp_map_.find(property);
+    if(cit != num_amp_map_.end())
     {
-        return tofloor ? (NumFilterKeyT)std::floor(filter_num * 100) : (NumFilterKeyT)std::ceil(filter_num * 100);
-    }
-    else if(property == "Price")
-    {
-        return tofloor?(NumFilterKeyT)std::floor(filter_num):(NumFilterKeyT)std::ceil(filter_num);
+        return tofloor ? (NumFilterKeyT)std::floor(filter_num * cit->second) : (NumFilterKeyT)std::ceil(filter_num * cit->second);
     }
     else
     {
@@ -429,6 +425,7 @@ void FilterManager::buildNumberFilterData(uint32_t last_docid, uint32_t max_doci
     for(size_t j = 0; j < propertys.size(); ++j)
     {
         const std::string& property = propertys[j];
+        LOG(INFO) << "building number property :" << property;
         boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = numericTableBuilder_->createPropertyTable(property);
         if (numericPropertyTable == NULL)
         {
@@ -677,6 +674,15 @@ izenelib::util::UString FilterManager::FormatAttrPath(const izenelib::util::UStr
 {
     izenelib::util::UString retstr = attrname;
     return retstr.append(UString(":", UString::UTF_8)).append(attrvalue);
+}
+
+void FilterManager::setNumberAmp(const std::map<std::string, int32_t>& num_property_amp_map)
+{
+    num_amp_map_ = num_property_amp_map;
+}
+const std::map<std::string, int32_t>& FilterManager::getNumberAmp()
+{
+    return num_amp_map_;
 }
 
 }
