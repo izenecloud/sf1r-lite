@@ -1744,14 +1744,14 @@ bool MiningManager::GetSuffixMatch(
                 queryU, max_docs,
                 docIdList, rankScoreList,
                 filter_param, actionOperation.actionItem_.groupParam_);
-
-        searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
-                                                    rankScoreList, customRankScoreList);
-
-        docIdList.erase(docIdList.begin(), docIdList.begin() + start);
-        rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
-        customRankScoreList.erase(customRankScoreList.begin(), customRankScoreList.begin() + start);
     }
+    searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
+        rankScoreList, customRankScoreList);
+
+    docIdList.erase(docIdList.begin(), docIdList.begin() + start);
+    rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
+    customRankScoreList.erase(customRankScoreList.begin(), customRankScoreList.begin() + start);
+ 
     return true;
 }
 

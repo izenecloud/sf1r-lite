@@ -125,6 +125,8 @@ private:
      */
     void preprocess(KeywordSearchResult& searchResult);
 
+    bool checkSuffixMatchParam(std::string& message);
+
 private:
     ::izenelib::driver::Request& request_;
     ::izenelib::driver::Response& response_;

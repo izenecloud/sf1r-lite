@@ -474,6 +474,10 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(
                         filterid_range.start = max(filterid_range.start, tmp_range.start);
                         filterid_range.end = min(filterid_range.end, tmp_range.end);
                     }
+                    else if (filtertype.operation_ == QueryFiltering::EQUAL)
+                    {
+                        filterid_range = filter_manager_->getNumFilterIdRangeExactly(filtertype.property_, filter_num);
+                    }
                     else
                     {
                         LOG(WARNING) << "not support filter operation for number property in fuzzy searching.";
