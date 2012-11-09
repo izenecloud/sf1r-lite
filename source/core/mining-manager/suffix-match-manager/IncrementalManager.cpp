@@ -82,7 +82,6 @@ namespace sf1r
 		isInitIndex_ = false;
 		isMergingIndex_ = false;
 		isStartFromLocal_ = false;
-		tmpdata = 600000;
 		isAddingIndex_ = false;
 		index_path_ = path;
 	}
@@ -174,10 +173,12 @@ namespace sf1r
  			laInput.setDocId(0);
  			if (laManager_)
  			{
- 				cout<<"xxxxxxxxxxxxxxxxxxxx"<<endl;
+ 				if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
+ 					return false;
  			}
- 			if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
+ 			else
  				return false;
+ 			
  			LAInput::const_iterator it = laInput.begin();
  			std::set<termid_t> setDocId;
  			std::vector<termid_t> termidList;
@@ -221,37 +222,32 @@ namespace sf1r
 
 	void IncrementalManager::doCreateIndex_()
 	{
-		
+		isInitIndex_ = true;
 		if (BerralNum_ == 0)
 		{
-			isInitIndex_ = true;
+			//isInitIndex_ = true;
 			LOG(INFO) << "Loading incremental index......"<<endl;
 			startIncrementalManager();
 			init_();
 			LOG(INFO) << "Loading Finished"<<endl;
 		}
 
-		if (isInitIndex_ == true)// this is before lock(mutex), used to prevent new request;
+		/*if (isInitIndex_ == true)// this is before lock(mutex), used to prevent new request;
 		{
-			isAddingIndex_ = false;// this means add to temp; 
+			isAddingIndex_ = false;// this means add to tempBarrel; 
 		}
 		else
-			isAddingIndex_ = true;
+			isAddingIndex_ = true;*/ //this part is discard means: all the index just at to mainbarrel. There is only one Barrel now
 
 		{
 			ScopedWriteLock lock(mutex_);
 			uint32_t i = 0;
-			tmpdata = (500000 + last_docid_);//xxx
 			LOG(INFO) << "Adding new documnent to index......"<<endl;
-			for(i = last_docid_ + 1; i <= document_manager_->getMaxDocId(); i++)
+			for(i = last_docid_ + 1; i <= document_manager_->getMaxDocId() && i < 500000; i++)
 			{
 				if (i % 100000 == 0)
 	        	{
 	            	LOG(INFO) << "inserted docs: " << i;
-	            	if (i == tmpdata || i == tmpdata+1 || i== tmpdata-1)//xxxx
-	            	{
-	            		//break;
-	            	}
 	        	}
 	        	Document doc;
 	        	document_manager_->getDocument(i, doc);
@@ -275,7 +271,7 @@ namespace sf1r
 	    	LOG(INFO) <<"Begin prepare_index_....."<<endl;
 	    	prepare_index_();
 	    	isInitIndex_ = false;
-	    	isAddingIndex_= false; 
+	    	//isAddingIndex_= false; there is only one Barrel now. 
 	    	LOG(INFO) <<"Prepare_index_ total elapsed:"<<timer.elapsed()<<" seconds"<<endl;
     	}
     	pMainBerral_->print();

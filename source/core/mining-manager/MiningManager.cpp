@@ -128,8 +128,8 @@ MiningManager::MiningManager(
     , productScorerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
-    , incrementalManager_(NULL)
     , suffixMatchManager_(NULL)
+    , incrementalManager_(NULL)
     , kvManager_(NULL)
 {
 }
@@ -506,7 +506,6 @@ bool MiningManager::open()
         }
 
         /** Suffix Match */
-      
       if (mining_schema_.suffixmatch_schema.suffix_match_enable)
         {
             LOG(INFO) << "suffix match enabled.";
@@ -530,15 +529,6 @@ bool MiningManager::open()
 
             incrementalManager_ = new IncrementalManager(suffix_match_path_, mining_schema_.suffixmatch_schema.suffix_match_property, 
                 document_manager_, idManager_, laManager_, indexSchema_);
-            //incrementalManager_->init_();
-            //std::vector<std::string> group_filter_props;
-            //GroupConfigMap::const_iterator it = mining_schema_.group_config_map.begin();
-            //while(it != mining_schema_.group_config_map.end())
-            //{
-            //    group_filter_props.push_back(it->first);
-            //    ++it;
-            //}
-            //suffixMatchManager_->setGroupFilterProperty(group_filter_props);
         }
 
         /** KV */
@@ -771,7 +761,7 @@ bool MiningManager::DoMiningCollection()
     }
 
     // do SuffixMatch
-    if (mining_schema_.suffix_match_enable)
+    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
     {
         suffixMatchManager_->buildCollection();
     }
@@ -780,7 +770,7 @@ bool MiningManager::DoMiningCollection()
 }
 void MiningManager::buildCollection()
 {
-    if (mining_schema_.suffix_match_enable)
+    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
     {
         incrementalManager_->createIndex_();
     }
