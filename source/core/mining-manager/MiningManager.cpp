@@ -518,7 +518,7 @@ bool MiningManager::open()
                 number_amp_list.push_back(number_config_list[i].amplification);
             }
             suffixMatchManager_->setNumberFilterProperty(number_props, number_amp_list);
-       }
+        }
 
         /** KV */
         kv_path_ = prefix_path + "/kv";
