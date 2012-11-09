@@ -107,6 +107,11 @@ private:
         const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers,
         faceted::PropSharedLockSet& propSharedLockSet);
 
+    ProductScorer* createProductScorer(
+        const KeywordSearchActionItem& actionItem,
+        boost::shared_ptr<Sorter> sorter,
+        faceted::PropSharedLockSet& propSharedLockSet);
+
     bool isProductRanking_(const KeywordSearchActionItem& actionItem) const;
 };
 

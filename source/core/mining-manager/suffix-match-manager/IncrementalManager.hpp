@@ -17,7 +17,8 @@
 
 namespace sf1r
 {
-#define MAX_INCREMENT_DOC 15000000 //forward index: for 64M docs,about:512M memory.
+#define MAX_INCREMENT_DOC 10000000 //forward index: for 64M docs,about:512M memory.
+#define MAX_TMP_DOC 1000000
 #define MAX_POS_LEN 24
 #define MAX_HIT_NUMBER 3
 #define MAX_SUB_LEN 15
@@ -45,7 +46,6 @@ struct BitMap
 		data = data_>>i;
 		unsigned int j = 1;
 		return (data&j) == 1;
-
 	}
 	bool setBitMap(unsigned short i)
 	{
@@ -109,17 +109,23 @@ struct pairLess
 class ForwardIndex
 {
 public:
-	ForwardIndex(std::string index_path)
+	ForwardIndex(std::string index_path, unsigned int Max_Doc_Num)
 	{
 		index_path_ = index_path + ".fd.idx";
-		IndexCount_ = 1;
+		Max_Doc_Num_ = Max_Doc_Num;
+		IndexCount_ = 0;
 		IndexItems_.clear();
-		BitMapMatrix_ = new BitMap[MAX_INCREMENT_DOC];
+		BitMapMatrix_ = new BitMap[Max_Doc_Num_];
+		start_docid_ = 0;
+		max_docid_ = 0;
 	}
 
 	~ForwardIndex()
 	{
-		delete [] BitMapMatrix_;
+		if (BitMapMatrix_ != NULL)
+		{
+			delete [] BitMapMatrix_;
+		}
 		BitMapMatrix_ = NULL;
 	}
 
@@ -148,12 +154,17 @@ public:
 
 	void addDocForwardIndex_(uint32_t docId, std::vector<uint32_t>& termidList, std::vector<unsigned short>& posList)
 	{
+		if (start_docid_ == 0)
+		{
+			start_docid_ = docId;
+		}
 		unsigned int count = termidList.size();	
 		for (unsigned int i = 0; i < count; ++i)
 		{
 			addOneIndexIterms_(docId, termidList[i], posList[i]);
 			IndexCount_++;
 		}
+		max_docid_ = docId;
 	}
     
 	void addOneIndexIterms_(uint32_t docId, uint32_t termid, unsigned short pos)
@@ -168,11 +179,11 @@ public:
 		std::vector<pair<uint32_t, unsigned short> >::const_iterator it = (*v).begin();
 		for (; it != (*v).end(); ++it)
 		{
-			BitMapMatrix_[(*it).first].setBitMap((*it).second);
+			BitMapMatrix_[(*it).first - start_docid_].setBitMap((*it).second);
 		}
 	}
 
-	bool getTermIDBy(const uint32_t& docid, const std::vector<unsigned short>& pos, std::vector<uint32_t>& termidList)
+	bool getTermIDByPos_(const uint32_t& docid, const std::vector<unsigned short>& pos, std::vector<uint32_t>& termidList)
 	{
 		std::set<uint32_t> termidSet; 
 		std::vector<IndexItem>::const_iterator it = IndexItems_.begin();
@@ -206,7 +217,7 @@ public:
 
 	void resetBitMapMatrix()
 	{
-		for (int i = 0; i < MAX_INCREMENT_DOC ; ++i)
+		for (unsigned int i = 0; i < Max_Doc_Num_ ; ++i)//for (int i = 0; i < (max_docid_ - start_docid_); i++ )
 		{
 			BitMapMatrix_[i].reset();
 		}
@@ -214,7 +225,6 @@ public:
 
 	void getLongestSubString_(std::vector<uint32_t>& termidList, const std::vector<std::vector<pair<uint32_t, unsigned short> >* >& resultList)
 	{
-		cout<<"getLongestSubString_"<<endl;
 		std::vector<pair<uint32_t, unsigned short> >::const_iterator it;
 		BitMap b;
 		b.reset();
@@ -233,7 +243,7 @@ public:
 				bool isNext = true;
 				for (unsigned short i = 0; i < MAX_POS_LEN; ++i)
 				{
-					if(BitMapMatrix_[(*it).first].getBitMap(i))
+					if(BitMapMatrix_[(*it).first - start_docid_].getBitMap(i))
 					{
 						temp.push_back(i);
 						isNext = true;
@@ -283,7 +293,7 @@ public:
 		{
 			return;
 		}
-		getTermIDBy(resultDocid, hitPos, termidList);
+		getTermIDByPos_(resultDocid, hitPos, termidList);
 	}
 
 	void print()
@@ -300,8 +310,12 @@ public:
 			LOG(INFO) <<"Cannot open output file"<<endl;
 			return false;
 		}
+
 		unsigned int totalSize = IndexCount_ * sizeof(IndexItem);
 		fwrite(&totalSize, sizeof(totalSize), 1, file);
+
+		fwrite(&start_docid_, sizeof(unsigned int), 1, file);
+		fwrite(&max_docid_, sizeof(unsigned int), 1, file);
 		std::vector<IndexItem>::const_iterator it = IndexItems_.begin();
 		for (; it != IndexItems_.end(); ++it)
 		{
@@ -322,23 +336,23 @@ public:
 		}
 		unsigned int totalSize;
 		unsigned int readSize = 0;
+		
 		readSize = fread(&totalSize, sizeof(totalSize), 1, file);
 		if (readSize != 1)
 		{
 			LOG(INFO) <<"Fread Wrong!!"<<endl;
 			return false;
 		}
+
+		readSize = fread(&start_docid_, sizeof(unsigned int), 1, file);
+		readSize = fread(&max_docid_, sizeof(unsigned int), 1, file);
+
 		IndexCount_ = totalSize/(sizeof(IndexItem));
 		for (unsigned int i = 0; i < IndexCount_; ++i)
 		{
 			IndexItem indexItem;
 			readSize = fread(&indexItem, sizeof(IndexItem), 1, file);
-			/*if (readSize != 1)
-			{
-				cout<<"readSize"<<readSize<<endl;
-				LOG(INFO) <<"Fread Wrong!!"<<endl;
-				return false;
-			}*/
+
 			IndexItems_.push_back(indexItem);
 		}
 		fclose(file);
@@ -348,6 +362,14 @@ public:
 	void addIndexItem_(const IndexItem& indexItem)
 	{
 		IndexItems_.push_back(indexItem);
+		if (start_docid_ == 0)
+		{
+			start_docid_ = indexItem.Docid_;
+		}
+		if (indexItem.Docid_ > max_docid_)
+		{
+			max_docid_ = indexItem.Docid_;
+		}
 		IndexCount_++;
 	}
 	
@@ -369,14 +391,22 @@ private:
  	unsigned int IndexCount_;
 
  	BitMap* BitMapMatrix_;
+
+ 	unsigned int Max_Doc_Num_;//this is from config file...
+
+ 	unsigned int start_docid_;//save and load... 
+
+ 	unsigned int max_docid_;
+ 	//unsigned int max support doc numbers;
 };
 
 class IncrementIndex
 {
 public:
-	IncrementIndex(std::string file_path)
+	IncrementIndex(std::string file_path, unsigned int Max_Doc_Num)
 	{
 		Increment_index_path_ = file_path + ".inc.idx";
+		Max_Doc_Num_ = Max_Doc_Num;
 		termidNum_ = 0;
 		allIndexDocNum_ = 0;
 	}
@@ -448,7 +478,7 @@ public:
 		mergeAnd_(docidLists, resultList, ResultListSimilarity);
 	}
 
-	bool getTermIdResult_(const uint32_t& termid, std::vector<pair<uint32_t, unsigned short> >* &v, uint32_t& size)
+	bool getTermIdResult_(const uint32_t& termid, std::vector<pair<uint32_t, unsigned short> >*& v, uint32_t& size)
 	{
 		pair<uint32_t, uint32_t> temp(termid, 0);
 
@@ -719,6 +749,8 @@ private:
 	unsigned int termidNum_;
 
 	unsigned int allIndexDocNum_;
+
+ 	unsigned int Max_Doc_Num_;//save and load.... here we will not add max_docid and start_id
 };
 
 class IndexBarral
@@ -728,7 +760,8 @@ public:
 		const std::string& path,
 		boost::shared_ptr<IDManager>& idManager,
 		boost::shared_ptr<LAManager>& laManager,
-		IndexBundleSchema& indexSchema);
+		IndexBundleSchema& indexSchema,
+		unsigned int Max_Doc_Num);
 
 
 	~IndexBarral()
@@ -747,12 +780,10 @@ public:
 		}
 	}
 
-	//@brief: If Barral is restarted, add all tmpIndex to MainIndex; 
 	bool init(std::string& path)
 	{
-		pForwardIndex_ = new ForwardIndex(doc_file_path_);
-		
-		pIncrementIndex_ = new IncrementIndex(doc_file_path_);
+		pForwardIndex_ = new ForwardIndex(doc_file_path_, Max_Doc_Num_);		
+		pIncrementIndex_ = new IncrementIndex(doc_file_path_, Max_Doc_Num_);
 		if (pForwardIndex_ == NULL || pIncrementIndex_ == NULL)
 		{
 			return false;
@@ -802,37 +833,36 @@ public:
 
  	bool buildIndex_(uint32_t docId, std::string& text);
 
-	void getResult_(std::vector<uint32_t>& termidList, std::vector<uint32_t>& resultList,  std::vector<float>& ResultListSimilarity)//
+	void getFuzzyResult_(std::vector<uint32_t>& termidList, std::vector<uint32_t>& resultList,  std::vector<float>& ResultListSimilarity)//
 	{
-		pIncrementIndex_->getResultAND_(termidList, resultList, ResultListSimilarity);
-		LOG(INFO)<<"getResultAND_ ::resultList.size()"<<resultList.size()<<endl;
-		if (resultList.size() < MAX_HIT_NUMBER)
-		{
-			std::vector<pair<uint32_t, unsigned short> >* v = NULL;
-			pForwardIndex_->resetBitMapMatrix();
+		std::vector<pair<uint32_t, unsigned short> >* v = NULL;
+		pForwardIndex_->resetBitMapMatrix();
 	izenelib::util::ClockTimer timer1;
-			for (std::vector<uint32_t>::iterator i = termidList.begin(); i != termidList.end(); ++i)
-			{
-				pIncrementIndex_->getTermIdPos_(*i, v);
-				if (v == NULL)
-				{
-					return;
-				}
-				pForwardIndex_->setPosition_(v);
-			}
+		for (std::vector<uint32_t>::iterator i = termidList.begin(); i != termidList.end(); ++i)
+		{
+			pIncrementIndex_->getTermIdPos_(*i, v);
+			if (v == NULL)
+				return;
+			pForwardIndex_->setPosition_(v);
+		}
 	cout<<"setPosition_"<<timer1.elapsed()<<" second"<<endl;
-
 	izenelib::util::ClockTimer timer2;
-			std::vector<std::vector<pair<uint32_t, unsigned short> >* > ORResultList;
-			pIncrementIndex_->getResultORFuzzy_(termidList, ORResultList);
+		std::vector<std::vector<pair<uint32_t, unsigned short> >* > ORResultList;
+		pIncrementIndex_->getResultORFuzzy_(termidList, ORResultList);
 	cout<<"getResultOR_"<<timer2.elapsed()<<" second"<<endl;
 	
 	izenelib::util::ClockTimer timer3;
-			std::vector<uint32_t> newTermidList;
-			pForwardIndex_->getLongestSubString_(newTermidList, ORResultList);
+		std::vector<uint32_t> newTermidList;
+		pForwardIndex_->getLongestSubString_(newTermidList, ORResultList);
 	cout<<"getLongestSubString_"<<timer3.elapsed()<<" second"<<endl;
-			pIncrementIndex_->getResultAND_(newTermidList, resultList, ResultListSimilarity);
-		}
+		pIncrementIndex_->getResultAND_(newTermidList, resultList, ResultListSimilarity);
+	}
+
+	void getExactResult_(std::vector<uint32_t>& termidList, std::vector<uint32_t>& resultList,  std::vector<float>& ResultListSimilarity)
+	{
+		izenelib::util::ClockTimer timer;
+		pIncrementIndex_->getResultAND_(termidList, resultList, ResultListSimilarity);
+		LOG(INFO)<<"ResultList Number:"<<resultList.size()<< " time cost:"<< timer.elapsed()<<endl;
 	}
 
 	void print()
@@ -871,6 +901,11 @@ private:
 	bool isAddedIndex_;
 
 	std::string doc_file_path_;
+
+	unsigned int Max_Doc_Num_;
+
+	//max support doc number... Memeory
+	//unsigned int doc_start_ = 0;
 };
 
 class IncrementalManager
@@ -971,7 +1006,8 @@ public:
 			path,
 			idManager_,
 			laManager_,
-			indexSchema_
+			indexSchema_,
+			MAX_INCREMENT_DOC
 			);
 			BerralNum_++;
 			if (pMainBerral_ == NULL)
@@ -994,7 +1030,8 @@ public:
 			path,
 			idManager_,
 			laManager_,
-			indexSchema_
+			indexSchema_,
+			MAX_TMP_DOC
 			);
 			if (pTmpBerral_ == NULL)
 			{
@@ -1004,17 +1041,6 @@ public:
 			pTmpBerral_->init(index_path_);
 		}
 		return true;
-	}
-	/**
-	@brief when the mainBerral is added to fm, and documentManager delete these docs and should rebuid these all really add to TmpBerral_;
-	If there is new doc add ;BerralNum = 2; change the pointer and is no new doc, berral is emtpy ;back to init status;
-	*/
-	void resetMainBerral_()//for fm-index;
-	{
-		delete pMainBerral_;
-		pMainBerral_ = pTmpBerral_;
-		pTmpBerral_ = NULL;
-		isMergeToFm_ = false;
 	}
 
 	unsigned int edit_distance(const string& s1, const string& s2)
@@ -1036,20 +1062,20 @@ public:
 
 	void createIndex_();
 
-	void index_(uint32_t& docId, std::string propertyString) 
+	bool index_(uint32_t& docId, std::string propertyString) 
 	{
 
-		if(IndexedDocNum_ >= MAX_INCREMENT_DOC)
-			return;
+		if(IndexedDocNum_ >= MAX_INCREMENT_DOC)//here use mainbarral max num;; yes; no matter add to main or tmp;
+			return false;
 		if ( isInitIndex_ == false)
 		{
 			init_tmpBerral();
 			{
-				ScopedWriteLock lock(mutex_);
 				if (pTmpBerral_ != NULL)
 				{	
 					pTmpBerral_->setStatus();
-					pTmpBerral_->buildIndex_(docId, propertyString);	
+					if(!pTmpBerral_->buildIndex_(docId, propertyString))
+						return false;
 				}
 				IndexedDocNum_++;
 			}
@@ -1057,15 +1083,16 @@ public:
 		else
 		{
 			{
-				ScopedWriteLock lock(mutex_);
 				if (pMainBerral_ != NULL)
 			    {
 			    	pMainBerral_->setStatus();
-			    	pMainBerral_->buildIndex_(docId, propertyString);//need propertyManager and config Manager;
+			    	if(!pMainBerral_->buildIndex_(docId, propertyString))//need propertyManager and config Manager;
+			    		return false;
 				}
 				IndexedDocNum_++;
 			}
 		}
+		return true;
 	}
 
 	void delete_AllIndexFile()
@@ -1083,6 +1110,10 @@ public:
 		boost::filesystem::remove(pathLastDocid);
 	}
 
+	bool fuzzySearch_(const std::string& query, std::vector<uint32_t>& resultList, std::vector<float> &ResultListSimilarity);
+
+	bool exactSearch_(const std::string& query, std::vector<uint32_t>& resultList, std::vector<float> &ResultListSimilarity);
+
 	void doCreateIndex_();
 
 	void mergeIndex();
@@ -1092,7 +1123,7 @@ public:
 		pMainBerral_->prepare_index_();
 	}
 
-	bool search_(const std::string& query, std::vector<uint32_t>& resultList, std::vector<float> &ResultListSimilarity);
+	//bool search_(const std::string& query, std::vector<uint32_t>& resultList, std::vector<float> &ResultListSimilarity);
 
 	bool saveLastDocid_(string path = "")
 	{
@@ -1146,7 +1177,7 @@ private:
 
 	unsigned int IndexedDocNum_;
 
-	bool isMergeToFm_;
+	bool isMergingIndex_;
 
 	bool isInitIndex_;
 
@@ -1165,7 +1196,6 @@ private:
 	typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ScopedReadLock;
     typedef boost::unique_lock<MutexType> ScopedWriteLock;
-
     mutable MutexType mutex_;
 };
 }

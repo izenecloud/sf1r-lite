@@ -148,6 +148,7 @@ MiningManager::~MiningManager()
     if (tdt_storage_) delete tdt_storage_;
     if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
+    if (incrementalManager_) delete incrementalManager_;
     if (kvManager_) delete kvManager_;
     close();
 }
@@ -505,13 +506,29 @@ bool MiningManager::open()
         }
 
         /** Suffix Match */
-        if (mining_schema_.suffix_match_enable)
+      
+      if (mining_schema_.suffixmatch_schema.suffix_match_enable)
         {
+            LOG(INFO) << "suffix match enabled.";
             suffix_match_path_ = prefix_path + "/suffix_match";
-            suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_, mining_schema_.suffix_match_property,
-               mining_schema_.suffix_match_tokenize_dicpath, document_manager_);
+            suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
+                mining_schema_.suffixmatch_schema.suffix_match_property,
+                mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
+                document_manager_, groupManager_, attrManager_, searchManager_.get());
+            // reading suffix config and load filter data here.
+            suffixMatchManager_->setGroupFilterProperty(mining_schema_.suffixmatch_schema.group_filter_properties);
+            suffixMatchManager_->setAttrFilterProperty(mining_schema_.suffixmatch_schema.attr_filter_properties);
+            std::vector<std::string> number_props;
+            std::vector<int32_t> number_amp_list;
+            const std::vector<NumberFilterConfig>& number_config_list = mining_schema_.suffixmatch_schema.number_filter_properties;
+            for(size_t i = 0; i < number_config_list.size(); ++i)
+            {
+                number_props.push_back(number_config_list[i].property);
+                number_amp_list.push_back(number_config_list[i].amplification);
+            }
+            suffixMatchManager_->setNumberFilterProperty(number_props, number_amp_list);
 
-            incrementalManager_ = new IncrementalManager(suffix_match_path_, mining_schema_.suffix_match_property, 
+            incrementalManager_ = new IncrementalManager(suffix_match_path_, mining_schema_.suffixmatch_schema.suffix_match_property, 
                 document_manager_, idManager_, laManager_, indexSchema_);
             //incrementalManager_->init_();
             //std::vector<std::string> group_filter_props;
@@ -773,7 +790,7 @@ void MiningManager::SearchCollection(const std::string query)
 {
     std::vector<docid_t> resultList;
     std::vector<float> ResultListSimilarity;
-    incrementalManager_->search_(query, resultList, ResultListSimilarity);
+    incrementalManager_->fuzzySearch_(query, resultList, ResultListSimilarity);
     PropertyValue result;
     uint32_t k = 0;
     for (std::vector<docid_t>::iterator i = resultList.begin(); i != resultList.end(); ++i)
@@ -1756,35 +1773,43 @@ bool MiningManager::GetKNNListBySignature(
 }
 
 bool MiningManager::GetSuffixMatch(
-        const std::string& query,
+        const SearchKeywordOperation& actionOperation,
         uint32_t max_docs,
         bool use_fuzzy,
         uint32_t start,
-        const std::string& filterstr,
+        const std::vector<QueryFiltering::FilteringType>& filter_param,
         std::vector<uint32_t>& docIdList,
         std::vector<float>& rankScoreList,
+        std::vector<float>& customRankScoreList,
         std::size_t& totalCount)
 {
-    if (!mining_schema_.suffix_match_enable || !suffixMatchManager_)
+    if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
 
-    izenelib::util::UString queryU(query, izenelib::util::UString::UTF_8);
-    if(!use_fuzzy)
+    izenelib::util::UString queryU(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
+    if (!use_fuzzy)
         totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
     else
     {
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
-        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(queryU, max_docs, docIdList, 
-            rankScoreList, UString(filterstr, UString::UTF_8));
+        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                queryU, max_docs,
+                docIdList, rankScoreList,
+                filter_param, actionOperation.actionItem_.groupParam_);
+
+        searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
+                                                    rankScoreList, customRankScoreList);
+
         docIdList.erase(docIdList.begin(), docIdList.begin() + start);
         rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
+        customRankScoreList.erase(customRankScoreList.begin(), customRankScoreList.begin() + start);
     }
     return true;
 }
 
 bool MiningManager::SetKV(const std::string& key, const std::string& value)
 {
-    if(kvManager_)
+    if (kvManager_)
     {
         kvManager_->update(key, value);
         return true;

@@ -77,6 +77,10 @@ public:
 
     ~SearchManager();
 
+    void rankDocIdListForFuzzySearch(const SearchKeywordOperation& actionOperation,
+        uint32_t start, std::vector<uint32_t>& docid_list, std::vector<float>& result_score_list,
+        std::vector<float>& custom_score_list);
+
     bool search(
             SearchKeywordOperation& actionOperation,
             std::vector<unsigned int>& docIdList,
