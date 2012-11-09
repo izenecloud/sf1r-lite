@@ -44,7 +44,8 @@ public:
     ~SuffixMatchManager();
     void setGroupFilterProperty(std::vector<std::string>& propertys);
     void setAttrFilterProperty(std::vector<std::string>& propertys);
-    void setNumberFilterProperty(std::vector<std::string>& propertys);
+    void setNumberFilterProperty(std::vector<std::string>& propertys,
+        std::vector<int32_t>& amplification);
 
     void buildCollection();
     void buildTokenizeDic();

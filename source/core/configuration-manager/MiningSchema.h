@@ -5,6 +5,7 @@
 #include "AttrConfig.h"
 #include "ProductRankingConfig.h"
 #include "SummarizeConfig.h"
+#include "SuffixMatchConfig.h"
 
 #include <stdint.h>
 #include <string>
@@ -27,7 +28,6 @@ public:
         , ise_enable(false)
         , recommend_tg(false), recommend_querylog(true)
         , summarization_enable(false), summarization_schema()
-        , suffix_match_enable(false)
     {
     }
     ~MiningSchema() {}
@@ -50,7 +50,7 @@ private:
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
         ar & summarization_enable & summarization_schema;
-        ar & suffix_match_enable & suffix_match_property & suffix_match_tokenize_dicpath;
+        ar & suffixmatch_schema;
     }
 
 public:
@@ -91,9 +91,7 @@ public:
     bool summarization_enable;
     SummarizeConfig summarization_schema;
 
-    bool suffix_match_enable;
-    std::string suffix_match_property;
-    std::string suffix_match_tokenize_dicpath;
+    SuffixMatchConfig suffixmatch_schema;
 };
 
 } // namespace

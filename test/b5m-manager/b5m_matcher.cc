@@ -55,7 +55,7 @@ struct ServerHandler
     }
     void operator()(const Server::request& request, Server::response& response)
     {
-        typedef typename Server::request::string_type string_type;
+        typedef Server::request::string_type string_type;
         std::string uri_string = destination(request);
         std::size_t cmd_pos = uri_string.find("cmd=");
         std::string cmd;
