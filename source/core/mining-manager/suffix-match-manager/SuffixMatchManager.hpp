@@ -50,22 +50,31 @@ public:
     void buildCollection();
     void buildTokenizeDic();
 
-    size_t longestSuffixMatch(const izenelib::util::UString& pattern, size_t max_docs, std::vector<uint32_t>& docid_list, std::vector<float>& score_list) const;
-    size_t AllPossibleSuffixMatch(const izenelib::util::UString& pattern,
-        size_t max_docs, std::vector<uint32_t>& docid_list,
-        std::vector<float>& score_list,
-        const std::vector<QueryFiltering::FilteringType>& filter_param,
-        const faceted::GroupParam& group_param) const;
+    size_t longestSuffixMatch(
+            const izenelib::util::UString& pattern,
+            size_t max_docs,
+            std::vector<uint32_t>& docid_list,
+            std::vector<float>& score_list) const;
+
+    size_t AllPossibleSuffixMatch(
+            const izenelib::util::UString& pattern,
+            size_t max_docs,
+            std::vector<uint32_t>& docid_list,
+            std::vector<float>& score_list,
+            const std::vector<QueryFiltering::FilteringType>& filter_param,
+            const faceted::GroupParam& group_param) const;
 
 
 private:
-
-    bool getAllFilterRangeFromGroupLable(const faceted::GroupParam& group_param,
-        std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
-    bool getAllFilterRangeFromAttrLable(const faceted::GroupParam& group_param,
-        std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
-    bool getAllFilterRangeFromFilterParam(const std::vector<QueryFiltering::FilteringType>& filter_param,
-        std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
+    bool getAllFilterRangeFromGroupLable(
+            const faceted::GroupParam& group_param,
+            std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
+    bool getAllFilterRangeFromAttrLable(
+            const faceted::GroupParam& group_param,
+            std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
+    bool getAllFilterRangeFromFilterParam(
+            const std::vector<QueryFiltering::FilteringType>& filter_param,
+            std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
 
     std::string data_root_path_;
     std::string fm_index_path_;
@@ -87,7 +96,7 @@ private:
     typedef boost::unique_lock<MutexType> WriteLock;
 
     mutable MutexType mutex_;
-    boost::shared_ptr<FilterManager>  filter_manager_;
+    boost::shared_ptr<FilterManager> filter_manager_;
 };
 
 }

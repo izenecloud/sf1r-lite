@@ -26,110 +26,57 @@
 #include "../TestResources.h"
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/trie_policy.hpp>
 #include <ext/pb_ds/tag_and_trait.hpp>
 #include <stack>
+#include <boost/network/protocol/http/server.hpp>
+#include <boost/network/uri/uri.hpp>
+#include <boost/network/uri/decode.hpp>
+
 
 using namespace sf1r;
 namespace po = boost::program_options;
 namespace pbds = __gnu_pbds;
-#define MSG_LEN 1000
+namespace http = boost::network::http;
+namespace uri = boost::network::uri;
 
-struct b5m_msgbuf {
-    long mtype;
-    char cmd[MSG_LEN];
-    void clear()
-    {
-        for(int i=0;i<MSG_LEN;i++)
-        {
-            cmd[i] = '\0';
-        }
-    }
-};
 int do_main(int ac, char** av);
 
-int main(int ac, char** av)
+struct ServerHandler;
+
+typedef http::server<ServerHandler> Server;
+
+struct ServerHandler
 {
-    if(ac>1)
+    ServerHandler(const std::string& program_path)
+    : program_path_(program_path)
     {
-        return do_main(ac, av);
     }
-    char* program_path = av[0];
-    boost::filesystem::path p(program_path);
-    p = p.parent_path();
-    p /= "daemon";
-    if(!boost::filesystem::exists(p))
+    void operator()(const Server::request& request, Server::response& response)
     {
-        std::cerr<<"daemon file not exists"<<std::endl;
-        return EXIT_FAILURE;
-    }
-    std::cout<<"daemon file:"<<p.string()<<std::endl;
-    key_t msgkey = ftok(p.string().c_str(), 0);
-    int qid;
-    if( (qid=msgget(msgkey, IPC_CREAT | 0660)) == -1 )
-    {
-        std::cerr<<"open msg queue error"<<std::endl;
-        return EXIT_FAILURE;
-    }
-    //std::cerr<<"sizeof "<<sizeof(b5m_msgbuf)<<","<<sizeof(long)<<std::endl;
-    int length = sizeof(b5m_msgbuf)-sizeof(long);
-    int result = 0;
-    int mtype = 1;
-
-    b5m_msgbuf msg;
-    b5m_msgbuf result_msg;
-    while(true)
-    {
-        msg.clear();
-        result_msg.clear();
-        result=msgrcv(qid, &msg, length, 0, IPC_NOWAIT);
-        if(result<0)
+        typedef Server::request::string_type string_type;
+        std::string uri_string = destination(request);
+        std::size_t cmd_pos = uri_string.find("cmd=");
+        std::string cmd;
+        if(cmd_pos!=std::string::npos)
         {
-            break;
+            cmd = uri_string.substr(cmd_pos+4);
         }
-        else
-        {
-            std::cerr<<"ignoring "<<msg.cmd<<std::endl;
-        }
-    }
-    //msg.mtype = mtype;
-    //char cmd[] = "--product-train -K \"./T/P\" -S ./T";
-    //strcpy(msg.cmd, cmd);
-    //if((result=msgsnd(qid,&msg,length,0))==-1)
-    //{
-        //std::cerr<<"msg send error"<<std::endl;
-        //return EXIT_FAILURE;
-    //}
-
-    //return EXIT_SUCCESS;
-    while(true)
-    {
-        msg.clear();
-        result_msg.clear();
-        result=msgrcv(qid, &msg, length, mtype, 0);
-        if(result==-1)
-        {
-            std::cerr<<"msg rcv error"<<std::endl;
-            continue;
-        }
-        std::string cmd_str(msg.cmd);
-        boost::algorithm::trim(cmd_str);
-        std::cout<<"cmd string:"<<cmd_str<<std::endl;
-        std::cout<<"start task:"<<msg.cmd<<std::endl;
-        std::vector<std::string> args = po::split_unix(msg.cmd);
-        if(args.empty()) continue;
+        cmd = uri::decoded(cmd);
+        //uri::uri _uri(uri_string);
+        //string_type q = uri::query(_uri);
+        std::cout<<"[cmd]"<<cmd<<std::endl;
+        std::vector<std::string> args = po::split_unix(cmd);
+        if(args.empty()) return;
         //for(uint32_t i=0;i<args.size();i++)
         //{
             //std::cout<<"arg:"<<args[i]<<std::endl;
         //}
         int dac = args.size()+1;
         char** dav = new char*[dac];
-        dav[0] = new char[strlen(program_path)+1];
-        strcpy(dav[0], program_path);
+        dav[0] = new char[program_path_.length()+1];
+        strcpy(dav[0], program_path_.c_str());
         for(int i=1;i<dac;i++)
         {
             const char* s = args[i-1].c_str();
@@ -150,26 +97,150 @@ int main(int ac, char** av)
             delete[] dav[i];
         }
         delete[] dav;
-        if(status>0)
+        std::string sstatus = boost::lexical_cast<std::string>(status);
+        if(status==0)//success
         {
-            std::cerr<<msg.cmd<<" return status fail "<<status<<std::endl;
-            result_msg.mtype = 2;
-            char str[] = "fail";
-            strcpy(result_msg.cmd, str);
+            response = Server::response::stock_reply(Server::response::ok, sstatus);
         }
         else
         {
-            std::cerr<<"task:"<<msg.cmd<<" finished"<<std::endl;
-            result_msg.mtype = 2;
-            char str[] = "succ";
-            strcpy(result_msg.cmd, str);
-        }
-        if((result=msgsnd(qid,&result_msg,length,0))==-1)
-        {
-            std::cerr<<"result msg send error"<<std::endl;
-            continue;
+            response = Server::response::stock_reply(Server::response::internal_server_error, sstatus);
         }
     }
+
+    void log(const Server::string_type& info)
+    {
+        std::cerr<<"[server log]"<<info<<std::endl;
+    }
+private:
+    std::string program_path_;
+};
+
+int main(int ac, char** av)
+{
+    if(ac>1)
+    {
+        return do_main(ac, av);
+    }
+    std::string program_path(av[0]);
+
+    ServerHandler handler(program_path);
+    Server server("0.0.0.0", "18190", handler);
+    server.run();
+
+
+
+    //boost::filesystem::path p(program_path);
+    //p = p.parent_path();
+    //p /= "daemon";
+    //if(!boost::filesystem::exists(p))
+    //{
+        //std::cerr<<"daemon file not exists"<<std::endl;
+        //return EXIT_FAILURE;
+    //}
+    //std::cout<<"daemon file:"<<p.string()<<std::endl;
+    //key_t msgkey = ftok(p.string().c_str(), 0);
+    //int qid;
+    //if( (qid=msgget(msgkey, IPC_CREAT | 0660)) == -1 )
+    //{
+        //std::cerr<<"open msg queue error"<<std::endl;
+        //return EXIT_FAILURE;
+    //}
+    ////std::cerr<<"sizeof "<<sizeof(b5m_msgbuf)<<","<<sizeof(long)<<std::endl;
+    //int length = sizeof(b5m_msgbuf)-sizeof(long);
+    //int result = 0;
+    //int mtype = 1;
+
+    //b5m_msgbuf msg;
+    //b5m_msgbuf result_msg;
+    //while(true)
+    //{
+        //msg.clear();
+        //result_msg.clear();
+        //result=msgrcv(qid, &msg, length, 0, IPC_NOWAIT);
+        //if(result<0)
+        //{
+            //break;
+        //}
+        //else
+        //{
+            //std::cerr<<"ignoring "<<msg.cmd<<std::endl;
+        //}
+    //}
+    ////msg.mtype = mtype;
+    ////char cmd[] = "--product-train -K \"./T/P\" -S ./T";
+    ////strcpy(msg.cmd, cmd);
+    ////if((result=msgsnd(qid,&msg,length,0))==-1)
+    ////{
+        ////std::cerr<<"msg send error"<<std::endl;
+        ////return EXIT_FAILURE;
+    ////}
+
+    ////return EXIT_SUCCESS;
+    //while(true)
+    //{
+        //msg.clear();
+        //result_msg.clear();
+        //result=msgrcv(qid, &msg, length, mtype, 0);
+        //if(result==-1)
+        //{
+            //std::cerr<<"msg rcv error"<<std::endl;
+            //continue;
+        //}
+        //std::string cmd_str(msg.cmd);
+        //boost::algorithm::trim(cmd_str);
+        //std::cout<<"cmd string:"<<cmd_str<<std::endl;
+        //std::cout<<"start task:"<<msg.cmd<<std::endl;
+        //std::vector<std::string> args = po::split_unix(msg.cmd);
+        //if(args.empty()) continue;
+        ////for(uint32_t i=0;i<args.size();i++)
+        ////{
+            ////std::cout<<"arg:"<<args[i]<<std::endl;
+        ////}
+        //int dac = args.size()+1;
+        //char** dav = new char*[dac];
+        //dav[0] = new char[strlen(program_path)+1];
+        //strcpy(dav[0], program_path);
+        //for(int i=1;i<dac;i++)
+        //{
+            //const char* s = args[i-1].c_str();
+            //dav[i] = new char[strlen(s)+1];
+            //strcpy(dav[i], s);
+        //}
+        //int status = 1;//default to fail
+        //try{
+            //status = do_main(dac, dav);
+        //}
+        //catch(std::exception& ex)
+        //{
+            //status = 1;
+            //std::cerr<<"do_main exception: "<<ex.what()<<std::endl;
+        //}
+        //for(int i=0;i<dac;i++)
+        //{
+            //delete[] dav[i];
+        //}
+        //delete[] dav;
+        //if(status>0)
+        //{
+            //std::cerr<<msg.cmd<<" return status fail "<<status<<std::endl;
+            //result_msg.mtype = 2;
+            //char str[] = "fail";
+            //strcpy(result_msg.cmd, str);
+        //}
+        //else
+        //{
+            //std::cerr<<"task:"<<msg.cmd<<" finished"<<std::endl;
+            //result_msg.mtype = 2;
+            //char str[] = "succ";
+            //strcpy(result_msg.cmd, str);
+        //}
+        //if((result=msgsnd(qid,&result_msg,length,0))==-1)
+        //{
+            //std::cerr<<"result msg send error"<<std::endl;
+            //continue;
+        //}
+    //}
     return EXIT_SUCCESS;
 }
 
