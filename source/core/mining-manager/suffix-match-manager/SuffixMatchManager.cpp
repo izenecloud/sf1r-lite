@@ -234,6 +234,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         size_t max_docs,
         std::vector<uint32_t>& docid_list,
         std::vector<float>& score_list,
+        const SearchingMode::SuffixMatchFilterMode& filter_mode,
         const std::vector<QueryFiltering::FilteringType>& filter_param,
         const GroupParam& group_param) const
 {
@@ -327,8 +328,20 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     return 0;
             }
 
-            fmi_->getTopKDocIdListByFilter(filter_range_list, match_ranges_list, max_match_list,
-                                           max_docs, res_list, doclen_list);
+            if(filter_mode == SearchingMode::OR_Filter)
+            {
+                fmi_->getTopKDocIdListByFilter(filter_range_list, match_ranges_list, max_match_list,
+                                               max_docs, res_list, doclen_list);
+            }
+            else if(filter_mode == SearchingMode::AND_Filter)
+            {
+                // todo: implement it when fm-index is ready for AND filter.
+                assert(false);
+            }
+            else
+            {
+                LOG(ERROR) << "unknown filter mode.";
+            }
         }
     }
 

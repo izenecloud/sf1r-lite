@@ -61,6 +61,7 @@ public:
             size_t max_docs,
             std::vector<uint32_t>& docid_list,
             std::vector<float>& score_list,
+            const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             const faceted::GroupParam& group_param) const;
 
