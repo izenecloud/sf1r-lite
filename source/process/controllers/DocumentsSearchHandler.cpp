@@ -532,7 +532,7 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
             }
             if(!finded)
             {
-                message = "The filter property : " + filtertype.property_ + " did not configured as FilterProperty in SuffixMatchConfig.";
+                message = "The filter property : " + filtertype.property_ + " was not configured as FilterProperty in SuffixMatchConfig.";
                 return false;
             }
         }
@@ -573,14 +573,14 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
                 suffixconfig.group_filter_properties.end(),
                 cit->first) == suffixconfig.group_filter_properties.end())
         {
-            message = "The filter property : " + cit->first + " did not configured as group FilterProperty in SuffixMatchConfig.";
+            message = "The filter property : " + cit->first + " was not configured as group FilterProperty in SuffixMatchConfig.";
             return false;
         }
         ++cit;
     }
     if(!gp.isAttrEmpty() && suffixconfig.attr_filter_properties.empty())
     {
-        message = "The attribute filter did not configured in the SuffixMatchConfig.";
+        message = "The attribute filter was not configured in the SuffixMatchConfig.";
         return false;
     }
     return true;
