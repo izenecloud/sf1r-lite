@@ -27,6 +27,8 @@ public:
 
     void index();
 
+    void mining();
+
     void index_query_log();
 
     void optimize_index();

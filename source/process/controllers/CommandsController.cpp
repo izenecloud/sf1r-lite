@@ -10,6 +10,8 @@
 #include <process/common/CollectionManager.h>
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/index/IndexSearchService.h>
+#include <bundles/mining/MiningSearchService.h>
+#include <core/mining-manager/MiningManager.h>
 #include <bundles/recommend/RecommendTaskService.h>
 #include <aggregator-manager/SearchAggregator.h>
 #include <mining-manager/MiningQueryLogHandler.h>
@@ -58,6 +60,36 @@ void CommandsController::index()
 
     indexSearch_();
     indexRecommend_();
+}
+
+/**
+ * @brief Action \b mining. Sends command "mining" to SF1 to ask it start mining
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ * No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ * }
+ * @endcode
+ */
+void CommandsController::mining()
+{
+     MiningSearchService* miningSearchService = collectionHandler_->miningSearchService_;
+     if (miningSearchService)
+     {
+         boost::shared_ptr<MiningManager> miningManager = miningSearchService->GetMiningManager();
+         miningManager->buildCollection();//add document count...
+     }
 }
 
 void CommandsController::indexSearch_()

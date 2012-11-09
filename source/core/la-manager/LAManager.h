@@ -54,13 +54,18 @@ public:
             la::MultilangGranularity indexingLevel = la::FIELD_LEVEL)
     {
         la::LA * pLA = NULL;
-
-        pLA = isMultiThreadEnv_ ? laPool_->popSearchLA(analysisInfo) :
+        if (laPool_)
+        {
+            pLA = isMultiThreadEnv_ ? laPool_->popSearchLA(analysisInfo) :
                 laPool_->topSearchLA(analysisInfo);
+        }
+        else
+            return false;
+        
 
         if (!pLA)
         {
-            // std::cerr << "[LAManager] Error : Cannot get LA instance in " << __FILE__ << ":" << __LINE__ << std::endl;
+            std::cerr << "[LAManager] Error : Cannot get LA instance in " << __FILE__ << ":" << __LINE__ << std::endl;
             return false;
         }
 

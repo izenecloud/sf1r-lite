@@ -86,6 +86,7 @@ class TaxonomyGenerationSubManager;
 class TaxonomyInfo;
 class Document;
 class DocumentManager;
+class LAManager;
 class IndexManager;
 class SearchManager;
 class MultiDocSummarizationSubManager;
@@ -94,6 +95,7 @@ class CustomRankManager;
 class CustomDocIdConverter;
 class ProductScorerFactory;
 class SuffixMatchManager;
+class IncrementalManager;
 
 namespace sim
 {
@@ -132,15 +134,21 @@ public:
     MiningManager(const std::string& collectionDataPath,
                   const CollectionPath& collectionPath,
                   const boost::shared_ptr<DocumentManager>& documentManager,
+                  const boost::shared_ptr<LAManager>& laManager,
                   const boost::shared_ptr<IndexManager>& index_manager,
                   const boost::shared_ptr<SearchManager>& searchManager,
                   const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager,
                   const std::string& collectionName,
                   const DocumentSchema& documentSchema,
                   const MiningConfig& miningConfig,
-                  const MiningSchema& miningSchema);
+                  const MiningSchema& miningSchema,
+                  const IndexBundleSchema& indexSchema);
 
     ~MiningManager();
+
+    void buildCollection();
+
+    void SearchCollection(const std::string query);
 
     bool open();
 
@@ -467,6 +475,7 @@ private:
     const DocumentSchema& documentSchema_;
 
     MiningConfig miningConfig_;
+    IndexBundleSchema indexSchema_;
     MiningSchema mining_schema_;
     std::string basicPath_;
     std::string mainPath_;
@@ -482,6 +491,7 @@ private:
     std::string id_path_;
 
     boost::shared_ptr<DocumentManager> document_manager_;
+    boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<SearchManager> searchManager_;
 
@@ -551,6 +561,7 @@ private:
     /** Suffix Match */
     std::string suffix_match_path_;
     SuffixMatchManager* suffixMatchManager_;
+    IncrementalManager* incrementalManager_;
 
     /** KV */
     std::string kv_path_;

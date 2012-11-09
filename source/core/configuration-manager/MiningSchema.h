@@ -7,6 +7,7 @@
 #include "SummarizeConfig.h"
 #include "SuffixMatchConfig.h"
 
+
 #include <stdint.h>
 #include <string>
 #include <boost/serialization/access.hpp>
@@ -50,7 +51,6 @@ private:
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
         ar & summarization_enable & summarization_schema;
-        ar & suffixmatch_schema;
     }
 
 public:
