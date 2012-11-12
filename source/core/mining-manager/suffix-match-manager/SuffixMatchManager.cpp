@@ -21,14 +21,15 @@ SuffixMatchManager::SuffixMatchManager(
         faceted::GroupManager* groupmanager,
         faceted::AttrManager* attrmanager,
         NumericPropertyTableBuilder* numeric_tablebuilder)
-    : fm_index_path_(homePath + "/" + property + ".fm_idx")
+    : data_root_path_(homePath)
+    , fm_index_path_(homePath + "/" + property + ".fm_idx")
+    , orig_text_path_(homePath + "/" + property + ".orig_txt")
     , property_(property)
     , tokenize_dicpath_(dicpath)
     , document_manager_(document_manager)
     , analyzer_(NULL)
     , knowledge_(NULL)
 {
-    data_root_path_ = homePath;
     if (!boost::filesystem::exists(homePath))
     {
         boost::filesystem::create_directories(homePath);
@@ -90,7 +91,6 @@ void SuffixMatchManager::setNumberFilterProperty(std::vector<std::string>& prope
         filter_manager_->setNumberAmp(num_amp_map);
     }
     number_property_list_.insert(propertys.begin(), propertys.end());
-    
 }
 
 void SuffixMatchManager::buildCollection()
@@ -113,15 +113,25 @@ void SuffixMatchManager::buildCollection()
     if (last_docid)
     {
         LOG(INFO) << "start rebuilding in fm-index";
-        std::vector<uint16_t> orig_text;
-        std::vector<uint32_t> del_docid_list;
-        document_manager_->getDeletedDocIdList(del_docid_list);
-        fmi_->reconstructText(del_docid_list, orig_text);
-        new_fmi->setOrigText(orig_text);
-        if (new_filter_manager)
+        std::ifstream ifs(orig_text_path_.c_str());
+        if (ifs)
         {
-            max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, filter_map);
-            max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
+            new_fmi->loadOriginalText(ifs);
+            std::vector<uint16_t> orig_text;
+            new_fmi->swapOrigText(orig_text);
+            std::vector<uint32_t> del_docid_list;
+            document_manager_->getDeletedDocIdList(del_docid_list);
+            fmi_->reconstructText(del_docid_list, orig_text);
+            new_fmi->swapOrigText(orig_text);
+            if (new_filter_manager)
+            {
+                max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, filter_map);
+                max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
+            }
+        }
+        else
+        {
+            last_docid = 0;
         }
     }
 
@@ -167,6 +177,8 @@ void SuffixMatchManager::buildCollection()
         text = Algorithm<UString>::trim(text);
         new_fmi->addDoc(text.data(), text.length());
     }
+    std::ofstream ofs(orig_text_path_.c_str());
+    new_fmi->saveOriginalText(ofs);
 
     LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
     LOG(INFO) << "building fm-index";
@@ -178,7 +190,7 @@ void SuffixMatchManager::buildCollection()
         filter_manager_.reset(new_filter_manager);
     }
 
-    std::ofstream ofs(fm_index_path_.c_str());
+    std::ofstream ofs1(fm_index_path_.c_str());
     fmi_->save(ofs);
     filter_manager_->saveFilterId();
     filter_manager_->clearAllFilterInvertedData();

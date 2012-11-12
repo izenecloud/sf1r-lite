@@ -20,7 +20,7 @@ IndexBarrel::IndexBarrel(const std::string& path,
                          boost::shared_ptr<LAManager>& laManager,
                          IndexBundleSchema& indexSchema,
                          unsigned int Max_Doc_Num)
-    :idManager_(idManager)
+    : idManager_(idManager)
     , laManager_(laManager)
     , indexSchema_(indexSchema)
     , Max_Doc_Num_(Max_Doc_Num)
@@ -68,7 +68,8 @@ IncrementalManager::IncrementalManager(const std::string& path,
                                        boost::shared_ptr<IDManager>& idManager,
                                        boost::shared_ptr<LAManager>& laManager,
                                        IndexBundleSchema& indexSchema
-                                      ):document_manager_(document_manager)
+                                      )
+    : document_manager_(document_manager)
     , idManager_(idManager)
     , laManager_(laManager)
     , indexSchema_(indexSchema)
@@ -171,12 +172,7 @@ bool IncrementalManager::exactSearch_(const std::string& query, std::vector<uint
         analysisInfo.analyzerId_ = "la_sia";
         LAInput laInput;
         laInput.setDocId(0);
-        if (laManager_)
-        {
-            if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
-                return false;
-        }
-        else
+        if (!laManager_ || !laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
             return false;
 
         LAInput::const_iterator it = laInput.begin();
