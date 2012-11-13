@@ -307,8 +307,7 @@
     <xs:element name="ProductRanking">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="MerchantProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
-                <xs:element name="CategoryProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="Score" type="ScoreType" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -325,6 +324,15 @@
 
     <xs:complexType name="ExcludeType">
         <xs:attribute name="name" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="ScoreType">
+        <xs:sequence>
+            <xs:element name="Score" type="ScoreType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="type" type="xs:string" use="optional"/>
+        <xs:attribute name="property" type="xs:string" use="optional"/>
+        <xs:attribute name="weight" type="xs:float" use="optional"/>
     </xs:complexType>
 
 </xs:schema>

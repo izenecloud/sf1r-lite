@@ -409,24 +409,30 @@ bool MiningManager::open()
             }
         }
 
-        const ProductRankingConfig& productRankingConfig =
+        const ProductRankingConfig& rankConfig =
             mining_schema_.product_ranking_config;
+        const ProductScoreConfig& merchantScoreConfig =
+            rankConfig.scores[MERCHANT_SCORE];
+
+        LOG(INFO) << rankConfig.toStr();
 
         /** merchant score */
-        if (!productRankingConfig.merchantPropName.empty() && groupManager_)
+        if (!merchantScoreConfig.propName.empty() && groupManager_)
         {
             if (merchantScoreManager_) delete merchantScoreManager_;
 
             const bfs::path scoreDir = bfs::path(prefix_path) / "merchant_score";
             bfs::create_directories(scoreDir);
 
-            const std::string& merchantProp = productRankingConfig.merchantPropName;
-            faceted::PropValueTable* merchantValueTable = groupManager_->getPropValueTable(merchantProp);
+            faceted::PropValueTable* merchantValueTable =
+                groupManager_->getPropValueTable(merchantScoreConfig.propName);
+            const ProductScoreConfig& categoryScoreConfig =
+                rankConfig.scores[CATEGORY_SCORE];
+            faceted::PropValueTable* categoryValueTable =
+                groupManager_->getPropValueTable(categoryScoreConfig.propName);
 
-            const std::string& categoryProp = productRankingConfig.categoryPropName;
-            faceted::PropValueTable* categoryValueTable = groupManager_->getPropValueTable(categoryProp);
-
-            merchantScoreManager_ = new MerchantScoreManager(merchantValueTable, categoryValueTable);
+            merchantScoreManager_ = new MerchantScoreManager(
+                merchantValueTable, categoryValueTable);
 
             const std::string scorePath = (scoreDir / "score.txt").string();
             if (! merchantScoreManager_->open(scorePath))
@@ -437,7 +443,7 @@ bool MiningManager::open()
         }
 
         /** product ranking */
-        if (productRankingConfig.isEnable)
+        if (rankConfig.isEnable)
         {
             // custom doc id converter & rank manager
             if (customRankManager_) delete customRankManager_;
@@ -458,7 +464,7 @@ bool MiningManager::open()
             if (productScorerFactory_) delete productScorerFactory_;
 
             productScorerFactory_ = new ProductScorerFactory(
-                productRankingConfig, *this);
+                rankConfig, *this);
 
             searchManager_->setCustomRankManager(customRankManager_);
             searchManager_->setProductScorerFactory(productScorerFactory_);

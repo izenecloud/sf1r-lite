@@ -17,6 +17,7 @@ class CustomRankManager;
 class GroupLabelLogger;
 class ProductRankingConfig;
 class MiningManager;
+class ProductScoreConfig;
 
 namespace faceted
 {
@@ -46,13 +47,28 @@ public:
         ProductScorer* relevanceScorer);
 
 private:
-    ProductScorer* createCustomScorer_(const std::string& query);
+    ProductScorer* createScorerImpl_(
+        const ProductScoreConfig& scoreConfig,
+        const std::string& query,
+        faceted::PropSharedLockSet& propSharedLockSet,
+        ProductScorer* relevanceScorer);
+
+    ProductScorer* createCustomScorer_(
+        const ProductScoreConfig& scoreConfig,
+        const std::string& query);
 
     ProductScorer* createCategoryScorer_(
+        const ProductScoreConfig& scoreConfig,
         const std::string& query,
         faceted::PropSharedLockSet& propSharedLockSet);
 
+    ProductScorer* createRelevanceScorer_(
+        const ProductScoreConfig& scoreConfig,
+        ProductScorer* relevanceScorer);
+
 private:
+    const ProductRankingConfig& config_;
+
     CustomRankManager* customRankManager_;
 
     GroupLabelLogger* categoryClickLogger_;
