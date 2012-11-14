@@ -49,6 +49,7 @@ public:
 
     void buildCollection();
     void buildTokenizeDic();
+    bool isStartFromLocalFM();
 
     size_t longestSuffixMatch(
             const izenelib::util::UString& pattern,
@@ -63,8 +64,6 @@ public:
             std::vector<float>& score_list,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             const faceted::GroupParam& group_param) const;
-
-
 private:
     bool getAllFilterRangeFromGroupLable(
             const faceted::GroupParam& group_param,

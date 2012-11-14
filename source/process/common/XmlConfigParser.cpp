@@ -1933,6 +1933,18 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             throw XmlConfigParserException("["+property_name+"] used in SuffixMatch is missing.");
         }
 
+        ticpp::Element* subNodeInc = getUniqChildElement(task_node, "Incremental", true);
+        if (subNodeInc)
+        {
+            bool bIncremental = false;
+            getAttribute(subNodeInc, "enable", bIncremental, false);
+            mining_schema.suffixmatch_schema.suffix_incremental_enable = bIncremental;
+        }
+        else
+        {
+            throw XmlConfigParserException("Incremental used in SuffixMatch is missing.");
+        }
+        
         Iterator<Element> filterit("FilterProperty");
         const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
         for (filterit = filterit.begin(task_node); filterit != filterit.end(); ++filterit)

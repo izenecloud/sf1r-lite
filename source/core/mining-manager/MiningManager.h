@@ -146,10 +146,6 @@ public:
 
     ~MiningManager();
 
-    void buildCollection();
-
-    void SearchCollection(const std::string query);
-
     bool open();
 
     bool DoMiningCollection();

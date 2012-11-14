@@ -62,25 +62,6 @@ void CommandsController::index()
     indexRecommend_();
 }
 
-void CommandsController::mining_create_index()
-{
-     MiningSearchService* miningSearchService = collectionHandler_->miningSearchService_;
-     if (miningSearchService)
-     {
-         boost::shared_ptr<MiningManager> miningManager = miningSearchService->GetMiningManager();
-         miningManager->buildCollection();//add document count...
-     }
-}
-void CommandsController::mining_search()
-{
-    MiningSearchService* miningSearchService = collectionHandler_->miningSearchService_;
-    if (miningSearchService)
-    {
-         boost::shared_ptr<MiningManager> miningManager = miningSearchService->GetMiningManager();
-         Value::StringType query = asString(request()[Keys::MiningQuery]);
-         miningManager->SearchCollection(query);//add document count...
-    }
-}
 void CommandsController::indexSearch_()
 {
     IndexTaskService* taskService = collectionHandler_->indexTaskService_;

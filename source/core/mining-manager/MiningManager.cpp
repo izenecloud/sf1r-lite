@@ -529,6 +529,10 @@ bool MiningManager::open()
 
             incrementalManager_ = new IncrementalManager(suffix_match_path_, mining_schema_.suffixmatch_schema.suffix_match_property, 
                 document_manager_, idManager_, laManager_, indexSchema_);
+            if (incrementalManager_)
+            {
+                incrementalManager_->InitManager_();
+            }
         }
 
         /** KV */
@@ -763,41 +767,41 @@ bool MiningManager::DoMiningCollection()
     // do SuffixMatch
     if (mining_schema_.suffixmatch_schema.suffix_match_enable)
     {
-        suffixMatchManager_->buildCollection();
-    }
-
-    return true;
-}
-void MiningManager::buildCollection()
-{
-    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
-    {
-        incrementalManager_->createIndex_();
-    }
-}
-
-void MiningManager::SearchCollection(const std::string query)
-{
-    std::vector<docid_t> resultList;
-    std::vector<float> ResultListSimilarity;
-    incrementalManager_->fuzzySearch_(query, resultList, ResultListSimilarity);
-    PropertyValue result;
-    uint32_t k = 0;
-    for (std::vector<docid_t>::iterator i = resultList.begin(); i != resultList.end(); ++i)
-    {
-        if (k > 6)
+        if(mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
-            cout<<"..................................."<<endl;
-            break;
+            if(!(suffixMatchManager_->isStartFromLocalFM()))
+            {
+                LOG(INFO)<<"[] Start suffix init fm-index..."<<endl;
+                suffixMatchManager_->buildCollection(); 
+                incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+            }
+            else
+            {
+                uint32_t last_docid = 0; 
+                uint32_t docNum = 0;
+                uint32_t maxDoc = 0;
+                incrementalManager_->getLastDocid(last_docid);
+                incrementalManager_->getDocNum(docNum);
+                incrementalManager_->getMaxNum(maxDoc);
+                if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
+                {
+                    LOG(INFO)<<"Rebuilding fm-index....."<<endl;
+                    suffixMatchManager_->buildCollection(); 
+                    incrementalManager_->reset();
+                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                    incrementalManager_->init_();
+                }
+                else
+                {
+                    incrementalManager_->createIndex_();//means add every day, now just for test;
+                }
+            }
         }
-        cout<<"[DocId]: "<<*i<<endl;
-        document_manager_->getPropertyValue(*i, "Title", result);
-
-        std::string oldvalue_str;
-        izenelib::util::UString& propertyValueU = result.get<izenelib::util::UString>();
-        propertyValueU.convertString(oldvalue_str, izenelib::util::UString::UTF_8);
-        cout<<"[Title]: "<<oldvalue_str<<" [Score]: "<<ResultListSimilarity[k++]<<endl;
-   }
+        else
+            suffixMatchManager_->buildCollection(); 
+        
+    }
+    return true;
 }
 
 void MiningManager::onIndexUpdated(size_t docNum)
@@ -1786,6 +1790,71 @@ bool MiningManager::GetSuffixMatch(
                 queryU, max_docs,
                 docIdList, rankScoreList,
                 filter_param, actionOperation.actionItem_.groupParam_);
+
+        if(mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+        {
+            std::vector<uint32_t> _docIdList;
+            std::vector<double> _rankScoreList;
+            incrementalManager_->fuzzySearch_(actionOperation.actionItem_.env_.queryString_, 
+                                            _docIdList, _rankScoreList);
+
+            std::vector<std::pair<double, uint32_t> > res_list;
+            res_list.resize(_docIdList.size());
+            for (size_t i = 0; i < res_list.size(); ++i)
+            {
+                res_list[i].first = _rankScoreList[i];
+                res_list[i].second = _docIdList[i];
+            }
+
+            std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());//use head
+
+            totalCount += _docIdList.size();
+            std::vector<uint32_t> docIdListT;
+            std::vector<double> rankScoreListT;
+            uint32_t k = 0;
+            uint32_t j = 0;
+            for (uint32_t i = 0; i < max_docs; ++i)
+            {
+                if (k < rankScoreList.size() && j < res_list.size())
+                {
+                    if (rankScoreList[k] >= res_list[j].first)
+                    {
+                        docIdListT.push_back(docIdList[k]);
+                        rankScoreListT.push_back(rankScoreList[k]);
+                    }
+                    else
+                    {
+                        docIdListT.push_back(res_list[j].second);
+                        rankScoreListT.push_back(res_list[j].first);
+                    }
+                    k++;j++;
+                }
+                else
+                {
+                    if (k < rankScoreList.size())
+                    {
+                        docIdListT.push_back(docIdList[k]);
+                        rankScoreListT.push_back(rankScoreList[k]);
+                        k++;
+                    }
+                    else if (j < res_list.size())
+                    {
+                        docIdListT.push_back(res_list[j].second);
+                        rankScoreListT.push_back(res_list[j].first);
+                        j++;
+                    }
+                    else
+                        break;
+                }
+            }
+            docIdList.clear();
+            rankScoreList.clear();
+            for (uint32_t i = 0; i < rankScoreListT.size(); ++i)
+            {
+                docIdList.push_back(docIdListT[i]);
+                rankScoreList.push_back(rankScoreListT[i]);
+            }
+        }
 
         searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
                                                     rankScoreList, customRankScoreList);

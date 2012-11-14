@@ -93,6 +93,17 @@ void SuffixMatchManager::setNumberFilterProperty(std::vector<std::string>& prope
     
 }
 
+bool SuffixMatchManager::isStartFromLocalFM()
+{
+    size_t last_docid = fmi_ ? fmi_->docCount() : 0;
+    if (last_docid > 0)
+    {
+        return true;
+    }
+    else
+        return false;
+}
+
 void SuffixMatchManager::buildCollection()
 {
     std::vector<FilterManager::StrFilterItemMapT> filter_map;
@@ -112,7 +123,7 @@ void SuffixMatchManager::buildCollection()
     uint32_t max_attr_docid = 0;
     if (last_docid)
     {
-        LOG(INFO) << "start rebuilding in fm-index";
+        LOG(INFO) << "start rebuilding in fm-index";//from file
         std::vector<uint16_t> orig_text;
         std::vector<uint32_t> del_docid_list;
         document_manager_->getDeletedDocIdList(del_docid_list);
@@ -252,7 +263,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     LOG(INFO) << " original query string:" << pattern_str;
 
     Sentence pattern_sentence(pattern_str.c_str());
-    analyzer_->runWithSentence(pattern_sentence);
+    analyzer_->runWithSentence(pattern_sentence);//
     std::vector< UString > all_sub_strpatterns;
     LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
     for (int i = 0; i < pattern_sentence.getCount(0); i++)
@@ -527,6 +538,7 @@ void SuffixMatchManager::buildTokenizeDic()
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
     boost::filesystem::path cma_fmindex_dic(cma_path);
+    cout<<"tokenize_dicpath_"<<tokenize_dicpath_<<endl;
     cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
     knowledge_ = CMA_Factory::instance()->createKnowledge();
@@ -538,15 +550,29 @@ void SuffixMatchManager::buildTokenizeDic()
     analyzer_->setKnowledge(knowledge_);
     LOG(INFO) << "load dictionary knowledge finished." << endl;
 
-    //izenelib::util::UString testustr("佳能(Canon)test non 单子不存在exist字典(6666) EOS 60D单反套机(EF-S 18-135mm f/3.5-5.6IS）单反镜头单子不存在", UString::UTF_8);
+
+
+    //izenelib::util::UString testustr("佳能(Canon)test non 单子不存在exist字典(6666) EOS ", UString::UTF_8);
     //Algorithm<UString>::to_lower(testustr);
     //string teststr;
     //testustr.convertString(teststr, UString::UTF_8);
     //Sentence tests(teststr.c_str());
+    //cout<<"begin:"<<endl;
+    //izenelib::util::ClockTimer timer;
     //analyzer_->runWithSentence(tests);
-    //for (int i = 0; i < tests.getCount(0); i++)
+
+    //cout<<"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxtimer cost: "<<timer.elapsed()<<" seconds"<<endl;
+    //cout<<tests.getListSize()<<endl;
+
+    //for (int i = 0; i < tests.getCount(0); ++i)
+    //{//
+        //printf("%s, ", tests.getLexicon(0, i));
+      //  string str(tests.getLexicon(0, i));
+        //cout<<str<<" "<<endl;
+    //}
+    //for (int i = 0; i < tests.getCount(1); i++)
     //{
-    //    printf("%s, ", tests.getLexicon(0, i));
+      //  printf("%s, ", tests.getLexicon(1, i));
     //}
     //printf("\n");
     //printf("non dictionary bigram: \n");

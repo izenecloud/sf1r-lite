@@ -51,10 +51,12 @@ class SuffixMatchConfig
 public:
     SuffixMatchConfig()
         :suffix_match_enable(false)
+        ,suffix_incremental_enable(false)
     {
     }
 
     bool suffix_match_enable;
+    bool suffix_incremental_enable;
     std::string suffix_match_property;
     std::string suffix_match_tokenize_dicpath;
     std::vector<std::string> group_filter_properties;
@@ -66,6 +68,7 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & suffix_match_enable;
+        ar & suffix_incremental_enable;
         ar & suffix_match_property;
         ar & suffix_match_tokenize_dicpath;
         ar & group_filter_properties;
