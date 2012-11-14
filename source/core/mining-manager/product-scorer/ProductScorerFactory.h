@@ -9,6 +9,7 @@
 #define SF1R_PRODUCT_SCORER_FACTORY_H
 
 #include <string>
+#include <boost/shared_ptr.hpp>
 
 namespace sf1r
 {
@@ -18,6 +19,7 @@ class GroupLabelLogger;
 class ProductRankingConfig;
 class MiningManager;
 class ProductScoreConfig;
+class SearchManager;
 
 namespace faceted
 {
@@ -66,6 +68,12 @@ private:
         const ProductScoreConfig& scoreConfig,
         ProductScorer* relevanceScorer);
 
+    ProductScorer* createPopularityScorer_(
+        const ProductScoreConfig& scoreConfig);
+
+    ProductScorer* createNumericPropertyScorer_(
+        const ProductScoreConfig& scoreConfig);
+
 private:
     const ProductRankingConfig& config_;
 
@@ -74,6 +82,8 @@ private:
     GroupLabelLogger* categoryClickLogger_;
 
     const faceted::PropValueTable* categoryValueTable_;
+
+    boost::shared_ptr<SearchManager> searchManager_;
 };
 
 } // namespace sf1r

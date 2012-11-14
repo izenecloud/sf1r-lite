@@ -2,11 +2,14 @@
 #include "ProductScoreSum.h"
 #include "CustomScorer.h"
 #include "CategoryScorer.h"
+#include "PopularityScorer.h"
+#include "NumericPropertyScorer.h"
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../group-label-logger/GroupLabelLogger.h"
 #include "../group-manager/PropSharedLockSet.h"
 #include <configuration-manager/ProductRankingConfig.h>
+#include <search-manager/SearchManager.h>
 #include <memory> // auto_ptr
 
 using namespace sf1r;
@@ -27,6 +30,7 @@ ProductScorerFactory::ProductScorerFactory(
     , customRankManager_(miningManager.GetCustomRankManager())
     , categoryClickLogger_(NULL)
     , categoryValueTable_(NULL)
+    , searchManager_(miningManager.GetSearchManager())
 {
     const ProductScoreConfig& categoryScoreConfig =
         config.scores[CATEGORY_SCORE];
@@ -83,7 +87,7 @@ ProductScorer* ProductScorerFactory::createScorerImpl_(
         return createRelevanceScorer_(scoreConfig, relevanceScorer);
 
     case POPULARITY_SCORE:
-        //return createPopularityScorer_(scoreConfig);
+        return createPopularityScorer_(scoreConfig);
 
     default:
         return NULL;
@@ -138,4 +142,50 @@ ProductScorer* ProductScorerFactory::createRelevanceScorer_(
 
     relevanceScorer->setWeight(scoreConfig.weight);
     return relevanceScorer;
+}
+
+ProductScorer* ProductScorerFactory::createPopularityScorer_(
+    const ProductScoreConfig& scoreConfig)
+{
+    std::auto_ptr<PopularityScorer> popularScorer(
+        new PopularityScorer(scoreConfig));
+
+    for (std::size_t i = 0; i < scoreConfig.factors.size(); ++i)
+    {
+        const ProductScoreConfig& factorConfig = scoreConfig.factors[i];
+        ProductScorer* scorer = createNumericPropertyScorer_(factorConfig);
+
+        if (scorer)
+        {
+            popularScorer->addScorer(scorer);
+        }
+    }
+
+    return popularScorer.release();
+}
+
+ProductScorer* ProductScorerFactory::createNumericPropertyScorer_(
+    const ProductScoreConfig& scoreConfig)
+{
+    const std::string& propName = scoreConfig.propName;
+    if (propName.empty() || scoreConfig.weight == 0)
+        return NULL;
+
+    if (!searchManager_)
+    {
+        LOG(WARNING) << "failed to get SearchManager";
+        return NULL;
+    }
+
+    boost::shared_ptr<NumericPropertyTableBase>& numericTable =
+        searchManager_->createPropertyTable(propName);
+
+    if (!numericTable)
+    {
+        LOG(WARNING) << "failed to create NumericPropertyTableBase "
+                     << "for property [" << propName << "]";
+        return NULL;
+    }
+
+    return new NumericPropertyScorer(scoreConfig, numericTable);
 }
