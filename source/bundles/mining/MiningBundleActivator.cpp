@@ -140,13 +140,15 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
                 dir,
                 config_->collPath_,
                 indexService->searchWorker_->documentManager_,
+                indexService->searchWorker_->laManager_,
                 indexService->searchWorker_->indexManager_,
                 indexService->searchWorker_->searchManager_,
                 indexService->searchWorker_->idManager_,
                 config_->collectionName_,
                 config_->documentSchema_,
                 config_->mining_config_,
-                config_->mining_schema_
+                config_->mining_schema_,
+                indexService->getBundleConfig()->indexSchema_
                 )
             );
 
