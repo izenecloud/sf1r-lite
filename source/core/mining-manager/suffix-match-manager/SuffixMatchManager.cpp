@@ -179,6 +179,7 @@ void SuffixMatchManager::buildCollection()
     }
     std::ofstream ofs(orig_text_path_.c_str());
     new_fmi->saveOriginalText(ofs);
+    ofs.close();
 
     LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
     LOG(INFO) << "building fm-index";
@@ -190,7 +191,7 @@ void SuffixMatchManager::buildCollection()
         filter_manager_.reset(new_filter_manager);
     }
 
-    std::ofstream ofs1(fm_index_path_.c_str());
+    ofs.open(fm_index_path_.c_str());
     fmi_->save(ofs);
     filter_manager_->saveFilterId();
     filter_manager_->clearAllFilterInvertedData();
