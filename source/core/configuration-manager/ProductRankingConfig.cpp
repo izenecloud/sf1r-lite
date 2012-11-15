@@ -101,7 +101,10 @@ bool checkScoreConfig(
     }
 }
 
-}
+} // namespace
+
+const std::string ProductRankingConfig::kScoreTypeName[] =
+    {"merchant", "custom", "category", "relevance", "popularity"};
 
 ProductRankingConfig::ProductRankingConfig()
     : isEnable(false)
@@ -112,7 +115,7 @@ ProductRankingConfig::ProductRankingConfig()
         ProductScoreType typeId = static_cast<ProductScoreType>(i);
         scores[i].type = typeId;
 
-        const char* typeName = SCORE_TYPE_NAME[i];
+        const std::string& typeName = kScoreTypeName[i];
         scoreTypeMap[typeName] = typeId;
     }
 }

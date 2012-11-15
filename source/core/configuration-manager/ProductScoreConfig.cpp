@@ -1,4 +1,5 @@
 #include "ProductScoreConfig.h"
+#include "ProductRankingConfig.h"
 #include <sstream>
 
 using namespace sf1r;
@@ -12,7 +13,8 @@ std::string ProductScoreConfig::toStr() const
 {
     std::ostringstream oss;
 
-    oss << "type: " << type << ", ";
+    const std::string& typeName = ProductRankingConfig::kScoreTypeName[type];
+    oss << "score type: " << typeName << ", ";
 
     if (!propName.empty())
     {

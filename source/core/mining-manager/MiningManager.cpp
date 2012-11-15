@@ -422,8 +422,6 @@ bool MiningManager::open()
         const ProductScoreConfig& merchantScoreConfig =
             rankConfig.scores[MERCHANT_SCORE];
 
-        LOG(INFO) << rankConfig.toStr();
-
         /** merchant score */
         if (!merchantScoreConfig.propName.empty() && groupManager_)
         {
@@ -453,6 +451,8 @@ bool MiningManager::open()
         /** product ranking */
         if (rankConfig.isEnable)
         {
+            LOG(INFO) << rankConfig.toStr();
+
             // custom doc id converter & rank manager
             if (customRankManager_) delete customRankManager_;
             if (customDocIdConverter_) delete customDocIdConverter_;
