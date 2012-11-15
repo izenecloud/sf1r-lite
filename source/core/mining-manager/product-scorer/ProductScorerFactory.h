@@ -20,11 +20,13 @@ class ProductRankingConfig;
 class MiningManager;
 class ProductScoreConfig;
 class SearchManager;
+class NumericPropertyTableBase;
 
 namespace faceted
 {
 class PropValueTable;
 class PropSharedLockSet;
+class CTRManager;
 }
 
 class ProductScorerFactory
@@ -74,6 +76,9 @@ private:
     ProductScorer* createNumericPropertyScorer_(
         const ProductScoreConfig& scoreConfig);
 
+    boost::shared_ptr<NumericPropertyTableBase> createNumericPropertyTable_(
+        const std::string& propName);
+
 private:
     const ProductRankingConfig& config_;
 
@@ -84,6 +89,8 @@ private:
     const faceted::PropValueTable* categoryValueTable_;
 
     boost::shared_ptr<SearchManager> searchManager_;
+
+    boost::shared_ptr<faceted::CTRManager> ctrManager_;
 };
 
 } // namespace sf1r

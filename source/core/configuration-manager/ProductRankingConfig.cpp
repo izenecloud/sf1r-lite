@@ -1,13 +1,12 @@
 #include "ProductRankingConfig.h"
 #include <process/common/CollectionMeta.h>
+#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <sstream>
 
 using namespace sf1r;
 
 namespace
 {
-const char* SCORE_TYPE_NAME[] =
-    {"merchant", "custom", "category", "relevance", "popularity"};
 
 bool isStringGroup(
     const ProductScoreConfig& scoreConfig,
@@ -46,7 +45,7 @@ bool isNumericFilter(
     std::string& error)
 {
     const std::string& propName = scoreConfig.propName;
-    if (propName.empty())
+    if (propName.empty() || propName == faceted::CTRManager::kCtrPropName)
         return true;
 
     const IndexBundleSchema& indexSchema =

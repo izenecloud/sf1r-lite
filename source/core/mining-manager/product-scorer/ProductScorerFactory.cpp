@@ -8,9 +8,11 @@
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../group-label-logger/GroupLabelLogger.h"
 #include "../group-manager/PropSharedLockSet.h"
+#include "../faceted-submanager/ctr_manager.h"
 #include <configuration-manager/ProductRankingConfig.h>
 #include <search-manager/SearchManager.h>
 #include <memory> // auto_ptr
+#include <glog/logging.h>
 
 using namespace sf1r;
 
@@ -31,6 +33,7 @@ ProductScorerFactory::ProductScorerFactory(
     , categoryClickLogger_(NULL)
     , categoryValueTable_(NULL)
     , searchManager_(miningManager.GetSearchManager())
+    , ctrManager_(miningManager.GetCtrManager())
 {
     const ProductScoreConfig& categoryScoreConfig =
         config.scores[CATEGORY_SCORE];
@@ -171,14 +174,8 @@ ProductScorer* ProductScorerFactory::createNumericPropertyScorer_(
     if (propName.empty() || scoreConfig.weight == 0)
         return NULL;
 
-    if (!searchManager_)
-    {
-        LOG(WARNING) << "failed to get SearchManager";
-        return NULL;
-    }
-
-    boost::shared_ptr<NumericPropertyTableBase>& numericTable =
-        searchManager_->createPropertyTable(propName);
+    boost::shared_ptr<NumericPropertyTableBase> numericTable =
+        createNumericPropertyTable_(propName);
 
     if (!numericTable)
     {
@@ -188,4 +185,35 @@ ProductScorer* ProductScorerFactory::createNumericPropertyScorer_(
     }
 
     return new NumericPropertyScorer(scoreConfig, numericTable);
+}
+
+boost::shared_ptr<NumericPropertyTableBase> ProductScorerFactory::createNumericPropertyTable_(
+    const std::string& propName)
+{
+    boost::shared_ptr<NumericPropertyTableBase> numericTable;
+
+    if (propName == faceted::CTRManager::kCtrPropName)
+    {
+        if (ctrManager_)
+        {
+            ctrManager_->loadCtrData(numericTable);
+        }
+        else
+        {
+            LOG(WARNING) << "failed to get CTRManager";
+        }
+    }
+    else
+    {
+        if (searchManager_)
+        {
+            numericTable = searchManager_->createPropertyTable(propName);
+        }
+        else
+        {
+            LOG(WARNING) << "failed to get SearchManager";
+        }
+    }
+
+    return numericTable;
 }
