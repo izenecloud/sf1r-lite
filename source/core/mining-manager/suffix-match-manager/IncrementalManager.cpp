@@ -15,7 +15,7 @@ using namespace cma;
 namespace sf1r
 {
 
-IndexBarral::IndexBarral(const std::string& path,
+IndexBarrel::IndexBarrel(const std::string& path,
                          boost::shared_ptr<IDManager>& idManager,
                          boost::shared_ptr<LAManager>& laManager,
                          IndexBundleSchema& indexSchema,
@@ -34,7 +34,7 @@ IndexBarral::IndexBarral(const std::string& path,
     isAddedIndex_ = false;
 }
 
-bool IndexBarral::buildIndex_(docid_t docId, std::string& text)
+bool IndexBarrel::buildIndex_(docid_t docId, std::string& text)
 {
     izenelib::util::UString utext(text, izenelib::util::UString::UTF_8);
 
@@ -65,7 +65,7 @@ bool IndexBarral::buildIndex_(docid_t docId, std::string& text)
     return true;
 }
 
-bool IndexBarral::score(const std::string& query, std::vector<uint32_t>& resultList, std::vector<double> &ResultListSimilarity)
+bool IndexBarrel::score(const std::string& query, std::vector<uint32_t>& resultList, std::vector<double> &ResultListSimilarity)
 {
     Sentence querySentence(query.c_str());
     izenelib::util::ClockTimer timer;
@@ -144,11 +144,11 @@ IncrementalManager::IncrementalManager(const std::string& path,
     , analyzer_(NULL)
     , knowledge_(NULL)
 {
-    BerralNum_ = 0;
+    BarrelNum_ = 0;
     last_docid_ = 0;
     IndexedDocNum_ = 0;
-    pMainBerral_ =  NULL;
-    pTmpBerral_ = NULL;
+    pMainBarrel_ =  NULL;
+    pTmpBarrel_ = NULL;
     property_ = property;
     isInitIndex_ = false;
     isMergingIndex_ = false;
@@ -178,7 +178,7 @@ void IncrementalManager::buildTokenizeDic()
 bool IncrementalManager::fuzzySearch_(const std::string& query, std::vector<uint32_t>& resultList, std::vector<double> &ResultListSimilarity)
 {
     izenelib::util::ClockTimer timer;
-    if (BerralNum_ == 0)
+    if (BarrelNum_ == 0)
     {
         std::cout<<"[NOTICE]:THERE IS NOT Berral"<<endl;
     }
@@ -209,21 +209,21 @@ bool IncrementalManager::fuzzySearch_(const std::string& query, std::vector<uint
             termidList.push_back(*i);
         }
 
-        if (pMainBerral_ != NULL && isInitIndex_ == false)
+        if (pMainBarrel_ != NULL && isInitIndex_ == false)
         {
             {
                 ScopedReadLock lock(mutex_);
                 uint32_t hitdoc;
-                pMainBerral_->getFuzzyResult_(termidList, resultList, ResultListSimilarity, hitdoc);
-                pMainBerral_->score(query, resultList, ResultListSimilarity);
+                pMainBarrel_->getFuzzyResult_(termidList, resultList, ResultListSimilarity, hitdoc);
+                pMainBarrel_->score(query, resultList, ResultListSimilarity);
             }
         }
-        if (pTmpBerral_ != NULL && isAddingIndex_ == false)
+        if (pTmpBarrel_ != NULL && isAddingIndex_ == false)
         {
             {
                 cout<<"get temp"<<endl;
                 ScopedReadLock lock(mutex_);
-                //pTmpBerral_->getFuzzyResult_(termidList, resultList, ResultListSimilarity);
+                //pTmpBarrel_->getFuzzyResult_(termidList, resultList, ResultListSimilarity);
             }
         }
         LOG(INFO)<<"INC Search ResulList Number:"<<resultList.size()<<endl;
@@ -234,7 +234,7 @@ bool IncrementalManager::fuzzySearch_(const std::string& query, std::vector<uint
 
 bool IncrementalManager::exactSearch_(const std::string& query, std::vector<uint32_t>& resultList, std::vector<double> &ResultListSimilarity)
 {
-    if (BerralNum_ == 0)
+    if (BarrelNum_ == 0)
     {
         std::cout<<"[NOTICE]:THERE IS NOT Berral"<<endl;
     }
@@ -272,19 +272,19 @@ bool IncrementalManager::exactSearch_(const std::string& query, std::vector<uint
         }
 
 
-        if (pMainBerral_ != NULL && isInitIndex_ == false)
+        if (pMainBarrel_ != NULL && isInitIndex_ == false)
         {
             {
                 ScopedReadLock lock(mutex_);
-                pMainBerral_->getExactResult_(termidList, resultList, ResultListSimilarity);
+                pMainBarrel_->getExactResult_(termidList, resultList, ResultListSimilarity);
             }
         }
-        if (pTmpBerral_ != NULL && isAddingIndex_ == false)
+        if (pTmpBarrel_ != NULL && isAddingIndex_ == false)
         {
             {
                 cout<<"get temp"<<endl;
                 ScopedReadLock lock(mutex_);
-                pTmpBerral_->getExactResult_(termidList, resultList, ResultListSimilarity);
+                pTmpBarrel_->getExactResult_(termidList, resultList, ResultListSimilarity);
             }
         }
         cout<<"search ResulList number:"<<resultList.size()<<endl;
@@ -308,7 +308,7 @@ void IncrementalManager::InitManager_()
 void IncrementalManager::doCreateIndex_()
 {
     isInitIndex_ = true;
-    if (BerralNum_ == 0)
+    if (BarrelNum_ == 0)
     {
         //isInitIndex_ = true;
         startIncrementalManager();
@@ -360,8 +360,8 @@ void IncrementalManager::doCreateIndex_()
         //isAddingIndex_= false; there is only one Barrel now.
         LOG(INFO) <<"Prepare_index_ total elapsed:"<<timer.elapsed()<<" seconds"<<endl;
     }
-    pMainBerral_->print();
-    if(pTmpBerral_) pTmpBerral_->print();
+    pMainBarrel_->print();
+    if(pTmpBarrel_) pTmpBarrel_->print();
 }
 
 void IncrementalManager::createIndex_()
@@ -377,42 +377,42 @@ void IncrementalManager::mergeIndex()
     isMergingIndex_ = true;
     {
         ScopedWriteLock lock(mutex_);
-        if (pMainBerral_ != NULL && pTmpBerral_ != NULL)
+        if (pMainBarrel_ != NULL && pTmpBarrel_ != NULL)
         {
-            std::vector<IndexItem>::const_iterator i = (*(pTmpBerral_->getForwardIndex()->getIndexItem_())).begin();
-            for ( ; i != (*(pTmpBerral_->getForwardIndex()->getIndexItem_())).end(); ++i)
+            std::vector<IndexItem>::const_iterator i = (*(pTmpBarrel_->getForwardIndex()->getIndexItem_())).begin();
+            for ( ; i != (*(pTmpBarrel_->getForwardIndex()->getIndexItem_())).end(); ++i)
             {
-                pMainBerral_->getForwardIndex()->addIndexItem_(*i);
+                pMainBarrel_->getForwardIndex()->addIndexItem_(*i);
             }
 
-            for (std::set<std::pair<uint32_t, uint32_t>, pairLess>::const_iterator it = (*(pTmpBerral_->getIncrementIndex()->gettermidList_())).begin()
-                    ; it != (*(pTmpBerral_->getIncrementIndex()->gettermidList_())).end()
+            for (std::set<std::pair<uint32_t, uint32_t>, pairLess>::const_iterator it = (*(pTmpBarrel_->getIncrementIndex()->gettermidList_())).begin()
+                    ; it != (*(pTmpBarrel_->getIncrementIndex()->gettermidList_())).end()
                     ; ++it)
             {
-                pMainBerral_->getIncrementIndex()->addTerm_(*it, (*(pTmpBerral_->getIncrementIndex()->getdocidLists_()))[(*it).second]);////xxx
+                pMainBarrel_->getIncrementIndex()->addTerm_(*it, (*(pTmpBarrel_->getIncrementIndex()->getdocidLists_()))[(*it).second]);////xxx
             }
             prepare_index_();
             delete_AllIndexFile();
             string file = ".tmp";
-            pMainBerral_->save_(file);
-            delete pTmpBerral_;
-            pTmpBerral_ = NULL;
+            pMainBarrel_->save_(file);
+            delete pTmpBarrel_;
+            pTmpBarrel_ = NULL;
             saveLastDocid_();
-            string tmpName = pMainBerral_->getForwardIndex()->getPath() + file;
-            string fileName = pMainBerral_->getForwardIndex()->getPath();
+            string tmpName = pMainBarrel_->getForwardIndex()->getPath() + file;
+            string fileName = pMainBarrel_->getForwardIndex()->getPath();
 
             boost::filesystem::path path(tmpName);
             boost::filesystem::path path1(fileName);
             boost::filesystem::rename(path, path1);
 
-            string tmpName1 = pMainBerral_->getIncrementIndex()->getPath() + file;
-            string fileName2 = pMainBerral_->getIncrementIndex()->getPath();
+            string tmpName1 = pMainBarrel_->getIncrementIndex()->getPath() + file;
+            string fileName2 = pMainBarrel_->getIncrementIndex()->getPath();
 
             boost::filesystem::path path2(tmpName1);
             boost::filesystem::path path3(fileName2);
             boost::filesystem::rename(path2, path3);
-            pMainBerral_->resetStatus();
-            pMainBerral_->print();
+            pMainBarrel_->resetStatus();
+            pMainBarrel_->print();
         }
     }
     isMergingIndex_ = false;

@@ -818,10 +818,10 @@ private:
     cma::Analyzer* analyzer_;
 };
 
-class IndexBarral
+class IndexBarrel
 {
 public:
-    IndexBarral(
+    IndexBarrel(
         const std::string& path,
         boost::shared_ptr<IDManager>& idManager,
         boost::shared_ptr<LAManager>& laManager,
@@ -830,7 +830,7 @@ public:
         cma::Analyzer* &analyzer);
 
 
-    ~IndexBarral()
+    ~IndexBarrel()
     {
         if (pForwardIndex_ != NULL)
         {
@@ -1016,15 +1016,15 @@ public:
 
     ~IncrementalManager()
     {
-        if (pMainBerral_ != NULL)
+        if (pMainBarrel_ != NULL)
         {
-            delete pMainBerral_;
-            pMainBerral_ = NULL;
+            delete pMainBarrel_;
+            pMainBarrel_ = NULL;
         }
-        if (pTmpBerral_!= NULL)
+        if (pTmpBarrel_!= NULL)
         {
-            delete pTmpBerral_;
-            pTmpBerral_ = NULL;
+            delete pTmpBarrel_;
+            pTmpBarrel_ = NULL;
         }
         if (analyzer_)
         {
@@ -1050,7 +1050,7 @@ public:
         if ( boost::filesystem::exists(pathMainInc) && boost::filesystem::exists(pathMainFd))//main
         {
             init_();
-            if(!pMainBerral_->load_())
+            if(!pMainBarrel_->load_())
             {
                 LOG(INFO) << "Index Wrong!!"<<endl;
                 delete_AllIndexFile();
@@ -1061,7 +1061,7 @@ public:
                 if ( boost::filesystem::exists(pathTmpInc) && boost::filesystem::exists(pathTmpFd) )//tmp
                 {
                     init_tmpBerral();
-                    if(!pTmpBerral_->load_())
+                    if(!pTmpBarrel_->load_())
                     {
                         LOG(INFO) << "Index Wrong!!"<<endl;
                         delete_AllIndexFile();
@@ -1086,15 +1086,15 @@ public:
         {
             if (!isStartFromLocal_)
             {
-                if (pMainBerral_ != NULL)
+                if (pMainBarrel_ != NULL)
                 {
-                    delete pMainBerral_;
-                    pMainBerral_ = NULL;
+                    delete pMainBarrel_;
+                    pMainBarrel_ = NULL;
                 }
-                if (pTmpBerral_!= NULL)
+                if (pTmpBarrel_!= NULL)
                 {
-                    delete pTmpBerral_;
-                    pTmpBerral_ = NULL;
+                    delete pTmpBarrel_;
+                    pTmpBarrel_ = NULL;
                 }
                 delete_AllIndexFile();
             }
@@ -1103,10 +1103,10 @@ public:
 
     bool init_()
     {
-        if (pMainBerral_ == NULL)
+        if (pMainBarrel_ == NULL)
         {
             string path = index_path_ + "/Main";
-            pMainBerral_ = new IndexBarral(
+            pMainBarrel_ = new IndexBarrel(
                 path,
                 idManager_,
                 laManager_,
@@ -1114,24 +1114,24 @@ public:
                 MAX_INCREMENT_DOC,
                 analyzer_
             );
-            BerralNum_++;
-            if (pMainBerral_ == NULL)
+            BarrelNum_++;
+            if (pMainBarrel_ == NULL)
             {
-                BerralNum_--;
+                BarrelNum_--;
                 return false;
             }
-            pMainBerral_->init(index_path_);
+            pMainBarrel_->init(index_path_);
         }
         return true;
     }
 
     bool init_tmpBerral()
     {
-        if (pTmpBerral_ == NULL)
+        if (pTmpBarrel_ == NULL)
         {
-            BerralNum_++;
+            BarrelNum_++;
             string path = index_path_ + "/Tmp";
-            pTmpBerral_ = new IndexBarral(
+            pTmpBarrel_ = new IndexBarrel(
                 path,
                 idManager_,
                 laManager_,
@@ -1139,12 +1139,12 @@ public:
                 MAX_TMP_DOC,
                 analyzer_
             );
-            if (pTmpBerral_ == NULL)
+            if (pTmpBarrel_ == NULL)
             {
-                BerralNum_--;
+                BarrelNum_--;
                 return false;
             }
-            pTmpBerral_->init(index_path_);
+            pTmpBarrel_->init(index_path_);
         }
         return true;
     }
@@ -1179,10 +1179,10 @@ public:
         {
             init_tmpBerral();
             {
-                if (pTmpBerral_ != NULL)
+                if (pTmpBarrel_ != NULL)
                 {
-                    pTmpBerral_->setStatus();
-                    if(!pTmpBerral_->buildIndex_(docId, propertyString))
+                    pTmpBarrel_->setStatus();
+                    if(!pTmpBarrel_->buildIndex_(docId, propertyString))
                         return false;
                 }
                 IndexedDocNum_++;
@@ -1191,10 +1191,10 @@ public:
         else
         {
             {
-                if (pMainBerral_ != NULL)
+                if (pMainBarrel_ != NULL)
                 {
-                    pMainBerral_->setStatus();
-                    if(!pMainBerral_->buildIndex_(docId, propertyString))
+                    pMainBarrel_->setStatus();
+                    if(!pMainBarrel_->buildIndex_(docId, propertyString))
                         return false;
                 }
                 IndexedDocNum_++;
@@ -1245,33 +1245,33 @@ public:
 
     void prepare_index_()
     {
-        if (pMainBerral_)
+        if (pMainBarrel_)
         {
-            pMainBerral_->prepare_index_();
+            pMainBarrel_->prepare_index_();
         }
-        if (pTmpBerral_)
+        if (pTmpBarrel_)
         {
-            pTmpBerral_->prepare_index_();
+            pTmpBarrel_->prepare_index_();
         }
     }
 
     void reset()
     {
-        if(pMainBerral_)
+        if(pMainBarrel_)
         {
-            pMainBerral_->reset();
-            delete pMainBerral_;
-            pMainBerral_ = NULL;
-            BerralNum_ = 0;
+            pMainBarrel_->reset();
+            delete pMainBarrel_;
+            pMainBarrel_ = NULL;
+            BarrelNum_ = 0;
             IndexedDocNum_ = 0;
         }
     }
 
     void save_()
     {
-        if (pMainBerral_)
+        if (pMainBarrel_)
         {
-            pMainBerral_->save_();
+            pMainBarrel_->save_();
         }
     }
 
@@ -1312,11 +1312,11 @@ private:
 
     std::string property_;
 
-    unsigned int BerralNum_;
+    unsigned int BarrelNum_;
 
-    IndexBarral* pMainBerral_;
+    IndexBarrel* pMainBarrel_;
 
-    IndexBarral* pTmpBerral_;
+    IndexBarrel* pTmpBarrel_;
 
     unsigned int IndexedDocNum_;
 
