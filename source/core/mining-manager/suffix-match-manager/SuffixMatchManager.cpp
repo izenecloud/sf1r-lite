@@ -55,9 +55,9 @@ SuffixMatchManager::~SuffixMatchManager()
     if (knowledge_) delete knowledge_;
 }
 
-void SuffixMatchManager::setGroupFilterProperty(std::vector<std::string>& propertys)
+void SuffixMatchManager::setGroupFilterProperty(std::vector<std::string>& property_list)
 {
-    group_property_list_.swap(propertys);
+    group_property_list_.swap(property_list);
     if (filter_manager_)
     {
         WriteLock lock(mutex_);
@@ -65,9 +65,9 @@ void SuffixMatchManager::setGroupFilterProperty(std::vector<std::string>& proper
     }
 }
 
-void SuffixMatchManager::setAttrFilterProperty(std::vector<std::string>& propertys)
+void SuffixMatchManager::setAttrFilterProperty(std::vector<std::string>& property_list)
 {
-    attr_property_list_.swap(propertys);
+    attr_property_list_.swap(property_list);
     if (filter_manager_)
     {
         WriteLock lock(mutex_);
@@ -75,34 +75,27 @@ void SuffixMatchManager::setAttrFilterProperty(std::vector<std::string>& propert
     }
 }
 
-void SuffixMatchManager::setNumberFilterProperty(std::vector<std::string>& propertys, std::vector<int32_t>& num_amp_list)
+void SuffixMatchManager::setNumberFilterProperty(std::vector<std::string>& property_list, std::vector<int32_t>& amp_list)
 {
-    assert(propertys.size() == num_amp_list.size());
+    assert(property_list.size() == amp_list.size());
     std::map<std::string, int32_t> num_amp_map;
-    for(size_t i = 0; i < propertys.size(); ++i)
+    for(size_t i = 0; i < property_list.size(); ++i)
     {
-        num_amp_map[propertys[i]] = num_amp_list[i];
+        num_amp_map[property_list[i]] = amp_list[i];
     }
 
     if (filter_manager_)
     {
         WriteLock lock(mutex_);
-        filter_manager_->loadFilterId(propertys);
+        filter_manager_->loadFilterId(property_list);
         filter_manager_->setNumberAmp(num_amp_map);
     }
-    number_property_list_.insert(propertys.begin(), propertys.end());
-    
+    number_property_list_.insert(property_list.begin(), property_list.end());
 }
 
-bool SuffixMatchManager::isStartFromLocalFM()
+bool SuffixMatchManager::isStartFromLocalFM() const
 {
-    size_t last_docid = fmi_ ? fmi_->docCount() : 0;
-    if (last_docid > 0)
-    {
-        return true;
-    }
-    else
-        return false;
+    return fmi_ && fmi_->docCount() > 0;
 }
 
 void SuffixMatchManager::buildCollection()
@@ -125,6 +118,11 @@ void SuffixMatchManager::buildCollection()
     if (last_docid)
     {
         LOG(INFO) << "start rebuilding in fm-index";
+        if (new_filter_manager)
+        {
+            max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, filter_map);
+            max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
+        }
         std::ifstream ifs(orig_text_path_.c_str());
         if (ifs)
         {
@@ -135,11 +133,6 @@ void SuffixMatchManager::buildCollection()
             document_manager_->getDeletedDocIdList(del_docid_list);
             fmi_->reconstructText(del_docid_list, orig_text);
             new_fmi->swapOrigText(orig_text);
-            if (new_filter_manager)
-            {
-                max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, filter_map);
-                max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
-            }
         }
         else
         {
@@ -148,8 +141,7 @@ void SuffixMatchManager::buildCollection()
     }
 
     LOG(INFO) << "building filter data in fm-index, start from:" << max_group_docid;
-    std::vector<std::string > number_property_list;
-    number_property_list.insert(number_property_list.end(), number_property_list_.begin(), number_property_list_.end());
+    std::vector<std::string > number_property_list(number_property_list_.begin(), number_property_list_.end());
     if (new_filter_manager)
     {
         new_filter_manager->buildGroupFilterData(max_group_docid, document_manager_->getMaxDocId(),
@@ -194,7 +186,7 @@ void SuffixMatchManager::buildCollection()
     ofs.close();
 
     LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
-    LOG(INFO) << "building fm-index";
+    LOG(INFO) << "building fm-index....";
     new_fmi->build();
 
     {
@@ -213,12 +205,12 @@ void SuffixMatchManager::buildCollection()
 size_t SuffixMatchManager::longestSuffixMatch(
         const izenelib::util::UString& pattern,
         size_t max_docs,
-        std::vector<uint32_t>& docid_list,
-        std::vector<float>& score_list) const
+        std::vector<std::pair<double, uint32_t> >& res_list) const
 {
     if (!fmi_) return 0;
 
     std::vector<std::pair<size_t, size_t> >match_ranges;
+    std::vector<uint32_t> docid_list;
     std::vector<size_t> doclen_list;
     size_t max_match;
 
@@ -230,20 +222,13 @@ size_t SuffixMatchManager::longestSuffixMatch(
         fmi_->getMatchedDocIdList(match_ranges, max_docs, docid_list, doclen_list);
     }
 
-    std::vector<std::pair<float, uint32_t> > res_list(docid_list.size());
+    res_list.resize(docid_list.size());
     for (size_t i = 0; i < res_list.size(); ++i)
     {
-        res_list[i].first = float(max_match) / float(doclen_list[i]);
+        res_list[i].first = double(max_match) / double(doclen_list[i]);
         res_list[i].second = docid_list[i];
     }
-    std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<float, uint32_t> >());
-
-    score_list.resize(doclen_list.size());
-    for (size_t i = 0; i < res_list.size(); ++i)
-    {
-        docid_list[i] = res_list[i].second;
-        score_list[i] = res_list[i].first;
-    }
+    std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
 
     size_t total_match = 0;
     for (size_t i = 0; i < match_ranges.size(); ++i)
@@ -257,25 +242,24 @@ size_t SuffixMatchManager::longestSuffixMatch(
 size_t SuffixMatchManager::AllPossibleSuffixMatch(
         const izenelib::util::UString& pattern_orig,
         size_t max_docs,
-        std::vector<uint32_t>& docid_list,
-        std::vector<float>& score_list,
         const SearchingMode::SuffixMatchFilterMode& filter_mode,
         const std::vector<QueryFiltering::FilteringType>& filter_param,
-        const GroupParam& group_param) const
+        const GroupParam& group_param,
+        std::vector<std::pair<double, uint32_t> >& res_list) const
 {
     if (!analyzer_) return 0;
 
     std::vector<std::pair<size_t, size_t> > match_ranges_list;
+    std::vector<uint32_t> docid_list;
     std::vector<size_t> doclen_list;
     std::vector<double> max_match_list;
-    std::vector<std::pair<double, uint32_t> > res_list;
 
     // tokenize the pattern.
     izenelib::util::UString pattern = pattern_orig;
     Algorithm<UString>::to_lower(pattern);
     string pattern_str;
     pattern.convertString(pattern_str, UString::UTF_8);
-    LOG(INFO) << " original query string:" << pattern_str;
+    LOG(INFO) << "original query string: " << pattern_str;
 
     Sentence pattern_sentence(pattern_str.c_str());
     analyzer_->runWithSentence(pattern_sentence);
@@ -368,14 +352,6 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                 LOG(ERROR) << "unknown filter mode.";
             }
         }
-    }
-
-    score_list.resize(doclen_list.size());
-    docid_list.resize(doclen_list.size());
-    for (size_t i = 0; i < res_list.size(); ++i)
-    {
-        docid_list[i] = res_list[i].second;
-        score_list[i] = res_list[i].first;
     }
 
     size_t total_match = 0;

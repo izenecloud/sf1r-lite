@@ -11,17 +11,17 @@ namespace sf1r
 struct NumberFilterConfig
 {
     NumberFilterConfig()
-        :amplification(1),
-        propType(UNKNOWN_DATA_PROPERTY_TYPE)
+        : amplifier(1)
+        , propType(UNKNOWN_DATA_PROPERTY_TYPE)
     {
     }
     NumberFilterConfig(PropertyDataType type)
-        :amplification(1),
-        propType(type)
+        : amplifier(1)
+        , propType(type)
     {
     }
     std::string property;
-    int32_t amplification;
+    int32_t amplifier;
     /// property type
     PropertyDataType propType;
 
@@ -41,7 +41,7 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & property;
-        ar & amplification;
+        ar & amplifier;
         ar & propType;
     }
 };
@@ -50,8 +50,8 @@ class SuffixMatchConfig
 {
 public:
     SuffixMatchConfig()
-        :suffix_match_enable(false)
-        ,suffix_incremental_enable(false)
+        : suffix_match_enable(false)
+        , suffix_incremental_enable(false)
     {
     }
 
@@ -62,6 +62,7 @@ public:
     std::vector<std::string> group_filter_properties;
     std::vector<std::string> attr_filter_properties;
     std::vector<NumberFilterConfig> number_filter_properties;
+
 private:
     friend class boost::serialization::access;
     template <typename Archive>
@@ -80,5 +81,3 @@ private:
 }
 
 #endif
-
-

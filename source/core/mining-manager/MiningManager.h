@@ -388,13 +388,10 @@ public:
     }
 
 private:
-    class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT >
+    class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
     {
     public:
-        WordPriorityQueue_()
-        {
-        }
-        void Init(size_t s)
+        WordPriorityQueue_(size_t s)
         {
             initialize(s);
         }

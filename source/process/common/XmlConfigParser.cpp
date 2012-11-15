@@ -1960,8 +1960,8 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             std::string type;
             getAttribute(propNode, "filtertype", type);
 
-            int32_t amplification = 1;
-            getAttribute(propNode, "amplification", amplification, false);
+            int32_t amplifier = 1;
+            getAttribute(propNode, "amplifier", amplifier, false);
 
             if(type == "group")
             {
@@ -1988,7 +1988,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
                 NumberFilterConfig number_filterconfig(property_type);
                 number_filterconfig.property = property_name;
-                number_filterconfig.amplification = amplification;
+                number_filterconfig.amplifier = amplifier;
                 if (number_filterconfig.isNumericType())
                 {
                     if (propIt == indexSchema.end() ||
@@ -2006,7 +2006,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                     throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not int, float type.");
                 }
             }
-            else 
+            else
             {
                 throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> unknown filter type.");
             }
