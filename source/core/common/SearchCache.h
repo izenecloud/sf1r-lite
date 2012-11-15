@@ -8,7 +8,7 @@
  */
 #include <query-manager/QueryIdentity.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-
+#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <cache/IzeneCache.h>
 
 #include <vector>
@@ -93,7 +93,7 @@ private:
         std::vector<std::pair<std::string , bool> >::const_iterator cit;
         for (cit = sortProperties.begin(); cit != sortProperties.end(); cit++)
         {
-            if (cit->first == "_ctr")
+            if (cit->first == faceted::CTRManager::kCtrPropName)
             {
                 check = true;
                 break;
