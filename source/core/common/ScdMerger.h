@@ -373,7 +373,7 @@ public:
                                     empty_value.swap(value);
                                     value.type = DELETE_SCD;
                                     output_value = value;
-                                    LOG(INFO)<<"XXX"<<std::endl;
+                                    //LOG(INFO)<<"XXX"<<std::endl;
                                 }
                                 else
                                 {

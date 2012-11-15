@@ -16,7 +16,7 @@
 using namespace sf1r;
 
 
-B5mcScdGenerator::B5mcScdGenerator(OfferDb* odb, BrandDb* bdb)
+B5mcScdGenerator::B5mcScdGenerator(OfferDbRecorder* odb, BrandDb* bdb)
 :odb_(odb), bdb_(bdb)
 {
 }
@@ -52,14 +52,14 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
     static const std::string oid_property_name = "ProdDocid";
     std::string output_dir = B5MHelper::GetB5mcPath(mdb_instance);
     B5MHelper::PrepareEmptyDir(output_dir);
-    ScdWriter b5mc_i(output_dir, INSERT_SCD);
     ScdWriter b5mc_u(output_dir, UPDATE_SCD);
-    ScdWriter b5mc_d(output_dir, DELETE_SCD);
+    //ScdWriter b5mc_d(output_dir, DELETE_SCD);
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
-        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
         int type = ScdParser::checkSCDType(scd_file);
+        if(type==DELETE_SCD) continue;
+        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
@@ -70,7 +70,6 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             {
                 LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
-            std::string soldpid;
             Document doc;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
@@ -79,46 +78,41 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
-            if(type!=DELETE_SCD)
+            std::string soid;
+            if(!doc.getString(oid_property_name, soid)) continue;
+            std::string spid;
+            bool pid_changed = false;
+            if(!odb_->get(soid, spid, pid_changed)) continue;
+            if(spid.empty()) continue;
+            if(!pid_changed) continue;
+            izenelib::util::UString upid(spid, izenelib::util::UString::UTF_8);
+            doc.property("uuid") = upid;
+            if(upid.length()>0 && bdb_!=NULL)
             {
-                std::string soid;
-                if(doc.getString(oid_property_name, soid))
+                uint128_t pid = B5MHelper::UStringToUint128(upid);
+                izenelib::util::UString brand;
+                bdb_->get(pid, brand);
+                if(brand.length()>0)
                 {
-                    std::string spid;
-                    if(odb_->get(soid, spid))
-                    {
-
-                    }
-                    izenelib::util::UString upid(spid, izenelib::util::UString::UTF_8);
-                    doc.property("uuid") = upid;
-                    if(upid.length()>0 && bdb_!=NULL)
-                    {
-                        uint128_t pid = B5MHelper::UStringToUint128(upid);
-                        izenelib::util::UString brand;
-                        bdb_->get(pid, brand);
-                        if(brand.length()>0)
-                        {
-                            doc.property(B5MHelper::GetBrandPropertyName()) = brand;
-                        }
-                    }
+                    doc.property(B5MHelper::GetBrandPropertyName()) = brand;
                 }
             }
-            if(type==INSERT_SCD)
-            {
-                b5mc_i.Append(doc);
-            }
-            else if(type==UPDATE_SCD)
-            {
-                b5mc_u.Append(doc);
-            }
-            else if(type==DELETE_SCD)
-            {
-                b5mc_d.Append(doc);
-            }
+            b5mc_u.Append(doc);
+            //if(type==INSERT_SCD)
+            //{
+                //b5mc_i.Append(doc);
+            //}
+            //else if(type==UPDATE_SCD)
+            //{
+            //}
+            //else if(type==DELETE_SCD)
+            //{
+                //b5mc_d.Append(doc);
+            //}
         }
     }
-    b5mc_i.Close();
     b5mc_u.Close();
-    b5mc_d.Close();
+    //b5mc_d.Close();
+    return true;
 }
 

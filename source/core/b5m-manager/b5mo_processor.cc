@@ -136,33 +136,27 @@ void B5moProcessor::Process(Document& doc, int& type)
         }
         if(need_do_match)
         {
-            //ProductMatcher::Product product;
-            //if(category.empty())
-            //{
-                //if(matcher_->GetCategory(doc, category))
-                //{
-                    //doc.property("Category") = category;
-                //}
-                //else
-                //{
-                    //category.clear();
-                //}
-            //}
-            ////if(!category.empty()&&matcher_->GetMatched(doc, product))
-            //if(matcher_->GetMatched2(doc, product))
-            //{
-                //doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
-                //spid = product.spid;
-                //UString title;
-                //doc.getProperty("Title", title);
-                //std::string stitle;
-                //title.convertString(stitle, UString::UTF_8);
-                //match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
-            //}
-            //else
-            //{
-                //spid = sdocid; //get matched pid fail
-            //}
+            ProductMatcher::Product product;
+            ProductMatcher::Category result_category;
+            matcher_->Process(doc, result_category, product);
+            if(category.empty()&&!result_category.name.empty())
+            {
+                doc.property("Category") = UString(result_category.name, UString::UTF_8);
+            }
+            if(!product.spid.empty())
+            {
+                doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
+                spid = product.spid;
+                UString title;
+                doc.getProperty("Title", title);
+                std::string stitle;
+                title.convertString(stitle, UString::UTF_8);
+                match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
+            }
+            else
+            {
+                spid = sdocid; //get matched pid fail
+            }
         }
         if(old_spid!=spid)
         {
