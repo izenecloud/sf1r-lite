@@ -417,24 +417,30 @@ bool MiningManager::open()
             }
         }
 
-        const ProductRankingConfig& productRankingConfig =
+        const ProductRankingConfig& rankConfig =
             mining_schema_.product_ranking_config;
+        const ProductScoreConfig& merchantScoreConfig =
+            rankConfig.scores[MERCHANT_SCORE];
+
+        LOG(INFO) << rankConfig.toStr();
 
         /** merchant score */
-        if (!productRankingConfig.merchantPropName.empty() && groupManager_)
+        if (!merchantScoreConfig.propName.empty() && groupManager_)
         {
             if (merchantScoreManager_) delete merchantScoreManager_;
 
             const bfs::path scoreDir = bfs::path(prefix_path) / "merchant_score";
             bfs::create_directories(scoreDir);
 
-            const std::string& merchantProp = productRankingConfig.merchantPropName;
-            faceted::PropValueTable* merchantValueTable = groupManager_->getPropValueTable(merchantProp);
+            faceted::PropValueTable* merchantValueTable =
+                groupManager_->getPropValueTable(merchantScoreConfig.propName);
+            const ProductScoreConfig& categoryScoreConfig =
+                rankConfig.scores[CATEGORY_SCORE];
+            faceted::PropValueTable* categoryValueTable =
+                groupManager_->getPropValueTable(categoryScoreConfig.propName);
 
-            const std::string& categoryProp = productRankingConfig.categoryPropName;
-            faceted::PropValueTable* categoryValueTable = groupManager_->getPropValueTable(categoryProp);
-
-            merchantScoreManager_ = new MerchantScoreManager(merchantValueTable, categoryValueTable);
+            merchantScoreManager_ = new MerchantScoreManager(
+                merchantValueTable, categoryValueTable);
 
             const std::string scorePath = (scoreDir / "score.txt").string();
             if (! merchantScoreManager_->open(scorePath))
@@ -445,7 +451,7 @@ bool MiningManager::open()
         }
 
         /** product ranking */
-        if (productRankingConfig.isEnable)
+        if (rankConfig.isEnable)
         {
             // custom doc id converter & rank manager
             if (customRankManager_) delete customRankManager_;
@@ -466,7 +472,7 @@ bool MiningManager::open()
             if (productScorerFactory_) delete productScorerFactory_;
 
             productScorerFactory_ = new ProductScorerFactory(
-                productRankingConfig, *this);
+                rankConfig, *this);
 
             searchManager_->setCustomRankManager(customRankManager_);
             searchManager_->setProductScorerFactory(productScorerFactory_);
@@ -789,7 +795,7 @@ bool MiningManager::DoMiningCollection()
                     suffixMatchManager_->buildCollection(); 
                     incrementalManager_->reset();
                     incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-                    incrementalManager_->init_();
+                    //incrementalManager_->init_();
                 }
                 else
                 {
@@ -1788,8 +1794,14 @@ bool MiningManager::GetSuffixMatch(
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                 queryU, max_docs,
-                docIdList, rankScoreList,
+                docIdList, rankScoreList, actionOperation.actionItem_.searchingMode_.filtermode_,
                 filter_param, actionOperation.actionItem_.groupParam_);
+
+        for (uint32_t i = 0; i < rankScoreList.size(); ++i)
+        {
+            //cout<<rankScoreList[i]<<" ";
+        }
+        //cout<<endl;
 
         if(mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
@@ -1799,15 +1811,33 @@ bool MiningManager::GetSuffixMatch(
                                             _docIdList, _rankScoreList);
 
             std::vector<std::pair<double, uint32_t> > res_list;
-            res_list.resize(_docIdList.size());
-            for (size_t i = 0; i < res_list.size(); ++i)
+            uint32_t max_count;
+            if (max_docs < _docIdList.size())
             {
-                res_list[i].first = _rankScoreList[i];
-                res_list[i].second = _docIdList[i];
+                max_count = max_docs;
+            }
+            else
+                max_count = _docIdList.size();
+
+            res_list.resize(max_count);
+            izenelib::util::ClockTimer timer;
+            WordPriorityQueue_  topk_seedbigram;
+            topk_seedbigram.Init(max_count);
+
+            for (size_t i = 0; i < _docIdList.size(); ++i)
+            {
+                topk_seedbigram.insert(std::make_pair(_rankScoreList[i], _docIdList[i]));
+            }
+            for (uint32_t i = 0; i < max_count; ++i)
+            {
+                res_list[max_count - i - 1] = topk_seedbigram.pop();
             }
 
-            std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());//use head
-
+            for (uint32_t i = 0; i < max_count; ++i)
+            {
+                //cout<<res_list[i].first<<" ";
+            }
+            LOG(INFO)<<"[]TOPN and cost:"<<timer.elapsed()<<" seconds"<<endl;
             totalCount += _docIdList.size();
             std::vector<uint32_t> docIdListT;
             std::vector<double> rankScoreListT;

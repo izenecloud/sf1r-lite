@@ -62,6 +62,7 @@ public:
             size_t max_docs,
             std::vector<uint32_t>& docid_list,
             std::vector<float>& score_list,
+            const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             const faceted::GroupParam& group_param) const;
 private:
@@ -77,10 +78,12 @@ private:
 
     std::string data_root_path_;
     std::string fm_index_path_;
+    std::string orig_text_path_;
+
     std::string property_;
-    std::vector<std::string>  group_property_list_;
-    std::vector<std::string>  attr_property_list_;
-    std::set<std::string>  number_property_list_;
+    std::vector<std::string> group_property_list_;
+    std::vector<std::string> attr_property_list_;
+    std::set<std::string> number_property_list_;
     std::string tokenize_dicpath_;
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;

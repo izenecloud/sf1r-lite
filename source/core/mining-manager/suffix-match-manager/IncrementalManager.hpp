@@ -22,8 +22,8 @@ class Knowledge;
 
 namespace sf1r
 {
-#define MAX_INCREMENT_DOC 1100000 //forward index: for 64M docs,about:512M memory.
-#define MAX_TMP_DOC 1000000
+#define MAX_INCREMENT_DOC 500000
+#define MAX_TMP_DOC 5000000
 #define MAX_POS_LEN 24
 #define MAX_HIT_NUMBER 3
 #define MAX_SUB_LEN 15
@@ -45,7 +45,7 @@ struct BitMap
 
 	bool getBitMap(unsigned short i) const
 	{
-		if (i > MAX_POS_LEN)//front first;
+		if (i > MAX_POS_LEN)
 		{
 			return false;
 		}
@@ -446,14 +446,13 @@ private:
 
  	unsigned int IndexCount_;
 
- 	BitMap* BitMapMatrix_;///
+ 	BitMap* BitMapMatrix_;
 
- 	unsigned int Max_Doc_Num_;//this is from config file...
+ 	unsigned int Max_Doc_Num_;
 
- 	unsigned int start_docid_;//save and load... 
+ 	unsigned int start_docid_; 
 
  	unsigned int max_docid_;
- 	//unsigned int max support doc numbers;
 };
 
 class IncrementIndex
@@ -663,7 +662,7 @@ public:
 
 	bool save_(string path = "")
 	{
-        string index_path = Increment_index_path_ + path;
+		string index_path = Increment_index_path_ + path;
 		FILE *file;
 		if ((file = fopen(index_path.c_str(), "wb")) == NULL)
 		{
@@ -837,7 +836,6 @@ public:
 
 	~IndexBarral()
 	{
-		//save_();
 		if (pForwardIndex_ != NULL)
 		{
 			delete pForwardIndex_;
@@ -1179,7 +1177,7 @@ public:
 	bool index_(uint32_t& docId, std::string propertyString) 
 	{
 
-		if(IndexedDocNum_ >= MAX_INCREMENT_DOC)//here use mainbarral max num;; yes; no matter add to main or tmp;
+		if(IndexedDocNum_ >= MAX_INCREMENT_DOC)
 			return false;
 		if ( isInitIndex_ == false)
 		{
@@ -1200,7 +1198,7 @@ public:
 				if (pMainBerral_ != NULL)
 			    {
 			    	pMainBerral_->setStatus();
-			    	if(!pMainBerral_->buildIndex_(docId, propertyString))//need propertyManager and config Manager;
+			    	if(!pMainBerral_->buildIndex_(docId, propertyString))
 			    		return false;
 				}
 				IndexedDocNum_++;
@@ -1229,6 +1227,8 @@ public:
 	void doCreateIndex_();
 
 	void mergeIndex();
+
+    void buildTokenizeDic();
 
 	void setLastDocid(uint32_t last_docid);
 
@@ -1271,8 +1271,6 @@ public:
 		}
 	}
 	
-	void buildTokenizeDic();
-
 	void save_()
 	{
 		if (pMainBerral_)
@@ -1312,10 +1310,7 @@ public:
 		return true;
 	}
 
-private:
-	uint32_t tmpdata;
-	ofstream out;
-			
+private:	
 	uint32_t last_docid_;
 
 	std::string index_path_;

@@ -372,6 +372,24 @@ bool SearchParser::parse(const Value& search)
         {
             searchingModeInfo_.usefuzzy_ = asBool(searching_mode[Keys::use_fuzzy]);
         }
+        if (searching_mode.hasKey(Keys::filter_mode))
+        {
+            Value::StringType filter_mode = asString(searching_mode[Keys::filter_mode]);
+            boost::to_lower(filter_mode);
+            if(filter_mode == "or")
+            {
+                searchingModeInfo_.filtermode_ = SearchingMode::OR_Filter;
+            }
+            else if(filter_mode == "and")
+            {
+                searchingModeInfo_.filtermode_ = SearchingMode::AND_Filter;
+            }
+            else
+            {
+                warning() = "Unknown filter Mode. Default filtering mode is used.";
+            }
+        }
+ 
     }
 
     return true;

@@ -30,6 +30,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/thread/mutex.hpp>
+#include <util/PriorityQueue.h>
 #include <string>
 #include <map>
 
@@ -119,6 +120,7 @@ class CTRManager;
 class MiningManager
 {
 typedef DupDetectorWrapper DupDType;
+typedef std::pair<double, uint32_t> ResultT;
 typedef idmlib::util::ContainerSwitch<idmlib::tdt::Storage> TdtStorageType;
 typedef idmlib::sim::TermSimilarityTable<uint32_t> SimTableType;
 typedef idmlib::sim::SimOutputCollector<SimTableType> SimCollectorType;
@@ -386,6 +388,22 @@ public:
     }
 
 private:
+    class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT >
+    {
+    public:
+        WordPriorityQueue_()
+        {
+        }
+        void Init(size_t s)
+        {
+            initialize(s);
+        }
+    protected:
+        bool lessThan(const ResultT& o1, const ResultT& o2) const
+        {
+            return (o1.first < o2.first);
+        }
+    };
     DISALLOW_COPY_AND_ASSIGN(MiningManager);
 
     void printSimilarLabelResult_(uint32_t label_id);

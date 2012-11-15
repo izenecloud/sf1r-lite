@@ -70,17 +70,15 @@ namespace sf1r
         Sentence querySentence(query.c_str());
         izenelib::util::ClockTimer timer;
         analyzer_->runWithSentence(querySentence);
-        cout<<querySentence.getListSize()<<endl;
         std::vector<std::vector<uint32_t> > termIN;
         std::vector<std::vector<uint32_t> > termNotIN;
 
         AnalysisInfo analysisInfo;
  		analysisInfo.analyzerId_ = "la_unigram";
  	    
-
         for (int i = 0; i < querySentence.getCount(0); ++i)
         {
-            printf("%s, ", querySentence.getLexicon(0, i));
+            //printf("%s, ", querySentence.getLexicon(0, i));
             string str(querySentence.getLexicon(0, i));
             LAInput laInput;
  		    laInput.setDocId(0);
@@ -95,10 +93,10 @@ namespace sf1r
  			}
  			termIN.push_back(termidList);
         }
-        cout<<endl;
+
         for (int i = 0; i < querySentence.getCount(1); i++)
         {
-            printf("%s, ", querySentence.getLexicon(1, i));
+            //printf("%s, ", querySentence.getLexicon(1, i));
             string str(querySentence.getLexicon(1, i));
             izenelib::util::UString utext(str, izenelib::util::UString::UTF_8);
             LAInput laInput;
@@ -113,9 +111,8 @@ namespace sf1r
  			}
  			termNotIN.push_back(termidList);
         }
-        double rank = 0;
-        //ResultListSimilarity.clear();
 
+        double rank = 0;
         for (uint32_t i = 0; i < resultList.size(); ++i)
         {
         	rank = 0;
@@ -197,7 +194,6 @@ namespace sf1r
  			analysisInfo.analyzerId_ = "la_unigram";
  			LAInput laInput;
  			laInput.setDocId(0);
- 			//time......
  			if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
  				return false;
  			LAInput::const_iterator it = laInput.begin();
@@ -316,10 +312,8 @@ namespace sf1r
 		if (BerralNum_ == 0)
 		{
 			//isInitIndex_ = true;
-			LOG(INFO) << "Loading incremental index......"<<endl;
 			startIncrementalManager();
 			init_();
-			LOG(INFO) << "Loading Finished"<<endl;
 		}
 
 		/*if (isInitIndex_ == true)// this is before lock(mutex), used to prevent new request;

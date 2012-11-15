@@ -9,6 +9,7 @@
 #define SF1R_PRODUCT_SCORER_FACTORY_H
 
 #include <string>
+#include <boost/shared_ptr.hpp>
 
 namespace sf1r
 {
@@ -17,6 +18,8 @@ class CustomRankManager;
 class GroupLabelLogger;
 class ProductRankingConfig;
 class MiningManager;
+class ProductScoreConfig;
+class SearchManager;
 
 namespace faceted
 {
@@ -46,18 +49,41 @@ public:
         ProductScorer* relevanceScorer);
 
 private:
-    ProductScorer* createCustomScorer_(const std::string& query);
+    ProductScorer* createScorerImpl_(
+        const ProductScoreConfig& scoreConfig,
+        const std::string& query,
+        faceted::PropSharedLockSet& propSharedLockSet,
+        ProductScorer* relevanceScorer);
+
+    ProductScorer* createCustomScorer_(
+        const ProductScoreConfig& scoreConfig,
+        const std::string& query);
 
     ProductScorer* createCategoryScorer_(
+        const ProductScoreConfig& scoreConfig,
         const std::string& query,
         faceted::PropSharedLockSet& propSharedLockSet);
 
+    ProductScorer* createRelevanceScorer_(
+        const ProductScoreConfig& scoreConfig,
+        ProductScorer* relevanceScorer);
+
+    ProductScorer* createPopularityScorer_(
+        const ProductScoreConfig& scoreConfig);
+
+    ProductScorer* createNumericPropertyScorer_(
+        const ProductScoreConfig& scoreConfig);
+
 private:
+    const ProductRankingConfig& config_;
+
     CustomRankManager* customRankManager_;
 
     GroupLabelLogger* categoryClickLogger_;
 
     const faceted::PropValueTable* categoryValueTable_;
+
+    boost::shared_ptr<SearchManager> searchManager_;
 };
 
 } // namespace sf1r

@@ -21,14 +21,15 @@ SuffixMatchManager::SuffixMatchManager(
         faceted::GroupManager* groupmanager,
         faceted::AttrManager* attrmanager,
         NumericPropertyTableBuilder* numeric_tablebuilder)
-    : fm_index_path_(homePath + "/" + property + ".fm_idx")
+    : data_root_path_(homePath)
+    , fm_index_path_(homePath + "/" + property + ".fm_idx")
+    , orig_text_path_(homePath + "/" + property + ".orig_txt")
     , property_(property)
     , tokenize_dicpath_(dicpath)
     , document_manager_(document_manager)
     , analyzer_(NULL)
     , knowledge_(NULL)
 {
-    data_root_path_ = homePath;
     if (!boost::filesystem::exists(homePath))
     {
         boost::filesystem::create_directories(homePath);
@@ -123,16 +124,26 @@ void SuffixMatchManager::buildCollection()
     uint32_t max_attr_docid = 0;
     if (last_docid)
     {
-        LOG(INFO) << "start rebuilding in fm-index";//from file
-        std::vector<uint16_t> orig_text;
-        std::vector<uint32_t> del_docid_list;
-        document_manager_->getDeletedDocIdList(del_docid_list);
-        fmi_->reconstructText(del_docid_list, orig_text);
-        new_fmi->setOrigText(orig_text);
-        if (new_filter_manager)
+        LOG(INFO) << "start rebuilding in fm-index";
+        std::ifstream ifs(orig_text_path_.c_str());
+        if (ifs)
         {
-            max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, filter_map);
-            max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
+            new_fmi->loadOriginalText(ifs);
+            std::vector<uint16_t> orig_text;
+            new_fmi->swapOrigText(orig_text);
+            std::vector<uint32_t> del_docid_list;
+            document_manager_->getDeletedDocIdList(del_docid_list);
+            fmi_->reconstructText(del_docid_list, orig_text);
+            new_fmi->swapOrigText(orig_text);
+            if (new_filter_manager)
+            {
+                max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, filter_map);
+                max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
+            }
+        }
+        else
+        {
+            last_docid = 0;
         }
     }
 
@@ -178,6 +189,9 @@ void SuffixMatchManager::buildCollection()
         text = Algorithm<UString>::trim(text);
         new_fmi->addDoc(text.data(), text.length());
     }
+    std::ofstream ofs(orig_text_path_.c_str());
+    new_fmi->saveOriginalText(ofs);
+    ofs.close();
 
     LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
     LOG(INFO) << "building fm-index";
@@ -189,7 +203,7 @@ void SuffixMatchManager::buildCollection()
         filter_manager_.reset(new_filter_manager);
     }
 
-    std::ofstream ofs(fm_index_path_.c_str());
+    ofs.open(fm_index_path_.c_str());
     fmi_->save(ofs);
     filter_manager_->saveFilterId();
     filter_manager_->clearAllFilterInvertedData();
@@ -245,6 +259,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         size_t max_docs,
         std::vector<uint32_t>& docid_list,
         std::vector<float>& score_list,
+        const SearchingMode::SuffixMatchFilterMode& filter_mode,
         const std::vector<QueryFiltering::FilteringType>& filter_param,
         const GroupParam& group_param) const
 {
@@ -263,7 +278,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     LOG(INFO) << " original query string:" << pattern_str;
 
     Sentence pattern_sentence(pattern_str.c_str());
-    analyzer_->runWithSentence(pattern_sentence);//
+    analyzer_->runWithSentence(pattern_sentence);
     std::vector< UString > all_sub_strpatterns;
     LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
     for (int i = 0; i < pattern_sentence.getCount(0); i++)
@@ -338,8 +353,20 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     return 0;
             }
 
-            fmi_->getTopKDocIdListByFilter(filter_range_list, match_ranges_list, max_match_list,
-                                           max_docs, res_list, doclen_list);
+            if(filter_mode == SearchingMode::OR_Filter)
+            {
+                fmi_->getTopKDocIdListByFilter(filter_range_list, match_ranges_list, max_match_list,
+                                               max_docs, res_list, doclen_list);
+            }
+            else if(filter_mode == SearchingMode::AND_Filter)
+            {
+                // todo: implement it when fm-index is ready for AND filter.
+                assert(false);
+            }
+            else
+            {
+                LOG(ERROR) << "unknown filter mode.";
+            }
         }
     }
 
@@ -485,6 +512,10 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(
                         filterid_range.start = max(filterid_range.start, tmp_range.start);
                         filterid_range.end = min(filterid_range.end, tmp_range.end);
                     }
+                    else if (filtertype.operation_ == QueryFiltering::EQUAL)
+                    {
+                        filterid_range = filter_manager_->getNumFilterIdRangeExactly(filtertype.property_, filter_num);
+                    }
                     else
                     {
                         LOG(WARNING) << "not support filter operation for number property in fuzzy searching.";
@@ -538,7 +569,6 @@ void SuffixMatchManager::buildTokenizeDic()
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
     boost::filesystem::path cma_fmindex_dic(cma_path);
-    cout<<"tokenize_dicpath_"<<tokenize_dicpath_<<endl;
     cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
     knowledge_ = CMA_Factory::instance()->createKnowledge();
@@ -550,29 +580,15 @@ void SuffixMatchManager::buildTokenizeDic()
     analyzer_->setKnowledge(knowledge_);
     LOG(INFO) << "load dictionary knowledge finished." << endl;
 
-
-
-    //izenelib::util::UString testustr("佳能(Canon)test non 单子不存在exist字典(6666) EOS ", UString::UTF_8);
+    //izenelib::util::UString testustr("佳能(Canon)test non 单子不存在exist字典(6666) EOS 60D单反套机(EF-S 18-135mm f/3.5-5.6IS）单反镜头单子不存在", UString::UTF_8);
     //Algorithm<UString>::to_lower(testustr);
     //string teststr;
     //testustr.convertString(teststr, UString::UTF_8);
     //Sentence tests(teststr.c_str());
-    //cout<<"begin:"<<endl;
-    //izenelib::util::ClockTimer timer;
     //analyzer_->runWithSentence(tests);
-
-    //cout<<"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxtimer cost: "<<timer.elapsed()<<" seconds"<<endl;
-    //cout<<tests.getListSize()<<endl;
-
-    //for (int i = 0; i < tests.getCount(0); ++i)
-    //{//
-        //printf("%s, ", tests.getLexicon(0, i));
-      //  string str(tests.getLexicon(0, i));
-        //cout<<str<<" "<<endl;
-    //}
-    //for (int i = 0; i < tests.getCount(1); i++)
+    //for (int i = 0; i < tests.getCount(0); i++)
     //{
-      //  printf("%s, ", tests.getLexicon(1, i));
+    //    printf("%s, ", tests.getLexicon(0, i));
     //}
     //printf("\n");
     //printf("non dictionary bigram: \n");

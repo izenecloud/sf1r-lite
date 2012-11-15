@@ -21,6 +21,8 @@ namespace sf1r
 class ProductScoreSum : public ProductScorer
 {
 public:
+    ProductScoreSum() {}
+    ProductScoreSum(const ProductScoreConfig& config);
     ~ProductScoreSum();
 
     void addScorer(ProductScorer* scorer);
