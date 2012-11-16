@@ -1007,6 +1007,7 @@ class IncrementalManager
 {
 public:
     IncrementalManager(const std::string& path,
+                       const std::string& tokenize_path,
                        const std::string& property,
                        boost::shared_ptr<DocumentManager>& document_manager,
                        boost::shared_ptr<IDManager>& idManager,
@@ -1309,6 +1310,8 @@ private:
     uint32_t last_docid_;
 
     std::string index_path_;
+
+    std::string tokenize_path_;
 
     std::string property_;
 

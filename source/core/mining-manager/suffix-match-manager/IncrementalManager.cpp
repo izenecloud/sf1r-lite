@@ -132,6 +132,7 @@ bool IndexBarrel::score(const std::string& query, std::vector<uint32_t>& resultL
 }
 
 IncrementalManager::IncrementalManager(const std::string& path,
+                                       const std::string& tokenize_path,
                                        const std::string& property,
                                        boost::shared_ptr<DocumentManager>& document_manager,
                                        boost::shared_ptr<IDManager>& idManager,
@@ -155,6 +156,7 @@ IncrementalManager::IncrementalManager(const std::string& path,
     isStartFromLocal_ = false;
     isAddingIndex_ = false;
     index_path_ = path;
+    tokenize_path_ = tokenize_path;
     buildTokenizeDic();
 }
 
@@ -163,7 +165,7 @@ void IncrementalManager::buildTokenizeDic()
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
     boost::filesystem::path cma_fmindex_dic(cma_path);
-    cma_fmindex_dic /= boost::filesystem::path("fmindex_dic");
+    cma_fmindex_dic /= boost::filesystem::path(tokenize_path_);
 
     knowledge_ = CMA_Factory::instance()->createKnowledge();
     knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);

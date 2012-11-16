@@ -533,11 +533,17 @@ bool MiningManager::open()
             }
             suffixMatchManager_->setNumberFilterProperty(number_props, number_amp_list);
 
-            incrementalManager_ = new IncrementalManager(suffix_match_path_, mining_schema_.suffixmatch_schema.suffix_match_property,
-                    document_manager_, idManager_, laManager_, indexSchema_);
-            if (incrementalManager_)
+            if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
             {
-                incrementalManager_->InitManager_();
+                incrementalManager_ = new IncrementalManager(suffix_match_path_,
+                    mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath, 
+                    mining_schema_.suffixmatch_schema.suffix_match_property, 
+                    document_manager_, idManager_, laManager_, indexSchema_);
+                if (incrementalManager_)
+                {
+                    incrementalManager_->InitManager_();
+                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                }
             }
         }
 
