@@ -34,6 +34,8 @@ namespace sf1r {
         typedef std::vector<term_t> TermList;
         typedef std::vector<TermList> Suffixes;
         typedef boost::unordered_set<TermList> KeywordSet;
+        typedef uint32_t position_t;
+        typedef std::pair<position_t, position_t>  Position;
         //struct Double : boost::less_than_comparable<Double>
                         //,boost::equality_comparable<Double>
                         //,boost::addable<Double>
@@ -141,6 +143,7 @@ namespace sf1r {
             uint32_t spu_id;
             std::string attribute_name;
             bool is_optional;
+            //bool is_complete;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
@@ -156,8 +159,8 @@ namespace sf1r {
 
             bool operator==(const AttributeApp& another) const
             {
-                //return spu_id==another.spu_id&&attribute_name==another.attribute_name;
-                return spu_id==another.spu_id;
+                return spu_id==another.spu_id&&attribute_name==another.attribute_name;
+                //return spu_id==another.spu_id;
             }
         };
         struct SpuTitleApp
@@ -189,15 +192,14 @@ namespace sf1r {
         };
         struct KeywordTag
         {
-            KeywordTag():weight(0.0), aweight(0.0), ngram(1)
-            {
-            }
+            KeywordTag();
             std::vector<CategoryNameApp> category_name_apps;
             std::vector<AttributeApp> attribute_apps;
             std::vector<SpuTitleApp> spu_title_apps;
-            double weight; //not serialized, runtime property
+            double cweight; //not serialized, runtime property
             double aweight;
             uint8_t ngram;
+            std::vector<Position> positions;
 
             template<class T>
             void SortAndUnique(std::vector<T>& vec)
@@ -205,193 +207,9 @@ namespace sf1r {
                 std::sort(vec.begin(), vec.end());
                 vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
             }
-            void Flush()
-            {
-                SortAndUnique(category_name_apps);
-                SortAndUnique(attribute_apps);
-                SortAndUnique(spu_title_apps);
-            }
-            void Append(const KeywordTag& another, bool is_complete)
-            {
-                uint32_t osize = category_name_apps.size();
-                for(uint32_t i=0;i<another.category_name_apps.size();i++)
-                {
-                    CategoryNameApp aapp = another.category_name_apps[i];
-                    aapp.is_complete = is_complete;
-                    bool same_cid = false;
-                    for(uint32_t j=0;j<osize;j++)
-                    {
-                        CategoryNameApp& app = category_name_apps[j];
-                        if(app.cid==aapp.cid)
-                        {
-                            if(!app.is_complete&&aapp.is_complete)
-                            {
-                                app = aapp;
-                            }
-                            else if( app.is_complete==aapp.is_complete && aapp.depth<app.depth )
-                            {
-                                app = aapp;
-                            }
-                            same_cid = true;
-                            break;
-                        }
-                    }
-                    if(!same_cid)
-                    {
-                        category_name_apps.push_back(aapp);
-                    }
-                    //if(app.find(suffixes[s])==app.end())
-                    //{
-                        //trie[suffixes[s]].category_name_apps.push_back(cn_app);
-                    //}
-                    //else
-                    //{
-                        //std::pair<bool, uint32_t>& last = app[suffixes[s]];
-                        //if(! (last.first && !cn_app.is_complete))
-                        //{
-                            //last.first = cn_app.is_complete;
-                            //last.second = cn_app.depth;
-                            //trie[suffixes[s]].category_name_apps.back() = cn_app;
-                        //}
-                    //}
-                }
-                //category_name_apps.insert(category_name_apps.end(), another.category_name_apps.begin(), another.category_name_apps.end());
-                //for(uint32_t i=osize;i<category_name_apps.size();i++)
-                //{
-                    //if(!is_complete)
-                    //{
-                        //category_name_apps[i].is_complete = is_complete;
-                    //}
-                //}
-                if(is_complete)
-                {
-                    attribute_apps.insert(attribute_apps.end(), another.attribute_apps.begin(), another.attribute_apps.end());
-                }
-                spu_title_apps.insert(spu_title_apps.end(), another.spu_title_apps.begin(), another.spu_title_apps.end());
-            }
-            KeywordTag& operator^=(const KeywordTag& another)
-            {
-                category_name_apps.clear();
-
-                uint32_t i=0;
-                uint32_t j=0;
-                if(ngram>0) //anytime
-                {
-                    while(i<attribute_apps.size()&&j<another.attribute_apps.size())
-                    {
-                        AttributeApp& app = attribute_apps[i];
-                        const AttributeApp& aapp = another.attribute_apps[j];
-                        if(app==aapp)
-                        {
-                            if(app.attribute_name!=aapp.attribute_name)
-                            {
-                                app.attribute_name += "+"+aapp.attribute_name;
-                                app.is_optional = app.is_optional | aapp.is_optional;
-                            }
-                            else
-                            {
-                                app.spu_id = 0;
-                            }
-                            ++i;
-                            ++j;
-                        }
-                        else if(app<aapp)
-                        {
-                            app.spu_id = 0;
-                            ++i;
-                        }
-                        else
-                        {
-                            ++j;
-                        }
-                    }
-                    while(i<attribute_apps.size())
-                    {
-                        AttributeApp& app = attribute_apps[i];
-                        app.spu_id = 0;
-                        ++i;
-                    }
-                }
-                i = 0;
-                j = 0;
-                while(i<spu_title_apps.size()&&j<another.spu_title_apps.size())
-                {
-                    SpuTitleApp& app = spu_title_apps[i];
-                    const SpuTitleApp& aapp = another.spu_title_apps[j];
-                    if(app.spu_id==aapp.spu_id)
-                    {
-                        app.pstart = std::min(app.pstart, aapp.pstart);
-                        app.pend = std::max(app.pend, aapp.pend);
-                        ++i;
-                        ++j;
-                    }
-                    else if(app<aapp)
-                    {
-                        app.spu_id = 0;
-                        ++i;
-                    }
-                    else
-                    {
-                        ++j;
-                    }
-                }
-                while(i<spu_title_apps.size())
-                {
-                    SpuTitleApp& app = spu_title_apps[i];
-                    app.spu_id = 0;
-                    ++i;
-                }
-                //std::vector<AttributeApp> new_attribute_apps;
-                //for(uint32_t i=0;i<another.attribute_apps.size();i++)
-                //{
-                    //const AttributeApp& aapp = another.attribute_apps[i];
-                    //for(uint32_t j=0;j<attribute_apps.size();j++)
-                    //{
-                        //const AttributeApp& app = attribute_apps[j];
-                        //if(aapp.spu_id==app.spu_id && aapp.attribute_name!=app.attribute_name)
-                        //{
-                            //AttributeApp new_app;
-                            //new_app.spu_id = app.spu_id;
-                            //new_app.attribute_name = app.attribute_name+"+"+aapp.attribute_name;
-                            //new_app.is_optional = app.is_optional | aapp.is_optional;
-                            //new_attribute_apps.push_back(new_app);
-                            //break;
-                        //}
-                    //}
-                //}
-                //std::swap(new_attribute_apps, attribute_apps);
-
-                //std::vector<SpuTitleApp> new_spu_title_apps;
-                //for(uint32_t i=0;i<another.spu_title_apps.size();i++)
-                //{
-                    //const SpuTitleApp& aapp = another.spu_title_apps[i];
-                    //for(uint32_t j=0;j<spu_title_apps.size();j++)
-                    //{
-                        //const SpuTitleApp& app = spu_title_apps[j];
-                        //if(aapp.spu_id==app.spu_id && aapp.pstart!=app.pstart)
-                        //{
-                            //SpuTitleApp new_app;
-                            //new_app.spu_id = app.spu_id;
-                            //new_app.pstart = std::min(app.pstart, aapp.pstart);
-                            //new_app.pend = std::max(app.pend, aapp.pend);
-                            //new_spu_title_apps.push_back(new_app);
-                            //break;
-                        //}
-                    //}
-                //}
-                //std::swap(new_spu_title_apps, spu_title_apps);
-                if(ngram==1)
-                {
-                    weight = std::min(weight, another.weight)*3.0;
-                }
-                else
-                {
-                    weight = std::min(weight, another.weight)*5.0;
-                }
-                ++ngram;
-                aweight = std::min(aweight, another.aweight)*ngram;
-                return *this;
-            }
+            void Flush();
+            void Append(const KeywordTag& another, bool is_complete);
+            bool Combine(const KeywordTag& another);
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
@@ -402,6 +220,24 @@ namespace sf1r {
 
         typedef std::map<TermList, KeywordTag> KeywordMap;
         typedef std::vector<std::pair<TermList, KeywordTag> > KeywordVector;
+
+        struct ProductCandidate
+        {
+            ProductCandidate()
+            : attribute_score(0.0)
+            {
+            }
+            dmap<std::string, double> attribute_score;
+            double GetAWeight() const
+            {
+                double r = 0.0;
+                for(dmap<std::string, double>::const_iterator it = attribute_score.begin();it!=attribute_score.end();++it)
+                {
+                    r+=it->second;
+                }
+                return r;
+            }
+        };
 
         template<class T>
         struct vector_access_traits
@@ -480,7 +316,7 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle & scategory & price & attributes & aweight;
+                ar & spid & stitle & scategory & price & attributes & aweight & title_obj;
             }
         };
         typedef uint32_t PidType;
@@ -524,7 +360,8 @@ namespace sf1r {
         void ConstructKeywords_();
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
-        void Compute_(const Document& doc, KeywordVector& keyword_vector, uint32_t& cid, uint32_t& pid);
+        void GetKeywordVector_(const TermList& term_list, KeywordVector& keyword_vector);
+        void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t& cid, uint32_t& pid);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
 
         template<class K, class V>
@@ -535,6 +372,12 @@ namespace sf1r {
                 vec.push_back(std::make_pair(it->second, it->first));
             }
             std::sort(vec.begin(), vec.end(), std::greater<std::pair<V, K> >());
+        }
+
+        template<class T>
+        void SortVectorDesc_(std::vector<T>& vec)
+        {
+            std::sort(vec.begin(), vec.end(), std::greater<T>());
         }
 
         template<class T>
