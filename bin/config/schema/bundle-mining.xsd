@@ -240,6 +240,7 @@
             <xs:sequence>
                 <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="TokenizeDictionary" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="Incremental" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="FilterProperty" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
@@ -250,6 +251,13 @@
             <xs:attribute name="path" type="xs:string" use="required" />
         </xs:complexType>
     </xs:element>
+
+    <xs:element name="Incremental">
+        <xs:complexType>
+            <xs:attribute name="enable" type="YesNoType" use="required" />
+        </xs:complexType>
+    </xs:element>
+
     <xs:element name="FilterProperty">
         <xs:complexType>
             <xs:attribute name="name" type="xs:string" use="required" />
@@ -257,6 +265,7 @@
             <xs:attribute name="amplification" type="xs:integer" use="optional" />
         </xs:complexType>
     </xs:element>
+
 
 
     <xs:element name="OpinionWorkingPath">
@@ -307,8 +316,7 @@
     <xs:element name="ProductRanking">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="MerchantProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
-                <xs:element name="CategoryProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="Score" type="ScoreType" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -325,6 +333,15 @@
 
     <xs:complexType name="ExcludeType">
         <xs:attribute name="name" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="ScoreType">
+        <xs:sequence>
+            <xs:element name="Score" type="ScoreType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="type" type="xs:string" use="optional"/>
+        <xs:attribute name="property" type="xs:string" use="optional"/>
+        <xs:attribute name="weight" type="xs:float" use="optional"/>
     </xs:complexType>
 
 </xs:schema>

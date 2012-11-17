@@ -10,6 +10,8 @@
 #include <process/common/CollectionManager.h>
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/index/IndexSearchService.h>
+#include <bundles/mining/MiningSearchService.h>
+#include <core/mining-manager/MiningManager.h>
 #include <bundles/recommend/RecommendTaskService.h>
 #include <aggregator-manager/SearchAggregator.h>
 #include <mining-manager/MiningQueryLogHandler.h>

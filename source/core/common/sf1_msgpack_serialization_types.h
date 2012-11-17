@@ -63,6 +63,33 @@ inline void operator<< (object::with_zone& o, sf1r::SearchingMode::SearchingMode
 {
     static_cast<object&>(o) << static_cast<int>(v);
 }
+
+/// SuffixMatchFilterMode
+inline sf1r::SearchingMode::SuffixMatchFilterMode& operator>>(object o, sf1r::SearchingMode::SuffixMatchFilterMode& v)
+{
+    signed int iv = type::detail::convert_integer<signed int>(o);
+    v = static_cast<sf1r::SearchingMode::SuffixMatchFilterMode>(iv);
+    return v;
+}
+
+template <typename Stream>
+inline packer<Stream>& operator<< (packer<Stream>& o, const sf1r::SearchingMode::SuffixMatchFilterMode& v)
+{
+    o.pack_int(static_cast<int>(v));
+    return o;
+}
+
+inline void operator<< (object& o, sf1r::SearchingMode::SuffixMatchFilterMode v)
+{
+    o.type = type::POSITIVE_INTEGER,
+    o.via.u64 = static_cast<int>(v);
+}
+
+inline void operator<< (object::with_zone& o, sf1r::SearchingMode::SuffixMatchFilterMode v)
+{
+    static_cast<object&>(o) << static_cast<int>(v);
+}
+
 ///// QueryFiltering::FilteringOperation
 //inline sf1r::QueryFiltering::FilteringOperation& operator>>(object o, sf1r::QueryFiltering::FilteringOperation& v)
 //{

@@ -495,6 +495,94 @@ bool DocumentsSearchHandler::parse()
         return false;
     }
 
+    if(!checkSuffixMatchParam(message))
+    {
+        response_.addError(message);
+        return false;
+    }
+
+    return true;
+}
+
+bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
+{
+    if(actionItem_.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH ||
+        !actionItem_.searchingMode_.usefuzzy_)
+        return true;
+    const std::vector<QueryFiltering::FilteringType>& filter_param = actionItem_.filteringList_;
+    const SuffixMatchConfig& suffixconfig = miningSchema_.suffixmatch_schema;
+    for(size_t i = 0; i < filter_param.size(); ++i)
+    {
+        const QueryFiltering::FilteringType& filtertype = filter_param[i];
+        if(std::find(suffixconfig.group_filter_properties.begin(),
+                suffixconfig.group_filter_properties.end(),
+                filtertype.property_) == suffixconfig.group_filter_properties.end() &&
+            std::find(suffixconfig.attr_filter_properties.begin(),
+                suffixconfig.attr_filter_properties.end(),
+                filtertype.property_) == suffixconfig.attr_filter_properties.end())
+        {
+            bool finded = false;
+            for(size_t j = 0; j < suffixconfig.number_filter_properties.size(); ++j)
+            {
+                if(filtertype.property_ == suffixconfig.number_filter_properties[j].property)
+                {
+                    finded = true;
+                    break;
+                }
+            }
+            if(!finded)
+            {
+                message = "The filter property : " + filtertype.property_ + " was not configured as FilterProperty in SuffixMatchConfig.";
+                return false;
+            }
+        }
+        PropertyConfig config;
+        bool hasit = getPropertyConfig(indexSchema_, filtertype.property_, config);
+        if(!hasit)
+        {
+            message = "The filter property:" + filtertype.property_ + " not found.";
+            return false;
+        }
+ 
+        if(config.isNumericType())
+        {
+            if(filtertype.operation_ != QueryFiltering::GREATER_THAN_EQUAL &&
+                filtertype.operation_ != QueryFiltering::LESS_THAN_EQUAL &&
+                filtertype.operation_ != QueryFiltering::EQUAL &&
+                filtertype.operation_ != QueryFiltering::RANGE)
+            {
+                message = "The number filter type only support \"=\", \">=\", \"<=\", \"between\" operations.";
+                return false;
+            }
+        }
+        else
+        {
+            if(filtertype.operation_ != QueryFiltering::EQUAL &&
+                filtertype.operation_ != QueryFiltering::INCLUDE)
+            {
+                message = "The string filter type only support \"=\", \"in\" operations while using fuzzy searching.";
+                return false;
+            }
+        }
+    }
+    const faceted::GroupParam& gp = actionItem_.groupParam_;
+    faceted::GroupParam::GroupLabelMap::const_iterator cit = gp.groupLabels_.begin();
+    while(cit != gp.groupLabels_.end())
+    {
+        if(std::find(suffixconfig.group_filter_properties.begin(),
+                suffixconfig.group_filter_properties.end(),
+                cit->first) == suffixconfig.group_filter_properties.end())
+        {
+            message = "The filter property : " + cit->first + " was not configured as group FilterProperty in SuffixMatchConfig.";
+            return false;
+        }
+        ++cit;
+    }
+    if(!gp.isAttrEmpty() && suffixconfig.attr_filter_properties.empty())
+    {
+        message = "The attribute filter was not configured in the SuffixMatchConfig.";
+        return false;
+    }
     return true;
 }
 

@@ -149,15 +149,17 @@ public:
 
     bool usefuzzy_;
 
+    SearchingMode::SuffixMatchFilterMode filtermode_;
+
     /// @brief a constructor
     SearchingModeInfo(void);
 
     /// @brief clear member variables
     void clear(void);
 
-    DATA_IO_LOAD_SAVE(SearchingModeInfo, & mode_ & threshold_ & lucky_ & useOriginalQuery_ & usefuzzy_ )
+    DATA_IO_LOAD_SAVE(SearchingModeInfo, & mode_ & threshold_ & lucky_ & useOriginalQuery_ & usefuzzy_ & filtermode_)
 
-    MSGPACK_DEFINE(mode_, threshold_, lucky_, useOriginalQuery_, usefuzzy_);
+    MSGPACK_DEFINE(mode_, threshold_, lucky_, useOriginalQuery_, usefuzzy_, filtermode_);
 
 private:
     // Log : 2009.09.08
@@ -171,6 +173,7 @@ private:
         ar & lucky_;
         ar & useOriginalQuery_;
         ar & usefuzzy_;
+        ar & filtermode_;
     }
 };
 
@@ -181,7 +184,8 @@ inline bool operator==(const SearchingModeInfo& a,
         && a.threshold_ == b.threshold_
         && a.lucky_ == b.lucky_
         && a.useOriginalQuery_ == b.useOriginalQuery_
-        && a.usefuzzy_ == b.usefuzzy_ ;
+        && a.usefuzzy_ == b.usefuzzy_ 
+        && a.filtermode_ == b.filtermode_ ;
 }
 
 } // end - namespace sf1r

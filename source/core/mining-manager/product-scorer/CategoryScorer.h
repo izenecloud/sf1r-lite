@@ -25,6 +25,7 @@ class CategoryScorer : public ProductScorer
 {
 public:
     CategoryScorer(
+        const ProductScoreConfig& config,
         const faceted::PropValueTable& categoryValueTable,
         const std::vector<category_id_t>& topLabels);
 

@@ -42,29 +42,26 @@ public:
             NumericPropertyTableBuilder* numeric_tablebuilder);
 
     ~SuffixMatchManager();
-    void setGroupFilterProperty(std::vector<std::string>& propertys);
-    void setAttrFilterProperty(std::vector<std::string>& propertys);
-    void setNumberFilterProperty(std::vector<std::string>& propertys,
-        std::vector<int32_t>& amplification);
+    void setGroupFilterProperty(std::vector<std::string>& property_list);
+    void setAttrFilterProperty(std::vector<std::string>& property_list);
+    void setNumberFilterProperty(std::vector<std::string>& property_list, std::vector<int32_t>& amp_list);
 
     void buildCollection();
     void buildTokenizeDic();
+    bool isStartFromLocalFM() const;
 
     size_t longestSuffixMatch(
             const izenelib::util::UString& pattern,
             size_t max_docs,
-            std::vector<uint32_t>& docid_list,
-            std::vector<float>& score_list) const;
+            std::vector<std::pair<double, uint32_t> >& res_list) const;
 
     size_t AllPossibleSuffixMatch(
             const izenelib::util::UString& pattern,
             size_t max_docs,
-            std::vector<uint32_t>& docid_list,
-            std::vector<float>& score_list,
+            const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
-            const faceted::GroupParam& group_param) const;
-
-
+            const faceted::GroupParam& group_param,
+            std::vector<std::pair<double, uint32_t> >& res_list) const;
 private:
     bool getAllFilterRangeFromGroupLable(
             const faceted::GroupParam& group_param,
@@ -78,10 +75,12 @@ private:
 
     std::string data_root_path_;
     std::string fm_index_path_;
+    std::string orig_text_path_;
+
     std::string property_;
-    std::vector<std::string>  group_property_list_;
-    std::vector<std::string>  attr_property_list_;
-    std::set<std::string>  number_property_list_;
+    std::vector<std::string> group_property_list_;
+    std::vector<std::string> attr_property_list_;
+    std::set<std::string> number_property_list_;
     std::string tokenize_dicpath_;
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;
@@ -90,13 +89,13 @@ private:
     cma::Knowledge* knowledge_;
 
     boost::shared_ptr<FMIndexType> fmi_;
+    boost::shared_ptr<FilterManager> filter_manager_;
 
     typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ReadLock;
     typedef boost::unique_lock<MutexType> WriteLock;
 
     mutable MutexType mutex_;
-    boost::shared_ptr<FilterManager> filter_manager_;
 };
 
 }

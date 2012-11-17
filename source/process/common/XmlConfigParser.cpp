@@ -1933,6 +1933,18 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             throw XmlConfigParserException("["+property_name+"] used in SuffixMatch is missing.");
         }
 
+        ticpp::Element* subNodeInc = getUniqChildElement(task_node, "Incremental", true);
+        if (subNodeInc)
+        {
+            bool bIncremental = false;
+            getAttribute(subNodeInc, "enable", bIncremental, false);
+            mining_schema.suffixmatch_schema.suffix_incremental_enable = bIncremental;
+        }
+        else
+        {
+            throw XmlConfigParserException("Incremental used in SuffixMatch is missing.");
+        }
+        
         Iterator<Element> filterit("FilterProperty");
         const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
         for (filterit = filterit.begin(task_node); filterit != filterit.end(); ++filterit)
@@ -1948,8 +1960,8 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             std::string type;
             getAttribute(propNode, "filtertype", type);
 
-            int32_t amplification = 1;
-            getAttribute(propNode, "amplification", amplification, false);
+            int32_t amplifier = 1;
+            getAttribute(propNode, "amplifier", amplifier, false);
 
             if(type == "group")
             {
@@ -1976,7 +1988,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
                 NumberFilterConfig number_filterconfig(property_type);
                 number_filterconfig.property = property_name;
-                number_filterconfig.amplification = amplification;
+                number_filterconfig.amplifier = amplifier;
                 if (number_filterconfig.isNumericType())
                 {
                     if (propIt == indexSchema.end() ||
@@ -1994,7 +2006,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                     throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not int, float type.");
                 }
             }
-            else 
+            else
             {
                 throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> unknown filter type.");
             }
@@ -2002,52 +2014,66 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     }
 }
 
-void CollectionConfig::parseProductRankingNode(const ticpp::Element* productRankingNode, CollectionMeta& collectionMeta)
+void CollectionConfig::parseProductRankingNode(
+    const ticpp::Element* rankNode,
+    CollectionMeta& collectionMeta) const
 {
-    if (!productRankingNode)
+    if (!rankNode)
         return;
 
-    MiningSchema& miningSchema = collectionMeta.miningBundleConfig_->mining_schema_;
-    ProductRankingConfig& productRankingConfig = miningSchema.product_ranking_config;
-    productRankingConfig.isEnable = true;
+    MiningSchema& miningSchema =
+        collectionMeta.miningBundleConfig_->mining_schema_;
 
-    const GroupConfigMap& groupConfigMap = miningSchema.group_config_map;
-    std::string propName;
-    ticpp::Element* subNode = getUniqChildElement(productRankingNode, "MerchantProperty", false);
-    if (subNode)
+    ProductRankingConfig& rankConfig = miningSchema.product_ranking_config;
+    rankConfig.isEnable = true;
+
+    Iterator<Element> it("Score");
+    for (it = it.begin(rankNode); it != it.end(); ++it)
     {
-        getAttribute(subNode, "name", propName);
-        checkStringGroupProperty(propName, groupConfigMap);
-        productRankingConfig.merchantPropName = propName;
+        parseScoreNode(it.Get(), rankConfig);
     }
 
-    subNode = getUniqChildElement(productRankingNode, "CategoryProperty", false);
-    if (subNode)
+    std::string error;
+    if (!rankConfig.checkConfig(collectionMeta, error))
     {
-        getAttribute(subNode, "name", propName);
-        checkStringGroupProperty(propName, groupConfigMap);
-        productRankingConfig.categoryPropName = propName;
+        throw XmlConfigParserException(error);
     }
 }
 
-void CollectionConfig::checkStringGroupProperty(const std::string& propName, const GroupConfigMap& groupConfigMap)
+void CollectionConfig::parseScoreNode(
+    const ticpp::Element* scoreNode,
+    ProductRankingConfig& rankConfig) const
 {
-    GroupConfigMap::const_iterator it = groupConfigMap.find(propName);
+    std::string typeName;
+    getAttribute(scoreNode, "type", typeName);
 
-    if (it == groupConfigMap.end())
+    ProductScoreType scoreType = rankConfig.getScoreType(typeName);
+    if (scoreType == PRODUCT_SCORE_NUM)
     {
-        throw XmlConfigParserException(
-            "Property [" + propName +
-            "] in <ProductRanking> is not configured in <Group>.");
+        std::string error("unknown <Score> type \"" + typeName + "\"");
+        throw XmlConfigParserException(error);
     }
 
-    const GroupConfig& groupConfig = it->second;
-    if (! groupConfig.isStringType())
+    ProductScoreConfig& scoreConfig = rankConfig.scores[scoreType];
+    parseScoreAttr(scoreNode, scoreConfig);
+
+    Iterator<Element> it("Score");
+    for (it = it.begin(scoreNode); it != it.end(); ++it)
     {
-        throw XmlConfigParserException(
-            "Property [" + propName +
-            "] in <ProductRanking> is not string type.");
+        ProductScoreConfig factorConfig;
+        factorConfig.type = scoreType;
+
+        parseScoreAttr(it.Get(), factorConfig);
+        scoreConfig.factors.push_back(factorConfig);
     }
+}
+
+void CollectionConfig::parseScoreAttr(
+    const ticpp::Element* scoreNode,
+    ProductScoreConfig& scoreConfig) const
+{
+    getAttribute(scoreNode, "property", scoreConfig.propName, false);
+    getAttribute_FloatType(scoreNode, "weight", scoreConfig.weight, false);
 }
 
 void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)

@@ -2,18 +2,10 @@
 
 using namespace sf1r;
 
-namespace
-{
-/**
- * in order to give the highest priority to custom score, as we assume
- * the sum of other scores (multiplied by their weight) are less than 10,
- * we choose 10 as its weight accordingly.
- */
-const score_t kCustomScoreWeight = 10;
-}
-
-CustomScorer::CustomScorer(const std::vector<docid_t>& topIds)
-    : ProductScorer(kCustomScoreWeight)
+CustomScorer::CustomScorer(
+    const ProductScoreConfig& config,
+    const std::vector<docid_t>& topIds)
+    : ProductScorer(config)
 {
     score_t score = 1;
 

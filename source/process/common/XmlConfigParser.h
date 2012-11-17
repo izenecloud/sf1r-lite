@@ -774,18 +774,33 @@ private:
     /// @param mining           Pointer to the Element
     void parseMiningBundleSchema(const ticpp::Element * mining, CollectionMeta & collectionMeta);
 
-    /// @brief                  Parse <MiningBundle> <Schema> <ProductRanking>
-    /// @param productRankingNode Pointer to the Element
-    void parseProductRankingNode(const ticpp::Element* productRankingNode, CollectionMeta& collectionMeta);
+    /// @brief Parse <MiningBundle> <Schema> <ProductRanking>
+    /// @param rankNode Pointer to the Element <ProductRanking>
+    /// @param collectionMeta the config instance to update
+    void parseProductRankingNode(
+        const ticpp::Element* rankNode,
+        CollectionMeta& collectionMeta) const;
 
-    void checkStringGroupProperty(const std::string& propName, const GroupConfigMap& groupConfigMap);
+    /// @brief Parse <Score>
+    /// @param scoreNode Pointer to the Element <Score>
+    /// @param rankConfig the config instance to update
+    void parseScoreNode(
+        const ticpp::Element* scoreNode,
+        ProductRankingConfig& rankConfig) const;
+
+    /// @brief Parse the attributes in <Score>
+    /// @param scoreNode Pointer to the Element <Score>
+    /// @param scoreConfig the config instance to updatE
+    void parseScoreAttr(
+        const ticpp::Element* scoreNode,
+        ProductScoreConfig& scoreConfig) const;
 
     /// @brief                  Parse <RecommendBundle> <Parameter>
-    /// @param recParamNode           Pointer to the Element
+    /// @param recParamNode     Pointer to the Element
     void parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <RecommendBundle> <Schema>
-    /// @param recSchemaNode           Pointer to the Element
+    /// @param recSchemaNode    Pointer to the Element
     void parseRecommendBundleSchema(const ticpp::Element * recSchemaNode, CollectionMeta & collectionMeta);
 
     /// @brief                  Parse <SF1Config><Deployment><DistributedTopology> for recommend bundle

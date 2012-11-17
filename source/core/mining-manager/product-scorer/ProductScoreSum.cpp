@@ -2,6 +2,11 @@
 
 using namespace sf1r;
 
+ProductScoreSum::ProductScoreSum(const ProductScoreConfig& config)
+    : ProductScorer(config)
+{
+}
+
 ProductScoreSum::~ProductScoreSum()
 {
     for (Scorers::iterator it = scorers_.begin();

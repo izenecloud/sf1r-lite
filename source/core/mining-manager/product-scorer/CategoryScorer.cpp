@@ -2,20 +2,11 @@
 
 using namespace sf1r;
 
-namespace
-{
-/**
- * in order to make the category score less than 10 (the minimum custom
- * score), assuming at most 9 top labels are selected, we choose 1 as its
- * weight accordingly.
- */
-const score_t kCategoryScoreWeight = 1;
-}
-
 CategoryScorer::CategoryScorer(
+    const ProductScoreConfig& config,
     const faceted::PropValueTable& categoryValueTable,
     const std::vector<category_id_t>& topLabels)
-    : ProductScorer(kCategoryScoreWeight)
+    : ProductScorer(config)
     , categoryValueTable_(categoryValueTable)
     , parentIdTable_(categoryValueTable.parentIdTable())
 {

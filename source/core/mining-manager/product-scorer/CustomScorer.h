@@ -25,7 +25,9 @@ namespace sf1r
 class CustomScorer : public ProductScorer
 {
 public:
-    CustomScorer(const std::vector<docid_t>& topIds);
+    CustomScorer(
+        const ProductScoreConfig& config,
+        const std::vector<docid_t>& topIds);
 
     virtual score_t score(docid_t docId);
 
