@@ -149,6 +149,7 @@ bool ProductMatcher::KeywordTag::Combine(const KeywordTag& another)
             ++j;
         }
     }
+    std::swap(new_attribute_apps, attribute_apps);
     //if(ngram>0) //anytime
     //{
         //while(i<attribute_apps.size()&&j<another.attribute_apps.size())
@@ -616,11 +617,11 @@ bool ProductMatcher::DoMatch(const std::string& scd_path)
         for( ScdParser::iterator doc_iter = parser.begin();
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
-            if(n%100==0)
+            if(n%1000==0)
             {
                 LOG(INFO)<<"Find Offer Documents "<<n<<std::endl;
             }
-            //if(n==2000) break;
+            if(n==150000) break;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
             Document doc;
@@ -1125,6 +1126,7 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
                 double price_sim = PriceSim_(price, product.price);
                 double category_sim = std::sqrt(cit->second);
                 double common_sim = str_sim*price_sim*category_sim;
+                //double common_sim = str_sim*price_sim;
                 pid_vec_candidates.push_back(std::make_pair(std::make_pair(aweight, common_sim), spu_id));
             }
             //it->second *= cit->second*str_sim;

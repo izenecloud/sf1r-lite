@@ -139,12 +139,13 @@ void B5moProcessor::Process(Document& doc, int& type)
             ProductMatcher::Product product;
             ProductMatcher::Category result_category;
             matcher_->Process(doc, result_category, product);
-            if(category.empty()&&!result_category.name.empty())
-            {
-                doc.property("Category") = UString(result_category.name, UString::UTF_8);
-            }
+            //if(category.empty()&&!result_category.name.empty())
+            //{
+                //doc.property("Category") = UString(result_category.name, UString::UTF_8);
+            //}
             if(!product.spid.empty())
             {
+                doc.property("Category") = UString(product.scategory, UString::UTF_8);
                 doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
                 spid = product.spid;
                 UString title;
