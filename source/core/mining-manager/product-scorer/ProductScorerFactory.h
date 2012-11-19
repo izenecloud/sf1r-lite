@@ -19,8 +19,7 @@ class GroupLabelLogger;
 class ProductRankingConfig;
 class MiningManager;
 class ProductScoreConfig;
-class SearchManager;
-class NumericPropertyTableBase;
+class ProductScoreManager;
 
 namespace faceted
 {
@@ -73,12 +72,6 @@ private:
     ProductScorer* createPopularityScorer_(
         const ProductScoreConfig& scoreConfig);
 
-    ProductScorer* createNumericPropertyScorer_(
-        const ProductScoreConfig& scoreConfig);
-
-    boost::shared_ptr<NumericPropertyTableBase> createNumericPropertyTable_(
-        const std::string& propName);
-
 private:
     const ProductRankingConfig& config_;
 
@@ -88,9 +81,7 @@ private:
 
     const faceted::PropValueTable* categoryValueTable_;
 
-    boost::shared_ptr<SearchManager> searchManager_;
-
-    boost::shared_ptr<faceted::CTRManager> ctrManager_;
+    ProductScoreManager* productScoreManager_;
 };
 
 } // namespace sf1r

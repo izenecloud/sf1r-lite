@@ -35,6 +35,8 @@
 #include "custom-rank-manager/CustomDocIdConverter.h"
 #include "custom-rank-manager/CustomRankManager.h"
 #include "product-scorer/ProductScorerFactory.h"
+#include "product-score-manager/ProductScoreManager.h"
+#include "product-score-manager/OfflineProductScorerFactoryImpl.h"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/IncrementalManager.hpp"
@@ -125,6 +127,8 @@ MiningManager::MiningManager(
     , merchantScoreManager_(NULL)
     , customDocIdConverter_(NULL)
     , customRankManager_(NULL)
+    , offlineScorerFactory_(NULL)
+    , productScoreManager_(NULL)
     , productScorerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
@@ -140,6 +144,8 @@ MiningManager::~MiningManager()
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
     if (productScorerFactory_) delete productScorerFactory_;
+    if (productScoreManager_) delete productScoreManager_;
+    if (offlineScorerFactory_) delete offlineScorerFactory_;
     if (customRankManager_) delete customRankManager_;
     if (customDocIdConverter_) delete customDocIdConverter_;
     if (merchantScoreManager_) delete merchantScoreManager_;
@@ -453,7 +459,9 @@ bool MiningManager::open()
         {
             LOG(INFO) << rankConfig.toStr();
 
-            // custom doc id converter & rank manager
+            if (productScorerFactory_) delete productScorerFactory_;
+            if (productScoreManager_) delete productScoreManager_;
+            if (offlineScorerFactory_) delete offlineScorerFactory_;
             if (customRankManager_) delete customRankManager_;
             if (customDocIdConverter_) delete customDocIdConverter_;
 
@@ -468,8 +476,20 @@ bool MiningManager::open()
                 *customDocIdConverter_,
                 document_manager_.get());
 
-            // product scorer factory
-            if (productScorerFactory_) delete productScorerFactory_;
+            offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(*this);
+
+            const std::string scoreDir = prefix_path + "/product_score";
+            productScoreManager_ = new ProductScoreManager(
+                rankConfig,
+                *offlineScorerFactory_,
+                *document_manager_,
+                scoreDir);
+
+            if (! productScoreManager_->open())
+            {
+                std::cerr << "open product score failed" << std::endl;
+                return false;
+            }
 
             productScorerFactory_ = new ProductScorerFactory(
                 rankConfig, *this);
@@ -709,6 +729,12 @@ bool MiningManager::DoMiningCollection()
     if (mining_schema_.attr_enable)
     {
         attrManager_->processCollection();
+    }
+
+    // calculate product score
+    if (mining_schema_.product_ranking_config.isEnable)
+    {
+        productScoreManager_->buildCollection();
     }
 
     //do tdt

@@ -69,8 +69,8 @@ FILE(GLOB mining_SRC
   "mining-manager/summarization-submanager/*.cpp"
   "mining-manager/summarization-submanager/svd/*.c"
   "mining-manager/merchant-score-manager/*.cpp"
-  "mining-manager/product-ranker/*.cpp"
   "mining-manager/product-scorer/*.cpp"
+  "mining-manager/product-score-manager/*.cpp"
   "mining-manager/custom-rank-manager/*.cpp"
   "mining-manager/suffix-match-manager/*.cpp"
 )

@@ -94,6 +94,8 @@ class MerchantScoreManager;
 class CustomRankManager;
 class CustomDocIdConverter;
 class ProductScorerFactory;
+class ProductScoreManager;
+class OfflineProductScorerFactory;
 class SuffixMatchManager;
 class IncrementalManager;
 
@@ -389,6 +391,11 @@ public:
         return searchManager_;
     }
 
+    ProductScoreManager* GetProductScoreManager()
+    {
+        return productScoreManager_;
+    }
+
 private:
     DISALLOW_COPY_AND_ASSIGN(MiningManager);
 
@@ -547,7 +554,12 @@ private:
     /** Custom Rank Manager */
     CustomRankManager* customRankManager_;
 
-    /** Product Score */
+    OfflineProductScorerFactory* offlineScorerFactory_;
+
+    /** Product Score Table Manager */
+    ProductScoreManager* productScoreManager_;
+
+    /** Product Score Factory */
     ProductScorerFactory* productScorerFactory_;
 
     /** TDT */
