@@ -140,7 +140,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     for(unsigned int i = 0; i < del_docid_list.size();++i)
     {
         Document doc;
-        document_manager_->getDocument(i, doc);
+        bool b = document_manager_->getDocument(i, doc);
+        if(!b) continue;
         Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
         if (kit == doc.propertyEnd()) continue;
 
@@ -157,7 +158,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
     {
         Document doc;
-        document_manager_->getDocument(i, doc);
+        bool b = document_manager_->getDocument(i, doc);
+        if(!b) continue;
         Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
         if (kit == doc.propertyEnd()) continue;
 

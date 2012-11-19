@@ -168,7 +168,8 @@ void SuffixMatchManager::buildCollection()
             LOG(INFO) << "inserted docs: " << i;
         }
         Document doc;
-        document_manager_->getDocument(i, doc);
+        bool b = document_manager_->getDocument(i, doc);
+        if(!b) continue;
         Document::property_const_iterator it = doc.findProperty(property_);
         if (it == doc.propertyEnd())
         {

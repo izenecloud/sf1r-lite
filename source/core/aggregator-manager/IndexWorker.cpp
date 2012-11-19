@@ -426,7 +426,8 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         }
 
         Document document;
-        documentManager->getDocument(curDocId, document);
+        bool b = documentManager->getDocument(curDocId, document);
+        if(!b) continue;
 
         // update docid
         std::string docidName("DOCID");
