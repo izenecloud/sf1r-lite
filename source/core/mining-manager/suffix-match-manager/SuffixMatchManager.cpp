@@ -169,7 +169,11 @@ void SuffixMatchManager::buildCollection()
         }
         Document doc;
         bool b = document_manager_->getDocument(i, doc);
-        if(!b) continue;
+        if(!b)
+        {
+            new_fmi->addDoc(NULL, 0);
+            continue;
+        }
         Document::property_const_iterator it = doc.findProperty(property_);
         if (it == doc.propertyEnd())
         {
