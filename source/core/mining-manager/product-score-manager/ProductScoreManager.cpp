@@ -91,7 +91,7 @@ void ProductScoreManager::createProductScoreTable_(ProductScoreType type)
     const ProductScoreConfig& config = config_.scores[type];
     const std::string& typeName = ProductRankingConfig::kScoreTypeName[type];
 
-    if (!config.factors.empty())
+    if (config.weight != 0)
     {
         scoreTableMap_[type] = new ProductScoreTable(dirPath_, typeName);
     }

@@ -175,6 +175,19 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_CustomRankManager")
 
+  ADD_EXECUTABLE(t_ProductScoreManager
+    Runner.cpp
+    t_ProductScoreManager.cpp
+    ProductScoreManagerTestFixture.cpp
+    RandomScorerFactory.cpp
+    RandomScorer.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_ProductScoreManager ${libs})
+  SET_TARGET_PROPERTIES(t_ProductScoreManager PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_ProductScoreManager")
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 INCLUDE_DIRECTORIES(
