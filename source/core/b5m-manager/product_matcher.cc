@@ -13,6 +13,7 @@
 #include <idmlib/util/svm.h>
 #include <util/functional.h>
 #include <util/ClockTimer.h>
+#include <3rdparty/udt/md5.h>
 using namespace sf1r;
 using namespace idmlib::sim;
 using namespace idmlib::kpe;
@@ -724,9 +725,19 @@ bool ProductMatcher::ProcessBook_(const Document& doc, Product& result_product)
         }
         if(!isbn_value.empty())
         {
-            std::string pid_str = "attrib-"+isbn_name+"-"+isbn_value;
-            uint128_t pid = izenelib::util::HashFunction<UString>::generateHash128(UString(pid_str, UString::UTF_8));
-            result_product.spid = B5MHelper::Uint128ToString(pid);
+            static const int MD5_DIGEST_LENGTH = 32;
+            std::string url = "http://www.taobao.com/spuid/isbn-"+isbn_value;
+
+            md5_state_t st;
+            md5_init(&st);
+            md5_append(&st, (const md5_byte_t*)(url.c_str()), url.size());
+            md5_byte_t digest[MD5_DIGEST_LENGTH];
+            memset(digest, 0, sizeof(digest));
+            md5_finish(&st,digest);
+            uint128_t md5_int_value = *((uint128_t*)digest);
+
+            //uint128_t pid = izenelib::util::HashFunction<UString>::generateHash128(UString(pid_str, UString::UTF_8));
+            result_product.spid = B5MHelper::Uint128ToString(md5_int_value);
         }
         return true;
     }
