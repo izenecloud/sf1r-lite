@@ -20,6 +20,9 @@ SET(libs
   sf1r_ranking_manager
   sf1r_index_manager
   sf1r_directory_manager
+  sf1r_b5m_manager
+  sf1r_image_manager
+  sf1r_net
   ${ilplib_LIBRARIES}
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}

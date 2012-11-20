@@ -276,7 +276,8 @@ bool ProductMatcher::KeywordTag::Combine(const KeywordTag& another)
 }
 
 ProductMatcher::ProductMatcher(const std::string& path)
-:path_(path), is_open_(false), tid_(1), aid_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL), chars_analyzer_(NULL),
+:path_(path), is_open_(false), use_price_sim_(true),
+ tid_(1), aid_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL), chars_analyzer_(NULL),
  test_docid_("7bc999f5d10830d0c59487bd48a73cae"),
  left_bracket_("("), right_bracket_(")"),
  left_bracket_term_(0), right_bracket_term_(0)
@@ -318,56 +319,66 @@ bool ProductMatcher::Open()
 {
     if(!is_open_)
     {
-        boost::filesystem::create_directories(path_);
-        idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path_, "");
-        aconfig.symbol = true;
-        analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
-        idmlib::util::IDMAnalyzerConfig cconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
-        //cconfig.symbol = true;
-        char_analyzer_ = new idmlib::util::IDMAnalyzer(cconfig);
-        idmlib::util::IDMAnalyzerConfig csconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
-        csconfig.symbol = true;
-        chars_analyzer_ = new idmlib::util::IDMAnalyzer(csconfig);
-        std::string path = path_+"/products";
-        izenelib::am::ssf::Util<>::Load(path, products_);
-        LOG(INFO)<<"products size "<<products_.size()<<std::endl;
-        path = path_+"/category_list";
-        izenelib::am::ssf::Util<>::Load(path, category_list_);
-        LOG(INFO)<<"category list size "<<category_list_.size()<<std::endl;
-        //path = path_+"/keywords";
-        //izenelib::am::ssf::Util<>::Load(path, keywords_thirdparty_);
-        path = path_+"/category_index";
-        izenelib::am::ssf::Util<>::Load(path, category_index_);
-        path = path_+"/keyword_trie";
-        izenelib::am::ssf::Util<>::Load(path, trie_);
-        LOG(INFO)<<"trie size "<<trie_.size()<<std::endl;
-        path = path_+"/attrib_id";
-        boost::filesystem::create_directories(path);
-        aid_manager_ = new AttributeIdManager(path+"/id");
+        try
+        {
+            boost::filesystem::create_directories(path_);
+            idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path_, "");
+            aconfig.symbol = true;
+            analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
+            idmlib::util::IDMAnalyzerConfig cconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
+            //cconfig.symbol = true;
+            char_analyzer_ = new idmlib::util::IDMAnalyzer(cconfig);
+            idmlib::util::IDMAnalyzerConfig csconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
+            csconfig.symbol = true;
+            chars_analyzer_ = new idmlib::util::IDMAnalyzer(csconfig);
+            std::string path = path_+"/products";
+            izenelib::am::ssf::Util<>::Load(path, products_);
+            LOG(INFO)<<"products size "<<products_.size()<<std::endl;
+            path = path_+"/category_list";
+            izenelib::am::ssf::Util<>::Load(path, category_list_);
+            LOG(INFO)<<"category list size "<<category_list_.size()<<std::endl;
+            //path = path_+"/keywords";
+            //izenelib::am::ssf::Util<>::Load(path, keywords_thirdparty_);
+            path = path_+"/category_index";
+            izenelib::am::ssf::Util<>::Load(path, category_index_);
+            path = path_+"/product_index";
+            izenelib::am::ssf::Util<>::Load(path, product_index_);
+            path = path_+"/keyword_trie";
+            izenelib::am::ssf::Util<>::Load(path, trie_);
+            LOG(INFO)<<"trie size "<<trie_.size()<<std::endl;
+            //path = path_+"/attrib_id";
+            //boost::filesystem::create_directories(path);
+            //aid_manager_ = new AttributeIdManager(path+"/id");
 
-        left_bracket_term_ = GetTerm_(left_bracket_);
-        right_bracket_term_ = GetTerm_(right_bracket_);
-        //std::string logger_file = path_+"/logger";
-        //logger_.open(logger_file.c_str(), std::ios::out | std::ios::app );
-        //std::string cidset_path = path_+"/cid_set";
-        //izenelib::am::ssf::Util<>::Load(cidset_path, cid_set_);
-        //std::string a2p_path = path_+"/a2p";
-        //izenelib::am::ssf::Util<>::Load(a2p_path, a2p_);
-        //std::string category_group_file = path_+"/category_group";
-        //if(boost::filesystem::exists(category_group_file))
-        //{
-            //LoadCategoryGroup(category_group_file);
-        //}
-        //std::string category_keywords_file = path_+"/category_keywords";
-        //if(boost::filesystem::exists(category_keywords_file))
-        //{
-            //LoadCategoryKeywords_(category_keywords_file);
-        //}
-        //std::string category_file = path_+"/category.txt";
-        //if(boost::filesystem::exists(category_file))
-        //{
-            //LoadCategories_(category_file);
-        //}
+            left_bracket_term_ = GetTerm_(left_bracket_);
+            right_bracket_term_ = GetTerm_(right_bracket_);
+            //std::string logger_file = path_+"/logger";
+            //logger_.open(logger_file.c_str(), std::ios::out | std::ios::app );
+            //std::string cidset_path = path_+"/cid_set";
+            //izenelib::am::ssf::Util<>::Load(cidset_path, cid_set_);
+            //std::string a2p_path = path_+"/a2p";
+            //izenelib::am::ssf::Util<>::Load(a2p_path, a2p_);
+            //std::string category_group_file = path_+"/category_group";
+            //if(boost::filesystem::exists(category_group_file))
+            //{
+                //LoadCategoryGroup(category_group_file);
+            //}
+            //std::string category_keywords_file = path_+"/category_keywords";
+            //if(boost::filesystem::exists(category_keywords_file))
+            //{
+                //LoadCategoryKeywords_(category_keywords_file);
+            //}
+            //std::string category_file = path_+"/category.txt";
+            //if(boost::filesystem::exists(category_file))
+            //{
+                //LoadCategories_(category_file);
+            //}
+        }
+        catch(std::exception& ex)
+        {
+            LOG(ERROR)<<"product matcher open failed"<<std::endl;
+            return false;
+        }
         is_open_ = true;
     }
     return true;
@@ -396,6 +407,15 @@ void ProductMatcher::Clear(const std::string& path)
     //{
         //boost::filesystem::remove_all(path+"/"+runtime_path[i]);
     //}
+}
+bool ProductMatcher::GetProduct(const std::string& pid, Product& product)
+{
+    ProductIndex::const_iterator it = product_index_.find(pid);
+    if(it==product_index_.end()) return false;
+    uint32_t index = it->second;
+    if(index>=products_.size()) return false;
+    product = products_[index];
+    return true;
 }
 
 bool ProductMatcher::Index(const std::string& scd_path)
@@ -490,7 +510,7 @@ bool ProductMatcher::Index(const std::string& scd_path)
             LOG(INFO)<<"Find Product Documents "<<n<<std::endl;
         }
         Document doc;
-        izenelib::util::UString oid;
+        izenelib::util::UString pid;
         izenelib::util::UString title;
         izenelib::util::UString category;
         izenelib::util::UString attrib_ustr;
@@ -502,7 +522,7 @@ bool ProductMatcher::Index(const std::string& scd_path)
             doc.property(property_name) = p->second;
             if(property_name=="DOCID")
             {
-                oid = p->second;
+                pid = p->second;
             }
             else if(property_name=="Title")
             {
@@ -548,10 +568,10 @@ bool ProductMatcher::Index(const std::string& scd_path)
         }
         std::string stitle;
         title.convertString(stitle, izenelib::util::UString::UTF_8);
-        std::string soid;
-        oid.convertString(soid, UString::UTF_8);
+        std::string spid;
+        pid.convertString(spid, UString::UTF_8);
         Product product;
-        product.spid = soid;
+        product.spid = spid;
         product.stitle = stitle;
         product.scategory = scategory;
         product.price = price;
@@ -569,6 +589,7 @@ bool ProductMatcher::Index(const std::string& scd_path)
         }
         product.aweight = 1.0*(attrib_count-optional_count)+0.2*optional_count;
         products_.push_back(product);
+        product_index_[spid] = products_.size()-1;
     }
     for(uint32_t i=0;i<products_.size();i++)
     {
@@ -592,6 +613,8 @@ bool ProductMatcher::Index(const std::string& scd_path)
     //izenelib::am::ssf::Util<>::Save(path, keywords_thirdparty_);
     path = path_+"/category_index";
     izenelib::am::ssf::Util<>::Save(path, category_index_);
+    path = path_+"/product_index";
+    izenelib::am::ssf::Util<>::Save(path, product_index_);
     path = path_+"/keyword_trie";
     izenelib::am::ssf::Util<>::Save(path, trie_);
     
@@ -1155,6 +1178,7 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
 
 double ProductMatcher::PriceSim_(double offerp, double spup)
 {
+    if(!use_price_sim_) return 0.25;
     if(spup==0.0) return 0.25;
     if(offerp==0.0) return 0.0;
     if(offerp>spup) return spup/offerp;

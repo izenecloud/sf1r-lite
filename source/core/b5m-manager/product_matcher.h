@@ -321,6 +321,7 @@ namespace sf1r {
         };
         typedef uint32_t PidType;
         typedef std::map<std::string, uint32_t> CategoryIndex;
+        typedef std::map<std::string, uint32_t> ProductIndex;
         typedef boost::unordered_map<uint32_t, UString> IdManager;
 
         ProductMatcher(const std::string& path);
@@ -331,9 +332,13 @@ namespace sf1r {
         bool Index(const std::string& scd_path);
         bool DoMatch(const std::string& scd_path);
         bool Process(const Document& doc, Category& result_category, Product& result_product);
+        bool GetProduct(const std::string& pid, Product& product);
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
+
+        void SetUsePriceSim(bool sim)
+        { use_price_sim_ = sim; }
 
     private:
         bool PriceMatch_(double p1, double p2);
@@ -396,6 +401,7 @@ namespace sf1r {
         std::string path_;
         bool is_open_;
         std::string cma_path_;
+        bool use_price_sim_;
         idmlib::sim::StringSimilarity string_similarity_;
         std::vector<Product> products_;
         term_t tid_;
@@ -413,6 +419,7 @@ namespace sf1r {
         term_t right_bracket_term_;
         std::vector<Category> category_list_;
         CategoryIndex category_index_;
+        ProductIndex product_index_;
         KeywordSet keyword_set_;
         TrieType trie_;
         KeywordVector keyword_vector_;

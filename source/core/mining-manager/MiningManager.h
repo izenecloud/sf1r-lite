@@ -97,6 +97,7 @@ class CustomDocIdConverter;
 class ProductScorerFactory;
 class SuffixMatchManager;
 class IncrementalManager;
+class ProductMatcher;
 
 namespace sim
 {
@@ -326,6 +327,8 @@ public:
             std::vector<float>& rankScoreList,
             std::vector<float>& customRankScoreList,
             std::size_t& totalCount);
+
+    bool GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category);
 
     bool SetKV(const std::string& key, const std::string& value);
 
@@ -573,6 +576,9 @@ private:
     std::string suffix_match_path_;
     SuffixMatchManager* suffixMatchManager_;
     IncrementalManager* incrementalManager_;
+
+    /** Product Matcher */
+    ProductMatcher* productMatcher_;
 
     /** KV */
     std::string kv_path_;

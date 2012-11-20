@@ -74,6 +74,9 @@ TARGET_LINK_LIBRARIES(CobraProcess
   sf1r_aggregator_manager
   sf1r_node_manager
   sf1r_product_manager
+  sf1r_b5m_manager
+  sf1r_image_manager
+  sf1r_net
 
   sf1r_bundle_index
   sf1r_bundle_product

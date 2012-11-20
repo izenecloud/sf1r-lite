@@ -108,7 +108,8 @@ void B5moProcessor::Process(Document& doc, int& type)
         std::string spid;
         UString ptitle;
         UString category;
-        doc.getProperty(B5MHelper::GetSPTPropertyName(), ptitle);
+        doc.eraseProperty(B5MHelper::GetSPTPropertyName());
+        //doc.getProperty(B5MHelper::GetSPTPropertyName(), ptitle);
         doc.getProperty("Category", category);
         bool is_human_edit = false;
         if(odb_->get(sdocid, spid)) 
@@ -130,7 +131,7 @@ void B5moProcessor::Process(Document& doc, int& type)
         {
             need_do_match = true;
         }
-        else if(spid.empty()||ptitle.empty())
+        else if(spid.empty())
         {
             need_do_match = true;
         }
@@ -157,6 +158,15 @@ void B5moProcessor::Process(Document& doc, int& type)
             else
             {
                 spid = sdocid; //get matched pid fail
+            }
+        }
+        else
+        {
+            ProductMatcher::Product product;
+            if(matcher_->GetProduct(spid, product))
+            {
+                doc.property("Category") = UString(product.scategory, UString::UTF_8);
+                doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
             }
         }
         if(old_spid!=spid)

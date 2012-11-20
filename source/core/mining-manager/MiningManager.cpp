@@ -54,6 +54,8 @@
 #include <idmlib/tdt/tdt_types.h>
 #include <directory-manager/DirectoryCookie.h>
 
+#include <b5m-manager/product_matcher.h> //idmlib/util/CollectionUtil.h make conflicts on scd parser
+
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
@@ -543,6 +545,38 @@ bool MiningManager::open()
                 {
                     incrementalManager_->InitManager_();
                     incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                }
+            }
+        }
+        if (mining_schema_.product_matcher_enable)
+        {
+            std::string res_path = system_resource_path_+"/product-matcher";
+            productMatcher_ = new ProductMatcher(res_path);
+            if(!productMatcher_->Open())
+            {
+                std::cerr<<"product matcher open failed"<<std::endl;
+                delete productMatcher_;
+                productMatcher_ = NULL;
+            }
+            productMatcher_->SetUsePriceSim(false);
+            //test
+            std::vector<std::string> test_queries;
+            test_queries.push_back("iPhone 5");
+            test_queries.push_back("尼康 D3200");
+            test_queries.push_back("iPhone");
+            test_queries.push_back("iPad");
+            test_queries.push_back("手机");
+            test_queries.push_back("单反");
+            for(uint32_t i=0;i<test_queries.size();i++)
+            {
+                std::string squery = test_queries[i];
+                UString query(squery, UString::UTF_8);
+                UString category;
+                if(GetProductCategory(query, category))
+                {
+                    std::string scategory;
+                    category.convertString(scategory, UString::UTF_8);
+                    std::cerr<<"!!!!!!!!!!!query category "<<squery<<","<<scategory<<std::endl;
                 }
             }
         }
@@ -1859,6 +1893,26 @@ bool MiningManager::GetSuffixMatch(
     customRankScoreList.erase(customRankScoreList.begin(), customRankScoreList.begin() + start);
 
     return true;
+}
+bool MiningManager::GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category)
+{
+    if(productMatcher_==NULL)
+    {
+        return false;
+    }
+    Document doc;
+    doc.property("Title") = query;
+    ProductMatcher::Category result_category;
+    ProductMatcher::Product result_product;
+    if(productMatcher_->Process(doc, result_category, result_product))
+    {
+        if(!result_category.name.empty())
+        {
+            category = izenelib::util::UString(result_category.name, izenelib::util::UString::UTF_8);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool MiningManager::SetKV(const std::string& key, const std::string& value)

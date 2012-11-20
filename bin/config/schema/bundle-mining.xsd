@@ -153,6 +153,7 @@
                             <xs:element ref="TDT" minOccurs="0"/>
                             <xs:element ref="Summarization" minOccurs="0"/>
                             <xs:element ref="SuffixMatch" minOccurs="0"/>
+                            <xs:element ref="ProductMatcher" minOccurs="0"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -343,5 +344,10 @@
         <xs:attribute name="property" type="xs:string" use="optional"/>
         <xs:attribute name="weight" type="xs:float" use="optional"/>
     </xs:complexType>
+
+    <xs:element name="ProductMatcher">
+        <xs:complexType>
+        </xs:complexType>
+    </xs:element>
 
 </xs:schema>

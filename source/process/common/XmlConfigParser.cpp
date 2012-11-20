@@ -2012,6 +2012,11 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
         }
     }
+    task_node = getUniqChildElement(mining_schema_node, "ProductMatcher", false);
+    if(task_node)
+    {
+        mining_schema.product_matcher_enable = true;
+    }
 }
 
 void CollectionConfig::parseProductRankingNode(

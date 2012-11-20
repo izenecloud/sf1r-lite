@@ -29,6 +29,7 @@ public:
         , ise_enable(false)
         , recommend_tg(false), recommend_querylog(true)
         , summarization_enable(false), summarization_schema()
+        , product_matcher_enable(false)
     {
     }
     ~MiningSchema() {}
@@ -51,6 +52,7 @@ private:
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
         ar & summarization_enable & summarization_schema;
+        ar & product_matcher_enable;
     }
 
 public:
@@ -92,6 +94,8 @@ public:
     SummarizeConfig summarization_schema;
 
     SuffixMatchConfig suffixmatch_schema;
+
+    bool product_matcher_enable;
 };
 
 } // namespace

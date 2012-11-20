@@ -31,6 +31,9 @@ SET(libs
   sf1r_product_manager
   sf1r_node_manager
   sf1r_common
+  sf1r_b5m_manager
+  sf1r_image_manager
+  sf1r_net
 
   ${ilplib_LIBRARIES}
   ${idmlib_LIBRARIES}
