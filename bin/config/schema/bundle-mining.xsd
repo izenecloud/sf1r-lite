@@ -229,6 +229,7 @@
                 <xs:element name="DisadvantageProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="TitleProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="ScoreProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="CommentCountProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="OpinionProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="OpinionWorkingPath" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="OpinionSyncId" minOccurs="1" maxOccurs="1"/>

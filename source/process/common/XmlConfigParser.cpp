@@ -1709,6 +1709,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
         }
 
+        {
+            Iterator<Element> it("CommentCountProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                mining_schema.summarization_schema.commentCountPropName = property_name;
+            }
+        }
 
         ticpp::Element* opinionProp_node = getUniqChildElement(task_node, "OpinionProperty", false);
         if (opinionProp_node)

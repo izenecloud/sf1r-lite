@@ -22,6 +22,7 @@ public:
     std::string disadvantagePropName;
     std::string titlePropName;
     std::string scorePropName;
+    std::string commentCountPropName;
     std::string opinionPropName;
     std::string opinionWorkingPath;
     std::string opinionSyncId;
@@ -38,6 +39,7 @@ public:
         ar & disadvantagePropName;
         ar & titlePropName;
         ar & scorePropName;
+        ar & commentCountPropName;
         ar & opinionPropName;
         ar & opinionWorkingPath;
         ar & opinionSyncId;
