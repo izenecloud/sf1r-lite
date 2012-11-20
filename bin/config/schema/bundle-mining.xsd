@@ -134,6 +134,9 @@
         <xs:attribute name="enableCN" type="YesNoType" use="required"/>
         <xs:attribute name="enableEK" type="YesNoType" use="required"/>
     </xs:complexType>
+    <xs:complexType name="ProductRankingParaType">
+        <xs:attribute name="cron" type="xs:string" use="required" />
+    </xs:complexType>
 
     <xs:element name="MiningBundle">
         <xs:complexType>
@@ -169,6 +172,7 @@
                             <xs:element name="ClassificationPara" type="ClassificationParaType" minOccurs="1"/>
                             <xs:element name="IsePara" type="IseParaType" minOccurs="1"/>
                             <xs:element name="QueryCorrectionPara" type="QueryCorrectionParaType" minOccurs="1"/>
+                            <xs:element name="ProductRankingPara" type="ProductRankingParaType" minOccurs="0"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>

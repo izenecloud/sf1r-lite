@@ -222,6 +222,30 @@ public:
 
 };
 
+/**
+ * @brief for configuration <ProductRankingPara>
+ */
+class ProductRankingPara
+{
+public:
+    std::string cron;
+
+    int schedule_interval_ms;
+
+    ProductRankingPara()
+        : schedule_interval_ms(60 * 1000) // minute
+    {}
+
+private:
+    friend class boost::serialization::access;
+
+    template <typename Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & cron;
+    }
+};
+
 class MiningConfig
 {
 
@@ -246,6 +270,7 @@ private:
         ar & dc_param;
         ar & ise_param;
         ar & query_correction_param;
+        ar & product_ranking_param;
     }
 
 public:
@@ -262,6 +287,7 @@ public:
 
     QueryCorrectionPara query_correction_param;
 
+    ProductRankingPara product_ranking_param;
 };
 
 } // namespace

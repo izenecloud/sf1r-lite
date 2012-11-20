@@ -9,7 +9,10 @@
 #define SF1R_PRODUCT_SCORE_MANAGER_H
 
 #include <configuration-manager/ProductScoreConfig.h>
+#include <util/cronexpression.h>
+#include <boost/thread/mutex.hpp>
 #include <map>
+#include <string>
 
 namespace sf1r
 {
@@ -18,14 +21,17 @@ class ProductScorer;
 class OfflineProductScorerFactory;
 class ProductScoreTable;
 class DocumentManager;
+class ProductRankingPara;
 
 class ProductScoreManager
 {
 public:
     ProductScoreManager(
         const ProductRankingConfig& config,
+        const ProductRankingPara& bundleParam,
         OfflineProductScorerFactory& offlineScorerFactory,
         const DocumentManager& documentManager,
+        const std::string& collectionName,
         const std::string& dirPath);
 
     ~ProductScoreManager();
@@ -52,7 +58,11 @@ public:
 private:
     void createProductScoreTable_(ProductScoreType type);
 
+    bool buildCollectionImpl_();
     bool buildScoreType_(ProductScoreType type);
+
+    bool addCronJob_(const ProductRankingPara& bundleParam);
+    void runCronJob_();
 
 private:
     const ProductRankingConfig& config_;
@@ -65,6 +75,10 @@ private:
 
     typedef std::map<ProductScoreType, ProductScoreTable*> ScoreTableMap;
     ScoreTableMap scoreTableMap_;
+
+    izenelib::util::CronExpression cronExpression_;
+    const std::string cronJobName_;
+    boost::mutex buildCollectionMutex_;
 };
 
 } // namespace sf1r

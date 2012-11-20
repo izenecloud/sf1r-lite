@@ -6,22 +6,29 @@
 #include "../util/FSUtil.hpp"
 #include "../MiningException.hpp"
 #include <configuration-manager/ProductRankingConfig.h>
+#include <configuration-manager/MiningConfig.h>
 #include <document-manager/DocumentManager.h>
+#include <util/scheduler.h>
 #include <glog/logging.h>
 
 using namespace sf1r;
 
 ProductScoreManager::ProductScoreManager(
     const ProductRankingConfig& config,
+    const ProductRankingPara& bundleParam,
     OfflineProductScorerFactory& offlineScorerFactory,
     const DocumentManager& documentManager,
+    const std::string& collectionName,
     const std::string& dirPath)
     : config_(config)
     , offlineScorerFactory_(offlineScorerFactory)
     , documentManager_(documentManager)
     , dirPath_(dirPath)
+    , cronJobName_("ProductScoreManager-" + collectionName)
 {
     createProductScoreTable_(POPULARITY_SCORE);
+
+    addCronJob_(bundleParam);
 }
 
 ProductScoreManager::~ProductScoreManager()
@@ -67,13 +74,25 @@ bool ProductScoreManager::open()
 
 bool ProductScoreManager::buildCollection()
 {
+    boost::mutex::scoped_lock lock(buildCollectionMutex_);
+
+    return buildCollectionImpl_();
+}
+
+bool ProductScoreManager::buildCollectionImpl_()
+{
+    bool result = true;
+
     for (ScoreTableMap::iterator it = scoreTableMap_.begin();
          it != scoreTableMap_.end(); ++it)
     {
-        buildScoreType_(it->first);
+        if (!buildScoreType_(it->first))
+        {
+            result = false;
+        }
     }
 
-    return true;
+    return result;
 }
 
 ProductScorer* ProductScoreManager::createProductScorer(ProductScoreType type)
@@ -142,4 +161,41 @@ bool ProductScoreManager::buildScoreType_(ProductScoreType type)
     }
 
     return true;
+}
+
+bool ProductScoreManager::addCronJob_(const ProductRankingPara& bundleParam)
+{
+    if (!cronExpression_.setExpression(bundleParam.cron))
+        return false;
+
+    bool result = izenelib::util::Scheduler::addJob(
+        cronJobName_,
+        bundleParam.schedule_interval_ms,
+        0, // start from now
+        boost::bind(&ProductScoreManager::runCronJob_, this));
+
+    if (!result)
+    {
+        LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), "
+                   << "cron job name: " << cronJobName_;
+    }
+
+    return result;
+}
+
+void ProductScoreManager::runCronJob_()
+{
+    if (cronExpression_.matches_now())
+    {
+        boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+
+        if (lock.owns_lock() == false)
+        {
+            LOG(INFO) << "as still in building collection, exit cron job: "
+                      << cronJobName_;
+            return;
+        }
+
+        buildCollectionImpl_();
+    }
 }

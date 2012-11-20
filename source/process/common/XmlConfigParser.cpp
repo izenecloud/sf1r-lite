@@ -1514,6 +1514,10 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     params.Get("QueryCorrectionPara/enableEK", mining_config.query_correction_param.enableEK);
     params.Get("QueryCorrectionPara/enableCN", mining_config.query_correction_param.enableCN);
 
+    // for product ranking
+    params.GetString("ProductRankingPara/cron",
+                     mining_config.product_ranking_param.cron);
+
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
 

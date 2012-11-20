@@ -481,8 +481,10 @@ bool MiningManager::open()
             const std::string scoreDir = prefix_path + "/product_score";
             productScoreManager_ = new ProductScoreManager(
                 rankConfig,
+                miningConfig_.product_ranking_param,
                 *offlineScorerFactory_,
                 *document_manager_,
+                collectionName_,
                 scoreDir);
 
             if (! productScoreManager_->open())

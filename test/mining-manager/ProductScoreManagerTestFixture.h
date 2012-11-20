@@ -10,6 +10,7 @@
 
 #include <configuration-manager/PropertyConfig.h>
 #include <configuration-manager/ProductRankingConfig.h>
+#include <configuration-manager/MiningConfig.h>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,7 @@ protected:
 
     std::string scoreDirPath_;
     ProductRankingConfig rankConfig_;
+    ProductRankingPara bundleParam_;
 
     docid_t lastDocId_;
     std::vector<score_t> goldScores_;

@@ -17,6 +17,7 @@ namespace bfs = boost::filesystem;
 namespace
 {
 const char* TEST_DIR_STR = "product_score_test";
+const char* TEST_COLLECTION_NAME = "example";
 
 const izenelib::util::UString::EncodingType ENCODING_TYPE =
     izenelib::util::UString::UTF_8;
@@ -81,8 +82,10 @@ void ProductScoreManagerTestFixture::resetScoreManager()
     delete productScoreManager_;
 
     productScoreManager_ = new ProductScoreManager(rankConfig_,
+                                                   bundleParam_,
                                                    *offlineScorerFactory_,
                                                    *documentManager_,
+                                                   TEST_COLLECTION_NAME,
                                                    scoreDirPath_);
 
     BOOST_CHECK(productScoreManager_->open());
