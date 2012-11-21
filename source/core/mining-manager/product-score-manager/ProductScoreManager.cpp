@@ -33,6 +33,8 @@ ProductScoreManager::ProductScoreManager(
 
 ProductScoreManager::~ProductScoreManager()
 {
+    izenelib::util::Scheduler::removeJob(cronJobName_);
+
     for (ScoreTableMap::iterator it = scoreTableMap_.begin();
          it != scoreTableMap_.end(); ++it)
     {
@@ -74,14 +76,15 @@ bool ProductScoreManager::open()
 
 bool ProductScoreManager::buildCollection()
 {
-    boost::mutex::scoped_lock lock(buildCollectionMutex_);
-
-    return buildCollectionImpl_();
-}
-
-bool ProductScoreManager::buildCollectionImpl_()
-{
     bool result = true;
+    boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+
+    if (!lock.owns_lock())
+    {
+        LOG(INFO) << "exit ProductScoreManager::buildCollection() directly, "
+                  << "as it's still in progress for previous call.";
+        return result;
+    }
 
     for (ScoreTableMap::iterator it = scoreTableMap_.begin();
          it != scoreTableMap_.end(); ++it)
@@ -170,7 +173,7 @@ bool ProductScoreManager::addCronJob_(const ProductRankingPara& bundleParam)
 
     bool result = izenelib::util::Scheduler::addJob(
         cronJobName_,
-        bundleParam.schedule_interval_ms,
+        60 * 1000, // check time once in each minute
         0, // start from now
         boost::bind(&ProductScoreManager::runCronJob_, this));
 
@@ -185,17 +188,8 @@ bool ProductScoreManager::addCronJob_(const ProductRankingPara& bundleParam)
 
 void ProductScoreManager::runCronJob_()
 {
-    if (cronExpression_.matches_now())
-    {
-        boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+    if (!cronExpression_.matches_now())
+        return;
 
-        if (lock.owns_lock() == false)
-        {
-            LOG(INFO) << "as still in building collection, exit cron job: "
-                      << cronJobName_;
-            return;
-        }
-
-        buildCollectionImpl_();
-    }
+    buildCollection();
 }

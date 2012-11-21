@@ -230,12 +230,6 @@ class ProductRankingPara
 public:
     std::string cron;
 
-    int schedule_interval_ms;
-
-    ProductRankingPara()
-        : schedule_interval_ms(60 * 1000) // minute
-    {}
-
 private:
     friend class boost::serialization::access;
 

@@ -30,8 +30,10 @@ public:
     void resetScoreManager();
 
     void buildScore(int docNum);
+
     void insertDocument(int docNum);
     void buildCollection();
+    void updateGoldScore();
 
     void checkScore();
     void readScore(int docNum);

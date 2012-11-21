@@ -96,6 +96,8 @@ void ProductScoreManagerTestFixture::buildScore(int docNum)
     insertDocument(docNum);
 
     buildCollection();
+
+    updateGoldScore();
 }
 
 void ProductScoreManagerTestFixture::insertDocument(int docNum)
@@ -116,8 +118,12 @@ void ProductScoreManagerTestFixture::insertDocument(int docNum)
 void ProductScoreManagerTestFixture::buildCollection()
 {
     BOOST_CHECK(productScoreManager_->buildCollection());
+}
 
+void ProductScoreManagerTestFixture::updateGoldScore()
+{
     goldScores_.resize(lastDocId_ + 1);
+
     for (docid_t docId = 1; docId <= lastDocId_; ++docId)
     {
         goldScores_[docId] = goldScorer_->score(docId);

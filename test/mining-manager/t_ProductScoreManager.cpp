@@ -9,6 +9,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
+#include <glog/logging.h>
+#include <unistd.h> // sleep
 
 using namespace sf1r;
 
@@ -55,7 +57,29 @@ BOOST_AUTO_TEST_CASE(concurrentBuildAndRead)
     }
 
     threads.join_all();
+
+    updateGoldScore();
     checkScore();
+}
+
+BOOST_AUTO_TEST_CASE(runCronJob)
+{
+    int docNum = 1000;
+    insertDocument(docNum);
+
+    // run cron job in every minute
+    bundleParam_.cron = "* * * * *";
+
+    resetScoreManager();
+
+    LOG(INFO) << "start sleeping...";
+    sleep(1);
+    LOG(INFO) << "end sleeping...";
+
+    LOG(INFO) << "start checking score...";
+    updateGoldScore();
+    checkScore();
+    LOG(INFO) << "end checking score";
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -58,7 +58,6 @@ public:
 private:
     void createProductScoreTable_(ProductScoreType type);
 
-    bool buildCollectionImpl_();
     bool buildScoreType_(ProductScoreType type);
 
     bool addCronJob_(const ProductRankingPara& bundleParam);
