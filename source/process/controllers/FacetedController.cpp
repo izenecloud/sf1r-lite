@@ -713,6 +713,7 @@ void FacetedController::set_custom_rank()
  *       { "DOCID": "555", "Title": "iphone4 配件"},
  *       { "DOCID": "666", "Title": "iphone3 配件"}
  *     ]
+ *   }
  * }
  * @endcode
  */
@@ -914,6 +915,72 @@ void FacetedController::get_custom_query()
     else
     {
         response().addError("Failed to get custom queries.");
+    }
+}
+
+/**
+ * @brief Action @b get_product_score. Get product score configured
+ * in <ProductRanking>.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ * - @b resource* (@c Object): Specify the docid and score type.
+ *   - @b DOCID* (@c String): Document ID.
+ *   - @b score_type* (@c String): The score type, only below types
+ *     are supported:
+ *     - @b popularity: it returns the score which is configured
+ *       as <Score type="popularity">.
+ *     - @b _ctr: it returns CTR click count which is updated
+ *       by @c documents/visit().
+ *
+ * @section response
+ *
+ * - @b header (@c Object): Property @b success gives the result, true or false.
+ * - @b resource (@c Object): The result object.
+ *   - @b score (@c Float): The score value.
+ *
+ * @section Example
+ *
+ * Request
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "resource": {
+ *     "DOCID": "111",
+ *     "score_type": "popularity"
+ *   }
+ * }
+ * @endcode
+ *
+ * Response
+ * @code
+ * {
+ *   "header": {"success": true},
+ *   "resource": {
+ *     "score": 0.75
+ *   }
+ * }
+ * @endcode
+ */
+void FacetedController::get_product_score()
+{
+    std::string docId;
+    std::string scoreType;
+
+    IZENELIB_DRIVER_BEFORE_HOOK(
+        requireResourceProperty(Keys::DOCID, docId) &&
+        requireResourceProperty(Keys::score_type, scoreType));
+
+    score_t score = 0;
+    if (miningSearchService_->GetProductScore(docId, scoreType, score))
+    {
+        Value& resourceValue = response()[Keys::resource];
+        resourceValue[Keys::score] = score;
+    }
+    else
+    {
+        response().addError("Failed to get product score.");
     }
 }
 

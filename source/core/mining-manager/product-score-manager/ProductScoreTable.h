@@ -30,14 +30,24 @@ public:
     void setScore(docid_t docId, score_t score);
 
     /**
-     * @attention before calling this function,
-     * you must call this statement for safe concurrent access:
+     * @brief get product score for @p docId (has lock version).
+     *
+     * before calling this function, the caller does not need to acquire
+     * the read lock, as it would acquire the lock by itself.
+     */
+    score_t getScoreHasLock(docid_t docId) const;
+
+    /**
+     * @brief get product score for @p docId (no lock version).
+     *
+     * before calling this function, in order to ensure safe concurrent access,
+     * the caller must acquire the read lock first, just like below:
      *
      * <code>
      * ProductScoreTable::ScopedReadLock lock(ProductScoreTable::getMutex());
      * </code>
      */
-    score_t getScore(docid_t docId) const;
+    score_t getScoreNoLock(docid_t docId) const;
 
 private:
     const std::string dirPath_;

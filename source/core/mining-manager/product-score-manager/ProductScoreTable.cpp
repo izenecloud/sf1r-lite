@@ -48,7 +48,14 @@ void ProductScoreTable::setScore(docid_t docId, score_t score)
     scores_[docId] = score;
 }
 
-score_t ProductScoreTable::getScore(docid_t docId) const
+score_t ProductScoreTable::getScoreHasLock(docid_t docId) const
+{
+    ScopedReadLock lock(mutex_);
+
+    return getScoreNoLock(docId);
+}
+
+score_t ProductScoreTable::getScoreNoLock(docid_t docId) const
 {
     if (docId < scores_.size())
         return scores_[docId];

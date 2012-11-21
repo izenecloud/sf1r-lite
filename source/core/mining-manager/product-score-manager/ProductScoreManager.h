@@ -53,7 +53,13 @@ public:
      *         of @p type, NULL is returned if failed.
      * @attention the caller should delete the instance returned.
      */
-    ProductScorer* createProductScorer(ProductScoreType type);
+    ProductScorer* createProductScorer(ProductScoreType type) const;
+
+    /**
+     * @return the @c ProductScoreTable instance of @p type,
+     *         NULL is returned if failed.
+     */
+    const ProductScoreTable* getProductScoreTable(ProductScoreType type) const;
 
 private:
     void createProductScoreTable_(ProductScoreType type);

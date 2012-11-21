@@ -116,4 +116,28 @@ bool Sf1Controller::checkCollectionHandler(std::string& error)
     return false;
 }
 
+bool Sf1Controller::requireResourceProperty(
+    const std::string& propName,
+    std::string& propValue)
+{
+    const Value& resourceValue = request()[Keys::resource];
+
+    if (! resourceValue.hasKey(propName))
+    {
+        response().addError("Require property \"" +
+                            propName + "\" in request[resource].");
+        return false;
+    }
+
+    propValue = asString(resourceValue[propName]);
+    if (propValue.empty())
+    {
+        response().addError("Require non-empty value for property \"" +
+                            propName + "\" in request[resource].");
+        return false;
+    }
+
+    return true;
+}
+
 } // namespace sf1r

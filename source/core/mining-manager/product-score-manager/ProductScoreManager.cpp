@@ -98,14 +98,26 @@ bool ProductScoreManager::buildCollection()
     return result;
 }
 
-ProductScorer* ProductScoreManager::createProductScorer(ProductScoreType type)
+ProductScorer* ProductScoreManager::createProductScorer(
+    ProductScoreType type) const
+{
+    const ProductScoreTable* table = getProductScoreTable(type);
+
+    if (table == NULL)
+        return NULL;
+
+    return new ProductScoreReader(*table);
+}
+
+const ProductScoreTable* ProductScoreManager::getProductScoreTable(
+    ProductScoreType type) const
 {
     ScoreTableMap::const_iterator it = scoreTableMap_.find(type);
+
     if (it == scoreTableMap_.end())
         return NULL;
 
-    const ProductScoreTable* table = it->second;
-    return new ProductScoreReader(*table);
+    return it->second;
 }
 
 void ProductScoreManager::createProductScoreTable_(ProductScoreType type)

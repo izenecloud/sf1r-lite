@@ -37,6 +37,7 @@
 #include "product-scorer/ProductScorerFactory.h"
 #include "product-score-manager/ProductScoreManager.h"
 #include "product-score-manager/OfflineProductScorerFactoryImpl.h"
+#include "product-score-manager/ProductScoreTable.h"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/IncrementalManager.hpp"
@@ -454,6 +455,9 @@ bool MiningManager::open()
             }
         }
 
+        if (customDocIdConverter_) delete customDocIdConverter_;
+        customDocIdConverter_ = new CustomDocIdConverter(*idManager_);
+
         /** product ranking */
         if (rankConfig.isEnable)
         {
@@ -463,9 +467,6 @@ bool MiningManager::open()
             if (productScoreManager_) delete productScoreManager_;
             if (offlineScorerFactory_) delete offlineScorerFactory_;
             if (customRankManager_) delete customRankManager_;
-            if (customDocIdConverter_) delete customDocIdConverter_;
-
-            customDocIdConverter_ = new CustomDocIdConverter(*idManager_);
 
             const bfs::path customRankDir = bfs::path(prefix_path) / "custom_rank";
             bfs::create_directories(customRankDir);
@@ -1887,4 +1888,40 @@ const faceted::PropValueTable* MiningManager::GetPropValueTable(const std::strin
         return NULL;
 
     return groupManager_->getPropValueTable(propName);
+}
+
+bool MiningManager::getProductScore(
+    const std::string& docIdStr,
+    const std::string& scoreTypeName,
+    score_t& scoreValue)
+{
+    docid_t docId = 0;
+
+    if (!customDocIdConverter_ ||
+        !customDocIdConverter_->convertDocId(docIdStr, docId))
+        return false;
+
+    if (scoreTypeName == faceted::CTRManager::kCtrPropName)
+    {
+        if (!ctrManager_)
+            return false;
+
+        scoreValue = ctrManager_->getClickCountByDocId(docId);
+        return true;
+    }
+
+    ProductScoreType scoreType =
+        mining_schema_.product_ranking_config.getScoreType(scoreTypeName);
+
+    const ProductScoreTable* productScoreTable =
+        productScoreManager_->getProductScoreTable(scoreType);
+
+    if (productScoreTable == NULL)
+    {
+        LOG(WARNING) << "unknown score type: " << scoreTypeName;
+        return false;
+    }
+
+    scoreValue = productScoreTable->getScoreHasLock(docId);
+    return true;
 }

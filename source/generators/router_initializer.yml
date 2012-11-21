@@ -95,6 +95,7 @@ controllers:
       - set_custom_rank
       - get_custom_rank
       - get_custom_query
+      - get_product_score
 
   TopicController:
     actions:

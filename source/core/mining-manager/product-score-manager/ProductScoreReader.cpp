@@ -11,5 +11,5 @@ ProductScoreReader::ProductScoreReader(const ProductScoreTable& scoreTable)
 
 score_t ProductScoreReader::score(docid_t docId)
 {
-    return productScoreTable_.getScore(docId);
+    return productScoreTable_.getScoreNoLock(docId);
 }

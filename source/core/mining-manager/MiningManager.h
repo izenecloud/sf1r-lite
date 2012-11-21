@@ -289,6 +289,18 @@ public:
 
     bool getCustomQueries(std::vector<std::string>& queries);
 
+    /**
+     * get product score.
+     * @param docIdStr the doc id
+     * @param scoreTypeName such as "popularity", "_ctr"
+     * @param scoreValue the score value as output
+     * @return true for success, false for failure
+     */
+    bool getProductScore(
+        const std::string& docIdStr,
+        const std::string& scoreTypeName,
+        score_t& scoreValue);
+
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
 
     bool GetTdtInTimeRange(const boost::gregorian::date& start, const boost::gregorian::date& end, std::vector<izenelib::util::UString>& topic_list);
