@@ -29,6 +29,7 @@ ProductScoreManagerTestFixture::ProductScoreManagerTestFixture()
     : offlineScorerFactory_(NULL)
     , productScoreManager_(NULL)
     , documentManager_(NULL)
+    , testScoreConfig_(rankConfig_.scores[TEST_SCORE_TYPE])
     , lastDocId_(0)
     , goldScorerFactory_(NULL)
     , goldScorer_(NULL)
@@ -49,9 +50,7 @@ ProductScoreManagerTestFixture::ProductScoreManagerTestFixture()
     unsigned int seed = time(NULL);
     offlineScorerFactory_ = new RandomScorerFactory(seed);
     goldScorerFactory_ = new RandomScorerFactory(seed);
-
-    const ProductScoreConfig& scoreConfig = rankConfig_.scores[TEST_SCORE_TYPE];
-    goldScorer_ = goldScorerFactory_->createScorer(scoreConfig);
+    goldScorer_ = goldScorerFactory_->createScorer(testScoreConfig_);
 
     resetScoreManager();
 }
@@ -64,8 +63,7 @@ void ProductScoreManagerTestFixture::initConfig_()
     schema_.insert(config);
 
     rankConfig_.isEnable = true;
-    ProductScoreConfig& scoreConfig = rankConfig_.scores[TEST_SCORE_TYPE];
-    scoreConfig.weight = 1;
+    testScoreConfig_.weight = 1;
 }
 
 ProductScoreManagerTestFixture::~ProductScoreManagerTestFixture()
@@ -133,7 +131,7 @@ void ProductScoreManagerTestFixture::updateGoldScore()
 void ProductScoreManagerTestFixture::checkScore()
 {
     boost::scoped_ptr<ProductScorer> productScorer(
-        productScoreManager_->createProductScorer(TEST_SCORE_TYPE));
+        productScoreManager_->createProductScorer(testScoreConfig_));
 
     BOOST_REQUIRE(productScorer);
 
@@ -151,7 +149,7 @@ void ProductScoreManagerTestFixture::readScore(int docNum)
     LOG(INFO) << "start readScore(), docNum: " << docNum;
 
     boost::scoped_ptr<ProductScorer> productScorer(
-        productScoreManager_->createProductScorer(TEST_SCORE_TYPE));
+        productScoreManager_->createProductScorer(testScoreConfig_));
 
     score_t sum = 0;
     for (int docId = 1; docId <= docNum; ++docId)

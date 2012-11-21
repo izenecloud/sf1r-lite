@@ -50,10 +50,10 @@ public:
 
     /**
      * @return the @c ProductScorer instance which reads @c ProductScoreTable
-     *         of @p type, NULL is returned if failed.
+     *         corresponding to @p config, NULL is returned if failed.
      * @attention the caller should delete the instance returned.
      */
-    ProductScorer* createProductScorer(ProductScoreType type) const;
+    ProductScorer* createProductScorer(const ProductScoreConfig& config) const;
 
     /**
      * @return the @c ProductScoreTable instance of @p type,

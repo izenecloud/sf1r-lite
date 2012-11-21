@@ -18,7 +18,9 @@ class ProductScoreTable;
 class ProductScoreReader : public ProductScorer
 {
 public:
-    ProductScoreReader(const ProductScoreTable& scoreTable);
+    ProductScoreReader(
+        const ProductScoreConfig& config,
+        const ProductScoreTable& scoreTable);
 
     virtual score_t score(docid_t docId);
 

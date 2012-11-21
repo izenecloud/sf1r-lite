@@ -99,14 +99,14 @@ bool ProductScoreManager::buildCollection()
 }
 
 ProductScorer* ProductScoreManager::createProductScorer(
-    ProductScoreType type) const
+    const ProductScoreConfig& config) const
 {
-    const ProductScoreTable* table = getProductScoreTable(type);
+    const ProductScoreTable* table = getProductScoreTable(config.type);
 
     if (table == NULL)
         return NULL;
 
-    return new ProductScoreReader(*table);
+    return new ProductScoreReader(config, *table);
 }
 
 const ProductScoreTable* ProductScoreManager::getProductScoreTable(

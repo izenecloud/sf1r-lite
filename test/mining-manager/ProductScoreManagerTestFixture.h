@@ -50,6 +50,7 @@ protected:
 
     std::string scoreDirPath_;
     ProductRankingConfig rankConfig_;
+    ProductScoreConfig& testScoreConfig_;
     ProductRankingPara bundleParam_;
 
     docid_t lastDocId_;

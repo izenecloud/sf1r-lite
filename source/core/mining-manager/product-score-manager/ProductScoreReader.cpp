@@ -3,8 +3,11 @@
 
 using namespace sf1r;
 
-ProductScoreReader::ProductScoreReader(const ProductScoreTable& scoreTable)
-    : productScoreTable_(scoreTable)
+ProductScoreReader::ProductScoreReader(
+    const ProductScoreConfig& config,
+    const ProductScoreTable& scoreTable)
+    : ProductScorer(config)
+    , productScoreTable_(scoreTable)
     , lock_(scoreTable.getMutex())
 {
 }

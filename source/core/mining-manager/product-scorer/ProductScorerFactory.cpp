@@ -149,5 +149,5 @@ ProductScorer* ProductScorerFactory::createPopularityScorer_(
     if (!productScoreManager_)
         return NULL;
 
-    return productScoreManager_->createProductScorer(scoreConfig.type);
+    return productScoreManager_->createProductScorer(scoreConfig);
 }
