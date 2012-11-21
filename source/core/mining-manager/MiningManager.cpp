@@ -726,6 +726,7 @@ bool MiningManager::DoMiningCollection()
         dupManager_->ProcessCollection();
         MEMLOG("[Mining] DUPD finished.");
     }
+
     if (mining_schema_.faceted_enable)
     {
         faceted_->ProcessCollection(false);
@@ -746,12 +747,15 @@ bool MiningManager::DoMiningCollection()
     //do group
     if (mining_schema_.group_enable)
     {
-        groupManager_->processCollection();
+        izenelib::util::ClockTimer timer;
+        groupManager_->processCollection1();
+        cout<<"[TEST] groupManager_->processCollection();"<<timer.elapsed()<<" seconds"<<endl;
     }
 
     //do attr
     if (mining_schema_.attr_enable)
     {
+        LOG(INFO)<<" attr_enable"<<endl;
         attrManager_->processCollection();
     }
 

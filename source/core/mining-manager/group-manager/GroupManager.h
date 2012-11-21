@@ -85,12 +85,27 @@ public:
         return NULL;
     }
 
+    bool processCollection1();
+
 private:
     bool createPropValueTable_(const std::string& propName);
     bool createDateGroupTable_(const std::string& propName);
 
     template <class PropTableType>
     void buildCollection_(PropTableType& propTable);
+
+    template <class PropMapType>
+    void buildCollection1_(PropMapType& propMap);
+
+    void buildDoc1_(
+            docid_t docId,
+            const izenelib::util::UString propValue,
+            DateGroupTable& dateTable);
+
+    void buildDoc1_(
+            docid_t docId,
+            const izenelib::util::UString propValue,
+            PropValueTable& pvTable);
 
     void buildDoc_(
             docid_t docId,
@@ -113,6 +128,56 @@ private:
     StrPropMap strPropMap_;
     DatePropMap datePropMap_;
 };
+
+template <class PropMapType>
+void GroupManager::buildCollection1_(PropMapType& propMap)
+{
+    if (propMap.size() == 0)
+        return;
+    typename PropMapType::iterator it;
+    it = propMap.begin();
+
+    const docid_t startDocId = it->second.docIdNum();
+    const docid_t endDocId = documentManager_.getMaxDocId();
+    if ( startDocId > endDocId)
+        return;
+    LOG(INFO) << "start building property:";
+    for (; it != propMap.end(); ++it)
+    {
+        if (isRebuildProp_(it->second.propName()))
+        {
+            LOG(INFO) << "**clear old group data to rebuild property: " << it->second.propName() <<endl;
+        }
+        cout<<it->second.propName()<<", ";
+        (it->second).reserveDocIdNum(endDocId + 1);
+    }
+    cout<<" start doc id" << startDocId
+        <<", end doc id" << endDocId;
+
+    Document doc;
+    for (docid_t docId = startDocId; docId <= endDocId; ++docId)
+    {
+        if (docId % 100000 == 0)
+        {
+            std::cout << "\rinserting doc id: " << docId << "\t" << std::flush;
+        }
+        documentManager_.getDocument(docId, doc);
+        for (it = propMap.begin(); it != propMap.end(); ++it)
+        {
+            izenelib::util::UString propValue;
+            doc.getProperty(it->first, propValue);
+            buildDoc1_(docId, propValue, it->second);
+        }
+    }
+    for (it = propMap.begin(); it != propMap.end(); ++it)
+    {
+        if (!(it->second).flush())
+        {
+            LOG(ERROR) << "propTable.flush() failed, property name: " << it->first;
+        }
+    }
+    std::cout << "\rinserting doc id: " << endDocId << "\t" << std::endl;
+}
 
 template <class PropTableType>
 void GroupManager::buildCollection_(PropTableType& propTable)

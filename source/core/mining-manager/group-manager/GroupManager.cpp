@@ -135,6 +135,57 @@ bool GroupManager::processCollection()
     return true;
 }
 
+bool GroupManager::processCollection1()
+{
+    LOG(INFO) << "start building group index data";
+
+    buildCollection1_(strPropMap_);
+
+    buildCollection1_(datePropMap_);
+
+    LOG(INFO) << "finished building group index data";
+    return true;
+}
+
+
+void GroupManager::buildDoc1_(
+    docid_t docId,
+    const izenelib::util::UString propValue,
+    PropValueTable& pvTable)
+{ 
+    std::vector<PropValueTable::pvid_t> propIdList;
+
+    {
+        std::vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(propValue, groupPaths);
+
+        try
+        {
+            for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
+                pathIt != groupPaths.end(); ++pathIt)
+            {
+                PropValueTable::pvid_t pvId = pvTable.insertPropValueId(*pathIt);
+                propIdList.push_back(pvId);
+            }
+        }
+        catch (MiningException& e)
+        {
+            LOG(ERROR) << "exception: " << e.what()
+                       << ", doc id: " << docId;
+        }
+    }
+
+    try
+    {
+        pvTable.appendPropIdList(propIdList);
+    }
+    catch (MiningException& e)
+    {
+        LOG(ERROR) << "exception: " << e.what()
+                   << ", doc id: " << docId;
+    }
+}
+
 void GroupManager::buildDoc_(
         docid_t docId,
         const std::string& propName,
@@ -169,6 +220,50 @@ void GroupManager::buildDoc_(
         pvTable.appendPropIdList(propIdList);
     }
     catch (MiningException& e)
+    {
+        LOG(ERROR) << "exception: " << e.what()
+                   << ", doc id: " << docId;
+    }
+}
+
+void GroupManager::buildDoc1_(
+        docid_t docId,
+        const izenelib::util::UString propValue,
+        DateGroupTable& dateTable)
+{
+    DateGroupTable::DateSet dateSet;
+    
+    {
+        std::vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(propValue, groupPaths);
+
+        DateGroupTable::date_t dateValue;
+        std::string dateStr;
+        std::string errorMsg;
+
+        for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
+            pathIt != groupPaths.end(); ++pathIt)
+        {
+            if (pathIt->empty())
+                continue;
+
+            pathIt->front().convertString(dateStr, ENCODING_TYPE);
+            if (dateStrParser_.scdStrToDate(dateStr, dateValue, errorMsg))
+            {
+                dateSet.insert(dateValue);
+            }
+            else
+            {
+                LOG(WARNING) << errorMsg;
+            }
+        }
+    }
+
+    try
+    {
+        dateTable.appendDateSet(dateSet);
+    }
+    catch(MiningException& e)
     {
         LOG(ERROR) << "exception: " << e.what()
                    << ", doc id: " << docId;
