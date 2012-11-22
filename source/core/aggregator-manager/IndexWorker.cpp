@@ -1159,9 +1159,6 @@ bool IndexWorker::insertDoc_(
         time_t timestamp,
         bool immediately)
 {
-    CREATE_PROFILER(proDocumentIndexing, "IndexWorker", "IndexWorker : InsertDocument")
-    CREATE_PROFILER(proIndexing, "IndexWorker", "IndexWorker : indexing")
-
     prepareIndexRTypeProperties_(document.getId(), indexDocument);
     if (hooker_)
     {
@@ -1188,6 +1185,9 @@ bool IndexWorker::doInsertDoc_(
         Document& document,
         IndexerDocument& indexDocument)
 {
+    CREATE_PROFILER(proDocumentIndexing, "IndexWorker", "IndexWorker : InsertDocument")
+    CREATE_PROFILER(proIndexing, "IndexWorker", "IndexWorker : indexing")
+
     START_PROFILER(proDocumentIndexing);
     if (documentManager_->insertDocument(document))
     {
