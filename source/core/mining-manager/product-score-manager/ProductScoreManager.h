@@ -11,6 +11,7 @@
 #include <configuration-manager/ProductScoreConfig.h>
 #include <util/cronexpression.h>
 #include <boost/thread/mutex.hpp>
+#include <boost/shared_ptr.hpp>
 #include <map>
 #include <string>
 
@@ -22,6 +23,7 @@ class OfflineProductScorerFactory;
 class ProductScoreTable;
 class DocumentManager;
 class ProductRankingPara;
+class SearchCache;
 
 class ProductScoreManager
 {
@@ -32,7 +34,8 @@ public:
         OfflineProductScorerFactory& offlineScorerFactory,
         const DocumentManager& documentManager,
         const std::string& collectionName,
-        const std::string& dirPath);
+        const std::string& dirPath,
+        boost::shared_ptr<SearchCache> searchCache);
 
     ~ProductScoreManager();
 
@@ -69,6 +72,8 @@ private:
     bool addCronJob_(const ProductRankingPara& bundleParam);
     void runCronJob_();
 
+    void clearSearchCache_();
+
 private:
     const ProductRankingConfig& config_;
 
@@ -84,6 +89,8 @@ private:
     izenelib::util::CronExpression cronExpression_;
     const std::string cronJobName_;
     boost::mutex buildCollectionMutex_;
+
+    boost::shared_ptr<SearchCache> searchCache_;
 };
 
 } // namespace sf1r

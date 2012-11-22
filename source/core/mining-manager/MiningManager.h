@@ -89,6 +89,7 @@ class DocumentManager;
 class LAManager;
 class IndexManager;
 class SearchManager;
+class SearchCache;
 class MultiDocSummarizationSubManager;
 class MerchantScoreManager;
 class CustomRankManager;
@@ -139,6 +140,7 @@ public:
                   const boost::shared_ptr<LAManager>& laManager,
                   const boost::shared_ptr<IndexManager>& index_manager,
                   const boost::shared_ptr<SearchManager>& searchManager,
+                  const boost::shared_ptr<SearchCache>& searchCache,
                   const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager,
                   const std::string& collectionName,
                   const DocumentSchema& documentSchema,
@@ -513,6 +515,7 @@ private:
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<SearchManager> searchManager_;
+    boost::shared_ptr<SearchCache> searchCache_;
 
     /** TG */
     TaxonomyInfo* tgInfo_;

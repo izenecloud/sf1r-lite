@@ -6,6 +6,7 @@
  * @date Created <2009-09-30 09:31:29>
  * @date Updated <2010-03-24 15:43:04>
  */
+#include "ResultType.h" // KeywordSearchResult
 #include <query-manager/QueryIdentity.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/faceted-submanager/ctr_manager.h>

@@ -44,6 +44,7 @@
 
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
+#include <common/SearchCache.h>
 
 #include <idmlib/tdt/integrator.h>
 #include <idmlib/util/container_switch.h>
@@ -100,6 +101,7 @@ MiningManager::MiningManager(
         const boost::shared_ptr<LAManager>& laManager,
         const boost::shared_ptr<IndexManager>& index_manager,
         const boost::shared_ptr<SearchManager>& searchManager,
+        const boost::shared_ptr<SearchCache>& searchCache,
         const boost::shared_ptr<IDManager>& idManager,
         const std::string& collectionName,
         const DocumentSchema& documentSchema,
@@ -121,6 +123,7 @@ MiningManager::MiningManager(
     , laManager_(laManager)
     , index_manager_(index_manager)
     , searchManager_(searchManager)
+    , searchCache_(searchCache)
     , tgInfo_(NULL)
     , idManager_(idManager)
     , groupManager_(NULL)
@@ -486,7 +489,8 @@ bool MiningManager::open()
                 *offlineScorerFactory_,
                 *document_manager_,
                 collectionName_,
-                scoreDir);
+                scoreDir,
+                searchCache_);
 
             if (! productScoreManager_->open())
             {

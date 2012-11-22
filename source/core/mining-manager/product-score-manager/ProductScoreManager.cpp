@@ -8,8 +8,10 @@
 #include <configuration-manager/ProductRankingConfig.h>
 #include <configuration-manager/MiningConfig.h>
 #include <document-manager/DocumentManager.h>
+#include <common/SearchCache.h>
 #include <util/scheduler.h>
 #include <glog/logging.h>
+#include <boost/scoped_ptr.hpp>
 
 using namespace sf1r;
 
@@ -19,12 +21,14 @@ ProductScoreManager::ProductScoreManager(
     OfflineProductScorerFactory& offlineScorerFactory,
     const DocumentManager& documentManager,
     const std::string& collectionName,
-    const std::string& dirPath)
+    const std::string& dirPath,
+    boost::shared_ptr<SearchCache> searchCache)
     : config_(config)
     , offlineScorerFactory_(offlineScorerFactory)
     , documentManager_(documentManager)
     , dirPath_(dirPath)
     , cronJobName_("ProductScoreManager-" + collectionName)
+    , searchCache_(searchCache)
 {
     createProductScoreTable_(POPULARITY_SCORE);
 
@@ -95,7 +99,18 @@ bool ProductScoreManager::buildCollection()
         }
     }
 
+    clearSearchCache_();
+
     return result;
+}
+
+void ProductScoreManager::clearSearchCache_()
+{
+    if (!searchCache_)
+        return;
+
+    LOG(INFO) << "clearing search cache";
+    searchCache_->clear();
 }
 
 ProductScorer* ProductScoreManager::createProductScorer(

@@ -3,6 +3,7 @@
 #include <mining-manager/product-score-manager/ProductScoreManager.h>
 #include <mining-manager/product-scorer/ProductScorer.h>
 #include <document-manager/DocumentManager.h>
+#include <common/SearchCache.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
@@ -79,12 +80,14 @@ void ProductScoreManagerTestFixture::resetScoreManager()
 {
     delete productScoreManager_;
 
+    boost::shared_ptr<SearchCache> searchCache;
     productScoreManager_ = new ProductScoreManager(rankConfig_,
                                                    bundleParam_,
                                                    *offlineScorerFactory_,
                                                    *documentManager_,
                                                    TEST_COLLECTION_NAME,
-                                                   scoreDirPath_);
+                                                   scoreDirPath_,
+                                                   searchCache);
 
     BOOST_CHECK(productScoreManager_->open());
 }
