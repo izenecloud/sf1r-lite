@@ -426,7 +426,8 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         }
 
         Document document;
-        documentManager->getDocument(curDocId, document);
+        bool b = documentManager->getDocument(curDocId, document);
+        if(!b) continue;
 
         // update docid
         std::string docidName("DOCID");
@@ -1158,9 +1159,6 @@ bool IndexWorker::insertDoc_(
         time_t timestamp,
         bool immediately)
 {
-    CREATE_PROFILER(proDocumentIndexing, "IndexWorker", "IndexWorker : InsertDocument")
-    CREATE_PROFILER(proIndexing, "IndexWorker", "IndexWorker : indexing")
-
     prepareIndexRTypeProperties_(document.getId(), indexDocument);
     if (hooker_)
     {
@@ -1187,6 +1185,9 @@ bool IndexWorker::doInsertDoc_(
         Document& document,
         IndexerDocument& indexDocument)
 {
+    CREATE_PROFILER(proDocumentIndexing, "IndexWorker", "IndexWorker : InsertDocument")
+    CREATE_PROFILER(proIndexing, "IndexWorker", "IndexWorker : indexing")
+
     START_PROFILER(proDocumentIndexing);
     if (documentManager_->insertDocument(document))
     {

@@ -141,7 +141,28 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
         }
         else
         {
-            value.doc.copyPropertiesFromDocument(another_value.doc, false);
+            const PropertyValue& docid_value = value.doc.property("DOCID");
+            //override if empty property
+            for (Document::property_const_iterator it = another_value.doc.propertyBegin(); it != another_value.doc.propertyEnd(); ++it)
+            {
+                if (!value.doc.hasProperty(it->first))
+                {
+                    value.doc.property(it->first) = it->second;
+                }
+                else
+                {
+                    PropertyValue& pvalue = value.doc.property(it->first);
+                    if(pvalue.which()==docid_value.which()) //is UString
+                    {
+                        const UString& uvalue = pvalue.get<UString>();
+                        if(uvalue.empty())
+                        {
+                            pvalue = it->second;
+                        }
+                    }
+                }
+            }
+            //value.doc.copyPropertiesFromDocument(another_value.doc, false);
         }
         value.type = UPDATE_SCD;
     }

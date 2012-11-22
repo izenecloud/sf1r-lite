@@ -81,6 +81,7 @@
           <UuidProperty name="uuid"/>
           <ContentProperty name="Content"/>
           <ScoreProperty name="Score"/>
+          <CommentCountProperty name="CommentCount"/> 
           <ScoreSCDPath path="@SF1RENGINE_ROOT@/bin/collection/chinese-wiki/scd/score"/>
         </Summarization
         <SuffixMatch>

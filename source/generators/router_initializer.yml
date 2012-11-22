@@ -29,7 +29,6 @@ controllers:
   CommandsController:
     actions:
       - index
-      - mining
       - optimize_index
       - index_query_log
 

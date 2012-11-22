@@ -62,36 +62,6 @@ void CommandsController::index()
     indexRecommend_();
 }
 
-/**
- * @brief Action \b mining. Sends command "mining" to SF1 to ask it start mining
- *
- * @section request
- *
- * - @b collection* (@c String): Collection name.
- *
- * @section response
- *
- * No extra fields.
- *
- * @section example
- *
- * Request
- * @code
- * {
- *   "collection": "ChnWiki",
- * }
- * @endcode
- */
-void CommandsController::mining()
-{
-     MiningSearchService* miningSearchService = collectionHandler_->miningSearchService_;
-     if (miningSearchService)
-     {
-         boost::shared_ptr<MiningManager> miningManager = miningSearchService->GetMiningManager();
-         miningManager->buildCollection();//add document count...
-     }
-}
-
 void CommandsController::indexSearch_()
 {
     IndexTaskService* taskService = collectionHandler_->indexTaskService_;

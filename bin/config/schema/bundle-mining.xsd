@@ -156,6 +156,7 @@
                             <xs:element ref="TDT" minOccurs="0"/>
                             <xs:element ref="Summarization" minOccurs="0"/>
                             <xs:element ref="SuffixMatch" minOccurs="0"/>
+                            <xs:element ref="ProductMatcher" minOccurs="0"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -232,6 +233,7 @@
                 <xs:element name="DisadvantageProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="TitleProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element name="ScoreProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="CommentCountProperty" type="PropertyType" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="OpinionProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="OpinionWorkingPath" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="OpinionSyncId" minOccurs="1" maxOccurs="1"/>
@@ -244,6 +246,7 @@
             <xs:sequence>
                 <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="TokenizeDictionary" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="Incremental" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="FilterProperty" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
@@ -254,6 +257,13 @@
             <xs:attribute name="path" type="xs:string" use="required" />
         </xs:complexType>
     </xs:element>
+
+    <xs:element name="Incremental">
+        <xs:complexType>
+            <xs:attribute name="enable" type="YesNoType" use="required" />
+        </xs:complexType>
+    </xs:element>
+
     <xs:element name="FilterProperty">
         <xs:complexType>
             <xs:attribute name="name" type="xs:string" use="required" />
@@ -261,6 +271,7 @@
             <xs:attribute name="amplification" type="xs:integer" use="optional" />
         </xs:complexType>
     </xs:element>
+
 
 
     <xs:element name="OpinionWorkingPath">
@@ -338,5 +349,10 @@
         <xs:attribute name="property" type="xs:string" use="optional"/>
         <xs:attribute name="weight" type="xs:float" use="optional"/>
     </xs:complexType>
+
+    <xs:element name="ProductMatcher">
+        <xs:complexType>
+        </xs:complexType>
+    </xs:element>
 
 </xs:schema>

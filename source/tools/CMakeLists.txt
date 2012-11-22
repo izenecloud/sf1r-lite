@@ -42,6 +42,9 @@ TARGET_LINK_LIBRARIES(LicenseFileGenerator
   sf1r_document_manager
   sf1r_node_manager
   sf1r_common
+  sf1r_b5m_manager
+  sf1r_image_manager
+  sf1r_net
   ${idmlib_LIBRARIES}
   ${imllib_LIBRARIES}
   ${ilplib_LIBRARIES}
@@ -100,6 +103,9 @@ SET(SF1_LIBS
   sf1r_mining_manager
   sf1r_ranking_manager
   sf1r_query_manager
+  sf1r_b5m_manager
+  sf1r_image_manager
+  sf1r_net
 
   sf1r_index_manager
   sf1r_document_manager

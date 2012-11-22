@@ -18,9 +18,11 @@ public:
     typedef std::map<izenelib::util::UString, GroupNode*> ChildContainerT;
     typedef ChildContainerT::iterator Iter;
     typedef ChildContainerT::const_iterator constIter;
+
     ChildContainerT child_nodes_;
     // the name is full path from root to the current node
     izenelib::util::UString  node_name_;
+
     GroupNode(const izenelib::util::UString& name)
         : node_name_(name)
     {
@@ -28,7 +30,7 @@ public:
     ~GroupNode()
     {
         ChildContainerT::iterator it = child_nodes_.begin();
-        while(it != child_nodes_.end())
+        while (it != child_nodes_.end())
         {
             delete it->second;
             ++it;
@@ -54,9 +56,9 @@ public:
 
     bool appendChild(GroupNode* child)
     {
-        if(child)
+        if (child)
         {
-            if(child_nodes_.find(child->node_name_) != child_nodes_.end())
+            if (child_nodes_.find(child->node_name_) != child_nodes_.end())
                 return false;
             child_nodes_[child->node_name_] = child;
             return true;
@@ -65,7 +67,7 @@ public:
     }
     bool appendChild(const izenelib::util::UString& node_name)
     {
-        if(child_nodes_.find(node_name) != child_nodes_.end())
+        if (child_nodes_.find(node_name) != child_nodes_.end())
             return false;
         GroupNode* n = new GroupNode(node_name);
         child_nodes_[node_name] = n;
@@ -74,7 +76,7 @@ public:
     bool removeChild(const izenelib::util::UString& node_name)
     {
         ChildContainerT::iterator it = child_nodes_.find(node_name);
-        if(it == child_nodes_.end())
+        if (it == child_nodes_.end())
             return false;
         delete it->second;
         child_nodes_.erase(it);
@@ -82,7 +84,7 @@ public:
     GroupNode* getChild(const izenelib::util::UString& node_name)
     {
         ChildContainerT::iterator it = child_nodes_.find(node_name);
-        if(it == child_nodes_.end())
+        if (it == child_nodes_.end())
             return NULL;
         return it->second;
     }
@@ -185,9 +187,9 @@ private:
     void mapNumberFilterToFilterId(const NumFilterItemMapT& num_filter_data, NumberIdMapT& filterids);
     static void printNode(GroupNode* node, size_t level, const StrIdMapT& filterids, const std::vector<FilterDocListT>& inverted_data)
     {
-        if(node)
+        if (node)
         {
-            for(size_t i = 0; i < level; i++)
+            for (size_t i = 0; i < level; i++)
                 printf("--");
             std::string str;
             node->node_name_.convertString(str, izenelib::util::UString::UTF_8);
@@ -195,12 +197,12 @@ private:
             assert(cit != filterids.end());
             cout << str << ", id range ( "<< cit->second.start << ","
                 << cit->second.end << " ) ";
-            if(cit->second.end > cit->second.start)
+            if (cit->second.end > cit->second.start)
                 cout << ", docid size:" << inverted_data[cit->second.start].size() << endl;
             else
                 cout << ", no doc id in current node." << endl;
             GroupNode::constIter group_cit = node->beginChild();
-            while(group_cit != node->endChild())
+            while (group_cit != node->endChild())
             {
                 printNode(group_cit->second, level + 1, filterids, inverted_data);
                 ++group_cit;

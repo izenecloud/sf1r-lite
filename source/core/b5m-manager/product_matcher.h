@@ -9,6 +9,7 @@
 #include <boost/unordered_set.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/serialization/set.hpp>
+#include <boost/operators.hpp>
 #include <ir/id_manager/IDManager.h>
 #include <am/sequence_file/ssfr.h>
 #include <am/leveldb/Table.h>
@@ -17,6 +18,9 @@
 #include <document-manager/Document.h>
 #include <idmlib/keyphrase-extraction/kpe_task.h>
 #include <idmlib/similarity/string_similarity.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/trie_policy.hpp>
+#include <ext/pb_ds/tag_and_trait.hpp>
 
 namespace sf1r {
 
@@ -25,152 +29,402 @@ namespace sf1r {
 
     public:
         typedef izenelib::util::UString UString;
-        typedef boost::unordered_map<std::string, std::string> CategoryGroup;
-        typedef boost::unordered_map<std::string, uint32_t> CategoryTermCount;
-        typedef uint64_t hash_t;
-        typedef std::pair<uint32_t, uint32_t> id2count_t;
-        typedef std::vector<uint32_t> idvec_t;
-        typedef std::vector<id2count_t> id2countvec_t;
         typedef idmlib::sim::StringSimilarity::Object SimObject;
-        typedef std::vector<std::string> EditCategoryKeywords;
-        typedef izenelib::am::leveldb::Table<std::string, UString> CRResult;
+        typedef uint32_t term_t;
+        typedef std::vector<term_t> TermList;
+        typedef std::vector<TermList> Suffixes;
+        typedef boost::unordered_set<TermList> KeywordSet;
+        typedef uint32_t position_t;
+        typedef std::pair<position_t, position_t>  Position;
+        //struct Double : boost::less_than_comparable<Double>
+                        //,boost::equality_comparable<Double>
+                        //,boost::addable<Double>
+                        //,boost::subtractable<Double>
+                        //,boost::multipliable<Double>
+                        //,boost::dividable<Double>
+        //{
+            //double value;
 
-        struct CategoryProb
+            //Double():value(0.0)
+            //{
+            //}
+            //Double(double d):value(d)
+            //{
+            //}
+
+            //bool operator<(const Double& another) const
+            //{
+                //return value<another.value;
+            //}
+
+            //bool operator==(const Double& another) const
+            //{
+                //return value==another.value;
+            //}
+
+            //Double& operator+=(const Double& another)
+            //{
+                //value+=another.value;
+                //return *this;
+            //}
+            //Double& operator-=(const Double& another)
+            //{
+                //value-=another.value;
+                //return *this;
+            //}
+            //Double& operator*=(const Double& another)
+            //{
+                //value*=another.value;
+                //return *this;
+            //}
+            //Double& operator/=(const Double& another)
+            //{
+                //value/=another.value;
+                //return *this;
+            //}
+
+            //operator double () const
+            //{
+                //return value;
+            //}
+        //};
+
+        template<class K, class V>
+        class dmap : public std::map<K,V>
         {
-            std::string scategory;
-            double score;
+            typedef std::map<K,V> BaseType;
+        public:
+            dmap():BaseType()
+            {
+            }
+            dmap(const V& default_value):d_(default_value)
+            {
+            }
+
+            V& operator[] (const K& k)
+            {
+                return (*((this->insert(make_pair(k,d_))).first)).second;
+            }
+
+
+        private:
+            V d_;
+            
+        };
+        struct CategoryNameApp 
+          : boost::less_than_comparable<CategoryNameApp> ,boost::equality_comparable<CategoryNameApp>
+        {
+            uint32_t cid;
+            uint32_t depth;
+            bool is_complete;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & cid & depth & is_complete;
+            }
+            bool operator<(const CategoryNameApp& another) const
+            {
+                if(cid<another.cid) return true;
+                else if(cid>another.cid) return false;
+                else if(depth<another.depth) return true;
+                else if(depth>another.depth) return false;
+                return false;
+            }
+
+            bool operator==(const CategoryNameApp& another) const
+            {
+                return cid==another.cid&&depth==another.depth;
+            }
+        };
+        struct AttributeApp
+          : boost::less_than_comparable<AttributeApp> ,boost::equality_comparable<AttributeApp>
+        {
+            uint32_t spu_id;
+            std::string attribute_name;
+            bool is_optional;
+            //bool is_complete;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & spu_id & attribute_name & is_optional;
+            }
+            bool operator<(const AttributeApp& another) const
+            {
+                if(spu_id<another.spu_id) return true;
+                else if(spu_id>another.spu_id) return false;
+                return attribute_name<another.attribute_name;
+            }
+
+            bool operator==(const AttributeApp& another) const
+            {
+                return spu_id==another.spu_id&&attribute_name==another.attribute_name;
+                //return spu_id==another.spu_id;
+            }
+        };
+        struct SpuTitleApp
+          : boost::less_than_comparable<SpuTitleApp> ,boost::equality_comparable<SpuTitleApp>
+        {
+            uint32_t spu_id;
+            uint32_t pstart;
+            uint32_t pend;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & spu_id & pstart & pend;
+            }
+            bool operator<(const SpuTitleApp& another) const
+            {
+                if(spu_id<another.spu_id) return true;
+                else if(spu_id>another.spu_id) return false;
+                else
+                {
+                    return pstart<another.pstart;
+                }
+            }
+
+            bool operator==(const SpuTitleApp& another) const
+            {
+                return spu_id==another.spu_id&&pstart==another.pstart;
+            }
+        };
+        struct KeywordTag
+        {
+            KeywordTag();
+            std::vector<CategoryNameApp> category_name_apps;
+            std::vector<AttributeApp> attribute_apps;
+            std::vector<SpuTitleApp> spu_title_apps;
+            double cweight; //not serialized, runtime property
+            double aweight;
+            uint8_t ngram;
+            std::vector<Position> positions;
+
+            template<class T>
+            void SortAndUnique(std::vector<T>& vec)
+            {
+                std::sort(vec.begin(), vec.end());
+                vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+            }
+            void Flush();
+            void Append(const KeywordTag& another, bool is_complete);
+            bool Combine(const KeywordTag& another);
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & category_name_apps & attribute_apps & spu_title_apps;
+            }
         };
 
-        struct CategoryKeyword
+        typedef std::map<TermList, KeywordTag> KeywordMap;
+        typedef std::vector<std::pair<TermList, KeywordTag> > KeywordVector;
+
+        struct ProductCandidate
         {
-            std::string keyword;
-            std::vector<CategoryProb> probs;
+            ProductCandidate()
+            : attribute_score(0.0)
+            {
+            }
+            dmap<std::string, double> attribute_score;
+            double GetAWeight() const
+            {
+                double r = 0.0;
+                for(dmap<std::string, double>::const_iterator it = attribute_score.begin();it!=attribute_score.end();++it)
+                {
+                    r+=it->second;
+                }
+                return r;
+            }
         };
 
-        struct SpuCategory
+        template<class T>
+        struct vector_access_traits
         {
-            std::string scategory;
-            idmlib::sim::StringSimilarity::Object obj;
+        public:
+          typedef std::size_t size_type;
+          typedef std::vector<T> key_type;
+          typedef const key_type& key_const_reference;
+          typedef T e_type;
+          typedef typename key_type::const_iterator const_iterator;
+
+          enum
+            {
+              max_size = 10000
+            };
+
+          // Returns a const_iterator to the firstelement of r_key.
+          inline static const_iterator
+          begin(key_const_reference r_key)
+          { return r_key.begin(); }
+
+          // Returns a const_iterator to the after-lastelement of r_key.
+          inline static const_iterator
+          end(key_const_reference r_key)
+          { return r_key.end(); }
+
+          // Maps an element to a position.
+          inline static std::size_t
+          e_pos(e_type e)
+          {
+              return (std::size_t)e;
+          }
+        };
+        //typedef __gnu_pbds::trie<std::vector<term_t>, KeywordTag, vector_access_traits<term_t> > TrieType;
+        typedef std::map<std::vector<term_t>, KeywordTag> TrieType;
+
+
+        struct Category
+        {
+            std::string name;
             uint32_t cid;
             uint32_t parent_cid;
             bool is_parent;
-        };
-
-        //typedef boost::unordered_map<std::string, double> CategorySS;
-        typedef boost::unordered_map<std::string, std::vector<uint32_t> > CategorySpuIndex;
-
-        typedef boost::unordered_map<std::string, uint32_t> CategoryIndex;
-
-        struct TitleCategoryScore
-        {
-            TitleCategoryScore()
-            : position(-1.0), category_sim(-1.0), spu_sim(-1.0)
+            uint32_t depth;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
             {
+                ar & name & cid & parent_cid & is_parent & depth;
             }
-            //std::string scategory;
-            uint32_t category_index;
-            //std::vector<double> position;
-            double position;
-            double category_sim;
-            double spu_sim;
         };
-        typedef std::pair<uint32_t, double> CategoryScore; //category_index, score;
-        typedef std::vector<CategoryScore> CategoryScoreList;
-        //typedef trie<std::string, CategoryScoreList> TrieType;
-        typedef boost::unordered_map<std::string, CategoryScoreList> TrieType;
+
+        struct Attribute
+        {
+            std::string name;
+            std::vector<std::string> values;
+            bool is_optional;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & name & values & is_optional;
+            }
+        };
 
         struct Product
         {
             std::string spid;
             std::string stitle;
             std::string scategory;
-            double price; friend class boost::serialization::access;
+            double price; 
+            std::vector<Attribute> attributes;
+            double aweight;
+            SimObject title_obj;
+            friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle & scategory & price;
+                ar & spid & stitle & scategory & price & attributes & aweight & title_obj;
             }
         };
         typedef uint32_t PidType;
-        typedef std::pair<PidType, double> PidPair;
-        typedef std::vector<PidPair> PidList;
-        typedef uint64_t CAttribId;
-        typedef std::map<AttribId, PidList> A2PMap;
-        typedef std::set<uint32_t> CidSet;
+        typedef std::map<std::string, uint32_t> CategoryIndex;
+        typedef std::map<std::string, uint32_t> ProductIndex;
+        typedef boost::unordered_map<uint32_t, UString> IdManager;
+
         ProductMatcher(const std::string& path);
         ~ProductMatcher();
         bool IsOpen() const;
         bool Open();
         static void Clear(const std::string& path);
-        void LoadCategoryGroup(const std::string& file);
-        void InsertCategoryGroup(const std::vector<std::string>& group);
         bool Index(const std::string& scd_path);
-        bool GetMatched(const Document& doc, uint32_t count, std::vector<Product>& products);
-        bool GetMatched(const Document& doc, Product& product);
-        bool GetCategory(const Document& doc, UString& category);
-        bool GetProductInfo(const PidType& pid, Product& product);
         bool DoMatch(const std::string& scd_path);
-        bool IndexCR();
-        bool DoCR(const std::string& scd_path); //do category recognizer
+        bool Process(const Document& doc, Category& result_category, Product& result_product);
+        bool GetProduct(const std::string& pid, Product& product);
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
 
+        void SetUsePriceSim(bool sim)
+        { use_price_sim_ = sim; }
+
     private:
         bool PriceMatch_(double p1, double p2);
-        uint32_t GetCategoryId_(const UString& category);
-        AttribId GenAID_(const UString& category, const std::vector<UString>& value_list, AttribId& aid);
-        CAttribId GetCAID_(AttribId aid, const UString& category);
-        CAttribId GetCAID_(AttribId aid);
-        void GetAttribIdSet(const UString& category, const izenelib::util::UString& value, std::set<AttribId>& aid_set);
-        void NormalizeText_(const izenelib::util::UString& text, izenelib::util::UString& ntext);
+        double PriceSim_(double offerp, double spup);
         void Analyze_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
         void AnalyzeChar_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
         void AnalyzeCR_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
         void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
-        UString GetAttribRep_(const UString& category, const UString& text);
-        void WriteCategoryGroup_();
-        void NgramProcess_(const std::vector<idmlib::kpe::NgramInCollection>& data);
-        std::string GetNgramString_(const std::vector<uint32_t>& id_list);
-        void OutputNgram_(const idmlib::kpe::NgramInCollection& ngram);
-        //void GetCategorySS_(UString title, CategorySS& ss);
-        void GetCategorySpuIndexes_(const std::string& scategory, std::vector<uint32_t>& indexes);
-        double ComputeSpuSim_(const SimObject& obj, const std::string& scategory);
-        void GenerateCategoryTokens_(const std::vector<SpuCategory>& spu_categories);
-        void LoadCategoryKeywords_(const std::string& file);
-        void LoadCategories_(const std::string& file);
-        void CRInit_();
+        bool ProcessBook_(const Document& doc, Product& result_product);
+
+
+        void ParseAttributes_(const UString& ustr, std::vector<Attribute>& attributes);
+        void GenSuffixes_(const std::vector<term_t>& term_list, Suffixes& suffixes);
+        void GenSuffixes_(const std::string& text, Suffixes& suffixes);
+        void ConstructSuffixTrie_(TrieType& trie);
+        term_t GetTerm_(const UString& text);
+        term_t GetTerm_(const std::string& text);
+        std::string GetText_(const TermList& tl);
+        void GetTerms_(const std::string& text, std::vector<term_t>& term_list);
+        void GetTerms_(const UString& text, std::vector<term_t>& term_list);
+        void GetCRTerms_(const UString& text, std::vector<term_t>& term_list);
+        void ConstructKeywords_();
+        void AddKeyword_(const UString& text);
+        void ConstructKeywordTrie_(const TrieType& suffix_trie);
+        void GetKeywordVector_(const TermList& term_list, KeywordVector& keyword_vector);
+        void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t& cid, uint32_t& pid);
+        uint32_t GetCidBySpuId_(uint32_t spu_id);
+
+        template<class K, class V>
+        void GetSortedVector_(const std::map<K, V>& map, std::vector<std::pair<V, K> >& vec)
+        {
+            for(typename std::map<K,V>::const_iterator it = map.begin();it!=map.end();it++)
+            {
+                vec.push_back(std::make_pair(it->second, it->first));
+            }
+            std::sort(vec.begin(), vec.end(), std::greater<std::pair<V, K> >());
+        }
+
+        template<class T>
+        void SortVectorDesc_(std::vector<T>& vec)
+        {
+            std::sort(vec.begin(), vec.end(), std::greater<T>());
+        }
+
+        template<class T>
+        static bool StartsWith_(const std::vector<T>& v1, const std::vector<T>& v2)
+        {
+            if(v2.size()>v1.size()) return false;
+            for(uint32_t i=0;i<v2.size();i++)
+            {
+                if(v2[i]!=v1[i]) return false;
+            }
+            return true;
+        }
 
 
     private:
         std::string path_;
         bool is_open_;
         std::string cma_path_;
+        bool use_price_sim_;
         idmlib::sim::StringSimilarity string_similarity_;
-        CategoryGroup category_group_;
-        CidSet cid_set_;
-        AttributeIdManager* aid_manager_;
-        A2PMap a2p_;
         std::vector<Product> products_;
-        std::ofstream logger_;
+        term_t tid_;
+        AttributeIdManager* aid_manager_;
+        IdManager id_manager_;
         idmlib::util::IDMAnalyzer* analyzer_;
         idmlib::util::IDMAnalyzer* char_analyzer_;
         idmlib::util::IDMAnalyzer* chars_analyzer_;
+        std::vector<std::string> keywords_thirdparty_;
+        KeywordSet not_keywords_;
         std::string test_docid_;
-        idmlib::util::IDMIdManager* id_manager_;
-        CategoryTermCount category_term_count_;
-        std::ofstream cr_ofs_;
-        std::vector<idmlib::sim::StringSimilarity::Object> ss_objects_;
-        EditCategoryKeywords edit_category_keywords_;
-        CategorySpuIndex category_spu_index_;
         std::string left_bracket_;
         std::string right_bracket_;
-        std::vector<SpuCategory> category_list_;
+        term_t left_bracket_term_;
+        term_t right_bracket_term_;
+        std::vector<Category> category_list_;
         CategoryIndex category_index_;
+        ProductIndex product_index_;
+        KeywordSet keyword_set_;
         TrieType trie_;
-        CRResult* cr_result_;
+        KeywordVector keyword_vector_;
+
+        const static double optional_weight_ = 0.2;
         
     };
 }

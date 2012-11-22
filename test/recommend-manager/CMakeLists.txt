@@ -33,6 +33,9 @@ SET(libs
   sf1r_bundle_recommend
   sf1r_document_manager
   sf1r_directory_manager
+  sf1r_b5m_manager
+  sf1r_image_manager
+  sf1r_net
 
   sf1r_license_manager
   sf1r_la_manager

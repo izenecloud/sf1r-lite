@@ -1713,6 +1713,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
         }
 
+        {
+            Iterator<Element> it("CommentCountProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                mining_schema.summarization_schema.commentCountPropName = property_name;
+            }
+        }
 
         ticpp::Element* opinionProp_node = getUniqChildElement(task_node, "OpinionProperty", false);
         if (opinionProp_node)
@@ -1937,6 +1945,18 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             throw XmlConfigParserException("["+property_name+"] used in SuffixMatch is missing.");
         }
 
+        ticpp::Element* subNodeInc = getUniqChildElement(task_node, "Incremental", true);
+        if (subNodeInc)
+        {
+            bool bIncremental = false;
+            getAttribute(subNodeInc, "enable", bIncremental, false);
+            mining_schema.suffixmatch_schema.suffix_incremental_enable = bIncremental;
+        }
+        else
+        {
+            throw XmlConfigParserException("Incremental used in SuffixMatch is missing.");
+        }
+        
         Iterator<Element> filterit("FilterProperty");
         const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
         for (filterit = filterit.begin(task_node); filterit != filterit.end(); ++filterit)
@@ -1952,8 +1972,8 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             std::string type;
             getAttribute(propNode, "filtertype", type);
 
-            int32_t amplification = 1;
-            getAttribute(propNode, "amplification", amplification, false);
+            int32_t amplifier = 1;
+            getAttribute(propNode, "amplifier", amplifier, false);
 
             if(type == "group")
             {
@@ -1980,7 +2000,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 
                 NumberFilterConfig number_filterconfig(property_type);
                 number_filterconfig.property = property_name;
-                number_filterconfig.amplification = amplification;
+                number_filterconfig.amplifier = amplifier;
                 if (number_filterconfig.isNumericType())
                 {
                     if (propIt == indexSchema.end() ||
@@ -1998,11 +2018,16 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                     throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not int, float type.");
                 }
             }
-            else 
+            else
             {
                 throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> unknown filter type.");
             }
         }
+    }
+    task_node = getUniqChildElement(mining_schema_node, "ProductMatcher", false);
+    if(task_node)
+    {
+        mining_schema.product_matcher_enable = true;
     }
 }
 

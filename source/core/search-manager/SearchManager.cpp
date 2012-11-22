@@ -169,10 +169,6 @@ bool SearchManager::search(
         uint32_t start,
         bool enable_parallel_searching)
 {
-    CREATE_PROFILER( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
-    CREATE_PROFILER( preparerank, "SearchManager", "doSearch_: prepare ranker");
-    CREATE_PROFILER( preparesort, "SearchManager", "doSearch_: prepare sort");
-
     if ( actionOperation.noError() == false )
         return false;
 
@@ -447,6 +443,9 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         bool is_parallel
         )
 {
+    CREATE_PROFILER( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
+    CREATE_PROFILER( preparerank, "SearchManager", "doSearch_: prepare ranker");
+
     unsigned int collectionId = 1;
     std::vector<std::string> indexPropertyList( actionOperation.actionItem_.searchPropertyList_ );
     START_PROFILER( preparedociter )

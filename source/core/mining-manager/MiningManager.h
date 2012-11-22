@@ -30,6 +30,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/thread/mutex.hpp>
+#include <util/PriorityQueue.h>
 #include <string>
 #include <map>
 
@@ -99,6 +100,7 @@ class ProductScoreManager;
 class OfflineProductScorerFactory;
 class SuffixMatchManager;
 class IncrementalManager;
+class ProductMatcher;
 
 namespace sim
 {
@@ -122,6 +124,7 @@ class CTRManager;
 class MiningManager
 {
 typedef DupDetectorWrapper DupDType;
+typedef std::pair<double, uint32_t> ResultT;
 typedef idmlib::util::ContainerSwitch<idmlib::tdt::Storage> TdtStorageType;
 typedef idmlib::sim::TermSimilarityTable<uint32_t> SimTableType;
 typedef idmlib::sim::SimOutputCollector<SimTableType> SimCollectorType;
@@ -149,10 +152,6 @@ public:
                   const IndexBundleSchema& indexSchema);
 
     ~MiningManager();
-
-    void buildCollection();
-
-    void SearchCollection(const std::string query);
 
     bool open();
 
@@ -345,6 +344,8 @@ public:
             std::vector<float>& customRankScoreList,
             std::size_t& totalCount);
 
+    bool GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category);
+
     bool SetKV(const std::string& key, const std::string& value);
 
     bool GetKV(const std::string& key, std::string& value);
@@ -411,6 +412,19 @@ public:
     }
 
 private:
+    class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
+    {
+    public:
+        WordPriorityQueue_(size_t s)
+        {
+            initialize(s);
+        }
+    protected:
+        bool lessThan(const ResultT& o1, const ResultT& o2) const
+        {
+            return (o1.first < o2.first);
+        }
+    };
     DISALLOW_COPY_AND_ASSIGN(MiningManager);
 
     void printSimilarLabelResult_(uint32_t label_id);
@@ -589,6 +603,9 @@ private:
     std::string suffix_match_path_;
     SuffixMatchManager* suffixMatchManager_;
     IncrementalManager* incrementalManager_;
+
+    /** Product Matcher */
+    ProductMatcher* productMatcher_;
 
     /** KV */
     std::string kv_path_;

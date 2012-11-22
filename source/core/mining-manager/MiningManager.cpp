@@ -58,6 +58,8 @@
 #include <idmlib/tdt/tdt_types.h>
 #include <directory-manager/DirectoryCookie.h>
 
+#include <b5m-manager/product_matcher.h> //idmlib/util/CollectionUtil.h make conflicts on scd parser
+
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/id_manager/IDManager.h>
 #include <la-manager/LAManager.h>
@@ -113,7 +115,7 @@ MiningManager::MiningManager(
     , collectionPath_(collectionPath)
     , collectionName_(collectionName)
     , documentSchema_(documentSchema)
-    , miningConfig_(miningConfig) 
+    , miningConfig_(miningConfig)
     , indexSchema_ (indexSchema)
     , mining_schema_(miningSchema)
     , analyzer_(NULL)
@@ -267,11 +269,11 @@ bool MiningManager::open()
         uint32_t logdays = 7;
 
         qcManager_.reset(new QueryCorrectionSubmanager(queryDataPath_, miningConfig_.query_correction_param.enableEK,
-                         miningConfig_.query_correction_param.enableCN));
+                    miningConfig_.query_correction_param.enableCN));
         rmDb_.reset(new RecommendManager(collectionName_, collectionPath_, mining_schema_, miningConfig_, document_manager_,
-                                         qcManager_, analyzer_, logdays));
+                    qcManager_, analyzer_, logdays));
 
-        if(!rmDb_->open())
+        if (!rmDb_->open())
         {
             std::cerr<<"open query recommend manager failed"<<std::endl;
             rmDb_->close();
@@ -358,8 +360,8 @@ bool MiningManager::open()
             std::string groupPath = prefix_path + "/group";
 
             groupManager_ = new faceted::GroupManager(
-                mining_schema_.group_config_map,
-                *document_manager_, groupPath);
+                    mining_schema_.group_config_map,
+                    *document_manager_, groupPath);
             if (! groupManager_->open())
             {
                 std::cerr << "open GROUP failed" << std::endl;
@@ -385,10 +387,10 @@ bool MiningManager::open()
         {
             faceted::GroupFilterBuilder* filterBuilder =
                 new faceted::GroupFilterBuilder(
-                    mining_schema_.group_config_map,
-                    groupManager_,
-                    attrManager_,
-                    searchManager_.get());
+                        mining_schema_.group_config_map,
+                        groupManager_,
+                        attrManager_,
+                        searchManager_.get());
             searchManager_->setGroupFilterBuilder(filterBuilder);
         }
 
@@ -421,7 +423,7 @@ bool MiningManager::open()
                 else
                 {
                     std::cerr << "the label logger on group property " << propName
-                              << " is already opened before" << std::endl;
+                        << " is already opened before" << std::endl;
                     return false;
                 }
             }
@@ -448,7 +450,7 @@ bool MiningManager::open()
                 groupManager_->getPropValueTable(categoryScoreConfig.propName);
 
             merchantScoreManager_ = new MerchantScoreManager(
-                merchantValueTable, categoryValueTable);
+                    merchantValueTable, categoryValueTable);
 
             const std::string scorePath = (scoreDir / "score.txt").string();
             if (! merchantScoreManager_->open(scorePath))
@@ -476,9 +478,9 @@ bool MiningManager::open()
 
             const std::string customRankPath = (customRankDir / "custom.db").string();
             customRankManager_ = new CustomRankManager(
-                customRankPath,
-                *customDocIdConverter_,
-                document_manager_.get());
+                    customRankPath,
+                    *customDocIdConverter_,
+                    document_manager_.get());
 
             offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(*this);
 
@@ -499,7 +501,7 @@ bool MiningManager::open()
             }
 
             productScorerFactory_ = new ProductScorerFactory(
-                rankConfig, *this);
+                    rankConfig, *this);
 
             searchManager_->setCustomRankManager(customRankManager_);
             searchManager_->setProductScorerFactory(productScorerFactory_);
@@ -532,43 +534,85 @@ bool MiningManager::open()
                                                     index_manager_,
                                                     c_analyzer_);
 
-           if (!mining_schema_.summarization_schema.uuidPropName.empty())
-           {
-               //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
-           }
+            if (!mining_schema_.summarization_schema.uuidPropName.empty())
+            {
+                //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
+            }
         }
 
         /** Suffix Match */
-      if (mining_schema_.suffixmatch_schema.suffix_match_enable)
+        if (mining_schema_.suffixmatch_schema.suffix_match_enable)
         {
             LOG(INFO) << "suffix match enabled.";
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
-                mining_schema_.suffixmatch_schema.suffix_match_property,
-                mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                document_manager_, groupManager_, attrManager_, searchManager_.get());
+                    mining_schema_.suffixmatch_schema.suffix_match_property,
+                    mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
+                    document_manager_, groupManager_, attrManager_, searchManager_.get());
             // reading suffix config and load filter data here.
             suffixMatchManager_->setGroupFilterProperty(mining_schema_.suffixmatch_schema.group_filter_properties);
             suffixMatchManager_->setAttrFilterProperty(mining_schema_.suffixmatch_schema.attr_filter_properties);
             std::vector<std::string> number_props;
             std::vector<int32_t> number_amp_list;
             const std::vector<NumberFilterConfig>& number_config_list = mining_schema_.suffixmatch_schema.number_filter_properties;
-            for(size_t i = 0; i < number_config_list.size(); ++i)
+            for (size_t i = 0; i < number_config_list.size(); ++i)
             {
                 number_props.push_back(number_config_list[i].property);
-                number_amp_list.push_back(number_config_list[i].amplification);
+                number_amp_list.push_back(number_config_list[i].amplifier);
             }
             suffixMatchManager_->setNumberFilterProperty(number_props, number_amp_list);
 
-            incrementalManager_ = new IncrementalManager(suffix_match_path_, mining_schema_.suffixmatch_schema.suffix_match_property, 
-                document_manager_, idManager_, laManager_, indexSchema_);
+            if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+            {
+                incrementalManager_ = new IncrementalManager(suffix_match_path_,
+                    mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath, 
+                    mining_schema_.suffixmatch_schema.suffix_match_property, 
+                    document_manager_, idManager_, laManager_, indexSchema_);
+                if (incrementalManager_)
+                {
+                    incrementalManager_->InitManager_();
+                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                }
+            }
+        }
+        if (mining_schema_.product_matcher_enable)
+        {
+            std::string res_path = system_resource_path_+"/product-matcher";
+            productMatcher_ = new ProductMatcher(res_path);
+            if(!productMatcher_->Open())
+            {
+                std::cerr<<"product matcher open failed"<<std::endl;
+                delete productMatcher_;
+                productMatcher_ = NULL;
+            }
+            productMatcher_->SetUsePriceSim(false);
+            //test
+            std::vector<std::string> test_queries;
+            test_queries.push_back("iPhone 5");
+            test_queries.push_back("尼康 D3200");
+            test_queries.push_back("iPhone");
+            test_queries.push_back("iPad");
+            test_queries.push_back("手机");
+            test_queries.push_back("单反");
+            for(uint32_t i=0;i<test_queries.size();i++)
+            {
+                std::string squery = test_queries[i];
+                UString query(squery, UString::UTF_8);
+                UString category;
+                if(GetProductCategory(query, category))
+                {
+                    std::string scategory;
+                    category.convertString(scategory, UString::UTF_8);
+                    std::cerr<<"!!!!!!!!!!!query category "<<squery<<","<<scategory<<std::endl;
+                }
+            }
         }
 
         /** KV */
         kv_path_ = prefix_path + "/kv";
         boost::filesystem::create_directories(kv_path_);
         kvManager_ = new KVSubManager(kv_path_);
-        if(!kvManager_->open())
+        if (!kvManager_->open())
         {
             std::cerr<<"kv manager open fail"<<std::endl;
             delete kvManager_;
@@ -768,7 +812,7 @@ bool MiningManager::DoMiningCollection()
             //         boost::gregorian::date end = boost::gregorian::from_string("2011-03-31");
             //         std::vector<izenelib::util::UString> topic_list;
             //         GetTdtInTimeRange(start, end, topic_list);
-            //         for(uint32_t i=0;i<topic_list.size();i++)
+            //         for (uint32_t i=0;i<topic_list.size();i++)
             //         {
             //             std::string str;
             //             topic_list[i].convertString(str, izenelib::util::UString::UTF_8);
@@ -802,41 +846,41 @@ bool MiningManager::DoMiningCollection()
     // do SuffixMatch
     if (mining_schema_.suffixmatch_schema.suffix_match_enable)
     {
-        suffixMatchManager_->buildCollection();
-    }
-
-    return true;
-}
-void MiningManager::buildCollection()
-{
-    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
-    {
-        incrementalManager_->createIndex_();
-    }
-}
-
-void MiningManager::SearchCollection(const std::string query)
-{
-    std::vector<docid_t> resultList;
-    std::vector<float> ResultListSimilarity;
-    incrementalManager_->fuzzySearch_(query, resultList, ResultListSimilarity);
-    PropertyValue result;
-    uint32_t k = 0;
-    for (std::vector<docid_t>::iterator i = resultList.begin(); i != resultList.end(); ++i)
-    {
-        if (k > 6)
+        if(mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
-            cout<<"..................................."<<endl;
-            break;
+            if(!(suffixMatchManager_->isStartFromLocalFM()))
+            {
+                LOG(INFO)<<"[] Start suffix init fm-index..."<<endl;
+                suffixMatchManager_->buildCollection();
+                incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+            }
+            else
+            {
+                uint32_t last_docid = 0;
+                uint32_t docNum = 0;
+                uint32_t maxDoc = 0;
+                incrementalManager_->getLastDocid(last_docid);
+                incrementalManager_->getDocNum(docNum);
+                incrementalManager_->getMaxNum(maxDoc);
+                if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
+                {
+                    LOG(INFO)<<"Rebuilding fm-index....."<<endl;
+                    suffixMatchManager_->buildCollection();
+                    incrementalManager_->reset();
+                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                    //incrementalManager_->init_();
+                }
+                else
+                {
+                    incrementalManager_->createIndex_();//means add every day, now just for test;
+                }
+            }
         }
-        cout<<"[DocId]: "<<*i<<endl;
-        document_manager_->getPropertyValue(*i, "Title", result);
+        else
+            suffixMatchManager_->buildCollection();
 
-        std::string oldvalue_str;
-        izenelib::util::UString& propertyValueU = result.get<izenelib::util::UString>();
-        propertyValueU.convertString(oldvalue_str, izenelib::util::UString::UTF_8);
-        cout<<"[Title]: "<<oldvalue_str<<" [Score]: "<<ResultListSimilarity[k++]<<endl;
-   }
+    }
+    return true;
 }
 
 void MiningManager::onIndexUpdated(size_t docNum)
@@ -1020,7 +1064,7 @@ bool MiningManager::getSimilarImageDocIdList(
 
 // void MiningManager::getMiningStatus(Status& status)
 // {
-//     if(status_)
+//     if (status_)
 //     {
 //         status = *status_;
 //     }
@@ -1097,7 +1141,7 @@ bool MiningManager::getDuplicateDocIdList(uint32_t docId, std::vector<
 
 bool MiningManager::computeSimilarity_(izenelib::ir::indexmanager::IndexReader* pIndexReader, const std::vector<std::string>& property_names)
 {
-//   if(pIndexReader->maxDoc()> similarityIndex_->GetMaxDocId())
+//   if (pIndexReader->maxDoc()> similarityIndex_->GetMaxDocId())
     if (true)
     {
         std::cout << "Start to compute similarity index, please wait..."<< std::endl;
@@ -1769,7 +1813,7 @@ bool MiningManager::GetSummarizationByRawKey(
         const izenelib::util::UString& rawKey,
         Summarization& result)
 {
-    if(!summarizationManager_) return false;
+    if (!summarizationManager_) return false;
     return summarizationManager_->GetSummarizationByRawKey(rawKey,result);
 }
 
@@ -1816,24 +1860,92 @@ bool MiningManager::GetSuffixMatch(
         return false;
 
     izenelib::util::UString queryU(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
+    std::vector<std::pair<double, uint32_t> > res_list;
+
     if (!use_fuzzy)
-        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, docIdList, rankScoreList);
+    {
+        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, res_list);
+    }
     else
     {
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                 queryU, max_docs,
-                docIdList, rankScoreList, actionOperation.actionItem_.searchingMode_.filtermode_,
-                filter_param, actionOperation.actionItem_.groupParam_);
+                actionOperation.actionItem_.searchingMode_.filtermode_,
+                filter_param,
+                actionOperation.actionItem_.groupParam_,
+                res_list);
+
+        if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+        {
+            std::vector<uint32_t> _docIdList;
+            std::vector<double> _rankScoreList;
+            incrementalManager_->fuzzySearch_(actionOperation.actionItem_.env_.queryString_,
+                    _docIdList, _rankScoreList);
+
+            uint32_t max_count = std::min(max_docs, (uint32_t)_docIdList.size());
+
+            izenelib::util::ClockTimer timer;
+
+            WordPriorityQueue_ topk_seedbigram(max_count);
+
+            for (size_t i = 0; i < _docIdList.size(); ++i)
+            {
+                topk_seedbigram.insert(std::make_pair(_rankScoreList[i], _docIdList[i]));
+            }
+
+            max_count += res_list.size();
+            std::vector<std::pair<double, uint32_t> > inc_res_list(max_count);
+            for (uint32_t i = 0; i < max_count; ++i)
+            {
+                inc_res_list[max_count - i - 1] = topk_seedbigram.pop();
+            }
+
+            totalCount += _docIdList.size();
+
+            std::merge(res_list.begin(), res_list.end(), inc_res_list.begin() + res_list.size(), inc_res_list.end(), inc_res_list.begin(), std::greater<std::pair<double, uint32_t> >());
+            inc_res_list.swap(res_list);
+
+            LOG(INFO) << "[]TOPN and cost:" << timer.elapsed() << " seconds" << std::endl;
+        }
     }
+
+    docIdList.resize(res_list.size());
+    rankScoreList.resize(res_list.size());
+    for (size_t i = 0; i < res_list.size(); ++i)
+    {
+        rankScoreList[i] = res_list[i].first;
+        docIdList[i] = res_list[i].second;
+    }
+
     searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
-        rankScoreList, customRankScoreList);
+            rankScoreList, customRankScoreList);
 
     docIdList.erase(docIdList.begin(), docIdList.begin() + start);
     rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
     customRankScoreList.erase(customRankScoreList.begin(), customRankScoreList.begin() + start);
- 
+
     return true;
+}
+bool MiningManager::GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category)
+{
+    if(productMatcher_==NULL)
+    {
+        return false;
+    }
+    Document doc;
+    doc.property("Title") = query;
+    ProductMatcher::Category result_category;
+    ProductMatcher::Product result_product;
+    if(productMatcher_->Process(doc, result_category, result_product))
+    {
+        if(!result_category.name.empty())
+        {
+            category = izenelib::util::UString(result_category.name, izenelib::util::UString::UTF_8);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool MiningManager::SetKV(const std::string& key, const std::string& value)
@@ -1851,7 +1963,7 @@ bool MiningManager::SetKV(const std::string& key, const std::string& value)
 
 bool MiningManager::GetKV(const std::string& key, std::string& value)
 {
-    if(kvManager_)
+    if (kvManager_)
     {
         return kvManager_->get(key, value);
     }

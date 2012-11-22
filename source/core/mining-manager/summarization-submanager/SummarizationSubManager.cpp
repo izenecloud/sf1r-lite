@@ -140,7 +140,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     for(unsigned int i = 0; i < del_docid_list.size();++i)
     {
         Document doc;
-        document_manager_->getDocument(i, doc);
+        bool b = document_manager_->getDocument(i, doc);
+        if(!b) continue;
         Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
         if (kit == doc.propertyEnd()) continue;
 
@@ -157,7 +158,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
     {
         Document doc;
-        document_manager_->getDocument(i, doc);
+        bool b = document_manager_->getDocument(i, doc);
+        if(!b) continue;
         Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
         if (kit == doc.propertyEnd()) continue;
 
@@ -611,6 +613,8 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             Document doc;
             doc.property("DOCID") = key_ustr;
             doc.property(schema_.scorePropName) = UString(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
+            if(!schema_.commentCountPropName.empty())
+                doc.property(schema_.commentCountPropName) = UString(boost::lexical_cast<std::string>(count), UString::UTF_8);
             score_scd_writer_->Append(doc);
         }
     }

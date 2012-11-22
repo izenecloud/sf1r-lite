@@ -19,6 +19,7 @@
 #include <b5m-manager/log_server_handler.h>
 #include <b5m-manager/product_db.h>
 #include <b5m-manager/offer_db.h>
+#include <b5m-manager/offer_db_recorder.h>
 #include <b5m-manager/brand_db.h>
 #include <b5m-manager/history_db_helper.h>
 #include <b5m-manager/psm_indexer.h>
@@ -274,6 +275,7 @@ int do_main(int ac, char** av)
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("pdb", po::value<std::string>(), "specify product db path")
         ("odb", po::value<std::string>(), "specify offer db path")
+        ("last-odb", po::value<std::string>(), "specify last offer db path")
         ("bdb", po::value<std::string>(), "specify brand db path")
         ("historydb", po::value<std::string>(), "specify offer history db path")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
@@ -323,6 +325,7 @@ int do_main(int ac, char** av)
     std::string output_match;
     std::string knowledge_dir;
     boost::shared_ptr<OfferDb> odb;
+    boost::shared_ptr<OfferDb> last_odb;
     boost::shared_ptr<BrandDb> bdb;
     boost::shared_ptr<B5MHistoryDBHelper> historydb;
 
@@ -393,6 +396,12 @@ int do_main(int ac, char** av)
         std::cout << "odb path: " << odb_path <<std::endl;
         odb.reset(new OfferDb(odb_path));
     } 
+    if(vm.count("last-odb"))
+    {
+        std::string last_odb_path = vm["last-odb"].as<std::string>();
+        std::cout << "last odb path: " << last_odb_path <<std::endl;
+        last_odb.reset(new OfferDb(last_odb_path));
+    }
     if (vm.count("bdb")) {
         std::string bdb_path = vm["bdb"].as<std::string>();
         std::cout << "bdb path: " << bdb_path <<std::endl;
@@ -782,7 +791,9 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5mcScdGenerator generator(odb.get(), bdb.get());
+
+        boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
+        B5mcScdGenerator generator(odbr.get(), bdb.get());
         if(!generator.Generate(scd_path, mdb_instance))
         {
             return EXIT_FAILURE;
@@ -800,40 +811,40 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
-    if(vm.count("cr-train"))
-    {
-        if( knowledge_dir.empty())
-        {
-            return EXIT_FAILURE;
-        }
-        ProductMatcher matcher(knowledge_dir);
-        matcher.SetCmaPath(cma_path);
-        if(!matcher.Open())
-        {
-            return EXIT_FAILURE;
-        }
-        if(!matcher.IndexCR())
-        {
-            return EXIT_FAILURE;
-        }
-    }
-    if(vm.count("cr"))
-    {
-        if( scd_path.empty() || knowledge_dir.empty())
-        {
-            return EXIT_FAILURE;
-        }
-        ProductMatcher matcher(knowledge_dir);
-        matcher.SetCmaPath(cma_path);
-        if(!matcher.Open())
-        {
-            return EXIT_FAILURE;
-        }
-        if(!matcher.DoCR(scd_path))
-        {
-            return EXIT_FAILURE;
-        }
-    }
+    //if(vm.count("cr-train"))
+    //{
+        //if( knowledge_dir.empty())
+        //{
+            //return EXIT_FAILURE;
+        //}
+        //ProductMatcher matcher(knowledge_dir);
+        //matcher.SetCmaPath(cma_path);
+        //if(!matcher.Open())
+        //{
+            //return EXIT_FAILURE;
+        //}
+        //if(!matcher.IndexCR())
+        //{
+            //return EXIT_FAILURE;
+        //}
+    //}
+    //if(vm.count("cr"))
+    //{
+        //if( scd_path.empty() || knowledge_dir.empty())
+        //{
+            //return EXIT_FAILURE;
+        //}
+        //ProductMatcher matcher(knowledge_dir);
+        //matcher.SetCmaPath(cma_path);
+        //if(!matcher.Open())
+        //{
+            //return EXIT_FAILURE;
+        //}
+        //if(!matcher.DoCR(scd_path))
+        //{
+            //return EXIT_FAILURE;
+        //}
+    //}
     if(vm.count("trie"))
     {
         typedef izenelib::util::UString UString;
