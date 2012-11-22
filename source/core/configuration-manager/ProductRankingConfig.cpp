@@ -55,8 +55,10 @@ bool isNumericFilter(
     propConfig.setName(propName);
 
     IndexBundleSchema::const_iterator propIt = indexSchema.find(propConfig);
-    if (propIt != indexSchema.end() && propIt->isNumericType() &&
-        propIt->getIsFilter() && propIt->isIndex())
+    if (propIt != indexSchema.end() &&
+        propIt->getIsFilter() &&
+        propIt->isIndex() &&
+        (propIt->isNumericType() || propIt->getType() == DATETIME_PROPERTY_TYPE))
     {
         return true;
     }
