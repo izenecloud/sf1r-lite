@@ -249,7 +249,8 @@ izenelib::util::UString FilterManager::FormatGroupPath(const std::vector<std::st
     std::string group_tmpstr = groupPath[0];
     for (size_t k = 1; k < groupPath.size(); ++k)
     {
-        group_tmpstr += ">" + groupPath[k];
+        if(!groupPath[k].empty())
+            group_tmpstr += ">" + groupPath[k];
     }
     return UString(group_tmpstr, UString::UTF_8);
 }
@@ -261,7 +262,8 @@ izenelib::util::UString FilterManager::FormatGroupPath(const std::vector<izeneli
     groupstr = groupPath[0];
     for (size_t k = 1; k < groupPath.size(); ++k)
     {
-        groupstr.append(UString(">", UString::UTF_8)).append(groupPath[k]);
+        if(!groupPath[k].empty())
+            groupstr.append(UString(">", UString::UTF_8)).append(groupPath[k]);
     }
     return groupstr;
 }
