@@ -81,6 +81,10 @@ bool ProductScoreManager::open()
 bool ProductScoreManager::buildCollection()
 {
     bool result = true;
+
+    if (isEmpty_())
+        return result;
+
     boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
     if (!lock.owns_lock())
@@ -146,6 +150,11 @@ void ProductScoreManager::createProductScoreTable_(ProductScoreType type)
     }
 }
 
+bool ProductScoreManager::isEmpty_() const
+{
+    return scoreTableMap_.empty();
+}
+
 bool ProductScoreManager::buildScoreType_(ProductScoreType type)
 {
     const std::string& typeName = ProductRankingConfig::kScoreTypeName[type];
@@ -195,7 +204,7 @@ bool ProductScoreManager::buildScoreType_(ProductScoreType type)
 
 bool ProductScoreManager::addCronJob_(const ProductRankingPara& bundleParam)
 {
-    if (!cronExpression_.setExpression(bundleParam.cron))
+    if (isEmpty_() || !cronExpression_.setExpression(bundleParam.cron))
         return false;
 
     bool result = izenelib::util::Scheduler::addJob(

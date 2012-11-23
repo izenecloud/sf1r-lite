@@ -66,6 +66,7 @@ public:
 
 private:
     void createProductScoreTable_(ProductScoreType type);
+    bool isEmpty_() const;
 
     bool buildScoreType_(ProductScoreType type);
 
