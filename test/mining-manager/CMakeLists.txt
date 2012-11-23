@@ -189,7 +189,18 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   SET_TARGET_PROPERTIES(t_ProductScoreManager PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
     )
-  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_ProductScoreManager")
+  ADD_TEST(product_score "${SF1RENGINE_ROOT}/testbin/t_ProductScoreManager")
+
+  ADD_EXECUTABLE(t_ProductScoreAverage
+    Runner.cpp
+    t_ProductScoreAverage.cpp
+    ProductScoreAverageTestFixture.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_ProductScoreAverage ${libs})
+  SET_TARGET_PROPERTIES(t_ProductScoreAverage PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(product_score "${SF1RENGINE_ROOT}/testbin/t_ProductScoreAverage")
 
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 

@@ -34,3 +34,8 @@ score_t ProductScoreSum::score(docid_t docId)
 
     return sum;
 }
+
+std::size_t ProductScoreSum::scorerNum_() const
+{
+    return scorers_.size();
+}

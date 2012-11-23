@@ -29,6 +29,9 @@ public:
 
     virtual score_t score(docid_t docId);
 
+protected:
+    std::size_t scorerNum_() const;
+
 private:
     typedef std::vector<ProductScorer*> Scorers;
     Scorers scorers_;
