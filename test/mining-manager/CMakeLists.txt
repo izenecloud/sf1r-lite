@@ -202,6 +202,17 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(product_score "${SF1RENGINE_ROOT}/testbin/t_ProductScoreAverage")
 
+  ADD_EXECUTABLE(t_NumericPropertyScorer
+    Runner.cpp
+    t_NumericPropertyScorer.cpp
+    NumericPropertyScorerTestFixture.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_NumericPropertyScorer ${libs})
+  SET_TARGET_PROPERTIES(t_NumericPropertyScorer PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(product_score "${SF1RENGINE_ROOT}/testbin/t_NumericPropertyScorer")
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 INCLUDE_DIRECTORIES(

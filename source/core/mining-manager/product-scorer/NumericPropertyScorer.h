@@ -1,11 +1,12 @@
 /**
  * @file NumericPropertyScorer.h
- * @brief It returns the property's numeric value as score.
-
- * For example, if the property value is 10, then its score is also 10.
+ * @brief It returns a score for property's numeric value.
+ *
+ * The score range is [0, 1], which is calculated like below:
+ * score(i) = (value(i) - min_value) / (max_value - min_value)
  *
  * @author Jun Jiang
- * @date Created 2012-11-14
+ * @date Created 2012-11-26
  */
 
 #ifndef SF1R_NUMERIC_PROPERTY_SCORER_H
@@ -29,6 +30,9 @@ public:
 
 private:
     boost::shared_ptr<NumericPropertyTableBase> numericTable_;
+    score_t minValue_;
+    score_t maxValue_;
+    score_t minMaxDiff_;
 };
 
 } // namespace sf1r

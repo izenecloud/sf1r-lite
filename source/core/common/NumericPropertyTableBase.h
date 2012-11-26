@@ -37,6 +37,9 @@ public:
     virtual bool getStringValue(std::size_t pos, std::string& value) const = 0;
     virtual bool getFloatPairValue(std::size_t pos, std::pair<float, float>& value) const = 0;
 
+    virtual bool getFloatMinValue(float& minValue) const { return false; }
+    virtual bool getFloatMaxValue(float& maxValue) const { return false; }
+
     virtual void* getValueList() = 0;
     virtual const void* getValueList() const = 0;
 

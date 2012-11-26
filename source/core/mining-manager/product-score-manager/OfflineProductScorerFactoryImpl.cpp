@@ -1,5 +1,5 @@
 #include "OfflineProductScorerFactoryImpl.h"
-#include "../product-scorer/PopularityScorer.h"
+#include "../product-scorer/ProductScoreAverage.h"
 #include "../product-scorer/NumericPropertyScorer.h"
 #include "../faceted-submanager/ctr_manager.h"
 #include "../MiningManager.h"
@@ -33,8 +33,8 @@ ProductScorer* OfflineProductScorerFactoryImpl::createScorer(
 ProductScorer* OfflineProductScorerFactoryImpl::createPopularityScorer_(
     const ProductScoreConfig& scoreConfig)
 {
-    std::auto_ptr<PopularityScorer> popularScorer(
-        new PopularityScorer(scoreConfig));
+    std::auto_ptr<ProductScoreAverage> averageScorer(
+        new ProductScoreAverage(scoreConfig));
 
     for (std::size_t i = 0; i < scoreConfig.factors.size(); ++i)
     {
@@ -43,11 +43,11 @@ ProductScorer* OfflineProductScorerFactoryImpl::createPopularityScorer_(
 
         if (scorer)
         {
-            popularScorer->addScorer(scorer);
+            averageScorer->addScorer(scorer);
         }
     }
 
-    return popularScorer.release();
+    return averageScorer.release();
 }
 
 ProductScorer* OfflineProductScorerFactoryImpl::createNumericPropertyScorer_(
@@ -67,6 +67,7 @@ ProductScorer* OfflineProductScorerFactoryImpl::createNumericPropertyScorer_(
         return NULL;
     }
 
+    LOG(INFO) << "createNumericPropertyScorer_(), propName: " << propName;
     return new NumericPropertyScorer(scoreConfig, numericTable);
 }
 
