@@ -27,6 +27,8 @@
 #include "faceted-submanager/ontology_manager.h"
 #include "group-manager/GroupManager.h"
 #include "group-manager/GroupFilterBuilder.h"
+#include "group-manager/GroupFilter.h"
+#include "group-manager/PropSharedLockSet.h"
 #include "attr-manager/AttrManager.h"
 #include "faceted-submanager/ctr_manager.h"
 
@@ -1854,7 +1856,10 @@ bool MiningManager::GetSuffixMatch(
         std::vector<uint32_t>& docIdList,
         std::vector<float>& rankScoreList,
         std::vector<float>& customRankScoreList,
-        std::size_t& totalCount)
+        std::size_t& totalCount,
+        faceted::GroupRep& groupRep,
+        sf1r::faceted::OntologyRep& attrRep
+        )
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
@@ -1868,6 +1873,14 @@ bool MiningManager::GetSuffixMatch(
     }
     else
     {
+        size_t orig_max_docs = max_docs;
+        if(actionOperation.actionItem_.groupParam_.groupProps_.size() > 0 ||
+            actionOperation.actionItem_.groupParam_.isAttrGroup_)
+        {
+            // need do counter.
+            max_docs = 100000;
+        }
+
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                 queryU, max_docs,
@@ -1908,6 +1921,37 @@ bool MiningManager::GetSuffixMatch(
 
             LOG(INFO) << "[]TOPN and cost:" << timer.elapsed() << " seconds" << std::endl;
         }
+
+        if (groupManager_ || attrManager_)
+        {
+            if(!groupFilterBuilder_)
+            {
+                faceted::GroupFilterBuilder* filterBuilder =
+                    new faceted::GroupFilterBuilder(
+                        mining_schema_.group_config_map,
+                        groupManager_,
+                        attrManager_,
+                        searchManager_.get());
+                groupFilterBuilder_.reset(filterBuilder);
+            }
+
+            faceted::PropSharedLockSet propSharedLockSet;
+            boost::scoped_ptr<faceted::GroupFilter> groupFilter;
+            if (groupFilterBuilder_)
+            {
+                groupFilter.reset(
+                    groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_, propSharedLockSet));
+            }
+            if(groupFilter)
+            {
+                for(size_t i = 0; i < res_list.size(); ++i)
+                {
+                    groupFilter->test(res_list[i].second);
+                }
+                groupFilter->getGroupRep(groupRep, attrRep);
+            }
+        }
+        res_list.resize(orig_max_docs);
     }
 
     docIdList.resize(res_list.size());
@@ -1927,6 +1971,7 @@ bool MiningManager::GetSuffixMatch(
 
     return true;
 }
+
 bool MiningManager::GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category)
 {
     if(productMatcher_==NULL)

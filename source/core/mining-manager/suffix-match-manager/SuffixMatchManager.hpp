@@ -5,6 +5,7 @@
 #include <am/succinct/fm-index/fm_index.hpp>
 #include <query-manager/ActionItem.h>
 #include <mining-manager/group-manager/GroupParam.h>
+#include <common/ResultType.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>

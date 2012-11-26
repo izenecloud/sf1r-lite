@@ -368,7 +368,10 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.topKDocs_,
                                             resultItem.topKRankScoreList_,
                                             resultItem.topKCustomRankScoreList_,
-                                            resultItem.totalCount_))
+                                            resultItem.totalCount_,
+                                            resultItem.groupRep_,
+                                            resultItem.attrRep_
+                                            ))
         {
             return true;
         }

@@ -113,6 +113,7 @@ class GroupManager;
 class AttrManager;
 class OntologyManager;
 class CTRManager;
+class GroupFilterBuilder;
 }
 
 /**
@@ -342,7 +343,10 @@ public:
             std::vector<uint32_t>& docIdList,
             std::vector<float>& rankScoreList,
             std::vector<float>& customRankScoreList,
-            std::size_t& totalCount);
+            std::size_t& totalCount,
+            faceted::GroupRep& groupRep,
+            sf1r::faceted::OntologyRep& attrRep
+            );
 
     bool GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category);
 
@@ -570,6 +574,7 @@ private:
     /** ATTR BY */
     faceted::AttrManager* attrManager_;
 
+    boost::shared_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
     /** property name => group label click logger */
     typedef std::map<std::string, GroupLabelLogger*> GroupLabelLoggerMap;
     GroupLabelLoggerMap groupLabelLoggerMap_;
