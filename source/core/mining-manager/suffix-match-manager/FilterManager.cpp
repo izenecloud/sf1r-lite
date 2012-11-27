@@ -401,7 +401,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& propertys)
 
 
 FilterManager::NumFilterKeyT FilterManager::formatNumberFilter(const std::string& property,
-    float filter_num, bool tofloor) const
+    double filter_num, bool tofloor) const
 {
     std::map<std::string, int32_t>::const_iterator cit = num_amp_map_.find(property);
     if (cit != num_amp_map_.end())
@@ -412,6 +412,56 @@ FilterManager::NumFilterKeyT FilterManager::formatNumberFilter(const std::string
     {
         return tofloor ? (NumFilterKeyT)std::floor(filter_num):(NumFilterKeyT)std::ceil(filter_num);
     }
+}
+
+void FilterManager::buildDateFilterData(uint32_t last_docid, uint32_t max_docid, const std::vector< std::string >& propertys,
+    std::vector<NumFilterItemMapT>& date_filter_data)
+{
+    if(groupManager_ == NULL)
+        return;
+    LOG(INFO) << "begin build date filter ... ";
+    date_filter_data.resize(propertys.size());
+    for (size_t j = 0; j < propertys.size(); ++j)
+    {
+        const std::string& property = propertys[j];
+        faceted::DateGroupTable* dgt = groupManager_->getDateGroupTable(property);
+        if(dgt == NULL)
+        {
+            LOG(INFO) << "property : " << property << " is not found in date property table!";
+            continue;
+        }
+        std::vector<NumFilterKeyT>& possible_keys = num_possible_keys_[property];
+        for (uint32_t docid = last_docid + 1; docid <= max_docid; ++docid)
+        {
+            faceted::DateGroupTable::DateSet original_date;
+            dgt->getDateSet(docid, faceted::MASK_YEAR_MONTH_DAY, original_date);
+            faceted::DateGroupTable::DateSet::const_iterator date_it = original_date.begin();
+            while (date_it != original_date.end())
+            {
+                const NumFilterKeyT& numberkey = (NumFilterKeyT)(*date_it);
+                if(docid % 100000)
+                    LOG(INFO) << "building date : " << numberkey;
+                NumFilterItemMapT::iterator it = date_filter_data[j].find(numberkey);
+                if (it != date_filter_data[j].end())
+                {
+                    it->second.push_back(docid);
+                }
+                else
+                {
+                    FilterDocListT& item = date_filter_data[j][numberkey];
+                    item.push_back(docid);
+                    possible_keys.push_back(numberkey);
+                }
+                ++date_it;
+            }
+        }
+        // sort possible_keys in asc order
+        std::sort(possible_keys.begin(), possible_keys.end(), std::less<NumFilterKeyT>());
+        // map the number filter to filter id.
+        NumberIdMapT& date_filterids = numbertype_filterids_[property];
+        mapNumberFilterToFilterId(date_filter_data[j], date_filterids);
+    }
+    LOG(INFO) << "finish building date filter data.";
 }
 
 void FilterManager::buildNumberFilterData(uint32_t last_docid, uint32_t max_docid, const std::vector< std::string >& propertys,
@@ -439,8 +489,8 @@ void FilterManager::buildNumberFilterData(uint32_t last_docid, uint32_t max_doci
         {
             NumFilterKeyT numberkey_low = 0;
             NumFilterKeyT numberkey_high = 0;
-            std::pair<float, float> original_key;
-            if (!numericPropertyTable->getFloatPairValue(docid, original_key))
+            std::pair<double, double> original_key;
+            if (!numericPropertyTable->getDoublePairValue(docid, original_key))
                 continue;
             numberkey_low = formatNumberFilter(property, original_key.first);
             numberkey_high = formatNumberFilter(property, original_key.second);
@@ -496,7 +546,7 @@ void FilterManager::mapNumberFilterToFilterId(const NumFilterItemMapT& num_filte
     }
 }
 
-FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeExactly(const std::string& property, float filter_num) const
+FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeExactly(const std::string& property, double filter_num) const
 {
     FilterIdRange empty_range;
     NumPropertyIdMapT::const_iterator cit = numbertype_filterids_.find(property);
@@ -516,7 +566,7 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeExactly(const std
     return id_cit->second;
 }
 
-FilterManager::FilterIdRange FilterManager::getNumFilterIdRange(const std::string& property, float filter_num, bool findlarger) const
+FilterManager::FilterIdRange FilterManager::getNumFilterIdRange(const std::string& property, double filter_num, bool findlarger) const
 {
     FilterIdRange empty_range;
     NumPropertyIdMapT::const_iterator cit = numbertype_filterids_.find(property);
@@ -591,13 +641,13 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRange(const std::strin
     return empty_range;
 }
 
-FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLarger(const std::string& property, float filter_num) const
+FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLarger(const std::string& property, double filter_num) const
 {
     // find a nearest key that >= numkey.
     return getNumFilterIdRange(property, filter_num, true);
 }
 
-FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeSmaller(const std::string& property, float filter_num) const
+FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeSmaller(const std::string& property, double filter_num) const
 {
     // find a nearest key that <= numkey.
     return getNumFilterIdRange(property, filter_num, false);

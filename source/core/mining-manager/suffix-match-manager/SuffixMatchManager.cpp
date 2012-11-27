@@ -5,9 +5,109 @@
 #include <icma/icma.h>
 #include <la-manager/LAPool.h>
 #include <mining-manager/util/split_ustr.h>
+#include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"
 
 using namespace cma;
+
+namespace
+{
+const char* NUMERIC_RANGE_DELIMITER = "-";
+
+typedef std::pair<int64_t, int64_t> NumericRange;
+
+using namespace sf1r::faceted;
+
+/**
+ * check parameter of group label
+ * @param[in] labelParam parameter to check
+ * @param[out] isRange true for group on range, false for group on single numeric value
+ * @return true for success, false for failure
+*/
+bool checkLabelParam(const GroupParam::GroupLabelParam& labelParam, bool& isRange)
+{
+    const GroupParam::GroupPathVec& labelPaths = labelParam.second;
+
+    if (labelPaths.empty())
+        return false;
+
+    const GroupParam::GroupPath& path = labelPaths.front();
+    if (path.empty())
+        return false;
+
+    const std::string& propValue = path.front();
+    std::size_t delimitPos = propValue.find(NUMERIC_RANGE_DELIMITER);
+    isRange = (delimitPos != std::string::npos);
+
+    return true;
+}
+
+bool convertNumericLabel(const std::string& src, float& target)
+{
+    std::size_t delimitPos = src.find(NUMERIC_RANGE_DELIMITER);
+    if (delimitPos != std::string::npos)
+    {
+        LOG(ERROR) << "group label parameter: " << src
+                   << ", it should be specified as single numeric value";
+        return false;
+    }
+
+    try
+    {
+        target = boost::lexical_cast<float>(src);
+    }
+    catch(const boost::bad_lexical_cast& e)
+    {
+        LOG(ERROR) << "failed in casting label from " << src
+                   << " to numeric value, exception: " << e.what();
+        return false;
+    }
+
+    return true;
+}
+
+bool convertRangeLabel(const std::string& src, NumericRange& target)
+{
+    std::size_t delimitPos = src.find(NUMERIC_RANGE_DELIMITER);
+    if (delimitPos == std::string::npos)
+    {
+        LOG(ERROR) << "group label parameter: " << src
+                   << ", it should be specified as numeric range value";
+        return false;
+    }
+
+    int64_t lowerBound = std::numeric_limits<int64_t>::min();
+    int64_t upperBound = std::numeric_limits<int64_t>::max();
+
+    try
+    {
+        if (delimitPos)
+        {
+            std::string sub = src.substr(0, delimitPos);
+            lowerBound = boost::lexical_cast<int64_t>(sub);
+        }
+
+        if (delimitPos+1 != src.size())
+        {
+            std::string sub = src.substr(delimitPos+1);
+            upperBound = boost::lexical_cast<int64_t>(sub);
+        }
+    }
+    catch(const boost::bad_lexical_cast& e)
+    {
+        LOG(ERROR) << "failed in casting label from " << src
+                    << " to numeric value, exception: " << e.what();
+        return false;
+    }
+
+    target.first = lowerBound;
+    target.second = upperBound;
+
+    return true;
+}
+
+}
+
 
 namespace sf1r
 {
@@ -75,6 +175,16 @@ void SuffixMatchManager::setAttrFilterProperty(std::vector<std::string>& propert
     }
 }
 
+void SuffixMatchManager::setDateFilterProperty(std::vector<std::string>& property_list)
+{
+    date_property_list_.swap(property_list);
+    if (filter_manager_)
+    {
+        WriteLock lock(mutex_);
+        filter_manager_->loadFilterId(date_property_list_);
+    }
+}
+
 void SuffixMatchManager::setNumberFilterProperty(std::vector<std::string>& property_list, std::vector<int32_t>& amp_list)
 {
     assert(property_list.size() == amp_list.size());
@@ -103,6 +213,7 @@ void SuffixMatchManager::buildCollection()
     std::vector<FilterManager::StrFilterItemMapT> filter_map;
     std::vector<FilterManager::StrFilterItemMapT> attr_filter_map;
     std::vector<FilterManager::NumFilterItemMapT> num_filter_map;
+    std::vector<FilterManager::NumFilterItemMapT> date_filter_map;
     FMIndexType* new_fmi = new FMIndexType();
     // do filter building only when filter is enable.
     FilterManager* new_filter_manager = NULL;
@@ -154,10 +265,13 @@ void SuffixMatchManager::buildCollection()
 
         new_filter_manager->buildNumberFilterData(0, document_manager_->getMaxDocId(),
                                                   number_property_list, num_filter_map);
+        new_filter_manager->buildDateFilterData(0, document_manager_->getMaxDocId(),
+                                                date_property_list_, date_filter_map);
         new_fmi->setAdditionFilterData(new_filter_manager->getAllFilterInvertedData());
         filter_map.clear();
         attr_filter_map.clear();
         num_filter_map.clear();
+        date_filter_map.clear();
     }
     LOG(INFO) << "building filter data finished";
 
@@ -423,14 +537,91 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable(const GroupParam& group
     for (GroupParam::GroupLabelMap::const_iterator cit = group_param.groupLabels_.begin();
             cit != group_param.groupLabels_.end(); ++cit)
     {
+        bool is_number_prop = number_property_list_.find(cit->first) != number_property_list_.end();
+        bool is_date_prop = std::find(date_property_list_.begin(), date_property_list_.end(),
+            cit->first) != date_property_list_.end();
         const GroupParam::GroupPathVec& group_values = cit->second;
         for (size_t i = 0; i < group_values.size(); ++i)
         {
-            UString group_filterstr = filter_manager_->FormatGroupPath(group_values[i]);
-            filterid_range = filter_manager_->getStrFilterIdRange(cit->first, group_filterstr);
+            if(is_number_prop)
+            {
+                bool isrange = false;
+                if(!checkLabelParam(*cit, isrange))
+                {
+                    continue;
+                }
+                if(isrange)
+                {
+                    NumericRange range;
+                    if(!convertRangeLabel(group_values[i].front(), range))
+                        continue;
+                    FilterManager::FilterIdRange tmp_range;
+                    tmp_range = filter_manager_->getNumFilterIdRangeSmaller(cit->first,
+                        max(range.first, range.second));
+                    filterid_range = filter_manager_->getNumFilterIdRangeLarger(cit->first,
+                        min(range.first, range.second));
+                    filterid_range.start = max(filterid_range.start, tmp_range.start);
+                    filterid_range.end = min(filterid_range.end, tmp_range.end);
+                }
+                else
+                {
+                    float value = 0;
+                    if(!convertNumericLabel(group_values[i].front(), value))
+                        continue;
+                    filterid_range = filter_manager_->getNumFilterIdRangeExactly(cit->first, value);
+                }   
+            }
+            else if(is_date_prop)
+            {
+                const std::string& propValue = group_values[i].front();
+                faceted::DateStrFormat dsf;
+                faceted::DateStrFormat::DateVec date_vec;
+                if(!dsf.apiDateStrToDateVec(propValue, date_vec))
+                {
+                    LOG(WARNING) << "get date from datestr error. " << propValue;
+                    continue;
+                }
+                double value = (double)dsf.createDate(date_vec);
+                LOG(INFO) << "date value is : " << value;
+                int date_index = date_vec.size() - 1;
+                if(date_index < faceted::DateStrFormat::DATE_INDEX_DAY)
+                {
+                    faceted::DateStrFormat::DateVec end_date_vec = date_vec;
+                    // convert to range.
+                    if(date_index == faceted::DateStrFormat::DATE_INDEX_MONTH)
+                    {
+                        end_date_vec.push_back(31);
+                    }
+                    else if(date_index == faceted::DateStrFormat::DATE_INDEX_YEAR)
+                    {
+                        end_date_vec.push_back(12);
+                        end_date_vec.push_back(31);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                    double end_value = (double)dsf.createDate(end_date_vec);
+                    LOG(INFO) << "end date value is : " << end_value;
+                    FilterManager::FilterIdRange tmp_range;
+                    tmp_range = filter_manager_->getNumFilterIdRangeSmaller(cit->first, end_value );
+                    filterid_range = filter_manager_->getNumFilterIdRangeLarger(cit->first, value);
+                    filterid_range.start = max(filterid_range.start, tmp_range.start);
+                    filterid_range.end = min(filterid_range.end, tmp_range.end);
+                }
+                else
+                {
+                    filterid_range = filter_manager_->getNumFilterIdRangeExactly(cit->first, value);
+                }
+            }
+            else
+            {
+                UString group_filterstr = filter_manager_->FormatGroupPath(group_values[i]);
+                filterid_range = filter_manager_->getStrFilterIdRange(cit->first, group_filterstr);
+            }
             if (filterid_range.start >= filterid_range.end)
             {
-                LOG(WARNING) << "group label filter id range not found. " << group_filterstr;
+                LOG(WARNING) << "one of group label filter id range not found.";
                 continue;
             }
             if (!fmi_->getFilterRange(std::make_pair(filterid_range.start, filterid_range.end), filter_range))

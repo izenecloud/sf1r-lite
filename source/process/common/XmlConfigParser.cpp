@@ -1992,6 +1992,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 }
                 mining_schema.suffixmatch_schema.attr_filter_properties.push_back(property_name);
             }
+            else if(type == "date")
+            {
+                if( property_type != DATETIME_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not date type.");
+                }
+                mining_schema.suffixmatch_schema.date_filter_properties.push_back(property_name);
+            }
             else if(type == "number")
             {
                 PropertyConfig propConfig;

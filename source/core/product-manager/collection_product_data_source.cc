@@ -254,8 +254,8 @@ bool CollectionProductDataSource::GetPrice(const uint32_t& docid, ProductPrice& 
     if (!propertyTable)
         return false;
 
-    std::pair<float, float> value;
-    if (!propertyTable->getFloatPairValue(docid, value))
+    std::pair<double, double> value;
+    if (!propertyTable->getDoublePairValue(docid, value))
         return false;
 
     price.value = value;
