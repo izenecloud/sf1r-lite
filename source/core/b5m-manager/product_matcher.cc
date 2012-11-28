@@ -22,7 +22,7 @@ using namespace idmlib::util;
 
 //#define B5M_DEBUG
 
-ProductMatcher::KeywordTag::KeywordTag():kweight(0.0), ngram(1)
+ProductMatcher::KeywordTag::KeywordTag():kweight(0.0), ngram(1), type_app(0)
 {
 }
 
@@ -646,7 +646,7 @@ bool ProductMatcher::Index(const std::string& scd_path)
         {
             if(product.attributes[i].is_optional)
             {
-                product.aweight+=0.5;
+                //product.aweight+=0.5;
             }
             else if(product.attributes[i].name=="型号")
             {
@@ -950,9 +950,12 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
     //text.convertString(stitle, UString::UTF_8);
     uint32_t begin = 0;
     uint8_t bracket_depth = 0;
-    keyword_vector.reserve(50);
-    typedef boost::unordered_map<TermList, uint32_t> KeywordIndex;
-    KeywordIndex keyword_index;
+    keyword_vector.reserve(10);
+    //typedef boost::unordered_map<TermList, uint32_t> KeywordIndex;
+    //typedef KeywordVector::value_type ItemType;
+    //typedef std::pair<double, std::string> ItemScore;
+    //KeywordIndex keyword_index;
+    //KeywordAppMap app_map;
     while(begin<term_list.size())
     {
         term_t begin_term = term_list[begin];
@@ -976,8 +979,11 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
             //begin++;
             //continue;
         //}
-        bool found_keyword = false;
-        std::pair<TrieType::key_type, TrieType::mapped_type> value;
+        //bool found_keyword = false;
+        //typedef std::vector<ItemType> Buffer;
+        //Buffer buffer;
+        //buffer.reserve(5);
+        //std::pair<TrieType::key_type, TrieType::mapped_type> value;
         std::vector<term_t> candidate_keyword(1, begin_term);
         candidate_keyword.reserve(10);
         uint32_t next_pos = begin+1;
@@ -988,27 +994,52 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
             {
                 if(candidate_keyword==it->first)
                 {
-                    value.first = it->first;
-                    value.second = it->second;
-                    found_keyword = true;
-                    KeywordTag& tag = value.second;
+                    //ItemType item;
+                    //item.first = it->first;
+                    //item.second = it->second;
+                    KeywordTag tag = it->second;
                     tag.kweight = 1.0;
                     tag.positions.push_back(std::make_pair(begin, next_pos));
                     if(bracket_depth>0) tag.kweight=0.1;
-                    KeywordIndex::iterator it = keyword_index.find(value.first);
-                    if(it==keyword_index.end())
+                    bool need_append = true;
+                    for(uint32_t i=0;i<keyword_vector.size();i++)
                     {
-                        keyword_vector.push_back(value);
-                        keyword_index[value.first] = keyword_vector.size()-1;
-                    }
-                    else
-                    {
-                        std::pair<TermList, KeywordTag>& evalue = keyword_vector[it->second];
-                        if(evalue.second.kweight<tag.kweight)
+                        int select = SelectKeyword_(tag, keyword_vector[i]);
+                        if(select==1)
                         {
-                            evalue.second = tag;
+                            keyword_vector[i] = tag;
+                            need_append = false;
+                            break;
+                        }
+                        else if(select==2)
+                        {
+                            need_append = false;
+                            break;
+                        }
+                        else if(select==3)
+                        {
+                            //keyword_vector.push_back(tag);
                         }
                     }
+                    if(need_append)
+                    {
+                        keyword_vector.push_back(tag);
+                    }
+                    //buffer.push_back(item);
+                    //KeywordIndex::iterator it = keyword_index.find(item.first);
+                    //if(it==keyword_index.end())
+                    //{
+                        //keyword_vector.push_back(item);
+                        //keyword_index[item.first] = keyword_vector.size()-1;
+                    //}
+                    //else
+                    //{
+                        //ItemType& evalue = keyword_vector[it->second];
+                        //if(evalue.second.kweight<tag.kweight)
+                        //{
+                            //evalue.second = tag;
+                        //}
+                    //}
                 }
                 else if(StartsWith_(it->first, candidate_keyword))
                 {
@@ -1027,6 +1058,158 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
             candidate_keyword.push_back(term_list[next_pos]);
             ++next_pos;
         }
+        //std::vector<ItemType> found_items;
+        //found_items.reserve(5);
+        //uint32_t max_found_length = 0;
+        //if(buffer.size()==1)
+        //{
+            //found_items.push_back(buffer.front());
+            //max_found_length = buffer.front().first.size();
+        //}
+        //else if(buffer.size()>1)
+        //{
+            ////typedef std::pair<ItemType, ItemScore> ItemCandidateType;
+            ////std::vector<ItemCandidateType> item_candidates;
+            ////CidApp cid_app;
+            ////item_candidates.reserve(buffer.size());
+            //bool mode_one = false;
+            //TypeApp last_type_app;
+            //ItemType last_item;
+            ////for(uint32_t b=0;b<buffer.size();b++)
+            //for(Buffer::const_reverse_iterator it = buffer.rbegin();it!=buffer.rend();it++)
+            //{
+                //TypeApp type_app(0);
+                //StringToScore sts(0.0);
+                //const KeywordTag& tag = it->second;
+                //std::string type;
+                //for(uint32_t i=0;i<tag.category_name_apps.size();i++)
+                //{
+                    //const CategoryNameApp& app = tag.category_name_apps[i];
+                    //if(app.is_complete) 
+                    //{
+                        ////type = "c";
+                        //type_app["c"] = 1;
+                        //break;
+                    //}
+                    ////double depth_ratio = 1.0-0.2*(app.depth-1);
+                    ////double times = 1.0;
+                    ////double share_point = times*depth_ratio;
+                    ////if(!app.is_complete) share_point*=0.6;
+                    ////sts["c|"] += share_point;
+                //}
+                //if(type_app.empty())
+                //{
+                    //for(uint32_t i=0;i<tag.attribute_apps.size();i++)
+                    //{
+                        //const AttributeApp& app = tag.attribute_apps[i];
+                        //if(app.spu_id==0) continue;
+                        ////if(app.is_optional) continue;
+                        //uint32_t cid = GetCidBySpuId_(app.spu_id);
+                        //std::string key = boost::lexical_cast<std::string>(cid)+"|"+app.attribute_name;
+                        //type_app[key]+=1;
+                        ////double share_point = 0.0;
+                        ////if(app.is_optional) share_point = 0.5;
+                        ////else if(app.attribute_name=="型号") share_point = 1.5;
+                        ////else share_point = 1.0;
+                        ////sts["a|"+app.attribute_name]+=share_point;
+                    //}
+                //}
+                //if(!last_type_app.empty()&&!type_app.empty())
+                //{
+                    //if(last_type_app.find("c")!=last_type_app.end())
+                    //{
+                        //mode_one = true;
+                    //}
+                    //else if(type_app.find("c")!=type_app.end())
+                    //{
+                        //mode_one = false;
+                    //}
+                    //else
+                    //{
+                        //bool has_same = false;
+                        //for(TypeApp::const_iterator tit = type_app.begin();tit!=type_app.end();tit++)
+                        //{
+                            //const std::string& key = tit->first;
+                            //if(last_type_app.find(key)!=last_type_app.end())
+                            //{
+                                //has_same = true;
+                                //break;
+                            //}
+                        //}
+                        //if(has_same) mode_one = true;
+                        //else mode_one = false;
+                    //}
+                //}
+                //last_type_app = type_app;
+                ////ItemScore max_score(0.0, "");
+                ////for(StringToScore::const_iterator it = sts.begin();it!=sts.end();it++)
+                ////{
+                    ////if(it->second>max_score.first)
+                    ////{
+                        ////max_score.first = it->second;
+                        ////max_score.second = it->first;
+                    ////}
+                ////}
+                ////if(max_score.first==0.0)
+                ////{
+                    ////max_score.first = 0.001;
+                ////}
+                ////max_score.first*=buffer[b].first.size();
+                ////item_candidates.push_back(std::make_pair(buffer[b], max_score));
+            //}
+            //if(mode_one)
+            //{
+                //found_items.push_back(buffer.back());
+            //}
+            //else
+            //{
+                //found_items = buffer;
+            //}
+            ////typedef izenelib::util::second_greater<ItemCandidateType> greater_than;
+            ////std::sort(item_candidates.begin(), item_candidates.end(), greater_than());
+            ////const ItemScore& top_score = item_candidates.front().second;
+            ////for(uint32_t i=0;i<item_candidates.size();i++)
+            ////{
+                ////const ItemType& item = item_candidates[i].first;
+                ////const ItemScore& score = item_candidates[i].second;
+                ////if(score.second==top_score.second)
+                ////{
+                    ////if(score.first/top_score.first>=0.85)
+                    ////{
+                        ////found_items.push_back(item);
+                    ////}
+                ////}
+                ////else if(score.first/top_score.first>=0.4)
+                ////{
+                    ////found_items.push_back(item);
+                ////}
+
+            ////}
+
+        //}
+        //for(uint32_t i=0;i<found_items.size();i++)
+        //{
+            //const ItemType& item = found_items[i];
+            //if(item.first.size()>max_found_length)
+            //{
+                //max_found_length = item.first.size();
+            //}
+            //const KeywordTag& tag = item.second;
+            //KeywordIndex::iterator it = keyword_index.find(item.first);
+            //if(it==keyword_index.end())
+            //{
+                //keyword_vector.push_back(item);
+                //keyword_index[item.first] = keyword_vector.size()-1;
+            //}
+            //else
+            //{
+                //ItemType& evalue = keyword_vector[it->second];
+                //if(evalue.second.kweight<tag.kweight)
+                //{
+                    //evalue.second = tag;
+                //}
+            //}
+        //}
         //if(found_keyword)
         //{
             //keyword_vector.back().second.kweight*=2;
@@ -1052,17 +1235,25 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
                 //}
             //}
         //}
+        //if(max_found_length>0)
+        //{
+            //begin+=max_found_length;
+        //}
+        //else
+        //{
+            //++begin;
+        //}
         ++begin;
     }
     uint32_t keyword_count = keyword_vector.size();
     double all_kweight = 0.0;
     for(uint32_t i=0;i<keyword_count;i++)
     {
-        all_kweight+=keyword_vector[i].second.kweight;
+        all_kweight+=keyword_vector[i].kweight;
     }
     for(uint32_t i=0;i<keyword_count;i++)
     {
-        keyword_vector[i].second.kweight/=all_kweight;
+        keyword_vector[i].kweight/=all_kweight;
     }
     //for(uint32_t i=0;i<keyword_count;i++)
     //{
@@ -1168,8 +1359,8 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
     SpuAttributeApp sa_app;
     for(KeywordVector::const_iterator it = keyword_vector.begin();it!=keyword_vector.end();++it)
     {
-        const TermList& tl = it->first;
-        const KeywordTag& tag = it->second;
+        const TermList& tl = it->term_list;
+        const KeywordTag& tag = *it;
         double weight = tag.kweight;
         //double aweight = tag.aweight;
         double terms_length = tl.size()-(tag.ngram-1);
@@ -1268,9 +1459,19 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
         uint32_t cid = GetCidBySpuId_(spu_id);
         std::pair<WeightType, uint32_t>& e_weight_spuid = cid_spu[cid];
         WeightType& eweight = e_weight_spuid.first;
-        if(SpuMatched_(eweight.paweight, p)&&SpuMatched_(weight.paweight, p))
+        bool ematched = SpuMatched_(eweight.paweight, p);
+        bool matched = SpuMatched_(weight.paweight, p);
+        if(ematched&&matched)
         {
             if(weight.paweight>eweight.paweight)
+            {
+                e_weight_spuid.first = weight;
+                e_weight_spuid.second = spu_id;
+            }
+        }
+        else if(!ematched&&matched)
+        {
+            if(weight.sum()>eweight.sum()*0.8)
             {
                 e_weight_spuid.first = weight;
                 e_weight_spuid.second = spu_id;
@@ -1841,6 +2042,7 @@ void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
         //std::string keyword_str = GetText_(keyword);
         //LOG(INFO)<<"keyword "<<keyword_str<<std::endl;
         KeywordTag tag;
+        tag.term_list = keyword;
         //find keyword in suffix_trie
         for(TrieType::const_iterator it = suffix_trie.lower_bound(keyword);it!=suffix_trie.end();it++)
         {
@@ -1862,6 +2064,32 @@ void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
             }
         }
         tag.Flush();
+        for(uint32_t i=0;i<tag.category_name_apps.size();i++)
+        {
+            const CategoryNameApp& app = tag.category_name_apps[i];
+            if(app.is_complete) 
+            {
+                tag.type_app["c|"+boost::lexical_cast<std::string>(app.cid)] = 1;
+                //break;
+            }
+        }
+        if(tag.type_app.empty())
+        {
+            for(uint32_t i=0;i<tag.attribute_apps.size();i++)
+            {
+                const AttributeApp& app = tag.attribute_apps[i];
+                if(app.spu_id==0) continue;
+                //if(app.is_optional) continue;
+                uint32_t cid = GetCidBySpuId_(app.spu_id);
+                std::string key = boost::lexical_cast<std::string>(cid)+"|"+app.attribute_name;
+                tag.type_app[key]+=1;
+                //double share_point = 0.0;
+                //if(app.is_optional) share_point = 0.5;
+                //else if(app.attribute_name=="型号") share_point = 1.5;
+                //else share_point = 1.0;
+                //sts["a|"+app.attribute_name]+=share_point;
+            }
+        }
         trie_[keyword] = tag;
     }
     //post-process
@@ -1910,7 +2138,80 @@ void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
 }
 bool ProductMatcher::SpuMatched_(double paweight, const Product& p) const
 {
-    if(paweight>=1.5&&paweight>=p.aweight*0.8) return true;
+    if(paweight>=1.5&&paweight>=p.aweight) return true;
     return false;
 }
 
+int ProductMatcher::SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const
+{
+    if(tag1.term_list==tag2.term_list)
+    {
+        if(tag1.kweight>tag2.kweight)
+        {
+            return 1;
+        }
+        return 2;
+    }
+    const Position& position1 = tag1.positions.front();
+    const Position& position2 = tag2.positions.front();
+    if( (position1.first>=position2.first&&position1.second<=position2.second) 
+      || (position2.first>=position1.first&&position2.second<=position1.second))
+    {
+        //overlapped
+        const KeywordTag* container = NULL;
+        const KeywordTag* be_contained = NULL;
+        int pcontainer = 1;
+        
+        if( (position1.first>=position2.first&&position1.second<=position2.second) )
+        {
+            container = &tag2;
+            pcontainer = 2;
+            be_contained = &tag1;
+        }
+        else
+        {
+            container = &tag1;
+            pcontainer = 1;
+            be_contained = &tag2;
+        }
+        bool has_same = false;
+        for(KeywordTypeApp::const_iterator tit = be_contained->type_app.begin();tit!=be_contained->type_app.end();tit++)
+        {
+            const std::string& key = tit->first;
+            if(container->type_app.find(key)!=container->type_app.end())
+            {
+                has_same = true;
+                break;
+            }
+        }
+        if(has_same) return pcontainer;
+        return 3;
+    }
+    return 3;
+    //if(!tag1.type_app.empty()&&!tag2.type_app.empty())
+    //{
+        //if(last_type_app.find("c")!=last_type_app.end())
+        //{
+            //mode_one = true;
+        //}
+        //else if(type_app.find("c")!=type_app.end())
+        //{
+            //mode_one = false;
+        //}
+        //else
+        //{
+            //bool has_same = false;
+            //for(TypeApp::const_iterator tit = type_app.begin();tit!=type_app.end();tit++)
+            //{
+                //const std::string& key = tit->first;
+                //if(last_type_app.find(key)!=last_type_app.end())
+                //{
+                    //has_same = true;
+                    //break;
+                //}
+            //}
+            //if(has_same) mode_one = true;
+            //else mode_one = false;
+        //}
+    //}
+}

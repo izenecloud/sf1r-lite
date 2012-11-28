@@ -81,7 +81,6 @@ namespace sf1r {
         };
 
         template<class K, class V>
-        //class dmap : public std::map<K,V>
         class dmap : public boost::unordered_map<K,V>
         {
             //typedef std::map<K,V> BaseType;
@@ -104,6 +103,36 @@ namespace sf1r {
             V d_;
             
         };
+        template<class K, class V>
+        class stdmap : public std::map<K,V>
+        {
+            typedef std::map<K,V> BaseType;
+        public:
+            stdmap():BaseType()
+            {
+            }
+            stdmap(const V& default_value):d_(default_value)
+            {
+            }
+
+            V& operator[] (const K& k)
+            {
+                return (*((this->insert(make_pair(k,d_))).first)).second;
+            }
+
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & *(dynamic_cast<BaseType*>(this));
+            }
+
+        private:
+            V d_;
+            
+        };
+
+        typedef dmap<std::string, double> StringToScore;
         struct CategoryNameApp 
           : boost::less_than_comparable<CategoryNameApp> 
            //,boost::equality_comparable<CategoryNameApp>
@@ -186,12 +215,15 @@ namespace sf1r {
                 return spu_id==another.spu_id&&pstart==another.pstart;
             }
         };
+        typedef stdmap<std::string, uint32_t> KeywordTypeApp;
         struct KeywordTag
         {
             KeywordTag();
+            TermList term_list;
             std::vector<CategoryNameApp> category_name_apps;
             std::vector<AttributeApp> attribute_apps;
             std::vector<SpuTitleApp> spu_title_apps;
+            KeywordTypeApp type_app;
             //double cweight; //not serialized, runtime property
             //double aweight;
             double kweight;
@@ -211,12 +243,19 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & category_name_apps & attribute_apps & spu_title_apps;
+                ar & term_list & category_name_apps & attribute_apps & spu_title_apps & type_app;
             }
         };
 
-        typedef std::map<TermList, KeywordTag> KeywordMap;
-        typedef std::vector<std::pair<TermList, KeywordTag> > KeywordVector;
+        //typedef std::map<TermList, KeywordTag> KeywordMap;
+        //typedef std::pair<TermList, KeywordTag> KeywordItem;
+        typedef std::vector<KeywordTag> KeywordVector;
+        //struct KeywordApp
+        //{
+            //KeywordItem item;
+            //KeywordTypeApp type_app;
+        //};
+        //typedef boost::unordered_map<Position, KeywordApp> KeywordAppMap;
 
         struct ProductCandidate
         {
@@ -372,6 +411,7 @@ namespace sf1r {
         uint32_t GetCidBySpuId_(uint32_t spu_id);
 
         bool SpuMatched_(double paweight, const Product& p) const;
+        int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
 
         template<class K, class V>
         void GetSortedVector_(const std::map<K, V>& map, std::vector<std::pair<V, K> >& vec, uint32_t max=0)
