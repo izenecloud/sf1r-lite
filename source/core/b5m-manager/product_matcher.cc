@@ -22,7 +22,7 @@ using namespace idmlib::util;
 
 //#define B5M_DEBUG
 
-ProductMatcher::KeywordTag::KeywordTag():kweight(0.0), type_app(0), ngram(1)
+ProductMatcher::KeywordTag::KeywordTag():type_app(0), kweight(0.0), ngram(1)
 {
 }
 
