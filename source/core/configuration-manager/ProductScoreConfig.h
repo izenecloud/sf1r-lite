@@ -16,6 +16,7 @@ enum ProductScoreType
     CATEGORY_SCORE,
     RELEVANCE_SCORE,
     POPULARITY_SCORE,
+    FUZZY_SCORE,
     PRODUCT_SCORE_NUM
 };
 

@@ -933,6 +933,7 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
         }
     }
     ScoreDocEvaluator scoreDocEvaluator(productScorer, customRanker);
+    const score_t fuzzyScoreWeight = getFuzzyScoreWeight_();
 
     const size_t count = docid_list.size();
     result_score_list.resize(count);
@@ -950,9 +951,17 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     {
         tmpdoc.docId = docid_list[i];
         scoreDocEvaluator.evaluate(tmpdoc);
-        // use the fuzzy match score if no other score.
+
+        float fuzzyScore = result_score_list[i];
         if(productScorer == NULL)
-            tmpdoc.score = result_score_list[i];
+        {
+            tmpdoc.score = fuzzyScore;
+        }
+        else
+        {
+            tmpdoc.score += fuzzyScore * fuzzyScoreWeight;
+        }
+
         scoreItemQueue->insert(tmpdoc);
         //cout << "doc : " << tmpdoc.docId << ", score is:" << tmpdoc.score << "," << tmpdoc.custom_score << endl;
     }
@@ -997,6 +1006,24 @@ void SearchManager::printDFCTF_(
             LOG(INFO) << "termid: " << iter_->first << " CTF: " << iter_->second;
         }
     }
+}
+
+score_t SearchManager::getFuzzyScoreWeight_() const
+{
+    boost::shared_ptr<MiningManager> miningManager = miningManagerPtr_.lock();
+
+    if (!miningManager)
+    {
+        LOG(WARNING) << "as SearchManager::miningManagerPtr_ is uninitialized, "
+                     << "the fuzzy score weight would be zero";
+        return 0;
+    }
+
+    const MiningSchema& miningSchema = miningManager->getMiningSchema();
+    const ProductScoreConfig& fuzzyConfig =
+        miningSchema.product_ranking_config.scores[FUZZY_SCORE];
+
+    return fuzzyConfig.weight;
 }
 
 } // namespace sf1r
