@@ -33,6 +33,7 @@
 #include "faceted-submanager/ctr_manager.h"
 
 #include "group-label-logger/GroupLabelLogger.h"
+#include "group-label-logger/BackendLabel2FrontendLabel.h"
 #include "merchant-score-manager/MerchantScoreManager.h"
 #include "custom-rank-manager/CustomDocIdConverter.h"
 #include "custom-rank-manager/CustomRankManager.h"
@@ -600,6 +601,7 @@ bool MiningManager::open()
                 match_category_restrict_.push_back(boost::regex(restrict_vector[i]));
             }
             std::string res_path = system_resource_path_+"/product-matcher";
+            BackendLabelToFrontendLabel::Get()->Init(res_path + "/backend_category_2_frontend_category.txt");
             productMatcher_ = new ProductMatcher(res_path);
             if(!productMatcher_->Open())
             {
