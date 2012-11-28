@@ -38,9 +38,8 @@ void BackendLabelToFrontendLabel::InitOnce_(const std::string& path)
             boost::algorithm::split( labels, line, boost::algorithm::is_any_of(",") );
             if(2 == labels.size())
             {
-                std::cout<<labels[0]<<","<<labels[1]<<std::endl;
                 UString backend( labels[0], UString::UTF_8);
-                UString frontend( labels[0], UString::UTF_8);
+                UString frontend( labels[1], UString::UTF_8);
                 back2front_[backend] = frontend;
             }
         }
