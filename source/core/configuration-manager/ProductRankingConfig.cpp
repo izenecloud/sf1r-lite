@@ -110,7 +110,8 @@ const std::string ProductRankingConfig::kScoreTypeName[] =
     "custom",       // CUSTOM_SCORE
     "category",     // CATEGORY_SCORE
     "relevance",    // RELEVANCE_SCORE
-    "popularity"    // POPULARITY_SCORE
+    "popularity",   // POPULARITY_SCORE
+    "fuzzy"         // FUZZY_SCORE
 };
 
 ProductRankingConfig::ProductRankingConfig()

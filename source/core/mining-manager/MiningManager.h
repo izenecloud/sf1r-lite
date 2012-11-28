@@ -159,6 +159,9 @@ public:
     bool DoMiningCollection();
 
     void DoContinue();
+
+    const MiningSchema& getMiningSchema() const { return mining_schema_; }
+
     /**
      * @brief The online querying interface.
      */
