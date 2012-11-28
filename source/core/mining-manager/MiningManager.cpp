@@ -1952,7 +1952,7 @@ bool MiningManager::GetSuffixMatch(
                 groupFilter->getGroupRep(groupRep, attrRep);
             }
         }
-        res_list.resize(orig_max_docs);
+        res_list.resize(min(orig_max_docs, res_list.size()));
     }
 
     docIdList.resize(res_list.size());

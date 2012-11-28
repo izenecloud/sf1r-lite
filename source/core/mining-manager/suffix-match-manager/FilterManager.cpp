@@ -383,6 +383,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& propertys)
             {
                 std::vector<NumFilterKeyT>& possible_keys = num_possible_keys_[property];
                 possible_keys.reserve(filter_num);
+                NumberIdMapT& filter_ids = numbertype_filterids_[property];
                 for (size_t j = 0; j < filter_num; ++j)
                 {
                     NumFilterKeyT numberkey;
@@ -390,7 +391,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& propertys)
                     FilterIdRange idrange;
                     ifs.read((char*)&idrange.start, sizeof(uint32_t));
                     ifs.read((char*)&idrange.end, sizeof(uint32_t));
-                    numbertype_filterids_[property].insert(std::make_pair(numberkey, idrange));
+                    filter_ids.insert(std::make_pair(numberkey, idrange));
                     possible_keys.push_back(numberkey);
                 }
                 std::sort(possible_keys.begin(), possible_keys.end(), std::less<NumFilterKeyT>());
