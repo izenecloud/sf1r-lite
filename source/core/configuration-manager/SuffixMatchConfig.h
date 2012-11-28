@@ -61,6 +61,7 @@ public:
     std::string suffix_match_tokenize_dicpath;
     std::vector<std::string> group_filter_properties;
     std::vector<std::string> attr_filter_properties;
+    std::vector<std::string> date_filter_properties;
     std::vector<NumberFilterConfig> number_filter_properties;
 
 private:
@@ -74,6 +75,7 @@ private:
         ar & suffix_match_tokenize_dicpath;
         ar & group_filter_properties;
         ar & attr_filter_properties;
+        ar & date_filter_properties;
         ar & number_filter_properties;
     }
 };

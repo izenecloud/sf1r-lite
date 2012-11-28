@@ -157,15 +157,25 @@ public:
         value = boost::lexical_cast<std::string>(data_[pos]);
         return true;
     }
-    bool getFloatPairValue(std::size_t pos, std::pair<float, float>& value) const
+    bool getDoublePairValue(std::size_t pos, std::pair<double, double>& value) const
     {
         ReadLock lock(mutex_);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
-        value.first = value.second = static_cast<float>(data_[pos]);
+        value.first = value.second = static_cast<double>(data_[pos]);
         return true;
     }
+    bool getInt64PairValue(std::size_t pos, std::pair<int64_t, int64_t>& value) const
+    {
+        ReadLock lock(mutex_);
+        if (pos >= data_.size() || data_[pos] == invalidValue_)
+            return false;
+
+        value.first = value.second = static_cast<int64_t>(data_[pos]);
+        return true;
+    }
+
 
     bool getFloatMinValue(float& minValue) const
     {

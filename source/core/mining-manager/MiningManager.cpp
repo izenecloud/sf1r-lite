@@ -554,6 +554,7 @@ bool MiningManager::open()
             // reading suffix config and load filter data here.
             suffixMatchManager_->setGroupFilterProperty(mining_schema_.suffixmatch_schema.group_filter_properties);
             suffixMatchManager_->setAttrFilterProperty(mining_schema_.suffixmatch_schema.attr_filter_properties);
+            suffixMatchManager_->setDateFilterProperty(mining_schema_.suffixmatch_schema.date_filter_properties);
             std::vector<std::string> number_props;
             std::vector<int32_t> number_amp_list;
             const std::vector<NumberFilterConfig>& number_config_list = mining_schema_.suffixmatch_schema.number_filter_properties;
@@ -1963,7 +1964,7 @@ bool MiningManager::GetSuffixMatch(
     }
 
     searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
-            rankScoreList, customRankScoreList);
+        rankScoreList, customRankScoreList);
 
     docIdList.erase(docIdList.begin(), docIdList.begin() + start);
     rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);

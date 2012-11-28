@@ -907,19 +907,7 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
         return;
     }
 
-    faceted::PropSharedLockSet propSharedLockSet;
-    boost::scoped_ptr<faceted::GroupFilter> groupFilter;
-    faceted::GroupParam gp = actionOperation.actionItem_.groupParam_;
-    if (groupFilterBuilder_)
-    {
-        groupFilter.reset(
-            groupFilterBuilder_->createFilter(gp, propSharedLockSet));
-    }
-
-    ProductScorer* productScorer = preprocessor_->createProductScorer(
-        actionOperation.actionItem_, pSorter, propSharedLockSet);
-
-    if(productScorer == NULL && !customRanker)
+    if(!customRanker)
     {
         if(actionOperation.actionItem_.sortPriorityList_.size() == 1)
         {
@@ -932,6 +920,19 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
             }
         }
     }
+
+    faceted::PropSharedLockSet propSharedLockSet;
+    boost::scoped_ptr<faceted::GroupFilter> groupFilter;
+    faceted::GroupParam gp = actionOperation.actionItem_.groupParam_;
+    if (groupFilterBuilder_)
+    {
+        groupFilter.reset(
+            groupFilterBuilder_->createFilter(gp, propSharedLockSet));
+    }
+
+    ProductScorer* productScorer = preprocessor_->createProductScorer(
+        actionOperation.actionItem_, pSorter, propSharedLockSet);
+
     ScoreDocEvaluator scoreDocEvaluator(productScorer, customRanker);
     const score_t fuzzyScoreWeight = getFuzzyScoreWeight_();
 
@@ -939,7 +940,7 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     result_score_list.resize(count);
     custom_score_list.resize(count);
 
-    boost::shared_ptr<HitQueue> scoreItemQueue;
+    boost::scoped_ptr<HitQueue> scoreItemQueue;
     ///sortby
     if (pSorter)
         scoreItemQueue.reset(new PropertySortedHitQueue(pSorter, count));
