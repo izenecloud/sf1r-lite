@@ -300,6 +300,7 @@ int do_main(int ac, char** av)
         ("name,N", po::value<std::string>(), "specify the name")
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
         ("test", "specify test flag")
+        ("noprice", "no price flag")
         ("force", "specify force flag")
         ("trie", "do trie test")
         ("cr-train", "do category recognizer training")
@@ -342,6 +343,7 @@ int do_main(int ac, char** av)
     std::string spu;
     bool test_flag = false;
     bool force_flag = false;
+    bool noprice = false;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
     } 
@@ -497,6 +499,10 @@ int do_main(int ac, char** av)
     {
         force_flag = true;
     }
+    if(vm.count("noprice"))
+    {
+        noprice = true;
+    }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
 
     if(vm.count("raw-generate"))
@@ -602,6 +608,23 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
+    } 
+    if (vm.count("match-test")) {
+        if( knowledge_dir.empty()||scd_path.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ProductMatcher matcher(knowledge_dir);
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open())
+        {
+            return EXIT_FAILURE;
+        }
+        if(noprice)
+        {
+            matcher.SetUsePriceSim(false);
+        }
+        matcher.Test(scd_path);
     } 
     if (vm.count("spu-process")) {
         if(spu.empty())

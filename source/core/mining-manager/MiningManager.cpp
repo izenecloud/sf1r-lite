@@ -550,6 +550,25 @@ bool MiningManager::open()
         }
         if (mining_schema_.product_matcher_enable)
         {
+            std::vector<std::string> restrict_vector;
+            restrict_vector.push_back("^手机$");
+            restrict_vector.push_back("^数码相机/单反相机/摄像机");
+            restrict_vector.push_back("^MP3/MP4/iPod/录音笔$");
+            restrict_vector.push_back("^笔记本电脑$");
+            restrict_vector.push_back("^平板电脑/MID$");
+            restrict_vector.push_back("^台式机/一体机/服务器.*$");
+            restrict_vector.push_back("^电脑硬件/显示器/电脑周边.*$");
+            restrict_vector.push_back("^网络设备/网络相关.*$");
+            restrict_vector.push_back("^闪存卡/U盘/存储/移动硬盘.*$");
+            restrict_vector.push_back("^办公设备/耗材/相关服务>打印机$");
+            restrict_vector.push_back("^办公设备/耗材/相关服务>投影机$");
+            restrict_vector.push_back("^办公设备/耗材/相关服务>扫描仪$");
+            restrict_vector.push_back("^办公设备/耗材/相关服务>复合复印机$");
+            restrict_vector.push_back("^大家电.*$");
+            for(uint32_t i=0;i<restrict_vector.size();i++)
+            {
+                match_category_restrict_.push_back(boost::regex(restrict_vector[i]));
+            }
             std::string res_path = system_resource_path_+"/product-matcher";
             productMatcher_ = new ProductMatcher(res_path);
             if(!productMatcher_->Open())
@@ -560,25 +579,21 @@ bool MiningManager::open()
             }
             productMatcher_->SetUsePriceSim(false);
             //test
-            std::vector<std::string> test_queries;
-            test_queries.push_back("iPhone 5");
-            test_queries.push_back("尼康 D3200");
-            test_queries.push_back("iPhone");
-            test_queries.push_back("iPad");
-            test_queries.push_back("手机");
-            test_queries.push_back("单反");
-            for(uint32_t i=0;i<test_queries.size();i++)
+            std::ifstream ifs("./querylog.txt");
+            std::string line;
+            while(getline(ifs, line))
             {
-                std::string squery = test_queries[i];
-                UString query(squery, UString::UTF_8);
+                boost::algorithm::trim(line);
+                UString query(line, UString::UTF_8);
                 UString category;
                 if(GetProductCategory(query, category))
                 {
                     std::string scategory;
                     category.convertString(scategory, UString::UTF_8);
-                    std::cerr<<"!!!!!!!!!!!query category "<<squery<<","<<scategory<<std::endl;
+                    std::cerr<<"!!!!!!!!!!!query category "<<line<<","<<scategory<<std::endl;
                 }
             }
+            ifs.close();
         }
 
         /** KV */
@@ -1908,8 +1923,25 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
     {
         if(!result_category.name.empty())
         {
-            category = izenelib::util::UString(result_category.name, izenelib::util::UString::UTF_8);
-            return true;
+            bool valid = true;
+            if(!match_category_restrict_.empty())
+            {
+                valid = false;
+                for(uint32_t i=0;i<match_category_restrict_.size();i++)
+                {
+                    if(boost::regex_match(result_category.name, match_category_restrict_[i]))
+                    {
+                        valid = true;
+                        break;
+                    }
+
+                }
+            }
+            if(valid)
+            {
+                category = izenelib::util::UString(result_category.name, izenelib::util::UString::UTF_8);
+                return true;
+            }
         }
     }
     return false;

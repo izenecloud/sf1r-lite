@@ -579,6 +579,7 @@ private:
 
     /** Product Matcher */
     ProductMatcher* productMatcher_;
+    std::vector<boost::regex> match_category_restrict_;
 
     /** KV */
     std::string kv_path_;
