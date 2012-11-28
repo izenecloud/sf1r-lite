@@ -1964,7 +1964,7 @@ bool MiningManager::GetSuffixMatch(
     }
 
     searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
-            rankScoreList, customRankScoreList);
+        rankScoreList, customRankScoreList);
 
     docIdList.erase(docIdList.begin(), docIdList.begin() + start);
     rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
