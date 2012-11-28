@@ -1,13 +1,12 @@
 #include "ProductRankingConfig.h"
 #include <process/common/CollectionMeta.h>
+#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <sstream>
 
 using namespace sf1r;
 
 namespace
 {
-const char* SCORE_TYPE_NAME[] =
-    {"merchant", "custom", "category", "relevance", "popularity"};
 
 bool isStringGroup(
     const ProductScoreConfig& scoreConfig,
@@ -46,7 +45,7 @@ bool isNumericFilter(
     std::string& error)
 {
     const std::string& propName = scoreConfig.propName;
-    if (propName.empty())
+    if (propName.empty() || propName == faceted::CTRManager::kCtrPropName)
         return true;
 
     const IndexBundleSchema& indexSchema =
@@ -56,8 +55,10 @@ bool isNumericFilter(
     propConfig.setName(propName);
 
     IndexBundleSchema::const_iterator propIt = indexSchema.find(propConfig);
-    if (propIt != indexSchema.end() && propIt->isNumericType() &&
-        propIt->getIsFilter() && propIt->isIndex())
+    if (propIt != indexSchema.end() &&
+        propIt->getIsFilter() &&
+        propIt->isIndex() &&
+        (propIt->isNumericType() || propIt->getType() == DATETIME_PROPERTY_TYPE))
     {
         return true;
     }
@@ -101,7 +102,17 @@ bool checkScoreConfig(
     }
 }
 
-}
+} // namespace
+
+const std::string ProductRankingConfig::kScoreTypeName[] =
+{
+    "merchant",     // MERCHANT_SCORE
+    "custom",       // CUSTOM_SCORE
+    "category",     // CATEGORY_SCORE
+    "relevance",    // RELEVANCE_SCORE
+    "popularity",   // POPULARITY_SCORE
+    "fuzzy"         // FUZZY_SCORE
+};
 
 ProductRankingConfig::ProductRankingConfig()
     : isEnable(false)
@@ -112,7 +123,7 @@ ProductRankingConfig::ProductRankingConfig()
         ProductScoreType typeId = static_cast<ProductScoreType>(i);
         scores[i].type = typeId;
 
-        const char* typeName = SCORE_TYPE_NAME[i];
+        const std::string& typeName = kScoreTypeName[i];
         scoreTypeMap[typeName] = typeId;
     }
 }

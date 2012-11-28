@@ -573,8 +573,22 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
                 suffixconfig.group_filter_properties.end(),
                 cit->first) == suffixconfig.group_filter_properties.end())
         {
-            message = "The filter property : " + cit->first + " was not configured as group FilterProperty in SuffixMatchConfig.";
-            return false;
+            bool find_num_prop = false;
+            for(size_t j = 0; j < suffixconfig.number_filter_properties.size(); ++j)
+            {
+                if(cit->first == suffixconfig.number_filter_properties[j].property)
+                {
+                    find_num_prop = true;
+                    break;
+                }
+            }
+            find_num_prop = find_num_prop || (std::find(suffixconfig.date_filter_properties.begin(),
+                suffixconfig.date_filter_properties.end(), cit->first) != suffixconfig.date_filter_properties.end());
+            if(!find_num_prop)
+            {
+                message = "The filter property : " + cit->first + " was not configured as group FilterProperty in SuffixMatchConfig.";
+                return false;
+            }
         }
         ++cit;
     }

@@ -103,6 +103,7 @@
           -->
           <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
           <QueryCorrectionPara enableEK="y" enableCN="y"/>
+          <ProductRankingPara cron="0 23 * * *"/>
         </Parameter>
       </MiningBundle>
 

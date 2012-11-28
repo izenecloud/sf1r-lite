@@ -198,16 +198,27 @@ public:
         }
         return true;
     }
-    bool getFloatPairValue(std::size_t pos, std::pair<float, float>& value) const
+    bool getDoublePairValue(std::size_t pos, std::pair<double, double>& value) const
     {
         ReadLock lock(mutex_);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
-        value.first = static_cast<float>(data_[pos].first);
-        value.second = static_cast<float>(data_[pos].second);
+        value.first = static_cast<double>(data_[pos].first);
+        value.second = static_cast<double>(data_[pos].second);
         return true;
     }
+    bool getInt64PairValue(std::size_t pos, std::pair<int64_t, int64_t>& value) const
+    {
+        ReadLock lock(mutex_);
+        if (pos >= data_.size() || data_[pos] == invalidValue_)
+            return false;
+
+        value.first = static_cast<int64_t>(data_[pos].first);
+        value.second = static_cast<int64_t>(data_[pos].second);
+        return true;
+    }
+
 
     bool getValue(std::size_t pos, value_type& value) const
     {

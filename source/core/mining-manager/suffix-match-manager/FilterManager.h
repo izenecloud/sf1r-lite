@@ -143,6 +143,10 @@ public:
             uint32_t last_docid, uint32_t max_docid,
             const std::vector< std::string >& propertys,
             std::vector<NumFilterItemMapT>& num_filter_data);
+    void buildDateFilterData(
+            uint32_t last_docid, uint32_t max_docid,
+            const std::vector< std::string >& propertys,
+            std::vector<NumFilterItemMapT>& date_filter_data);
 
     izenelib::util::UString FormatGroupPath(const std::vector<izenelib::util::UString>& groupPath) const;
     izenelib::util::UString FormatGroupPath(const std::vector<std::string>& groupPath) const;
@@ -154,9 +158,9 @@ public:
             const std::string& attrname,
             const std::string& attrvalue) const;
 
-    FilterIdRange getNumFilterIdRangeExactly(const std::string& property, float filter_num) const;
-    FilterIdRange getNumFilterIdRangeLarger(const std::string& property, float filter_num) const;
-    FilterIdRange getNumFilterIdRangeSmaller(const std::string& property, float filter_num) const;
+    FilterIdRange getNumFilterIdRangeExactly(const std::string& property, double filter_num) const;
+    FilterIdRange getNumFilterIdRangeLarger(const std::string& property, double filter_num) const;
+    FilterIdRange getNumFilterIdRangeSmaller(const std::string& property, double filter_num) const;
 
     std::vector<FilterDocListT>& getAllFilterInvertedData();
     void clearAllFilterInvertedData();
@@ -177,8 +181,8 @@ private:
     typedef std::map<std::string, StrIdMapT> StrPropertyIdMapT;
     typedef std::map<std::string, NumberIdMapT> NumPropertyIdMapT;
 
-    FilterIdRange getNumFilterIdRange(const std::string& property, float filter_num, bool findlarger) const;
-    NumFilterKeyT formatNumberFilter(const std::string& property, float filter_num, bool tofloor = true) const;
+    FilterIdRange getNumFilterIdRange(const std::string& property, double filter_num, bool findlarger) const;
+    NumFilterKeyT formatNumberFilter(const std::string& property, double filter_num, bool tofloor = true) const;
     void mapGroupFilterToFilterId(
             GroupNode* node,
             const StrFilterItemMapT& group_filter_data,

@@ -33,7 +33,7 @@ bool CustomDocIdConverter::convertDocIdList_(
     for (std::vector<std::string>::const_iterator it = docStrList.begin();
         it != docStrList.end(); ++it)
     {
-        if (convertDocId_(*it, docId))
+        if (convertDocId(*it, docId))
         {
             docIdList.push_back(docId);
         }
@@ -46,7 +46,7 @@ bool CustomDocIdConverter::convertDocIdList_(
     return result;
 }
 
-bool CustomDocIdConverter::convertDocId_(
+bool CustomDocIdConverter::convertDocId(
     const std::string& docStr,
     docid_t& docId
 )
@@ -55,7 +55,7 @@ bool CustomDocIdConverter::convertDocId_(
 
     if (! idManager_.getDocIdByDocName(convertId, docId, false))
     {
-        LOG(WARNING) << "in convertDocId_(), DOCID " << docStr
+        LOG(WARNING) << "in convertDocId(), DOCID " << docStr
                      << " does not exist";
         return false;
     }

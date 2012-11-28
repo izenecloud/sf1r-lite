@@ -1514,6 +1514,10 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     params.Get("QueryCorrectionPara/enableEK", mining_config.query_correction_param.enableEK);
     params.Get("QueryCorrectionPara/enableCN", mining_config.query_correction_param.enableCN);
 
+    // for product ranking
+    params.GetString("ProductRankingPara/cron",
+                     mining_config.product_ranking_param.cron);
+
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
 
@@ -1709,6 +1713,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             }
         }
 
+        {
+            Iterator<Element> it("CommentCountProperty");
+            for (it = it.begin(task_node); it != it.end(); it++)
+            {
+                getAttribute(it.Get(), "name", property_name);
+                mining_schema.summarization_schema.commentCountPropName = property_name;
+            }
+        }
 
         ticpp::Element* opinionProp_node = getUniqChildElement(task_node, "OpinionProperty", false);
         if (opinionProp_node)
@@ -1979,6 +1991,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                     throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> must be one of item configured in <Attr> if it has type attribute.");
                 }
                 mining_schema.suffixmatch_schema.attr_filter_properties.push_back(property_name);
+            }
+            else if(type == "date")
+            {
+                if( property_type != DATETIME_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not date type.");
+                }
+                mining_schema.suffixmatch_schema.date_filter_properties.push_back(property_name);
             }
             else if(type == "number")
             {

@@ -27,6 +27,8 @@
 #include "faceted-submanager/ontology_manager.h"
 #include "group-manager/GroupManager.h"
 #include "group-manager/GroupFilterBuilder.h"
+#include "group-manager/GroupFilter.h"
+#include "group-manager/PropSharedLockSet.h"
 #include "attr-manager/AttrManager.h"
 #include "faceted-submanager/ctr_manager.h"
 
@@ -35,12 +37,16 @@
 #include "custom-rank-manager/CustomDocIdConverter.h"
 #include "custom-rank-manager/CustomRankManager.h"
 #include "product-scorer/ProductScorerFactory.h"
+#include "product-score-manager/ProductScoreManager.h"
+#include "product-score-manager/OfflineProductScorerFactoryImpl.h"
+#include "product-score-manager/ProductScoreTable.h"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/IncrementalManager.hpp"
 
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
+#include <common/SearchCache.h>
 
 #include <idmlib/tdt/integrator.h>
 #include <idmlib/util/container_switch.h>
@@ -99,6 +105,7 @@ MiningManager::MiningManager(
         const boost::shared_ptr<LAManager>& laManager,
         const boost::shared_ptr<IndexManager>& index_manager,
         const boost::shared_ptr<SearchManager>& searchManager,
+        const boost::shared_ptr<SearchCache>& searchCache,
         const boost::shared_ptr<IDManager>& idManager,
         const std::string& collectionName,
         const DocumentSchema& documentSchema,
@@ -120,6 +127,7 @@ MiningManager::MiningManager(
     , laManager_(laManager)
     , index_manager_(index_manager)
     , searchManager_(searchManager)
+    , searchCache_(searchCache)
     , tgInfo_(NULL)
     , idManager_(idManager)
     , groupManager_(NULL)
@@ -127,6 +135,8 @@ MiningManager::MiningManager(
     , merchantScoreManager_(NULL)
     , customDocIdConverter_(NULL)
     , customRankManager_(NULL)
+    , offlineScorerFactory_(NULL)
+    , productScoreManager_(NULL)
     , productScorerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
@@ -142,6 +152,8 @@ MiningManager::~MiningManager()
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
     if (productScorerFactory_) delete productScorerFactory_;
+    if (productScoreManager_) delete productScoreManager_;
+    if (offlineScorerFactory_) delete offlineScorerFactory_;
     if (customRankManager_) delete customRankManager_;
     if (customDocIdConverter_) delete customDocIdConverter_;
     if (merchantScoreManager_) delete merchantScoreManager_;
@@ -424,8 +436,6 @@ bool MiningManager::open()
         const ProductScoreConfig& merchantScoreConfig =
             rankConfig.scores[MERCHANT_SCORE];
 
-        LOG(INFO) << rankConfig.toStr();
-
         /** merchant score */
         if (!merchantScoreConfig.propName.empty() && groupManager_)
         {
@@ -452,14 +462,18 @@ bool MiningManager::open()
             }
         }
 
+        if (customDocIdConverter_) delete customDocIdConverter_;
+        customDocIdConverter_ = new CustomDocIdConverter(*idManager_);
+
         /** product ranking */
         if (rankConfig.isEnable)
         {
-            // custom doc id converter & rank manager
-            if (customRankManager_) delete customRankManager_;
-            if (customDocIdConverter_) delete customDocIdConverter_;
+            LOG(INFO) << rankConfig.toStr();
 
-            customDocIdConverter_ = new CustomDocIdConverter(*idManager_);
+            if (productScorerFactory_) delete productScorerFactory_;
+            if (productScoreManager_) delete productScoreManager_;
+            if (offlineScorerFactory_) delete offlineScorerFactory_;
+            if (customRankManager_) delete customRankManager_;
 
             const bfs::path customRankDir = bfs::path(prefix_path) / "custom_rank";
             bfs::create_directories(customRankDir);
@@ -470,8 +484,23 @@ bool MiningManager::open()
                     *customDocIdConverter_,
                     document_manager_.get());
 
-            // product scorer factory
-            if (productScorerFactory_) delete productScorerFactory_;
+            offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(*this);
+
+            const std::string scoreDir = prefix_path + "/product_score";
+            productScoreManager_ = new ProductScoreManager(
+                rankConfig,
+                miningConfig_.product_ranking_param,
+                *offlineScorerFactory_,
+                *document_manager_,
+                collectionName_,
+                scoreDir,
+                searchCache_);
+
+            if (! productScoreManager_->open())
+            {
+                std::cerr << "open product score failed" << std::endl;
+                return false;
+            }
 
             productScorerFactory_ = new ProductScorerFactory(
                     rankConfig, *this);
@@ -525,6 +554,7 @@ bool MiningManager::open()
             // reading suffix config and load filter data here.
             suffixMatchManager_->setGroupFilterProperty(mining_schema_.suffixmatch_schema.group_filter_properties);
             suffixMatchManager_->setAttrFilterProperty(mining_schema_.suffixmatch_schema.attr_filter_properties);
+            suffixMatchManager_->setDateFilterProperty(mining_schema_.suffixmatch_schema.date_filter_properties);
             std::vector<std::string> number_props;
             std::vector<int32_t> number_amp_list;
             const std::vector<NumberFilterConfig>& number_config_list = mining_schema_.suffixmatch_schema.number_filter_properties;
@@ -768,6 +798,12 @@ bool MiningManager::DoMiningCollection()
     if (mining_schema_.attr_enable)
     {
         attrManager_->processCollection();
+    }
+
+    // calculate product score
+    if (mining_schema_.product_ranking_config.isEnable)
+    {
+        productScoreManager_->buildCollection();
     }
 
     //do tdt
@@ -1836,7 +1872,10 @@ bool MiningManager::GetSuffixMatch(
         std::vector<uint32_t>& docIdList,
         std::vector<float>& rankScoreList,
         std::vector<float>& customRankScoreList,
-        std::size_t& totalCount)
+        std::size_t& totalCount,
+        faceted::GroupRep& groupRep,
+        sf1r::faceted::OntologyRep& attrRep
+        )
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
@@ -1850,6 +1889,14 @@ bool MiningManager::GetSuffixMatch(
     }
     else
     {
+        size_t orig_max_docs = max_docs;
+        if(actionOperation.actionItem_.groupParam_.groupProps_.size() > 0 ||
+            actionOperation.actionItem_.groupParam_.isAttrGroup_)
+        {
+            // need do counter.
+            max_docs = 100000;
+        }
+
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                 queryU, max_docs,
@@ -1890,6 +1937,37 @@ bool MiningManager::GetSuffixMatch(
 
             LOG(INFO) << "[]TOPN and cost:" << timer.elapsed() << " seconds" << std::endl;
         }
+
+        if (groupManager_ || attrManager_)
+        {
+            if(!groupFilterBuilder_)
+            {
+                faceted::GroupFilterBuilder* filterBuilder =
+                    new faceted::GroupFilterBuilder(
+                        mining_schema_.group_config_map,
+                        groupManager_,
+                        attrManager_,
+                        searchManager_.get());
+                groupFilterBuilder_.reset(filterBuilder);
+            }
+
+            faceted::PropSharedLockSet propSharedLockSet;
+            boost::scoped_ptr<faceted::GroupFilter> groupFilter;
+            if (groupFilterBuilder_)
+            {
+                groupFilter.reset(
+                    groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_, propSharedLockSet));
+            }
+            if(groupFilter)
+            {
+                for(size_t i = 0; i < res_list.size(); ++i)
+                {
+                    groupFilter->test(res_list[i].second);
+                }
+                groupFilter->getGroupRep(groupRep, attrRep);
+            }
+        }
+        res_list.resize(min(orig_max_docs, res_list.size()));
     }
 
     docIdList.resize(res_list.size());
@@ -1909,6 +1987,7 @@ bool MiningManager::GetSuffixMatch(
 
     return true;
 }
+
 bool MiningManager::GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category)
 {
     if(productMatcher_==NULL)
@@ -2003,4 +2082,40 @@ const faceted::PropValueTable* MiningManager::GetPropValueTable(const std::strin
         return NULL;
 
     return groupManager_->getPropValueTable(propName);
+}
+
+bool MiningManager::getProductScore(
+    const std::string& docIdStr,
+    const std::string& scoreTypeName,
+    score_t& scoreValue)
+{
+    docid_t docId = 0;
+
+    if (!customDocIdConverter_ ||
+        !customDocIdConverter_->convertDocId(docIdStr, docId))
+        return false;
+
+    if (scoreTypeName == faceted::CTRManager::kCtrPropName)
+    {
+        if (!ctrManager_)
+            return false;
+
+        scoreValue = ctrManager_->getClickCountByDocId(docId);
+        return true;
+    }
+
+    ProductScoreType scoreType =
+        mining_schema_.product_ranking_config.getScoreType(scoreTypeName);
+
+    const ProductScoreTable* productScoreTable =
+        productScoreManager_->getProductScoreTable(scoreType);
+
+    if (productScoreTable == NULL)
+    {
+        LOG(WARNING) << "unknown score type: " << scoreTypeName;
+        return false;
+    }
+
+    scoreValue = productScoreTable->getScoreHasLock(docId);
+    return true;
 }

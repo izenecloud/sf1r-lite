@@ -19,12 +19,13 @@ class GroupLabelLogger;
 class ProductRankingConfig;
 class MiningManager;
 class ProductScoreConfig;
-class SearchManager;
+class ProductScoreManager;
 
 namespace faceted
 {
 class PropValueTable;
 class PropSharedLockSet;
+class CTRManager;
 }
 
 class ProductScorerFactory
@@ -71,9 +72,6 @@ private:
     ProductScorer* createPopularityScorer_(
         const ProductScoreConfig& scoreConfig);
 
-    ProductScorer* createNumericPropertyScorer_(
-        const ProductScoreConfig& scoreConfig);
-
 private:
     const ProductRankingConfig& config_;
 
@@ -83,7 +81,7 @@ private:
 
     const faceted::PropValueTable* categoryValueTable_;
 
-    boost::shared_ptr<SearchManager> searchManager_;
+    ProductScoreManager* productScoreManager_;
 };
 
 } // namespace sf1r

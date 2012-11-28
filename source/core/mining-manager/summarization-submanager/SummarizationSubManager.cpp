@@ -613,6 +613,8 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
             Document doc;
             doc.property("DOCID") = key_ustr;
             doc.property(schema_.scorePropName) = UString(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
+            if(!schema_.commentCountPropName.empty())
+                doc.property(schema_.commentCountPropName) = UString(boost::lexical_cast<std::string>(count), UString::UTF_8);
             score_scd_writer_->Append(doc);
         }
     }

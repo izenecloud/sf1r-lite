@@ -72,25 +72,25 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(log_manager "${SF1RENGINE_ROOT}/testbin/t_log_manager")
 
-  ADD_EXECUTABLE(t_OrderLogger
-    Runner.cpp
-    t_OrderLogger.cpp
-    )
-  TARGET_LINK_LIBRARIES(t_OrderLogger ${libs})
-  SET_TARGET_PROPERTIES(t_OrderLogger PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(log_manager "${SF1RENGINE_ROOT}/testbin/t_OrderLogger")
+#  ADD_EXECUTABLE(t_OrderLogger
+#    Runner.cpp
+#    t_OrderLogger.cpp
+#    )
+#  TARGET_LINK_LIBRARIES(t_OrderLogger ${libs})
+#  SET_TARGET_PROPERTIES(t_OrderLogger PROPERTIES
+#    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+#    )
+#  ADD_TEST(log_manager "${SF1RENGINE_ROOT}/testbin/t_OrderLogger")
 
-  ADD_EXECUTABLE(t_ItemLogger
-    Runner.cpp
-    t_ItemLogger.cpp
-    )
-  TARGET_LINK_LIBRARIES(t_ItemLogger ${libs})
-  SET_TARGET_PROPERTIES(t_ItemLogger PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
-    )
-  ADD_TEST(log_manager "${SF1RENGINE_ROOT}/testbin/t_ItemLogger")
+#  ADD_EXECUTABLE(t_ItemLogger
+#    Runner.cpp
+#    t_ItemLogger.cpp
+#    )
+#  TARGET_LINK_LIBRARIES(t_ItemLogger ${libs})
+#  SET_TARGET_PROPERTIES(t_ItemLogger PROPERTIES
+#    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+#    )
+#  ADD_TEST(log_manager "${SF1RENGINE_ROOT}/testbin/t_ItemLogger")
 
   ADD_EXECUTABLE(t_RpcServerConnection
     Runner.cpp

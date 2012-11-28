@@ -339,4 +339,12 @@ bool MiningSearchService::GetKV(const std::string& key, std::string& value)
     return miningManager_->GetKV(key, value);
 }
 
+bool MiningSearchService::GetProductScore(
+    const std::string& docIdStr,
+    const std::string& scoreType,
+    score_t& scoreValue)
+{
+    return miningManager_->getProductScore(docIdStr, scoreType, scoreValue);
+}
+
 }

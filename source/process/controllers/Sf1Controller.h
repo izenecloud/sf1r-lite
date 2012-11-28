@@ -54,6 +54,16 @@ protected:
      */
     bool checkCollectionName();
 
+    /**
+     * @brief get @p propValue for @p propName in request['resource'].
+     * @return true for success, false for failure.
+     * If @p propName does not exist or @p propValue is empty,
+     * false is returned, and the error message is added in response.
+     */
+    bool requireResourceProperty(
+        const std::string& propName,
+        std::string& propValue);
+
 private:
     /**
      * @brief do collection related check, such as ACL, handler, etc.

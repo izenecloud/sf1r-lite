@@ -5,6 +5,7 @@
 #include <am/succinct/fm-index/fm_index.hpp>
 #include <query-manager/ActionItem.h>
 #include <mining-manager/group-manager/GroupParam.h>
+#include <common/ResultType.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
@@ -45,6 +46,7 @@ public:
     void setGroupFilterProperty(std::vector<std::string>& property_list);
     void setAttrFilterProperty(std::vector<std::string>& property_list);
     void setNumberFilterProperty(std::vector<std::string>& property_list, std::vector<int32_t>& amp_list);
+    void setDateFilterProperty(std::vector<std::string>& property_list);
 
     void buildCollection();
     void buildTokenizeDic();
@@ -81,6 +83,7 @@ private:
     std::vector<std::string> group_property_list_;
     std::vector<std::string> attr_property_list_;
     std::set<std::string> number_property_list_;
+    std::vector<std::string> date_property_list_;
     std::string tokenize_dicpath_;
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;

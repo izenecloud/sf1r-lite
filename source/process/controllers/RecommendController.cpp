@@ -133,32 +133,9 @@ bool RecommendController::checkCollectionService(std::string& error)
     return true;
 }
 
-bool RecommendController::requireProperty(
-    const std::string& propName,
-    std::string& propValue
-)
-{
-    const Value& resourceValue = request()[Keys::resource];
-
-    if (! resourceValue.hasKey(propName))
-    {
-        response().addError("Require property \"" + propName + "\" in request[resource].");
-        return false;
-    }
-
-    propValue = asString(resourceValue[propName]);
-    if (propValue.empty())
-    {
-        response().addError("Require non-empty value for property \"" + propName + "\" in request[resource].");
-        return false;
-    }
-
-    return true;
-}
-
 bool RecommendController::value2User(User& user)
 {
-    if (! requireProperty(Keys::USERID, user.idStr_))
+    if (! requireResourceProperty(Keys::USERID, user.idStr_))
         return false;
 
     const Value& resourceValue = request()[Keys::resource];
@@ -418,7 +395,8 @@ void RecommendController::update_user()
 void RecommendController::remove_user()
 {
     std::string userIdStr;
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID, userIdStr));
+    IZENELIB_DRIVER_BEFORE_HOOK(
+        requireResourceProperty(Keys::USERID, userIdStr));
 
     if (! recommendTaskService_->removeUser(userIdStr))
     {
@@ -468,7 +446,8 @@ void RecommendController::remove_user()
 void RecommendController::get_user()
 {
     std::string userIdStr;
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID, userIdStr));
+    IZENELIB_DRIVER_BEFORE_HOOK(
+        requireResourceProperty(Keys::USERID, userIdStr));
 
     User user;
     if (recommendSearchService_->getUser(userIdStr, user))
@@ -535,9 +514,10 @@ void RecommendController::get_user()
 void RecommendController::visit_item()
 {
     std::string sessionIdStr, userIdStr, itemIdStr;
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::session_id, sessionIdStr) &&
-                                requireProperty(Keys::USERID, userIdStr) &&
-                                requireProperty(Keys::ITEMID, itemIdStr));
+    IZENELIB_DRIVER_BEFORE_HOOK(
+        requireResourceProperty(Keys::session_id, sessionIdStr) &&
+        requireResourceProperty(Keys::USERID, userIdStr) &&
+        requireResourceProperty(Keys::ITEMID, itemIdStr));
 
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
     bool isRecItem = asBoolOr(resourceValue[Keys::is_recommend_item], false);
@@ -602,7 +582,8 @@ void RecommendController::visit_item()
 void RecommendController::purchase_item()
 {
     std::string userIdStr;
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID, userIdStr));
+    IZENELIB_DRIVER_BEFORE_HOOK(
+        requireResourceProperty(Keys::USERID, userIdStr));
 
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
     std::string orderIdStr = asString(resourceValue[Keys::order_id]);
@@ -683,7 +664,8 @@ void RecommendController::purchase_item()
 void RecommendController::update_shopping_cart()
 {
     std::string userIdStr;
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::USERID, userIdStr));
+    IZENELIB_DRIVER_BEFORE_HOOK(
+        requireResourceProperty(Keys::USERID, userIdStr));
 
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
     const izenelib::driver::Value& itemsValue = resourceValue[Keys::items];
@@ -764,9 +746,10 @@ void RecommendController::update_shopping_cart()
 void RecommendController::track_event()
 {
     std::string eventStr, userIdStr, itemIdStr;
-    IZENELIB_DRIVER_BEFORE_HOOK(requireProperty(Keys::event, eventStr) &&
-                                requireProperty(Keys::USERID, userIdStr) &&
-                                requireProperty(Keys::ITEMID, itemIdStr));
+    IZENELIB_DRIVER_BEFORE_HOOK(
+        requireResourceProperty(Keys::event, eventStr) &&
+        requireResourceProperty(Keys::USERID, userIdStr) &&
+        requireResourceProperty(Keys::ITEMID, itemIdStr));
 
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
     bool isAdd = asBoolOr(resourceValue[Keys::is_add], true);
@@ -840,8 +823,8 @@ void RecommendController::rate_item()
 
 bool RecommendController::parseRateParam(RateParam& param)
 {
-    if (!requireProperty(Keys::USERID, param.userIdStr) ||
-        !requireProperty(Keys::ITEMID, param.itemIdStr))
+    if (!requireResourceProperty(Keys::USERID, param.userIdStr) ||
+        !requireResourceProperty(Keys::ITEMID, param.itemIdStr))
         return false;
 
     izenelib::driver::Value& resourceValue = request()[Keys::resource];
@@ -980,7 +963,7 @@ void RecommendController::do_recommend()
 bool RecommendController::parseRecommendParam(RecommendParam& param)
 {
     std::string recTypeStr;
-    if (! requireProperty(Keys::rec_type, recTypeStr))
+    if (! requireResourceProperty(Keys::rec_type, recTypeStr))
         return false;
 
     param.type = recommendSearchService_->getRecommendType(recTypeStr);
