@@ -39,12 +39,18 @@ namespace sf1r {
         
         struct WeightType
         {
-            WeightType():cweight(0.0), aweight(0.0), tweight(0.0), kweight(1.0), paweight(0.0) {}
+            WeightType()
+            :cweight(0.0), aweight(0.0), tweight(0.0), kweight(1.0)
+             , paweight(0.0), paratio(0.0), type_match(false)
+            {
+            }
             double cweight;
             double aweight;
             double tweight;
             double kweight;
             double paweight;
+            double paratio;
+            bool type_match;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
@@ -68,7 +74,8 @@ namespace sf1r {
             uint32_t cid;
             uint32_t spu_id;
             double score;
-            double paweight;
+            WeightType weight;
+            //double paweight;
             bool is_given_category;
             bool operator<(const ResultVectorItem& another) const
             {
@@ -410,7 +417,7 @@ namespace sf1r {
         void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t& cid, uint32_t& pid);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
 
-        bool SpuMatched_(double paweight, const Product& p) const;
+        bool SpuMatched_(const WeightType& weight, const Product& p) const;
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
 
         template<class K, class V>

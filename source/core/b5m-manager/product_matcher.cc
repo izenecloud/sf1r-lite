@@ -22,7 +22,7 @@ using namespace idmlib::util;
 
 //#define B5M_DEBUG
 
-ProductMatcher::KeywordTag::KeywordTag():kweight(0.0), ngram(1), type_app(0)
+ProductMatcher::KeywordTag::KeywordTag():kweight(0.0), type_app(0), ngram(1)
 {
 }
 
@@ -63,7 +63,7 @@ void ProductMatcher::KeywordTag::Flush()
 }
 void ProductMatcher::KeywordTag::Append(const KeywordTag& another, bool is_complete)
 {
-    uint32_t osize = category_name_apps.size();
+    //uint32_t osize = category_name_apps.size();
     for(uint32_t i=0;i<another.category_name_apps.size();i++)
     {
         CategoryNameApp aapp = another.category_name_apps[i];
@@ -1419,10 +1419,13 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             if(app.is_optional) share_point = 0.5;
             else if(app.attribute_name=="型号") share_point = 1.5;
             else share_point = 1.0;
-            pid_weight[app.spu_id].aweight+=share_point*weight;
+            WeightType& wt = pid_weight[app.spu_id];
+            wt.aweight+=share_point*weight;
             double paweight = share_point;
-            if(length_ratio>=0.5 && app.attribute_name=="型号") paweight*=2;
-            pid_weight[app.spu_id].paweight+=paweight;
+            //if(length_ratio>=0.5 && app.attribute_name=="型号") paweight*=2;
+            wt.paweight+=paweight;
+            wt.paratio+=length_ratio;
+            if(app.attribute_name=="型号") wt.type_match = true;
             sa_app.insert(sa_app_value);
             //pid_score[app.spu_id]+=share_point*weight;
         }
@@ -1459,8 +1462,8 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
         uint32_t cid = GetCidBySpuId_(spu_id);
         std::pair<WeightType, uint32_t>& e_weight_spuid = cid_spu[cid];
         WeightType& eweight = e_weight_spuid.first;
-        bool ematched = SpuMatched_(eweight.paweight, p);
-        bool matched = SpuMatched_(weight.paweight, p);
+        bool ematched = SpuMatched_(eweight, p);
+        bool matched = SpuMatched_(weight, p);
         if(ematched&&matched)
         {
             if(weight.paweight>eweight.paweight)
@@ -1510,7 +1513,7 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
         item.cid = cid;
         item.spu_id = spu_id;
         item.score = weight.sum();
-        item.paweight = weight.paweight;
+        item.weight = weight;
         item.is_given_category = false;
         if(item.score>max_score) max_score = item.score;
         result_vector.push_back(item);
@@ -1536,11 +1539,12 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
         double score = result_vector[i].score;
         if(score<0.5) break;
         if(i>=MAX_CANDIDATE_RESULT&&score<max_score*0.75) break;
-        double paweight = result_vector[i].paweight;
+        const WeightType& weight = result_vector[i].weight;
+        //double paweight = result_vector[i].paweight;
 #ifdef B5M_DEBUG
         std::cerr<<"[CC]"<<category_list_[cid].name<<","<<products_[spu_id].stitle<<","<<score<<std::endl;
 #endif
-        if(SpuMatched_(paweight, p))
+        if(SpuMatched_(weight, p))
         {
             result_cid = cid;
             result_pid = spu_id;
@@ -2136,8 +2140,10 @@ void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
 
     }
 }
-bool ProductMatcher::SpuMatched_(double paweight, const Product& p) const
+bool ProductMatcher::SpuMatched_(const WeightType& weight, const Product& p) const
 {
+    double paweight = weight.paweight;
+    if(weight.paratio>=0.8&&weight.type_match) paweight*=2;
     if(paweight>=1.5&&paweight>=p.aweight) return true;
     return false;
 }
