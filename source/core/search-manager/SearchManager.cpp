@@ -939,7 +939,7 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     result_score_list.resize(count);
     custom_score_list.resize(count);
 
-    boost::shared_ptr<HitQueue> scoreItemQueue;
+    boost::scoped_ptr<HitQueue> scoreItemQueue;
     ///sortby
     if (pSorter)
         scoreItemQueue.reset(new PropertySortedHitQueue(pSorter, count));
