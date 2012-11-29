@@ -43,11 +43,10 @@ public:
             NumericPropertyTableBuilder* numeric_tablebuilder);
 
     ~SuffixMatchManager();
-    void setGroupFilterProperty(std::vector<std::string>& property_list);
-    void setAttrFilterProperty(std::vector<std::string>& property_list);
-    void setNumberFilterProperty(std::vector<std::string>& property_list, std::vector<int32_t>& amp_list);
-    void setDateFilterProperty(std::vector<std::string>& property_list);
-
+    void setGroupFilterProperties(std::vector<std::string>& property_list);
+    void setAttrFilterProperties(std::vector<std::string>& property_list);
+    void setDateFilterProperties(std::vector<std::string>& property_list);
+    void setNumericFilterProperties(std::vector<std::string>& property_list, std::vector<int32_t>& amp_list);
     void buildCollection();
     void buildTokenizeDic();
     bool isStartFromLocalFM() const;
@@ -64,6 +63,7 @@ public:
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             const faceted::GroupParam& group_param,
             std::vector<std::pair<double, uint32_t> >& res_list) const;
+
 private:
     bool getAllFilterRangeFromGroupLable(
             const faceted::GroupParam& group_param,
@@ -71,9 +71,13 @@ private:
     bool getAllFilterRangeFromAttrLable(
             const faceted::GroupParam& group_param,
             std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
-    bool getAllFilterRangeFromFilterParam(
+    bool getStringFilterRangeFromFilterParam(
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
+    bool getNumericFilterRangeFromFilterParam(
+            const std::vector<QueryFiltering::FilteringType>& filter_param,
+            std::vector<size_t>& filterid_list,
+            std::vector<std::vector<FMIndexType::FilterRangeT> >& aux_filter_range_list) const;
 
     std::string data_root_path_;
     std::string fm_index_path_;
@@ -82,7 +86,7 @@ private:
     std::string property_;
     std::vector<std::string> group_property_list_;
     std::vector<std::string> attr_property_list_;
-    std::set<std::string> number_property_list_;
+    std::set<std::string> numeric_property_list_;
     std::vector<std::string> date_property_list_;
     std::string tokenize_dicpath_;
     boost::shared_ptr<DocumentManager> document_manager_;

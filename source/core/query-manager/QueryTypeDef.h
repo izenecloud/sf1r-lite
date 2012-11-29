@@ -5,7 +5,7 @@
 /// @date   2009.08.10
 /// @details
 /// - Log
-///     
+///
 
 #ifndef _QUERYTYPEDEF_H_
 #define _QUERYTYPEDEF_H_
@@ -49,7 +49,7 @@ struct FilteringType
     std::vector<PropertyValue> values_;
 
     FilteringType()
-    : logic_(AND)
+        : logic_(AND)
     {}
 
     bool operator==(const FilteringType& obj) const

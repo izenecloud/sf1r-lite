@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 #include <vector>
@@ -429,9 +428,9 @@ public:
         IndexCount_++;
     }
 
-    const std::vector<IndexItem>* getIndexItem_()
+    std::vector<IndexItem>& getIndexItem_()
     {
-        return &IndexItems_;
+        return IndexItems_;
     }
 
     string getPath()
@@ -771,22 +770,22 @@ public:
         }
     }
 
-    const std::set<std::pair<uint32_t, uint32_t>, pairLess>* gettermidList_()
+    std::set<std::pair<uint32_t, uint32_t>, pairLess>& gettermidList_()
     {
-        return &termidList_;
+        return termidList_;
     }
 
-    const std::vector<std::vector<pair<uint32_t, unsigned short> > >* getdocidLists_()
+    std::vector<std::vector<pair<uint32_t, unsigned short> > >& getdocidLists_()
     {
-        return &docidLists_;
+        return docidLists_;
     }
 
-    string getPath()
+    const string& getPath() const
     {
         return Increment_index_path_;
     }
 private:
-    int BinSearch_(std::vector<pair<unsigned int, unsigned short> >&A,  int min,  int max, unsigned int key)
+    int BinSearch_(std::vector<pair<unsigned int, unsigned short> >&A, int min, int max, unsigned int key)
     {
         while(min <= max)
         {
@@ -828,7 +827,6 @@ public:
         IndexBundleSchema& indexSchema,
         unsigned int Max_Doc_Num,
         cma::Analyzer* &analyzer);
-
 
     ~IndexBarrel()
     {
@@ -1048,7 +1046,7 @@ public:
         std::string pathTmpFd = index_path_ + "/Tmp.fd.idx";
         std::string pathLastDocid = index_path_ + "/last.docid";
 
-        if ( boost::filesystem::exists(pathMainInc) && boost::filesystem::exists(pathMainFd))//main
+        if (boost::filesystem::exists(pathMainInc) && boost::filesystem::exists(pathMainFd))//main
         {
             init_();
             if(!pMainBarrel_->load_())
@@ -1059,7 +1057,7 @@ public:
             }
             else
             {
-                if ( boost::filesystem::exists(pathTmpInc) && boost::filesystem::exists(pathTmpFd) )//tmp
+                if (boost::filesystem::exists(pathTmpInc) && boost::filesystem::exists(pathTmpFd))//tmp
                 {
                     init_tmpBerral();
                     if(!pTmpBarrel_->load_())

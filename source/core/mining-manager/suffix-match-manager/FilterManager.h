@@ -29,11 +29,10 @@ public:
     }
     ~GroupNode()
     {
-        ChildContainerT::iterator it = child_nodes_.begin();
-        while (it != child_nodes_.end())
+        for (ChildContainerT::iterator it = child_nodes_.begin();
+                it != child_nodes_.end(); ++it)
         {
             delete it->second;
-            ++it;
         }
         child_nodes_.clear();
     }
@@ -56,21 +55,16 @@ public:
 
     bool appendChild(GroupNode* child)
     {
-        if (child)
-        {
-            if (child_nodes_.find(child->node_name_) != child_nodes_.end())
-                return false;
-            child_nodes_[child->node_name_] = child;
-            return true;
-        }
-        return false;
+        if (!child || child_nodes_.find(child->node_name_) != child_nodes_.end())
+            return false;
+        child_nodes_[child->node_name_] = child;
+        return true;
     }
     bool appendChild(const izenelib::util::UString& node_name)
     {
         if (child_nodes_.find(node_name) != child_nodes_.end())
             return false;
-        GroupNode* n = new GroupNode(node_name);
-        child_nodes_[node_name] = n;
+        child_nodes_[node_name] = new GroupNode(node_name);
         return true;
     }
     bool removeChild(const izenelib::util::UString& node_name)
@@ -89,7 +83,6 @@ public:
         return it->second;
     }
 };
-
 
 class FilterManager
 {
@@ -133,19 +126,19 @@ public:
 
     void buildGroupFilterData(
             uint32_t last_docid, uint32_t max_docid,
-            const std::vector< std::string >& propertys,
+            const std::vector<std::string>& property_list,
             std::vector<StrFilterItemMapT>& group_filter_data);
     void buildAttrFilterData(
             uint32_t last_docid, uint32_t max_docid,
-            const std::vector<std::string>& propertys,
+            const std::vector<std::string>& property_list,
             std::vector<StrFilterItemMapT>& attr_filter_data);
-    void buildNumberFilterData(
+    void buildNumericFilterData(
             uint32_t last_docid, uint32_t max_docid,
-            const std::vector< std::string >& propertys,
+            const std::vector<std::string>& property_list,
             std::vector<NumFilterItemMapT>& num_filter_data);
     void buildDateFilterData(
             uint32_t last_docid, uint32_t max_docid,
-            const std::vector< std::string >& propertys,
+            const std::vector<std::string>& property_list,
             std::vector<NumFilterItemMapT>& date_filter_data);
 
     izenelib::util::UString FormatGroupPath(const std::vector<izenelib::util::UString>& groupPath) const;
@@ -162,55 +155,56 @@ public:
     FilterIdRange getNumFilterIdRangeLarger(const std::string& property, double filter_num) const;
     FilterIdRange getNumFilterIdRangeSmaller(const std::string& property, double filter_num) const;
 
-    std::vector<FilterDocListT>& getAllFilterInvertedData();
-    void clearAllFilterInvertedData();
+    std::vector<FilterDocListT>& getStringFilterList();
+    std::vector<std::vector<FilterDocListT> >& getNumericFilterList();
+    void clearAllFilterLists();
 
     void clearFilterId();
     void saveFilterId();
-    void loadFilterId(const std::vector<std::string>& propertys);
+    void loadFilterId(const std::vector<std::string>& property_list);
 
     faceted::GroupManager* getGroupManager() const;
     faceted::AttrManager* getAttrManager() const;
     NumericPropertyTableBuilder* getNumericTableBuilder() const;
-    void setNumberAmp(const std::map<std::string, int32_t>& num_property_amp_list);
-    const std::map<std::string, int32_t>& getNumberAmp();
+    void setNumericAmp(const std::map<std::string, int32_t>& num_property_amp_list);
+    const std::map<std::string, int32_t>& getNumericAmp();
+
+    size_t getNumericFilterId(const std::string& property) const;
 
 private:
     typedef std::map<izenelib::util::UString, FilterIdRange> StrIdMapT;
-    typedef std::map<NumFilterKeyT, FilterIdRange> NumberIdMapT;
+    typedef std::map<NumFilterKeyT, FilterIdRange> NumericIdMapT;
     typedef std::map<std::string, StrIdMapT> StrPropertyIdMapT;
-    typedef std::map<std::string, NumberIdMapT> NumPropertyIdMapT;
+    typedef std::map<std::string, NumericIdMapT> NumPropertyIdMapT;
 
     FilterIdRange getNumFilterIdRange(const std::string& property, double filter_num, bool findlarger) const;
-    NumFilterKeyT formatNumberFilter(const std::string& property, double filter_num, bool tofloor = true) const;
+    NumFilterKeyT formatNumericFilter(const std::string& property, double filter_num, bool tofloor = true) const;
     void mapGroupFilterToFilterId(
             GroupNode* node,
             const StrFilterItemMapT& group_filter_data,
             StrIdMapT& filterids);
     void mapAttrFilterToFilterId(const StrFilterItemMapT& attr_filter_data, StrIdMapT& filterids);
-    void mapNumberFilterToFilterId(const NumFilterItemMapT& num_filter_data, NumberIdMapT& filterids);
+    void mapNumericFilterToFilterId(const NumFilterItemMapT& num_filter_data, NumericIdMapT& filterids);
     static void printNode(GroupNode* node, size_t level, const StrIdMapT& filterids, const std::vector<FilterDocListT>& inverted_data)
     {
-        if (node)
+        if (!node) return;
+
+        for (size_t i = 0; i < level; i++)
+            printf("--");
+        std::string str;
+        node->node_name_.convertString(str, izenelib::util::UString::UTF_8);
+        StrIdMapT::const_iterator cit = filterids.find(node->node_name_);
+        assert(cit != filterids.end());
+        cout << str << ", id range ( "<< cit->second.start << ","
+            << cit->second.end << " ) ";
+        if (cit->second.end > cit->second.start)
+            cout << ", docid size:" << inverted_data[cit->second.start].size() << endl;
+        else
+            cout << ", no doc id in current node." << endl;
+        for (GroupNode::constIter group_cit = node->beginChild();
+                group_cit != node->endChild(); ++group_cit)
         {
-            for (size_t i = 0; i < level; i++)
-                printf("--");
-            std::string str;
-            node->node_name_.convertString(str, izenelib::util::UString::UTF_8);
-            StrIdMapT::const_iterator cit = filterids.find(node->node_name_);
-            assert(cit != filterids.end());
-            cout << str << ", id range ( "<< cit->second.start << ","
-                << cit->second.end << " ) ";
-            if (cit->second.end > cit->second.start)
-                cout << ", docid size:" << inverted_data[cit->second.start].size() << endl;
-            else
-                cout << ", no doc id in current node." << endl;
-            GroupNode::constIter group_cit = node->beginChild();
-            while (group_cit != node->endChild())
-            {
-                printNode(group_cit->second, level + 1, filterids, inverted_data);
-                ++group_cit;
-            }
+            printNode(group_cit->second, level + 1, filterids, inverted_data);
         }
     }
 
@@ -218,15 +212,17 @@ private:
     faceted::AttrManager* attrManager_;
     NumericPropertyTableBuilder* numericTableBuilder_;
     std::string data_root_path_;
-    // property=>(GroupPath/Attribute =>filterid)
-    StrPropertyIdMapT  strtype_filterids_;
+    // property -> (GroupPath/Attribute -> filterid)
+    StrPropertyIdMapT strtype_filterids_;
 
-    // property=>(Price/Score=>filterid)
-    NumPropertyIdMapT numbertype_filterids_;
+    // property -> (Price/Score -> filterid)
+    NumPropertyIdMapT numerictype_filterids_;
+    std::map<std::string, size_t> numeric_filterid_map_;
     std::map<std::string, std::vector<NumFilterKeyT> > num_possible_keys_;
-    std::map<std::string, int32_t > num_amp_map_;
+    std::map<std::string, int32_t> num_amp_map_;
 
-    std::vector< FilterDocListT > all_inverted_filter_data_;
+    std::vector<FilterDocListT> string_filter_list_;
+    std::vector<std::vector<FilterDocListT> > numeric_filter_list_;
 };
 
 }
