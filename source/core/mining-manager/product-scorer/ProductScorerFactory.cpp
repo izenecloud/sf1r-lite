@@ -146,7 +146,7 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
         }
     }
 
-    if (result && !topLabels.empty())
+    if (!topLabels.empty())
     {
         propSharedLockSet.insertSharedLock(categoryValueTable_);
         return new CategoryScorer(scoreConfig, *categoryValueTable_, topLabels);
