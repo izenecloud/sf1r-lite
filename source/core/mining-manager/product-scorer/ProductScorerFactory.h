@@ -75,6 +75,8 @@ private:
 private:
     const ProductRankingConfig& config_;
 
+    MiningManager* miningManager_;
+
     CustomRankManager* customRankManager_;
 
     GroupLabelLogger* categoryClickLogger_;

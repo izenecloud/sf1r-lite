@@ -143,6 +143,7 @@ MiningManager::MiningManager(
     , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
+    , productMatcher_(NULL)
     , kvManager_(NULL)
 {
 }
@@ -164,6 +165,7 @@ MiningManager::~MiningManager()
     if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
+    if (productMatcher_) delete productMatcher_;
     if (kvManager_) delete kvManager_;
     close();
 }
