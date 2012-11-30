@@ -560,7 +560,7 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable(const GroupParam& group
         const GroupParam::GroupPathVec& group_values = cit->second;
 
         size_t filterid;
-        if(is_numeric_prop || is_date_prop)
+        if (is_numeric_prop || is_date_prop)
         {
             filterid = filter_manager_->getNumericFilterId(cit->first);
             if (filterid == (size_t)-1) continue;
@@ -583,11 +583,11 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable(const GroupParam& group
                         continue;
                     FilterManager::FilterIdRange tmp_range;
                     tmp_range = filter_manager_->getNumFilterIdRangeSmaller(cit->first,
-                        max(range.first, range.second));
+                            std::max(range.first, range.second));
                     filterid_range = filter_manager_->getNumFilterIdRangeLarger(cit->first,
-                        min(range.first, range.second));
-                    filterid_range.start = max(filterid_range.start, tmp_range.start);
-                    filterid_range.end = min(filterid_range.end, tmp_range.end);
+                            std::min(range.first, range.second));
+                    filterid_range.start = std::max(filterid_range.start, tmp_range.start);
+                    filterid_range.end = std::min(filterid_range.end, tmp_range.end);
                 }
                 else
                 {
@@ -650,7 +650,7 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable(const GroupParam& group
                 LOG(WARNING) << "one of group label filter id range not found.";
                 continue;
             }
-            if(is_numeric_prop || is_date_prop)
+            if (is_numeric_prop || is_date_prop)
             {
                 if (!fmi_->getAuxFilterRange(filterid, std::make_pair(filterid_range.start, filterid_range.end), filter_range))
                 {
@@ -669,11 +669,11 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable(const GroupParam& group
                     continue;
                 }
 
-                LOG(INFO) << "group label filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
                 filter_range_list.push_back(filter_range);
+                LOG(INFO) << "group label filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
             }
         }
-        if((is_numeric_prop || is_date_prop) && !temp_aux_range_list.empty())
+        if ((is_numeric_prop || is_date_prop) && !temp_aux_range_list.empty())
         {
             filterid_list.push_back(filterid);
             aux_filter_range_list.push_back(temp_aux_range_list);
@@ -775,33 +775,37 @@ bool SuffixMatchManager::getNumericFilterRangeFromFilterParam(
             {
                 float filter_num = filtertype.values_[k].get<float>();
                 LOG(INFO) << "filter num by : " << filter_num;
-                if (filtertype.operation_ == QueryFiltering::LESS_THAN_EQUAL)
+
+                switch (filtertype.operation_)
                 {
+                case QueryFiltering::LESS_THAN_EQUAL:
                     filterid_range = filter_manager_->getNumFilterIdRangeSmaller(filtertype.property_, filter_num);
-                }
-                else if (filtertype.operation_ == QueryFiltering::GREATER_THAN_EQUAL)
-                {
+                    break;
+
+                case QueryFiltering::GREATER_THAN_EQUAL:
                     filterid_range = filter_manager_->getNumFilterIdRangeLarger(filtertype.property_, filter_num);
-                }
-                else if (filtertype.operation_ == QueryFiltering::RANGE)
-                {
-                    assert(filtertype.values_.size() == 2);
-                    if (k >= 1) break;
-                    float filter_num_2 = filtertype.values_[1].get<float>();
-                    FilterManager::FilterIdRange tmp_range;
-                    tmp_range = filter_manager_->getNumFilterIdRangeSmaller(filtertype.property_,
-                            std::max(filter_num, filter_num_2));
-                    filterid_range = filter_manager_->getNumFilterIdRangeLarger(filtertype.property_,
-                            std::min(filter_num, filter_num_2));
-                    filterid_range.start = std::max(filterid_range.start, tmp_range.start);
-                    filterid_range.end = std::min(filterid_range.end, tmp_range.end);
-                }
-                else if (filtertype.operation_ == QueryFiltering::EQUAL)
-                {
+                    break;
+
+                case QueryFiltering::RANGE:
+                    {
+                        assert(filtertype.values_.size() == 2);
+                        if (k >= 1) break;
+                        float filter_num_2 = filtertype.values_[1].get<float>();
+                        FilterManager::FilterIdRange tmp_range;
+                        tmp_range = filter_manager_->getNumFilterIdRangeSmaller(filtertype.property_,
+                                std::max(filter_num, filter_num_2));
+                        filterid_range = filter_manager_->getNumFilterIdRangeLarger(filtertype.property_,
+                                std::min(filter_num, filter_num_2));
+                        filterid_range.start = std::max(filterid_range.start, tmp_range.start);
+                        filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                    }
+                    break;
+
+                case QueryFiltering::EQUAL:
                     filterid_range = filter_manager_->getNumFilterIdRangeExactly(filtertype.property_, filter_num);
-                }
-                else
-                {
+                    break;
+
+                default:
                     LOG(WARNING) << "not support filter operation for numeric property in fuzzy searching.";
                     return false;
                 }

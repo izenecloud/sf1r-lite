@@ -361,7 +361,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
             }
             else if (type == NumFilter)
             {
-                size_t id = 0;
+                size_t id = -1;
                 ifs.read((char*)&id, sizeof(id));
                 numeric_filterid_map_[property] = id;
                 std::vector<NumFilterKeyT>& possible_keys = num_possible_keys_[property];
@@ -439,8 +439,7 @@ void FilterManager::buildDateFilterData(
         std::sort(possible_keys.begin(), possible_keys.end(), std::less<NumFilterKeyT>());
         // map the numeric filter to filter id.
         numeric_filterid_map_[property] = numeric_filter_list_.size();
-        NumericIdMapT& date_filterids = numerictype_filterids_[property];
-        mapNumericFilterToFilterId(date_filter_data[j], date_filterids);
+        mapNumericFilterToFilterId(date_filter_data[j], numerictype_filterids_[property]);
     }
     LOG(INFO) << "finish building date filter data.";
 }
@@ -504,8 +503,7 @@ void FilterManager::buildNumericFilterData(
         std::sort(possible_keys.begin(), possible_keys.end());
         // map the numeric filter to filter id.
         numeric_filterid_map_[property] = numeric_filter_list_.size();
-        NumericIdMapT& num_filterids = numerictype_filterids_[property];
-        mapNumericFilterToFilterId(num_filter_data[j], num_filterids);
+        mapNumericFilterToFilterId(num_filter_data[j], numerictype_filterids_[property]);
     }
     LOG(INFO) << "finish building numeric filter data.";
 }

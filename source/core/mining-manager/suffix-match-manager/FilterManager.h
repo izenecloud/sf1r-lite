@@ -185,6 +185,7 @@ private:
             StrIdMapT& filterids);
     void mapAttrFilterToFilterId(const StrFilterItemMapT& attr_filter_data, StrIdMapT& filterids);
     void mapNumericFilterToFilterId(const NumFilterItemMapT& num_filter_data, NumericIdMapT& filterids);
+
     static void printNode(GroupNode* node, size_t level, const StrIdMapT& filterids, const std::vector<FilterDocListT>& inverted_data)
     {
         if (!node) return;
