@@ -123,8 +123,8 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
 
     std::vector<faceted::PropValueTable::pvid_t> topLabels;
     std::vector<int> topFreqs;
-    bool result = categoryClickLogger_->getFreqLabel(query, kTopLabelLimit,
-                                                     topLabels, topFreqs);
+    categoryClickLogger_->getFreqLabel(query, kTopLabelLimit,
+                                       topLabels, topFreqs);
 
     if(topLabels.empty())
     {
