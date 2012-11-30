@@ -457,7 +457,7 @@ void FilterManager::buildNumericFilterData(
     }
     LOG(INFO) << "begin building numeric filter data.";
     num_filter_data.resize(property_list.size());
-    numeric_filter_list_.resize(numeric_filter_list_.size() + property_list.size());
+    numeric_filter_list_.reserve(numeric_filter_list_.size() + property_list.size());
     NumFilterKeyT numerickey_low;
     NumFilterKeyT numerickey_high;
     std::pair<double, double> original_key;
