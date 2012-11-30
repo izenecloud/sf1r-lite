@@ -302,12 +302,12 @@ void FilterManager::saveFilterId()
         std::ofstream ofs(savepath.c_str());
         if (ofs)
         {
-            size_t id = numeric_filterid_map_[numtype_cit->first];
-            ofs.write((const char*)&id, sizeof(id));
             FilterType type = NumFilter;
             ofs.write((const char*)&type, sizeof(type));
             size_t num = numtype_cit->second.size();
             ofs.write((const char*)&num, sizeof(num));
+            size_t id = numeric_filterid_map_[numtype_cit->first];
+            ofs.write((const char*)&id, sizeof(id));
             for (NumericIdMapT::const_iterator cit = numtype_cit->second.begin();
                     cit != numtype_cit->second.end(); ++cit)
             {
@@ -422,8 +422,6 @@ void FilterManager::buildDateFilterData(
                     date_it != original_date.end(); ++date_it)
             {
                 const NumFilterKeyT& numerickey = (NumFilterKeyT)(*date_it);
-                if (docid % 100000)
-                    LOG(INFO) << "building date : " << numerickey;
                 NumFilterItemMapT::iterator it = date_filter_data[j].find(numerickey);
                 if (it != date_filter_data[j].end())
                 {
