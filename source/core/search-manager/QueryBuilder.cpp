@@ -29,22 +29,23 @@
 #include <boost/token_iterator.hpp>
 #include <boost/scoped_ptr.hpp>
 
-//#define VERBOSE_SERACH_MANAGER 1
+#define VERBOSE_SERACH_MANAGER 1
 
 using namespace std;
 
 using izenelib::ir::indexmanager::TermDocFreqs;
 using izenelib::ir::indexmanager::TermReader;
 
-namespace sf1r{
+namespace sf1r
+{
 
 QueryBuilder::QueryBuilder(
-        const boost::shared_ptr<IndexManager> indexManager,
-        const boost::shared_ptr<DocumentManager> documentManager,
-        const boost::shared_ptr<IDManager> idManager,
-        const boost::shared_ptr<RankingManager>& rankingManager,
-        boost::unordered_map<std::string, PropertyConfig>& schemaMap,
-        size_t filterCacheNum
+    const boost::shared_ptr<IndexManager> indexManager,
+    const boost::shared_ptr<DocumentManager> documentManager,
+    const boost::shared_ptr<IDManager> idManager,
+    const boost::shared_ptr<RankingManager>& rankingManager,
+    boost::unordered_map<std::string, PropertyConfig>& schemaMap,
+    size_t filterCacheNum
 )
     :indexManagerPtr_(indexManager)
     ,documentManagerPtr_(documentManager)
@@ -66,8 +67,8 @@ void QueryBuilder::reset_cache()
 }
 
 void QueryBuilder::prepare_filter(
-        const std::vector<QueryFiltering::FilteringType>& filtingList,
-        boost::shared_ptr<EWAHBoolArray<uint32_t> >& pDocIdSet)
+    const std::vector<QueryFiltering::FilteringType>& filtingList,
+    boost::shared_ptr<EWAHBoolArray<uint32_t> >& pDocIdSet)
 {
     boost::shared_ptr<BitVector> pBitVector;
     unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
@@ -130,48 +131,51 @@ void QueryBuilder::prepare_filter(
 }
 
 WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
-        const SearchKeywordOperation& actionOperation,
-        collectionid_t colID,
-        const property_weight_map& propertyWeightMap,
-        const std::vector<std::string>& properties,
-        const std::vector<unsigned int>& propertyIds,
-        bool readPositions,
-        const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
+    const SearchKeywordOperation& actionOperation,
+    collectionid_t colID,
+    const property_weight_map& propertyWeightMap,
+    const std::vector<std::string>& properties,
+    const std::vector<unsigned int>& propertyIds,
+    bool readPositions,
+    const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
 )
 {
     size_t size_of_properties = propertyIds.size();
 
     WANDDocumentIterator* pWandScorer = new WANDDocumentIterator(
-                                           propertyWeightMap,
-                                           propertyIds,
-                                           properties);
+        propertyWeightMap,
+        propertyIds,
+        properties);
     if (pIndexReader_->isDirty())
     {
         pIndexReader_ = indexManagerPtr_->getIndexReader();
     }
-    try{
-    size_t success_properties = 0;
-    for (size_t i = 0; i < size_of_properties; i++)
+    try
     {
-        prepare_for_wand_property_(
-            pWandScorer,
-            success_properties,
-            actionOperation,
-            colID,
-            properties[i],
-            propertyIds[i],
-            readPositions,
-            termIndexMaps[i]
-        );
+        size_t success_properties = 0;
+        for (size_t i = 0; i < size_of_properties; i++)
+        {
+            prepare_for_wand_property_(
+                pWandScorer,
+                success_properties,
+                actionOperation,
+                colID,
+                properties[i],
+                propertyIds[i],
+                readPositions,
+                termIndexMaps[i]
+            );
+        }
+
+        if (success_properties)
+            return pWandScorer;
+        else
+            delete pWandScorer;
+
+        return NULL;
     }
-
-    if (success_properties)
-        return pWandScorer;
-    else
-        delete pWandScorer;
-
-    return NULL;
-    }catch(std::exception& e){
+    catch(std::exception& e)
+    {
         delete pWandScorer;
         throw std::runtime_error("Failed to prepare wanddociterator");
         return NULL;
@@ -179,14 +183,14 @@ WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
 }
 
 void QueryBuilder::prepare_for_wand_property_(
-        WANDDocumentIterator* pWandScorer,
-        size_t & success_properties,
-        const SearchKeywordOperation& actionOperation,
-        collectionid_t colID,
-        const std::string& property,
-        unsigned int propertyId,
-        bool readPositions,
-        const std::map<termid_t, unsigned>& termIndexMapInProperty
+    WANDDocumentIterator* pWandScorer,
+    size_t & success_properties,
+    const SearchKeywordOperation& actionOperation,
+    collectionid_t colID,
+    const std::string& property,
+    unsigned int propertyId,
+    bool readPositions,
+    const std::map<termid_t, unsigned>& termIndexMapInProperty
 )
 {
     typedef std::map<termid_t, unsigned>::const_iterator const_iter;
@@ -198,7 +202,7 @@ void QueryBuilder::prepare_for_wand_property_(
     TermReader* pTermReader = NULL;
     pTermReader = pIndexReader_->getTermReader(colID);
     if (!pTermReader)
-            return;
+        return;
 
     const_iter iter = termIndexMapInProperty.begin();
     for ( ; iter != termIndexMapInProperty.end(); ++iter)
@@ -231,19 +235,19 @@ void QueryBuilder::prepare_for_wand_property_(
                 ++success_properties;
             }
         }
-     }
-     if (pTermReader)
+    }
+    if (pTermReader)
         delete pTermReader;
 }
 
 MultiPropertyScorer* QueryBuilder::prepare_dociterator(
-        const SearchKeywordOperation& actionOperation,
-        collectionid_t colID,
-        const property_weight_map& propertyWeightMap,
-        const std::vector<std::string>& properties,
-        const std::vector<unsigned int>& propertyIds,
-        bool readPositions,
-        const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
+    const SearchKeywordOperation& actionOperation,
+    collectionid_t colID,
+    const property_weight_map& propertyWeightMap,
+    const std::vector<std::string>& properties,
+    const std::vector<unsigned int>& propertyIds,
+    bool readPositions,
+    const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
 )
 {
     size_t size_of_properties = propertyIds.size();
@@ -292,20 +296,20 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
 }
 
 void QueryBuilder::prefetch_term_doc_readers_(
-        const std::vector<pair<termid_t, string> >& termList,
-        collectionid_t colID,
-        const PropertyConfig& properyConfig,
-        bool readPositions,
-        bool& isNumericFilter,
-        std::map<termid_t, std::vector<TermDocFreqs*> > & termDocReaders
+    const std::vector<pair<termid_t, string> >& termList,
+    collectionid_t colID,
+    const PropertyConfig& properyConfig,
+    bool readPositions,
+    bool& isNumericFilter,
+    std::map<termid_t, std::vector<TermDocFreqs*> > & termDocReaders
 )
 {
     sf1r::PropertyDataType dataType;
 
     dataType = properyConfig.getType();
-    if( properyConfig.isIndex() && 
-        properyConfig.getIsFilter() && 
-        properyConfig.getType() != STRING_PROPERTY_TYPE)
+    if( properyConfig.isIndex() &&
+            properyConfig.getIsFilter() &&
+            properyConfig.getType() != STRING_PROPERTY_TYPE)
         isNumericFilter = true;
 
     const string& property = properyConfig.getName();
@@ -339,7 +343,6 @@ void QueryBuilder::prefetch_term_doc_readers_(
                 if(pTermDocReader) ///NULL when exception
                     termDocReaders[termId].push_back(pTermDocReader);
             }
-
         }
         else
         {
@@ -375,18 +378,18 @@ void QueryBuilder::prefetch_term_doc_readers_(
                 termDocReaders[termId].push_back(pTermDocReader);
             }
         }
-     }
+    }
 #endif
 }
 
 void QueryBuilder::prepare_for_property_(
-        MultiPropertyScorer* pScorer,
-        size_t & success_properties,
-        const SearchKeywordOperation& actionOperation,
-        collectionid_t colID,
-        const PropertyConfig& properyConfig,
-        bool readPositions,
-        const std::map<termid_t, unsigned>& termIndexMapInProperty
+    MultiPropertyScorer* pScorer,
+    size_t & success_properties,
+    const SearchKeywordOperation& actionOperation,
+    collectionid_t colID,
+    const PropertyConfig& properyConfig,
+    bool readPositions,
+    const std::map<termid_t, unsigned>& termIndexMapInProperty
 )
 {
     std::map<termid_t, std::vector<TermDocFreqs*> > termDocReaders;
@@ -439,16 +442,16 @@ void QueryBuilder::prepare_for_property_(
 }
 
 void QueryBuilder::post_prepare_ranker_(
-	const std::string& virtualProperty,
-        const std::vector<std::string>& indexPropertyList,
-        unsigned indexPropertySize,
-        const property_term_info_map& propertyTermInfoMap,
-        DocumentFrequencyInProperties& dfmap,
-        CollectionTermFrequencyInProperties& ctfmap,
-        MaxTermFrequencyInProperties& maxtfmap,
-        bool readTermPosition,
-        std::vector<RankQueryProperty>& rankQueryProperties,
-        std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers)
+    const std::string& virtualProperty,
+    const std::vector<std::string>& indexPropertyList,
+    unsigned indexPropertySize,
+    const property_term_info_map& propertyTermInfoMap,
+    DocumentFrequencyInProperties& dfmap,
+    CollectionTermFrequencyInProperties& ctfmap,
+    MaxTermFrequencyInProperties& maxtfmap,
+    bool readTermPosition,
+    std::vector<RankQueryProperty>& rankQueryProperties,
+    std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers)
 {
     static const PropertyTermInfo emptyPropertyTermInfo;
     for (unsigned i = 0; i < indexPropertySize; ++i)
@@ -456,25 +459,25 @@ void QueryBuilder::post_prepare_ranker_(
         const std::string& currentProperty = indexPropertyList[i];
 
         rankQueryProperties[i].setNumDocs(
-                indexManagerPtr_->numDocs()
+            indexManagerPtr_->numDocs()
         );
 
         rankQueryProperties[i].setTotalPropertyLength(
-                documentManagerPtr_->getTotalPropertyLength(currentProperty)
+            documentManagerPtr_->getTotalPropertyLength(currentProperty)
         );
         const PropertyTermInfo::id_uint_list_map_t& termPositionsMap = virtualProperty.empty()?
-            izenelib::util::getOr(
+                izenelib::util::getOr(
                     propertyTermInfoMap,
                     currentProperty,
                     emptyPropertyTermInfo
-            ).getTermIdPositionMap() 
-            :
-            izenelib::util::getOr(
+                ).getTermIdPositionMap()
+                :
+                izenelib::util::getOr(
                     propertyTermInfoMap,
                     virtualProperty,
                     emptyPropertyTermInfo
-            ).getTermIdPositionMap()            
-            ;
+                ).getTermIdPositionMap()
+                ;
 
         typedef PropertyTermInfo::id_uint_list_map_t::const_iterator
         term_id_position_iterator;
@@ -485,14 +488,14 @@ void QueryBuilder::post_prepare_ranker_(
         {
             rankQueryProperties[i].addTerm(termIt->first);
             rankQueryProperties[i].setTotalTermFreq(
-                    ctfmap[currentProperty][termIt->first]
+                ctfmap[currentProperty][termIt->first]
             );
             rankQueryProperties[i].setDocumentFreq(
-                    dfmap[currentProperty][termIt->first]
+                dfmap[currentProperty][termIt->first]
             );
 
             rankQueryProperties[i].setMaxTermFreq(
-                    maxtfmap[currentProperty][termIt->first]
+                maxtfmap[currentProperty][termIt->first]
             );
 
             queryLength += termIt->second.size();
@@ -523,14 +526,14 @@ void QueryBuilder::post_prepare_ranker_(
 }
 
 void QueryBuilder::prepare_for_virtual_property_(
-        MultiPropertyScorer* pScorer,
-        size_t & success_properties,
-        const SearchKeywordOperation& actionOperation,
-        collectionid_t colID,
-        const PropertyConfig& properyConfig, //virtual property config
-        bool readPositions,
-        const std::map<termid_t, unsigned>& termIndexMapInProperty,
-        const property_weight_map& propertyWeightMap
+    MultiPropertyScorer* pScorer,
+    size_t & success_properties,
+    const SearchKeywordOperation& actionOperation,
+    collectionid_t colID,
+    const PropertyConfig& properyConfig, //virtual property config
+    bool readPositions,
+    const std::map<termid_t, unsigned>& termIndexMapInProperty,
+    const property_weight_map& propertyWeightMap
 )
 {
     QueryTreePtr queryTree;
@@ -539,13 +542,12 @@ void QueryBuilder::prepare_for_virtual_property_(
     typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator schema_iterator;
     DocumentIterator* pIter = NULL;
     std::map<termid_t, VirtualPropertyTermDocumentIterator* > virtualTermIters;
-    bool hasVirtualIterBuilt = false;
 
     std::vector<pair<termid_t, string> > termList;
     actionOperation.getQueryTermInfoList(properyConfig.getName(), termList);
     std::sort(termList.begin(), termList.end());
 
-    for(unsigned j = 0; j < properyConfig.subProperties_.size();++j)
+    for(unsigned j = 0; j < properyConfig.subProperties_.size(); ++j)
     {
         schema_iterator p = schemaMap_.find(properyConfig.subProperties_[j]);
         if(p != schemaMap_.end())
@@ -553,7 +555,6 @@ void QueryBuilder::prepare_for_virtual_property_(
             std::map<termid_t, std::vector<TermDocFreqs*> > termDocReaders;
             bool isNumericFilter = false;
             prefetch_term_doc_readers_(termList,colID,p->second,readPositions,isNumericFilter,termDocReaders);
-            if(pIter) hasVirtualIterBuilt  = true;
             do_prepare_for_property_(
                 queryTree,
                 colID,
@@ -568,11 +569,10 @@ void QueryBuilder::prepare_for_virtual_property_(
                 termDocReaders,
                 actionOperation.hasUnigramProperty_,
                 actionOperation.isUnigramSearchMode_,
-                properyConfig.getName(),
-                hasVirtualIterBuilt
+                properyConfig.getName()
             );
             for (std::map<termid_t, std::vector<TermDocFreqs*> >::iterator
-                it = termDocReaders.begin(); it != termDocReaders.end(); ++it)
+                    it = termDocReaders.begin(); it != termDocReaders.end(); ++it)
             {
                 for (size_t j =0; j<it->second.size(); j ++ )
                 {
@@ -581,7 +581,7 @@ void QueryBuilder::prepare_for_virtual_property_(
                 it->second.clear();
             }
         }
-    }	
+    }
     if(pIter)
     {
         size_t indexSubPropertySize = properyConfig.subProperties_.size();
@@ -598,7 +598,7 @@ void QueryBuilder::prepare_for_virtual_property_(
         sf1r::TextRankingType& pTextRankingType = actionOperation.actionItem_.rankingType_;
         // references for property term info
         const property_term_info_map& propertyTermInfoMap =
-                actionOperation.getPropertyTermInfoMap();
+            actionOperation.getPropertyTermInfoMap();
 
         DocumentFrequencyInProperties dfmap;
         CollectionTermFrequencyInProperties ctfmap;
@@ -606,7 +606,7 @@ void QueryBuilder::prepare_for_virtual_property_(
         rankingManagerPtr_->createPropertyRankers(pTextRankingType, indexSubPropertySize, pVirtualScorer->propertyRankers_);
 
         bool readTermPosition = pVirtualScorer->propertyRankers_[0]->requireTermPosition();
-        pIter->df_cmtf(dfmap, ctfmap, maxtfmap);	
+        pIter->df_cmtf(dfmap, ctfmap, maxtfmap);
         post_prepare_ranker_(
             properyConfig.getName(),
             properyConfig.subProperties_,
@@ -624,22 +624,21 @@ void QueryBuilder::prepare_for_virtual_property_(
 }
 
 bool QueryBuilder::do_prepare_for_property_(
-        QueryTreePtr& queryTree,
-        collectionid_t colID,
-        const std::string& property,
-        unsigned int propertyId,
-        PropertyDataType propertyDataType,
-        bool isNumericFilter,
-        bool readPositions,
-        const std::map<termid_t, unsigned>& termIndexMapInProperty,
-        DocumentIteratorPointer& pDocIterator,
-        std::map<termid_t, VirtualPropertyTermDocumentIterator* >& virtualTermIters,
-        std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders,
-        bool hasUnigramProperty,
-        bool isUnigramSearchMode,
-        const std::string& virtualProperty,
-        bool hasVirtualIterBuilt,
-        int parentAndOrFlag
+    QueryTreePtr& queryTree,
+    collectionid_t colID,
+    const std::string& property,
+    unsigned int propertyId,
+    PropertyDataType propertyDataType,
+    bool isNumericFilter,
+    bool readPositions,
+    const std::map<termid_t, unsigned>& termIndexMapInProperty,
+    DocumentIteratorPointer& pDocIterator,
+    std::map<termid_t, VirtualPropertyTermDocumentIterator* >& virtualTermIters,
+    std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders,
+    bool hasUnigramProperty,
+    bool isUnigramSearchMode,
+    const std::string& virtualProperty,
+    int parentAndOrFlag
 )
 {
     switch (queryTree->type_)
@@ -656,104 +655,62 @@ bool QueryBuilder::do_prepare_for_property_(
                              );
 
         TermDocumentIterator* pIterator = NULL;
-        try{
-        if (!isUnigramSearchMode)
+        try
         {
-            pIterator = new TermDocumentIterator(
-                keywordId,
-                keyword,
-                colID,
-                pIndexReader_,
-                indexManagerPtr_,
-                property,
-                propertyId,
-                propertyDataType,
-                isNumericFilter,
-                termIndex,
-                readPositions);
-        }
-        else
-        {
-            // term for searching
-            if (queryTree->type_ == QueryTree::KEYWORD)
+            if (!isUnigramSearchMode)
             {
-                // termIndex is invalid in this case, it will not be used
-                pIterator = new SearchTermDocumentIterator(keywordId,
-                        colID,
-                        pIndexReader_,
-                        property,
-                        propertyId,
-                        termIndex,
-                        readPositions);
-            }
-            // term for ranking
-            else //if(queryTree->type_ == QueryTree::RANK_KEYWORD)
-            {
-                pIterator = new RankTermDocumentIterator(keywordId,
-                        colID,
-                        pIndexReader_,
-                        property,
-                        propertyId,
-                        termIndex,
-                        readPositions,
-                        (parentAndOrFlag == 1));
-            }
-        }
-
-#if PREFETCH_TERMID
-        std::map<termid_t, std::vector<TermDocFreqs*> >::iterator constIt
-        = termDocReaders.find(keywordId);
-        if (constIt != termDocReaders.end() && !constIt->second.empty() )
-        {
-#ifdef VERBOSE_SERACH_MANAGER
-            cout<<"have term  property "<<property<<" keyword ";
-            queryTree->keywordUString_.displayStringValue(izenelib::util::UString::UTF_8);
-            cout<<endl;
-#endif
-            pIterator->set(constIt->second.back() );
-            if(virtualProperty.empty())
-            {
-                ///General keyword search
-                if (NULL == pDocIterator)
-                    pDocIterator = pIterator;
-                else
-                    pDocIterator->add(pIterator);
+                pIterator = new TermDocumentIterator(
+                    keywordId,
+                    keyword,
+                    colID,
+                    pIndexReader_,
+                    indexManagerPtr_,
+                    property,
+                    propertyId,
+                    propertyDataType,
+                    isNumericFilter,
+                    termIndex,
+                    readPositions);
             }
             else
             {
-                ///Keyword search over virtual property
-                std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vpIt =  
-                    virtualTermIters.find(keywordId);
-                if(vpIt != virtualTermIters.end())
+                // term for searching
+                if (queryTree->type_ == QueryTree::KEYWORD)
                 {
-                    vpIt->second->add(pIterator);
+                    // termIndex is invalid in this case, it will not be used
+                    pIterator = new SearchTermDocumentIterator(keywordId,
+                            colID,
+                            pIndexReader_,
+                            property,
+                            propertyId,
+                            termIndex,
+                            readPositions);
                 }
-                else
+                // term for ranking
+                else //if(queryTree->type_ == QueryTree::RANK_KEYWORD)
                 {
-                    VirtualPropertyTermDocumentIterator* pVirtualTermDocIter = 
-                        new VirtualPropertyTermDocumentIterator(virtualProperty);
-                    pVirtualTermDocIter->add(pIterator);
-                    virtualTermIters[keywordId] = pVirtualTermDocIter;
-
-                    if (NULL == pDocIterator)
-                        pDocIterator = pVirtualTermDocIter;
-                    else
-                        pDocIterator->add(pVirtualTermDocIter);
+                    pIterator = new RankTermDocumentIterator(keywordId,
+                            colID,
+                            pIndexReader_,
+                            property,
+                            propertyId,
+                            termIndex,
+                            readPositions,
+                            (parentAndOrFlag == 1));
                 }
             }
 
-            constIt->second.pop_back();
-        }
-        else
-#endif
-        {
-            if (pIterator->accept())
+#if PREFETCH_TERMID
+            std::map<termid_t, std::vector<TermDocFreqs*> >::iterator constIt
+            = termDocReaders.find(keywordId);
+            if (constIt != termDocReaders.end() && !constIt->second.empty() )
             {
 #ifdef VERBOSE_SERACH_MANAGER
                 cout<<"have term  property "<<property<<" keyword ";
                 queryTree->keywordUString_.displayStringValue(izenelib::util::UString::UTF_8);
                 cout<<endl;
 #endif
+                pIterator->set(constIt->second.back() );
                 if(virtualProperty.empty())
                 {
                     ///General keyword search
@@ -765,7 +722,7 @@ bool QueryBuilder::do_prepare_for_property_(
                 else
                 {
                     ///Keyword search over virtual property
-                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vpIt =  
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vpIt =
                         virtualTermIters.find(keywordId);
                     if(vpIt != virtualTermIters.end())
                     {
@@ -773,32 +730,72 @@ bool QueryBuilder::do_prepare_for_property_(
                     }
                     else
                     {
-                        VirtualPropertyTermDocumentIterator* pVirtualTermDocIter = 
+                        VirtualPropertyTermDocumentIterator* pVirtualTermDocIter =
                             new VirtualPropertyTermDocumentIterator(virtualProperty);
                         pVirtualTermDocIter->add(pIterator);
                         virtualTermIters[keywordId] = pVirtualTermDocIter;
                         if (NULL == pDocIterator)
                             pDocIterator = pVirtualTermDocIter;
-                        else
-                            pDocIterator->add(pVirtualTermDocIter);
                     }
                 }
 
+                constIt->second.pop_back();
             }
             else
-            {
-#ifdef VERBOSE_SERACH_MANAGER
-                cout<<"do not have term property "<<property<<" ";
-                queryTree->keywordUString_.displayStringValue(izenelib::util::UString::UTF_8);
-                cout<<endl;
 #endif
-                delete pIterator;
-                pIterator = NULL;
-                if (!isNumericFilter)
-                    return false;
+            {
+                if (pIterator->accept())
+                {
+#ifdef VERBOSE_SERACH_MANAGER
+                    cout<<"have term  property "<<property<<" keyword ";
+                    queryTree->keywordUString_.displayStringValue(izenelib::util::UString::UTF_8);
+                    cout<<endl;
+#endif
+                    if(virtualProperty.empty())
+                    {
+                        ///General keyword search
+                        if (NULL == pDocIterator)
+                            pDocIterator = pIterator;
+                        else
+                            pDocIterator->add(pIterator);
+                    }
+                    else
+                    {
+                        ///Keyword search over virtual property
+                        std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vpIt =
+                            virtualTermIters.find(keywordId);
+                        if(vpIt != virtualTermIters.end())
+                        {
+                            vpIt->second->add(pIterator);
+                        }
+                        else
+                        {
+                            VirtualPropertyTermDocumentIterator* pVirtualTermDocIter =
+                                new VirtualPropertyTermDocumentIterator(virtualProperty);
+                            pVirtualTermDocIter->add(pIterator);
+                            virtualTermIters[keywordId] = pVirtualTermDocIter;
+                            if (NULL == pDocIterator)
+                                pDocIterator = pVirtualTermDocIter;
+                        }
+                    }
+
+                }
+                else
+                {
+#ifdef VERBOSE_SERACH_MANAGER
+                    cout<<"do not have term property "<<property<<" ";
+                    queryTree->keywordUString_.displayStringValue(izenelib::util::UString::UTF_8);
+                    cout<<endl;
+#endif
+                    delete pIterator;
+                    pIterator = NULL;
+                    if (!isNumericFilter)
+                        return false;
+                }
             }
         }
-        }catch(std::exception& e){
+        catch(std::exception& e)
+        {
             delete pIterator;
             return false;
         }
@@ -828,47 +825,15 @@ bool QueryBuilder::do_prepare_for_property_(
                                      propertyId,
                                      termIndex,
                                      readPositions);
-        try{
+        try
+        {
 #if PREFETCH_TERMID
-        std::map<termid_t, std::vector<TermDocFreqs*> >::iterator constIt
-        = termDocReaders.find(keywordId);
-        if (constIt != termDocReaders.end() && !constIt->second.empty() )
-        {
-            pIterator->set(constIt->second.back());
+            std::map<termid_t, std::vector<TermDocFreqs*> >::iterator constIt
+            = termDocReaders.find(keywordId);
+            if (constIt != termDocReaders.end() && !constIt->second.empty() )
+            {
+                pIterator->set(constIt->second.back());
 
-            if(virtualProperty.empty())
-            {
-                ///General keyword search
-                pIterator->setNot(true);
-                pDocIterator->add(pIterator);
-            }
-            else
-            {
-                ///Keyword search over virtual property
-                std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vpIt =  
-                    virtualTermIters.find(keywordId);
-                if(vpIt != virtualTermIters.end())
-                {
-                    vpIt->second->add(pIterator);
-                }
-                else
-                {
-                    VirtualPropertyTermDocumentIterator* pVirtualTermDocIter = 
-                        new VirtualPropertyTermDocumentIterator(virtualProperty);
-                    pVirtualTermDocIter->setNot(true);
-                    pVirtualTermDocIter->add(pIterator);
-                    virtualTermIters[keywordId] = pVirtualTermDocIter;
-                    if(!hasVirtualIterBuilt)
-                        pDocIterator->add(pVirtualTermDocIter);
-                }
-            }
-            constIt->second.pop_back();
-        }
-        else
-#endif
-        {
-            if (pIterator->accept())
-            {
                 if(virtualProperty.empty())
                 {
                     ///General keyword search
@@ -878,7 +843,7 @@ bool QueryBuilder::do_prepare_for_property_(
                 else
                 {
                     ///Keyword search over virtual property
-                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vpIt =  
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vpIt =
                         virtualTermIters.find(keywordId);
                     if(vpIt != virtualTermIters.end())
                     {
@@ -886,19 +851,50 @@ bool QueryBuilder::do_prepare_for_property_(
                     }
                     else
                     {
-                        VirtualPropertyTermDocumentIterator* pVirtualTermDocIter = 
+                        VirtualPropertyTermDocumentIterator* pVirtualTermDocIter =
                             new VirtualPropertyTermDocumentIterator(virtualProperty);
                         pVirtualTermDocIter->setNot(true);
                         pVirtualTermDocIter->add(pIterator);
                         virtualTermIters[keywordId] = pVirtualTermDocIter;
-                        pDocIterator->add(pVirtualTermDocIter);
                     }
                 }
+                constIt->second.pop_back();
             }
             else
-                delete pIterator;
+#endif
+            {
+                if (pIterator->accept())
+                {
+                    if(virtualProperty.empty())
+                    {
+                        ///General keyword search
+                        pIterator->setNot(true);
+                        pDocIterator->add(pIterator);
+                    }
+                    else
+                    {
+                        ///Keyword search over virtual property
+                        std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vpIt =
+                            virtualTermIters.find(keywordId);
+                        if(vpIt != virtualTermIters.end())
+                        {
+                            vpIt->second->add(pIterator);
+                        }
+                        else
+                        {
+                            VirtualPropertyTermDocumentIterator* pVirtualTermDocIter =
+                                new VirtualPropertyTermDocumentIterator(virtualProperty);
+                            pVirtualTermDocIter->setNot(true);
+                            pVirtualTermDocIter->add(pIterator);
+                            virtualTermIters[keywordId] = pVirtualTermDocIter;
+                        }
+                    }
+                }
+                else
+                    delete pIterator;
+            }
         }
-        }catch(std::exception& e)
+        catch(std::exception& e)
         {
             delete pIterator;
             return true;
@@ -1013,50 +1009,53 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new ANDDocumentIterator();
         bool ret = false;
-        try{
-        for (QTIter andChildIter = queryTree->children_.begin();
-                andChildIter != queryTree->children_.end(); ++andChildIter)
+        try
         {
-            ret = do_prepare_for_property_(
-                      *andChildIter,
-                      colID,
-                      property,
-                      propertyId,
-                      propertyDataType,
-                      isNumericFilter,
-                      readPositions,
-                      termIndexMapInProperty,
-                      pIterator,
-                      virtualTermIters,
-                      termDocReaders,
-                      hasUnigramProperty,
-                      isUnigramSearchMode,
-                      virtualProperty,
-                      hasVirtualIterBuilt,
-                      1
-                  );
-            if (virtualProperty.empty()&&!ret)
+            for (QTIter andChildIter = queryTree->children_.begin();
+                    andChildIter != queryTree->children_.end(); ++andChildIter)
             {
-                delete pIterator;
-                return false;
-            }
-        }
-        if (! static_cast<ANDDocumentIterator*>(pIterator)->empty())
-        {
-            if(!virtualProperty.empty())
-            {
-                ///And query on virtual property
-                if(!hasVirtualIterBuilt)
-                {
-                    if(NULL == pDocIterator)
-                        pDocIterator = pIterator;
-                    else
-                        pDocIterator->add(pIterator);
-                }
-                else
+                ret = do_prepare_for_property_(
+                          *andChildIter,
+                          colID,
+                          property,
+                          propertyId,
+                          propertyDataType,
+                          isNumericFilter,
+                          readPositions,
+                          termIndexMapInProperty,
+                          pIterator,
+                          virtualTermIters,
+                          termDocReaders,
+                          hasUnigramProperty,
+                          isUnigramSearchMode,
+                          virtualProperty,
+                          1
+                      );
+                if (virtualProperty.empty()&&!ret)
                 {
                     delete pIterator;
                     return false;
+                }
+            }
+            if(!virtualProperty.empty())
+            {
+                if(parentAndOrFlag)
+                {
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                    for(; vit != virtualTermIters.end(); ++vit)
+                        pIterator->add(vit->second);
+                    pDocIterator->add(pIterator);
+                }
+                else
+                {
+                    if(NULL == pDocIterator) 
+                    {
+                        pDocIterator = pIterator;
+                        std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                        for(; vit != virtualTermIters.end(); ++vit)
+                            pDocIterator->add(vit->second);
+                    }
+                    else delete pIterator;
                 }
             }
             else
@@ -1065,10 +1064,9 @@ bool QueryBuilder::do_prepare_for_property_(
                     pDocIterator = pIterator;
                 else
                     pDocIterator->add(pIterator);
-       	}
-        else
-            delete pIterator;
-        }catch(std::exception& e){
+        }
+        catch(std::exception& e)
+        {
             delete pIterator;
             return false;
         }
@@ -1081,59 +1079,62 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new ORDocumentIterator();
         bool ret = false;
-        try{
-        for (QTIter orChildIter = queryTree->children_.begin();
-                orChildIter != queryTree->children_.end(); ++orChildIter)
+        try
         {
-            ret |= do_prepare_for_property_(
-                       *orChildIter,
-                       colID,
-                       property,
-                       propertyId,
-                       propertyDataType,
-                       isNumericFilter,
-                       readPositions,
-                       termIndexMapInProperty,
-                       pIterator,
-                       virtualTermIters,
-                       termDocReaders,
-                       hasUnigramProperty,
-                       isUnigramSearchMode,
-                       virtualProperty,
-                       hasVirtualIterBuilt,
-                       0
-                   );
-        }
-        if (!ret)
-        {
-            delete pIterator;
-            return false;
-        }
-        if (! static_cast<ORDocumentIterator*>(pIterator)->empty()) {
+            for (QTIter orChildIter = queryTree->children_.begin();
+                    orChildIter != queryTree->children_.end(); ++orChildIter)
+            {
+                ret |= do_prepare_for_property_(
+                           *orChildIter,
+                           colID,
+                           property,
+                           propertyId,
+                           propertyDataType,
+                           isNumericFilter,
+                           readPositions,
+                           termIndexMapInProperty,
+                           pIterator,
+                           virtualTermIters,
+                           termDocReaders,
+                           hasUnigramProperty,
+                           isUnigramSearchMode,
+                           virtualProperty,
+                           0
+                       );
+            }
+            if (!ret)
+            {
+                delete pIterator;
+                return false;
+            }
             if(!virtualProperty.empty())
             {
-                if(!hasVirtualIterBuilt)
+                if(parentAndOrFlag)
                 {
-                    if(NULL == pDocIterator)
-                        pDocIterator = pIterator;
-                    else
-                        pDocIterator->add(pIterator);
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                    for(; vit != virtualTermIters.end(); ++vit)
+                        pIterator->add(vit->second);
+                    pDocIterator->add(pIterator);
                 }
                 else
                 {
-                    delete pIterator;
-                    return false;
+                    if(NULL == pDocIterator) 
+                    {
+                        pDocIterator = pIterator;
+                        std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                        for(; vit != virtualTermIters.end(); ++vit)
+                            pDocIterator->add(vit->second);
+                    }
+                    else delete pIterator;
                 }
             }
+            else if (NULL == pDocIterator)
+                pDocIterator = pIterator;
             else
-                if (NULL == pDocIterator)
-                    pDocIterator = pIterator;
-                else
-                    pDocIterator->add(pIterator);
+                pDocIterator->add(pIterator);
         }
-        else
-            delete pIterator;
-        }catch(std::exception& e)            {
+        catch(std::exception& e)
+        {
             delete pIterator;
             return false;
         }
@@ -1148,59 +1149,62 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new PersonalSearchDocumentIterator(true);
         bool ret = false;
-        try{
-        for (QTIter andChildIter = queryTree->children_.begin();
-                andChildIter != queryTree->children_.end(); ++andChildIter)
+        try
         {
-            ret = do_prepare_for_property_(
-                      *andChildIter,
-                      colID,
-                      property,
-                      propertyId,
-                      propertyDataType,
-                      isNumericFilter,
-                      readPositions,
-                      termIndexMapInProperty,
-                      pIterator,
-                      virtualTermIters,
-                      termDocReaders,
-                      hasUnigramProperty,
-                      isUnigramSearchMode,
-                      virtualProperty,
-                      hasVirtualIterBuilt
-                  );
-            if (virtualProperty.empty()&&!ret)
+            for (QTIter andChildIter = queryTree->children_.begin();
+                    andChildIter != queryTree->children_.end(); ++andChildIter)
             {
-                delete pIterator;
-                ///return false;
-                return true;
-            }
-        }
-        if (! static_cast<PersonalSearchDocumentIterator*>(pIterator)->empty()) {
-            if(!virtualProperty.empty())
-            {
-                if(!hasVirtualIterBuilt)
-                {
-                    if(NULL == pDocIterator)
-                        pDocIterator = pIterator;
-                    else
-                        pDocIterator->add(pIterator);
-                }
-                else
+                ret = do_prepare_for_property_(
+                          *andChildIter,
+                          colID,
+                          property,
+                          propertyId,
+                          propertyDataType,
+                          isNumericFilter,
+                          readPositions,
+                          termIndexMapInProperty,
+                          pIterator,
+                          virtualTermIters,
+                          termDocReaders,
+                          hasUnigramProperty,
+                          isUnigramSearchMode,
+                          virtualProperty
+                      );
+                if (virtualProperty.empty()&&!ret)
                 {
                     delete pIterator;
-                    return false;
+                    ///return false;
+                    return true;
                 }
             }
-            else
-                if (NULL == pDocIterator)
-                    pDocIterator = pIterator;
-                else
+            if(!virtualProperty.empty())
+            {
+                if(parentAndOrFlag)
+                {
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                    for(; vit != virtualTermIters.end(); ++vit)
+                        pIterator->add(vit->second);
                     pDocIterator->add(pIterator);
+                }
+                else
+                {
+                    if(NULL == pDocIterator) 
+                    {
+                        pDocIterator = pIterator;
+                        std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                        for(; vit != virtualTermIters.end(); ++vit)
+                            pDocIterator->add(vit->second);
+                    }
+                    else delete pIterator;
+                }
+            }
+            else if (NULL == pDocIterator)
+                pDocIterator = pIterator;
+            else
+                pDocIterator->add(pIterator);
         }
-        else
-            delete pIterator;
-        }catch(std::exception& e){
+        catch(std::exception& e)
+        {
             delete pIterator;
             return false;
         }
@@ -1216,59 +1220,62 @@ bool QueryBuilder::do_prepare_for_property_(
 #endif
         DocumentIterator* pIterator = new PersonalSearchDocumentIterator(false);
         bool ret = false;
-        try{
-        for (QTIter orChildIter = queryTree->children_.begin();
-                orChildIter != queryTree->children_.end(); ++orChildIter)
+        try
         {
-            ret = do_prepare_for_property_(
-                      *orChildIter,
-                      colID,
-                      property,
-                      propertyId,
-                      propertyDataType,
-                      isNumericFilter,
-                      readPositions,
-                      termIndexMapInProperty,
-                      pIterator,
-                      virtualTermIters,
-                      termDocReaders,
-                      hasUnigramProperty,
-                      isUnigramSearchMode,
-                      virtualProperty,
-                      hasVirtualIterBuilt
-                  );
-            if (!ret)
+            for (QTIter orChildIter = queryTree->children_.begin();
+                    orChildIter != queryTree->children_.end(); ++orChildIter)
             {
-                delete pIterator;
-                ///return false;
-                return true;
-            }
-        }
-        if (! static_cast<PersonalSearchDocumentIterator*>(pIterator)->empty()) {
-            if(!virtualProperty.empty())
-            {
-                if(!hasVirtualIterBuilt)
-                {
-                    if(NULL == pDocIterator)
-                        pDocIterator = pIterator;
-                    else
-                        pDocIterator->add(pIterator);
-                }
-                else
+                ret = do_prepare_for_property_(
+                          *orChildIter,
+                          colID,
+                          property,
+                          propertyId,
+                          propertyDataType,
+                          isNumericFilter,
+                          readPositions,
+                          termIndexMapInProperty,
+                          pIterator,
+                          virtualTermIters,
+                          termDocReaders,
+                          hasUnigramProperty,
+                          isUnigramSearchMode,
+                          virtualProperty
+                      );
+                if (!ret)
                 {
                     delete pIterator;
-                    return false;
+                    ///return false;
+                    return true;
                 }
             }
-            else
-                if (NULL == pDocIterator)
-                    pDocIterator = pIterator;
-                else
+            if(!virtualProperty.empty())
+            {
+                if(parentAndOrFlag)
+                {
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                    for(; vit != virtualTermIters.end(); ++vit)
+                        pIterator->add(vit->second);
                     pDocIterator->add(pIterator);
+                }
+                else
+                {
+                    if(NULL == pDocIterator) 
+                    {
+                        pDocIterator = pIterator;
+                        std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                        for(; vit != virtualTermIters.end(); ++vit)
+                            pDocIterator->add(vit->second);
+                    }
+                    else delete pIterator;
+                }
+            }
+            else if (NULL == pDocIterator)
+                pDocIterator = pIterator;
+            else
+                pDocIterator->add(pIterator);
         }
-        else
-            delete pIterator;
-        }catch(std::exception& e){
+        catch(std::exception& e)
+        {
             delete pIterator;
             return false;
         }
@@ -1384,11 +1391,11 @@ bool QueryBuilder::do_prepare_for_property_(
 }
 
 void QueryBuilder::getTermIdsAndIndexesOfSiblings(
-        QueryTreePtr& queryTree,
-        const std::map<termid_t, unsigned>& termIndexMapInProperty,
-        const std::string& property,
-        std::vector<termid_t>& outTermIds,
-        std::vector<unsigned>& outTermIndexes
+    QueryTreePtr& queryTree,
+    const std::map<termid_t, unsigned>& termIndexMapInProperty,
+    const std::string& property,
+    std::vector<termid_t>& outTermIds,
+    std::vector<unsigned>& outTermIndexes
 )
 {
     std::vector<termid_t> termIds;
