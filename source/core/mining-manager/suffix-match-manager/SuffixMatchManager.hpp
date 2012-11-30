@@ -67,7 +67,9 @@ public:
 private:
     bool getAllFilterRangeFromGroupLable(
             const faceted::GroupParam& group_param,
-            std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
+            std::vector<FMIndexType::FilterRangeT>& filter_range_list,
+            std::vector<size_t>& filterid_list,
+            std::vector<std::vector<FMIndexType::FilterRangeT> >& aux_filter_range_list) const;
     bool getAllFilterRangeFromAttrLable(
             const faceted::GroupParam& group_param,
             std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;

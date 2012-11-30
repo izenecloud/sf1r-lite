@@ -448,7 +448,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             std::vector<FMIndexType::FilterRangeT> filter_range_list;
             if (!group_param.isGroupEmpty())
             {
-                if (!getAllFilterRangeFromGroupLable(group_param, filter_range_list))
+                if (!getAllFilterRangeFromGroupLable(group_param, filter_range_list, filterid_list, aux_filter_range_list))
                     return 0;
             }
             if (!group_param.isAttrEmpty())
@@ -538,7 +538,9 @@ bool SuffixMatchManager::getAllFilterRangeFromAttrLable(
 }
 
 bool SuffixMatchManager::getAllFilterRangeFromGroupLable(const GroupParam& group_param,
-        std::vector<FMIndexType::FilterRangeT>& filter_range_list) const
+        std::vector<FMIndexType::FilterRangeT>& filter_range_list,
+        std::vector<size_t>& filterid_list,
+        std::vector<std::vector<FMIndexType::FilterRangeT> >& aux_filter_range_list) const
 {
     if (filter_manager_ == NULL)
     {
@@ -556,6 +558,15 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable(const GroupParam& group
         bool is_date_prop = std::find(date_property_list_.begin(), date_property_list_.end(),
                 cit->first) != date_property_list_.end();
         const GroupParam::GroupPathVec& group_values = cit->second;
+
+        size_t filterid;
+        if(is_numeric_prop || is_date_prop)
+        {
+            filterid = filter_manager_->getNumericFilterId(cit->first);
+            if (filterid == (size_t)-1) continue;
+        }
+        std::vector<std::pair<size_t, size_t> > temp_aux_range_list;
+
         for (size_t i = 0; i < group_values.size(); ++i)
         {
             if (is_numeric_prop)
@@ -639,14 +650,33 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable(const GroupParam& group
                 LOG(WARNING) << "one of group label filter id range not found.";
                 continue;
             }
-            if (!fmi_->getFilterRange(std::make_pair(filterid_range.start, filterid_range.end), filter_range))
+            if(is_numeric_prop || is_date_prop)
             {
-                LOG(WARNING) << "get filter DocArray range failed.";
-                continue;
-            }
+                if (!fmi_->getAuxFilterRange(filterid, std::make_pair(filterid_range.start, filterid_range.end), filter_range))
+                {
+                    LOG(WARNING) << "get filter DocArray range failed.";
+                    continue;
+                }
 
-            LOG(INFO) << "group label filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
-            filter_range_list.push_back(filter_range);
+                temp_aux_range_list.push_back(filter_range);
+                LOG(INFO) << "filter DocArray aux range is : " << filter_range.first << ", " << filter_range.second;
+            }
+            else
+            {
+                if (!fmi_->getFilterRange(std::make_pair(filterid_range.start, filterid_range.end), filter_range))
+                {
+                    LOG(WARNING) << "get filter DocArray range failed.";
+                    continue;
+                }
+
+                LOG(INFO) << "group label filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
+                filter_range_list.push_back(filter_range);
+            }
+        }
+        if((is_numeric_prop || is_date_prop) && !temp_aux_range_list.empty())
+        {
+            filterid_list.push_back(filterid);
+            aux_filter_range_list.push_back(temp_aux_range_list);
         }
     }
     return true;
