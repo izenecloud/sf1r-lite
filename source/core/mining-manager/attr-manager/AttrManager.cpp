@@ -16,6 +16,7 @@ AttrManager::AttrManager(
     : attrConfig_(attrConfig)
     , dirPath_(dirPath)
     , documentManager_(documentManager)
+    , attrMiningTask_(NULL)
 {
 }
 
@@ -30,7 +31,13 @@ bool AttrManager::open()
     }
 
     LOG(INFO) << "End attr loading";
+    attrMiningTask_ = new AttrMiningTask(documentManager_, *this, dirPath_);
 
+    if(attrMiningTask_ == NULL)
+    {
+        LOG(INFO)<<"Build AttrMiningTask ERROR"<<endl;
+        return false;
+    }
     return true;
 }
 

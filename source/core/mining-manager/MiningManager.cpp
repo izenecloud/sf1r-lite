@@ -2,6 +2,8 @@
 #include <document-manager/DocumentManager.h>
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
+#include "MiningTaskBuilder.h"
+#include "MiningTask.h"
 
 #include "duplicate-detection-submanager/dup_detector_wrapper.h"
 
@@ -133,6 +135,7 @@ MiningManager::MiningManager(
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
     , kvManager_(NULL)
+    , miningTaskBuilder_(NULL)
 {
 }
 
@@ -152,6 +155,7 @@ MiningManager::~MiningManager()
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
     if (kvManager_) delete kvManager_;
+    if (miningTaskBuilder_) delete miningTaskBuilder_;
     close();
 }
 
@@ -591,6 +595,14 @@ bool MiningManager::open()
             delete kvManager_;
             kvManager_ = NULL;
         }
+
+        if (mining_schema_.suffixmatch_schema.suffix_match_enable ||
+            mining_schema_.group_enable ||
+            mining_schema_.attr_enable )
+        {
+            miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);//add path... prefix_path/Taskbuider.startdocid;
+        }
+
     }
     catch (NotEnoughMemoryException& ex)
     {
@@ -653,9 +665,76 @@ void MiningManager::DoContinue()
     }
 }
 
+bool MiningManager::DOMiningTask()
+{
+    if (mining_schema_.group_enable)
+    {
+        const std::vector<MiningTask*>& miningTaskList = groupManager_->getGroupMiningTask();
+        for (std::vector<MiningTask*>::const_iterator i = miningTaskList.begin(); i != miningTaskList.end(); ++i)
+        {
+            miningTaskBuilder_->addTask(*i);   
+        }
+    }
+
+    if (mining_schema_.attr_enable)
+    {
+        MiningTask* miningTask = attrManager_->getAttrMiningTask();
+        miningTaskBuilder_->addTask(miningTask);
+    }
+
+    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
+    {
+        if(mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+        {
+            if(!(suffixMatchManager_->isStartFromLocalFM()))
+            {
+                LOG(INFO)<<"[] Start suffix init fm-index..."<<endl;
+                suffixMatchManager_->buildMiningTask();
+                MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                miningTaskBuilder_->addTask(miningTask);
+                incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+            }
+            else
+            {
+                uint32_t last_docid = 0;
+                uint32_t docNum = 0;
+                uint32_t maxDoc = 0;
+                incrementalManager_->getLastDocid(last_docid);
+                incrementalManager_->getDocNum(docNum);
+                incrementalManager_->getMaxNum(maxDoc);
+                if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
+                {
+                    LOG(INFO)<<"Rebuilding fm-index....."<<endl;
+                    suffixMatchManager_->buildMiningTask();
+                    MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                    miningTaskBuilder_->addTask(miningTask);
+                    incrementalManager_->reset();
+                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                }
+                else
+                {
+                    incrementalManager_->createIndex_();
+                }
+            }
+        }
+        else
+        {
+            suffixMatchManager_->buildMiningTask();
+            MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+            miningTaskBuilder_->addTask(miningTask);
+        }
+    }
+
+    miningTaskBuilder_->buildCollection();
+    return true;
+}
+
 bool MiningManager::DoMiningCollection()
 {
+    //return DOMiningTask();
+
     MEMLOG("[Mining] DoMiningCollection");
+
     //do TG
     if (mining_schema_.tg_enable)
     {
@@ -747,9 +826,7 @@ bool MiningManager::DoMiningCollection()
     //do group
     if (mining_schema_.group_enable)
     {
-        izenelib::util::ClockTimer timer;
-        groupManager_->processCollection1();
-        cout<<"[TEST] groupManager_->processCollection();"<<timer.elapsed()<<" seconds"<<endl;
+        groupManager_->processCollection();
     }
 
     //do attr
@@ -849,8 +926,8 @@ bool MiningManager::DoMiningCollection()
         }
         else
             suffixMatchManager_->buildCollection();
-
     }
+
     return true;
 }
 

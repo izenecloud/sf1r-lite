@@ -29,6 +29,7 @@ SuffixMatchManager::SuffixMatchManager(
     , document_manager_(document_manager)
     , analyzer_(NULL)
     , knowledge_(NULL)
+    , suffixMatchTask_(NULL)
 {
     if (!boost::filesystem::exists(homePath))
     {
@@ -53,6 +54,7 @@ SuffixMatchManager::~SuffixMatchManager()
 {
     if (analyzer_) delete analyzer_;
     if (knowledge_) delete knowledge_;
+    if (suffixMatchTask_) delete suffixMatchTask_;
 }
 
 void SuffixMatchManager::setGroupFilterProperty(std::vector<std::string>& property_list)
@@ -289,7 +291,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
 
     match_ranges_list.reserve(all_sub_strpatterns.size());
     max_match_list.reserve(all_sub_strpatterns.size());
-
+    
     if (!fmi_) return 0;
     {
         ReadLock lock(mutex_);
@@ -543,6 +545,41 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam(
         }
     }
     return true;
+}
+
+bool SuffixMatchManager::buildMiningTask()
+{
+    suffixMatchTask_ = new SuffixMatchMiningTask(document_manager_
+            , group_property_list_
+            , attr_property_list_
+            , number_property_list_
+            , fmi_
+            , filter_manager_
+            , data_root_path_
+            , fm_index_path_
+            , orig_text_path_
+            , property_);
+    if (suffixMatchTask_ == NULL)
+    {
+        LOG(INFO)<<"Build SuffixMatch MingTask ERROR"<<endl;
+        return false;
+    }
+    return false;
+
+/*if (no)//incremental;
+    {}
+    else
+    {}
+*/
+}
+
+MiningTask* SuffixMatchManager::getMiningTask()
+{
+    if (suffixMatchTask_)
+    {
+        return suffixMatchTask_;
+    }
+    return NULL;
 }
 
 void SuffixMatchManager::buildTokenizeDic()
