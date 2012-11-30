@@ -187,6 +187,12 @@ public:
 
     bool SetKV(const std::string& key, const std::string& value);
     bool GetKV(const std::string& key, std::string& value);
+
+    bool GetProductScore(
+        const std::string& docIdStr,
+        const std::string& scoreType,
+        score_t& scoreValue);
+
 private:
     MiningBundleConfiguration* bundleConfig_;
     boost::shared_ptr<MiningManager> miningManager_;
@@ -200,4 +206,3 @@ private:
 }
 
 #endif
-

@@ -43,6 +43,7 @@ public:
 			, std::vector<std::string>& group_property_list
     		, std::vector<std::string>& attr_property_list
     		, std::set<std::string>& number_property_list
+            , std::vector<std::string>& date_property_list
 			, boost::shared_ptr<FMIndexType>& fmi
     		, boost::shared_ptr<FilterManager>& filter_manager
     		, std::string data_root_path
@@ -63,6 +64,7 @@ private:
 	std::vector<std::string>& group_property_list_;
     std::vector<std::string>& attr_property_list_;
     std::set<std::string>& number_property_list_;
+    std::vector<std::string>& date_property_list_;
 	
 	boost::shared_ptr<FMIndexType>& fmi_;
     boost::shared_ptr<FilterManager>& filter_manager_;

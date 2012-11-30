@@ -13,6 +13,7 @@ SuffixMatchMiningTask::SuffixMatchMiningTask(boost::shared_ptr<DocumentManager> 
         , std::vector<std::string>& group_property_list
         , std::vector<std::string>& attr_property_list
         , std::set<std::string>& number_property_list
+        , std::vector<std::string>& date_property_list
         , boost::shared_ptr<FMIndexType>& fmi
         , boost::shared_ptr<FilterManager>& filter_manager
         , std::string data_root_path
@@ -23,6 +24,7 @@ SuffixMatchMiningTask::SuffixMatchMiningTask(boost::shared_ptr<DocumentManager> 
     , group_property_list_(group_property_list)
     , attr_property_list_(attr_property_list)
     , number_property_list_(number_property_list)
+    , date_property_list_(date_property_list)
     , fmi_(fmi)
     , filter_manager_(filter_manager)
     , data_root_path_(data_root_path)
@@ -43,15 +45,16 @@ SuffixMatchMiningTask::~SuffixMatchMiningTask()
 
 void SuffixMatchMiningTask::preProcess()
 {
-    std::vector<FilterManager::StrFilterItemMapT> filter_map;
+    std::vector<FilterManager::StrFilterItemMapT> group_filter_map;
     std::vector<FilterManager::StrFilterItemMapT> attr_filter_map;
     std::vector<FilterManager::NumFilterItemMapT> num_filter_map;
+    std::vector<FilterManager::NumFilterItemMapT> date_filter_map;
     
     if (filter_manager_)
     {
         new_filter_manager = new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
                                                filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder());
-        new_filter_manager->setNumberAmp(filter_manager_->getNumberAmp());
+        new_filter_manager->setNumericAmp(filter_manager_->getNumericAmp());
     }
     size_t last_docid = fmi_ ? fmi_->docCount() : 0;
     uint32_t max_group_docid = 0;
@@ -61,7 +64,7 @@ void SuffixMatchMiningTask::preProcess()
         LOG(INFO) << "start rebuilding in fm-index";
         if (new_filter_manager)
         {
-            max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, filter_map);
+            max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, group_filter_map);
             max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
         }
         std::ifstream ifs(orig_text_path_.c_str());
@@ -86,19 +89,24 @@ void SuffixMatchMiningTask::preProcess()
     if (new_filter_manager)
     {
         new_filter_manager->buildGroupFilterData(max_group_docid, document_manager_->getMaxDocId(),
-                                                 group_property_list_, filter_map);
-        new_filter_manager->saveStrFilterInvertedData(group_property_list_, filter_map);
+                                                 group_property_list_, group_filter_map);
+        new_filter_manager->saveStrFilterInvertedData(group_property_list_, group_filter_map);
 
         new_filter_manager->buildAttrFilterData(max_attr_docid, document_manager_->getMaxDocId(),
                                                 attr_property_list_, attr_filter_map);
         new_filter_manager->saveStrFilterInvertedData(attr_property_list_, attr_filter_map);
 
-        new_filter_manager->buildNumberFilterData(0, document_manager_->getMaxDocId(),
+        new_filter_manager->buildNumericFilterData(0, document_manager_->getMaxDocId(),
                                                   number_property_list, num_filter_map);
-        new_fmi_tmp->setAdditionFilterData(new_filter_manager->getAllFilterInvertedData());
-        filter_map.clear();
-        attr_filter_map.clear();
-        num_filter_map.clear();
+        new_filter_manager->buildDateFilterData(0, document_manager_->getMaxDocId(),
+                                                date_property_list_, date_filter_map);
+        
+        new_fmi_tmp->setFilterList(new_filter_manager->getStringFilterList());
+        new_fmi_tmp->setAuxFilterList(new_filter_manager->getNumericFilterList());
+        
+        std::vector<FilterManager::StrFilterItemMapT>().swap(group_filter_map);
+        std::vector<FilterManager::StrFilterItemMapT>().swap(attr_filter_map);
+        std::vector<FilterManager::NumFilterItemMapT>().swap(num_filter_map);
     }
     LOG(INFO) << "building filter data finished";
 }
@@ -122,7 +130,7 @@ void SuffixMatchMiningTask::postProcess()
     ofs.open(fm_index_path_.c_str());
     fmi_->save(ofs);
     filter_manager_->saveFilterId();
-    filter_manager_->clearAllFilterInvertedData();
+    filter_manager_->clearAllFilterLists();
     LOG(INFO) << "building fm-index finished";
 }
 

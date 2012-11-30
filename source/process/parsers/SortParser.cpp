@@ -6,7 +6,7 @@
 #include "SortParser.h"
 
 #include <common/BundleSchemaHelpers.h>
-
+#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <query-manager/QueryManager.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
@@ -45,7 +45,7 @@ bool SortParser::parse(const Value& orders)
     sortPriorityList_.resize(parsedOrderCount());
     for (std::size_t i = 0; i < parsedOrderCount(); ++i)
     {
-        if (parsedOrders(i).property() == "_ctr")
+        if (parsedOrders(i).property() == faceted::CTRManager::kCtrPropName)
         {
             //nothing
         }

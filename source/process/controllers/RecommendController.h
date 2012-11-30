@@ -57,10 +57,6 @@ protected:
     virtual bool checkCollectionService(std::string& error);
 
 private:
-    bool requireProperty(
-        const std::string& propName,
-        std::string& propValue
-    );
     bool value2User(User& user);
     bool value2ItemIdVec(const std::string& propName, std::vector<std::string>& itemIdVec);
     bool value2ItemCondition(ItemCondition& itemCondition);

@@ -6,7 +6,7 @@
 #include <ranking-manager/PropertyRanker.h>
 #include <mining-manager/product-scorer/RelevanceScorer.h>
 #include <mining-manager/product-scorer/ProductScorerFactory.h>
-
+#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <mining-manager/MiningManager.h>
 #include <common/SFLogger.h>
 #include <util/get.h>
@@ -19,7 +19,6 @@ using namespace sf1r;
 const std::string RANK_PROPERTY("_rank");
 const std::string DATE_PROPERTY("date");
 const std::string CUSTOM_RANK_PROPERTY("custom_rank");
-const std::string CTR_PROPERTY("_ctr");
 
 namespace
 {
@@ -139,7 +138,7 @@ void SearchManagerPreProcessor::prepare_sorter_customranker_(
                 continue;
             }
             // sort by ctr (click through rate)
-            if (fieldNameL == CTR_PROPERTY)
+            if (fieldNameL == faceted::CTRManager::kCtrPropName)
             {
                 if (miningManagerPtr.expired())
                 {

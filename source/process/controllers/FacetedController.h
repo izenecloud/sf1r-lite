@@ -48,6 +48,8 @@ public:
     void get_custom_rank();
     void get_custom_query();
 
+    void get_product_score();
+
 protected:
     virtual bool checkCollectionService(std::string& error);
 

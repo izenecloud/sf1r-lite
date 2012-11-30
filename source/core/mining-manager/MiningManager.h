@@ -90,11 +90,14 @@ class DocumentManager;
 class LAManager;
 class IndexManager;
 class SearchManager;
+class SearchCache;
 class MultiDocSummarizationSubManager;
 class MerchantScoreManager;
 class CustomRankManager;
 class CustomDocIdConverter;
 class ProductScorerFactory;
+class ProductScoreManager;
+class OfflineProductScorerFactory;
 class SuffixMatchManager;
 class IncrementalManager;
 class ProductMatcher;
@@ -111,6 +114,7 @@ class GroupManager;
 class AttrManager;
 class OntologyManager;
 class CTRManager;
+class GroupFilterBuilder;
 }
 
 /**
@@ -141,6 +145,7 @@ public:
                   const boost::shared_ptr<LAManager>& laManager,
                   const boost::shared_ptr<IndexManager>& index_manager,
                   const boost::shared_ptr<SearchManager>& searchManager,
+                  const boost::shared_ptr<SearchCache>& searchCache,
                   const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& idManager,
                   const std::string& collectionName,
                   const DocumentSchema& documentSchema,
@@ -157,6 +162,9 @@ public:
     bool DOMiningTask();
 
     void DoContinue();
+
+    const MiningSchema& getMiningSchema() const { return mining_schema_; }
+
     /**
      * @brief The online querying interface.
      */
@@ -289,6 +297,18 @@ public:
 
     bool getCustomQueries(std::vector<std::string>& queries);
 
+    /**
+     * get product score.
+     * @param docIdStr the doc id
+     * @param scoreTypeName such as "popularity", "_ctr"
+     * @param scoreValue the score value as output
+     * @return true for success, false for failure
+     */
+    bool getProductScore(
+        const std::string& docIdStr,
+        const std::string& scoreTypeName,
+        score_t& scoreValue);
+
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
 
     bool GetTdtInTimeRange(const boost::gregorian::date& start, const boost::gregorian::date& end, std::vector<izenelib::util::UString>& topic_list);
@@ -329,7 +349,10 @@ public:
             std::vector<uint32_t>& docIdList,
             std::vector<float>& rankScoreList,
             std::vector<float>& customRankScoreList,
-            std::size_t& totalCount);
+            std::size_t& totalCount,
+            faceted::GroupRep& groupRep,
+            sf1r::faceted::OntologyRep& attrRep
+            );
 
     bool GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category);
 
@@ -391,6 +414,11 @@ public:
     boost::shared_ptr<SearchManager>& GetSearchManager()
     {
         return searchManager_;
+    }
+
+    ProductScoreManager* GetProductScoreManager()
+    {
+        return productScoreManager_;
     }
 
 private:
@@ -511,6 +539,7 @@ private:
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<SearchManager> searchManager_;
+    boost::shared_ptr<SearchCache> searchCache_;
 
     /** TG */
     TaxonomyInfo* tgInfo_;
@@ -551,6 +580,7 @@ private:
     /** ATTR BY */
     faceted::AttrManager* attrManager_;
 
+    boost::shared_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
     /** property name => group label click logger */
     typedef std::map<std::string, GroupLabelLogger*> GroupLabelLoggerMap;
     GroupLabelLoggerMap groupLabelLoggerMap_;
@@ -564,7 +594,12 @@ private:
     /** Custom Rank Manager */
     CustomRankManager* customRankManager_;
 
-    /** Product Score */
+    OfflineProductScorerFactory* offlineScorerFactory_;
+
+    /** Product Score Table Manager */
+    ProductScoreManager* productScoreManager_;
+
+    /** Product Score Factory */
     ProductScorerFactory* productScorerFactory_;
 
     /** TDT */
@@ -582,6 +617,7 @@ private:
 
     /** Product Matcher */
     ProductMatcher* productMatcher_;
+    std::vector<boost::regex> match_category_restrict_;
 
     /** KV */
     std::string kv_path_;

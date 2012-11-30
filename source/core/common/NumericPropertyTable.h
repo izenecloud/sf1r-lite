@@ -8,9 +8,48 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 
 namespace sf1r
 {
+
+template <class T>
+struct InvalidGreat
+{
+    T invalidValue_;
+
+    InvalidGreat(const T& invalid) : invalidValue_(invalid) {}
+
+    bool operator()(const T& x, const T& y) const
+    {
+        if (x == invalidValue_)
+            return false;
+
+        if (y == invalidValue_)
+            return true;
+
+        return x < y;
+    }
+};
+
+template <class T>
+struct InvalidLess
+{
+    T invalidValue_;
+
+    InvalidLess(const T& invalid) : invalidValue_(invalid) {}
+
+    bool operator()(const T& x, const T& y) const
+    {
+        if (y == invalidValue_)
+            return false;
+
+        if (x == invalidValue_)
+            return true;
+
+        return x < y;
+    }
+};
 
 template <class T>
 class NumericPropertyTable : public NumericPropertyTableBase
@@ -118,13 +157,51 @@ public:
         value = boost::lexical_cast<std::string>(data_[pos]);
         return true;
     }
-    bool getFloatPairValue(std::size_t pos, std::pair<float, float>& value) const
+    bool getDoublePairValue(std::size_t pos, std::pair<double, double>& value) const
     {
         ReadLock lock(mutex_);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
-        value.first = value.second = static_cast<float>(data_[pos]);
+        value.first = value.second = static_cast<double>(data_[pos]);
+        return true;
+    }
+    bool getInt64PairValue(std::size_t pos, std::pair<int64_t, int64_t>& value) const
+    {
+        ReadLock lock(mutex_);
+        if (pos >= data_.size() || data_[pos] == invalidValue_)
+            return false;
+
+        value.first = value.second = static_cast<int64_t>(data_[pos]);
+        return true;
+    }
+
+
+    bool getFloatMinValue(float& minValue) const
+    {
+        ReadLock lock(mutex_);
+
+        typename std::vector<T>::const_iterator minIter = std::min_element(
+            data_.begin(), data_.end(), InvalidGreat<T>(invalidValue_));
+
+        if (minIter == data_.end() || *minIter == invalidValue_)
+            return false;
+
+        minValue = static_cast<float>(*minIter);
+        return true;
+    }
+
+    bool getFloatMaxValue(float& maxValue) const
+    {
+        ReadLock lock(mutex_);
+
+        typename std::vector<T>::const_iterator maxIter = std::max_element(
+            data_.begin(), data_.end(), InvalidLess<T>(invalidValue_));
+
+        if (maxIter == data_.end() || *maxIter == invalidValue_)
+            return false;
+
+        maxValue = static_cast<float>(*maxIter);
         return true;
     }
 

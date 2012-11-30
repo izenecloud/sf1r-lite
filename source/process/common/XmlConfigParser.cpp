@@ -1514,6 +1514,10 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     params.Get("QueryCorrectionPara/enableEK", mining_config.query_correction_param.enableEK);
     params.Get("QueryCorrectionPara/enableCN", mining_config.query_correction_param.enableCN);
 
+    // for product ranking
+    params.GetString("ProductRankingPara/cron",
+                     mining_config.product_ranking_param.cron);
+
     std::set<std::string> directories;
     params.Get("CollectionDataDirectory", directories);
 
@@ -1952,7 +1956,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         {
             throw XmlConfigParserException("Incremental used in SuffixMatch is missing.");
         }
-        
+
         Iterator<Element> filterit("FilterProperty");
         const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
         for (filterit = filterit.begin(task_node); filterit != filterit.end(); ++filterit)
@@ -1988,6 +1992,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 }
                 mining_schema.suffixmatch_schema.attr_filter_properties.push_back(property_name);
             }
+            else if(type == "date")
+            {
+                if( property_type != DATETIME_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not date type.");
+                }
+                mining_schema.suffixmatch_schema.date_filter_properties.push_back(property_name);
+            }
             else if(type == "number")
             {
                 PropertyConfig propConfig;
@@ -1999,9 +2011,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 number_filterconfig.amplifier = amplifier;
                 if (number_filterconfig.isNumericType())
                 {
-                    if (propIt == indexSchema.end() ||
-                        !propIt->isIndex() ||
-                        !propIt->getIsFilter())
+                    if (propIt == indexSchema.end() || !propIt->isIndex() || !propIt->getIsFilter())
                     {
                         throw XmlConfigParserException("As property ["+property_name+"] in <SuffixMatch> is int or float type, "
                             "it needs to be configured as a filter property like below:\n"
@@ -2028,8 +2038,8 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
 }
 
 void CollectionConfig::parseProductRankingNode(
-    const ticpp::Element* rankNode,
-    CollectionMeta& collectionMeta) const
+        const ticpp::Element* rankNode,
+        CollectionMeta& collectionMeta) const
 {
     if (!rankNode)
         return;
@@ -2054,8 +2064,8 @@ void CollectionConfig::parseProductRankingNode(
 }
 
 void CollectionConfig::parseScoreNode(
-    const ticpp::Element* scoreNode,
-    ProductRankingConfig& rankConfig) const
+        const ticpp::Element* scoreNode,
+        ProductRankingConfig& rankConfig) const
 {
     std::string typeName;
     getAttribute(scoreNode, "type", typeName);
@@ -2082,8 +2092,8 @@ void CollectionConfig::parseScoreNode(
 }
 
 void CollectionConfig::parseScoreAttr(
-    const ticpp::Element* scoreNode,
-    ProductScoreConfig& scoreConfig) const
+        const ticpp::Element* scoreNode,
+        ProductScoreConfig& scoreConfig) const
 {
     getAttribute(scoreNode, "property", scoreConfig.propName, false);
     getAttribute_FloatType(scoreNode, "weight", scoreConfig.weight, false);

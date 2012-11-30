@@ -2,6 +2,7 @@
 
 NS_FACETED_BEGIN
 
+const std::string CTRManager::kCtrPropName("_ctr");
 
 CTRManager::CTRManager(const std::string& dirPath, size_t docNum)
     : docNum_(docNum)

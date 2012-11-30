@@ -2,15 +2,16 @@
 #include "ProductScoreSum.h"
 #include "CustomScorer.h"
 #include "CategoryScorer.h"
-#include "PopularityScorer.h"
-#include "NumericPropertyScorer.h"
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../group-label-logger/GroupLabelLogger.h"
+#include "../group-label-logger/BackendLabel2FrontendLabel.h"
 #include "../group-manager/PropSharedLockSet.h"
+#include "../product-score-manager/ProductScoreManager.h"
+#include "../util/split_ustr.h"
 #include <configuration-manager/ProductRankingConfig.h>
-#include <search-manager/SearchManager.h>
 #include <memory> // auto_ptr
+#include <glog/logging.h>
 
 using namespace sf1r;
 
@@ -27,10 +28,11 @@ ProductScorerFactory::ProductScorerFactory(
     const ProductRankingConfig& config,
     MiningManager& miningManager)
     : config_(config)
+    , miningManager_(&miningManager)
     , customRankManager_(miningManager.GetCustomRankManager())
     , categoryClickLogger_(NULL)
     , categoryValueTable_(NULL)
-    , searchManager_(miningManager.GetSearchManager())
+    , productScoreManager_(miningManager.GetProductScoreManager())
 {
     const ProductScoreConfig& categoryScoreConfig =
         config.scores[CATEGORY_SCORE];
@@ -124,7 +126,27 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
     bool result = categoryClickLogger_->getFreqLabel(query, kTopLabelLimit,
                                                      topLabels, topFreqs);
 
-    if (result && !topLabels.empty())
+    if(topLabels.empty())
+    {
+        UString ustrQuery(query, UString::UTF_8);
+        UString backendCategory;
+        if(miningManager_->GetProductCategory(ustrQuery, backendCategory))
+        {
+            UString frontendCategory;
+            if(BackendLabelToFrontendLabel::Get()->Map(backendCategory,frontendCategory))
+            {
+                std::vector<std::vector<izenelib::util::UString> > groupPaths;
+                split_group_path(frontendCategory, groupPaths);
+                if(1 == groupPaths.size())
+                {
+                    faceted::PropValueTable::pvid_t topLabel = categoryValueTable_->propValueId(groupPaths[0]);
+                    topLabels.push_back(topLabel);
+                }
+            }
+        }
+    }
+
+    if (!topLabels.empty())
     {
         propSharedLockSet.insertSharedLock(categoryValueTable_);
         return new CategoryScorer(scoreConfig, *categoryValueTable_, topLabels);
@@ -147,45 +169,8 @@ ProductScorer* ProductScorerFactory::createRelevanceScorer_(
 ProductScorer* ProductScorerFactory::createPopularityScorer_(
     const ProductScoreConfig& scoreConfig)
 {
-    std::auto_ptr<PopularityScorer> popularScorer(
-        new PopularityScorer(scoreConfig));
-
-    for (std::size_t i = 0; i < scoreConfig.factors.size(); ++i)
-    {
-        const ProductScoreConfig& factorConfig = scoreConfig.factors[i];
-        ProductScorer* scorer = createNumericPropertyScorer_(factorConfig);
-
-        if (scorer)
-        {
-            popularScorer->addScorer(scorer);
-        }
-    }
-
-    return popularScorer.release();
-}
-
-ProductScorer* ProductScorerFactory::createNumericPropertyScorer_(
-    const ProductScoreConfig& scoreConfig)
-{
-    const std::string& propName = scoreConfig.propName;
-    if (propName.empty() || scoreConfig.weight == 0)
+    if (!productScoreManager_)
         return NULL;
 
-    if (!searchManager_)
-    {
-        LOG(WARNING) << "failed to get SearchManager";
-        return NULL;
-    }
-
-    boost::shared_ptr<NumericPropertyTableBase>& numericTable =
-        searchManager_->createPropertyTable(propName);
-
-    if (!numericTable)
-    {
-        LOG(WARNING) << "failed to create NumericPropertyTableBase "
-                     << "for property [" << propName << "]";
-        return NULL;
-    }
-
-    return new NumericPropertyScorer(scoreConfig, numericTable);
+    return productScoreManager_->createProductScorer(scoreConfig);
 }

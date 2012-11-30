@@ -36,63 +36,62 @@ namespace sf1r {
         typedef boost::unordered_set<TermList> KeywordSet;
         typedef uint32_t position_t;
         typedef std::pair<position_t, position_t>  Position;
-        //struct Double : boost::less_than_comparable<Double>
-                        //,boost::equality_comparable<Double>
-                        //,boost::addable<Double>
-                        //,boost::subtractable<Double>
-                        //,boost::multipliable<Double>
-                        //,boost::dividable<Double>
-        //{
-            //double value;
+        
+        struct WeightType
+        {
+            WeightType()
+            :cweight(0.0), aweight(0.0), tweight(0.0), kweight(1.0)
+             , paweight(0.0), paratio(0.0), type_match(false)
+            {
+            }
+            double cweight;
+            double aweight;
+            double tweight;
+            double kweight;
+            double paweight;
+            double paratio;
+            bool type_match;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & cweight & aweight & tweight & kweight & paweight;
+            }
 
-            //Double():value(0.0)
-            //{
-            //}
-            //Double(double d):value(d)
-            //{
-            //}
+            inline double sum() const
+            {
+                return (cweight+aweight+tweight)*kweight;
+            }
 
-            //bool operator<(const Double& another) const
-            //{
-                //return value<another.value;
-            //}
+            bool operator<(const WeightType& another) const
+            {
+                return sum()<another.sum();
+            }
+        };
 
-            //bool operator==(const Double& another) const
-            //{
-                //return value==another.value;
-            //}
-
-            //Double& operator+=(const Double& another)
-            //{
-                //value+=another.value;
-                //return *this;
-            //}
-            //Double& operator-=(const Double& another)
-            //{
-                //value-=another.value;
-                //return *this;
-            //}
-            //Double& operator*=(const Double& another)
-            //{
-                //value*=another.value;
-                //return *this;
-            //}
-            //Double& operator/=(const Double& another)
-            //{
-                //value/=another.value;
-                //return *this;
-            //}
-
-            //operator double () const
-            //{
-                //return value;
-            //}
-        //};
+        struct ResultVectorItem
+        {
+            uint32_t cid;
+            uint32_t spu_id;
+            double score;
+            WeightType weight;
+            //double paweight;
+            bool is_given_category;
+            bool operator<(const ResultVectorItem& another) const
+            {
+                if(score==another.score)
+                {
+                    return is_given_category;
+                }
+                return score>another.score;
+            }
+        };
 
         template<class K, class V>
-        class dmap : public std::map<K,V>
+        class dmap : public boost::unordered_map<K,V>
         {
-            typedef std::map<K,V> BaseType;
+            //typedef std::map<K,V> BaseType;
+            typedef boost::unordered_map<K,V> BaseType;
         public:
             dmap():BaseType()
             {
@@ -111,8 +110,39 @@ namespace sf1r {
             V d_;
             
         };
+        template<class K, class V>
+        class stdmap : public std::map<K,V>
+        {
+            typedef std::map<K,V> BaseType;
+        public:
+            stdmap():BaseType()
+            {
+            }
+            stdmap(const V& default_value):d_(default_value)
+            {
+            }
+
+            V& operator[] (const K& k)
+            {
+                return (*((this->insert(make_pair(k,d_))).first)).second;
+            }
+
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & *(dynamic_cast<BaseType*>(this));
+            }
+
+        private:
+            V d_;
+            
+        };
+
+        typedef dmap<std::string, double> StringToScore;
         struct CategoryNameApp 
-          : boost::less_than_comparable<CategoryNameApp> ,boost::equality_comparable<CategoryNameApp>
+          : boost::less_than_comparable<CategoryNameApp> 
+           //,boost::equality_comparable<CategoryNameApp>
         {
             uint32_t cid;
             uint32_t depth;
@@ -123,19 +153,21 @@ namespace sf1r {
             {
                 ar & cid & depth & is_complete;
             }
+
             bool operator<(const CategoryNameApp& another) const
             {
-                if(cid<another.cid) return true;
-                else if(cid>another.cid) return false;
-                else if(depth<another.depth) return true;
-                else if(depth>another.depth) return false;
-                return false;
+                return cid<another.cid;
+                //if(cid<another.cid) return true;
+                //else if(cid>another.cid) return false;
+                //else if(depth<another.depth) return true;
+                //else if(depth>another.depth) return false;
+                //return false;
             }
 
-            bool operator==(const CategoryNameApp& another) const
-            {
-                return cid==another.cid&&depth==another.depth;
-            }
+            //bool operator==(const CategoryNameApp& another) const
+            //{
+                //return cid==another.cid&&depth==another.depth;
+            //}
         };
         struct AttributeApp
           : boost::less_than_comparable<AttributeApp> ,boost::equality_comparable<AttributeApp>
@@ -190,14 +222,18 @@ namespace sf1r {
                 return spu_id==another.spu_id&&pstart==another.pstart;
             }
         };
+        typedef stdmap<std::string, uint32_t> KeywordTypeApp;
         struct KeywordTag
         {
             KeywordTag();
+            TermList term_list;
             std::vector<CategoryNameApp> category_name_apps;
             std::vector<AttributeApp> attribute_apps;
             std::vector<SpuTitleApp> spu_title_apps;
-            double cweight; //not serialized, runtime property
-            double aweight;
+            KeywordTypeApp type_app;
+            //double cweight; //not serialized, runtime property
+            //double aweight;
+            double kweight;
             uint8_t ngram;
             std::vector<Position> positions;
 
@@ -214,12 +250,19 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & category_name_apps & attribute_apps & spu_title_apps;
+                ar & term_list & category_name_apps & attribute_apps & spu_title_apps & type_app;
             }
         };
 
-        typedef std::map<TermList, KeywordTag> KeywordMap;
-        typedef std::vector<std::pair<TermList, KeywordTag> > KeywordVector;
+        //typedef std::map<TermList, KeywordTag> KeywordMap;
+        //typedef std::pair<TermList, KeywordTag> KeywordItem;
+        typedef std::vector<KeywordTag> KeywordVector;
+        //struct KeywordApp
+        //{
+            //KeywordItem item;
+            //KeywordTypeApp type_app;
+        //};
+        //typedef boost::unordered_map<Position, KeywordApp> KeywordAppMap;
 
         struct ProductCandidate
         {
@@ -310,18 +353,22 @@ namespace sf1r {
             std::string scategory;
             double price; 
             std::vector<Attribute> attributes;
+            //WeightType weight;
             double aweight;
+            double tweight;
             SimObject title_obj;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle & scategory & price & attributes & aweight & title_obj;
+                ar & spid & stitle & scategory & price & attributes & aweight & tweight & title_obj;
             }
         };
         typedef uint32_t PidType;
         typedef std::map<std::string, uint32_t> CategoryIndex;
         typedef std::map<std::string, uint32_t> ProductIndex;
+        typedef std::vector<uint32_t> IdList;
+        typedef std::map<uint32_t, IdList> IdToIdList;
         typedef boost::unordered_map<uint32_t, UString> IdManager;
 
         ProductMatcher(const std::string& path);
@@ -330,6 +377,7 @@ namespace sf1r {
         bool Open();
         static void Clear(const std::string& path);
         bool Index(const std::string& scd_path);
+        void Test(const std::string& scd_path);
         bool DoMatch(const std::string& scd_path);
         bool Process(const Document& doc, Category& result_category, Product& result_product);
         bool GetProduct(const std::string& pid, Product& product);
@@ -369,14 +417,21 @@ namespace sf1r {
         void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t& cid, uint32_t& pid);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
 
+        bool SpuMatched_(const WeightType& weight, const Product& p) const;
+        int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
+
         template<class K, class V>
-        void GetSortedVector_(const std::map<K, V>& map, std::vector<std::pair<V, K> >& vec)
+        void GetSortedVector_(const std::map<K, V>& map, std::vector<std::pair<V, K> >& vec, uint32_t max=0)
         {
             for(typename std::map<K,V>::const_iterator it = map.begin();it!=map.end();it++)
             {
                 vec.push_back(std::make_pair(it->second, it->first));
             }
             std::sort(vec.begin(), vec.end(), std::greater<std::pair<V, K> >());
+            if(max>0&&vec.size()>max)
+            {
+                vec.resize(max);
+            }
         }
 
         template<class T>
@@ -418,6 +473,7 @@ namespace sf1r {
         term_t left_bracket_term_;
         term_t right_bracket_term_;
         std::vector<Category> category_list_;
+        IdToIdList cid_to_pids_;
         CategoryIndex category_index_;
         ProductIndex product_index_;
         KeywordSet keyword_set_;

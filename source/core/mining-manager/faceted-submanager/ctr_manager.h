@@ -21,6 +21,8 @@ NS_FACETED_BEGIN
 class CTRManager
 {
 public:
+    static const std::string kCtrPropName;
+
     typedef izenelib::am::sdb_fixedhash<docid_t, count_t, izenelib::util::ReadWriteLock> DBType;
 
     typedef boost::shared_mutex MutexType;

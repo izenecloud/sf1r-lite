@@ -17,6 +17,8 @@ class CollectionMeta;
 class ProductRankingConfig
 {
 public:
+    static const std::string kScoreTypeName[];
+
     bool isEnable; /// whether enable product ranking
 
     std::vector<ProductScoreConfig> scores;

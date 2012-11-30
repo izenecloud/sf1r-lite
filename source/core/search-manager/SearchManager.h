@@ -181,6 +181,8 @@ private:
         boost::shared_ptr<Sorter> pSorter,
         DocumentIterator* originDocIterator);
 
+    score_t getFuzzyScoreWeight_() const;
+
 private:
     /**
      * @brief for testing

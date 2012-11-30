@@ -30,15 +30,15 @@ public:
         CustomRankDocId& customDocId
     );
 
+    bool convertDocId(
+        const std::string& docStr,
+        docid_t& docId
+    );
+
 private:
     bool convertDocIdList_(
         const std::vector<std::string>& docStrList,
         std::vector<docid_t>& docIdList
-    );
-
-    bool convertDocId_(
-        const std::string& docStr,
-        docid_t& docId
     );
 
 private:

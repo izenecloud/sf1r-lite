@@ -169,10 +169,6 @@ bool SearchManager::search(
         uint32_t start,
         bool enable_parallel_searching)
 {
-    CREATE_PROFILER( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
-    CREATE_PROFILER( preparerank, "SearchManager", "doSearch_: prepare ranker");
-    CREATE_PROFILER( preparesort, "SearchManager", "doSearch_: prepare sort");
-
     if ( actionOperation.noError() == false )
         return false;
 
@@ -447,6 +443,9 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
         bool is_parallel
         )
 {
+    CREATE_PROFILER( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
+    CREATE_PROFILER( preparerank, "SearchManager", "doSearch_: prepare ranker");
+
     unsigned int collectionId = 1;
     std::vector<std::string> indexPropertyList( actionOperation.actionItem_.searchPropertyList_ );
     START_PROFILER( preparedociter )
@@ -897,6 +896,8 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     uint32_t start, std::vector<uint32_t>& docid_list, std::vector<float>& result_score_list,
     std::vector<float>& custom_score_list)
 {
+    if(docid_list.empty())
+        return;
     CustomRankerPtr customRanker;
     boost::shared_ptr<Sorter> pSorter;
     try
@@ -934,12 +935,13 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
         }
     }
     ScoreDocEvaluator scoreDocEvaluator(productScorer, customRanker);
+    const score_t fuzzyScoreWeight = getFuzzyScoreWeight_();
 
     const size_t count = docid_list.size();
     result_score_list.resize(count);
     custom_score_list.resize(count);
 
-    boost::shared_ptr<HitQueue> scoreItemQueue;
+    boost::scoped_ptr<HitQueue> scoreItemQueue;
     ///sortby
     if (pSorter)
         scoreItemQueue.reset(new PropertySortedHitQueue(pSorter, count));
@@ -951,9 +953,17 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     {
         tmpdoc.docId = docid_list[i];
         scoreDocEvaluator.evaluate(tmpdoc);
-        // use the fuzzy match score if no other score.
+
+        float fuzzyScore = result_score_list[i];
         if(productScorer == NULL)
-            tmpdoc.score = result_score_list[i];
+        {
+            tmpdoc.score = fuzzyScore;
+        }
+        else
+        {
+            tmpdoc.score += fuzzyScore * fuzzyScoreWeight;
+        }
+
         scoreItemQueue->insert(tmpdoc);
         //cout << "doc : " << tmpdoc.docId << ", score is:" << tmpdoc.score << "," << tmpdoc.custom_score << endl;
     }
@@ -998,6 +1008,24 @@ void SearchManager::printDFCTF_(
             LOG(INFO) << "termid: " << iter_->first << " CTF: " << iter_->second;
         }
     }
+}
+
+score_t SearchManager::getFuzzyScoreWeight_() const
+{
+    boost::shared_ptr<MiningManager> miningManager = miningManagerPtr_.lock();
+
+    if (!miningManager)
+    {
+        LOG(WARNING) << "as SearchManager::miningManagerPtr_ is uninitialized, "
+                     << "the fuzzy score weight would be zero";
+        return 0;
+    }
+
+    const MiningSchema& miningSchema = miningManager->getMiningSchema();
+    const ProductScoreConfig& fuzzyConfig =
+        miningSchema.product_ranking_config.scores[FUZZY_SCORE];
+
+    return fuzzyConfig.weight;
 }
 
 } // namespace sf1r

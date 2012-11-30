@@ -6,9 +6,10 @@
  * @date Created <2009-09-30 09:31:29>
  * @date Updated <2010-03-24 15:43:04>
  */
+#include "ResultType.h" // KeywordSearchResult
 #include <query-manager/QueryIdentity.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
-
+#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <cache/IzeneCache.h>
 
 #include <vector>
@@ -93,7 +94,7 @@ private:
         std::vector<std::pair<std::string , bool> >::const_iterator cit;
         for (cit = sortProperties.begin(); cit != sortProperties.end(); cit++)
         {
-            if (cit->first == "_ctr")
+            if (cit->first == faceted::CTRManager::kCtrPropName)
             {
                 check = true;
                 break;
