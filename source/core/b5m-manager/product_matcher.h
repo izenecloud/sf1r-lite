@@ -1,5 +1,6 @@
 #ifndef SF1R_B5MMANAGER_PRODUCTMATCHER_H_
 #define SF1R_B5MMANAGER_PRODUCTMATCHER_H_
+#include "brand_db.h"
 #include "ngram_synonym.h"
 #include "b5m_helper.h"
 #include "b5m_types.h"
@@ -344,6 +345,16 @@ namespace sf1r {
             {
                 ar & name & values & is_optional;
             }
+            std::string GetValue() const
+            {
+                std::string result;
+                for(uint32_t i=0;i<values.size();i++)
+                {
+                    if(!result.empty()) result+="/";
+                    result+=values[i];
+                }
+                return result;
+            }
         };
 
         struct Product
@@ -375,11 +386,12 @@ namespace sf1r {
         ~ProductMatcher();
         bool IsOpen() const;
         bool Open();
-        static void Clear(const std::string& path);
+        static void Clear(const std::string& path, int mode=3);
         bool Index(const std::string& scd_path);
         void Test(const std::string& scd_path);
         bool DoMatch(const std::string& scd_path);
-        bool Process(const Document& doc, Category& result_category, Product& result_product);
+        bool Process(const Document& doc, Product& result_product);
+        bool ProcessBook(const Document& doc, Product& result_product);
         bool GetProduct(const std::string& pid, Product& product);
 
         void SetCmaPath(const std::string& path)
@@ -397,7 +409,6 @@ namespace sf1r {
 
         void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
-        bool ProcessBook_(const Document& doc, Product& result_product);
 
 
         void ParseAttributes_(const UString& ustr, std::vector<Attribute>& attributes);

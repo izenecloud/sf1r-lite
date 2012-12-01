@@ -574,10 +574,7 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        if(mode>2)//re-train
-        {
-            ProductMatcher::Clear(knowledge_dir);
-        }
+        ProductMatcher::Clear(knowledge_dir, mode);
         ProductMatcher matcher(knowledge_dir);
         matcher.SetCmaPath(cma_path);
         if(!matcher.Open())
@@ -757,14 +754,14 @@ int do_main(int ac, char** av)
     }
     if(vm.count("b5mo-generate") && !scd_path.empty())
     {
-        if( scd_path.empty() || !odb || mdb_instance.empty() || knowledge_dir.empty())
+        if( scd_path.empty() || !odb || !bdb || mdb_instance.empty() || knowledge_dir.empty())
         {
             return EXIT_FAILURE;
         }
         LOG(INFO)<<"b5mo generator, mode: "<<mode<<std::endl;
         boost::shared_ptr<ProductMatcher> matcher(new ProductMatcher(knowledge_dir));
         matcher->SetCmaPath(cma_path);
-        B5moProcessor processor(odb.get(), matcher.get(), mode, imgserver_config.get());
+        B5moProcessor processor(odb.get(), matcher.get(), bdb.get(), mode, imgserver_config.get());
         if(!mobile_source.empty())
         {
             if(boost::filesystem::exists(mobile_source))
@@ -801,7 +798,7 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5mpProcessor processor(mdb_instance, last_mdb_instance, bdb.get());
+        B5mpProcessor processor(mdb_instance, last_mdb_instance);
         if(!processor.Generate())
         {
             std::cout<<"b5mp processor failed"<<std::endl;

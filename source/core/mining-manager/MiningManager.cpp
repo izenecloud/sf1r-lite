@@ -1996,11 +1996,11 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
     }
     Document doc;
     doc.property("Title") = query;
-    ProductMatcher::Category result_category;
     ProductMatcher::Product result_product;
-    if(productMatcher_->Process(doc, result_category, result_product))
+    if(productMatcher_->Process(doc, result_product))
     {
-        if(!result_category.name.empty())
+        const std::string& category_name = result_product.scategory;
+        if(!category_name.empty())
         {
             bool valid = true;
             if(!match_category_restrict_.empty())
@@ -2008,7 +2008,7 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
                 valid = false;
                 for(uint32_t i=0;i<match_category_restrict_.size();i++)
                 {
-                    if(boost::regex_match(result_category.name, match_category_restrict_[i]))
+                    if(boost::regex_match(category_name, match_category_restrict_[i]))
                     {
                         valid = true;
                         break;
@@ -2018,7 +2018,7 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
             }
             if(valid)
             {
-                category = izenelib::util::UString(result_category.name, izenelib::util::UString::UTF_8);
+                category = izenelib::util::UString(category_name, izenelib::util::UString::UTF_8);
                 return true;
             }
         }

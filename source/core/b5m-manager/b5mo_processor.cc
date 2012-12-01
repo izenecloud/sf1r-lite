@@ -22,10 +22,10 @@
 
 using namespace sf1r;
 
-B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher,
+B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher, BrandDb* bdb,
     int mode, 
     RpcServerConnectionConfig* img_server_config)
-:odb_(odb), matcher_(matcher), mode_(mode), img_server_cfg_(img_server_config)
+:odb_(odb), matcher_(matcher), bdb_(bdb), mode_(mode), img_server_cfg_(img_server_config)
 {
 }
 
@@ -108,9 +108,13 @@ void B5moProcessor::Process(Document& doc, int& type)
         std::string spid;
         UString ptitle;
         UString category;
+        UString brand;
+        std::string sbrand;
         doc.eraseProperty(B5MHelper::GetSPTPropertyName());
-        //doc.getProperty(B5MHelper::GetSPTPropertyName(), ptitle);
+        doc.getProperty(B5MHelper::GetBrandPropertyName(), brand);
         doc.getProperty("Category", category);
+        //brand.convertString(sbrand, UString::UTF_8);
+        //std::cerr<<"[ABRAND]"<<sbrand<<std::endl;
         bool is_human_edit = false;
         if(odb_->get(sdocid, spid)) 
         {
@@ -135,40 +139,61 @@ void B5moProcessor::Process(Document& doc, int& type)
         {
             need_do_match = true;
         }
+        ProductMatcher::Product product;
         if(need_do_match)
         {
-            ProductMatcher::Product product;
-            ProductMatcher::Category result_category;
-            matcher_->Process(doc, result_category, product);
+            matcher_->Process(doc, product);
             //if(category.empty()&&!result_category.name.empty())
             //{
                 //doc.property("Category") = UString(result_category.name, UString::UTF_8);
             //}
-            if(!product.spid.empty())
-            {
-                doc.property("Category") = UString(product.scategory, UString::UTF_8);
-                doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
-                spid = product.spid;
-                UString title;
-                doc.getProperty("Title", title);
-                std::string stitle;
-                title.convertString(stitle, UString::UTF_8);
-                match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
-            }
-            else
-            {
-                spid = sdocid; //get matched pid fail
-            }
         }
         else
         {
-            ProductMatcher::Product product;
-            if(matcher_->GetProduct(spid, product))
+            matcher_->GetProduct(spid, product);
+        }
+        if(!product.spid.empty())
+        {
+            //has SPU matched
+            spid = product.spid;
+            doc.property("Category") = UString(product.scategory, UString::UTF_8);
+            UString title;
+            doc.getProperty("Title", title);
+            std::string stitle;
+            title.convertString(stitle, UString::UTF_8);
+            match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
+        }
+        else
+        {
+            spid = sdocid;
+        }
+        if(!product.stitle.empty())
+        {
+            doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
+        }
+        uint128_t pid = B5MHelper::StringToUint128(spid);
+        UString ebrand;
+        if(bdb_->get(pid, ebrand))
+        {
+            brand = ebrand;
+        }
+        else
+        {
+            if(bdb_->get_source(brand, ebrand))
             {
-                doc.property("Category") = UString(product.scategory, UString::UTF_8);
-                doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
+                brand = ebrand;
+            }
+            if(!brand.empty())
+            {
+                bdb_->set(pid, brand);
             }
         }
+        if(!brand.empty())
+        {
+            doc.property(B5MHelper::GetBrandPropertyName()) = brand;
+        }
+        //brand.convertString(sbrand, UString::UTF_8);
+        //std::cerr<<"[BBRAND]"<<sbrand<<std::endl;
         if(old_spid!=spid)
         {
             odb_->insert(sdocid, spid);
@@ -194,6 +219,15 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         if(!odb_->open())
         {
             LOG(ERROR)<<"odb open fail"<<std::endl;
+            return false;
+        }
+    }
+    if(!bdb_->is_open())
+    {
+        LOG(INFO)<<"open bdb..."<<std::endl;
+        if(!bdb_->open())
+        {
+            LOG(ERROR)<<"bdb open fail"<<std::endl;
             return false;
         }
     }
@@ -274,6 +308,7 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
     match_ofs_.close();
     cmatch_ofs_.close();
     odb_->flush();
+    bdb_->flush();
     if(!changed_match_.empty())
     {
         if(last_mdb_instance.empty())
