@@ -50,8 +50,8 @@ bool IndexBarrel::buildIndex_(docid_t docId, std::string& text)
     std::vector<unsigned short> posList;
     for ( it = laInput.begin(); it != laInput.end(); ++it)
     {
-        termidList.push_back((*it).termid_);
-        posList.push_back((*it).wordOffset_);
+        termidList.push_back(it->termid_);
+        posList.push_back(it->wordOffset_);
     }
     if (pForwardIndex_)
         pForwardIndex_->addDocForwardIndex_(docId, termidList, posList);
@@ -89,7 +89,7 @@ bool IndexBarrel::score(const std::string& query, std::vector<uint32_t>& resultL
         std::vector<uint32_t> termidList;
         for (; it != laInput.end(); ++it)
         {
-            termidList.push_back((*it).termid_);
+            termidList.push_back(it->termid_);
         }
         termIN.push_back(termidList);
     }
@@ -107,7 +107,7 @@ bool IndexBarrel::score(const std::string& query, std::vector<uint32_t>& resultL
         std::vector<uint32_t> termidList;
         for (; it != laInput.end(); ++it)
         {
-            termidList.push_back((*it).termid_);
+            termidList.push_back(it->termid_);
         }
         termNotIN.push_back(termidList);
     }
@@ -137,8 +137,8 @@ IncrementalManager::IncrementalManager(const std::string& path,
                                        boost::shared_ptr<DocumentManager>& document_manager,
                                        boost::shared_ptr<IDManager>& idManager,
                                        boost::shared_ptr<LAManager>& laManager,
-                                       IndexBundleSchema& indexSchema
-                                      ):document_manager_(document_manager)
+                                       IndexBundleSchema& indexSchema)
+    : document_manager_(document_manager)
     , idManager_(idManager)
     , laManager_(laManager)
     , indexSchema_(indexSchema)
@@ -204,7 +204,7 @@ bool IncrementalManager::fuzzySearch_(const std::string& query, std::vector<uint
 
         for (; it != laInput.end(); ++it)
         {
-            setDocId.insert((*it).termid_);
+            setDocId.insert(it->termid_);
         }
         for (std::set<termid_t>::iterator i = setDocId.begin(); i != setDocId.end(); ++i)
         {
@@ -266,7 +266,7 @@ bool IncrementalManager::exactSearch_(const std::string& query, std::vector<uint
 
         for (; it != laInput.end(); ++it)
         {
-            setDocId.insert((*it).termid_);
+            setDocId.insert(it->termid_);
         }
         for (std::set<termid_t>::iterator i = setDocId.begin(); i != setDocId.end(); ++i)
         {
@@ -381,17 +381,17 @@ void IncrementalManager::mergeIndex()
         ScopedWriteLock lock(mutex_);
         if (pMainBarrel_ != NULL && pTmpBarrel_ != NULL)
         {
-            std::vector<IndexItem>::const_iterator i = (*(pTmpBarrel_->getForwardIndex()->getIndexItem_())).begin();
-            for ( ; i != (*(pTmpBarrel_->getForwardIndex()->getIndexItem_())).end(); ++i)
+            std::vector<IndexItem>::const_iterator i = pTmpBarrel_->getForwardIndex()->getIndexItem_().begin();
+            for ( ; i != pTmpBarrel_->getForwardIndex()->getIndexItem_().end(); ++i)
             {
                 pMainBarrel_->getForwardIndex()->addIndexItem_(*i);
             }
 
-            for (std::set<std::pair<uint32_t, uint32_t>, pairLess>::const_iterator it = (*(pTmpBarrel_->getIncrementIndex()->gettermidList_())).begin()
-                    ; it != (*(pTmpBarrel_->getIncrementIndex()->gettermidList_())).end()
+            for (std::set<std::pair<uint32_t, uint32_t>, pairLess>::const_iterator it = pTmpBarrel_->getIncrementIndex()->gettermidList_().begin()
+                    ; it != pTmpBarrel_->getIncrementIndex()->gettermidList_().end()
                     ; ++it)
             {
-                pMainBarrel_->getIncrementIndex()->addTerm_(*it, (*(pTmpBarrel_->getIncrementIndex()->getdocidLists_()))[(*it).second]);////xxx
+                pMainBarrel_->getIncrementIndex()->addTerm_(*it, pTmpBarrel_->getIncrementIndex()->getdocidLists_()[it->second]);////xxx
             }
             prepare_index_();
             delete_AllIndexFile();

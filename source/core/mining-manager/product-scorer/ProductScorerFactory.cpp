@@ -5,8 +5,10 @@
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../group-label-logger/GroupLabelLogger.h"
+#include "../group-label-logger/BackendLabel2FrontendLabel.h"
 #include "../group-manager/PropSharedLockSet.h"
 #include "../product-score-manager/ProductScoreManager.h"
+#include "../util/split_ustr.h"
 #include <configuration-manager/ProductRankingConfig.h>
 #include <memory> // auto_ptr
 #include <glog/logging.h>
@@ -26,6 +28,7 @@ ProductScorerFactory::ProductScorerFactory(
     const ProductRankingConfig& config,
     MiningManager& miningManager)
     : config_(config)
+    , miningManager_(&miningManager)
     , customRankManager_(miningManager.GetCustomRankManager())
     , categoryClickLogger_(NULL)
     , categoryValueTable_(NULL)
@@ -123,7 +126,27 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
     bool result = categoryClickLogger_->getFreqLabel(query, kTopLabelLimit,
                                                      topLabels, topFreqs);
 
-    if (result && !topLabels.empty())
+    if(topLabels.empty())
+    {
+        UString ustrQuery(query, UString::UTF_8);
+        UString backendCategory;
+        if(miningManager_->GetProductCategory(ustrQuery, backendCategory))
+        {
+            UString frontendCategory;
+            if(BackendLabelToFrontendLabel::Get()->Map(backendCategory,frontendCategory))
+            {
+                std::vector<std::vector<izenelib::util::UString> > groupPaths;
+                split_group_path(frontendCategory, groupPaths);
+                if(1 == groupPaths.size())
+                {
+                    faceted::PropValueTable::pvid_t topLabel = categoryValueTable_->propValueId(groupPaths[0]);
+                    topLabels.push_back(topLabel);
+                }
+            }
+        }
+    }
+
+    if (!topLabels.empty())
     {
         propSharedLockSet.insertSharedLock(categoryValueTable_);
         return new CategoryScorer(scoreConfig, *categoryValueTable_, topLabels);
