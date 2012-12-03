@@ -42,6 +42,8 @@
 #include "product-score-manager/OfflineProductScorerFactoryImpl.h"
 #include "product-score-manager/ProductScoreTable.h"
 
+#include "tdt-submanager/NaiveTopicDetector.hpp"
+
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/IncrementalManager.hpp"
 
@@ -140,6 +142,7 @@ MiningManager::MiningManager(
     , productScoreManager_(NULL)
     , productScorerFactory_(NULL)
     , tdt_storage_(NULL)
+    , topicDetector_(NULL)
     , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
@@ -162,6 +165,7 @@ MiningManager::~MiningManager()
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
     if (tdt_storage_) delete tdt_storage_;
+    if (topicDetector_) delete topicDetector_;
     if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
@@ -524,6 +528,7 @@ bool MiningManager::open()
                 std::cerr<<"tdt init failed"<<std::endl;
                 return false;
             }
+            topicDetector_ = new NaiveTopicDetector(mining_schema_.tdt_config.tdt_tokenize_dicpath);
         }
 
 
@@ -1800,6 +1805,12 @@ bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib:
         return false;
     }
     return storage->GetTopicInfo(text, info);
+}
+
+bool MiningManager::GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit)
+{
+    if (!mining_schema_.tdt_enable) return false;
+    return topicDetector_->GetTopics(content, topic_list,limit);
 }
 
 void MiningManager::GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result)

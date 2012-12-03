@@ -98,6 +98,7 @@ class CustomDocIdConverter;
 class ProductScorerFactory;
 class ProductScoreManager;
 class OfflineProductScorerFactory;
+class NaiveTopicDetector;
 class SuffixMatchManager;
 class IncrementalManager;
 class ProductMatcher;
@@ -311,6 +312,8 @@ public:
     bool GetTdtInTimeRange(const boost::gregorian::date& start, const boost::gregorian::date& end, std::vector<izenelib::util::UString>& topic_list);
 
     bool GetTdtTopicInfo(const izenelib::util::UString& text, std::pair<idmlib::tdt::TrackResult, std::vector<izenelib::util::UString> >& info);
+
+    bool GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit);
 
     void GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result);
 
@@ -602,6 +605,7 @@ private:
     /** TDT */
     std::string tdt_path_;
     TdtStorageType* tdt_storage_;
+    NaiveTopicDetector* topicDetector_;
 
     /** SUMMARIZATION */
     std::string summarization_path_;

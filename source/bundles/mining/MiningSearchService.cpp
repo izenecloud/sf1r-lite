@@ -296,6 +296,11 @@ bool MiningSearchService::GetTdtTopicInfo(const izenelib::util::UString& text, i
     return miningManager_->GetTdtTopicInfo(text, topic_info);
 }
 
+bool MiningSearchService::GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit)
+{
+    return miningManager_->GetTopics(content, topic_list, limit);
+}
+
 void MiningSearchService::GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result)
 {
     miningManager_->GetRefinedQuery(query, result);

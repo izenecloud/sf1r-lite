@@ -215,7 +215,54 @@ void TopicController::get_temporal_similar()
     }
 }
 
+/**
+ * @brief Action @b get_topics. Get topics from given content
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Find topics in this collection.
+ *
+ * @section response
+ *
+ * - @b resources (@c Object): All returned items
+ * - @b content (@c String): The name of requested topic
+ *
+ * @section example
+ *
+ * @code
+ * {
+ *   "collection": "ChnWiki",
+ *   "content" : "abc"
+ * }
+ * @endcode
+ */
+void TopicController::get_topics()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(requireContent_());
+    size_t limit = 0;
+    if(!izenelib::driver::nullValue( request()[Keys::limit] ) )
+    {
+        limit = asInt(request()[Keys::limit]);
+    }
+	
+    std::vector<std::string> topic_list;
+    bool requestSent = miningSearchService_->GetTopics(content_, topic_list, limit);
 
+    if (!requestSent)
+    {
+        response().addError(
+            "Request Failed."
+        );
+        return;
+    }
+    Value& resources = response()[Keys::resources];
+    resources.reset<Value::ArrayType>();
+    for(uint32_t i=0;i<topic_list.size();i++)
+    {
+        Value& new_resource = resources();
+        new_resource[Keys::topic] = topic_list[i];
+    }
+}
 bool TopicController::requireTID_()
 {
   if(!izenelib::driver::nullValue( request()[Keys::similar_to] ) )
@@ -277,5 +324,17 @@ bool TopicController::requireTopicText_()
 
     return true;
 }
+
+bool TopicController::requireContent_()
+{
+    content_= asString(request()[Keys::content]);
+    if (content_.empty())
+    {
+        response().addError("Require field content in request.");
+        return false;
+    }
+    return true;
+}
+
 
 }
