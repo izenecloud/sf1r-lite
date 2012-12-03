@@ -28,10 +28,6 @@ namespace sf1r
 				min_last_docid = (*iter)->getLastDocId();
 			}
 		}
-		if (min_last_docid == 0)
-		{
-			min_last_docid = 1;
-		}
 
 		Document doc;
 		LOG(INFO)<<"begin build Collection...."<<endl;

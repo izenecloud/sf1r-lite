@@ -147,7 +147,7 @@ bool SuffixMatchMiningTask::buildDocment(docid_t docID, Document& doc)
        new_fmi_tmp->addDoc(NULL, 0);
        return true;
     }
-    izenelib::util::UString text = it->second.get<UString>();//text;
+    izenelib::util::UString text = it->second.get<UString>();
     Algorithm<UString>::to_lower(text);
     text = Algorithm<UString>::trim(text);
     new_fmi_tmp->addDoc(text.data(), text.length());
@@ -156,7 +156,7 @@ bool SuffixMatchMiningTask::buildDocment(docid_t docID, Document& doc)
 
 docid_t SuffixMatchMiningTask::getLastDocId()
 {
-    return fmi_ ? fmi_->docCount() : 0;
+    return fmi_ ? fmi_->docCount()+1 : 1;
 }
 
 }
