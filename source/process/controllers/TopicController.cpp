@@ -220,7 +220,7 @@ void TopicController::get_temporal_similar()
  *
  * @section request
  *
- * - @b collection* (@c String): Find topics in this collection.
+ * - @b collection* (@c String): Get topics from given content
  *
  * @section response
  *

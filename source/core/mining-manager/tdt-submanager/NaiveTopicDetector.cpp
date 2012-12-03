@@ -2,12 +2,15 @@
 #include <glog/logging.h>
 #include <icma/icma.h>
 #include <la-manager/LAPool.h>
+#include <util/ustring/UString.h>
 
 #include <boost/filesystem.hpp>
 
 namespace sf1r
 {
 using namespace cma;
+using izenelib::util::UString;
+
 NaiveTopicDetector::NaiveTopicDetector(const std::string& dict_path)
     :tokenize_dicpath_(dict_path)
     ,analyzer_(NULL)
@@ -30,13 +33,13 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
     LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
     for (int i = 0; i < pattern_sentence.getCount(0); i++)
     {
-        std::cout<<"topic "<<pattern_sentence.getLexicon(0, i)<<std::endl;
         std::string topic(pattern_sentence.getLexicon(0, i));
-        if(topic.length() > 1)
+        UString topic_ustr(topic, UString::UTF_8);
+        LOG(INFO) <<"topic "<<topic<<std::endl;
+        if(topic_ustr.length() > 1)
             topic_list.push_back(topic);
     }
-    cout << endl;	
-    if(limit > 0 && limit > topic_list.size())
+    if(limit > 0 && limit < topic_list.size())
         topic_list.resize(limit);
     return true;
 }
