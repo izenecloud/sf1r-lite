@@ -862,12 +862,6 @@ bool SuffixMatchManager::buildMiningTask()
         return false;
     }
     return false;
-
-/*if (no)//incremental;
-    {}
-    else
-    {}
-*/
 }
 
 MiningTask* SuffixMatchManager::getMiningTask()

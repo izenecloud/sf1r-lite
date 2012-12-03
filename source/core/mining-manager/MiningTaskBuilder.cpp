@@ -59,6 +59,7 @@ namespace sf1r
 		{
 			(*iter)->postProcess();
 		}
+		taskList_.clear();
 		return true;
 	}
 
