@@ -782,7 +782,7 @@ bool MiningManager::DOMiningTask()
 
 bool MiningManager::DoMiningCollection()
 {
-    //return DOMiningTask();
+    DOMiningTask();
 
     MEMLOG("[Mining] DoMiningCollection");
     //do TG
@@ -873,19 +873,6 @@ bool MiningManager::DoMiningCollection()
         ctrManager_->updateDocNum(docNum);
     }
 
-    //do group
-    if (mining_schema_.group_enable)
-    {
-        groupManager_->processCollection();
-    }
-
-    //do attr
-    if (mining_schema_.attr_enable)
-    {
-        LOG(INFO)<<" attr_enable"<<endl;
-        attrManager_->processCollection();
-    }
-
     // calculate product score
     if (mining_schema_.product_ranking_config.isEnable)
     {
@@ -945,45 +932,6 @@ bool MiningManager::DoMiningCollection()
     if (mining_schema_.summarization_enable)
     {
         summarizationManager_->EvaluateSummarization();
-    }
-
-    // do SuffixMatch
-    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
-    {
-        if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
-        {
-            if (!(suffixMatchManager_->isStartFromLocalFM()))
-            {
-                LOG(INFO)<<"[] Start suffix init fm-index..."<<endl;
-                suffixMatchManager_->buildCollection();
-                incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-            }
-            else
-            {
-                uint32_t last_docid = 0;
-                uint32_t docNum = 0;
-                uint32_t maxDoc = 0;
-                incrementalManager_->getLastDocid(last_docid);
-                incrementalManager_->getDocNum(docNum);
-                incrementalManager_->getMaxNum(maxDoc);
-                if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
-                {
-                    LOG(INFO)<<"Rebuilding fm-index....."<<endl;
-                    suffixMatchManager_->buildCollection();
-                    incrementalManager_->reset();
-                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-                    //incrementalManager_->init_();
-                }
-                else
-                {
-                    incrementalManager_->createIndex_();//means add every day, now just for test;
-                }
-            }
-        }
-        else
-        {
-            suffixMatchManager_->buildCollection();
-        }
     }
 
     return true;
