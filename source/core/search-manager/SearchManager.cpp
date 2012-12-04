@@ -11,6 +11,9 @@
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/custom-rank-manager/CustomRankManager.h>
 #include <mining-manager/product-scorer/ProductScorerFactory.h>
+#include <mining-manager/product-ranker/ProductRankerFactory.h>
+#include <mining-manager/product-ranker/ProductRanker.h>
+#include <mining-manager/product-ranker/ProductRankParam.h>
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
@@ -63,6 +66,7 @@ SearchManager::SearchManager(
     , customRankManager_(NULL)
     , threadpool_(0)
     , preprocessor_(new SearchManagerPreProcessor())
+    , productRankerFactory_(NULL)
 {
     collectionName_ = config->collectionName_;
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
@@ -106,6 +110,42 @@ void SearchManager::setCustomRankManager(CustomRankManager* customRankManager)
 void SearchManager::setProductScorerFactory(ProductScorerFactory* productScorerFactory)
 {
     preprocessor_->productScorerFactory_ = productScorerFactory;
+}
+
+void SearchManager::setProductRankerFactory(ProductRankerFactory* productRankerFactory)
+{
+    productRankerFactory_ = productRankerFactory;
+}
+
+bool SearchManager::rerank(
+    const KeywordSearchActionItem& actionItem,
+    KeywordSearchResult& resultItem)
+{
+    if (productRankerFactory_ &&
+        resultItem.topKCustomRankScoreList_.empty() &&
+        preprocessor_->isProductRanking(actionItem))
+    {
+        izenelib::util::ClockTimer timer;
+
+        ProductRankParam rankParam(resultItem.topKDocs_,
+                                   resultItem.topKRankScoreList_);
+
+        boost::scoped_ptr<ProductRanker> productRanker(
+            productRankerFactory_->createProductRanker(rankParam));
+
+        if (!productRanker)
+            return false;
+
+        productRanker->rank();
+
+        LOG(INFO) << "topK doc num: " << resultItem.topKDocs_.size()
+                  << ", product rerank costs: " << timer.elapsed()
+                  << " seconds";
+
+        return true;
+    }
+
+    return false;
 }
 
 void SearchManager::reset_all_property_cache()

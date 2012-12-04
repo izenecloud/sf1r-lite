@@ -41,6 +41,7 @@
 #include "product-score-manager/ProductScoreManager.h"
 #include "product-score-manager/OfflineProductScorerFactoryImpl.h"
 #include "product-score-manager/ProductScoreTable.h"
+#include "product-ranker/ProductRankerFactory.h"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/IncrementalManager.hpp"
@@ -139,6 +140,7 @@ MiningManager::MiningManager(
     , offlineScorerFactory_(NULL)
     , productScoreManager_(NULL)
     , productScorerFactory_(NULL)
+    , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
     , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
@@ -153,6 +155,7 @@ MiningManager::~MiningManager()
     if (analyzer_) delete analyzer_;
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
+    if (productRankerFactory_) delete productRankerFactory_;
     if (productScorerFactory_) delete productScorerFactory_;
     if (productScoreManager_) delete productScoreManager_;
     if (offlineScorerFactory_) delete offlineScorerFactory_;
@@ -505,11 +508,16 @@ bool MiningManager::open()
                 return false;
             }
 
-            productScorerFactory_ = new ProductScorerFactory(
-                    rankConfig, *this);
+            productScorerFactory_ = new ProductScorerFactory(rankConfig, *this);
 
             searchManager_->setCustomRankManager(customRankManager_);
             searchManager_->setProductScorerFactory(productScorerFactory_);
+
+            if (!rankConfig.scores[DIVERSITY_SCORE].propName.empty())
+            {
+                productRankerFactory_ = new ProductRankerFactory(*this);
+                searchManager_->setProductRankerFactory(productRankerFactory_);
+            }
         }
 
         /** tdt **/

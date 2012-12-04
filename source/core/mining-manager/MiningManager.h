@@ -98,6 +98,7 @@ class CustomDocIdConverter;
 class ProductScorerFactory;
 class ProductScoreManager;
 class OfflineProductScorerFactory;
+class ProductRankerFactory;
 class SuffixMatchManager;
 class IncrementalManager;
 class ProductMatcher;
@@ -598,6 +599,9 @@ private:
 
     /** Product Score Factory */
     ProductScorerFactory* productScorerFactory_;
+
+    /** For Merchant Diversity */
+    ProductRankerFactory* productRankerFactory_;
 
     /** TDT */
     std::string tdt_path_;
