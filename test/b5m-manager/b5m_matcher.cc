@@ -827,7 +827,7 @@ int do_main(int ac, char** av)
         }
 
         boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
-        B5mcScdGenerator generator(cdb.get(), odbr.get(), bdb.get(), matcher.get());
+        B5mcScdGenerator generator(cdb.get(), odbr.get(), bdb.get(), matcher.get(), mode);
         if(!generator.Generate(scd_path, mdb_instance))
         {
             return EXIT_FAILURE;

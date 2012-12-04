@@ -1,5 +1,6 @@
 #include "b5mc_scd_generator.h"
 #include "b5m_types.h"
+#include "b5m_mode.h"
 #include "b5m_helper.h"
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
@@ -16,8 +17,8 @@
 using namespace sf1r;
 
 
-B5mcScdGenerator::B5mcScdGenerator(CommentDb* cdb, OfferDbRecorder* odb, BrandDb* bdb, ProductMatcher* matcher)
-:cdb_(cdb), odb_(odb), bdb_(bdb), matcher_(matcher)
+B5mcScdGenerator::B5mcScdGenerator(CommentDb* cdb, OfferDbRecorder* odb, BrandDb* bdb, ProductMatcher* matcher, int mode)
+:cdb_(cdb), odb_(odb), bdb_(bdb), matcher_(matcher), mode_(mode)
 {
 }
 
@@ -98,8 +99,19 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             if(!soid.empty()) has_oid = true;
 
             bool is_new_cid = true;
-            if(cdb_->Get(cid)) is_new_cid = false;
-            cdb_->Insert(cid);
+            if(mode_==B5MMode::INC&&cdb_->Count()==0)
+            {
+                is_new_cid = false;
+            }
+            else{
+                if(cdb_->Get(cid)) 
+                {
+                    is_new_cid = false;
+                }
+                else {
+                    cdb_->Insert(cid);
+                }
+            }
             std::string spid;
             bool pid_changed = false;
             if(has_oid)

@@ -12,7 +12,7 @@
 namespace sf1r {
     class B5mcScdGenerator {
     public:
-        B5mcScdGenerator(CommentDb* cdb, OfferDbRecorder* odb, BrandDb* bdb, ProductMatcher* matcher);
+        B5mcScdGenerator(CommentDb* cdb, OfferDbRecorder* odb, BrandDb* bdb, ProductMatcher* matcher, int mode=0);
 
         bool Generate(const std::string& scd_path, const std::string& mdb_instance);
 
@@ -28,6 +28,7 @@ namespace sf1r {
         OfferDbRecorder* odb_;
         BrandDb* bdb_;
         ProductMatcher* matcher_;
+        int mode_;
     };
 
 }

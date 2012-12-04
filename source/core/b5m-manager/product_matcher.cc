@@ -19,7 +19,7 @@ using namespace idmlib::kpe;
 using namespace idmlib::util;
 
 
-#define B5M_DEBUG
+//#define B5M_DEBUG
 
 const std::string ProductMatcher::VERSION("20121204");
 
