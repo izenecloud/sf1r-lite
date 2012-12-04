@@ -22,7 +22,7 @@ namespace sf1r {
         //typedef boost::unordered_map<std::string, ItemsT >  ProductOfferT;
     public:
         B5mpProcessor(const std::string& mdb_instance,
-            const std::string& last_mdb_instance, BrandDb* bdb);
+            const std::string& last_mdb_instance);
 
         bool Generate();
 
@@ -35,7 +35,7 @@ namespace sf1r {
     private:
         std::string mdb_instance_;
         std::string last_mdb_instance_;
-        BrandDb* bdb_;
+        //BrandDb* bdb_;
     };
 
 }

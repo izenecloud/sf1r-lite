@@ -4,6 +4,7 @@
 #include "GroupConfig.h"
 #include "AttrConfig.h"
 #include "ProductRankingConfig.h"
+#include "TDTConfig.h"
 #include "SummarizeConfig.h"
 #include "SuffixMatchConfig.h"
 
@@ -49,6 +50,7 @@ private:
         ar & attr_enable & attr_property;
         ar & product_ranking_config;
         ar & tdt_enable;
+        ar & tdt_config;
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
         ar & summarization_enable & summarization_schema;
@@ -82,6 +84,7 @@ public:
     ProductRankingConfig product_ranking_config;
 
     bool tdt_enable;
+    TDTConfig tdt_config;
 
     bool ise_enable;
     std::string ise_property;

@@ -164,6 +164,7 @@ public:
 
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info);
+    bool GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit);
 
     boost::shared_ptr<MiningManager> GetMiningManager() const
     {

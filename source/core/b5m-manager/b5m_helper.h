@@ -8,6 +8,7 @@
 #include <common/ScdParser.h>
 #include <common/Utilities.h>
 #include <types.h>
+#include <3rdparty/udt/md5.h>
 
 namespace sf1r {
 
@@ -128,6 +129,11 @@ namespace sf1r {
         }
 
 
+        static void SplitAttributeValue(const std::string& str, std::vector<std::string>& str_list)
+        {
+            boost::algorithm::split(str_list, str, boost::algorithm::is_any_of("/"));
+        }
+
         static std::string GetRawPath(const std::string& mdb_instance)
         {
             return mdb_instance+"/raw";
@@ -167,6 +173,29 @@ namespace sf1r {
         {
             static std::string p("SPTitle");
             return p;
+        }
+
+        static std::string BookCategoryName()
+        {
+            static std::string name("书籍/杂志/报纸");
+            return name;
+        }
+
+        static std::string GetPidByIsbn(const std::string& isbn)
+        {
+            static const int MD5_DIGEST_LENGTH = 32;
+            std::string url = "http://www.taobao.com/spuid/isbn-"+isbn;
+
+            md5_state_t st;
+            md5_init(&st);
+            md5_append(&st, (const md5_byte_t*)(url.c_str()), url.size());
+            md5_byte_t digest[MD5_DIGEST_LENGTH];
+            memset(digest, 0, sizeof(digest));
+            md5_finish(&st,digest);
+            uint128_t md5_int_value = *((uint128_t*)digest);
+
+            //uint128_t pid = izenelib::util::HashFunction<UString>::generateHash128(UString(pid_str, UString::UTF_8));
+            return B5MHelper::Uint128ToString(md5_int_value);
         }
     };
 

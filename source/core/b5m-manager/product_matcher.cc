@@ -13,7 +13,6 @@
 #include <idmlib/util/svm.h>
 #include <util/functional.h>
 #include <util/ClockTimer.h>
-#include <3rdparty/udt/md5.h>
 using namespace sf1r;
 using namespace idmlib::sim;
 using namespace idmlib::kpe;
@@ -416,9 +415,17 @@ bool ProductMatcher::Open()
     return true;
 }
 
-void ProductMatcher::Clear(const std::string& path)
+void ProductMatcher::Clear(const std::string& path, int mode)
 {
-    B5MHelper::PrepareEmptyDir(path);
+    if(mode==3)
+    {
+        B5MHelper::PrepareEmptyDir(path);
+    }
+    else if(mode>0)
+    {
+        std::string bdb_path = path+"/bdb";
+        B5MHelper::PrepareEmptyDir(bdb_path);
+    }
     //if(!boost::filesystem::exists(path)) return;
     //std::vector<std::string> runtime_path;
     //runtime_path.push_back("logger");
@@ -530,6 +537,9 @@ bool ProductMatcher::Index(const std::string& scd_path)
     }
     products_.resize(1);
     category_list_.resize(1);
+    std::string bdb_path = path_+"/bdb";
+    BrandDb bdb(bdb_path);
+    bdb.open();
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd);
     uint32_t n=0;
@@ -608,6 +618,7 @@ bool ProductMatcher::Index(const std::string& scd_path)
         title.convertString(stitle, izenelib::util::UString::UTF_8);
         std::string spid;
         pid.convertString(spid, UString::UTF_8);
+        uint128_t ipid = B5MHelper::StringToUint128(spid);
         std::string sattribute;
         attrib_ustr.convertString(sattribute, UString::UTF_8);
         Product product;
@@ -662,7 +673,22 @@ bool ProductMatcher::Index(const std::string& scd_path)
         products_.push_back(product);
         product_index_[spid] = spu_id;
         cid_to_pids_[cid].push_back(spu_id);
+        UString brand;
+        for(uint32_t i=0;i<product.attributes.size();i++)
+        {
+            if(product.attributes[i].name=="品牌")
+            {
+                brand = UString(product.attributes[i].GetValue(), UString::UTF_8);
+                break;
+            }
+        }
+        if(!brand.empty())
+        {
+            BrandDb::BidType bid = bdb.set(ipid, brand);
+            bdb.set_source(brand, bid);
+        }
     }
+    bdb.flush();
     for(uint32_t i=0;i<products_.size();i++)
     {
         Product& p = products_[i];
@@ -727,9 +753,8 @@ bool ProductMatcher::DoMatch(const std::string& scd_path)
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
-            Category result_category;
             Product result_product;
-            Process(doc, result_category, result_product);
+            Process(doc, result_product);
             std::string spid = result_product.spid;
             std::string sptitle = result_product.stitle;
             std::string soid;
@@ -828,19 +853,18 @@ void ProductMatcher::Test(const std::string& scd_path)
             doc.getString("Title", stitle);
             std::string epid;
             doc.getString("uuid", epid);
-            Category result_category;
             Product result_product;
             doc.eraseProperty("Category");
-            Process(doc, result_category, result_product);
-            LOG(INFO)<<"categorized "<<stitle<<","<<result_category.name<<std::endl;
+            Process(doc, result_product);
+            LOG(INFO)<<"categorized "<<stitle<<","<<result_product.scategory<<std::endl;
             if(!ecategory.empty()) allc++;
-            if(!result_category.name.empty()&&result_category.name==ecategory)
+            if(!result_product.scategory.empty()&&result_product.scategory==ecategory)
             {
                 correctc++;
             }
             else
             {
-                LOG(ERROR)<<"category error : "<<ecategory<<","<<result_category.name<<std::endl;
+                LOG(ERROR)<<"category error : "<<ecategory<<","<<result_product.scategory<<std::endl;
             }
             if(!epid.empty()) allp++;
             if(!result_product.spid.empty()&&result_product.spid==epid) correctp++;
@@ -851,11 +875,11 @@ void ProductMatcher::Test(const std::string& scd_path)
     
 }
 
-bool ProductMatcher::ProcessBook_(const Document& doc, Product& result_product)
+bool ProductMatcher::ProcessBook(const Document& doc, Product& result_product)
 {
     std::string scategory;
     doc.getString("Category", scategory);
-    if(boost::algorithm::starts_with(scategory, "书籍/杂志/报纸"))
+    if(boost::algorithm::starts_with(scategory, B5MHelper::BookCategoryName()))
     {
         const static std::string isbn_name = "isbn";
         std::string isbn_value;
@@ -881,28 +905,16 @@ bool ProductMatcher::ProcessBook_(const Document& doc, Product& result_product)
         }
         if(!isbn_value.empty())
         {
-            static const int MD5_DIGEST_LENGTH = 32;
-            std::string url = "http://www.taobao.com/spuid/isbn-"+isbn_value;
-
-            md5_state_t st;
-            md5_init(&st);
-            md5_append(&st, (const md5_byte_t*)(url.c_str()), url.size());
-            md5_byte_t digest[MD5_DIGEST_LENGTH];
-            memset(digest, 0, sizeof(digest));
-            md5_finish(&st,digest);
-            uint128_t md5_int_value = *((uint128_t*)digest);
-
-            //uint128_t pid = izenelib::util::HashFunction<UString>::generateHash128(UString(pid_str, UString::UTF_8));
-            result_product.spid = B5MHelper::Uint128ToString(md5_int_value);
+            result_product.spid = B5MHelper::GetPidByIsbn(isbn_value);
         }
         return true;
     }
     return false;
 }
 
-bool ProductMatcher::Process(const Document& doc, Category& result_category, Product& result_product)
+bool ProductMatcher::Process(const Document& doc, Product& result_product)
 {
-    if(ProcessBook_(doc, result_product))
+    if(ProcessBook(doc, result_product))
     {
         return true;
     }
@@ -926,7 +938,8 @@ bool ProductMatcher::Process(const Document& doc, Category& result_category, Pro
     Compute_(doc, term_list, keyword_vector, cid, pid);
     if(cid>0)
     {
-        result_category = category_list_[cid];
+        result_product.scategory = category_list_[cid].name;
+        //result_category = category_list_[cid];
         //std::string scategory = category_list_[cid].name;
         //doc.property("Category") = UString(scategory, UString::UTF_8);
     }

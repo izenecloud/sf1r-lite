@@ -43,6 +43,8 @@
 #include "product-score-manager/ProductScoreTable.h"
 #include "product-ranker/ProductRankerFactory.h"
 
+#include "tdt-submanager/NaiveTopicDetector.hpp"
+
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/IncrementalManager.hpp"
 
@@ -142,6 +144,7 @@ MiningManager::MiningManager(
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
+    , topicDetector_(NULL)
     , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
@@ -165,6 +168,7 @@ MiningManager::~MiningManager()
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
     if (tdt_storage_) delete tdt_storage_;
+    if (topicDetector_) delete topicDetector_;
     if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
@@ -532,6 +536,7 @@ bool MiningManager::open()
                 std::cerr<<"tdt init failed"<<std::endl;
                 return false;
             }
+            topicDetector_ = new NaiveTopicDetector(mining_schema_.tdt_config.tdt_tokenize_dicpath);
         }
 
 
@@ -1810,6 +1815,12 @@ bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib:
     return storage->GetTopicInfo(text, info);
 }
 
+bool MiningManager::GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit)
+{
+    if (!mining_schema_.tdt_enable) return false;
+    return topicDetector_->GetTopics(content, topic_list,limit);
+}
+
 void MiningManager::GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result)
 {
     if (!qcManager_) return;
@@ -2009,11 +2020,11 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
     }
     Document doc;
     doc.property("Title") = query;
-    ProductMatcher::Category result_category;
     ProductMatcher::Product result_product;
-    if (productMatcher_->Process(doc, result_category, result_product))
+    if(productMatcher_->Process(doc, result_product))
     {
-        if (!result_category.name.empty())
+        const std::string& category_name = result_product.scategory;
+        if(!category_name.empty())
         {
             bool valid = true;
             if (!match_category_restrict_.empty())
@@ -2021,7 +2032,7 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
                 valid = false;
                 for (uint32_t i=0;i<match_category_restrict_.size();i++)
                 {
-                    if (boost::regex_match(result_category.name, match_category_restrict_[i]))
+                    if(boost::regex_match(category_name, match_category_restrict_[i]))
                     {
                         valid = true;
                         break;
@@ -2031,7 +2042,7 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
             }
             if (valid)
             {
-                category = izenelib::util::UString(result_category.name, izenelib::util::UString::UTF_8);
+                category = izenelib::util::UString(category_name, izenelib::util::UString::UTF_8);
                 return true;
             }
         }

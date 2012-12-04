@@ -73,6 +73,7 @@ FILE(GLOB mining_SRC
   "mining-manager/product-score-manager/*.cpp"
   "mining-manager/product-ranker/*.cpp"
   "mining-manager/custom-rank-manager/*.cpp"
+  "mining-manager/tdt-submanager/*.cpp"
   "mining-manager/suffix-match-manager/*.cpp"
 )
 

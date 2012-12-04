@@ -936,6 +936,8 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     uint32_t start, std::vector<uint32_t>& docid_list, std::vector<float>& result_score_list,
     std::vector<float>& custom_score_list)
 {
+    if(docid_list.empty())
+        return;
     CustomRankerPtr customRanker;
     boost::shared_ptr<Sorter> pSorter;
     try

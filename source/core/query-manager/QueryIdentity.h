@@ -50,6 +50,9 @@ struct QueryIdentity
     /// @brief param for group filter
     faceted::GroupParam groupParam;
 
+    /// @brief remove duplicate
+    bool removeDuplicatedDocs;
+
     /// @brief property name which needs range result
     std::string rangeProperty;
 
@@ -79,6 +82,7 @@ struct QueryIdentity
             && sortInfo == other.sortInfo
             && filterInfo == other.filterInfo
             && groupParam == other.groupParam
+            && removeDuplicatedDocs == other.removeDuplicatedDocs
             && rangeProperty == other.rangeProperty
             && strExp == other.strExp
             && paramConstValueMap == other.paramConstValueMap
@@ -93,8 +97,8 @@ struct QueryIdentity
     }
 
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
-            & properties & counterList & sortInfo & filterInfo & groupParam & rangeProperty
-            & strExp & paramConstValueMap & paramPropertyValueMap & simHash
+            & properties & counterList & sortInfo & filterInfo & groupParam & removeDuplicatedDocs 
+            & rangeProperty & strExp & paramConstValueMap & paramPropertyValueMap & simHash
             & start & distActionType);
 };
 
