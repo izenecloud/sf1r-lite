@@ -2056,6 +2056,7 @@ void CollectionConfig::parseProductRankingNode(
 
     ProductRankingConfig& rankConfig = miningSchema.product_ranking_config;
     rankConfig.isEnable = true;
+    getAttribute(rankNode, "debug", rankConfig.isDebug, false);
 
     Iterator<Element> it("Score");
     for (it = it.begin(rankNode); it != it.end(); ++it)

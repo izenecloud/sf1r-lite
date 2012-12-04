@@ -112,7 +112,7 @@ private:
         boost::shared_ptr<Sorter> sorter,
         faceted::PropSharedLockSet& propSharedLockSet);
 
-    bool isProductRanking_(const KeywordSearchActionItem& actionItem) const;
+    bool isProductRanking(const KeywordSearchActionItem& actionItem) const;
 };
 
 } // end of sf1r

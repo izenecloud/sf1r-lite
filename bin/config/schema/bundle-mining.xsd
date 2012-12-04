@@ -324,6 +324,7 @@
             <xs:sequence>
                 <xs:element name="Score" type="ScoreType" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
+            <xs:attribute name="debug" type="YesNoType" use="optional"/>
         </xs:complexType>
     </xs:element>
 

@@ -98,6 +98,7 @@ class CustomDocIdConverter;
 class ProductScorerFactory;
 class ProductScoreManager;
 class OfflineProductScorerFactory;
+class ProductRankerFactory;
 class NaiveTopicDetector;
 class SuffixMatchManager;
 class IncrementalManager;
@@ -504,6 +505,10 @@ private:
         std::vector<Document>& docList
     );
 
+    bool initMerchantScoreManager_(const ProductRankingConfig& rankConfig);
+    bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
+    bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
+
 public:
     /// Should be initialized after construction
     static std::string system_resource_path_;
@@ -601,6 +606,9 @@ private:
 
     /** Product Score Factory */
     ProductScorerFactory* productScorerFactory_;
+
+    /** For Merchant Diversity */
+    ProductRankerFactory* productRankerFactory_;
 
     /** TDT */
     std::string tdt_path_;
