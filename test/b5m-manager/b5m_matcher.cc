@@ -21,6 +21,7 @@
 #include <b5m-manager/offer_db.h>
 #include <b5m-manager/offer_db_recorder.h>
 #include <b5m-manager/brand_db.h>
+#include <b5m-manager/comment_db.h>
 #include <b5m-manager/history_db_helper.h>
 #include <b5m-manager/psm_indexer.h>
 #include <b5m-manager/cmatch_generator.h>
@@ -277,6 +278,7 @@ int do_main(int ac, char** av)
         ("odb", po::value<std::string>(), "specify offer db path")
         ("last-odb", po::value<std::string>(), "specify last offer db path")
         ("bdb", po::value<std::string>(), "specify brand db path")
+        ("cdb", po::value<std::string>(), "specify comment db path")
         ("historydb", po::value<std::string>(), "specify offer history db path")
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
         ("scd-path,S", po::value<std::string>(), "specify scd path")
@@ -328,6 +330,7 @@ int do_main(int ac, char** av)
     boost::shared_ptr<OfferDb> odb;
     boost::shared_ptr<OfferDb> last_odb;
     boost::shared_ptr<BrandDb> bdb;
+    boost::shared_ptr<CommentDb> cdb;
     boost::shared_ptr<B5MHistoryDBHelper> historydb;
 
     boost::shared_ptr<LogServerConnectionConfig> logserver_config;
@@ -408,6 +411,11 @@ int do_main(int ac, char** av)
         std::string bdb_path = vm["bdb"].as<std::string>();
         std::cout << "bdb path: " << bdb_path <<std::endl;
         bdb.reset(new BrandDb(bdb_path));
+    } 
+    if (vm.count("cdb")) {
+        std::string cdb_path = vm["cdb"].as<std::string>();
+        std::cout << "cdb path: " << cdb_path <<std::endl;
+        cdb.reset(new CommentDb(cdb_path));
     } 
     if (vm.count("historydb")) {
         std::string hdb_path = vm["historydb"].as<std::string>();
@@ -807,13 +815,19 @@ int do_main(int ac, char** av)
     }
     if(vm.count("b5mc-generate"))
     {
-        if( !odb || scd_path.empty() || mdb_instance.empty())
+        if( !odb || !cdb || scd_path.empty() || mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
+        boost::shared_ptr<ProductMatcher> matcher;
+        if(!knowledge_dir.empty())
+        {
+            matcher.reset(new ProductMatcher(knowledge_dir));
+            matcher->SetCmaPath(cma_path);
+        }
 
         boost::shared_ptr<OfferDbRecorder> odbr(new OfferDbRecorder(odb.get(), last_odb.get()));
-        B5mcScdGenerator generator(odbr.get(), bdb.get());
+        B5mcScdGenerator generator(cdb.get(), odbr.get(), bdb.get(), matcher.get());
         if(!generator.Generate(scd_path, mdb_instance))
         {
             return EXIT_FAILURE;

@@ -19,7 +19,9 @@ using namespace idmlib::kpe;
 using namespace idmlib::util;
 
 
-//#define B5M_DEBUG
+#define B5M_DEBUG
+
+const std::string ProductMatcher::VERSION("20121204");
 
 ProductMatcher::KeywordTag::KeywordTag():type_app(0), kweight(0.0), ngram(1)
 {
@@ -415,8 +417,14 @@ bool ProductMatcher::Open()
     return true;
 }
 
-void ProductMatcher::Clear(const std::string& path, int mode)
+void ProductMatcher::Clear(const std::string& path, int omode)
 {
+    int mode = omode;
+    std::string version = GetVersion(path);
+    if(version!=VERSION)
+    {
+        mode = 3;
+    }
     if(mode==3)
     {
         B5MHelper::PrepareEmptyDir(path);
@@ -425,28 +433,23 @@ void ProductMatcher::Clear(const std::string& path, int mode)
     {
         std::string bdb_path = path+"/bdb";
         B5MHelper::PrepareEmptyDir(bdb_path);
+        if(mode==2)
+        {
+            std::string odb_path = path+"/odb";
+            B5MHelper::PrepareEmptyDir(odb_path);
+        }
     }
-    //if(!boost::filesystem::exists(path)) return;
-    //std::vector<std::string> runtime_path;
-    //runtime_path.push_back("logger");
-    //runtime_path.push_back("attrib_id");
-    //runtime_path.push_back("cid_set");
-    //runtime_path.push_back("products");
-    //runtime_path.push_back("a2p");
-    //runtime_path.push_back("category_group");
-    //runtime_path.push_back("category_keywords");
-    //runtime_path.push_back("category.txt");
-    //runtime_path.push_back("cr_result");
-    //runtime_path.push_back("category_list");
-    //runtime_path.push_back("keywords");
-    //runtime_path.push_back("category_index");
-    //runtime_path.push_back("keyword_trie");
-
-    //for(uint32_t i=0;i<runtime_path.size();i++)
-    //{
-        //boost::filesystem::remove_all(path+"/"+runtime_path[i]);
-    //}
 }
+std::string ProductMatcher::GetVersion(const std::string& path)
+{
+    std::string version_file = path+"/VERSION";
+    std::string version;
+    std::ifstream ifs(version_file.c_str());
+    getline(ifs, version);
+    boost::algorithm::trim(version);
+    return version;
+}
+
 bool ProductMatcher::GetProduct(const std::string& pid, Product& product)
 {
     ProductIndex::const_iterator it = product_index_.find(pid);
@@ -638,7 +641,8 @@ bool ProductMatcher::Index(const std::string& scd_path)
             const Attribute& attrib = product.attributes[i];
             for(uint32_t a=0;a<attrib.values.size();a++)
             {
-                const std::string& v = attrib.values[a];
+                std::string v = attrib.values[a];
+                boost::algorithm::to_lower(v);
                 if(attribute_value_app.find(v)!=attribute_value_app.end())
                 {
                     invalid_attribute = true;
@@ -717,6 +721,10 @@ bool ProductMatcher::Index(const std::string& scd_path)
     izenelib::am::ssf::Util<>::Save(path, product_index_);
     path = path_+"/keyword_trie";
     izenelib::am::ssf::Util<>::Save(path, trie_);
+    std::string version_file = path_+"/VERSION";
+    std::ofstream ofs(version_file.c_str());
+    ofs<<VERSION<<std::endl;
+    ofs.close();
     
     return true;
 }
@@ -874,6 +882,33 @@ void ProductMatcher::Test(const std::string& scd_path)
     LOG(INFO)<<"clocker used "<<clocker.elapsed()<<std::endl;
     
 }
+bool ProductMatcher::GetIsbnAttribute(const Document& doc, std::string& isbn_value)
+{
+    const static std::string isbn_name = "isbn";
+    UString attrib_ustr;
+    doc.getProperty("Attribute", attrib_ustr);
+    std::vector<Attribute> attributes;
+    ParseAttributes_(attrib_ustr, attributes);
+    for(uint32_t i=0;i<attributes.size();i++)
+    {
+        const Attribute& a = attributes[i];
+        std::string aname = a.name;
+        boost::algorithm::trim(aname);
+        boost::to_lower(aname);
+        if(aname==isbn_name)
+        {
+            if(!a.values.empty())
+            {
+                isbn_value = a.values[0];
+                boost::algorithm::replace_all(isbn_value, "-", "");
+            }
+            break;
+        }
+    }
+    if(!isbn_value.empty()) return true;
+    return false;
+
+}
 
 bool ProductMatcher::ProcessBook(const Document& doc, Product& result_product)
 {
@@ -881,28 +916,8 @@ bool ProductMatcher::ProcessBook(const Document& doc, Product& result_product)
     doc.getString("Category", scategory);
     if(boost::algorithm::starts_with(scategory, B5MHelper::BookCategoryName()))
     {
-        const static std::string isbn_name = "isbn";
         std::string isbn_value;
-        UString attrib_ustr;
-        doc.getProperty("Attribute", attrib_ustr);
-        std::vector<Attribute> attributes;
-        ParseAttributes_(attrib_ustr, attributes);
-        for(uint32_t i=0;i<attributes.size();i++)
-        {
-            const Attribute& a = attributes[i];
-            std::string aname = a.name;
-            boost::algorithm::trim(aname);
-            boost::to_lower(aname);
-            if(aname==isbn_name)
-            {
-                if(!a.values.empty())
-                {
-                    isbn_value = a.values[0];
-                    boost::algorithm::replace_all(isbn_value, "-", "");
-                }
-                break;
-            }
-        }
+        GetIsbnAttribute(doc, isbn_value);
         if(!isbn_value.empty())
         {
             result_product.spid = B5MHelper::GetPidByIsbn(isbn_value);
@@ -1949,8 +1964,8 @@ void ProductMatcher::AddKeyword_(const UString& otext)
         }
         if(value_type==0) break;
     }
-    if(value_type==2 && text.length()<3) return;
-    if(value_type==1 && text.length()<4) return;
+    if(value_type==2 && text.length()<2) return;
+    if(value_type==1 && text.length()<3) return;
     std::vector<term_t> term_list;
     GetTerms_(text, term_list);
     if(term_list.empty()) return;

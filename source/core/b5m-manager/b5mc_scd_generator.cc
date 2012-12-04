@@ -16,8 +16,8 @@
 using namespace sf1r;
 
 
-B5mcScdGenerator::B5mcScdGenerator(OfferDbRecorder* odb, BrandDb* bdb)
-:odb_(odb), bdb_(bdb)
+B5mcScdGenerator::B5mcScdGenerator(CommentDb* cdb, OfferDbRecorder* odb, BrandDb* bdb, ProductMatcher* matcher)
+:cdb_(cdb), odb_(odb), bdb_(bdb), matcher_(matcher)
 {
 }
 
@@ -29,6 +29,14 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
     {
         LOG(WARNING)<<"scd path empty"<<std::endl;
         return true;
+    }
+    if(!cdb_->is_open())
+    {
+        if(!cdb_->open())
+        {
+            LOG(ERROR)<<"cdb open fail"<<std::endl;
+            return false;
+        }
     }
     if(!odb_->is_open())
     {
@@ -78,41 +86,104 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
+            doc.eraseProperty("uuid");
+            doc.eraseProperty(B5MHelper::GetBrandPropertyName());
+            std::string scid;
+            doc.getString("DOCID", scid);
+            if(scid.empty()) continue;
+            uint128_t cid = B5MHelper::StringToUint128(scid);
+            bool has_oid = false;
             std::string soid;
-            if(!doc.getString(oid_property_name, soid)) continue;
+            doc.getString(oid_property_name, soid);
+            if(!soid.empty()) has_oid = true;
+
+            bool is_new_cid = true;
+            if(cdb_->Get(cid)) is_new_cid = false;
+            cdb_->Insert(cid);
             std::string spid;
             bool pid_changed = false;
-            if(!odb_->get(soid, spid, pid_changed)) continue;
-            if(spid.empty()) continue;
-            if(!pid_changed) continue;
-            izenelib::util::UString upid(spid, izenelib::util::UString::UTF_8);
-            doc.property("uuid") = upid;
-            if(upid.length()>0 && bdb_!=NULL)
+            if(has_oid)
             {
-                uint128_t pid = B5MHelper::UStringToUint128(upid);
-                izenelib::util::UString brand;
-                bdb_->get(pid, brand);
-                if(brand.length()>0)
-                {
-                    doc.property(B5MHelper::GetBrandPropertyName()) = brand;
-                }
+                odb_->get(soid, spid, pid_changed);
             }
+            if(!spid.empty())
+            {
+                doc.property("uuid") = UString(spid, UString::UTF_8);
+            }
+            //std::cerr<<is_new_cid<<","<<pid_changed<<","<<spid<<std::endl;
+            bool need_process = is_new_cid || pid_changed;
+            if(!need_process) continue;
+            ProcessFurther_(doc);
+            spid.clear();
+            doc.getString("uuid", spid);
+            if(spid.empty()) continue;
             b5mc_u.Append(doc);
-            //if(type==INSERT_SCD)
-            //{
-                //b5mc_i.Append(doc);
-            //}
-            //else if(type==UPDATE_SCD)
-            //{
-            //}
-            //else if(type==DELETE_SCD)
-            //{
-                //b5mc_d.Append(doc);
-            //}
-        }
+        } 
     }
     b5mc_u.Close();
-    //b5mc_d.Close();
+    cdb_->flush();
     return true;
 }
 
+void B5mcScdGenerator::ProcessFurther_(Document& doc)
+{
+    static const std::string title_property_name = "ProdName";
+    std::string spid;
+    doc.getString("uuid", spid);
+    if(spid.empty())
+    {
+        ProductMatcher::Product product;
+        std::string isbn;
+        if(ProductMatcher::GetIsbnAttribute(doc, isbn))
+        {
+            Document book_doc;
+            book_doc.property("Category") = UString(B5MHelper::BookCategoryName(), UString::UTF_8);
+            book_doc.property("Attribute") = doc.property("Attribute");
+            ProductMatcher::ProcessBook(book_doc, product);
+        }
+        else
+        {
+            UString title;
+            doc.getProperty(title_property_name, title);
+            if(!title.empty())
+            {
+                Document matcher_doc;
+                matcher_doc.property("Title") = title;
+                ProductMatcher* matcher = GetMatcher_();
+                if(matcher!=NULL)
+                {
+                    matcher->Process(matcher_doc, product);
+                }
+            }
+        }
+        if(!product.spid.empty())
+        {
+            spid = product.spid;
+        }
+    }
+    if(!spid.empty() && bdb_!=NULL)
+    {
+        uint128_t pid = B5MHelper::StringToUint128(spid);
+        izenelib::util::UString brand;
+        bdb_->get(pid, brand);
+        if(brand.length()>0)
+        {
+            doc.property(B5MHelper::GetBrandPropertyName()) = brand;
+        }
+    }
+    if(!spid.empty())
+    {
+        doc.property("uuid") = UString(spid, UString::UTF_8);
+    }
+}
+
+ProductMatcher* B5mcScdGenerator::GetMatcher_()
+{
+    if(matcher_==NULL) return NULL;
+    if(!matcher_->IsOpen())
+    {
+        matcher_->Open();
+        matcher_->SetUsePriceSim(false);
+    }
+    return matcher_;
+}
