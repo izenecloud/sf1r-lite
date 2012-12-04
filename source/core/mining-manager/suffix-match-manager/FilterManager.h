@@ -155,9 +155,8 @@ public:
     FilterIdRange getNumFilterIdRangeLarger(const std::string& property, double filter_num) const;
     FilterIdRange getNumFilterIdRangeSmaller(const std::string& property, double filter_num) const;
 
-    std::vector<FilterDocListT>& getStringFilterList();
-    std::vector<std::vector<FilterDocListT> >& getNumericFilterList();
-    void clearAllFilterLists();
+    std::vector<std::vector<FilterDocListT> >& getFilterList();
+    void clearFilterList();
 
     void clearFilterId();
     void saveFilterId();
@@ -166,10 +165,12 @@ public:
     faceted::GroupManager* getGroupManager() const;
     faceted::AttrManager* getAttrManager() const;
     NumericPropertyTableBuilder* getNumericTableBuilder() const;
-    void setNumericAmp(const std::map<std::string, int32_t>& num_property_amp_list);
-    const std::map<std::string, int32_t>& getNumericAmp();
 
-    size_t getNumericFilterId(const std::string& property) const;
+    void setNumericAmp(const std::map<std::string, int32_t>& num_property_amp_list);
+    const std::map<std::string, int32_t>& getNumericAmp() const;
+
+    size_t getFilterId(const std::string& property) const;
+    size_t filterCount() const;
 
 private:
     typedef std::map<izenelib::util::UString, FilterIdRange> StrIdMapT;
@@ -217,13 +218,12 @@ private:
     StrPropertyIdMapT strtype_filterids_;
 
     // property -> (Price/Score -> filterid)
-    NumPropertyIdMapT numerictype_filterids_;
-    std::map<std::string, size_t> numeric_filterid_map_;
+    NumPropertyIdMapT numtype_filterids_;
     std::map<std::string, std::vector<NumFilterKeyT> > num_possible_keys_;
     std::map<std::string, int32_t> num_amp_map_;
 
-    std::vector<FilterDocListT> string_filter_list_;
-    std::vector<std::vector<FilterDocListT> > numeric_filter_list_;
+    std::map<std::string, size_t> filterid_map_;
+    std::vector<std::vector<FilterDocListT> > filter_list_;
 };
 
 }

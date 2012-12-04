@@ -65,21 +65,18 @@ public:
             std::vector<std::pair<double, uint32_t> >& res_list) const;
 
 private:
-    bool getAllFilterRangeFromGroupLable(
+    bool getAllFilterRangeFromGroupLable_(
             const faceted::GroupParam& group_param,
-            std::vector<FMIndexType::FilterRangeT>& filter_range_list,
             std::vector<size_t>& filterid_list,
-            std::vector<std::vector<FMIndexType::FilterRangeT> >& aux_filter_range_list) const;
-    bool getAllFilterRangeFromAttrLable(
+            std::vector<std::vector<FMIndexType::FilterRangeT> >& filter_range_list) const;
+    bool getAllFilterRangeFromAttrLable_(
             const faceted::GroupParam& group_param,
-            std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
-    bool getStringFilterRangeFromFilterParam(
-            const std::vector<QueryFiltering::FilteringType>& filter_param,
-            std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
-    bool getNumericFilterRangeFromFilterParam(
+            std::vector<size_t>& filterid_list,
+            std::vector<std::vector<FMIndexType::FilterRangeT> >& filter_range_list) const;
+    bool getAllFilterRangeFromFilterParam_(
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             std::vector<size_t>& filterid_list,
-            std::vector<std::vector<FMIndexType::FilterRangeT> >& aux_filter_range_list) const;
+            std::vector<std::vector<FMIndexType::FilterRangeT> >& filter_range_list) const;
 
     std::string data_root_path_;
     std::string fm_index_path_;
