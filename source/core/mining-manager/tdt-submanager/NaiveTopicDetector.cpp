@@ -1,6 +1,7 @@
 #include "NaiveTopicDetector.hpp"
 #include <glog/logging.h>
 #include <icma/icma.h>
+#include <icma/openccxx.h>
 #include <la-manager/LAPool.h>
 #include <util/ustring/UString.h>
 
@@ -15,6 +16,7 @@ NaiveTopicDetector::NaiveTopicDetector(const std::string& dict_path)
     :tokenize_dicpath_(dict_path)
     ,analyzer_(NULL)
     ,knowledge_(NULL)
+    ,opencc_(NULL)
 {
     InitCMA_();
 }
@@ -23,12 +25,17 @@ NaiveTopicDetector::~NaiveTopicDetector()
 {
     if (analyzer_) delete analyzer_;
     if (knowledge_) delete knowledge_;
+    if (opencc_) delete opencc_;
 }
 
 bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit)
 {
     if(!analyzer_) return false;
-    Sentence pattern_sentence(content.c_str());
+    ///convert from traditional chinese to simplified chinese
+    std::string simplified_content;
+    long ret = opencc_->convert(content, simplified_content);
+    if(-1 == ret) simplified_content = content;
+    Sentence pattern_sentence(simplified_content.c_str());
     analyzer_->runWithSentence(pattern_sentence);
     LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
     for (int i = 0; i < pattern_sentence.getCount(0); i++)
@@ -58,6 +65,11 @@ void NaiveTopicDetector::InitCMA_()
     // using the maxprefix analyzer
     analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE, 100);
     analyzer_->setKnowledge(knowledge_);
+
+    boost::filesystem::path cma_opencc_data_path(cma_path);
+    cma_opencc_data_path /= boost::filesystem::path("opencc");
+    opencc_ = new OpenCC(cma_opencc_data_path.c_str());
+
     LOG(INFO) << "load dictionary for topic detector knowledge finished." << endl;
 }
 

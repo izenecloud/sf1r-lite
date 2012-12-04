@@ -8,6 +8,7 @@ namespace cma
 {
 class Analyzer;
 class Knowledge;
+class OpenCC;
 }
 
 namespace sf1r
@@ -26,6 +27,7 @@ private:
     std::string tokenize_dicpath_;
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
+    cma::OpenCC* opencc_;
 };
 }
 
