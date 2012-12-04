@@ -505,6 +505,10 @@ private:
         std::vector<Document>& docList
     );
 
+    bool initMerchantScoreManager_(const ProductRankingConfig& rankConfig);
+    bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
+    bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
+
 public:
     /// Should be initialized after construction
     static std::string system_resource_path_;

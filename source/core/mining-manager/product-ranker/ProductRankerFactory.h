@@ -11,7 +11,6 @@
 namespace sf1r
 {
 struct ProductRankParam;
-class MiningManager;
 class ProductRanker;
 class ProductRankingConfig;
 
@@ -20,14 +19,16 @@ namespace faceted { class PropValueTable; }
 class ProductRankerFactory
 {
 public:
-    ProductRankerFactory(MiningManager& miningManager);
+    ProductRankerFactory(
+        const ProductRankingConfig& config,
+        const faceted::PropValueTable& merchantValueTable);
 
     ProductRanker* createProductRanker(ProductRankParam& param);
 
 private:
     const ProductRankingConfig& config_;
 
-    const faceted::PropValueTable* merchantValueTable_;
+    const faceted::PropValueTable& merchantValueTable_;
 };
 
 } // namespace sf1r

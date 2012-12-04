@@ -441,88 +441,16 @@ bool MiningManager::open()
             }
         }
 
-        const ProductRankingConfig& rankConfig =
-            mining_schema_.product_ranking_config;
-        const ProductScoreConfig& merchantScoreConfig =
-            rankConfig.scores[MERCHANT_SCORE];
-
-        /** merchant score */
-        if (!merchantScoreConfig.propName.empty() && groupManager_)
-        {
-            if (merchantScoreManager_) delete merchantScoreManager_;
-
-            const bfs::path scoreDir = bfs::path(prefix_path) / "merchant_score";
-            bfs::create_directories(scoreDir);
-
-            faceted::PropValueTable* merchantValueTable =
-                groupManager_->getPropValueTable(merchantScoreConfig.propName);
-            const ProductScoreConfig& categoryScoreConfig =
-                rankConfig.scores[CATEGORY_SCORE];
-            faceted::PropValueTable* categoryValueTable =
-                groupManager_->getPropValueTable(categoryScoreConfig.propName);
-
-            merchantScoreManager_ = new MerchantScoreManager(
-                    merchantValueTable, categoryValueTable);
-
-            const std::string scorePath = (scoreDir / "score.txt").string();
-            if (! merchantScoreManager_->open(scorePath))
-            {
-                std::cerr << "open " << scorePath << " failed" << std::endl;
-                return false;
-            }
-        }
-
         if (customDocIdConverter_) delete customDocIdConverter_;
         customDocIdConverter_ = new CustomDocIdConverter(*idManager_);
 
-        /** product ranking */
-        if (rankConfig.isEnable)
-        {
-            LOG(INFO) << rankConfig.toStr();
+        const ProductRankingConfig& rankConfig =
+            mining_schema_.product_ranking_config;
 
-            if (productScorerFactory_) delete productScorerFactory_;
-            if (productScoreManager_) delete productScoreManager_;
-            if (offlineScorerFactory_) delete offlineScorerFactory_;
-            if (customRankManager_) delete customRankManager_;
-
-            const bfs::path customRankDir = bfs::path(prefix_path) / "custom_rank";
-            bfs::create_directories(customRankDir);
-
-            const std::string customRankPath = (customRankDir / "custom.db").string();
-            customRankManager_ = new CustomRankManager(
-                    customRankPath,
-                    *customDocIdConverter_,
-                    document_manager_.get());
-
-            offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(*this);
-
-            const std::string scoreDir = prefix_path + "/product_score";
-            productScoreManager_ = new ProductScoreManager(
-                rankConfig,
-                miningConfig_.product_ranking_param,
-                *offlineScorerFactory_,
-                *document_manager_,
-                collectionName_,
-                scoreDir,
-                searchCache_);
-
-            if (! productScoreManager_->open())
-            {
-                std::cerr << "open product score failed" << std::endl;
-                return false;
-            }
-
-            productScorerFactory_ = new ProductScorerFactory(rankConfig, *this);
-
-            searchManager_->setCustomRankManager(customRankManager_);
-            searchManager_->setProductScorerFactory(productScorerFactory_);
-
-            if (!rankConfig.scores[DIVERSITY_SCORE].propName.empty())
-            {
-                productRankerFactory_ = new ProductRankerFactory(*this);
-                searchManager_->setProductRankerFactory(productRankerFactory_);
-            }
-        }
+        if (!initMerchantScoreManager_(rankConfig) ||
+            !initProductScorerFactory_(rankConfig) ||
+            !initProductRankerFactory_(rankConfig))
+            return false;
 
         /** tdt **/
         if (mining_schema_.tdt_enable)
@@ -2141,5 +2069,109 @@ bool MiningManager::getProductScore(
     }
 
     scoreValue = productScoreTable->getScoreHasLock(docId);
+    return true;
+}
+
+bool MiningManager::initMerchantScoreManager_(const ProductRankingConfig& rankConfig)
+{
+    const ProductScoreConfig& merchantScoreConfig =
+        rankConfig.scores[MERCHANT_SCORE];
+
+    if (merchantScoreConfig.propName.empty() || !groupManager_)
+        return true;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path scoreDir(parentDir / "merchant_score");
+    bfs::create_directories(scoreDir);
+
+    faceted::PropValueTable* merchantValueTable =
+        groupManager_->getPropValueTable(merchantScoreConfig.propName);
+    const ProductScoreConfig& categoryScoreConfig =
+        rankConfig.scores[CATEGORY_SCORE];
+    faceted::PropValueTable* categoryValueTable =
+        groupManager_->getPropValueTable(categoryScoreConfig.propName);
+
+    if (merchantScoreManager_) delete merchantScoreManager_;
+
+    merchantScoreManager_ = new MerchantScoreManager(
+        merchantValueTable, categoryValueTable);
+
+    bfs::path scorePath = scoreDir / "score.txt";
+    if (!merchantScoreManager_->open(scorePath.string()))
+    {
+        LOG(ERROR) << "open " << scorePath << " failed";
+        return false;
+    }
+
+    return true;
+}
+
+bool MiningManager::initProductScorerFactory_(const ProductRankingConfig& rankConfig)
+{
+    if (!rankConfig.isEnable)
+        return true;
+
+    LOG(INFO) << rankConfig.toStr();
+
+    if (productScorerFactory_) delete productScorerFactory_;
+    if (productScoreManager_) delete productScoreManager_;
+    if (offlineScorerFactory_) delete offlineScorerFactory_;
+    if (customRankManager_) delete customRankManager_;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path customRankDir(parentDir / "custom_rank");
+    bfs::create_directories(customRankDir);
+
+    const bfs::path customRankPath(customRankDir / "custom.db");
+    customRankManager_ = new CustomRankManager(customRankPath.string(),
+                                               *customDocIdConverter_,
+                                               document_manager_.get());
+
+    offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(*this);
+
+    const bfs::path scoreDir(parentDir / "product_score");
+    productScoreManager_ = new ProductScoreManager(
+        rankConfig,
+        miningConfig_.product_ranking_param,
+        *offlineScorerFactory_,
+        *document_manager_,
+        collectionName_,
+        scoreDir.string(),
+        searchCache_);
+
+    if (!productScoreManager_->open())
+    {
+        LOG(ERROR) << "open " << scoreDir << " failed";
+        return false;
+    }
+
+    productScorerFactory_ = new ProductScorerFactory(rankConfig, *this);
+    searchManager_->setCustomRankManager(customRankManager_);
+    searchManager_->setProductScorerFactory(productScorerFactory_);
+    return true;
+}
+
+bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankConfig)
+{
+    const std::string& diversityPropName =
+        rankConfig.scores[DIVERSITY_SCORE].propName;
+
+    if (!rankConfig.isEnable || diversityPropName.empty())
+        return true;
+
+    const faceted::PropValueTable* diversityValueTable =
+        GetPropValueTable(diversityPropName);
+
+    if (!diversityValueTable)
+    {
+        LOG(ERROR) << "the PropValueTable is not initialized for property: "
+                   << diversityPropName;
+        return false;
+    }
+
+    if (productRankerFactory_) delete productRankerFactory_;
+    productRankerFactory_ = new ProductRankerFactory(rankConfig,
+                                                     *diversityValueTable);
+    searchManager_->setProductRankerFactory(productRankerFactory_);
     return true;
 }

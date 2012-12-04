@@ -133,9 +133,6 @@ bool SearchManager::rerank(
         boost::scoped_ptr<ProductRanker> productRanker(
             productRankerFactory_->createProductRanker(rankParam));
 
-        if (!productRanker)
-            return false;
-
         productRanker->rank();
 
         LOG(INFO) << "topK doc num: " << resultItem.topKDocs_.size()
