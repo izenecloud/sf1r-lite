@@ -1875,7 +1875,6 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         mining_schema.tdt_enable = true;
         std::string perform_tdt_task;
         getAttribute(task_node, "enabletdt", perform_tdt_task);
-std::cout<<"perform_tdt_task "<<perform_tdt_task<<std::endl;		
         int enable = parseTruth(perform_tdt_task);
         if(1 == enable)
             mining_schema.tdt_config.perform_tdt_task= true;

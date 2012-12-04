@@ -6,6 +6,7 @@
 #include <util/ustring/UString.h>
 
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 
 namespace sf1r
 {
@@ -32,9 +33,11 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
 {
     if(!analyzer_) return false;
     ///convert from traditional chinese to simplified chinese
+    std::string lowercase_content = content;
+    boost::to_lower(lowercase_content);
     std::string simplified_content;
-    long ret = opencc_->convert(content, simplified_content);
-    if(-1 == ret) simplified_content = content;
+    long ret = opencc_->convert(lowercase_content, simplified_content);
+    if(-1 == ret) simplified_content = lowercase_content;
     Sentence pattern_sentence(simplified_content.c_str());
     analyzer_->runWithSentence(pattern_sentence);
     LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
