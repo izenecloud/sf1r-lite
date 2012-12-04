@@ -40,6 +40,8 @@ public:
 
     void get_temporal_similar();
 
+    void get_topics();
+
 protected:
     virtual bool checkCollectionService(std::string& error);
 
@@ -47,6 +49,7 @@ private:
     bool requireTID_();
     bool requireDateRange_();
     bool requireTopicText_();
+    bool requireContent_();
 
 private:
     uint32_t tid_;
@@ -55,6 +58,7 @@ private:
     boost::gregorian::date start_;
     boost::gregorian::date end_;
     izenelib::util::UString topic_text_;
+    std::string content_;
     MiningSearchService* miningSearchService_;
 };
 
