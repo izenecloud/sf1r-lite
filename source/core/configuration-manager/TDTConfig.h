@@ -14,6 +14,7 @@ namespace sf1r
 class TDTConfig
 {
 public:
+    bool perform_tdt_task;
     std::string tdt_tokenize_dicpath;
 
     friend class boost::serialization::access;
@@ -21,6 +22,7 @@ public:
     template <typename Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
+        ar & perform_tdt_task;
         ar & tdt_tokenize_dicpath;
     }
 };

@@ -519,14 +519,17 @@ bool MiningManager::open()
         /** tdt **/
         if (mining_schema_.tdt_enable)
         {
-            tdt_path_ = prefix_path + "/tdt";
-            boost::filesystem::create_directories(tdt_path_);
-            std::string tdt_storage_path = tdt_path_+"/storage";
-            tdt_storage_ = new TdtStorageType(tdt_storage_path);
-            if (!tdt_storage_->Open())
+            if(mining_schema_.tdt_config.perform_tdt_task)
             {
-                std::cerr<<"tdt init failed"<<std::endl;
-                return false;
+                tdt_path_ = prefix_path + "/tdt";
+                boost::filesystem::create_directories(tdt_path_);
+                std::string tdt_storage_path = tdt_path_+"/storage";
+                tdt_storage_ = new TdtStorageType(tdt_storage_path);
+                if (!tdt_storage_->Open())
+                {
+                    std::cerr<<"tdt init failed"<<std::endl;
+                    return false;
+                }
             }
             topicDetector_ = new NaiveTopicDetector(mining_schema_.tdt_config.tdt_tokenize_dicpath);
         }
@@ -816,7 +819,7 @@ bool MiningManager::DoMiningCollection()
     }
 
     //do tdt
-    if (mining_schema_.tdt_enable)
+    if (mining_schema_.tdt_enable && mining_schema_.tdt_config.perform_tdt_task)
     {
         idmlib::tdt::Storage* next_storage = tdt_storage_->Next();
         if (!next_storage)
