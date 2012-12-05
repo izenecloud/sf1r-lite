@@ -2,7 +2,7 @@
  \file      AutoFillChildManager.h
  \author    Hongliang.Zhao&&Qiang.Wang
  \brief     AutoFillChildManager will get the search item list which match the prefix of the keyword user typed.
- \dat	    2012-07-26
+ \dat       2012-07-26
 */
 
 #if !defined(_AUTO_FILL_SUBMANAGER_)
@@ -69,6 +69,7 @@ class AutoFillChildManager: public boost::noncopyable
     string SCDDIC_;
     string ItemPath_;
     string ItemdbPath_;
+    string WatArrayPath_;
     fstream out;// for log
     std::vector<string> SCDHaveDone_;
     string SCDLogPath_;
@@ -224,6 +225,8 @@ public:
     bool InitFromLog();
     void SaveItem();
     void LoadItem();
+    void SaveWat();
+    bool LoadWat();
     bool openDB(string path, string path2);
     void closeDB();
 

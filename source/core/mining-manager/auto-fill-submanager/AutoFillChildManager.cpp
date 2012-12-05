@@ -19,7 +19,7 @@ AutoFillChildManager::AutoFillChildManager(bool fromSCD)
     isIniting_ = false;
 
     updatelogdays_ = 1;
-    alllogdays_ =  120;
+    alllogdays_ =  90;
     topN_ =  10;
     QN_ = new izenelib::am::QueryNormalize();
 }
@@ -52,7 +52,7 @@ void AutoFillChildManager::SaveItem()
         }
         else
         {
-            LOG(ERROR)<<"open saveItem file error"<<endl;
+           //LOG(ERROR)<<"open saveItem file error"<<endl;
         }
     }
 }
@@ -79,8 +79,31 @@ void AutoFillChildManager::LoadItem()
     }
     else
     {
-        LOG(ERROR)<<"open LoadItem file error"<<endl;
+        //LOG(ERROR)<<"open LoadItem file error"<<endl;
     }
+}
+
+void AutoFillChildManager::SaveWat()
+{
+    ofstream out1;
+    out1.open(WatArrayPath_.c_str(), ios::out|ios::binary);
+    if (out1.is_open())
+    {
+        wa_.Save(out1);
+    }
+}
+
+bool AutoFillChildManager::LoadWat()
+{
+    ifstream in;
+    in.open(WatArrayPath_.c_str(), ios::in|ios::binary);
+    if (in.is_open())
+    {
+        wa_.Load(in);
+        return true;
+    }
+    else
+        return false;
 }
 
 bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression, const string& instanceName)
@@ -97,7 +120,8 @@ bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std:
     ItemdbPath_ = AutofillPath_ + "/itemdb";
     string IDPath = AutofillPath_ + "/id/";
     ItemPath_ = leveldbPath_ + "/Itemlist.list";
-    SCDLogPath_=AutofillPath_ +"/SCDLog";
+    WatArrayPath_ = leveldbPath_ + "/wavelet.tree";
+    SCDLogPath_ = AutofillPath_ +"/SCDLog";
     SCDDIC_ = collectionPath.getScdPath() + "autofill";
 
     std::string dictionaryFile = system_resource_path_;
@@ -192,7 +216,8 @@ bool AutoFillChildManager::InitWhileHaveLeveldb()
     LoadItem();
     buildItemVector();//erase same;
     isUpdating_Wat_ = true;
-    buildWat_array(true);
+    if(!LoadWat())
+        buildWat_array(true);
     isUpdating_Wat_ = false;
     return true;
 }
@@ -405,6 +430,10 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
             PrefixQueryType prefix;
             std::string pinyin;
             (*itv).convertString(pinyin, izenelib::util::UString::UTF_8);
+            if(pinyin.length() > 30)
+            {
+                continue;
+            }
             prefix.init(strO,pinyin,freq,HitNum);
             thousandpair.push_back(prefix);
         }
@@ -452,7 +481,7 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
                 newValue.toString(value);
                 firstvalue.append(value);
                 if(!dbTable_.add_item(pinyin, firstvalue));
-                //	return false;
+                //return false;
             }
             else
             {
@@ -477,7 +506,7 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
                         *(uint32_t*)(str + *(uint32_t*)str - UINT32_LEN) = HitNum;
                         buildTopNDbTable(value, offset);
                         if(!dbTable_.add_item(pinyin, value));
-                        //			return false;
+                        //return false;
                         break;
                     }
                     offset += *(uint32_t*)str;
@@ -492,7 +521,7 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
                     value.append(newValueStr);
                     buildTopNDbTable(value, offset);
                     if(!dbTable_.add_item(pinyin, value));
-                    //		return false;
+                    //return false;
                 }
             }
             if(Similar==true)
@@ -634,7 +663,7 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
             //   if(!dbTable_.add_item(pinyin, firstvalue));
             value=firstvalue;
             // cout<<"add"<<pinyin<<endl;
-            //	return false;
+            //  return false;
         }
         else
         {
@@ -645,7 +674,7 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
             value.append(newValueStr);
             //buildTopNDbTable(value, offset);
             // if(!dbTable_.add_item(pinyin, value));
-            //		return false;
+            //      return false;
         }
 
     }
@@ -1042,6 +1071,7 @@ void AutoFillChildManager::buildWat_array(bool _fromleveldb)
     }
     wa_.Init(A);
     SaveItem();
+    SaveWat();
     vector<ItemType>().swap(ItemVector_);
 }
 
