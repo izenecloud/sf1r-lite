@@ -184,6 +184,9 @@ docid_t ORDocumentIterator::skipTo(docid_t target)
         {
             nFoundId = do_skipTo(currentDoc);
             currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currentDoc);
+            if((nFoundId != MAX_DOC_ID) && ((nFoundId == currentDoc) &&(currDocOfNOTIter_ == currentDoc)))
+                return MAX_DOC_ID;
+            currentDoc = nFoundId;
         }
         while ((nFoundId != MAX_DOC_ID)&&(nFoundId == currDocOfNOTIter_));
         return nFoundId;
