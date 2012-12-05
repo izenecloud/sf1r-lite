@@ -21,6 +21,7 @@ namespace sf1r
 
 class DocumentManager;
 class FilterManager;
+class FMIndexManager;
 namespace faceted
 {
     class GroupManager;
@@ -30,12 +31,9 @@ class NumericPropertyTableBuilder;
 
 class SuffixMatchManager
 {
-    typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
-
 public:
     SuffixMatchManager(
             const std::string& homePath,
-            const std::string& property,
             const std::string& dicpath,
             boost::shared_ptr<DocumentManager>& document_manager,
             faceted::GroupManager* groupmanager,
@@ -43,6 +41,7 @@ public:
             NumericPropertyTableBuilder* numeric_tablebuilder);
 
     ~SuffixMatchManager();
+    void addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished = false);
     void setGroupFilterProperties(std::vector<std::string>& property_list);
     void setAttrFilterProperties(std::vector<std::string>& property_list);
     void setDateFilterProperties(std::vector<std::string>& property_list);
@@ -53,11 +52,13 @@ public:
 
     size_t longestSuffixMatch(
             const izenelib::util::UString& pattern,
+            std::vector<std::string> search_in_properties,
             size_t max_docs,
             std::vector<std::pair<double, uint32_t> >& res_list) const;
 
     size_t AllPossibleSuffixMatch(
             const izenelib::util::UString& pattern,
+            std::vector<std::string> search_in_properties,
             size_t max_docs,
             const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
@@ -65,27 +66,28 @@ public:
             std::vector<std::pair<double, uint32_t> >& res_list) const;
 
 private:
+    typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
+    typedef FMIndexType::MatchRangeListT  RangeListT;
+
     bool getAllFilterRangeFromGroupLable(
             const faceted::GroupParam& group_param,
-            std::vector<FMIndexType::FilterRangeT>& filter_range_list,
-            std::vector<size_t>& filterid_list,
-            std::vector<std::vector<FMIndexType::FilterRangeT> >& aux_filter_range_list) const;
+            std::vector<size_t>& filterindex_list,
+            std::vector<RangeListT>& filter_range_list) const;
     bool getAllFilterRangeFromAttrLable(
             const faceted::GroupParam& group_param,
-            std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
+            std::vector<size_t>& filterindex_list,
+            std::vector<RangeListT>& filter_range_list) const;
     bool getStringFilterRangeFromFilterParam(
             const std::vector<QueryFiltering::FilteringType>& filter_param,
-            std::vector<FMIndexType::FilterRangeT>& filter_range_list) const;
+            std::vector<size_t>& filterindex_list,
+            std::vector<RangeListT>& filter_range_list) const;
     bool getNumericFilterRangeFromFilterParam(
             const std::vector<QueryFiltering::FilteringType>& filter_param,
-            std::vector<size_t>& filterid_list,
-            std::vector<std::vector<FMIndexType::FilterRangeT> >& aux_filter_range_list) const;
+            std::vector<size_t>& filterindex_list,
+            std::vector<RangeListT>& filter_range_list) const;
 
     std::string data_root_path_;
-    std::string fm_index_path_;
-    std::string orig_text_path_;
 
-    std::string property_;
     std::vector<std::string> group_property_list_;
     std::vector<std::string> attr_property_list_;
     std::set<std::string> numeric_property_list_;
@@ -97,7 +99,7 @@ private:
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
 
-    boost::shared_ptr<FMIndexType> fmi_;
+    boost::shared_ptr<FMIndexManager> fmi_manager_;
     boost::shared_ptr<FilterManager> filter_manager_;
 
     typedef boost::shared_mutex MutexType;
