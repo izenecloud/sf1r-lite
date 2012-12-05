@@ -89,10 +89,10 @@ class FilterManager
 public:
     enum FilterType
     {
-        StrFilter = 0,
-        NumFilter,
+        STR_FILTER = 0,
+        NUM_FILTER,
 
-        LastTypeFilter
+        FILTER_TYPE_COUNT
     };
     struct FilterIdRange
     {
@@ -122,8 +122,6 @@ public:
     uint32_t loadStrFilterInvertedData(const std::vector<std::string>& property, std::vector<StrFilterItemMapT>& str_filter_data);
     void saveStrFilterInvertedData(const std::vector<std::string>& property, const std::vector<StrFilterItemMapT>& str_filte_data) const;
 
-    FilterIdRange getStrFilterIdRange(const std::string& property, const izenelib::util::UString& strfilter_key);
-
     void buildGroupFilterData(
             uint32_t last_docid, uint32_t max_docid,
             const std::vector<std::string>& property_list,
@@ -151,9 +149,10 @@ public:
             const std::string& attrname,
             const std::string& attrvalue) const;
 
-    FilterIdRange getNumFilterIdRangeExactly(const std::string& property, double filter_num) const;
-    FilterIdRange getNumFilterIdRangeLarger(const std::string& property, double filter_num) const;
-    FilterIdRange getNumFilterIdRangeSmaller(const std::string& property, double filter_num) const;
+    FilterIdRange getStrFilterIdRange(size_t prop_id, const izenelib::util::UString& strfilter_key);
+    FilterIdRange getNumFilterIdRangeExactly(size_t prop_id, double filter_num) const;
+    FilterIdRange getNumFilterIdRangeLarger(size_t prop_id, double filter_num) const;
+    FilterIdRange getNumFilterIdRangeSmaller(size_t prop_id, double filter_num) const;
 
     std::vector<std::vector<FilterDocListT> >& getFilterList();
     void clearFilterList();
@@ -166,26 +165,27 @@ public:
     faceted::AttrManager* getAttrManager() const;
     NumericPropertyTableBuilder* getNumericTableBuilder() const;
 
-    void setNumericAmp(const std::map<std::string, int32_t>& num_property_amp_list);
+    void setNumericAmp(const std::map<std::string, int32_t>& num_amp_list);
     const std::map<std::string, int32_t>& getNumericAmp() const;
 
-    size_t getFilterId(const std::string& property) const;
-    size_t filterCount() const;
+    size_t getPropertyId(const std::string& property) const;
+    size_t propertyCount() const;
 
 private:
     typedef std::map<izenelib::util::UString, FilterIdRange> StrIdMapT;
-    typedef std::map<NumFilterKeyT, FilterIdRange> NumericIdMapT;
-    typedef std::map<std::string, StrIdMapT> StrPropertyIdMapT;
-    typedef std::map<std::string, NumericIdMapT> NumPropertyIdMapT;
+    typedef std::map<NumFilterKeyT, FilterIdRange> NumIdMapT;
+    typedef std::vector<StrIdMapT> StrPropIdVecT;
+    typedef std::vector<NumIdMapT> NumPropIdVecT;
 
-    FilterIdRange getNumFilterIdRange(const std::string& property, double filter_num, bool findlarger) const;
-    NumFilterKeyT formatNumericFilter(const std::string& property, double filter_num, bool tofloor = true) const;
+    FilterIdRange getNumFilterIdRange(size_t prop_id, double filter_num, bool findlarger) const;
+    NumFilterKeyT formatNumericFilter(size_t prop_id, double filter_num, bool tofloor = true) const;
     void mapGroupFilterToFilterId(
             GroupNode* node,
             const StrFilterItemMapT& group_filter_data,
-            StrIdMapT& filterids);
-    void mapAttrFilterToFilterId(const StrFilterItemMapT& attr_filter_data, StrIdMapT& filterids);
-    void mapNumericFilterToFilterId(const NumFilterItemMapT& num_filter_data, NumericIdMapT& filterids);
+            StrIdMapT& filterids,
+            std::vector<FilterDocListT>& filter_list);
+    void mapAttrFilterToFilterId(const StrFilterItemMapT& attr_filter_data, StrIdMapT& filterids, std::vector<FilterDocListT>& filter_list);
+    void mapNumericFilterToFilterId(const NumFilterItemMapT& num_filter_data, NumIdMapT& filterids, std::vector<FilterDocListT>& filter_list);
 
     static void printNode(GroupNode* node, size_t level, const StrIdMapT& filterids, const std::vector<FilterDocListT>& inverted_data)
     {
@@ -210,19 +210,42 @@ private:
         }
     }
 
+    template <class T>
+    std::ostream& saveArray_(std::ostream& ofs, const T& arr) const
+    {
+        size_t len = arr.size();
+        ofs.write((const char*)&len, sizeof(len));
+        ofs.write((const char*)&arr[0], sizeof(arr[0]) * len);
+        return ofs;
+    }
+
+    template <class T>
+    std::istream& loadArray_(std::istream& ifs, T& arr)
+    {
+        size_t len = 0;
+        ifs.read((char*)&len, sizeof(len));
+        arr.resize(len);
+        ifs.read((char*)&arr[0], sizeof(arr[0]) * len);
+        return ifs;
+    }
+
     faceted::GroupManager* groupManager_;
     faceted::AttrManager* attrManager_;
     NumericPropertyTableBuilder* numericTableBuilder_;
     std::string data_root_path_;
+
+    std::map<std::string, size_t> prop_id_map_;
+    std::vector<std::pair<int, std::string> > prop_list_;
+    std::vector<int32_t> num_amp_list_;
+
     // property -> (GroupPath/Attribute -> filterid)
-    StrPropertyIdMapT strtype_filterids_;
-
+    StrPropIdVecT strtype_filterids_;
     // property -> (Price/Score -> filterid)
-    NumPropertyIdMapT numtype_filterids_;
-    std::map<std::string, std::vector<NumFilterKeyT> > num_possible_keys_;
-    std::map<std::string, int32_t> num_amp_map_;
+    NumPropIdVecT numtype_filterids_;
 
-    std::map<std::string, size_t> filterid_map_;
+    std::vector<std::vector<NumFilterKeyT> > num_possible_keys_;
+
+    std::map<std::string, int32_t> num_amp_map_;
     std::vector<std::vector<FilterDocListT> > filter_list_;
 };
 
