@@ -47,6 +47,7 @@
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/IncrementalManager.hpp"
+#include "suffix-match-manager/FMIndexManager.h"
 
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
@@ -495,9 +496,11 @@ bool MiningManager::open()
             LOG(INFO) << "suffix match enabled.";
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
-                    mining_schema_.suffixmatch_schema.suffix_match_property,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
                     document_manager_, groupManager_, attrManager_, searchManager_.get());
+            std::vector<std::string> index_properties;
+            index_properties.push_back(mining_schema_.suffixmatch_schema.suffix_match_property);
+            suffixMatchManager_->addFMIndexProperties(index_properties, FMIndexManager::COMMON, true);
             // reading suffix config and load filter data here.
             suffixMatchManager_->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
             suffixMatchManager_->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
@@ -1838,9 +1841,12 @@ bool MiningManager::GetSuffixMatch(
     izenelib::util::UString queryU(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
     std::vector<std::pair<double, uint32_t> > res_list;
 
+    std::vector<string> search_in_properties;
+    search_in_properties.push_back(mining_schema_.suffixmatch_schema.suffix_match_property);
+
     if (!use_fuzzy)
     {
-        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, res_list);
+        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, search_in_properties, max_docs, res_list);
     }
     else
     {
@@ -1854,7 +1860,7 @@ bool MiningManager::GetSuffixMatch(
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                queryU, max_docs,
+                queryU, search_in_properties, max_docs,
                 actionOperation.actionItem_.searchingMode_.filtermode_,
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
