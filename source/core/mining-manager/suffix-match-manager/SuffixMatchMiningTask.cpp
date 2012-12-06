@@ -134,7 +134,7 @@ void SuffixMatchMiningTask::postProcess()
     LOG(INFO) << "building fm-index finished";
 }
 
-bool SuffixMatchMiningTask::buildDocment(docid_t docID, Document& doc)
+bool SuffixMatchMiningTask::buildDocment(docid_t docID, const Document& doc)
 {
     if (doc.getId() == 0)
     {

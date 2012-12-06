@@ -371,6 +371,12 @@ void GroupManagerTestFixture::resetGroupManager()
 
     miningTaskBuilder_ = new MiningTaskBuilder(documentManager_);
     BOOST_CHECK(miningTaskBuilder_);
+    std::vector<MiningTask*>& miningTaskList = groupManager_->getGroupMiningTask();
+    for (std::vector<MiningTask*>::const_iterator it = miningTaskList.begin(); it != miningTaskList.end(); ++it)
+    {
+        miningTaskBuilder_->addTask(*it);   
+    }
+    miningTaskList.clear();
 }
 
 void GroupManagerTestFixture::configGroupPropRebuild()
@@ -426,11 +432,7 @@ void GroupManagerTestFixture::createDocument(int num)
 
     checkCollection_();
 
-    const std::vector<MiningTask*>& miningTaskList = groupManager_->getGroupMiningTask();
-    for (std::vector<MiningTask*>::const_iterator it = miningTaskList.begin(); it != miningTaskList.end(); ++it)
-    {
-        miningTaskBuilder_->addTask(*it);   
-    }
+    
 
     BOOST_CHECK(miningTaskBuilder_->buildCollection());
     //BOOST_CHECK(groupManager_->processCollection());

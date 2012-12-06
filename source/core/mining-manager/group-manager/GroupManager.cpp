@@ -1,5 +1,6 @@
 #include "GroupManager.h"
 #include "DateStrParser.h"
+#include "GroupMiningTask.h"
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/util/FSUtil.hpp>
 #include <mining-manager/MiningException.hpp>
@@ -34,7 +35,7 @@ GroupManager::~GroupManager()
     {
         if (*it)
         {
-            delete *it;
+            ///delete *it;
         }
     }
 }

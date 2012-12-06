@@ -7,11 +7,8 @@
 #define MING_TASK_BUILDER_H
 
 #include "MiningTask.h"
-#include <string>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/shared_mutex.hpp>
 
-using namespace std;
 namespace sf1r
 {
 class DocumentManager;
@@ -19,16 +16,16 @@ class DocumentManager;
 class MiningTaskBuilder
 {
 public:
-	MiningTaskBuilder(boost::shared_ptr<DocumentManager> document_manager);
-	~MiningTaskBuilder() {} ;
+    MiningTaskBuilder(boost::shared_ptr<DocumentManager> document_manager);
+    ~MiningTaskBuilder();
 
-	bool buildCollection();
-	void addTask(MiningTask*);
+    bool buildCollection();
+    void addTask(MiningTask*);
 
 private:
 
-	std::vector<MiningTask*> taskList_;
-	boost::shared_ptr<DocumentManager> document_manager_;
+    std::vector<MiningTask*> taskList_;
+    boost::shared_ptr<DocumentManager> document_manager_;
 
 };
 }

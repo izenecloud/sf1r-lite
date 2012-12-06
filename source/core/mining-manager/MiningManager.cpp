@@ -247,6 +247,13 @@ bool MiningManager::open()
         {
             return false;
         }
+        /**Miningtask Builder*/
+        if (mining_schema_.suffixmatch_schema.suffix_match_enable ||
+            mining_schema_.group_enable ||
+            mining_schema_.attr_enable )
+        {
+            miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);
+        }
 
         /** TG */
         if (mining_schema_.tg_enable)
@@ -376,6 +383,12 @@ bool MiningManager::open()
                 std::cerr << "open GROUP failed" << std::endl;
                 return false;
             }
+            std::vector<MiningTask*>& miningTaskList = groupManager_->getGroupMiningTask();
+            for (std::vector<MiningTask*>::const_iterator i = miningTaskList.begin(); i != miningTaskList.end(); ++i)
+            {
+                miningTaskBuilder_->addTask(*i);
+            }
+            miningTaskList.clear();
         }
 
         /** attr */
@@ -390,6 +403,8 @@ bool MiningManager::open()
                 std::cerr << "open ATTR failed" << std::endl;
                 return false;
             }
+            MiningTask* miningTask = attrManager_->getAttrMiningTask();
+            miningTaskBuilder_->addTask(miningTask);
         }
 
         if (groupManager_ || attrManager_)
@@ -647,12 +662,7 @@ bool MiningManager::open()
             kvManager_ = NULL;
         }
 
-        if (mining_schema_.suffixmatch_schema.suffix_match_enable ||
-            mining_schema_.group_enable ||
-            mining_schema_.attr_enable )
-        {
-            miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);//add path... prefix_path/Taskbuider.startdocid;
-        }
+        
 
     }
     catch (NotEnoughMemoryException& ex)
@@ -718,21 +728,6 @@ void MiningManager::DoContinue()
 
 bool MiningManager::DOMiningTask()
 {
-    if (mining_schema_.group_enable)
-    {
-        const std::vector<MiningTask*>& miningTaskList = groupManager_->getGroupMiningTask();
-        for (std::vector<MiningTask*>::const_iterator i = miningTaskList.begin(); i != miningTaskList.end(); ++i)
-        {
-            miningTaskBuilder_->addTask(*i);   
-        }
-    }
-
-    if (mining_schema_.attr_enable)
-    {
-        MiningTask* miningTask = attrManager_->getAttrMiningTask();
-        miningTaskBuilder_->addTask(miningTask);
-    }
-
     if (mining_schema_.suffixmatch_schema.suffix_match_enable)
     {
         if(mining_schema_.suffixmatch_schema.suffix_incremental_enable)

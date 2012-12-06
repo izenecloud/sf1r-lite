@@ -9,16 +9,13 @@
 
 NS_FACETED_BEGIN
 AttrMiningTask::AttrMiningTask(DocumentManager& documentManager
-		, AttrManager& attrManager
-		, std::string dirPath)
-	:documentManager_(documentManager)
-	, attrManager_(attrManager)
-	, dirPath_(dirPath)
-{
-
-}
-
-AttrMiningTask::~AttrMiningTask()
+        , AttrTable& attrTable
+        , std::string dirPath
+        , const AttrConfig& attrConfig)
+    :documentManager_(documentManager)
+    , attrTable_(attrTable)
+    , dirPath_(dirPath)
+    , attrConfig_(attrConfig)
 {
 
 }
@@ -27,7 +24,7 @@ bool AttrMiningTask::processCollection_forTest()
 {
     preProcess();
     docid_t MaxDocid = documentManager_.getMaxDocId();
-    const docid_t startDocId = attrManager_.getAttrTable().docIdNum();
+    const docid_t startDocId = attrTable_.docIdNum();
     Document doc;
     
     for (uint32_t docid = startDocId; docid <= MaxDocid; ++docid)
@@ -45,27 +42,20 @@ bool AttrMiningTask::processCollection_forTest()
 
 void AttrMiningTask::preProcess()
 {
-    try
-    {
-        FSUtil::createDir(dirPath_);
-    }
-    catch(FileOperationException& e)
-    {
-        LOG(ERROR) << "exception in FSUtil::createDir: " << e.what();
-        return;
-    }
+    const docid_t endDocId = documentManager_.getMaxDocId();
+    attrTable_.reserveDocIdNum(endDocId + 1);
 }
 
 docid_t AttrMiningTask::getLastDocId()
 {
-	return attrManager_.getAttrTable().docIdNum();
+    return attrTable_.docIdNum();
 }
 
 void AttrMiningTask::postProcess()
 {
-    const char* propName = attrManager_.getAttrTable().propName();  
+    const char* propName = attrTable_.propName();  
 
-    if (!attrManager_.getAttrTable().flush())
+    if (!attrTable_.flush())
     {
         LOG(ERROR) << "AttrTable::flush() failed, property name: " << propName;
     }
@@ -73,13 +63,55 @@ void AttrMiningTask::postProcess()
     LOG(INFO) << "finished building attr index data";
 }
 
-
-bool AttrMiningTask::buildDocment(docid_t docID, Document& doc)
+bool AttrMiningTask::buildDocment(docid_t docID, const Document& doc)
 {
     if (doc.getId() == 0)
         return true;
-    const char* propName = attrManager_.getAttrTable().propName();
-    attrManager_.buildDocp_(docID, propName);
+    const std::string propName(attrTable_.propName());
+    std::vector<AttrTable::vid_t> valueIdList;
+    Document::property_const_iterator it = doc.findProperty(propName);
+    if (it != doc.propertyEnd())
+    {
+        const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
+        std::vector<AttrPair> attrPairs;
+        split_attr_pair(propValue, attrPairs);
+
+        try
+        {
+            for (std::vector<AttrPair>::const_iterator pairIt = attrPairs.begin();
+                pairIt != attrPairs.end(); ++pairIt)
+            {
+                const izenelib::util::UString& attrName = pairIt->first;
+
+                if (attrConfig_.isExcludeAttrName(attrName))
+                    continue;
+
+                AttrTable::nid_t nameId = attrTable_.insertNameId(attrName);
+
+                for (std::vector<izenelib::util::UString>::const_iterator valueIt = pairIt->second.begin();
+                    valueIt != pairIt->second.end(); ++valueIt)
+                {
+                    AttrTable::vid_t valueId = attrTable_.insertValueId(nameId, *valueIt);
+                    valueIdList.push_back(valueId);
+                }
+            }
+        }
+        catch(MiningException& e)
+        {
+            LOG(ERROR) << "exception: " << e.what()
+                       << ", doc id: " << docID;
+        }
+    }
+
+    try
+    {
+        attrTable_.appendValueIdList(valueIdList);
+    }
+    catch(MiningException& e)
+    {
+        LOG(ERROR) << "exception: " << e.what()
+                   << ", doc id: " << docID;
+    }
     return true;
 }
 

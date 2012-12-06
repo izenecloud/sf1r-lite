@@ -24,21 +24,22 @@ class AttrManager;
 class AttrMiningTask: public MiningTask
 {
 public:
-	AttrMiningTask(DocumentManager& documentManager
-		, AttrManager& attrManager
-		, std::string dirPath);
-	~AttrMiningTask();
+    AttrMiningTask(DocumentManager& documentManager
+        , AttrTable& attrTable
+        , std::string dirPath
+        , const AttrConfig& attrConfig);
 
     void preProcess();
     void postProcess();
-    bool buildDocment(docid_t docID, Document& doc);
+    bool buildDocment(docid_t docID, const Document& doc);
     docid_t getLastDocId();
     bool processCollection_forTest();
 
 private:
-	sf1r::DocumentManager& documentManager_;
-	AttrManager& attrManager_;
-	std::string dirPath_;
+    sf1r::DocumentManager& documentManager_;
+    AttrTable& attrTable_;
+    std::string dirPath_;
+    const AttrConfig& attrConfig_;
 };
 
 NS_FACETED_END

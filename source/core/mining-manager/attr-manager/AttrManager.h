@@ -30,14 +30,6 @@ public:
             const std::string& dirPath,
             DocumentManager& documentManager);
 
-    ~AttrManager()
-    {
-        if (attrMiningTask_)
-        {
-            delete attrMiningTask_;
-        }
-    }
-
     /**
      * @brief Open the attribute property.
      * @return true for success, false for failure

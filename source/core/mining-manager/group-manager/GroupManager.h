@@ -11,7 +11,6 @@
 #include "PropValueTable.h"
 #include "DateGroupTable.h"
 #include "../MiningTask.h"
-#include "GroupMiningTask.h"
 #include "../faceted-submanager/ontology_rep.h"
 #include <configuration-manager/GroupConfig.h>
 #include <document-manager/DocumentManager.h>
@@ -48,7 +47,7 @@ public:
      */
     bool processCollection();
 
-    const std::vector<MiningTask*> getGroupMiningTask()
+    std::vector<MiningTask*>& getGroupMiningTask()
     {
         return groupMiningTaskList_;
     }

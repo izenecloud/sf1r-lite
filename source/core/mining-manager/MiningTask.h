@@ -15,16 +15,16 @@ namespace sf1r
 class MiningTask
 {
 public:
-	MiningTask() {};
-	~MiningTask() {};
+    MiningTask() {};
+    virtual ~MiningTask() {};
 
-	virtual bool buildDocment(docid_t docID, Document& doc) = 0;
+    virtual bool buildDocment(docid_t docID, const Document& doc) = 0;
 
-	virtual void preProcess() = 0;
+    virtual void preProcess() = 0;
 
-	virtual void postProcess() = 0;
+    virtual void postProcess() = 0;
 
-	virtual docid_t getLastDocId() = 0;
+    virtual docid_t getLastDocId() = 0;
 
 };
 }

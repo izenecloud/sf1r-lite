@@ -168,6 +168,8 @@ public:
 
         miningTaskBuilder_ = new MiningTaskBuilder(documentManager_);
         BOOST_CHECK(miningTaskBuilder_);
+        MiningTask* miningTask = attrManager_->getAttrMiningTask();
+        miningTaskBuilder_->addTask(miningTask);
     }
 
     void createDocument(int start, int end)
@@ -203,8 +205,6 @@ public:
         }
 
         checkCollection_();
-        MiningTask* miningTask = attrManager_->getAttrMiningTask();
-        miningTaskBuilder_->addTask(miningTask);
 
         BOOST_CHECK(miningTaskBuilder_->buildCollection());
         //BOOST_CHECK(attrManager_->processCollection());
