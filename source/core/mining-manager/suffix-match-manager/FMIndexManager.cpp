@@ -73,8 +73,39 @@ bool FMIndexManager::loadAll()
         std::ifstream ifs((data_root_path_ + "/" + fmit->first + ".fm_idx").c_str());
         if(ifs)
         {
+            LOG(INFO) << "loading fmindex for property : " << fmit->first;
             fmit->second.fmi.reset(new FMIndexType);
+            ifs.read((char*)&fmit->second.docarray_mgr_index, sizeof(fmit->second.docarray_mgr_index));
             fmit->second.fmi->load(ifs);
+            if(fmit->second.docarray_mgr_index == (size_t)-1)
+            {
+                // the LESS_DV property hold its own doc_array data.
+                if(fmit->second.type != LESS_DV)
+                {
+                    LOG(ERROR) << "the doc array should be stored to doc array manager for Not LESS_DV property: " << fmit->first;
+                    clearFMIData();
+                    return false;
+                }
+                if(fmit->second.fmi->docCount() == 0)
+                {
+                    LOG(ERROR) << "the LESS_DV property's doc array count is zero!!";
+                }
+            }
+            else
+            {
+                if(fmit->second.type == LESS_DV)
+                {
+                    LOG(ERROR) << "Doc array should not be stored to doc array manager for LESS_DV property: " << fmit->first;
+                    clearFMIData();
+                    return false;
+                }
+                if(fmit->second.fmi->docCount() != 0 )
+                {
+                    LOG(ERROR) << "the COMMON property's doc array count must be zero!!";
+                    clearFMIData();
+                    return false;
+                }
+            }
             //if(fmit->second.type == COMMON)
             //{
             //    size_t cnt = fmit->second.fmi->docCount();
@@ -98,6 +129,7 @@ bool FMIndexManager::loadAll()
         std::ifstream ifs((data_root_path_ + "/" + "AllDocArray.doc_array").c_str());
         if(ifs)
         {
+            LOG(INFO) << "loading all doc array ";
             docarray_mgr_.load(ifs);
             doc_count_ = docarray_mgr_.getDocCount();
         }
@@ -239,6 +271,7 @@ size_t FMIndexManager::putFMIndexToDocArrayMgr(FMIndexType* fmi)
     size_t mgr_index = docarray_mgr_.mainDocArrayNum();
     FMDocArrayMgrType::DocArrayItemT& doc_array_item = docarray_mgr_.addMainDocArrayItem();
     // take the owner of data to avoid duplication.
+    LOG(INFO) << "add the doc array to manager, docCount: " << fmi->docCount(); 
     doc_array_item.doc_delim.swap(fmi->getDocDelim());
     doc_array_item.doc_array_ptr.swap(fmi->getDocArray());
     return mgr_index;
@@ -314,7 +347,7 @@ void FMIndexManager::getMatchedDocIdList(
     }
     else if(cit->second.type == LESS_DV)
     {
-        size_t match_filter_index = filter_manager->getPropertyFilterIndex(property);
+        size_t match_filter_index = filter_manager->getPropertyId(property);
         if(match_filter_index == (size_t)-1)
         {
             LOG(ERROR) << "the LESS_DV property : " << property << "  not found in filter.";
@@ -361,7 +394,8 @@ void FMIndexManager::convertMatchRanges(
         converted_max_match_list.reserve(converted_max_match_list.size() + tmp_docid_list.size());
         for(size_t j = 0; j < tmp_docid_list.size(); ++j)
         {
-            FilterManager::FilterIdRange range = filter_manager->getNumFilterIdRangeExactly(property, tmp_docid_list[j]);
+            FilterManager::FilterIdRange range = filter_manager->getNumFilterIdRangeExactly(
+                filter_manager->getPropertyId(property), tmp_docid_list[j]);
             cout << "( id: " << tmp_docid_list[j] << ", converted range: " << range.start << "-" << range.end << ")" << std::flush;
             if(range.start >= range.end)
                 continue;
@@ -406,7 +440,7 @@ size_t FMIndexManager::backwardSearch(const std::string& prop, const izenelib::u
 void FMIndexManager::getTopKDocIdListByFilter(
     const std::string& property,
     const FilterManager* filter_manager,
-    const std::vector<size_t> &filter_index_list,
+    const std::vector<size_t> &prop_id_list,
     const std::vector<RangeListT> &filter_ranges,
     const RangeListT &match_ranges_list,
     const std::vector<double> &max_match_list,
@@ -419,28 +453,31 @@ void FMIndexManager::getTopKDocIdListByFilter(
     FMIndexConstIter cit = all_fmi_.find(property);
     if(cit == all_fmi_.end())
     {
+        LOG(INFO) << "get topk failed for not exist property : " << property;
         return;
     }
     if(cit->second.type == COMMON)
     {
+        LOG(INFO) << "get topk in common property : " << property;
         if(cit->second.docarray_mgr_index == (size_t)-1)
         {
             LOG(ERROR) << "the common property : " << property << "  not found in doc array.";
             return;
         }
-        docarray_mgr_.getTopKDocIdListByFilter(filter_index_list, filter_ranges,
+        docarray_mgr_.getTopKDocIdListByFilter(prop_id_list, filter_ranges,
             cit->second.docarray_mgr_index, false, match_ranges_list, max_match_list,
             max_docs, res_list);
     }
     else if(cit->second.type == LESS_DV)
     {
-        size_t match_filter_index = filter_manager->getPropertyFilterIndex(property);
+        LOG(INFO) << "get topk in LESS_DV property : " << property;
+        size_t match_filter_index = filter_manager->getPropertyId(property);
         if(match_filter_index == (size_t)-1)
         {
             LOG(ERROR) << "the LESS_DV property : " << property << "  not found in filter.";
             return;
         }
-        docarray_mgr_.getTopKDocIdListByFilter(filter_index_list, filter_ranges,
+        docarray_mgr_.getTopKDocIdListByFilter(prop_id_list, filter_ranges,
             match_filter_index, true, match_ranges_list, max_match_list, max_docs,
             res_list);
     }
@@ -457,7 +494,7 @@ void FMIndexManager::saveAll()
     {
         std::ofstream ofs;
         ofs.open((data_root_path_ + "/" + fmit->first + ".fm_idx").c_str());
-        ofs.write((const char*)fmit->second.docarray_mgr_index, sizeof(fmit->second.docarray_mgr_index));
+        ofs.write((const char*)&fmit->second.docarray_mgr_index, sizeof(fmit->second.docarray_mgr_index));
         fmit->second.fmi->save(ofs);
         ++fmit;
     }

@@ -387,11 +387,13 @@ namespace sf1r {
         bool IsOpen() const;
         bool Open();
         static void Clear(const std::string& path, int mode=3);
+        static std::string GetVersion(const std::string& path);
         bool Index(const std::string& scd_path);
         void Test(const std::string& scd_path);
         bool DoMatch(const std::string& scd_path);
         bool Process(const Document& doc, Product& result_product);
-        bool ProcessBook(const Document& doc, Product& result_product);
+        static bool GetIsbnAttribute(const Document& doc, std::string& isbn);
+        static bool ProcessBook(const Document& doc, Product& result_product);
         bool GetProduct(const std::string& pid, Product& product);
 
         void SetCmaPath(const std::string& path)
@@ -411,7 +413,7 @@ namespace sf1r {
 
 
 
-        void ParseAttributes_(const UString& ustr, std::vector<Attribute>& attributes);
+        static void ParseAttributes_(const UString& ustr, std::vector<Attribute>& attributes);
         void GenSuffixes_(const std::vector<term_t>& term_list, Suffixes& suffixes);
         void GenSuffixes_(const std::string& text, Suffixes& suffixes);
         void ConstructSuffixTrie_(TrieType& trie);
@@ -492,6 +494,7 @@ namespace sf1r {
         KeywordVector keyword_vector_;
 
         const static double optional_weight_ = 0.2;
+        const static std::string VERSION;
         
     };
 }

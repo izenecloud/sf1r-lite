@@ -69,21 +69,17 @@ private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
     typedef FMIndexType::MatchRangeListT  RangeListT;
 
-    bool getAllFilterRangeFromGroupLable(
+    bool getAllFilterRangeFromGroupLable_(
             const faceted::GroupParam& group_param,
-            std::vector<size_t>& filterindex_list,
+            std::vector<size_t>& prop_id_list,
             std::vector<RangeListT>& filter_range_list) const;
-    bool getAllFilterRangeFromAttrLable(
+    bool getAllFilterRangeFromAttrLable_(
             const faceted::GroupParam& group_param,
-            std::vector<size_t>& filterindex_list,
+            std::vector<size_t>& prop_id_list,
             std::vector<RangeListT>& filter_range_list) const;
-    bool getStringFilterRangeFromFilterParam(
+    bool getAllFilterRangeFromFilterParam_(
             const std::vector<QueryFiltering::FilteringType>& filter_param,
-            std::vector<size_t>& filterindex_list,
-            std::vector<RangeListT>& filter_range_list) const;
-    bool getNumericFilterRangeFromFilterParam(
-            const std::vector<QueryFiltering::FilteringType>& filter_param,
-            std::vector<size_t>& filterindex_list,
+            std::vector<size_t>& prop_id_list,
             std::vector<RangeListT>& filter_range_list) const;
 
     std::string data_root_path_;

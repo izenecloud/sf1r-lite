@@ -67,7 +67,7 @@ public:
     void getTopKDocIdListByFilter(
             const std::string& property,
             const FilterManager* filter_manager,
-            const std::vector<size_t> &filter_index_list,
+            const std::vector<size_t> &prop_id_list,
             const std::vector<RangeListT> &filter_ranges,
             const RangeListT &match_ranges_list,
             const std::vector<double> &max_match_list,

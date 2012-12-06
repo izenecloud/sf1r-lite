@@ -101,6 +101,7 @@ controllers:
       - get_similar
       - get_in_date_range
       - get_temporal_similar
+      - get_topics
 
   RecommendController:
     actions:

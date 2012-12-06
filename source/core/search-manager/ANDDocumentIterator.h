@@ -187,6 +187,13 @@ inline docid_t ANDDocumentIterator::skipTo(docid_t target)
         {
             nFoundId = do_skipTo(currentDoc);
             currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currentDoc);
+            ///skipto and next have different semantics:
+            ///for next, if it does not have value, it will return false.
+            ///while for skipto, if the target is the same as current last doc, 
+            ///it will still return target
+            if((nFoundId != MAX_DOC_ID) && ((nFoundId == currentDoc) &&(currDocOfNOTIter_ == currentDoc)))
+                return MAX_DOC_ID;
+            currentDoc = nFoundId;
         }
         while ((nFoundId != MAX_DOC_ID)&&(nFoundId == currDocOfNOTIter_));
         return nFoundId;

@@ -21,6 +21,8 @@ public:
 
     bool isEnable; /// whether enable product ranking
 
+    bool isDebug; /// whether print debug message
+
     std::vector<ProductScoreConfig> scores;
 
     ProductRankingConfig();
@@ -55,6 +57,7 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & isEnable;
+        ar & isDebug;
         ar & scores;
         ar & scoreTypeMap;
     }

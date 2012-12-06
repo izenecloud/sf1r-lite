@@ -47,6 +47,7 @@ class SearchManagerPreProcessor;
 class CustomRankManager;
 class ScoreDocEvaluator;
 class ProductScorerFactory;
+class ProductRankerFactory;
 
 namespace faceted
 {
@@ -98,6 +99,10 @@ public:
             uint32_t start = 0,
             bool enable_parallel_searching = false);
 
+    bool rerank(
+        const KeywordSearchActionItem& actionItem,
+        KeywordSearchResult& resultItem);
+
     void reset_all_property_cache();
 
     void set_filter_hook(filter_hook_t filter_hook)
@@ -114,6 +119,8 @@ public:
     void setCustomRankManager(CustomRankManager* customRankManager);
 
     void setProductScorerFactory(ProductScorerFactory* productScorerFactory);
+
+    void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
 
     QueryBuilder* getQueryBuilder() { return queryBuilder_.get(); }
 
@@ -210,6 +217,8 @@ private:
 
     boost::threadpool::pool  threadpool_;
     SearchManagerPreProcessor*  preprocessor_;
+
+    ProductRankerFactory* productRankerFactory_;
 };
 
 } // end - namespace sf1r

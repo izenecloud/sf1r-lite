@@ -1873,6 +1873,13 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     if (task_node)
     {
         mining_schema.tdt_enable = true;
+        std::string perform_tdt_task;
+        getAttribute(task_node, "enabletdt", perform_tdt_task);
+        int enable = parseTruth(perform_tdt_task);
+        if(1 == enable)
+            mining_schema.tdt_config.perform_tdt_task= true;
+        else
+            mining_schema.tdt_config.perform_tdt_task= false;
     }
 
     task_node = getUniqChildElement(mining_schema_node, "IISE", false);
@@ -2049,6 +2056,7 @@ void CollectionConfig::parseProductRankingNode(
 
     ProductRankingConfig& rankConfig = miningSchema.product_ranking_config;
     rankConfig.isEnable = true;
+    getAttribute(rankNode, "debug", rankConfig.isDebug, false);
 
     Iterator<Element> it("Score");
     for (it = it.begin(rankNode); it != it.end(); ++it)
