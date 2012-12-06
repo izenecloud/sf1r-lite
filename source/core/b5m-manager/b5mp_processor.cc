@@ -17,8 +17,8 @@
 using namespace sf1r;
 
 B5mpProcessor::B5mpProcessor(const std::string& mdb_instance,
-    const std::string& last_mdb_instance, BrandDb* bdb)
-: mdb_instance_(mdb_instance), last_mdb_instance_(last_mdb_instance), bdb_(bdb)
+    const std::string& last_mdb_instance)
+: mdb_instance_(mdb_instance), last_mdb_instance_(last_mdb_instance)
 {
 }
 
@@ -55,17 +55,17 @@ bool B5mpProcessor::Generate()
         //}
     //}
 
-    if(bdb_!=NULL)
-    {
-        if(!bdb_->is_open())
-        {
-            if(!bdb_->open())
-            {
-                LOG(ERROR)<<"bdb open error"<<std::endl;
-                return false;
-            }
-        }
-    }
+    //if(bdb_!=NULL)
+    //{
+        //if(!bdb_->is_open())
+        //{
+            //if(!bdb_->open())
+            //{
+                //LOG(ERROR)<<"bdb open error"<<std::endl;
+                //return false;
+            //}
+        //}
+    //}
     ScdMerger::PropertyConfig config;
     config.output_dir = B5MHelper::GetB5mpPath(mdb_instance_);
     B5MHelper::PrepareEmptyDir(config.output_dir);
@@ -101,10 +101,10 @@ bool B5mpProcessor::Generate()
     //po_map_writer_->Close();
     //delete po_map_writer_;
     //po_map_writer_ = NULL;
-    if(bdb_!=NULL)
-    {
-        bdb_->flush();
-    }
+    //if(bdb_!=NULL)
+    //{
+        //bdb_->flush();
+    //}
     return true;
 }
 
@@ -235,17 +235,17 @@ void B5mpProcessor::ProductOutput_(Document& doc, int& type)
     {
         doc.clearExceptDOCID();
     }
-    else if(bdb_!=NULL)
-    {
-        UString spid;
-        doc.getProperty("DOCID", spid);
-        uint128_t pid = B5MHelper::UStringToUint128(spid);
-        UString brand;
-        doc.getProperty(B5MHelper::GetBrandPropertyName(), brand);
-        if(brand.length()>0)
-        {
-            bdb_->set(pid, brand);
-        }
-    }
+    //else if(bdb_!=NULL)
+    //{
+        //UString spid;
+        //doc.getProperty("DOCID", spid);
+        //uint128_t pid = B5MHelper::UStringToUint128(spid);
+        //UString brand;
+        //doc.getProperty(B5MHelper::GetBrandPropertyName(), brand);
+        //if(brand.length()>0)
+        //{
+            //bdb_->set(pid, brand);
+        //}
+    //}
 }
 

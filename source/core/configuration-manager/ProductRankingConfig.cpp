@@ -92,6 +92,7 @@ bool checkScoreConfig(
     {
     case MERCHANT_SCORE:
     case CATEGORY_SCORE:
+    case DIVERSITY_SCORE:
         return isStringGroup(scoreConfig, collectionMeta, error);
 
     case POPULARITY_SCORE:
@@ -111,11 +112,13 @@ const std::string ProductRankingConfig::kScoreTypeName[] =
     "category",     // CATEGORY_SCORE
     "relevance",    // RELEVANCE_SCORE
     "popularity",   // POPULARITY_SCORE
-    "fuzzy"         // FUZZY_SCORE
+    "fuzzy",        // FUZZY_SCORE
+    "diversity"     // DIVERSITY_SCORE
 };
 
 ProductRankingConfig::ProductRankingConfig()
     : isEnable(false)
+    , isDebug(false)
     , scores(PRODUCT_SCORE_NUM)
 {
     for (int i = 0; i < PRODUCT_SCORE_NUM; ++i)
@@ -156,7 +159,8 @@ std::string ProductRankingConfig::toStr() const
 {
     std::ostringstream oss;
 
-    oss << "ProductRankingConfig::isEnable: " << isEnable << std::endl;
+    oss << "ProductRankingConfig::isEnable: " << isEnable
+        << ", isDebug: " << isDebug << std::endl;
 
     for (std::vector<ProductScoreConfig>::const_iterator it = scores.begin();
          it != scores.end(); ++it)

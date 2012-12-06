@@ -147,6 +147,8 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
         if (resultItem.topKDocs_.empty())
             return true;
 
+        searchManager_->rerank(actionItem, resultItem);
+
         if (! getSummaryMiningResult_(actionItem, resultItem, false))
             return false;
 
@@ -245,6 +247,7 @@ void SearchWorker::makeQueryIdentity(
         identity.sortInfo = item.sortPriorityList_;
         identity.filterInfo = item.filteringList_;
         identity.groupParam = item.groupParam_;
+        identity.removeDuplicatedDocs = item.removeDuplicatedDocs_;
         identity.rangeProperty = item.rangePropertyName_;
         identity.strExp = item.strExp_;
         identity.paramConstValueMap = item.paramConstValueMap_;

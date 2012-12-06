@@ -6,6 +6,7 @@
 #include <la-manager/LAPool.h>
 #include <mining-manager/util/split_ustr.h>
 #include "FilterManager.h"
+#include "FMIndexManager.h"
 namespace sf1r
 {
 
@@ -14,12 +15,9 @@ SuffixMatchMiningTask::SuffixMatchMiningTask(boost::shared_ptr<DocumentManager> 
         , std::vector<std::string>& attr_property_list
         , std::set<std::string>& number_property_list
         , std::vector<std::string>& date_property_list
-        , boost::shared_ptr<FMIndexType>& fmi
+        , boost::shared_ptr<FMIndexManager>& fmi
         , boost::shared_ptr<FilterManager>& filter_manager
-        , std::string data_root_path
-        , std::string fm_index_path
-        , std::string orig_text_path
-        , std::string property)
+        , std::string data_root_path)
     : document_manager_(document_manager)
     , group_property_list_(group_property_list)
     , attr_property_list_(attr_property_list)
@@ -28,19 +26,15 @@ SuffixMatchMiningTask::SuffixMatchMiningTask(boost::shared_ptr<DocumentManager> 
     , fmi_(fmi)
     , filter_manager_(filter_manager)
     , data_root_path_(data_root_path)
-    , fm_index_path_(fm_index_path)
-    , orig_text_path_(orig_text_path)
-    , property_(property)
-    , new_fmi_tmp(NULL)
+    , new_fmi_manager(NULL)
     , new_filter_manager(NULL)
 {
-    new_fmi_tmp = new FMIndexType();
+    new_fmi_manager = new FMIndexManager(data_root_path_, document_manager_);
 }
 
 SuffixMatchMiningTask::~SuffixMatchMiningTask()
 {
-    if(new_filter_manager) delete new_filter_manager;
-    if(new_fmi_tmp) delete new_fmi_tmp;
+
 }
 
 void SuffixMatchMiningTask::preProcess()
@@ -50,6 +44,15 @@ void SuffixMatchMiningTask::preProcess()
     std::vector<FilterManager::NumFilterItemMapT> num_filter_map;
     std::vector<FilterManager::NumFilterItemMapT> date_filter_map;
     
+    std::vector<std::string> properties;
+    for(int i = 0; i < FMIndexManager::LAST; ++i)
+    {
+        fmi_->getProperties(properties, (FMIndexManager::PropertyFMType)i);
+        new_fmi_manager->addProperties(properties, (FMIndexManager::PropertyFMType)i);
+        std::vector<std::string>().swap(properties);
+    }
+
+    // do filter building only when filter is enable.
     if (filter_manager_)
     {
         new_filter_manager = new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
@@ -66,21 +69,6 @@ void SuffixMatchMiningTask::preProcess()
         {
             max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, group_filter_map);
             max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
-        }
-        std::ifstream ifs(orig_text_path_.c_str());
-        if (ifs)
-        {
-            new_fmi_tmp->loadOriginalText(ifs);
-            std::vector<uint16_t> orig_text;
-            new_fmi_tmp->swapOrigText(orig_text);
-            std::vector<uint32_t> del_docid_list;
-            document_manager_->getDeletedDocIdList(del_docid_list);
-            fmi_->reconstructText(del_docid_list, orig_text);
-            new_fmi_tmp->swapOrigText(orig_text);
-        }
-        else
-        {
-            last_docid = 0;
         }
     }
 
@@ -101,56 +89,42 @@ void SuffixMatchMiningTask::preProcess()
         new_filter_manager->buildDateFilterData(0, document_manager_->getMaxDocId(),
                                                 date_property_list_, date_filter_map);
         
-        new_fmi_tmp->setFilterList(new_filter_manager->getStringFilterList());
-        new_fmi_tmp->setAuxFilterList(new_filter_manager->getNumericFilterList());
-        
+        new_fmi_manager->setFilterList(new_filter_manager->getFilterList());
         std::vector<FilterManager::StrFilterItemMapT>().swap(group_filter_map);
         std::vector<FilterManager::StrFilterItemMapT>().swap(attr_filter_map);
         std::vector<FilterManager::NumFilterItemMapT>().swap(num_filter_map);
     }
     LOG(INFO) << "building filter data finished";
+
+    if(!new_fmi_manager->initAndLoadOldDocs(fmi_.get()))
+    {
+        LOG(ERROR) << "fmindex init building failed, must stop. ";
+        new_fmi_manager->clearFMIData();
+        return ;///more need to do ;
+    }
 }
 
 void SuffixMatchMiningTask::postProcess()
 {
-    std::ofstream ofs(orig_text_path_.c_str());
-    new_fmi_tmp->saveOriginalText(ofs);
-    ofs.close();
+    new_fmi_manager->buildCollectionAfter();
 
-    LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
-    LOG(INFO) << "building fm-index....";
-    new_fmi_tmp->build();
-
+    new_fmi_manager->buildExternalFilter();
     {
         WriteLock lock(mutex_);
-        fmi_.reset(new_fmi_tmp);
+        fmi_.reset(new_fmi_manager);
         filter_manager_.reset(new_filter_manager);
     }
 
-    ofs.open(fm_index_path_.c_str());
-    fmi_->save(ofs);
+    fmi_->saveAll();
     filter_manager_->saveFilterId();
-    filter_manager_->clearAllFilterLists();
+    filter_manager_->clearFilterList();
     LOG(INFO) << "building fm-index finished";
 }
 
 bool SuffixMatchMiningTask::buildDocment(docid_t docID, const Document& doc)
 {
-    if (doc.getId() == 0)
-    {
-        new_fmi_tmp->addDoc(NULL, 0);
-        return true;
-    }
-    Document::property_const_iterator it = doc.findProperty(property_);
-    if (it == doc.propertyEnd())
-    {
-       new_fmi_tmp->addDoc(NULL, 0);
-       return true;
-    }
-    izenelib::util::UString text = it->second.get<UString>();
-    Algorithm<UString>::to_lower(text);
-    text = Algorithm<UString>::trim(text);
-    new_fmi_tmp->addDoc(text.data(), text.length());
+    bool failed = (doc.getId() == 0);
+    new_fmi_manager->appendDocsAfter(failed, doc);
     return true;
 }
 

@@ -98,6 +98,8 @@ class CustomDocIdConverter;
 class ProductScorerFactory;
 class ProductScoreManager;
 class OfflineProductScorerFactory;
+class ProductRankerFactory;
+class NaiveTopicDetector;
 class SuffixMatchManager;
 class IncrementalManager;
 class ProductMatcher;
@@ -315,6 +317,8 @@ public:
 
     bool GetTdtTopicInfo(const izenelib::util::UString& text, std::pair<idmlib::tdt::TrackResult, std::vector<izenelib::util::UString> >& info);
 
+    bool GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit);
+
     void GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result);
 
     void InjectQueryCorrection(const izenelib::util::UString& query, const izenelib::util::UString& result);
@@ -504,6 +508,10 @@ private:
         std::vector<Document>& docList
     );
 
+    bool initMerchantScoreManager_(const ProductRankingConfig& rankConfig);
+    bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
+    bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
+
 public:
     /// Should be initialized after construction
     static std::string system_resource_path_;
@@ -602,9 +610,13 @@ private:
     /** Product Score Factory */
     ProductScorerFactory* productScorerFactory_;
 
+    /** For Merchant Diversity */
+    ProductRankerFactory* productRankerFactory_;
+
     /** TDT */
     std::string tdt_path_;
     TdtStorageType* tdt_storage_;
+    NaiveTopicDetector* topicDetector_;
 
     /** SUMMARIZATION */
     std::string summarization_path_;

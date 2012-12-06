@@ -324,11 +324,16 @@
             <xs:sequence>
                 <xs:element name="Score" type="ScoreType" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
+            <xs:attribute name="debug" type="YesNoType" use="optional"/>
         </xs:complexType>
     </xs:element>
 
     <xs:element name="TDT">
         <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="TokenizeDictionary" minOccurs="1" maxOccurs="1"/>
+            </xs:sequence>
+        <xs:attribute name="enabletdt" type="YesNoType" use="required"/>
         </xs:complexType>
     </xs:element>
 

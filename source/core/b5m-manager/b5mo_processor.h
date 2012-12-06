@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "offer_db.h"
+#include "brand_db.h"
 #include "product_matcher.h"
 //#include "history_db_helper.h"
 
@@ -11,7 +12,7 @@ namespace sf1r {
     class RpcServerConnectionConfig;
     class B5moProcessor {
     public:
-        B5moProcessor(OfferDb* odb, ProductMatcher* matcher, 
+        B5moProcessor(OfferDb* odb, ProductMatcher* matcher, BrandDb* bdb,
             int mode,
             RpcServerConnectionConfig* img_server_config);
 
@@ -27,6 +28,7 @@ namespace sf1r {
     private:
         OfferDb* odb_;
         ProductMatcher* matcher_;
+        BrandDb* bdb_;
         int mode_;
         std::string human_match_file_;
         boost::unordered_set<std::string> mobile_source_;

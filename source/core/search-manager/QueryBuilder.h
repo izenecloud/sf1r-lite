@@ -169,8 +169,7 @@ private:
         bool hasUnigramProperty = true,
         bool isUnigramSearchMode = false,
         const std::string& virtualProperty = "",
-        bool hasVirtualIterBuilt = false,
-        int parentAndOrFlag = -1
+        int parentAndOrFlag = 0
     );
 
     void getTermIdsAndIndexesOfSiblings(

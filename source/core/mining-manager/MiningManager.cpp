@@ -43,9 +43,13 @@
 #include "product-score-manager/ProductScoreManager.h"
 #include "product-score-manager/OfflineProductScorerFactoryImpl.h"
 #include "product-score-manager/ProductScoreTable.h"
+#include "product-ranker/ProductRankerFactory.h"
+
+#include "tdt-submanager/NaiveTopicDetector.hpp"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/IncrementalManager.hpp"
+#include "suffix-match-manager/FMIndexManager.h"
 
 #include <search-manager/SearchManager.h>
 #include <index-manager/IndexManager.h>
@@ -141,7 +145,9 @@ MiningManager::MiningManager(
     , offlineScorerFactory_(NULL)
     , productScoreManager_(NULL)
     , productScorerFactory_(NULL)
+    , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
+    , topicDetector_(NULL)
     , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
@@ -156,6 +162,7 @@ MiningManager::~MiningManager()
     if (analyzer_) delete analyzer_;
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
+    if (productRankerFactory_) delete productRankerFactory_;
     if (productScorerFactory_) delete productScorerFactory_;
     if (productScoreManager_) delete productScoreManager_;
     if (offlineScorerFactory_) delete offlineScorerFactory_;
@@ -165,6 +172,7 @@ MiningManager::~MiningManager()
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
     if (tdt_storage_) delete tdt_storage_;
+    if (topicDetector_) delete topicDetector_;
     if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
@@ -453,96 +461,33 @@ bool MiningManager::open()
             }
         }
 
-        const ProductRankingConfig& rankConfig =
-            mining_schema_.product_ranking_config;
-        const ProductScoreConfig& merchantScoreConfig =
-            rankConfig.scores[MERCHANT_SCORE];
-
-        /** merchant score */
-        if (!merchantScoreConfig.propName.empty() && groupManager_)
-        {
-            if (merchantScoreManager_) delete merchantScoreManager_;
-
-            const bfs::path scoreDir = bfs::path(prefix_path) / "merchant_score";
-            bfs::create_directories(scoreDir);
-
-            faceted::PropValueTable* merchantValueTable =
-                groupManager_->getPropValueTable(merchantScoreConfig.propName);
-            const ProductScoreConfig& categoryScoreConfig =
-                rankConfig.scores[CATEGORY_SCORE];
-            faceted::PropValueTable* categoryValueTable =
-                groupManager_->getPropValueTable(categoryScoreConfig.propName);
-
-            merchantScoreManager_ = new MerchantScoreManager(
-                    merchantValueTable, categoryValueTable);
-
-            const std::string scorePath = (scoreDir / "score.txt").string();
-            if (! merchantScoreManager_->open(scorePath))
-            {
-                std::cerr << "open " << scorePath << " failed" << std::endl;
-                return false;
-            }
-        }
-
         if (customDocIdConverter_) delete customDocIdConverter_;
         customDocIdConverter_ = new CustomDocIdConverter(*idManager_);
 
-        /** product ranking */
-        if (rankConfig.isEnable)
-        {
-            LOG(INFO) << rankConfig.toStr();
+        const ProductRankingConfig& rankConfig =
+            mining_schema_.product_ranking_config;
 
-            if (productScorerFactory_) delete productScorerFactory_;
-            if (productScoreManager_) delete productScoreManager_;
-            if (offlineScorerFactory_) delete offlineScorerFactory_;
-            if (customRankManager_) delete customRankManager_;
-
-            const bfs::path customRankDir = bfs::path(prefix_path) / "custom_rank";
-            bfs::create_directories(customRankDir);
-
-            const std::string customRankPath = (customRankDir / "custom.db").string();
-            customRankManager_ = new CustomRankManager(
-                    customRankPath,
-                    *customDocIdConverter_,
-                    document_manager_.get());
-
-            offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(*this);
-
-            const std::string scoreDir = prefix_path + "/product_score";
-            productScoreManager_ = new ProductScoreManager(
-                rankConfig,
-                miningConfig_.product_ranking_param,
-                *offlineScorerFactory_,
-                *document_manager_,
-                collectionName_,
-                scoreDir,
-                searchCache_);
-
-            if (! productScoreManager_->open())
-            {
-                std::cerr << "open product score failed" << std::endl;
-                return false;
-            }
-
-            productScorerFactory_ = new ProductScorerFactory(
-                    rankConfig, *this);
-
-            searchManager_->setCustomRankManager(customRankManager_);
-            searchManager_->setProductScorerFactory(productScorerFactory_);
-        }
+        if (!initMerchantScoreManager_(rankConfig) ||
+            !initProductScorerFactory_(rankConfig) ||
+            !initProductRankerFactory_(rankConfig))
+            return false;
 
         /** tdt **/
         if (mining_schema_.tdt_enable)
         {
-            tdt_path_ = prefix_path + "/tdt";
-            boost::filesystem::create_directories(tdt_path_);
-            std::string tdt_storage_path = tdt_path_+"/storage";
-            tdt_storage_ = new TdtStorageType(tdt_storage_path);
-            if (!tdt_storage_->Open())
+            if(mining_schema_.tdt_config.perform_tdt_task)
             {
-                std::cerr<<"tdt init failed"<<std::endl;
-                return false;
+                tdt_path_ = prefix_path + "/tdt";
+                boost::filesystem::create_directories(tdt_path_);
+                std::string tdt_storage_path = tdt_path_+"/storage";
+                tdt_storage_ = new TdtStorageType(tdt_storage_path);
+                if (!tdt_storage_->Open())
+                {
+                    std::cerr<<"tdt init failed"<<std::endl;
+                    return false;
+                }
             }
+            topicDetector_ = new NaiveTopicDetector(mining_schema_.tdt_config.tdt_tokenize_dicpath);
         }
 
 
@@ -570,9 +515,11 @@ bool MiningManager::open()
             LOG(INFO) << "suffix match enabled.";
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
-                    mining_schema_.suffixmatch_schema.suffix_match_property,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
                     document_manager_, groupManager_, attrManager_, searchManager_.get());
+            std::vector<std::string> index_properties;
+            index_properties.push_back(mining_schema_.suffixmatch_schema.suffix_match_property);
+            suffixMatchManager_->addFMIndexProperties(index_properties, FMIndexManager::COMMON, true);
             // reading suffix config and load filter data here.
             suffixMatchManager_->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
             suffixMatchManager_->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
@@ -599,6 +546,49 @@ bool MiningManager::open()
                 {
                     incrementalManager_->InitManager_();
                     incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                }
+            }
+
+            if (mining_schema_.suffixmatch_schema.suffix_match_enable)
+            {
+                if(mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+                {
+                    if(!(suffixMatchManager_->isStartFromLocalFM()))
+                    {
+                        LOG(INFO)<<"[] Start suffix init fm-index..."<<endl;
+                        suffixMatchManager_->buildMiningTask();
+                        MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                        miningTaskBuilder_->addTask(miningTask);
+                        incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                    }
+                    else
+                    {
+                        uint32_t last_docid = 0;
+                        uint32_t docNum = 0;
+                        uint32_t maxDoc = 0;
+                        incrementalManager_->getLastDocid(last_docid);
+                        incrementalManager_->getDocNum(docNum);
+                        incrementalManager_->getMaxNum(maxDoc);
+                        if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
+                        {
+                            LOG(INFO)<<"Rebuilding fm-index....."<<endl;
+                            suffixMatchManager_->buildMiningTask();
+                            MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                            miningTaskBuilder_->addTask(miningTask);
+                            incrementalManager_->reset();
+                            incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                        }
+                        else
+                        {
+                            incrementalManager_->createIndex_();
+                        }
+                    }
+                }
+                else
+                {
+                    suffixMatchManager_->buildMiningTask();
+                    MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                    miningTaskBuilder_->addTask(miningTask);
                 }
             }
         }
@@ -728,49 +718,6 @@ void MiningManager::DoContinue()
 
 bool MiningManager::DOMiningTask()
 {
-    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
-    {
-        if(mining_schema_.suffixmatch_schema.suffix_incremental_enable)
-        {
-            if(!(suffixMatchManager_->isStartFromLocalFM()))
-            {
-                LOG(INFO)<<"[] Start suffix init fm-index..."<<endl;
-                suffixMatchManager_->buildMiningTask();
-                MiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                miningTaskBuilder_->addTask(miningTask);
-                incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-            }
-            else
-            {
-                uint32_t last_docid = 0;
-                uint32_t docNum = 0;
-                uint32_t maxDoc = 0;
-                incrementalManager_->getLastDocid(last_docid);
-                incrementalManager_->getDocNum(docNum);
-                incrementalManager_->getMaxNum(maxDoc);
-                if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
-                {
-                    LOG(INFO)<<"Rebuilding fm-index....."<<endl;
-                    suffixMatchManager_->buildMiningTask();
-                    MiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                    miningTaskBuilder_->addTask(miningTask);
-                    incrementalManager_->reset();
-                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-                }
-                else
-                {
-                    incrementalManager_->createIndex_();
-                }
-            }
-        }
-        else
-        {
-            suffixMatchManager_->buildMiningTask();
-            MiningTask* miningTask = suffixMatchManager_->getMiningTask();
-            miningTaskBuilder_->addTask(miningTask);
-        }
-    }
-
     miningTaskBuilder_->buildCollection();
     return true;
 }
@@ -875,7 +822,7 @@ bool MiningManager::DoMiningCollection()
     }
 
     //do tdt
-    if (mining_schema_.tdt_enable)
+    if (mining_schema_.tdt_enable && mining_schema_.tdt_config.perform_tdt_task)
     {
         idmlib::tdt::Storage* next_storage = tdt_storage_->Next();
         if (!next_storage)
@@ -1828,6 +1775,12 @@ bool MiningManager::GetTdtTopicInfo(const izenelib::util::UString& text, idmlib:
     return storage->GetTopicInfo(text, info);
 }
 
+bool MiningManager::GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit)
+{
+    if (!mining_schema_.tdt_enable) return false;
+    return topicDetector_->GetTopics(content, topic_list,limit);
+}
+
 void MiningManager::GetRefinedQuery(const izenelib::util::UString& query, izenelib::util::UString& result)
 {
     if (!qcManager_) return;
@@ -1914,9 +1867,12 @@ bool MiningManager::GetSuffixMatch(
     izenelib::util::UString queryU(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
     std::vector<std::pair<double, uint32_t> > res_list;
 
+    std::vector<string> search_in_properties;
+    search_in_properties.push_back(mining_schema_.suffixmatch_schema.suffix_match_property);
+
     if (!use_fuzzy)
     {
-        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, max_docs, res_list);
+        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, search_in_properties, max_docs, res_list);
     }
     else
     {
@@ -1930,7 +1886,7 @@ bool MiningManager::GetSuffixMatch(
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                queryU, max_docs,
+                queryU, search_in_properties, max_docs,
                 actionOperation.actionItem_.searchingMode_.filtermode_,
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
@@ -2027,11 +1983,11 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
     }
     Document doc;
     doc.property("Title") = query;
-    ProductMatcher::Category result_category;
     ProductMatcher::Product result_product;
-    if (productMatcher_->Process(doc, result_category, result_product))
+    if(productMatcher_->Process(doc, result_product))
     {
-        if (!result_category.name.empty())
+        const std::string& category_name = result_product.scategory;
+        if(!category_name.empty())
         {
             bool valid = true;
             if (!match_category_restrict_.empty())
@@ -2039,7 +1995,7 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
                 valid = false;
                 for (uint32_t i=0;i<match_category_restrict_.size();i++)
                 {
-                    if (boost::regex_match(result_category.name, match_category_restrict_[i]))
+                    if(boost::regex_match(category_name, match_category_restrict_[i]))
                     {
                         valid = true;
                         break;
@@ -2049,7 +2005,7 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
             }
             if (valid)
             {
-                category = izenelib::util::UString(result_category.name, izenelib::util::UString::UTF_8);
+                category = izenelib::util::UString(category_name, izenelib::util::UString::UTF_8);
                 return true;
             }
         }
@@ -2148,5 +2104,109 @@ bool MiningManager::getProductScore(
     }
 
     scoreValue = productScoreTable->getScoreHasLock(docId);
+    return true;
+}
+
+bool MiningManager::initMerchantScoreManager_(const ProductRankingConfig& rankConfig)
+{
+    const ProductScoreConfig& merchantScoreConfig =
+        rankConfig.scores[MERCHANT_SCORE];
+
+    if (merchantScoreConfig.propName.empty() || !groupManager_)
+        return true;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path scoreDir(parentDir / "merchant_score");
+    bfs::create_directories(scoreDir);
+
+    faceted::PropValueTable* merchantValueTable =
+        groupManager_->getPropValueTable(merchantScoreConfig.propName);
+    const ProductScoreConfig& categoryScoreConfig =
+        rankConfig.scores[CATEGORY_SCORE];
+    faceted::PropValueTable* categoryValueTable =
+        groupManager_->getPropValueTable(categoryScoreConfig.propName);
+
+    if (merchantScoreManager_) delete merchantScoreManager_;
+
+    merchantScoreManager_ = new MerchantScoreManager(
+        merchantValueTable, categoryValueTable);
+
+    bfs::path scorePath = scoreDir / "score.txt";
+    if (!merchantScoreManager_->open(scorePath.string()))
+    {
+        LOG(ERROR) << "open " << scorePath << " failed";
+        return false;
+    }
+
+    return true;
+}
+
+bool MiningManager::initProductScorerFactory_(const ProductRankingConfig& rankConfig)
+{
+    if (!rankConfig.isEnable)
+        return true;
+
+    LOG(INFO) << rankConfig.toStr();
+
+    if (productScorerFactory_) delete productScorerFactory_;
+    if (productScoreManager_) delete productScoreManager_;
+    if (offlineScorerFactory_) delete offlineScorerFactory_;
+    if (customRankManager_) delete customRankManager_;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path customRankDir(parentDir / "custom_rank");
+    bfs::create_directories(customRankDir);
+
+    const bfs::path customRankPath(customRankDir / "custom.db");
+    customRankManager_ = new CustomRankManager(customRankPath.string(),
+                                               *customDocIdConverter_,
+                                               document_manager_.get());
+
+    offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(*this);
+
+    const bfs::path scoreDir(parentDir / "product_score");
+    productScoreManager_ = new ProductScoreManager(
+        rankConfig,
+        miningConfig_.product_ranking_param,
+        *offlineScorerFactory_,
+        *document_manager_,
+        collectionName_,
+        scoreDir.string(),
+        searchCache_);
+
+    if (!productScoreManager_->open())
+    {
+        LOG(ERROR) << "open " << scoreDir << " failed";
+        return false;
+    }
+
+    productScorerFactory_ = new ProductScorerFactory(rankConfig, *this);
+    searchManager_->setCustomRankManager(customRankManager_);
+    searchManager_->setProductScorerFactory(productScorerFactory_);
+    return true;
+}
+
+bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankConfig)
+{
+    const std::string& diversityPropName =
+        rankConfig.scores[DIVERSITY_SCORE].propName;
+
+    if (!rankConfig.isEnable || diversityPropName.empty())
+        return true;
+
+    const faceted::PropValueTable* diversityValueTable =
+        GetPropValueTable(diversityPropName);
+
+    if (!diversityValueTable)
+    {
+        LOG(ERROR) << "the PropValueTable is not initialized for property: "
+                   << diversityPropName;
+        return false;
+    }
+
+    if (productRankerFactory_) delete productRankerFactory_;
+    productRankerFactory_ = new ProductRankerFactory(rankConfig,
+                                                     *diversityValueTable);
+    searchManager_->setProductRankerFactory(productRankerFactory_);
     return true;
 }

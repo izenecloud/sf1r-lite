@@ -369,7 +369,7 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
                                                          rankQueryProps,
                                                          propRankers);
 
-    if (!isProductRanking_(actionItem))
+    if (!isProductRanking(actionItem))
         return relevanceScorer;
 
     const std::string& query = actionItem.env_.queryString_;
@@ -383,14 +383,14 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
     boost::shared_ptr<Sorter> sorter,
     faceted::PropSharedLockSet& propSharedLockSet)
 {
-    if (!isProductRanking_(actionItem))
+    if (!isProductRanking(actionItem))
         return NULL;
     const std::string& query = actionItem.env_.queryString_;
     return productScorerFactory_->createScorer(query,
                                                propSharedLockSet, NULL);
 }
 
-bool SearchManagerPreProcessor::isProductRanking_(
+bool SearchManagerPreProcessor::isProductRanking(
     const KeywordSearchActionItem& actionItem) const
 {
     if (productScorerFactory_ == NULL)
