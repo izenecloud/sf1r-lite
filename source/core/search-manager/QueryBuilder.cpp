@@ -1039,23 +1039,16 @@ bool QueryBuilder::do_prepare_for_property_(
             }
             if(!virtualProperty.empty())
             {
-                if(parentAndOrFlag)
-                {
-                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
-                    for(; vit != virtualTermIters.end(); ++vit)
-                        pIterator->add(vit->second);
-                    pDocIterator->add(pIterator);
-                }
-                else
+                if(!parentAndOrFlag)
                 {
                     if(NULL == pDocIterator) 
                     {
                         pDocIterator = pIterator;
-                        std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
-                        for(; vit != virtualTermIters.end(); ++vit)
-                            pDocIterator->add(vit->second);
                     }
                     else delete pIterator;
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                    for(; vit != virtualTermIters.end(); ++vit)
+                        pDocIterator->add(vit->second);
                 }
             }
             else
@@ -1099,7 +1092,7 @@ bool QueryBuilder::do_prepare_for_property_(
                            hasUnigramProperty,
                            isUnigramSearchMode,
                            virtualProperty,
-                           0
+                           1
                        );
             }
             if (!ret)
@@ -1109,23 +1102,16 @@ bool QueryBuilder::do_prepare_for_property_(
             }
             if(!virtualProperty.empty())
             {
-                if(parentAndOrFlag)
-                {
-                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
-                    for(; vit != virtualTermIters.end(); ++vit)
-                        pIterator->add(vit->second);
-                    pDocIterator->add(pIterator);
-                }
-                else
+                if(!parentAndOrFlag)
                 {
                     if(NULL == pDocIterator) 
                     {
                         pDocIterator = pIterator;
-                        std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
-                        for(; vit != virtualTermIters.end(); ++vit)
-                            pDocIterator->add(vit->second);
                     }
                     else delete pIterator;
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                    for(; vit != virtualTermIters.end(); ++vit)
+                        pDocIterator->add(vit->second);
                 }
             }
             else if (NULL == pDocIterator)
@@ -1179,23 +1165,16 @@ bool QueryBuilder::do_prepare_for_property_(
             }
             if(!virtualProperty.empty())
             {
-                if(parentAndOrFlag)
-                {
-                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
-                    for(; vit != virtualTermIters.end(); ++vit)
-                        pIterator->add(vit->second);
-                    pDocIterator->add(pIterator);
-                }
-                else
+                if(!parentAndOrFlag)
                 {
                     if(NULL == pDocIterator) 
                     {
                         pDocIterator = pIterator;
-                        std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
-                        for(; vit != virtualTermIters.end(); ++vit)
-                            pDocIterator->add(vit->second);
                     }
                     else delete pIterator;
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                    for(; vit != virtualTermIters.end(); ++vit)
+                        pDocIterator->add(vit->second);
                 }
             }
             else if (NULL == pDocIterator)
@@ -1250,23 +1229,16 @@ bool QueryBuilder::do_prepare_for_property_(
             }
             if(!virtualProperty.empty())
             {
-                if(parentAndOrFlag)
-                {
-                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
-                    for(; vit != virtualTermIters.end(); ++vit)
-                        pIterator->add(vit->second);
-                    pDocIterator->add(pIterator);
-                }
-                else
+                if(!parentAndOrFlag)
                 {
                     if(NULL == pDocIterator) 
                     {
                         pDocIterator = pIterator;
-                        std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
-                        for(; vit != virtualTermIters.end(); ++vit)
-                            pDocIterator->add(vit->second);
                     }
                     else delete pIterator;
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                    for(; vit != virtualTermIters.end(); ++vit)
+                        pDocIterator->add(vit->second);
                 }
             }
             else if (NULL == pDocIterator)

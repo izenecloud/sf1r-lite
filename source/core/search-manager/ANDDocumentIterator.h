@@ -12,13 +12,9 @@
 #include "DocumentIterator.h"
 #include "NOTDocumentIterator.h"
 
-#include <boost/memory.hpp>
-
 #include <list>
 
 namespace sf1r{
-
-using boost::stl_allocator;
 
 class ANDDocumentIterator:public DocumentIterator
 {
@@ -29,6 +25,8 @@ public:
 
 public:
     void add(DocumentIterator* pDocIterator);
+
+    void add(VirtualPropertyTermDocumentIterator* pDocIterator);
 
     bool next()
     {
@@ -102,11 +100,7 @@ protected:
 
     NOTDocumentIterator* pNOTDocIterator_;
 
-    NS_BOOST_MEMORY::block_pool recycle_;
-
-    boost::scoped_alloc alloc_;
-
-    std::list<DocumentIterator*, stl_allocator<int> > docIterList_;
+    std::list<DocumentIterator*> docIterList_;
 
     ///Use a member to record size of docIterList, becaus std::list::size() has O(n) overheads
     size_t nIteratorNum_;

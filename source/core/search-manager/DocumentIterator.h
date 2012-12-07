@@ -22,6 +22,7 @@
 
 namespace sf1r {
 
+class VirtualPropertyTermDocumentIterator;
 class DocumentIterator
 {
 public:
@@ -31,6 +32,8 @@ public:
 
 public:
     virtual void add(DocumentIterator* pDocIterator) = 0;
+
+    virtual void add(VirtualPropertyTermDocumentIterator* pDocIterator) {};
 
     virtual bool next() = 0;
 

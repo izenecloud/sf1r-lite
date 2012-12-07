@@ -1,5 +1,8 @@
 #include "ORDocumentIterator.h"
 #include "NOTDocumentIterator.h"
+#include "VirtualPropertyTermDocumentIterator.h"
+
+#include <algorithm>
 
 using namespace std;
 using namespace sf1r;
@@ -64,6 +67,13 @@ void ORDocumentIterator::add(DocumentIterator* pDocIterator)
     }
     else
         docIteratorList_.push_back(pDocIterator);
+}
+
+void ORDocumentIterator::add(VirtualPropertyTermDocumentIterator* pDocIterator)
+{
+    docIteratorList_.push_back(pDocIterator);
+    std::sort( docIteratorList_.begin(), docIteratorList_.end() );
+    docIteratorList_.erase( std::unique( docIteratorList_.begin(), docIteratorList_.end() ), docIteratorList_.end() );
 }
 
 bool ORDocumentIterator::next()

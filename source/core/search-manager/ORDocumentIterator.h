@@ -42,6 +42,8 @@ public:
 public:
     void add(DocumentIterator* pDocIterator);
 
+    void add(VirtualPropertyTermDocumentIterator* pDocIterator);
+
     bool next();
 
     docid_t doc(){ return currDoc_; }
