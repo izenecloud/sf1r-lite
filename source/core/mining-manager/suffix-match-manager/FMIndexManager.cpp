@@ -595,20 +595,7 @@ void FMIndexManager::getTopKDocIdListByFilter(
 
 void FMIndexManager::getDocLenList(const std::vector<uint32_t>& docid_list, std::vector<size_t>& doclen_list) const
 {
-    FMIndexConstIter fmit = all_fmi_.begin();
-    std::vector<size_t> tmp_doclen_list;
-    doclen_list.resize(docid_list.size());
-    for( ; fmit != all_fmi_.end(); ++fmit)
-    {
-        if(fmit->second.type != COMMON)
-            continue;
-        fmit->second.fmi->getDocLenList(docid_list, tmp_doclen_list);
-        for(size_t i = 0; i < tmp_doclen_list.size(); ++i)
-        {
-            doclen_list[i] += tmp_doclen_list[i];
-        }
-        std::vector<size_t>().swap(tmp_doclen_list);
-    }
+    docarray_mgr_.getDocLenList(docid_list, doclen_list);
 }
 
 void FMIndexManager::saveAll()
