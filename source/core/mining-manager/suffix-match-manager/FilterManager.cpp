@@ -125,7 +125,7 @@ void FilterManager::buildGroupFilterData(
     prop_list_.resize(prop_id_map_.size() + property_list.size());
     strtype_filterids_.resize(prop_list_.size());
     filter_list_.resize(prop_list_.size());
-
+    prop_filterstr_text_list_.resize(prop_list_.size());
     // the relationship between group node need rebuild from docid = 1.
     GroupNode* group_root = new GroupNode(UString("root", UString::UTF_8));
     std::vector<GroupNode*> property_root_nodes;
@@ -171,6 +171,13 @@ void FilterManager::buildGroupFilterData(
                 group_filter_data[j][groupstr].push_back(docid);
             }
         }
+        prop_filterstr_text_list_[prop_id].reserve(group_filter_data[j].size());
+        for(StrFilterItemMapT::const_iterator filterstr_it = group_filter_data[j].begin();
+            filterstr_it != group_filter_data[j].end(); ++ filterstr_it)
+        {
+            prop_filterstr_text_list_[prop_id].push_back(filterstr_it->first);
+        }
+        
         // map the group filter string to filter id.
         mapGroupFilterToFilterId(
                 property_root_nodes[j],
@@ -218,6 +225,7 @@ void FilterManager::buildAttrFilterData(
     prop_list_.resize(prop_id_map_.size() + 1);
     strtype_filterids_.resize(prop_list_.size());
     filter_list_.resize(prop_list_.size());
+    prop_filterstr_text_list_.resize(prop_list_.size());
 
     const std::string& property = property_list.front();
     const faceted::AttrTable& attr_table = attrManager_->getAttrTable();
@@ -238,6 +246,13 @@ void FilterManager::buildAttrFilterData(
             attr_filter_data[0][attrstr].push_back(docid);
         }
     }
+    prop_filterstr_text_list_[prop_id].reserve(attr_filter_data[0].size());
+    for(StrFilterItemMapT::const_iterator filterstr_it = attr_filter_data[0].begin();
+        filterstr_it != attr_filter_data[0].end(); ++ filterstr_it)
+    {
+        prop_filterstr_text_list_[prop_id].push_back(filterstr_it->first);
+    }
+
     // map the attribute filter string to filter id.
     mapAttrFilterToFilterId(attr_filter_data[0], strtype_filterids_[prop_id], filter_list_[prop_id]);
     LOG(INFO) << "finish building attribute filter data.";
@@ -496,7 +511,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
         }
         if (prop_id >= prop_list_.size())
         {
-            prop_list_.resize(prop_id + 10);
+            prop_list_.resize(prop_id + 1);
         }
         int& type = prop_list_[prop_id].first;
         type = FILTER_TYPE_COUNT;
@@ -518,6 +533,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
                 if (prop_id >= strtype_filterids_.size())
                 {
                     strtype_filterids_.resize(prop_id + 1);
+                    prop_filterstr_text_list_.resize(prop_id + 1);
                 }
                 StrIdMapT& strid_map = strtype_filterids_[prop_id];
                 for (size_t j = 0; j < num; ++j)
@@ -526,6 +542,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
                     loadArray_(ifs, str_key);
                     FilterIdRange& idrange = strid_map[UString(str_key, UString::UTF_8)];
                     ifs.read((char*)&idrange, sizeof(idrange));
+                    prop_filterstr_text_list_[prop_id].push_back(UString(str_key, UString::UTF_8));
                 }
             }
             break;
@@ -742,6 +759,23 @@ size_t FilterManager::getPropertyId(const std::string& property) const
 size_t FilterManager::propertyCount() const
 {
     return prop_id_map_.size();
+}
+
+izenelib::util::UString FilterManager::getPropFilterString(size_t prop_id, size_t filter_strid) const
+{
+    izenelib::util::UString result;
+    if(prop_id >= prop_filterstr_text_list_.size())
+        return result;
+    if(filter_strid >= prop_filterstr_text_list_[prop_id].size())
+        return result;
+    return prop_filterstr_text_list_[prop_id][filter_strid];
+}
+
+size_t FilterManager::getMaxPropFilterStrId(size_t prop_id) const
+{
+    if(prop_id >= prop_filterstr_text_list_.size())
+        return 0;
+    return prop_filterstr_text_list_[prop_id].size();
 }
 
 }

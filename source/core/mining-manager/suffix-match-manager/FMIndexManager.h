@@ -30,7 +30,8 @@ public:
     };
 
     FMIndexManager(const std::string& homePath,
-            boost::shared_ptr<DocumentManager>& document_manager);
+            boost::shared_ptr<DocumentManager>& document_manager,
+            boost::shared_ptr<FilterManager>& filter_manager);
 
     ~FMIndexManager();
     inline size_t docCount() const { return doc_count_; }
@@ -38,7 +39,10 @@ public:
     void getProperties(std::vector<std::string>& properties, PropertyFMType type) const;
     bool isStartFromLocalFM() const;
     void clearFMIData();
-    bool buildCollection(const FMIndexManager* old_fmi_manager);
+    void useOldDocCount(const FMIndexManager* old_fmi_manager);
+    bool buildCommonProperties(const FMIndexManager* old_fmi_manager);
+    void swapCommonPropertiesData(FMIndexManager* old_fmi_manager);
+    void buildLessDVProperties();
     void buildExternalFilter();
 
     void setFilterList(std::vector<std::vector<FMDocArrayMgrType::FilterItemT> > &filter_list);
@@ -46,13 +50,11 @@ public:
 
     void getMatchedDocIdList(
         const std::string& property,
-        const FilterManager* filter_manager,
         const RangeListT& match_ranges, size_t max_docs,
         std::vector<uint32_t>& docid_list, std::vector<size_t>& doclen_list) const;
 
     void convertMatchRanges(
         const std::string& property,
-        const FilterManager* filter_manager,
         size_t max_docs,
         RangeListT& match_ranges,
         std::vector<double>& max_match_list) const;
@@ -66,13 +68,14 @@ public:
 
     void getTopKDocIdListByFilter(
             const std::string& property,
-            const FilterManager* filter_manager,
             const std::vector<size_t> &prop_id_list,
             const std::vector<RangeListT> &filter_ranges,
             const RangeListT &match_ranges_list,
             const std::vector<double> &max_match_list,
             size_t max_docs,
             std::vector<std::pair<double, uint32_t> > &res_list) const;
+
+    void getDocLenList(const std::vector<uint32_t>& docid_list, std::vector<size_t>& doclen_list) const;
 
     void saveAll();
     bool loadAll();
@@ -100,6 +103,7 @@ private:
 
     std::string data_root_path_;
     boost::shared_ptr<DocumentManager> document_manager_;
+    boost::shared_ptr<FilterManager> filter_manager_;
     size_t doc_count_;
 
     std::map<std::string, PropertyFMIndex> all_fmi_;

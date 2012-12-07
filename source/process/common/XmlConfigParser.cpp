@@ -1931,15 +1931,17 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     if (task_node)
     {
         Iterator<Element> it("Property");
-        it = it.begin(task_node);
-        getAttribute(it.Get(), "name", property_name);
-        bool gottype = collectionMeta.getPropertyType(property_name, property_type);
-        if (!gottype || property_type != STRING_PROPERTY_TYPE)
+        for(it = it.begin(task_node); it != it.end(); ++it)
         {
-            throw XmlConfigParserException("Property ["+property_name+"] used in SuffixMatch is not string type.");
+            getAttribute(it.Get(), "name", property_name);
+            bool gottype = collectionMeta.getPropertyType(property_name, property_type);
+            if (!gottype || property_type != STRING_PROPERTY_TYPE)
+            {
+                throw XmlConfigParserException("Property ["+property_name+"] used in SuffixMatch is not string type.");
+            }
+            mining_schema.suffixmatch_schema.suffix_match_properties.push_back(property_name);
+            mining_schema.suffixmatch_schema.suffix_match_enable = true;
         }
-        mining_schema.suffixmatch_schema.suffix_match_property = property_name;
-        mining_schema.suffixmatch_schema.suffix_match_enable = true;
 
         ticpp::Element* subNode = getUniqChildElement(task_node, "TokenizeDictionary", true);
         if (subNode)
@@ -1982,6 +1984,9 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             int32_t amplifier = 1;
             getAttribute(propNode, "amplifier", amplifier, false);
 
+            bool searchable = false;
+            getAttribute(propNode, "searchable", searchable, false);
+
             if(type == "group")
             {
                 GroupConfigMap::const_iterator cit = mining_schema.group_config_map.find(property_name);
@@ -1990,6 +1995,12 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                     throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> must be one of item configured in <Group> if it has type group.");
                 }
                 mining_schema.suffixmatch_schema.group_filter_properties.push_back(property_name);
+                if(searchable)
+                {
+                    if(property_type != STRING_PROPERTY_TYPE)
+                        throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> searchable must be string type.");
+                    mining_schema.suffixmatch_schema.searchable_properties.push_back(property_name);
+                }
             }
             else if(type == "attribute")
             {
@@ -1998,6 +2009,12 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                     throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> must be one of item configured in <Attr> if it has type attribute.");
                 }
                 mining_schema.suffixmatch_schema.attr_filter_properties.push_back(property_name);
+                if(searchable)
+                {
+                    if(property_type != STRING_PROPERTY_TYPE)
+                        throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> searchable must be string type.");
+                    mining_schema.suffixmatch_schema.searchable_properties.push_back(property_name);
+                }
             }
             else if(type == "date")
             {

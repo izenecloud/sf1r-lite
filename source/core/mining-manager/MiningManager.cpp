@@ -498,9 +498,8 @@ bool MiningManager::open()
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
                     document_manager_, groupManager_, attrManager_, searchManager_.get());
-            std::vector<std::string> index_properties;
-            index_properties.push_back(mining_schema_.suffixmatch_schema.suffix_match_property);
-            suffixMatchManager_->addFMIndexProperties(index_properties, FMIndexManager::COMMON, true);
+            suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
+            suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
             // reading suffix config and load filter data here.
             suffixMatchManager_->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
             suffixMatchManager_->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
@@ -522,7 +521,7 @@ bool MiningManager::open()
                 incrementalManager_ = new IncrementalManager(
                         suffix_match_path_,
                         mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                        mining_schema_.suffixmatch_schema.suffix_match_property,
+                        mining_schema_.suffixmatch_schema.suffix_match_properties[0],
                         document_manager_, idManager_, laManager_, indexSchema_);
                 incrementalManager_->InitManager_();
                 incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
@@ -1842,7 +1841,9 @@ bool MiningManager::GetSuffixMatch(
     std::vector<std::pair<double, uint32_t> > res_list;
 
     std::vector<string> search_in_properties;
-    search_in_properties.push_back(mining_schema_.suffixmatch_schema.suffix_match_property);
+    search_in_properties = mining_schema_.suffixmatch_schema.suffix_match_properties;
+    search_in_properties.insert(search_in_properties.end(), mining_schema_.suffixmatch_schema.searchable_properties.begin(),
+        mining_schema_.suffixmatch_schema.searchable_properties.end());
 
     if (!use_fuzzy)
     {

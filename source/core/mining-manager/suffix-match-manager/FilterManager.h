@@ -168,6 +168,9 @@ public:
     void setNumericAmp(const std::map<std::string, int32_t>& num_amp_list);
     const std::map<std::string, int32_t>& getNumericAmp() const;
 
+    izenelib::util::UString getPropFilterString(size_t prop_id, size_t filter_strid) const;
+    size_t getMaxPropFilterStrId(size_t prop_id) const;
+
     size_t getPropertyId(const std::string& property) const;
     size_t propertyCount() const;
 
@@ -176,6 +179,7 @@ private:
     typedef std::map<NumFilterKeyT, FilterIdRange> NumIdMapT;
     typedef std::vector<StrIdMapT> StrPropIdVecT;
     typedef std::vector<NumIdMapT> NumPropIdVecT;
+    typedef std::vector< std::vector<izenelib::util::UString> >    PropFilterStrVecT;
 
     FilterIdRange getNumFilterIdRange(size_t prop_id, double filter_num, bool findlarger) const;
     NumFilterKeyT formatNumericFilter(size_t prop_id, double filter_num, bool tofloor = true) const;
@@ -242,6 +246,8 @@ private:
     StrPropIdVecT strtype_filterids_;
     // property -> (Price/Score -> filterid)
     NumPropIdVecT numtype_filterids_;
+
+    PropFilterStrVecT prop_filterstr_text_list_;
 
     std::vector<std::vector<NumFilterKeyT> > num_possible_keys_;
 
