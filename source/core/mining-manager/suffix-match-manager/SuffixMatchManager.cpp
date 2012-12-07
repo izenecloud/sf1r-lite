@@ -347,7 +347,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
                 ", length  : " << max_match;
             for(size_t i = 0; i < match_ranges.size(); ++i)
             {
-                cout << "range " << i << " : " << match_ranges[i].first << "-" << match_ranges[i].second << endl;
+                LOG(INFO) << "range " << i << " : " << match_ranges[i].first << "-" << match_ranges[i].second << endl;
             }
             std::vector<double> max_match_list;
             max_match_list.insert(max_match_list.end(), match_ranges.size(), max_match);
@@ -424,14 +424,14 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         match_ranges_list.reserve(all_sub_strpatterns.size());
         max_match_list.reserve(all_sub_strpatterns.size());
         ReadLock lock(mutex_);
-        LOG(INFO) << "query tokenize match ranges are: ";
+        LOG(INFO) << "query tokenize match ranges in property : " << search_property;
         for (size_t i = 0; i < all_sub_strpatterns.size(); ++i)
         {
             if (all_sub_strpatterns[i].empty())
                 continue;
             std::pair<size_t, size_t> sub_match_range;
             size_t matched = fmi_manager_->backwardSearch(search_property, all_sub_strpatterns[i], sub_match_range);
-            cout << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
+            LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
             if (matched == all_sub_strpatterns[i].length())
             {
                 match_ranges_list.push_back(sub_match_range);

@@ -310,7 +310,7 @@ void FMIndexManager::buildLessDVProperties()
         }
         // read all property distinct string from filter manager.
         size_t max_filterstr_id = filter_manager_->getMaxPropFilterStrId(prop_id);
-        for(size_t i = 0; i < max_filterstr_id; ++i)
+        for(size_t i = 1; i <= max_filterstr_id; ++i)
         {
             izenelib::util::UString text = filter_manager_->getPropFilterString(prop_id, i);
             Algorithm<UString>::to_lower(text);
@@ -479,30 +479,31 @@ void FMIndexManager::convertMatchRanges(
                 continue;
             FilterManager::FilterIdRange range = filter_manager_->getStrFilterIdRange(
                 prop_id, match_filter_string);
-            cout << "( id: " << tmp_docid_list[j] << ", converted match range: " << range.start <<
-                "-" << range.end << ")" << std::flush;
             if(range.start >= range.end)
                 continue;
+            RangeT doc_array_filterrange;
+            getFilterRange(prop_id, std::make_pair(range.start, range.end), doc_array_filterrange);
+            LOG(INFO) << "( id: " << tmp_docid_list[j] << ", converted match range: " << doc_array_filterrange.first <<
+                "-" << doc_array_filterrange.second << ")";
             if(!converted_match_ranges.empty())
             {
                 RangeT& prev_range = converted_match_ranges.back();
-                if(range.start < prev_range.first ||
-                    range.end < prev_range.second )
+                if(doc_array_filterrange.first < prev_range.first)
                 {
-                    LOG(ERROR) << "range should be after.!! " << range.start << "-" << range.end <<
-                        ", prev_range: " << prev_range.first << "-" << prev_range.second;
+                    LOG(ERROR) << "range should be after.!! " << doc_array_filterrange.first <<
+                        "-" << doc_array_filterrange.second << ", prev_range: " <<
+                        prev_range.first << "-" << prev_range.second;
                 }
                 // merge the overlap range.
-                if(range.start <= prev_range.second)
+                if(doc_array_filterrange.first <= prev_range.second)
                 {
-                    prev_range.second = range.end;
+                    prev_range.second = max(doc_array_filterrange.second, prev_range.second);
                     continue;
                 }
             }
-            converted_match_ranges.push_back(std::make_pair(range.start, range.end));
+            converted_match_ranges.push_back(doc_array_filterrange);
             converted_max_match_list.push_back(max_match_list[i]);
         }
-        cout << endl;
         std::vector<uint32_t>().swap(tmp_docid_list);
         std::vector<size_t>().swap(tmp_doclen_list);
     }
