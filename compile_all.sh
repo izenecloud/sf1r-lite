@@ -31,7 +31,7 @@ else
   exit 1
 fi
 
-dependencie=(izenelib ilplib imllib idmlib icma sf1r-engine)
+dependencie=(izenelib icma ijma ilplib imllib idmlib sf1r-engine)
 
 element_count=${#dependencie[@]}
 index=0
