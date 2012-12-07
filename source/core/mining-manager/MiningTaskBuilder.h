@@ -3,11 +3,11 @@
 /// @author hongliang.zhao@b5m.com
 /// @date Created 2012.11.28
 ///
-#ifndef MING_TASK_BUILDER_H
-#define MING_TASK_BUILDER_H
+#ifndef SOURCE_CORE_MINING_MANAGER_MININGTASKBUILDER_H_
+#define SOURCE_CORE_MINING_MANAGER_MININGTASKBUILDER_H_
 
-#include "MiningTask.h"
 #include <boost/shared_ptr.hpp>
+#include "./MiningTask.h"
 
 namespace sf1r
 {
@@ -15,18 +15,18 @@ class DocumentManager;
 
 class MiningTaskBuilder
 {
-public:
-    MiningTaskBuilder(boost::shared_ptr<DocumentManager> document_manager);
+ public:
+    explicit MiningTaskBuilder(boost::shared_ptr<DocumentManager> document_manager);
     ~MiningTaskBuilder();
 
     bool buildCollection();
     void addTask(MiningTask*);
 
-private:
-
+ private:
     std::vector<MiningTask*> taskList_;
     boost::shared_ptr<DocumentManager> document_manager_;
 
 };
 }
-#endif
+
+#endif  // SOURCE_CORE_MINING_MANAGER_MININGTASKBUILDER_H_

@@ -106,15 +106,16 @@ void SuffixMatchMiningTask::preProcess()
 
 void SuffixMatchMiningTask::postProcess()
 {
+cout<<"1"<<endl;
     new_fmi_manager->buildCollectionAfter();
-
+cout<<"2"<<endl;
     new_fmi_manager->buildExternalFilter();
     {
         WriteLock lock(mutex_);
         fmi_.reset(new_fmi_manager);
         filter_manager_.reset(new_filter_manager);
     }
-
+cout<<"3"<<endl;
     fmi_->saveAll();
     filter_manager_->saveFilterId();
     filter_manager_->clearFilterList();
