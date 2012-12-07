@@ -8,6 +8,18 @@
 #include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"
 
+namespace
+{
+struct RangeSorter
+{
+    bool operator()(const sf1r::FMIndexManager::RangeT& t1, const sf1r::FMIndexManager::RangeT& t2)
+    {
+        return t1.first < t2.first ||
+            (t1.first == t2.first && t1.second < t2.second);
+    }
+} RangeSorter_;
+}
+
 using namespace cma;
 namespace sf1r
 {
@@ -450,8 +462,10 @@ void FMIndexManager::convertMatchRanges(
         cit->second.fmi->getMatchedDocIdList(match_ranges[i], max_docs, tmp_docid_list, tmp_doclen_list);
         // for LESS_DV, the docid is the distinct value id, we need get all the docid belong to the distinct
         // value from the docarray_mgr_.
-        converted_match_ranges.reserve(converted_match_ranges.size() + tmp_docid_list.size());
-        converted_max_match_list.reserve(converted_max_match_list.size() + tmp_docid_list.size());
+        size_t oldsize = converted_match_ranges.size();
+        converted_match_ranges.reserve(oldsize + tmp_docid_list.size());
+        converted_max_match_list.reserve(oldsize + tmp_docid_list.size());
+        std::sort(tmp_docid_list.begin(), tmp_docid_list.end(), std::less<uint32_t>());
         for(size_t j = 0; j < tmp_docid_list.size(); ++j)
         {
             size_t prop_id = filter_manager_->getPropertyId(property);
@@ -461,14 +475,30 @@ void FMIndexManager::convertMatchRanges(
                 continue;
             }
             UString match_filter_string = filter_manager_->getPropFilterString(prop_id, tmp_docid_list[j]);
-            cout << "( id: " << tmp_docid_list[j] << ", match filter string: " << match_filter_string << std::flush;
             if(match_filter_string.empty())
                 continue;
             FilterManager::FilterIdRange range = filter_manager_->getStrFilterIdRange(
                 prop_id, match_filter_string);
-            cout << ", converted match range: " << range.start << "-" << range.end << ")" << std::flush;
+            cout << "( id: " << tmp_docid_list[j] << ", converted match range: " << range.start <<
+                "-" << range.end << ")" << std::flush;
             if(range.start >= range.end)
                 continue;
+            if(!converted_match_ranges.empty())
+            {
+                RangeT& prev_range = converted_match_ranges.back();
+                if(range.start < prev_range.first ||
+                    range.end < prev_range.second )
+                {
+                    LOG(ERROR) << "range should be after.!! " << range.start << "-" << range.end <<
+                        ", prev_range: " << prev_range.first << "-" << prev_range.second;
+                }
+                // merge the overlap range.
+                if(range.start <= prev_range.second)
+                {
+                    prev_range.second = range.end;
+                    continue;
+                }
+            }
             converted_match_ranges.push_back(std::make_pair(range.start, range.end));
             converted_max_match_list.push_back(max_match_list[i]);
         }

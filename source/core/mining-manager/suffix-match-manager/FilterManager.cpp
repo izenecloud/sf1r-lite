@@ -184,7 +184,7 @@ void FilterManager::buildGroupFilterData(
                 group_filter_data[j],
                 strtype_filterids_[prop_id],
                 filter_list_[prop_id]);
-        //printNode(property_root_nodes[j], 0, gfilterids, filter_list_);
+        printNode(property_root_nodes[j], 0, strtype_filterids_[prop_id], filter_list_[prop_id]);
     }
     delete group_root;
     LOG(INFO) << "finish building group filter data.";
@@ -736,6 +736,17 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRange(size_t prop_id, 
 void FilterManager::setNumericAmp(const std::map<std::string, int32_t>& num_amp_map)
 {
     num_amp_map_ = num_amp_map;
+    num_amp_list_.resize(num_amp_map_.size(), 1);
+    std::map<std::string, int32_t>::const_iterator mit = num_amp_map_.begin();
+    while (mit != num_amp_map_.end())
+    {
+        size_t prop_id = getPropertyId(mit->first);
+        if(prop_id != (size_t)-1)
+        {
+            num_amp_list_[prop_id] = mit->second;
+        }
+        ++mit;
+    }
 }
 
 const std::map<std::string, int32_t>& FilterManager::getNumericAmp() const
