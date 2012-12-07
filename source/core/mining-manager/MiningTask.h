@@ -20,9 +20,9 @@ public:
 
     virtual bool buildDocment(docid_t docID, const Document& doc) = 0;
 
-    virtual void preProcess() = 0;
+    virtual bool preProcess() = 0;
 
-    virtual void postProcess() = 0;
+    virtual bool postProcess() = 0;
 
     virtual docid_t getLastDocId() = 0;
 

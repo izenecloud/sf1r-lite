@@ -29,8 +29,8 @@ public:
         , std::string dirPath
         , const AttrConfig& attrConfig);
 
-    void preProcess();
-    void postProcess();
+    bool preProcess();
+    bool postProcess();
     bool buildDocment(docid_t docID, const Document& doc);
     docid_t getLastDocId();
     bool processCollection_forTest();

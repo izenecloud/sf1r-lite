@@ -40,10 +40,11 @@ bool AttrMiningTask::processCollection_forTest()
     return true;
 }
 
-void AttrMiningTask::preProcess()
+bool AttrMiningTask::preProcess()
 {
     const docid_t endDocId = documentManager_.getMaxDocId();
     attrTable_.reserveDocIdNum(endDocId + 1);
+    return true;
 }
 
 docid_t AttrMiningTask::getLastDocId()
@@ -51,16 +52,18 @@ docid_t AttrMiningTask::getLastDocId()
     return attrTable_.docIdNum();
 }
 
-void AttrMiningTask::postProcess()
+bool AttrMiningTask::postProcess()
 {
     const char* propName = attrTable_.propName();  
 
     if (!attrTable_.flush())
     {
         LOG(ERROR) << "AttrTable::flush() failed, property name: " << propName;
+        return false;
     }
 
     LOG(INFO) << "finished building attr index data";
+    return true;
 }
 
 bool AttrMiningTask::buildDocment(docid_t docID, const Document& doc)

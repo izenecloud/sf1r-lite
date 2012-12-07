@@ -57,12 +57,13 @@ public:
 
     bool suffix_match_enable;
     bool suffix_incremental_enable;
-    std::string suffix_match_property;
+    std::vector<std::string> suffix_match_properties;
     std::string suffix_match_tokenize_dicpath;
     std::vector<std::string> group_filter_properties;
     std::vector<std::string> attr_filter_properties;
     std::vector<std::string> date_filter_properties;
     std::vector<NumberFilterConfig> number_filter_properties;
+    std::vector<std::string> searchable_properties;
 
 private:
     friend class boost::serialization::access;
@@ -71,12 +72,13 @@ private:
     {
         ar & suffix_match_enable;
         ar & suffix_incremental_enable;
-        ar & suffix_match_property;
+        ar & suffix_match_properties;
         ar & suffix_match_tokenize_dicpath;
         ar & group_filter_properties;
         ar & attr_filter_properties;
         ar & date_filter_properties;
         ar & number_filter_properties;
+        ar & searchable_properties;
     }
 };
 

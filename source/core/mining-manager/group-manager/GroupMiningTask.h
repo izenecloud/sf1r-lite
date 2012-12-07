@@ -57,7 +57,7 @@ public:
         return true;
     }
 
-    void preProcess()
+    bool preProcess()
     {
         if (isRebuildProp_(propValueTable_.propName()))
         {
@@ -67,17 +67,20 @@ public:
         const docid_t endDocId = documentManager_.getMaxDocId();
         docid_t startDocId = propValueTable_.docIdNum();
         if (startDocId > endDocId)
-            return;
+            return false;
         cout<<propValueTable_.propName()<<", ";
         propValueTable_.reserveDocIdNum(endDocId + 1);
+        return true;
     }
 
-    void postProcess()
+    bool postProcess()
     {
         if (!propValueTable_.flush())
-           {
+        {
             LOG(ERROR) << "propTable.flush() failed, property name: " << propValueTable_.propName();
+            return false;
         }
+        return true;
     }
     
     docid_t getLastDocId()

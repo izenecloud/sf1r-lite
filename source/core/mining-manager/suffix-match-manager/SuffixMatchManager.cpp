@@ -134,9 +134,9 @@ SuffixMatchManager::SuffixMatchManager(
     }
     buildTokenizeDic();
 
-    fmi_manager_.reset(new FMIndexManager(data_root_path_, document_manager_));
     filter_manager_.reset(new FilterManager(groupmanager, data_root_path_,
             attrmanager, numeric_tablebuilder));
+    fmi_manager_.reset(new FMIndexManager(data_root_path_, document_manager_, filter_manager_));
 }
 
 SuffixMatchManager::~SuffixMatchManager()
@@ -220,8 +220,14 @@ void SuffixMatchManager::buildCollection()
     std::vector<FilterManager::NumFilterItemMapT> num_filter_map;
     std::vector<FilterManager::NumFilterItemMapT> date_filter_map;
 
-    FilterManager* new_filter_manager = NULL;
-    FMIndexManager* new_fmi_manager = new FMIndexManager(data_root_path_, document_manager_);
+    boost::shared_ptr<FilterManager> new_filter_manager;
+    new_filter_manager.reset(new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
+        filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder()));
+    new_filter_manager->setNumericAmp(filter_manager_->getNumericAmp());
+
+    boost::shared_ptr<FMIndexManager> new_fmi_manager(new FMIndexManager(data_root_path_,
+            document_manager_, new_filter_manager));
+
     std::vector<std::string> properties;
     for(int i = 0; i < FMIndexManager::LAST; ++i)
     {
@@ -230,64 +236,83 @@ void SuffixMatchManager::buildCollection()
         std::vector<std::string>().swap(properties);
     }
 
-    // do filter building only when filter is enable.
-    if (filter_manager_)
-    {
-        new_filter_manager = new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
-                                               filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder());
-        new_filter_manager->setNumericAmp(filter_manager_->getNumericAmp());
-    }
-
     size_t last_docid = fmi_manager_ ? fmi_manager_->docCount() : 0;
+    bool is_need_rebuild = false;
+    std::vector<uint32_t> del_docid_list;
+    document_manager_->getDeletedDocIdList(del_docid_list);
+    if(last_docid == document_manager_->getMaxDocId())
+    {
+        // check if there is any new deleted doc.
+        std::vector<size_t> doclen_list(del_docid_list.size(), 0);
+        fmi_manager_->getDocLenList(del_docid_list, doclen_list);
+        for(size_t i = 0; i < doclen_list.size(); ++i)
+        {
+            if(doclen_list[i] > 0)
+            {
+                is_need_rebuild = true;
+                break;
+            }
+        }
+    }
+    else
+    {
+        LOG(INFO) << "old fmi docCount is : " << last_docid << ", document_manager count:" << document_manager_->getMaxDocId();
+        is_need_rebuild = true;
+    }
+    if(is_need_rebuild)
+        LOG(INFO) << "rebuilding in fm-index is needed.";
+    else
+    {
+        new_fmi_manager->useOldDocCount(fmi_manager_.get());
+    }
     uint32_t max_group_docid = 0;
     uint32_t max_attr_docid = 0;
     if (last_docid)
     {
-        LOG(INFO) << "start rebuilding in fm-index";
-        if (new_filter_manager)
-        {
-            max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, group_filter_map);
-            max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
-        }
+        max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, group_filter_map);
+        max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
     }
 
     LOG(INFO) << "building filter data in fm-index, start from: " << max_group_docid;
     std::vector<std::string> numeric_property_list(numeric_property_list_.begin(), numeric_property_list_.end());
-    if (new_filter_manager)
-    {
-        new_filter_manager->buildGroupFilterData(max_group_docid, document_manager_->getMaxDocId(),
-                                                 group_property_list_, group_filter_map);
-        new_filter_manager->saveStrFilterInvertedData(group_property_list_, group_filter_map);
+    new_filter_manager->buildGroupFilterData(max_group_docid, document_manager_->getMaxDocId(),
+        group_property_list_, group_filter_map);
+    new_filter_manager->saveStrFilterInvertedData(group_property_list_, group_filter_map);
 
-        new_filter_manager->buildAttrFilterData(max_attr_docid, document_manager_->getMaxDocId(),
-                                                attr_property_list_, attr_filter_map);
-        new_filter_manager->saveStrFilterInvertedData(attr_property_list_, attr_filter_map);
+    new_filter_manager->buildAttrFilterData(max_attr_docid, document_manager_->getMaxDocId(),
+        attr_property_list_, attr_filter_map);
+    new_filter_manager->saveStrFilterInvertedData(attr_property_list_, attr_filter_map);
 
-        new_filter_manager->buildNumericFilterData(0, document_manager_->getMaxDocId(),
-                                                   numeric_property_list, num_filter_map);
-        new_filter_manager->buildDateFilterData(0, document_manager_->getMaxDocId(),
-                                                date_property_list_, date_filter_map);
+    new_filter_manager->buildNumericFilterData(0, document_manager_->getMaxDocId(),
+        numeric_property_list, num_filter_map);
+    new_filter_manager->buildDateFilterData(0, document_manager_->getMaxDocId(),
+        date_property_list_, date_filter_map);
 
-        new_fmi_manager->setFilterList(new_filter_manager->getFilterList());
-        std::vector<FilterManager::StrFilterItemMapT>().swap(group_filter_map);
-        std::vector<FilterManager::StrFilterItemMapT>().swap(attr_filter_map);
-        std::vector<FilterManager::NumFilterItemMapT>().swap(num_filter_map);
-    }
+    new_fmi_manager->setFilterList(new_filter_manager->getFilterList());
+    std::vector<FilterManager::StrFilterItemMapT>().swap(group_filter_map);
+    std::vector<FilterManager::StrFilterItemMapT>().swap(attr_filter_map);
+    std::vector<FilterManager::NumFilterItemMapT>().swap(num_filter_map);
     LOG(INFO) << "building filter data finished";
 
-    if(!new_fmi_manager->buildCollection(fmi_manager_.get()))
+    if(is_need_rebuild && !new_fmi_manager->buildCommonProperties(fmi_manager_.get()))
     {
-        delete new_fmi_manager;
-        if(new_filter_manager)
-            delete new_filter_manager;
         LOG(ERROR) << "building fm index error !";
         return;
     }
+    new_fmi_manager->buildLessDVProperties();
     new_fmi_manager->buildExternalFilter();
     {
         WriteLock lock(mutex_);
-        fmi_manager_.reset(new_fmi_manager);
-        filter_manager_.reset(new_filter_manager);
+        if(!is_need_rebuild)
+        {
+            // no rebuilding, so just take the owner of old data.
+            LOG(INFO) << "no rebuild need, just swap data for common properties.";
+            new_fmi_manager->swapCommonPropertiesData(fmi_manager_.get());
+        }
+        fmi_manager_.swap(new_fmi_manager);
+        filter_manager_.swap(new_filter_manager);
+        new_fmi_manager.reset();
+        new_filter_manager.reset();
     }
 
     fmi_manager_->saveAll();
@@ -327,8 +352,8 @@ size_t SuffixMatchManager::longestSuffixMatch(
             }
             std::vector<double> max_match_list;
             max_match_list.insert(max_match_list.end(), match_ranges.size(), max_match);
-            fmi_manager_->convertMatchRanges(property, filter_manager_.get(), max_docs, match_ranges, max_match_list);
-            fmi_manager_->getMatchedDocIdList(property, filter_manager_.get(), match_ranges, max_docs, docid_list, doclen_list);
+            fmi_manager_->convertMatchRanges(property, max_docs, match_ranges, max_match_list);
+            fmi_manager_->getMatchedDocIdList(property, match_ranges, max_docs, docid_list, doclen_list);
         }
 
         res_list.reserve(res_list.size() + docid_list.size());
@@ -435,12 +460,11 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                 return 0;
         }
 
-        fmi_manager_->convertMatchRanges(search_property, filter_manager_.get(), max_docs, match_ranges_list, max_match_list);
+        fmi_manager_->convertMatchRanges(search_property, max_docs, match_ranges_list, max_match_list);
         if (filter_mode == SearchingMode::OR_Filter)
         {
             fmi_manager_->getTopKDocIdListByFilter(
                 search_property,
-                filter_manager_.get(),
                 prop_id_list,
                 filter_range_list,
                 match_ranges_list,

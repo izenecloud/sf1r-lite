@@ -33,8 +33,12 @@ namespace sf1r
             docid_t currentDocid = (*iter)->getLastDocId();
             if (MaxDocid >= currentDocid)
             {
-                (*iter)->preProcess();
                 taskFlag[lable] = true;
+                if(!(*iter)->preProcess())
+                {
+                    cout<<"ffffffffffffffffffffffffffffff"<<lable<<endl;
+                    taskFlag[lable] = false;
+                }
             }
             lable++;
         }

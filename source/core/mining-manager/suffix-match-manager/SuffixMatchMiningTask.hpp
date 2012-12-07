@@ -49,8 +49,8 @@ public:
     ~SuffixMatchMiningTask();
 
     bool buildDocment(docid_t docID, const Document& doc);
-    void preProcess();
-    void postProcess();
+    bool preProcess();
+    bool postProcess();
     docid_t getLastDocId();
 
 private:
@@ -66,8 +66,9 @@ private:
 
     std::string data_root_path_;
 
-    FMIndexManager* new_fmi_manager;
-    FilterManager* new_filter_manager;
+    boost::shared_ptr<FMIndexManager> new_fmi_manager;
+    boost::shared_ptr<FilterManager> new_filter_manager;
+    bool is_need_rebuild;
 
     typedef boost::shared_mutex MutexType;
     mutable MutexType mutex_;

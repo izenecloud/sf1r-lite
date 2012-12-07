@@ -309,43 +309,15 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             idManager_->flush();
             index_mode_selector.TryCommit();
             //indexManager_->optimizeIndex();
-#ifdef __x86_64
-            if (bundleConfig_->isTrieWildcard())
-            {
-                idManager_->startWildcardProcess();
-                idManager_->joinWildcardProcess();
-            }
-#endif
-
-            if (hooker_)
-            {
-                if (!hooker_->FinishHook())
-                {
-                    std::cout<<"[IndexWorker] Hooker Finish failed."<<std::endl;
-                    idManager_->coolDown();
-                    return false;
-                }
-                std::cout<<"[IndexWorker] Hooker Finished."<<std::endl;
-            }
-
-            if (miningTaskService_)
-            {
-                indexManager_->pauseMerge();
-                miningTaskService_->DoMiningCollection();
-                indexManager_->resumeMerge();
-            }
-
-            idManager_->coolDown();
         }
         catch (std::exception& e)
         {
-            LOG(WARNING) << "exception in indexing or mining: " << e.what();
+            LOG(WARNING) << "exception in indexing : " << e.what();
             indexProgress_.getIndexingStatus(indexStatus_);
             indexProgress_.reset();
             idManager_->coolDown();
             return false;
         }
-        indexManager_->getIndexReader();
 
         bfs::path bkDir = bfs::path(scdPath) / SCD_BACKUP_DIR;
         bfs::create_directory(bkDir);
@@ -365,23 +337,63 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             }
         }
 
-        indexProgress_.getIndexingStatus(indexStatus_);
-        LOG(INFO) << "Indexing Finished! Documents Indexed: " << documentManager_->getMaxDocId()
-                  << " Deleted: " << numDeletedDocs_
-                  << " Updated: " << numUpdatedDocs_;
+    }///set cookie as true here
+    try{
+#ifdef __x86_64
+        if (bundleConfig_->isTrieWildcard())
+        {
+            idManager_->startWildcardProcess();
+            idManager_->joinWildcardProcess();
+        }
+#endif
 
-        //both variables are refreshed
-        numDeletedDocs_ = 0;
-        numUpdatedDocs_ = 0;
+        if (hooker_)
+        {
+            if (!hooker_->FinishHook())
+            {
+                std::cout<<"[IndexWorker] Hooker Finish failed."<<std::endl;
+                idManager_->coolDown();
+                return false;
+            }
+            std::cout<<"[IndexWorker] Hooker Finished."<<std::endl;
+        }
 
-        indexProgress_.reset();
+        if (miningTaskService_)
+        {
+            indexManager_->pauseMerge();
+            miningTaskService_->DoMiningCollection();
+            indexManager_->resumeMerge();
+        }
 
-        STOP_PROFILER(buildIndex);
-
-        REPORT_PROFILE_TO_FILE("PerformanceIndexResult.SIAProcess")
-        LOG(INFO) << "End BuildCollection: ";
-        LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
+        idManager_->coolDown();
     }
+    catch (std::exception& e)
+    {
+        LOG(WARNING) << "exception in mining: " << e.what();
+        indexProgress_.getIndexingStatus(indexStatus_);
+        indexProgress_.reset();
+        idManager_->coolDown();
+        return false;
+    }
+		
+    indexManager_->getIndexReader();
+
+    indexProgress_.getIndexingStatus(indexStatus_);
+    LOG(INFO) << "Indexing Finished! Documents Indexed: " << documentManager_->getMaxDocId()
+              << " Deleted: " << numDeletedDocs_
+              << " Updated: " << numUpdatedDocs_;
+
+    //both variables are refreshed
+    numDeletedDocs_ = 0;
+    numUpdatedDocs_ = 0;
+
+    indexProgress_.reset();
+
+    STOP_PROFILER(buildIndex);
+
+    REPORT_PROFILE_TO_FILE("PerformanceIndexResult.SIAProcess")
+    LOG(INFO) << "End BuildCollection: ";
+    LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
 
     if (requireBackup_(currTotalSCDSize))
     {
