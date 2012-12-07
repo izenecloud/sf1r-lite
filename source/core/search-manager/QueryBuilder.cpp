@@ -29,7 +29,7 @@
 #include <boost/token_iterator.hpp>
 #include <boost/scoped_ptr.hpp>
 
-#define VERBOSE_SERACH_MANAGER 1
+//#define VERBOSE_SERACH_MANAGER 1
 
 using namespace std;
 
