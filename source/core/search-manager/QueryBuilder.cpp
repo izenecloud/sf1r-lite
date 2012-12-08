@@ -1041,7 +1041,7 @@ bool QueryBuilder::do_prepare_for_property_(
             {
                 if(!parentAndOrFlag)
                 {
-                    if(NULL == pDocIterator) 
+                    if(NULL == pDocIterator)
                     {
                         pDocIterator = pIterator;
                     }
@@ -1104,7 +1104,7 @@ bool QueryBuilder::do_prepare_for_property_(
             {
                 if(!parentAndOrFlag)
                 {
-                    if(NULL == pDocIterator) 
+                    if(NULL == pDocIterator)
                     {
                         pDocIterator = pIterator;
                     }
@@ -1167,7 +1167,7 @@ bool QueryBuilder::do_prepare_for_property_(
             {
                 if(!parentAndOrFlag)
                 {
-                    if(NULL == pDocIterator) 
+                    if(NULL == pDocIterator)
                     {
                         pDocIterator = pIterator;
                     }
@@ -1231,7 +1231,7 @@ bool QueryBuilder::do_prepare_for_property_(
             {
                 if(!parentAndOrFlag)
                 {
-                    if(NULL == pDocIterator) 
+                    if(NULL == pDocIterator)
                     {
                         pDocIterator = pIterator;
                     }

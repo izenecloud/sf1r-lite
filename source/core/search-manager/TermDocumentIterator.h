@@ -30,33 +30,33 @@ class TermDocumentIterator: public DocumentIterator
 {
 public:
     TermDocumentIterator(
-            termid_t termid,
-            collectionid_t colID,
-            izenelib::ir::indexmanager::IndexReader* pIndexReader,
-            const std::string& property,
-            unsigned int propertyId,
-            unsigned int termIndex,
-            bool readPositions
+        termid_t termid,
+        collectionid_t colID,
+        izenelib::ir::indexmanager::IndexReader* pIndexReader,
+        const std::string& property,
+        unsigned int propertyId,
+        unsigned int termIndex,
+        bool readPositions
     );
 
     TermDocumentIterator(
-            termid_t termid,
-            std::string rawTerm,
-            collectionid_t colID,
-            izenelib::ir::indexmanager::IndexReader* pIndexReader,
-            boost::shared_ptr<IndexManager> indexManagerPtr,
-            const std::string& property,
-            unsigned int propertyId,
-            sf1r::PropertyDataType dataType,
-            bool isNumericFilter,
-            unsigned int termIndex,
-            bool readPositions
+        termid_t termid,
+        std::string rawTerm,
+        collectionid_t colID,
+        izenelib::ir::indexmanager::IndexReader* pIndexReader,
+        boost::shared_ptr<IndexManager> indexManagerPtr,
+        const std::string& property,
+        unsigned int propertyId,
+        sf1r::PropertyDataType dataType,
+        bool isNumericFilter,
+        unsigned int termIndex,
+        bool readPositions
     );
 
     ~TermDocumentIterator();
 
 public:
-    void add(DocumentIterator* pDocIterator){}
+    void add(DocumentIterator* pDocIterator) {}
 
     bool accept();
 
@@ -90,9 +90,15 @@ public:
 
     void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0);
 
-    unsigned int df() {return df_;}
+    unsigned int df()
+    {
+        return df_;
+    }
 
-    void set_df(unsigned int df) {df_ = df;}
+    void set_df(unsigned int df)
+    {
+        df_ = df;
+    }
 
     void df_cmtf(
         DocumentFrequencyInProperties& dfmap,
@@ -105,19 +111,26 @@ public:
         return pTermDocReader_->freq();
     }
 
-    void set_ub(float ub){
+    void set_ub(float ub)
+    {
         ub_ = ub;
     }
 
-    termid_t termId() {return termId_;}
+    termid_t termId()
+    {
+        return termId_;
+    }
 
-    unsigned int termIndex() {return termIndex_;}
+    unsigned int termIndex()
+    {
+        return termIndex_;
+    }
 
     void print(int level=0)
     {
         cout << std::string(level*4, ' ') << "|--[ "
-                << "TermIter " << current_
-                << " - termid: " << termId_ << " " << property_<<" ]"<< endl;
+             << "TermIter " << current_
+             << " - termid: " << termId_ << " " << property_<<" ]"<< endl;
     }
 
 private:

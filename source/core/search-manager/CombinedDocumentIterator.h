@@ -3,7 +3,8 @@
 
 #include "ANDDocumentIterator.h"
 
-namespace sf1r{
+namespace sf1r
+{
 
 // class CombinedDocumentIterator
 // The eventual DocumentIterator used by SearchManager
@@ -13,9 +14,9 @@ namespace sf1r{
 class CombinedDocumentIterator : public ANDDocumentIterator
 {
 public:
-    CombinedDocumentIterator(){}
+    CombinedDocumentIterator() {}
 
-    ~CombinedDocumentIterator (){}
+    ~CombinedDocumentIterator () {}
 
     bool next()
     {

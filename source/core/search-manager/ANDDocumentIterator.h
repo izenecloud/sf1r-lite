@@ -14,7 +14,8 @@
 
 #include <list>
 
-namespace sf1r{
+namespace sf1r
+{
 
 class ANDDocumentIterator:public DocumentIterator
 {
@@ -46,7 +47,8 @@ public:
             }
 
             bool ret = do_next();
-            if (currDoc_ == currDocOfNOTIter_) {
+            if (currDoc_ == currDocOfNOTIter_)
+            {
                 return move_together_with_not();
             }
             else if (currDoc_ < currDocOfNOTIter_)
@@ -59,21 +61,27 @@ public:
                 else
                     return ret;
             }
+        }
     }
-}
 
-    docid_t doc() { return currDoc_; }
+    docid_t doc()
+    {
+        return currDoc_;
+    }
 
     inline void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0);
 
     void df_cmtf(
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            MaxTermFrequencyInProperties& maxtfmap);
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap);
 
     count_t tf();
 
-    bool empty() { return docIterList_.empty(); }
+    bool empty()
+    {
+        return docIterList_.empty();
+    }
 
     void queryBoosting(double& score, double& weight);
 
@@ -183,7 +191,7 @@ inline docid_t ANDDocumentIterator::skipTo(docid_t target)
             currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currentDoc);
             ///skipto and next have different semantics:
             ///for next, if it does not have value, it will return false.
-            ///while for skipto, if the target is the same as current last doc, 
+            ///while for skipto, if the target is the same as current last doc,
             ///it will still return target
             if((nFoundId != MAX_DOC_ID) && ((nFoundId == currentDoc) &&(currDocOfNOTIter_ == currentDoc)))
                 return MAX_DOC_ID;

@@ -6,7 +6,8 @@
 
 #include <string>
 
-namespace sf1r {
+namespace sf1r
+{
 using izenelib::ir::indexmanager::BitMapIterator;
 
 /////////////////////////////////////////
@@ -21,7 +22,7 @@ public:
     AllDocumentIterator (docid_t maxDoc)
         : delDocIterator_(NULL)
         , currDoc_(0)
-        , maxDoc_(maxDoc){}
+        , maxDoc_(maxDoc) {}
     AllDocumentIterator (BitMapIterator* bitMapIterator, docid_t maxDoc)
         : delDocIterator_(bitMapIterator)
         , currDoc_(0)
@@ -33,22 +34,27 @@ public:
             currDelDoc_ = MAX_DOC_ID;
     }
 
-    ~AllDocumentIterator () {
+    ~AllDocumentIterator ()
+    {
         if(delDocIterator_) delete delDocIterator_;
     }
 
 public:
     void add(DocumentIterator* pDocIterator) {}
 
-    bool next() {
+    bool next()
+    {
         ++currDoc_;
-        if(!delDocIterator_) {
+        if(!delDocIterator_)
+        {
             return currDoc_ <= maxDoc_ ? true:false;
         }
-        if (currDoc_ == currDelDoc_) {
+        if (currDoc_ == currDelDoc_)
+        {
             return move_with_del();
         }
-        else if (currDoc_ < currDelDoc_) {
+        else if (currDoc_ < currDelDoc_)
+        {
             return currDoc_ <= maxDoc_ ? true:false;
         }
         else
@@ -56,7 +62,8 @@ public:
             currDelDoc_ = delDocIterator_->skipTo(currDoc_);
             if (currDoc_ == currDelDoc_)
                 return move_with_del();
-            else {
+            else
+            {
                 return currDoc_ <= maxDoc_ ? true:false;
             }
         }
@@ -67,14 +74,18 @@ public:
         return currDoc_;
     }
 
-    docid_t skipTo(docid_t target) {
-        if(!delDocIterator_) {
+    docid_t skipTo(docid_t target)
+    {
+        if(!delDocIterator_)
+        {
             return do_skipTo(target);
         }
-        if (currDelDoc_ <= target) {
+        if (currDelDoc_ <= target)
+        {
             return skip_with_del(target);
         }
-        else {
+        else
+        {
             currDoc_ = currDoc_ > target ? currDoc_ : ++target;
             while((currDoc_ == currDelDoc_)&&(currDelDoc_ != MAX_DOC_ID))
             {
@@ -88,23 +99,26 @@ public:
     void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0) {}
 
     void df_ctf(DocumentFrequencyInProperties& dfmap,
-                     CollectionTermFrequencyInProperties& ctfmap){}
+                CollectionTermFrequencyInProperties& ctfmap) {}
 
     void df_cmtf(DocumentFrequencyInProperties& dfmap,
-                     CollectionTermFrequencyInProperties& ctfmap,
-                     MaxTermFrequencyInProperties& maxtfmap) {}
+                 CollectionTermFrequencyInProperties& ctfmap,
+                 MaxTermFrequencyInProperties& maxtfmap) {}
 
-    count_t tf() {
+    count_t tf()
+    {
         return 1;
     }
 
 protected:
-    docid_t do_skipTo(docid_t target) {
+    docid_t do_skipTo(docid_t target)
+    {
         currDoc_ = currDoc_ > target ? currDoc_ : ++target;
         return currDoc_ > maxDoc_ ? MAX_DOC_ID : currDoc_;
     }
 
-    bool move_with_del() {
+    bool move_with_del()
+    {
         do
         {
             ++currDoc_;
@@ -117,7 +131,8 @@ protected:
         return currDoc_ <=maxDoc_ ? true:false;
     }
 
-    docid_t skip_with_del(docid_t target) {
+    docid_t skip_with_del(docid_t target)
+    {
         do
         {
             currDoc_ = currDoc_ > target ? currDoc_ : ++target;

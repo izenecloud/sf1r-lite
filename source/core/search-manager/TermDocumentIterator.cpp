@@ -12,30 +12,31 @@
 
 using namespace izenelib::ir::indexmanager;
 
-namespace sf1r {
+namespace sf1r
+{
 
 TermDocumentIterator::TermDocumentIterator(
-   termid_t termid,
-   collectionid_t colID,
-   IndexReader* pIndexReader,
-   const std::string& property,
-   unsigned int propertyId,
-   unsigned int termIndex,
-   bool readPositions
+    termid_t termid,
+    collectionid_t colID,
+    IndexReader* pIndexReader,
+    const std::string& property,
+    unsigned int propertyId,
+    unsigned int termIndex,
+    bool readPositions
 )
-        :termId_(termid)
-        ,rawTerm_("")
-        ,colID_(colID)
-        ,property_(property)
-        ,propertyId_(propertyId)
-        ,dataType_(sf1r::STRING_PROPERTY_TYPE)
-        ,isNumericFilter_(false)
-        ,termIndex_(termIndex)
-        ,pIndexReader_(pIndexReader)
-        ,pTermReader_(0)
-        ,pTermDocReader_(0)
-        ,df_(0)
-        ,readPositions_(readPositions)
+    :termId_(termid)
+    ,rawTerm_("")
+    ,colID_(colID)
+    ,property_(property)
+    ,propertyId_(propertyId)
+    ,dataType_(sf1r::STRING_PROPERTY_TYPE)
+    ,isNumericFilter_(false)
+    ,termIndex_(termIndex)
+    ,pIndexReader_(pIndexReader)
+    ,pTermReader_(0)
+    ,pTermDocReader_(0)
+    ,df_(0)
+    ,readPositions_(readPositions)
 {
 }
 
@@ -52,20 +53,20 @@ TermDocumentIterator::TermDocumentIterator(
     unsigned int termIndex,
     bool readPositions
 )
-        :termId_(termid)
-        ,rawTerm_(rawTerm)
-        ,colID_(colID)
-        ,property_(property)
-        ,propertyId_(propertyId)
-        ,dataType_(dataType)
-        ,isNumericFilter_(isNumericFilter)
-        ,termIndex_(termIndex)
-        ,pIndexReader_(pIndexReader)
-        ,pTermReader_(0)
-        ,pTermDocReader_(0)
-        ,indexManagerPtr_(indexManagerPtr)
-        ,df_(0)
-        ,readPositions_(readPositions)
+    :termId_(termid)
+    ,rawTerm_(rawTerm)
+    ,colID_(colID)
+    ,property_(property)
+    ,propertyId_(propertyId)
+    ,dataType_(dataType)
+    ,isNumericFilter_(isNumericFilter)
+    ,termIndex_(termIndex)
+    ,pIndexReader_(pIndexReader)
+    ,pTermReader_(0)
+    ,pTermDocReader_(0)
+    ,indexManagerPtr_(indexManagerPtr)
+    ,df_(0)
+    ,readPositions_(readPositions)
 {
 }
 
@@ -121,15 +122,15 @@ bool TermDocumentIterator::accept()
         bool find = indexManagerPtr_->seekTermFromBTreeIndex(colID_, property_, value);
         if (find)
         {
-             pDocIdSet.reset(new izenelib::am::EWAHBoolArray<uint32_t>());
-             pBitVector.reset(new izenelib::ir::indexmanager::BitVector(pIndexReader_->maxDoc() + 1));
+            pDocIdSet.reset(new izenelib::am::EWAHBoolArray<uint32_t>());
+            pBitVector.reset(new izenelib::ir::indexmanager::BitVector(pIndexReader_->maxDoc() + 1));
 
-             indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
-             pBitVector->compressed(*pDocIdSet);
-             if(pTermDocReader_) delete pTermDocReader_;
-             pTermDocReader_ = new BitMapIterator(pDocIdSet);
-             df_ = pTermDocReader_->docFreq();
-         }
+            indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
+            pBitVector->compressed(*pDocIdSet);
+            if(pTermDocReader_) delete pTermDocReader_;
+            pTermDocReader_ = new BitMapIterator(pDocIdSet);
+            df_ = pTermDocReader_->docFreq();
+        }
         return find;
     }
 }
@@ -141,7 +142,7 @@ void TermDocumentIterator::doc_item(
     CREATE_PROFILER ( get_position, "SearchManager", "doSearch_: getting positions");
 
     if (readPositions_)
-    BOOST_ASSERT(termIndex_ < rankDocumentProperty.size());
+        BOOST_ASSERT(termIndex_ < rankDocumentProperty.size());
 
     if (rankDocumentProperty.termFreqAt(termIndex_) == 0)
     {

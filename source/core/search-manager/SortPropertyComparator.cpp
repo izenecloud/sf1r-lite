@@ -1,6 +1,7 @@
 #include "SortPropertyComparator.h"
 
-namespace sf1r{
+namespace sf1r
+{
 
 SortPropertyComparator::SortPropertyComparator()
     : type_(UNKNOWN_DATA_PROPERTY_TYPE)

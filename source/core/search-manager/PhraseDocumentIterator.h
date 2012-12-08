@@ -25,7 +25,8 @@ using namespace izenelib::ir::indexmanager;
 
 //#define VERBOSE_SERACH_MANAGER
 
-namespace sf1r{
+namespace sf1r
+{
 
 ///DocumentIterator for a phrase.
 ///Template parameter IndexReaderType is added for writing unitests,
@@ -68,29 +69,34 @@ public:
         origProperty_ = property;
     }
 
-    void add(DocumentIterator* pDocIterator){}
+    void add(DocumentIterator* pDocIterator) {}
 
     bool next()
     {
 #ifdef VERBOSE_SERACH_MANAGER
         std::cout << "next" << std::endl;
 #endif
-        if(!inited_) {
+        if(!inited_)
+        {
             hasNext_ = init();
             inited_ = true;
         }
 
-        while (hasNext_) {
+        while (hasNext_)
+        {
             hasNext_ = do_next();
-            if(hasNext_) {
-                if( isQualified() ) {
+            if(hasNext_)
+            {
+                if( isQualified() )
+                {
 #ifdef VERBOSE_SERACH_MANAGER
                     std::cout << "match" << std::endl;
 #endif
                     break;
                 }
 #ifdef VERBOSE_SERACH_MANAGER
-                else {
+                else
+                {
                     std::cout << "miss" << std::endl;
                 }
 #endif
@@ -100,7 +106,10 @@ public:
     }
 
 
-    docid_t doc() { return currDoc_; }
+    docid_t doc()
+    {
+        return currDoc_;
+    }
 
     void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0)
     {
@@ -126,16 +135,18 @@ public:
     }
 
     void df_cmtf(
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            MaxTermFrequencyInProperties& maxtfmap)
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap)
     {
-        if(!inited_) {
+        if(!inited_)
+        {
             hasNext_ = init();
             inited_ = true;
         }
 
-        for( size_t i = 0; i < termDocReaders_.size(); i++ ) {
+        for( size_t i = 0; i < termDocReaders_.size(); i++ )
+        {
             TermDocFreqs* pTermDocReader = termDocReaders_[i];
             ID_FREQ_MAP_T& df = dfmap[origProperty_];
             df[termids_[i]] = (float)pTermDocReader->docFreq();
@@ -149,7 +160,8 @@ public:
     {
         // here return the minimum tf,
         //
-        if(!inited_) {
+        if(!inited_)
+        {
             hasNext_ = init();
             inited_ = true;
         }
@@ -157,10 +169,12 @@ public:
         TermDocFreqs* pTermDocReader;
         count_t mintf = MAX_COUNT;
         count_t tf;
-        for( size_t i = 0; i < termDocReaders_.size(); i++ ) {
+        for( size_t i = 0; i < termDocReaders_.size(); i++ )
+        {
             pTermDocReader = termDocReaders_[i];
             tf = pTermDocReader->freq();
-            if (tf < mintf) {
+            if (tf < mintf)
+            {
                 mintf = tf;
             }
         }
@@ -184,10 +198,13 @@ protected:
 //        }
 
         termDocReaders_.reserve(termids_.size());
-        for (size_t i = 0; i< termids_.size(); i++ ) {
+        for (size_t i = 0; i< termids_.size(); i++ )
+        {
             Term term(property_.c_str(),termids_[i]);
-            if( ! pTermReader->seek(&term) ) {
-                succ = false; break;
+            if( ! pTermReader->seek(&term) )
+            {
+                succ = false;
+                break;
             }
 
 //            if(pIndexReader_->isDirty()) {
@@ -200,7 +217,10 @@ protected:
     }
 
     /// Overriden it if strong restriction is required, for example, exact matches.
-    virtual bool isQualified() { return true; }
+    virtual bool isQualified()
+    {
+        return true;
+    }
 
     bool do_next()
     {
@@ -226,9 +246,12 @@ protected:
 #ifdef VERBOSE_SERACH_MANAGER
             std::cout << termDocReaders_[i]->doc() << ",";
 #endif
-            if(nearTarget == target) {
+            if(nearTarget == target)
+            {
                 nMatch ++;
-            } else {
+            }
+            else
+            {
                 target = nearTarget;
                 nMatch = 1;
             }
@@ -237,7 +260,8 @@ protected:
             std::cout << std::endl;
 #endif
         }
-        if(nMatch == termDocReaders_.size()) {
+        if(nMatch == termDocReaders_.size())
+        {
 #ifdef VERBOSE_SERACH_MANAGER
             std::cout << currDoc_ << std::endl;
 #endif

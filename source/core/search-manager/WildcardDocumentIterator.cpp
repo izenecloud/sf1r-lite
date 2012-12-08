@@ -2,7 +2,8 @@
 
 using namespace izenelib::ir::indexmanager;
 
-namespace sf1r {
+namespace sf1r
+{
 
 WildcardDocumentIterator::WildcardDocumentIterator(
     collectionid_t colID,
@@ -11,14 +12,14 @@ WildcardDocumentIterator::WildcardDocumentIterator(
     unsigned int propertyId,
     bool readPositions,
     int maxTerms)
-        :maxTermThreshold_(maxTerms)
-        ,pWildcardDocIteratorQueue_(NULL)
-        ,colID_(colID)
-        ,pIndexReader_(pIndexReader)
-        ,pTermReader_(NULL)
-        ,property_(property)
-        ,propertyId_(propertyId)
-        ,readPositions_(readPositions)
+    :maxTermThreshold_(maxTerms)
+    ,pWildcardDocIteratorQueue_(NULL)
+    ,colID_(colID)
+    ,pIndexReader_(pIndexReader)
+    ,pTermReader_(NULL)
+    ,property_(property)
+    ,propertyId_(propertyId)
+    ,readPositions_(readPositions)
 
 {
     pTermReader_ = pIndexReader_->getTermReader(colID);
@@ -46,13 +47,13 @@ void WildcardDocumentIterator::getTermIds(std::vector<termid_t>& termIds)
 }
 
 void WildcardDocumentIterator::add(
-        termid_t termId,
-        unsigned termIndex,
-        std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders)
+    termid_t termId,
+    unsigned termIndex,
+    std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders)
 {
 #if PREFETCH_TERMID
     std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >::iterator constIt
-        = termDocReaders.find(termId);
+    = termDocReaders.find(termId);
     if(constIt != termDocReaders.end())
     {
         TermDocumentIterator* pIterator =
@@ -133,9 +134,9 @@ bool WildcardDocumentIterator::next()
 }
 
 void WildcardDocumentIterator::df_cmtf(
-        DocumentFrequencyInProperties& dfmap,
-        CollectionTermFrequencyInProperties& ctfmap,
-        MaxTermFrequencyInProperties& maxtfmap)
+    DocumentFrequencyInProperties& dfmap,
+    CollectionTermFrequencyInProperties& ctfmap,
+    MaxTermFrequencyInProperties& maxtfmap)
 {
     for (size_t i = 0; i < pWildcardDocIteratorQueue_->size(); ++i)
     {

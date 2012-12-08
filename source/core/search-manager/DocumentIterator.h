@@ -20,15 +20,16 @@
 
 #define SKIP_ENABLED 1
 
-namespace sf1r {
+namespace sf1r
+{
 
 class VirtualPropertyTermDocumentIterator;
 class DocumentIterator
 {
 public:
-    DocumentIterator():current_(false), not_(false), scorer_(false){}
+    DocumentIterator():current_(false), not_(false), scorer_(false) {}
 
-    virtual ~DocumentIterator(){}
+    virtual ~DocumentIterator() {}
 
 public:
     virtual void add(DocumentIterator* pDocIterator) = 0;
@@ -43,8 +44,8 @@ public:
     virtual void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0) = 0;
 
     virtual void df_cmtf(DocumentFrequencyInProperties& dfmap,
-                             CollectionTermFrequencyInProperties& ctfmap,
-                             MaxTermFrequencyInProperties& maxtfmap) = 0;
+                         CollectionTermFrequencyInProperties& ctfmap,
+                         MaxTermFrequencyInProperties& maxtfmap) = 0;
 
     virtual count_t tf() = 0;
 
@@ -57,7 +58,8 @@ public:
             if(!next())
                 return MAX_DOC_ID;
             currDoc = doc();
-        } while(target > currDoc);
+        }
+        while(target > currDoc);
 
         return currDoc;
     }
@@ -69,22 +71,43 @@ public:
     virtual double score(
         const RankQueryProperty& rankQueryProperty,
         const boost::shared_ptr<PropertyRanker>& propertyRanker
-    ){ return 0.0f; }
+    )
+    {
+        return 0.0f;
+    }
 
     virtual double score(
         const std::vector<RankQueryProperty>& rankQueryProperties,
         const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers
-    ){ return 0.0f; }
+    )
+    {
+        return 0.0f;
+    }
 
-    void setCurrent(bool current){ current_ = current; }
+    void setCurrent(bool current)
+    {
+        current_ = current;
+    }
 
-    bool isCurrent(){ return current_; }
+    bool isCurrent()
+    {
+        return current_;
+    }
 
-    void setNot(bool isNot) { not_ = isNot; }
+    void setNot(bool isNot)
+    {
+        not_ = isNot;
+    }
 
-    bool isNot() { return not_; }
+    bool isNot()
+    {
+        return not_;
+    }
 
-    bool isScorer() { return scorer_;}
+    bool isScorer()
+    {
+        return scorer_;
+    }
 protected:
     bool current_;
 

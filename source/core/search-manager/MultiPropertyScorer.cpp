@@ -34,9 +34,9 @@ double MultiPropertyScorer::score(
 
                     //START_PROFILER ( compute_score )
                     score += weight * propertyRankers[i]->getScore(
-                        rankQueryProperties[i],
-                        rankDocumentProperty_
-                    );
+                                 rankQueryProperties[i],
+                                 rankDocumentProperty_
+                             );
                     //STOP_PROFILER ( compute_score )
 
                     //cout << i << " - " << weight << " * " << propertyRankers[i]->getScore(rankQueryProperties[i], rankDocumentProperty_) <<endl;

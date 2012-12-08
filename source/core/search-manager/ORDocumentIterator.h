@@ -15,7 +15,8 @@
 
 #include <vector>
 
-namespace sf1r{
+namespace sf1r
+{
 class NOTDocumentIterator;
 class ORDocumentIterator:public DocumentIterator
 {
@@ -46,18 +47,24 @@ public:
 
     bool next();
 
-    docid_t doc(){ return currDoc_; }
+    docid_t doc()
+    {
+        return currDoc_;
+    }
 
     void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0);
 
     void df_cmtf(
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            MaxTermFrequencyInProperties& maxtfmap);
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap);
 
     count_t tf();
 
-    bool empty() { return docIteratorList_.empty(); }
+    bool empty()
+    {
+        return docIteratorList_.empty();
+    }
 
     void queryBoosting(double& score, double& weight);
 

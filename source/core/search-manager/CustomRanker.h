@@ -17,7 +17,8 @@
 
 using namespace BOOST_SPIRIT_CLASSIC_NS;
 
-namespace sf1r {
+namespace sf1r
+{
 
 class SortPropertyCache;
 
@@ -51,17 +52,17 @@ private:
 
 public:
     CustomRanker()
-    : score_(0)
-    , strExp_()
-    , errorInfo_()
+        : score_(0)
+        , strExp_()
+        , errorInfo_()
     {
         ESTree_.reset(new ExpSyntaxTree(ExpSyntaxTree::ROOT));
     }
 
     CustomRanker(std::string& strExp)
-    : score_(0)
-    , strExp_(strExp)
-    , errorInfo_()
+        : score_(0)
+        , strExp_(strExp)
+        , errorInfo_()
     {
         ESTree_.reset(new ExpSyntaxTree(ExpSyntaxTree::ROOT)); // root
     }
@@ -84,7 +85,8 @@ public:
      */
     static bool str2real(const std::string& str, double& ret)
     {
-        try {
+        try
+        {
             ret = boost::lexical_cast<double>(str);
             return true;
         }
@@ -103,7 +105,7 @@ public:
     static bool validateName(std::string& name)
     {
         rule<phrase_scanner_t> name_parser =
-                (alpha_p|ch_p('_')) >> *(alnum_p|ch_p('_'));
+            (alpha_p|ch_p('_')) >> *(alnum_p|ch_p('_'));
 
         parse_info<> info = BOOST_SPIRIT_CLASSIC_NS::parse(name.c_str(), name_parser);
 

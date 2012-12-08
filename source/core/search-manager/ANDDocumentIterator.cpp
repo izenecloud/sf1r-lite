@@ -5,11 +5,11 @@ using namespace std;
 using namespace sf1r;
 
 ANDDocumentIterator::ANDDocumentIterator()
-        :hasNot_(false)
-        ,currDocOfNOTIter_(MAX_DOC_ID)
-        ,initNOTIterator_(false)
-        ,pNOTDocIterator_(0)
-        ,nIteratorNum_(0)
+    :hasNot_(false)
+    ,currDocOfNOTIter_(MAX_DOC_ID)
+    ,initNOTIterator_(false)
+    ,pNOTDocIterator_(0)
+    ,nIteratorNum_(0)
 {
 }
 
@@ -31,7 +31,8 @@ void ANDDocumentIterator::add(DocumentIterator* pDocIterator)
             pNOTDocIterator_ = new NOTDocumentIterator();
         pNOTDocIterator_->add(pDocIterator);
     }
-    else {
+    else
+    {
         docIterList_.push_back(pDocIterator);
         ++nIteratorNum_;
     }
@@ -69,7 +70,8 @@ count_t ANDDocumentIterator::tf()
     {
         pEntry = (*iter);
         tf = pEntry->tf();
-        if (tf < mintf) {
+        if (tf < mintf)
+        {
             mintf = tf;
         }
     }
