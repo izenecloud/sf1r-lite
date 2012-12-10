@@ -372,6 +372,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
         std::vector<size_t>().swap(doclen_list);
     }
     std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
+    res_list.erase(std::unique(res_list.begin(), res_list.end()), res_list.end());
     if(res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
     return total_match;
@@ -496,6 +497,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     }
 
     std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
+    res_list.erase(std::unique(res_list.begin(), res_list.end()), res_list.end());
     if(res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
     return total_match;

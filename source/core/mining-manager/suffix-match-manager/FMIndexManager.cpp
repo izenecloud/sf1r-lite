@@ -492,7 +492,7 @@ void FMIndexManager::convertMatchRanges(
             getFilterRange(prop_id, std::make_pair(range.start, range.end), doc_array_filterrange);
             LOG(INFO) << "( id: " << tmp_docid_list[j] << ", converted match range: " << doc_array_filterrange.first <<
                 "-" << doc_array_filterrange.second << ")";
-            if(!converted_match_ranges.empty())
+            if(converted_match_ranges.size() > oldsize)
             {
                 RangeT& prev_range = converted_match_ranges.back();
                 if(doc_array_filterrange.first < prev_range.first)
