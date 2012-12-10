@@ -380,15 +380,7 @@ bool SearchWorker::getSearchResult_(
 
     default:
         if (!searchManager_->search(actionOperation,
-                                    resultItem.topKDocs_,
-                                    resultItem.topKRankScoreList_,
-                                    resultItem.topKCustomRankScoreList_,
-                                    resultItem.totalCount_,
-                                    resultItem.groupRep_,
-                                    resultItem.attrRep_,
-                                    resultItem.propertyRange_,
-                                    resultItem.distSearchInfo_,
-                                    resultItem.counterResults_,
+                                    resultItem,
                                     TOP_K_NUM,
                                     topKStart,
                                     bundleConfig_->enable_parallel_searching_))
@@ -407,15 +399,7 @@ bool SearchWorker::getSearchResult_(
             }
 
             if (!searchManager_->search(actionOperation,
-                                        resultItem.topKDocs_,
-                                        resultItem.topKRankScoreList_,
-                                        resultItem.topKCustomRankScoreList_,
-                                        resultItem.totalCount_,
-                                        resultItem.groupRep_,
-                                        resultItem.attrRep_,
-                                        resultItem.propertyRange_,
-                                        resultItem.distSearchInfo_,
-                                        resultItem.counterResults_,
+                                        resultItem,
                                         TOP_K_NUM,
                                         topKStart,
                                         bundleConfig_->enable_parallel_searching_))

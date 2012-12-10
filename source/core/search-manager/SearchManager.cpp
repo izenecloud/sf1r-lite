@@ -191,21 +191,20 @@ struct SearchThreadParam
 
 bool SearchManager::search(
     const SearchKeywordOperation& actionOperation,
-    std::vector<unsigned int>& docIdList,
-    std::vector<float>& rankScoreList,
-    std::vector<float>& customRankScoreList,
-    std::size_t& totalCount,
-    faceted::GroupRep& groupRep,
-    faceted::OntologyRep& attrRep,
-    sf1r::PropertyRange& propertyRange,
-    DistKeywordSearchInfo& distSearchInfo,
-    std::map<std::string, unsigned int>& counterResults,
+    KeywordSearchResult& searchResult,
     uint32_t topK,
     uint32_t start,
     bool enable_parallel_searching)
 {
     if ( actionOperation.noError() == false )
         return false;
+
+    std::size_t& totalCount = searchResult.totalCount_;
+    faceted::GroupRep& groupRep = searchResult.groupRep_;
+    faceted::OntologyRep& attrRep = searchResult.attrRep_;
+    PropertyRange& propertyRange = searchResult.propertyRange_;
+    DistKeywordSearchInfo& distSearchInfo = searchResult.distSearchInfo_;
+    std::map<std::string, unsigned int>& counterResults = searchResult.counterResults_;
 
     docid_t maxDocId = documentManagerPtr_->getMaxDocId();
     size_t thread_num = s_cpunum;
@@ -366,9 +365,15 @@ bool SearchManager::search(
             }
         }
     }
+
+    std::vector<unsigned int>& docIdList = searchResult.topKDocs_;
+    std::vector<float>& rankScoreList = searchResult.topKRankScoreList_;
+    std::vector<float>& customRankScoreList = searchResult.topKCustomRankScoreList_;
+
     size_t count = start > 0 ? (finalResultQueue->size() - start) : finalResultQueue->size();
     docIdList.resize(count);
     rankScoreList.resize(count);
+
     if (customRanker)
     {
         customRankScoreList.resize(count);

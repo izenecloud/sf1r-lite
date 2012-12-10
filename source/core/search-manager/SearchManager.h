@@ -84,15 +84,7 @@ public:
 
     bool search(
         const SearchKeywordOperation& actionOperation,
-        std::vector<unsigned int>& docIdList,
-        std::vector<float>& rankScoreList,
-        std::vector<float>& customRankScoreList,
-        std::size_t& totalCount,
-        faceted::GroupRep& groupRep,
-        faceted::OntologyRep& attrRep,
-        sf1r::PropertyRange& propertyRange,
-        DistKeywordSearchInfo& distSearchInfo,
-        std::map<std::string, unsigned int>& counterResults,
+        KeywordSearchResult& searchResult,
         uint32_t topK = 200,
         uint32_t start = 0,
         bool enable_parallel_searching = false);
