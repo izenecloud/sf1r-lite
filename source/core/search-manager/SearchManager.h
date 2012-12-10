@@ -69,35 +69,35 @@ public:
     typedef boost::function< void( std::vector<QueryFiltering::FilteringType>& ) > filter_hook_t;
 
     SearchManager(
-            const IndexBundleSchema& indexSchema,
-            const boost::shared_ptr<IDManager>& idManager,
-            const boost::shared_ptr<DocumentManager>& documentManager,
-            const boost::shared_ptr<IndexManager>& indexManager,
-            const boost::shared_ptr<RankingManager>& rankingManager,
-            IndexBundleConfiguration* config);
+        const IndexBundleSchema& indexSchema,
+        const boost::shared_ptr<IDManager>& idManager,
+        const boost::shared_ptr<DocumentManager>& documentManager,
+        const boost::shared_ptr<IndexManager>& indexManager,
+        const boost::shared_ptr<RankingManager>& rankingManager,
+        IndexBundleConfiguration* config);
 
     ~SearchManager();
 
     void rankDocIdListForFuzzySearch(const SearchKeywordOperation& actionOperation,
-        uint32_t start, std::vector<uint32_t>& docid_list, std::vector<float>& result_score_list,
-        std::vector<float>& custom_score_list);
+                                     uint32_t start, std::vector<uint32_t>& docid_list, std::vector<float>& result_score_list,
+                                     std::vector<float>& custom_score_list);
 
     bool search(
-            SearchKeywordOperation& actionOperation,
-            std::vector<unsigned int>& docIdList,
-            std::vector<float>& rankScoreList,
-            std::vector<float>& customRankScoreList,
-            std::size_t& totalCount,
-            faceted::GroupRep& groupRep,
-            faceted::OntologyRep& attrRep,
-            sf1r::PropertyRange& propertyRange,
-            DistKeywordSearchInfo& distSearchInfo,
-            std::map<std::string, unsigned int>& counterResults,
-            uint32_t topK = 200,
-            uint32_t knnTopK = 200,
-            uint32_t knnDist = 15,
-            uint32_t start = 0,
-            bool enable_parallel_searching = false);
+        SearchKeywordOperation& actionOperation,
+        std::vector<unsigned int>& docIdList,
+        std::vector<float>& rankScoreList,
+        std::vector<float>& customRankScoreList,
+        std::size_t& totalCount,
+        faceted::GroupRep& groupRep,
+        faceted::OntologyRep& attrRep,
+        sf1r::PropertyRange& propertyRange,
+        DistKeywordSearchInfo& distSearchInfo,
+        std::map<std::string, unsigned int>& counterResults,
+        uint32_t topK = 200,
+        uint32_t knnTopK = 200,
+        uint32_t knnDist = 15,
+        uint32_t start = 0,
+        bool enable_parallel_searching = false);
 
     bool rerank(
         const KeywordSearchActionItem& actionItem,
@@ -122,46 +122,49 @@ public:
 
     void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
 
-    QueryBuilder* getQueryBuilder() { return queryBuilder_.get(); }
+    QueryBuilder* getQueryBuilder()
+    {
+        return queryBuilder_.get();
+    }
 
 private:
     bool doSearch_(
-            const SearchKeywordOperation& actionOperation,
-            std::size_t& totalCount,
-            sf1r::PropertyRange& propertyRange,
-            CombinedDocumentIterator* pDocIterator,
-            faceted::GroupFilter* groupFilter,
-            ScoreDocEvaluator& scoreDocEvaluator,
-            HitQueue* scoreItemQueue,
-            std::map<std::string, unsigned int>& counterResults,
-            std::size_t docid_start,
-            std::size_t docid_num_byeachthread,
-            std::size_t docid_nextstart_inc);
+        const SearchKeywordOperation& actionOperation,
+        std::size_t& totalCount,
+        sf1r::PropertyRange& propertyRange,
+        CombinedDocumentIterator* pDocIterator,
+        faceted::GroupFilter* groupFilter,
+        ScoreDocEvaluator& scoreDocEvaluator,
+        HitQueue* scoreItemQueue,
+        std::map<std::string, unsigned int>& counterResults,
+        std::size_t docid_start,
+        std::size_t docid_num_byeachthread,
+        std::size_t docid_nextstart_inc);
 
     void doSearchInThreadOneParam(SearchThreadParam* pParam,
-            boost::detail::atomic_count* finishedJobs);
+                                  boost::detail::atomic_count* finishedJobs);
 
     bool doSearchInThread(const SearchKeywordOperation& actionOperation,
-            std::size_t& totalCount,
-            sf1r::PropertyRange& propertyRange,
-            uint32_t start,
-            boost::shared_ptr<Sorter>& pSorter_orig,
-            CustomRankerPtr& customRanker_orig,
-            faceted::GroupRep& groupRep,
-            faceted::OntologyRep& attrRep,
-            boost::shared_ptr<HitQueue>& scoreItemQueue,
-            DistKeywordSearchInfo& distSearchInfo,
-            std::map<std::string, unsigned int>& counterResults,
-            int heapSize,
-            std::size_t docid_start,
-            std::size_t docid_num_byeachthread,
-            std::size_t docid_nextstart_inc,
-            bool is_parallel = false);
+                          std::size_t& totalCount,
+                          sf1r::PropertyRange& propertyRange,
+                          uint32_t start,
+                          boost::shared_ptr<Sorter>& pSorter_orig,
+                          CustomRankerPtr& customRanker_orig,
+                          faceted::GroupRep& groupRep,
+                          faceted::OntologyRep& attrRep,
+                          boost::shared_ptr<HitQueue>& scoreItemQueue,
+                          DistKeywordSearchInfo& distSearchInfo,
+                          std::map<std::string, unsigned int>& counterResults,
+                          int heapSize,
+                          std::size_t docid_start,
+                          std::size_t docid_num_byeachthread,
+                          std::size_t docid_nextstart_inc,
+                          bool is_parallel = false);
 
     void prepare_sorter_customranker_(
-            const SearchKeywordOperation& actionOperation,
-            CustomRankerPtr& customRanker,
-            boost::shared_ptr<Sorter> &pSorter);
+        const SearchKeywordOperation& actionOperation,
+        CustomRankerPtr& customRanker,
+        boost::shared_ptr<Sorter> &pSorter);
 
     /**
      * @brief get data list of each sort property for documents referred by docIdList,
@@ -171,9 +174,9 @@ private:
      * @param distSearchInfo [OUT]
      */
     void fillSearchInfoWithSortPropertyData_(
-            Sorter* pSorter,
-            std::vector<unsigned int>& docIdList,
-            DistKeywordSearchInfo& distSearchInfo);
+        Sorter* pSorter,
+        std::vector<unsigned int>& docIdList,
+        DistKeywordSearchInfo& distSearchInfo);
 
     /**
      * combine the @p originDocIterator with the customized doc iterator.
@@ -195,8 +198,8 @@ private:
      * @brief for testing
      */
     void printDFCTF_(
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties ctfmap);
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties ctfmap);
 
 private:
     IndexBundleConfiguration* config_;

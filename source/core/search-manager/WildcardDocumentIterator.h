@@ -10,7 +10,8 @@
 #include "ORDocumentIterator.h"
 #include "TermDocumentIterator.h"
 
-namespace sf1r{
+namespace sf1r
+{
 
 class WildcardDocumentIterator : public ORDocumentIterator
 {
@@ -30,26 +31,26 @@ class WildcardDocumentIterator : public ORDocumentIterator
 
 public:
     WildcardDocumentIterator(
-            collectionid_t colID,
-            izenelib::ir::indexmanager::IndexReader* pIndexReader,
-            const std::string& property,
-            unsigned int propertyId,
-            bool readPositions,
-            int maxTerms);
+        collectionid_t colID,
+        izenelib::ir::indexmanager::IndexReader* pIndexReader,
+        const std::string& property,
+        unsigned int propertyId,
+        bool readPositions,
+        int maxTerms);
 
     ~WildcardDocumentIterator();
 
 public:
     void add(termid_t termId,
-                     unsigned termIndex,
-                     std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders);
+             unsigned termIndex,
+             std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders);
 
     bool next();
 
     void df_cmtf(
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            MaxTermFrequencyInProperties& maxtfmap);
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap);
 
     unsigned int numIterators();
 

@@ -14,7 +14,8 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace sf1r{
+namespace sf1r
+{
 
 class SortPropertyComparator
 {

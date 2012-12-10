@@ -1,6 +1,6 @@
 /**
  * \file WANDDocumentIterator.cpp
- * \brief 
+ * \brief
  * \date Feb 29, 2012
  * \author Xin Liu
  */
@@ -57,7 +57,7 @@ void WANDDocumentIterator::init_(const property_weight_map& propertyWeightMap)
     for (size_t i = 0; i < numProperties; ++i)
     {
         property_weight_map::const_iterator found
-            = propertyWeightMap.find(indexPropertyIdList_[i]);
+        = propertyWeightMap.find(indexPropertyIdList_[i]);
         if (found != propertyWeightMap.end())
         {
             propertyWeightList_[i] = found->second;
@@ -301,7 +301,8 @@ bool WANDDocumentIterator::do_next()
                     return false;
             }
         }
-    }while(true);
+    }
+    while(true);
 }
 
 #if SKIP_ENABLED
@@ -383,11 +384,11 @@ double WANDDocumentIterator::score(
 
                 //START_PROFILER ( compute_score )
                 score += weight * propertyRankers[index]->getScore(
-                    rankQueryProperties[index],
-                    rankDocumentProperty_
-                );
+                             rankQueryProperties[index],
+                             rankDocumentProperty_
+                         );
                 //STOP_PROFILER ( compute_score )
-               // LOG(INFO) << "current property's sum score:"<<score;
+                // LOG(INFO) << "current property's sum score:"<<score;
             }
         }
     }

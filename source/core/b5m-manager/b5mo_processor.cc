@@ -110,9 +110,15 @@ void B5moProcessor::Process(Document& doc, int& type)
         UString category;
         UString brand;
         std::string sbrand;
+        std::string scategory;
         doc.eraseProperty(B5MHelper::GetSPTPropertyName());
         doc.getProperty(B5MHelper::GetBrandPropertyName(), brand);
         doc.getProperty("Category", category);
+        category.convertString(scategory, UString::UTF_8);
+        UString title;
+        doc.getProperty("Title", title);
+        std::string stitle;
+        title.convertString(stitle, UString::UTF_8);
         //brand.convertString(sbrand, UString::UTF_8);
         //std::cerr<<"[ABRAND]"<<sbrand<<std::endl;
         bool is_human_edit = false;
@@ -143,10 +149,6 @@ void B5moProcessor::Process(Document& doc, int& type)
         if(need_do_match)
         {
             matcher_->Process(doc, product);
-            //if(category.empty()&&!result_category.name.empty())
-            //{
-                //doc.property("Category") = UString(result_category.name, UString::UTF_8);
-            //}
         }
         else
         {
@@ -157,10 +159,15 @@ void B5moProcessor::Process(Document& doc, int& type)
             //has SPU matched
             spid = product.spid;
             doc.property("Category") = UString(product.scategory, UString::UTF_8);
-            UString title;
-            doc.getProperty("Title", title);
-            std::string stitle;
-            title.convertString(stitle, UString::UTF_8);
+            if(scategory!=product.scategory)
+            {
+                const std::string& tcp = B5MHelper::GetTargetCategoryPropertyName();
+                if(doc.hasProperty(tcp))
+                {
+                    doc.property(tcp) = UString("", UString::UTF_8);
+                }
+
+            }
             match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
         }
         else
@@ -182,6 +189,12 @@ void B5moProcessor::Process(Document& doc, int& type)
             if(bdb_->get_source(brand, ebrand))
             {
                 brand = ebrand;
+            }
+            else if(!product.sbrand.empty())
+            {
+                //TODO, remove?
+                brand = UString(product.sbrand, UString::UTF_8);
+                //std::cerr<<"[EBRAND]"<<product.sbrand<<","<<stitle<<std::endl;
             }
             if(!brand.empty())
             {

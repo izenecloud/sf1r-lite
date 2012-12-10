@@ -14,23 +14,28 @@
 
 using namespace izenelib::am;
 
-namespace sf1r{
+namespace sf1r
+{
 
 /**
  * @brief Filter is nothing more than a bitmap that indicates whether a document
  * should be masked or not.  The bitmap is ususally generated through data from
- * BTreeIndex in Indexmanager. 
+ * BTreeIndex in Indexmanager.
  */
 class Filter
 {
 public:
-    Filter(boost::shared_ptr<EWAHBoolArray<uint32_t> > docIdSet){
+    Filter(boost::shared_ptr<EWAHBoolArray<uint32_t> > docIdSet)
+    {
         uncompressedIDSet_.reset(new BoolArray<uint32_t>());
         docIdSet->toBoolArray(*uncompressedIDSet_);
     }
-    virtual ~Filter(){}
+    virtual ~Filter() {}
 public:
-    bool test(docid_t docId){ return uncompressedIDSet_->get(docId); }
+    bool test(docid_t docId)
+    {
+        return uncompressedIDSet_->get(docId);
+    }
 private:
     boost::shared_ptr<BoolArray<uint32_t> > uncompressedIDSet_;
 };

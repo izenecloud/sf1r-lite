@@ -14,7 +14,7 @@ FilterDocumentIterator* createFilterDocIterator(CustomRankDocId::DocIdList& docI
 
     std::sort(docIdList.begin(), docIdList.end());
     for (CustomRankDocId::DocIdList::const_iterator it = docIdList.begin();
-        it != docIdList.end(); ++it)
+            it != docIdList.end(); ++it)
     {
         docIdSet->set(*it);
     }
@@ -68,7 +68,7 @@ double CustomRankDocumentIterator::score(
     if (defaultScoreDocIterator_)
     {
         result = defaultScoreDocIterator_->score(rankQueryProperties,
-                                                 propertyRankers);
+                 propertyRankers);
     }
 
     return result;

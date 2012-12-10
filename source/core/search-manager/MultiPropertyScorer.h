@@ -8,7 +8,8 @@
 
 #include <boost/thread.hpp>
 
-namespace sf1r{
+namespace sf1r
+{
 class MultiPropertyScorer:public ORDocumentIterator
 {
 public:
@@ -16,8 +17,8 @@ public:
         const property_weight_map& propertyWeightMap,
         const std::vector<unsigned int>& propertyIds
     )
-    :ORDocumentIterator()
-    ,indexPropertyIdList_(propertyIds)
+        :ORDocumentIterator()
+        ,indexPropertyIdList_(propertyIds)
     {
         init_(propertyWeightMap);
     }
@@ -27,10 +28,12 @@ public:
         for(size_t i = 0; i < termDocReadersList_.size(); i++)
         {
             std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders
-                        = termDocReadersList_[i];
+            = termDocReadersList_[i];
             for(std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >::iterator it = termDocReaders.begin();
-                        it != termDocReaders.end(); ++it) {
-                for(size_t j =0; j<it->second.size(); j ++ ) {
+                    it != termDocReaders.end(); ++it)
+            {
+                for(size_t j =0; j<it->second.size(); j ++ )
+                {
                     delete it->second[j];
                 }
                 it->second.clear();
@@ -40,16 +43,16 @@ public:
 
 public:
     void add(propertyid_t propertyId,
-                  DocumentIterator* pDocIterator)
+             DocumentIterator* pDocIterator)
     {
         size_t index = getIndexOfProperty_(propertyId);
         boost::mutex::scoped_lock lock(mutex_);
         docIteratorList_[index] = pDocIterator;
     }
-	
+
     void add(propertyid_t propertyId,
-                  DocumentIterator* pDocIterator,
-                  std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders)
+             DocumentIterator* pDocIterator,
+             std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> >& termDocReaders)
     {
         size_t index = getIndexOfProperty_(propertyId);
         boost::mutex::scoped_lock lock(mutex_);
@@ -89,7 +92,7 @@ private:
         for (size_t i = 0; i < numProperties; ++i)
         {
             property_weight_map::const_iterator found
-                = propertyWeightMap.find(indexPropertyIdList_[i]);
+            = propertyWeightMap.find(indexPropertyIdList_[i]);
             if (found != propertyWeightMap.end())
             {
                 propertyWeightList_[i] = found->second;

@@ -174,6 +174,11 @@ namespace sf1r {
             static std::string p("SPTitle");
             return p;
         }
+        static std::string GetTargetCategoryPropertyName()
+        {
+            static std::string p("TargetCategory");
+            return p;
+        }
 
         static std::string BookCategoryName()
         {

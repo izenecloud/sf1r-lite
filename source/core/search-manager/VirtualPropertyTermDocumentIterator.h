@@ -5,7 +5,8 @@
 
 #include <set>
 
-namespace sf1r{
+namespace sf1r
+{
 
 class TermDocumentIterator;
 class VirtualPropertyTermDocumentIterator : public ORDocumentIterator
@@ -18,8 +19,8 @@ public:
     void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0);
 
     void df_cmtf(DocumentFrequencyInProperties& dfmap,
-                        CollectionTermFrequencyInProperties& ctfmap,
-                        MaxTermFrequencyInProperties& maxtfmap);
+                 CollectionTermFrequencyInProperties& ctfmap,
+                 MaxTermFrequencyInProperties& maxtfmap);
 
 protected:
     std::set<propertyid_t> propIds_;
