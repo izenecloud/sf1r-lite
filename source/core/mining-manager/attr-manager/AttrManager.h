@@ -10,6 +10,7 @@
 
 #include "../faceted-submanager/ontology_rep.h"
 #include "AttrTable.h"
+#include "AttrMiningTask.h"
 #include <configuration-manager/AttrConfig.h>
 
 #include <string>
@@ -21,7 +22,8 @@ class DocumentManager;
 
 NS_FACETED_BEGIN
 
-class AttrManager {
+class AttrManager
+{
 public:
     AttrManager(
             const AttrConfig& attrConfig,
@@ -40,9 +42,28 @@ public:
      */
     bool processCollection();
 
+    MiningTask* getAttrMiningTask()
+    {
+        if (attrMiningTask_)
+        {
+            return attrMiningTask_;
+        }
+        return NULL;
+    }
+
     const AttrTable& getAttrTable() const
     {
         return attrTable_;
+    }
+
+    AttrTable& getAttrTable()
+    {
+        return attrTable_;
+    }
+
+    void buildDocp_(docid_t docId, const std::string& propName)
+    {
+        buildDoc_(docId, propName);
     }
 
 private:
@@ -55,6 +76,8 @@ private:
     sf1r::DocumentManager& documentManager_;
 
     AttrTable attrTable_;
+
+    AttrMiningTask* attrMiningTask_;
 };
 
 NS_FACETED_END

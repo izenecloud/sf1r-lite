@@ -1,5 +1,6 @@
 #include "GroupManager.h"
 #include "DateStrParser.h"
+#include "GroupMiningTask.h"
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/util/FSUtil.hpp>
 #include <mining-manager/MiningException.hpp>
@@ -25,6 +26,18 @@ GroupManager::GroupManager(
     , dirPath_(dirPath)
     , dateStrParser_(*DateStrParser::get())
 {
+    
+}
+GroupManager::~GroupManager()
+{
+    std::vector<MiningTask*>::iterator it = groupMiningTaskList_.begin();
+    for (; it != groupMiningTaskList_.end(); ++it)
+    {
+        if (*it)
+        {
+            ///delete *it;
+        }
+    }
 }
 
 bool GroupManager::open()
@@ -59,15 +72,14 @@ bool GroupManager::open()
         {
             result = createDateGroupTable_(propName);
         }
-
         if (!result)
             return false;
     }
-
     LOG(INFO) << "End group loading";
 
     return true;
 }
+
 
 bool GroupManager::createPropValueTable_(const std::string& propName)
 {
@@ -83,6 +95,8 @@ bool GroupManager::createPropValueTable_(const std::string& propName)
             LOG(ERROR) << "PropValueTable::open() failed, property name: " << propName;
             return false;
         }
+        MiningTask* miningTask = new GroupMiningTask<PropValueTable>(documentManager_, groupConfigMap_, pvTable);
+        groupMiningTaskList_.push_back(miningTask);
     }
     else
     {
@@ -96,22 +110,21 @@ bool GroupManager::createDateGroupTable_(const std::string& propName)
 {
     std::pair<DatePropMap::iterator, bool> res =
         datePropMap_.insert(DatePropMap::value_type(propName, DateGroupTable(dirPath_, propName)));
-
     if (res.second)
     {
         DateGroupTable& dateTable = res.first->second;
-
         if (!dateTable.open())
         {
             LOG(ERROR) << "DateGroupTable::open() failed, property name: " << propName;
             return false;
         }
+        MiningTask* miningTask = new GroupMiningTask<DateGroupTable>(documentManager_, groupConfigMap_, dateTable);
+        groupMiningTaskList_.push_back(miningTask);
     }
     else
     {
         LOG(WARNING) << "the group property " << propName << " is opened already.";
     }
-
     return true;
 }
 

@@ -2,6 +2,8 @@
 #include <document-manager/DocumentManager.h>
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
+#include "MiningTaskBuilder.h"
+#include "MiningTask.h"
 
 #include "duplicate-detection-submanager/dup_detector_wrapper.h"
 
@@ -151,6 +153,7 @@ MiningManager::MiningManager(
     , incrementalManager_(NULL)
     , productMatcher_(NULL)
     , kvManager_(NULL)
+    , miningTaskBuilder_(NULL)
 {
 }
 
@@ -175,6 +178,7 @@ MiningManager::~MiningManager()
     if (incrementalManager_) delete incrementalManager_;
     if (productMatcher_) delete productMatcher_;
     if (kvManager_) delete kvManager_;
+    if (miningTaskBuilder_) delete miningTaskBuilder_;
     close();
 }
 
@@ -250,6 +254,13 @@ bool MiningManager::open()
         if (!kpe_analyzer_->LoadT2SMapFile(kpe_res_path_+"/cs_ct"))
         {
             return false;
+        }
+        /**Miningtask Builder*/
+        if (mining_schema_.suffixmatch_schema.suffix_match_enable ||
+            mining_schema_.group_enable ||
+            mining_schema_.attr_enable )
+        {
+            miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);
         }
 
         /** TG */
@@ -380,6 +391,12 @@ bool MiningManager::open()
                 std::cerr << "open GROUP failed" << std::endl;
                 return false;
             }
+            std::vector<MiningTask*>& miningTaskList = groupManager_->getGroupMiningTask();
+            for (std::vector<MiningTask*>::const_iterator i = miningTaskList.begin(); i != miningTaskList.end(); ++i)
+            {
+                miningTaskBuilder_->addTask(*i);
+            }
+            miningTaskList.clear();
         }
 
         /** attr */
@@ -394,6 +411,8 @@ bool MiningManager::open()
                 std::cerr << "open ATTR failed" << std::endl;
                 return false;
             }
+            MiningTask* miningTask = attrManager_->getAttrMiningTask();
+            miningTaskBuilder_->addTask(miningTask);
         }
 
         if (groupManager_ || attrManager_)
@@ -518,13 +537,58 @@ bool MiningManager::open()
 
             if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
             {
-                incrementalManager_ = new IncrementalManager(
-                        suffix_match_path_,
-                        mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                        mining_schema_.suffixmatch_schema.suffix_match_properties[0],
-                        document_manager_, idManager_, laManager_, indexSchema_);
-                incrementalManager_->InitManager_();
-                incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                incrementalManager_ = new IncrementalManager(suffix_match_path_,
+                    mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath, 
+                    mining_schema_.suffixmatch_schema.suffix_match_properties[0], 
+                    document_manager_, idManager_, laManager_, indexSchema_);
+                if (incrementalManager_)
+                {
+                    incrementalManager_->InitManager_();
+                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                }
+            }
+
+            if (mining_schema_.suffixmatch_schema.suffix_match_enable)
+            {
+                if(mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+                {
+                    if(!(suffixMatchManager_->isStartFromLocalFM()))
+                    {
+                        LOG(INFO)<<"[] Start suffix init fm-index..."<<endl;
+                        suffixMatchManager_->buildMiningTask();
+                        MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                        miningTaskBuilder_->addTask(miningTask);
+                        incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                    }
+                    else
+                    {
+                        uint32_t last_docid = 0;
+                        uint32_t docNum = 0;
+                        uint32_t maxDoc = 0;
+                        incrementalManager_->getLastDocid(last_docid);
+                        incrementalManager_->getDocNum(docNum);
+                        incrementalManager_->getMaxNum(maxDoc);
+                        if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
+                        {
+                            LOG(INFO)<<"Rebuilding fm-index....."<<endl;
+                            suffixMatchManager_->buildMiningTask();
+                            MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                            miningTaskBuilder_->addTask(miningTask);
+                            incrementalManager_->reset();
+                            incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                        }
+                        else
+                        {
+                            incrementalManager_->createIndex_();
+                        }
+                    }
+                }
+                else
+                {
+                    suffixMatchManager_->buildMiningTask();
+                    MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                    miningTaskBuilder_->addTask(miningTask);
+                }
             }
         }
         if (mining_schema_.product_matcher_enable)
@@ -648,8 +712,19 @@ void MiningManager::DoContinue()
     }
 }
 
+bool MiningManager::DOMiningTask()
+{
+    if (miningTaskBuilder_)
+    {
+        miningTaskBuilder_->buildCollection();
+    }
+    return true;
+}
+
 bool MiningManager::DoMiningCollection()
 {
+    DOMiningTask();
+
     MEMLOG("[Mining] DoMiningCollection");
     //do TG
     if (mining_schema_.tg_enable)
@@ -721,6 +796,7 @@ bool MiningManager::DoMiningCollection()
         dupManager_->ProcessCollection();
         MEMLOG("[Mining] DUPD finished.");
     }
+
     if (mining_schema_.faceted_enable)
     {
         faceted_->ProcessCollection(false);
@@ -736,18 +812,6 @@ bool MiningManager::DoMiningCollection()
         }
 
         ctrManager_->updateDocNum(docNum);
-    }
-
-    //do group
-    if (mining_schema_.group_enable)
-    {
-        groupManager_->processCollection();
-    }
-
-    //do attr
-    if (mining_schema_.attr_enable)
-    {
-        attrManager_->processCollection();
     }
 
     // calculate product score
@@ -789,7 +853,6 @@ bool MiningManager::DoMiningCollection()
         }
     }
 
-
     //do Similarity
     if (mining_schema_.sim_enable)
     {
@@ -811,44 +874,6 @@ bool MiningManager::DoMiningCollection()
         summarizationManager_->EvaluateSummarization();
     }
 
-    // do SuffixMatch
-    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
-    {
-        if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
-        {
-            if (!(suffixMatchManager_->isStartFromLocalFM()))
-            {
-                LOG(INFO)<<"[] Start suffix init fm-index..."<<endl;
-                suffixMatchManager_->buildCollection();
-                incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-            }
-            else
-            {
-                uint32_t last_docid = 0;
-                uint32_t docNum = 0;
-                uint32_t maxDoc = 0;
-                incrementalManager_->getLastDocid(last_docid);
-                incrementalManager_->getDocNum(docNum);
-                incrementalManager_->getMaxNum(maxDoc);
-                if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
-                {
-                    LOG(INFO)<<"Rebuilding fm-index....."<<endl;
-                    suffixMatchManager_->buildCollection();
-                    incrementalManager_->reset();
-                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-                    //incrementalManager_->init_();
-                }
-                else
-                {
-                    incrementalManager_->createIndex_();//means add every day, now just for test;
-                }
-            }
-        }
-        else
-        {
-            suffixMatchManager_->buildCollection();
-        }
-    }
     return true;
 }
 

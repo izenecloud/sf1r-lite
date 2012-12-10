@@ -353,7 +353,7 @@ bool SearchParser::parse(const Value& search)
         if (searching_mode.hasKey(Keys::lucky))
         {
             uint32_t lucky = asUint(searching_mode[Keys::lucky]);
-            if (lucky <= 1000)
+            if (lucky <= 100000)
             {
                 searchingModeInfo_.lucky_ = lucky;
             }

@@ -178,37 +178,45 @@ void FMIndexManager::appendDocs(size_t last_docid)
         {
             failed = true;
         }
-        FMIndexIter it_start = all_fmi_.begin();
-        FMIndexIter it_end = all_fmi_.end();
-        while(it_start != it_end)
+        appendDocsAfter(failed, doc);
+        
+    }
+    LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
+    // load distinct value for less_distinct property.
+}
+
+void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)
+{
+    FMIndexIter it_start = all_fmi_.begin();
+    FMIndexIter it_end = all_fmi_.end();
+    while(it_start != it_end)
+    {
+        if(it_start->second.type == COMMON)
         {
-            if(it_start->second.type == COMMON)
+            if(failed)
             {
-                if(failed)
+                it_start->second.fmi->addDoc(NULL, 0);
+            }
+            else
+            {
+                const std::string& prop_name = it_start->first;
+                Document::property_const_iterator it = doc.findProperty(prop_name);
+                if (it == doc.propertyEnd())
                 {
                     it_start->second.fmi->addDoc(NULL, 0);
                 }
                 else
                 {
-                    const std::string& prop_name = it_start->first;
-                    Document::property_const_iterator it = doc.findProperty(prop_name);
-                    if (it == doc.propertyEnd())
-                    {
-                        it_start->second.fmi->addDoc(NULL, 0);
-                    }
-                    else
-                    {
-                        izenelib::util::UString text = it->second.get<UString>();
-                        Algorithm<UString>::to_lower(text);
-                        text = Algorithm<UString>::trim(text);
-                        it_start->second.fmi->addDoc(text.data(), text.length());
-                    }
+                    izenelib::util::UString text = it->second.get<UString>();
+                    Algorithm<UString>::to_lower(text);
+                    text = Algorithm<UString>::trim(text);
+                    it_start->second.fmi->addDoc(text.data(), text.length());
                 }
             }
-            ++it_start;
         }
+        ++it_start;
     }
-    LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
+    //LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
 }
 
 void FMIndexManager::reconstructText(const std::string& prop_name,
@@ -364,6 +372,11 @@ bool FMIndexManager::buildCommonProperties(const FMIndexManager* old_fmi_manager
 
     appendDocs(doc_count_);
 
+    return buildCollectionAfter();
+}
+
+bool FMIndexManager::buildCollectionAfter()
+{
     FMIndexIter it_start = all_fmi_.begin();
     FMIndexIter it_end = all_fmi_.end();
     size_t new_doc_cnt = 0;
