@@ -591,7 +591,10 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     }
 
     if(updateType != IndexWorker::RTYPE)
+    {
+        documentManager_->getRTypePropertiesForDocument(document.getId(),document);
         document2SCDDoc(document,scddoc);
+    }
     scd_writer_->Write(scddoc, UPDATE_SCD);
 
     return ret;
