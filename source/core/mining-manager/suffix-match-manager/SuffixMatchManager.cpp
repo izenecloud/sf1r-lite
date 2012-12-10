@@ -437,6 +437,23 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     }
     cout << endl;
 
+    std::vector<size_t> prop_id_list;
+    std::vector<RangeListT> filter_range_list;
+    if (!group_param.isGroupEmpty())
+    {
+        if (!getAllFilterRangeFromGroupLable_(group_param, prop_id_list, filter_range_list))
+            return 0;
+    }
+    if (!group_param.isAttrEmpty())
+    {
+        if (!getAllFilterRangeFromAttrLable_(group_param, prop_id_list, filter_range_list))
+            return 0;
+    }
+    if (!filter_param.empty())
+    {
+        if (!getAllFilterRangeFromFilterParam_(filter_param, prop_id_list, filter_range_list))
+            return 0;
+    }
 
     size_t total_match = 0;
     for(size_t prop_i = 0; prop_i < search_in_properties.size(); ++prop_i)
@@ -462,24 +479,6 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     max_match_list.push_back((double)1.0);
             }
         }
-        std::vector<size_t> prop_id_list;
-        std::vector<RangeListT> filter_range_list;
-        if (!group_param.isGroupEmpty())
-        {
-            if (!getAllFilterRangeFromGroupLable_(group_param, prop_id_list, filter_range_list))
-                return 0;
-        }
-        if (!group_param.isAttrEmpty())
-        {
-            if (!getAllFilterRangeFromAttrLable_(group_param, prop_id_list, filter_range_list))
-                return 0;
-        }
-        if (!filter_param.empty())
-        {
-            if (!getAllFilterRangeFromFilterParam_(filter_param, prop_id_list, filter_range_list))
-                return 0;
-        }
-
         fmi_manager_->convertMatchRanges(search_property, max_docs, match_ranges_list, max_match_list);
         if (filter_mode == SearchingMode::OR_Filter)
         {
