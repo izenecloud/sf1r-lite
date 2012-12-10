@@ -392,8 +392,6 @@ bool SearchWorker::getSearchResult_(
                                     resultItem.distSearchInfo_,
                                     resultItem.counterResults_,
                                     TOP_K_NUM,
-                                    KNN_TOP_K_NUM,
-                                    KNN_DIST,
                                     topKStart,
                                     bundleConfig_->enable_parallel_searching_))
         {
@@ -421,8 +419,6 @@ bool SearchWorker::getSearchResult_(
                                         resultItem.distSearchInfo_,
                                         resultItem.counterResults_,
                                         TOP_K_NUM,
-                                        KNN_TOP_K_NUM,
-                                        KNN_DIST,
                                         topKStart,
                                         bundleConfig_->enable_parallel_searching_))
             {

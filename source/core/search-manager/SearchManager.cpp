@@ -169,7 +169,7 @@ boost::shared_ptr<NumericPropertyTableBase>& SearchManager::createPropertyTable(
 
 struct SearchThreadParam
 {
-    SearchKeywordOperation* actionOperation;
+    const SearchKeywordOperation* actionOperation;
     std::size_t totalCount_thread;
     sf1r::PropertyRange propertyRange;
     uint32_t start;
@@ -190,7 +190,7 @@ struct SearchThreadParam
 
 
 bool SearchManager::search(
-    SearchKeywordOperation& actionOperation,
+    const SearchKeywordOperation& actionOperation,
     std::vector<unsigned int>& docIdList,
     std::vector<float>& rankScoreList,
     std::vector<float>& customRankScoreList,
@@ -201,8 +201,6 @@ bool SearchManager::search(
     DistKeywordSearchInfo& distSearchInfo,
     std::map<std::string, unsigned int>& counterResults,
     uint32_t topK,
-    uint32_t knnTopK,
-    uint32_t knnDist,
     uint32_t start,
     bool enable_parallel_searching)
 {
