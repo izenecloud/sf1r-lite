@@ -1,6 +1,8 @@
 #ifndef SF1R_MINING_SUFFIX_MATCHMANAGER_H_
 #define SF1R_MINING_SUFFIX_MATCHMANAGER_H_
 
+#include "SuffixMatchMiningTask.hpp"
+
 #include <common/type_defs.h>
 #include <am/succinct/fm-index/fm_index.hpp>
 #include <query-manager/ActionItem.h>
@@ -65,6 +67,9 @@ public:
             const faceted::GroupParam& group_param,
             std::vector<std::pair<double, uint32_t> >& res_list) const;
 
+    MiningTask* getMiningTask();
+    bool buildMiningTask();
+
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
     typedef FMIndexType::MatchRangeListT  RangeListT;
@@ -97,6 +102,8 @@ private:
 
     boost::shared_ptr<FMIndexManager> fmi_manager_;
     boost::shared_ptr<FilterManager> filter_manager_;
+
+    MiningTask* suffixMatchTask_;
 
     typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ReadLock;

@@ -12,7 +12,7 @@ namespace sf1r
 
 class DocumentManager;
 class FilterManager;
-
+class Document;
 class FMIndexManager
 {
 public:
@@ -21,6 +21,7 @@ public:
     typedef FMIndexType::MatchRangeT  RangeT;
     typedef FMIndexType::MatchRangeListT  RangeListT;
     typedef FMDocArrayMgrType::FilterRangeT FilterRangeT;
+
 
     enum PropertyFMType
     {
@@ -44,6 +45,8 @@ public:
     void swapCommonPropertiesData(FMIndexManager* old_fmi_manager);
     void buildLessDVProperties();
     void buildExternalFilter();
+    void appendDocsAfter(bool failed, const Document& doc);
+    bool buildCollectionAfter();
 
     void setFilterList(std::vector<std::vector<FMDocArrayMgrType::FilterItemT> > &filter_list);
     bool getFilterRange(size_t filter_index, const RangeT &filter_id_range, RangeT &match_range) const;
@@ -80,8 +83,8 @@ public:
     void saveAll();
     bool loadAll();
 
-private:
     bool initAndLoadOldDocs(const FMIndexManager* old_fmi_manager);
+private:
     void appendDocs(size_t last_docid);
 
     size_t putFMIndexToDocArrayMgr(FMIndexType* fmi);
@@ -110,6 +113,8 @@ private:
     typedef std::map<std::string, PropertyFMIndex>::iterator FMIndexIter;
     typedef std::map<std::string, PropertyFMIndex>::const_iterator FMIndexConstIter;
     FMDocArrayMgrType  docarray_mgr_;
+public:
+    inline std::map<std::string, PropertyFMIndex>& getFMIndexPropertyMap() { return all_fmi_; };
 };
 
 }

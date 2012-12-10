@@ -1,7 +1,9 @@
 #include "GroupManagerTestFixture.h"
 #include "NumericPropertyTableBuilderStub.h"
+
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
+#include <mining-manager/MiningTaskBuilder.h>
 #include <mining-manager/group-manager/GroupManager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
@@ -328,9 +330,9 @@ GroupManagerTestFixture::DocInput::DocInput(
 }
 
 GroupManagerTestFixture::GroupManagerTestFixture()
-    : documentManager_(NULL)
-    , groupManager_(NULL)
+    : groupManager_(NULL)
     , numericTableBuilder_(NULL)
+    , miningTaskBuilder_(NULL)
 {
     boost::filesystem::remove_all(TEST_DIR_STR);
     bfs::path dmPath(bfs::path(TEST_DIR_STR) / "dm/");
@@ -338,12 +340,12 @@ GroupManagerTestFixture::GroupManagerTestFixture()
     groupPath_ = (bfs::path(TEST_DIR_STR) / "group").string();
 
     initConfig_();
-
-    documentManager_ = new DocumentManager(
+    boost::shared_ptr<DocumentManager> ret(new DocumentManager(
         dmPath.string(),
         schema_,
         ENCODING_TYPE,
-        2000);
+        2000));
+    documentManager_ = ret;
 
     numericTableBuilder_ = new NumericPropertyTableBuilderStub(groupConfigMap_);
 
@@ -352,18 +354,29 @@ GroupManagerTestFixture::GroupManagerTestFixture()
 
 GroupManagerTestFixture::~GroupManagerTestFixture()
 {
-    delete documentManager_;
+    cout<<"~GroupManagerTestFixture"<<endl;
     delete groupManager_;
     delete numericTableBuilder_;
+    delete miningTaskBuilder_;
 }
 
 void GroupManagerTestFixture::resetGroupManager()
 {
     delete groupManager_;
+    delete miningTaskBuilder_;
 
     groupManager_ = new faceted::GroupManager(
         groupConfigMap_, *documentManager_, groupPath_);
     BOOST_CHECK(groupManager_->open());
+
+    miningTaskBuilder_ = new MiningTaskBuilder(documentManager_);
+    BOOST_CHECK(miningTaskBuilder_);
+    std::vector<MiningTask*>& miningTaskList = groupManager_->getGroupMiningTask();
+    for (std::vector<MiningTask*>::const_iterator it = miningTaskList.begin(); it != miningTaskList.end(); ++it)
+    {
+        miningTaskBuilder_->addTask(*it);   
+    }
+    miningTaskList.clear();
 }
 
 void GroupManagerTestFixture::configGroupPropRebuild()
@@ -382,7 +395,6 @@ void GroupManagerTestFixture::createDocument(int num)
     {
         lastDocId = docIdList_.back();
     }
-
     const int startDocId = lastDocId + 1;
     const int endDocId = lastDocId + num;
     for (int i = startDocId; i <= endDocId; ++i)
@@ -412,13 +424,18 @@ void GroupManagerTestFixture::createDocument(int num)
 
         Document document;
         prepareDocument(document, docInput);
+
         BOOST_CHECK(documentManager_->insertDocument(document));
 
         BOOST_CHECK(numericTableBuilder_->insertDocument(document));
     }
 
     checkCollection_();
-    BOOST_CHECK(groupManager_->processCollection());
+
+    
+
+    BOOST_CHECK(miningTaskBuilder_->buildCollection());
+    //BOOST_CHECK(groupManager_->processCollection());
 }
 
 void GroupManagerTestFixture::checkGetGroupRep()

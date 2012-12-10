@@ -103,6 +103,7 @@ class NaiveTopicDetector;
 class SuffixMatchManager;
 class IncrementalManager;
 class ProductMatcher;
+class MiningTaskBuilder;
 
 namespace sim
 {
@@ -159,6 +160,8 @@ public:
     bool open();
 
     bool DoMiningCollection();
+
+    bool DOMiningTask();
 
     void DoContinue();
 
@@ -631,6 +634,9 @@ private:
     /** KV */
     std::string kv_path_;
     KVSubManager* kvManager_;
+
+    /** MiningTaskBuilder */
+    MiningTaskBuilder* miningTaskBuilder_;
 };
 
 }

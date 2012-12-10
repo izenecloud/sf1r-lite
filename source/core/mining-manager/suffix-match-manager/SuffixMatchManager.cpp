@@ -126,6 +126,7 @@ SuffixMatchManager::SuffixMatchManager(
     , document_manager_(document_manager)
     , analyzer_(NULL)
     , knowledge_(NULL)
+    , suffixMatchTask_(NULL)
 {
     if (!boost::filesystem::exists(homePath))
     {
@@ -795,8 +796,34 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
             filter_range_list.push_back(temp_range_list);
         }
     }
-
     return true;
+}
+
+bool SuffixMatchManager::buildMiningTask()
+{
+    suffixMatchTask_ = new SuffixMatchMiningTask(document_manager_
+            , group_property_list_
+            , attr_property_list_
+            , numeric_property_list_
+            , date_property_list_
+            , fmi_manager_
+            , filter_manager_
+            , data_root_path_);
+    if (suffixMatchTask_ == NULL)
+    {
+        LOG(INFO)<<"Build SuffixMatch MingTask ERROR"<<endl;
+        return false;
+    }
+    return false;
+}
+
+MiningTask* SuffixMatchManager::getMiningTask()
+{
+    if (suffixMatchTask_)
+    {
+        return suffixMatchTask_;
+    }
+    return NULL;
 }
 
 void SuffixMatchManager::buildTokenizeDic()
