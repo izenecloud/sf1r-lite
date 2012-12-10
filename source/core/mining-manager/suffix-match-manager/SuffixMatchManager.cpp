@@ -248,6 +248,7 @@ void SuffixMatchManager::buildCollection()
         {
             if(doclen_list[i] > 0)
             {
+                LOG(INFO) << "rebuilding needed for new deleted document. " << del_docid_list[i] << ", len: " << doclen_list[i];
                 is_need_rebuild = true;
                 break;
             }
@@ -358,7 +359,10 @@ size_t SuffixMatchManager::longestSuffixMatch(
         res_list.reserve(res_list.size() + docid_list.size());
         for (size_t j = 0; j < docid_list.size(); ++j)
         {
-            res_list.push_back(std::make_pair(double(max_match) / double(doclen_list[j]), docid_list[j]));
+            double score = 0;
+            if(doclen_list[j] > 0)
+                score = double(max_match) / double(doclen_list[j]);
+            res_list.push_back(std::make_pair(score, docid_list[j]));
         }
         for (size_t j = 0; j < match_ranges.size(); ++j)
         {
