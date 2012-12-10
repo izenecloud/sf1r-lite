@@ -241,6 +241,10 @@ bool FMIndexManager::initAndLoadOldDocs(const FMIndexManager* old_fmi_manager)
     FMIndexIter it_end = all_fmi_.end();
 
     int has_orig_prop = 0;
+    if (old_fmi_manager)
+    {
+         doc_count_ = old_fmi_manager->docCount();
+    }
     for(; it_start != it_end; ++it_start)
     {
         if(it_start->second.type != COMMON)
@@ -377,7 +381,7 @@ bool FMIndexManager::buildCollectionAfter()
     FMIndexIter it_end = all_fmi_.end();
     size_t new_doc_cnt = 0;
     doc_count_ = 0;
-    docarray_mgr_.clear();
+    docarray_mgr_.clearMainDocArray();
     for(; it_start != it_end; ++it_start)
     {
         if(it_start->second.type != COMMON)

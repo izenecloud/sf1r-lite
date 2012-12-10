@@ -36,7 +36,6 @@ namespace sf1r
                 taskFlag[lable] = true;
                 if(!(*iter)->preProcess())
                 {
-                    cout<<"ffffffffffffffffffffffffffffff"<<lable<<endl;
                     taskFlag[lable] = false;
                 }
             }

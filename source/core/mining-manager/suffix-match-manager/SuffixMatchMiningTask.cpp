@@ -121,6 +121,8 @@ bool SuffixMatchMiningTask::preProcess()
 
     LOG(INFO) << "building filter data finished";
     bool isInitAndLoad = true;
+    if (!is_need_rebuild)
+        return true;
     if(!new_fmi_manager->initAndLoadOldDocs(fmi_.get()))
     {
         LOG(ERROR) << "fmindex init building failed, must stop. ";
@@ -134,7 +136,7 @@ bool SuffixMatchMiningTask::preProcess()
 
 bool SuffixMatchMiningTask::postProcess()
 {
-    if (!new_fmi_manager->buildCollectionAfter() && is_need_rebuild)
+    if (is_need_rebuild && !new_fmi_manager->buildCollectionAfter())
         return false;
 
     new_fmi_manager->buildExternalFilter();

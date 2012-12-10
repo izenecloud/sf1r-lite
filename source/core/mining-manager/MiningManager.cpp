@@ -850,7 +850,6 @@ bool MiningManager::DoMiningCollection()
         }
     }
 
-
     //do Similarity
     if (mining_schema_.sim_enable)
     {
