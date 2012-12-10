@@ -19,33 +19,28 @@
 #include <vector>
 #include <map>
 #include <glog/logging.h>
+
+
 NS_FACETED_BEGIN
-namespace sf1r
-{
-class DocumentManager;
-}
-namespace
-{
-    const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-}
+
 class DateStrParser;
+using izenelib::util::UString;
+
 template<class PropVauleType>
 class GroupMiningTask: public MiningTask
 {
 public:
     GroupMiningTask(
-            DocumentManager& documentManager
-            , const GroupConfigMap& groupConfigMap
-            , PropVauleType& propValueTable)
+        DocumentManager& documentManager
+        , const GroupConfigMap& groupConfigMap
+        , PropVauleType& propValueTable)
         :documentManager_(documentManager)
         , groupConfigMap_(groupConfigMap)
         , propValueTable_(propValueTable)
         , dateStrParser_(*DateStrParser::get())
-    {
+    {}
 
-    }
-
-    ~GroupMiningTask() {} ;
+    ~GroupMiningTask() {}
 
     bool buildDocment(docid_t docID, const Document& doc)
     {
@@ -82,7 +77,7 @@ public:
         }
         return true;
     }
-    
+
     docid_t getLastDocId()
     {
         return propValueTable_.docIdNum();
@@ -115,43 +110,43 @@ void GroupMiningTask<DateGroupTable>::buildDoc_(
     const izenelib::util::UString& propValue,
     DateGroupTable& propValueTable)
 {
-        DateGroupTable::DateSet dateSet;
-        
-        {
-            std::vector<vector<izenelib::util::UString> > groupPaths;
-            split_group_path(propValue, groupPaths);
+    DateGroupTable::DateSet dateSet;
 
-            DateGroupTable::date_t dateValue;
-            std::string dateStr;
-            std::string errorMsg;
+    {
+        std::vector<vector<izenelib::util::UString> > groupPaths;
+        split_group_path(propValue, groupPaths);
 
-            for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
+        DateGroupTable::date_t dateValue;
+        std::string dateStr;
+        std::string errorMsg;
+
+        for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
                 pathIt != groupPaths.end(); ++pathIt)
-            {
-                if (pathIt->empty())
-                    continue;
+        {
+            if (pathIt->empty())
+                continue;
 
-                pathIt->front().convertString(dateStr, ENCODING_TYPE);
-                if (dateStrParser_.scdStrToDate(dateStr, dateValue, errorMsg))
-                {
-                    dateSet.insert(dateValue);
-                }
-                else
-                {
-                    LOG(WARNING) << errorMsg;
-                }
+            pathIt->front().convertString(dateStr, UString::UTF_8);
+            if (dateStrParser_.scdStrToDate(dateStr, dateValue, errorMsg))
+            {
+                dateSet.insert(dateValue);
+            }
+            else
+            {
+                LOG(WARNING) << errorMsg;
             }
         }
+    }
 
-        try
-        {
-            propValueTable.appendDateSet(dateSet);
-        }
-        catch(MiningException& e)
-        {
-            LOG(ERROR) << "exception: " << e.what()
-                       << ", doc id: " << docId;
-        }
+    try
+    {
+        propValueTable.appendDateSet(dateSet);
+    }
+    catch(MiningException& e)
+    {
+        LOG(ERROR) << "exception: " << e.what()
+                   << ", doc id: " << docId;
+    }
 }
 
 template<>
@@ -168,7 +163,7 @@ void GroupMiningTask<PropValueTable>::buildDoc_(
     try
     {
         for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
-            pathIt != groupPaths.end(); ++pathIt)
+                pathIt != groupPaths.end(); ++pathIt)
         {
             PropValueTable::pvid_t pvId = propValueTable.insertPropValueId(*pathIt);
             propIdList.push_back(pvId);
@@ -177,7 +172,7 @@ void GroupMiningTask<PropValueTable>::buildDoc_(
     catch (MiningException& e)
     {
         LOG(ERROR) << "exception: " << e.what()
-        << ", doc id: " << docId;
+                   << ", doc id: " << docId;
     }
     try
     {
@@ -186,7 +181,7 @@ void GroupMiningTask<PropValueTable>::buildDoc_(
     catch (MiningException& e)
     {
         LOG(ERROR) << "exception: " << e.what()
-            << ", doc id: " << docId;
+                   << ", doc id: " << docId;
     }
 }
 

@@ -7,7 +7,7 @@
 #define SOURCE_CORE_MINING_MANAGER_MININGTASKBUILDER_H_
 
 #include <boost/shared_ptr.hpp>
-#include "./MiningTask.h"
+#include "MiningTask.h"
 
 namespace sf1r
 {
@@ -15,14 +15,14 @@ class DocumentManager;
 
 class MiningTaskBuilder
 {
- public:
+public:
     explicit MiningTaskBuilder(boost::shared_ptr<DocumentManager> document_manager);
     ~MiningTaskBuilder();
 
     bool buildCollection();
     void addTask(MiningTask*);
 
- private:
+private:
     std::vector<MiningTask*> taskList_;
     boost::shared_ptr<DocumentManager> document_manager_;
 
