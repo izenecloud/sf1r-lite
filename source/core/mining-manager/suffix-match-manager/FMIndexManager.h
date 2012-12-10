@@ -76,6 +76,7 @@ public:
             std::vector<std::pair<double, uint32_t> > &res_list) const;
 
     void getDocLenList(const std::vector<uint32_t>& docid_list, std::vector<size_t>& doclen_list) const;
+    void getLessDVStrLenList(const std::string& property, const std::vector<uint32_t>& dvid_list, std::vector<size_t>& dvlen_list) const;
 
     void saveAll();
     bool loadAll();

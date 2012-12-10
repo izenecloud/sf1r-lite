@@ -432,6 +432,9 @@ void FMIndexManager::getMatchedDocIdList(
         }
         docarray_mgr_.getMatchedDocIdList(match_filter_index, true, match_ranges,
             max_docs, docid_list, doclen_list);
+        // Since doclen is not available in doc array manager for LESS_DV property,
+        // we need recompute doclen from common property.
+        getDocLenList(docid_list, doclen_list);
     }
     else
     {
@@ -595,7 +598,29 @@ void FMIndexManager::getTopKDocIdListByFilter(
 
 void FMIndexManager::getDocLenList(const std::vector<uint32_t>& docid_list, std::vector<size_t>& doclen_list) const
 {
+    // the doclen is total length for common property only.
     docarray_mgr_.getDocLenList(docid_list, doclen_list);
+}
+
+void FMIndexManager::getLessDVStrLenList(const std::string& property, const std::vector<uint32_t>& dvid_list, std::vector<size_t>& dvlen_list) const
+{
+    dvlen_list.resize(dvid_list.size(), 0);
+    if(doc_count_ == 0)
+        return;
+    FMIndexConstIter cit = all_fmi_.find(property);
+    if(cit == all_fmi_.end())
+    {
+        LOG(INFO) << "get LESS_DV string length failed for not exist property : " << property;
+        return;
+    }
+    if(cit->second.type != LESS_DV)
+    {
+        LOG(INFO) << "get LESS_DV string length failed for not LESS_DV property : " << property;
+        return;
+    }
+
+    // for LESS_DV properties, we can use the distinct value id to get the length of the distinct value string.
+    cit->second.fmi->getDocLenList(dvid_list, dvlen_list);
 }
 
 void FMIndexManager::saveAll()
