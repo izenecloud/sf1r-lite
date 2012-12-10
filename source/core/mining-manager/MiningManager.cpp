@@ -714,7 +714,10 @@ void MiningManager::DoContinue()
 
 bool MiningManager::DOMiningTask()
 {
-    miningTaskBuilder_->buildCollection();
+    if (miningTaskBuilder_)
+    {
+        miningTaskBuilder_->buildCollection();
+    }
     return true;
 }
 
