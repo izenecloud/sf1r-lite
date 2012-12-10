@@ -194,13 +194,16 @@ namespace sf1r {
             md5_state_t st;
             md5_init(&st);
             md5_append(&st, (const md5_byte_t*)(url.c_str()), url.size());
-            md5_byte_t digest[MD5_DIGEST_LENGTH];
-            memset(digest, 0, sizeof(digest));
-            md5_finish(&st,digest);
-            uint128_t md5_int_value = *((uint128_t*)digest);
+            union
+            {
+                md5_byte_t digest[MD5_DIGEST_LENGTH];
+                uint128_t md5_int_value;
+            } digest_union;			
+            memset(digest_union.digest, 0, sizeof(digest_union.digest));
+            md5_finish(&st,digest_union.digest);
 
             //uint128_t pid = izenelib::util::HashFunction<UString>::generateHash128(UString(pid_str, UString::UTF_8));
-            return B5MHelper::Uint128ToString(md5_int_value);
+            return B5MHelper::Uint128ToString(digest_union.md5_int_value);
         }
     };
 

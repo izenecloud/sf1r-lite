@@ -58,15 +58,30 @@ public:
     ~SortProperty();
 
 public:
-    string& getProperty() { return property_; }
+    string& getProperty()
+    {
+        return property_;
+    }
 
-    PropertyDataType getPropertyDataType() { return propertyDataType_;}
+    PropertyDataType getPropertyDataType()
+    {
+        return propertyDataType_;
+    }
 
-    SortPropertyType getType() { return type_; }
+    SortPropertyType getType()
+    {
+        return type_;
+    }
 
-    bool isReverse() { return reverse_;}
+    bool isReverse()
+    {
+        return reverse_;
+    }
 
-    SortPropertyComparator* getComparator() { return pComparator_; }
+    SortPropertyComparator* getComparator()
+    {
+        return pComparator_;
+    }
 
     int compare(const ScoreDoc& doc1,const ScoreDoc& doc2) const
     {
@@ -101,7 +116,10 @@ public:
 
 public:
     ///If index has been changed, we should reload
-    void setDirty(bool dirty) { dirty_ = dirty;}
+    void setDirty(bool dirty)
+    {
+        dirty_ = dirty;
+    }
 
     SortPropertyComparator* getComparator(SortProperty* pSortProperty);
 
@@ -179,8 +197,8 @@ public:
                 ///Tricky optmization, while difficult to maintain
                 return c ^ (reverseMul_[i]);
             }
-        //c = (pSortProperty->isReverse()) ? pSortProperty->pComparator_->compare(doc2, doc1)
-        //       : pSortProperty->pComparator_->compare(doc1, doc2);
+            //c = (pSortProperty->isReverse()) ? pSortProperty->pComparator_->compare(doc2, doc1)
+            //       : pSortProperty->pComparator_->compare(doc1, doc2);
         }
 
         return doc1.docId > doc2.docId;

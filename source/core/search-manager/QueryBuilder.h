@@ -32,7 +32,8 @@ using namespace izenelib::ir::idmanager;
 using namespace izenelib::ir::indexmanager;
 using namespace sf1r::QueryFiltering;
 
-namespace sf1r{
+namespace sf1r
+{
 class FilterCache;
 typedef DocumentIterator* DocumentIteratorPointer;
 class QueryBuilder
@@ -47,7 +48,7 @@ public:
         const boost::shared_ptr<RankingManager>& rankingManager,
         boost::unordered_map<std::string, PropertyConfig>& schemaMap,
         size_t filterCacheNum
-        );
+    );
 
     ~QueryBuilder();
 
@@ -84,8 +85,8 @@ public:
     *@brief Generate Filter, filter will be released by the user.
     */
     void prepare_filter(
-            const std::vector<QueryFiltering::FilteringType>& filtingList,
-            boost::shared_ptr<EWAHBoolArray<uint32_t> >& pDocIdSet
+        const std::vector<QueryFiltering::FilteringType>& filtingList,
+        boost::shared_ptr<EWAHBoolArray<uint32_t> >& pDocIdSet
     );
 
     void reset_cache();
@@ -98,7 +99,7 @@ public:
     propertyid_t getPropertyIdByName(const std::string& name) const;
 
     void post_prepare_ranker_(
-	const std::string& virtualProperty,
+        const std::string& virtualProperty,
         const std::vector<std::string>& indexPropertyList,
         unsigned indexPropertySize,
         const property_term_info_map& propertyTermInfoMap,

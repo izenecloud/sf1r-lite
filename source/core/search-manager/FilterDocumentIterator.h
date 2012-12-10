@@ -13,7 +13,8 @@
 
 #include <string>
 
-namespace sf1r {
+namespace sf1r
+{
 
 class FilterDocumentIterator : public DocumentIterator
 {
@@ -23,10 +24,13 @@ public:
     {
     }
 
-    ~FilterDocumentIterator() {delete bitMapIterator_;}
+    ~FilterDocumentIterator()
+    {
+        delete bitMapIterator_;
+    }
 
 public:
-    void add(DocumentIterator* pDocIterator){}
+    void add(DocumentIterator* pDocIterator) {}
 
     bool next()
     {
@@ -48,9 +52,9 @@ public:
     void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0) {}
 
     void df_cmtf(
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            MaxTermFrequencyInProperties& maxtfmap)
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap)
     {}
 
     count_t tf()

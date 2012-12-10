@@ -124,12 +124,12 @@ bool PsmIndexer::Index(const std::string& scd_path, const std::string& output_pa
         uint32_t centroid = 0;
         for(uint32_t i=0;i<in_group.size();i++)
         {
-            uint64_t ibits[1];
+            uint64_t ibits[1] = {0};
             psm.ToFingerprint(cache_list[in_group[i]].doc_vector, ibits);
             uint32_t correct = 0;
             for(uint32_t j=0;j<in_group.size();j++)
             {
-                uint64_t jbits[1];
+                uint64_t jbits[1] = {0};
                 psm.ToFingerprint(cache_list[in_group[j]].doc_vector, jbits);
                 uint32_t dist = psm.GetDistance(ibits[0], jbits[0]);
                 if(dist<=3 && cache_list[in_group[i]].attach.dd(cache_list[in_group[j]].attach))
@@ -174,7 +174,7 @@ bool PsmIndexer::Index(const std::string& scd_path, const std::string& output_pa
             uint32_t odocid = in_group[centroid];
             const CacheType& ocache = cache_list[odocid];
             const std::string& okey = ocache.key;
-            uint64_t obits[1];
+            uint64_t obits[1] = {0};
             psm.ToFingerprint(ocache.doc_vector, obits);
             uint32_t bit_correct = 0;
             uint32_t correct = 0;
@@ -182,7 +182,7 @@ bool PsmIndexer::Index(const std::string& scd_path, const std::string& output_pa
             {
                 if(i==centroid) continue;
                 const CacheType& cache = cache_list[in_group[i]];
-                uint64_t bits[1];
+                uint64_t bits[1] = {0};
                 psm.ToFingerprint(cache.doc_vector, bits);
                 uint32_t dist = psm.GetDistance(obits[0], bits[0]);
                 if(dist<=3 && ocache.attach.dd(cache.attach)) bit_correct+=1;

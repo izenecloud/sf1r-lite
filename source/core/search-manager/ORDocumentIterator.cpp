@@ -1,15 +1,18 @@
 #include "ORDocumentIterator.h"
 #include "NOTDocumentIterator.h"
+#include "VirtualPropertyTermDocumentIterator.h"
+
+#include <algorithm>
 
 using namespace std;
 using namespace sf1r;
 
 ORDocumentIterator::ORDocumentIterator()
-        :pDocIteratorQueue_(NULL)
-        ,hasNot_(false)
-        ,currDocOfNOTIter_(MAX_DOC_ID)
-        ,initNOTIterator_(false)
-        ,pNOTDocIterator_(NULL)
+    :pDocIteratorQueue_(NULL)
+    ,hasNot_(false)
+    ,currDocOfNOTIter_(MAX_DOC_ID)
+    ,initNOTIterator_(false)
+    ,pNOTDocIterator_(NULL)
 {
 }
 
@@ -41,13 +44,13 @@ void ORDocumentIterator::initDocIteratorQueue()
             pDocIterator->setCurrent(false);
             if(pDocIterator->next())
                 pDocIteratorQueue_->insert(pDocIterator);
-           else
-           {
-               ///Mark here!
-               ///If a DocumentIterator does not contain member, remove it from docIteratorList_
-               *iter = NULL;
-               delete pDocIterator;
-           }
+            else
+            {
+                ///Mark here!
+                ///If a DocumentIterator does not contain member, remove it from docIteratorList_
+                *iter = NULL;
+                delete pDocIterator;
+            }
         }
         iter ++;
     }
@@ -64,6 +67,13 @@ void ORDocumentIterator::add(DocumentIterator* pDocIterator)
     }
     else
         docIteratorList_.push_back(pDocIterator);
+}
+
+void ORDocumentIterator::add(VirtualPropertyTermDocumentIterator* pDocIterator)
+{
+    docIteratorList_.push_back(pDocIterator);
+    std::sort( docIteratorList_.begin(), docIteratorList_.end() );
+    docIteratorList_.erase( std::unique( docIteratorList_.begin(), docIteratorList_.end() ), docIteratorList_.end() );
 }
 
 bool ORDocumentIterator::next()
@@ -156,7 +166,7 @@ bool ORDocumentIterator::do_next()
     ///we can not use priority queue here because if some dociterator
     ///is removed from that queue, we should set flag for it.
     for (std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
-      iter != docIteratorList_.end(); ++iter)
+            iter != docIteratorList_.end(); ++iter)
     {
         //DocumentIterator* pEntry = pDocIteratorQueue_->getAt(i);
         DocumentIterator* pEntry = (*iter);
@@ -184,6 +194,9 @@ docid_t ORDocumentIterator::skipTo(docid_t target)
         {
             nFoundId = do_skipTo(currentDoc);
             currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currentDoc);
+            if((nFoundId != MAX_DOC_ID) && ((nFoundId == currentDoc) &&(currDocOfNOTIter_ == currentDoc)))
+                return MAX_DOC_ID;
+            currentDoc = nFoundId;
         }
         while ((nFoundId != MAX_DOC_ID)&&(nFoundId == currDocOfNOTIter_));
         return nFoundId;
@@ -217,7 +230,7 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
                 if((*iter)->doc() == currDoc_)
                     (*iter)->setCurrent(true);
                 else
-                    (*iter)->setCurrent(false);					
+                    (*iter)->setCurrent(false);
             }
         }
 
@@ -249,13 +262,14 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
                 pDocIteratorQueue_->adjustTop();
             }
         }
-    } while (true);
+    }
+    while (true);
 
 }
 #endif
 
 void ORDocumentIterator::doc_item(
-    RankDocumentProperty& rankDocumentProperty, 
+    RankDocumentProperty& rankDocumentProperty,
     unsigned propIndex)
 {
     DocumentIterator* pEntry;

@@ -29,7 +29,10 @@ class PropertyRanker;
 class ProductScorerFactory;
 class ProductScorer;
 
-namespace faceted { class PropSharedLockSet; }
+namespace faceted
+{
+class PropSharedLockSet;
+}
 
 class SearchManagerPreProcessor
 {
@@ -43,19 +46,19 @@ private:
     ProductScorerFactory* productScorerFactory_;
 
     boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(
-            const std::string& propertyName,
-            SortPropertyCache* pSorterCache);
+        const std::string& propertyName,
+        SortPropertyCache* pSorterCache);
 
     bool getPropertyTypeByName_(
-            const std::string& name,
-            PropertyDataType& type) const;
+        const std::string& name,
+        PropertyDataType& type) const;
 
     void prepare_sorter_customranker_(
-            const SearchKeywordOperation& actionOperation,
-            CustomRankerPtr& customRanker,
-            boost::shared_ptr<Sorter> &pSorter,
-            SortPropertyCache* pSorterCache,
-            boost::weak_ptr<MiningManager> miningManagerPtr);
+        const SearchKeywordOperation& actionOperation,
+        CustomRankerPtr& customRanker,
+        boost::shared_ptr<Sorter> &pSorter,
+        SortPropertyCache* pSorterCache,
+        boost::weak_ptr<MiningManager> miningManagerPtr);
 
     /**
      * rebuild custom ranker.
@@ -72,32 +75,32 @@ private:
      * @param distSearchInfo [OUT]
      */
     void fillSearchInfoWithSortPropertyData_(
-            Sorter* pSorter,
-            std::vector<unsigned int>& docIdList,
-            DistKeywordSearchInfo& distSearchInfo,
-            SortPropertyCache* pSorterCache);
+        Sorter* pSorter,
+        std::vector<unsigned int>& docIdList,
+        DistKeywordSearchInfo& distSearchInfo,
+        SortPropertyCache* pSorterCache);
 
     template<class UnaryOperator>
     void PreparePropertyList(
-            std::vector<std::string>& indexPropertyList,
-            std::vector<propertyid_t>& indexPropertyIdList,
-            UnaryOperator op)
+        std::vector<std::string>& indexPropertyList,
+        std::vector<propertyid_t>& indexPropertyIdList,
+        UnaryOperator op)
     {
 #if PREFETCH_TERMID
         std::stable_sort (indexPropertyList.begin(), indexPropertyList.end());
 #endif
         std::transform(
-                indexPropertyList.begin(),
-                indexPropertyList.end(),
-                indexPropertyIdList.begin(),
-                op);
+            indexPropertyList.begin(),
+            indexPropertyList.end(),
+            indexPropertyIdList.begin(),
+            op);
 
     }
 
     void PreparePropertyTermIndex(
-            const std::map<std::string, PropertyTermInfo>& propertyTermInfoMap,
-            const std::vector<std::string>& indexPropertyList,
-            std::vector<std::map<termid_t, unsigned> >& termIndexMaps);
+        const std::map<std::string, PropertyTermInfo>& propertyTermInfoMap,
+        const std::vector<std::string>& indexPropertyList,
+        std::vector<std::map<termid_t, unsigned> >& termIndexMaps);
 
     ProductScorer* createProductScorer(
         const KeywordSearchActionItem& actionItem,

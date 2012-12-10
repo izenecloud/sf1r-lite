@@ -1,6 +1,6 @@
 /**
  * \file WANDDocumentIterator.h
- * \brief 
+ * \brief
  * \date Feb 29, 2012
  * \author Xin Liu
  */
@@ -20,7 +20,8 @@
 #include <map>
 #include <boost/thread.hpp>
 
-namespace sf1r{
+namespace sf1r
+{
 
 class WANDDocumentIterator : public DocumentIterator
 {
@@ -33,8 +34,8 @@ public:
         const std::vector<unsigned int>& propertyIds,
         const std::vector<std::string>& properties
     )
-    :indexPropertyList_(properties)
-    ,indexPropertyIdList_(propertyIds)
+        :indexPropertyList_(properties)
+        ,indexPropertyIdList_(propertyIds)
     {
         init_(propertyWeightMap);
     }
@@ -55,22 +56,31 @@ public:
 
     bool next();
 
-    docid_t doc(){ return currDoc_; }
+    docid_t doc()
+    {
+        return currDoc_;
+    }
 
-    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0){}
+    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0) {}
 
     void df_cmtf(
-             DocumentFrequencyInProperties& dfmap,
-             CollectionTermFrequencyInProperties& ctfmap,
-             MaxTermFrequencyInProperties& maxtfmap);
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap);
 
     double score(
-               const std::vector<RankQueryProperty>& rankQueryProperties,
-               const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers);
+        const std::vector<RankQueryProperty>& rankQueryProperties,
+        const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers);
 
-    count_t tf() { return 0; }
+    count_t tf()
+    {
+        return 0;
+    }
 
-    bool empty() { return docIteratorList_.empty(); }
+    bool empty()
+    {
+        return docIteratorList_.empty();
+    }
 
 #if SKIP_ENABLED
     docid_t skipTo(docid_t target);

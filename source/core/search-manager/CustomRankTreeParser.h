@@ -16,18 +16,20 @@
 
 using namespace BOOST_SPIRIT_CLASSIC_NS;
 
-namespace sf1r {
+namespace sf1r
+{
 
 class ExpSyntaxTree // Node
 {
 public:
-    enum NodeType {
+    enum NodeType
+    {
         UNKNOWN,   // unknown
         ROOT,      // root
         /* variable */
         CONSTANT,  // constant value
         PARAMETER, // property name which indicating where to get value,
-                   // or variable who's value is set by user(set as constant after parsing)
+        // or variable who's value is set by user(set as constant after parsing)
         /* operators */
         SUM,       // +
         SUB,       // -
@@ -76,13 +78,13 @@ public:
     std::vector<boost::shared_ptr<ExpSyntaxTree> > children_;
 
     ExpSyntaxTree()
-    :type_(UNKNOWN), name_(), value_(0)
+        :type_(UNKNOWN), name_(), value_(0)
     {
 
     }
 
     ExpSyntaxTree(NodeType type)
-    :type_(type), name_(), value_(0)
+        :type_(type), name_(), value_(0)
     {
 
     }
@@ -117,7 +119,10 @@ public:
         rule<ScannerT> factor_pre_1, factor_pre_2, factor_0, factor_1, factor_2;
         rule<ScannerT> exp_;
 
-        const rule<ScannerT>& start() const { return exp_; }
+        const rule<ScannerT>& start() const
+        {
+            return exp_;
+        }
 
         definition(const CustomRankTreeParser&)
         {

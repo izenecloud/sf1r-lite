@@ -9,7 +9,8 @@
 
 #include "ORDocumentIterator.h"
 
-namespace sf1r{
+namespace sf1r
+{
 
 class NOTDocumentIterator : public ORDocumentIterator
 {
