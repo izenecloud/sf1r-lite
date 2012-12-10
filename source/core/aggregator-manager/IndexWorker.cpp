@@ -550,6 +550,9 @@ bool IndexWorker::createDocument(const Value& documentValue)
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType))
         return false;
 
+    if(!indexManager_->isRealTime())
+    	indexManager_->setIndexMode("realtime");
+
     bool ret = insertDoc_(document, indexDocument, timestamp, true);
     if (ret)
     {
@@ -583,6 +586,8 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
+    if(!indexManager_->isRealTime())
+    	indexManager_->setIndexMode("realtime");
     bool ret = updateDoc_(document, indexDocument, oldIndexDocument, timestamp, updateType, true);
     if (ret)
     {
