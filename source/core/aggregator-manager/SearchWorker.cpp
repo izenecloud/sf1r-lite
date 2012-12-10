@@ -19,7 +19,9 @@ namespace sf1r
 SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     : bundleConfig_(bundleConfig)
     , recommendSearchService_(NULL)
-    , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_))
+    , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_, 
+                                    bundleConfig_->refreshCacheInterval_,
+                                    bundleConfig_->refreshSearchCache_))
     , pQA_(NULL)
 {
     ///LA can only be got from a pool because it is not thread safe

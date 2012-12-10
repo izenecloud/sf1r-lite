@@ -24,10 +24,12 @@ public:
     typedef QueryIdentity key_type;
     typedef KeywordSearchResult value_type;
 
-    explicit SearchCache(unsigned cacheSize)
+    explicit SearchCache(unsigned cacheSize, time_t refreshInterval = 60*60, bool refreshAll = false)
         : cache_(cacheSize)
-        , refreshInterval_(60 * 60)
-    {}
+        , refreshInterval_(refreshInterval)
+        , refreshAll_(refreshAll)
+    {
+    }
 
     /**
      * Cannot be \c const becuase \c IzeneCache::getValue is not const.
@@ -87,28 +89,29 @@ private:
      */
     bool needRefresh(const key_type& key, const std::time_t& timestamp)
     {
-        bool check = false;
+        bool check = refreshAll_;
 
         // check "_ctr" sort property
-        const std::vector<std::pair<std::string , bool> >& sortProperties = key.sortInfo;
-        std::vector<std::pair<std::string , bool> >::const_iterator cit;
-        for (cit = sortProperties.begin(); cit != sortProperties.end(); cit++)
+        if(!check)
         {
-            if (cit->first == faceted::CTRManager::kCtrPropName)
+            const std::vector<std::pair<std::string , bool> >& sortProperties = key.sortInfo;
+            std::vector<std::pair<std::string , bool> >::const_iterator cit;
+            for (cit = sortProperties.begin(); cit != sortProperties.end(); cit++)
             {
-                check = true;
-                break;
+                if (cit->first == faceted::CTRManager::kCtrPropName)
+                {
+                    check = true;
+                    break;
+                }
             }
+            ///Fixme!
+            ///COUNT(Property) will be refreshed from search cache
+            ///This is a temporary solution before we exactly know the rule for evicting search
+            ///cache periodically
+            if(key.counterList.size() > 0 ) check = true;
         }
-        ///Fixme!
-        ///COUNT(Property) will be refreshed from search cache
-        ///This is a temporary solution before we exactly know the rule for evicting search
-        ///cache periodically
-        if(key.counterList.size() > 0 ) check = true;
-
-        if (check){
+        if (check)
             return (std::time(NULL) - timestamp) > refreshInterval_;
-        }
         else
             return false;
     }
@@ -124,6 +127,7 @@ private:
 
     cache_type cache_;
     time_t refreshInterval_; // seconds
+    bool refreshAll_;
 };
 
 } // namespace sf1r
