@@ -224,6 +224,7 @@ void SearchWorker::makeQueryIdentity(
         break;
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
+        identity.properties = item.searchPropertyList_;
         identity.filterInfo = item.filteringList_;
         identity.sortInfo = item.sortPriorityList_;
         identity.strExp = item.strExp_;

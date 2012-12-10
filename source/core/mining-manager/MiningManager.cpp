@@ -1865,10 +1865,10 @@ bool MiningManager::GetSuffixMatch(
     izenelib::util::UString queryU(actionOperation.actionItem_.env_.queryString_, izenelib::util::UString::UTF_8);
     std::vector<std::pair<double, uint32_t> > res_list;
 
-    std::vector<string> search_in_properties;
-    search_in_properties = mining_schema_.suffixmatch_schema.suffix_match_properties;
-    search_in_properties.insert(search_in_properties.end(), mining_schema_.suffixmatch_schema.searchable_properties.begin(),
-        mining_schema_.suffixmatch_schema.searchable_properties.end());
+    const std::vector<string>& search_in_properties = actionOperation.actionItem_.searchPropertyList_;
+    //search_in_properties = mining_schema_.suffixmatch_schema.suffix_match_properties;
+    //search_in_properties.insert(search_in_properties.end(), mining_schema_.suffixmatch_schema.searchable_properties.begin(),
+    //    mining_schema_.suffixmatch_schema.searchable_properties.end());
 
     if (!use_fuzzy)
     {
