@@ -435,7 +435,7 @@ bool SearchWorker::getSearchResult_(
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
     if (actionItem.searchingMode_.mode_ != SearchingMode::KNN
-            && actionItem.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH)
+            /*&& actionItem.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH */)
     {
         removeDuplicateDocs(actionItem, resultItem);
     }

@@ -8,7 +8,8 @@ using namespace izenelib::ir::indexmanager;
 
 //#define VERBOSE_SERACH_MANAGER
 
-namespace sf1r{
+namespace sf1r
+{
 
 ///DocumentIterator for a phrase.
 ///Template parameter IndexReaderType is added for writing unitests,
@@ -26,16 +27,16 @@ public:
         const string& property,
         unsigned int propertyId
     )
-    : PhraseDocumentIterator_<IndexReaderType>(
-        termids,
-        termIndexes,
-        colID,
-        pIndexReader,
-        property,
-        propertyId,
-        true
-    )
-    , ptrs_(NULL)
+        : PhraseDocumentIterator_<IndexReaderType>(
+            termids,
+            termIndexes,
+            colID,
+            pIndexReader,
+            property,
+            propertyId,
+            true
+        )
+        , ptrs_(NULL)
     {
 #ifdef VERBOSE_SERACH_MANAGER
         std::cout << "OrderedPhraseDocumentIterator is initialized" << std::endl ;
@@ -68,12 +69,14 @@ protected:
         std::cout << "positions:" << std::endl;
 #endif
         // Now, all TermPositions in positions_ list point to the same document.
-        for(size_t i=0; i<PhraseDocumentIterator_<IndexReaderType>::offsets_.size(); i++ ) {
+        for(size_t i=0; i<PhraseDocumentIterator_<IndexReaderType>::offsets_.size(); i++ )
+        {
             ptrs_[i] = 0;
             PhraseDocumentIterator_<IndexReaderType>::offsets_[i].clear();
             TermPositions* pPositions =
                 (TermPositions*)this->termDocReaders_[i];
-            while(true) {
+            while(true)
+            {
                 loc_t o = pPositions->nextPosition();
                 //this->termDocReaders_[i]->nextPosition();
                 if(o==BAD_POSITION)break;
@@ -88,7 +91,8 @@ protected:
         }
 
         size_t step = PhraseDocumentIterator_<IndexReaderType>::offsets_[0][0];
-        for( size_t i = 1 ; i < PhraseDocumentIterator_<IndexReaderType>::offsets_.size(); i++ ) {
+        for( size_t i = 1 ; i < PhraseDocumentIterator_<IndexReaderType>::offsets_.size(); i++ )
+        {
             while( ptrs_[i] < PhraseDocumentIterator_<IndexReaderType>::offsets_[i].size() && PhraseDocumentIterator_<IndexReaderType>::offsets_[i][ptrs_[i]] < step)
                 ptrs_[i] ++;
             if(ptrs_[i] == PhraseDocumentIterator_<IndexReaderType>::offsets_[i].size() )

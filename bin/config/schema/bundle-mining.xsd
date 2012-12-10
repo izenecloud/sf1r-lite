@@ -244,7 +244,7 @@
     <xs:element name="SuffixMatch">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="Property" type="PropertyType" minOccurs="1" maxOccurs="unbounded"/>
                 <xs:element ref="TokenizeDictionary" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="Incremental" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="FilterProperty" minOccurs="0" maxOccurs="unbounded"/>

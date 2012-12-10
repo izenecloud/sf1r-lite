@@ -8,7 +8,8 @@
 
 #include <string>
 
-namespace sf1r{
+namespace sf1r
+{
 
 /**
 * This priorityqueue is used temporarily because it does not need to allocate

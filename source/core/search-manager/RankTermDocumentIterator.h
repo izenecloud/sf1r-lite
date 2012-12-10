@@ -11,25 +11,26 @@
 
 #include "TermDocumentIterator.h"
 
-namespace sf1r{
+namespace sf1r
+{
 
 class RankTermDocumentIterator : public TermDocumentIterator
 {
 public:
 
     explicit RankTermDocumentIterator(
-            termid_t termid,
-            collectionid_t colID,
-            izenelib::ir::indexmanager::IndexReader* pIndexReader,
-            const std::string& property,
-            unsigned int propertyId,
-            unsigned int termIndex,
-            bool readPositions,
-            bool nextResponse)
-    : TermDocumentIterator(termid, colID, pIndexReader, property, propertyId, termIndex, readPositions)
-    , nextResponse_(nextResponse)
-    , hasNext_(true)
-    , isCurrent_(false)
+        termid_t termid,
+        collectionid_t colID,
+        izenelib::ir::indexmanager::IndexReader* pIndexReader,
+        const std::string& property,
+        unsigned int propertyId,
+        unsigned int termIndex,
+        bool readPositions,
+        bool nextResponse)
+        : TermDocumentIterator(termid, colID, pIndexReader, property, propertyId, termIndex, readPositions)
+        , nextResponse_(nextResponse)
+        , hasNext_(true)
+        , isCurrent_(false)
     {
         currDoc_ = 0;
     }
@@ -62,7 +63,8 @@ public:
     /*virtual*/
     docid_t skipTo(docid_t target)
     {
-        if (target > currDoc_) {
+        if (target > currDoc_)
+        {
             currDoc_ = TermDocumentIterator::skipTo(target);
         }
 
@@ -79,9 +81,9 @@ public:
 public:
     /*virtual*/
     void df_cmtf(
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            MaxTermFrequencyInProperties& maxtfmap)
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap)
     {
         TermDocumentIterator::df_cmtf(dfmap, ctfmap, maxtfmap);
     }
@@ -89,7 +91,8 @@ public:
     /*virtual*/
     void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex)
     {
-        if ( isCurrent_ ) {
+        if ( isCurrent_ )
+        {
             TermDocumentIterator::doc_item(rankDocumentProperty);
         }
     }
@@ -98,8 +101,8 @@ public:
     void print(int level=0)
     {
         cout << std::string(level*4, ' ') << "|--[ "
-                << "RankTermIter " << isCurrent_
-                << " - termid: " << termId_ << " " << property_<<" ]"<< endl;
+             << "RankTermIter " << isCurrent_
+             << " - termid: " << termId_ << " " << property_<<" ]"<< endl;
     }
 
 private:

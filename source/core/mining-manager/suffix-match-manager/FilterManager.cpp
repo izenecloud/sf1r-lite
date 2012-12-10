@@ -171,7 +171,10 @@ void FilterManager::buildGroupFilterData(
                 group_filter_data[j][groupstr].push_back(docid);
             }
         }
-        prop_filterstr_text_list_[prop_id].reserve(group_filter_data[j].size());
+        std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
+        prop_filterstr_text_list_[prop_id].reserve(group_filter_data[j].size() + 1);
+
+        prop_filterstr_text_list_[prop_id].push_back(UString(""));
         for(StrFilterItemMapT::const_iterator filterstr_it = group_filter_data[j].begin();
             filterstr_it != group_filter_data[j].end(); ++ filterstr_it)
         {
@@ -246,7 +249,9 @@ void FilterManager::buildAttrFilterData(
             attr_filter_data[0][attrstr].push_back(docid);
         }
     }
-    prop_filterstr_text_list_[prop_id].reserve(attr_filter_data[0].size());
+    std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
+    prop_filterstr_text_list_[prop_id].reserve(attr_filter_data[0].size() + 1);
+    prop_filterstr_text_list_[prop_id].push_back(UString(""));
     for(StrFilterItemMapT::const_iterator filterstr_it = attr_filter_data[0].begin();
         filterstr_it != attr_filter_data[0].end(); ++ filterstr_it)
     {
@@ -536,6 +541,10 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
                     prop_filterstr_text_list_.resize(prop_id + 1);
                 }
                 StrIdMapT& strid_map = strtype_filterids_[prop_id];
+                // start from 1. so reserve the first.
+                std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
+                prop_filterstr_text_list_[prop_id].reserve(num + 1);
+                prop_filterstr_text_list_[prop_id].resize(1);
                 for (size_t j = 0; j < num; ++j)
                 {
                     std::string str_key;
@@ -777,6 +786,8 @@ izenelib::util::UString FilterManager::getPropFilterString(size_t prop_id, size_
     izenelib::util::UString result;
     if(prop_id >= prop_filterstr_text_list_.size())
         return result;
+    // filter_strid start from 1. just like the document id.
+    assert(filter_strid >= 1);
     if(filter_strid >= prop_filterstr_text_list_[prop_id].size())
         return result;
     return prop_filterstr_text_list_[prop_id][filter_strid];
@@ -786,7 +797,7 @@ size_t FilterManager::getMaxPropFilterStrId(size_t prop_id) const
 {
     if(prop_id >= prop_filterstr_text_list_.size())
         return 0;
-    return prop_filterstr_text_list_[prop_id].size();
+    return prop_filterstr_text_list_[prop_id].size() - 1;
 }
 
 }

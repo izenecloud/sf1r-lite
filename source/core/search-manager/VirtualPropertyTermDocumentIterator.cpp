@@ -3,16 +3,17 @@
 
 #include <iostream>
 
-namespace sf1r{
+namespace sf1r
+{
 
 VirtualPropertyTermDocumentIterator::VirtualPropertyTermDocumentIterator(
-        const std::string& property)
-        :virtualProperty_(property)
+    const std::string& property)
+    :virtualProperty_(property)
 {
 }
 
 void VirtualPropertyTermDocumentIterator::add(
-        TermDocumentIterator* pDocIterator)
+    TermDocumentIterator* pDocIterator)
 {
     if(propIds_.find(pDocIterator->propertyId_) == propIds_.end())
     {
@@ -22,19 +23,19 @@ void VirtualPropertyTermDocumentIterator::add(
 }
 
 void VirtualPropertyTermDocumentIterator::doc_item(
-        RankDocumentProperty& rankDocumentProperty, 
-        unsigned propIndex)
+    RankDocumentProperty& rankDocumentProperty,
+    unsigned propIndex)
 {
     if(propIndex >= docIteratorList_.size()) return;
     DocumentIterator* pEntry = docIteratorList_[propIndex];
     if(pEntry&&pEntry->isCurrent())
-        pEntry->doc_item(rankDocumentProperty);	
+        pEntry->doc_item(rankDocumentProperty);
 }
 
 void VirtualPropertyTermDocumentIterator::df_cmtf(
-        DocumentFrequencyInProperties& dfmap,
-        CollectionTermFrequencyInProperties& ctfmap,
-        MaxTermFrequencyInProperties& maxtfmap)
+    DocumentFrequencyInProperties& dfmap,
+    CollectionTermFrequencyInProperties& ctfmap,
+    MaxTermFrequencyInProperties& maxtfmap)
 {
     TermDocumentIterator* pEntry;
     std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();

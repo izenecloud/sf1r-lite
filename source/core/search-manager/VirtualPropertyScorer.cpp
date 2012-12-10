@@ -1,10 +1,11 @@
 #include "VirtualPropertyScorer.h"
 #include <iostream>
-namespace sf1r{
+namespace sf1r
+{
 
 VirtualPropertyScorer::VirtualPropertyScorer(
-        const property_weight_map& propertyWeightMap,
-        const std::vector<unsigned int>& propertyIds)
+    const property_weight_map& propertyWeightMap,
+    const std::vector<unsigned int>& propertyIds)
     :pIter_(NULL)
     ,indexPropertyIdList_(propertyIds)
     ,rankQueryProperties_(propertyIds.size())
@@ -19,7 +20,7 @@ VirtualPropertyScorer::~VirtualPropertyScorer()
 }
 
 void VirtualPropertyScorer::init_(
-        const property_weight_map& propertyWeightMap)
+    const property_weight_map& propertyWeightMap)
 {
     numProperties_ = indexPropertyIdList_.size();
     propertyWeightList_.resize(numProperties_);
@@ -27,7 +28,7 @@ void VirtualPropertyScorer::init_(
     for (size_t i = 0; i < numProperties_; ++i)
     {
         property_weight_map::const_iterator found
-            = propertyWeightMap.find(indexPropertyIdList_[i]);
+        = propertyWeightMap.find(indexPropertyIdList_[i]);
         if (found != propertyWeightMap.end())
         {
             propertyWeightList_[i] = found->second;
@@ -38,8 +39,8 @@ void VirtualPropertyScorer::init_(
 }
 
 double VirtualPropertyScorer::score(
-        const RankQueryProperty& rankQueryProperty,
-        const boost::shared_ptr<PropertyRanker>& propertyRanker)
+    const RankQueryProperty& rankQueryProperty,
+    const boost::shared_ptr<PropertyRanker>& propertyRanker)
 {
     double score = 0.0F;
     for(unsigned i = 0; i < numProperties_; ++i)
@@ -50,9 +51,9 @@ double VirtualPropertyScorer::score(
             rankDocumentProperty_.resize_and_initdata(rankQueryProperties_[i].size());
             pIter_->doc_item(rankDocumentProperty_,i);
             score += weight * propertyRankers_[i]->getScore(
-                    rankQueryProperties_[i],
-                    rankDocumentProperty_
-                );
+                         rankQueryProperties_[i],
+                         rankDocumentProperty_
+                     );
         }
     }
     return score;

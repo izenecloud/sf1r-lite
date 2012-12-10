@@ -14,9 +14,11 @@
 #include <util/PriorityQueue.h>
 
 
-namespace sf1r{
+namespace sf1r
+{
 
-class HitQueue {
+class HitQueue
+{
 public:
     virtual ~HitQueue() = 0;
     virtual bool insert(ScoreDoc doc) = 0;
@@ -49,17 +51,33 @@ public:
     {
     }
 
-    ~ScoreSortedHitQueue(){}
+    ~ScoreSortedHitQueue() {}
 
-    bool insert(ScoreDoc doc) {
+    bool insert(ScoreDoc doc)
+    {
         return queue_.insert(doc);
     }
 
-    ScoreDoc pop() { return queue_.pop(); }
-    ScoreDoc top() { return queue_.top(); }
-    ScoreDoc operator[](size_t pos) { return queue_[pos]; }
-    ScoreDoc getAt(size_t pos) { return queue_.getAt(pos); }
-    size_t size() { return queue_.size(); }
+    ScoreDoc pop()
+    {
+        return queue_.pop();
+    }
+    ScoreDoc top()
+    {
+        return queue_.top();
+    }
+    ScoreDoc operator[](size_t pos)
+    {
+        return queue_[pos];
+    }
+    ScoreDoc getAt(size_t pos)
+    {
+        return queue_.getAt(pos);
+    }
+    size_t size()
+    {
+        return queue_.size();
+    }
     void clear() {}
 
 private:
@@ -95,15 +113,31 @@ public:
 
     ~PropertySortedHitQueue() {}
 
-    bool insert(ScoreDoc doc) {
-         return queue_.insert(doc);
+    bool insert(ScoreDoc doc)
+    {
+        return queue_.insert(doc);
     }
 
-    ScoreDoc pop() { return queue_.pop(); }
-    ScoreDoc top() { return queue_.top(); }
-    ScoreDoc operator[](size_t pos) { return queue_[pos]; }
-    ScoreDoc getAt(size_t pos) { return queue_.getAt(pos); }
-    size_t size() { return queue_.size(); }
+    ScoreDoc pop()
+    {
+        return queue_.pop();
+    }
+    ScoreDoc top()
+    {
+        return queue_.top();
+    }
+    ScoreDoc operator[](size_t pos)
+    {
+        return queue_[pos];
+    }
+    ScoreDoc getAt(size_t pos)
+    {
+        return queue_.getAt(pos);
+    }
+    size_t size()
+    {
+        return queue_.size();
+    }
     void clear() { }
 
 private:

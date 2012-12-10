@@ -10,7 +10,8 @@
 
 #include "TermDocumentIterator.h"
 
-namespace sf1r{
+namespace sf1r
+{
 
 class SearchTermDocumentIterator : public TermDocumentIterator
 {
@@ -23,16 +24,16 @@ public:
         unsigned int propertyId,
         unsigned int termIndex,
         bool readPositions)
-    : TermDocumentIterator(termid, colID, pIndexReader, property, propertyId, termIndex, readPositions)
+        : TermDocumentIterator(termid, colID, pIndexReader, property, propertyId, termIndex, readPositions)
     {
     }
 
 public:
     /*virtual*/
     void df_cmtf(
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            MaxTermFrequencyInProperties& maxtfmap)
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap)
     {
         // do nothing
     }
@@ -47,8 +48,8 @@ public:
     void print(int level=0)
     {
         cout << std::string(level*4, ' ') << "|--[ "
-                << "SearchTermIter " << current_
-                << " - termid: " << termId_ << " " << property_<<" ]"<< endl;
+             << "SearchTermIter " << current_
+             << " - termid: " << termId_ << " " << property_<<" ]"<< endl;
     }
 };
 

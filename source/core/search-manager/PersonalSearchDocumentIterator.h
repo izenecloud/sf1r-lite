@@ -9,7 +9,8 @@
 
 #include "ANDDocumentIterator.h"
 
-namespace sf1r{
+namespace sf1r
+{
 
 /**
  * @brief PersonalSearchDocumentIterator is designed to not affecting normal search logic and scoring.
@@ -21,8 +22,8 @@ class PersonalSearchDocumentIterator : public ANDDocumentIterator
 {
 public:
     explicit PersonalSearchDocumentIterator(bool nextResponse)
-    : nextResponse_(nextResponse)
-    , hasNext_(true)
+        : nextResponse_(nextResponse)
+        , hasNext_(true)
     {
         currDoc_ = 0; // needed
     }
@@ -38,7 +39,8 @@ public:
      */
     bool next()
     {
-        if (hasNext_) {
+        if (hasNext_)
+        {
             hasNext_ = ANDDocumentIterator::next();
         }
         personal_current_ = hasNext_;
@@ -54,9 +56,9 @@ public:
     }
 
     void df_cmtf(
-            DocumentFrequencyInProperties& dfmap,
-            CollectionTermFrequencyInProperties& ctfmap,
-            MaxTermFrequencyInProperties& maxtfmap)
+        DocumentFrequencyInProperties& dfmap,
+        CollectionTermFrequencyInProperties& ctfmap,
+        MaxTermFrequencyInProperties& maxtfmap)
     {
         // ignore
         //cout << " [ PersonalSearchDocumentIterator::df_cmtf() ] " << endl;
@@ -68,7 +70,8 @@ public:
      */
     docid_t skipTo(docid_t target)
     {
-        if (target > currDoc_) {
+        if (target > currDoc_)
+        {
             currDoc_ = ANDDocumentIterator::skipTo(target);
         }
 
@@ -95,7 +98,7 @@ public:
     void print(int level=0)
     {
         cout << std::string(level*4, ' ') << "|--[ "
-            << "PersonalSearchIter "<< personal_current_<<" "<<  currDoc_<<" ]"<< endl;
+             << "PersonalSearchIter "<< personal_current_<<" "<<  currDoc_<<" ]"<< endl;
 
         DocumentIterator* pEntry;
         std::list<DocumentIterator*>::iterator iter = docIterList_.begin();

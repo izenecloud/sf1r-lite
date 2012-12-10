@@ -23,7 +23,7 @@ public:
 
 public:
     explicit FilterCache(unsigned cacheSize)
-            : cache_(cacheSize)
+        : cache_(cacheSize)
     {}
 
     ~FilterCache()
@@ -50,11 +50,11 @@ public:
     }
 private:
     typedef izenelib::cache::IzeneCache<
-        key_type,
-        value_type,
-        izenelib::util::ReadWriteLock,
-        izenelib::cache::RDE_HASH,
-        izenelib::cache::LRLFU
+    key_type,
+    value_type,
+    izenelib::util::ReadWriteLock,
+    izenelib::cache::RDE_HASH,
+    izenelib::cache::LRLFU
     > cache_type;
 
     cache_type cache_;

@@ -48,59 +48,59 @@ bool CustomRanker::buildExpSyntaxTree(const ast_info_trees& astrees, ExpSyntaxTr
         ExpSyntaxTreePtr child(new ExpSyntaxTree(type));
         switch (type)
         {
-            case ExpSyntaxTree::CONSTANT:
+        case ExpSyntaxTree::CONSTANT:
+        {
+            string v(iter->value.begin(), iter->value.end());
+            trim(v);
+            //child->value_ = atof(v.c_str());
+            if(!str2real(v, child->value_))
             {
-                string v(iter->value.begin(), iter->value.end());
-                trim(v);
-                //child->value_ = atof(v.c_str());
-                if(!str2real(v, child->value_))
-                {
-                    errorInfo_ = "Failed to parse \"" + v + "\" in custom_rank[expression], as a real number. ";
-                    return false;
-                }
-                break;
+                errorInfo_ = "Failed to parse \"" + v + "\" in custom_rank[expression], as a real number. ";
+                return false;
             }
-            case ExpSyntaxTree::PARAMETER:
-            {
-                // parameter name
-                string param(iter->value.begin(), iter->value.end());
-                trim(param);
+            break;
+        }
+        case ExpSyntaxTree::PARAMETER:
+        {
+            // parameter name
+            string param(iter->value.begin(), iter->value.end());
+            trim(param);
 
-                // parameter value is constant value set by user, or is proptery name
-                std::map<std::string, double>::iterator dbIter;
-                std::map<std::string, std::string>::iterator proIter;
-                if ((dbIter = paramConstValueMap_.find(param)) != paramConstValueMap_.end())
-                {
-                    // param value is constant
-                    child->value_ = dbIter->second;
-                    child->type_ = ExpSyntaxTree::CONSTANT;
-                }
-                else if((proIter = paramPropertyValueMap_.find(param)) != paramPropertyValueMap_.end())
-                {
-                    // param value is property name
-                    child->name_ = proIter->second;
-                    propertyDataTypeMap_.insert(std::make_pair(child->name_, UNKNOWN_DATA_PROPERTY_TYPE));
-                }
-                else
-                {
-                    // value of param did not found in custom_rank[params],
-                    // assume parameter it self is a property name,
-                    // all property names will be checked later.
-                    child->name_ = param;
-                    propertyDataTypeMap_.insert(std::make_pair(child->name_, UNKNOWN_DATA_PROPERTY_TYPE));
-                }
-                break;
+            // parameter value is constant value set by user, or is proptery name
+            std::map<std::string, double>::iterator dbIter;
+            std::map<std::string, std::string>::iterator proIter;
+            if ((dbIter = paramConstValueMap_.find(param)) != paramConstValueMap_.end())
+            {
+                // param value is constant
+                child->value_ = dbIter->second;
+                child->type_ = ExpSyntaxTree::CONSTANT;
             }
-            case ExpSyntaxTree::SUM:
-            case ExpSyntaxTree::SUB:
-            case ExpSyntaxTree::PRODUCT:
-            case ExpSyntaxTree::DIV:
-            case ExpSyntaxTree::LOG:
-            case ExpSyntaxTree::POW:
-            case ExpSyntaxTree::SQRT:
-                break;
-            default:
-                break;
+            else if((proIter = paramPropertyValueMap_.find(param)) != paramPropertyValueMap_.end())
+            {
+                // param value is property name
+                child->name_ = proIter->second;
+                propertyDataTypeMap_.insert(std::make_pair(child->name_, UNKNOWN_DATA_PROPERTY_TYPE));
+            }
+            else
+            {
+                // value of param did not found in custom_rank[params],
+                // assume parameter it self is a property name,
+                // all property names will be checked later.
+                child->name_ = param;
+                propertyDataTypeMap_.insert(std::make_pair(child->name_, UNKNOWN_DATA_PROPERTY_TYPE));
+            }
+            break;
+        }
+        case ExpSyntaxTree::SUM:
+        case ExpSyntaxTree::SUB:
+        case ExpSyntaxTree::PRODUCT:
+        case ExpSyntaxTree::DIV:
+        case ExpSyntaxTree::LOG:
+        case ExpSyntaxTree::POW:
+        case ExpSyntaxTree::SQRT:
+            break;
+        default:
+            break;
         }
 
         // children in AST
@@ -147,84 +147,84 @@ bool CustomRanker::sub_evaluate(ExpSyntaxTreePtr& estree, docid_t& docid)
 
     switch (type)
     {
-        case ExpSyntaxTree::ROOT:
-        {
-            sub_evaluate(estree->children_[0], docid);
-            estree->value_ = estree->children_[0]->value_;
+    case ExpSyntaxTree::ROOT:
+    {
+        sub_evaluate(estree->children_[0], docid);
+        estree->value_ = estree->children_[0]->value_;
+        break;
+    }
+    case ExpSyntaxTree::CONSTANT:
+    {
+        // constant value has been set already
+        return true;
+    }
+    case ExpSyntaxTree::PARAMETER:
+    {
+        if (! estree->propertyData_)
             break;
-        }
-        case ExpSyntaxTree::CONSTANT:
-        {
-            // constant value has been set already
-            return true;
-        }
-        case ExpSyntaxTree::PARAMETER:
-        {
-            if (! estree->propertyData_)
-                break;
 
-            estree->propertyData_->getDoubleValue(docid, estree->value_);
-            //cout << "CustomRanker::sub_evaluate docid(" << docid << ") get property \"" << estree->name_ << "\" data value: " << estree->value_ <<endl;
-            break;
-        }
-        case ExpSyntaxTree::SUM:
+        estree->propertyData_->getDoubleValue(docid, estree->value_);
+        //cout << "CustomRanker::sub_evaluate docid(" << docid << ") get property \"" << estree->name_ << "\" data value: " << estree->value_ <<endl;
+        break;
+    }
+    case ExpSyntaxTree::SUM:
+    {
+        sub_evaluate(estree->children_[0], docid);
+        estree->value_ = estree->children_[0]->value_;
+        sub_evaluate(estree->children_[1], docid);
+        estree->value_ += estree->children_[1]->value_;
+        break;
+    }
+    case ExpSyntaxTree::SUB:
+    {
+        sub_evaluate(estree->children_[0], docid);
+        estree->value_ = estree->children_[0]->value_;
+        sub_evaluate(estree->children_[1], docid);
+        estree->value_ -= estree->children_[1]->value_;
+        break;
+    }
+    case ExpSyntaxTree::PRODUCT:
+    {
+        sub_evaluate(estree->children_[0], docid);
+        estree->value_ = estree->children_[0]->value_;
+        sub_evaluate(estree->children_[1], docid);
+        estree->value_ *= estree->children_[1]->value_;
+        break;
+    }
+    case ExpSyntaxTree::DIV:
+    {
+        sub_evaluate(estree->children_[0], docid);
+        estree->value_ = estree->children_[0]->value_;
+        sub_evaluate(estree->children_[1], docid);
+        if (estree->children_[1]->value_ < 1e-8 && estree->children_[1]->value_ > -1e-8)
         {
-            sub_evaluate(estree->children_[0], docid);
-            estree->value_ = estree->children_[0]->value_;
-            sub_evaluate(estree->children_[1], docid);
-            estree->value_ += estree->children_[1]->value_;
-            break;
+            errorInfo_ = "*Waring: division by zero, got zero from \"" + estree->children_[1]->name_ + "\"";
+            cout << errorInfo_ << endl;
         }
-        case ExpSyntaxTree::SUB:
-        {
-            sub_evaluate(estree->children_[0], docid);
-            estree->value_ = estree->children_[0]->value_;
-            sub_evaluate(estree->children_[1], docid);
-            estree->value_ -= estree->children_[1]->value_;
-            break;
-        }
-        case ExpSyntaxTree::PRODUCT:
-        {
-            sub_evaluate(estree->children_[0], docid);
-            estree->value_ = estree->children_[0]->value_;
-            sub_evaluate(estree->children_[1], docid);
-            estree->value_ *= estree->children_[1]->value_;
-            break;
-        }
-        case ExpSyntaxTree::DIV:
-        {
-            sub_evaluate(estree->children_[0], docid);
-            estree->value_ = estree->children_[0]->value_;
-            sub_evaluate(estree->children_[1], docid);
-            if (estree->children_[1]->value_ < 1e-8 && estree->children_[1]->value_ > -1e-8)
-            {
-                errorInfo_ = "*Waring: division by zero, got zero from \"" + estree->children_[1]->name_ + "\"";
-                cout << errorInfo_ << endl;
-            }
-            estree->value_ /= estree->children_[1]->value_;
-            break;
-        }
-        case ExpSyntaxTree::LOG:
-        {
-            sub_evaluate(estree->children_[0], docid);
-            estree->value_ = std::log(estree->children_[0]->value_);
-            break;
-        }
-        case ExpSyntaxTree::POW:
-        {
-            sub_evaluate(estree->children_[0], docid);
-            sub_evaluate(estree->children_[1], docid);
-            estree->value_ = std::pow(estree->children_[0]->value_, estree->children_[1]->value_);
-            break;
-        }
-        case ExpSyntaxTree::SQRT:
-        {
-            sub_evaluate(estree->children_[0], docid);
-            estree->value_ = std::sqrt(estree->children_[0]->value_);
-            break;
-        }
-        default:
-            break;
+        estree->value_ /= estree->children_[1]->value_;
+        break;
+    }
+    case ExpSyntaxTree::LOG:
+    {
+        sub_evaluate(estree->children_[0], docid);
+        estree->value_ = std::log(estree->children_[0]->value_);
+        break;
+    }
+    case ExpSyntaxTree::POW:
+    {
+        sub_evaluate(estree->children_[0], docid);
+        sub_evaluate(estree->children_[1], docid);
+        estree->value_ = std::pow(estree->children_[0]->value_, estree->children_[1]->value_);
+        break;
+    }
+    case ExpSyntaxTree::SQRT:
+    {
+        sub_evaluate(estree->children_[0], docid);
+        estree->value_ = std::sqrt(estree->children_[0]->value_);
+        break;
+    }
+    default:
+        break;
     }
 
     return true;

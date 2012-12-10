@@ -42,7 +42,7 @@ namespace sf1r {
         {
             WeightType()
             :cweight(0.0), aweight(0.0), tweight(0.0), kweight(1.0)
-             , paweight(0.0), paratio(0.0), type_match(false)
+             , paweight(0.0), paratio(0.0), type_match(false), brand_match(false)
             {
             }
             double cweight;
@@ -52,12 +52,13 @@ namespace sf1r {
             double paweight;
             double paratio;
             bool type_match;
-            friend class boost::serialization::access;
-            template<class Archive>
-            void serialize(Archive & ar, const unsigned int version)
-            {
-                ar & cweight & aweight & tweight & kweight & paweight;
-            }
+            bool brand_match;
+            //friend class boost::serialization::access;
+            //template<class Archive>
+            //void serialize(Archive & ar, const unsigned int version)
+            //{
+                //ar & cweight & aweight & tweight & kweight & paweight;
+            //}
 
             inline double sum() const
             {
@@ -362,8 +363,10 @@ namespace sf1r {
             std::string spid;
             std::string stitle;
             std::string scategory;
+            uint32_t cid;
             double price; 
             std::vector<Attribute> attributes;
+            std::string sbrand;
             //WeightType weight;
             double aweight;
             double tweight;
@@ -372,7 +375,7 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle & scategory & price & attributes & aweight & tweight & title_obj;
+                ar & spid & stitle & scategory & cid & price & attributes & sbrand & aweight & tweight & title_obj;
             }
         };
         typedef uint32_t PidType;
@@ -427,7 +430,7 @@ namespace sf1r {
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
         void GetKeywordVector_(const TermList& term_list, KeywordVector& keyword_vector);
-        void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t& cid, uint32_t& pid);
+        void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, Product& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
 
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
@@ -486,7 +489,7 @@ namespace sf1r {
         term_t left_bracket_term_;
         term_t right_bracket_term_;
         std::vector<Category> category_list_;
-        IdToIdList cid_to_pids_;
+        std::vector<IdList> cid_to_pids_;
         CategoryIndex category_index_;
         ProductIndex product_index_;
         KeywordSet keyword_set_;
