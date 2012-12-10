@@ -35,7 +35,7 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
 
 void SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
-    DistKeywordSearchResult fakeResultItem;
+    KeywordSearchResult fakeResultItem;
     fakeResultItem.distSearchInfo_.option_ = DistKeywordSearchInfo::OPTION_GATHER_INFO;
 
     getSearchResult_(actionItem, fakeResultItem);
@@ -43,7 +43,7 @@ void SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, 
     resultItem.swap(fakeResultItem.distSearchInfo_);
 }
 
-void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem)
+void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
     cout << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
@@ -263,20 +263,18 @@ void SearchWorker::makeQueryIdentity(
 
 /// private methods ////////////////////////////////////////////////////////////
 
-template <typename ResultItemType>
 bool SearchWorker::getSearchResult_(
         const KeywordSearchActionItem& actionItem,
-        ResultItemType& resultItem,
+        KeywordSearchResult& resultItem,
         bool isDistributedSearch)
 {
     QueryIdentity identity;
     return getSearchResult_(actionItem, resultItem, identity, isDistributedSearch);
 }
 
-template <typename ResultItemType>
 bool SearchWorker::getSearchResult_(
         const KeywordSearchActionItem& actionItem,
-        ResultItemType& resultItem,
+        KeywordSearchResult& resultItem,
         QueryIdentity& identity,
         bool isDistributedSearch)
 {
@@ -547,11 +545,10 @@ void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util:
     }
 }
 
-template <typename ResultItemT>
 bool SearchWorker::buildQuery(
         SearchKeywordOperation& actionOperation,
         std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
-        ResultItemT& resultItem,
+        KeywordSearchResult& resultItem,
         PersonalSearchInfo& personalSearchInfo)
 {
     if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::KNN
@@ -744,10 +741,9 @@ bool  SearchWorker::getResultItem(
     return ret;
 }
 
-template <typename ResultItemType>
 bool SearchWorker::removeDuplicateDocs(
         const KeywordSearchActionItem& actionItem,
-        ResultItemType& resultItem)
+        KeywordSearchResult& resultItem)
 {
     // Remove duplicated docs from the result if the option is on.
     if (miningManager_)
