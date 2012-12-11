@@ -244,8 +244,15 @@ bool SearchManager::search(
     // begin thread code
     //
     std::vector<SearchThreadParam> searchparams;
+    int& attrGroupNum = actionOperation.actionItem_.groupParam_.attrGroupNum_;
+    const int originAttrGroupNum = attrGroupNum;
     if(thread_num > 1)
     {
+        // Because the top attribute info can not be decided until
+        // all threads' result merged, we need to get all the
+        // attribute info in each thread.
+        attrGroupNum = 0;
+
         searchparams.resize(thread_num);
         // make each thread process 2 separated data will get the most efficient.
         std::size_t docid_num_byeachthread = maxDocId/thread_num;
@@ -405,8 +412,8 @@ bool SearchManager::search(
                 groupRep.merge(searchparams[i].groupRep_thread);
                 all_attrReps.push_back(&searchparams[i].attrRep_thread);
             }
-            attrRep.merge(actionOperation.actionItem_.groupParam_.attrGroupNum_,
-                          all_attrReps);
+            attrGroupNum = originAttrGroupNum;
+            attrRep.merge(attrGroupNum, all_attrReps);
         }
         if (distSearchInfo.effective_ && pSorter)
         {
@@ -452,7 +459,7 @@ void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam,
                                        pParam->totalCount_thread, pParam->propertyRange, pParam->start,
                                        pParam->pSorter, pParam->customRanker, pParam->groupRep_thread, pParam->attrRep_thread,
                                        *(pParam->scoreItemQueue), *(pParam->distSearchInfo), pParam->counterResults_thread, pParam->heapSize,
-                                       pParam->docid_start, pParam->docid_num_byeachthread, pParam->docid_nextstart_inc, true);
+                                       pParam->docid_start, pParam->docid_num_byeachthread, pParam->docid_nextstart_inc);
     }
     ++(*finishedJobs);
     //gettimeofday(&tv_end, NULL);
@@ -480,9 +487,7 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
                                      int heapSize,
                                      std::size_t docid_start,
                                      std::size_t docid_num_byeachthread,
-                                     std::size_t docid_nextstart_inc,
-                                     bool is_parallel
-                                    )
+                                     std::size_t docid_nextstart_inc)
 {
     CREATE_PROFILER( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
     CREATE_PROFILER( preparerank, "SearchManager", "doSearch_: prepare ranker");
@@ -709,18 +714,11 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
 
     faceted::PropSharedLockSet propSharedLockSet;
     boost::scoped_ptr<faceted::GroupFilter> groupFilter;
-    faceted::GroupParam gp = actionOperation.actionItem_.groupParam_;
     if (groupFilterBuilder_)
     {
-        if(is_parallel)
-        {
-            // Because the top info can not be decided until
-            // all threads' result merged, we need to get all the
-            // attribute info in each thread.
-            gp.attrGroupNum_ = 0;
-        }
         groupFilter.reset(
-            groupFilterBuilder_->createFilter(gp, propSharedLockSet));
+            groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_,
+                                              propSharedLockSet));
     }
     std::size_t totalCount;
     sf1r::PropertyRange propertyRange = propertyRange_orig;

@@ -148,8 +148,7 @@ private:
                           int heapSize,
                           std::size_t docid_start,
                           std::size_t docid_num_byeachthread,
-                          std::size_t docid_nextstart_inc,
-                          bool is_parallel = false);
+                          std::size_t docid_nextstart_inc);
 
     void prepare_sorter_customranker_(
         const SearchKeywordOperation& actionOperation,
