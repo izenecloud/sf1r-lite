@@ -89,7 +89,7 @@ private:
      */
     bool needRefresh(const key_type& key, const std::time_t& timestamp)
     {
-        bool check = refreshAll_;
+        bool check = refreshAll_ |key.isRandomRank;
 
         // check "_ctr" sort property
         if(!check)
