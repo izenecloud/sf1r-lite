@@ -22,12 +22,16 @@ struct ProductRankParam
 
     const std::size_t docNum_;
 
+    bool isRandomRank_;
+
     ProductRankParam(
         std::vector<docid_t>& docIds,
-        std::vector<score_t>& topKScores)
+        std::vector<score_t>& topKScores,
+        bool isRandomRank)
         : docIds_(docIds)
         , topKScores_(topKScores)
         , docNum_(docIds.size())
+        , isRandomRank_(isRandomRank)
     {}
 
     bool isValid() const

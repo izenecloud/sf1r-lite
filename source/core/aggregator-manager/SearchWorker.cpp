@@ -16,6 +16,16 @@
 namespace sf1r
 {
 
+namespace
+{
+
+bool isNeedCache(const KeywordSearchActionItem& actionItem)
+{
+    return actionItem.isRandomRank_ == false;
+}
+
+} // namespace
+
 SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     : bundleConfig_(bundleConfig)
     , recommendSearchService_(NULL)
@@ -155,7 +165,7 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
             return false;
 
         START_PROFILER( cacheoverhead )
-        if (searchCache_)
+        if (searchCache_ && isNeedCache(actionItem))
             searchCache_->set(identity, resultItem);
         STOP_PROFILER( cacheoverhead )
     }
@@ -233,6 +243,7 @@ void SearchWorker::makeQueryIdentity(
         identity.paramConstValueMap = item.paramConstValueMap_;
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
         identity.groupParam = item.groupParam_;
+        identity.isRandomRank = item.isRandomRank_;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -256,6 +267,7 @@ void SearchWorker::makeQueryIdentity(
         identity.paramConstValueMap = item.paramConstValueMap_;
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
         identity.distActionType = distActionType;
+        identity.isRandomRank = item.isRandomRank_;
         std::sort(identity.properties.begin(),
                 identity.properties.end());
         std::sort(identity.counterList.begin(),

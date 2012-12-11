@@ -10,7 +10,6 @@
 
 #include <configuration-manager/ProductRankingConfig.h>
 #include <mining-manager/group-manager/PropValueTable.h>
-#include <mining-manager/product-ranker/ProductRankerFactory.h>
 #include <string>
 #include <vector>
 
@@ -21,6 +20,8 @@ class ProductRankerTestFixture
 {
 public:
     ProductRankerTestFixture();
+
+    void configRandomScore();
 
     void setDocId(const std::string& docIdList);
     void setTopKScore(const std::string& scoreList);
@@ -33,10 +34,17 @@ public:
     void checkDocId(const std::string& goldDocIdList);
     void checkTopKScore(const std::string& goldScoreList);
 
+    void checkDocId(
+        const std::string& goldDocIdList,
+        int equalNum);
+
+    void checkTopKScore(
+        const std::string& goldScoreList,
+        int equalNum);
+
 protected:
     ProductRankingConfig rankConfig_;
     faceted::PropValueTable merchantValueTable_;
-    ProductRankerFactory rankerFactory_;
 
     std::vector<docid_t> docIds_;
     std::vector<score_t> topKScores_;

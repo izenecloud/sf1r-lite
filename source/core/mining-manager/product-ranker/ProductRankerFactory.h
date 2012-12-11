@@ -21,14 +21,22 @@ class ProductRankerFactory
 public:
     ProductRankerFactory(
         const ProductRankingConfig& config,
-        const faceted::PropValueTable& merchantValueTable);
+        const faceted::PropValueTable* merchantValueTable);
 
     ProductRanker* createProductRanker(ProductRankParam& param);
 
 private:
+    void addCategoryEvaluator_(ProductRanker& ranker) const;
+    void addRandomEvaluator_(ProductRanker& ranker) const;
+    void addDiversityEvaluator_(ProductRanker& ranker) const;
+
+private:
     const ProductRankingConfig& config_;
 
-    const faceted::PropValueTable& merchantValueTable_;
+    const faceted::PropValueTable* merchantValueTable_;
+
+    /** true when the weight in <Score type="random"> is non-zero */
+    const bool isRandomScoreConfig_;
 };
 
 } // namespace sf1r
