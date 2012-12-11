@@ -16,16 +16,6 @@
 namespace sf1r
 {
 
-namespace
-{
-
-bool isNeedCache(const KeywordSearchActionItem& actionItem)
-{
-    return actionItem.isRandomRank_ == false;
-}
-
-} // namespace
-
 SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     : bundleConfig_(bundleConfig)
     , recommendSearchService_(NULL)
@@ -165,7 +155,7 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
             return false;
 
         START_PROFILER( cacheoverhead )
-        if (searchCache_ && isNeedCache(actionItem))
+        if (searchCache_)
             searchCache_->set(identity, resultItem);
         STOP_PROFILER( cacheoverhead )
     }
