@@ -91,11 +91,10 @@ bool SuffixMatchMiningTask::preProcess()
     if (last_docid)
     {
         LOG(INFO) << "start rebuilding in fm-index";
-        if (new_filter_manager)
-        {
-            max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, group_filter_map);
-            max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
-        }
+
+        max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, group_filter_map);
+        max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
+
     }
 
     LOG(INFO) << "building filter data in fm-index, start from:" << max_group_docid;
@@ -138,7 +137,7 @@ bool SuffixMatchMiningTask::postProcess()
 {
     if (is_need_rebuild && !new_fmi_manager->buildCollectionAfter())
         return false;
-
+    new_fmi_manager->buildLessDVProperties();
     new_fmi_manager->buildExternalFilter();
     {
         WriteLock lock(mutex_);
