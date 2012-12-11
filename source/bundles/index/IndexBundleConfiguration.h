@@ -132,6 +132,12 @@ public:
     /// @brief searchmanager cache number
     size_t searchCacheNum_;
 
+    /// @brief whether refresh search cache periodically
+    bool refreshSearchCache_;
+
+    /// @brief refresh interval of search cache
+    time_t refreshCacheInterval_;
+
     /// @brief filter cache number
     size_t filterCacheNum_;
 

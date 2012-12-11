@@ -221,6 +221,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
 {
     if (!fmi_manager_) return 0;
 
+    std::map<uint32_t, double> res_list_map;
     std::vector<uint32_t> docid_list;
     std::vector<size_t> doclen_list;
     size_t max_match;
@@ -248,20 +249,34 @@ size_t SuffixMatchManager::longestSuffixMatch(
             fmi_manager_->getMatchedDocIdList(property, match_ranges, max_docs, docid_list, doclen_list);
         }
 
-        res_list.reserve(res_list.size() + docid_list.size());
         for (size_t j = 0; j < docid_list.size(); ++j)
         {
             double score = 0;
             if(doclen_list[j] > 0)
                 score = double(max_match) / double(doclen_list[j]);
-            res_list.push_back(std::make_pair(score, docid_list[j]));
+            std::map<uint32_t, double>::iterator res_it = res_list_map.find(docid_list[j]);
+            if(res_it != res_list_map.end())
+            {
+                res_it->second += score;
+            }
+            else
+            {
+                res_list_map[docid_list[i]] = score;
+            }
         }
+
         for (size_t j = 0; j < match_ranges.size(); ++j)
         {
             total_match += match_ranges[i].second - match_ranges[i].first;
         }
         std::vector<uint32_t>().swap(docid_list);
         std::vector<size_t>().swap(doclen_list);
+    }
+    res_list.reserve(res_list_map.size());
+    for(std::map<uint32_t, double>::const_iterator cit = res_list_map.begin();
+        cit != res_list_map.end(); ++cit)
+    {
+        res_list.push_back(std::make_pair(cit->second, cit->first));
     }
     std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
     if(res_list.size() > max_docs)
@@ -280,6 +295,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
 {
     if (!analyzer_) return 0;
 
+    std::map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > match_ranges_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> max_match_list;
@@ -312,6 +328,23 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     }
     cout << endl;
 
+    std::vector<size_t> prop_id_list;
+    std::vector<RangeListT> filter_range_list;
+    if (!group_param.isGroupEmpty())
+    {
+        if (!getAllFilterRangeFromGroupLable_(group_param, prop_id_list, filter_range_list))
+            return 0;
+    }
+    if (!group_param.isAttrEmpty())
+    {
+        if (!getAllFilterRangeFromAttrLable_(group_param, prop_id_list, filter_range_list))
+            return 0;
+    }
+    if (!filter_param.empty())
+    {
+        if (!getAllFilterRangeFromFilterParam_(filter_param, prop_id_list, filter_range_list))
+            return 0;
+    }
 
     size_t total_match = 0;
     for(size_t prop_i = 0; prop_i < search_in_properties.size(); ++prop_i)
@@ -337,24 +370,6 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     max_match_list.push_back((double)1.0);
             }
         }
-        std::vector<size_t> prop_id_list;
-        std::vector<RangeListT> filter_range_list;
-        if (!group_param.isGroupEmpty())
-        {
-            if (!getAllFilterRangeFromGroupLable_(group_param, prop_id_list, filter_range_list))
-                return 0;
-        }
-        if (!group_param.isAttrEmpty())
-        {
-            if (!getAllFilterRangeFromAttrLable_(group_param, prop_id_list, filter_range_list))
-                return 0;
-        }
-        if (!filter_param.empty())
-        {
-            if (!getAllFilterRangeFromFilterParam_(filter_param, prop_id_list, filter_range_list))
-                return 0;
-        }
-
         fmi_manager_->convertMatchRanges(search_property, max_docs, match_ranges_list, max_match_list);
         if (filter_mode == SearchingMode::OR_Filter)
         {
@@ -376,7 +391,18 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         {
             LOG(ERROR) << "unknown filter mode.";
         }
-        res_list.insert(res_list.end(), single_res_list.begin(), single_res_list.end());
+        for(size_t i = 0; i < single_res_list.size(); ++i)
+        {
+            std::map<uint32_t, double>::iterator res_it = res_list_map.find(single_res_list[i].second);
+            if(res_it != res_list_map.end())
+            {
+                res_it->second += single_res_list[i].first;
+            }
+            else
+            {
+                res_list_map[single_res_list[i].second] = single_res_list[i].first;
+            }
+        }
         std::vector<std::pair<double, uint32_t> >().swap(single_res_list);
 
         for (size_t i = 0; i < match_ranges_list.size(); ++i)
@@ -387,6 +413,12 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         std::vector<double>().swap(max_match_list);
     }
 
+    res_list.reserve(res_list_map.size());
+    for(std::map<uint32_t, double>::const_iterator cit = res_list_map.begin();
+        cit != res_list_map.end(); ++cit)
+    {
+        res_list.push_back(std::make_pair(cit->second, cit->first));
+    }
     std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
     if(res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());

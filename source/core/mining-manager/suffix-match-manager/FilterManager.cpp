@@ -171,15 +171,6 @@ void FilterManager::buildGroupFilterData(
                 group_filter_data[j][groupstr].push_back(docid);
             }
         }
-        std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
-        prop_filterstr_text_list_[prop_id].reserve(group_filter_data[j].size() + 1);
-
-        prop_filterstr_text_list_[prop_id].push_back(UString(""));
-        for(StrFilterItemMapT::const_iterator filterstr_it = group_filter_data[j].begin();
-            filterstr_it != group_filter_data[j].end(); ++ filterstr_it)
-        {
-            prop_filterstr_text_list_[prop_id].push_back(filterstr_it->first);
-        }
         
         // map the group filter string to filter id.
         mapGroupFilterToFilterId(
@@ -187,6 +178,17 @@ void FilterManager::buildGroupFilterData(
                 group_filter_data[j],
                 strtype_filterids_[prop_id],
                 filter_list_[prop_id]);
+
+        std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
+        prop_filterstr_text_list_[prop_id].reserve(strtype_filterids_[prop_id].size() + 1);
+
+        prop_filterstr_text_list_[prop_id].push_back(UString(""));
+        for(StrIdMapT::const_iterator filterstr_it = strtype_filterids_[prop_id].begin();
+            filterstr_it != strtype_filterids_[prop_id].end(); ++ filterstr_it)
+        {
+            prop_filterstr_text_list_[prop_id].push_back(filterstr_it->first);
+        }
+
         printNode(property_root_nodes[j], 0, strtype_filterids_[prop_id], filter_list_[prop_id]);
     }
     delete group_root;
@@ -249,17 +251,18 @@ void FilterManager::buildAttrFilterData(
             attr_filter_data[0][attrstr].push_back(docid);
         }
     }
+    // map the attribute filter string to filter id.
+    mapAttrFilterToFilterId(attr_filter_data[0], strtype_filterids_[prop_id], filter_list_[prop_id]);
+
     std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
-    prop_filterstr_text_list_[prop_id].reserve(attr_filter_data[0].size() + 1);
+    prop_filterstr_text_list_[prop_id].reserve(strtype_filterids_[prop_id].size() + 1);
     prop_filterstr_text_list_[prop_id].push_back(UString(""));
-    for(StrFilterItemMapT::const_iterator filterstr_it = attr_filter_data[0].begin();
-        filterstr_it != attr_filter_data[0].end(); ++ filterstr_it)
+    for(StrIdMapT::const_iterator filterstr_it = strtype_filterids_[prop_id].begin();
+        filterstr_it != strtype_filterids_[prop_id].end(); ++ filterstr_it)
     {
         prop_filterstr_text_list_[prop_id].push_back(filterstr_it->first);
     }
 
-    // map the attribute filter string to filter id.
-    mapAttrFilterToFilterId(attr_filter_data[0], strtype_filterids_[prop_id], filter_list_[prop_id]);
     LOG(INFO) << "finish building attribute filter data.";
 }
 
@@ -446,6 +449,7 @@ void FilterManager::clearFilterId()
     std::vector<std::pair<int, std::string> >().swap(prop_list_);
     StrPropIdVecT().swap(strtype_filterids_);
     NumPropIdVecT().swap(numtype_filterids_);
+    PropFilterStrVecT().swap(prop_filterstr_text_list_);
 }
 
 void FilterManager::saveFilterId()
@@ -544,7 +548,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
                 // start from 1. so reserve the first.
                 std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
                 prop_filterstr_text_list_[prop_id].reserve(num + 1);
-                prop_filterstr_text_list_[prop_id].resize(1);
+                prop_filterstr_text_list_[prop_id].push_back(UString(""));
                 for (size_t j = 0; j < num; ++j)
                 {
                     std::string str_key;
