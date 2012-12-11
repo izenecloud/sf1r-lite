@@ -952,14 +952,6 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     }
 
     faceted::PropSharedLockSet propSharedLockSet;
-    boost::scoped_ptr<faceted::GroupFilter> groupFilter;
-    faceted::GroupParam gp = actionOperation.actionItem_.groupParam_;
-    if (groupFilterBuilder_)
-    {
-        groupFilter.reset(
-            groupFilterBuilder_->createFilter(gp, propSharedLockSet));
-    }
-
     ProductScorer* productScorer = preprocessor_->createProductScorer(
                                        actionOperation.actionItem_, pSorter, propSharedLockSet);
 
