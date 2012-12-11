@@ -48,7 +48,6 @@ public:
     void setAttrFilterProperties(std::vector<std::string>& property_list);
     void setDateFilterProperties(std::vector<std::string>& property_list);
     void setNumericFilterProperties(std::vector<std::string>& property_list, std::vector<int32_t>& amp_list);
-    void buildCollection();
     void buildTokenizeDic();
     bool isStartFromLocalFM() const;
 
