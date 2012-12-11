@@ -2190,14 +2190,19 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
 {
     const std::string& diversityPropName =
         rankConfig.scores[DIVERSITY_SCORE].propName;
+    const score_t randomScoreWeight =
+        rankConfig.scores[RANDOM_SCORE].weight;
 
-    if (!rankConfig.isEnable || diversityPropName.empty())
+    if (!rankConfig.isEnable)
+        return true;
+
+    if (diversityPropName.empty() && randomScoreWeight == 0)
         return true;
 
     const faceted::PropValueTable* diversityValueTable =
         GetPropValueTable(diversityPropName);
 
-    if (!diversityValueTable)
+    if (!diversityPropName.empty() && !diversityValueTable)
     {
         LOG(ERROR) << "the PropValueTable is not initialized for property: "
                    << diversityPropName;
@@ -2206,7 +2211,7 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
 
     if (productRankerFactory_) delete productRankerFactory_;
     productRankerFactory_ = new ProductRankerFactory(rankConfig,
-                                                     *diversityValueTable);
+                                                     diversityValueTable);
     searchManager_->setProductRankerFactory(productRankerFactory_);
     return true;
 }

@@ -1,31 +1,10 @@
 #include "CategoryScoreEvaluator.h"
-#include <configuration-manager/ProductRankingConfig.h>
-#include <algorithm> // min
 
 using namespace sf1r;
 
-namespace
-{
-
-score_t extractWeight(const ProductRankingConfig& config)
-{
-    score_t customWeight = config.scores[CUSTOM_SCORE].weight;
-    score_t categoryWeight = config.scores[CATEGORY_SCORE].weight;
-
-    if (customWeight == 0)
-        return categoryWeight;
-
-    if (categoryWeight == 0)
-        return customWeight;
-
-    return std::min(customWeight, categoryWeight);
-}
-
-}
-
-CategoryScoreEvaluator::CategoryScoreEvaluator(const ProductRankingConfig& config)
+CategoryScoreEvaluator::CategoryScoreEvaluator(score_t weight)
     : ProductScoreEvaluator("category")
-    , weight_(extractWeight(config))
+    , weight_(weight)
 {
 }
 

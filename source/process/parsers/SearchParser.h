@@ -155,6 +155,11 @@ public:
         return searchingModeInfo_;
     }
 
+    bool isRandomRank() const
+    {
+        return isRandomRank_;
+    }
+
 private:
     bool parseGroupLabel_(const Value& search);
     bool parseAttrLabel_(const Value& search);
@@ -179,6 +184,8 @@ private:
     RankingType::TextRankingType rankingModel_;
     SearchingModeInfo searchingModeInfo_;
     LanguageAnalyzerInfo analyzerInfo_;
+
+    bool isRandomRank_;
 };
 
 /// @}

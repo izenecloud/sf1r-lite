@@ -128,7 +128,8 @@ bool SearchManager::rerank(
         izenelib::util::ClockTimer timer;
 
         ProductRankParam rankParam(resultItem.topKDocs_,
-                                   resultItem.topKRankScoreList_);
+                                   resultItem.topKRankScoreList_,
+                                   actionItem.isRandomRank_);
 
         boost::scoped_ptr<ProductRanker> productRanker(
             productRankerFactory_->createProductRanker(rankParam));

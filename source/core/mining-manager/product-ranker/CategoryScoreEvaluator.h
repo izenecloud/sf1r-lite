@@ -20,12 +20,11 @@
 
 namespace sf1r
 {
-class ProductRankingConfig;
 
 class CategoryScoreEvaluator : public ProductScoreEvaluator
 {
 public:
-    CategoryScoreEvaluator(const ProductRankingConfig& config);
+    CategoryScoreEvaluator(score_t weight);
 
     virtual score_t evaluate(ProductScore& productScore);
 
