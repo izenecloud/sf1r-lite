@@ -470,6 +470,12 @@ void FMIndexManager::convertMatchRanges(
     }
     if(cit->second.type != LESS_DV || (filter_manager_ == NULL))
         return;
+    if(!cit->second.fmi)
+    {
+        match_ranges.clear();
+        max_match_list.clear();
+        return;
+    }
     std::vector<uint32_t> tmp_docid_list;
     std::vector<size_t> tmp_doclen_list;
     RangeListT converted_match_ranges;
@@ -538,7 +544,7 @@ size_t FMIndexManager::longestSuffixMatch(
     if(doc_count_ == 0)
         return 0;
     FMIndexConstIter cit = all_fmi_.find(property);
-    if(cit == all_fmi_.end())
+    if(cit == all_fmi_.end() || !cit->second.fmi)
     {
         return 0;
     }
@@ -551,7 +557,7 @@ size_t FMIndexManager::backwardSearch(const std::string& prop, const izenelib::u
         return 0;
 
     FMIndexConstIter cit = all_fmi_.find(prop);
-    if(cit == all_fmi_.end())
+    if(cit == all_fmi_.end() || !cit->second.fmi)
     {
         return 0;
     }
@@ -620,7 +626,7 @@ void FMIndexManager::getLessDVStrLenList(const std::string& property, const std:
     if(doc_count_ == 0)
         return;
     FMIndexConstIter cit = all_fmi_.find(property);
-    if(cit == all_fmi_.end())
+    if(cit == all_fmi_.end() || !cit->second.fmi)
     {
         LOG(INFO) << "get LESS_DV string length failed for not exist property : " << property;
         return;
@@ -643,7 +649,8 @@ void FMIndexManager::saveAll()
         std::ofstream ofs;
         ofs.open((data_root_path_ + "/" + fmit->first + ".fm_idx").c_str());
         ofs.write((const char*)&fmit->second.docarray_mgr_index, sizeof(fmit->second.docarray_mgr_index));
-        fmit->second.fmi->save(ofs);
+        if(fmit->second.fmi)
+            fmit->second.fmi->save(ofs);
         ++fmit;
     }
     try

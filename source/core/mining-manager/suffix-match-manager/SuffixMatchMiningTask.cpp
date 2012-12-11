@@ -152,6 +152,7 @@ bool SuffixMatchMiningTask::postProcess()
         new_fmi_manager.reset();
         new_filter_manager.reset();
     }
+    LOG(INFO) << "saving fm-index data";
     fmi_->saveAll();
     filter_manager_->saveFilterId();
     filter_manager_->clearFilterList();
