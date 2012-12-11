@@ -36,10 +36,6 @@ SuffixMatchMiningTask::~SuffixMatchMiningTask()
 
 bool SuffixMatchMiningTask::preProcess()
 {
-    std::vector<FilterManager::StrFilterItemMapT> group_filter_map;
-    std::vector<FilterManager::StrFilterItemMapT> attr_filter_map;
-    std::vector<FilterManager::NumFilterItemMapT> num_filter_map;
-    std::vector<FilterManager::NumFilterItemMapT> date_filter_map;
     
     new_filter_manager.reset(new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
         filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder()));
@@ -86,6 +82,30 @@ bool SuffixMatchMiningTask::preProcess()
     {
         new_fmi_manager->useOldDocCount(fmi_.get());
     }
+    bool isInitAndLoad = true;
+    if (!is_need_rebuild)
+        return true;
+    if(!new_fmi_manager->initAndLoadOldDocs(fmi_.get()))
+    {
+        LOG(ERROR) << "fmindex init building failed, must stop. ";
+        new_fmi_manager->clearFMIData();
+        isInitAndLoad = false;
+    }
+    if (is_need_rebuild && !isInitAndLoad)
+        return false;
+    return true;
+}
+
+bool SuffixMatchMiningTask::postProcess()
+{
+    if (is_need_rebuild && !new_fmi_manager->buildCollectionAfter())
+        return false;
+
+    std::vector<FilterManager::StrFilterItemMapT> group_filter_map;
+    std::vector<FilterManager::StrFilterItemMapT> attr_filter_map;
+    std::vector<FilterManager::NumFilterItemMapT> num_filter_map;
+    std::vector<FilterManager::NumFilterItemMapT> date_filter_map;
+    size_t last_docid = fmi_ ? fmi_->docCount() : 0;
     uint32_t max_group_docid = 0;
     uint32_t max_attr_docid = 0;
     if (last_docid)
@@ -119,24 +139,7 @@ bool SuffixMatchMiningTask::preProcess()
     std::vector<FilterManager::NumFilterItemMapT>().swap(num_filter_map);
 
     LOG(INFO) << "building filter data finished";
-    bool isInitAndLoad = true;
-    if (!is_need_rebuild)
-        return true;
-    if(!new_fmi_manager->initAndLoadOldDocs(fmi_.get()))
-    {
-        LOG(ERROR) << "fmindex init building failed, must stop. ";
-        new_fmi_manager->clearFMIData();
-        isInitAndLoad = false;
-    }
-    if (is_need_rebuild && !isInitAndLoad)
-        return false;
-    return true;
-}
 
-bool SuffixMatchMiningTask::postProcess()
-{
-    if (is_need_rebuild && !new_fmi_manager->buildCollectionAfter())
-        return false;
     new_fmi_manager->buildLessDVProperties();
     new_fmi_manager->buildExternalFilter();
     {
