@@ -131,6 +131,7 @@ void FilterManager::buildGroupFilterData(
     std::vector<GroupNode*> property_root_nodes;
     for (size_t j = 0; j < property_list.size(); ++j)
     {
+        uint32_t last_docid_forproperty = last_docid;
         const std::string& property = property_list[j];
         size_t prop_id = prop_id_map_.size();
         prop_id_map_[property] = prop_id;
@@ -145,6 +146,13 @@ void FilterManager::buildGroupFilterData(
             LOG(INFO) << "property: " << property_list[j] << " not in group manager!";
             continue;
         }
+        if (groupManager_->isRebuildProp_(property))
+        {
+            LOG(INFO) << "clear old group data to rebuild filter data for property: " << property;
+            group_filter_data[j].clear();
+            last_docid_forproperty = 0;
+        }
+
         for (uint32_t docid = 1; docid <= max_docid; ++docid)
         {
             faceted::PropValueTable::PropIdList propids;
@@ -167,7 +175,7 @@ void FilterManager::buildGroupFilterData(
                     curgroup = curgroup->getChild(groupstr);
                     assert(curgroup);
                 }
-                if (docid <= last_docid) continue;
+                if (docid <= last_docid_forproperty) continue;
                 group_filter_data[j][groupstr].push_back(docid);
             }
         }

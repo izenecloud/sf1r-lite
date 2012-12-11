@@ -182,7 +182,6 @@ void FMIndexManager::appendDocs(size_t last_docid)
         
     }
     LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
-    // load distinct value for less_distinct property.
 }
 
 void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)

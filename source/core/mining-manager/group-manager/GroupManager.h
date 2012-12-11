@@ -92,6 +92,8 @@ public:
         return NULL;
     }
 
+    bool isRebuildProp_(const std::string& propName) const;
+
 private:
     bool createPropValueTable_(const std::string& propName);
     bool createDateGroupTable_(const std::string& propName);
@@ -108,8 +110,6 @@ private:
             docid_t docId,
             const std::string& propName,
             DateGroupTable& dateTable);
-
-    bool isRebuildProp_(const std::string& propName) const;
 
 private:
     const GroupConfigMap& groupConfigMap_;

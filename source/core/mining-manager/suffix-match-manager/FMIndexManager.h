@@ -114,8 +114,6 @@ private:
     typedef std::map<std::string, PropertyFMIndex>::iterator FMIndexIter;
     typedef std::map<std::string, PropertyFMIndex>::const_iterator FMIndexConstIter;
     FMDocArrayMgrType  docarray_mgr_;
-public:
-    inline std::map<std::string, PropertyFMIndex>& getFMIndexPropertyMap() { return all_fmi_; };
 };
 
 }
