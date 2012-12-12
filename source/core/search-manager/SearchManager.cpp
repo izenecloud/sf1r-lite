@@ -149,8 +149,12 @@ bool SearchManager::rerank(
 
 void SearchManager::reset_all_property_cache()
 {
-    queryBuilder_->reset_cache();
     pSorterCache_->setDirty(true);
+}
+
+void SearchManager::reset_filter_cache()
+{
+    queryBuilder_->reset_cache();
 }
 
 void SearchManager::setGroupFilterBuilder(faceted::GroupFilterBuilder* builder)

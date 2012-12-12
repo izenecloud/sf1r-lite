@@ -105,6 +105,8 @@ public:
 
     void reset_all_property_cache();
 
+    void reset_filter_cache();
+
     void set_filter_hook(filter_hook_t filter_hook)
     {
         filter_hook_ = filter_hook;
