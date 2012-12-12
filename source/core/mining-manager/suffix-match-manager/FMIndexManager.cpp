@@ -151,21 +151,27 @@ bool FMIndexManager::loadAll()
 
 void FMIndexManager::swapUnchangedFilter(FMIndexManager* old_fmi_manager)
 {
-    FMIndexIter it = all_fmi_.begin();
-    FMIndexIter old_it = old_fmi_manager->all_fmi_.begin();
-    for(; it != all_fmi_.end() && old_it != old_fmi_manager->all_fmi_.end(); ++it, ++old_it)
+    const std::set<std::string>& unchanged_props = filter_manager_->getUnchangedProperties();
+
+    std::set<std::string>::const_iterator unchanged_cit = unchanged_props.begin();
+    for(; unchanged_cit != unchanged_props.end(); ++unchanged_cit)
     {
-        if(it->second.type != LESS_DV)
-            continue;
-        if(!filter_manager_->isUnchangedProperty(it->first))
-            continue;
-        it->second.fmi.swap(old_it->second.fmi);
-        size_t prop_id = filter_manager_->getPropertyId(it->first);
+        FMIndexIter fmit = all_fmi_.find(*unchanged_cit);
+        if(fmit != all_fmi_.end())
+        {
+            if(fmit->second.type == LESS_DV)
+            {
+                LOG(INFO) << "LESS_DV property fm-index swapped: " << *unchanged_cit;
+                fmit->second.fmi.swap(old_fmi_manager->all_fmi_[*unchanged_cit].fmi);
+            }
+        }
+        size_t prop_id = filter_manager_->getPropertyId(*unchanged_cit);
         if(prop_id == (size_t)-1)
         {
-            LOG(ERROR) << "swap unchanged property failed for non-exist property: " << it->first;
+            LOG(ERROR) << "swap unchanged property failed for non-exist property: " << *unchanged_cit;
             continue;
         }
+        LOG(INFO) << "LESS_DV property doc array swapped: " << *unchanged_cit;
         docarray_mgr_.swapFilterDocArray(prop_id, old_fmi_manager->docarray_mgr_);
     }
 }

@@ -179,6 +179,10 @@ public:
     void swapUnchangedFilter(FilterManager* old_filter);
     void setRebuildFlag(const FilterManager* old_filter = NULL);
     void clearRebuildFlag();
+    inline const std::set<std::string>& getUnchangedProperties() const
+    {
+        return unchanged_prop_list_;
+    }
 
 private:
     typedef std::map<izenelib::util::UString, FilterIdRange> StrIdMapT;
