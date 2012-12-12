@@ -180,15 +180,11 @@ private:
 
     /**
      * combine the @p originDocIterator with the customized doc iterator.
-     * @param query the user query
-     * @param pSorter the Sorter instance, it decides whether need to create
-     *                the customized doc iterator.
      * @return the combined doc iterator instance, it would be just
      *         @p originDocIterator if no customized doc iterator is created.
      */
     DocumentIterator* combineCustomDocIterator_(
-        const std::string& query,
-        boost::shared_ptr<Sorter> pSorter,
+        const KeywordSearchActionItem& actionItem,
         DocumentIterator* originDocIterator);
 
     score_t getFuzzyScoreWeight_() const;
