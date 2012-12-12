@@ -121,6 +121,7 @@ void FilterManager::buildGroupFilterData(
 
     LOG(INFO) << "begin building group filter data.";
 
+    last_docid_list.resize(property_list.size(), 0);
     group_filter_data.resize(property_list.size());
     prop_list_.resize(prop_id_map_.size() + property_list.size());
     strtype_filterids_.resize(prop_list_.size());
@@ -233,6 +234,7 @@ void FilterManager::buildAttrFilterData(
     if (!attrManager_ || property_list.empty())
         return;
 
+    last_docid_list.resize(1, 0);
     uint32_t last_docid = last_docid_list.front();
 
     LOG(INFO) << "begin building attribute filter data.";
