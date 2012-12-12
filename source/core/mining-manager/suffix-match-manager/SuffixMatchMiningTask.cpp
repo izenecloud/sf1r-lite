@@ -106,25 +106,23 @@ bool SuffixMatchMiningTask::postProcess()
     std::vector<FilterManager::NumFilterItemMapT> num_filter_map;
     std::vector<FilterManager::NumFilterItemMapT> date_filter_map;
     size_t last_docid = fmi_ ? fmi_->docCount() : 0;
-    uint32_t max_group_docid = 0;
-    uint32_t max_attr_docid = 0;
+    std::vector<uint32_t> max_group_docid_list;
+    std::vector<uint32_t> max_attr_docid_list;
     if (last_docid)
     {
         LOG(INFO) << "start rebuilding in fm-index";
 
-        max_group_docid = new_filter_manager->loadStrFilterInvertedData(group_property_list_, group_filter_map);
-        max_attr_docid = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
-
+        max_group_docid_list = new_filter_manager->loadStrFilterInvertedData(group_property_list_, group_filter_map);
+        max_attr_docid_list = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
     }
 
-    LOG(INFO) << "building filter data in fm-index, start from:" << max_group_docid;
     std::vector<std::string > number_property_list(number_property_list_.begin(), number_property_list_.end());
 
-    new_filter_manager->buildGroupFilterData(max_group_docid, document_manager_->getMaxDocId(),
+    new_filter_manager->buildGroupFilterData(max_group_docid_list, document_manager_->getMaxDocId(),
                                                  group_property_list_, group_filter_map);
     new_filter_manager->saveStrFilterInvertedData(group_property_list_, group_filter_map);
 
-    new_filter_manager->buildAttrFilterData(max_attr_docid, document_manager_->getMaxDocId(),
+    new_filter_manager->buildAttrFilterData(max_attr_docid_list, document_manager_->getMaxDocId(),
                                                 attr_property_list_, attr_filter_map);
     new_filter_manager->saveStrFilterInvertedData(attr_property_list_, attr_filter_map);
 
