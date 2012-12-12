@@ -13,10 +13,12 @@
 #include <idmlib/util/svm.h>
 #include <util/functional.h>
 #include <util/ClockTimer.h>
+#include <3rdparty/json/json.h>
 using namespace sf1r;
 using namespace idmlib::sim;
 using namespace idmlib::kpe;
 using namespace idmlib::util;
+namespace bfs = boost::filesystem;
 
 
 //#define B5M_DEBUG
@@ -810,38 +812,93 @@ bool ProductMatcher::DoMatch(const std::string& scd_path)
 
 void ProductMatcher::Test(const std::string& scd_path)
 {
-    izenelib::util::ClockTimer clocker;
+    //{
+        //std::ifstream ifs(scd_path.c_str());
+        //ScdWriter writer(".", INSERT_SCD);
+        //std::string line;
+        //while(getline(ifs, line))
+        //{
+            //boost::algorithm::trim(line);
+            //Document doc;
+            //doc.property("DOCID") = UString("00000000000000000000000000000000", UString::UTF_8);
+            //doc.property("Title") = UString(line, UString::UTF_8);
+            //SetUsePriceSim(false);
+            //Product result_product;
+            //Process(doc, result_product);
+            //doc.property("Category") = UString(result_product.scategory, UString::UTF_8);
+            //writer.Append(doc);
+            //std::cerr<<result_product.scategory<<std::endl;
+            
+        //}
+        //writer.Close();
+        //return;
+    //}
+    std::vector<std::pair<std::string, std::string> > process_list;
+    bfs::path d(scd_path);
+    if(!bfs::is_directory(d)) return;
     std::vector<std::string> scd_list;
     B5MHelper::GetIUScdList(scd_path, scd_list);
-    if(scd_list.empty()) return;
-    uint32_t allc = 0;
-    uint32_t correctc = 0;
-    uint32_t allp = 0;
-    uint32_t correctp = 0;
-    //std::ofstream ofs("./brand.txt");
-    //for(uint32_t i=0;i<products_.size();i++)
-    //{
-        //Product& p = products_[i];
-        //std::vector<Attribute>& attributes = p.attributes;
-        //for(uint32_t a=0;a<attributes.size();a++)
+    if(scd_list.size()==1)
+    {
+        process_list.push_back(std::make_pair(d.filename().string(), scd_list.front()));
+    }
+    bfs::path p(scd_path);
+    bfs::directory_iterator end;
+    for(bfs::directory_iterator it(p);it!=end;it++)
+    {
+        bfs::path d = it->path();
+        if(bfs::is_directory(d))
+        {
+            std::string test_dir = d.string();
+            std::string test_name = d.filename().string();
+            scd_list.clear();
+            B5MHelper::GetIUScdList(test_dir, scd_list);
+            if(scd_list.size()==1)
+            {
+                process_list.push_back(std::make_pair(test_name, scd_list.front()));
+            }
+        }
+    }
+    if(process_list.empty()) return;
+    boost::posix_time::ptime now(boost::posix_time::microsec_clock::local_time());
+    std::string ios_str = boost::posix_time::to_iso_string(now);
+    std::string ts;
+    ts += ios_str.substr(0,8);
+    ts += ios_str.substr(9,6);
+    std::string output_dir = path_+"/test_result";
+    boost::filesystem::create_directories(output_dir);
+    std::string output_file = output_dir+"/"+ts+".json";
+    std::ofstream ofs(output_file.c_str());
+    for(uint32_t i=0;i<process_list.size();i++)
+    {
+        izenelib::util::ClockTimer clocker;
+        uint32_t allc = 0;
+        uint32_t correctc = 0;
+        uint32_t allp = 0;
+        uint32_t correctp = 0;
+        //std::ofstream ofs("./brand.txt");
+        //for(uint32_t i=0;i<products_.size();i++)
         //{
-            //Attribute& attribute = attributes[a];
-            //if(attribute.name=="品牌")
+            //Product& p = products_[i];
+            //std::vector<Attribute>& attributes = p.attributes;
+            //for(uint32_t a=0;a<attributes.size();a++)
             //{
-                //std::string value;
-                //for(uint32_t v=0;v<attribute.values.size();v++)
+                //Attribute& attribute = attributes[a];
+                //if(attribute.name=="品牌")
                 //{
-                    //if(!value.empty()) value+="/";
-                    //value+=attribute.values[v];
+                    //std::string value;
+                    //for(uint32_t v=0;v<attribute.values.size();v++)
+                    //{
+                        //if(!value.empty()) value+="/";
+                        //value+=attribute.values[v];
+                    //}
+                    //ofs<<value<<std::endl;
                 //}
-                //ofs<<value<<std::endl;
             //}
         //}
-    //}
-    //ofs.close();
-    for(uint32_t i=0;i<scd_list.size();i++)
-    {
-        std::string scd_file = scd_list[i];
+        //ofs.close();
+        std::string test_name = process_list[i].first;
+        std::string scd_file = process_list[i].second;
         LOG(INFO)<<"Processing "<<scd_file<<std::endl;
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
@@ -861,6 +918,21 @@ void ProductMatcher::Test(const std::string& scd_path)
                 const std::string& property_name = p->first;
                 doc.property(property_name) = p->second;
             }
+            if(doc.hasProperty("Price"))
+            {
+                SetUsePriceSim(true);
+            }
+            else
+            {
+                SetUsePriceSim(false);
+            }
+            bool has_category = false;
+            if(doc.hasProperty("Category"))
+            {
+                has_category = true;
+            }
+            std::string sdocid;
+            doc.getString("DOCID", sdocid);
             std::string ecategory;
             doc.getString("Category", ecategory);
             std::string stitle;
@@ -870,23 +942,52 @@ void ProductMatcher::Test(const std::string& scd_path)
             Product result_product;
             doc.eraseProperty("Category");
             Process(doc, result_product);
-            LOG(INFO)<<"categorized "<<stitle<<","<<result_product.scategory<<std::endl;
-            if(!ecategory.empty()) allc++;
-            if(!result_product.scategory.empty()&&result_product.scategory==ecategory)
+            //LOG(INFO)<<"categorized "<<stitle<<","<<result_product.scategory<<std::endl;
+            if(has_category)
             {
-                correctc++;
+                allc++;
+                if(boost::algorithm::starts_with(result_product.scategory,ecategory))
+                {
+                    correctc++;
+                }
+                else
+                {
+                    LOG(ERROR)<<"category error : "<<sdocid<<","<<stitle<<","<<ecategory<<","<<result_product.scategory<<std::endl;
+                }
             }
-            else
+            if(doc.hasProperty("uuid"))
             {
-                LOG(ERROR)<<"category error : "<<ecategory<<","<<result_product.scategory<<std::endl;
+                allp++;
+                if(result_product.spid==epid) 
+                {
+                    correctp++;
+                }
+                else
+                {
+                    LOG(ERROR)<<"spu error : "<<sdocid<<","<<stitle<<","<<epid<<","<<result_product.spid<<std::endl;
+                }
             }
-            if(!epid.empty()) allp++;
-            if(!result_product.spid.empty()&&result_product.spid==epid) correctp++;
         }
+        double ratioc = (double)correctc/allc;
+        double ratiop = (double)correctp/allp;
+        LOG(INFO)<<"stat : "<<allc<<","<<correctc<<","<<allp<<","<<correctp<<std::endl;
+        double time_used = clocker.elapsed();
+        LOG(INFO)<<"clocker used "<<clocker.elapsed()<<std::endl;
+        Json::Value json_value;
+        json_value["name"] = test_name;
+        json_value["allc"] = Json::Value::UInt(allc);
+        json_value["correctc"] = Json::Value::UInt(correctc);
+        json_value["allp"] = Json::Value::UInt(allp);
+        json_value["correctp"] = Json::Value::UInt(correctp);
+        json_value["ratioc"] = ratioc;
+        json_value["ratiop"] = ratiop;
+        json_value["time"] = time_used;
+        Json::FastWriter writer;
+        std::string str_value = writer.write(json_value);
+        boost::algorithm::trim(str_value);
+        ofs<<str_value<<std::endl;
     }
-    LOG(INFO)<<"stat : "<<allc<<","<<correctc<<","<<allp<<","<<correctp<<std::endl;
-    LOG(INFO)<<"clocker used "<<clocker.elapsed()<<std::endl;
-    
+    ofs.close();
 }
 bool ProductMatcher::GetIsbnAttribute(const Document& doc, std::string& isbn_value)
 {
