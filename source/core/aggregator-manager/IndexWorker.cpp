@@ -2178,7 +2178,7 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
                 idManager_->updateDocIdByDocName(scdDocId, docId);
                 return GENERAL;
             }
-            else if (iter->getIsFilter())
+            else if (iter->getIsFilter() && iter->getType() != STRING_PROPERTY_TYPE)
             {
                 continue;
             }
