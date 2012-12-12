@@ -26,14 +26,14 @@ class RelevanceScorer : public ProductScorer
 {
 public:
     RelevanceScorer(
-        DocumentIterator* scoreDocIterator,
+        DocumentIterator& scoreDocIterator,
         const std::vector<RankQueryProperty>& rankQueryProps,
         const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers);
 
     virtual score_t score(docid_t docId);
 
 private:
-    DocumentIterator* scoreDocIterator_;
+    DocumentIterator& scoreDocIterator_;
 
     const std::vector<RankQueryProperty>& rankQueryProps_;
     const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers_;

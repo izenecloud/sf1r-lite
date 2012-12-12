@@ -18,7 +18,7 @@ const score_t kRelevanceScoreWeight = 0.01;
 }
 
 RelevanceScorer::RelevanceScorer(
-    DocumentIterator* scoreDocIterator,
+    DocumentIterator& scoreDocIterator,
     const std::vector<RankQueryProperty>& rankQueryProps,
     const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers)
     : ProductScorer(kRelevanceScoreWeight)
@@ -30,7 +30,7 @@ RelevanceScorer::RelevanceScorer(
 
 score_t RelevanceScorer::score(docid_t docId)
 {
-    assert(scoreDocIterator_->doc() == docId);
+    assert(scoreDocIterator_.doc() == docId);
 
-    return scoreDocIterator_->score(rankQueryProps_, propRankers_);
+    return scoreDocIterator_.score(rankQueryProps_, propRankers_);
 }
