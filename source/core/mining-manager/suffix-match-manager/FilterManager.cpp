@@ -21,6 +21,7 @@ FilterManager::FilterManager(
     , attrManager_(attr)
     , numericTableBuilder_(builder)
     , data_root_path_(rootpath)
+    , need_rebuild_all_filter_(false)
 {
 }
 
@@ -137,8 +138,15 @@ void FilterManager::buildGroupFilterData(
         prop_id_map_[property] = prop_id;
         prop_list_[prop_id].first = STR_FILTER;
         prop_list_[prop_id].second = property;
+
         group_root->appendChild(UString(property, UString::UTF_8));
         property_root_nodes.push_back(group_root->getChild(UString(property, UString::UTF_8)));
+
+        if(isUnchangedProperty(property))
+        {
+            LOG(INFO) << "the filter property : " << property << " do not need rebuild since no change.";
+            continue;
+        }
 
         faceted::PropValueTable* pvt = groupManager_->getPropValueTable(property);
         if (!pvt)
@@ -249,6 +257,12 @@ void FilterManager::buildAttrFilterData(
     prop_id_map_[property] = prop_id;
     prop_list_[prop_id].first = STR_FILTER;
     prop_list_[prop_id].second = property;
+
+    if(isUnchangedProperty(property))
+    {
+        LOG(INFO) << "the filter property : " << property << " do not need rebuild since no change.";
+        return;
+    }
 
     for (uint32_t docid = last_docid + 1; docid <= max_docid; ++docid)
     {
@@ -518,6 +532,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
         if (!ifs)
         {
             LOG(WARNING) << "the property filter id not found: " << property;
+            need_rebuild_all_filter_ = true;
             continue;
         }
         LOG(INFO) << "loading filter id map for property: " << property;
@@ -527,6 +542,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
         if (prop_id == (size_t)-1)
         {
             LOG(ERROR) << "wrong filter id data. " << endl;
+            need_rebuild_all_filter_ = true;
             continue;
         }
         if (prop_id >= prop_list_.size())
@@ -539,6 +555,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
         if (type < 0 || type >= FILTER_TYPE_COUNT)
         {
             LOG(ERROR) << "wrong filter id data. " << endl;
+            need_rebuild_all_filter_ = true;
             continue;
         }
         prop_list_[prop_id].second = property;
@@ -813,6 +830,60 @@ size_t FilterManager::getMaxPropFilterStrId(size_t prop_id) const
     if(prop_id >= prop_filterstr_text_list_.size())
         return 0;
     return prop_filterstr_text_list_[prop_id].size() - 1;
+}
+
+void FilterManager::addUnchangedProperty(const std::string& property)
+{
+    if(need_rebuild_all_filter_)
+        return;
+    if(groupManager_ && groupManager_->isRebuildProp_(property))
+    {
+        // rebuild property always changed.
+        return;
+    }
+    unchanged_prop_list_.insert(property);
+}
+
+void FilterManager::clearUnchangedProperties()
+{
+    unchanged_prop_list_.clear();
+}
+
+bool FilterManager::isUnchangedProperty(const std::string& property) const
+{
+    return unchanged_prop_list_.find(property) != unchanged_prop_list_.end();
+}
+
+void FilterManager::swapUnchangedFilter(FilterManager* old_filter)
+{
+    std::set<std::string>::const_iterator cit = unchanged_prop_list_.begin();
+    for(; cit != unchanged_prop_list_.end(); ++cit)
+    {
+        size_t prop_id = getPropertyId(*cit);
+        if(prop_id == (size_t)-1)
+        {
+            LOG(ERROR) << "swap filter string id failed for non-exist property: " << *cit;
+            continue;
+        }
+        strtype_filterids_[prop_id].swap(old_filter->strtype_filterids_[prop_id]);
+        prop_filterstr_text_list_[prop_id].swap(old_filter->prop_filterstr_text_list_[prop_id]);
+        LOG(INFO) << "property filter data swapped: " << *cit;
+    }
+}
+
+void FilterManager::setRebuildFlag(const FilterManager* old_filter)
+{
+    if(old_filter == NULL)
+    {
+        need_rebuild_all_filter_ = true;
+        return;
+    }
+    need_rebuild_all_filter_ = old_filter->need_rebuild_all_filter_;
+}
+
+void FilterManager::clearRebuildFlag()
+{
+    need_rebuild_all_filter_ = false;
 }
 
 }

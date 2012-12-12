@@ -635,7 +635,7 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
             {
                 if (is_numeric)
                 {
-                    float filter_num = filtertype.values_[j].get<float>();
+                    double filter_num = filtertype.values_[j].getNumber();
                     LOG(INFO) << "filter num by : " << filter_num;
 
                     switch (filtertype.operation_)
@@ -654,7 +654,7 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
                         {
                             assert(filtertype.values_.size() == 2);
                             if (j >= 1) continue;
-                            float filter_num_2 = filtertype.values_[1].get<float>();
+                            double filter_num_2 = filtertype.values_[1].getNumber();
                             FilterManager::FilterIdRange tmp_range;
                             tmp_range = filter_manager_->getNumFilterIdRangeSmaller(prop_id, std::max(filter_num, filter_num_2));
                             filterid_range = filter_manager_->getNumFilterIdRangeLarger(prop_id, std::min(filter_num, filter_num_2));

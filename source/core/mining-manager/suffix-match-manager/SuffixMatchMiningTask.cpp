@@ -101,6 +101,8 @@ bool SuffixMatchMiningTask::postProcess()
     if (is_need_rebuild && !new_fmi_manager->buildCollectionAfter())
         return false;
 
+    new_filter_manager->setRebuildFlag(filter_manager_.get());
+
     std::vector<FilterManager::StrFilterItemMapT> group_filter_map;
     std::vector<FilterManager::StrFilterItemMapT> attr_filter_map;
     std::vector<FilterManager::NumFilterItemMapT> num_filter_map;
@@ -108,27 +110,43 @@ bool SuffixMatchMiningTask::postProcess()
     size_t last_docid = fmi_ ? fmi_->docCount() : 0;
     std::vector<uint32_t> max_group_docid_list(group_property_list_.size(), 0);
     std::vector<uint32_t> max_attr_docid_list(attr_property_list_.size(), 0);
+    size_t max_docid = document_manager_->getMaxDocId();
     if (last_docid)
     {
         LOG(INFO) << "start rebuilding in fm-index";
 
         max_group_docid_list = new_filter_manager->loadStrFilterInvertedData(group_property_list_, group_filter_map);
         max_attr_docid_list = new_filter_manager->loadStrFilterInvertedData(attr_property_list_, attr_filter_map);
+        if(!is_need_rebuild)
+        {
+            for(size_t i = 0; i < max_group_docid_list.size(); ++i)
+            {
+                if(max_group_docid_list[i] == max_docid)
+                {
+                    new_filter_manager->addUnchangedProperty(group_property_list_[i]);
+                }
+            }
+            for(size_t i = 0; i < max_attr_docid_list.size(); ++i)
+            {
+                if(max_attr_docid_list[i] == max_docid)
+                    new_filter_manager->addUnchangedProperty(attr_property_list_[i]);
+            }
+        }
     }
 
     std::vector<std::string > number_property_list(number_property_list_.begin(), number_property_list_.end());
 
-    new_filter_manager->buildGroupFilterData(max_group_docid_list, document_manager_->getMaxDocId(),
+    new_filter_manager->buildGroupFilterData(max_group_docid_list, max_docid,
                                                  group_property_list_, group_filter_map);
     new_filter_manager->saveStrFilterInvertedData(group_property_list_, group_filter_map);
 
-    new_filter_manager->buildAttrFilterData(max_attr_docid_list, document_manager_->getMaxDocId(),
+    new_filter_manager->buildAttrFilterData(max_attr_docid_list, max_docid,
                                                 attr_property_list_, attr_filter_map);
     new_filter_manager->saveStrFilterInvertedData(attr_property_list_, attr_filter_map);
 
-    new_filter_manager->buildNumericFilterData(0, document_manager_->getMaxDocId(),
+    new_filter_manager->buildNumericFilterData(0, max_docid,
                                                   number_property_list, num_filter_map);
-    new_filter_manager->buildDateFilterData(0, document_manager_->getMaxDocId(),
+    new_filter_manager->buildDateFilterData(0, max_docid,
                                                 date_property_list_, date_filter_map);
         
     new_fmi_manager->setFilterList(new_filter_manager->getFilterList());
@@ -147,9 +165,13 @@ bool SuffixMatchMiningTask::postProcess()
             // no rebuilding, so just take the owner of old data.
             LOG(INFO) << "no rebuild need, just swap data for common properties.";
             new_fmi_manager->swapCommonPropertiesData(fmi_.get());
+            new_fmi_manager->swapUnchangedFilter(fmi_.get());
+            new_filter_manager->swapUnchangedFilter(filter_manager_.get());
+            new_filter_manager->clearUnchangedProperties();
         }
         fmi_.swap(new_fmi_manager);
         filter_manager_.swap(new_filter_manager);
+        filter_manager_->clearRebuildFlag();
         new_fmi_manager.reset();
         new_filter_manager.reset();
     }

@@ -123,6 +123,12 @@ bool FMIndexManager::loadAll()
                 }
             }
         }
+        else
+        {
+            if(fmit->second.type == LESS_DV)
+                filter_manager_->setRebuildFlag();
+            LOG(INFO) << "loading fmindex for property failed: " << fmit->first;
+        }
     }
     try
     {
@@ -141,6 +147,27 @@ bool FMIndexManager::loadAll()
         return false;
     }
     return true;
+}
+
+void FMIndexManager::swapUnchangedFilter(FMIndexManager* old_fmi_manager)
+{
+    FMIndexIter it = all_fmi_.begin();
+    FMIndexIter old_it = old_fmi_manager->all_fmi_.begin();
+    for(; it != all_fmi_.end() && old_it != old_fmi_manager->all_fmi_.end(); ++it, ++old_it)
+    {
+        if(it->second.type != LESS_DV)
+            continue;
+        if(!filter_manager_->isUnchangedProperty(it->first))
+            continue;
+        it->second.fmi.swap(old_it->second.fmi);
+        size_t prop_id = filter_manager_->getPropertyId(it->first);
+        if(prop_id == (size_t)-1)
+        {
+            LOG(ERROR) << "swap unchanged property failed for non-exist property: " << it->first;
+            continue;
+        }
+        docarray_mgr_.swapFilterDocArray(prop_id, old_fmi_manager->docarray_mgr_);
+    }
 }
 
 void FMIndexManager::buildExternalFilter()
@@ -317,6 +344,11 @@ void FMIndexManager::buildLessDVProperties()
         if(prop_id == (size_t)-1)
         {
             LOG(ERROR) << "LESS_DV property not found in filter manager : " << it_start->first;
+            continue;
+        }
+        if(filter_manager_->isUnchangedProperty(it_start->first))
+        {
+            LOG(INFO) << "unchanged property do not need rebuild the fm-index. " << it_start->first;
             continue;
         }
         // read all property distinct string from filter manager.

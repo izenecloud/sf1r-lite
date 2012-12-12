@@ -47,6 +47,7 @@ public:
     void buildExternalFilter();
     void appendDocsAfter(bool failed, const Document& doc);
     bool buildCollectionAfter();
+    void swapUnchangedFilter(FMIndexManager* old_fmi_manager);
 
     void setFilterList(std::vector<std::vector<FMDocArrayMgrType::FilterItemT> > &filter_list);
     bool getFilterRange(size_t filter_index, const RangeT &filter_id_range, RangeT &match_range) const;
