@@ -43,10 +43,10 @@ NumericPropertyTableBuilder* FilterManager::getNumericTableBuilder() const
     return numericTableBuilder_;
 }
 
-uint32_t FilterManager::loadStrFilterInvertedData(const std::vector<std::string>& property_list, std::vector<StrFilterItemMapT>& str_filter_data)
+std::vector<uint32_t> FilterManager::loadStrFilterInvertedData(const std::vector<std::string>& property_list, std::vector<StrFilterItemMapT>& str_filter_data)
 {
     str_filter_data.resize(property_list.size());
-    uint32_t max_docid = 0;
+    std::vector<uint32_t> max_docid_list(property_list.size(), 0);
     for (size_t property_num = 0; property_num < property_list.size(); ++property_num)
     {
         const std::string& property = property_list[property_num];
@@ -68,7 +68,7 @@ uint32_t FilterManager::loadStrFilterInvertedData(const std::vector<std::string>
                 std::vector<uint32_t> docid_list(docid_len);
                 ifs.read((char*)&docid_list[0], sizeof(docid_list[0]) * docid_len);
                 //LOG(INFO) << "filter num: " << i << ", key=" << key << ", docnum: " << docid_len;
-                max_docid = std::max(max_docid, *std::max_element(docid_list.begin(), docid_list.end()));
+                max_docid_list[property_num] = std::max(max_docid_list[property_num], *std::max_element(docid_list.begin(), docid_list.end()));
                 str_filter_data[property_num].insert(std::make_pair(UString(key, UString::UTF_8), docid_list));
             }
         }
@@ -77,7 +77,7 @@ uint32_t FilterManager::loadStrFilterInvertedData(const std::vector<std::string>
             LOG(INFO) << "propterty: " << property << ", no inverted file found!";
         }
     }
-    return max_docid;
+    return max_docid_list;
 }
 
 void FilterManager::saveStrFilterInvertedData(
@@ -113,7 +113,7 @@ void FilterManager::saveStrFilterInvertedData(
 // the last_docid means where the last indexing end for. We just build the
 // inverted data begin from last_docid+1.
 void FilterManager::buildGroupFilterData(
-        uint32_t last_docid, uint32_t max_docid,
+        const std::vector<uint32_t>& last_docid_list, uint32_t max_docid,
         const std::vector<std::string>& property_list,
         std::vector<StrFilterItemMapT>& group_filter_data)
 {
@@ -131,7 +131,7 @@ void FilterManager::buildGroupFilterData(
     std::vector<GroupNode*> property_root_nodes;
     for (size_t j = 0; j < property_list.size(); ++j)
     {
-        uint32_t last_docid_forproperty = last_docid;
+        uint32_t last_docid_forproperty = last_docid_list[j];
         const std::string& property = property_list[j];
         size_t prop_id = prop_id_map_.size();
         prop_id_map_[property] = prop_id;
@@ -152,6 +152,7 @@ void FilterManager::buildGroupFilterData(
             group_filter_data[j].clear();
             last_docid_forproperty = 0;
         }
+        LOG(INFO) << "building filter data, start from:" << last_docid_forproperty << ", property: " << property;
 
         for (uint32_t docid = 1; docid <= max_docid; ++docid)
         {
@@ -225,12 +226,14 @@ void FilterManager::mapGroupFilterToFilterId(
 }
 
 void FilterManager::buildAttrFilterData(
-        uint32_t last_docid, uint32_t max_docid,
+        const std::vector<uint32_t>& last_docid_list, uint32_t max_docid,
         const std::vector<std::string>& property_list,
         std::vector<StrFilterItemMapT>& attr_filter_data)
 {
     if (!attrManager_ || property_list.empty())
         return;
+
+    uint32_t last_docid = last_docid_list.front();
 
     LOG(INFO) << "begin building attribute filter data.";
 

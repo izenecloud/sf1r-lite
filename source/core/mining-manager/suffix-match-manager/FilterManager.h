@@ -119,15 +119,15 @@ public:
             NumericPropertyTableBuilder* numericTableBuilder);
     ~FilterManager();
 
-    uint32_t loadStrFilterInvertedData(const std::vector<std::string>& property, std::vector<StrFilterItemMapT>& str_filter_data);
+    std::vector<uint32_t> loadStrFilterInvertedData(const std::vector<std::string>& property, std::vector<StrFilterItemMapT>& str_filter_data);
     void saveStrFilterInvertedData(const std::vector<std::string>& property, const std::vector<StrFilterItemMapT>& str_filte_data) const;
 
     void buildGroupFilterData(
-            uint32_t last_docid, uint32_t max_docid,
+            const std::vector<uint32_t>& last_docid_list, uint32_t max_docid,
             const std::vector<std::string>& property_list,
             std::vector<StrFilterItemMapT>& group_filter_data);
     void buildAttrFilterData(
-            uint32_t last_docid, uint32_t max_docid,
+            const std::vector<uint32_t>& last_docid_list, uint32_t max_docid,
             const std::vector<std::string>& property_list,
             std::vector<StrFilterItemMapT>& attr_filter_data);
     void buildNumericFilterData(
