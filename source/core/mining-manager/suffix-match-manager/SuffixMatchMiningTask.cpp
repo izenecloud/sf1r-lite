@@ -106,8 +106,8 @@ bool SuffixMatchMiningTask::postProcess()
     std::vector<FilterManager::NumFilterItemMapT> num_filter_map;
     std::vector<FilterManager::NumFilterItemMapT> date_filter_map;
     size_t last_docid = fmi_ ? fmi_->docCount() : 0;
-    std::vector<uint32_t> max_group_docid_list;
-    std::vector<uint32_t> max_attr_docid_list;
+    std::vector<uint32_t> max_group_docid_list(group_property_list_.size(), 0);
+    std::vector<uint32_t> max_attr_docid_list(attr_property_list_.size(), 0);
     if (last_docid)
     {
         LOG(INFO) << "start rebuilding in fm-index";
