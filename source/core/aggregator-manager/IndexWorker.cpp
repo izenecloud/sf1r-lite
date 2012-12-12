@@ -589,7 +589,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     if(!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
     bool ret = updateDoc_(document, indexDocument, oldIndexDocument, timestamp, updateType, true);
-    if (ret)
+    if (ret && (updateType != IndexWorker::RTYPE))
     {
         searchWorker_->clearSearchCache();
         doMining_();
