@@ -1670,7 +1670,6 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
         uint32_t spu_id = result_vector[i].spu_id;
         const Product& p = products_[spu_id];
         double score = result_vector[i].score;
-        if(score<0.5) break;
         if(i>=MAX_CANDIDATE_RESULT&&score<max_score*0.75) break;
         const WeightType& weight = result_vector[i].weight;
         //double paweight = result_vector[i].paweight;
@@ -1683,6 +1682,7 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             match_found = true;
             break;
         }
+        if(score<0.5) break;
     }
     result_vector.resize(i);
     if(result_vector.empty()) return;
