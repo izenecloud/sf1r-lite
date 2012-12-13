@@ -275,6 +275,7 @@ public:
 
     KeywordSearchActionItem()
         : removeDuplicatedDocs_(false)
+        , isRandomRank_(false)
     {
     }
 
@@ -297,6 +298,7 @@ public:
         , paramConstValueMap_(obj.paramConstValueMap_)
         , paramPropertyValueMap_(obj.paramPropertyValueMap_)
         , customRanker_(obj.customRanker_)
+        , isRandomRank_(obj.isRandomRank_)
     {
     }
 
@@ -321,6 +323,7 @@ public:
         paramConstValueMap_ = obj.paramConstValueMap_;
         paramPropertyValueMap_ = obj.paramPropertyValueMap_;
         customRanker_ = obj.customRanker_;
+        isRandomRank_ = obj.isRandomRank_;
 
         return (*this);
     }
@@ -344,7 +347,8 @@ public:
             && strExp_ == obj.strExp_
             && paramConstValueMap_ == obj.paramConstValueMap_
             && paramPropertyValueMap_ == obj.paramPropertyValueMap_
-            && customRanker_ == obj.customRanker_;
+            && customRanker_ == obj.customRanker_
+            && isRandomRank_ == obj.isRandomRank_;
     }
 
     void print(std::ostream& out = std::cout) const
@@ -403,6 +407,9 @@ public:
         {
             ss << "\tParameter : " << siter->first << ", Value : " << siter->second << endl;
         }
+        ss << "------------------------------------------------" << endl;
+
+        ss << "isRandomRank_: " << isRandomRank_ << endl;
         ss << "------------------------------------------------" << endl;
 
         out << ss.str();
@@ -499,15 +506,17 @@ public:
     /// TODO, abandon this, serialization needed for remoted call
     boost::shared_ptr<CustomRanker> customRanker_;
 
+    bool isRandomRank_;
+
     DATA_IO_LOAD_SAVE(KeywordSearchActionItem, & env_ & refinedQueryString_ & collectionName_
              & rankingType_ & searchingMode_ & pageInfo_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
              & displayPropertyList_ & sortPriorityList_ & filteringList_ & counterList_ & rangePropertyName_ & groupParam_
-             & strExp_ & paramConstValueMap_ & paramPropertyValueMap_);
+             & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_);
 
     /// msgpack serializtion
     MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, languageAnalyzerInfo_,
             searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_, counterList_,
-            rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_);
+                   rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_);
 
 private:
     // Log : 2009.09.08
@@ -534,6 +543,7 @@ private:
         ar & strExp_;
         ar & paramConstValueMap_;
         ar & paramPropertyValueMap_;
+        ar & isRandomRank_;
     }
 
 }; // end - class KeywordSearchActionItem

@@ -21,6 +21,7 @@ FilterManager::FilterManager(
     , attrManager_(attr)
     , numericTableBuilder_(builder)
     , data_root_path_(rootpath)
+    , need_rebuild_all_filter_(false)
 {
 }
 
@@ -43,10 +44,10 @@ NumericPropertyTableBuilder* FilterManager::getNumericTableBuilder() const
     return numericTableBuilder_;
 }
 
-uint32_t FilterManager::loadStrFilterInvertedData(const std::vector<std::string>& property_list, std::vector<StrFilterItemMapT>& str_filter_data)
+std::vector<uint32_t> FilterManager::loadStrFilterInvertedData(const std::vector<std::string>& property_list, std::vector<StrFilterItemMapT>& str_filter_data)
 {
     str_filter_data.resize(property_list.size());
-    uint32_t max_docid = 0;
+    std::vector<uint32_t> max_docid_list(property_list.size(), 0);
     for (size_t property_num = 0; property_num < property_list.size(); ++property_num)
     {
         const std::string& property = property_list[property_num];
@@ -68,7 +69,7 @@ uint32_t FilterManager::loadStrFilterInvertedData(const std::vector<std::string>
                 std::vector<uint32_t> docid_list(docid_len);
                 ifs.read((char*)&docid_list[0], sizeof(docid_list[0]) * docid_len);
                 //LOG(INFO) << "filter num: " << i << ", key=" << key << ", docnum: " << docid_len;
-                max_docid = std::max(max_docid, *std::max_element(docid_list.begin(), docid_list.end()));
+                max_docid_list[property_num] = std::max(max_docid_list[property_num], *std::max_element(docid_list.begin(), docid_list.end()));
                 str_filter_data[property_num].insert(std::make_pair(UString(key, UString::UTF_8), docid_list));
             }
         }
@@ -77,7 +78,7 @@ uint32_t FilterManager::loadStrFilterInvertedData(const std::vector<std::string>
             LOG(INFO) << "propterty: " << property << ", no inverted file found!";
         }
     }
-    return max_docid;
+    return max_docid_list;
 }
 
 void FilterManager::saveStrFilterInvertedData(
@@ -113,7 +114,7 @@ void FilterManager::saveStrFilterInvertedData(
 // the last_docid means where the last indexing end for. We just build the
 // inverted data begin from last_docid+1.
 void FilterManager::buildGroupFilterData(
-        uint32_t last_docid, uint32_t max_docid,
+        const std::vector<uint32_t>& last_docid_list, uint32_t max_docid,
         const std::vector<std::string>& property_list,
         std::vector<StrFilterItemMapT>& group_filter_data)
 {
@@ -131,13 +132,21 @@ void FilterManager::buildGroupFilterData(
     std::vector<GroupNode*> property_root_nodes;
     for (size_t j = 0; j < property_list.size(); ++j)
     {
+        uint32_t last_docid_forproperty = last_docid_list[j];
         const std::string& property = property_list[j];
         size_t prop_id = prop_id_map_.size();
         prop_id_map_[property] = prop_id;
         prop_list_[prop_id].first = STR_FILTER;
         prop_list_[prop_id].second = property;
+
         group_root->appendChild(UString(property, UString::UTF_8));
         property_root_nodes.push_back(group_root->getChild(UString(property, UString::UTF_8)));
+
+        if(isUnchangedProperty(property))
+        {
+            LOG(INFO) << "the filter property : " << property << " do not need rebuild since no change.";
+            continue;
+        }
 
         faceted::PropValueTable* pvt = groupManager_->getPropValueTable(property);
         if (!pvt)
@@ -145,6 +154,14 @@ void FilterManager::buildGroupFilterData(
             LOG(INFO) << "property: " << property_list[j] << " not in group manager!";
             continue;
         }
+        if (groupManager_->isRebuildProp_(property))
+        {
+            LOG(INFO) << "clear old group data to rebuild filter data for property: " << property;
+            group_filter_data[j].clear();
+            last_docid_forproperty = 0;
+        }
+        LOG(INFO) << "building filter data, start from:" << last_docid_forproperty << ", property: " << property;
+
         for (uint32_t docid = 1; docid <= max_docid; ++docid)
         {
             faceted::PropValueTable::PropIdList propids;
@@ -167,18 +184,9 @@ void FilterManager::buildGroupFilterData(
                     curgroup = curgroup->getChild(groupstr);
                     assert(curgroup);
                 }
-                if (docid <= last_docid) continue;
+                if (docid <= last_docid_forproperty) continue;
                 group_filter_data[j][groupstr].push_back(docid);
             }
-        }
-        std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
-        prop_filterstr_text_list_[prop_id].reserve(group_filter_data[j].size() + 1);
-
-        prop_filterstr_text_list_[prop_id].push_back(UString(""));
-        for(StrFilterItemMapT::const_iterator filterstr_it = group_filter_data[j].begin();
-            filterstr_it != group_filter_data[j].end(); ++ filterstr_it)
-        {
-            prop_filterstr_text_list_[prop_id].push_back(filterstr_it->first);
         }
         
         // map the group filter string to filter id.
@@ -187,6 +195,17 @@ void FilterManager::buildGroupFilterData(
                 group_filter_data[j],
                 strtype_filterids_[prop_id],
                 filter_list_[prop_id]);
+
+        std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
+        prop_filterstr_text_list_[prop_id].reserve(strtype_filterids_[prop_id].size() + 1);
+
+        prop_filterstr_text_list_[prop_id].push_back(UString(""));
+        for(StrIdMapT::const_iterator filterstr_it = strtype_filterids_[prop_id].begin();
+            filterstr_it != strtype_filterids_[prop_id].end(); ++ filterstr_it)
+        {
+            prop_filterstr_text_list_[prop_id].push_back(filterstr_it->first);
+        }
+
         printNode(property_root_nodes[j], 0, strtype_filterids_[prop_id], filter_list_[prop_id]);
     }
     delete group_root;
@@ -215,12 +234,14 @@ void FilterManager::mapGroupFilterToFilterId(
 }
 
 void FilterManager::buildAttrFilterData(
-        uint32_t last_docid, uint32_t max_docid,
+        const std::vector<uint32_t>& last_docid_list, uint32_t max_docid,
         const std::vector<std::string>& property_list,
         std::vector<StrFilterItemMapT>& attr_filter_data)
 {
     if (!attrManager_ || property_list.empty())
         return;
+
+    uint32_t last_docid = last_docid_list.front();
 
     LOG(INFO) << "begin building attribute filter data.";
 
@@ -237,6 +258,12 @@ void FilterManager::buildAttrFilterData(
     prop_list_[prop_id].first = STR_FILTER;
     prop_list_[prop_id].second = property;
 
+    if(isUnchangedProperty(property))
+    {
+        LOG(INFO) << "the filter property : " << property << " do not need rebuild since no change.";
+        return;
+    }
+
     for (uint32_t docid = last_docid + 1; docid <= max_docid; ++docid)
     {
         faceted::AttrTable::ValueIdList attrvids;
@@ -249,17 +276,18 @@ void FilterManager::buildAttrFilterData(
             attr_filter_data[0][attrstr].push_back(docid);
         }
     }
+    // map the attribute filter string to filter id.
+    mapAttrFilterToFilterId(attr_filter_data[0], strtype_filterids_[prop_id], filter_list_[prop_id]);
+
     std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
-    prop_filterstr_text_list_[prop_id].reserve(attr_filter_data[0].size() + 1);
+    prop_filterstr_text_list_[prop_id].reserve(strtype_filterids_[prop_id].size() + 1);
     prop_filterstr_text_list_[prop_id].push_back(UString(""));
-    for(StrFilterItemMapT::const_iterator filterstr_it = attr_filter_data[0].begin();
-        filterstr_it != attr_filter_data[0].end(); ++ filterstr_it)
+    for(StrIdMapT::const_iterator filterstr_it = strtype_filterids_[prop_id].begin();
+        filterstr_it != strtype_filterids_[prop_id].end(); ++ filterstr_it)
     {
         prop_filterstr_text_list_[prop_id].push_back(filterstr_it->first);
     }
 
-    // map the attribute filter string to filter id.
-    mapAttrFilterToFilterId(attr_filter_data[0], strtype_filterids_[prop_id], filter_list_[prop_id]);
     LOG(INFO) << "finish building attribute filter data.";
 }
 
@@ -446,6 +474,7 @@ void FilterManager::clearFilterId()
     std::vector<std::pair<int, std::string> >().swap(prop_list_);
     StrPropIdVecT().swap(strtype_filterids_);
     NumPropIdVecT().swap(numtype_filterids_);
+    PropFilterStrVecT().swap(prop_filterstr_text_list_);
 }
 
 void FilterManager::saveFilterId()
@@ -503,6 +532,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
         if (!ifs)
         {
             LOG(WARNING) << "the property filter id not found: " << property;
+            need_rebuild_all_filter_ = true;
             continue;
         }
         LOG(INFO) << "loading filter id map for property: " << property;
@@ -512,6 +542,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
         if (prop_id == (size_t)-1)
         {
             LOG(ERROR) << "wrong filter id data. " << endl;
+            need_rebuild_all_filter_ = true;
             continue;
         }
         if (prop_id >= prop_list_.size())
@@ -524,6 +555,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
         if (type < 0 || type >= FILTER_TYPE_COUNT)
         {
             LOG(ERROR) << "wrong filter id data. " << endl;
+            need_rebuild_all_filter_ = true;
             continue;
         }
         prop_list_[prop_id].second = property;
@@ -544,7 +576,7 @@ void FilterManager::loadFilterId(const std::vector<std::string>& property_list)
                 // start from 1. so reserve the first.
                 std::vector<StrFilterKeyT>().swap(prop_filterstr_text_list_[prop_id]);
                 prop_filterstr_text_list_[prop_id].reserve(num + 1);
-                prop_filterstr_text_list_[prop_id].resize(1);
+                prop_filterstr_text_list_[prop_id].push_back(UString(""));
                 for (size_t j = 0; j < num; ++j)
                 {
                     std::string str_key;
@@ -798,6 +830,60 @@ size_t FilterManager::getMaxPropFilterStrId(size_t prop_id) const
     if(prop_id >= prop_filterstr_text_list_.size())
         return 0;
     return prop_filterstr_text_list_[prop_id].size() - 1;
+}
+
+void FilterManager::addUnchangedProperty(const std::string& property)
+{
+    if(need_rebuild_all_filter_)
+        return;
+    if(groupManager_ && groupManager_->isRebuildProp_(property))
+    {
+        // rebuild property always changed.
+        return;
+    }
+    unchanged_prop_list_.insert(property);
+}
+
+void FilterManager::clearUnchangedProperties()
+{
+    unchanged_prop_list_.clear();
+}
+
+bool FilterManager::isUnchangedProperty(const std::string& property) const
+{
+    return unchanged_prop_list_.find(property) != unchanged_prop_list_.end();
+}
+
+void FilterManager::swapUnchangedFilter(FilterManager* old_filter)
+{
+    std::set<std::string>::const_iterator cit = unchanged_prop_list_.begin();
+    for(; cit != unchanged_prop_list_.end(); ++cit)
+    {
+        size_t prop_id = getPropertyId(*cit);
+        if(prop_id == (size_t)-1)
+        {
+            LOG(ERROR) << "swap filter string id failed for non-exist property: " << *cit;
+            continue;
+        }
+        strtype_filterids_[prop_id].swap(old_filter->strtype_filterids_[prop_id]);
+        prop_filterstr_text_list_[prop_id].swap(old_filter->prop_filterstr_text_list_[prop_id]);
+        LOG(INFO) << "property filter data swapped: " << *cit;
+    }
+}
+
+void FilterManager::setRebuildFlag(const FilterManager* old_filter)
+{
+    if(old_filter == NULL)
+    {
+        need_rebuild_all_filter_ = true;
+        return;
+    }
+    need_rebuild_all_filter_ = old_filter->need_rebuild_all_filter_;
+}
+
+void FilterManager::clearRebuildFlag()
+{
+    need_rebuild_all_filter_ = false;
 }
 
 }

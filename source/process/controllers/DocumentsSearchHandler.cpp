@@ -449,6 +449,7 @@ bool DocumentsSearchHandler::parse()
     actionItem_.rankingType_ = searchParser.rankingModel();
     actionItem_.searchingMode_ = searchParser.searchingModeInfo();
     actionItem_.env_.isLogging_ = searchParser.logKeywords();
+    actionItem_.isRandomRank_ = searchParser.isRandomRank();
 
     // filteringParser
     swap(

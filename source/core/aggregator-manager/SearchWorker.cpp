@@ -19,7 +19,9 @@ namespace sf1r
 SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     : bundleConfig_(bundleConfig)
     , recommendSearchService_(NULL)
-    , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_))
+    , searchCache_(new SearchCache(bundleConfig_->searchCacheNum_, 
+                                    bundleConfig_->refreshCacheInterval_,
+                                    bundleConfig_->refreshSearchCache_))
     , pQA_(NULL)
 {
     ///LA can only be got from a pool because it is not thread safe
@@ -224,12 +226,14 @@ void SearchWorker::makeQueryIdentity(
         break;
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
+        identity.properties = item.searchPropertyList_;
         identity.filterInfo = item.filteringList_;
         identity.sortInfo = item.sortPriorityList_;
         identity.strExp = item.strExp_;
         identity.paramConstValueMap = item.paramConstValueMap_;
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
         identity.groupParam = item.groupParam_;
+        identity.isRandomRank = item.isRandomRank_;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -253,6 +257,7 @@ void SearchWorker::makeQueryIdentity(
         identity.paramConstValueMap = item.paramConstValueMap_;
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
         identity.distActionType = distActionType;
+        identity.isRandomRank = item.isRandomRank_;
         std::sort(identity.properties.begin(),
                 identity.properties.end());
         std::sort(identity.counterList.begin(),
@@ -750,11 +755,14 @@ void SearchWorker::reset_all_property_cache()
     searchCache_->clear();
 
     searchManager_->reset_all_property_cache();
+
+    searchManager_->reset_filter_cache();
 }
 
 void SearchWorker::clearSearchCache()
 {
     searchCache_->clear();
+    searchManager_->reset_filter_cache();
 }
 
 }

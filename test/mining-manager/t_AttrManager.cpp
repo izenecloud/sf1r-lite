@@ -4,7 +4,8 @@
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2011-06-23
 ///
-
+#include <mining-manager/MiningTask.h>
+#include <mining-manager/MiningTaskBuilder.h>
 #include <util/ustring/UString.h>
 #include <document-manager/DocumentManager.h>
 #include <document-manager/Document.h>
@@ -120,18 +121,19 @@ class AttrManagerTestFixture
 private:
     set<PropertyConfig, PropertyComp> schema_;
 
-    DocumentManager* documentManager_;
+    boost::shared_ptr<DocumentManager> documentManager_;
     vector<DocInput> docInputVec_;
     vector<unsigned int> docIdList_;
 
     string attrPath_;
     AttrConfig attrConfig_;
     faceted::AttrManager* attrManager_;
+    MiningTaskBuilder* miningTaskBuilder_;
 
 public:
     AttrManagerTestFixture()
-        : documentManager_(NULL)
-        , attrManager_(NULL)
+        : attrManager_(NULL)
+        , miningTaskBuilder_(NULL)
     {
         boost::filesystem::remove_all(TEST_DIR_STR);
         bfs::path dmPath(bfs::path(TEST_DIR_STR) / "dm/");
@@ -139,28 +141,35 @@ public:
         attrPath_ = (bfs::path(TEST_DIR_STR) / "attr").string();
 
         initConfig_();
-
-        documentManager_ = new DocumentManager(
+     
+        boost::shared_ptr<DocumentManager> ret(new DocumentManager(
             dmPath.string(),
             schema_,
             ENCODING_TYPE,
-            2000);
+            2000));
+        documentManager_ = ret;
 
         resetAttrManager();
     }
 
     ~AttrManagerTestFixture()
     {
-        delete documentManager_;
         delete attrManager_;
+        delete miningTaskBuilder_;
     }
 
     void resetAttrManager()
     {
         delete attrManager_;
+        delete miningTaskBuilder_;
 
         attrManager_ = new faceted::AttrManager(attrConfig_, attrPath_, *documentManager_);
         BOOST_CHECK(attrManager_->open());
+
+        miningTaskBuilder_ = new MiningTaskBuilder(documentManager_);
+        BOOST_CHECK(miningTaskBuilder_);
+        MiningTask* miningTask = attrManager_->getAttrMiningTask();
+        miningTaskBuilder_->addTask(miningTask);
     }
 
     void createDocument(int start, int end)
@@ -196,7 +205,9 @@ public:
         }
 
         checkCollection_();
-        BOOST_CHECK(attrManager_->processCollection());
+
+        BOOST_CHECK(miningTaskBuilder_->buildCollection());
+        //BOOST_CHECK(attrManager_->processCollection());
     }
 
     void checkAttrManager()

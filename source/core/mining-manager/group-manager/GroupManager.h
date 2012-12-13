@@ -10,6 +10,7 @@
 
 #include "PropValueTable.h"
 #include "DateGroupTable.h"
+#include "../MiningTask.h"
 #include "../faceted-submanager/ontology_rep.h"
 #include <configuration-manager/GroupConfig.h>
 #include <document-manager/DocumentManager.h>
@@ -32,6 +33,7 @@ public:
         const GroupConfigMap& groupConfigMap,
         DocumentManager& documentManager,
         const std::string& dirPath);
+    ~GroupManager();
 
     /**
      * @brief Open the properties which need group result.
@@ -44,6 +46,11 @@ public:
      * @return true for success, false for failure
      */
     bool processCollection();
+
+    std::vector<MiningTask*>& getGroupMiningTask()
+    {
+        return groupMiningTaskList_;
+    }
 
     const PropValueTable* getPropValueTable(const std::string& propName) const
     {
@@ -85,6 +92,8 @@ public:
         return NULL;
     }
 
+    bool isRebuildProp_(const std::string& propName) const;
+
 private:
     bool createPropValueTable_(const std::string& propName);
     bool createDateGroupTable_(const std::string& propName);
@@ -102,8 +111,6 @@ private:
             const std::string& propName,
             DateGroupTable& dateTable);
 
-    bool isRebuildProp_(const std::string& propName) const;
-
 private:
     const GroupConfigMap& groupConfigMap_;
     DocumentManager& documentManager_;
@@ -112,6 +119,7 @@ private:
 
     StrPropMap strPropMap_;
     DatePropMap datePropMap_;
+    std::vector<MiningTask*> groupMiningTaskList_;
 };
 
 template <class PropTableType>

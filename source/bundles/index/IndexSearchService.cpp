@@ -13,7 +13,9 @@ namespace sf1r
 IndexSearchService::IndexSearchService(IndexBundleConfiguration* config)
     : bundleConfig_(config)
     , searchMerger_(NULL)
-    , searchCache_(new SearchCache(bundleConfig_->masterSearchCacheNum_))
+    , searchCache_(new SearchCache(bundleConfig_->masterSearchCacheNum_,
+                                    bundleConfig_->refreshCacheInterval_,
+                                    bundleConfig_->refreshSearchCache_))
 {
 }
 

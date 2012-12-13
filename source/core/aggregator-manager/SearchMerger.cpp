@@ -188,6 +188,15 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
     if (workerNum == 0)
         return;
 
+    for(size_t workerId = 0; workerId < workerNum; ++workerId)
+    {
+        if(!workerResults.result(workerId).error_.empty())
+        {
+            mergeResult.error_ = workerResults.result(workerId).error_;
+            return;
+        }
+    }
+
     size_t pageCount = mergeResult.count_;
     size_t displayPropertyNum = workerResults.result(0).snippetTextOfDocumentInPage_.size();
     size_t isSummaryOn = workerResults.result(0).rawTextOfSummaryInPage_.size();

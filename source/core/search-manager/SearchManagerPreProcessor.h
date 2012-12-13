@@ -104,18 +104,27 @@ private:
 
     ProductScorer* createProductScorer(
         const KeywordSearchActionItem& actionItem,
-        boost::shared_ptr<Sorter> sorter,
-        DocumentIterator* scoreDocIterator,
-        const std::vector<RankQueryProperty>& rankQueryProps,
-        const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers,
-        faceted::PropSharedLockSet& propSharedLockSet);
-
-    ProductScorer* createProductScorer(
-        const KeywordSearchActionItem& actionItem,
-        boost::shared_ptr<Sorter> sorter,
-        faceted::PropSharedLockSet& propSharedLockSet);
+        faceted::PropSharedLockSet& propSharedLockSet,
+        ProductScorer* relevanceScorer);
 
     bool isProductRanking(const KeywordSearchActionItem& actionItem) const;
+
+    bool isNeedCustomDocIterator(const KeywordSearchActionItem& actionItem) const;
+
+    bool isNeedRerank(const KeywordSearchActionItem& actionItem) const;
+
+public:
+    /**
+     * @return true when @p sortPriorityList_ contains "_rank" property.
+     */
+    static bool hasSortByRankProp(
+        const KeywordSearchActionItem::SortPriorityList& sortPriorityList);
+
+    /**
+     * @return true when @p sortPriorityList_ has only "_rank" property.
+     */
+    static bool isSortByRankProp(
+        const KeywordSearchActionItem::SortPriorityList& sortPriorityList);
 };
 
 } // end of sf1r

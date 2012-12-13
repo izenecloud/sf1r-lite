@@ -95,7 +95,8 @@ public:
             return false;
         STOP_PROFILER( proDocumentCompression )
 
-        return containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::APPEND);
+        bool ret = containerPtr_->put(docId, destPtr.get(), destLen + sizeof(uint32_t), Lux::IO::OVERWRITE);
+        return ret;
     }
 
     bool get(const unsigned int docId, Document& doc)

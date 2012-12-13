@@ -123,6 +123,12 @@ bool FMIndexManager::loadAll()
                 }
             }
         }
+        else
+        {
+            if(fmit->second.type == LESS_DV)
+                filter_manager_->setRebuildFlag();
+            LOG(INFO) << "loading fmindex for property failed: " << fmit->first;
+        }
     }
     try
     {
@@ -141,6 +147,33 @@ bool FMIndexManager::loadAll()
         return false;
     }
     return true;
+}
+
+void FMIndexManager::swapUnchangedFilter(FMIndexManager* old_fmi_manager)
+{
+    const std::set<std::string>& unchanged_props = filter_manager_->getUnchangedProperties();
+
+    std::set<std::string>::const_iterator unchanged_cit = unchanged_props.begin();
+    for(; unchanged_cit != unchanged_props.end(); ++unchanged_cit)
+    {
+        FMIndexIter fmit = all_fmi_.find(*unchanged_cit);
+        if(fmit != all_fmi_.end())
+        {
+            if(fmit->second.type == LESS_DV)
+            {
+                LOG(INFO) << "LESS_DV property fm-index swapped: " << *unchanged_cit;
+                fmit->second.fmi.swap(old_fmi_manager->all_fmi_[*unchanged_cit].fmi);
+            }
+        }
+        size_t prop_id = filter_manager_->getPropertyId(*unchanged_cit);
+        if(prop_id == (size_t)-1)
+        {
+            LOG(ERROR) << "swap unchanged property failed for non-exist property: " << *unchanged_cit;
+            continue;
+        }
+        LOG(INFO) << "LESS_DV property doc array swapped: " << *unchanged_cit;
+        docarray_mgr_.swapFilterDocArray(prop_id, old_fmi_manager->docarray_mgr_);
+    }
 }
 
 void FMIndexManager::buildExternalFilter()
@@ -178,37 +211,44 @@ void FMIndexManager::appendDocs(size_t last_docid)
         {
             failed = true;
         }
-        FMIndexIter it_start = all_fmi_.begin();
-        FMIndexIter it_end = all_fmi_.end();
-        while(it_start != it_end)
+        appendDocsAfter(failed, doc);
+        
+    }
+    LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
+}
+
+void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)
+{
+    FMIndexIter it_start = all_fmi_.begin();
+    FMIndexIter it_end = all_fmi_.end();
+    while(it_start != it_end)
+    {
+        if(it_start->second.type == COMMON)
         {
-            if(it_start->second.type == COMMON)
+            if(failed)
             {
-                if(failed)
+                it_start->second.fmi->addDoc(NULL, 0);
+            }
+            else
+            {
+                const std::string& prop_name = it_start->first;
+                Document::property_const_iterator it = doc.findProperty(prop_name);
+                if (it == doc.propertyEnd())
                 {
                     it_start->second.fmi->addDoc(NULL, 0);
                 }
                 else
                 {
-                    const std::string& prop_name = it_start->first;
-                    Document::property_const_iterator it = doc.findProperty(prop_name);
-                    if (it == doc.propertyEnd())
-                    {
-                        it_start->second.fmi->addDoc(NULL, 0);
-                    }
-                    else
-                    {
-                        izenelib::util::UString text = it->second.get<UString>();
-                        Algorithm<UString>::to_lower(text);
-                        text = Algorithm<UString>::trim(text);
-                        it_start->second.fmi->addDoc(text.data(), text.length());
-                    }
+                    izenelib::util::UString text = it->second.get<UString>();
+                    Algorithm<UString>::to_lower(text);
+                    text = Algorithm<UString>::trim(text);
+                    it_start->second.fmi->addDoc(text.data(), text.length());
                 }
             }
-            ++it_start;
         }
+        ++it_start;
     }
-    LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
+    //LOG(INFO) << "inserted docs: " << document_manager_->getMaxDocId();
 }
 
 void FMIndexManager::reconstructText(const std::string& prop_name,
@@ -312,6 +352,11 @@ void FMIndexManager::buildLessDVProperties()
             LOG(ERROR) << "LESS_DV property not found in filter manager : " << it_start->first;
             continue;
         }
+        if(filter_manager_->isUnchangedProperty(it_start->first))
+        {
+            LOG(INFO) << "unchanged property do not need rebuild the fm-index. " << it_start->first;
+            continue;
+        }
         // read all property distinct string from filter manager.
         size_t max_filterstr_id = filter_manager_->getMaxPropFilterStrId(prop_id);
         for(size_t i = 1; i <= max_filterstr_id; ++i)
@@ -364,6 +409,11 @@ bool FMIndexManager::buildCommonProperties(const FMIndexManager* old_fmi_manager
 
     appendDocs(doc_count_);
 
+    return buildCollectionAfter();
+}
+
+bool FMIndexManager::buildCollectionAfter()
+{
     FMIndexIter it_start = all_fmi_.begin();
     FMIndexIter it_end = all_fmi_.end();
     size_t new_doc_cnt = 0;
@@ -432,6 +482,9 @@ void FMIndexManager::getMatchedDocIdList(
         }
         docarray_mgr_.getMatchedDocIdList(match_filter_index, true, match_ranges,
             max_docs, docid_list, doclen_list);
+        // Since doclen is not available in doc array manager for LESS_DV property,
+        // we need recompute doclen from common property.
+        getDocLenList(docid_list, doclen_list);
     }
     else
     {
@@ -455,6 +508,12 @@ void FMIndexManager::convertMatchRanges(
     }
     if(cit->second.type != LESS_DV || (filter_manager_ == NULL))
         return;
+    if(!cit->second.fmi)
+    {
+        match_ranges.clear();
+        max_match_list.clear();
+        return;
+    }
     std::vector<uint32_t> tmp_docid_list;
     std::vector<size_t> tmp_doclen_list;
     RangeListT converted_match_ranges;
@@ -489,7 +548,7 @@ void FMIndexManager::convertMatchRanges(
             getFilterRange(prop_id, std::make_pair(range.start, range.end), doc_array_filterrange);
             LOG(INFO) << "( id: " << tmp_docid_list[j] << ", converted match range: " << doc_array_filterrange.first <<
                 "-" << doc_array_filterrange.second << ")";
-            if(!converted_match_ranges.empty())
+            if(converted_match_ranges.size() > oldsize)
             {
                 RangeT& prev_range = converted_match_ranges.back();
                 if(doc_array_filterrange.first < prev_range.first)
@@ -523,7 +582,7 @@ size_t FMIndexManager::longestSuffixMatch(
     if(doc_count_ == 0)
         return 0;
     FMIndexConstIter cit = all_fmi_.find(property);
-    if(cit == all_fmi_.end())
+    if(cit == all_fmi_.end() || !cit->second.fmi)
     {
         return 0;
     }
@@ -536,7 +595,7 @@ size_t FMIndexManager::backwardSearch(const std::string& prop, const izenelib::u
         return 0;
 
     FMIndexConstIter cit = all_fmi_.find(prop);
-    if(cit == all_fmi_.end())
+    if(cit == all_fmi_.end() || !cit->second.fmi)
     {
         return 0;
     }
@@ -595,20 +654,29 @@ void FMIndexManager::getTopKDocIdListByFilter(
 
 void FMIndexManager::getDocLenList(const std::vector<uint32_t>& docid_list, std::vector<size_t>& doclen_list) const
 {
-    FMIndexConstIter fmit = all_fmi_.begin();
-    std::vector<size_t> tmp_doclen_list;
-    doclen_list.resize(docid_list.size());
-    for( ; fmit != all_fmi_.end(); ++fmit)
+    // the doclen is total length for common property only.
+    docarray_mgr_.getDocLenList(docid_list, doclen_list);
+}
+
+void FMIndexManager::getLessDVStrLenList(const std::string& property, const std::vector<uint32_t>& dvid_list, std::vector<size_t>& dvlen_list) const
+{
+    dvlen_list.resize(dvid_list.size(), 0);
+    if(doc_count_ == 0)
+        return;
+    FMIndexConstIter cit = all_fmi_.find(property);
+    if(cit == all_fmi_.end() || !cit->second.fmi)
     {
-        if(fmit->second.type != COMMON)
-            continue;
-        fmit->second.fmi->getDocLenList(docid_list, tmp_doclen_list);
-        for(size_t i = 0; i < tmp_doclen_list.size(); ++i)
-        {
-            doclen_list[i] += tmp_doclen_list[i];
-        }
-        std::vector<size_t>().swap(tmp_doclen_list);
+        LOG(INFO) << "get LESS_DV string length failed for not exist property : " << property;
+        return;
     }
+    if(cit->second.type != LESS_DV)
+    {
+        LOG(INFO) << "get LESS_DV string length failed for not LESS_DV property : " << property;
+        return;
+    }
+
+    // for LESS_DV properties, we can use the distinct value id to get the length of the distinct value string.
+    cit->second.fmi->getDocLenList(dvid_list, dvlen_list);
 }
 
 void FMIndexManager::saveAll()
@@ -619,7 +687,8 @@ void FMIndexManager::saveAll()
         std::ofstream ofs;
         ofs.open((data_root_path_ + "/" + fmit->first + ".fm_idx").c_str());
         ofs.write((const char*)&fmit->second.docarray_mgr_index, sizeof(fmit->second.docarray_mgr_index));
-        fmit->second.fmi->save(ofs);
+        if(fmit->second.fmi)
+            fmit->second.fmi->save(ofs);
         ++fmit;
     }
     try

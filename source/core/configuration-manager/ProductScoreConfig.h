@@ -18,6 +18,7 @@ enum ProductScoreType
     POPULARITY_SCORE,
     FUZZY_SCORE,
     DIVERSITY_SCORE,
+    RANDOM_SCORE,
     PRODUCT_SCORE_NUM
 };
 

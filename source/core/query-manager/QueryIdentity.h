@@ -18,6 +18,7 @@ struct QueryIdentity
         : rankingType(RankingType::DefaultTextRanker)
         , start(0)
         , distActionType(0)
+        , isRandomRank(false)
     {
     }
 
@@ -69,6 +70,9 @@ struct QueryIdentity
     /// action type of distributed search
     int8_t distActionType;
 
+    /// @brief whether rank randomly
+    bool isRandomRank;
+
     inline bool operator==(const QueryIdentity& other) const
     {
         return rankingType == other.rankingType
@@ -88,7 +92,8 @@ struct QueryIdentity
             && paramConstValueMap == other.paramConstValueMap
             && paramPropertyValueMap == other.paramPropertyValueMap
             && start == other.start
-            && distActionType == other.distActionType;
+            && distActionType == other.distActionType
+            && isRandomRank == other.isRandomRank;
     }
 
     inline bool operator!=(const QueryIdentity& other) const
@@ -99,7 +104,7 @@ struct QueryIdentity
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
             & properties & counterList & sortInfo & filterInfo & groupParam & removeDuplicatedDocs 
             & rangeProperty & strExp & paramConstValueMap & paramPropertyValueMap & simHash
-            & start & distActionType);
+            & start & distActionType & isRandomRank);
 };
 
 } // namespace sf1r

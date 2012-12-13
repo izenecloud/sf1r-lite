@@ -95,6 +95,10 @@ using driver::Keys;
  *   - @b apply_la (@c Bool = @c true): TODO
  *   - @b use_synonym_extension (@c Bool = @c false): TODO
  *   - @b use_original_keyword (@c Bool = @c false): TODO
+ * - @b is_random_rank (@c Bool = @c false): If true, the search results would
+ *   be randomly ordered.@n
+ *   In order to enable this feature, you need also configure a non-zero weight
+ *   for <ProductRanking><Score type="random"> in collection config file.
  *
  * Example
  * @code
@@ -166,6 +170,7 @@ bool SearchParser::parse(const Value& search)
         return false;
 
     logKeywords_ = asBoolOr(search[Keys::log_keywords], true);
+    isRandomRank_ = asBoolOr(search[Keys::is_random_rank], false);
 
     // properties
     const Value& propertiesNode = search[Keys::in];
@@ -353,7 +358,7 @@ bool SearchParser::parse(const Value& search)
         if (searching_mode.hasKey(Keys::lucky))
         {
             uint32_t lucky = asUint(searching_mode[Keys::lucky]);
-            if (lucky <= 1000)
+            if (lucky <= 100000)
             {
                 searchingModeInfo_.lucky_ = lucky;
             }

@@ -606,7 +606,7 @@ bool DocumentManager::getRawTextOfOneDocument(
 
     if (rawText.empty())
     {
-        DLOG(ERROR)<<"No RawText For This Property. Property Name "<<propertyName<<endl;
+        //DLOG(ERROR)<<"No RawText For This Property. Property Name "<<propertyName<<endl;
         return true;
     }
 
