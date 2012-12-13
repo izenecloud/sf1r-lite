@@ -1883,6 +1883,17 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             mining_schema.tdt_config.perform_tdt_task= true;
         else
             mining_schema.tdt_config.perform_tdt_task= false;
+
+        ticpp::Element* subNode = getUniqChildElement(task_node, "TokenizeDictionary", true);
+        if (subNode)
+        {
+            getAttribute(subNode, "path", property_name);
+            mining_schema.tdt_config.tdt_tokenize_dicpath = property_name;
+        }
+        else
+        {
+            throw XmlConfigParserException("["+property_name+"] used in TDT is missing.");
+        }
     }
 
     task_node = getUniqChildElement(mining_schema_node, "IISE", false);

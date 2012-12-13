@@ -487,7 +487,10 @@ bool MiningManager::open()
                     return false;
                 }
             }
-            topicDetector_ = new NaiveTopicDetector(mining_schema_.tdt_config.tdt_tokenize_dicpath);
+            boost::filesystem::path cma_tdt_dic(system_resource_path_);
+            cma_tdt_dic /= boost::filesystem::path("dict");
+            cma_tdt_dic /= boost::filesystem::path(mining_schema_.tdt_config.tdt_tokenize_dicpath);
+            topicDetector_ = new NaiveTopicDetector(cma_tdt_dic.c_str());
         }
 
 

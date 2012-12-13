@@ -10,6 +10,9 @@ class Analyzer;
 class Knowledge;
 class OpenCC;
 }
+namespace izenelib{namespace am{namespace succinct{namespace ux{
+class Trie;
+}}}}
 
 namespace sf1r
 {
@@ -28,6 +31,8 @@ private:
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
     cma::OpenCC* opencc_;
+
+    izenelib::am::succinct::ux::Trie* trie_;
 };
 }
 
