@@ -391,6 +391,8 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         {
             LOG(ERROR) << "unknown filter mode.";
         }
+        LOG(INFO) << "topk finished in property : " << search_property;
+        size_t oldsize = res_list_map.size();
         for(size_t i = 0; i < single_res_list.size(); ++i)
         {
             std::map<uint32_t, double>::iterator res_it = res_list_map.find(single_res_list[i].second);
@@ -411,6 +413,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         }
         std::vector<std::pair<size_t, size_t> >().swap(match_ranges_list);
         std::vector<double>().swap(max_match_list);
+        LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
     }
 
     res_list.reserve(res_list_map.size());
@@ -422,6 +425,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
     if(res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
+    LOG(INFO) << "all property fuzzy search finished";
     return total_match;
 }
 
