@@ -40,6 +40,7 @@ public:
 
         Document doc;
         int type;
+        Document edoc;
 
         bool empty() const
         {
@@ -50,6 +51,7 @@ public:
         {
             std::swap(type, other.type);
             doc.swap(other.doc);
+            edoc.swap(other.edoc);
         }
 
         //ValueType& operator+=(const ValueType& value)
