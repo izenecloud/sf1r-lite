@@ -129,10 +129,6 @@ private:
 
     bool createInsertDocId_(const uint128_t& scdDocId, docid_t& newId);
 
-    void logCreatedDocToLogServer(const SCDDoc& scdDoc);
-
-    bool fetchSCDFromLogServer(const std::string& scdPath);
-
     bool deleteSCD_(ScdParser& parser, time_t timestamp);
 
     bool insertDoc_(
@@ -245,6 +241,8 @@ private:
     bool recoverSCD_();
 
     static void value2SCDDoc(const ::izenelib::driver::Value& value, SCDDoc& scddoc);
+
+    static void document2SCDDoc(const Document& document, SCDDoc& scddoc);
 
     /**
      * notify to clear cache on master.

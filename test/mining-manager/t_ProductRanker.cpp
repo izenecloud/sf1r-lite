@@ -47,4 +47,22 @@ BOOST_AUTO_TEST_CASE(testAllFactors)
     checkTopKScore(       "12.1  1.2  0.1  0.3  0.4  0.6  0.5  0.7  0.9  0.8");
 }
 
+BOOST_AUTO_TEST_CASE(testRandomScore)
+{
+    BOOST_TEST_MESSAGE("test random score");
+
+    configRandomScore();
+
+    setDocId(             "1     2    3    4    5    6    7    8    9");
+    setTopKScore(         "12.1  1.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9");
+
+    rank();
+
+    int equalNum = 2;
+    checkDocId(           "1     2    3    4    5    6    7    8    9",
+                          equalNum);
+    checkTopKScore(       "12.1  1.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9",
+                          equalNum);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

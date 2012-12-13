@@ -164,15 +164,15 @@
                 <xs:element name="Parameter" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="1" maxOccurs="2"/>
+                            <xs:element name="CollectionDataDirectory" type="CollectionDataDirectoryType" minOccurs="0" maxOccurs="2"/>
                             <xs:element name="DocumentMiningPara" type="DocumentMiningParaType" minOccurs="0"/>
-                            <xs:element name="TaxonomyPara" type="TaxonomyParaType" minOccurs="1"/>
-                            <xs:element name="AutofillPara" type="AutofillParaType" minOccurs="1"/>
-                            <xs:element name="RecommendPara" type="RecommendParaType" minOccurs="1"/>
-                            <xs:element name="SimilarityPara" type="SimilarityParaType" minOccurs="1"/>
-                            <xs:element name="ClassificationPara" type="ClassificationParaType" minOccurs="1"/>
-                            <xs:element name="IsePara" type="IseParaType" minOccurs="1"/>
-                            <xs:element name="QueryCorrectionPara" type="QueryCorrectionParaType" minOccurs="1"/>
+                            <xs:element name="TaxonomyPara" type="TaxonomyParaType" minOccurs="0"/>
+                            <xs:element name="AutofillPara" type="AutofillParaType" minOccurs="0"/>
+                            <xs:element name="RecommendPara" type="RecommendParaType" minOccurs="0"/>
+                            <xs:element name="SimilarityPara" type="SimilarityParaType" minOccurs="0"/>
+                            <xs:element name="ClassificationPara" type="ClassificationParaType" minOccurs="0"/>
+                            <xs:element name="IsePara" type="IseParaType" minOccurs="0"/>
+                            <xs:element name="QueryCorrectionPara" type="QueryCorrectionParaType" minOccurs="0"/>
                             <xs:element name="ProductRankingPara" type="ProductRankingParaType" minOccurs="0"/>
                         </xs:sequence>
                     </xs:complexType>

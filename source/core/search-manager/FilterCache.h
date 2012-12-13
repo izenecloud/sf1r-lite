@@ -1,7 +1,7 @@
 #ifndef CORE_SEARCH_MANAGER_FILTER_CACHE_H
 #define CORE_SEARCH_MANAGER_FILTER_CACHE_H
 /**
- * @file core/search-manager/SearchCache.h
+ * @file core/search-manager/FilterCache.h
  * @author Yingfeng
  * @date Created <2010-04-09 16:12:00>
  */

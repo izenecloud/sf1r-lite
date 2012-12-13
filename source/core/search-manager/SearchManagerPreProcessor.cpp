@@ -4,7 +4,6 @@
 #include "DocumentIterator.h"
 #include <ranking-manager/RankQueryProperty.h>
 #include <ranking-manager/PropertyRanker.h>
-#include <mining-manager/product-scorer/RelevanceScorer.h>
 #include <mining-manager/product-scorer/ProductScorerFactory.h>
 #include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <mining-manager/MiningManager.h>
@@ -19,37 +18,6 @@ using namespace sf1r;
 const std::string RANK_PROPERTY("_rank");
 const std::string DATE_PROPERTY("date");
 const std::string CUSTOM_RANK_PROPERTY("custom_rank");
-
-namespace
-{
-
-bool isNeedScore(
-    DocumentIterator* scoreDocIterator,
-    boost::shared_ptr<Sorter> sorter)
-{
-    return scoreDocIterator &&
-           sorter && sorter->requireScorer();
-}
-
-bool isSortByRankProp(
-    const KeywordSearchActionItem::SortPriorityList& sortPriorityList)
-{
-    if (sortPriorityList.empty())
-        return true;
-
-    for (KeywordSearchActionItem::SortPriorityList::const_iterator it =
-                sortPriorityList.begin(); it != sortPriorityList.end(); ++it)
-    {
-        std::string propName = it->first;
-        boost::to_lower(propName);
-        if (propName == RANK_PROPERTY)
-            return true;
-    }
-
-    return false;
-}
-
-}
 
 SearchManagerPreProcessor::SearchManagerPreProcessor()
     : schemaMap_()
@@ -356,38 +324,21 @@ void SearchManagerPreProcessor::PreparePropertyTermIndex(
 
 ProductScorer* SearchManagerPreProcessor::createProductScorer(
     const KeywordSearchActionItem& actionItem,
-    boost::shared_ptr<Sorter> sorter,
-    DocumentIterator* scoreDocIterator,
-    const std::vector<RankQueryProperty>& rankQueryProps,
-    const std::vector<boost::shared_ptr<PropertyRanker> >& propRankers,
-    faceted::PropSharedLockSet& propSharedLockSet)
+    faceted::PropSharedLockSet& propSharedLockSet,
+    ProductScorer* relevanceScorer)
 {
-    if (!isNeedScore(scoreDocIterator, sorter))
+    std::auto_ptr<ProductScorer> relevanceScorerPtr(relevanceScorer);
+
+    if (!hasSortByRankProp(actionItem.sortPriorityList_))
         return NULL;
 
-    ProductScorer* relevanceScorer = new RelevanceScorer(scoreDocIterator,
-            rankQueryProps,
-            propRankers);
-
     if (!isProductRanking(actionItem))
-        return relevanceScorer;
+        return relevanceScorerPtr.release();
 
     const std::string& query = actionItem.env_.queryString_;
     return productScorerFactory_->createScorer(query,
-            propSharedLockSet,
-            relevanceScorer);
-}
-
-ProductScorer* SearchManagerPreProcessor::createProductScorer(
-    const KeywordSearchActionItem& actionItem,
-    boost::shared_ptr<Sorter> sorter,
-    faceted::PropSharedLockSet& propSharedLockSet)
-{
-    if (!isProductRanking(actionItem))
-        return NULL;
-    const std::string& query = actionItem.env_.queryString_;
-    return productScorerFactory_->createScorer(query,
-            propSharedLockSet, NULL);
+                                               propSharedLockSet,
+                                               relevanceScorerPtr.release());
 }
 
 bool SearchManagerPreProcessor::isProductRanking(
@@ -399,9 +350,44 @@ bool SearchManagerPreProcessor::isProductRanking(
     SearchingMode::SearchingModeType searchMode =
         actionItem.searchingMode_.mode_;
 
-    if (searchMode == SearchingMode::KNN /*||
-        searchMode == SearchingMode::SUFFIX_MATCH*/)
+    if (searchMode == SearchingMode::KNN)
         return false;
 
-    return isSortByRankProp(actionItem.sortPriorityList_);
+    return true;
+}
+
+bool SearchManagerPreProcessor::isNeedCustomDocIterator(
+    const KeywordSearchActionItem& actionItem) const
+{
+    return hasSortByRankProp(actionItem.sortPriorityList_) &&
+        isProductRanking(actionItem);
+}
+
+bool SearchManagerPreProcessor::isNeedRerank(
+    const KeywordSearchActionItem& actionItem) const
+{
+    return isSortByRankProp(actionItem.sortPriorityList_) &&
+        isProductRanking(actionItem);
+}
+
+bool SearchManagerPreProcessor::hasSortByRankProp(
+    const KeywordSearchActionItem::SortPriorityList& sortPriorityList)
+{
+    for (KeywordSearchActionItem::SortPriorityList::const_iterator it =
+             sortPriorityList.begin(); it != sortPriorityList.end(); ++it)
+    {
+        std::string propName = it->first;
+        boost::to_lower(propName);
+        if (propName == RANK_PROPERTY)
+            return true;
+    }
+
+    return false;
+}
+
+bool SearchManagerPreProcessor::isSortByRankProp(
+    const KeywordSearchActionItem::SortPriorityList& sortPriorityList)
+{
+    return sortPriorityList.size() == 1 &&
+        hasSortByRankProp(sortPriorityList);
 }

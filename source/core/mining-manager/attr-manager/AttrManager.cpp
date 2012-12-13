@@ -16,6 +16,7 @@ AttrManager::AttrManager(
     : attrConfig_(attrConfig)
     , dirPath_(dirPath)
     , documentManager_(documentManager)
+    , attrMiningTask_(NULL)
 {
 }
 
@@ -30,7 +31,23 @@ bool AttrManager::open()
     }
 
     LOG(INFO) << "End attr loading";
+    attrMiningTask_ = new AttrMiningTask(documentManager_, attrTable_, dirPath_, attrConfig_);
 
+    if(attrMiningTask_ == NULL)
+    {
+        LOG(INFO)<<"Build AttrMiningTask ERROR"<<endl;
+        return false;
+    }
+
+    try
+    {
+        FSUtil::createDir(dirPath_);//xxx
+    }
+    catch(FileOperationException& e)
+    {
+        LOG(ERROR) << "exception in FSUtil::createDir: " << e.what();
+        return false;
+    }
     return true;
 }
 

@@ -10,6 +10,7 @@
 #include <mining-manager/group-manager/PropSharedLockSet.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/custom-rank-manager/CustomRankManager.h>
+#include <mining-manager/product-scorer/RelevanceScorer.h>
 #include <mining-manager/product-scorer/ProductScorerFactory.h>
 #include <mining-manager/product-ranker/ProductRankerFactory.h>
 #include <mining-manager/product-ranker/ProductRanker.h>
@@ -123,12 +124,13 @@ bool SearchManager::rerank(
 {
     if (productRankerFactory_ &&
             resultItem.topKCustomRankScoreList_.empty() &&
-            preprocessor_->isProductRanking(actionItem))
+            preprocessor_->isNeedRerank(actionItem))
     {
         izenelib::util::ClockTimer timer;
 
         ProductRankParam rankParam(resultItem.topKDocs_,
-                                   resultItem.topKRankScoreList_);
+                                   resultItem.topKRankScoreList_,
+                                   actionItem.isRandomRank_);
 
         boost::scoped_ptr<ProductRanker> productRanker(
             productRankerFactory_->createProductRanker(rankParam));
@@ -147,8 +149,12 @@ bool SearchManager::rerank(
 
 void SearchManager::reset_all_property_cache()
 {
-    queryBuilder_->reset_cache();
     pSorterCache_->setDirty(true);
+}
+
+void SearchManager::reset_filter_cache()
+{
+    queryBuilder_->reset_cache();
 }
 
 void SearchManager::setGroupFilterBuilder(faceted::GroupFilterBuilder* builder)
@@ -599,14 +605,14 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     DocumentIterator* pScoreDocIterator = scoreDocIterPtr.get();
     if (isFilterQuery == false)
     {
-        const std::string& query =
-            actionOperation.actionItem_.env_.queryString_;
-
         pScoreDocIterator = combineCustomDocIterator_(
-                                query, pSorter, scoreDocIterPtr.release());
+            actionOperation.actionItem_, scoreDocIterPtr.release());
 
         if (pScoreDocIterator == NULL)
         {
+            const std::string& query =
+                actionOperation.actionItem_.env_.queryString_;
+
             LOG(INFO) << "empty search result for query [" << query << "]";
             return false;
         }
@@ -722,10 +728,16 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
     std::size_t totalCount;
     sf1r::PropertyRange propertyRange = propertyRange_orig;
 
+    ProductScorer* relevanceScorer = NULL;
+    if (pScoreDocIterator)
+    {
+        relevanceScorer = new RelevanceScorer(*pScoreDocIterator,
+                                              rankQueryProperties,
+                                              propertyRankers);
+    }
+
     ProductScorer* productScorer = preprocessor_->createProductScorer(
-                                       actionOperation.actionItem_, pSorter,
-                                       pScoreDocIterator, rankQueryProperties, propertyRankers,
-                                       propSharedLockSet);
+        actionOperation.actionItem_, propSharedLockSet, relevanceScorer);
 
     ScoreDocEvaluator scoreDocEvaluator(productScorer, customRanker);
 
@@ -903,14 +915,15 @@ void SearchManager::fillSearchInfoWithSortPropertyData_(
 }
 
 DocumentIterator* SearchManager::combineCustomDocIterator_(
-    const std::string& query,
-    boost::shared_ptr<Sorter> pSorter,
+    const KeywordSearchActionItem& actionItem,
     DocumentIterator* originDocIterator)
 {
     if (customRankManager_ &&
-            pSorter && pSorter->requireScorer())
+        preprocessor_->isNeedCustomDocIterator(actionItem))
     {
+        const std::string& query = actionItem.env_.queryString_;
         CustomRankDocId customDocId;
+
         if (!customRankManager_->getCustomValue(query, customDocId) ||
                 customDocId.empty())
         {
@@ -958,21 +971,15 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     }
 
     ProductScorer* productScorer = preprocessor_->createProductScorer(
-                                       actionOperation.actionItem_, pSorter, propSharedLockSet);
+        actionOperation.actionItem_, propSharedLockSet, NULL);
 
-    if(productScorer == NULL && !customRanker)
+    if (productScorer == NULL && !customRanker &&
+       preprocessor_->isSortByRankProp(actionOperation.actionItem_.sortPriorityList_))
     {
-        if(actionOperation.actionItem_.sortPriorityList_.size() == 1)
-        {
-            std::string propName = actionOperation.actionItem_.sortPriorityList_.begin()->first;
-            boost::to_lower(propName);
-            if (propName == "_rank")
-            {
-                LOG(INFO) << "no need to resort, sorting by original fuzzy match order.";
-                return;
-            }
-        }
+        LOG(INFO) << "no need to resort, sorting by original fuzzy match order.";
+        return;
     }
+
     ScoreDocEvaluator scoreDocEvaluator(productScorer, customRanker);
     const score_t fuzzyScoreWeight = getFuzzyScoreWeight_();
 

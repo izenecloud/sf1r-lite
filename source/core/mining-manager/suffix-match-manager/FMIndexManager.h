@@ -12,7 +12,7 @@ namespace sf1r
 
 class DocumentManager;
 class FilterManager;
-
+class Document;
 class FMIndexManager
 {
 public:
@@ -21,6 +21,7 @@ public:
     typedef FMIndexType::MatchRangeT  RangeT;
     typedef FMIndexType::MatchRangeListT  RangeListT;
     typedef FMDocArrayMgrType::FilterRangeT FilterRangeT;
+
 
     enum PropertyFMType
     {
@@ -44,6 +45,9 @@ public:
     void swapCommonPropertiesData(FMIndexManager* old_fmi_manager);
     void buildLessDVProperties();
     void buildExternalFilter();
+    void appendDocsAfter(bool failed, const Document& doc);
+    bool buildCollectionAfter();
+    void swapUnchangedFilter(FMIndexManager* old_fmi_manager);
 
     void setFilterList(std::vector<std::vector<FMDocArrayMgrType::FilterItemT> > &filter_list);
     bool getFilterRange(size_t filter_index, const RangeT &filter_id_range, RangeT &match_range) const;
@@ -76,12 +80,13 @@ public:
             std::vector<std::pair<double, uint32_t> > &res_list) const;
 
     void getDocLenList(const std::vector<uint32_t>& docid_list, std::vector<size_t>& doclen_list) const;
+    void getLessDVStrLenList(const std::string& property, const std::vector<uint32_t>& dvid_list, std::vector<size_t>& dvlen_list) const;
 
     void saveAll();
     bool loadAll();
 
-private:
     bool initAndLoadOldDocs(const FMIndexManager* old_fmi_manager);
+private:
     void appendDocs(size_t last_docid);
 
     size_t putFMIndexToDocArrayMgr(FMIndexType* fmi);

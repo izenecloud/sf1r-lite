@@ -122,6 +122,18 @@ public:
         return data_;
     }
 
+    double getNumber() const
+    {
+        // get without consider the accuracy loss.
+        if(data_.type() == typeid(int32_t))
+            return boost::get<int32_t>(data_);
+        else if(data_.type() == typeid(int64_t))
+            return boost::get<int64_t>(data_);
+        else if(data_.type() == typeid(float))
+            return boost::get<float>(data_);
+        else
+            return boost::get<double>(data_);
+    }
 
 private:
     variant_type data_;

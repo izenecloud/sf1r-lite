@@ -119,15 +119,15 @@ public:
             NumericPropertyTableBuilder* numericTableBuilder);
     ~FilterManager();
 
-    uint32_t loadStrFilterInvertedData(const std::vector<std::string>& property, std::vector<StrFilterItemMapT>& str_filter_data);
+    std::vector<uint32_t> loadStrFilterInvertedData(const std::vector<std::string>& property, std::vector<StrFilterItemMapT>& str_filter_data);
     void saveStrFilterInvertedData(const std::vector<std::string>& property, const std::vector<StrFilterItemMapT>& str_filte_data) const;
 
     void buildGroupFilterData(
-            uint32_t last_docid, uint32_t max_docid,
+            const std::vector<uint32_t>& last_docid_list, uint32_t max_docid,
             const std::vector<std::string>& property_list,
             std::vector<StrFilterItemMapT>& group_filter_data);
     void buildAttrFilterData(
-            uint32_t last_docid, uint32_t max_docid,
+            const std::vector<uint32_t>& last_docid_list, uint32_t max_docid,
             const std::vector<std::string>& property_list,
             std::vector<StrFilterItemMapT>& attr_filter_data);
     void buildNumericFilterData(
@@ -173,6 +173,16 @@ public:
 
     size_t getPropertyId(const std::string& property) const;
     size_t propertyCount() const;
+    void addUnchangedProperty(const std::string& property);
+    void clearUnchangedProperties();
+    bool isUnchangedProperty(const std::string& property) const;
+    void swapUnchangedFilter(FilterManager* old_filter);
+    void setRebuildFlag(const FilterManager* old_filter = NULL);
+    void clearRebuildFlag();
+    inline const std::set<std::string>& getUnchangedProperties() const
+    {
+        return unchanged_prop_list_;
+    }
 
 private:
     typedef std::map<izenelib::util::UString, FilterIdRange> StrIdMapT;
@@ -253,6 +263,8 @@ private:
 
     std::map<std::string, int32_t> num_amp_map_;
     std::vector<std::vector<FilterDocListT> > filter_list_;
+    std::set<std::string>  unchanged_prop_list_;
+    bool need_rebuild_all_filter_;
 };
 
 }

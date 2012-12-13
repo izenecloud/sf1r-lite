@@ -7,7 +7,7 @@
 
 #ifndef SF1R_GROUP_MANAGER_TEST_FIXTURE_H
 #define SF1R_GROUP_MANAGER_TEST_FIXTURE_H
-
+#include <mining-manager/MiningTask.h>
 #include <mining-manager/group-manager/GroupParam.h>
 #include <mining-manager/group-manager/GroupRep.h>
 #include <configuration-manager/PropertyConfig.h>
@@ -22,6 +22,7 @@ namespace sf1r
 
 class NumericPropertyTableBuilderStub;
 class DocumentManager;
+class MiningTaskBuilder;
 
 namespace faceted
 {
@@ -100,13 +101,15 @@ protected:
     std::vector<std::string> propNames_;
     GroupConfigMap groupConfigMap_;
 
-    DocumentManager* documentManager_;
+    boost::shared_ptr<DocumentManager> documentManager_;
     std::vector<DocInput> docInputVec_;
     std::vector<unsigned int> docIdList_;
 
     std::string groupPath_;
     faceted::GroupManager* groupManager_;
     NumericPropertyTableBuilderStub* numericTableBuilder_;
+
+    MiningTaskBuilder* miningTaskBuilder_;
 };
 
 }

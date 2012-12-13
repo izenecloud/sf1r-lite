@@ -145,20 +145,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 
     indexProgress_.reset();
 
-    // fetch scd from log server if necessary
-    if (bundleConfig_->logCreatedDoc_)
-    {
-        LOG(INFO) << "fetching SCD from LogServer...";
-        try
-        {
-            fetchSCDFromLogServer(scdPath);
-        }
-        catch (const std::exception& e)
-        {
-            LOG(ERROR) << "LogServer " << e.what();
-        }
-    }
-
     ScdParser parser(bundleConfig_->encoding_);
 
     // saves the name of the scd files in the path
@@ -564,87 +550,16 @@ bool IndexWorker::createDocument(const Value& documentValue)
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType))
         return false;
 
+    if(!indexManager_->isRealTime())
+    	indexManager_->setIndexMode("realtime");
+
     bool ret = insertDoc_(document, indexDocument, timestamp, true);
     if (ret)
     {
         doMining_();
     }
 
-    // to log server
-    if (bundleConfig_->logCreatedDoc_)
-    {
-        try
-        {
-            logCreatedDocToLogServer(scddoc);
-        }
-        catch (const std::exception& e)
-        {}
-    }
-
     return ret;
-}
-
-void IndexWorker::logCreatedDocToLogServer(const SCDDoc& scdDoc)
-{
-    // prepare request data
-    std::string docidStr;
-    std::string content;
-
-    std::string propertyValue;
-    for (SCDDoc::const_iterator it = scdDoc.begin(); it != scdDoc.end(); it++)
-    {
-        const std::string& propertyName = it->first;
-        it->second.convertString(propertyValue, bundleConfig_->encoding_);
-        if (boost::iequals(propertyName, DOCID))
-        {
-            docidStr = propertyValue;
-        }
-        else
-        {
-            content += "<" + propertyName + ">" + propertyValue + "\n";
-        }
-    }
-
-    CreateScdDocRequest scdDocReq;
-    try
-    {
-        scdDocReq.param_.docid_ = Utilities::md5ToUint128(docidStr);
-    }
-    catch (const std::exception)
-    {
-        return;
-    }
-
-    scdDocReq.param_.collection_ = bundleConfig_->collectionName_;
-    scdDocReq.param_.content_ = "<DOCID>" + docidStr + "\n" + content;
-    //std::cout << scdDocReq.param_.content_ << std::endl;
-
-    // request to log server
-    LogServerConnection::instance().asynRequest(scdDocReq);
-    LogServerConnection::instance().flushRequests();
-}
-
-bool IndexWorker::fetchSCDFromLogServer(const std::string& scdPath)
-{
-    GetScdFileRequest scdFileReq;
-    scdFileReq.param_.username_ = bundleConfig_->localHostUsername_;
-    scdFileReq.param_.host_ = bundleConfig_->localHostIp_;
-    scdFileReq.param_.path_ = boost::filesystem::absolute(scdPath).string();
-    scdFileReq.param_.collection_ = bundleConfig_->collectionName_;
-
-    GetScdFileResponseData response;
-    LogServerConnection::instance().syncRequest(scdFileReq, response); // timeout?
-
-    if (response.success_)
-    {
-        std::cout << "Successfully fetched SCD: " << response.scdFileName_ << std::endl;
-        return true;
-    }
-    else
-    {
-        std::cout << "Failed to fetch SCD  :  " << response.error_ << std::endl;
-        return false;
-    }
 }
 
 bool IndexWorker::updateDocument(const Value& documentValue)
@@ -657,7 +572,6 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     }
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
-    scd_writer_->Write(scddoc, UPDATE_SCD);
 
     time_t timestamp = Utilities::createTimeStamp();
 
@@ -672,23 +586,21 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
+    if(!indexManager_->isRealTime())
+    	indexManager_->setIndexMode("realtime");
     bool ret = updateDoc_(document, indexDocument, oldIndexDocument, timestamp, updateType, true);
-    if (ret)
+    if (ret && (updateType != IndexWorker::RTYPE))
     {
         searchWorker_->clearSearchCache();
         doMining_();
     }
 
-    // to log server
-    if (bundleConfig_->logCreatedDoc_)
+    if(updateType != IndexWorker::RTYPE)
     {
-        try
-        {
-            logCreatedDocToLogServer(scddoc);
-        }
-        catch (const std::exception& e)
-            {}
+        documentManager_->getRTypePropertiesForDocument(document.getId(),document);
+        document2SCDDoc(document,scddoc);
     }
+    scd_writer_->Write(scddoc, UPDATE_SCD);
 
     return ret;
 }
@@ -2266,7 +2178,7 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
                 idManager_->updateDocIdByDocName(scdDocId, docId);
                 return GENERAL;
             }
-            else if (iter->getIsFilter())
+            else if (iter->getIsFilter() && iter->getType() != STRING_PROPERTY_TYPE)
             {
                 continue;
             }
@@ -2490,6 +2402,28 @@ void IndexWorker::value2SCDDoc(const Value& value, SCDDoc& scddoc)
             asString(it->second),
             izenelib::util::UString::UTF_8
             );
+    }
+}
+
+void IndexWorker::document2SCDDoc(const Document& document, SCDDoc& scddoc)
+{
+    scddoc.resize(document.getPropertySize());
+
+    std::size_t propertyId = 1;
+    Document::property_const_iterator it = document.propertyBegin();
+    for (; it != document.propertyEnd(); ++it,++propertyId)
+    {
+        std::size_t insertto = propertyId;
+        // the first position for SCDDoc must be preserved for the DOCID,
+        const std::string& propertyName = it->first;
+        const izenelib::util::UString& propValue = document.property(it->first).get<izenelib::util::UString>();
+        if (boost::iequals(propertyName, DOCID))
+        {
+            insertto = 0;
+            --propertyId;
+        }
+        scddoc[insertto].first.assign(it->first);
+        scddoc[insertto].second.assign(propValue);
     }
 }
 
