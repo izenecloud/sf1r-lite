@@ -865,7 +865,7 @@ void ProductMatcher::Test(const std::string& scd_path)
     std::string ts;
     ts += ios_str.substr(0,8);
     ts += ios_str.substr(9,6);
-    std::string output_dir = path_+"/test_result";
+    std::string output_dir = "./matcher_test_result";
     boost::filesystem::create_directories(output_dir);
     std::string output_file = output_dir+"/"+ts+".json";
     std::ofstream ofs(output_file.c_str());
