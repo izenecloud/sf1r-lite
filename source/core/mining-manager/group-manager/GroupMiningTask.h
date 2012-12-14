@@ -42,7 +42,7 @@ public:
 
     ~GroupMiningTask() {}
 
-    bool buildDocment(docid_t docID, const Document& doc)
+    bool buildDocument(docid_t docID, const Document& doc)
     {
         if (doc.getId() == 0)
             return true;

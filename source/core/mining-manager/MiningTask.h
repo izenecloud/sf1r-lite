@@ -18,7 +18,7 @@ public:
     MiningTask() {};
     virtual ~MiningTask() {};
 
-    virtual bool buildDocment(docid_t docID, const Document& doc) = 0;
+    virtual bool buildDocument(docid_t docID, const Document& doc) = 0;
 
     virtual bool preProcess() = 0;
 
