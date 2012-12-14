@@ -187,9 +187,9 @@ struct SearchThreadParam
     DistKeywordSearchInfo* distSearchInfo;
     std::map<std::string, unsigned int> counterResults_thread;
     int heapSize;
-    std::size_t docid_start;
-    std::size_t docid_num_byeachthread;
-    std::size_t docid_nextstart_inc;
+    std::size_t thread_id;
+    std::size_t docid_begin;
+    std::size_t docid_end;
     bool  ret;
     int  running_node;
 };
@@ -260,8 +260,13 @@ bool SearchManager::search(
         attrGroupNum = 0;
 
         searchparams.resize(thread_num);
-        // make each thread process 2 separated data will get the most efficient.
-        std::size_t docid_num_byeachthread = maxDocId/thread_num;
+
+        // in order to split the whole docid range [0, maxDocId+1) to N threads,
+        // the average docs num for each thread is (maxDocId+1)/N, after
+        // rounding it up by N, it could be simplified to maxDocId/N + 1,
+        // then the docid range for each thread is [i*avg, (i+1)*avg).
+        std::size_t averageDocNum = maxDocId/thread_num + 1;
+
         for (size_t i = 0; i < thread_num; ++i)
         {
             searchparams[i].actionOperation               =    &actionOperation;
@@ -272,9 +277,9 @@ bool SearchManager::search(
             searchparams[i].scoreItemQueue                =    &scoreItemQueue[i];
             searchparams[i].distSearchInfo                =    &distSearchInfo;
             searchparams[i].heapSize                      =    heapSize;
-            searchparams[i].docid_start                   =    i*docid_num_byeachthread;
-            searchparams[i].docid_num_byeachthread        =    docid_num_byeachthread;
-            searchparams[i].docid_nextstart_inc           =    docid_num_byeachthread*(thread_num - 1);
+            searchparams[i].thread_id                     =    i;
+            searchparams[i].docid_begin                   =    i * averageDocNum;
+            searchparams[i].docid_end                     =    (i+1) * averageDocNum;
             searchparams[i].running_node                  =    running_node;
         }
 
@@ -318,8 +323,7 @@ bool SearchManager::search(
                         counterResults,
                         heapSize,
                         0,
-                        (std::size_t)maxDocId,
-                        (std::size_t)maxDocId) )
+                        maxDocId + 1))
             {
                 return false;
             }
@@ -451,7 +455,7 @@ void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam,
     {
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
-        CPU_SET(s_cpu_topology_info.cpu_topology_array[pParam->running_node][pParam->docid_start/pParam->docid_num_byeachthread], &cpuset);
+        CPU_SET(s_cpu_topology_info.cpu_topology_array[pParam->running_node][pParam->thread_id], &cpuset);
         pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
     }
 
@@ -465,7 +469,7 @@ void SearchManager::doSearchInThreadOneParam(SearchThreadParam* pParam,
                                        pParam->totalCount_thread, pParam->propertyRange, pParam->start,
                                        pParam->pSorter, pParam->customRanker, pParam->groupRep_thread, pParam->attrRep_thread,
                                        *(pParam->scoreItemQueue), *(pParam->distSearchInfo), pParam->counterResults_thread, pParam->heapSize,
-                                       pParam->docid_start, pParam->docid_num_byeachthread, pParam->docid_nextstart_inc);
+                                       pParam->docid_begin, pParam->docid_end);
     }
     ++(*finishedJobs);
     //gettimeofday(&tv_end, NULL);
@@ -491,9 +495,8 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
                                      DistKeywordSearchInfo& distSearchInfo,
                                      std::map<std::string, unsigned int>& counterResults,
                                      int heapSize,
-                                     std::size_t docid_start,
-                                     std::size_t docid_num_byeachthread,
-                                     std::size_t docid_nextstart_inc)
+                                     std::size_t docid_begin,
+                                     std::size_t docid_end)
 {
     CREATE_PROFILER( preparedociter, "SearchManager", "doSearch_: SearchManager_search : build doc iterator");
     CREATE_PROFILER( preparerank, "SearchManager", "doSearch_: prepare ranker");
@@ -753,9 +756,8 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
                        scoreDocEvaluator,
                        scoreItemQueue.get(),
                        counterResults,
-                       docid_start,
-                       docid_num_byeachthread,
-                       docid_nextstart_inc);
+                       docid_begin,
+                       docid_end);
         // for CPU cache missing optimization, parallel searching need
         // to separate all the result containers to get the best performance.
         // That is minimize the access to the memory which is not allocated in
@@ -791,9 +793,8 @@ bool SearchManager::doSearch_(
     ScoreDocEvaluator& scoreDocEvaluator,
     HitQueue* scoreItemQueue,
     std::map<std::string, unsigned>& counterResults,
-    std::size_t docid_start,
-    std::size_t docid_num_byeachthread,
-    std::size_t docid_nextstart_inc)
+    std::size_t docid_begin,
+    std::size_t docid_end)
 {
     CREATE_PROFILER( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
     CREATE_PROFILER( inserttoqueue, "SearchManager", "doSearch_: overall time for inserting to result queue");
@@ -823,14 +824,9 @@ bool SearchManager::doSearch_(
         }
     }
 
-    if(docid_start > 0)
-        pDocIterator->skipTo(docid_start);
-    std::size_t docid_end = docid_start + docid_num_byeachthread;
-
-    while (pDocIterator->next())
+    docid_t curDocId = pDocIterator->skipTo(docid_begin);
+    while (curDocId < docid_end)
     {
-        docid_t curDocId = pDocIterator->doc();
-
         if (groupFilter && !groupFilter->test(curDocId))
             continue;
 
@@ -874,13 +870,10 @@ bool SearchManager::doSearch_(
         scoreItemQueue->insert(scoreItem);
         STOP_PROFILER( inserttoqueue )
 
-        if(curDocId >= docid_end)
-        {
-            docid_start = docid_end + docid_nextstart_inc;
-            if(docid_start > curDocId)
-                pDocIterator->skipTo(docid_start);
-            docid_end = docid_start + docid_num_byeachthread;
-        }
+        if (!pDocIterator->next())
+            break;
+
+        curDocId = pDocIterator->doc();
     }
 
     if (rangePropertyTable && lowValue <= highValue)

@@ -129,9 +129,8 @@ private:
         ScoreDocEvaluator& scoreDocEvaluator,
         HitQueue* scoreItemQueue,
         std::map<std::string, unsigned int>& counterResults,
-        std::size_t docid_start,
-        std::size_t docid_num_byeachthread,
-        std::size_t docid_nextstart_inc);
+        std::size_t docid_begin,
+        std::size_t docid_end);
 
     void doSearchInThreadOneParam(SearchThreadParam* pParam,
                                   boost::detail::atomic_count* finishedJobs);
@@ -148,9 +147,8 @@ private:
                           DistKeywordSearchInfo& distSearchInfo,
                           std::map<std::string, unsigned int>& counterResults,
                           int heapSize,
-                          std::size_t docid_start,
-                          std::size_t docid_num_byeachthread,
-                          std::size_t docid_nextstart_inc);
+                          std::size_t docid_begin,
+                          std::size_t docid_end);
 
     void prepare_sorter_customranker_(
         const SearchKeywordOperation& actionOperation,
