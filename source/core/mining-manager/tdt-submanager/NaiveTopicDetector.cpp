@@ -85,7 +85,7 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
         std::string topic(pattern_sentence.getLexicon(0, i));
         UString topic_ustr(topic, UString::UTF_8);
         LOG(INFO) <<"topic "<<topic<<std::endl;
-        if(topic_ustr.length() > 1)
+        if((topic_ustr.length() > 1)&&(topic_ustr.isAllChineseChar()))
         {
             /*
             std::vector<izenelib::am::succinct::ux::id_t> retIDs;  
