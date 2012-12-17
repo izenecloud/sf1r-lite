@@ -22,6 +22,11 @@ public:
 
     MiningBundleConfiguration* getMiningBundleConfig(){ return bundleConfig_; }
 
+    void incDeletedDocBeforeMining()
+    {
+        miningManager_->incDeletedDocBeforeMining();
+    }
+
 private:
     void cronJob_();
 
