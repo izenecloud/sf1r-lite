@@ -121,34 +121,15 @@ public:
 
 private:
     bool doSearch_(
-        const SearchKeywordOperation& actionOperation,
-        std::size_t& totalCount,
-        sf1r::PropertyRange& propertyRange,
+        SearchThreadParam& pParam,
         CombinedDocumentIterator* pDocIterator,
         faceted::GroupFilter* groupFilter,
-        ScoreDocEvaluator& scoreDocEvaluator,
-        HitQueue* scoreItemQueue,
-        std::map<std::string, unsigned int>& counterResults,
-        std::size_t docid_begin,
-        std::size_t docid_end);
+        ScoreDocEvaluator& scoreDocEvaluator);
 
     void doSearchInThreadOneParam(SearchThreadParam* pParam,
                                   boost::detail::atomic_count* finishedJobs);
 
-    bool doSearchInThread(const SearchKeywordOperation& actionOperation,
-                          std::size_t& totalCount,
-                          sf1r::PropertyRange& propertyRange,
-                          uint32_t start,
-                          boost::shared_ptr<Sorter>& pSorter_orig,
-                          CustomRankerPtr& customRanker_orig,
-                          faceted::GroupRep& groupRep,
-                          faceted::OntologyRep& attrRep,
-                          boost::shared_ptr<HitQueue>& scoreItemQueue,
-                          DistKeywordSearchInfo& distSearchInfo,
-                          std::map<std::string, unsigned int>& counterResults,
-                          int heapSize,
-                          std::size_t docid_begin,
-                          std::size_t docid_end);
+    bool doSearchInThread(SearchThreadParam& pParam);
 
     void prepare_sorter_customranker_(
         const SearchKeywordOperation& actionOperation,
