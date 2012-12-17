@@ -110,8 +110,9 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
                 topics.push_back(std::make_pair(topic,0));
         }
     }
-    std::sort (topics.begin(), topics.end(), SortTopic); 
+    std::sort (topics.begin(), topics.end()); 
     topics.erase( std::unique( topics.begin(), topics.end(), UniqueTopic), topics.end() );
+    std::sort (topics.begin(), topics.end(), SortTopic); 
 
     size_t size = topics.size();
     if(limit > 0 && limit < topics.size()) size = limit;
