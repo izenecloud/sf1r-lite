@@ -278,7 +278,7 @@ private:
         node->node_name_.convertString(str, izenelib::util::UString::UTF_8);
         StrIdMapT::const_iterator cit = filterids.find(node->node_name_);
         assert(cit != filterids.end());
-        std::cout << str << ", id range ( "<< cit->second.start << ","
+        std::cout << str << ", id range ( " << cit->second.start << ","
             << cit->second.end << " ) ";
         if (cit->second.end > cit->second.start)
             std::cout << ", docid size:" << inverted_data[cit->second.start].size() << std::endl;

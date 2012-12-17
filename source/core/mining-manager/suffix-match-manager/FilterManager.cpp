@@ -245,9 +245,36 @@ void FilterManager::buildStringFiltersForDoc(docid_t doc_id, const Document& doc
             continue;
         }
         size_t prop_id = prop_id_map_[property];
+        size_t n = 0, nOld = 0;
         const UString& value = dit->second.get<UString>();
-        str_key_sets_[prop_id].push_back(value);
-        str_filter_map_[i][value].push_back(doc_id);
+        if (value.empty())
+        {
+            continue;
+        }
+        if ((n = value.find((UString::CharT)',', n)) != UString::npos)
+        {
+            do
+            {
+                if (n != nOld)
+                {
+                    UString sub_value = value.substr(nOld, n - nOld);
+                    FilterDocListT& item = str_filter_map_[i][sub_value];
+                    if (item.empty())
+                    {
+                        str_key_sets_[prop_id].push_back(sub_value);
+                    }
+                    item.push_back(doc_id);
+                }
+                n = value.find((UString::CharT)',', ++n);
+            } while (n != UString::npos);
+        }
+        UString sub_value = value.substr(nOld);
+        FilterDocListT& item = str_filter_map_[i][sub_value];
+        if (item.empty())
+        {
+            str_key_sets_[prop_id].push_back(sub_value);
+        }
+        item.push_back(doc_id);
     }
 }
 
