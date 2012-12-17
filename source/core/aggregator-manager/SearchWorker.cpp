@@ -759,17 +759,24 @@ bool SearchWorker::removeDuplicateDocs(
         ResultItemType& resultItem)
 {
     // Remove duplicated docs from the result if the option is on.
-    if (miningManager_)
+    if (miningManager_ &&
+        actionItem.removeDuplicatedDocs_ &&
+        resultItem.topKDocs_.size() != 0)
     {
-      if (actionItem.removeDuplicatedDocs_ && resultItem.topKDocs_.size() != 0)
-      {
-          std::vector<sf1r::docid_t> dupRemovedDocs;
-          bool ret = miningManager_->getUniqueDocIdList(resultItem.topKDocs_, dupRemovedDocs);
-          if ( ret )
-          {
-              resultItem.topKDocs_.swap(dupRemovedDocs);
-          }
-      }
+        std::vector<std::size_t> uniquePosList;
+        if (miningManager_->getUniquePosList(resultItem.topKDocs_,
+                                             uniquePosList))
+        {
+            const std::size_t uniqueNum = uniquePosList.size();
+            for (std::size_t i = 0; i < uniqueNum; ++i)
+            {
+                std::size_t pos = uniquePosList[i];
+                resultItem.topKDocs_[i] = resultItem.topKDocs_[pos];
+                resultItem.topKRankScoreList_[i] = resultItem.topKRankScoreList_[pos];
+            }
+            resultItem.topKDocs_.resize(uniqueNum);
+            resultItem.topKRankScoreList_.resize(uniqueNum);
+        }
     }
     return true;
 }
