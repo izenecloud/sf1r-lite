@@ -1134,13 +1134,25 @@ bool MiningManager::getReminderQuery(
     return true;
 }
 
-bool MiningManager::getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
-                                       std::vector<uint32_t>& cleanDocs)
+bool MiningManager::getUniqueDocIdList(
+    const std::vector<uint32_t>& docIdList,
+    std::vector<uint32_t>& cleanDocs)
 {
     if (!mining_schema_.dupd_enable || !dupManager_)
         return false;
 
     return dupManager_->getUniqueDocIdList(docIdList, cleanDocs);
+
+}
+
+bool MiningManager::getUniquePosList(
+    const std::vector<uint32_t>& docIdList,
+    std::vector<std::size_t>& uniquePosList)
+{
+    if (!mining_schema_.dupd_enable || !dupManager_)
+        return false;
+
+    return dupManager_->getUniquePosList(docIdList, uniquePosList);
 
 }
 

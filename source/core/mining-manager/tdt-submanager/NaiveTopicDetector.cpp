@@ -85,7 +85,7 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
         std::string topic(pattern_sentence.getLexicon(0, i));
         UString topic_ustr(topic, UString::UTF_8);
         LOG(INFO) <<"topic "<<topic<<std::endl;
-        if(topic_ustr.length() > 1)
+        if((topic_ustr.length() > 1)&&(topic_ustr.isAllChineseChar()))
         {
             /*
             std::vector<izenelib::am::succinct::ux::id_t> retIDs;  
@@ -110,8 +110,9 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
                 topics.push_back(std::make_pair(topic,0));
         }
     }
-    std::sort (topics.begin(), topics.end(), SortTopic); 
+    std::sort (topics.begin(), topics.end()); 
     topics.erase( std::unique( topics.begin(), topics.end(), UniqueTopic), topics.end() );
+    std::sort (topics.begin(), topics.end(), SortTopic); 
 
     size_t size = topics.size();
     if(limit > 0 && limit < topics.size()) size = limit;
