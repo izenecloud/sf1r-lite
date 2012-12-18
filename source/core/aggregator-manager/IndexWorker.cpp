@@ -1225,7 +1225,6 @@ void IndexWorker::flushUpdateBuffer_()
         {
             if(documentManager_->insertDocument(updateData.get<1>()))
             {
-                LOG(INFO) << "doc id: " << it->first << " inserted in flush insert.";
                 indexManager_->insertDocument(updateData.get<2>());
                 indexStatus_.numDocs_ = indexManager_->numDocs();
             }
