@@ -44,8 +44,6 @@ public:
 
     bool buildDocument(docid_t docID, const Document& doc)
     {
-        if (doc.getId() == 0)
-            return true;
         izenelib::util::UString propValue;
         doc.getProperty(propValueTable_.propName(), propValue);
         buildDoc_(docID, propValue, propValueTable_);//return
@@ -165,6 +163,7 @@ void GroupMiningTask<PropValueTable>::buildDoc_(
         for (std::vector<vector<izenelib::util::UString> >::const_iterator pathIt = groupPaths.begin();
                 pathIt != groupPaths.end(); ++pathIt)
         {
+
             PropValueTable::pvid_t pvId = propValueTable.insertPropValueId(*pathIt);
             propIdList.push_back(pvId);
         }
