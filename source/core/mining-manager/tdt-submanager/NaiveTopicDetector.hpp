@@ -4,15 +4,14 @@
 #include <string>
 #include <vector>
 
+#include <am/succinct/ux-trie/uxMap.hpp>
+
 namespace cma
 {
 class Analyzer;
 class Knowledge;
 class OpenCC;
 }
-namespace izenelib{namespace am{namespace succinct{namespace ux{
-class Trie;
-}}}}
 
 namespace sf1r
 {
@@ -32,7 +31,8 @@ private:
     cma::Knowledge* knowledge_;
     cma::OpenCC* opencc_;
 
-    izenelib::am::succinct::ux::Trie* trie_;
+    izenelib::am::succinct::ux::Trie* kpe_trie_;
+    izenelib::am::succinct::ux::Map<std::vector<std::string> >* related_map_;	
 };
 }
 

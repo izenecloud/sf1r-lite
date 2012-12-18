@@ -4,7 +4,7 @@
 #include <icma/openccxx.h>
 #include <la-manager/LAPool.h>
 #include <util/ustring/UString.h>
-#include <am/succinct/ux-trie/uxTrie.hpp>
+#include <util/csv.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -55,6 +55,8 @@ NaiveTopicDetector::NaiveTopicDetector(const std::string& dict_path)
     ,analyzer_(NULL)
     ,knowledge_(NULL)
     ,opencc_(NULL)
+    ,kpe_trie_(NULL)
+    ,related_map_(NULL)
 {
     InitCMA_();
 }
@@ -64,7 +66,8 @@ NaiveTopicDetector::~NaiveTopicDetector()
     if (analyzer_) delete analyzer_;
     if (knowledge_) delete knowledge_;
     if (opencc_) delete opencc_;
-    delete trie_;
+    if (kpe_trie_) delete kpe_trie_;
+    if (related_map_) delete related_map_;
 }
 
 bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit)
@@ -78,36 +81,44 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
     if(-1 == ret) simplified_content = lowercase_content;
     Sentence pattern_sentence(simplified_content.c_str());
     analyzer_->runWithSentence(pattern_sentence);
-    LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
+    //LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
     std::vector<std::pair<std::string, double> > topics;
     for (int i = 0; i < pattern_sentence.getCount(0); i++)
     {
         std::string topic(pattern_sentence.getLexicon(0, i));
         UString topic_ustr(topic, UString::UTF_8);
-        LOG(INFO) <<"topic "<<topic<<std::endl;
-        if((topic_ustr.length() > 1)&&(topic_ustr.isAllChineseChar()))
+        //LOG(INFO) <<"topic "<<topic<<std::endl;
+        if(topic_ustr.length() > 1)
         {
-            /*
-            std::vector<izenelib::am::succinct::ux::id_t> retIDs;  
-            // commonPrefixSearch
-            trie_->commonPrefixSearch(topic.c_str(), topic.size(), retIDs);
-            std::cout << "commonPrefixSearch: " << retIDs.size() << " found." << std::endl;
-            for (size_t i = 0; i < retIDs.size(); ++i)
+            izenelib::am::succinct::ux::id_t retID;
+            std::vector<std::string> related_keywords;
+            retID = related_map_->get(topic.c_str(), topic.size(), related_keywords);
+            if(retID == 0)
             {
-                std::cout << trie_->decodeKey(retIDs[i]) << "\t(id=" << retIDs[i] << ")" << std::endl;
+                unsigned score = topic.length() + 1;//higher weight?
+                //LOG(INFO) <<"match related commonlen "<<score<<" related_keywords size "<<related_keywords.size()<<std::endl;
+                topics.push_back(std::make_pair(topic,score));
+                std::vector<std::string>::iterator rit = related_keywords.begin();
+                for(; rit != related_keywords.end(); ++rit)
+                {
+                    //LOG(INFO) <<"related "<<*rit<<std::endl;
+                    topics.push_back(std::make_pair(*rit,score));
+                }
             }
-            topics.push_back(std::make_pair(topic,retIDs.size()));*/
-            size_t retLen;
-            izenelib::am::succinct::ux::id_t retID = trie_->prefixSearch(topic.c_str(), topic.size(), retLen);
-            if(retID != izenelib::am::succinct::ux::NOTFOUND)
+            else if(topic_ustr.isAllChineseChar()) /// All Chinese Char is required for a temporary solution.
             {
-                std::string match = trie_->decodeKey(retID);
-                unsigned commonLen = CommonPrefixLen(topic, match);
-                topics.push_back(std::make_pair(topic,commonLen));
-                LOG(INFO) <<"match "<<match<<" commonlen "<<commonLen<<std::endl;
+                size_t retLen;
+                retID = kpe_trie_->prefixSearch(topic.c_str(), topic.size(), retLen);
+                if(retID != izenelib::am::succinct::ux::NOTFOUND)
+                {
+                    std::string match = kpe_trie_->decodeKey(retID);
+                    unsigned commonLen = CommonPrefixLen(topic, match);
+                    topics.push_back(std::make_pair(topic,commonLen));
+                    //LOG(INFO) <<"match "<<match<<" commonlen "<<commonLen<<std::endl;
+                }
+                else
+                    topics.push_back(std::make_pair(topic,0));
             }
-            else
-                topics.push_back(std::make_pair(topic,0));
         }
     }
     std::sort (topics.begin(), topics.end()); 
@@ -142,13 +153,48 @@ void NaiveTopicDetector::InitCMA_()
 
     LOG(INFO) << "load dictionary for topic detector knowledge finished." << endl;
 
-    trie_ = new izenelib::am::succinct::ux::Trie;
+    kpe_trie_ = new izenelib::am::succinct::ux::Trie;
     std::vector<std::string> keyList;
     boost::filesystem::path kpe_dic(tokenize_dicpath_);
     kpe_dic /= boost::filesystem::path("kpe.txt");
     LOG(INFO) << "kpe dictionary path : " << kpe_dic.c_str() << endl;
     ReadKeyList( kpe_dic.c_str(), keyList);
-    trie_->build(keyList);
+    kpe_trie_->build(keyList);
+
+    related_map_ = new izenelib::am::succinct::ux::Map<std::vector<std::string> >;
+    boost::filesystem::path related_map(tokenize_dicpath_);
+    related_map /= boost::filesystem::path("relatedkeywords.csv");
+    LOG(INFO) << "related keywords dictionary path : " << related_map.c_str() << endl;
+    std::ifstream ifs(related_map.c_str());
+    if (ifs)
+    {
+        izenelib::util::csv_parser c(ifs);
+        izenelib::util::csv_iterator p(c), q;
+        std::map<std::string, std::vector<std::string> > map;
+        for (; p!=q; ++p)
+        {
+            std::vector<std::string> w(p->begin(), p->end());
+            unsigned size = w.size();
+            if(size > 0)
+            {
+                std::string k = w[0];
+                if(!k.empty())
+                {
+                    std::vector<std::string> v;
+                    for(unsigned i = 1; i < size; ++i)
+                    {
+                        std::string vv = w[i];
+                        if(!vv.empty())
+                            v.push_back(vv);
+                    }
+                    map[k] = v;
+                }
+            }
+        }
+        related_map_->build(map);
+    }
+    else
+        LOG(INFO) << "can not open related keywords: " << related_map.c_str() << endl;
 }
 
 }
