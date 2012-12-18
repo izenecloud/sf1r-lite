@@ -48,6 +48,7 @@
 #include "tdt-submanager/NaiveTopicDetector.hpp"
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
+#include "suffix-match-manager/FilterManager.h"
 #include "suffix-match-manager/IncrementalManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
 
@@ -194,10 +195,10 @@ void MiningManager::close()
     MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
     handler->deleteCollection(collectionName_);
 
-    if(deleted_doc_before_mining_ > 0)
+    if (deleted_doc_before_mining_ > 0)
     {
         std::ofstream ofs((collectionDataPath_ + "/deleted_doc_before_mining_.data").c_str());
-        if(ofs)
+        if (ofs)
         {
             ofs.write((const char*)&deleted_doc_before_mining_, sizeof(deleted_doc_before_mining_));
         }
@@ -235,11 +236,11 @@ bool MiningManager::open()
         std::string prefix_path  = collectionDataPath_;
         FSUtil::createDir(prefix_path);
         ifstream ifs_last_mining_file((prefix_path + "/deleted_doc_before_mining_.data").c_str());
-        if(ifs_last_mining_file)
+        if (ifs_last_mining_file)
         {
             ifs_last_mining_file.read((char*)&deleted_doc_before_mining_, sizeof(deleted_doc_before_mining_));
         }
-        
+
         kpe_res_path_ = system_resource_path_+"/kpe";
         rig_path_ = system_resource_path_+"/sim/rig";
         /** analyzer */
@@ -491,7 +492,7 @@ bool MiningManager::open()
         /** tdt **/
         if (mining_schema_.tdt_enable)
         {
-            if(mining_schema_.tdt_config.perform_tdt_task)
+            if (mining_schema_.tdt_config.perform_tdt_task)
             {
                 tdt_path_ = prefix_path + "/tdt";
                 boost::filesystem::create_directories(tdt_path_);
@@ -499,7 +500,7 @@ bool MiningManager::open()
                 tdt_storage_ = new TdtStorageType(tdt_storage_path);
                 if (!tdt_storage_->Open())
                 {
-                    std::cerr<<"tdt init failed"<<std::endl;
+                    LOG(ERROR) << "tdt init failed";
                     return false;
                 }
             }
@@ -538,11 +539,14 @@ bool MiningManager::open()
                     document_manager_, groupManager_, attrManager_, searchManager_.get());
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
+
             // reading suffix config and load filter data here.
-            suffixMatchManager_->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
-            suffixMatchManager_->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
-            suffixMatchManager_->setDateFilterProperties(mining_schema_.suffixmatch_schema.date_filter_properties);
-            const std::vector<NumberFilterConfig>& number_config_list = mining_schema_.suffixmatch_schema.number_filter_properties;
+            boost::shared_ptr<FilterManager>& filter_manager = suffixMatchManager_->getFilterManager();
+            filter_manager->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
+            filter_manager->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
+            filter_manager->setStrFilterProperties(mining_schema_.suffixmatch_schema.str_filter_properties);
+            filter_manager->setDateFilterProperties(mining_schema_.suffixmatch_schema.date_filter_properties);
+            const std::vector<NumericFilterConfig>& number_config_list = mining_schema_.suffixmatch_schema.num_filter_properties;
             std::vector<std::string> number_props;
             number_props.reserve(number_config_list.size());
             std::vector<int32_t> number_amp_list;
@@ -552,14 +556,15 @@ bool MiningManager::open()
                 number_props.push_back(number_config_list[i].property);
                 number_amp_list.push_back(number_config_list[i].amplifier);
             }
-            suffixMatchManager_->setNumericFilterProperties(number_props, number_amp_list);
+            filter_manager->setNumFilterProperties(number_props, number_amp_list);
+            filter_manager->loadFilterId();
 
             if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
             {
                 incrementalManager_ = new IncrementalManager(suffix_match_path_,
-                    mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath, 
-                    mining_schema_.suffixmatch_schema.suffix_match_properties[0], 
-                    document_manager_, idManager_, laManager_, indexSchema_);
+                        mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
+                        mining_schema_.suffixmatch_schema.suffix_match_properties[0],
+                        document_manager_, idManager_, laManager_, indexSchema_);
                 if (incrementalManager_)
                 {
                     incrementalManager_->InitManager_();
@@ -569,11 +574,11 @@ bool MiningManager::open()
 
             if (mining_schema_.suffixmatch_schema.suffix_match_enable)
             {
-                if(mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+                if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
                 {
-                    if(!(suffixMatchManager_->isStartFromLocalFM()))
+                    if (!(suffixMatchManager_->isStartFromLocalFM()))
                     {
-                        LOG(INFO)<<"[] Start suffix init fm-index..."<<endl;
+                        LOG(INFO) << "[] Start suffix init fm-index...";
                         suffixMatchManager_->buildMiningTask();
                         MiningTask* miningTask = suffixMatchManager_->getMiningTask();
                         miningTaskBuilder_->addTask(miningTask);
@@ -589,7 +594,7 @@ bool MiningManager::open()
                         incrementalManager_->getMaxNum(maxDoc);
                         if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
                         {
-                            LOG(INFO)<<"Rebuilding fm-index....."<<endl;
+                            LOG(INFO) << "Rebuilding fm-index.....";
                             suffixMatchManager_->buildMiningTask();
                             MiningTask* miningTask = suffixMatchManager_->getMiningTask();
                             miningTaskBuilder_->addTask(miningTask);
@@ -653,7 +658,7 @@ bool MiningManager::open()
                 {
                     std::string scategory;
                     category.convertString(scategory, UString::UTF_8);
-                    std::cerr<<"!!!!!!!!!!!query category "<<line<<","<<scategory<<std::endl;
+                    LOG(ERROR) << "!!!!!!!!!!!query category " << line << "," << scategory;
                 }
             }
             ifs.close();
@@ -665,7 +670,7 @@ bool MiningManager::open()
         kvManager_ = new KVSubManager(kv_path_);
         if (!kvManager_->open())
         {
-            std::cerr<<"kv manager open fail"<<std::endl;
+            LOG(ERROR) << "kv manager open fail";
             delete kvManager_;
             kvManager_ = NULL;
         }
@@ -1927,7 +1932,7 @@ bool MiningManager::GetSuffixMatch(
     size_t orig_max_docs = max_docs;
     max_docs += deleted_doc_before_mining_;
 
-    if(deleted_doc_before_mining_ > 0)
+    if (deleted_doc_before_mining_ > 0)
         LOG(INFO) << "since last mining, new deleted doc num is :" << deleted_doc_before_mining_;
     if (!use_fuzzy)
     {
@@ -2015,7 +2020,7 @@ bool MiningManager::GetSuffixMatch(
     }
 
     res_list.erase(std::remove_if(res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
-    res_list.resize(min(orig_max_docs, res_list.size()));
+    res_list.resize(std::min(orig_max_docs, res_list.size()));
 
     docIdList.resize(res_list.size());
     rankScoreList.resize(res_list.size());
@@ -2044,10 +2049,10 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
     Document doc;
     doc.property("Title") = query;
     ProductMatcher::Product result_product;
-    if(productMatcher_->Process(doc, result_product))
+    if (productMatcher_->Process(doc, result_product))
     {
         const std::string& category_name = result_product.scategory;
-        if(!category_name.empty())
+        if (!category_name.empty())
         {
             bool valid = true;
             if (!match_category_restrict_.empty())
@@ -2055,7 +2060,7 @@ bool MiningManager::GetProductCategory(const izenelib::util::UString& query, ize
                 valid = false;
                 for (uint32_t i=0;i<match_category_restrict_.size();i++)
                 {
-                    if(boost::regex_match(category_name, match_category_restrict_[i]))
+                    if (boost::regex_match(category_name, match_category_restrict_[i]))
                     {
                         valid = true;
                         break;

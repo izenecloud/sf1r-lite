@@ -26,7 +26,7 @@ bool AttrMiningTask::processCollection_forTest()
     docid_t MaxDocid = documentManager_.getMaxDocId();
     const docid_t startDocId = attrTable_.docIdNum();
     Document doc;
-    
+
     for (uint32_t docid = startDocId; docid <= MaxDocid; ++docid)
     {
         if (docid % 10000 == 0)
@@ -34,7 +34,7 @@ bool AttrMiningTask::processCollection_forTest()
             std::cout << "\rinserting doc id: " << docid << "\t" << std::flush;
         }
         documentManager_.getDocument(docid, doc);
-        buildDocment(docid, doc);
+        buildDocument(docid, doc);
     }
     postProcess();
     return true;
@@ -54,7 +54,7 @@ docid_t AttrMiningTask::getLastDocId()
 
 bool AttrMiningTask::postProcess()
 {
-    const char* propName = attrTable_.propName();  
+    const char* propName = attrTable_.propName();
 
     if (!attrTable_.flush())
     {
@@ -66,7 +66,7 @@ bool AttrMiningTask::postProcess()
     return true;
 }
 
-bool AttrMiningTask::buildDocment(docid_t docID, const Document& doc)
+bool AttrMiningTask::buildDocument(docid_t docID, const Document& doc)
 {
     const std::string propName(attrTable_.propName());
     std::vector<AttrTable::vid_t> valueIdList;

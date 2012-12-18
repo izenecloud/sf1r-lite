@@ -42,7 +42,7 @@ public:
 
     ~GroupMiningTask() {}
 
-    bool buildDocment(docid_t docID, const Document& doc)
+    bool buildDocument(docid_t docID, const Document& doc)
     {
         izenelib::util::UString propValue;
         doc.getProperty(propValueTable_.propName(), propValue);

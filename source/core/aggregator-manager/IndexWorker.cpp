@@ -361,7 +361,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         idManager_->coolDown();
         return false;
     }
-		
+
     indexManager_->getIndexReader();
 
     indexProgress_.getIndexingStatus(indexStatus_);
@@ -1092,7 +1092,7 @@ bool IndexWorker::insertDoc_(
     }
     if (immediately)
         return doInsertDoc_(document, indexDocument);
-	
+
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
     UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
     updateData.get<0>() = INSERT;
@@ -1704,7 +1704,6 @@ bool IndexWorker::prepareIndexDocumentStringProperty_(
                         MultiValueIndexPropertyType indexData =
                             std::make_pair(laInputs_[iter->getPropertyId()], props);
                         indexDocument.insertProperty(indexerPropertyConfig, indexData);
-
                     }
                     else
                     {
