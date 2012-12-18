@@ -68,8 +68,6 @@ bool AttrMiningTask::postProcess()
 
 bool AttrMiningTask::buildDocment(docid_t docID, const Document& doc)
 {
-    if (doc.getId() == 0)
-        return true;
     const std::string propName(attrTable_.propName());
     std::vector<AttrTable::vid_t> valueIdList;
     Document::property_const_iterator it = doc.findProperty(propName);

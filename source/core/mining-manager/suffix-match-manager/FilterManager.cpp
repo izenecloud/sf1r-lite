@@ -161,6 +161,7 @@ void FilterManager::buildGroupFilterData(
             last_docid_forproperty = 0;
         }
         LOG(INFO) << "building filter data, start from:" << last_docid_forproperty << ", property: " << property;
+        LOG(INFO) << "building filter data, end at:" << max_docid;
 
         for (uint32_t docid = 1; docid <= max_docid; ++docid)
         {
