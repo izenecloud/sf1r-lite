@@ -39,7 +39,7 @@ class SuffixMatchMiningTask: public MiningTask
 public:
     SuffixMatchMiningTask(
             boost::shared_ptr<DocumentManager>& document_manager,
-            boost::shared_ptr<FMIndexManager>& fmi,
+            boost::shared_ptr<FMIndexManager>& fmi_manager,
             boost::shared_ptr<FilterManager>& filter_manager,
             std::string data_root_path);
 

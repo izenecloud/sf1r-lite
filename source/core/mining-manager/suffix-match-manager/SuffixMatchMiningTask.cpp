@@ -12,11 +12,11 @@ namespace sf1r
 
 SuffixMatchMiningTask::SuffixMatchMiningTask(
         boost::shared_ptr<DocumentManager>& document_manager,
-        boost::shared_ptr<FMIndexManager>& fmi,
+        boost::shared_ptr<FMIndexManager>& fmi_manager,
         boost::shared_ptr<FilterManager>& filter_manager,
         std::string data_root_path)
     : document_manager_(document_manager)
-    , fmi_manager_(fmi)
+    , fmi_manager_(fmi_manager)
     , filter_manager_(filter_manager)
     , data_root_path_(data_root_path)
 {

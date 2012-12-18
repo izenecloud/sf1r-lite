@@ -32,11 +32,11 @@ bool checkLabelParam(const GroupParam::GroupLabelParam& labelParam, bool& isRang
     if (labelPaths.empty())
         return false;
 
-    const GroupParam::GroupPath& path = labelPaths.front();
+    const GroupParam::GroupPath& path = labelPaths[0];
     if (path.empty())
         return false;
 
-    const std::string& propValue = path.front();
+    const std::string& propValue = path[0];
     std::size_t delimitPos = propValue.find(NUMERIC_RANGE_DELIMITER);
     isRange = (delimitPos != std::string::npos);
 
@@ -466,7 +466,7 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
                 if (is_range)
                 {
                     NumericRange range;
-                    if (!convertRangeLabel(group_values[i].front(), range))
+                    if (!convertRangeLabel(group_values[i][0], range))
                         continue;
                     FilterManager::FilterIdRange tmp_range;
                     tmp_range = filter_manager_->getNumFilterIdRangeLess(prop_id, std::max(range.first, range.second), true);
@@ -477,14 +477,14 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
                 else
                 {
                     float value = 0;
-                    if (!convertNumericLabel(group_values[i].front(), value))
+                    if (!convertNumericLabel(group_values[i][0], value))
                         continue;
                     filterid_range = filter_manager_->getNumFilterIdRangeExact(prop_id, value);
                 }
             }
             else if (is_date)
             {
-                const std::string& propValue = group_values[i].front();
+                const std::string& propValue = group_values[i][0];
                 faceted::DateStrFormat dsf;
                 faceted::DateStrFormat::DateVec date_vec;
                 if (!dsf.apiDateStrToDateVec(propValue, date_vec))

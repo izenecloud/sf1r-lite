@@ -221,6 +221,11 @@ void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid)
         loadStrFilterInvertedData(group_prop_list_, group_filter_map, group_last_docid_list);
         loadStrFilterInvertedData(attr_prop_list_, attr_filter_map, attr_last_docid_list);
     }
+    else
+    {
+        group_last_docid_list.resize(group_prop_list_.size());
+        attr_last_docid_list.resize(attr_prop_list_.size());
+    }
 
     buildGroupFilters(group_last_docid_list, max_docid, group_prop_list_, group_filter_map);
     saveStrFilterInvertedData(group_prop_list_, group_filter_map);
