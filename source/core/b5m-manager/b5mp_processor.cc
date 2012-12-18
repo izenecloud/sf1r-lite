@@ -2,7 +2,6 @@
 #include "log_server_client.h"
 #include "b5m_types.h"
 #include "b5m_helper.h"
-#include "scd_doc_processor.h"
 #include <types.h>
 #include <common/ScdParser.h>
 #include <common/Utilities.h>
@@ -34,6 +33,7 @@ bool B5mpProcessor::Generate()
     std::string b5mo_path = B5MHelper::GetB5moPath(mdb_instance_);
     PairwiseScdMerger merger(b5mo_path);
     odoc_count_ = ScdParser::getScdDocCount(b5mo_path);
+    LOG(INFO)<<"o doc count "<<odoc_count_<<std::endl;
     uint32_t m = odoc_count_/2400000+1;
     if(!last_mdb_instance_.empty())
     {
@@ -51,14 +51,20 @@ bool B5mpProcessor::Generate()
     std::string p_output_dir = B5MHelper::GetB5mpPath(mdb_instance_);
     B5MHelper::PrepareEmptyDir(p_output_dir);
     writer_.reset(new ScdTypeWriter(p_output_dir));
-    InitFilter_();
+    if(!last_mdb_instance_.empty())
+    {
+        filter_.reset(new FilterType(odoc_count_+100, 0.0000000001));
+        ofilter_.reset(new FilterType(odoc_count_+100, 0.0000000001));
+        merger.SetPreprocessor(boost::bind( &B5mpProcessor::FilterTask_, this, _1));
+    }
     merger.Run();
     writer_->Close();
     return true;
 }
 
-void B5mpProcessor::FilterTask_(Document& doc, int& type)
+void B5mpProcessor::FilterTask_(ValueType& value)
 {
+    Document& doc = value.doc;
     uint128_t pid = GetPid_(doc);
     if(pid==0) return;
     uint128_t oid = GetOid_(doc);
@@ -67,19 +73,6 @@ void B5mpProcessor::FilterTask_(Document& doc, int& type)
     ofilter_->Insert(oid);
 }
 
-void B5mpProcessor::InitFilter_()
-{
-    if(!last_mdb_instance_.empty())
-    {
-        std::string b5mo_path = B5MHelper::GetB5moPath(mdb_instance_);
-        filter_.reset(new FilterType(odoc_count_+100, 0.0000000001));
-        ofilter_.reset(new FilterType(odoc_count_+100, 0.0000000001));
-        ScdDocProcessor::ProcessorType p = boost::bind(&B5mpProcessor::FilterTask_, this, _1, _2);
-        ScdDocProcessor sd_processor(p);
-        sd_processor.AddInput(b5mo_path);
-        sd_processor.Process();
-    }
-}
 bool B5mpProcessor::B5moValid_(const Document& doc)
 {
     uint128_t pid = GetPid_(doc);

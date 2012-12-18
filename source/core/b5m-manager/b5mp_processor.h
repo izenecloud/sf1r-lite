@@ -38,10 +38,7 @@ namespace sf1r {
 
     private:
 
-
-        void InitFilter_();
-
-        void FilterTask_(Document& doc, int& type);
+        void FilterTask_(ValueType& value);
 
         bool B5moValid_(const Document& doc);
 

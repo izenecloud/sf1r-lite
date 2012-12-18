@@ -137,13 +137,13 @@ public:
         for(uint32_t m=0;m<m_;m++)
         {
             LOG(INFO)<<"Processing M "<<m<<std::endl;
-            if(!e_scd_list.empty()||pre_processor_)
+            if(!e_scd_list.empty())//if has exist scd, do pre-processing
             {
                 for(uint32_t s=0;s<scd_list.size();s++)
                 {
                     std::string scd_file = scd_list[s];
                     ScdParser parser(izenelib::util::UString::UTF_8);
-                    LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+                    LOG(INFO)<<"pre-processing "<<scd_file<<std::endl;
                     int type = ScdParser::checkSCDType(scd_file);
                     parser.load(scd_file);
                     uint64_t p=0;
@@ -236,11 +236,8 @@ public:
         {
             pre_processor_(value);
         }
-        else
-        {
-            uint128_t id = GetDocId_(value.doc);
-            cache_[id] = ValueType();
-        }
+        uint128_t id = GetDocId_(value.doc);
+        cache_[id] = ValueType();
         
     }
 
