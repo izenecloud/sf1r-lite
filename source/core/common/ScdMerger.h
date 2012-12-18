@@ -54,27 +54,6 @@ public:
             edoc.swap(other.edoc);
         }
 
-        //ValueType& operator+=(const ValueType& value)
-        //{
-            //if(value.type==DELETE_SCD)
-            //{
-                ////doc.clear();
-                ////doc.property("DOCID") = value.doc.property("DOCID");
-                //doc.copyPropertiesFromDocument(value.doc, true);
-                //type = value.type;
-            //}
-            //else if(value.type==UPDATE_SCD)
-            //{
-                //type = value.type;
-            //}
-            //else if(value.type==INSERT_SCD)
-            //{
-                //doc = value.doc;
-                //type = value.type;
-            //}
-
-            //return *this;
-        //}
     };
     typedef boost::function<void (ValueType&, const ValueType&) > MergeFunctionType;
     typedef boost::function<void (Document&, int&) > OutputFunctionType;
@@ -206,8 +185,7 @@ public:
             property_config_index[property_config_list[i].property_name] = &property_config_list[i];
         }
         PositionType p = 0;
-        //typedef std::map<std::string, PositionMap> MapType; //key is property name
-        //MapType map;
+        //position begin
         for (uint32_t i=0;i<input_list_.size();i++)
         {
             std::vector<std::string> scd_list;
@@ -271,6 +249,7 @@ public:
             config.u_writer.reset(new ScdWriter(output_dir, UPDATE_SCD));
             config.d_writer.reset(new ScdWriter(output_dir, DELETE_SCD));
         }
+        //real scanning begin
         LOG(INFO)<<"mod split : "<<mod_split_<<std::endl;
         for(uint32_t m=0;m<mod_split_;m++)
         {

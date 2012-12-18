@@ -4,7 +4,6 @@
 #include "b5m_helper.h"
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
-#include <common/ScdMerger.h>
 #include <common/Utilities.h>
 #include <product-manager/product_price.h>
 #include <product-manager/uuid_generator.h>
