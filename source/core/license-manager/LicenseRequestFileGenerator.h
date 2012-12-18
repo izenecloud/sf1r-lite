@@ -31,6 +31,11 @@ namespace LicenseRequestFileGenerator {
     ///
     void printLicenseFile(const std::string& requestFile, std::ostream& out = std::cout);
 
+    ///
+    /// @brief print content of license Data file, which contains total use time and each user's info.
+    ///
+    void printLicenseFileInFo(const std::string& requestFile, std::ostream& out = std::cout);
+
 }; // end - namespace LicenseRequestFileGenerator
 
 LICENSE_NAMESPACE_END

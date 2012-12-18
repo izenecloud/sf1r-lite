@@ -150,6 +150,77 @@ namespace LicenseRequestFileGenerator {
 
     } // end - printLicenseFile()
 
+    void printLicenseFileInFo(const std::string& licenseFile, std::ostream& out)
+    {
+        using namespace std;
+        try {
+				size_t tmpSize, licenseSize, index;
+				LICENSE_DATA_T tmpData, requestData;
+				if ( !license_tool::getUCharArrayOfFile(licenseFile, tmpSize, tmpData) )
+					return;
+
+				// Decryption
+				LicenseEncryptor licenseEncryptor;
+				licenseEncryptor.decryptData(tmpSize, tmpData, licenseSize, requestData);
+
+				// Extract total time and left time
+				uint32_t totalTime;
+				uint32_t leftTime;
+
+				memcpy(&totalTime, requestData.get(), license_module::LICENSE_TOTAL_TIME_SIZE ); index = license_module::LICENSE_TOTAL_TIME_SIZE;
+                memcpy(&leftTime, requestData.get() + index, license_module::LICENSE_TIME_LEFT_SIZE); index += license_module::LICENSE_TIME_LEFT_SIZE;
+
+                bool hasCustInfo = false;
+                uint32_t customerNum;
+                license_tool::CustomerInfo* custInfos = 0;
+                if (licenseSize > index)
+                {
+                	hasCustInfo = true;
+                	memcpy(&customerNum, requestData.get() + index, sizeof(uint32_t));
+                	index += sizeof(uint32_t);
+
+                	if (customerNum > 0)
+                	{
+						// Extract customer info
+						custInfos = new license_tool::CustomerInfo[customerNum];
+						custinfo_size_t custInfoSize;
+						license_tool::CustomerInfo custInfo;
+
+						for(size_t i = 0; i < customerNum; i++)
+						{
+							memcpy(&custInfoSize, requestData.get() + index, sizeof(custinfo_size_t));
+							index += sizeof(custinfo_size_t);
+							custInfo.init(index, custInfoSize, requestData);
+							custInfos[i] = custInfo;
+							index += custInfoSize;
+						}
+                	}
+                }
+
+				// Print
+				stringstream ss;
+				ss << endl<< "License Data" << endl;
+				ss << "---------------------" << endl;
+				ss << "Data File          : " << licenseFile << endl;
+				ss << "Data Size          : " << licenseSize << endl;
+				ss << "Total Time (months): " << totalTime << endl;
+				ss << "Time Left (months) : " << leftTime << endl;
+				if (hasCustInfo)
+				{
+					ss << "Current Customer Number : " << customerNum << endl;
+					for(size_t i = 0; i < customerNum; i++)
+					{
+						custInfos[i].print(ss);
+					}
+				}
+
+				out << ss.str() << endl;
+        } catch ( exception e ) {
+            cerr << "print() Exception : " << e.what() << endl;
+        }
+
+    } // end - printLicenseFileInFo()
+
 } // end - namespace LicenseRequestFileGenerator
 
 LICENSE_NAMESPACE_END

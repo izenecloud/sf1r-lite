@@ -333,6 +333,49 @@ namespace license_tool {
             bool sysInfoType_;
     }; // end - class SystemInfo
 
+	///
+	/// @brief a class which can help to extract customer information.
+	///
+	class CustomerInfo {
+		public:
+			CustomerInfo() : startDate_(0), endDate_(0) {}
+			bool init(size_t custInfoOffset, size_t custInfoSize, LICENSE_DATA_T& bArrData)
+			{
+				size_t offset = custInfoOffset;
+
+				// Extract start date
+				memcpy(&startDate_, bArrData.get() + offset, sizeof(license_date_t));
+				offset += sizeof(license_date_t);
+
+				// Extract end date
+				memcpy(&endDate_, bArrData.get() + offset, sizeof(license_date_t));
+				offset += sizeof(license_date_t);
+
+				// Extract collection name (customer identifier)
+				size_t collectionNameSize = custInfoSize - (offset - custInfoOffset);
+				LICENSE_DATA_T collectionNameArr( new LICENSE_DATA_UNIT_T[collectionNameSize] );
+				memcpy(collectionNameArr.get(), bArrData.get() + offset, collectionNameSize);
+				arrToStr( collectionNameSize, collectionNameArr, collectionName_);
+				return true;
+			}
+			uint32_t getStartDate() { return startDate_; }
+			uint32_t getEndDate() { return endDate_; }
+			std::string getCollectionName() { return collectionName_; }
+			void print(std::ostream& out = std::cout)
+			{
+				using namespace std;
+				stringstream ss;
+				ss << "Collection Name    : " << collectionName_ << endl;
+				ss << "Service Start Date : " << startDate_ << endl;
+				ss << "Service End Date   : " << endDate_ << endl;
+
+				out << ss.str();
+			}
+		private:
+			std::string collectionName_;
+			uint32_t startDate_;
+			uint32_t endDate_;
+	}; // end - class CustomerInfo
 
 
 } // end - namespace license_tool
