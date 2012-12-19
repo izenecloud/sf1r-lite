@@ -1982,6 +1982,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             throw XmlConfigParserException("Incremental used in SuffixMatch is missing.");
         }
 
+        ticpp::Element* subNodeTopK = getUniqChildElement(task_node, "GroupCounterTopK", false);
+        if (subNodeTopK)
+        {
+            int32_t topk = 100000;
+            getAttribute(subNodeTopK, "num", topk);
+            mining_schema.suffixmatch_schema.suffix_groupcounter_topk = topk;
+        }
+
         Iterator<Element> filterit("FilterProperty");
         const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
         for (filterit = filterit.begin(task_node); filterit != filterit.end(); ++filterit)

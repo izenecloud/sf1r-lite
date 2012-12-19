@@ -1944,7 +1944,8 @@ bool MiningManager::GetSuffixMatch(
             actionOperation.actionItem_.groupParam_.isAttrGroup_)
         {
             // need do counter.
-            max_docs = 100000;
+            max_docs = mining_schema_.suffixmatch_schema.suffix_groupcounter_topk;
+            LOG(INFO) << "topk doc num is :" << max_docs;
         }
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
