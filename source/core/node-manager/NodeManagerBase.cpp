@@ -58,7 +58,7 @@ void NodeManagerBase::stop()
 
 void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
-    //LOG (INFO) << CLASSNAME << " " << zkEvent.toString();
+    LOG (INFO) << CLASSNAME << " worker node event: " << zkEvent.toString();
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
@@ -70,6 +70,16 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         }
     }
 
+    if (zkEvent.type_ == ZOO_SESSION_EVENT && 
+        zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
+    {
+        // closed by zookeeper because of session expired
+        LOG(WARNING) << "worker node disconnected by zookeeper, state: " << zookeeper_->getStateString();
+        LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
+        stop();
+        nodeState_ = NODE_STATE_STARTING;
+        enterCluster();
+    }
     if (zkEvent.type_ == ZOO_CHILD_EVENT)
     {
         detectMasters();

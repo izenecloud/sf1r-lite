@@ -96,7 +96,7 @@ void MasterManagerBase::registerIndexStatus(const std::string& collection, bool 
 
 void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 {
-    //std::cout <<CLASSNAME<<state2string(masterState_)<<" "<<zkEvent.toString();
+    LOG(INFO) << CLASSNAME << ", "<< state2string(masterState_) <<", "<<zkEvent.toString();
 
     boost::lock_guard<boost::mutex> lock(state_mutex_);
 
@@ -107,6 +107,20 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
             masterState_ = MASTER_STATE_STARTING;
             doStart();
         }
+    }
+    else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
+    {
+        LOG(WARNING) << "master node disconnected by zookeeper, state : " << zookeeper_->getStateString();
+        LOG(WARNING) << "try reconnect: " << sf1rTopology_.curNode_.toString();
+        stop();
+        masterState_ = MASTER_STATE_STARTING;
+        if(!checkZooKeeperService())
+        {
+            masterState_ = MASTER_STATE_STARTING_WAIT_ZOOKEEPER;
+            LOG (ERROR) << CLASSNAME << "retry: waiting for ZooKeeper Service...";
+            return;
+        }
+        doStart();
     }
 }
 
