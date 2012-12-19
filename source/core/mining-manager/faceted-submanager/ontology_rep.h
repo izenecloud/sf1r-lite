@@ -165,9 +165,19 @@ public:
                     }
                     else
                     {
-                        while(current_value_it->id < it->id)
-                            ++current_value_it;
-                        if(current_value_it->id == it->id)
+                        bool is_found_equal = false;
+                        for(; current_value_it != current_nvmap_it->second.end();
+                            ++current_value_it)
+                        {
+                            if (current_value_it->id < it->id)
+                                continue;
+
+                            if (current_value_it->id == it->id)
+                                is_found_equal = true;
+
+                            break;
+                        }
+                        if(is_found_equal)
                         {
                             current_value_it->doc_count += it->doc_count;
                         }
