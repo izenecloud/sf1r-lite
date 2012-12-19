@@ -336,7 +336,9 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
         return relevanceScorerPtr.release();
 
     const std::string& query = actionItem.env_.queryString_;
+    const std::string& querySource = actionItem.env_.querySource_;
     return productScorerFactory_->createScorer(query,
+                                               querySource,
                                                propSharedLockSet,
                                                relevanceScorerPtr.release());
 }

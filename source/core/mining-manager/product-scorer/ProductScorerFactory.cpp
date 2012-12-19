@@ -6,6 +6,7 @@
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../group-label-logger/GroupLabelLogger.h"
 #include "../group-label-logger/BackendLabel2FrontendLabel.h"
+#include "../group-label-logger/GroupLabelKnowledge.h"
 #include "../group-manager/PropSharedLockSet.h"
 #include "../product-score-manager/ProductScoreManager.h"
 #include "../util/split_ustr.h"
@@ -32,6 +33,7 @@ ProductScorerFactory::ProductScorerFactory(
     , customRankManager_(miningManager.GetCustomRankManager())
     , categoryClickLogger_(NULL)
     , categoryValueTable_(NULL)
+    , groupLabelKnowledge_(miningManager.GetGroupLabelKnowledge())
     , productScoreManager_(miningManager.GetProductScoreManager())
 {
     const ProductScoreConfig& categoryScoreConfig =
@@ -43,6 +45,7 @@ ProductScorerFactory::ProductScorerFactory(
 
 ProductScorer* ProductScorerFactory::createScorer(
     const std::string& query,
+    const std::string& querySource,
     faceted::PropSharedLockSet& propSharedLockSet,
     ProductScorer* relevanceScorer)
 {
@@ -53,6 +56,7 @@ ProductScorer* ProductScorerFactory::createScorer(
     {
         ProductScorer* scorer = createScorerImpl_(config_.scores[i],
                                                   query,
+                                                  querySource,
                                                   propSharedLockSet,
                                                   relevanceScorer);
         if (scorer)
@@ -71,6 +75,7 @@ ProductScorer* ProductScorerFactory::createScorer(
 ProductScorer* ProductScorerFactory::createScorerImpl_(
     const ProductScoreConfig& scoreConfig,
     const std::string& query,
+    const std::string& querySource,
     faceted::PropSharedLockSet& propSharedLockSet,
     ProductScorer* relevanceScorer)
 {
@@ -83,7 +88,10 @@ ProductScorer* ProductScorerFactory::createScorerImpl_(
         return createCustomScorer_(scoreConfig, query);
 
     case CATEGORY_SCORE:
-        return createCategoryScorer_(scoreConfig, query, propSharedLockSet);
+        return createCategoryScorer_(scoreConfig,
+                                     query,
+                                     querySource,
+                                     propSharedLockSet);
 
     case RELEVANCE_SCORE:
         return createRelevanceScorer_(scoreConfig, relevanceScorer);
@@ -115,6 +123,7 @@ ProductScorer* ProductScorerFactory::createCustomScorer_(
 ProductScorer* ProductScorerFactory::createCategoryScorer_(
     const ProductScoreConfig& scoreConfig,
     const std::string& query,
+    const std::string& querySource,
     faceted::PropSharedLockSet& propSharedLockSet)
 {
     if (categoryClickLogger_ == NULL ||
@@ -126,7 +135,7 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
     categoryClickLogger_->getFreqLabel(query, kTopLabelLimit,
                                        topLabels, topFreqs);
 
-    if(topLabels.empty())
+    if (topLabels.empty())
     {
         UString ustrQuery(query, UString::UTF_8);
         UString backendCategory;
@@ -144,6 +153,11 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
                 }
             }
         }
+    }
+
+    if (topLabels.empty() && !querySource.empty() && groupLabelKnowledge_)
+    {
+        groupLabelKnowledge_->getKnowledgeLabel(querySource, topLabels);
     }
 
     if (!topLabels.empty())
