@@ -29,6 +29,7 @@ namespace sf1r {
         UString oid;
         bool independent;
         AttributeType attribute;
+        std::string date;
 
         ProductProperty();
 

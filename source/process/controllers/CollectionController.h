@@ -10,6 +10,7 @@
 
 #include <util/driver/Controller.h>
 #include <common/Keys.h>
+#include <process/common/XmlConfigParser.h>
 #include <util/driver/value/types.h>
 #include <string>
 
@@ -41,6 +42,15 @@ public:
 
     void set_kv();
     void get_kv();
+
+    void load_license();
+
+private:
+    static std::string getConfigPath_()
+    {
+    	std::string configFilePath = SF1Config::get()->getHomeDirectory();
+    	return configFilePath;
+    }
 };
 
 /// @}

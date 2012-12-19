@@ -37,18 +37,15 @@ class NumericPropertyTableBuilder;
 class SuffixMatchMiningTask: public MiningTask
 {
 public:
-    SuffixMatchMiningTask(boost::shared_ptr<DocumentManager> document_manager
-            , std::vector<std::string>& group_property_list
-            , std::vector<std::string>& attr_property_list
-            , std::set<std::string>& number_property_list
-            , std::vector<std::string>& date_property_list
-            , boost::shared_ptr<FMIndexManager>& fmi
-            , boost::shared_ptr<FilterManager>& filter_manager
-            , std::string data_root_path);
+    SuffixMatchMiningTask(
+            boost::shared_ptr<DocumentManager>& document_manager,
+            boost::shared_ptr<FMIndexManager>& fmi_manager,
+            boost::shared_ptr<FilterManager>& filter_manager,
+            std::string data_root_path);
 
     ~SuffixMatchMiningTask();
 
-    bool buildDocment(docid_t docID, const Document& doc);
+    bool buildDocument(docid_t docID, const Document& doc);
     bool preProcess();
     bool postProcess();
     docid_t getLastDocId();
@@ -56,19 +53,14 @@ public:
 private:
     boost::shared_ptr<DocumentManager> document_manager_;
 
-    std::vector<std::string>& group_property_list_;
-    std::vector<std::string>& attr_property_list_;
-    std::set<std::string>& number_property_list_;
-    std::vector<std::string>& date_property_list_;
-    
-    boost::shared_ptr<FMIndexManager>& fmi_;
+    boost::shared_ptr<FMIndexManager>& fmi_manager_;
     boost::shared_ptr<FilterManager>& filter_manager_;
 
     std::string data_root_path_;
 
     boost::shared_ptr<FMIndexManager> new_fmi_manager;
     boost::shared_ptr<FilterManager> new_filter_manager;
-    bool is_need_rebuild;
+    bool need_rebuild;
 
     typedef boost::shared_mutex MutexType;
     mutable MutexType mutex_;
@@ -76,4 +68,5 @@ private:
     typedef boost::unique_lock<MutexType> WriteLock;
 };
 }
+
 #endif

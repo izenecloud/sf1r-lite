@@ -234,6 +234,7 @@ void SearchWorker::makeQueryIdentity(
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
         identity.groupParam = item.groupParam_;
         identity.isRandomRank = item.isRandomRank_;
+        identity.querySource = item.env_.querySource_;
         break;
     default:
         identity.query = item.env_.queryString_;
@@ -258,6 +259,7 @@ void SearchWorker::makeQueryIdentity(
         identity.paramPropertyValueMap = item.paramPropertyValueMap_;
         identity.distActionType = distActionType;
         identity.isRandomRank = item.isRandomRank_;
+        identity.querySource = item.env_.querySource_;
         std::sort(identity.properties.begin(),
                 identity.properties.end());
         std::sort(identity.counterList.begin(),
@@ -769,6 +771,10 @@ void SearchWorker::reset_all_property_cache()
 void SearchWorker::clearSearchCache()
 {
     searchCache_->clear();
+}
+
+void SearchWorker::clearFilterCache()
+{
     searchManager_->reset_filter_cache();
 }
 

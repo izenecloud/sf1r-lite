@@ -6,15 +6,19 @@
 #include <fstream>
 #include <sstream>
 
+#include <boost/filesystem.hpp>
+
 using namespace std;
 using namespace sf1r;
 using namespace license_module;
 
 const int CREATE_REQ_DATA = 1;
 const int CREATE_LICENSE_DATA = 2;
+const int CREATE_FIRST_LEVEL_LICENSE_DATA = 3; // used for channel
 
 int  displayMenu();
 void createLicenseFile();
+void createChannelLicenseFile();
 void createLocalReqFile();
 void getValueOrExit(const std::string& message, std::string& output);
 void getLicenseFilename(const std::string& message, std::string& output, bool isRequestFile=true);
@@ -25,6 +29,7 @@ bool extractProductCodeNSysInfo(
         uint64_t& productCode, 
         uint32_t& sysInfoSize, LICENSE_DATA_T& sysInfoData);
 bool extractStartNEndDate(uint32_t& startDate, uint32_t& endDate);
+bool extractTotalTime(uint32_t& totalTime);
 
 int main()
 {
@@ -36,6 +41,9 @@ int main()
             case CREATE_LICENSE_DATA:
                 createLicenseFile();
                 break;
+            case CREATE_FIRST_LEVEL_LICENSE_DATA:
+            	createChannelLicenseFile();
+            	break;
             default:
                 continue;
         }
@@ -49,6 +57,7 @@ int displayMenu()
     ss << "------------------------------" << endl;
     ss << "1. Create License Request File" << endl;
     ss << "2. Create License File" << endl;
+    ss << "3. Create Top Level License File for Channel" << endl;
     ss << "------------------------------" << endl;
     ss << "Select : ";
     cout << ss.str();
@@ -107,8 +116,66 @@ void createLicenseFile()
     fpout.write( (char*)(encData.get()), encSize );
     fpout.close();
     LicenseRequestFileGenerator::printLicenseFile(licenseFileName);
-
 } // end - createLicenseFile()
+
+void createChannelLicenseFile()
+{
+	uint32_t licenseTotalTime;
+	std::string licenseFile;
+
+	// Get license file name
+	getLicenseFilename("Enter top level license file", licenseFile, false);
+
+	// Get the total use time
+	while(!extractTotalTime(licenseTotalTime));
+
+	size_t licenseSize, tmpSize;
+	LICENSE_DATA_T licenseData, tmpData;
+	LicenseEncryptor licenseEncryptor;
+	// If License file doesn't exist
+	if (!boost::filesystem::exists(licenseFile))
+	{
+		// Prepare raw license data
+		licenseData.reset(new unsigned char[LICENSE_INFO_MAX_LENGTH]);
+		memcpy(licenseData.get(), &licenseTotalTime, LICENSE_TOTAL_TIME_SIZE);
+		licenseSize = license_module::LICENSE_TOTAL_TIME_SIZE;
+		memcpy(licenseData.get() + licenseSize, &licenseTotalTime, LICENSE_TIME_LEFT_SIZE);
+		licenseSize += license_module::LICENSE_TIME_LEFT_SIZE;
+	}
+	else
+	{
+		if ( !license_tool::getUCharArrayOfFile(licenseFile, tmpSize, tmpData) ) {
+			cout << "Read Error : " << licenseFile << endl;
+			return;
+		}
+
+		licenseEncryptor.decryptData(tmpSize, tmpData, licenseSize, licenseData);
+		uint32_t leftTime = 0;
+		memcpy(&leftTime, licenseData.get() + LICENSE_TOTAL_TIME_SIZE, LICENSE_TIME_LEFT_SIZE);
+		cout<< "The last remaining time: "<< leftTime << endl;
+		memcpy(licenseData.get(), &licenseTotalTime, LICENSE_TOTAL_TIME_SIZE);
+		licenseTotalTime += leftTime;
+		memcpy(licenseData.get() + LICENSE_TOTAL_TIME_SIZE, &licenseTotalTime, LICENSE_TIME_LEFT_SIZE);
+	}
+
+	// { // DEBUG
+	//     std::string licenseDataStr ;
+	//     license_tool::cvtArrToStr( licenseSize, licenseData, licenseDataStr);
+	//     std::cerr << "License Data String in LFG() : " << licenseDataStr << std::endl;
+	// } // DEBUG
+
+	//Encrypt license data
+	size_t encSize;
+	LICENSE_DATA_T encData;
+	licenseEncryptor.encryptData(licenseSize, licenseData, encSize, encData);
+
+	// Write data to file
+	//getLicenseFilename("Enter top level license file", licenseFileName, false);
+	std::ofstream fpout(licenseFile.c_str());
+	fpout.write( (char*) (encData.get()), encSize );
+	fpout.close();
+	LicenseRequestFileGenerator::printLicenseFileInFo(licenseFile);
+}
 
 void createLocalReqFile()
 {
@@ -203,7 +270,7 @@ bool extractProductCodeNSysInfo(
     memcpy(sysInfoData.get(), reqData.get(), sysInfoSize);
 
     return true;
-} // end - bool extractProductCodeNSysInfo(
+} // end - bool extractProductCodeNSysInfo()
 
 bool extractStartNEndDate(uint32_t& startDate, uint32_t& endDate)
 {
@@ -222,3 +289,11 @@ bool extractStartNEndDate(uint32_t& startDate, uint32_t& endDate)
     endDate = tmpEndDate;
     return true;
 } // end - extractStartNEndDate()
+
+bool extractTotalTime(uint32_t& totalTime)
+{
+	uint32_t tmpTotalTime;
+	cout<<"Total Time (months) : "; cin >> tmpTotalTime;
+	totalTime = tmpTotalTime;
+	return true;
+}// end - extractTotalTime()

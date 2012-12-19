@@ -24,6 +24,7 @@ LICENSE_NAMESPACE_BEGIN
     // Typedefs
     typedef uint64_t product_info_t;
     typedef uint32_t sysinfo_size_t;
+    typedef uint32_t custinfo_size_t;
     typedef uint32_t license_date_t;
 
     typedef uint8_t license_concurrency_t;
@@ -40,6 +41,8 @@ LICENSE_NAMESPACE_BEGIN
     const size_t LICENSE_DATE_SIZE = sizeof(uint32_t) * 2;
     const size_t LICENSE_DATE_START = 0;
     const size_t LICENSE_DATE_END = 1;
+    const size_t LICENSE_TOTAL_TIME_SIZE = sizeof(uint32_t);
+    const size_t LICENSE_TIME_LEFT_SIZE = sizeof(uint32_t);
 
     const size_t LICENSE_DOC_LIMIT_SIZE = sizeof(uint64_t) * 2;
     const size_t LICENSE_MAX_DOC_NUM = 0;
@@ -59,6 +62,7 @@ LICENSE_NAMESPACE_BEGIN
     const size_t PACKET_HEADER_SIZE = 8;
     const size_t PRODUCT_CODE_SIZE = sizeof(product_info_t); // byte size
     const size_t SYSINFOSIZE_SIZE = sizeof(sysinfo_size_t); // byte size
+    const size_t CUSTINFOSIZE_SIZE = sizeof(custinfo_size_t); // byte size
     const size_t REQ_HEADER_SIZE = 1; // byte size
     const size_t ETC_DATA_SIZE = 8; // byte size
     const size_t DATE_SIZE = 8; // byte size

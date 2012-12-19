@@ -99,6 +99,8 @@ public:
 
     void clearSearchCache();
 
+    void clearFilterCache();
+
 private:
     bool getSearchResult_(
             const KeywordSearchActionItem& actionItem,

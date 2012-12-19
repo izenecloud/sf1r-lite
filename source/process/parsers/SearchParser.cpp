@@ -99,6 +99,8 @@ using driver::Keys;
  *   be randomly ordered.@n
  *   In order to enable this feature, you need also configure a non-zero weight
  *   for <ProductRanking><Score type="random"> in collection config file.
+ * - @b query_source (@c String): Where does the query come from, used to decide
+ *   the categories to boost in product ranking.
  *
  * Example
  * @code
@@ -142,6 +144,7 @@ bool SearchParser::parse(const Value& search)
 
     userID_ = asString(search[Keys::USERID]);
     sessionID_ = asString(search[Keys::session_id]);
+    querySource_ = asString(search[Keys::query_source]);
 
     int labelCount = 0;
     if (search.hasKey(Keys::taxonomy_label))

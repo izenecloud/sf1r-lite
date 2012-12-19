@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <am/succinct/ux-trie/uxMap.hpp>
+
 namespace cma
 {
 class Analyzer;
@@ -28,6 +30,9 @@ private:
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
     cma::OpenCC* opencc_;
+
+    izenelib::am::succinct::ux::Trie* kpe_trie_;
+    izenelib::am::succinct::ux::Map<std::vector<std::string> >* related_map_;	
 };
 }
 

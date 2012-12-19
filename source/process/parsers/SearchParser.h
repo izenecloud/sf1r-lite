@@ -160,6 +160,11 @@ public:
         return isRandomRank_;
     }
 
+    std::string& mutableQuerySource()
+    {
+        return querySource_;
+    }
+
 private:
     bool parseGroupLabel_(const Value& search);
     bool parseAttrLabel_(const Value& search);
@@ -186,6 +191,7 @@ private:
     LanguageAnalyzerInfo analyzerInfo_;
 
     bool isRandomRank_;
+    std::string querySource_;
 };
 
 /// @}

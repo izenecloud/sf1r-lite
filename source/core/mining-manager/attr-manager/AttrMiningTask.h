@@ -31,7 +31,7 @@ public:
 
     bool preProcess();
     bool postProcess();
-    bool buildDocment(docid_t docID, const Document& doc);
+    bool buildDocument(docid_t docID, const Document& doc);
     docid_t getLastDocId();
     bool processCollection_forTest();
 

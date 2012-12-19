@@ -104,6 +104,7 @@ class SuffixMatchManager;
 class IncrementalManager;
 class ProductMatcher;
 class MiningTaskBuilder;
+class GroupLabelKnowledge;
 
 namespace sim
 {
@@ -354,6 +355,8 @@ public:
             uint32_t knnDist,
             uint32_t start);
 
+    void incDeletedDocBeforeMining();
+
     bool GetSuffixMatch(
             const SearchKeywordOperation& actionOperation,
             uint32_t max_docs,
@@ -433,6 +436,11 @@ public:
     ProductScoreManager* GetProductScoreManager()
     {
         return productScoreManager_;
+    }
+
+    const GroupLabelKnowledge* GetGroupLabelKnowledge() const
+    {
+        return groupLabelKnowledge_;
     }
 
 private:
@@ -519,6 +527,7 @@ private:
     );
 
     bool initMerchantScoreManager_(const ProductRankingConfig& rankConfig);
+    bool initGroupLabelKnowledge_(const ProductRankingConfig& rankConfig);
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
 
@@ -617,6 +626,9 @@ private:
     /** Product Score Table Manager */
     ProductScoreManager* productScoreManager_;
 
+    /** the knowledge of top labels for category boosting */
+    GroupLabelKnowledge* groupLabelKnowledge_;
+
     /** Product Score Factory */
     ProductScorerFactory* productScorerFactory_;
 
@@ -647,6 +659,7 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
+    uint32_t deleted_doc_before_mining_;
 };
 
 }

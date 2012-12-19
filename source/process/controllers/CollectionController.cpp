@@ -8,11 +8,12 @@
 #include "CollectionController.h"
 #include "CollectionHandler.h"
 #include "process/common/XmlSchema.h"
+#include "core/license-manager/LicenseCustManager.h"
 
 #include <process/common/CollectionManager.h>
-#include <process/common/XmlConfigParser.h>
 #include <bundles/mining/MiningSearchService.h>
 #include <common/CollectionTask.h>
+#include <common/CollectionTaskScheduler.h>
 #include <iostream>
 #include <fstream>
 
@@ -413,6 +414,65 @@ void CollectionController::get_kv()
     if(handler->miningSearchService_->GetKV(key, value))
     {
         response()[Keys::value] = value;
+    }
+}
+
+/**
+ * @brief Action @b load_license.
+ *
+ * @section request
+ *
+ * - @b path (@c String): license file path.
+ *
+ * @section response
+ *
+ * - No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *	  "path": "/home/customer/sf1_license/license_key.dat"
+ * }
+ * @endcode
+ *
+ */
+
+void CollectionController::load_license()
+{
+	std::string path = asString(request()[Keys::path]);
+	if (path.empty())
+	{
+		response().addError("Require field path in request.");
+		return;
+	}
+
+	std::vector<std::string> collectionList;
+	LicenseCustManager::get()->setLicenseFilePath(path);
+	LicenseCustManager::get()->setCollectionInfo();
+	collectionList = LicenseCustManager::get()->getCollectionList();
+
+	if (collectionList.empty())
+	{
+		response().addError("There's no information about customer in your license file.");
+		return;
+	}
+	std::string configFilePath = getConfigPath_();
+	std::string slash("");
+#ifdef WIN32
+		slash = "\\";
+#else
+		slash = "/";
+#endif
+    std::vector<std::string>::const_iterator iter;
+    for(iter = collectionList.begin(); iter != collectionList.end(); iter++)
+    {
+    	std::string collectionName = *iter;
+    	std::string configFile = configFilePath + slash + collectionName + ".xml";
+    	CollectionManager::get()->startCollection(collectionName, configFile);
+    	CollectionTaskScheduler::get()->scheduleLicenseTask(collectionName);
     }
 }
 
