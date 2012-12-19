@@ -43,11 +43,9 @@ public:
             NumericPropertyTableBuilder* numeric_tablebuilder);
 
     ~SuffixMatchManager();
+
     void addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished = false);
-    void setGroupFilterProperties(std::vector<std::string>& property_list);
-    void setAttrFilterProperties(std::vector<std::string>& property_list);
-    void setDateFilterProperties(std::vector<std::string>& property_list);
-    void setNumericFilterProperties(std::vector<std::string>& property_list, std::vector<int32_t>& amp_list);
+
     void buildTokenizeDic();
     bool isStartFromLocalFM() const;
 
@@ -69,9 +67,11 @@ public:
     MiningTask* getMiningTask();
     bool buildMiningTask();
 
+    boost::shared_ptr<FilterManager>& getFilterManager();
+
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
-    typedef FMIndexType::MatchRangeListT  RangeListT;
+    typedef FMIndexType::MatchRangeListT RangeListT;
 
     bool getAllFilterRangeFromGroupLable_(
             const faceted::GroupParam& group_param,
@@ -87,12 +87,8 @@ private:
             std::vector<RangeListT>& filter_range_list) const;
 
     std::string data_root_path_;
-
-    std::vector<std::string> group_property_list_;
-    std::vector<std::string> attr_property_list_;
-    std::set<std::string> numeric_property_list_;
-    std::vector<std::string> date_property_list_;
     std::string tokenize_dicpath_;
+
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;
 

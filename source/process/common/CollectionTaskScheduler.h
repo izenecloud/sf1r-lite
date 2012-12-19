@@ -32,6 +32,8 @@ public:
 
     bool schedule(const CollectionHandler* collectionHandler);
 
+    bool scheduleLicenseTask(const std::string collectionName);
+
 private:
     void cronTask_();
 

@@ -147,4 +147,5 @@ controllers:
       - delete_collection
       - set_kv
       - get_kv
+      - load_license
 
