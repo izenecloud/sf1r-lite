@@ -38,6 +38,7 @@ void MasterManagerBase::stop()
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
     zookeeper_->disconnect();
+    masterState_ = MASTER_STATE_INIT;
 }
 
 bool MasterManagerBase::getShardReceiver(
@@ -112,15 +113,17 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
     {
         LOG(WARNING) << "master node disconnected by zookeeper, state : " << zookeeper_->getStateString();
         LOG(WARNING) << "try reconnect: " << sf1rTopology_.curNode_.toString();
-        stop();
+         
+        zookeeper_->disconnect();
         masterState_ = MASTER_STATE_STARTING;
-        if(!checkZooKeeperService())
+        if (!checkZooKeeperService())
         {
             masterState_ = MASTER_STATE_STARTING_WAIT_ZOOKEEPER;
-            LOG (ERROR) << CLASSNAME << "retry: waiting for ZooKeeper Service...";
+            LOG (ERROR) << CLASSNAME << " waiting for ZooKeeper Service...";
             return;
         }
         doStart();
+        LOG (WARNING) << " restarted in MasterManagerBase for ZooKeeper Service finished";
     }
 }
 

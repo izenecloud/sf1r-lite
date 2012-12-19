@@ -40,6 +40,7 @@ public:
     }
 
     void start();
+    void stop();
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);

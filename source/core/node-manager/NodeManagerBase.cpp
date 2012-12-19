@@ -51,9 +51,11 @@ void NodeManagerBase::stop()
     if (masterStarted_)
     {
         stopMasterManager();
+        SuperMasterManager::get()->stop();
     }
 
     leaveCluster();
+    nodeState_ = NODE_STATE_INIT;
 }
 
 void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
@@ -76,9 +78,10 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         // closed by zookeeper because of session expired
         LOG(WARNING) << "worker node disconnected by zookeeper, state: " << zookeeper_->getStateString();
         LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
-        stop();
+        zookeeper_->disconnect();
         nodeState_ = NODE_STATE_STARTING;
-        enterCluster();
+        enterCluster(false);
+        LOG (WARNING) << " restarted in NodeManagerBase for ZooKeeper Service finished";
     }
     if (zkEvent.type_ == ZOO_CHILD_EVENT)
     {
@@ -149,7 +152,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     }
 }
 
-void NodeManagerBase::enterCluster()
+void NodeManagerBase::enterCluster(bool start_master)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
     if (nodeState_ == NODE_STATE_STARTED)
@@ -209,13 +212,16 @@ void NodeManagerBase::enterCluster()
                        (std::string("worker") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
                << curNode.userName_ << "@" << curNode.host_ << "}";
 
-    // Start Master manager
-    if (sf1rTopology_.curNode_.master_.isEnabled_)
+    if(start_master)
     {
-        startMasterManager();
-        SuperMasterManager::get()->init(sf1rTopology_);
-        SuperMasterManager::get()->start();
-        masterStarted_ = true;
+        // Start Master manager
+        if (sf1rTopology_.curNode_.master_.isEnabled_)
+        {
+            startMasterManager();
+            SuperMasterManager::get()->init(sf1rTopology_);
+            SuperMasterManager::get()->start();
+            masterStarted_ = true;
+        }
     }
 
     if (sf1rTopology_.curNode_.worker_.isEnabled_)
