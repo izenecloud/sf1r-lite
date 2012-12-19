@@ -99,6 +99,8 @@ public:
 
     void clearSearchCache();
 
+    void clearFilterCache();
+
 private:
     template <typename ResultItemType>
     bool getSearchResult_(

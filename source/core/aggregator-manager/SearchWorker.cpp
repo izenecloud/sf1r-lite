@@ -793,6 +793,10 @@ void SearchWorker::reset_all_property_cache()
 void SearchWorker::clearSearchCache()
 {
     searchCache_->clear();
+}
+
+void SearchWorker::clearFilterCache()
+{
     searchManager_->reset_filter_cache();
 }
 

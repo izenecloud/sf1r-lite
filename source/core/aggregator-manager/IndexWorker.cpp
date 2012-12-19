@@ -592,6 +592,10 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     if (ret && (updateType != IndexWorker::RTYPE))
     {
         searchWorker_->clearSearchCache();
+        ///clear filter cache because of * queries:
+        ///filter will be added into documentiterator 
+        ///together with AllDocumentIterator
+        searchWorker_->clearFilterCache();		
         doMining_();
     }
 
@@ -760,6 +764,10 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     if (ret)
     {
         searchWorker_->clearSearchCache();
+        ///clear filter cache because of * queries:
+        ///filter will be added into documentiterator 
+        ///together with AllDocumentIterator
+        searchWorker_->clearFilterCache();		
         doMining_();
     }
 
@@ -1073,6 +1081,7 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     boost::this_thread::interruption_point();
 
     searchWorker_->clearSearchCache();
+    searchWorker_->clearFilterCache();
 
     return true;
 }
