@@ -104,6 +104,7 @@ class SuffixMatchManager;
 class IncrementalManager;
 class ProductMatcher;
 class MiningTaskBuilder;
+class GroupLabelKnowledge;
 
 namespace sim
 {
@@ -435,6 +436,11 @@ public:
         return productScoreManager_;
     }
 
+    const GroupLabelKnowledge* GetGroupLabelKnowledge() const
+    {
+        return groupLabelKnowledge_;
+    }
+
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
     {
@@ -519,6 +525,7 @@ private:
     );
 
     bool initMerchantScoreManager_(const ProductRankingConfig& rankConfig);
+    bool initGroupLabelKnowledge_(const ProductRankingConfig& rankConfig);
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
 
@@ -616,6 +623,9 @@ private:
 
     /** Product Score Table Manager */
     ProductScoreManager* productScoreManager_;
+
+    /** the knowledge of top labels for category boosting */
+    GroupLabelKnowledge* groupLabelKnowledge_;
 
     /** Product Score Factory */
     ProductScorerFactory* productScorerFactory_;

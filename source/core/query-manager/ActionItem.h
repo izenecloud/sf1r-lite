@@ -177,6 +177,7 @@ public:
         ss << "nameEntityItem_  : " << nameEntityItem_  << endl;
         ss << "nameEntityType_  : " << nameEntityType_  << endl;
         ss << "ipAddress_       : " << ipAddress_       << endl;
+        ss << "querySource      : " << querySource_     << endl;
         out << ss.str();
     }
 
@@ -224,12 +225,20 @@ public:
     ///
     std::string ipAddress_;
 
+    ///
+    /// @brief where does the query come from, used to decide
+    ///        the categories to boost in product ranking.
+    ///
+    std::string querySource_;
+
     DATA_IO_LOAD_SAVE(RequesterEnvironment,
             & isLogging_ & encodingType_ & queryString_ & expandedQueryString_
-            & userID_ & taxonomyLabel_ & nameEntityItem_ & nameEntityType_ & ipAddress_);
+            & userID_ & taxonomyLabel_ & nameEntityItem_ & nameEntityType_
+            & ipAddress_ & querySource_);
 
     MSGPACK_DEFINE(isLogging_, encodingType_, queryString_, expandedQueryString_,
-            userID_, taxonomyLabel_, nameEntityItem_, nameEntityItem_, nameEntityType_, ipAddress_);
+            userID_, taxonomyLabel_, nameEntityItem_, nameEntityItem_, nameEntityType_,
+            ipAddress_, querySource_);
 
 private:
     // Log : 2009.09.08
@@ -247,6 +256,7 @@ private:
         ar & nameEntityItem_;
         ar & nameEntityType_;
         ar & ipAddress_;
+        ar & querySource_;
     }
 }; // end - queryEnvironment
 
@@ -259,7 +269,8 @@ inline bool operator==(
         && a.encodingType_ == b.encodingType_
         && a.queryString_ == b.queryString_
         && a.taxonomyLabel_ == b.taxonomyLabel_
-        && a.ipAddress_ == b.ipAddress_;
+        && a.ipAddress_ == b.ipAddress_
+        && a.querySource_ == b.querySource_;
 }
 
 ///

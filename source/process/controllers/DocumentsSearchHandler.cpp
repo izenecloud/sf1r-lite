@@ -426,6 +426,10 @@ bool DocumentsSearchHandler::parse()
         searchParser.mutableNameEntityType()
     );
     swap(
+        actionItem_.env_.querySource_,
+        searchParser.mutableQuerySource()
+    );
+    swap(
         actionItem_.groupParam_.groupLabels_,
         searchParser.mutableGroupLabels()
     );

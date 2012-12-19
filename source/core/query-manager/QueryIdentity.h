@@ -73,6 +73,10 @@ struct QueryIdentity
     /// @brief whether rank randomly
     bool isRandomRank;
 
+    /// @brief where does the query come from, used to decide
+    ///        the categories to boost in product ranking.
+    std::string querySource;
+
     inline bool operator==(const QueryIdentity& other) const
     {
         return rankingType == other.rankingType
@@ -93,7 +97,8 @@ struct QueryIdentity
             && paramPropertyValueMap == other.paramPropertyValueMap
             && start == other.start
             && distActionType == other.distActionType
-            && isRandomRank == other.isRandomRank;
+            && isRandomRank == other.isRandomRank
+            && querySource == other.querySource;
     }
 
     inline bool operator!=(const QueryIdentity& other) const
@@ -104,7 +109,7 @@ struct QueryIdentity
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
             & properties & counterList & sortInfo & filterInfo & groupParam & removeDuplicatedDocs 
             & rangeProperty & strExp & paramConstValueMap & paramPropertyValueMap & simHash
-            & start & distActionType & isRandomRank);
+            & start & distActionType & isRandomRank & querySource);
 };
 
 } // namespace sf1r

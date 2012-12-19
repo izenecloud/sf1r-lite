@@ -36,6 +36,7 @@
 
 #include "group-label-logger/GroupLabelLogger.h"
 #include "group-label-logger/BackendLabel2FrontendLabel.h"
+#include "group-label-logger/GroupLabelKnowledge.h"
 #include "merchant-score-manager/MerchantScoreManager.h"
 #include "custom-rank-manager/CustomDocIdConverter.h"
 #include "custom-rank-manager/CustomRankManager.h"
@@ -144,6 +145,7 @@ MiningManager::MiningManager(
     , customRankManager_(NULL)
     , offlineScorerFactory_(NULL)
     , productScoreManager_(NULL)
+    , groupLabelKnowledge_(NULL)
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
@@ -164,6 +166,7 @@ MiningManager::~MiningManager()
     if (kpe_analyzer_) delete kpe_analyzer_;
     if (productRankerFactory_) delete productRankerFactory_;
     if (productScorerFactory_) delete productScorerFactory_;
+    if (groupLabelKnowledge_) delete groupLabelKnowledge_;
     if (productScoreManager_) delete productScoreManager_;
     if (offlineScorerFactory_) delete offlineScorerFactory_;
     if (customRankManager_) delete customRankManager_;
@@ -468,6 +471,7 @@ bool MiningManager::open()
             mining_schema_.product_ranking_config;
 
         if (!initMerchantScoreManager_(rankConfig) ||
+            !initGroupLabelKnowledge_(rankConfig) ||
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
@@ -2151,6 +2155,35 @@ bool MiningManager::initMerchantScoreManager_(const ProductRankingConfig& rankCo
     {
         LOG(ERROR) << "open " << scorePath << " failed";
         return false;
+    }
+
+    return true;
+}
+
+bool MiningManager::initGroupLabelKnowledge_(const ProductRankingConfig& rankConfig)
+{
+    if (!rankConfig.isEnable || !groupManager_)
+        return true;
+
+    if (groupLabelKnowledge_) delete groupLabelKnowledge_;
+
+    const ProductScoreConfig& categoryScoreConfig =
+        rankConfig.scores[CATEGORY_SCORE];
+
+    const faceted::PropValueTable* categoryValueTable =
+        groupManager_->getPropValueTable(categoryScoreConfig.propName);
+
+    const bfs::path resourcePath(system_resource_path_);
+    const bfs::path categoryBoostDir(resourcePath / "category-boost");
+    if (bfs::exists(categoryBoostDir) && categoryValueTable)
+    {
+        groupLabelKnowledge_ = new GroupLabelKnowledge(collectionName_,
+                                                       *categoryValueTable);
+
+        if (!groupLabelKnowledge_->open(categoryBoostDir.string()))
+        {
+            LOG(ERROR) << "error in opening " << categoryBoostDir;
+        }
     }
 
     return true;
