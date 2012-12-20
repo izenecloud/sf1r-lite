@@ -21,6 +21,12 @@ void SuperMasterManager::start()
         detectRecommendMasters();
 }
 
+void SuperMasterManager::stop()
+{
+    boost::lock_guard<boost::mutex> lock(mutex_);
+    zookeeper_->disconnect();
+}
+
 void SuperMasterManager::detectSearchMasters()
 {
     boost::lock_guard<boost::mutex> lock(mutex_);
@@ -77,7 +83,31 @@ void SuperMasterManager::detectSearchMasters()
 
 void SuperMasterManager::process(ZooKeeperEvent& zkEvent)
 {
-    // boost::lock_guard<boost::mutex> lock(mutex_);
+    bool restarted = false;
+    {
+        boost::lock_guard<boost::mutex> lock(mutex_);
+        if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
+        {
+            LOG(WARNING) << "super master node disconnected by zookeeper, state : " << zookeeper_->getStateString();
+            zookeeper_->disconnect();
+            zookeeper_->connect(true);
+            if (!zookeeper_->isConnected())
+            {
+                LOG (ERROR) << "failed to connect to ZooKeeper";
+                return;
+            }
+            restarted = true;
+        }
+    }
+    if (restarted)
+    {
+        if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_SEARCH)
+            detectSearchMasters();
+
+        if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_RECOMMEND)
+            detectRecommendMasters();
+        LOG (WARNING) << "restarted ZooKeeper for SuperMasterManager finished";
+    }
 }
 
 void SuperMasterManager::detectRecommendMasters()

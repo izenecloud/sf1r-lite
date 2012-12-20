@@ -6,6 +6,7 @@
 #include <log-manager/LogServerConnection.h>
 #include <la-manager/LAPool.h>
 #include <license-manager/LicenseManager.h>
+#include <license-manager/LicenseCustManager.h>
 #include <aggregator-manager/CollectionDataReceiver.h>
 #include <node-manager/ZooKeeperManager.h>
 #include <node-manager/SuperNodeManager.h>
@@ -165,6 +166,8 @@ bool CobraProcess::initLicenseManager()
         return false;
     }
     std::string path = licenseDir + LicenseManager::LICENSE_KEY_FILENAME;
+    LicenseCustManager::get()->setLicenseFilePath(path);
+    LicenseCustManager::get()->setCollectionInfo();
     licenseManager.reset( new LicenseManager("1.0.0", path, false) );
 
     path = licenseDir + LicenseManager::LICENSE_REQUEST_FILENAME;
@@ -174,11 +177,12 @@ bool CobraProcess::initLicenseManager()
         return false;
     }
 
-    if ( !licenseManager->validateLicenseFile() )
-    {
-        std::cerr << "[Warning] : license is invalid. Now sf1 will be worked on trial mode." << std::endl;
-        LicenseManager::continueIndex_ = false;
-    }
+  //  if ( !licenseManager->validateLicenseFile() )
+  //  {
+  //      std::cerr << "[Warning] : license is invalid. Now sf1 will be worked on trial mode." << std::endl;
+  //      LicenseManager::continueIndex_ = false;
+  //     std::cout<<"[Warning]: LicenseManager:: continueIndex = false"<<std::endl;
+  //  }
 
 #endif // COBRA_RESTRICT
     return true;
@@ -330,6 +334,9 @@ void CobraProcess::scheduleTask(const std::string& collection)
 
     CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
     CollectionTaskScheduler::get()->schedule(collectionHandler);
+#ifdef COBRA_RESTRICT
+    	CollectionTaskScheduler::get()->scheduleLicenseTask(collection);
+#endif // COBRA_RESTRICT
 }
 
 int CobraProcess::run()

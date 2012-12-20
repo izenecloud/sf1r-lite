@@ -9,9 +9,13 @@
 #include <aggregator-manager/GetRecommendWorker.h>
 #include <aggregator-manager/UpdateRecommendWorker.h>
 #include <common/JobScheduler.h>
+#include <license-manager/LicenseCustManager.h>
+#include <license-manager/LicenseTool.h>
 
 #include <boost/filesystem.hpp>
 #include <memory> // for std::auto_ptr
+
+using namespace license_module;
 
 namespace bfs = boost::filesystem;
 
@@ -52,6 +56,20 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
 
     if(findHandler(collectionName) != NULL)
         return false;
+
+#ifdef COBRA_RESTRICT
+    if (!LicenseCustManager::get()->hasCollection(collectionName))
+    {
+    	return false;
+    }
+    std::pair<uint32_t, uint32_t> date;
+    uint32_t currentDate = license_tool::getCurrentDate();
+    LicenseCustManager::get()->getDate(collectionName, date);
+    if (date.first > currentDate || date.second < currentDate)
+    {
+    	return false;
+    }
+#endif
 
     std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
 

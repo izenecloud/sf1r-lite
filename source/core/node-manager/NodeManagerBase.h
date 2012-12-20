@@ -86,7 +86,7 @@ protected:
 
     void setSf1rNodeData(ZNode& znode);
 
-    void enterCluster();
+    void enterCluster(bool start_master = true);
 
     /**
      * Deregister SF1 node on exit

@@ -361,7 +361,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         idManager_->coolDown();
         return false;
     }
-		
+
     indexManager_->getIndexReader();
 
     indexProgress_.getIndexingStatus(indexStatus_);
@@ -592,6 +592,10 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     if (ret && (updateType != IndexWorker::RTYPE))
     {
         searchWorker_->clearSearchCache();
+        ///clear filter cache because of * queries:
+        ///filter will be added into documentiterator 
+        ///together with AllDocumentIterator
+        searchWorker_->clearFilterCache();		
         doMining_();
     }
 
@@ -760,6 +764,10 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     if (ret)
     {
         searchWorker_->clearSearchCache();
+        ///clear filter cache because of * queries:
+        ///filter will be added into documentiterator 
+        ///together with AllDocumentIterator
+        searchWorker_->clearFilterCache();		
         doMining_();
     }
 
@@ -1073,6 +1081,7 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     boost::this_thread::interruption_point();
 
     searchWorker_->clearSearchCache();
+    searchWorker_->clearFilterCache();
 
     return true;
 }
@@ -1092,7 +1101,7 @@ bool IndexWorker::insertDoc_(
     }
     if (immediately)
         return doInsertDoc_(document, indexDocument);
-	
+
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
     UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
     updateData.get<0>() = INSERT;
@@ -1177,9 +1186,12 @@ bool IndexWorker::doUpdateDoc_(
 
         if (!documentManager_->removeDocument(oldId))
         {
-            //LOG(WARNING) << "document " << oldId << " is already deleted";
+            LOG(WARNING) << "document " << oldId << " is already deleted";
         }
-
+        else
+        {
+            miningTaskService_->incDeletedDocBeforeMining();
+        }
         indexManager_->updateDocument(indexDocument);
 
         if (!documentManager_->insertDocument(document))
@@ -1218,37 +1230,6 @@ void IndexWorker::flushUpdateBuffer_()
         UpdateBufferDataType& updateData = it->second;
         switch (updateData.get<0>())
         {
-        case GENERAL:
-        {
-            uint32_t oldId = it->first;
-            if (!mergeDocument_(oldId, updateData.get<1>(), updateData.get<2>(), true))
-            {
-                //updateData.get<0>() = UNKNOWN;
-                break;
-            }
-            documentManager_->removeDocument(oldId);
-            break;
-        }
-
-        case REPLACE:
-        {
-            uint32_t oldId = it->first;
-            if (mergeDocument_(oldId, updateData.get<1>(), updateData.get<2>(), false))
-                documentManager_->updateDocument(updateData.get<1>());
-            break;
-        }
-
-        default:
-            break;
-        }
-    }
-
-    for (UpdateBufferType::iterator it = updateBuffer_.begin();
-            it != updateBuffer_.end(); ++it)
-    {
-        UpdateBufferDataType& updateData = it->second;
-        switch (updateData.get<0>())
-        {
         case INSERT:
         {
             if(documentManager_->insertDocument(updateData.get<1>()))
@@ -1260,19 +1241,45 @@ void IndexWorker::flushUpdateBuffer_()
                 LOG(ERROR) << "Document Insert Failed in SDB. " << updateData.get<1>().property("DOCID");
             break;
         }
+
         case GENERAL:
         {
-            if(documentManager_->insertDocument(updateData.get<1>()))
-                indexManager_->updateDocument(updateData.get<2>());
-            else
+            uint32_t oldId = updateData.get<2>().getOldId();
+            if (!mergeDocument_(oldId, updateData.get<1>(), updateData.get<2>(), true))
+            {
+                //updateData.get<0>() = UNKNOWN;
+                LOG(INFO) << "doc id: " << it->first << " merger failed in flush general.";
+                break;
+            }
+
+            if(documentManager_->removeDocument(oldId))
+            {
+                miningTaskService_->incDeletedDocBeforeMining();
+            }
+
+            indexManager_->updateDocument(updateData.get<2>());
+
+            if(!documentManager_->insertDocument(updateData.get<1>()))
+            {
                 LOG(ERROR) << "Document Insert Failed in SDB. " << updateData.get<1>().property("DOCID");
+            }
+            break;
+        }
+
+        case REPLACE:
+        {
+            uint32_t oldId = updateData.get<2>().getOldId();
+            if (mergeDocument_(oldId, updateData.get<1>(), updateData.get<2>(), false))
+                documentManager_->updateDocument(updateData.get<1>());
             break;
         }
 
         case RTYPE:
+        {
             // Store the old property value.
             indexManager_->updateRtypeDocument(updateData.get<3>(), updateData.get<2>());
             break;
+        }
 
         default:
             break;
@@ -1292,6 +1299,7 @@ bool IndexWorker::deleteDoc_(docid_t docid, time_t timestamp)
     }
     if (documentManager_->removeDocument(docid))
     {
+        miningTaskService_->incDeletedDocBeforeMining();
         indexManager_->removeDocument(collectionId_, docid);
         ++numDeletedDocs_;
         indexStatus_.numDocs_ = indexManager_->numDocs();
@@ -1705,7 +1713,6 @@ bool IndexWorker::prepareIndexDocumentStringProperty_(
                         MultiValueIndexPropertyType indexData =
                             std::make_pair(laInputs_[iter->getPropertyId()], props);
                         indexDocument.insertProperty(indexerPropertyConfig, indexData);
-
                     }
                     else
                     {

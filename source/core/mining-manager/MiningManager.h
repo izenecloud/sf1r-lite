@@ -104,6 +104,7 @@ class SuffixMatchManager;
 class IncrementalManager;
 class ProductMatcher;
 class MiningTaskBuilder;
+class GroupLabelKnowledge;
 
 namespace sim
 {
@@ -185,11 +186,21 @@ public:
                           std::vector<izenelib::util::UString>& realtimeQueries);
     /**
      * @brief Get the unique document list that eliminates duplicates from the result.
-     * @param docIdList the docs inputed.
-     * @param removedDocs the docs removed.
+     * For example, given @p docIdList "1 2 3 4 5 6", and "2 4 6" are duplicated
+     * docs, then @p cleanDocs would be "1 3 5".
      */
-    bool getUniqueDocIdList(const std::vector<uint32_t>& docIdList,
-                            std::vector<uint32_t>& cleanDocs);
+    bool getUniqueDocIdList(
+        const std::vector<uint32_t>& docIdList,
+        std::vector<uint32_t>& cleanDocs);
+
+    /**
+     * @brief Get the unique docid positions in original list.
+     * For example, given @p docIdList "1 2 3 4 5 6", and "2 4 6" are duplicated
+     * docs, then @p uniquePosList would be "0 2 4".
+     */
+    bool getUniquePosList(
+        const std::vector<uint32_t>& docIdList,
+        std::vector<std::size_t>& uniquePosList);
 
     /**
      * @brief Get the duplicated documents for a given document.
@@ -344,6 +355,8 @@ public:
             uint32_t knnDist,
             uint32_t start);
 
+    void incDeletedDocBeforeMining();
+
     bool GetSuffixMatch(
             const SearchKeywordOperation& actionOperation,
             uint32_t max_docs,
@@ -423,6 +436,11 @@ public:
     ProductScoreManager* GetProductScoreManager()
     {
         return productScoreManager_;
+    }
+
+    const GroupLabelKnowledge* GetGroupLabelKnowledge() const
+    {
+        return groupLabelKnowledge_;
     }
 
 private:
@@ -509,6 +527,7 @@ private:
     );
 
     bool initMerchantScoreManager_(const ProductRankingConfig& rankConfig);
+    bool initGroupLabelKnowledge_(const ProductRankingConfig& rankConfig);
     bool initProductScorerFactory_(const ProductRankingConfig& rankConfig);
     bool initProductRankerFactory_(const ProductRankingConfig& rankConfig);
 
@@ -607,6 +626,9 @@ private:
     /** Product Score Table Manager */
     ProductScoreManager* productScoreManager_;
 
+    /** the knowledge of top labels for category boosting */
+    GroupLabelKnowledge* groupLabelKnowledge_;
+
     /** Product Score Factory */
     ProductScorerFactory* productScorerFactory_;
 
@@ -637,6 +659,7 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
+    uint32_t deleted_doc_before_mining_;
 };
 
 }

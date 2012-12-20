@@ -5,6 +5,8 @@
 
 #include <bundles/index/IndexTaskService.h>
 
+#include <core/license-manager/LicenseCustManager.h>
+
 namespace sf1r
 {
 
@@ -63,6 +65,34 @@ bool CollectionTaskScheduler::schedule(const CollectionHandler* collectionHandle
     }
 
     return true;
+}
+
+bool CollectionTaskScheduler::scheduleLicenseTask(std::string collectionName)
+{ // Check collection license expiration
+	std::string cronStr = "0 3 * * *"; // start task at 3 am every day.
+
+	std::pair<uint32_t, uint32_t> licenseDate;
+	if (LicenseCustManager::get()->getDate(collectionName, licenseDate))
+	{
+		boost::shared_ptr<ExpirationCheckTask> task(new ExpirationCheckTask(collectionName, licenseDate));
+		if (task && task->setCronExpression(cronStr))
+		{
+			task->setIsCronTask(true);
+			taskList_.push_back(task);
+		}
+		else
+		{
+			LOG(ERROR) << "Failed to set cron expression: "<< cronStr<<" for ExpirationCheckTask";
+			return false;
+		}
+	}
+	else
+	{
+		LOG(ERROR) << "Failed to schedule license task as license date not found.";
+		return false;
+	}
+
+	return true;
 }
 
 void CollectionTaskScheduler::cronTask_()

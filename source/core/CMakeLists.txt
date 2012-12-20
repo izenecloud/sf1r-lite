@@ -14,6 +14,7 @@ INCLUDE_DIRECTORIES(
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
   ${Thrift_INCLUDE_DIR}
+  ${ImageMagick_INCLUDE_DIRS}
 )
 
 FILE(GLOB_RECURSE configuration_SRC "configuration-manager/*.cpp")

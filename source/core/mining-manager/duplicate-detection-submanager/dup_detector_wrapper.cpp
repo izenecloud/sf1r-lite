@@ -239,9 +239,18 @@ bool DupDetectorWrapper::getDuplicatedDocIdList(uint32_t docId, std::vector<uint
 }
 
 /// Get a unique document id list with duplicated ones excluded.
-bool DupDetectorWrapper::getUniqueDocIdList(const std::vector<uint32_t>& docIdList, std::vector<uint32_t>& cleanDocs)
+bool DupDetectorWrapper::getUniqueDocIdList(
+    const std::vector<uint32_t>& docIdList,
+    std::vector<uint32_t>& cleanDocs)
 {
     return dd_->GetUniqueDocIdList(docIdList, cleanDocs);
+}
+
+bool DupDetectorWrapper::getUniquePosList(
+    const std::vector<uint32_t>& docIdList,
+    std::vector<std::size_t>& uniquePosList)
+{
+    return dd_->GetUniquePosList(docIdList, uniquePosList);
 }
 
 uint32_t DupDetectorWrapper::getSignatureForText(
