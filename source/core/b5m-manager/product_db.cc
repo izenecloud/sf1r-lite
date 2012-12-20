@@ -37,6 +37,7 @@ bool ProductProperty::Parse(const Document& doc)
         LOG(ERROR)<<"parse doc error"<<std::endl;
         return false;
     }
+    doc.getString("DATE", date);
     SetIndependent();
     //LOG(INFO)<<"find oid "<<oid<<std::endl;
     UString usource;
@@ -88,6 +89,10 @@ void ProductProperty::Set(Document& doc) const
     doc.property("DOCID") = pid;
     //LOG(INFO)<<"set oid "<<oid<<std::endl;
     doc.property("OID") = oid;
+    if(!date.empty())
+    {
+        doc.property("DATE") = UString(date, UString::UTF_8);
+    }
     if(price.Valid())
     {
         doc.property("Price") = price.ToUString();
@@ -173,6 +178,7 @@ ProductProperty& ProductProperty::operator+=(const ProductProperty& other)
 {
     if(pid.empty()) pid = other.pid;
     if(oid.empty() || other.pid==other.oid) oid = other.oid;
+    if(other.date>date) date = other.date; //use latest date
     price += other.price;
     for(SourceType::const_iterator oit = other.source.begin(); oit!=other.source.end(); ++oit)
     {
@@ -221,7 +227,7 @@ std::string ProductProperty::ToString() const
     std::string spid;
     pid.convertString(spid, izenelib::util::UString::UTF_8);
     std::stringstream ss;
-    ss<<"pid:"<<spid<<",itemcount:"<<itemcount<<",price:"<<price.ToString()<<",source:";
+    ss<<"pid:"<<spid<<",DATE:"<<date<<",itemcount:"<<itemcount<<",price:"<<price.ToString()<<",source:";
     for(SourceType::const_iterator it = source.begin(); it!=source.end(); ++it)
     {
         ss<<"["<<*it<<"]";

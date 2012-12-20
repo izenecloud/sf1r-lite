@@ -17,15 +17,13 @@ B5mpProcessor::B5mpProcessor(const std::string& mdb_instance,
     const std::string& last_mdb_instance)
 : mdb_instance_(mdb_instance), last_mdb_instance_(last_mdb_instance), odoc_count_(0)
 {
-    //consistent_properties will not be updated while SPU matched, they're not SPU related
-    consistent_properties_.push_back("Attribute");
-    consistent_properties_.push_back("Source");
-    consistent_properties_.push_back("Content");
-    consistent_properties_.push_back("DATE");
-    consistent_properties_.push_back("OriginalCategory");
-    consistent_properties_.push_back("Picture");//remove if we use SPU picture in future.
-    consistent_properties_.push_back("TargetCategory");
-    consistent_properties_.push_back("Url");
+    //random_properties will not be updated while SPU matched, they're not SPU related
+    random_properties_.push_back("Source");
+    random_properties_.push_back("Content");
+    random_properties_.push_back("OriginalCategory");
+    random_properties_.push_back("Picture");//remove if we use SPU picture in future.
+    random_properties_.push_back("TargetCategory");
+    random_properties_.push_back("Url");
 }
 
 bool B5mpProcessor::Generate()
@@ -271,9 +269,9 @@ void B5mpProcessor::ProductOutput_(PValueType& pvalue)
         if(ii>0) independent = true;
         if(!independent)
         {
-            for(uint32_t i=0;i<consistent_properties_.size();i++)
+            for(uint32_t i=0;i<random_properties_.size();i++)
             {
-                doc.eraseProperty(consistent_properties_[i]);
+                doc.eraseProperty(random_properties_[i]);
             }
         }
         for(Document::property_iterator it = edoc.propertyBegin();it!=edoc.propertyEnd();it++)

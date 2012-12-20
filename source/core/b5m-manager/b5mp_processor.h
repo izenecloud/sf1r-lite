@@ -63,7 +63,7 @@ namespace sf1r {
         boost::shared_ptr<ScdTypeWriter> writer_;
         boost::shared_ptr<FilterType> filter_; //pfilter
         boost::shared_ptr<FilterType> ofilter_; //ofilter
-        std::vector<std::string> consistent_properties_;
+        std::vector<std::string> random_properties_;
         std::size_t odoc_count_;
 
         //BrandDb* bdb_;
