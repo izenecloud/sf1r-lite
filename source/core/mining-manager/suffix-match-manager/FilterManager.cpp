@@ -345,7 +345,7 @@ void FilterManager::buildGroupFilters(
             faceted::PropValueTable::PropIdList propids;
             // get all leaf group path
             pvt->getPropIdList(docid, propids);
-            for (size_t k = last_docid_forproperty + 1; k < propids.size(); ++k)
+            for (size_t k = 0; k < propids.size(); ++k)
             {
                 std::vector<izenelib::util::UString> groupPath;
                 pvt->propValuePath(propids[k], groupPath);
