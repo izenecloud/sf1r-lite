@@ -31,7 +31,7 @@ bool IndexTaskService::index(unsigned int numdoc)
 {
     bool result = true;
 
-    if (bundleConfig_->isMasterAggregator())
+    if (bundleConfig_->isMasterAggregator() && indexAggregator_->isNeedDistribute())
     {
         task_type task = boost::bind(&IndexTaskService::distributedIndex_, this, numdoc);
         JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);

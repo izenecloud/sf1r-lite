@@ -38,7 +38,7 @@ bool MiningSearchService::getSimilarDocIdList(
         uint32_t maxNum,
         std::vector<std::pair<uint64_t, float> >& result)
 {
-    if (!bundleConfig_->isMasterAggregator_)
+    if (!bundleConfig_->isMasterAggregator_ || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getSimilarDocIdList(documentId, maxNum, result);;
         return true;
@@ -212,7 +212,7 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
     sf1r::docid_t docId = wd.second;
     bool ret = true;
 
-    if (!bundleConfig_->isMasterAggregator_)
+    if (!bundleConfig_->isMasterAggregator_ || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->visitDoc(docId, ret);
     }

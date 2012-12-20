@@ -45,7 +45,7 @@ bool IndexSearchService::getSearchResult(
 {
     CREATE_SCOPED_PROFILER (query, "IndexSearchService", "processGetSearchResults all: total query time");
 
-    if (!bundleConfig_->isMasterAggregator())
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         bool ret = searchWorker_->doLocalSearch(actionItem, resultItem);
         net::aggregator::WorkerResults<KeywordSearchResult> workerResults;
@@ -138,7 +138,7 @@ bool IndexSearchService::getDocumentsByIds(
     RawTextResultFromSIA& resultItem
 )
 {
-    if (!bundleConfig_->isMasterAggregator())
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getDocumentsByIds(actionItem, resultItem);
         return !resultItem.idList_.empty();
@@ -176,7 +176,7 @@ bool IndexSearchService::getInternalDocumentId(
 )
 {
     internalId = 0;
-    if (!bundleConfig_->isMasterAggregator())
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getInternalDocumentId(scdDocumentId, internalId);
     }
