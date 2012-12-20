@@ -1648,7 +1648,6 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
     uint32_t i=0;
     for(;i<result_vector.size();i++)
     {
-        uint32_t cid = result_vector[i].cid;
         uint32_t spu_id = result_vector[i].spu_id;
         const Product& p = products_[spu_id];
         double score = result_vector[i].score;
@@ -1656,6 +1655,7 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
         const WeightType& weight = result_vector[i].weight;
         //double paweight = result_vector[i].paweight;
 #ifdef B5M_DEBUG
+        uint32_t cid = result_vector[i].cid;
         std::cerr<<"[CC]"<<category_list_[cid].name<<","<<products_[spu_id].stitle<<","<<score<<std::endl;
 #endif
         if(SpuMatched_(weight, p))
