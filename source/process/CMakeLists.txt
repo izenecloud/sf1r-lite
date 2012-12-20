@@ -17,7 +17,10 @@ INCLUDE_DIRECTORIES(
   ${Glog_INCLUDE_DIRS}
   ${xml2_INCLUDE_DIRS}
   ${sqlite3_INCLUDE_DIRS}
+  ${ImageMagick_INCLUDE_DIRS}
   )
+
+MESSAGE(STATUE "include path: ${INCLUDE_DIRECTORIES}")
 
 SET(POSCharExtractor_SRC tools/POSCharExtractor.cpp)
 SET(TGTrainerBridge_SRC tools/TGTrainerBridge.cpp)
@@ -29,7 +32,15 @@ FILE(GLOB_RECURSE parsers_SRC "parsers/*.cpp")
 FILE(GLOB_RECURSE renderers_SRC "renderers/*.cpp")
 FILE(GLOB_RECURSE log_server_SRC "log-server/*.cpp")
 FILE(GLOB_RECURSE distribute_SRC "distribute/*.cpp")
+FILE(GLOB_RECURSE img_dup_detector_SRC "ImgDupDetector/*.cpp")
 
+FILE(GLOB img_dup_process_SRC
+  "ImgDup*.cpp"
+  "common/ProcessOptions.cpp"
+  "common/OnSignal.cpp"
+  ${img_dup_detector_SRC}
+  ${CMAKE_SOURCE_DIR}/core/b5m-manager/img_dup_detector.cc
+  )
 
 FILE(GLOB cobra_process_SRC
   "Cobra*.cpp"
@@ -55,6 +66,56 @@ FILE(GLOB log_server_process_SRC
 ADD_DEFINITIONS("-fno-strict-aliasing")
 ADD_EXECUTABLE(CobraProcess ${cobra_process_SRC})
 ADD_EXECUTABLE(LogServerProcess ${log_server_process_SRC})
+ADD_EXECUTABLE(ImgDupDetector ${img_dup_process_SRC})
+
+TARGET_LINK_LIBRARIES(ImgDupDetector
+  sf1r_mining_manager
+  sf1r_license_manager
+  sf1r_b5m_manager
+  sf1r_log_manager
+  sf1r_document_manager
+  sf1r_ranking_manager
+  sf1r_search_manager
+  sf1r_query_manager
+  sf1r_la_manager
+  sf1r_configuration_manager
+  sf1r_index_manager
+  sf1r_directory_manager
+  sf1r_common
+  sf1r_recommend_manager
+  sf1r_aggregator_manager
+  sf1r_node_manager
+  sf1r_product_manager
+  sf1r_b5m_manager
+  sf1r_image_manager
+  sf1r_net
+
+  sf1r_bundle_index
+  sf1r_bundle_product
+  sf1r_bundle_mining
+  sf1r_bundle_recommend
+
+  ${iise_LIBRARIES}
+  ${idmlib_LIBRARIES}
+  ${imllib_LIBRARIES}
+  ${ilplib_LIBRARIES}
+  ${wisekma_LIBRARIES}
+  ${izenecma_LIBRARIES}
+  ${izenejma_LIBRARIES}
+  ${izenelib_LIBRARIES}
+
+  #external
+  ${xml2_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${TokyoCabinet_LIBRARIES}
+  ${Glog_LIBRARIES}
+  ${sqlite3_LIBRARIES}
+  ${MYSQL_LIBRARIES}
+  ${Thrift_LIBS}
+  ${LibCURL_LIBRARIES}
+  ${ImageMagick_LIBRARIES}
+  )
+
 
 TARGET_LINK_LIBRARIES(CobraProcess
   sf1r_mining_manager
