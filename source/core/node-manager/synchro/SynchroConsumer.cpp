@@ -63,6 +63,18 @@ void SynchroConsumer::process(ZooKeeperEvent& zkEvent)
             doWatchProducer();
     }
 
+    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
+    {
+        LOG(WARNING) << "SynchroConsumer node disconnected by zookeeper, state : " << zookeeper_->getStateString();
+        zookeeper_->disconnect();
+        zookeeper_->connect(true);
+        if (zookeeper_->isConnected())
+        {
+            LOG(WARNING) << "SynchroConsumer node reset watch";
+            resetWatch();
+        }
+    }
+
     if (zkEvent.path_ == producerZkNode_)
     {
         resetWatch();

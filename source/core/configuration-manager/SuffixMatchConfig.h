@@ -62,11 +62,13 @@ public:
     SuffixMatchConfig()
         : suffix_match_enable(false)
         , suffix_incremental_enable(false)
+        , suffix_groupcounter_topk(100000)
     {
     }
 
     bool suffix_match_enable;
     bool suffix_incremental_enable;
+    int32_t suffix_groupcounter_topk;
     std::vector<std::string> suffix_match_properties;
     std::string suffix_match_tokenize_dicpath;
     std::vector<std::string> group_filter_properties;
@@ -83,6 +85,7 @@ private:
     {
         ar & suffix_match_enable;
         ar & suffix_incremental_enable;
+        ar & suffix_groupcounter_topk;
         ar & suffix_match_properties;
         ar & suffix_match_tokenize_dicpath;
         ar & group_filter_properties;

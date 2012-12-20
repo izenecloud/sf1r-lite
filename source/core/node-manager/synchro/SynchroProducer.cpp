@@ -126,7 +126,14 @@ bool SynchroProducer::wait(int timeout)
 /* virtual */
 void SynchroProducer::process(ZooKeeperEvent& zkEvent)
 {
+    boost::lock_guard<boost::mutex> lock(produce_mutex_);
     DLOG(INFO) << SYNCHRO_PRODUCER << "process event: "<< zkEvent.toString();
+    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
+    {
+        LOG(WARNING) << "SynchroProducer node disconnected by zookeeper, state : " << zookeeper_->getStateString();
+        zookeeper_->disconnect();
+        zookeeper_->connect(true);
+    }
 }
 
 void SynchroProducer::onNodeDeleted(const std::string& path)
