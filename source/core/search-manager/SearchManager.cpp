@@ -770,9 +770,15 @@ bool SearchManager::doSearch_(
         }
     }
 
-    docid_t curDocId = pDocIterator->skipTo(pParam.docid_begin);
-    while (curDocId < pParam.docid_end)
+    pDocIterator->skipTo(pParam.docid_begin);
+
+    do
     {
+        docid_t curDocId = pDocIterator->doc();
+
+        if (curDocId >= pParam.docid_end)
+            break;
+
         if (groupFilter && !groupFilter->test(curDocId))
             continue;
 
@@ -815,12 +821,8 @@ bool SearchManager::doSearch_(
         START_PROFILER( inserttoqueue )
         (*pParam.scoreItemQueue)->insert(scoreItem);
         STOP_PROFILER( inserttoqueue )
-
-        if (!pDocIterator->next())
-            break;
-
-        curDocId = pDocIterator->doc();
     }
+    while (pDocIterator->next());
 
     if (rangePropertyTable && lowValue <= highValue)
     {
