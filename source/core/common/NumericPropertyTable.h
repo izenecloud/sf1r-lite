@@ -309,7 +309,7 @@ public:
 
     int compareValues(std::size_t lhs, std::size_t rhs) const
     {
-        ReadLock lock(mutex_);
+        //ReadLock lock(mutex_);
         const T& lv = data_[lhs];
         if (lv == invalidValue_) return -1;
         const T& rv = data_[rhs];
