@@ -350,10 +350,7 @@ int MasterManagerBase::detectWorkers()
     }
 
     // update workers' info to aggregators
-    if (good > 0)
-    {
-        resetAggregatorConfig();
-    }
+    resetAggregatorConfig();
 
     return good;
 }
@@ -523,10 +520,7 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
     }
 
     // notify aggregators
-    if (sf1rNode->worker_.isGood_)
-    {
-        resetAggregatorConfig();
-    }
+    resetAggregatorConfig();
 
     // Watch current replica, waiting for node recover
     zookeeper_->isZNodeExists(getNodePath(sf1rNode->replicaId_, sf1rNode->nodeId_), ZooKeeper::WATCH);
@@ -571,12 +565,12 @@ void MasterManagerBase::recover(const std::string& zpath)
 
                 // recovered, and notify aggregators
                 sf1rNode->worker_.isGood_ = true;
-                resetAggregatorConfig();
                 break;
             }
         }
     }
 
+    resetAggregatorConfig();
     masterState_ = MASTER_STATE_STARTED;
 }
 
@@ -619,6 +613,11 @@ void MasterManagerBase::resetAggregatorConfig()
             WorkerMapT::iterator it = workerMap_.find(shardidList[i]);
             if (it != workerMap_.end())
             {
+                if(!it->second->worker_.isGood_)
+                {
+                    LOG(INFO) << "worker_ : " << it->second->nodeId_ << " is not good, so do not added to aggregator.";
+                    continue;
+                }
                 bool isLocal = (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_);
                 aggregatorConfig.addWorker(it->second->host_, it->second->worker_.port_, shardidList[i], isLocal);
             }

@@ -343,6 +343,7 @@ bool SearchWorker::getSearchResult_(
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
     uint32_t KNN_TOP_K_NUM = bundleConfig_->kNNTopKNum_;
     uint32_t KNN_DIST = bundleConfig_->kNNDist_;
+    uint32_t fuzzy_lucky = actionOperation.actionItem_.searchingMode_.lucky_;
 
     // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
     // we don't know which part of results should be retrieved in one node. Currently, the limitation of documents
@@ -350,6 +351,14 @@ bool SearchWorker::getSearchResult_(
     if (!isDistributedSearch)
     {
         topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
+    }
+    else
+    {
+        // distributed search need get more topk since 
+        // each worker can only start topk from 0.
+        TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
+        KNN_TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
+        fuzzy_lucky += actionOperation.actionItem_.pageInfo_.start_;
     }
 
     switch (actionOperation.actionItem_.searchingMode_.mode_)
@@ -371,7 +380,7 @@ bool SearchWorker::getSearchResult_(
 
     case SearchingMode::SUFFIX_MATCH:
         if (!miningManager_->GetSuffixMatch(actionOperation,
-                                            actionOperation.actionItem_.searchingMode_.lucky_,
+                                            fuzzy_lucky,
                                             actionOperation.actionItem_.searchingMode_.usefuzzy_,
                                             topKStart,
                                             actionOperation.actionItem_.filteringList_,
