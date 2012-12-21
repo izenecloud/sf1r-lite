@@ -124,7 +124,8 @@ bool checkDateLabel(
 NS_FACETED_BEGIN
 
 GroupPropParam::GroupPropParam()
-    : isRange_(false)
+    : isRange_(false),
+    group_top_(0)
 {
 }
 
@@ -133,7 +134,8 @@ bool operator==(const GroupPropParam& a, const GroupPropParam& b)
     return a.property_ == b.property_ &&
            a.subProperty_ == b.subProperty_ &&
            a.isRange_ == b.isRange_ &&
-           a.unit_ == b.unit_;
+           a.unit_ == b.unit_ &&
+           a.group_top_ == b.group_top_;
 }
 
 std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam)
@@ -142,6 +144,7 @@ std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam
         << ", sub property: " << groupPropParam.subProperty_
         << ", is range: " << groupPropParam.isRange_
         << ", unit: " << groupPropParam.unit_
+        << ", group top: " << groupPropParam.group_top_
         << std::endl;
 
     return out;
