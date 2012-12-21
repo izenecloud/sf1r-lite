@@ -56,6 +56,7 @@ bool GroupingParser::parse(const Value& grouping)
             propParam.property_ = asString(groupingRule[Keys::property]);
             propParam.subProperty_ = asString(groupingRule[Keys::sub_property]);
             propParam.unit_ = asString(groupingRule[Keys::unit]);
+            propParam.group_top_ = asInt(groupingRule[Keys::grouptop]);
 
             if (groupingRule.hasKey(Keys::range))
             {

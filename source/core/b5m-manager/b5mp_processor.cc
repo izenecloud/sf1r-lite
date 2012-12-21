@@ -6,110 +6,119 @@
 #include <common/ScdParser.h>
 #include <common/Utilities.h>
 #include <product-manager/product_price.h>
-#include <product-manager/uuid_generator.h>
-#include <am/sequence_file/ssfr.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
-#include <configuration-manager/LogServerConnectionConfig.h>
 
 using namespace sf1r;
 
 B5mpProcessor::B5mpProcessor(const std::string& mdb_instance,
     const std::string& last_mdb_instance)
-: mdb_instance_(mdb_instance), last_mdb_instance_(last_mdb_instance)
+: mdb_instance_(mdb_instance), last_mdb_instance_(last_mdb_instance), odoc_count_(0)
 {
+    //random_properties will not be updated while SPU matched, they're not SPU related
+    random_properties_.push_back("Source");
+    random_properties_.push_back("Content");
+    random_properties_.push_back("OriginalCategory");
+    random_properties_.push_back("Picture");//remove if we use SPU picture in future.
+    random_properties_.push_back("TargetCategory");
+    random_properties_.push_back("Url");
 }
 
 bool B5mpProcessor::Generate()
 {
-    //if(historydb_)
-    //{
-        //if(!historydb_->is_open())
-        //{
-            //if(!historydb_->open())
-            //{
-                //LOG(ERROR)<<"B5MHistoryDBHelper open fail"<<std::endl;
-                //return false;
-            //}
-        //}
-    //}
-    //else
-    //{
-        //if(log_server_cfg_ == NULL)
-        //{
-            //LOG(ERROR)<<"log server config empty"<<std::endl;
-            //return false;
-        //}
-        //// use logserver instead of local history 
-        //if(!LogServerClient::Init(*log_server_cfg_))
-        //{
-            //LOG(ERROR) << "Log Server Init failed." << std::endl;
-            //return false;
-        //}
-        //if(!LogServerClient::Test())
-        //{
-            //LOG(ERROR) << "log server test failed" << std::endl;
-            //return false;
-        //}
-    //}
-
-    //if(bdb_!=NULL)
-    //{
-        //if(!bdb_->is_open())
-        //{
-            //if(!bdb_->open())
-            //{
-                //LOG(ERROR)<<"bdb open error"<<std::endl;
-                //return false;
-            //}
-        //}
-    //}
-    ScdMerger::PropertyConfig config;
-    config.output_dir = B5MHelper::GetB5mpPath(mdb_instance_);
-    B5MHelper::PrepareEmptyDir(config.output_dir);
-    config.property_name = "uuid";
-    config.merge_function = boost::bind( &B5mpProcessor::ProductMerge_, this, _1, _2);
-    config.output_function = boost::bind( &B5mpProcessor::ProductOutput_, this, _1, _2);
-    config.output_if_no_position = false;
-    std::string b5mo_mirror = B5MHelper::GetB5moMirrorPath(mdb_instance_);
-    B5MHelper::PrepareEmptyDir(b5mo_mirror);
-    ScdMerger merger(b5mo_mirror, true);
-    merger.AddPropertyConfig(config);
+    std::string b5mo_path = B5MHelper::GetB5moPath(mdb_instance_);
+    PairwiseScdMerger merger(b5mo_path);
+    odoc_count_ = ScdParser::getScdDocCount(b5mo_path);
+    LOG(INFO)<<"o doc count "<<odoc_count_<<std::endl;
+    uint32_t m = odoc_count_/2400000+1;
     if(!last_mdb_instance_.empty())
     {
-        std::string mirror = B5MHelper::GetB5moMirrorPath(last_mdb_instance_);
-        ScdMerger::InputSource is;
-        is.scd_path = mirror;
-        is.position = false;
-        merger.AddInput(is);
+        std::string last_b5mo_mirror = B5MHelper::GetB5moMirrorPath(last_mdb_instance_);
+        merger.SetExistScdPath(last_b5mo_mirror);
+        m = odoc_count_/1200000+1;
     }
-    ScdMerger::InputSource is;
-    is.scd_path = B5MHelper::GetB5moPath(mdb_instance_);
-    is.position = true;
-    merger.AddInput(is);
+    merger.SetM(m);
+    merger.SetMProperty("uuid");
+    std::string output_dir = B5MHelper::GetB5moMirrorPath(mdb_instance_);
+    B5MHelper::PrepareEmptyDir(output_dir);
+    merger.SetOutputPath(output_dir);
+    merger.SetOutputer(boost::bind( &B5mpProcessor::B5moOutput_, this, _1, _2));
+    merger.SetMEnd(boost::bind( &B5mpProcessor::OutputAll_, this));
+    std::string p_output_dir = B5MHelper::GetB5mpPath(mdb_instance_);
+    B5MHelper::PrepareEmptyDir(p_output_dir);
+    writer_.reset(new ScdTypeWriter(p_output_dir));
     if(!last_mdb_instance_.empty())
     {
-        uint32_t m = ScdParser::getScdDocCount(is.scd_path)/1200000+1;
-        merger.SetModSplit(m);
+        filter_.reset(new FilterType(odoc_count_+100, 0.0000000001));
+        ofilter_.reset(new FilterType(odoc_count_+100, 0.0000000001));
+        merger.SetPreprocessor(boost::bind( &B5mpProcessor::FilterTask_, this, _1));
     }
-
-    //po_map_writer_ = new PoMapWriter(B5MHelper::GetPoMapPath(mdb_instance_));
-    //po_map_writer_->Open();
-    merger.Output();
-    //po_map_writer_->Close();
-    //delete po_map_writer_;
-    //po_map_writer_ = NULL;
-    //if(bdb_!=NULL)
-    //{
-        //bdb_->flush();
-    //}
+    merger.Run();
+    writer_->Close();
     return true;
 }
 
+void B5mpProcessor::FilterTask_(ValueType& value)
+{
+    Document& doc = value.doc;
+    uint128_t pid = GetPid_(doc);
+    if(pid==0) return;
+    uint128_t oid = GetOid_(doc);
+    if(oid==0) return;
+    filter_->Insert(pid);
+    ofilter_->Insert(oid);
+}
 
-void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::ValueType& another_value)
+bool B5mpProcessor::B5moValid_(const Document& doc)
+{
+    uint128_t pid = GetPid_(doc);
+    if(pid==0) return false;
+    uint128_t oid = GetOid_(doc);
+    if(oid==0) return false;
+    if(!last_mdb_instance_.empty())
+    {
+        if(filter_->Get(pid)||ofilter_->Get(oid))
+        {
+            //LOG(INFO)<<"valid b5mo "<<B5MHelper::Uint128ToString(oid)<<std::endl;
+            return true;
+        }
+        else return false;
+    }
+    else return true;
+
+}
+
+void B5mpProcessor::B5moOutput_(ValueType& value, int status)
+{
+    uint128_t pid = GetPid_(value.doc);
+    if(pid==0) return;
+    if(!B5moValid_(value.doc)) return;
+    bool independent_mode = false;
+    uint128_t oid = GetOid_(value.doc);
+    if(oid==pid && last_mdb_instance_.empty()) independent_mode = true;
+    if(!independent_mode)
+    {
+        PValueType& pvalue = cache_[pid];
+        if(status==PairwiseScdMerger::OLD||status==PairwiseScdMerger::EXIST)
+        {
+            ProductMerge_(pvalue.first, value);
+        }
+        if(status!=PairwiseScdMerger::OLD)
+        {
+            ProductMerge_(pvalue.second, value);
+        }
+    }
+    else
+    {
+        PValueType pvalue;
+        ProductMerge_(pvalue.second, value);
+        ProductOutput_(pvalue);
+    }
+}
+
+void B5mpProcessor::ProductMerge_(ValueType& value, const ValueType& another_value)
 {
     //value is pdoc or empty, another_value is odoc
     ProductProperty pp;
@@ -190,9 +199,24 @@ void B5mpProcessor::ProductMerge_(ScdMerger::ValueType& value, const ScdMerger::
     //po_map_writer_->Append(ipid, oid);
 
 }
-
-void B5mpProcessor::ProductOutput_(Document& doc, int& type)
+void B5mpProcessor::OutputAll_()
 {
+    for(CacheIterator it = cache_.begin();it!=cache_.end();it++)
+    {
+        PValueType& pvalue = it->second;
+        ProductOutput_(pvalue);
+    }
+    cache_.clear();
+}
+void B5mpProcessor::GetOutputP_(ValueType& value)
+{
+    if(value.empty())
+    {
+        value.type = NOT_SCD;
+        return;
+    }
+    Document& doc = value.doc;
+    int& type = value.type;
     doc.eraseProperty("OID");
     int64_t itemcount = 0;
     doc.getProperty("itemcount", itemcount);
@@ -204,30 +228,13 @@ void B5mpProcessor::ProductOutput_(Document& doc, int& type)
         doc.eraseProperty(B5MHelper::GetSPTPropertyName());
     }
 
-    //UString docid;
-    //std::string docid_s;
-    //doc.getProperty("DOCID", docid);
-    //docid.convertString(docid_s, izenelib::util::UString::UTF_8);
-    //std::string offerids_s;
-    //if(historydb_)
-    //{
-        //historydb_->pd_get(docid_s, offerids_s);
-    //}
-    //else
-    //{
-        //LogServerClient::GetOldDocIdList(docid_s, offerids_s);
-    //}
-    //doc.property("OldOfferIds") = UString(offerids_s, UString::UTF_8);
+    doc.eraseProperty("Source");
+    doc.eraseProperty("DATE");
+    doc.eraseProperty("DATE");
+
 
     if(itemcount<=0)
     {
-        //if(!offerids_s.empty())
-        //{
-            //cout << "===== itemcount = 0 but old offers not empty, docid:" << 
-                //docid_s << "offerids:" << offerids_s <<endl;
-            //cout << "this product would be reserved for keep consistent." << endl;
-            //return;
-        //}
 
         type = DELETE_SCD;
     }
@@ -235,17 +242,71 @@ void B5mpProcessor::ProductOutput_(Document& doc, int& type)
     {
         doc.clearExceptDOCID();
     }
-    //else if(bdb_!=NULL)
-    //{
-        //UString spid;
-        //doc.getProperty("DOCID", spid);
-        //uint128_t pid = B5MHelper::UStringToUint128(spid);
-        //UString brand;
-        //doc.getProperty(B5MHelper::GetBrandPropertyName(), brand);
-        //if(brand.length()>0)
-        //{
-            //bdb_->set(pid, brand);
-        //}
-    //}
+    if(type!=DELETE_SCD)
+    {
+        if(doc.getPropertySize()<2)
+        {
+            value.type = NOT_SCD;
+        }
+    }
+}
+
+void B5mpProcessor::ProductOutput_(PValueType& pvalue)
+{
+    ValueType& value = pvalue.second;
+    ValueType& evalue = pvalue.first;
+    GetOutputP_(evalue);
+    GetOutputP_(value);
+    if(value.empty()) return;
+    if(value.type==NOT_SCD) return;
+    if(!evalue.empty()&&value.type==UPDATE_SCD)
+    {
+        Document& doc = value.doc;
+        Document& edoc = evalue.doc;
+        bool independent = false;
+        int64_t ii = 0;
+        doc.getProperty("independent", ii);
+        if(ii>0) independent = true;
+        if(!independent)
+        {
+            for(uint32_t i=0;i<random_properties_.size();i++)
+            {
+                doc.eraseProperty(random_properties_[i]);
+            }
+        }
+        for(Document::property_iterator it = edoc.propertyBegin();it!=edoc.propertyEnd();it++)
+        {
+            const std::string& pname = it->first;
+            if(pname=="DOCID") continue;
+            PropertyValue& ev = it->second;
+            if(doc.hasProperty(pname))
+            {
+                PropertyValue& v = doc.property(pname);
+                if(v==ev)
+                {
+                    doc.eraseProperty(pname);
+                }
+            }
+        }
+        if(doc.getPropertySize()<2)
+        {
+            value.type = NOT_SCD;
+        }
+    }
+    writer_->Append(value.doc, value.type);
+}
+uint128_t B5mpProcessor::GetPid_(const Document& doc)
+{
+    std::string spid;
+    doc.getString("uuid", spid);
+    if(spid.empty()) return 0;
+    return B5MHelper::StringToUint128(spid);
+}
+uint128_t B5mpProcessor::GetOid_(const Document& doc)
+{
+    std::string soid;
+    doc.getString("DOCID", soid);
+    if(soid.empty()) return 0;
+    return B5MHelper::StringToUint128(soid);
 }
 

@@ -13,7 +13,6 @@ CONFIGURE_FILE(
   )
 
 ADD_SUBDIRECTORY(document-manager)
-ADD_SUBDIRECTORY(mining-manager)
 ADD_SUBDIRECTORY(ranking-manager)
 ADD_SUBDIRECTORY(query-manager)
 ADD_SUBDIRECTORY(log-manager)
@@ -26,3 +25,4 @@ ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(product-manager)
 ADD_SUBDIRECTORY(b5m-manager)
 ADD_SUBDIRECTORY(aggregator-manager)
+ADD_SUBDIRECTORY(img-dup-detector)

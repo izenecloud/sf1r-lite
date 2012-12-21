@@ -222,6 +222,17 @@ void GroupFilter::getGroupRep(
         attrCounter_->getGroupRep(groupParam_.attrGroupNum_, attrRep);
     }
 
+    bool needResize = false;
+    std::map<std::string, int> grouptop_for_props;
+    for(size_t i = 0; i < groupParam_.groupProps_.size(); ++i)
+    {
+        grouptop_for_props[groupParam_.groupProps_[i].property_] = groupParam_.groupProps_[i].group_top_;
+        if (groupParam_.groupProps_[i].group_top_ > 0)
+            needResize = true;
+    }
+    if(needResize)
+        groupRep.ResizeTo(grouptop_for_props);
+
     LOG(INFO) << "GroupFilter::getGroupRep() costs " << timer.elapsed() << " seconds";
 }
 
