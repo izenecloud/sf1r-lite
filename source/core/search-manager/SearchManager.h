@@ -82,12 +82,29 @@ public:
                                      uint32_t start, std::vector<uint32_t>& docid_list, std::vector<float>& result_score_list,
                                      std::vector<float>& custom_score_list);
 
+    /**
+     * get search results.
+     *
+     * @param actionOperation the search parameters
+     * @param searchResult it stores the search results
+     * @param limit at most how many docs to return. Generally it's TOP_K_NUM.
+     * @param offset the index offset of the first returned doc in all candidate
+     *        docs, start from 0. Generally it's a multiple of TOP_K_NUM.
+     *
+     * @note in SF1R driver API documents/search(), there are also such
+     *       parameters as "offset" and "limit", which are used for pagination.
+     *
+     *       While the @p offset and @p limit of this method have different
+     *       meanings, they are used to get a batch of docs.
+     *
+     *       By putting the batch into cache, there is no need to call this
+     *       method again as long as the cache is hit.
+     */
     bool search(
         const SearchKeywordOperation& actionOperation,
         KeywordSearchResult& searchResult,
-        uint32_t topK = 200,
-        uint32_t start = 0,
-        bool enable_parallel_searching = false);
+        std::size_t limit,
+        std::size_t offset);
 
     bool rerank(
         const KeywordSearchActionItem& actionItem,
@@ -120,14 +137,44 @@ public:
     }
 
 private:
+    void prepareThreadParams_(
+        const SearchKeywordOperation& actionOperation,
+        DistKeywordSearchInfo& distSearchInfo,
+        std::size_t heapSize,
+        std::vector<SearchThreadParam>& threadParams);
+
+    void getThreadInfo_(
+        const DistKeywordSearchInfo& distSearchInfo,
+        std::size_t& threadNum,
+        std::size_t& runningNode);
+
+    bool executeThreadParams_(
+        std::vector<SearchThreadParam>& threadParams);
+
+    bool executeSingleThread_(
+        SearchThreadParam& threadParam);
+
+    bool executeMultiThreads_(
+        std::vector<SearchThreadParam>& threadParams);
+
+    bool mergeThreadParams_(
+        const SearchKeywordOperation& actionOperation,
+        std::vector<SearchThreadParam>& threadParams) const;
+
+    bool fetchSearchResult_(
+        std::size_t offset,
+        SearchThreadParam& threadParam,
+        KeywordSearchResult& searchResult);
+
     bool doSearch_(
         SearchThreadParam& pParam,
         CombinedDocumentIterator* pDocIterator,
         faceted::GroupFilter* groupFilter,
         ScoreDocEvaluator& scoreDocEvaluator);
 
-    void doSearchInThreadOneParam(SearchThreadParam* pParam,
-                                  boost::detail::atomic_count* finishedJobs);
+    void doSearchInThreadOneParam(
+        SearchThreadParam* pParam,
+        boost::detail::atomic_count* finishedJobs);
 
     bool doSearchInThread(SearchThreadParam& pParam);
 
@@ -169,6 +216,7 @@ private:
 
 private:
     IndexBundleConfiguration* config_;
+    const bool isParallelEnabled_;
     std::string collectionName_;
     boost::shared_ptr<IndexManager> indexManagerPtr_;
     boost::shared_ptr<DocumentManager> documentManagerPtr_;

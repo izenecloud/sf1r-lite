@@ -45,6 +45,16 @@ public:
     std::vector<std::pair<std::string, std::vector<int64_t> > > sortPropertyInt64DataList_;
     std::vector<std::pair<std::string, std::vector<float> > > sortPropertyFloatDataList_;
 
+    bool isOptionGatherInfo() const
+    {
+        return effective_ && option_ == OPTION_GATHER_INFO;
+    }
+
+    bool isOptionCarriedInfo() const
+    {
+        return effective_ && option_ == OPTION_CARRIED_INFO;
+    }
+
     void swap(DistKeywordSearchInfo& other)
     {
         using std::swap;

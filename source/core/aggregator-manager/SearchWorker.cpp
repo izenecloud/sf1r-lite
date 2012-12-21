@@ -389,8 +389,7 @@ bool SearchWorker::getSearchResult_(
         if (!searchManager_->search(actionOperation,
                                     resultItem,
                                     TOP_K_NUM,
-                                    topKStart,
-                                    bundleConfig_->enable_parallel_searching_))
+                                    topKStart))
         {
             std::string newQuery;
 
@@ -408,8 +407,7 @@ bool SearchWorker::getSearchResult_(
             if (!searchManager_->search(actionOperation,
                                         resultItem,
                                         TOP_K_NUM,
-                                        topKStart,
-                                        bundleConfig_->enable_parallel_searching_))
+                                        topKStart))
             {
                 return true;
             }
