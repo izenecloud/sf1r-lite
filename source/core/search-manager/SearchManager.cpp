@@ -374,7 +374,14 @@ bool SearchManager::search(
             }
         }
     }
-    size_t count = start > 0 ? (finalResultQueue->size() - start) : finalResultQueue->size();
+
+    size_t count = finalResultQueue->size();
+    if (start > count)
+        count = 0;
+    else if(start > 0)
+    {
+        count -= start;
+    }
     docIdList.resize(count);
     rankScoreList.resize(count);
     if (customRanker)
