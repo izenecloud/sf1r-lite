@@ -258,6 +258,12 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="WikiGraph">
+        <xs:complexType>
+            <xs:attribute name="path" type="xs:string" use="optional" />
+        </xs:complexType>
+    </xs:element>
+
     <xs:element name="Incremental">
         <xs:complexType>
             <xs:attribute name="enable" type="YesNoType" use="required" />
@@ -333,6 +339,7 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="TokenizeDictionary" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="WikiGraph" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
         <xs:attribute name="enabletdt" type="YesNoType" use="required"/>
         </xs:complexType>

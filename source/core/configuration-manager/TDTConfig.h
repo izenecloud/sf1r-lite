@@ -16,7 +16,7 @@ class TDTConfig
 public:
     bool perform_tdt_task;
     std::string tdt_tokenize_dicpath;
-
+    std::string wiki_graph_path;
     friend class boost::serialization::access;
 
     template <typename Archive>
@@ -24,6 +24,7 @@ public:
     {
         ar & perform_tdt_task;
         ar & tdt_tokenize_dicpath;
+      //  ar & wiki_graph_path;
     }
 };
 

@@ -33,7 +33,7 @@
 #include "group-manager/PropSharedLockSet.h"
 #include "attr-manager/AttrManager.h"
 #include "faceted-submanager/ctr_manager.h"
-
+#include "tdt-submanager/NaiveTopicDetector.hpp"
 #include "group-label-logger/GroupLabelLogger.h"
 #include "group-label-logger/BackendLabel2FrontendLabel.h"
 #include "merchant-score-manager/MerchantScoreManager.h"
@@ -45,7 +45,7 @@
 #include "product-score-manager/ProductScoreTable.h"
 #include "product-ranker/ProductRankerFactory.h"
 
-#include "tdt-submanager/NaiveTopicDetector.hpp"
+
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/IncrementalManager.hpp"
@@ -487,7 +487,7 @@ bool MiningManager::open()
                     return false;
                 }
             }
-            topicDetector_ = new NaiveTopicDetector(mining_schema_.tdt_config.tdt_tokenize_dicpath);
+            topicDetector_ = new NaiveTopicDetector(mining_schema_.tdt_config.tdt_tokenize_dicpath,cma_path,mining_schema_.tdt_config.wiki_graph_path);//(mining_schema_.tdt_config.tdt_tokenize_dicpath);
         }
 
 

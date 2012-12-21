@@ -1883,6 +1883,17 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             mining_schema.tdt_config.perform_tdt_task= true;
         else
             mining_schema.tdt_config.perform_tdt_task= false;
+         
+        cout<<"enable"<<enable<<endl;
+        task_node = getUniqChildElement(task_node, "WikiGraph", false);
+        if (task_node)
+        {    
+            cout<<"task_node"<<endl;
+            std::string  wiki_graph_path;
+            getAttribute(task_node, "path", wiki_graph_path);
+            cout<<"wiki_graph_path"<<wiki_graph_path<<endl;
+            mining_schema.tdt_config.wiki_graph_path=wiki_graph_path;
+        }
     }
 
     task_node = getUniqChildElement(mining_schema_node, "IISE", false);

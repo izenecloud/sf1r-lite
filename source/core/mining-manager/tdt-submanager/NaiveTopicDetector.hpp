@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "wikipediaGraph.h"
 
 namespace cma
 {
@@ -13,11 +14,11 @@ class OpenCC;
 
 namespace sf1r
 {
-
+//class wikipediaGraph;
 class NaiveTopicDetector
 {
 public:
-    NaiveTopicDetector(const std::string& dict_path);
+    NaiveTopicDetector(const std::string& dict_path,const std::string& cma_path,const std::string& wiki_path);
     ~NaiveTopicDetector();
 
     bool GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit);
@@ -28,6 +29,7 @@ private:
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
     cma::OpenCC* opencc_;
+    wikipediaGraph* wg_;
 };
 }
 
