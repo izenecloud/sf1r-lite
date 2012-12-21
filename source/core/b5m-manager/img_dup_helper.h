@@ -63,18 +63,6 @@ namespace sf1r {
 
             doc["Img"].convertString(attach.img_url, izenelib::util::UString::UTF_8);
             doc["ShareSourceName"].convertString(attach.source_name, izenelib::util::UString::UTF_8);
-/*            if(doc["Img"].length() > 50)
-                analyzer.Analyze(doc["Img"], doc_vector);
-            else
-            {
-                analyzer.Analyze(doc["Img"].substr(25, 18), doc_vector);
-            }
-            if( doc_vector.empty() )
-            {
-                LOG(INFO)<<"Doc Vector empty ... "<<std::endl;
-                return false;
-            }
-*/
             return true;
         }
 
