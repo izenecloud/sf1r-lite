@@ -368,7 +368,6 @@ void GroupRep::ResizeTo(const std::map<std::string, int>& grouptop_for_props)
             ++prop_index;
             if(need_remove_last)
             {
-                std::cout << "removing group : " << last_removing_group << ", " << prop_erase_start->doc_count << std::endl;
                 it = stringGroupRep_.erase(prop_erase_start, it);
                 need_remove_last = false;
             }
@@ -377,7 +376,6 @@ void GroupRep::ResizeTo(const std::map<std::string, int>& grouptop_for_props)
         {
             if(need_remove_last)
             {
-                std::cout << "removing group : " << last_removing_group << ", " << prop_erase_start->doc_count << std::endl;
                 it = stringGroupRep_.erase(prop_erase_start, it);
             }
             if(it->doc_count < topk_doc_count_queue[prop_index].top())
@@ -394,7 +392,6 @@ void GroupRep::ResizeTo(const std::map<std::string, int>& grouptop_for_props)
     }
     if (need_remove_last)
     {
-        std::cout << "removing group : " << last_removing_group << ", " << prop_erase_start->doc_count << std::endl;
         stringGroupRep_.erase(prop_erase_start, stringGroupRep_.end());
     }
 }
