@@ -682,6 +682,10 @@ bool SearchManager::doSearchInThread(const SearchKeywordOperation& actionOperati
             ctfmap = distSearchInfo.ctfmap_;
             maxtfmap = distSearchInfo.maxtfmap_;
         }
+        else
+        {
+            pDocIterator->df_cmtf(dfmap, ctfmap, maxtfmap);
+        }
     }
     else
     {
