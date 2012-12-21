@@ -148,13 +148,13 @@ private:
         std::size_t& threadNum,
         std::size_t& runningNode);
 
-    bool executeThreadParams_(
+    bool runThreadParams_(
         std::vector<SearchThreadParam>& threadParams);
 
-    bool executeSingleThread_(
+    bool runSingleThread_(
         SearchThreadParam& threadParam);
 
-    bool executeMultiThreads_(
+    bool runMultiThreads_(
         std::vector<SearchThreadParam>& threadParams);
 
     bool mergeThreadParams_(

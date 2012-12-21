@@ -193,7 +193,7 @@ bool SearchManager::search(
                          heapSize,
                          threadParams);
 
-    if (!executeThreadParams_(threadParams))
+    if (!runThreadParams_(threadParams))
         return false;
 
     if (distSearchInfo.isOptionGatherInfo())
@@ -277,16 +277,16 @@ void SearchManager::getThreadInfo_(
     }
 }
 
-bool SearchManager::executeThreadParams_(
+bool SearchManager::runThreadParams_(
     std::vector<SearchThreadParam>& threadParams)
 {
     if (threadParams.size() == 1)
-        return executeSingleThread_(threadParams.front());
+        return runSingleThread_(threadParams.front());
 
-    return executeMultiThreads_(threadParams);
+    return runMultiThreads_(threadParams);
 }
 
-bool SearchManager::executeSingleThread_(
+bool SearchManager::runSingleThread_(
     SearchThreadParam& threadParam)
 {
     bool result = false;
@@ -303,7 +303,7 @@ bool SearchManager::executeSingleThread_(
     return result;
 }
 
-bool SearchManager::executeMultiThreads_(
+bool SearchManager::runMultiThreads_(
     std::vector<SearchThreadParam>& threadParams)
 {
     const std::size_t threadNum = threadParams.size();
