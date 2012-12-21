@@ -42,7 +42,7 @@ class MultiPropertyScorer;
 class WANDDocumentIterator;
 class CombinedDocumentIterator;
 class HitQueue;
-class SearchThreadParam;
+struct SearchThreadParam;
 class SearchManagerPreProcessor;
 class CustomRankManager;
 class ScoreDocEvaluator;
@@ -158,7 +158,6 @@ private:
         std::vector<SearchThreadParam>& threadParams);
 
     bool mergeThreadParams_(
-        const SearchKeywordOperation& actionOperation,
         std::vector<SearchThreadParam>& threadParams) const;
 
     bool fetchSearchResult_(

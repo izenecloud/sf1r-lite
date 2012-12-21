@@ -28,6 +28,7 @@
 #include "CustomRankDocumentIterator.h"
 #include "SearchManagerPreProcessor.h"
 #include "ScoreDocEvaluator.h"
+#include "SearchThreadParam.h"
 
 #include <util/swap.h>
 #include <util/get.h>
@@ -174,31 +175,6 @@ boost::shared_ptr<NumericPropertyTableBase>& SearchManager::createPropertyTable(
     return preprocessor_->createPropertyTable(propertyName, pSorterCache_);
 }
 
-struct SearchThreadParam
-{
-    const SearchKeywordOperation* actionOperation;
-    std::size_t totalCount_thread;
-    sf1r::PropertyRange propertyRange;
-    boost::shared_ptr<Sorter> pSorter;
-    CustomRankerPtr customRanker;
-    faceted::GroupRep groupRep_thread;
-    faceted::OntologyRep attrRep_thread;
-    int origin_attr_group_num;
-    boost::shared_ptr<HitQueue> scoreItemQueue;
-    DistKeywordSearchInfo* distSearchInfo;
-    std::map<std::string, unsigned int> counterResults_thread;
-    std::size_t heapSize;
-    std::size_t thread_id;
-    std::size_t docid_begin;
-    std::size_t docid_end;
-    bool  ret;
-    int  running_node;
-
-    SearchThreadParam()
-        : origin_attr_group_num(0)
-    {}
-};
-
 bool SearchManager::search(
     const SearchKeywordOperation& actionOperation,
     KeywordSearchResult& searchResult,
@@ -223,7 +199,7 @@ bool SearchManager::search(
     if (distSearchInfo.isOptionGatherInfo())
         return true;
 
-    if (!mergeThreadParams_(actionOperation, threadParams))
+    if (!mergeThreadParams_(threadParams))
         return false;
 
     if (!fetchSearchResult_(offset, threadParams.front(), searchResult))
@@ -250,17 +226,17 @@ void SearchManager::prepareThreadParams_(
     docid_t maxDocId = documentManagerPtr_->getMaxDocId();
     std::size_t averageDocNum = maxDocId/threadNum + 1;
 
-    threadParams.resize(threadNum);
+    const SearchThreadParam initParam(&actionOperation,
+                                      &distSearchInfo,
+                                      heapSize,
+                                      runningNode);
+    threadParams.resize(threadNum, initParam);
+
     for (std::size_t i = 0; i < threadNum; ++i)
     {
-        threadParams[i].actionOperation   = &actionOperation;
-        threadParams[i].totalCount_thread = 0;
-        threadParams[i].distSearchInfo    = &distSearchInfo;
-        threadParams[i].heapSize          = heapSize;
-        threadParams[i].thread_id         = i;
-        threadParams[i].docid_begin       = i * averageDocNum;
-        threadParams[i].docid_end         = (i+1) * averageDocNum;
-        threadParams[i].running_node      = runningNode;
+        threadParams[i].threadId   = i;
+        threadParams[i].docIdBegin = i * averageDocNum;
+        threadParams[i].docIdEnd   = (i+1) * averageDocNum;
     }
 
     if (threadNum > 1)
@@ -269,7 +245,7 @@ void SearchManager::prepareThreadParams_(
         // all threads' result merged, we need to get all the
         // attribute info in each thread.
         std::swap(actionOperation.actionItem_.groupParam_.attrGroupNum_,
-                  threadParams[0].origin_attr_group_num);
+                  threadParams[0].originAttrGroupNum);
     }
 }
 
@@ -358,7 +334,6 @@ bool SearchManager::executeMultiThreads_(
 }
 
 bool SearchManager::mergeThreadParams_(
-    const SearchKeywordOperation& actionOperation,
     std::vector<SearchThreadParam>& threadParams) const
 {
     const std::size_t threadNum = threadParams.size();
@@ -366,24 +341,24 @@ bool SearchManager::mergeThreadParams_(
         return true;
 
     SearchThreadParam& masterParam = threadParams[0];
-    if (!masterParam.ret)
+    if (!masterParam.isSuccess)
         return false;
 
-    std::size_t& masterTotalCount = masterParam.totalCount_thread;
+    std::size_t& masterTotalCount = masterParam.totalCount;
     PropertyRange& masterPropertyRange = masterParam.propertyRange;
-    std::map<std::string, unsigned int>& masterCounterResults = masterParam.counterResults_thread;
-    faceted::GroupRep& masterGroupRep = masterParam.groupRep_thread;
-    faceted::OntologyRep& masterAttrRep = masterParam.attrRep_thread;
+    std::map<std::string, unsigned int>& masterCounterResults = masterParam.counterResults;
+    faceted::GroupRep& masterGroupRep = masterParam.groupRep;
+    faceted::OntologyRep& masterAttrRep = masterParam.attrRep;
     std::list<faceted::OntologyRep*> otherAttrReps;
     boost::shared_ptr<HitQueue> masterQueue(masterParam.scoreItemQueue);
 
     for (std::size_t i = 1; i < threadNum; ++i)
     {
         SearchThreadParam& param = threadParams[i];
-        if (!param.ret)
+        if (!param.isSuccess)
             return false;
 
-        masterTotalCount += param.totalCount_thread;
+        masterTotalCount += param.totalCount;
         while (param.scoreItemQueue->size() > 0)
         {
             masterQueue->insert(param.scoreItemQueue->pop());
@@ -401,18 +376,18 @@ bool SearchManager::mergeThreadParams_(
                 std::min(lowValue, masterPropertyRange.lowValue_);
         }
 
-        for (std::map<std::string, unsigned>::iterator cit = param.counterResults_thread.begin();
-             cit != param.counterResults_thread.end(); ++cit)
+        for (std::map<std::string, unsigned>::iterator cit = param.counterResults.begin();
+             cit != param.counterResults.end(); ++cit)
         {
             masterCounterResults[cit->first] += cit->second;
         }
 
-        masterGroupRep.merge(param.groupRep_thread);
-        otherAttrReps.push_back(&param.attrRep_thread);
+        masterGroupRep.merge(param.groupRep);
+        otherAttrReps.push_back(&param.attrRep);
     }
 
-    int& attrGroupNum = actionOperation.actionItem_.groupParam_.attrGroupNum_;
-    std::swap(attrGroupNum, masterParam.origin_attr_group_num);
+    int& attrGroupNum = masterParam.actionOperation->actionItem_.groupParam_.attrGroupNum_;
+    std::swap(attrGroupNum, masterParam.originAttrGroupNum);
     masterAttrRep.merge(attrGroupNum, otherAttrReps);
 
     return true;
@@ -423,11 +398,11 @@ bool SearchManager::fetchSearchResult_(
     SearchThreadParam& threadParam,
     KeywordSearchResult& searchResult)
 {
-    std::swap(searchResult.totalCount_, threadParam.totalCount_thread);
-    searchResult.groupRep_.swap(threadParam.groupRep_thread);
-    searchResult.attrRep_.swap(threadParam.attrRep_thread);
+    std::swap(searchResult.totalCount_, threadParam.totalCount);
+    searchResult.groupRep_.swap(threadParam.groupRep);
+    searchResult.attrRep_.swap(threadParam.attrRep);
     searchResult.propertyRange_.swap(threadParam.propertyRange);
-    searchResult.counterResults_.swap(threadParam.counterResults_thread);
+    searchResult.counterResults_.swap(threadParam.counterResults);
 
     std::vector<unsigned int>& docIdList = searchResult.topKDocs_;
     std::vector<float>& rankScoreList = searchResult.topKRankScoreList_;
@@ -486,17 +461,17 @@ void SearchManager::doSearchInThreadOneParam(
     boost::detail::atomic_count* finishedJobs)
 {
     assert(pParam);
-    if(s_cpu_topology_info.cpu_topology_supported)
+    if (s_cpu_topology_info.cpu_topology_supported)
     {
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
-        CPU_SET(s_cpu_topology_info.cpu_topology_array[pParam->running_node][pParam->thread_id], &cpuset);
+        CPU_SET(s_cpu_topology_info.cpu_topology_array[pParam->runningNode][pParam->threadId], &cpuset);
         pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
     }
 
-    if(pParam)
+    if (pParam)
     {
-        pParam->ret = doSearchInThread(*pParam);
+        pParam->isSuccess = doSearchInThread(*pParam);
     }
     ++(*finishedJobs);
 }
@@ -756,7 +731,7 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
 
         if(groupFilter)
         {
-            groupFilter->getGroupRep(pParam.groupRep_thread, pParam.attrRep_thread);
+            groupFilter->getGroupRep(pParam.groupRep, pParam.attrRep);
         }
         return ret;
     }
@@ -779,7 +754,6 @@ bool SearchManager::doSearch_(
     const SearchKeywordOperation& actionOperation = *pParam.actionOperation;
 
     typedef boost::shared_ptr<NumericPropertyTableBase> NumericPropertyTablePtr;
-    pParam.totalCount_thread = 0;
     const std::string& rangePropertyName = actionOperation.actionItem_.rangePropertyName_;
     NumericPropertyTablePtr rangePropertyTable;
     float lowValue = (std::numeric_limits<float>::max) ();
@@ -792,7 +766,8 @@ bool SearchManager::doSearch_(
 
     std::vector<NumericPropertyTablePtr> counterTables;
     std::vector<uint32_t> counterValues;
-    unsigned counterSize = actionOperation.actionItem_.counterList_.size();
+    const std::vector<std::string>& counterList = actionOperation.actionItem_.counterList_;
+    unsigned counterSize = counterList.size();
     unsigned ii = 0;
     if(counterSize)
     {
@@ -800,17 +775,17 @@ bool SearchManager::doSearch_(
         counterValues.resize(counterSize,0);
         for(; ii < counterSize; ++ii)
         {
-            counterTables[ii] = documentManagerPtr_->getNumericPropertyTable(actionOperation.actionItem_.counterList_[ii]);
+            counterTables[ii] = documentManagerPtr_->getNumericPropertyTable(counterList[ii]);
         }
     }
 
-    pDocIterator->skipTo(pParam.docid_begin);
+    pDocIterator->skipTo(pParam.docIdBegin);
 
     do
     {
         docid_t curDocId = pDocIterator->doc();
 
-        if (curDocId >= pParam.docid_end)
+        if (curDocId >= pParam.docIdEnd)
             break;
 
         if (groupFilter && !groupFilter->test(curDocId))
@@ -847,7 +822,7 @@ bool SearchManager::doSearch_(
 
         START_PROFILER( computerankscore )
 
-        ++pParam.totalCount_thread;
+        ++pParam.totalCount;
         scoreDocEvaluator.evaluate(scoreItem);
 
         STOP_PROFILER( computerankscore )
@@ -867,7 +842,8 @@ bool SearchManager::doSearch_(
     {
         for(ii = 0; ii < counterSize; ++ii)
         {
-            pParam.counterResults_thread[actionOperation.actionItem_.counterList_[ii]] = counterValues[ii];
+            const std::string& propName = counterList[ii];
+            pParam.counterResults[propName] = counterValues[ii];
         }
     }
     return true;
