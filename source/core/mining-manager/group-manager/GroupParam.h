@@ -34,12 +34,13 @@ struct GroupPropParam
     std::string subProperty_;
     bool isRange_;
     std::string unit_;
+    int group_top_;
 
     GroupPropParam();
 
-    DATA_IO_LOAD_SAVE(GroupPropParam, &property_&subProperty_&isRange_&unit_);
+    DATA_IO_LOAD_SAVE(GroupPropParam, &property_&subProperty_&isRange_&unit_&group_top_);
 
-    MSGPACK_DEFINE(property_, subProperty_, isRange_, unit_);
+    MSGPACK_DEFINE(property_, subProperty_, isRange_, unit_, group_top_);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)
@@ -48,6 +49,7 @@ struct GroupPropParam
         ar & subProperty_;
         ar & isRange_;
         ar & unit_;
+        ar & group_top_;
     }
 };
 bool operator==(const GroupPropParam& a, const GroupPropParam& b);

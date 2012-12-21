@@ -170,7 +170,6 @@ void FilterManager::generatePropertyId()
     generatePropertyIdForList(date_prop_list_, NUM_FILTER);
     generatePropertyIdForList(num_prop_list_, NUM_FILTER);
 
-    group_attr_filter_ids_.resize(prop_list_.size());
     str_filter_ids_.resize(prop_list_.size());
     num_filter_ids_.resize(prop_list_.size());
     prop_filter_str_list_.resize(prop_list_.size());
@@ -371,20 +370,20 @@ void FilterManager::buildGroupFilters(
         mapGroupFilterToFilterId(
                 property_root_nodes[j],
                 group_filter_data[j],
-                group_attr_filter_ids_[prop_id],
+                str_filter_ids_[prop_id],
                 filter_list_[prop_id]);
 
         std::vector<StrFilterKeyT>().swap(prop_filter_str_list_[prop_id]);
-        prop_filter_str_list_[prop_id].reserve(group_attr_filter_ids_[prop_id].size() + 1);
+        prop_filter_str_list_[prop_id].reserve(str_filter_ids_[prop_id].size() + 1);
 
         prop_filter_str_list_[prop_id].push_back(UString(""));
-        for (StrIdMapT::const_iterator filterstr_it = group_attr_filter_ids_[prop_id].begin();
-                filterstr_it != group_attr_filter_ids_[prop_id].end(); ++filterstr_it)
+        for (StrIdMapT::const_iterator filterstr_it = str_filter_ids_[prop_id].begin();
+                filterstr_it != str_filter_ids_[prop_id].end(); ++filterstr_it)
         {
             prop_filter_str_list_[prop_id].push_back(filterstr_it->first);
         }
 
-        printNode(property_root_nodes[j], 0, group_attr_filter_ids_[prop_id], filter_list_[prop_id]);
+        printNode(property_root_nodes[j], 0, str_filter_ids_[prop_id], filter_list_[prop_id]);
     }
     delete group_root;
     LOG(INFO) << "finish building group filter data.";
@@ -449,13 +448,13 @@ void FilterManager::buildAttrFilters(
     }
 
     // map the attribute filter string to filter id.
-    mapAttrFilterToFilterId(attr_filter_data[0], group_attr_filter_ids_[prop_id], filter_list_[prop_id]);
+    mapAttrFilterToFilterId(attr_filter_data[0], str_filter_ids_[prop_id], filter_list_[prop_id]);
 
     std::vector<StrFilterKeyT>().swap(prop_filter_str_list_[prop_id]);
-    prop_filter_str_list_[prop_id].reserve(group_attr_filter_ids_[prop_id].size() + 1);
+    prop_filter_str_list_[prop_id].reserve(str_filter_ids_[prop_id].size() + 1);
     prop_filter_str_list_[prop_id].push_back(UString(""));
-    for (StrIdMapT::const_iterator filterstr_it = group_attr_filter_ids_[prop_id].begin();
-            filterstr_it != group_attr_filter_ids_[prop_id].end(); ++filterstr_it)
+    for (StrIdMapT::const_iterator filterstr_it = str_filter_ids_[prop_id].begin();
+            filterstr_it != str_filter_ids_[prop_id].end(); ++filterstr_it)
     {
         prop_filter_str_list_[prop_id].push_back(filterstr_it->first);
     }
@@ -634,7 +633,6 @@ void FilterManager::clearFilterId()
 {
     std::map<std::string, size_t>().swap(prop_id_map_);
     std::vector<std::pair<int32_t, std::string> >().swap(prop_list_);
-    StrPropIdVecT().swap(group_attr_filter_ids_);
     StrPropIdVecT().swap(str_filter_ids_);
     NumPropIdVecT().swap(num_filter_ids_);
     PropFilterStrVecT().swap(prop_filter_str_list_);
@@ -666,10 +664,10 @@ void FilterManager::saveFilterId()
         {
         case GROUP_ATTR_FILTER:
             {
-                size_t num = group_attr_filter_ids_[i].size();
+                size_t num = str_filter_ids_[i].size();
                 ofs.write((const char*)&num, sizeof(num));
-                for (StrIdMapT::const_iterator it = group_attr_filter_ids_[i].begin();
-                        it != group_attr_filter_ids_[i].end(); ++it)
+                for (StrIdMapT::const_iterator it = str_filter_ids_[i].begin();
+                        it != str_filter_ids_[i].end(); ++it)
                 {
                     std::string str_key;
                     it->first.convertString(str_key, UString::UTF_8);
@@ -751,9 +749,9 @@ void FilterManager::loadFilterId()
         {
         case GROUP_ATTR_FILTER:
             {
-                group_attr_filter_ids_.resize(i + 1);
+                str_filter_ids_.resize(i + 1);
                 prop_filter_str_list_.resize(i + 1);
-                StrIdMapT& strid_map = group_attr_filter_ids_[i];
+                StrIdMapT& strid_map = str_filter_ids_[i];
                 // start from 1. so reserve the first.
                 std::vector<StrFilterKeyT>().swap(prop_filter_str_list_[i]);
                 prop_filter_str_list_[i].reserve(prop_filter_str_list_.size() + num + 1);
@@ -1150,7 +1148,7 @@ void FilterManager::swapUnchangedFilter(FilterManager* old_filter)
             LOG(ERROR) << "swap filter string id failed for non-exist property: " << *cit;
             continue;
         }
-        group_attr_filter_ids_[prop_id].swap(old_filter->group_attr_filter_ids_[prop_id]);
+        str_filter_ids_[prop_id].swap(old_filter->str_filter_ids_[prop_id]);
         prop_filter_str_list_[prop_id].swap(old_filter->prop_filter_str_list_[prop_id]);
         LOG(INFO) << "property filter data swapped: " << *cit;
     }

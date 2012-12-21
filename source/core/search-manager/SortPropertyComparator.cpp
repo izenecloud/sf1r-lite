@@ -4,7 +4,8 @@ namespace sf1r
 {
 
 SortPropertyComparator::SortPropertyComparator()
-    : type_(UNKNOWN_DATA_PROPERTY_TYPE)
+    : propertyTableLock_(NULL)
+    , type_(UNKNOWN_DATA_PROPERTY_TYPE)
     , size_(0)
 {
     initComparator();
@@ -12,17 +13,28 @@ SortPropertyComparator::SortPropertyComparator()
 
 SortPropertyComparator::SortPropertyComparator(const boost::shared_ptr<NumericPropertyTableBase>& propData)
     : propertyTable_(propData)
+    , propertyTableLock_(& propertyTable_->mutex_)
     , type_(propData->getType())
     , size_(propData->size())
 {
+    propertyTableLock_->lock_shared();
     initComparator();
 }
 
 SortPropertyComparator::SortPropertyComparator(PropertyDataType dataType)
-    : type_(dataType)
+    : propertyTableLock_(NULL)
+    , type_(dataType)
     , size_(0)
 {
     initComparator();
+}
+
+SortPropertyComparator::~SortPropertyComparator()
+{
+    if(propertyTableLock_)
+    {
+        propertyTableLock_->unlock_shared();
+    }
 }
 
 void SortPropertyComparator::initComparator()

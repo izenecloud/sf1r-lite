@@ -1,5 +1,6 @@
 #include "GroupRep.h"
 #include "NumericRangeGroupCounter.h"
+#include <queue>
 
 NS_FACETED_BEGIN
 
@@ -311,6 +312,88 @@ void GroupRep::toOntologyRepItemList()
 
     NumericRangeGroupCounter::toOntologyRepItemList(*this);
     numericRangeGroupRep_.clear();
+}
+
+void GroupRep::ResizeTo(const std::map<std::string, int>& grouptop_for_props)
+{
+    toOntologyRepItemList();
+    // first we need to decide the topk group doc_count, since 
+    // the items is not sorted, we need traverse it first.
+    // each property has a separate topk .
+    typedef std::priority_queue<uint32_t, std::vector<uint32_t>, std::greater<uint32_t> > GroupTopKQueueT;
+    std::vector<GroupTopKQueueT> topk_doc_count_queue;
+    std::string last_property;
+    int grouptop = stringGroupRep_.size();
+    for(std::list<OntologyRepItem>::iterator it = stringGroupRep_.begin();
+        it != stringGroupRep_.end(); ++it)
+    {
+        if(it->level == 0)
+        {
+            if(topk_doc_count_queue.size() > 0)
+                cout << "topk group doc_count in property : " << last_property << ", " << topk_doc_count_queue.back().top() << std::endl;
+            // new property group.
+            topk_doc_count_queue.push_back(GroupTopKQueueT());
+            it->text.convertString(last_property, izenelib::util::UString::UTF_8);
+            std::map<std::string, int>::const_iterator tmpit = grouptop_for_props.find(last_property);
+            if(tmpit != grouptop_for_props.end())
+            {
+                grouptop = tmpit->second;
+            }
+            else
+            {
+                grouptop = stringGroupRep_.size();
+            }
+        }
+        else if(it->level == 1)
+        {
+            topk_doc_count_queue.back().push(it->doc_count);
+        }
+        if(topk_doc_count_queue.back().size() > (size_t)grouptop)
+        {
+            topk_doc_count_queue.back().pop();
+        }
+    }
+    if(topk_doc_count_queue.size() > 0)
+        cout << "topk group doc_count in property : " << last_property << ", " << topk_doc_count_queue.back().top() << std::endl;
+
+    std::list<OntologyRepItem>::iterator prop_erase_start = stringGroupRep_.begin();
+    int prop_index = -1;
+    bool need_remove_last = false;
+    std::string last_removing_group;
+    for(std::list<OntologyRepItem>::iterator it = stringGroupRep_.begin();
+        it != stringGroupRep_.end(); ++it)
+    {
+        if (it->level == 0)
+        {
+            ++prop_index;
+            if(need_remove_last)
+            {
+                it = stringGroupRep_.erase(prop_erase_start, it);
+                need_remove_last = false;
+            }
+        }
+        else if(it->level == 1)
+        {
+            if(need_remove_last)
+            {
+                it = stringGroupRep_.erase(prop_erase_start, it);
+            }
+            if(it->doc_count < topk_doc_count_queue[prop_index].top())
+            {
+                prop_erase_start = it;
+                need_remove_last = true;
+                it->text.convertString(last_removing_group, izenelib::util::UString::UTF_8);
+            }
+            else
+            {
+                need_remove_last = false;
+            }
+        }
+    }
+    if (need_remove_last)
+    {
+        stringGroupRep_.erase(prop_erase_start, stringGroupRep_.end());
+    }
 }
 
 string GroupRep::ToString() const
