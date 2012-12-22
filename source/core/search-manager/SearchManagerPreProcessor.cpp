@@ -5,6 +5,7 @@
 #include <ranking-manager/RankQueryProperty.h>
 #include <ranking-manager/PropertyRanker.h>
 #include <mining-manager/product-scorer/ProductScorerFactory.h>
+#include <mining-manager/product-scorer/ProductScoreParam.h>
 #include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <mining-manager/MiningManager.h>
 #include <common/SFLogger.h>
@@ -335,12 +336,11 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
     if (!isProductRanking(actionItem))
         return relevanceScorerPtr.release();
 
-    const std::string& query = actionItem.env_.queryString_;
-    const std::string& querySource = actionItem.env_.querySource_;
-    return productScorerFactory_->createScorer(query,
-                                               querySource,
-                                               propSharedLockSet,
-                                               relevanceScorerPtr.release());
+    ProductScoreParam scoreParam(actionItem.env_.queryString_,
+                                 actionItem.env_.querySource_,
+                                 propSharedLockSet,
+                                 relevanceScorerPtr.release());
+    return productScorerFactory_->createScorer(scoreParam);
 }
 
 bool SearchManagerPreProcessor::isProductRanking(
