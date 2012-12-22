@@ -8,18 +8,18 @@
 #ifndef SF1R_PRODUCT_SCORER_FACTORY_H
 #define SF1R_PRODUCT_SCORER_FACTORY_H
 
+#include "BoostLabelSelector.h"
 #include <string>
+#include <boost/scoped_ptr.hpp>
 
 namespace sf1r
 {
 class ProductScorer;
 class CustomRankManager;
-class GroupLabelLogger;
 class ProductRankingConfig;
 class MiningManager;
 class ProductScoreConfig;
 class ProductScoreManager;
-class GroupLabelKnowledge;
 struct ProductScoreParam;
 
 namespace faceted { class PropValueTable; }
@@ -62,15 +62,11 @@ private:
 private:
     const ProductRankingConfig& config_;
 
-    MiningManager* miningManager_;
-
     CustomRankManager* customRankManager_;
-
-    GroupLabelLogger* categoryClickLogger_;
 
     const faceted::PropValueTable* categoryValueTable_;
 
-    const GroupLabelKnowledge* groupLabelKnowledge_;
+    boost::scoped_ptr<BoostLabelSelector> labelSelector_;
 
     ProductScoreManager* productScoreManager_;
 };

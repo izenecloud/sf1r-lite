@@ -5,12 +5,8 @@
 #include "CategoryScorer.h"
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
-#include "../group-label-logger/GroupLabelLogger.h"
-#include "../group-label-logger/BackendLabel2FrontendLabel.h"
-#include "../group-label-logger/GroupLabelKnowledge.h"
 #include "../group-manager/PropSharedLockSet.h"
 #include "../product-score-manager/ProductScoreManager.h"
-#include "../util/split_ustr.h"
 #include <configuration-manager/ProductRankingConfig.h>
 #include <memory> // auto_ptr
 #include <glog/logging.h>
@@ -30,18 +26,27 @@ ProductScorerFactory::ProductScorerFactory(
     const ProductRankingConfig& config,
     MiningManager& miningManager)
     : config_(config)
-    , miningManager_(&miningManager)
     , customRankManager_(miningManager.GetCustomRankManager())
-    , categoryClickLogger_(NULL)
     , categoryValueTable_(NULL)
-    , groupLabelKnowledge_(miningManager.GetGroupLabelKnowledge())
     , productScoreManager_(miningManager.GetProductScoreManager())
 {
     const ProductScoreConfig& categoryScoreConfig =
         config.scores[CATEGORY_SCORE];
     const std::string& categoryProp = categoryScoreConfig.propName;
-    categoryClickLogger_ = miningManager.GetGroupLabelLogger(categoryProp);
     categoryValueTable_ = miningManager.GetPropValueTable(categoryProp);
+
+    if (categoryValueTable_)
+    {
+        GroupLabelLogger* clickLogger =
+            miningManager.GetGroupLabelLogger(categoryProp);
+        const GroupLabelKnowledge* labelKnowledge =
+            miningManager.GetGroupLabelKnowledge();
+
+        labelSelector_.reset(new BoostLabelSelector(miningManager,
+                                                    *categoryValueTable_,
+                                                    clickLogger,
+                                                    labelKnowledge));
+    }
 }
 
 ProductScorer* ProductScorerFactory::createScorer(
@@ -113,47 +118,16 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
     const ProductScoreConfig& scoreConfig,
     const ProductScoreParam& scoreParam)
 {
-    if (categoryClickLogger_ == NULL ||
-        categoryValueTable_ == NULL)
+    if (!labelSelector_)
         return NULL;
 
-    std::vector<faceted::PropValueTable::pvid_t> topLabels;
-    std::vector<int> topFreqs;
-    categoryClickLogger_->getFreqLabel(scoreParam.query_, kTopLabelLimit,
-                                       topLabels, topFreqs);
-
-    if (topLabels.empty())
-    {
-        UString ustrQuery(scoreParam.query_, UString::UTF_8);
-        UString backendCategory;
-        if(miningManager_->GetProductCategory(ustrQuery, backendCategory))
-        {
-            UString frontendCategory;
-            if(BackendLabelToFrontendLabel::Get()->Map(backendCategory,frontendCategory))
-            {
-                std::vector<std::vector<izenelib::util::UString> > groupPaths;
-                split_group_path(frontendCategory, groupPaths);
-                if(1 == groupPaths.size())
-                {
-                    faceted::PropValueTable::pvid_t topLabel = categoryValueTable_->propValueId(groupPaths[0]);
-                    topLabels.push_back(topLabel);
-                }
-            }
-        }
-    }
-
-    if (topLabels.empty() &&
-        !scoreParam.querySource_.empty() &&
-        groupLabelKnowledge_)
-    {
-        groupLabelKnowledge_->getKnowledgeLabel(scoreParam.querySource_,
-                                                topLabels);
-    }
-
-    if (!topLabels.empty())
+    std::vector<category_id_t> boostLabels;
+    if (labelSelector_->selectLabel(scoreParam, kTopLabelLimit, boostLabels))
     {
         scoreParam.propSharedLockSet_.insertSharedLock(categoryValueTable_);
-        return new CategoryScorer(scoreConfig, *categoryValueTable_, topLabels);
+        return new CategoryScorer(scoreConfig,
+                                  *categoryValueTable_,
+                                  boostLabels);
     }
 
     return NULL;
