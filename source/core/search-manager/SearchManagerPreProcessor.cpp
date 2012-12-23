@@ -338,6 +338,7 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
 
     ProductScoreParam scoreParam(actionItem.env_.queryString_,
                                  actionItem.env_.querySource_,
+                                 actionItem.groupParam_.boostGroupLabels_,
                                  propSharedLockSet,
                                  relevanceScorerPtr.release());
     return productScorerFactory_->createScorer(scoreParam);

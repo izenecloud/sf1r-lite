@@ -43,8 +43,7 @@ UStrIter parse_ustr(
     UStrIter first,
     UStrIter last,
     const izenelib::util::UString& delimStr,
-    izenelib::util::UString& output
-)
+    izenelib::util::UString& output)
 {
     output.clear();
 
@@ -108,10 +107,21 @@ UStrIter parse_ustr(
 namespace sf1r
 {
 
+void convert_to_ustr_path(
+    const std::vector<std::string>& strPath,
+    std::vector<izenelib::util::UString>& ustrPath)
+{
+    for (std::vector<std::string>::const_iterator it = strPath.begin();
+         it != strPath.end(); ++it)
+    {
+        izenelib::util::UString ustr(*it, ENCODING_TYPE);
+        ustrPath.push_back(ustr);
+    }
+}
+
 void split_group_path(
     const izenelib::util::UString& src,
-    std::vector<std::vector<izenelib::util::UString> >& groupPaths
-)
+    std::vector<std::vector<izenelib::util::UString> >& groupPaths)
 {
     UStrIter it = src.begin();
     UStrIter endIt = src.end();
@@ -153,8 +163,7 @@ void split_group_path(
 
 void split_attr_pair(
     const izenelib::util::UString& src,
-    std::vector<AttrPair>& attrPairs
-)
+    std::vector<AttrPair>& attrPairs)
 {
     UStrIter it = src.begin();
     UStrIter endIt = src.end();

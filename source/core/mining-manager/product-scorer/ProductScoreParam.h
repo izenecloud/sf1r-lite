@@ -8,6 +8,7 @@
 #ifndef SF1R_PRODUCT_SCORE_PARAM_H
 #define SF1R_PRODUCT_SCORE_PARAM_H
 
+#include "../group-manager/GroupParam.h"
 #include <string>
 
 namespace sf1r
@@ -23,6 +24,9 @@ struct ProductScoreParam
     /** used to create @c CategoryScorer */
     const std::string& querySource_;
 
+    /** used to create @c CategoryScorer */
+    const faceted::GroupParam::GroupPathVec& boostGroupLabels_;
+
     /** for concurrent access on category data by @c CategoryScorer */
     faceted::PropSharedLockSet& propSharedLockSet_;
 
@@ -32,10 +36,12 @@ struct ProductScoreParam
     ProductScoreParam(
         const std::string& query,
         const std::string& querySource,
+        const faceted::GroupParam::GroupPathVec& boostGroupLabels,
         faceted::PropSharedLockSet& propSharedLockSet,
         ProductScorer* relevanceScorer)
         : query_(query)
         , querySource_(querySource)
+        , boostGroupLabels_(boostGroupLabels)
         , propSharedLockSet_(propSharedLockSet)
         , relevanceScorer_(relevanceScorer)
     {}

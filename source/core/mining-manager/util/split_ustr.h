@@ -9,11 +9,16 @@
 #define SF1R_SPLIT_USTR_H_
 
 #include <util/ustring/UString.h>
-
+#include <string>
 #include <vector>
 
 namespace sf1r
 {
+
+/** Convert from @p strPath to @p ustrPath. */
+void convert_to_ustr_path(
+    const std::vector<std::string>& strPath,
+    std::vector<izenelib::util::UString>& ustrPath);
 
 /**
  * Split @p src into multiple group paths.
@@ -25,8 +30,7 @@ namespace sf1r
  */
 void split_group_path(
     const izenelib::util::UString& src,
-    std::vector<std::vector<izenelib::util::UString> >& groupPaths
-);
+    std::vector<std::vector<izenelib::util::UString> >& groupPaths);
 
 typedef std::pair<
             izenelib::util::UString, /// attribute name
@@ -43,8 +47,7 @@ typedef std::pair<
  */
 void split_attr_pair(
     const izenelib::util::UString& src,
-    std::vector<AttrPair>& attrPairs
-);
+    std::vector<AttrPair>& attrPairs);
 
 }
 

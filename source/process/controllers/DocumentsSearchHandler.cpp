@@ -438,6 +438,10 @@ bool DocumentsSearchHandler::parse()
         searchParser.mutableGroupLabelAutoSelectLimits()
     );
     swap(
+        actionItem_.groupParam_.boostGroupLabels_,
+        searchParser.mutableBoostGroupLabels()
+    );
+    swap(
         actionItem_.groupParam_.attrLabels_,
         searchParser.mutableAttrLabels()
     );

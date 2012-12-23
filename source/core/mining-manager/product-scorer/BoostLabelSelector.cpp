@@ -1,6 +1,7 @@
 #include "BoostLabelSelector.h"
 #include "ProductScoreParam.h"
 #include "../MiningManager.h"
+#include "../group-manager/PropValueTable.h"
 #include "../group-label-logger/GroupLabelLogger.h"
 #include "../group-label-logger/BackendLabel2FrontendLabel.h"
 #include "../group-label-logger/GroupLabelKnowledge.h"
@@ -32,7 +33,8 @@ bool BoostLabelSelector::selectLabel(
     std::size_t limit,
     std::vector<category_id_t>& boostLabels)
 {
-    if (getFreqLabel_(scoreParam.query_, limit, boostLabels) ||
+    if (convertLabelIds_(scoreParam.boostGroupLabels_, boostLabels) ||
+        getFreqLabel_(scoreParam.query_, limit, boostLabels) ||
         classifyQueryToLabel_(scoreParam.query_, boostLabels) ||
         getKnowledgeLabel_(scoreParam.querySource_, boostLabels))
     {
@@ -40,6 +42,28 @@ bool BoostLabelSelector::selectLabel(
         {
             boostLabels.resize(limit);
         }
+    }
+
+    return !boostLabels.empty();
+}
+
+bool BoostLabelSelector::convertLabelIds_(
+    const faceted::GroupParam::GroupPathVec& groupPathVec,
+    std::vector<category_id_t>& boostLabels)
+{
+    for (faceted::GroupParam::GroupPathVec::const_iterator pathIt =
+             groupPathVec.begin(); pathIt != groupPathVec.end(); ++pathIt)
+    {
+        std::vector<izenelib::util::UString> ustrPath;
+        convert_to_ustr_path(*pathIt, ustrPath);
+
+        faceted::PropValueTable::pvid_t labelId =
+            propValueTable_.propValueId(ustrPath);
+
+        if (labelId == 0)
+            continue;
+
+        boostLabels.push_back(labelId);
     }
 
     return !boostLabels.empty();

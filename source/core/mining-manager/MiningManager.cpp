@@ -34,6 +34,7 @@
 #include "attr-manager/AttrManager.h"
 #include "faceted-submanager/ctr_manager.h"
 
+#include "util/split_ustr.h"
 #include "group-label-logger/GroupLabelLogger.h"
 #include "group-label-logger/BackendLabel2FrontendLabel.h"
 #include "group-label-logger/GroupLabelKnowledge.h"
@@ -1623,13 +1624,9 @@ faceted::PropValueTable::pvid_t MiningManager::propValueId_(
         (propValueTable = groupManager_->getPropValueTable(propName)))
     {
         std::vector<izenelib::util::UString> ustrPath;
-        for (std::vector<std::string>::const_iterator it = groupPath.begin();
-                it != groupPath.end(); ++it)
-        {
-            ustrPath.push_back(izenelib::util::UString(*it, UString::UTF_8));
-        }
-
+        convert_to_ustr_path(groupPath, ustrPath);
         pvId = propValueTable->propValueId(ustrPath);
+
         if (pvId == 0)
         {
             std::string pathStr;
