@@ -19,7 +19,6 @@ namespace sf1r
 
 class MiningManager;
 class DistKeywordSearchInfo;
-class DistKeywordSearchResult;
 class KeywordSearchResult;
 class RawTextResultFromSIA;
 class GetDocumentsByIdsActionItem;
@@ -33,7 +32,7 @@ public:
     {
         BIND_CALL_PROXY_BEGIN(SearchMerger, proxy)
         BIND_CALL_PROXY_2(getDistSearchInfo, net::aggregator::WorkerResults<DistKeywordSearchInfo>, DistKeywordSearchInfo)
-        BIND_CALL_PROXY_2(getDistSearchResult, net::aggregator::WorkerResults<DistKeywordSearchResult>, DistKeywordSearchResult)
+        BIND_CALL_PROXY_2(getDistSearchResult, net::aggregator::WorkerResults<KeywordSearchResult>, KeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryResult, net::aggregator::WorkerResults<KeywordSearchResult>, KeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryMiningResult, net::aggregator::WorkerResults<KeywordSearchResult>, KeywordSearchResult)
         BIND_CALL_PROXY_2(getDocumentsByIds, net::aggregator::WorkerResults<RawTextResultFromSIA>, RawTextResultFromSIA)
@@ -43,7 +42,7 @@ public:
     }
 
     void getDistSearchInfo(const net::aggregator::WorkerResults<DistKeywordSearchInfo>& workerResults, DistKeywordSearchInfo& mergeResult);
-    void getDistSearchResult(const net::aggregator::WorkerResults<DistKeywordSearchResult>& workerResults, DistKeywordSearchResult& mergeResult);
+    void getDistSearchResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult);
     void getSummaryResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult);
     void getSummaryMiningResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult);
     void getMiningResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult);

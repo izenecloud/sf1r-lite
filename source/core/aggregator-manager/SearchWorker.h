@@ -46,7 +46,7 @@ public:
     {
         BIND_CALL_PROXY_BEGIN(SearchWorker, proxy)
         BIND_CALL_PROXY_2(getDistSearchInfo, KeywordSearchActionItem, DistKeywordSearchInfo)
-        BIND_CALL_PROXY_2(getDistSearchResult, KeywordSearchActionItem, DistKeywordSearchResult)
+        BIND_CALL_PROXY_2(getDistSearchResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getSummaryMiningResult, KeywordSearchActionItem, KeywordSearchResult)
         BIND_CALL_PROXY_2(getDocumentsByIds, GetDocumentsByIdsActionItem, RawTextResultFromSIA)
@@ -67,7 +67,7 @@ public:
     /// search
     void getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem);
 
-    void getDistSearchResult(const KeywordSearchActionItem& actionItem, DistKeywordSearchResult& resultItem);
+    void getDistSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     void getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
@@ -102,16 +102,14 @@ public:
     void clearFilterCache();
 
 private:
-    template <typename ResultItemType>
     bool getSearchResult_(
             const KeywordSearchActionItem& actionItem,
-            ResultItemType& resultItem,
+            KeywordSearchResult& resultItem,
             bool isDistributedSearch = true);
 
-    template <typename ResultItemType>
     bool getSearchResult_(
             const KeywordSearchActionItem& actionItem,
-            ResultItemType& resultItem,
+            KeywordSearchResult& resultItem,
             QueryIdentity& identity,
             bool isDistributedSearch = true);
 
@@ -127,11 +125,10 @@ private:
 
     void analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results, bool isQA);
 
-    template <typename ResultItemT>
     bool buildQuery(
             SearchKeywordOperation& actionOperation,
             std::vector<std::vector<izenelib::util::UString> >& propertyQueryTermList,
-            ResultItemT& resultItem,
+            KeywordSearchResult& resultItem,
             PersonalSearchInfo& personalSearchInfo);
 
     template<typename ActionItemT, typename ResultItemT>
@@ -141,10 +138,9 @@ private:
             const vector<vector<izenelib::util::UString> >& propertyQueryTermList,
             ResultItemT& resultItem);
 
-    template <typename ResultItemType>
     bool removeDuplicateDocs(
             const KeywordSearchActionItem& actionItem,
-            ResultItemType& resultItem);
+            KeywordSearchResult& resultItem);
 
 private:
     IndexBundleConfiguration* bundleConfig_;

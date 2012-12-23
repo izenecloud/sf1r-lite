@@ -124,7 +124,8 @@ bool checkDateLabel(
 NS_FACETED_BEGIN
 
 GroupPropParam::GroupPropParam()
-    : isRange_(false)
+    : isRange_(false),
+    group_top_(0)
 {
 }
 
@@ -133,7 +134,8 @@ bool operator==(const GroupPropParam& a, const GroupPropParam& b)
     return a.property_ == b.property_ &&
            a.subProperty_ == b.subProperty_ &&
            a.isRange_ == b.isRange_ &&
-           a.unit_ == b.unit_;
+           a.unit_ == b.unit_ &&
+           a.group_top_ == b.group_top_;
 }
 
 std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam)
@@ -142,6 +144,7 @@ std::ostream& operator<<(std::ostream& out, const GroupPropParam& groupPropParam
         << ", sub property: " << groupPropParam.subProperty_
         << ", is range: " << groupPropParam.isRange_
         << ", unit: " << groupPropParam.unit_
+        << ", group top: " << groupPropParam.group_top_
         << std::endl;
 
     return out;
@@ -299,6 +302,7 @@ bool operator==(const GroupParam& a, const GroupParam& b)
     return a.groupProps_ == b.groupProps_ &&
            a.groupLabels_ == b.groupLabels_ &&
            a.autoSelectLimits_ == b.autoSelectLimits_ &&
+           a.boostGroupLabels_ == b.boostGroupLabels_ &&
            a.isAttrGroup_ == b.isAttrGroup_ &&
            a.attrGroupNum_ == b.attrGroupNum_ &&
            a.attrLabels_ == b.attrLabels_;
@@ -324,6 +328,8 @@ std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam)
         out << "property " << propName
             << ", limit " << limit << " auto selected labels" << std::endl;
     }
+
+    out << "boostGroupLabels_:" << groupParam.boostGroupLabels_ << std::endl;
 
     out << "isAttrGroup_: " << groupParam.isAttrGroup_ << std::endl;
     out << "attrGroupNum_: " << groupParam.attrGroupNum_ << std::endl;
@@ -355,19 +361,25 @@ std::ostream& operator<<(std::ostream& out, const GroupParam::GroupLabelMap& gro
         const std::string& propName = labelIt->first;
         const GroupParam::GroupPathVec& pathVec = labelIt->second;
 
-        for (GroupParam::GroupPathVec::const_iterator pathIt = pathVec.begin();
-             pathIt != pathVec.end(); ++pathIt)
-        {
-            out << "property " << propName << ", "
-                << pathIt->size() << " labels" << std::endl;
+        out << "property " << propName << ", " << pathVec;
+    }
 
-            for (GroupParam::GroupPath::const_iterator nodeIt = pathIt->begin();
-                 nodeIt != pathIt->end(); ++nodeIt)
-            {
-                out << *nodeIt << ", ";
-            }
-            out << std::endl;
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const GroupParam::GroupPathVec& groupPathVec)
+{
+    out << "labels num: " << groupPathVec.size() << std::endl;
+
+    for (GroupParam::GroupPathVec::const_iterator pathIt = groupPathVec.begin();
+         pathIt != groupPathVec.end(); ++pathIt)
+    {
+        for (GroupParam::GroupPath::const_iterator nodeIt = pathIt->begin();
+             nodeIt != pathIt->end(); ++nodeIt)
+        {
+            out << *nodeIt << ", ";
         }
+        out << std::endl;
     }
 
     return out;

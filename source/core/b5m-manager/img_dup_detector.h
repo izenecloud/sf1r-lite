@@ -14,11 +14,10 @@
 #include <idmlib/duplicate-detection/dup_detector.h>
 #include <idmlib/duplicate-detection/psm.h>
 #include <common/ScdWriter.h>
-#include <idmlib/ise/psm.hpp>
-#include <idmlib/ise/extractor.hpp>
+//#include <idmlib/ise/psm.hpp>
+//#include <idmlib/ise/extractor.hpp>
 
 
-bool findTheOneToLeft(sf1r::PsmAttach& attach, std::vector<sf1r::PsmAttach>& match_attach, std::string& toDelete);
 namespace sf1r {
 
     class ImgDupDetector
@@ -37,7 +36,7 @@ namespace sf1r {
     public:
         typedef idmlib::dd::DupDetector<uint32_t, uint32_t, PsmAttach> DDType;
         typedef DDType::GroupTableType GroupTableType;
-        typedef idmlib::dd::PSM<64, 0, 24, std::string, std::string, PsmAttach> PsmType;
+        typedef idmlib::dd::PSM<64, 0, 24, uint32_t, std::string, PsmAttach> PsmType;
         ImgDupDetector();
         void SetPsmK(uint32_t k) {psmk_ = k;}
 
@@ -47,7 +46,7 @@ namespace sf1r {
         }
 
         bool DupDetectByImgUrl(const std::string& scd_path, const std::string& output_path, std::string& toDelete);
-        bool DupDetectByImgSift(const std::string& scd_path,  const std::string& output_path, bool test);
+//        bool DupDetectByImgSift(const std::string& scd_path,  const std::string& output_path, bool test);
 
         std::string cma_path_;
         uint32_t psmk_;

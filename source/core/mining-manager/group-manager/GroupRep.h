@@ -38,6 +38,8 @@ public:
     template<typename CounterType> friend class NumericGroupCounter;
     friend class NumericRangeGroupCounter;
     void toOntologyRepItemList();
+    // make sure toOntologyRepItemList has been called before
+    void ResizeTo(const std::map<std::string, int>& grouptop_for_props);
 
     friend class boost::serialization::access;
     template<class Archive>

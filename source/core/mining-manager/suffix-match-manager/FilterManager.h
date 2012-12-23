@@ -325,7 +325,6 @@ private:
     std::vector<std::pair<int32_t, std::string> > prop_list_;
     std::vector<int32_t> num_amp_list_;
 
-    StrPropIdVecT group_attr_filter_ids_;
     StrPropIdVecT str_filter_ids_;
     NumPropIdVecT num_filter_ids_;
 

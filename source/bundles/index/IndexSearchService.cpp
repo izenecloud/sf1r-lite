@@ -55,7 +55,7 @@ bool IndexSearchService::getSearchResult(
     }
 
     /// Perform distributed search by aggregator
-    DistKeywordSearchResult distResultItem;
+    KeywordSearchResult distResultItem;
     distResultItem.distSearchInfo_.effective_ = true;
     distResultItem.distSearchInfo_.nodeType_ = DistKeywordSearchInfo::NODE_WORKER;
 

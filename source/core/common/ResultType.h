@@ -450,52 +450,6 @@ public:
         }
     }
 
-    void assign(const DistKeywordSearchResult& result)
-    {
-        rawQueryString_ = result.rawQueryString_;
-        encodingType_ = result.encodingType_;
-        collectionName_ = result.collectionName_;
-        analyzedQuery_ = result.analyzedQuery_;
-        queryTermIdList_ = result.queryTermIdList_;
-        totalCount_ = result.totalCount_;
-        counterResults_ = result.counterResults_;
-        topKDocs_ = result.topKDocs_;
-        topKWorkerIds_ = result.topKWorkerIds_;
-        topKtids_ = result.topKtids_;
-        topKRankScoreList_ = result.topKRankScoreList_;
-        topKCustomRankScoreList_ = result.topKCustomRankScoreList_;
-        start_ = result.start_;
-        count_ = result.count_;
-        pageOffsetList_ = result.pageOffsetList_;
-        propertyQueryTermList_ = result.propertyQueryTermList_;
-        onto_rep_ = result.onto_rep_;
-        groupRep_ = result.groupRep_;
-        attrRep_ = result.attrRep_;
-    }
-
-    void swap(DistKeywordSearchResult& result)
-    {
-        rawQueryString_.swap(result.rawQueryString_);
-        encodingType_ = result.encodingType_;
-        collectionName_.swap(result.collectionName_);
-        analyzedQuery_.swap(result.analyzedQuery_);
-        queryTermIdList_.swap(result.queryTermIdList_);
-        totalCount_ = result.totalCount_;
-        counterResults_.swap(result.counterResults_);
-        topKDocs_.swap(result.topKDocs_);
-        topKWorkerIds_.swap(result.topKWorkerIds_);
-        topKtids_.swap(result.topKtids_);
-        topKRankScoreList_.swap(result.topKRankScoreList_);
-        topKCustomRankScoreList_.swap(result.topKCustomRankScoreList_);
-        start_ = result.start_;
-        count_ = result.count_;
-        pageOffsetList_.swap(result.pageOffsetList_);
-        propertyQueryTermList_.swap(result.propertyQueryTermList_);
-        onto_rep_.swap(result.onto_rep_);
-        groupRep_.swap(result.groupRep_);
-        attrRep_.swap(result.attrRep_);
-    }
-
     void swap(KeywordSearchResult& other)
     {
         using std::swap;
