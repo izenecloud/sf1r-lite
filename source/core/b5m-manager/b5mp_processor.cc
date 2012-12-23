@@ -228,11 +228,6 @@ void B5mpProcessor::GetOutputP_(ValueType& value)
         doc.eraseProperty(B5MHelper::GetSPTPropertyName());
     }
 
-    doc.eraseProperty("Source");
-    doc.eraseProperty("DATE");
-    doc.eraseProperty("DATE");
-
-
     if(itemcount<=0)
     {
 
