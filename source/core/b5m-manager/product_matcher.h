@@ -43,6 +43,7 @@ namespace sf1r {
             WeightType()
             :cweight(0.0), aweight(0.0), tweight(0.0), kweight(1.0)
              , paweight(0.0), paratio(0.0), type_match(false), brand_match(false)
+             , price_diff(0.0)
             {
             }
             double cweight;
@@ -53,6 +54,7 @@ namespace sf1r {
             double paratio;
             bool type_match;
             bool brand_match;
+            double price_diff;
             //friend class boost::serialization::access;
             //template<class Archive>
             //void serialize(Archive & ar, const unsigned int version)

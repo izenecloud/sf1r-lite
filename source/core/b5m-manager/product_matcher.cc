@@ -1508,11 +1508,18 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             WeightType& wt = pid_weight[app.spu_id];
             wt.aweight+=share_point*weight;
             double paweight = p_point;
-            //if(length_ratio>=0.5 && app.attribute_name=="型号") paweight*=2;
             wt.paweight+=paweight;
             wt.paratio+=length_ratio;
             if(app.attribute_name=="型号") wt.type_match = true;
             if(app.attribute_name=="品牌") wt.brand_match = true;
+            if(p.price==0.0)
+            {
+                wt.price_diff = 99999999.0; //set to a huge value
+            }
+            else
+            {
+                wt.price_diff = std::fabs(price-p.price);
+            }
             sa_app.insert(sa_app_value);
             //pid_score[app.spu_id]+=share_point*weight;
         }
@@ -1553,10 +1560,13 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             if(weight.paweight>eweight.paweight) replace = true;
             else if(weight.paweight==eweight.paweight)
             {
-                if(ep.price==0.0) replace = true;
+                if(eweight.price_diff!=weight.price_diff)
+                {
+                    if(weight.price_diff<eweight.price_diff) replace = true;
+                }
                 else
                 {
-                    if(p.aweight<ep.aweight)
+                    if(weight.sum()>eweight.sum())
                     {
                         replace = true;
                     }
