@@ -2042,7 +2042,55 @@ bool MiningManager::GetSuffixMatch(
     return true;
 }
 
-bool MiningManager::GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category)
+bool MiningManager::GetProductCategory(
+    const std::string& query,
+    int limit,
+    std::vector<std::vector<std::string> >& pathVec
+)
+{
+    const UString ustrQuery(query, UString::UTF_8);
+    std::vector<UString> backendCategories;
+    if (!GetProductCategory(ustrQuery,limit, backendCategories))
+        return false;
+
+    for(std::vector<UString>::iterator bcit = backendCategories.begin();
+        bcit != backendCategories.end(); ++bcit)
+    {
+        UString frontendCategory;
+        if (!BackendLabelToFrontendLabel::Get()->Map(*bcit, frontendCategory))
+            return false;
+        std::vector<std::vector<UString> > groupPaths;
+        split_group_path(frontendCategory, groupPaths);
+        if (groupPaths.empty())
+            return false;
+        std::vector<std::string> path;
+        const std::vector<UString>& topGroup = groupPaths[0];
+        for (std::vector<UString>::const_iterator it = topGroup.begin();
+             it != topGroup.end(); ++it)
+        {
+            std::string str;
+            it->convertString(str, UString::UTF_8);
+            path.push_back(str);
+        }
+        pathVec.push_back(path);
+    }
+    return true;
+}
+
+bool MiningManager::GetProductCategory(
+    const izenelib::util::UString& query, 
+    int limit, 
+    std::vector<UString>& categories)
+{
+    if (productMatcher_==NULL)
+    {
+        return false;
+    }
+    ///TODO
+    return true;
+}
+
+bool MiningManager::GetProductCategory(const UString& query, UString& category)
 {
     if (productMatcher_==NULL)
     {

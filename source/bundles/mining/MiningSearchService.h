@@ -194,6 +194,11 @@ public:
         const std::string& scoreType,
         score_t& scoreValue);
 
+    bool GetProductCategory(
+        const std::string& query, 
+        int limit, 
+        std::vector<std::vector<std::string> >& pathVec );
+
 private:
     MiningBundleConfiguration* bundleConfig_;
     boost::shared_ptr<MiningManager> miningManager_;
