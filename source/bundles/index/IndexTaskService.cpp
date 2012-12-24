@@ -38,6 +38,39 @@ bool IndexTaskService::index(unsigned int numdoc)
     }
     else
     {
+        if (bundleConfig_->isMasterAggregator())
+        {
+            LOG(INFO) << "only local worker available, copy master scd files and indexing local.";
+            // search the directory for files
+            static const bfs::directory_iterator kItrEnd;
+            std::string masterScdPath = bundleConfig_->masterIndexSCDPath();
+            ScdParser parser(bundleConfig_->encoding_);
+            bfs::path bkDir = bfs::path(masterScdPath) / SCD_BACKUP_DIR;
+            bfs::create_directory(bkDir);
+            for (bfs::directory_iterator itr(masterScdPath); itr != kItrEnd; ++itr)
+            {
+                if (bfs::is_regular_file(itr->status()))
+                {
+                    std::string fileName = itr->path().filename().string();
+                    if (parser.checkSCDFormat(fileName))
+                    {
+                        bfs::copy_file(itr->path().string(), bundleConfig_->indexSCDPath() + "/" + fileName);
+                        LOG(INFO) << "SCD File copy to local index path:" << fileName;
+                        LOG(INFO) << "moving SCD files to directory " << bkDir;
+                        try {
+                            bfs::rename(itr->path().string(), bkDir / itr->path().filename());
+                        }
+                        catch(const std::exception& e) {
+                            LOG(WARNING) << "failed to move file: " << std::endl << fileName << std::endl << e.what();
+                        }
+                    }
+                    else
+                    {
+                        LOG(WARNING) << "SCD File not valid " << fileName;
+                    }
+                }
+            }
+        }
         indexWorker_->index(numdoc, result);
     }
 
