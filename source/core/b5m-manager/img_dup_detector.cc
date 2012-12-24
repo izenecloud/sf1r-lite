@@ -312,6 +312,9 @@ bool ImgDupDetector::DupDetectByImgUrlIncre(const std::string& scd_path, const s
 //                          LOG(INFO)<<"Get psm item Error ... "<<std::endl;
                             continue;
                         }
+                        std::map<std::string, uint32_t>::iterator it = docid_key.find(docID);
+                        if(!(it == docid_key.end()))
+                            continue;
                         psm.Insert(key, doc_vector, attach);
                         docid_key[docID] = key;
                         key_docid[key] = docID;
@@ -350,6 +353,9 @@ bool ImgDupDetector::DupDetectByImgUrlIncre(const std::string& scd_path, const s
 //                          LOG(INFO)<<"Get psm item Error ... "<<std::endl;
                             continue;
                         }
+                        std::map<std::string, uint32_t>::iterator it = docid_key.find(docID);
+                        if(!(it == docid_key.end()))
+                            continue;
                         psm.Insert(key, doc_vector, attach);
                         docid_key[docID] = key;
                         key_docid[key] = docID;
