@@ -20,7 +20,7 @@ int main(int argc, char **argv)
   parse_parameters(argc, argv);
 
   ImgDupDetector imgdupdetector;
-  imgdupdetector.DupDetectByImgUrl(scd_path, output_path, source_name);
+  imgdupdetector.DupDetectByImgUrlNotIn(scd_path, output_path, source_name);
 //  imgdupdetector.DupDetectByImgSift(scd_path, output_path, true);
   return 0;
 }

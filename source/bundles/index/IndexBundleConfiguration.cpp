@@ -14,6 +14,7 @@ IndexBundleConfiguration::IndexBundleConfiguration(const std::string& collection
     , indexMultilangGranularity_(la::FIELD_LEVEL)
     , isAutoRebuild_(false)
     , enable_parallel_searching_(false)
+    , enable_forceget_doc_(false)
     , isMasterAggregator_(false)
     , isWorkerNode_(false)
     , encoding_(izenelib::util::UString::UNKNOWN)

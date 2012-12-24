@@ -1209,7 +1209,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     params.Get("Sia/triggerqa", indexBundleConfig.bTriggerQA_);
     params.Get("Sia/enable_parallel_searching", indexBundleConfig.enable_parallel_searching_);
-
+    params.Get("Sia/enable_forceget_doc", indexBundleConfig.enable_forceget_doc_);
     params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
     params.Get<std::size_t>("Sia/searchcachenum", indexBundleConfig.searchCacheNum_);
     params.Get("Sia/refreshsearchcache", indexBundleConfig.refreshSearchCache_);
