@@ -1489,12 +1489,25 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             std::pair<uint32_t, std::string> sa_app_value(app.spu_id, app.attribute_name);
             if(sa_app.find(sa_app_value)!=sa_app.end()) continue;
             double share_point = 0.0;
-            if(app.is_optional) share_point = 0.5;
-            else if(app.attribute_name=="型号") share_point = 1.5;
-            else share_point = 1.0;
+            double p_point = 0.0;
+            if(app.is_optional) 
+            {
+                share_point = 0.5;
+                p_point = 0.1;
+            }
+            else if(app.attribute_name=="型号") 
+            {
+                share_point = 1.5;
+                p_point = 1.5;
+            }
+            else 
+            {
+                share_point = 1.0;
+                p_point = 1.0;
+            }
             WeightType& wt = pid_weight[app.spu_id];
             wt.aweight+=share_point*weight;
-            double paweight = share_point;
+            double paweight = p_point;
             //if(length_ratio>=0.5 && app.attribute_name=="型号") paweight*=2;
             wt.paweight+=paweight;
             wt.paratio+=length_ratio;
