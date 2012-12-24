@@ -171,6 +171,7 @@
             </xs:attribute>
             <xs:attribute name="triggerqa" type="YesNoType" use="optional"/>
             <xs:attribute name="enable_parallel_searching" type="YesNoType" use="optional"/>
+            <xs:attribute name="enable_forceget_doc" type="YesNoType" use="optional"/>
             <xs:attribute name="encoding" type="EncodingType" use="optional"/>
             <xs:attribute name="wildcardtype" use="optional">
                 <xs:simpleType>

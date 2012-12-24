@@ -152,13 +152,14 @@ public:
 
     bool getDocuments(
             const std::vector<unsigned int>& ids,
-            vector<Document>& docs);
+            vector<Document>& docs,
+            bool forceget = false);
 
     void getRTypePropertiesForDocument(docid_t, Document& document);
 
     bool existDocument(docid_t docId);
 
-    bool getDocumentByCache(docid_t docId, Document& document);
+    bool getDocumentByCache(docid_t docId, Document& document, bool forceget = false);
 
     /**
      * @brief gets total \c propertyLength_[i] in \c propertyDb_[i]
