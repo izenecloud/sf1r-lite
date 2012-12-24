@@ -6,8 +6,8 @@
     wikipediaGraph::wikipediaGraph(const string& cma_path,const string& wiki_path,cma::OpenCC* opencc):path_(wiki_path+"wikigraph"),redirpath_(wiki_path+"redirect"),contentBias(cma_path),opencc_(opencc)
     {
        
-      cout<<"wikipediaGraphBuild"<<endl;
-      cout<<"init wiki_path"<<wiki_path<<endl;
+      //cout<<"wikipediaGraphBuild"<<endl;
+      //cout<<"init wiki_path"<<wiki_path<<endl;
       
       init();
       //sort(nodes_.begin(),nodes_end(),NodeCmpOperator);
@@ -34,6 +34,13 @@
     };
     wikipediaGraph::~wikipediaGraph()
     {
+        
+       for(unsigned i=0;i<nodes_.size();i++)
+       { 
+
+          delete nodes_[i];
+
+       }
     };
     void  wikipediaGraph::load(std::istream& is)
     {
