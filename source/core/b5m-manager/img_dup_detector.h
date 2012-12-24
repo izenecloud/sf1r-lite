@@ -45,7 +45,8 @@ namespace sf1r {
             return izenelib::util::Singleton<ImgDupDetector>::get();
         }
 
-        bool DupDetectByImgUrl(const std::string& scd_path, const std::string& output_path, std::string& toDelete);
+        bool DupDetectByImgUrlIncre(const std::string& scd_path, const std::string& output_path, std::string& toDelete);
+        bool DupDetectByImgUrlNotIn(const std::string& scd_path, const std::string& output_path, std::string& toDelete);
 //        bool DupDetectByImgSift(const std::string& scd_path,  const std::string& output_path, bool test);
 
         std::string cma_path_;
