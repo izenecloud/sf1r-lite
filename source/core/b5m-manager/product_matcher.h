@@ -327,11 +327,12 @@ namespace sf1r {
             uint32_t parent_cid;
             bool is_parent;
             uint32_t depth;
+            bool has_spu;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & name & cid & parent_cid & is_parent & depth;
+                ar & name & cid & parent_cid & is_parent & depth & has_spu;
             }
         };
 
@@ -360,6 +361,10 @@ namespace sf1r {
 
         struct Product
         {
+            Product()
+            : cid(0), price(0.0), aweight(0.0), tweight(0.0)
+            {
+            }
             std::string spid;
             std::string stitle;
             std::string scategory;

@@ -499,6 +499,34 @@ bool ProductMatcher::Index(const std::string& scd_path)
     }
     products_.resize(1);
     category_list_.resize(1);
+    {
+        std::string category_path = scd_path+"/category.txt";
+        std::string line;
+        std::ifstream ifs(category_path.c_str());
+        while(getline(ifs, line))
+        {
+            boost::algorithm::trim(line);
+            std::vector<std::string> vec;
+            boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
+            if(vec.size()!=4) continue;
+            bool is_parent = true;
+            if(vec[3]=="false") is_parent = false;
+            const std::string& scategory = vec[0];
+            Category c;
+            c.name = scategory;
+            c.cid = 0;//not use
+            c.parent_cid = 0;//not use
+            c.is_parent = is_parent
+            c.has_spu = false;
+            std::vector<std::string> cs_list;
+            boost::algorithm::split( cs_list, c.name, boost::algorithm::is_any_of(">") );
+            c.depth=cs_list.size();
+            uint32_t cid = category_list_.size();
+            category_list_.push_back(c);
+            category_index_[scategory] = cid;
+        }
+        ifs.close();
+    }
     std::string bdb_path = path_+"/bdb";
     BrandDb bdb(bdb_path);
     bdb.open();
@@ -552,21 +580,24 @@ bool ProductMatcher::Index(const std::string& scd_path)
         CategoryIndex::iterator cit = category_index_.find(scategory);
         if(cit==category_index_.end())
         {
-            cid = category_list_.size();
-            Category c;
-            c.name = scategory;
-            c.cid = 0;//not use
-            c.parent_cid = 0;//not use
-            c.is_parent = false;
-            std::vector<std::string> cs_list;
-            boost::algorithm::split( cs_list, c.name, boost::algorithm::is_any_of(">") );
-            c.depth=cs_list.size();
-            category_list_.push_back(c);
-            category_index_[scategory] = cid;
+            //cid = category_list_.size();
+            //Category c;
+            //c.name = scategory;
+            //c.cid = 0;//not use
+            //c.parent_cid = 0;//not use
+            //c.is_parent = false;
+            //std::vector<std::string> cs_list;
+            //boost::algorithm::split( cs_list, c.name, boost::algorithm::is_any_of(">") );
+            //c.depth=cs_list.size();
+            //category_list_.push_back(c);
+            //category_index_[scategory] = cid;
+            continue;
         }
         else
         {
             cid = cit->second;
+            Category& category = category_list_[cid];
+            category.has_spu = true;
         }
         double price = 0.0;
         UString uprice;
@@ -655,6 +686,15 @@ bool ProductMatcher::Index(const std::string& scd_path)
         product_index_[spid] = spu_id;
     }
     bdb.flush();
+    //add virtual spus
+    for(uint32_t i=1;i<category_list_.size();i++)
+    {
+        const Category& c = category_list_[i];
+        Product p;
+        p.scategory = c.name;
+        p.cid = i;
+        products_.push_back(p);
+    }
     cid_to_pids_.resize(category_list_.size());
     for(uint32_t spu_id=1;spu_id<products_.size();spu_id++)
     {
