@@ -6,8 +6,6 @@
 
 #include <am/succinct/ux-trie/uxMap.hpp>
 
-#include "wikipediaGraph.h"
-
 namespace cma
 {
 class Analyzer;
@@ -17,6 +15,7 @@ class OpenCC;
 
 namespace sf1r
 {
+class WikiGraph;
 class NaiveTopicDetector
 {
 public:
@@ -36,7 +35,7 @@ private:
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
     cma::OpenCC* opencc_;
-    wikipediaGraph* wg_;
+    WikiGraph* wg_;
     izenelib::am::succinct::ux::Trie* kpe_trie_;
     izenelib::am::succinct::ux::Map<std::vector<std::string> >* related_map_;	
 };

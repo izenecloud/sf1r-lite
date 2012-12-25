@@ -1,4 +1,6 @@
 #include "NaiveTopicDetector.hpp"
+#include "WikiGraph.hpp"
+
 #include <glog/logging.h>
 #include <icma/icma.h>
 #include <icma/openccxx.h>
@@ -208,7 +210,7 @@ void NaiveTopicDetector::InitKnowledge_()
     boost::filesystem::path wiki_graph_path(sys_resource_path_);
     wiki_graph_path /= boost::filesystem::path("wikigraph");
     LOG(INFO) << "wiki graph knowledge path : " << wiki_graph_path.c_str() << endl;
-    wg_=new wikipediaGraph(cma_path,wiki_graph_path.c_str(),opencc_);
+    wg_=new WikiGraph(cma_path,wiki_graph_path.c_str(),opencc_);
 }
 
 }

@@ -9,6 +9,9 @@
 #include <icma/openccxx.h>
 using namespace std;
 
+namespace sf1r
+{
+
 // use graph store webpage, weight representlink times
 struct CalText
 {
@@ -17,54 +20,54 @@ struct CalText
     double contentRelevancy_;
     int outNumber_;
 };
-class Node 
+class Node
 {
 public:
     Node(string name, int id=0);
 
     ~Node();
-   
+
     void InsertLinkInNode(int i) ;
 
     //double GetPageRank();
 
-   // void SetPageRank(double pr);
+    // void SetPageRank(double pr);
 
-   // void SetContentRelevancy(double contentRelevancy);
+    // void SetContentRelevancy(double contentRelevancy);
 
     void SetAdvertiRelevancy(double advertiRelevancy);
 
-   // double CalcRank(const vector<Node*>& vecNode,const CalText& linkinSub);
+    // double CalcRank(const vector<Node*>& vecNode,const CalText& linkinSub);
 
     size_t GetOutBoundNum() ;
- 
+
     size_t GetInBoundNum() ;
-   
+
     //double GetContentRelevancy() ;
 
     double GetAdvertiRelevancy() ;
-   
+
     string GetName() ;
-    
+
     void InsertLinkOutNode(int i) ;
-   
+
     void PrintNode();
-   
+
     void SetId(int id);
- 
+
     int GetId();
-    
-   friend istream& operator>> ( istream &f, Node &node );
-   friend ostream& operator<< ( ostream &f, const Node &node );
-   friend void simplify(Node &node, cma::OpenCC* opencc);
-   //set<int> linkin_index_;
-   vector<int> linkin_index_;
-   vector<int> linkout_index_;
-   int outNumber_;
-  // int outNumberOrg_;
+
+    friend istream& operator>> ( istream &f, Node &node );
+    friend ostream& operator<< ( ostream &f, const Node &node );
+    friend void simplify(Node &node, cma::OpenCC* opencc);
+    //set<int> linkin_index_;
+    vector<int> linkin_index_;
+    vector<int> linkout_index_;
+    int outNumber_;
+    // int outNumberOrg_;
 private:
     string name_;
-  //  double page_rank_;
+    //  double page_rank_;
     int id_;
 
 
@@ -101,4 +104,7 @@ private:
     double alpha_; //内容阻尼系数
     double beta_; //广告阻尼系数
 };
+
+
+}
 #endif
