@@ -1,21 +1,24 @@
-
-
-#include"WikiGraph.hpp"
-#include<math.h>
+#include "WikiGraph.hpp"
+#include <math.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/filesystem.hpp>
 
 namespace sf1r
 {
 
 WikiGraph::WikiGraph(const string& cma_path,const string& wiki_path,cma::OpenCC* opencc)
-    : path_(wiki_path+"wikigraph")
-    , redirpath_(wiki_path+"redirect")
-    , contentBias_(cma_path)
+    : contentBias_(cma_path)
     , opencc_(opencc)
 {
+    boost::filesystem::path wikigraph_path(wiki_path);
+    wikigraph_path /= boost::filesystem::path("wikigraph");
+    path_ = wikigraph_path.c_str();
+    boost::filesystem::path redirect_path(wiki_path);
+    redirect_path /= boost::filesystem::path("redirect");
+    redirpath_ = redirect_path.c_str();
 
     //cout<<"wikipediaGraphBuild"<<endl;
-    //cout<<"init wiki_path"<<wiki_path<<endl;
+    //cout<<"init wiki_path"<<wiki_path<<" "<<path_<<endl;
 
     init();
     //sort(nodes_.begin(),nodes_end(),NodeCmpOperator);
@@ -64,8 +67,6 @@ void  WikiGraph::load(std::istream& is)
         nodes_[i]=new Node("");
         is>>(*nodes_[i]);
     }
-
-
 }
 
 void  WikiGraph::save(std::ostream& os)
@@ -89,7 +90,6 @@ void  WikiGraph::init()
 
 void  WikiGraph::flush()
 {
-
     if (path_.empty()) return;
     std::ofstream ofs(path_.c_str());
     if (ofs) save(ofs);
@@ -450,15 +450,12 @@ void  WikiGraph::BuildMap()
 
 void WikiGraph::simplifyTitle()
 {
-
     for(unsigned i=0; i<nodes_.size(); i++)
     {
         // if(i%10000==0){cout<<"have simplify node"<<i<<endl;}
         simplify(*nodes_[i],opencc_);
     }
-
 }
-
 
 void  WikiGraph::load(std::istream &f, int& id,string& name )
 {
@@ -469,7 +466,6 @@ void  WikiGraph::load(std::istream &f, int& id,string& name )
     f.read(( char*)&name[0], len);
 
 }
-
 
 void  WikiGraph::loadAll(std::istream &f )
 {
@@ -484,8 +480,6 @@ void  WikiGraph::loadAll(std::istream &f )
         title2id.insert(pair<string,int>(ToSimplified(name),id));
         // if(i%10000==0){cout<<"have build map"<<nodes_.size()+i<<endl;}
     }
-
-
 }
 
 void  WikiGraph::InitOutLink()
