@@ -2051,17 +2051,19 @@ bool MiningManager::GetProductCategory(
     std::vector<UString> backendCategories;
     if (!GetProductCategory(ustrQuery,limit, backendCategories))
         return false;
-
     for(std::vector<UString>::iterator bcit = backendCategories.begin();
         bcit != backendCategories.end(); ++bcit)
     {
         UString frontendCategory;
         if (!BackendLabelToFrontendLabel::Get()->Map(*bcit, frontendCategory))
-            return false;
+        {
+            if(!BackendLabelToFrontendLabel::Get()->PrefixMap(*bcit, frontendCategory))
+                continue;
+        }
         std::vector<std::vector<UString> > groupPaths;
         split_group_path(frontendCategory, groupPaths);
         if (groupPaths.empty())
-            return false;
+            continue;
         std::vector<std::string> path;
         const std::vector<UString>& topGroup = groupPaths[0];
         for (std::vector<UString>::const_iterator it = topGroup.begin();
