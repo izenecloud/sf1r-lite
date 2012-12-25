@@ -379,6 +379,19 @@ namespace sf1r {
             {
                 ar & spid & stitle & scategory & cid & price & attributes & sbrand & aweight & tweight & title_obj;
             }
+
+            std::string GetAttributeValue() const
+            {
+                std::string result;
+                for(uint32_t i=0;i<attributes.size();i++)
+                {
+                    if(!result.empty()) result+=",";
+                    result+=attributes[i].name;
+                    result+=":";
+                    result+=attributes[i].GetValue();
+                }
+                return result;
+            }
         };
         typedef uint32_t PidType;
         typedef std::map<std::string, uint32_t> CategoryIndex;
@@ -400,6 +413,7 @@ namespace sf1r {
         static bool GetIsbnAttribute(const Document& doc, std::string& isbn);
         static bool ProcessBook(const Document& doc, Product& result_product);
         bool GetProduct(const std::string& pid, Product& product);
+        static void ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes);
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
@@ -418,7 +432,6 @@ namespace sf1r {
 
 
 
-        static void ParseAttributes_(const UString& ustr, std::vector<Attribute>& attributes);
         void GenSuffixes_(const std::vector<term_t>& term_list, Suffixes& suffixes);
         void GenSuffixes_(const std::string& text, Suffixes& suffixes);
         void ConstructSuffixTrie_(TrieType& trie);
