@@ -589,7 +589,7 @@ bool ProductMatcher::Index(const std::string& scd_path)
         product.scategory = scategory;
         product.cid = cid;
         product.price = price;
-        ParseAttributes_(attrib_ustr, product.attributes);
+        ParseAttributes(attrib_ustr, product.attributes);
         if(product.attributes.size()<2) continue;
         product.tweight = 0.0;
         product.aweight = 0.0;
@@ -952,7 +952,7 @@ bool ProductMatcher::GetIsbnAttribute(const Document& doc, std::string& isbn_val
     UString attrib_ustr;
     doc.getProperty("Attribute", attrib_ustr);
     std::vector<Attribute> attributes;
-    ParseAttributes_(attrib_ustr, attributes);
+    ParseAttributes(attrib_ustr, attributes);
     for(uint32_t i=0;i<attributes.size();i++)
     {
         const Attribute& a = attributes[i];
@@ -1830,7 +1830,7 @@ void ProductMatcher::AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const ize
 }
 
 
-void ProductMatcher::ParseAttributes_(const UString& ustr, std::vector<Attribute>& attributes)
+void ProductMatcher::ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes)
 {
     std::vector<AttrPair> attrib_list;
     std::vector<std::pair<UString, std::vector<UString> > > my_attrib_list;
