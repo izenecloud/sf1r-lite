@@ -659,8 +659,6 @@ void FilterManager::saveFilterId()
         std::ofstream ofs((data_root_path_ + "/filterid." + prop_list_[i].second).c_str());
         if (!ofs) continue;
 
-        ofs.write((const char*)&i, sizeof(i));
-
         switch (prop_list_[i].first)
         {
         case GROUP_ATTR_FILTER:
