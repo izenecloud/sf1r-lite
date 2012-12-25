@@ -50,7 +50,23 @@ namespace sf1r {
             }
             doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
 
-            analyzer.Analyze(doc["Img"], doc_vector);
+//            analyzer.Analyze(doc["Img"], doc_vector);
+
+            std::string img_url;
+            doc["Img"].convertString(img_url, izenelib::util::UString::UTF_8);
+            uint32_t i;
+            for(i=0;i<img_url.size()-2;i+=2)
+            {
+                doc_vector.push_back(make_pair(img_url.substr(i,3), 0.4));
+            }
+            for(i=0;i<img_url.size()-5;i+=5)
+            {
+                doc_vector.push_back(make_pair(img_url.substr(i,6), 0.8));
+            }
+            for(i=0;i<img_url.size()-8;i+=8)
+            {
+                doc_vector.push_back(make_pair(img_url.substr(i,9), 1.0));
+            }
 
             return true;
         }

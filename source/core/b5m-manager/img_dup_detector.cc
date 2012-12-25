@@ -58,7 +58,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                 psm.Open();
 
                 uint32_t key = 100;
-                std::map<std::string, UString> imgurl_list;
+//                std::map<std::string, UString> imgurl_list;
                 std::map<std::string, uint32_t> docid_key;
                 std::map<uint32_t, std::string> key_docid;
 
@@ -104,7 +104,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                         docid_key[docID] = key;
                         key_docid[key] = docID;
                         key++;
-                        imgurl_list[docID] =doc["Img"];
+//                        imgurl_list[docID] =doc["Img"];
                     }
                     n = 0;
                     for( ScdParser::iterator doc_iter = parser.begin();
@@ -142,7 +142,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                         docid_key[docID] = key;
                         key_docid[key] = docID;
                         key++;
-                        imgurl_list[docID] =doc["Img"];
+ //                       imgurl_list[docID] =doc["Img"];
                     }
 
                 }
@@ -198,22 +198,24 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                         }
                         else
                         {
+/*
                             std::string current_url;
                             std::string match_url;
                             doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
                             imgurl_list[key_docid[match_key]].convertString(match_url, izenelib::util::UString::UTF_8);
                             if(current_url.compare(match_url) == 0)
                             {
-/*
+
                                 LOG(INFO)<<std::endl<<docID<<":  "<<current_url
                                          <<std::endl<<key_docid[match_key]<<":  "<<match_url
                                          <<std::endl<<"Matches "<<std::endl;
-*/
+
                             }
                             else
                             {
                                 if(writer.Append(scddoc)) rest++;
                             }
+*/
                         }
 
                     }
