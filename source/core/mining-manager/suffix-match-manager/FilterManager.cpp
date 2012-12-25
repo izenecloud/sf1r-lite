@@ -336,7 +336,8 @@ void FilterManager::buildGroupFilters(
             group_filter_data[j].clear();
             last_docid_forproperty = 0;
         }
-        LOG(INFO) << "building filter data, start from:" << last_docid_forproperty << ", property: " << property;
+        LOG(INFO) << "building filter data, start from:" << last_docid_forproperty <<
+            ", property: " << property << ", pid: " << prop_id;
         LOG(INFO) << "building filter data, end at:" << max_docid;
 
         for (uint32_t docid = 1; docid <= max_docid; ++docid)
@@ -658,8 +659,6 @@ void FilterManager::saveFilterId()
         std::ofstream ofs((data_root_path_ + "/filterid." + prop_list_[i].second).c_str());
         if (!ofs) continue;
 
-        ofs.write((const char*)&i, sizeof(i));
-
         switch (prop_list_[i].first)
         {
         case GROUP_ATTR_FILTER:
@@ -721,16 +720,15 @@ void FilterManager::loadFilterId()
 
     size_t prop_count = 0;
     ifs >> prop_count;
-    prop_list_.resize(prop_count);
+    std::vector<std::pair<int32_t, std::string> > tmp_prop_list(prop_count);
     for (size_t i = 0; i < prop_count; ++i)
     {
-        ifs >> prop_list_[i].first >> prop_list_[i].second;
-        prop_id_map_[prop_list_[i].second] = i;
+        ifs >> tmp_prop_list[i].first >> tmp_prop_list[i].second;
     }
 
-    for (size_t i = 0; i < prop_list_.size(); ++i)
+    for (size_t i = 0; i < prop_count; ++i)
     {
-        const std::string& property = prop_list_[i].second;
+        const std::string& property = tmp_prop_list[i].second;
         std::string loadpath = data_root_path_ + "/filterid." + property;
         std::ifstream ifs(loadpath.c_str());
         if (!ifs)
@@ -740,12 +738,14 @@ void FilterManager::loadFilterId()
             continue;
         }
         LOG(INFO) << "loading filter id map for property: " << property;
+        prop_list_.push_back(tmp_prop_list[i]);
+        prop_id_map_[property] = prop_list_.size() - 1;
 
         size_t num = 0;
         ifs.read((char*)&num, sizeof(num));
         LOG(INFO) << "filter id num: " << num;
 
-        switch (prop_list_[i].first)
+        switch (prop_list_.back().first)
         {
         case GROUP_ATTR_FILTER:
             {
@@ -860,13 +860,14 @@ FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeExact(size_t prop
 {
     static const FilterIdRange empty_range;
     StrIdMapT::const_iterator it = str_filter_ids_[prop_id].find(str_filter);
+    std::string outstr;
+    str_filter.convertString(outstr, UString::UTF_8);
     if (it == str_filter_ids_[prop_id].end())
     {
         // no such group
+        LOG(INFO) << "string filter key: " << outstr << " not found in pid:" << prop_id;
         return empty_range;
     }
-    std::string outstr;
-    str_filter.convertString(outstr, UString::UTF_8);
     LOG(INFO) << "string filter key: " << outstr << ", filter id range is: " << it->second.start << ", " << it->second.end;
     return it->second;
 }
