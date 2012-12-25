@@ -305,6 +305,14 @@ void FMIndexManager::buildLessDVProperties()
             izenelib::util::UString text = filter_manager_->getPropFilterString(prop_id, i);
             Algorithm<UString>::to_lower(text);
             text = Algorithm<UString>::trim(text);
+            for(size_t c_i = 0; c_i < text.length(); ++c_i)
+            {
+                if(text[c_i] == succinct::fm_index::DOC_DELIM)
+                {
+                    LOG(WARNING) << "find a DOC_DELIM char in the document data.";
+                    text[c_i] = ' ';
+                }
+            }
             it->second.fmi->addDoc(text.data(), text.length());
         }
         LOG(INFO) << "LESS_DV for property count is: " << max_filterstr_id ;
@@ -392,6 +400,15 @@ void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)
                     izenelib::util::UString text = dit->second.get<UString>();
                     Algorithm<UString>::to_lower(text);
                     text = Algorithm<UString>::trim(text);
+                    for(size_t c_i = 0; c_i < text.length(); ++c_i)
+                    {
+                        if(text[c_i] == succinct::fm_index::DOC_DELIM)
+                        {
+                            LOG(WARNING) << "find a DOC_DELIM char in the document data.";
+                            text[c_i] = ' ';
+                        }
+                    }
+
                     it->second.fmi->addDoc(text.data(), text.length());
                 }
             }
