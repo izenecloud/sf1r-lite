@@ -90,16 +90,21 @@ void ImgDupCfg::parseServerCfg(properties& props)
 
     if (!props.getValue("imgdupdetector.inputpath", scd_input_dir_))
     {
-        throw std::runtime_error("Log Server Configuration missing property: imgdupdetector.inputpath");
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.inputpath");
     }
 
     if (!props.getValue("imgdupdetector.outputpath", scd_output_dir_))
     {
-        throw std::runtime_error("Log Server Configuration missing property: imgdupdetector.outputpath");
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.outputpath");
     }
 
     if (!props.getValue("imgdupdetector.sourcename", source_name_))
     {
-        throw std::runtime_error("Log Server Configuration missing property: imgdupdetector.sourcename");
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.sourcename");
+    }
+
+    if(!props.getValue("imgdupdetector.mode.incremental", incremental_mode_))
+    {
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.mode.incremental");
     }
 }

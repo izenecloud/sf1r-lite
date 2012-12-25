@@ -591,11 +591,14 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     bool ret = updateDoc_(document, indexDocument, oldIndexDocument, timestamp, updateType, true);
     if (ret && (updateType != IndexWorker::RTYPE))
     {
-        searchWorker_->clearSearchCache();
-        ///clear filter cache because of * queries:
-        ///filter will be added into documentiterator 
-        ///together with AllDocumentIterator
-        searchWorker_->clearFilterCache();		
+        if(!bundleConfig_->enable_forceget_doc_)
+        {
+            searchWorker_->clearSearchCache();
+            ///clear filter cache because of * queries:
+            ///filter will be added into documentiterator 
+            ///together with AllDocumentIterator
+            searchWorker_->clearFilterCache();		
+        }
         doMining_();
     }
 
@@ -763,11 +766,14 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     bool ret = deleteDoc_(docid, timestamp);
     if (ret)
     {
-        searchWorker_->clearSearchCache();
-        ///clear filter cache because of * queries:
-        ///filter will be added into documentiterator 
-        ///together with AllDocumentIterator
-        searchWorker_->clearFilterCache();		
+        if(!bundleConfig_->enable_forceget_doc_)
+        {
+            searchWorker_->clearSearchCache();
+            ///clear filter cache because of * queries:
+            ///filter will be added into documentiterator 
+            ///together with AllDocumentIterator
+            searchWorker_->clearFilterCache();		
+        }
         doMining_();
     }
 

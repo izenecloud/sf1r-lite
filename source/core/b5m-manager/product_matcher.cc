@@ -620,7 +620,7 @@ bool ProductMatcher::Index(const std::string& scd_path)
         product.scategory = scategory;
         product.cid = cid;
         product.price = price;
-        ParseAttributes_(attrib_ustr, product.attributes);
+        ParseAttributes(attrib_ustr, product.attributes);
         if(product.attributes.size()<2) continue;
         product.tweight = 0.0;
         product.aweight = 0.0;
@@ -992,7 +992,7 @@ bool ProductMatcher::GetIsbnAttribute(const Document& doc, std::string& isbn_val
     UString attrib_ustr;
     doc.getProperty("Attribute", attrib_ustr);
     std::vector<Attribute> attributes;
-    ParseAttributes_(attrib_ustr, attributes);
+    ParseAttributes(attrib_ustr, attributes);
     for(uint32_t i=0;i<attributes.size();i++)
     {
         const Attribute& a = attributes[i];
@@ -1529,17 +1529,37 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             std::pair<uint32_t, std::string> sa_app_value(app.spu_id, app.attribute_name);
             if(sa_app.find(sa_app_value)!=sa_app.end()) continue;
             double share_point = 0.0;
-            if(app.is_optional) share_point = 0.5;
-            else if(app.attribute_name=="型号") share_point = 1.5;
-            else share_point = 1.0;
+            double p_point = 0.0;
+            if(app.is_optional) 
+            {
+                share_point = 0.5;
+                p_point = 0.1;
+            }
+            else if(app.attribute_name=="型号") 
+            {
+                share_point = 1.5;
+                p_point = 1.5;
+            }
+            else 
+            {
+                share_point = 1.0;
+                p_point = 1.0;
+            }
             WeightType& wt = pid_weight[app.spu_id];
             wt.aweight+=share_point*weight;
-            double paweight = share_point;
-            //if(length_ratio>=0.5 && app.attribute_name=="型号") paweight*=2;
+            double paweight = p_point;
             wt.paweight+=paweight;
             wt.paratio+=length_ratio;
             if(app.attribute_name=="型号") wt.type_match = true;
             if(app.attribute_name=="品牌") wt.brand_match = true;
+            if(p.price==0.0)
+            {
+                wt.price_diff = 99999999.0; //set to a huge value
+            }
+            else
+            {
+                wt.price_diff = std::fabs(price-p.price);
+            }
             sa_app.insert(sa_app_value);
             //pid_score[app.spu_id]+=share_point*weight;
         }
@@ -1580,10 +1600,13 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             if(weight.paweight>eweight.paweight) replace = true;
             else if(weight.paweight==eweight.paweight)
             {
-                if(ep.price==0.0) replace = true;
+                if(eweight.price_diff!=weight.price_diff)
+                {
+                    if(weight.price_diff<eweight.price_diff) replace = true;
+                }
                 else
                 {
-                    if(p.aweight<ep.aweight)
+                    if(weight.sum()>eweight.sum())
                     {
                         replace = true;
                     }
@@ -1847,7 +1870,7 @@ void ProductMatcher::AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const ize
 }
 
 
-void ProductMatcher::ParseAttributes_(const UString& ustr, std::vector<Attribute>& attributes)
+void ProductMatcher::ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes)
 {
     std::vector<AttrPair> attrib_list;
     std::vector<std::pair<UString, std::vector<UString> > > my_attrib_list;

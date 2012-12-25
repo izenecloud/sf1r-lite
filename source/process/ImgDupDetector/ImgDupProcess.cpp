@@ -46,7 +46,10 @@ void ImgDupProcess::start()
     std::string scd_path = ImgDupCfg::get()->scd_input_dir_;
     std::string output_path = ImgDupCfg::get()->scd_output_dir_;
     std::string source_name = ImgDupCfg::get()->source_name_;
-    ImgDupDetector::get()->DupDetectByImgUrl(scd_path, output_path,source_name);
+    std::string incremental_mode = ImgDupCfg::get()->incremental_mode_;
+    if(incremental_mode.compare("n") == 0 || incremental_mode.compare("N") == 0)
+        ImgDupDetector::get()->DupDetectByImgUrlNotIn(scd_path, output_path, source_name);
+    else ImgDupDetector::get()->DupDetectByImgUrlIncre(scd_path, output_path, source_name);
 }
 
 void ImgDupProcess::join()

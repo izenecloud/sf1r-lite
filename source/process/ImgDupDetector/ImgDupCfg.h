@@ -54,6 +54,8 @@ public:
 
     std::string source_name_;
 
+    std::string incremental_mode_;
+
 };
 
 #endif /* IMGDUPCFG_H_ */

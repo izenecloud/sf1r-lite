@@ -352,4 +352,12 @@ bool MiningSearchService::GetProductScore(
     return miningManager_->getProductScore(docIdStr, scoreType, scoreValue);
 }
 
+bool MiningSearchService::GetProductCategory(
+    const std::string& query, 
+    int limit, 
+    std::vector<std::vector<std::string> >& pathVec )
+{
+    return miningManager_->GetProductCategory(query, limit, pathVec);
+}
+
 }

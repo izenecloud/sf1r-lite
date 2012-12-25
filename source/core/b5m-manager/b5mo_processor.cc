@@ -156,15 +156,55 @@ void B5moProcessor::Process(Document& doc, int& type)
         {
             //has SPU matched
             spid = product.spid;
-            if(!title.empty()) doc.property("Category") = UString(product.scategory, UString::UTF_8);
-            if(scategory!=product.scategory)
+            if(!title.empty()) 
             {
-                const std::string& tcp = B5MHelper::GetTargetCategoryPropertyName();
-                if(doc.hasProperty(tcp))
+                doc.property("Category") = UString(product.scategory, UString::UTF_8);
+                if(scategory!=product.scategory)
                 {
-                    doc.property(tcp) = UString("", UString::UTF_8);
-                }
+                    const std::string& tcp = B5MHelper::GetTargetCategoryPropertyName();
+                    if(doc.hasProperty(tcp))
+                    {
+                        doc.property(tcp) = UString("", UString::UTF_8);
+                    }
 
+                }
+                //process attributes
+                
+                const std::vector<ProductMatcher::Attribute>& attributes = product.attributes;
+                if(!attributes.empty())
+                {
+                    std::vector<ProductMatcher::Attribute> eattributes;
+                    UString attrib_ustr;
+                    doc.getProperty("Attribute", attrib_ustr);
+                    std::string attrib_str;
+                    attrib_ustr.convertString(attrib_str, UString::UTF_8);
+                    boost::algorithm::trim(attrib_str);
+                    if(!attrib_str.empty())
+                    {
+                        ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
+                    }
+                    boost::unordered_set<std::string> to_append_name;
+                    for(uint32_t i=0;i<attributes.size();i++)
+                    {
+                        to_append_name.insert(attributes[i].name);
+                    }
+                    for(uint32_t i=0;i<eattributes.size();i++)
+                    {
+                        to_append_name.erase(eattributes[i].name);
+                    }
+                    for(uint32_t i=0;i<attributes.size();i++)
+                    {
+                        const ProductMatcher::Attribute& a = attributes[i];
+                        if(to_append_name.find(a.name)!=to_append_name.end())
+                        {
+                            if(!attrib_str.empty()) attrib_str+=",";
+                            attrib_str+=a.name;
+                            attrib_str+=":";
+                            attrib_str+=a.GetValue();
+                        }
+                    }
+                    doc.property("Attribute") = UString(attrib_str, UString::UTF_8);
+                }
             }
             match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
         }
