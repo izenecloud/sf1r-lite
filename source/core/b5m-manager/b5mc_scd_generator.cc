@@ -191,10 +191,10 @@ void B5mcScdGenerator::ProcessFurther_(Document& doc)
 ProductMatcher* B5mcScdGenerator::GetMatcher_()
 {
     if(matcher_==NULL) return NULL;
-    if(!matcher_->IsOpen())
-    {
-        matcher_->Open();
-        matcher_->SetUsePriceSim(false);
-    }
+    //if(!matcher_->IsOpen())
+    //{
+        //matcher_->Open();
+        //matcher_->SetUsePriceSim(false);
+    //}
     return matcher_;
 }

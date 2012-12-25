@@ -3,11 +3,11 @@
 
 #include <util/ustring/UString.h>
 #include <util/singleton.h>
+#include <am/succinct/ux-trie/uxMap.hpp>
 
 #include <boost/thread/once.hpp>
 
 #include <string>
-#include <map>
 
 namespace sf1r
 {
@@ -25,9 +25,10 @@ public:
     }
     void Init(const std::string& path);
     bool Map(const UString&backend, UString&frontend);  
+    bool PrefixMap(const UString&backend, UString&frontend);
 private:
     void InitOnce_(const std::string& path);
-    static std::map<UString, UString> back2front_;
+    static izenelib::am::succinct::ux::Map<std::string> back2front_;		
 };
 
 }

@@ -12,6 +12,7 @@
 #include <boost/serialization/set.hpp>
 #include <boost/operators.hpp>
 #include <ir/id_manager/IDManager.h>
+#include <util/singleton.h>
 #include <am/sequence_file/ssfr.h>
 #include <am/leveldb/Table.h>
 #include <idmlib/util/idm_analyzer.h>
@@ -325,15 +326,17 @@ namespace sf1r {
         struct Category
         {
             std::string name;
-            uint32_t cid;
-            uint32_t parent_cid;
+            uint32_t cid;//inner cid starts with 1, not specified by category file.
+            uint32_t parent_cid;//also inner cid
             bool is_parent;
             uint32_t depth;
+            bool has_spu;
+            std::vector<std::string> keywords;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & name & cid & parent_cid & is_parent & depth;
+                ar & name & cid & parent_cid & is_parent & depth & has_spu;
             }
         };
 
@@ -362,6 +365,10 @@ namespace sf1r {
 
         struct Product
         {
+            Product()
+            : cid(0), price(0.0), aweight(0.0), tweight(0.0)
+            {
+            }
             std::string spid;
             std::string stitle;
             std::string scategory;
@@ -400,16 +407,17 @@ namespace sf1r {
         typedef std::map<uint32_t, IdList> IdToIdList;
         typedef boost::unordered_map<uint32_t, UString> IdManager;
 
-        ProductMatcher(const std::string& path);
+        ProductMatcher();
         ~ProductMatcher();
         bool IsOpen() const;
-        bool Open();
+        bool Open(const std::string& path);
         static void Clear(const std::string& path, int mode=3);
         static std::string GetVersion(const std::string& path);
-        bool Index(const std::string& scd_path);
+        bool Index(const std::string& path, const std::string& scd_path);
         void Test(const std::string& scd_path);
         bool DoMatch(const std::string& scd_path);
         bool Process(const Document& doc, Product& result_product);
+        bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products);
         static bool GetIsbnAttribute(const Document& doc, std::string& isbn);
         static bool ProcessBook(const Document& doc, Product& result_product);
         bool GetProduct(const std::string& pid, Product& product);
@@ -445,7 +453,7 @@ namespace sf1r {
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
         void GetKeywordVector_(const TermList& term_list, KeywordVector& keyword_vector);
-        void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, Product& p);
+        void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
 
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
@@ -515,6 +523,11 @@ namespace sf1r {
         const static std::string VERSION;
         
     };
+
+    class ProductMatcherInstance : public izenelib::util::Singleton<ProductMatcher>
+    {
+    };
+
 }
 
 #endif

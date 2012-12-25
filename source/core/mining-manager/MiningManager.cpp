@@ -155,7 +155,6 @@ MiningManager::MiningManager(
     , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
-    , productMatcher_(NULL)
     , kvManager_(NULL)
     , miningTaskBuilder_(NULL)
     , deleted_doc_before_mining_(0)
@@ -182,7 +181,6 @@ MiningManager::~MiningManager()
     if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
-    if (productMatcher_) delete productMatcher_;
     if (kvManager_) delete kvManager_;
     if (miningTaskBuilder_) delete miningTaskBuilder_;
     close();
@@ -623,50 +621,51 @@ bool MiningManager::open()
         if (mining_schema_.product_matcher_enable)
         {
             std::vector<std::string> restrict_vector;
-            restrict_vector.push_back("^手机$");
-            restrict_vector.push_back("^数码相机/单反相机/摄像机");
-            restrict_vector.push_back("^MP3/MP4/iPod/录音笔$");
-            restrict_vector.push_back("^笔记本电脑$");
-            restrict_vector.push_back("^平板电脑/MID$");
-            restrict_vector.push_back("^台式机/一体机/服务器.*$");
-            restrict_vector.push_back("^电脑硬件/显示器/电脑周边.*$");
-            restrict_vector.push_back("^网络设备/网络相关.*$");
-            restrict_vector.push_back("^闪存卡/U盘/存储/移动硬盘.*$");
-            restrict_vector.push_back("^办公设备/耗材/相关服务>打印机$");
-            restrict_vector.push_back("^办公设备/耗材/相关服务>投影机$");
-            restrict_vector.push_back("^办公设备/耗材/相关服务>扫描仪$");
-            restrict_vector.push_back("^办公设备/耗材/相关服务>复合复印机$");
-            restrict_vector.push_back("^大家电.*$");
+            //restrict_vector.push_back("^手机$");
+            //restrict_vector.push_back("^数码相机/单反相机/摄像机");
+            //restrict_vector.push_back("^MP3/MP4/iPod/录音笔$");
+            //restrict_vector.push_back("^笔记本电脑$");
+            //restrict_vector.push_back("^平板电脑/MID$");
+            //restrict_vector.push_back("^台式机/一体机/服务器.*$");
+            //restrict_vector.push_back("^电脑硬件/显示器/电脑周边.*$");
+            //restrict_vector.push_back("^网络设备/网络相关.*$");
+            //restrict_vector.push_back("^闪存卡/U盘/存储/移动硬盘.*$");
+            //restrict_vector.push_back("^办公设备/耗材/相关服务>打印机$");
+            //restrict_vector.push_back("^办公设备/耗材/相关服务>投影机$");
+            //restrict_vector.push_back("^办公设备/耗材/相关服务>扫描仪$");
+            //restrict_vector.push_back("^办公设备/耗材/相关服务>复合复印机$");
+            //restrict_vector.push_back("^大家电.*$");
             for (uint32_t i=0;i<restrict_vector.size();i++)
             {
                 match_category_restrict_.push_back(boost::regex(restrict_vector[i]));
             }
             std::string res_path = system_resource_path_+"/product-matcher";
             BackendLabelToFrontendLabel::Get()->Init(res_path + "/backend_category_2_frontend_category.txt");
-            productMatcher_ = new ProductMatcher(res_path);
-            if (!productMatcher_->Open())
+            ProductMatcher* matcher = ProductMatcherInstance::get();
+            if (!matcher->Open(res_path))
             {
                 std::cerr<<"product matcher open failed"<<std::endl;
-                delete productMatcher_;
-                productMatcher_ = NULL;
             }
-            productMatcher_->SetUsePriceSim(false);
-            //test
-            std::ifstream ifs("./querylog.txt");
-            std::string line;
-            while (getline(ifs, line))
+            else
             {
-                boost::algorithm::trim(line);
-                UString query(line, UString::UTF_8);
-                UString category;
-                if (GetProductCategory(query, category))
-                {
-                    std::string scategory;
-                    category.convertString(scategory, UString::UTF_8);
-                    LOG(ERROR) << "!!!!!!!!!!!query category " << line << "," << scategory;
-                }
+                matcher->SetUsePriceSim(false);
             }
-            ifs.close();
+            //test
+            //std::ifstream ifs("./querylog.txt");
+            //std::string line;
+            //while (getline(ifs, line))
+            //{
+                //boost::algorithm::trim(line);
+                //UString query(line, UString::UTF_8);
+                //UString category;
+                //if (GetProductCategory(query, category))
+                //{
+                    //std::string scategory;
+                    //category.convertString(scategory, UString::UTF_8);
+                    //LOG(ERROR) << "!!!!!!!!!!!query category " << line << "," << scategory;
+                //}
+            //}
+            //ifs.close();
         }
 
         /** KV */
@@ -2052,17 +2051,19 @@ bool MiningManager::GetProductCategory(
     std::vector<UString> backendCategories;
     if (!GetProductCategory(ustrQuery,limit, backendCategories))
         return false;
-
     for(std::vector<UString>::iterator bcit = backendCategories.begin();
         bcit != backendCategories.end(); ++bcit)
     {
         UString frontendCategory;
         if (!BackendLabelToFrontendLabel::Get()->Map(*bcit, frontendCategory))
-            return false;
+        {
+            if(!BackendLabelToFrontendLabel::Get()->PrefixMap(*bcit, frontendCategory))
+                continue;
+        }
         std::vector<std::vector<UString> > groupPaths;
         split_group_path(frontendCategory, groupPaths);
         if (groupPaths.empty())
-            return false;
+            continue;
         std::vector<std::string> path;
         const std::vector<UString>& topGroup = groupPaths[0];
         for (std::vector<UString>::const_iterator it = topGroup.begin();
@@ -2082,48 +2083,52 @@ bool MiningManager::GetProductCategory(
     int limit, 
     std::vector<UString>& categories)
 {
-    if (productMatcher_==NULL)
+    if (mining_schema_.product_matcher_enable)
     {
-        return false;
-    }
-    ///TODO
-    return true;
-}
-
-bool MiningManager::GetProductCategory(const UString& query, UString& category)
-{
-    if (productMatcher_==NULL)
-    {
-        return false;
-    }
-    Document doc;
-    doc.property("Title") = query;
-    ProductMatcher::Product result_product;
-    if (productMatcher_->Process(doc, result_product))
-    {
-        const std::string& category_name = result_product.scategory;
-        if (!category_name.empty())
+        ProductMatcher* matcher = ProductMatcherInstance::get();
+        Document doc;
+        doc.property("Title") = query;
+        std::vector<ProductMatcher::Product> result_products;
+        if (matcher->Process(doc, (uint32_t)limit, result_products))
         {
-            bool valid = true;
-            if (!match_category_restrict_.empty())
+            for(uint32_t i=0;i<result_products.size();i++)
             {
-                valid = false;
-                for (uint32_t i=0;i<match_category_restrict_.size();i++)
+                const std::string& category_name = result_products[i].scategory;
+                if (!category_name.empty())
                 {
-                    if (boost::regex_match(category_name, match_category_restrict_[i]))
+                    bool valid = true;
+                    if (!match_category_restrict_.empty())
                     {
-                        valid = true;
-                        break;
-                    }
+                        valid = false;
+                        for (uint32_t i=0;i<match_category_restrict_.size();i++)
+                        {
+                            if (boost::regex_match(category_name, match_category_restrict_[i]))
+                            {
+                                valid = true;
+                                break;
+                            }
 
+                        }
+                    }
+                    if(valid)
+                    {
+                        categories.push_back(UString(category_name, UString::UTF_8));
+                    }
                 }
             }
-            if (valid)
-            {
-                category = izenelib::util::UString(category_name, izenelib::util::UString::UTF_8);
-                return true;
-            }
         }
+    }
+    if(!categories.empty()) return true;
+    return false;
+}
+
+bool MiningManager::GetProductCategory(const izenelib::util::UString& query, UString& category)
+{
+    std::vector<UString> vec;
+    if(GetProductCategory(query, 1, vec) && !vec.empty())
+    {
+        category = vec.front();
+        return true;
     }
     return false;
 }
