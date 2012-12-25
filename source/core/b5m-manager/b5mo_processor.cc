@@ -289,15 +289,15 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
             return false;
         }
     }
-    if(!matcher_->IsOpen())
-    {
-        LOG(INFO)<<"open matcher..."<<std::endl;
-        if(!matcher_->Open())
-        {
-            LOG(ERROR)<<"matcher open fail"<<std::endl;
-            return false;
-        }
-    }
+    //if(!matcher_->IsOpen())
+    //{
+        //LOG(INFO)<<"open matcher..."<<std::endl;
+        //if(!matcher_->Open())
+        //{
+            //LOG(ERROR)<<"matcher open fail"<<std::endl;
+            //return false;
+        //}
+    //}
 
     if(img_server_cfg_)
     {

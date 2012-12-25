@@ -583,17 +583,18 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         ProductMatcher::Clear(knowledge_dir, mode);
-        ProductMatcher matcher(knowledge_dir);
+        ProductMatcher matcher;
         matcher.SetCmaPath(cma_path);
-        if(!matcher.Open())
+        if(!matcher.Open(knowledge_dir))
         {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
             return EXIT_FAILURE;
         }
         //if(!category_group.empty()&&boost::filesystem::exists(category_group))
         //{
             //matcher.LoadCategoryGroup(category_group);
         //}
-        if(!matcher.Index(scd_path))
+        if(!matcher.Index(knowledge_dir, scd_path))
         {
             return EXIT_FAILURE;
         }
@@ -603,10 +604,11 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        ProductMatcher matcher(knowledge_dir);
+        ProductMatcher matcher;
         matcher.SetCmaPath(cma_path);
-        if(!matcher.Open())
+        if(!matcher.Open(knowledge_dir))
         {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
             return EXIT_FAILURE;
         }
         if(!matcher.DoMatch(scd_path))
@@ -615,21 +617,44 @@ int do_main(int ac, char** av)
         }
     } 
     if (vm.count("match-test")) {
-        if( knowledge_dir.empty()||scd_path.empty())
+        if( knowledge_dir.empty())
         {
             return EXIT_FAILURE;
         }
-        ProductMatcher matcher(knowledge_dir);
+        ProductMatcher matcher;
         matcher.SetCmaPath(cma_path);
-        if(!matcher.Open())
+        if(!matcher.Open(knowledge_dir))
         {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
             return EXIT_FAILURE;
         }
         if(noprice)
         {
             matcher.SetUsePriceSim(false);
         }
-        matcher.Test(scd_path);
+        if(!scd_path.empty())
+        {
+            matcher.Test(scd_path);
+        }
+        else
+        {
+            matcher.SetUsePriceSim(false);
+            std::cerr<<"input text:"<<std::endl;
+            std::string line;
+            while( getline(std::cin, line) )
+            {
+                boost::algorithm::trim(line);
+                Document doc;
+                doc.property("Title") = UString(line, UString::UTF_8);
+                uint32_t limit = 3;
+                std::vector<ProductMatcher::Product> products;
+                matcher.Process(doc, limit, products);
+                for(uint32_t i=0;i<products.size();i++)
+                {
+                    std::cout<<"[CATEGORY]"<<products[i].scategory<<std::endl;
+                }
+            }
+        }
     } 
     if (vm.count("spu-process")) {
         if(spu.empty())
@@ -767,8 +792,13 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         LOG(INFO)<<"b5mo generator, mode: "<<mode<<std::endl;
-        boost::shared_ptr<ProductMatcher> matcher(new ProductMatcher(knowledge_dir));
+        boost::shared_ptr<ProductMatcher> matcher(new ProductMatcher);
         matcher->SetCmaPath(cma_path);
+        if(!matcher->Open(knowledge_dir))
+        {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
         B5moProcessor processor(odb.get(), matcher.get(), bdb.get(), mode, imgserver_config.get());
         if(!mobile_source.empty())
         {
@@ -822,7 +852,12 @@ int do_main(int ac, char** av)
         boost::shared_ptr<ProductMatcher> matcher;
         if(!knowledge_dir.empty())
         {
-            matcher.reset(new ProductMatcher(knowledge_dir));
+            matcher.reset(new ProductMatcher);
+            if(!matcher->Open(knowledge_dir)) 
+            {
+                LOG(ERROR)<<"matcher open failed"<<std::endl;
+                return EXIT_FAILURE;
+            }
             matcher->SetCmaPath(cma_path);
         }
 
