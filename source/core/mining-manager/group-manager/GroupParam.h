@@ -34,12 +34,13 @@ struct GroupPropParam
     std::string subProperty_;
     bool isRange_;
     std::string unit_;
+    int group_top_;
 
     GroupPropParam();
 
-    DATA_IO_LOAD_SAVE(GroupPropParam, &property_&subProperty_&isRange_&unit_);
+    DATA_IO_LOAD_SAVE(GroupPropParam, &property_&subProperty_&isRange_&unit_&group_top_);
 
-    MSGPACK_DEFINE(property_, subProperty_, isRange_, unit_);
+    MSGPACK_DEFINE(property_, subProperty_, isRange_, unit_, group_top_);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)
@@ -48,6 +49,7 @@ struct GroupPropParam
         ar & subProperty_;
         ar & isRange_;
         ar & unit_;
+        ar & group_top_;
     }
 };
 bool operator==(const GroupPropParam& a, const GroupPropParam& b);
@@ -76,6 +78,9 @@ struct GroupParam
     /** group labels to auto select */
     AutoSelectLimitMap autoSelectLimits_;
 
+    /** the group labels to boost product rankings */
+    GroupPathVec boostGroupLabels_;
+
     /** true for need doc counts for each attribute value */
     bool isAttrGroup_;
 
@@ -95,16 +100,20 @@ struct GroupParam
     bool checkParam(const MiningSchema& miningSchema, std::string& message) const;
 
     DATA_IO_LOAD_SAVE(GroupParam, &groupProps_&groupLabels_
-            &isAttrGroup_&attrGroupNum_&attrLabels_);
+                      &autoSelectLimits_&boostGroupLabels_
+                      &isAttrGroup_&attrGroupNum_&attrLabels_);
 
     MSGPACK_DEFINE(groupProps_, groupLabels_,
-            isAttrGroup_, attrGroupNum_, attrLabels_);
+                   autoSelectLimits_, boostGroupLabels_,
+                   isAttrGroup_, attrGroupNum_, attrLabels_);
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)
     {
         ar & groupProps_;
         ar & groupLabels_;
+        ar & autoSelectLimits_;
+        ar & boostGroupLabels_;
         ar & isAttrGroup_;
         ar & attrGroupNum_;
         ar & attrLabels_;
@@ -122,6 +131,7 @@ private:
 bool operator==(const GroupParam& a, const GroupParam& b);
 std::ostream& operator<<(std::ostream& out, const GroupParam& groupParam);
 std::ostream& operator<<(std::ostream& out, const GroupParam::GroupLabelMap& groupLabelMap);
+std::ostream& operator<<(std::ostream& out, const GroupParam::GroupPathVec& groupPathVec);
 
 NS_FACETED_END
 

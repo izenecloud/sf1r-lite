@@ -110,6 +110,11 @@ public:
         return groupLabelAutoSelectLimits_;
     }
 
+    faceted::GroupParam::GroupPathVec& mutableBoostGroupLabels()
+    {
+        return boostGroupLabels_;
+    }
+
     faceted::GroupParam::AttrLabelMap& mutableAttrLabels()
     {
         return attrLabels_;
@@ -160,9 +165,15 @@ public:
         return isRandomRank_;
     }
 
+    std::string& mutableQuerySource()
+    {
+        return querySource_;
+    }
+
 private:
     bool parseGroupLabel_(const Value& search);
     bool parseAttrLabel_(const Value& search);
+    bool parseBoostGroupLabel_(const Value& search);
 
 private:
     const IndexBundleSchema& indexSchema_;
@@ -176,6 +187,7 @@ private:
 
     faceted::GroupParam::GroupLabelMap groupLabels_;
     faceted::GroupParam::AutoSelectLimitMap groupLabelAutoSelectLimits_;
+    faceted::GroupParam::GroupPathVec boostGroupLabels_;
     faceted::GroupParam::AttrLabelMap attrLabels_;
 
     bool logKeywords_;
@@ -186,6 +198,7 @@ private:
     LanguageAnalyzerInfo analyzerInfo_;
 
     bool isRandomRank_;
+    std::string querySource_;
 };
 
 /// @}

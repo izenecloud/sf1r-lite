@@ -5,6 +5,7 @@
 #include <common/XmlConfigParser.h>
 
 #include <bundles/index/IndexTaskService.h>
+#include <core/license-manager/LicenseCustManager.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -101,6 +102,42 @@ void RebuildTask::doTask()
 
     LOG(INFO) << "## end RebuildTask for " << collectionName_;
     isRunning_ = false;
+}
+
+void ExpirationCheckTask::startTask()
+{
+    if (isRunning_)
+    {
+        LOG(ERROR) << "ExpirationCheckTask is running!" ;
+        return;
+    }
+
+    task_type task = boost::bind(&ExpirationCheckTask::doTask, this);
+    asyncJodScheduler_.addTask(task);
+}
+
+void ExpirationCheckTask::doTask()
+{
+    LOG(INFO) << "## start ExpirationCheckTask for " << collectionName_;
+    isRunning_ = true;
+
+    std::string configFile = SF1Config::get()->getCollectionConfigFile(collectionName_);
+    uint32_t currentDate = license_module::license_tool::getCurrentDate();
+    if (currentDate >= startDate_ && endDate_ >= currentDate)
+    {
+    	// Check collection handler
+        CollectionManager::MutexType* collMutex = CollectionManager::get()->getCollectionMutex(collectionName_);
+        CollectionManager::ScopedReadLock collLock(*collMutex);
+        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collectionName_);
+        if (!collectionHandler)
+        	CollectionManager::get()->startCollection(collectionName_, configFile);
+    }
+    // Check if the time is expired
+    if (endDate_ < currentDate)
+    {
+    	CollectionManager::get()->stopCollection(collectionName_);
+    	LicenseCustManager::get()->deleteCollection(collectionName_);
+    }
 }
 
 }

@@ -22,36 +22,32 @@ bool MiningTaskBuilder::buildCollection()
 {
     docid_t MaxDocid = document_manager_->getMaxDocId();
     docid_t min_last_docid = MaxDocid;
-    bool taskFlag[20];
-    for (int i = 0; i < 20; ++i)
-    {
-        taskFlag[i] = false;
-    }
-    int lable = 0;
-    for (std::vector<MiningTask*>::iterator iter = taskList_.begin(); iter != taskList_.end(); ++iter)
+
+    std::vector<bool> taskFlag(taskList_.size(), true);
+
+    size_t false_count = 0;
+    for (size_t i = 0; i < taskList_.size(); ++i)
     {
         {
-            taskFlag[lable] = true;
-            if(!(*iter)->preProcess())
+            if (!taskList_[i]->preProcess())
             {
-                taskFlag[lable] = false;
+                taskFlag[i] = false;
+                ++false_count;
             }
-        }
-        lable++;
-    }
-    for (std::vector<MiningTask*>::iterator iter = taskList_.begin(); iter != taskList_.end(); ++iter)
-    {
-        if (min_last_docid > (*iter)->getLastDocId())
-        {
-            min_last_docid = (*iter)->getLastDocId();
         }
     }
 
-    LOG(INFO) << "begin build Collection...." << endl;
+    if (false_count == taskList_.size()) return true;
+
+    for (size_t i = 0; i < taskList_.size(); ++i)
+    {
+        min_last_docid = std::min(min_last_docid, taskList_[i]->getLastDocId());
+    }
+
+    LOG(INFO) << "begin build Collection....";
     for (uint32_t docid = min_last_docid; docid <= MaxDocid; ++docid)
     {
         Document doc;
-        lable = 0;
         if (docid % 10000 == 0)
         {
             std::cout << "\rinserting doc id: " << docid << "\t" << std::flush;
@@ -62,28 +58,25 @@ bool MiningTaskBuilder::buildCollection()
             document_manager_->getRTypePropertiesForDocument(docid, doc);
         }
 
-        for (std::vector<MiningTask*>::iterator iter = taskList_.begin(); iter != taskList_.end(); ++iter)
+        for (size_t i = 0; i < taskList_.size(); ++i)
         {
-            if ( taskFlag[lable])
+            if (taskFlag[i])
             {
-                docid_t currentDocid = (*iter)->getLastDocId();
-                if (docid < currentDocid)
-                continue;
-                (*iter)->buildDocment(docid, doc);
+                if (docid < taskList_[i]->getLastDocId()) continue;
+                taskList_[i]->buildDocument(docid, doc);
             }
-            lable++;
         }
     }
-    LOG(INFO) << "build Collection end" << endl;
-    lable = 0;
-    for (std::vector<MiningTask*>::iterator iter = taskList_.begin(); iter != taskList_.end(); ++iter)
+
+    LOG(INFO) << "build Collection end";
+    for (size_t i = 0; i < taskList_.size(); ++i)
     {
-        if ( taskFlag[lable])
+        if (taskFlag[i])
         {
-            (*iter)->postProcess();
+            taskList_[i]->postProcess();
         }
-        lable++;
     }
+
     return true;
 }
 
@@ -95,7 +88,7 @@ void MiningTaskBuilder::addTask(MiningTask* miningTask)
     }
     else
     {
-        LOG(INFO) << "ONE MiningTask IS ERORR" << endl;
+        LOG(INFO) << "ONE MiningTask IS ERORR";
     }
 }
 }

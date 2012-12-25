@@ -4,10 +4,7 @@
 #include "b5m_types.h"
 #include "b5m_helper.h"
 #include "b5m_mode.h"
-#include <common/ScdParser.h>
-#include <common/ScdWriter.h>
-#include <common/ScdMerger.h>
-#include <common/ScdWriterController.h>
+#include "scd_doc_processor.h"
 #include <common/Utilities.h>
 #include <product-manager/product_price.h>
 #include <product-manager/uuid_generator.h>
@@ -43,6 +40,7 @@ void B5moProcessor::LoadMobileSource(const std::string& file)
 
 void B5moProcessor::Process(Document& doc, int& type)
 {
+    //return;
     //reset type
     if(mode_!=B5MMode::INC)
     {
@@ -158,15 +156,55 @@ void B5moProcessor::Process(Document& doc, int& type)
         {
             //has SPU matched
             spid = product.spid;
-            doc.property("Category") = UString(product.scategory, UString::UTF_8);
-            if(scategory!=product.scategory)
+            if(!title.empty()) 
             {
-                const std::string& tcp = B5MHelper::GetTargetCategoryPropertyName();
-                if(doc.hasProperty(tcp))
+                doc.property("Category") = UString(product.scategory, UString::UTF_8);
+                if(scategory!=product.scategory)
                 {
-                    doc.property(tcp) = UString("", UString::UTF_8);
-                }
+                    const std::string& tcp = B5MHelper::GetTargetCategoryPropertyName();
+                    if(doc.hasProperty(tcp))
+                    {
+                        doc.property(tcp) = UString("", UString::UTF_8);
+                    }
 
+                }
+                //process attributes
+                
+                const std::vector<ProductMatcher::Attribute>& attributes = product.attributes;
+                if(!attributes.empty())
+                {
+                    std::vector<ProductMatcher::Attribute> eattributes;
+                    UString attrib_ustr;
+                    doc.getProperty("Attribute", attrib_ustr);
+                    std::string attrib_str;
+                    attrib_ustr.convertString(attrib_str, UString::UTF_8);
+                    boost::algorithm::trim(attrib_str);
+                    if(!attrib_str.empty())
+                    {
+                        ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
+                    }
+                    boost::unordered_set<std::string> to_append_name;
+                    for(uint32_t i=0;i<attributes.size();i++)
+                    {
+                        to_append_name.insert(attributes[i].name);
+                    }
+                    for(uint32_t i=0;i<eattributes.size();i++)
+                    {
+                        to_append_name.erase(eattributes[i].name);
+                    }
+                    for(uint32_t i=0;i<attributes.size();i++)
+                    {
+                        const ProductMatcher::Attribute& a = attributes[i];
+                        if(to_append_name.find(a.name)!=to_append_name.end())
+                        {
+                            if(!attrib_str.empty()) attrib_str+=",";
+                            attrib_str+=a.name;
+                            attrib_str+=":";
+                            attrib_str+=a.GetValue();
+                        }
+                    }
+                    doc.property("Attribute") = UString(attrib_str, UString::UTF_8);
+                }
             }
             match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
         }
@@ -174,7 +212,7 @@ void B5moProcessor::Process(Document& doc, int& type)
         {
             spid = sdocid;
         }
-        if(!product.stitle.empty())
+        if(!product.stitle.empty() && !title.empty())
         {
             doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
         }
@@ -201,7 +239,7 @@ void B5moProcessor::Process(Document& doc, int& type)
                 bdb_->set(pid, brand);
             }
         }
-        if(!brand.empty())
+        if(!brand.empty() && !title.empty())
         {
             doc.property(B5MHelper::GetBrandPropertyName()) = brand;
         }
@@ -217,6 +255,13 @@ void B5moProcessor::Process(Document& doc, int& type)
     else
     {
         doc.clearExceptDOCID();
+        std::string spid;
+        odb_->get(sdocid, spid);
+        if(spid.empty()) type=NOT_SCD;
+        else
+        {
+            doc.property("uuid") = UString(spid, UString::UTF_8);
+        }
     }
     if(!changed_match_.empty())
     {
@@ -273,113 +318,109 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
     std::string cmatch_file = mdb_instance+"/cmatch";
     match_ofs_.open(match_file.c_str());
     cmatch_ofs_.open(cmatch_file.c_str());
-    if(!human_match_file_.empty())
-    {
-        odb_->clear_all_flag();
-        std::ifstream ifs(human_match_file_.c_str());
-        std::string line;
-        uint32_t i=0;
-        while( getline(ifs, line))
-        {
-            boost::algorithm::trim(line);
-            ++i;
-            if(i%100000==0)
-            {
-                LOG(INFO)<<"human match processing "<<i<<" item"<<std::endl;
-            }
-            boost::algorithm::trim(line);
-            std::vector<std::string> vec;
-            boost::algorithm::split(vec, line, boost::is_any_of(","));
-            if(vec.size()<2) continue;
-            const std::string& soid = vec[0];
-            const std::string& spid = vec[1];
-            std::string old_spid;
-            odb_->get(soid, old_spid);
-            if(spid!=old_spid)
-            {
-                changed_match_.insert(B5MHelper::StringToUint128(soid));
-                cmatch_ofs_<<soid<<","<<spid<<","<<old_spid<<std::endl;
-                odb_->insert(soid, spid);
-            }
-            odb_->insert_flag(soid, 1);
-        }
-        ifs.close();
-        odb_->flush();
-    }
+    //if(!human_match_file_.empty())
+    //{
+        //odb_->clear_all_flag();
+        //std::ifstream ifs(human_match_file_.c_str());
+        //std::string line;
+        //uint32_t i=0;
+        //while( getline(ifs, line))
+        //{
+            //boost::algorithm::trim(line);
+            //++i;
+            //if(i%100000==0)
+            //{
+                //LOG(INFO)<<"human match processing "<<i<<" item"<<std::endl;
+            //}
+            //boost::algorithm::trim(line);
+            //std::vector<std::string> vec;
+            //boost::algorithm::split(vec, line, boost::is_any_of(","));
+            //if(vec.size()<2) continue;
+            //const std::string& soid = vec[0];
+            //const std::string& spid = vec[1];
+            //std::string old_spid;
+            //odb_->get(soid, old_spid);
+            //if(spid!=old_spid)
+            //{
+                //changed_match_.insert(B5MHelper::StringToUint128(soid));
+                //cmatch_ofs_<<soid<<","<<spid<<","<<old_spid<<std::endl;
+                //odb_->insert(soid, spid);
+            //}
+            //odb_->insert_flag(soid, 1);
+        //}
+        //ifs.close();
+        //odb_->flush();
+    //}
 
-    ScdMerger::PropertyConfig config;
-    config.output_dir = B5MHelper::GetB5moPath(mdb_instance);
-    B5MHelper::PrepareEmptyDir(config.output_dir);
-    config.property_name = "DOCID";
-    config.merge_function = &ScdMerger::DefaultMergeFunction;
-    config.output_function = boost::bind(&B5moProcessor::Process, this, _1, _2);
-    config.output_if_no_position = true;
-    ScdMerger merger;
-    merger.AddPropertyConfig(config);
-    merger.AddInput(scd_path);
-    merger.Output();
+    ScdDocProcessor::ProcessorType p = boost::bind(&B5moProcessor::Process, this, _1, _2);
+    ScdDocProcessor sd_processor(p);
+    sd_processor.AddInput(scd_path);
+    std::string output_dir = B5MHelper::GetB5moPath(mdb_instance);
+    B5MHelper::PrepareEmptyDir(output_dir);
+    sd_processor.SetOutput(output_dir);
+    sd_processor.Process();
     match_ofs_.close();
     cmatch_ofs_.close();
     odb_->flush();
     bdb_->flush();
-    if(!changed_match_.empty())
-    {
-        if(last_mdb_instance.empty())
-        {
-            LOG(ERROR)<<"pid changed oid not empty but last mdb instance not specify"<<std::endl;
-        }
-        else
-        {
-            std::vector<std::string> last_b5mo_scd_list;
-            std::string last_b5mo_mirror_scd_path = B5MHelper::GetB5moMirrorPath(last_mdb_instance);
-            B5MHelper::GetScdList(last_b5mo_mirror_scd_path, last_b5mo_scd_list);
-            if(last_b5mo_scd_list.size()!=1)
-            {
-                LOG(ERROR)<<"last b5mo scd size should be 1"<<std::endl;
-            }
-            else
-            {
-                ScdWriter edit_u(B5MHelper::GetB5moPath(mdb_instance), UPDATE_SCD);
-                std::string scd_file = last_b5mo_scd_list[0];
-                ScdParser parser(izenelib::util::UString::UTF_8);
-                parser.load(scd_file);
-                uint32_t n=0;
-                for( ScdParser::iterator doc_iter = parser.begin();
-                  doc_iter!= parser.end(); ++doc_iter, ++n)
-                {
-                    if(changed_match_.empty()) break;
-                    if(n%10000==0)
-                    {
-                        LOG(INFO)<<"Last b5mo mirror find Documents "<<n<<std::endl;
-                    }
-                    std::string soldpid;
-                    Document doc;
-                    SCDDoc& scddoc = *(*doc_iter);
-                    SCDDoc::iterator p = scddoc.begin();
-                    for(; p!=scddoc.end(); ++p)
-                    {
-                        const std::string& property_name = p->first;
-                        doc.property(property_name) = p->second;
-                    }
-                    std::string sdocid;
-                    doc.getString("DOCID", sdocid);
-                    uint128_t oid = B5MHelper::StringToUint128(sdocid);
-                    if(changed_match_.find(oid)!=changed_match_.end())
-                    {
-                        std::string spid;
-                        if(odb_->get(sdocid, spid))
-                        {
-                            doc.property("uuid") = spid;
-                            edit_u.Append(doc);
-                        }
-                        changed_match_.erase(oid);
-                    }
-                }
-                edit_u.Close();
+    //if(!changed_match_.empty())
+    //{
+        //if(last_mdb_instance.empty())
+        //{
+            //LOG(ERROR)<<"pid changed oid not empty but last mdb instance not specify"<<std::endl;
+        //}
+        //else
+        //{
+            //std::vector<std::string> last_b5mo_scd_list;
+            //std::string last_b5mo_mirror_scd_path = B5MHelper::GetB5moMirrorPath(last_mdb_instance);
+            //B5MHelper::GetScdList(last_b5mo_mirror_scd_path, last_b5mo_scd_list);
+            //if(last_b5mo_scd_list.size()!=1)
+            //{
+                //LOG(ERROR)<<"last b5mo scd size should be 1"<<std::endl;
+            //}
+            //else
+            //{
+                //ScdWriter edit_u(B5MHelper::GetB5moPath(mdb_instance), UPDATE_SCD);
+                //std::string scd_file = last_b5mo_scd_list[0];
+                //ScdParser parser(izenelib::util::UString::UTF_8);
+                //parser.load(scd_file);
+                //uint32_t n=0;
+                //for( ScdParser::iterator doc_iter = parser.begin();
+                  //doc_iter!= parser.end(); ++doc_iter, ++n)
+                //{
+                    //if(changed_match_.empty()) break;
+                    //if(n%10000==0)
+                    //{
+                        //LOG(INFO)<<"Last b5mo mirror find Documents "<<n<<std::endl;
+                    //}
+                    //std::string soldpid;
+                    //Document doc;
+                    //SCDDoc& scddoc = *(*doc_iter);
+                    //SCDDoc::iterator p = scddoc.begin();
+                    //for(; p!=scddoc.end(); ++p)
+                    //{
+                        //const std::string& property_name = p->first;
+                        //doc.property(property_name) = p->second;
+                    //}
+                    //std::string sdocid;
+                    //doc.getString("DOCID", sdocid);
+                    //uint128_t oid = B5MHelper::StringToUint128(sdocid);
+                    //if(changed_match_.find(oid)!=changed_match_.end())
+                    //{
+                        //std::string spid;
+                        //if(odb_->get(sdocid, spid))
+                        //{
+                            //doc.property("uuid") = spid;
+                            //edit_u.Append(doc);
+                        //}
+                        //changed_match_.erase(oid);
+                    //}
+                //}
+                //edit_u.Close();
 
-            }
-        }
-    }
+            //}
+        //}
+    //}
     return true;
 }
 

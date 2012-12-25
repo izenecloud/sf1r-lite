@@ -219,6 +219,8 @@ bool DocumentManager::removeDocument(docid_t docId)
     {
         delfilter_.resize(docId);
     }
+    if(delfilter_.test(docId - 1))
+        return false;
     delfilter_.set(docId - 1);
     documentCache_.del(docId);
     return true;
@@ -326,13 +328,14 @@ bool DocumentManager::existDocument(docid_t docId)
 
 bool DocumentManager::getDocumentByCache(
         docid_t docId,
-        Document& document)
+        Document& document,
+        bool forceget)
 {
     if (documentCache_.getValue(docId, document))
     {
         return true;
     }
-    if (!isDeleted(docId) && propertyValueTable_->get(docId, document))
+    if ((forceget | !isDeleted(docId) ) && propertyValueTable_->get(docId, document))
     {
         documentCache_.insertValue(docId, document);
         return true;
@@ -342,13 +345,14 @@ bool DocumentManager::getDocumentByCache(
 
 bool DocumentManager::getDocuments(
         const std::vector<unsigned int>& ids,
-        std::vector<Document>& docs)
+        std::vector<Document>& docs,
+        bool forceget)
 {
     docs.resize(ids.size());
     bool ret = true;
     for (size_t i=0; i<ids.size(); i++)
     {
-        ret &= getDocumentByCache(ids[i], docs[i]);
+        ret &= getDocumentByCache(ids[i], docs[i], forceget);
     }
     return ret;
 }

@@ -30,6 +30,7 @@ using driver::Keys;
  * - @b sub_property (@c String): Property name, it gives 2nd level group results
  *   in response["group"]["labels"]["sub_labels"].@n
  *   The property type must be string, int or float. If this parameter is set, @b range must be false.
+ * - @b grouptop (@c Int): only select top group labels according to group counting results
  */
 
 bool GroupingParser::parse(const Value& grouping)
@@ -56,6 +57,7 @@ bool GroupingParser::parse(const Value& grouping)
             propParam.property_ = asString(groupingRule[Keys::property]);
             propParam.subProperty_ = asString(groupingRule[Keys::sub_property]);
             propParam.unit_ = asString(groupingRule[Keys::unit]);
+            propParam.group_top_ = asInt(groupingRule[Keys::grouptop]);
 
             if (groupingRule.hasKey(Keys::range))
             {

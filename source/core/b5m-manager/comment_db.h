@@ -17,8 +17,8 @@ namespace sf1r {
     {
     public:
         typedef uint128_t KeyType;
-        typedef izenelib::util::BloomFilter<KeyType, KeyType> FilterType;
-        //typedef izenelib::util::DynamicBloomFilter<KeyType, KeyType> FilterType;
+        //typedef izenelib::util::BloomFilter<KeyType, KeyType> FilterType;
+        typedef izenelib::util::DynamicBloomFilter<KeyType, KeyType> FilterType;
         CommentDb(const std::string& path)
         : path_(path)
           , filter_path_(path+"/filter")
@@ -44,8 +44,8 @@ namespace sf1r {
         {
             if(is_open_) return true;
             boost::filesystem::create_directories(path_);
-            filter_ = new FilterType(100000000, 0.000000001);
-            //filter_ = new FilterType(100000000, 0.000000001, 100000000);
+            //filter_ = new FilterType(100000000, 0.000000001);
+            filter_ = new FilterType(100000000, 0.000000001, 100000000);
             if(boost::filesystem::exists(filter_path_))
             {
                 std::ifstream ifs(filter_path_.c_str());

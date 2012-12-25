@@ -1209,7 +1209,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     params.Get("Sia/triggerqa", indexBundleConfig.bTriggerQA_);
     params.Get("Sia/enable_parallel_searching", indexBundleConfig.enable_parallel_searching_);
-
+    params.Get("Sia/enable_forceget_doc", indexBundleConfig.enable_forceget_doc_);
     params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
     params.Get<std::size_t>("Sia/searchcachenum", indexBundleConfig.searchCacheNum_);
     params.Get("Sia/refreshsearchcache", indexBundleConfig.refreshSearchCache_);
@@ -1879,20 +1879,20 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         std::string perform_tdt_task;
         getAttribute(task_node, "enabletdt", perform_tdt_task);
         int enable = parseTruth(perform_tdt_task);
-        if(1 == enable)
+        if (1 == enable)
             mining_schema.tdt_config.perform_tdt_task= true;
         else
             mining_schema.tdt_config.perform_tdt_task= false;
-         
-        cout<<"enable"<<enable<<endl;
-        task_node = getUniqChildElement(task_node, "WikiGraph", false);
-        if (task_node)
-        {    
-            cout<<"task_node"<<endl;
-            std::string  wiki_graph_path;
-            getAttribute(task_node, "path", wiki_graph_path);
-            cout<<"wiki_graph_path"<<wiki_graph_path<<endl;
-            mining_schema.tdt_config.wiki_graph_path=wiki_graph_path;
+
+        ticpp::Element* subNode = getUniqChildElement(task_node, "TokenizeDictionary", true);
+        if (subNode)
+        {
+            getAttribute(subNode, "path", property_name);
+            mining_schema.tdt_config.tdt_tokenize_dicpath = property_name;
+        }
+        else
+        {
+            throw XmlConfigParserException("["+property_name+"] used in TDT is missing.");
         }
     }
 
@@ -1945,7 +1945,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     if (task_node)
     {
         Iterator<Element> it("Property");
-        for(it = it.begin(task_node); it != it.end(); ++it)
+        for (it = it.begin(task_node); it != it.end(); ++it)
         {
             getAttribute(it.Get(), "name", property_name);
             bool gottype = collectionMeta.getPropertyType(property_name, property_type);
@@ -1956,6 +1956,8 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             mining_schema.suffixmatch_schema.suffix_match_properties.push_back(property_name);
             mining_schema.suffixmatch_schema.suffix_match_enable = true;
         }
+
+        std::sort(mining_schema.suffixmatch_schema.suffix_match_properties.begin(), mining_schema.suffixmatch_schema.suffix_match_properties.end());
 
         ticpp::Element* subNode = getUniqChildElement(task_node, "TokenizeDictionary", true);
         if (subNode)
@@ -1980,6 +1982,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             throw XmlConfigParserException("Incremental used in SuffixMatch is missing.");
         }
 
+        ticpp::Element* subNodeTopK = getUniqChildElement(task_node, "GroupCounterTopK", false);
+        if (subNodeTopK)
+        {
+            int32_t topk = 100000;
+            getAttribute(subNodeTopK, "num", topk);
+            mining_schema.suffixmatch_schema.suffix_groupcounter_topk = topk;
+        }
+
         Iterator<Element> filterit("FilterProperty");
         const IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
         for (filterit = filterit.begin(task_node); filterit != filterit.end(); ++filterit)
@@ -2001,65 +2011,73 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             bool searchable = false;
             getAttribute(propNode, "searchable", searchable, false);
 
-            if(type == "group")
+            if (type == "group")
             {
                 GroupConfigMap::const_iterator cit = mining_schema.group_config_map.find(property_name);
-                if(cit == mining_schema.group_config_map.end())
+                if (cit == mining_schema.group_config_map.end())
                 {
                     throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> must be one of item configured in <Group> if it has type group.");
                 }
                 mining_schema.suffixmatch_schema.group_filter_properties.push_back(property_name);
-                if(searchable)
+                if (searchable)
                 {
-                    if(property_type != STRING_PROPERTY_TYPE)
+                    if (property_type != STRING_PROPERTY_TYPE)
                         throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> searchable must be string type.");
                     mining_schema.suffixmatch_schema.searchable_properties.push_back(property_name);
                 }
             }
-            else if(type == "attribute")
+            else if (type == "attribute")
             {
-                if( property_name != mining_schema.attr_property.propName)
+                if ( property_name != mining_schema.attr_property.propName)
                 {
                     throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> must be one of item configured in <Attr> if it has type attribute.");
                 }
                 mining_schema.suffixmatch_schema.attr_filter_properties.push_back(property_name);
-                if(searchable)
+                if (searchable)
                 {
-                    if(property_type != STRING_PROPERTY_TYPE)
+                    if (property_type != STRING_PROPERTY_TYPE)
                         throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> searchable must be string type.");
                     mining_schema.suffixmatch_schema.searchable_properties.push_back(property_name);
                 }
             }
-            else if(type == "date")
+            else if (type == "string")
             {
-                if( property_type != DATETIME_PROPERTY_TYPE)
+                if ( property_type != STRING_PROPERTY_TYPE)
+                {
+                    throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not string type.");
+                }
+                mining_schema.suffixmatch_schema.str_filter_properties.push_back(property_name);
+            }
+            else if (type == "date")
+            {
+                if ( property_type != DATETIME_PROPERTY_TYPE)
                 {
                     throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not date type.");
                 }
                 mining_schema.suffixmatch_schema.date_filter_properties.push_back(property_name);
             }
-            else if(type == "number")
+            else if (type == "numeric")
             {
                 PropertyConfig propConfig;
                 propConfig.setName(property_name);
                 IndexBundleSchema::const_iterator propIt = indexSchema.find(propConfig);
 
-                NumberFilterConfig number_filterconfig(property_type);
+                NumericFilterConfig number_filterconfig(property_type);
                 number_filterconfig.property = property_name;
                 number_filterconfig.amplifier = amplifier;
                 if (number_filterconfig.isNumericType())
                 {
                     if (propIt == indexSchema.end() || !propIt->isIndex() || !propIt->getIsFilter())
                     {
-                        throw XmlConfigParserException("As property ["+property_name+"] in <SuffixMatch> is int or float type, "
+                        throw XmlConfigParserException("As property ["+property_name+"] in <SuffixMatch> is numeric type, "
                             "it needs to be configured as a filter property like below:\n"
                             "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
                     }
-                    mining_schema.suffixmatch_schema.number_filter_properties.push_back(number_filterconfig);
+                    mining_schema.suffixmatch_schema.num_filter_properties.push_back(number_filterconfig);
                 }
                 else
                 {
-                    throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not int, float type.");
+                    throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> is not numeric type.");
                 }
             }
             else
@@ -2067,9 +2085,15 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 throw XmlConfigParserException("Property ["+property_name+"] in <SuffixMatch> unknown filter type.");
             }
         }
+
+        std::sort(mining_schema.suffixmatch_schema.group_filter_properties.begin(), mining_schema.suffixmatch_schema.group_filter_properties.end());
+        std::sort(mining_schema.suffixmatch_schema.attr_filter_properties.begin(), mining_schema.suffixmatch_schema.attr_filter_properties.end());
+        std::sort(mining_schema.suffixmatch_schema.str_filter_properties.begin(), mining_schema.suffixmatch_schema.str_filter_properties.end());
+        std::sort(mining_schema.suffixmatch_schema.date_filter_properties.begin(), mining_schema.suffixmatch_schema.date_filter_properties.end());
+        std::sort(mining_schema.suffixmatch_schema.num_filter_properties.begin(), mining_schema.suffixmatch_schema.num_filter_properties.end());
     }
     task_node = getUniqChildElement(mining_schema_node, "ProductMatcher", false);
-    if(task_node)
+    if (task_node)
     {
         mining_schema.product_matcher_enable = true;
     }
@@ -2500,7 +2524,7 @@ void CollectionConfig::parseProperty_Indexing(const ticpp::Element * indexing, P
         throw XmlConfigParserException(msg.str());
     }
 
-    if(!analyzer.empty() && rtype)
+    if (!analyzer.empty() && rtype)
     {
         stringstream msg;
         msg << propertyConfig.getName() << "\": an \"rtype\" can not have any analyzer.";

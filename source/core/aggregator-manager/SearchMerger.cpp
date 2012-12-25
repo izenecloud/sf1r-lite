@@ -51,12 +51,12 @@ void SearchMerger::getDistSearchInfo(const net::aggregator::WorkerResults<DistKe
     }
 }
 
-void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<DistKeywordSearchResult>& workerResults, DistKeywordSearchResult& mergeResult)
+void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
 {
     cout << "#[SearchMerger::getDistSearchResult] " << workerResults.size() << endl;
 
     size_t workerNum = workerResults.size();
-    const DistKeywordSearchResult& result0 = workerResults.result(0);
+    const KeywordSearchResult& result0 = workerResults.result(0);
 
     // only one result
     if (workerNum == 1)
@@ -81,7 +81,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
     float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
     for (size_t i = 0; i < workerNum; i++)
     {
-        const DistKeywordSearchResult& wResult = workerResults.result(i);
+        const KeywordSearchResult& wResult = workerResults.result(i);
         //wResult.print();
 
         mergeResult.totalCount_ += wResult.totalCount_;
@@ -161,7 +161,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Dist
 
         // get a result
         const workerid_t& workerid = workerResults.workerId(maxi);
-        const DistKeywordSearchResult& wResult = workerResults.result(maxi);
+        const KeywordSearchResult& wResult = workerResults.result(maxi);
 
         mergeResult.topKDocs_[cnt] = wResult.topKDocs_[iter[maxi]];
         mergeResult.topKWorkerIds_[cnt] = workerid;

@@ -267,13 +267,13 @@ std::size_t DocumentsSearchHandler::getDocumentIdListInNameEntityItem(
     std::size_t totalCount = 0;
     typedef NEResultList::const_iterator ne_result_list_iterator;
     ne_result_list_iterator resultOfType =
-        std::find_if(miaResult.neList_.begin(), miaResult.neList_.end(),
+        std::find_if (miaResult.neList_.begin(), miaResult.neList_.end(),
                      boost::bind(&NEResult::type, _1) == type);
     if (resultOfType != miaResult.neList_.end())
     {
         typedef std::vector<NEItem>::const_iterator item_iterator;
         item_iterator foundItem =
-            std::find_if(resultOfType->item_list.begin(),
+            std::find_if (resultOfType->item_list.begin(),
                          resultOfType->item_list.end(),
                          boost::bind(&NEItem::text, _1) == name);
 
@@ -315,11 +315,11 @@ bool DocumentsSearchHandler::doGet(
     //add dd result
     rawTextResult.numberOfDuplicatedDocs_.resize(rawTextResult.idList_.size(), 0);
 //     uint32_t pos1=0,pos2=0;
-//     while(pos1<miaResult.topKDocs_.size() && pos<rawTextResult.idList_.size() )
+//     while (pos1<miaResult.topKDocs_.size() && pos<rawTextResult.idList_.size() )
 //     {
 //
 //     }
-//     for(uint32_t i=0;i<rawTextResult.idList_.size();i++)
+//     for (uint32_t i=0;i<rawTextResult.idList_.size();i++)
 //     {
 //         wdocid_t wdocid = rawTextResult.idList_[i];
 //         rawTextResult.numberOfDuplicatedDocs_[i] = dd_list.size();
@@ -426,12 +426,20 @@ bool DocumentsSearchHandler::parse()
         searchParser.mutableNameEntityType()
     );
     swap(
+        actionItem_.env_.querySource_,
+        searchParser.mutableQuerySource()
+    );
+    swap(
         actionItem_.groupParam_.groupLabels_,
         searchParser.mutableGroupLabels()
     );
     swap(
         actionItem_.groupParam_.autoSelectLimits_,
         searchParser.mutableGroupLabelAutoSelectLimits()
+    );
+    swap(
+        actionItem_.groupParam_.boostGroupLabels_,
+        searchParser.mutableBoostGroupLabels()
     );
     swap(
         actionItem_.groupParam_.attrLabels_,
@@ -496,7 +504,7 @@ bool DocumentsSearchHandler::parse()
         return false;
     }
 
-    if(!checkSuffixMatchParam(message))
+    if (!checkSuffixMatchParam(message))
     {
         response_.addError(message);
         return false;
@@ -507,15 +515,15 @@ bool DocumentsSearchHandler::parse()
 
 bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
 {
-    if(actionItem_.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH ||
-        !actionItem_.searchingMode_.usefuzzy_)
+    if (actionItem_.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH
+            || !actionItem_.searchingMode_.usefuzzy_)
         return true;
     const std::vector<QueryFiltering::FilteringType>& filter_param = actionItem_.filteringList_;
     const SuffixMatchConfig& suffixconfig = miningSchema_.suffixmatch_schema;
-    for(size_t i = 0; i < filter_param.size(); ++i)
+    for (size_t i = 0; i < filter_param.size(); ++i)
     {
         const QueryFiltering::FilteringType& filtertype = filter_param[i];
-        if(std::find(suffixconfig.group_filter_properties.begin(),
+        if (std::find(suffixconfig.group_filter_properties.begin(),
                 suffixconfig.group_filter_properties.end(),
                 filtertype.property_) == suffixconfig.group_filter_properties.end() &&
             std::find(suffixconfig.attr_filter_properties.begin(),
@@ -523,15 +531,15 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
                 filtertype.property_) == suffixconfig.attr_filter_properties.end())
         {
             bool finded = false;
-            for(size_t j = 0; j < suffixconfig.number_filter_properties.size(); ++j)
+            for (size_t j = 0; j < suffixconfig.num_filter_properties.size(); ++j)
             {
-                if(filtertype.property_ == suffixconfig.number_filter_properties[j].property)
+                if (filtertype.property_ == suffixconfig.num_filter_properties[j].property)
                 {
                     finded = true;
                     break;
                 }
             }
-            if(!finded)
+            if (!finded)
             {
                 message = "The filter property : " + filtertype.property_ + " was not configured as FilterProperty in SuffixMatchConfig.";
                 return false;
@@ -539,16 +547,18 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
         }
         PropertyConfig config;
         bool hasit = getPropertyConfig(indexSchema_, filtertype.property_, config);
-        if(!hasit)
+        if (!hasit)
         {
             message = "The filter property:" + filtertype.property_ + " not found.";
             return false;
         }
- 
-        if(config.isNumericType())
+
+        if (config.isNumericType())
         {
-            if(filtertype.operation_ != QueryFiltering::GREATER_THAN_EQUAL &&
+            if (filtertype.operation_ != QueryFiltering::GREATER_THAN_EQUAL &&
+                filtertype.operation_ != QueryFiltering::GREATER_THAN &&
                 filtertype.operation_ != QueryFiltering::LESS_THAN_EQUAL &&
+                filtertype.operation_ != QueryFiltering::LESS_THAN &&
                 filtertype.operation_ != QueryFiltering::EQUAL &&
                 filtertype.operation_ != QueryFiltering::RANGE)
             {
@@ -558,8 +568,13 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
         }
         else
         {
-            if(filtertype.operation_ != QueryFiltering::EQUAL &&
-                filtertype.operation_ != QueryFiltering::INCLUDE)
+            if (filtertype.operation_ != QueryFiltering::EQUAL &&
+                filtertype.operation_ != QueryFiltering::GREATER_THAN_EQUAL &&
+                filtertype.operation_ != QueryFiltering::GREATER_THAN &&
+                filtertype.operation_ != QueryFiltering::LESS_THAN_EQUAL &&
+                filtertype.operation_ != QueryFiltering::LESS_THAN &&
+                filtertype.operation_ != QueryFiltering::RANGE &&
+                filtertype.operation_ != QueryFiltering::PREFIX)
             {
                 message = "The string filter type only support \"=\", \"in\" operations while using fuzzy searching.";
                 return false;
@@ -568,16 +583,16 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
     }
     const faceted::GroupParam& gp = actionItem_.groupParam_;
     faceted::GroupParam::GroupLabelMap::const_iterator cit = gp.groupLabels_.begin();
-    while(cit != gp.groupLabels_.end())
+    while (cit != gp.groupLabels_.end())
     {
-        if(std::find(suffixconfig.group_filter_properties.begin(),
+        if (std::find(suffixconfig.group_filter_properties.begin(),
                 suffixconfig.group_filter_properties.end(),
                 cit->first) == suffixconfig.group_filter_properties.end())
         {
             bool find_num_prop = false;
-            for(size_t j = 0; j < suffixconfig.number_filter_properties.size(); ++j)
+            for (size_t j = 0; j < suffixconfig.num_filter_properties.size(); ++j)
             {
-                if(cit->first == suffixconfig.number_filter_properties[j].property)
+                if (cit->first == suffixconfig.num_filter_properties[j].property)
                 {
                     find_num_prop = true;
                     break;
@@ -585,7 +600,7 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
             }
             find_num_prop = find_num_prop || (std::find(suffixconfig.date_filter_properties.begin(),
                 suffixconfig.date_filter_properties.end(), cit->first) != suffixconfig.date_filter_properties.end());
-            if(!find_num_prop)
+            if (!find_num_prop)
             {
                 message = "The filter property : " + cit->first + " was not configured as group FilterProperty in SuffixMatchConfig.";
                 return false;
@@ -593,7 +608,7 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
         }
         ++cit;
     }
-    if(!gp.isAttrEmpty() && suffixconfig.attr_filter_properties.empty())
+    if (!gp.isAttrEmpty() && suffixconfig.attr_filter_properties.empty())
     {
         message = "The attribute filter was not configured in the SuffixMatchConfig.";
         return false;

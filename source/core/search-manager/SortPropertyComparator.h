@@ -24,6 +24,7 @@ public:
 
 private:
     boost::shared_ptr<NumericPropertyTableBase> propertyTable_;
+    NumericPropertyTableBase::MutexType * propertyTableLock_;
     PropertyDataType type_;
     size_t size_;
     int (SortPropertyComparator::*comparator_)(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
@@ -32,7 +33,7 @@ public:
     SortPropertyComparator();
     explicit SortPropertyComparator(const boost::shared_ptr<NumericPropertyTableBase>& propData);
     explicit SortPropertyComparator(PropertyDataType dataType);
-
+    ~SortPropertyComparator();
 private:
     void initComparator();
     int compareImplDefault(const ScoreDoc& doc1, const ScoreDoc& doc2) const;

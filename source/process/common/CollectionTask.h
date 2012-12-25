@@ -81,6 +81,26 @@ private:
     std::string rebuildCollectionName_;
 };
 
+class ExpirationCheckTask : public CollectionTask
+{
+public:
+	ExpirationCheckTask(const std::string collectionName,
+						std::pair<uint32_t, uint32_t> licenseDate)
+		: CollectionTask(collectionName)
+	{
+		startDate_ = licenseDate.first;
+		endDate_ = licenseDate.second;
+	}
+
+	virtual void startTask();
+
+	void doTask();
+
+private:
+	uint32_t startDate_;
+	uint32_t endDate_;
+};
+
 }
 
 #endif /* SF1R_PROCESS_COMMON_COLLECTION_TASK_H_ */

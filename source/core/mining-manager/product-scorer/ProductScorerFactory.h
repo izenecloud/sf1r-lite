@@ -8,25 +8,21 @@
 #ifndef SF1R_PRODUCT_SCORER_FACTORY_H
 #define SF1R_PRODUCT_SCORER_FACTORY_H
 
+#include "BoostLabelSelector.h"
 #include <string>
-#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 namespace sf1r
 {
 class ProductScorer;
 class CustomRankManager;
-class GroupLabelLogger;
 class ProductRankingConfig;
 class MiningManager;
 class ProductScoreConfig;
 class ProductScoreManager;
+struct ProductScoreParam;
 
-namespace faceted
-{
-class PropValueTable;
-class PropSharedLockSet;
-class CTRManager;
-}
+namespace faceted { class PropValueTable; }
 
 class ProductScorerFactory
 {
@@ -38,23 +34,15 @@ public:
     /**
      * create the @c ProductScorer instance, it sums up weighted scores
      * from @c CustomScorer, @c CategoryScorer, and @p relevanceScorer, etc.
-     * @param query used to create @c CustomScorer and @c CategoryScorer.
-     * @param propSharedLockSet used to concurrently access category data
-     *        by @c CategoryScorer.
-     * @param relevanceScorer if not NULL, it would be added into return value.
+     * @param scoreParam the parameters used to create @c ProductScorer instance.
      * @return the @c ProductScorer instance, it should be deleted by caller.
      */
-    ProductScorer* createScorer(
-        const std::string& query,
-        faceted::PropSharedLockSet& propSharedLockSet,
-        ProductScorer* relevanceScorer);
+    ProductScorer* createScorer(const ProductScoreParam& scoreParam);
 
 private:
     ProductScorer* createScorerImpl_(
         const ProductScoreConfig& scoreConfig,
-        const std::string& query,
-        faceted::PropSharedLockSet& propSharedLockSet,
-        ProductScorer* relevanceScorer);
+        const ProductScoreParam& scoreParam);
 
     ProductScorer* createCustomScorer_(
         const ProductScoreConfig& scoreConfig,
@@ -62,8 +50,7 @@ private:
 
     ProductScorer* createCategoryScorer_(
         const ProductScoreConfig& scoreConfig,
-        const std::string& query,
-        faceted::PropSharedLockSet& propSharedLockSet);
+        const ProductScoreParam& scoreParam);
 
     ProductScorer* createRelevanceScorer_(
         const ProductScoreConfig& scoreConfig,
@@ -75,13 +62,11 @@ private:
 private:
     const ProductRankingConfig& config_;
 
-    MiningManager* miningManager_;
-
     CustomRankManager* customRankManager_;
 
-    GroupLabelLogger* categoryClickLogger_;
-
     const faceted::PropValueTable* categoryValueTable_;
+
+    boost::scoped_ptr<BoostLabelSelector> labelSelector_;
 
     ProductScoreManager* productScoreManager_;
 };
