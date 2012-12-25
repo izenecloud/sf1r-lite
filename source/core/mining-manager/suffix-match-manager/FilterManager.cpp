@@ -336,7 +336,8 @@ void FilterManager::buildGroupFilters(
             group_filter_data[j].clear();
             last_docid_forproperty = 0;
         }
-        LOG(INFO) << "building filter data, start from:" << last_docid_forproperty << ", property: " << property;
+        LOG(INFO) << "building filter data, start from:" << last_docid_forproperty <<
+            ", property: " << property << ", pid: " << prop_id;
         LOG(INFO) << "building filter data, end at:" << max_docid;
 
         for (uint32_t docid = 1; docid <= max_docid; ++docid)
@@ -860,13 +861,14 @@ FilterManager::FilterIdRange FilterManager::getStrFilterIdRangeExact(size_t prop
 {
     static const FilterIdRange empty_range;
     StrIdMapT::const_iterator it = str_filter_ids_[prop_id].find(str_filter);
+    std::string outstr;
+    str_filter.convertString(outstr, UString::UTF_8);
     if (it == str_filter_ids_[prop_id].end())
     {
         // no such group
+        LOG(INFO) << "string filter key: " << outstr << " not found in pid:" << prop_id;
         return empty_range;
     }
-    std::string outstr;
-    str_filter.convertString(outstr, UString::UTF_8);
     LOG(INFO) << "string filter key: " << outstr << ", filter id range is: " << it->second.start << ", " << it->second.end;
     return it->second;
 }
