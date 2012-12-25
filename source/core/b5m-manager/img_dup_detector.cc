@@ -243,6 +243,7 @@ bool ImgDupDetector::DupDetectByImgUrlIncre(const std::string& scd_path, const s
     std::map<std::string, UString> imgurl_list;
     std::map<std::string, uint32_t> docid_key;
     std::map<uint32_t, std::string> key_docid;
+    uint32_t key = 100;
 
     int fd, wd;
     int len, index;
@@ -273,7 +274,7 @@ bool ImgDupDetector::DupDetectByImgUrlIncre(const std::string& scd_path, const s
             {
                 LOG(INFO)<<"File "<<event->name<<" is closed for write. " << std::endl;
                 psm.Open();
-                uint32_t key = 100;
+
                 for(uint32_t i=0;i<1;i++)
                 {
                     std::string scd_file = scd_path + "/" + std::string(event->name);

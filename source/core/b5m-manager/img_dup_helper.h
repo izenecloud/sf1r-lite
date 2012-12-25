@@ -18,9 +18,6 @@ namespace sf1r {
         ProductPrice price;
         uint32_t id; //id should be different
         uint32_t cid;
-        std::string docid;
-        std::string img_url;
-        std::string source_name;
         friend class boost::serialization::access;
         template<class Archive>
         void serialize(Archive & ar, const unsigned int version)
@@ -31,9 +28,6 @@ namespace sf1r {
         bool dd(const PsmAttach& other) const
         {
             return true;
-            if(img_url.compare(other.img_url) == 0)
-                return true;
-            return false;
         }
         friend std::ostream& operator<<(std::ostream& out, const PsmAttach& attach)
         {
@@ -56,13 +50,8 @@ namespace sf1r {
             }
             doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
 
-            doc["DOCID"].convertString(attach.docid, izenelib::util::UString::UTF_8);
-            izenelib::util::UString prefix;
-
             analyzer.Analyze(doc["Img"], doc_vector);
 
-            doc["Img"].convertString(attach.img_url, izenelib::util::UString::UTF_8);
-            doc["ShareSourceName"].convertString(attach.source_name, izenelib::util::UString::UTF_8);
             return true;
         }
 
