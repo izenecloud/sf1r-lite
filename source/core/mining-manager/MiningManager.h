@@ -19,7 +19,7 @@
 #include "summarization-submanager/Summarization.h" //Summarization
 #include "custom-rank-manager/CustomRankValue.h"
 #include "merchant-score-manager/MerchantScore.h"
-#include "tdt-submanager/NaiveTopicDetector.hpp"
+
 #include <common/ResultType.h>
 #include <configuration-manager/PropertyConfig.h>
 #include <query-manager/SearchKeywordOperation.h>
