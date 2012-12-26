@@ -19,6 +19,10 @@ struct CalText
     double pr_;
     double contentRelevancy_;
     int outNumber_;
+    void PrintNode()
+    {
+       cout<<"linkin"<<linkin_.size()<<"pr"<<pr_<<"contentRelevancy"<<contentRelevancy_<<"outNumber_"<<outNumber_<<endl;
+    }
 };
 class Node
 {

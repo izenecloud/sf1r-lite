@@ -33,10 +33,10 @@ class WikiGraph
     //set<int> SubGraph_;
     std::string path_;
     std::string redirpath_;
-
+    std::string stopwordpath_;
     ConBias contentBias_;
     AdBias advertiseBias_;
-
+    set<string> stopword_;
 public:
     cma::OpenCC* opencc_;
 
@@ -51,6 +51,8 @@ public:
     void initFromDb();
 
     void init();
+
+    void initStopword();
 
     void flush();
 

@@ -334,7 +334,7 @@ void PageRank::CalcAll(int n)
              Calc(node);
           }
          */
-
+        //if(i==n-1){alpha_=0.7,beta_=0.15;}
         citr = SubGraph_.begin();
         // cout<<"pr"<<pr<<endl;
         for (; citr != SubGraph_.end(); ++citr)
@@ -390,7 +390,7 @@ double PageRank::Calc(int index)
     else
     {
         // (1-alpha_-beta_)
-        pr = pr*(1-alpha_-beta_)+ alpha_*temp.contentRelevancy_+beta_*node->GetAdvertiRelevancy();
+        pr = pr*((1-alpha_-beta_))+ alpha_*temp.contentRelevancy_+beta_*node->GetAdvertiRelevancy();
     }
     // cout<<"setPr"<<endl;
     // node->SetPageRank(pr);

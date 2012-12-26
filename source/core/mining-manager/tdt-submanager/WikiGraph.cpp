@@ -8,6 +8,7 @@ namespace sf1r
 
 WikiGraph::WikiGraph(const string& cma_path,const string& wiki_path,cma::OpenCC* opencc)
     : contentBias_(cma_path)
+    , advertiseBias_(wiki_path+"/AdvertiseWord.txt")
     , opencc_(opencc)
 {
     boost::filesystem::path wikigraph_path(wiki_path);
@@ -16,10 +17,13 @@ WikiGraph::WikiGraph(const string& cma_path,const string& wiki_path,cma::OpenCC*
     boost::filesystem::path redirect_path(wiki_path);
     redirect_path /= boost::filesystem::path("redirect");
     redirpath_ = redirect_path.c_str();
+    boost::filesystem::path stopword_path(wiki_path);
+    stopword_path /= boost::filesystem::path("StopWord.txt");
+    stopwordpath_ = stopword_path.c_str();
 
     //cout<<"wikipediaGraphBuild"<<endl;
     //cout<<"init wiki_path"<<wiki_path<<" "<<path_<<endl;
-
+    initStopword();
     init();
     //sort(nodes_.begin(),nodes_end(),NodeCmpOperator);
 
@@ -192,6 +196,10 @@ void  WikiGraph::GetTopics(const std::string& content, std::vector<std::string>&
     {
         lowbound=0.75;
     }
+    if(TopicPR[0].first>1)
+    {
+        lowbound=0.8;
+    }
     // sort(TopicPR.begin(),TopicPR.end());
     //set<int>::const_iterator citr = SubGraph.begin();
     for(uint32_t i=0; i<min(TopicPR.size(),limit); i++)
@@ -224,7 +232,7 @@ void  WikiGraph::test()
     cout<<"test Begin"<<endl;
     vector<string> content;
 
-    content.push_back("手机还是iphone最好,其他手机不行啊");
+    content.push_back("手机还是iphone最好,其他不行啊");
     content.push_back("韩版秋装新款耸肩镂空短款镂空小立领波浪花边针织开衫外套 ");
     content.push_back("时尚秋冬新款修身韩版秋衣女款长袖打底衫");
     content.push_back("第84屆奥斯卡的那些事兒. - 堆糖专辑");
@@ -303,6 +311,7 @@ std::vector<pair<double,string> >  WikiGraph::SetContentBias(const string& conte
         //cout<<"id"<<Title2Id(RelativeWords[i].first)<<endl;
         //cout<<"Index"<<getIndex(Title2Id(RelativeWords[i].first))<<endl;
         // cout<<RelativeWords[i].first<<" "<<RelativeWords[i].second<<"       ";
+        if(stopword_.find( RelativeWords[i].first)==stopword_.end()) 
         ret.push_back(make_pair(log(double(advertiseBias_.getCount(RelativeWords[i].first)+1.0))*0.25*RelativeWords[i].second +0.5,RelativeWords[i].first));
     }
     pr.InitMap();
@@ -436,7 +445,8 @@ void  WikiGraph::BuildMap()
 
     for(unsigned i=0; i<nodes_.size(); i++)
     {
-
+        
+        if(stopword_.find(nodes_[i]->GetName())==stopword_.end())
         title2id.insert(pair<string,int>(nodes_[i]->GetName(),nodes_[i]->GetId()));
         //if(i%10000==0){cout<<"have build map"<<i<<endl;}
         //if(nodes_[i]->GetName()=="奥斯卡"){cout<<i<<"   "<<nodes_[i]->GetId()<<"  "<<Title2Id("奥斯卡")<<endl;}奧斯卡
@@ -446,6 +456,18 @@ void  WikiGraph::BuildMap()
     // {cout<<"get手机"<<Title2Id("手机")<<endl;}
     // {cout<<"get手機"<<Title2Id("手機")<<endl;}
 
+}
+
+void WikiGraph::initStopword()
+{
+     ifstream in;
+     in.open(stopwordpath_.c_str(),ios::in);
+     while(!in.eof())
+     {
+         string word;
+         getline(in,word);
+         stopword_.insert(word);
+     }
 }
 
 void WikiGraph::simplifyTitle()
@@ -477,6 +499,7 @@ void  WikiGraph::loadAll(std::istream &f )
         string name;
         load(f,id,name);
         // cout<<"name"<<name<<"id"<<id<<endl;
+        if(stopword_.find(ToSimplified(name))==stopword_.end())
         title2id.insert(pair<string,int>(ToSimplified(name),id));
         // if(i%10000==0){cout<<"have build map"<<nodes_.size()+i<<endl;}
     }
