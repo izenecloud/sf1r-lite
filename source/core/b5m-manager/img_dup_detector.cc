@@ -142,7 +142,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                         docid_key[docID] = key;
                         key_docid[key] = docID;
                         key++;
- //                       imgurl_list[docID] =doc["Img"];
+//                        imgurl_list[docID] =doc["Img"];
                     }
 
                 }
@@ -160,6 +160,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                     parser.load(scd_file);
                     uint32_t n=0;
                     uint32_t rest=0;
+                    uint32_t error=0;
                     ScdWriter writer(output_path, 2);
                     std::string outfilename = std::string(event->name);
                     writer.SetFileName(outfilename);
@@ -213,13 +214,17 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                             }
                             else
                             {
+                                LOG(INFO)<<std::endl<<docID<<":  "<<current_url
+                                         <<std::endl<<key_docid[match_key]<<":  "<<match_url
+                                         <<std::endl<<"Matches ERROR "<<std::endl;
+                                error++;
                                 if(writer.Append(scddoc)) rest++;
                             }
 */
                         }
 
                     }
-                    LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<<std::endl;
+                    LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<<" Error: " << error << std::endl;
                 }
 
             }
@@ -242,7 +247,7 @@ bool ImgDupDetector::DupDetectByImgUrlIncre(const std::string& scd_path, const s
     PsmType psm(psm_path);
     psm.SetK(psmk_);
 
-    std::map<std::string, UString> imgurl_list;
+//    std::map<std::string, UString> imgurl_list;
     std::map<std::string, uint32_t> docid_key;
     std::map<uint32_t, std::string> key_docid;
     uint32_t key = 100;
@@ -322,7 +327,7 @@ bool ImgDupDetector::DupDetectByImgUrlIncre(const std::string& scd_path, const s
                         docid_key[docID] = key;
                         key_docid[key] = docID;
                         key++;
-                        imgurl_list[docID] =doc["Img"];
+//                        imgurl_list[docID] =doc["Img"];
                     }
                     n = 0;
                     for( ScdParser::iterator doc_iter = parser.begin();
@@ -363,7 +368,7 @@ bool ImgDupDetector::DupDetectByImgUrlIncre(const std::string& scd_path, const s
                         docid_key[docID] = key;
                         key_docid[key] = docID;
                         key++;
-                        imgurl_list[docID] =doc["Img"];
+//                        imgurl_list[docID] =doc["Img"];
                     }
 
                 }
@@ -419,22 +424,24 @@ bool ImgDupDetector::DupDetectByImgUrlIncre(const std::string& scd_path, const s
                         }
                         else
                         {
+/*
                             std::string current_url;
                             std::string match_url;
                             doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
                             imgurl_list[key_docid[match_key]].convertString(match_url, izenelib::util::UString::UTF_8);
                             if(current_url.compare(match_url) == 0)
                             {
-/*
+
                                 LOG(INFO)<<std::endl<<docID<<":  "<<current_url
                                          <<std::endl<<key_docid[match_key]<<":  "<<match_url
                                          <<std::endl<<"Matches "<<std::endl;
-*/
+
                             }
                             else
                             {
                                 if(writer.Append(scddoc)) rest++;
                             }
+*/
                         }
 
                     }
