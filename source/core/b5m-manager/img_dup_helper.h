@@ -50,24 +50,49 @@ namespace sf1r {
             }
             doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
 
-//            analyzer.Analyze(doc["Img"], doc_vector);
-
             std::string img_url;
             doc["Img"].convertString(img_url, izenelib::util::UString::UTF_8);
+
+
+            analyzer.Analyze(doc["Img"].substr(7), doc_vector);
+
             uint32_t i;
-            for(i=0;i<img_url.size()-2;i+=2)
+            uint32_t size = img_url.size();
+            if(size < 60)
             {
-                doc_vector.push_back(make_pair(img_url.substr(i,3), 0.5));
+                for(i=20;i<size-6;i++)
+                {
+                    doc_vector.push_back(make_pair(img_url.substr(i, 7), 1.0));
+                }
             }
-            for(i=0;i<img_url.size()-5;i+=5)
+/*
+            for(i=6;i<size-2;i+=1)
             {
-                doc_vector.push_back(make_pair(img_url.substr(i,6), 0.8));
+                doc_vector.push_back(make_pair(img_url.substr(i,3), 0.4));
             }
-            for(i=0;i<img_url.size()-8;i+=8)
+            for(i=6;i<size-5;i+=4)
             {
-                doc_vector.push_back(make_pair(img_url.substr(i,9), 0.9));
+                doc_vector.push_back(make_pair(img_url.substr(i,6), 0.7));
             }
-            doc_vector.push_back(make_pair(img_url, 1.0));
+            for(i=6;i<size-8;i+=7)
+            {
+                doc_vector.push_back(make_pair(img_url.substr(i,9), 0.8));
+            }
+            for(i=6;i<size-11;i+=10)
+            {
+                doc_vector.push_back(make_pair(img_url.substr(i,12), 0.9));
+            }
+            for(i=6;i<size-14;i+=13)
+            {
+                doc_vector.push_back(make_pair(img_url.substr(i,15), 1.0));
+            }
+            doc_vector.push_back(make_pair(img_url.substr(6, size/3), 1.0));
+            doc_vector.push_back(make_pair(img_url.substr(size/3-1, size/3), 1.0));
+            doc_vector.push_back(make_pair(img_url.substr(size*2/3-1), 1.0));
+            doc_vector.push_back(make_pair(img_url.substr(6, size/2), 1.0));
+            doc_vector.push_back(make_pair(img_url.substr(size/2-1), 1.0));
+            doc_vector.push_back(make_pair(img_url.substr(6), 1.0));
+*/
             return true;
         }
 
