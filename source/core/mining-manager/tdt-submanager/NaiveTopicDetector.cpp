@@ -190,7 +190,7 @@ void NaiveTopicDetector::InitKnowledge_()
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
 	
-    if(!enable_semantic_)
+    if(enable_semantic_)
     {
         knowledge_->loadModel( "utf8", cma_path.c_str());
         // using the maxprefix analyzer
