@@ -69,7 +69,6 @@ ForwardIterator unique_merge(ForwardIterator first, ForwardIterator last, Binary
 NaiveTopicDetector::NaiveTopicDetector(
         const std::string& sys_resource_path, 
         const std::string& dict_path,
-        const std::string& cma_path,
         bool enable_semantic)
     :sys_resource_path_(sys_resource_path)
     ,tokenize_dicpath_(dict_path)
@@ -146,31 +145,34 @@ void NaiveTopicDetector::GetCMAResults_(const std::string& content, std::vector<
             izenelib::am::succinct::ux::id_t retID;
             std::vector<std::string> related_keywords;
             retID = related_map_->get(topic.c_str(), topic.size(), related_keywords);
+            unsigned score = 0;
             if(retID == 0)
             {
-                unsigned score = 1;//higher weight?
+                score = enable_semantic_ ? 1 : topic.length() + 1;//higher weight?
                 //LOG(INFO) <<"match related commonlen "<<score<<" related_keywords size "<<related_keywords.size()<<std::endl;
                 topics.push_back(std::make_pair(topic,score));
                 std::vector<std::string>::iterator rit = related_keywords.begin();
                 for(; rit != related_keywords.end(); ++rit)
                 {
                     //LOG(INFO) <<"related "<<*rit<<std::endl;
-                    topics.push_back(std::make_pair(*rit,0));
+                    topics.push_back(std::make_pair(*rit,score));
                 }
             }
-            else if(topic_ustr.isAllChineseChar()) /// All Chinese Char is required for a temporary solution.
+            else if(enable_semantic_ || topic_ustr.isAllChineseChar()) /// All Chinese Char is required for a temporary solution.
             {
                 size_t retLen;
                 retID = kpe_trie_->prefixSearch(topic.c_str(), topic.size(), retLen);
                 if(retID != izenelib::am::succinct::ux::NOTFOUND)
                 {
                     std::string match = kpe_trie_->decodeKey(retID);
-                    //unsigned commonLen = CommonPrefixLen(topic, match);
-                    topics.push_back(std::make_pair(topic,1));
+                    score = enable_semantic_ ? 1 : CommonPrefixLen(topic, match);
                     //LOG(INFO) <<"match "<<match<<" commonlen "<<commonLen<<std::endl;
                 }
                 else
-                    topics.push_back(std::make_pair(topic,1));
+                {
+                    score = enable_semantic_ ? 1 : 0;
+                }
+                topics.push_back(std::make_pair(topic,score));
             }
         }
     }
@@ -180,17 +182,27 @@ void NaiveTopicDetector::GetCMAResults_(const std::string& content, std::vector<
 
 void NaiveTopicDetector::InitKnowledge_()
 {
-    LOG(INFO) << "topic detector dictionary path : " << tokenize_dicpath_ << endl;
-    knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel( "utf8", tokenize_dicpath_.c_str(), false);
-    analyzer_ = CMA_Factory::instance()->createAnalyzer();
-    analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
-    // using the maxprefix analyzer
-    analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE, 2);
-    analyzer_->setKnowledge(knowledge_);
-
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
+
+    LOG(INFO) << "topic detector dictionary path : " << tokenize_dicpath_ << endl;
+    knowledge_ = CMA_Factory::instance()->createKnowledge();
+    analyzer_ = CMA_Factory::instance()->createAnalyzer();
+    analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
+	
+    if(!enable_semantic_)
+    {
+        knowledge_->loadModel( "utf8", cma_path.c_str());
+        // using the maxprefix analyzer
+        analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE, 77);
+    }
+    else
+    {
+        knowledge_->loadModel( "utf8", tokenize_dicpath_.c_str(), false);
+        analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE, 2);
+    }
+    analyzer_->setKnowledge(knowledge_);
+
     boost::filesystem::path cma_opencc_data_path(cma_path);
     cma_opencc_data_path /= boost::filesystem::path("opencc");
     opencc_ = new OpenCC(cma_opencc_data_path.c_str());

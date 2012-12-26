@@ -511,7 +511,7 @@ bool MiningManager::open()
             cma_tdt_dic /= boost::filesystem::path("dict");
             cma_tdt_dic /= boost::filesystem::path(mining_schema_.tdt_config.tdt_tokenize_dicpath);
             topicDetector_ = new NaiveTopicDetector(
-                system_resource_path_, cma_tdt_dic.c_str(),cma_path,mining_schema_.tdt_config.enable_semantic);
+                system_resource_path_, cma_tdt_dic.c_str(),mining_schema_.tdt_config.enable_semantic);
         }
 
 

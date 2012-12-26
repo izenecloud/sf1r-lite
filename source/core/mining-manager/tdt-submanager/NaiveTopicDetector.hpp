@@ -22,7 +22,6 @@ public:
     NaiveTopicDetector(
         const std::string& sys_resource_path, 
         const std::string& dict_path,
-        const std::string& cma_path,
         bool enable_semantic = false);
 
     ~NaiveTopicDetector();
