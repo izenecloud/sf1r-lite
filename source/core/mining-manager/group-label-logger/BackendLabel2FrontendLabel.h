@@ -28,7 +28,7 @@ public:
     bool PrefixMap(const UString&backend, UString&frontend);
 private:
     void InitOnce_(const std::string& path);
-    static izenelib::am::succinct::ux::Map<std::string> back2front_;		
+    static izenelib::am::succinct::ux::Map<UString> back2front_;		
 };
 
 }
