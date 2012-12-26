@@ -64,7 +64,7 @@ public:
 
     void test();
 
-    std::vector<pair<double,std::string> > SetContentBias(const std::string& content,PageRank& pr);
+    void SetContentBias(const std::string& content,PageRank& pr,std::vector<pair<double,std::string> >& ret);
 
     // void pairBias(pair<string,uint32_t>& ReLativepair,bool reset=false);
 

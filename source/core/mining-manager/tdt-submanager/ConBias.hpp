@@ -1,35 +1,29 @@
 #ifndef SF1R_CON_BIAS_HPP_
 #define SF1R_CON_BIAS_HPP_
-#include <log-manager/LogAnalysis.h>
-#include <string.h>
-#include <iostream>
-#include <list>
-#include <map>
-#include <vector>
-#include <time.h>
-#include <icma/icma.h>
-#include <log-manager/UserQuery.h>
-using namespace std;
-using namespace boost;
-using namespace cma;
 
+#include <icma/icma.h>
+
+#include <iostream>
+#include <vector>
+
+using namespace cma;
 
 namespace sf1r
 {
 
 class ConBias
 {
-    string tokenize_dicpath_;
+    std::string tokenize_dicpath_;
     Knowledge* knowledge_;
     Analyzer* analyzer_;
     CMA_Factory* factory_;
 public:
-    ConBias(const string& cma_path):tokenize_dicpath_(cma_path)
+    ConBias(const std::string& cma_path):tokenize_dicpath_(cma_path)
     {
-        cout<<"conBiasBuild"<<endl;
+        std::cout<<"conBiasBuild"<<std::endl;
         factory_ = CMA_Factory::instance();
         knowledge_ = factory_->createKnowledge();
-        cout<<"cma_path"<<cma_path<<endl;
+        std::cout<<"cma_path"<<cma_path<<std::endl;
         knowledge_->loadModel( "utf8", cma_path.data() );
         analyzer_ = factory_->createAnalyzer();
         analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
@@ -41,19 +35,18 @@ public:
     {
         delete knowledge_;
         delete analyzer_;
-
     }
-    vector<pair<string,uint32_t> > getKeywordFreq(const std::string& content)
+    void getKeywordFreq(const std::string& content, std::vector<pair<std::string,uint32_t> >& pairRet)
     {
         //cout<<"getKeywordFreqBegin"<<endl;
         const char* result = analyzer_->runWithString(content.data());
         //cout<<result<<endl;
-        string res(result);
+        std::string res(result);
         //log_<<res<<"  ";
-        vector<string> ret;
+        std::vector<std::string> ret;
         string temp=res;
         size_t templen = temp.find(" ");
-        while(templen!= string::npos)
+        while(templen!= std::string::npos)
         {
             if(templen!=0)
             {
@@ -72,11 +65,10 @@ public:
             ret.push_back(temp);
         }
 
-        sort(ret.begin(),ret.end());
+        std::sort(ret.begin(),ret.end());
         //cout<<"ret.size"<<ret.size()<<endl;
         temp="";
         uint32_t tempNum=1;
-        vector<pair<string,uint32_t> >    pairRet;
         for(unsigned i=0; i<ret.size(); i++)
         {
             if(ret[i]==temp)
@@ -93,7 +85,6 @@ public:
             }
         }
         // cout<<"getKeywordFreqEnd"<<endl;
-        return pairRet;
     }
 
 };

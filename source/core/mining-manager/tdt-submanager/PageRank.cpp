@@ -1,14 +1,13 @@
 #include "PageRank.hpp"
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <algorithm>
+
 #include <boost/thread/shared_mutex.hpp>
-#include <pthread.h>
-#include <icma/icma.h>
-#include <icma/openccxx.h>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+
+#include <iostream>
+#include <sstream>
+#include <algorithm>
+
 using namespace std;
 
 namespace sf1r
@@ -83,21 +82,18 @@ void simplify(Node &node, cma::OpenCC* opencc)
     node.name_=simplified_content;
 }
 
-Node::Node(string name, int id):name_(name),id_(id)
+Node::Node(string name, int id)
+    : outNumber_(0)
+    , name_(name)
+    , id_(id)
+    , contentRelevancy_(0)
+    , advertiRelevancy_(0)
 {
-    contentRelevancy_=0;;
-    advertiRelevancy_=0;;
-    outNumber_=0;
-
-
 }
 
 Node::~Node()
 {
     linkin_index_.clear();
-
-
-    //
 }
 /*
 void InsertLinkdInNode(Node* node)
@@ -120,13 +116,12 @@ void InsertLinkOutNode(Node* node)
 }
 */
 
-
 void Node::InsertLinkInNode(int i)
 {
     //如果没有链接top
-
     linkin_index_.push_back(i);
 }
+
 /*
     double Node::GetPageRank()
     {
@@ -151,7 +146,7 @@ void Node::SetAdvertiRelevancy(double advertiRelevancy)
     double Node::CalcRank(const vector<Node*>& vecNode,const CalText& linkinSub)
     {
         double pr = 0;
-        /*
+
         vector<int>::const_iterator citr = linkin_index_.begin();
        // cout<<"pr"<<pr<<endl;
         for (; citr != linkin_index_.end(); ++citr)
@@ -183,29 +178,35 @@ size_t Node::GetOutBoundNum()
 {
     return  outNumber_;
 }
+
 size_t Node::GetInBoundNum()
 {
     return  linkin_index_.size();
 }
+
 /*
     double Node::GetContentRelevancy()
     {
         return contentRelevancy_;
     }
 */
+
 double Node::GetAdvertiRelevancy()
 {
     return advertiRelevancy_;
 }
+
 string Node::GetName()
 {
     return name_;
 }
+
 void Node::InsertLinkOutNode(int i)
 {
     linkout_index_.push_back(i);
     outNumber_++;
 }
+
 void Node::PrintNode()
 {
 
@@ -215,19 +216,24 @@ void Node::SetId(int id)
 {
     id_=id;
 }
+
 int Node::GetId()
 {
     return id_;
 }
-PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph,double alpha,double beta) : alpha_(alpha),beta_(beta), nodes_(nodes),SubGraph_(SubGraph)
+
+PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph,double alpha,double beta) 
+    : SubGraph_(SubGraph)
+    , nodes_(nodes)
+    , alpha_(alpha)
+    , beta_(beta)
 {
     cout<<"PageRankBuild"<<endl;
     // q_ must < 1
-
 }
 
 
-PageRank::~PageRank(void)
+PageRank::~PageRank()
 {
 }
 
@@ -364,7 +370,7 @@ void PageRank::CalcAll(int n)
 
 void PageRank::PrintPageRank(vector<Node*> & nodes)
 {
-    double total_pr = 0;
+    //double total_pr = 0;
     vector<Node*>::const_iterator citr = nodes.begin();
     for (; citr!=nodes.end(); ++citr)
     {
@@ -405,43 +411,43 @@ CalText& PageRank::getLinkin(int index)
 
     if(it !=linkinMap_.end())
     {
-
         return (it->second);
-
     }
     else
     {
         cout<<"error getLinkin"<<endl;
+        static CalText null;
+        return null;
     }
-
 }
 
 double PageRank::getPr(int index)
 {
     //cout<<"getPr"<<index<<endl;
     return getLinkin(index).pr_;
-
 }
+
 void PageRank::setPr(int index,double pr)
 {
     // cout<<"SetPr"<<index<<endl;
     getLinkin(index).pr_=pr;
 }
-double PageRank::setContentRelevancy(int index,double contentRelevancy)
+
+void PageRank::setContentRelevancy(int index,double contentRelevancy)
 {
     // cout<<"setContentRelevancy"<<index<<endl;
     getLinkin(index).contentRelevancy_=contentRelevancy;
 }
+
 double PageRank::getContentRelevancy(int index)
 {
-    return   getLinkin(index).contentRelevancy_;
+    return getLinkin(index).contentRelevancy_;
 }
+
 double PageRank::getON(int index)
 {
     // cout<<"getON"<<index<<endl;
-
     return double(getLinkin(index).outNumber_);
-
 }
 
 double PageRank::CalcRank(const CalText& linkinSub)

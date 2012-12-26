@@ -1,5 +1,5 @@
 #include "WikiGraph.hpp"
-#include <math.h>
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 
@@ -46,16 +46,13 @@ WikiGraph::WikiGraph(const string& cma_path,const string& wiki_path,cma::OpenCC*
 
 WikiGraph::~WikiGraph()
 {
-
     for(unsigned i=0; i<nodes_.size(); i++)
     {
-
         delete nodes_[i];
-
     }
 }
 
-void  WikiGraph::load(std::istream& is)
+void WikiGraph::load(std::istream& is)
 {
     unsigned int nodesize;
     is.read(( char*)&nodesize, sizeof(nodesize));
@@ -69,7 +66,7 @@ void  WikiGraph::load(std::istream& is)
     }
 }
 
-void  WikiGraph::save(std::ostream& os)
+void WikiGraph::save(std::ostream& os)
 {
     unsigned int nodesize=nodes_.size();
     os.write(( char*)&nodesize, sizeof(nodesize));
@@ -77,18 +74,16 @@ void  WikiGraph::save(std::ostream& os)
     {
         os<<(*nodes_[i]);
     }
-
 }
 
-void  WikiGraph::init()
+void WikiGraph::init()
 {
-
     std::ifstream ifs(path_.c_str());
     if (ifs) load(ifs);
     ifs.close();
 }
 
-void  WikiGraph::flush()
+void WikiGraph::flush()
 {
     if (path_.empty()) return;
     std::ofstream ofs(path_.c_str());
@@ -96,20 +91,21 @@ void  WikiGraph::flush()
     ofs.close();
 }
 
-void  WikiGraph::link2nodes(const int& i,const int& j)
+void WikiGraph::link2nodes(const int& i,const int& j)
 {
     nodes_[i]->InsertLinkInNode(j);
     nodes_[j]->InsertLinkOutNode(i);
 
 }
 
-void  WikiGraph::GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit)
+void WikiGraph::GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit)
 {
     //cout<<"SetContentBias";
 
     set<int> SubGraph;
     PageRank pr(nodes_,SubGraph);
-    std::vector<pair<double,string> > NotInGraph=SetContentBias(content,pr);
+    std::vector<pair<double,string> > NotInGraph;
+    SetContentBias(content,pr,NotInGraph);
 
     //pr_.PrintPageRank(nodes_);
     cout<<"SubGraph size"<<SubGraph.size()<<endl;
@@ -219,7 +215,7 @@ void  WikiGraph::GetTopics(const std::string& content, std::vector<std::string>&
 
 }
 
-void  WikiGraph::test()
+void WikiGraph::test()
 {
     cout<<"test Begin"<<endl;
     vector<string> content;
@@ -261,7 +257,7 @@ void  WikiGraph::test()
     cout<<"end time:"<<time_now<<endl;
 }
 
-void  WikiGraph::InitSubGaph(const int& index,set<int>& SubGraph,int itertime)
+void WikiGraph::InitSubGaph(const int& index,set<int>& SubGraph,int itertime)
 {
     if(itertime>2||(itertime!=1&&(nodes_[index]->linkin_index_.size()>1000||nodes_[index]->linkout_index_.size()>1000))) {}
     else
@@ -284,11 +280,11 @@ void  WikiGraph::InitSubGaph(const int& index,set<int>& SubGraph,int itertime)
     }
 }
 
-std::vector<pair<double,string> >  WikiGraph::SetContentBias(const string& content,PageRank& pr)
+void WikiGraph::SetContentBias(const string& content,PageRank& pr, std::vector<pair<double,string> >& ret)
 {
     //cout<<"SetContentBiasBegin"<<endl;
-    std::vector<pair<double,string> > ret;
-    vector<pair<string,uint32_t> > RelativeWords=contentBias_.getKeywordFreq(content);
+    vector<pair<string,uint32_t> > RelativeWords;
+    contentBias_.getKeywordFreq(content, RelativeWords);
     // cout<<"RelativeWords:";
 
     for(uint32_t i=0; i<RelativeWords.size(); i++)
@@ -315,7 +311,6 @@ std::vector<pair<double,string> >  WikiGraph::SetContentBias(const string& conte
             pr.setContentRelevancy(getIndex(id),RelativeWords[i].second);
         }
     }
-    return ret;
     //cout<<"SetContentBiasEnd"<<endl;
     //cout<<endl;
 }
@@ -342,7 +337,7 @@ void  WikiGraph::pairBias(pair<string,uint32_t>& ReLativepair,bool reset)
    cout<<endl;
 };
 */
-Node*  WikiGraph::getNode(const int&  id,bool& HaveGet)
+Node* WikiGraph::getNode(const int&  id,bool& HaveGet)
 {
     int  index=getIndex(id);
     if(index==(-1))
@@ -358,7 +353,7 @@ Node*  WikiGraph::getNode(const int&  id,bool& HaveGet)
 
 }
 
-int  WikiGraph::getIndex(const int&  id)
+int WikiGraph::getIndex(const int&  id)
 {
 
     int front=0;
@@ -383,7 +378,7 @@ int  WikiGraph::getIndex(const int&  id)
     }
 }
 
-Node*  WikiGraph::getNode(const string&  str,bool& HaveGet)
+Node* WikiGraph::getNode(const string&  str,bool& HaveGet)
 {
     int id=Title2Id(str);
     // cout<<title2id.size();
@@ -394,7 +389,7 @@ Node*  WikiGraph::getNode(const string&  str,bool& HaveGet)
     }
     return getNode(id,HaveGet);
 };
-void  WikiGraph::SetAdvertiseAll()
+void WikiGraph::SetAdvertiseAll()
 {
     for(uint32_t i=0; i<nodes_.size(); i++)
     {
@@ -403,12 +398,12 @@ void  WikiGraph::SetAdvertiseAll()
     }
 }
 
-void  WikiGraph::SetAdvertiseBias(Node* node)
+void WikiGraph::SetAdvertiseBias(Node* node)
 {
     node->SetAdvertiRelevancy(advertiseBias_.getCount(node->GetName()) );
 };
 /* */
-int  WikiGraph::Title2Id(const string& title)
+int WikiGraph::Title2Id(const string& title)
 {
     map<string, int>::iterator titleit;
     titleit = title2id.find(title);
@@ -425,13 +420,13 @@ int  WikiGraph::Title2Id(const string& title)
     }
 }
 
-void  WikiGraph::CalPageRank(PageRank& pr)
+void WikiGraph::CalPageRank(PageRank& pr)
 {
     pr.CalcAll(5);
     //pr_.PrintPageRank(nodes_);
 }
 
-void  WikiGraph::BuildMap()
+void WikiGraph::BuildMap()
 {
 
     for(unsigned i=0; i<nodes_.size(); i++)
@@ -457,7 +452,7 @@ void WikiGraph::simplifyTitle()
     }
 }
 
-void  WikiGraph::load(std::istream &f, int& id,string& name )
+void WikiGraph::load(std::istream &f, int& id,string& name )
 {
     f.read(( char*)&id, sizeof(id));
     size_t len;
@@ -467,7 +462,7 @@ void  WikiGraph::load(std::istream &f, int& id,string& name )
 
 }
 
-void  WikiGraph::loadAll(std::istream &f )
+void WikiGraph::loadAll(std::istream &f )
 {
     unsigned size;
     f.read(( char*)&size, sizeof(size));
@@ -482,7 +477,7 @@ void  WikiGraph::loadAll(std::istream &f )
     }
 }
 
-void  WikiGraph::InitOutLink()
+void WikiGraph::InitOutLink()
 {
     for(unsigned i=0; i<nodes_.size(); i++)
     {

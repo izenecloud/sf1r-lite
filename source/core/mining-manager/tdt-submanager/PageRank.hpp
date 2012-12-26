@@ -7,7 +7,6 @@
 #include <math.h>
 #include <icma/icma.h>
 #include <icma/openccxx.h>
-using namespace std;
 
 namespace sf1r
 {
@@ -15,7 +14,7 @@ namespace sf1r
 // use graph store webpage, weight representlink times
 struct CalText
 {
-    vector<int> linkin_;
+    std::vector<int> linkin_;
     double pr_;
     double contentRelevancy_;
     int outNumber_;
@@ -23,7 +22,7 @@ struct CalText
 class Node
 {
 public:
-    Node(string name, int id=0);
+    Node(std::string name, int id=0);
 
     ~Node();
 
@@ -47,7 +46,7 @@ public:
 
     double GetAdvertiRelevancy() ;
 
-    string GetName() ;
+    std::string GetName() ;
 
     void InsertLinkOutNode(int i) ;
 
@@ -57,16 +56,16 @@ public:
 
     int GetId();
 
-    friend istream& operator>> ( istream &f, Node &node );
-    friend ostream& operator<< ( ostream &f, const Node &node );
+    friend std::istream& operator>> ( std::istream &f, Node &node );
+    friend std::ostream& operator<< ( std::ostream &f, const Node &node );
     friend void simplify(Node &node, cma::OpenCC* opencc);
     //set<int> linkin_index_;
-    vector<int> linkin_index_;
-    vector<int> linkout_index_;
+    std::vector<int> linkin_index_;
+    std::vector<int> linkout_index_;
     int outNumber_;
     // int outNumberOrg_;
 private:
-    string name_;
+    std::string name_;
     //  double page_rank_;
     int id_;
 
@@ -81,25 +80,25 @@ private:
 class PageRank
 {
 public:
-    PageRank(vector<Node*>& nodes,set<int>& SubGraph,double alpha=0.7,double beta=0.15);
+    PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,double alpha=0.7,double beta=0.15);
     ~PageRank(void);
     void CalcAll(int n);
     double Calc(int index);
-    void PrintPageRank(vector<Node*> & nodes);
+    void PrintPageRank(std::vector<Node*> & nodes);
     CalText& getLinkin(int index);
     double CalcRank(const CalText& linkinSub);
     double getON(int index);
     double getPr(int index);
-    double setContentRelevancy(int index,double contentRelevancy);
+    void setContentRelevancy(int index,double contentRelevancy);
     double getContentRelevancy(int index);
     void InitMap();
     void setPr(int index,double pr);
     //void setVec(vector<Node*>& nodes)
     //{nodes_=&nodes;}
-    set<int> &SubGraph_;
+    std::set<int> &SubGraph_;
 private:
-    map<int,CalText>  linkinMap_;
-    vector<Node*> &nodes_;
+    std::map<int,CalText>  linkinMap_;
+    std::vector<Node*> &nodes_;
 
     double alpha_; //内容阻尼系数
     double beta_; //广告阻尼系数
