@@ -16,6 +16,7 @@ class TDTConfig
 public:
     bool perform_tdt_task;
     std::string tdt_tokenize_dicpath;
+    bool enable_semantic;
     friend class boost::serialization::access;
 
     template <typename Archive>
@@ -23,6 +24,7 @@ public:
     {
         ar & perform_tdt_task;
         ar & tdt_tokenize_dicpath;
+        ar & enable_semantic;
     }
 };
 

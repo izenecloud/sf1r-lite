@@ -6,7 +6,7 @@
 #include <map>
 #include "PageRank.hpp"
 #include "AdBias.hpp"
-#include "ConBias.hpp"
+//#include "ConBias.hpp"
 //#include "database.h"
 #include <algorithm>
 #include <icma/icma.h>
@@ -34,13 +34,13 @@ class WikiGraph
     std::string path_;
     std::string redirpath_;
 
-    ConBias contentBias_;
+    //ConBias contentBias_;
     AdBias advertiseBias_;
 
 public:
     cma::OpenCC* opencc_;
 
-    WikiGraph(const std::string& cma_path,const std::string& wiki_path, cma::OpenCC* opencc);
+    WikiGraph(const std::string& wiki_path, cma::OpenCC* opencc);
 
     ~WikiGraph();
 
@@ -57,14 +57,11 @@ public:
     void InitSubGaph(const int& index,set<int>& SubGraph,int itertime=1);
     //  void InitGraph();
 
-
     void link2nodes(const int& i,const int& j);
 
-    void GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit);
+    void GetTopics(const std::vector<std::pair<std::string,uint32_t> >& relativeWords, std::vector<std::string>& topic_list, size_t limit);
 
-    void test();
-
-    void SetContentBias(const std::string& content,PageRank& pr,std::vector<pair<double,std::string> >& ret);
+    void SetContentBias(const std::vector<std::pair<std::string,uint32_t> >& relativeWords,PageRank& pr,std::vector<pair<double,std::string> >& ret);
 
     // void pairBias(pair<string,uint32_t>& ReLativepair,bool reset=false);
 
@@ -86,11 +83,11 @@ public:
 
     void simplifyTitle();
 
-    void  loadAll(std::istream &f );
+    void loadAll(std::istream &f );
 
-    void  load(std::istream &f, int& id,std::string& name );
+    void load(std::istream &f, int& id,std::string& name );
 
-    void  InitOutLink();
+    void InitOutLink();
 
     std::string ToSimplified(const std::string& name);
 
