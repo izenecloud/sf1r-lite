@@ -98,7 +98,9 @@ void B5mpProcessor::B5moOutput_(ValueType& value, int status)
     uint128_t oid = GetOid_(value.doc);
     std::string spu_title;
     value.doc.getString(B5MHelper::GetSPTPropertyName(), spu_title);
-    if(oid==pid && spu_title.empty() && last_mdb_instance_.empty()) independent_mode = true;
+    bool is_play = false;
+    if(value.doc.hasProperty("PlayName")) is_play = true;
+    if(oid==pid && spu_title.empty() && !is_play && last_mdb_instance_.empty()) independent_mode = true;
     if(!independent_mode)
     {
         PValueType& pvalue = cache_[pid];
