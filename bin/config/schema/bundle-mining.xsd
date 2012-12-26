@@ -342,6 +342,7 @@
                 <xs:element ref="TokenizeDictionary" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
         <xs:attribute name="enabletdt" type="YesNoType" use="required"/>
+        <xs:attribute name="enablesemantic" type="YesNoType" use="optional"/>
         </xs:complexType>
     </xs:element>
 

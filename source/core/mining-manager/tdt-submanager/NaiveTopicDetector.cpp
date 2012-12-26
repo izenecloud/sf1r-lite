@@ -7,7 +7,7 @@
 #include <la-manager/LAPool.h>
 #include <util/ustring/UString.h>
 #include <util/csv.h>
-
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -36,12 +36,12 @@ int ReadKeyList(const std::string& fn, vector<std::string>& keyList)
     return 0;
 } 
 
-bool SortTopic (const std::pair<std::string, double>& i,const std::pair<std::string, double>& j) 
+bool SortTopic (const std::pair<std::string, uint32_t>& i,const std::pair<std::string, uint32_t>& j) 
 {
     return (i.second > j.second); 
 }
 
-bool UniqueTopic (const std::pair<std::string, double>& i,const std::pair<std::string, double>& j) 
+bool UniqueTopic (const std::pair<std::string, uint32_t>& i,const std::pair<std::string, uint32_t>& j) 
 {
     return (i.first == j.first); 
 }
@@ -52,10 +52,25 @@ unsigned CommonPrefixLen( std::string a, std::string b )
     return std::mismatch( a.begin(), a.end(), b.begin() ).first - a.begin();
 }
 
+template<typename ForwardIterator, typename BinaryPredicate>
+ForwardIterator unique_merge(ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
+{
+    ForwardIterator result = first;
+    while (++first != last)
+    {
+        if (!(binary_pred(*result, *first)))
+            *++result = *first;
+        else
+            result->second += first->second;
+    }
+    return ++result;
+}
+
 NaiveTopicDetector::NaiveTopicDetector(
         const std::string& sys_resource_path, 
         const std::string& dict_path,
-        const std::string& cma_path)
+        const std::string& cma_path,
+        bool enable_semantic)
     :sys_resource_path_(sys_resource_path)
     ,tokenize_dicpath_(dict_path)
     ,analyzer_(NULL)
@@ -64,8 +79,10 @@ NaiveTopicDetector::NaiveTopicDetector(
     ,wg_(NULL)
     ,kpe_trie_(NULL)
     ,related_map_(NULL)
+    ,enable_semantic_(enable_semantic)
 {
     InitKnowledge_();
+    
 }
 
 NaiveTopicDetector::~NaiveTopicDetector()
@@ -87,13 +104,38 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
     std::string simplified_content;
     long ret = opencc_->convert(lowercase_content, simplified_content);
     if(-1 == ret) simplified_content = lowercase_content;
-    wg_->GetTopics(simplified_content, topic_list, limit);
+    std::vector<std::pair<std::string, uint32_t> > topics;
+    GetCMAResults_(simplified_content, topics);
+    if(wg_)
+    {
+        if(topics.empty()){return true;}
+        if(0 == limit) limit = 5;
+        wg_->GetTopics(topics, topic_list, limit);
+        return true;
+    }
+    else
+    {
+        ///Pure CMA based solution
+        std::sort (topics.begin(), topics.end(), SortTopic); 
+        size_t size = topics.size();
+        if(limit > 0 && limit < topics.size()) size = limit;
+        topic_list.reserve(size);
+        for(unsigned i = 0; i < size; ++i)
+        {
+            //LOG(INFO) <<"topic "<<topics[i].first<<" score "<<topics[i].second<<std::endl;    
+            topic_list.push_back(topics[i].first);
+        }
+    }
     return true;
-    ///CMA based solution
-    Sentence pattern_sentence(simplified_content.c_str());
+}
+
+void NaiveTopicDetector::GetCMAResults_(const std::string& content, std::vector<std::pair<std::string, uint32_t> >& topics)
+{
+    UString con_ustr(content, UString::UTF_8);
+    if (!con_ustr.includeChineseChar()){return;}
+    Sentence pattern_sentence(content.c_str());
     analyzer_->runWithSentence(pattern_sentence);
     //LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
-    std::vector<std::pair<std::string, double> > topics;
     for (int i = 0; i < pattern_sentence.getCount(0); i++)
     {
         std::string topic(pattern_sentence.getLexicon(0, i));
@@ -106,14 +148,14 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
             retID = related_map_->get(topic.c_str(), topic.size(), related_keywords);
             if(retID == 0)
             {
-                unsigned score = topic.length() + 1;//higher weight?
+                unsigned score = 1;//higher weight?
                 //LOG(INFO) <<"match related commonlen "<<score<<" related_keywords size "<<related_keywords.size()<<std::endl;
                 topics.push_back(std::make_pair(topic,score));
                 std::vector<std::string>::iterator rit = related_keywords.begin();
                 for(; rit != related_keywords.end(); ++rit)
                 {
                     //LOG(INFO) <<"related "<<*rit<<std::endl;
-                    topics.push_back(std::make_pair(*rit,score));
+                    topics.push_back(std::make_pair(*rit,0));
                 }
             }
             else if(topic_ustr.isAllChineseChar()) /// All Chinese Char is required for a temporary solution.
@@ -124,25 +166,16 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
                 {
                     std::string match = kpe_trie_->decodeKey(retID);
                     unsigned commonLen = CommonPrefixLen(topic, match);
-                    topics.push_back(std::make_pair(topic,commonLen));
+                    topics.push_back(std::make_pair(topic,1));
                     //LOG(INFO) <<"match "<<match<<" commonlen "<<commonLen<<std::endl;
                 }
                 else
-                    topics.push_back(std::make_pair(topic,0));
+                    topics.push_back(std::make_pair(topic,1));
             }
         }
     }
     std::sort (topics.begin(), topics.end()); 
-    topics.erase( std::unique( topics.begin(), topics.end(), UniqueTopic), topics.end() );
-    std::sort (topics.begin(), topics.end(), SortTopic); 
-
-    size_t size = topics.size();
-    if(limit > 0 && limit < topics.size()) size = limit;
-    topic_list.reserve(size);
-    for(unsigned i = 0; i < size; ++i)
-        topic_list.push_back(topics[i].first);
-
-    return true;
+    topics.erase( unique_merge( topics.begin(), topics.end(), UniqueTopic), topics.end() );
 }
 
 void NaiveTopicDetector::InitKnowledge_()
@@ -207,10 +240,13 @@ void NaiveTopicDetector::InitKnowledge_()
     else
         LOG(INFO) << "can not open related keywords: " << related_map.c_str() << endl;
 
-    boost::filesystem::path wiki_graph_path(sys_resource_path_);
-    wiki_graph_path /= boost::filesystem::path("wikigraph");
-    LOG(INFO) << "wiki graph knowledge path : " << wiki_graph_path.c_str() << endl;
-    wg_=new WikiGraph(cma_path,wiki_graph_path.c_str(),opencc_);
+    if(enable_semantic_)
+    {
+        boost::filesystem::path wiki_graph_path(sys_resource_path_);
+        wiki_graph_path /= boost::filesystem::path("wikigraph");
+        LOG(INFO) << "wiki graph knowledge path : " << wiki_graph_path.c_str() << endl;
+        wg_=new WikiGraph(wiki_graph_path.c_str(),opencc_);
+    }
 }
 
 }

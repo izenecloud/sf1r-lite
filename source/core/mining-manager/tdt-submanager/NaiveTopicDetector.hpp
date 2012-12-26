@@ -22,12 +22,15 @@ public:
     NaiveTopicDetector(
         const std::string& sys_resource_path, 
         const std::string& dict_path,
-        const std::string& cma_path);
+        const std::string& cma_path,
+        bool enable_semantic = false);
 
     ~NaiveTopicDetector();
 
     bool GetTopics(const std::string& content, std::vector<std::string>& topic_list, size_t limit);
 private:
+    void GetCMAResults_(const std::string& content, std::vector<std::pair<std::string, uint32_t> >& topics);
+
     void InitKnowledge_();
 
     std::string sys_resource_path_;
@@ -38,6 +41,7 @@ private:
     WikiGraph* wg_;
     izenelib::am::succinct::ux::Trie* kpe_trie_;
     izenelib::am::succinct::ux::Map<std::vector<std::string> >* related_map_;	
+    bool enable_semantic_;
 };
 }
 

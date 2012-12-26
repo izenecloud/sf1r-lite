@@ -19,10 +19,11 @@ class AdBias
     typedef map<string,uint32_t> StrToIntMap;
     StrToIntMap adverWeight;
 public:
-    AdBias()
+    AdBias(string path)
     {
         cout<<"AdBiasBuild"<<endl;
         initFromDB();
+        initFromTxt(path);
     };
     ~AdBias()
     {
@@ -50,6 +51,18 @@ public:
         {
             adverWeight.insert(pair<string,uint32_t>(it->getQuery(),it->getCount()));
         }
+
+    };
+    void initFromTxt(string path)
+    {
+          ifstream in;
+          in.open(path.c_str(),ios::in);
+          while(!in.eof())
+          {
+                 string word;
+                 getline(in,word);
+                 adverWeight.insert(pair<string,uint32_t>(word,20));
+          }
 
     };
     void initFromScd()
