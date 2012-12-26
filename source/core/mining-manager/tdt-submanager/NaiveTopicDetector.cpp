@@ -165,7 +165,7 @@ void NaiveTopicDetector::GetCMAResults_(const std::string& content, std::vector<
                 if(retID != izenelib::am::succinct::ux::NOTFOUND)
                 {
                     std::string match = kpe_trie_->decodeKey(retID);
-                    unsigned commonLen = CommonPrefixLen(topic, match);
+                    //unsigned commonLen = CommonPrefixLen(topic, match);
                     topics.push_back(std::make_pair(topic,1));
                     //LOG(INFO) <<"match "<<match<<" commonlen "<<commonLen<<std::endl;
                 }

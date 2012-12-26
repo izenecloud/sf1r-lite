@@ -7,8 +7,7 @@ namespace sf1r
 {
 
 WikiGraph::WikiGraph(const string& wiki_path,cma::OpenCC* opencc)
-    : //contentBias_(cma_path)
-    advertiseBias_(wiki_path+"/AdvertiseWord.txt")
+    : advertiseBias_((boost::filesystem::path(wiki_path)/=boost::filesystem::path("AdvertiseWord.txt")).c_str())
     , opencc_(opencc)
 {
     boost::filesystem::path wikigraph_path(wiki_path);
@@ -278,7 +277,7 @@ void WikiGraph::SetContentBias(const std::vector<std::pair<std::string,uint32_t>
         //cout<<"Index"<<getIndex(Title2Id(RelativeWords[i].first))<<endl;
        // cout<<relativeWords[i].first<<" "<<relativeWords[i].second<<"       ";
         if(stopword_.find( relativeWords[i].first)==stopword_.end()) 
-        ret.push_back(make_pair(log(double(advertiseBias_.getCount(relativeWords[i].first)+1.0))*0.25*relativeWords[i].second +0.5,relativeWords[i].first));
+        ret.push_back(make_pair(log(double(advertiseBias_.GetCount(relativeWords[i].first)+1.0))*0.25*relativeWords[i].second +0.5,relativeWords[i].first));
     }
     pr.InitMap();
     for(uint32_t i=0; i<relativeWords.size(); i++)
@@ -382,7 +381,7 @@ void WikiGraph::SetAdvertiseAll()
 
 void WikiGraph::SetAdvertiseBias(Node* node)
 {
-    node->SetAdvertiRelevancy(advertiseBias_.getCount(node->GetName()) );
+    node->SetAdvertiRelevancy(advertiseBias_.GetCount(node->GetName()) );
 };
 /* */
 int WikiGraph::Title2Id(const string& title)
