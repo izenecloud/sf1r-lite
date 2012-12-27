@@ -76,14 +76,14 @@ class Sf1rProcess: public Fastcgipp::Request<char>
         }
 
         std::string requri = environment().requestUri;
-        error_log("got sf1r request: " + requri);
+        //error_log("got sf1r request: " + requri);
         if (requri.find("/sf1r") == 0)
             requri.replace(0, 5, "");
         std::string tokens;
         std::string body = environment().raw_post.raw_post_data;
         if(!body.empty() && environment().raw_post.type == Http::Post<char>::raw)
         {
-            error_log("post raw data: " + body);
+            //error_log("post raw data: " + body);
         }
 		else
         {
@@ -144,13 +144,18 @@ int main(int argc, char* argv[])
         {
             distributed = argv[2];
         }
+        std::string match_master;
+        if (argc > 3)
+        {
+            match_master = argv[3];
+        }
         if(distributed.empty())
         {
             Sf1Config conf;
             conf.initialSize = 2;
             conf.resize = 2;
             conf.maxSize = 4;
-            conf.timeout = 60;
+            conf.timeout = 30;
             Sf1rProcess::driver = new Sf1Driver(host, conf);
         }
         else
@@ -159,8 +164,9 @@ int main(int argc, char* argv[])
             dconf.initialSize = 2;
             dconf.resize = 2;
             dconf.maxSize = 4;
-            dconf.timeout = 60;
+            dconf.timeout = 30;
             dconf.zkTimeout = 2000;  //ms
+            dconf.match_master_name = match_master;
             Sf1rProcess::driver = new Sf1DistributedDriver(host, dconf);
             error_log("config as distributed sf1r node");
         }
@@ -174,8 +180,10 @@ int main(int argc, char* argv[])
 	}
 	catch(std::exception& e)
 	{
-		error_log(e.what());
+        error_log("sf1r cgi process init failed, exited.");
+        error_log(e.what());
 	}
     if (Sf1rProcess::driver)
         delete Sf1rProcess::driver;
+    return -1;
 }
