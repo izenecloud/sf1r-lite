@@ -139,7 +139,7 @@ void NaiveTopicDetector::GetCMAResults_(const std::string& content, std::vector<
     {
         std::string topic(pattern_sentence.getLexicon(0, i));
         UString topic_ustr(topic, UString::UTF_8);
-        //LOG(INFO) <<"topic "<<topic<<std::endl;
+        LOG(INFO) <<"topic "<<topic<<std::endl;
         if(topic_ustr.length() > 1)
         {
             izenelib::am::succinct::ux::id_t retID;
@@ -176,8 +176,11 @@ void NaiveTopicDetector::GetCMAResults_(const std::string& content, std::vector<
             }
         }
     }
-    std::sort (topics.begin(), topics.end()); 
-    topics.erase( unique_merge( topics.begin(), topics.end(), UniqueTopic), topics.end() );
+    if(!topics.empty())
+    {
+        std::sort (topics.begin(), topics.end()); 
+        topics.erase( unique_merge( topics.begin(), topics.end(), UniqueTopic), topics.end() );
+    }
 }
 
 void NaiveTopicDetector::InitKnowledge_()
