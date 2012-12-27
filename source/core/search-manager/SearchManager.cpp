@@ -563,7 +563,6 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
     {
         return false;
     }
-
     boost::shared_ptr<CombinedDocumentIterator> pDocIterator(
         new CombinedDocumentIterator());
     if (pFilterIdSet)
@@ -608,7 +607,6 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
 
         pDocIterator->add(pScoreDocIterator);
     }
-
     if (isFilterQuery && !pFilterIdSet)
     {
         //SELECT * , and filter is null
@@ -638,7 +636,6 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
             return false;
         }
     }
-
     START_PROFILER( preparerank )
 
     ///prepare data for rankingmanager;
@@ -670,7 +667,6 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
     {
         pDocIterator->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
-
     std::vector<RankQueryProperty> rankQueryProperties(indexPropertyList.size());
 
     queryBuilder_->post_prepare_ranker_(
@@ -721,7 +717,6 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
         actionOperation.actionItem_, propSharedLockSet, relevanceScorer);
 
     ScoreDocEvaluator scoreDocEvaluator(productScorer, pParam.customRanker);
-
     try
     {
         bool ret = doSearch_(pParam,
@@ -783,6 +778,7 @@ bool SearchManager::doSearch_(
 
     do
     {
+
         docid_t curDocId = pDocIterator->doc();
 
         if (curDocId >= pParam.docIdEnd)
@@ -830,6 +826,7 @@ bool SearchManager::doSearch_(
         START_PROFILER( inserttoqueue )
         pParam.scoreItemQueue->insert(scoreItem);
         STOP_PROFILER( inserttoqueue )
+
     }
     while (pDocIterator->next());
 
