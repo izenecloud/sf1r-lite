@@ -813,9 +813,11 @@ bool SearchManager::doSearch_(
         {
             for(ii = 0; ii < counterSize; ++ii)
             {
-                if(counterTables[ii]->isValid(curDocId))
+                int32_t value;
+                if(counterTables[ii]->getInt32Value(curDocId,value))
+                //if(counterTables[ii]->isValid(curDocId))
                 {
-                    counterValues[ii] += counterTables[ii];
+                    counterValues[ii] += value;
                 }
             }
         }
