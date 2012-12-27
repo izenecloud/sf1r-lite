@@ -210,7 +210,7 @@ void Node::InsertLinkOutNode(int i)
 void Node::PrintNode()
 {
 
-    cout << "Node:" <<name_ <<"advertiRelevancy"<<advertiRelevancy_<<"id"<<id_<<"outNumber_"<<outNumber_<<"inNumber"<< linkin_index_.size()<<endl;
+    cout << "Node:" <<name_ <<"advertiRelevancy"<<advertiRelevancy_<<"id"<<id_;//<<"outNumber_"<<outNumber_<<"inNumber"<< linkin_index_.size()<<endl;
 }
 void Node::SetId(int id)
 {
@@ -222,13 +222,13 @@ int Node::GetId()
     return id_;
 }
 
-PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph,double alpha,double beta) 
+PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph,double alpha,double beta)
     : SubGraph_(SubGraph)
     , nodes_(nodes)
     , alpha_(alpha)
     , beta_(beta)
 {
-   // cout<<"PageRankBuild"<<endl;
+    // cout<<"PageRankBuild"<<endl;
     // q_ must < 1
 }
 
@@ -276,7 +276,7 @@ void PageRank::InitMap()
         temp.contentRelevancy_=0.0;
         temp.outNumber_=oN;
         linkinMap_.insert(pair<int,CalText>((*citr), temp));
-        //node->PrintNode();
+        // node->PrintNode();
         //cout<<"innumber"<<iN<<endl;
     }
 }
@@ -322,7 +322,7 @@ void PageRank::CalcAll(int n)
     /**/
     set<int>::const_iterator citr;
     boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
-   // cout<<"subset"<<time_now<<endl;
+    // cout<<"subset"<<time_now<<endl;
     for (int i=0; i<n; ++i)
     {
         //  cout<<"for"<<i<<"time"<<endl;
@@ -354,6 +354,8 @@ void PageRank::CalcAll(int n)
         /**/
 
     }
+
+
     /*
      for (; citr != SubGraph_.end(); ++citr)
     {
@@ -365,7 +367,7 @@ void PageRank::CalcAll(int n)
     */
     //linkinMap_.clear();
     time_now = boost::posix_time::microsec_clock::local_time();
-   // cout<<"done"<<time_now<<endl;
+    // cout<<"done"<<time_now<<endl;
 }
 
 void PageRank::PrintPageRank(vector<Node*> & nodes)
@@ -375,7 +377,7 @@ void PageRank::PrintPageRank(vector<Node*> & nodes)
     for (; citr!=nodes.end(); ++citr)
     {
         Node * node = *citr;
-        node->PrintNode();
+        //node->PrintNode();
         //total_pr += node->GetPageRank();
     }
     //cout << "Total PR:" << total_pr << endl;
@@ -436,7 +438,27 @@ void PageRank::setPr(int index,double pr)
 void PageRank::setContentRelevancy(int index,double contentRelevancy)
 {
     // cout<<"setContentRelevancy"<<index<<endl;
-    getLinkin(index).contentRelevancy_=contentRelevancy;
+    if(nodes_[index]->GetName()=="upload_log")
+        return;
+    if(getLinkin(index).contentRelevancy_>0.0&&contentRelevancy<1.0)
+    {
+        getLinkin(index).contentRelevancy_+=0.3;
+    }
+    else
+    {
+        getLinkin(index).contentRelevancy_=contentRelevancy;
+    }
+    if(contentRelevancy>=1)
+    {
+        //CalText &linkinSub=getLinkin(index);
+        vector<int>::const_iterator citr = nodes_[index]->linkout_index_.begin();
+        // cout<<"pr"<<pr<<endl;
+        for (; citr != nodes_[index]->linkout_index_.end(); ++citr)
+        {
+            setContentRelevancy(*citr,0.01);
+
+        }
+    }
 }
 
 double PageRank::getContentRelevancy(int index)

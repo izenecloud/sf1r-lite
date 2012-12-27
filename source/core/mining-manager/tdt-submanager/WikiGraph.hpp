@@ -29,6 +29,7 @@ class WikiGraph
 
     //database db_;
     std::map<std::string,int> title2id;
+    std::map<int,std::string> redirect;
     // PageRank pr_;
     //set<int> SubGraph_;
     std::string path_;
