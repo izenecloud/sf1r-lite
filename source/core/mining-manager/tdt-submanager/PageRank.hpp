@@ -7,7 +7,7 @@
 #include <math.h>
 #include <icma/icma.h>
 #include <icma/openccxx.h>
-
+using namespace std;
 namespace sf1r
 {
 
@@ -18,12 +18,9 @@ struct CalText
     double pr_;
     double contentRelevancy_;
     int outNumber_;
-    /*
-    void PrintNode()
-    {
-       cout<<"linkin"<<linkin_.size()<<"pr"<<pr_<<"contentRelevancy"<<contentRelevancy_<<"outNumber_"<<outNumber_<<endl;
-    }
-    */
+
+
+
 };
 class Node
 {
@@ -86,7 +83,7 @@ private:
 class PageRank
 {
 public:
-    PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,double alpha=0.7,double beta=0.15);
+    PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,double alpha=0.7,double beta=0.05);
     ~PageRank(void);
     void CalcAll(int n);
     double Calc(int index);

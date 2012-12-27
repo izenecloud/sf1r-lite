@@ -155,7 +155,7 @@ void NaiveTopicDetector::GetCMAResults_(const std::string& content, std::vector<
                 for(; rit != related_keywords.end(); ++rit)
                 {
                     //LOG(INFO) <<"related "<<*rit<<std::endl;
-                    topics.push_back(std::make_pair(*rit,score));
+                   // topics.push_back(std::make_pair(*rit,0));
                 }
             }
             else if(enable_semantic_ || topic_ustr.isAllChineseChar()) /// All Chinese Char is required for a temporary solution.
