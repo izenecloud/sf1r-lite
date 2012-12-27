@@ -428,7 +428,7 @@ void WikiGraph::SetAdvertiseBias(Node* node)
     node->SetAdvertiRelevancy(advertiseBias_.GetCount(node->GetName()) );
 };
 /* */
-int WikiGraph::Title2Id(const string& title)
+int WikiGraph::Title2Id(const string& title,const int i)
 {
     map<string, int>::iterator titleit;
     titleit = title2id.find(title);
@@ -437,9 +437,10 @@ int WikiGraph::Title2Id(const string& title)
     {
         map<int,string>::iterator redirit;
         redirit = redirect.find(titleit->second);
-        if(redirit !=redirect.end())
+        if(redirit !=redirect.end()&&i<5)
         {
-            return  Title2Id(redirit->second);
+           
+            return  Title2Id(redirit->second,i+1);
         }
         else
         {

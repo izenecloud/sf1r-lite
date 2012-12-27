@@ -79,7 +79,7 @@ public:
 
     void SetAdvertiseBias(Node* node);
 
-    int Title2Id(const std::string& title);
+    int Title2Id(const std::string& title,const int i=0);
 
     void CalPageRank(PageRank& pr);
 
