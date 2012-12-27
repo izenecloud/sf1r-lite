@@ -79,7 +79,11 @@ class Sf1rProcess: public Fastcgipp::Request<char>
         //error_log("got sf1r request: " + requri);
         if (requri.find("/sf1r") == 0)
             requri.replace(0, 5, "");
-        std::string tokens;
+        std::string tokens = environment().findCustomHeader("HTTP_X_IZENESOFT_ACL_TOKENS");
+        if (!tokens.empty())
+        {
+            error_log("using tokens : " + tokens);
+        }
         std::string body = environment().raw_post.raw_post_data;
         if(!body.empty() && environment().raw_post.type == Http::Post<char>::raw)
         {
