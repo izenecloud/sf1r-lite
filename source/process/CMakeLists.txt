@@ -31,8 +31,8 @@ FILE(GLOB_RECURSE controller_SRC "controllers/*.cpp")
 FILE(GLOB_RECURSE parsers_SRC "parsers/*.cpp")
 FILE(GLOB_RECURSE renderers_SRC "renderers/*.cpp")
 FILE(GLOB_RECURSE log_server_SRC "log-server/*.cpp")
-FILE(GLOB_RECURSE distribute_SRC "distribute/*.cpp")
 FILE(GLOB_RECURSE img_dup_detector_SRC "ImgDupDetector/*.cpp")
+FILE(GLOB distribute_SRC "distribute/*.cpp")
 
 FILE(GLOB img_dup_process_SRC
   "ImgDup*.cpp"
