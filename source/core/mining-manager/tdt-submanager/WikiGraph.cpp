@@ -108,14 +108,14 @@ void WikiGraph::link2nodes(const int& i,const int& j)
 void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& relativeWords, std::vector<std::string>& topic_list, size_t limit)
 {
     //cout<<"SetContentBias";
-    cout<<"word segment end"<<endl;
+   // cout<<"word segment end"<<endl;
     set<int> SubGraph;
     PageRank pr(nodes_,SubGraph);
     std::vector<pair<double,string> > NotInGraph;
     SetContentBias(relativeWords,pr,NotInGraph);
 
     //pr_.PrintPageRank(nodes_);
-    cout<<"SubGraph size"<<SubGraph.size()<<endl;
+   // cout<<"SubGraph size"<<SubGraph.size()<<endl;
     //cout<<"CalPageRank"<<endl;
     CalPageRank(pr);
     //cout<<"finish"<<endl;
@@ -239,7 +239,7 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
         if(TopicPR[i].first>lowbound)
         {
             topic_list.push_back(TopicPR[i].second);
-            cout<<"result"<<TopicPR[i].second<<"  "<<TopicPR[i].first<<endl;
+           // cout<<"result"<<TopicPR[i].second<<"  "<<TopicPR[i].first<<endl;
         }
     }
     // SetContentBias(content,pr);
@@ -292,20 +292,20 @@ void WikiGraph::InitSubGaph(const int& index,set<int>& SubGraph,int itertime)
 
 void WikiGraph::SetContentBias(const std::vector<std::pair<std::string,uint32_t> >& relativeWords,PageRank& pr, std::vector<pair<double,string> >& ret)
 {
-    cout<<"SetContentBiasBegin"<<endl;
+   // cout<<"SetContentBiasBegin"<<endl;
     //vector<pair<string,uint32_t> > RelativeWords;
     //contentBias_.getKeywordFreq(content, RelativeWords);
-    cout<<"RelativeWords:";
-    cout<<relativeWords.size()<<endl;
+   // cout<<"RelativeWords:";
+   // cout<<relativeWords.size()<<endl;
     for(uint32_t i=0; i<relativeWords.size(); i++)
     {
         int id=Title2Id(relativeWords[i].first);
         // cout<<"id"<<id<<endl;
-        cout<<relativeWords[i].first<<" "<<relativeWords[i].second<<"       ";
+        //cout<<relativeWords[i].first<<" "<<relativeWords[i].second<<"       ";
         if(id>=0)
         {
 
-            cout<<"get";
+          //  cout<<"get";
             //cout<<"index"<<getIndex(id)<<endl;
             if(relativeWords[i].second>0.5)
             {
@@ -316,7 +316,7 @@ void WikiGraph::SetContentBias(const std::vector<std::pair<std::string,uint32_t>
                 InitSubGaph(getIndex(id),pr.SubGraph_,2);
             }
         }
-        cout<<endl;
+        //cout<<endl;
         //cout<<"id"<<Title2Id(RelativeWords[i].first)<<endl;
         //cout<<"Index"<<getIndex(Title2Id(RelativeWords[i].first))<<endl;
 
