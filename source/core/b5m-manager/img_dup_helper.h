@@ -95,6 +95,21 @@ namespace sf1r {
 */
             return true;
         }
+        static bool GetPsmItemCon(ProductTermAnalyzer& analyzer
+          , std::map<std::string, izenelib::util::UString>& doc
+          , std::string& key, std::vector<std::pair<std::string, double> >& doc_vector, PsmAttach& attach)
+        {
+            if(doc["Content"].length()==10)
+            {
+                LOG(INFO)<<"Content Empty... "<<std::endl;
+                return false;
+            }
+            doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
+
+            analyzer.Analyze(doc["Content"], doc_vector);
+
+            return true;
+        }
 
     };
 

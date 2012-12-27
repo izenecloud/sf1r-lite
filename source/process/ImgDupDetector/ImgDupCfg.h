@@ -56,6 +56,10 @@ public:
 
     std::string incremental_mode_;
 
+    std::string detect_by_imgurl_;
+
+    std::string detect_by_imgcontent_;
+
 };
 
 #endif /* IMGDUPCFG_H_ */

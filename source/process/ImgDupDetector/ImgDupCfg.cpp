@@ -107,4 +107,12 @@ void ImgDupCfg::parseServerCfg(properties& props)
     {
         throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.mode.incremental");
     }
+    if(!props.getValue("imgdupdetector.detect.by.imgurl", detect_by_imgurl_))
+    {
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetecor.detect.by.imgurl");
+    }
+    if(!props.getValue("imgdupdetector.detect.by.imgcontent", detect_by_imgcontent_))
+    {
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.detect.by.imgcontent");
+    }
 }
