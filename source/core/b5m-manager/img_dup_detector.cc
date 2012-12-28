@@ -260,9 +260,9 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                                          <<std::endl<<"Matches ERROR "<<std::endl;
                                 error++;
                                 if(writer.Append(scddoc)) rest++;
-*/
-                            }
 
+                            }
+*/
                         }
 
                     }
@@ -297,8 +297,8 @@ bool ImgDupDetector::DupDelectByImgCon(const std::string& scd_path, const std::s
     uint32_t key = 100;
     std::map<std::string, uint32_t> docid_key;
     std::map<uint32_t, std::string> key_docid;
-    std::map<uint32_t, UString> key_imgcon;
-    std::map<uint32_t, UString> imgurl_list;
+//    std::map<uint32_t, UString> key_imgcon;
+//    std::map<uint32_t, UString> imgurl_list;
 
     std::string scd_file = scd_path + "/" + filename;
     LOG(INFO)<<"Processing "<<scd_file<<std::endl;
@@ -339,8 +339,8 @@ bool ImgDupDetector::DupDelectByImgCon(const std::string& scd_path, const std::s
         psm.Insert(key, doc_vector, attach);
         docid_key[docID] = key;
         key_docid[key] = docID;
-        key_imgcon[key] = doc["Content"];
-        imgurl_list[key] = doc["Img"];
+//        key_imgcon[key] = doc["Content"];
+//        imgurl_list[key] = doc["Img"];
         key++;
     }
     n=0;
@@ -378,8 +378,8 @@ bool ImgDupDetector::DupDelectByImgCon(const std::string& scd_path, const std::s
         psm.Insert(key, doc_vector, attach);
         docid_key[docID] = key;
         key_docid[key] = docID;
-        key_imgcon[key] = doc["Content"];
-        imgurl_list[key] = doc["Img"];
+//        key_imgcon[key] = doc["Content"];
+//        imgurl_list[key] = doc["Img"];
         key++;
     }
     if(!psm.Build())
@@ -434,6 +434,7 @@ bool ImgDupDetector::DupDelectByImgCon(const std::string& scd_path, const std::s
             }
             else
             {
+/*
                 std::string content;
                 key_imgcon[docid_key[docID]].convertString(content, izenelib::util::UString::UTF_8);
                 std::string matchCon;
@@ -443,6 +444,7 @@ bool ImgDupDetector::DupDelectByImgCon(const std::string& scd_path, const std::s
                          <<std::endl<<key_docid[match_key]<<":  "<<matchCon
                          <<std::endl<<"   " << imgurl_list[match_key]
                          <<std::endl<<"Matches "<<std::endl;
+*/
             }
         }
         LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<<" Error: " << error << std::endl;
