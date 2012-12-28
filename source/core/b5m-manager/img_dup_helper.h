@@ -99,9 +99,9 @@ namespace sf1r {
           , std::map<std::string, izenelib::util::UString>& doc
           , std::string& key, std::vector<std::pair<std::string, double> >& doc_vector, PsmAttach& attach)
         {
-            if(doc["Content"].length()==10)
+            if(doc["Content"].length()<=6)
             {
-                LOG(INFO)<<"Content Empty... "<<std::endl;
+//                LOG(INFO)<<"Content Empty... "<<std::endl;
                 return false;
             }
             doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
