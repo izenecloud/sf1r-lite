@@ -29,6 +29,7 @@
 
 using namespace std;
 using namespace izenelib::net::sf1r;
+using namespace boost::posix_time;
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
 void error_log(const std::string& msg)
@@ -42,7 +43,7 @@ void error_log(const std::string& msg)
 		error.imbue(locale(error.getloc(), new posix_time::time_facet()));
 	}
 
-	error << '[' << posix_time::second_clock::local_time() << "] " << msg << endl;
+	error << "PID: " << (long)getpid() << " [" << posix_time::microsec_clock::local_time() << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
