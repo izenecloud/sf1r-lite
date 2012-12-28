@@ -209,11 +209,15 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
     {
         initDocIteratorQueue();
         if (pDocIteratorQueue_ == NULL)
+        {
+            currDoc_ = MAX_DOC_ID;    
             return MAX_DOC_ID;
+        }
     }
 
     if (pDocIteratorQueue_->size() < 1)
     {
+        currDoc_ = MAX_DOC_ID;    
         return MAX_DOC_ID;
     }
     docid_t nFoundId = MAX_DOC_ID;
@@ -238,6 +242,7 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
         {
             if(pDocIteratorQueue_->size() < 1)
             {
+                currDoc_ = MAX_DOC_ID;
                 return MAX_DOC_ID;
             }
             else
@@ -254,6 +259,7 @@ docid_t ORDocumentIterator::do_skipTo(docid_t target)
                 pDocIteratorQueue_->pop();
                 if (pDocIteratorQueue_->size() < 1)
                 {
+                    currDoc_ = MAX_DOC_ID;                
                     return MAX_DOC_ID;
                 }
             }
