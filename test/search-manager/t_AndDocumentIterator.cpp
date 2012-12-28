@@ -1,6 +1,8 @@
 /**
  * @author Yingfeng Zhang
  * @date 2010-08-13
+ * @update Hongliang Zhao
+ * @date 2012-12-27
  */
 
 #include <boost/test/unit_test.hpp>
@@ -470,37 +472,25 @@ BOOST_AUTO_TEST_CASE(and_test)
         dataTypeList.push_back(STRING_PROPERTY_TYPE);
         dataTypeList.push_back(STRING_PROPERTY_TYPE);
 
-        MockVirtualTermDocumentIterator * pVtermIterator1 = new MockVirtualTermDocumentIterator(1, 1, &indexer, subProperties, propertyIdList, dataTypeList, 0);
+        MockVirtualTermDocumentIterator * pVtermIterator1 = new MockVirtualTermDocumentIterator(11, 1, &indexer, subProperties, propertyIdList, dataTypeList, 0);
         pVtermIterator1->setPropertiesAndIDs(subProperties, propertyIdList);
-        MockVirtualTermDocumentIterator * pVtermIterator2 = new MockVirtualTermDocumentIterator(1, 1, &indexer, subProperties, propertyIdList, dataTypeList, 0);
+        MockVirtualTermDocumentIterator * pVtermIterator2 = new MockVirtualTermDocumentIterator(11, 1, &indexer, subProperties, propertyIdList, dataTypeList, 0);
         pVtermIterator2->setPropertiesAndIDs(subProperties, propertyIdList);
 
         MockTermDocumentIterator* pTermDocIterator11 = new MockTermDocumentIterator(11, 1, &indexer, "title", 1);
         pTermDocIterator11->accept();
         MockTermDocumentIterator* pTermDocIterator12 = new MockTermDocumentIterator(11, 1, &indexer, "title", 1);
         pTermDocIterator12->accept();
-        /*MockTermDocumentIterator* pTermDocIterator13 = new MockTermDocumentIterator(3, 1, &indexer, "title", 1);
-        pTermDocIterator13->accept();
-        MockTermDocumentIterator* pTermDocIterator14 = new MockTermDocumentIterator(4, 1, &indexer, "title", 1);
-        pTermDocIterator14->accept();*/
 
         MockTermDocumentIterator* pTermDocIterator21 = new MockTermDocumentIterator(11, 1, &indexer, "Source", 2);
         pTermDocIterator21->accept();
         MockTermDocumentIterator* pTermDocIterator22 = new MockTermDocumentIterator(11, 1, &indexer, "Source", 2);
         pTermDocIterator22->accept();
-        /*MockTermDocumentIterator* pTermDocIterator23 = new MockTermDocumentIterator(3, 1, &indexer, "Source", 2);
-        pTermDocIterator23->accept();
-        MockTermDocumentIterator* pTermDocIterator24 = new MockTermDocumentIterator(4, 1, &indexer, "Source", 2);
-        pTermDocIterator24->accept();*/
 
         MockTermDocumentIterator* pTermDocIterator31 = new MockTermDocumentIterator(11, 1, &indexer, "Cat", 3);
         pTermDocIterator31->accept();
         MockTermDocumentIterator* pTermDocIterator32 = new MockTermDocumentIterator(11, 1, &indexer, "Cat", 3);
         pTermDocIterator32->accept();
-        /*MockTermDocumentIterator* pTermDocIterator33 = new MockTermDocumentIterator(3, 1, &indexer, "Cat", 3);
-        pTermDocIterator33->accept();
-        MockTermDocumentIterator* pTermDocIterator34 = new MockTermDocumentIterator(4, 1, &indexer, "Cat", 3);
-        pTermDocIterator34->accept();*/
 
         ORDocumentIterator* pOrDocumentIterator1 = new ORDocumentIterator();
         pOrDocumentIterator1->add(pTermDocIterator11);
@@ -509,7 +499,9 @@ BOOST_AUTO_TEST_CASE(and_test)
         pVtermIterator1->add(pOrDocumentIterator1);
         pVtermIterator1->accept();
 
-
+        /**
+        @Brief  check VirtualTermDocumentIterator
+        */
         BOOST_CHECK_EQUAL(pVtermIterator1->next(), true );
         BOOST_CHECK_EQUAL(pVtermIterator1->doc(), 2U);
         BOOST_CHECK_EQUAL(pVtermIterator1->next(), true );
@@ -528,6 +520,9 @@ BOOST_AUTO_TEST_CASE(and_test)
         BOOST_CHECK_EQUAL(pVtermIterator1->doc(), 19U);
         BOOST_CHECK_EQUAL(pVtermIterator1->next(), false );
 
+        /**
+        @Brief  check doc_item, rankDocumentPropety
+        */
         ORDocumentIterator* pOrDocumentIterator2 = new ORDocumentIterator();
         pOrDocumentIterator2->add(pTermDocIterator12);
         pOrDocumentIterator2->add(pTermDocIterator22);
@@ -535,7 +530,6 @@ BOOST_AUTO_TEST_CASE(and_test)
         pVtermIterator2->add(pOrDocumentIterator2);
         pVtermIterator2->accept();
 
-        //check doc_item
         RankDocumentProperty rankDocumentProperty;
         rankDocumentProperty.resize_and_initdata(1);
         BOOST_CHECK_EQUAL(pVtermIterator2->next(), true );//2
@@ -580,7 +574,81 @@ BOOST_AUTO_TEST_CASE(and_test)
 
         BOOST_CHECK_EQUAL(pVtermIterator2->next(), false );//false
 
-    } 
+        /**
+        @Brief  Test rankQuery and integration test; 
+        */
+        MockTermDocumentIterator* pTermDocIterator_11 = new MockTermDocumentIterator(3, 1, &indexer, "title", 1);
+        pTermDocIterator_11->accept();
+        MockTermDocumentIterator* pTermDocIterator_12 = new MockTermDocumentIterator(8, 1, &indexer, "title", 1);
+        pTermDocIterator_12->accept();
+        MockTermDocumentIterator* pTermDocIterator_13 = new MockTermDocumentIterator(11, 1, &indexer, "title", 1);
+        pTermDocIterator_13->accept();
+
+        MockTermDocumentIterator* pTermDocIterator_21 = new MockTermDocumentIterator(3, 1, &indexer, "Source", 2);
+        pTermDocIterator_21->accept();
+        MockTermDocumentIterator* pTermDocIterator_22 = new MockTermDocumentIterator(8, 1, &indexer, "Source", 2);
+        pTermDocIterator_22->accept();
+        MockTermDocumentIterator* pTermDocIterator_23 = new MockTermDocumentIterator(11, 1, &indexer, "Source", 2);
+        pTermDocIterator_23->accept();
+
+        MockTermDocumentIterator* pTermDocIterator_31 = new MockTermDocumentIterator(3, 1, &indexer, "Cat", 3);
+        pTermDocIterator_31->accept();
+        MockTermDocumentIterator* pTermDocIterator_32 = new MockTermDocumentIterator(8, 1, &indexer, "Cat", 3);
+        pTermDocIterator_32->accept();
+        MockTermDocumentIterator* pTermDocIterator_33 = new MockTermDocumentIterator(11, 1, &indexer, "Cat", 3);
+        pTermDocIterator_33->accept();
+
+        MockVirtualTermDocumentIterator * pVtermIterator3 = new MockVirtualTermDocumentIterator(3, 1, &indexer, subProperties, propertyIdList, dataTypeList, 0);
+        pVtermIterator3->setPropertiesAndIDs(subProperties, propertyIdList);
+        MockVirtualTermDocumentIterator * pVtermIterator8 = new MockVirtualTermDocumentIterator(8, 1, &indexer, subProperties, propertyIdList, dataTypeList, 0);
+        pVtermIterator8->setPropertiesAndIDs(subProperties, propertyIdList);
+        MockVirtualTermDocumentIterator * pVtermIterator11 = new MockVirtualTermDocumentIterator(11, 1, &indexer, subProperties, propertyIdList, dataTypeList, 0);
+        pVtermIterator11->setPropertiesAndIDs(subProperties, propertyIdList);
+
+        ORDocumentIterator* pOrDocumentIterator3 = new ORDocumentIterator();
+        ORDocumentIterator* pOrDocumentIterator8 = new ORDocumentIterator();
+        ORDocumentIterator* pOrDocumentIterator11 = new ORDocumentIterator();
+
+        pOrDocumentIterator3->add(pTermDocIterator_11);
+        pOrDocumentIterator3->add(pTermDocIterator_21);
+        pOrDocumentIterator3->add(pTermDocIterator_31);
+
+        pOrDocumentIterator8->add(pTermDocIterator_12);
+        pOrDocumentIterator8->add(pTermDocIterator_22);
+        pOrDocumentIterator8->add(pTermDocIterator_32);
+
+        pOrDocumentIterator11->add(pTermDocIterator_13);
+        pOrDocumentIterator11->add(pTermDocIterator_23);
+        pOrDocumentIterator11->add(pTermDocIterator_33);
+
+        pVtermIterator3->add(pOrDocumentIterator3);
+        pVtermIterator8->add(pOrDocumentIterator8);
+        pVtermIterator11->add(pOrDocumentIterator11);
+
+        ANDDocumentIterator ANDVirtualTerm;
+        ANDVirtualTerm.add(pVtermIterator3);
+        ANDVirtualTerm.add(pVtermIterator8);
+        ANDVirtualTerm.add(pVtermIterator11);
+
+        DocumentFrequencyInProperties dfmap;
+        CollectionTermFrequencyInProperties ctfmap;
+        MaxTermFrequencyInProperties maxtfmap;
+        
+        ANDVirtualTerm.df_cmtf(dfmap, ctfmap, maxtfmap);
+
+        
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.next(), true );//2
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.doc(), 2U);
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.next(), true );//5
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.doc(), 5U);
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.next(), true );//7
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.doc(), 7U);
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.next(), true );//10
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.doc(), 10U);
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.next(), true );//19
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.doc(), 19U);
+        BOOST_CHECK_EQUAL(ANDVirtualTerm.next(), false );//false
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

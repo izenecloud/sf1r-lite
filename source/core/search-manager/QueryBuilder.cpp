@@ -527,6 +527,7 @@ void QueryBuilder::post_prepare_ranker_(
         {
             rankQueryProperties[i].setNumDocs(
                 indexManagerPtr_->numDocs());
+///cout<<"indexManagerPtr_->numDocs()"<<indexManagerPtr_->numDocs()<<endl;
             const PropertyTermInfo::id_uint_list_map_t& termPositionsMap = izenelib::util::getOr(
                         propertyTermInfoMap,
                         currentProperty,
@@ -537,6 +538,7 @@ void QueryBuilder::post_prepare_ranker_(
             uint32_t index = 0;
             uint32_t queryLength = 0;
             uint32_t ctf = 0;
+            uint32_t TotalPropertyLength = 0;
             typedef PropertyTermInfo::id_uint_list_map_t::const_iterator
             term_id_position_iterator;
             for (term_id_position_iterator termIt = termPositionsMap.begin();
@@ -546,7 +548,7 @@ void QueryBuilder::post_prepare_ranker_(
                 queryLength += termIt->second.size();
                 for (uint32_t j = 0; j < found->second.subProperties_.size(); ++j, ++index)
                 {
-                    uint32_t dftmp = dfmap[found->second.subProperties_[index]][termIt->first];
+                    uint32_t dftmp = dfmap[found->second.subProperties_[index]][termIt->first];// subString and terid;
                     uint32_t ctftmp = ctfmap[found->second.subProperties_[index]][termIt->first];
                     uint32_t maxtf =  maxtfmap[found->second.subProperties_[index]][termIt->first];
                     DocumentFreq += dftmp;
@@ -558,29 +560,32 @@ void QueryBuilder::post_prepare_ranker_(
                     if (readTermPosition)
                     {
                         /**
-                        code 
+                        code
                         */
                     }
-                    else
+                    if (termIt == termPositionsMap.begin())
                     {
-                        rankQueryProperties[i].setTermFreq(termIt->second.size());
+                        TotalPropertyLength += documentManagerPtr_->getTotalPropertyLength(found->second.subProperties_[j]);
                     }
                 }
-///                cout<<"totalPropertyLength"<<ctf<<endl;
-///                cout<<"virtual queryLength"<<queryLength<<endl;
-///                cout<<"MaxTermFreq"<<MaxTermFreq<<endl;
-///                cout<<"DocumentFreq"<<DocumentFreq<<endl;
-///                cout<<"ctf"<<ctf<<endl;
-                rankQueryProperties[i].setTotalPropertyLength(ctf);
-                ctf = 0;
-                rankQueryProperties[i].setQueryLength(queryLength);
-                queryLength = 0;
+                rankQueryProperties[i].setTermFreq(termIt->second.size());
+///cout<<"MaxTermFreq"<<MaxTermFreq<<endl;
+///cout<<"DocumentFreq"<<DocumentFreq<<endl;
+///cout<<"ctf"<<ctf<<endl;//该属性所有包含该TermID的频率值;
                 rankQueryProperties[i].setMaxTermFreq(MaxTermFreq);
                 MaxTermFreq = 0;
                 rankQueryProperties[i].setDocumentFreq(DocumentFreq);
                 DocumentFreq = 0;
+                rankQueryProperties[i].setTotalTermFreq(ctf);
+                ctf = 0;
                 index = 0;
             }
+
+            rankQueryProperties[i].setTotalPropertyLength(TotalPropertyLength);
+            TotalPropertyLength = 0;
+///cout<<"virtual queryLength"<<queryLength<<endl;
+            rankQueryProperties[i].setQueryLength(queryLength);
+            queryLength = 0;
         }
     }
 
