@@ -651,21 +651,21 @@ bool MiningManager::open()
                 matcher->SetUsePriceSim(false);
             }
             //test
-            //std::ifstream ifs("./querylog.txt");
-            //std::string line;
-            //while (getline(ifs, line))
-            //{
-                //boost::algorithm::trim(line);
-                //UString query(line, UString::UTF_8);
-                //UString category;
-                //if (GetProductCategory(query, category))
-                //{
-                    //std::string scategory;
-                    //category.convertString(scategory, UString::UTF_8);
-                    //LOG(ERROR) << "!!!!!!!!!!!query category " << line << "," << scategory;
-                //}
-            //}
-            //ifs.close();
+            std::ifstream ifs("./querylog.txt");
+            std::string line;
+            while (getline(ifs, line))
+            {
+                boost::algorithm::trim(line);
+                UString query(line, UString::UTF_8);
+                UString category;
+                if (GetProductCategory(query, category))
+                {
+                    std::string scategory;
+                    category.convertString(scategory, UString::UTF_8);
+                    LOG(ERROR) << "!!!!!!!!!!!query category " << line << "," << scategory;
+                }
+            }
+            ifs.close();
         }
 
         /** KV */

@@ -7,6 +7,7 @@
 #include <boost/unordered_set.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
+#include <boost/serialization/hash_map.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <algorithm>
 #include <cmath>
@@ -339,6 +340,11 @@ bool ProductMatcher::Open(const std::string& kpath)
             path = path_+"/keyword_trie";
             izenelib::am::ssf::Util<>::Load(path, trie_);
             LOG(INFO)<<"trie size "<<trie_.size()<<std::endl;
+            path = path_+"/back2front";
+            std::map<std::string, std::string> b2f_map;
+            izenelib::am::ssf::Util<>::Load(path, b2f_map);
+            back2front_.insert(b2f_map.begin(), b2f_map.end());
+            LOG(INFO)<<"back2front size "<<back2front_.size()<<std::endl;
             //path = path_+"/attrib_id";
             //boost::filesystem::create_directories(path);
             //aid_manager_ = new AttributeIdManager(path+"/id");
@@ -385,7 +391,7 @@ void ProductMatcher::Clear(const std::string& path, int omode)
     {
         mode = 3;
     }
-    if(mode==3)
+    if(mode>=2)
     {
         B5MHelper::PrepareEmptyDir(path);
     }
@@ -393,11 +399,11 @@ void ProductMatcher::Clear(const std::string& path, int omode)
     {
         std::string bdb_path = path+"/bdb";
         B5MHelper::PrepareEmptyDir(bdb_path);
-        if(mode==2)
-        {
-            std::string odb_path = path+"/odb";
-            B5MHelper::PrepareEmptyDir(odb_path);
-        }
+        //if(mode>=2)
+        //{
+            //std::string odb_path = path+"/odb";
+            //B5MHelper::PrepareEmptyDir(odb_path);
+        //}
     }
 }
 std::string ProductMatcher::GetVersion(const std::string& path)
@@ -418,6 +424,31 @@ bool ProductMatcher::GetProduct(const std::string& pid, Product& product)
     if(index>=products_.size()) return false;
     product = products_[index];
     return true;
+}
+
+bool ProductMatcher::GetFrontendCategory(const UString& backend, UString& frontend) const
+{
+    if(back2front_.empty()) return false;
+    std::string b;
+    backend.convertString(b, UString::UTF_8);
+    std::string ob = b;//original
+    while(!b.empty())
+    {
+        Back2Front::const_iterator it = back2front_.find(b);
+        if(it!=back2front_.end())
+        {
+            frontend = UString(it->second, UString::UTF_8);
+            break;
+        }
+        std::size_t pos = b.find_last_of('>');
+        if(pos==std::string::npos) b.clear();
+        else
+        {
+            b = b.substr(0, pos);
+        }
+    }
+    if(b==ob) return true;
+    return false;
 }
 
 bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path)
@@ -484,6 +515,24 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             TermList tl;
             GetTerms_(line, tl);
             not_keywords_.insert(tl);
+        }
+        ifs.close();
+    }
+    std::string back2front_file= scd_path+"/back2front";
+    std::map<std::string, std::string> b2f_map;
+    if(boost::filesystem::exists(back2front_file))
+    {
+        std::ifstream ifs(back2front_file.c_str());
+        std::string line;
+        while( getline(ifs, line))
+        {
+            boost::algorithm::trim(line);
+            std::vector<std::string> vec;
+            boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
+            if(vec.size()!=2) continue;
+            std::pair<std::string, std::string> value(vec[0], vec[1]);
+            b2f_map.insert(value);
+            back2front_.insert(value);
         }
         ifs.close();
     }
@@ -778,6 +827,8 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     izenelib::am::ssf::Util<>::Save(path, product_index_);
     path = path_+"/keyword_trie";
     izenelib::am::ssf::Util<>::Save(path, trie_);
+    path = path_+"/back2front";
+    izenelib::am::ssf::Util<>::Save(path, b2f_map);
     std::string version_file = path_+"/VERSION";
     std::ofstream ofs(version_file.c_str());
     ofs<<VERSION<<std::endl;
@@ -1098,6 +1149,7 @@ bool ProductMatcher::Process(const Document& doc, Product& result_product)
 
 bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products)
 {
+    if(!IsOpen()) return false;
     if(limit==0) return false;
     Product pbook;
     if(ProcessBook(doc, pbook))

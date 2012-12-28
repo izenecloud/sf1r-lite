@@ -38,6 +38,7 @@ namespace sf1r {
         typedef boost::unordered_set<TermList> KeywordSet;
         typedef uint32_t position_t;
         typedef std::pair<position_t, position_t>  Position;
+        typedef boost::unordered_map<std::string, std::string> Back2Front;
         
         struct WeightType
         {
@@ -422,6 +423,8 @@ namespace sf1r {
         static bool ProcessBook(const Document& doc, Product& result_product);
         bool GetProduct(const std::string& pid, Product& product);
         static void ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes);
+        //return true if this is a complete match, else false: to return parent nodes
+        bool GetFrontendCategory(const UString& backend, UString& frontend) const;
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
@@ -518,6 +521,7 @@ namespace sf1r {
         KeywordSet keyword_set_;
         TrieType trie_;
         KeywordVector keyword_vector_;
+        Back2Front back2front_;
 
         const static double optional_weight_ = 0.2;
         const static std::string VERSION;
