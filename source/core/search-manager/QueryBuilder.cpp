@@ -633,21 +633,36 @@ void QueryBuilder::prepare_for_virtual_property_new(
         propertyDataTypes.push_back(p->second.getType());
     }
     
-    do_prepare_for_virtual_property_(
-        queryTree,
-        colID,
-        properties,
-        propertyIds,
-        propertyDataTypes,
-        isNumericFilter,
-        readPositions,
-        termIndexMap,
-        pIter,
-        termDocReadersList,
-        actionOperation.hasUnigramProperty_,
-        actionOperation.isUnigramSearchMode_
-    );
-
+    bool ret = do_prepare_for_virtual_property_(
+                queryTree,
+                colID,
+                properties,
+                propertyIds,
+                propertyDataTypes,
+                isNumericFilter,
+                readPositions,
+                termIndexMap,
+                pIter,
+                termDocReadersList,
+                actionOperation.hasUnigramProperty_,
+                actionOperation.isUnigramSearchMode_
+            );
+    if (!ret)
+    {
+        for(unsigned j = 0; j < properyConfig.subProperties_.size(); ++j)
+        {
+            for (std::map<termid_t, std::vector<TermDocFreqs*> >::iterator
+                    it = termDocReadersList[j].begin(); it != termDocReadersList[j].end(); ++it)
+            {
+                for (size_t i =0; i < it->second.size(); ++i )
+                {
+                    if(it->second[i])
+                        delete it->second[i];
+                }
+                it->second.clear();
+            }
+        }
+    }
     if (pIter)
     {
         pScorer->add(properyConfig.getPropertyId(), pIter);
@@ -922,6 +937,10 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
             if (notChildIter == queryTree->children_.end())
                 return false;
             DocumentIterator* pIterator = NULL;
+            if ((*notChildIter)->type_ == QueryTree::NOT)
+            {
+                return false;
+            }// do not support: NOT NOT like !(!())
             do_prepare_for_virtual_property_(
                             *notChildIter,
                             colID,
@@ -1189,6 +1208,10 @@ bool QueryBuilder::do_prepare_for_property_(
             if (notChildIter == queryTree->children_.end())
                 return false;
             DocumentIterator* pIterator = NULL;
+            if ((*notChildIter)->type_ == QueryTree::NOT)
+            {
+                return false;
+            }
             do_prepare_for_property_(
                           *notChildIter,
                           colID,
