@@ -29,6 +29,7 @@ class WikiGraph
 
     //database db_;
     std::map<std::string,int> title2id;
+    std::map<int,std::string> redirect;
     // PageRank pr_;
     //set<int> SubGraph_;
     std::string path_;
@@ -78,7 +79,7 @@ public:
 
     void SetAdvertiseBias(Node* node);
 
-    int Title2Id(const std::string& title);
+    int Title2Id(const std::string& title,const int i=0);
 
     void CalPageRank(PageRank& pr);
 

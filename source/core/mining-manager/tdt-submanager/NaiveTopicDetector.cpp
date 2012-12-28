@@ -139,7 +139,7 @@ void NaiveTopicDetector::GetCMAResults_(const std::string& content, std::vector<
     {
         std::string topic(pattern_sentence.getLexicon(0, i));
         UString topic_ustr(topic, UString::UTF_8);
-        //LOG(INFO) <<"topic "<<topic<<std::endl;
+        LOG(INFO) <<"topic "<<topic<<std::endl;
         if(topic_ustr.length() > 1)
         {
             izenelib::am::succinct::ux::id_t retID;
@@ -155,7 +155,7 @@ void NaiveTopicDetector::GetCMAResults_(const std::string& content, std::vector<
                 for(; rit != related_keywords.end(); ++rit)
                 {
                     //LOG(INFO) <<"related "<<*rit<<std::endl;
-                    topics.push_back(std::make_pair(*rit,score));
+                   // topics.push_back(std::make_pair(*rit,0));
                 }
             }
             else if(enable_semantic_ || topic_ustr.isAllChineseChar()) /// All Chinese Char is required for a temporary solution.
@@ -176,8 +176,11 @@ void NaiveTopicDetector::GetCMAResults_(const std::string& content, std::vector<
             }
         }
     }
-    std::sort (topics.begin(), topics.end()); 
-    topics.erase( unique_merge( topics.begin(), topics.end(), UniqueTopic), topics.end() );
+    if(!topics.empty())
+    {
+        std::sort (topics.begin(), topics.end()); 
+        topics.erase( unique_merge( topics.begin(), topics.end(), UniqueTopic), topics.end() );
+    }
 }
 
 void NaiveTopicDetector::InitKnowledge_()
