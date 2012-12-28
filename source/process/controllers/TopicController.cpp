@@ -244,7 +244,6 @@ void TopicController::get_topics()
     {
         limit = asInt(request()[Keys::limit]);
     }
-	
     std::vector<std::string> topic_list;
     bool requestSent = miningSearchService_->GetTopics(content_, topic_list, limit);
 

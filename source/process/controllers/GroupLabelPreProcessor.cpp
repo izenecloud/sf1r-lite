@@ -41,15 +41,16 @@ void GroupLabelPreProcessor::pushTopLabels_(
     GroupPathVec pathVec;
     std::vector<int> freqVec;
 
-    if(! miningSearchService_->GetProductCategory(query, limit, pathVec))
-    {
-        if (! miningSearchService_->getFreqGroupLabel(
+    if (! miningSearchService_->getFreqGroupLabel(
             query, propName, limit, pathVec, freqVec))
-        {
-            LOG(ERROR) << "failed to get frequent label for group property: "
-                       << propName << ", query: " << query;
-            return;
-        }
+    {
+        LOG(ERROR) << "failed to get frequent label for group property: "
+                   << propName << ", query: " << query;
+    }
+
+    if (pathVec.empty())
+    {
+        miningSearchService_->GetProductCategory(query, limit, pathVec);
     }
 
     for (GroupPathVec::const_iterator pathIt = pathVec.begin();
