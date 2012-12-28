@@ -61,6 +61,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
     std::string output_dir = B5MHelper::GetB5mcPath(mdb_instance);
     B5MHelper::PrepareEmptyDir(output_dir);
     ScdWriter b5mc_u(output_dir, UPDATE_SCD);
+    boost::unordered_set<uint128_t> uset;
     //ScdWriter b5mc_d(output_dir, DELETE_SCD);
     for(uint32_t i=0;i<scd_list.size();i++)
     {
@@ -78,6 +79,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             {
                 LOG(INFO)<<"Find Documents "<<n<<std::endl;
             }
+            if(n>=2000000) break;
             Document doc;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
@@ -109,6 +111,21 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
                 }
                 else {
                     cdb_->Insert(cid);
+                }
+            }
+            {
+                bool test_is_new_cid = true;
+                if(uset.find(cid)!=uset.end())
+                {
+                    test_is_new_cid = false;
+                }
+                else
+                {
+                    uset.insert(cid);
+                }
+                if(is_new_cid!=test_is_new_cid)
+                {
+                    LOG(ERROR)<<"filter error on "<<scid<<std::endl;
                 }
             }
             std::string spid;
