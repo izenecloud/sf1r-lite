@@ -3,9 +3,9 @@
 #include "GroupParam.h"
 #include "GroupCounterLabelBuilder.h"
 #include "GroupManager.h"
-#include "PropSharedLockSet.h"
 #include "../attr-manager/AttrManager.h"
 #include "../attr-manager/AttrTable.h"
+#include <common/PropSharedLockSet.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 
 #include <memory> // auto_ptr

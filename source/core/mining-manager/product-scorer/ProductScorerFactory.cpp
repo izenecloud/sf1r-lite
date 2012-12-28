@@ -5,8 +5,8 @@
 #include "CategoryScorer.h"
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
-#include "../group-manager/PropSharedLockSet.h"
 #include "../product-score-manager/ProductScoreManager.h"
+#include <common/PropSharedLockSet.h>
 #include <configuration-manager/ProductRankingConfig.h>
 #include <memory> // auto_ptr
 #include <glog/logging.h>

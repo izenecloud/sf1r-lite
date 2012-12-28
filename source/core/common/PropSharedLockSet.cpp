@@ -1,7 +1,7 @@
 #include "PropSharedLockSet.h"
 #include "PropSharedLock.h"
 
-NS_FACETED_BEGIN
+using namespace sf1r;
 
 PropSharedLockSet::~PropSharedLockSet()
 {
@@ -19,5 +19,3 @@ void PropSharedLockSet::insertSharedLock(const PropSharedLock* lock)
         lock->lockShared();
     }
 }
-
-NS_FACETED_END

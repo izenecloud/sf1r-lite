@@ -8,10 +8,10 @@
 #ifndef SF1R_PROP_SHARED_LOCK_H
 #define SF1R_PROP_SHARED_LOCK_H
 
-#include "../faceted-submanager/faceted_types.h"
 #include <boost/thread.hpp>
 
-NS_FACETED_BEGIN
+namespace sf1r
+{
 
 class PropSharedLock
 {
@@ -32,6 +32,6 @@ protected:
     mutable MutexType mutex_;
 };
 
-NS_FACETED_END
+} // namespace sf1r
 
 #endif // SF1R_PROP_SHARED_LOCK_H

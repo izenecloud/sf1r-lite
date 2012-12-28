@@ -18,6 +18,7 @@
 namespace sf1r
 {
 class NumericPropertyTableBuilder;
+class PropSharedLockSet;
 }
 
 NS_FACETED_BEGIN
@@ -25,7 +26,6 @@ NS_FACETED_BEGIN
 class GroupManager;
 class GroupCounter;
 class GroupLabel;
-class PropSharedLockSet;
 
 class GroupCounterLabelBuilder
 {

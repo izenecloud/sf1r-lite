@@ -7,7 +7,6 @@
 #include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
-#include <mining-manager/group-manager/PropSharedLockSet.h>
 #include <mining-manager/faceted-submanager/ontology_rep.h>
 #include <mining-manager/custom-rank-manager/CustomRankManager.h>
 #include <mining-manager/product-scorer/RelevanceScorer.h>
@@ -15,6 +14,7 @@
 #include <mining-manager/product-ranker/ProductRankerFactory.h>
 #include <mining-manager/product-ranker/ProductRanker.h>
 #include <mining-manager/product-ranker/ProductRankParam.h>
+#include <common/PropSharedLockSet.h>
 #include <common/SFLogger.h>
 
 #include "SearchManager.h"
@@ -700,7 +700,7 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
 
     STOP_PROFILER( preparerank )
 
-    faceted::PropSharedLockSet propSharedLockSet;
+    PropSharedLockSet propSharedLockSet;
     boost::scoped_ptr<faceted::GroupFilter> groupFilter;
     if (groupFilterBuilder_)
     {
@@ -917,7 +917,7 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
         return;
     }
 
-    faceted::PropSharedLockSet propSharedLockSet;
+    PropSharedLockSet propSharedLockSet;
     ProductScorer* productScorer = preprocessor_->createProductScorer(
         actionOperation.actionItem_, propSharedLockSet, NULL);
 

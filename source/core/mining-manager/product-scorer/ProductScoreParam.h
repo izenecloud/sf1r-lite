@@ -14,7 +14,7 @@
 namespace sf1r
 {
 class ProductScorer;
-namespace faceted { class PropSharedLockSet; }
+class PropSharedLockSet;
 
 struct ProductScoreParam
 {
@@ -28,7 +28,7 @@ struct ProductScoreParam
     const faceted::GroupParam::GroupPathVec& boostGroupLabels_;
 
     /** for concurrent access on category data by @c CategoryScorer */
-    faceted::PropSharedLockSet& propSharedLockSet_;
+    PropSharedLockSet& propSharedLockSet_;
 
     /** the relevance scorer, it could be NULL if not existed */
     ProductScorer* relevanceScorer_;
@@ -37,7 +37,7 @@ struct ProductScoreParam
         const std::string& query,
         const std::string& querySource,
         const faceted::GroupParam::GroupPathVec& boostGroupLabels,
-        faceted::PropSharedLockSet& propSharedLockSet,
+        PropSharedLockSet& propSharedLockSet,
         ProductScorer* relevanceScorer)
         : query_(query)
         , querySource_(querySource)

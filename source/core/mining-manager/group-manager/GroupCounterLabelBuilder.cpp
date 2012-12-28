@@ -9,7 +9,7 @@
 #include "DateGroupCounter.h"
 #include "DateGroupLabel.h"
 #include "DateStrParser.h"
-#include "PropSharedLockSet.h"
+#include <common/PropSharedLockSet.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 
 #include <limits>
