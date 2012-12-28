@@ -69,11 +69,11 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                 psm.Open();
 
                 uint32_t key = 100;
-                std::map<std::string, UString> imgurl_list;
-                std::map<std::string, UString> docid_content;
-                std::map<std::string, UString> docid_url;
+                //std::map<std::string, UString> imgurl_list;
+                //std::map<std::string, UString> docid_content;
+                //std::map<std::string, UString> docid_url;
                 std::map<std::string, uint32_t> docid_key;
-                std::map<std::string, UString> docid_username;
+                //std::map<std::string, UString> docid_username;
                 std::map<uint32_t, std::string> key_docid;
 
                 for(uint32_t i=0;i<1;i++)
@@ -118,10 +118,10 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                         docid_key[docID] = key;
                         key_docid[key] = docID;
                         key++;
-                        imgurl_list[docID] =doc["Img"];
-                        docid_content[docID] = doc["Content"];
-                        docid_url[docID] = doc["Url"];
-                        docid_username[docID] = doc["UserName"];
+                        //imgurl_list[docID] =doc["Img"];
+                        //docid_content[docID] = doc["Content"];
+                        //docid_url[docID] = doc["Url"];
+                        //docid_username[docID] = doc["UserName"];
                     }
                     n = 0;
                     for( ScdParser::iterator doc_iter = parser.begin();
@@ -159,10 +159,10 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                         docid_key[docID] = key;
                         key_docid[key] = docID;
                         key++;
-                        imgurl_list[docID] =doc["Img"];
-                        docid_content[docID] = doc["Content"];
-                        docid_url[docID] = doc["Url"];
-                        docid_username[docID] = doc["UserName"];
+                        //imgurl_list[docID] =doc["Img"];
+                        //docid_content[docID] = doc["Content"];
+                        //docid_url[docID] = doc["Url"];
+                        //docid_username[docID] = doc["UserName"];
                     }
 
                 }
@@ -219,7 +219,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                         }
                         else
                         {
-
+/*
                             std::string current_url;
                             std::string current_page_url;
                             std::string current_content;
@@ -260,6 +260,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                                          <<std::endl<<"Matches ERROR "<<std::endl;
                                 error++;
                                 if(writer.Append(scddoc)) rest++;
+*/
                             }
 
                         }
