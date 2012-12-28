@@ -432,10 +432,9 @@ void GroupManagerTestFixture::createDocument(int num)
 
     checkCollection_();
 
-    
-
     BOOST_CHECK(miningTaskBuilder_->buildCollection());
-    //BOOST_CHECK(groupManager_->processCollection());
+
+    numericTableBuilder_->clearTableMap();
 }
 
 void GroupManagerTestFixture::checkGetGroupRep()

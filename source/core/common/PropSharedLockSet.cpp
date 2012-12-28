@@ -14,6 +14,9 @@ PropSharedLockSet::~PropSharedLockSet()
 
 void PropSharedLockSet::insertSharedLock(const PropSharedLock* lock)
 {
+    if (lock == NULL)
+        return;
+
     if (sharedLockSet_.insert(lock).second)
     {
         lock->lockShared();

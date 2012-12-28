@@ -19,11 +19,15 @@ BOOST_FIXTURE_TEST_CASE(checkGroupRep, sf1r::GroupManagerTestFixture)
     createDocument(100);
     checkGetGroupRep();
 
+    BOOST_TEST_MESSAGE("create group index 2nd time");
+    createDocument(200);
+    checkGetGroupRep();
+
     BOOST_TEST_MESSAGE("load group index");
     resetGroupManager();
     checkGetGroupRep();
 
-    BOOST_TEST_MESSAGE("create group index 2nd time");
+    BOOST_TEST_MESSAGE("create group index 3rd time");
     createDocument(1000);
     checkGetGroupRep();
 }

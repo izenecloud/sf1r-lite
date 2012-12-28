@@ -585,11 +585,19 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
     {
         return false;
     }
+
+    PropSharedLockSet propSharedLockSet;
     ///sortby
     if (pParam.pSorter)
-        pParam.scoreItemQueue.reset(new PropertySortedHitQueue(pParam.pSorter, pParam.heapSize));
+    {
+        pParam.scoreItemQueue.reset(new PropertySortedHitQueue(pParam.pSorter,
+                                                               pParam.heapSize,
+                                                               propSharedLockSet));
+    }
     else
+    {
         pParam.scoreItemQueue.reset(new ScoreSortedHitQueue(pParam.heapSize));
+    }
 
     DocumentIterator* pScoreDocIterator = scoreDocIterPtr.get();
     if (isFilterQuery == false)
@@ -700,7 +708,6 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
 
     STOP_PROFILER( preparerank )
 
-    PropSharedLockSet propSharedLockSet;
     boost::scoped_ptr<faceted::GroupFilter> groupFilter;
     if (groupFilterBuilder_)
     {
@@ -727,7 +734,8 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
         bool ret = doSearch_(pParam,
                              pDocIterator.get(),
                              groupFilter.get(),
-                             scoreDocEvaluator);
+                             scoreDocEvaluator,
+                             propSharedLockSet);
 
         if(groupFilter)
         {
@@ -746,7 +754,8 @@ bool SearchManager::doSearch_(
     SearchThreadParam& pParam,
     CombinedDocumentIterator* pDocIterator,
     faceted::GroupFilter* groupFilter,
-    ScoreDocEvaluator& scoreDocEvaluator)
+    ScoreDocEvaluator& scoreDocEvaluator,
+    PropSharedLockSet& propSharedLockSet)
 {
     CREATE_PROFILER( computerankscore, "SearchManager", "doSearch_: overall time for scoring a doc");
     CREATE_PROFILER( inserttoqueue, "SearchManager", "doSearch_: overall time for inserting to result queue");
@@ -762,6 +771,7 @@ bool SearchManager::doSearch_(
     if (!rangePropertyName.empty())
     {
         rangePropertyTable = documentManagerPtr_->getNumericPropertyTable(rangePropertyName);
+        propSharedLockSet.insertSharedLock(rangePropertyTable.get());
     }
 
     std::vector<NumericPropertyTablePtr> counterTables;
@@ -776,6 +786,7 @@ bool SearchManager::doSearch_(
         for(; ii < counterSize; ++ii)
         {
             counterTables[ii] = documentManagerPtr_->getNumericPropertyTable(counterList[ii]);
+            propSharedLockSet.insertSharedLock(counterTables[ii].get());
         }
     }
 
@@ -794,7 +805,7 @@ bool SearchManager::doSearch_(
         if (rangePropertyTable)
         {
             float docPropertyValue = 0;
-            if (rangePropertyTable->getFloatValue(curDocId, docPropertyValue))
+            if (rangePropertyTable->getFloatValue(curDocId, docPropertyValue, false))
             {
                 if (docPropertyValue < lowValue)
                 {
@@ -814,8 +825,7 @@ bool SearchManager::doSearch_(
             for(ii = 0; ii < counterSize; ++ii)
             {
                 int32_t value;
-                if(counterTables[ii]->getInt32Value(curDocId,value))
-                //if(counterTables[ii]->isValid(curDocId))
+                if(counterTables[ii]->getInt32Value(curDocId,value, false))
                 {
                     counterValues[ii] += value;
                 }
@@ -938,9 +948,15 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     boost::scoped_ptr<HitQueue> scoreItemQueue;
     ///sortby
     if (pSorter)
-        scoreItemQueue.reset(new PropertySortedHitQueue(pSorter, count));
+    {
+        scoreItemQueue.reset(new PropertySortedHitQueue(pSorter,
+                                                        count,
+                                                        propSharedLockSet));
+    }
     else
+    {
         scoreItemQueue.reset(new ScoreSortedHitQueue(count));
+    }
 
     ScoreDoc tmpdoc;
     for(size_t i = 0; i < count; ++i)
