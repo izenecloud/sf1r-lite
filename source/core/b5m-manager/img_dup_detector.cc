@@ -49,18 +49,20 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                 continue;
             if(event -> mask & IN_CLOSE_WRITE)
             {
+                std::string new_scd_path = scd_path;
                 if( ((controller/2)%2) == 1 )
                 {
                     std::string filename = std::string(event->name);
                     std::string final_path = output_path + "/final";
                     ImgDupDetector::DupDelectByImgCon(scd_path, final_path, filename, toDelete);
+                    new_scd_path = final_path;
                 }
                 if( (controller%2) == 0 )
                 {
                     index += sizeof(struct inotify_event)+event->len;
                     continue;
                 }
-                LOG(INFO)<<"File "<<event->name<<" is closed for write. " << std::endl;
+                                LOG(INFO)<<"File "<<event->name<<" is closed for write. " << std::endl;
                 std::string psm_path = output_path+"/psm";
                 B5MHelper::PrepareEmptyDir(psm_path);
 
@@ -69,16 +71,16 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                 psm.Open();
 
                 uint32_t key = 100;
-                std::map<std::string, UString> imgurl_list;
-                std::map<std::string, UString> docid_content;
-                std::map<std::string, UString> docid_url;
+                //std::map<std::string, UString> imgurl_list;
+                //std::map<std::string, UString> docid_content;
+                //std::map<std::string, UString> docid_url;
                 std::map<std::string, uint32_t> docid_key;
-                std::map<std::string, UString> docid_username;
+                //std::map<std::string, UString> docid_username;
                 std::map<uint32_t, std::string> key_docid;
 
                 for(uint32_t i=0;i<1;i++)
                 {
-                    std::string scd_file = scd_path + "/" + std::string(event->name);
+                    std::string scd_file = new_scd_path + "/" + std::string(event->name);
                     LOG(INFO)<<"Processing "<<scd_file<<std::endl;
                     ScdParser parser(izenelib::util::UString::UTF_8);
                     parser.load(scd_file);
@@ -118,10 +120,10 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                         docid_key[docID] = key;
                         key_docid[key] = docID;
                         key++;
-                        imgurl_list[docID] =doc["Img"];
-                        docid_content[docID] = doc["Content"];
-                        docid_url[docID] = doc["Url"];
-                        docid_username[docID] = doc["UserName"];
+                        //imgurl_list[docID] =doc["Img"];
+                        //docid_content[docID] = doc["Content"];
+                        //docid_url[docID] = doc["Url"];
+                        //docid_username[docID] = doc["UserName"];
                     }
                     n = 0;
                     for( ScdParser::iterator doc_iter = parser.begin();
@@ -159,10 +161,10 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                         docid_key[docID] = key;
                         key_docid[key] = docID;
                         key++;
-                        imgurl_list[docID] =doc["Img"];
-                        docid_content[docID] = doc["Content"];
-                        docid_url[docID] = doc["Url"];
-                        docid_username[docID] = doc["UserName"];
+                        //imgurl_list[docID] =doc["Img"];
+                        //docid_content[docID] = doc["Content"];
+                        //docid_url[docID] = doc["Url"];
+                        //docid_username[docID] = doc["UserName"];
                     }
 
                 }
@@ -174,7 +176,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                 psm.Open();
                 for(uint32_t i=0;i<1;i++)
                 {
-                    std::string scd_file =  scd_path + "/" + std::string(event->name);
+                    std::string scd_file =  new_scd_path + "/" + std::string(event->name);
                     LOG(INFO)<<"Processing "<<scd_file<<std::endl;
                     ScdParser parser(izenelib::util::UString::UTF_8);
                     parser.load(scd_file);
@@ -219,7 +221,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                         }
                         else
                         {
-
+/*
                             std::string current_url;
                             std::string current_page_url;
                             std::string current_content;
@@ -260,8 +262,9 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                                          <<std::endl<<"Matches ERROR "<<std::endl;
                                 error++;
                                 if(writer.Append(scddoc)) rest++;
-                            }
 
+                            }
+*/
                         }
 
                     }
@@ -296,8 +299,8 @@ bool ImgDupDetector::DupDelectByImgCon(const std::string& scd_path, const std::s
     uint32_t key = 100;
     std::map<std::string, uint32_t> docid_key;
     std::map<uint32_t, std::string> key_docid;
-    std::map<uint32_t, UString> key_imgcon;
-    std::map<uint32_t, UString> imgurl_list;
+//    std::map<uint32_t, UString> key_imgcon;
+//    std::map<uint32_t, UString> imgurl_list;
 
     std::string scd_file = scd_path + "/" + filename;
     LOG(INFO)<<"Processing "<<scd_file<<std::endl;
@@ -338,8 +341,8 @@ bool ImgDupDetector::DupDelectByImgCon(const std::string& scd_path, const std::s
         psm.Insert(key, doc_vector, attach);
         docid_key[docID] = key;
         key_docid[key] = docID;
-        key_imgcon[key] = doc["Content"];
-        imgurl_list[key] = doc["Img"];
+//        key_imgcon[key] = doc["Content"];
+//        imgurl_list[key] = doc["Img"];
         key++;
     }
     n=0;
@@ -377,8 +380,8 @@ bool ImgDupDetector::DupDelectByImgCon(const std::string& scd_path, const std::s
         psm.Insert(key, doc_vector, attach);
         docid_key[docID] = key;
         key_docid[key] = docID;
-        key_imgcon[key] = doc["Content"];
-        imgurl_list[key] = doc["Img"];
+//        key_imgcon[key] = doc["Content"];
+//        imgurl_list[key] = doc["Img"];
         key++;
     }
     if(!psm.Build())
@@ -433,6 +436,7 @@ bool ImgDupDetector::DupDelectByImgCon(const std::string& scd_path, const std::s
             }
             else
             {
+/*
                 std::string content;
                 key_imgcon[docid_key[docID]].convertString(content, izenelib::util::UString::UTF_8);
                 std::string matchCon;
@@ -442,6 +446,7 @@ bool ImgDupDetector::DupDelectByImgCon(const std::string& scd_path, const std::s
                          <<std::endl<<key_docid[match_key]<<":  "<<matchCon
                          <<std::endl<<"   " << imgurl_list[match_key]
                          <<std::endl<<"Matches "<<std::endl;
+*/
             }
         }
         LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<<" Error: " << error << std::endl;

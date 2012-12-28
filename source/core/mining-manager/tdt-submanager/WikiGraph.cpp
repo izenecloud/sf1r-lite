@@ -135,7 +135,7 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
         }
         else
         {
-            pr.setPr(i,pr.getPr(i)+1.0);
+            pr.setPr(i,pr.getPr(i)*5.0);
         }
         if(nodes_[i]->GetAdvertiRelevancy()>0.1)
         {
