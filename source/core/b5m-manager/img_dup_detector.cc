@@ -49,18 +49,20 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                 continue;
             if(event -> mask & IN_CLOSE_WRITE)
             {
+                std::string new_scd_path = scd_path;
                 if( ((controller/2)%2) == 1 )
                 {
                     std::string filename = std::string(event->name);
                     std::string final_path = output_path + "/final";
                     ImgDupDetector::DupDelectByImgCon(scd_path, final_path, filename, toDelete);
+                    new_scd_path = final_path;
                 }
                 if( (controller%2) == 0 )
                 {
                     index += sizeof(struct inotify_event)+event->len;
                     continue;
                 }
-                LOG(INFO)<<"File "<<event->name<<" is closed for write. " << std::endl;
+                                LOG(INFO)<<"File "<<event->name<<" is closed for write. " << std::endl;
                 std::string psm_path = output_path+"/psm";
                 B5MHelper::PrepareEmptyDir(psm_path);
 
@@ -78,7 +80,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
 
                 for(uint32_t i=0;i<1;i++)
                 {
-                    std::string scd_file = scd_path + "/" + std::string(event->name);
+                    std::string scd_file = new_scd_path + "/" + std::string(event->name);
                     LOG(INFO)<<"Processing "<<scd_file<<std::endl;
                     ScdParser parser(izenelib::util::UString::UTF_8);
                     parser.load(scd_file);
@@ -174,7 +176,7 @@ bool ImgDupDetector::DupDetectByImgUrlNotIn(const std::string& scd_path, const s
                 psm.Open();
                 for(uint32_t i=0;i<1;i++)
                 {
-                    std::string scd_file =  scd_path + "/" + std::string(event->name);
+                    std::string scd_file =  new_scd_path + "/" + std::string(event->name);
                     LOG(INFO)<<"Processing "<<scd_file<<std::endl;
                     ScdParser parser(izenelib::util::UString::UTF_8);
                     parser.load(scd_file);
