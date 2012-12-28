@@ -251,7 +251,6 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
 )
 {
     size_t size_of_properties = propertyIds.size();
-
     std::auto_ptr<MultiPropertyScorer> docIterPtr(new MultiPropertyScorer(propertyWeightMap, propertyIds));
     if (pIndexReader_->isDirty())
     {
@@ -956,8 +955,11 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
                             isUnigramSearchMode,
                             1
                         );
-            pIterator->setNot(true);
-            pDocIterator->add(pIterator);
+            if (pIterator)
+            {
+                pIterator->setNot(true);
+                pDocIterator->add(pIterator);
+            }
         }
         catch(std::exception& e)
         {
@@ -1229,8 +1231,11 @@ bool QueryBuilder::do_prepare_for_property_(
                           virtualProperty,
                           1
                       );
-            pIterator->setNot(true);
-            pDocIterator->add(pIterator);
+            if (pIterator)
+            {
+                pIterator->setNot(true);
+                pDocIterator->add(pIterator);
+            }
         }
         catch(std::exception& e)
         {
@@ -1438,6 +1443,7 @@ bool QueryBuilder::do_prepare_for_property_(
                 delete pIterator;
                 return false;
             }
+            
             if(!virtualProperty.empty())
             {
                 if(!parentAndOrFlag)
