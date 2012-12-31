@@ -42,7 +42,7 @@ bool ImgDupProcess::init(const std::string& cfgFile)
 
 void ImgDupProcess::start()
 {
-    LOG(INFO) << "\tImage duplicate detection server start " << std::endl;
+    LOG(INFO) << "Setting params ... " << std::endl;
     std::string scd_path = ImgDupCfg::get()->scd_input_dir_;
     std::string output_path = ImgDupCfg::get()->scd_output_dir_;
     std::string source_name = ImgDupCfg::get()->source_name_;
