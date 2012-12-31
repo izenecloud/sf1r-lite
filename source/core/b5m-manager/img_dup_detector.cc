@@ -615,7 +615,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
                          <<std::endl<<std::endl<<"DOCID: "<<con_key_docid_[match_key]
                          <<std::endl<<"ImgUrl: "<<match_url
                          <<std::endl<<"Content: "<<match_content
-                         <<std::endl<<"Image URL Matches "<<std::endl<<std::endl<<std::endl;
+                         <<std::endl<<"Image Content Matches "<<std::endl<<std::endl<<std::endl;
 
 
             }
