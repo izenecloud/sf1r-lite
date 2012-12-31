@@ -146,7 +146,15 @@ void B5moProcessor::Process(Document& doc, int& type)
         ProductMatcher::Product product;
         if(need_do_match)
         {
+            if(!category.empty())
+            {
+                doc.property(ProductMatcher::MatcherOnlyPropertyName()) = (int64_t)1;
+            }
             matcher_->Process(doc, product);
+            if(!category.empty())
+            {
+                doc.eraseProperty(ProductMatcher::MatcherOnlyPropertyName());
+            }
         }
         else
         {
