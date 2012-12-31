@@ -8,10 +8,10 @@
 #ifndef SF1R_PROP_SHARED_LOCK_H
 #define SF1R_PROP_SHARED_LOCK_H
 
-#include "../faceted-submanager/faceted_types.h"
 #include <boost/thread.hpp>
 
-NS_FACETED_BEGIN
+namespace sf1r
+{
 
 class PropSharedLock
 {
@@ -19,6 +19,8 @@ public:
     typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ScopedReadLock;
     typedef boost::unique_lock<MutexType> ScopedWriteLock;
+
+    class ScopedReadBoolLock;
 
     virtual ~PropSharedLock() {}
 
@@ -32,6 +34,22 @@ protected:
     mutable MutexType mutex_;
 };
 
-NS_FACETED_END
+class PropSharedLock::ScopedReadBoolLock
+{
+public:
+    ScopedReadBoolLock(PropSharedLock::MutexType& mutex, bool isLock)
+        : lock_(mutex, boost::defer_lock)
+    {
+        if (isLock)
+        {
+            lock_.lock();
+        }
+    }
+
+private:
+    PropSharedLock::ScopedReadLock lock_;
+};
+
+} // namespace sf1r
 
 #endif // SF1R_PROP_SHARED_LOCK_H

@@ -261,7 +261,7 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
 void WikiGraph::InitSubGaph(const int& index,set<int>& SubGraph,int itertime)
 {
     if(itertime>2||(itertime!=1&&(nodes_[index]->linkin_index_.size()>1000||nodes_[index]->linkout_index_.size()>1000))) {}
-    else
+    else if( SubGraph.find(index) == SubGraph.end() )
     {
         SubGraph.insert(index);
         //nodes_[index]->SetPageRank(1.0);
@@ -439,7 +439,7 @@ int WikiGraph::Title2Id(const string& title,const int i)
         redirit = redirect.find(titleit->second);
         if(redirit !=redirect.end()&&i<5)
         {
-           
+
             return  Title2Id(redirit->second,i+1);
         }
         else

@@ -325,7 +325,7 @@ void SearchManagerPreProcessor::PreparePropertyTermIndex(
 
 ProductScorer* SearchManagerPreProcessor::createProductScorer(
     const KeywordSearchActionItem& actionItem,
-    faceted::PropSharedLockSet& propSharedLockSet,
+    PropSharedLockSet& propSharedLockSet,
     ProductScorer* relevanceScorer)
 {
     std::auto_ptr<ProductScorer> relevanceScorerPtr(relevanceScorer);

@@ -127,7 +127,7 @@ public:
             numericPropertyTable.reset(new NumericPropertyTable<T>(type));
         numericPropertyTable->resize(size);
 
-        NumericPropertyTableBase::WriteLock lock(numericPropertyTable->mutex_);
+        PropSharedLock::ScopedWriteLock lock(numericPropertyTable->getMutex());
         T* data = (T *)numericPropertyTable->getValueList();
         T low = NumericUtil<T>::Low();
         T high = NumericUtil<T>::High();

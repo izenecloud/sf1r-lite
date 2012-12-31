@@ -115,4 +115,12 @@ void ImgDupCfg::parseServerCfg(properties& props)
     {
         throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.detect.by.imgcontent");
     }
+    if(!props.getValue("imgdupdetector.imgcontent.length", img_con_len_))
+    {
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.imgcontent.length");
+    }
+    if(!props.getValue("imgdupdetector.loginfo", log_info_))
+    {
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.loginfo");
+    }
 }

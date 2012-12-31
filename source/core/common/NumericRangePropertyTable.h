@@ -115,13 +115,13 @@ public:
 
     void resize(std::size_t size)
     {
-        WriteLock lock(mutex_);
+        ScopedWriteLock lock(mutex_);
         data_.resize(size, invalidValue_);
     }
 
-    std::size_t size() const
+    std::size_t size(bool isLock) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         return data_.size();
     }
 
@@ -135,53 +135,53 @@ public:
         if (ofs) save_(ofs);
     }
 
-    bool isValid(std::size_t pos) const
+    bool isValid(std::size_t pos, bool isLock) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
         return true;
     }
 
-    bool getInt32Value(std::size_t pos, int32_t& value) const
+    bool getInt32Value(std::size_t pos, int32_t& value, bool isLock) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
         value = static_cast<int32_t>(data_[pos].first);
         return true;
     }
-    bool getFloatValue(std::size_t pos, float& value) const
+    bool getFloatValue(std::size_t pos, float& value, bool isLock) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
         value = static_cast<float>(data_[pos].first);
         return true;
     }
-    bool getInt64Value(std::size_t pos, int64_t& value) const
+    bool getInt64Value(std::size_t pos, int64_t& value, bool isLock) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
         value = static_cast<int64_t>(data_[pos].first);
         return true;
     }
-    bool getDoubleValue(std::size_t pos, double& value) const
+    bool getDoubleValue(std::size_t pos, double& value, bool isLock) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
         value = static_cast<double>(data_[pos].first);
         return true;
     }
-    bool getStringValue(std::size_t pos, std::string& value) const
+    bool getStringValue(std::size_t pos, std::string& value, bool isLock) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
@@ -198,9 +198,9 @@ public:
         }
         return true;
     }
-    bool getDoublePairValue(std::size_t pos, std::pair<double, double>& value) const
+    bool getDoublePairValue(std::size_t pos, std::pair<double, double>& value, bool isLock) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
@@ -208,9 +208,9 @@ public:
         value.second = static_cast<double>(data_[pos].second);
         return true;
     }
-    bool getInt64PairValue(std::size_t pos, std::pair<int64_t, int64_t>& value) const
+    bool getInt64PairValue(std::size_t pos, std::pair<int64_t, int64_t>& value, bool isLock) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
@@ -220,9 +220,9 @@ public:
     }
 
 
-    bool getValue(std::size_t pos, value_type& value) const
+    bool getValue(std::size_t pos, value_type& value, bool isLock = true) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         if (pos >= data_.size() || data_[pos] == invalidValue_)
             return false;
 
@@ -247,7 +247,7 @@ public:
 
     void setInt32Value(std::size_t pos, const int32_t& value)
     {
-        WriteLock lock(mutex_);
+        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
             data_.resize(pos + 1, invalidValue_);
 
@@ -256,7 +256,7 @@ public:
     }
     void setFloatValue(std::size_t pos, const float& value)
     {
-        WriteLock lock(mutex_);
+        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
             data_.resize(pos + 1, invalidValue_);
 
@@ -265,7 +265,7 @@ public:
     }
     void setInt64Value(std::size_t pos, const int64_t& value)
     {
-        WriteLock lock(mutex_);
+        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
             data_.resize(pos + 1, invalidValue_);
 
@@ -274,7 +274,7 @@ public:
     }
     void setDoubleValue(std::size_t pos, const double& value)
     {
-        WriteLock lock(mutex_);
+        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
             data_.resize(pos + 1, invalidValue_);
 
@@ -283,7 +283,7 @@ public:
     }
     bool setStringValue(std::size_t pos, const std::string& value)
     {
-        WriteLock lock(mutex_);
+        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
             data_.resize(pos + 1, invalidValue_);
 
@@ -297,7 +297,7 @@ public:
 
     void setValue(std::size_t pos, const value_type& value)
     {
-        WriteLock lock(mutex_);
+        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
             data_.resize(pos + 1, invalidValue_);
 
@@ -307,7 +307,7 @@ public:
 
     void copyValue(std::size_t from, std::size_t to)
     {
-        WriteLock lock(mutex_);
+        ScopedWriteLock lock(mutex_);
         if (from >= data_.size() || data_[from] == invalidValue_)
             return;
 
@@ -318,9 +318,9 @@ public:
         dirty_ = true;
     }
 
-    int compareValues(std::size_t lhs, std::size_t rhs) const
+    int compareValues(std::size_t lhs, std::size_t rhs, bool isLock) const
     {
-        //ReadLock lock(mutex_);
+        ScopedReadBoolLock lock(mutex_, isLock);
         const value_type& lv = data_[lhs];
         if (lv == invalidValue_) return -1;
         const value_type& rv = data_[rhs];
@@ -332,7 +332,7 @@ public:
 
     void clearValue(std::size_t pos)
     {
-        WriteLock lock(mutex_);
+        ScopedWriteLock lock(mutex_);
         if (pos < data_.size())
         {
             data_[pos] = invalidValue_;
@@ -343,7 +343,7 @@ public:
 protected:
     void load_(std::istream& is)
     {
-        WriteLock lock(mutex_);
+        ScopedWriteLock lock(mutex_);
         std::size_t len = 0;
         is.read((char*)&len, sizeof(len));
         data_.resize(len);
@@ -352,7 +352,7 @@ protected:
 
     void save_(std::ostream& os) const
     {
-        ReadLock lock(mutex_);
+        ScopedReadLock lock(mutex_);
         std::size_t len = data_.size();
         os.write((const char*)&len, sizeof(len));
         os.write((const char*)&data_[0], sizeof(value_type) * len);
@@ -366,9 +366,9 @@ protected:
 };
 
 template <>
-inline bool NumericRangePropertyTable<int64_t>::getStringValue(std::size_t pos, std::string& value) const
+inline bool NumericRangePropertyTable<int64_t>::getStringValue(std::size_t pos, std::string& value, bool isLock) const
 {
-    ReadLock lock(mutex_);
+    ScopedReadBoolLock lock(mutex_, isLock);
     if (pos >= data_.size() || data_[pos] == invalidValue_)
         return false;
 
@@ -404,9 +404,9 @@ inline bool NumericRangePropertyTable<int64_t>::getStringValue(std::size_t pos, 
 }
 
 template <>
-inline bool NumericRangePropertyTable<float>::getStringValue(std::size_t pos, std::string& value) const
+inline bool NumericRangePropertyTable<float>::getStringValue(std::size_t pos, std::string& value, bool isLock) const
 {
-    ReadLock lock(mutex_);
+    ScopedReadBoolLock lock(mutex_, isLock);
     if (pos >= data_.size() || data_[pos] == invalidValue_)
         return false;
 
@@ -427,9 +427,9 @@ inline bool NumericRangePropertyTable<float>::getStringValue(std::size_t pos, st
 }
 
 template <>
-inline bool NumericRangePropertyTable<int8_t>::getStringValue(std::size_t pos, std::string& value) const
+inline bool NumericRangePropertyTable<int8_t>::getStringValue(std::size_t pos, std::string& value, bool isLock) const
 {
-    ReadLock lock(mutex_);
+    ScopedReadBoolLock lock(mutex_, isLock);
     if (pos >= data_.size() || data_[pos] == invalidValue_)
         return false;
 

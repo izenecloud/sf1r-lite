@@ -12,10 +12,10 @@
 #define SF1R_ATTR_TABLE_H_
 
 #include <common/inttypes.h>
+#include <common/PropSharedLock.h>
 #include <util/ustring/UString.h>
 #include "../faceted-submanager/faceted_types.h"
 #include "../group-manager/PropIdTable.h"
-#include "../group-manager/PropSharedLock.h"
 
 #include <vector>
 #include <string>

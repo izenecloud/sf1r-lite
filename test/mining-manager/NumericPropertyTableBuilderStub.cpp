@@ -17,9 +17,13 @@ void createPropertyData(
         const std::string& propName,
         boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable)
 {
-    typename NumericPropertyTableBuilderStub::PropertyMap<T>::table_type& propTable = propMap[propName];
-    if (!numericPropertyTable)
-        numericPropertyTable.reset(new NumericPropertyTable<T>(type));
+    if (numericPropertyTable)
+        return;
+
+    numericPropertyTable.reset(new NumericPropertyTable<T>(type));
+    typename NumericPropertyTableBuilderStub::PropertyMap<T>::table_type&
+        propTable = propMap[propName];
+
     std::size_t num = propTable.size();
     numericPropertyTable->resize(num);
     void* data = numericPropertyTable->getValueList();
@@ -173,6 +177,11 @@ void NumericPropertyTableBuilderStub::insertPropMap_(
     default:
         break;
     }
+}
+
+void NumericPropertyTableBuilderStub::clearTableMap()
+{
+    numericPropertyTableMap_.clear();
 }
 
 }

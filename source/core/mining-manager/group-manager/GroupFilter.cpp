@@ -5,11 +5,11 @@
 #include "GroupLabel.h"
 #include "GroupCounterLabelBuilder.h"
 #include "GroupRep.h"
-#include "PropSharedLockSet.h"
 #include "../faceted-submanager/ontology_rep.h"
 #include "../attr-manager/AttrTable.h"
 #include "../attr-manager/AttrCounter.h"
 #include "../attr-manager/AttrLabel.h"
+#include <common/PropSharedLockSet.h>
 #include <util/ClockTimer.h>
 
 #include <glog/logging.h>

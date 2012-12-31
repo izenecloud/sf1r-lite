@@ -8,10 +8,10 @@
 #ifndef SF1R_PROP_SHARED_LOCK_SET_H
 #define SF1R_PROP_SHARED_LOCK_SET_H
 
-#include "../faceted-submanager/faceted_types.h"
 #include <set>
 
-NS_FACETED_BEGIN
+namespace sf1r
+{
 class PropSharedLock;
 
 class PropSharedLockSet
@@ -26,6 +26,6 @@ private:
     SharedLockSetT sharedLockSet_;
 };
 
-NS_FACETED_END
+} // namespace sf1r
 
 #endif // SF1R_PROP_SHARED_LOCK_SET_H

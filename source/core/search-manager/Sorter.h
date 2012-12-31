@@ -25,6 +25,7 @@ namespace sf1r
 class DocumentManager;
 class IndexManager;
 class IndexBundleConfiguration;
+class PropSharedLockSet;
 
 namespace faceted
 {
@@ -121,7 +122,9 @@ public:
         dirty_ = dirty;
     }
 
-    SortPropertyComparator* getComparator(SortProperty* pSortProperty);
+    SortPropertyComparator* getComparator(
+        SortProperty* pSortProperty,
+        PropSharedLockSet& propSharedLockSet);
 
     boost::shared_ptr<NumericPropertyTableBase>& getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType);
 
@@ -207,7 +210,7 @@ public:
 
     ///This interface would be called after an instance of Sorter is established, it will generate SortPropertyComparator
     /// for internal usage
-    void getComparators();
+    void getComparators(PropSharedLockSet& propSharedLockSet);
 
 private:
     SortPropertyCache* pCache_;
