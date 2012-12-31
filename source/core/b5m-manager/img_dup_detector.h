@@ -95,6 +95,9 @@ namespace sf1r {
         std::map<std::string, uint32_t> url_docid_key_;
         std::map<uint32_t, std::string> url_key_docid_;
         uint32_t url_key_;
+
+        std::map<uint32_t, UString> key_con_map_;
+        std::map<uint32_t, UString> key_url_map_;
     };
 }
 

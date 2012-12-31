@@ -75,6 +75,10 @@ bool ImgDupDetector::ClearHistoryCon()
         con_docid_key_.clear();
     if( !(con_key_docid_.empty()) )
         con_key_docid_.clear();
+    if( !(key_con_map_.empty()) )
+        key_con_map_.clear();
+    if( !(key_url_map_.empty()) )
+        key_url_map_.clear();
     con_key_ = 0;
     return true;
 }
@@ -85,6 +89,10 @@ bool ImgDupDetector::ClearHistoryUrl()
         url_docid_key_.clear();
     if( !(url_key_docid_.empty()) )
         url_key_docid_.clear();
+    if( !(key_con_map_.empty()) )
+        key_con_map_.clear();
+    if( !(key_url_map_.empty()) )
+        key_url_map_.clear();
     url_key_ = 0;
     return true;
 }
@@ -121,7 +129,7 @@ bool ImgDupDetector::DupDetectorMain()
     ImgDupDetector::SetPath();
     ImgDupDetector::ClearHistory();
 
-    if(log_info_)
+    if(log_info_ || !log_info_)
     {
         if(incremental_mode_)
             LOG(INFO) << "The image dd server works in incremental mode! " << std::endl;
@@ -299,7 +307,12 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         }
         psm.Insert(url_key_, doc_vector, attach);
         url_docid_key_[docID] = url_key_;
-        url_key_docid_[url_key_] = docID;
+        if(log_info_ && !log_info_)
+        {
+            url_key_docid_[url_key_] = docID;
+            key_url_map_[url_key_] = doc["Img"];
+            key_con_map_[url_key_] = doc["Content"];
+        }
         url_key_++;
     }
 
@@ -335,7 +348,12 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         }
         psm.Insert(url_key_, doc_vector, attach);
         url_docid_key_[docID] = url_key_;
-        url_key_docid_[url_key_] = docID;
+        if(log_info_ && !log_info_)
+        {
+            url_key_docid_[url_key_] = docID;
+            key_url_map_[url_key_] = doc["Img"];
+            key_con_map_[url_key_] = doc["Content"];
+        }
         url_key_++;
     }
 
@@ -390,7 +408,12 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         }
         psm.Insert(con_key_, doc_vector, attach);
         con_docid_key_[docID] = con_key_;
-        con_key_docid_[con_key_] = docID;
+        if(log_info_)
+        {
+            con_key_docid_[con_key_] = docID;
+            key_con_map_[con_key_] = doc["Content"];
+            key_url_map_[con_key_] = doc["Img"];
+        }
         con_key_++;
     }
 
@@ -426,7 +449,12 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         }
         psm.Insert(con_key_, doc_vector, attach);
         con_docid_key_[docID] = con_key_;
-        con_key_docid_[con_key_] = docID;
+        if(log_info_)
+        {
+            con_key_docid_[con_key_] = docID;
+            key_con_map_[con_key_] = doc["Content"];
+            key_url_map_[con_key_] = doc["Img"];
+        }
         con_key_++;
     }
 
@@ -490,6 +518,28 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
         else
         {
             /****Matches****/
+            if(log_info_ && !log_info_)
+            {
+                std::string current_url;
+                std::string current_content;
+                std::string match_url;
+                std::string match_content;
+                doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
+                doc["Content"].convertString(current_content, izenelib::util::UString::UTF_8);
+                key_url_map_[match_key].convertString(match_url, izenelib::util::UString::UTF_8);
+                key_con_map_[match_key].convertString(match_content, izenelib::util::UString::UTF_8);
+
+
+                LOG(INFO)<<std::endl<<"DOCID: "<<docID
+                         <<std::endl<<"ImgUrl: "<<current_url
+                         <<std::endl<<"Content: "<<current_content
+                         <<std::endl<<std::endl<<"DOCID: "<<url_key_docid_[match_key]
+                         <<std::endl<<"ImgUrl: "<<match_url
+                         <<std::endl<<"Content: "<<match_content
+                         <<std::endl<<"Image URL Matches "<<std::endl<<std::endl<<std::endl;
+
+
+            }
         }
     }
     LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<< std::endl;
@@ -547,6 +597,29 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         else
         {
             /****Matches****/
+            if(log_info_)
+            {
+                std::string current_url;
+                std::string current_content;
+                std::string match_url;
+                std::string match_content;
+                doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
+                doc["Content"].convertString(current_content, izenelib::util::UString::UTF_8);
+                key_url_map_[match_key].convertString(match_url, izenelib::util::UString::UTF_8);
+                key_con_map_[match_key].convertString(match_content, izenelib::util::UString::UTF_8);
+
+
+                LOG(INFO)<<std::endl<<"DOCID: "<<docID
+                         <<std::endl<<"ImgUrl: "<<current_url
+                         <<std::endl<<"Content: "<<current_content
+                         <<std::endl<<std::endl<<"DOCID: "<<con_key_docid_[match_key]
+                         <<std::endl<<"ImgUrl: "<<match_url
+                         <<std::endl<<"Content: "<<match_content
+                         <<std::endl<<"Image URL Matches "<<std::endl<<std::endl<<std::endl;
+
+
+            }
+
         }
     }
     LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<< std::endl;
