@@ -582,19 +582,19 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        ProductMatcher::Clear(knowledge_dir, mode);
+        //ProductMatcher::Clear(knowledge_dir, mode);
         ProductMatcher matcher;
         matcher.SetCmaPath(cma_path);
-        if(!matcher.Open(knowledge_dir))
-        {
-            LOG(ERROR)<<"matcher open failed"<<std::endl;
-            return EXIT_FAILURE;
-        }
+        //if(!matcher.Open(knowledge_dir))
+        //{
+            //LOG(ERROR)<<"matcher open failed"<<std::endl;
+            //return EXIT_FAILURE;
+        //}
         //if(!category_group.empty()&&boost::filesystem::exists(category_group))
         //{
             //matcher.LoadCategoryGroup(category_group);
         //}
-        if(!matcher.Index(knowledge_dir, scd_path))
+        if(!matcher.Index(knowledge_dir, scd_path, mode))
         {
             return EXIT_FAILURE;
         }
