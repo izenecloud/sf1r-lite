@@ -19,17 +19,25 @@
 
 #include <fstream>
 #include <boost/date_time/posix_time/posix_time.hpp>
-
+#include <boost/asio.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <fastcgi++/request.hpp>
 #include <fastcgi++/manager.hpp>
 #include <string>
 #include <net/sf1r/Sf1DriverBase.hpp>
 #include <net/sf1r/Sf1Driver.hpp>
 #include <net/sf1r/distributed/Sf1DistributedDriver.hpp>
+#include <3rdparty/rapidjson/document.h>
+#include <3rdparty/rapidjson/stringbuffer.h>
+#include <3rdparty/rapidjson/writer.h>
 
 using namespace std;
 using namespace izenelib::net::sf1r;
 using namespace boost::posix_time;
+using boost::asio::ip::udp;
+
+namespace rj = rapidjson;
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
 void error_log(const std::string& msg)
@@ -100,6 +108,34 @@ class Sf1rProcess: public Fastcgipp::Request<char>
         assert(driver);
         try
         {
+            std::string log_content;
+            rj::Document document;
+            rj::Document::AllocatorType& allocator = document.GetAllocator();
+            document.SetObject();
+            rj::Value& top = document;
+            rj::Value tag(log_tag.c_str(), log_tag.length(), allocator);
+            top.AddMember("tag", tag, allocator);
+            rj::Value request_body(body.c_str(), body.length(), allocator);
+            top.AddMember("request", request_body, allocator);
+            rj::Value request_uri(requri.c_str(), requri.length(), allocator);
+            top.AddMember("uri", request_uri, allocator);
+            std::string time_str = to_simple_string(microsec_clock::local_time());
+            rj::Value msec(time_str.c_str(), time_str.length(), allocator);
+            top.AddMember("msec", msec, allocator);
+
+            rj::StringBuffer stream;
+            rj::Writer<rj::StringBuffer> writer(stream);
+            document.Accept(writer);
+            log_content.assign(stream.GetString(), stream.GetSize());
+            boost::system::error_code ec;
+            s.send_to(boost::asio::buffer(log_content.data(), log_content.size()),
+                destination, 0, ec);
+
+            if(ec)
+            {
+                error_log("send log to fluentd failed.");
+            }
+
             response = driver->call(requri, tokens, body);
         }
         catch (ClientError& e) {
@@ -131,28 +167,42 @@ class Sf1rProcess: public Fastcgipp::Request<char>
 	}
 public:
     static Sf1DriverBase* driver;
+    static boost::asio::io_service io_service;
+    static boost::asio::ip::udp::endpoint destination;
+    static udp::socket s;
+    static std::string log_tag;
 };
 
 Sf1DriverBase* Sf1rProcess::driver = NULL;
+boost::asio::io_service Sf1rProcess::io_service;
+udp::socket Sf1rProcess::s(Sf1rProcess::io_service);
+boost::asio::ip::udp::endpoint Sf1rProcess::destination;
+std::string Sf1rProcess::log_tag;
+
 
 int main(int argc, char* argv[])
 {
 	try
 	{
-        std::string host( "180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" );
-        if(argc > 1)
+        if (argc < 5)
         {
-            host = argv[1];
+            error_log("arg not enough. sf1rhost:sf1rport fluent_ip fluent_port fluent_tag ");
+            return -1;
         }
+        std::string host( "180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" );
+        host = argv[1];
+        std::string fluent_ip = argv[2];
+        std::string fluent_port = argv[3];
+        Sf1rProcess::log_tag = argv[4];
         std::string distributed;
-        if(argc > 2) 
+        if(argc > 5) 
         {
-            distributed = argv[2];
+            distributed = argv[5];
         }
         std::string match_master;
-        if (argc > 3)
+        if (argc > 6)
         {
-            match_master = argv[3];
+            match_master = argv[6];
         }
         if(distributed.empty())
         {
@@ -176,6 +226,9 @@ int main(int argc, char* argv[])
             error_log("config as distributed sf1r node");
         }
 
+        Sf1rProcess::destination.address(boost::asio::ip::address::from_string(fluent_ip));
+        Sf1rProcess::destination.port(boost::lexical_cast<unsigned short>(fluent_port));
+        Sf1rProcess::s.open(udp::v4());
 		// First we make a Fastcgipp::Manager object, with our request handling class
 		// as a template parameter.
 		Fastcgipp::Manager<Sf1rProcess> fcgi;
