@@ -204,6 +204,8 @@ int main(int argc, char* argv[])
         {
             match_master = argv[6];
         }
+        error_log("args:" + host + "," + fluent_ip + "," + fluent_port + "," + Sf1rProcess::log_tag +
+            "," + distributed + "," + match_master);
         if(distributed.empty())
         {
             Sf1Config conf;
