@@ -119,7 +119,10 @@ class Sf1rProcess: public Fastcgipp::Request<char>
             top.AddMember("request", request_body, allocator);
             rj::Value request_uri(requri.c_str(), requri.length(), allocator);
             top.AddMember("uri", request_uri, allocator);
-            std::string time_str = to_simple_string(microsec_clock::local_time());
+            static ptime epoch(boost::gregorian::date(1970, 1, 1));
+            ptime current_time = microsec_clock::universal_time();
+            time_duration td = current_time - epoch;
+            std::string time_str = boost::lexical_cast<std::string>(double(td.total_milliseconds())/1000);
             rj::Value msec(time_str.c_str(), time_str.length(), allocator);
             top.AddMember("msec", msec, allocator);
 
