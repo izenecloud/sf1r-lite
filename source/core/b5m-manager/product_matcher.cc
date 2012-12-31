@@ -484,8 +484,6 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         SetIndexDone_(kpath, false);
         std::string bdb_path = kpath+"/bdb";
         B5MHelper::PrepareEmptyDir(bdb_path);
-        std::string odb_path = kpath+"/odb";
-        B5MHelper::PrepareEmptyDir(odb_path);
     }
     path_ = kpath;
     if(IsIndexDone_(path_))
