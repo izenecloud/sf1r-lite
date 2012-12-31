@@ -412,9 +412,9 @@ namespace sf1r {
         ~ProductMatcher();
         bool IsOpen() const;
         bool Open(const std::string& path);
-        static void Clear(const std::string& path, int mode=3);
+        //static void Clear(const std::string& path, int mode=3);
         static std::string GetVersion(const std::string& path);
-        bool Index(const std::string& path, const std::string& scd_path);
+        bool Index(const std::string& path, const std::string& scd_path, int mode);
         void Test(const std::string& scd_path);
         bool DoMatch(const std::string& scd_path);
         bool Process(const Document& doc, Product& result_product);
@@ -432,7 +432,16 @@ namespace sf1r {
         void SetUsePriceSim(bool sim)
         { use_price_sim_ = sim; }
 
+        static std::string MatcherOnlyPropertyName()
+        {
+            static const std::string p("matcher_only");
+            return p;
+        }
+
     private:
+        static void SetIndexDone_(const std::string& path, bool b);
+        static bool IsIndexDone_(const std::string& path);
+        void Init_();
         bool PriceMatch_(double p1, double p2);
         double PriceSim_(double offerp, double spup);
         void Analyze_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
@@ -456,6 +465,7 @@ namespace sf1r {
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
         void GetKeywordVector_(const TermList& term_list, KeywordVector& keyword_vector);
+        bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
         void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
 
@@ -500,31 +510,29 @@ namespace sf1r {
         std::string cma_path_;
         bool use_price_sim_;
         idmlib::sim::StringSimilarity string_similarity_;
-        std::vector<Product> products_;
-        term_t tid_;
         AttributeIdManager* aid_manager_;
         IdManager id_manager_;
         idmlib::util::IDMAnalyzer* analyzer_;
         idmlib::util::IDMAnalyzer* char_analyzer_;
         idmlib::util::IDMAnalyzer* chars_analyzer_;
-        std::vector<std::string> keywords_thirdparty_;
-        KeywordSet not_keywords_;
         std::string test_docid_;
         std::string left_bracket_;
         std::string right_bracket_;
         term_t left_bracket_term_;
         term_t right_bracket_term_;
+        std::vector<Product> products_;
+        std::vector<std::string> keywords_thirdparty_;
+        KeywordSet not_keywords_;
         std::vector<Category> category_list_;
         std::vector<IdList> cid_to_pids_;
         CategoryIndex category_index_;
         ProductIndex product_index_;
         KeywordSet keyword_set_;
         TrieType trie_;
-        KeywordVector keyword_vector_;
         Back2Front back2front_;
 
         const static double optional_weight_ = 0.2;
-        const static std::string VERSION;
+        const static std::string AVERSION;
         
     };
 
