@@ -276,7 +276,7 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
                 termIndexMaps[i]
             );
         else
-            prepare_for_virtual_property_new(
+            prepare_for_virtual_property_(
                 docIterPtr.get(),
                 success_properties,
                 actionOperation,
@@ -594,7 +594,7 @@ void QueryBuilder::post_prepare_ranker_(
     }
 }
 
-void QueryBuilder::prepare_for_virtual_property_new(
+void QueryBuilder::prepare_for_virtual_property_(
     MultiPropertyScorer* pScorer,
     size_t & success_properties,
     const SearchKeywordOperation& actionOperation,
@@ -605,7 +605,7 @@ void QueryBuilder::prepare_for_virtual_property_new(
     const property_weight_map& propertyWeightMap
     )
 {
-    LOG(INFO)<<"start prepare_for_virtual_property_new"<<endl;
+    LOG(INFO)<<"start prepare_for_virtual_property_"<<endl;
     QueryTreePtr queryTree;
     if (! actionOperation.getQueryTree(properyConfig.getName(), queryTree) ) 
         return;
@@ -666,104 +666,6 @@ void QueryBuilder::prepare_for_virtual_property_new(
     {
         pScorer->add(properyConfig.getPropertyId(), pIter);
         success_properties++;
-    }
-}
-
-void QueryBuilder::prepare_for_virtual_property_(
-    MultiPropertyScorer* pScorer,
-    size_t & success_properties,
-    const SearchKeywordOperation& actionOperation,
-    collectionid_t colID,
-    const PropertyConfig& properyConfig, //virtual property config
-    bool readPositions,
-    const std::map<termid_t, unsigned>& termIndexMapInProperty,
-    const property_weight_map& propertyWeightMap
-)
-{
-    QueryTreePtr queryTree;
-    if (! actionOperation.getQueryTree(properyConfig.getName(), queryTree) ) return;
-
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator schema_iterator;
-    DocumentIterator* pIter = NULL;
-    std::map<termid_t, VirtualPropertyTermDocumentIterator* > virtualTermIters;
-
-    std::vector<pair<termid_t, string> > termList;
-    actionOperation.getQueryTermInfoList(properyConfig.getName(), termList);
-    std::sort(termList.begin(), termList.end());
-
-    for(unsigned j = 0; j < properyConfig.subProperties_.size(); ++j)
-    {
-        schema_iterator p = schemaMap_.find(properyConfig.subProperties_[j]);
-        if(p != schemaMap_.end())
-        {
-            std::map<termid_t, std::vector<TermDocFreqs*> > termDocReaders;
-            bool isNumericFilter = false;
-            prefetch_term_doc_readers_(termList,colID,p->second,readPositions,isNumericFilter,termDocReaders);
-            do_prepare_for_property_(
-                queryTree,
-                colID,
-                p->second.getName(),
-                p->second.getPropertyId(),
-                p->second.getType(),
-                isNumericFilter,
-                readPositions,
-                termIndexMapInProperty,
-                pIter,
-                virtualTermIters,
-                termDocReaders,
-                actionOperation.hasUnigramProperty_,
-                actionOperation.isUnigramSearchMode_,
-                properyConfig.getName()
-            );
-            for (std::map<termid_t, std::vector<TermDocFreqs*> >::iterator
-                    it = termDocReaders.begin(); it != termDocReaders.end(); ++it)
-            {
-                for (size_t j =0; j<it->second.size(); j ++ )
-                {
-                    delete it->second[j];
-                }
-                it->second.clear();
-            }
-        }
-    }
-    if(pIter)
-    {
-        size_t indexSubPropertySize = properyConfig.subProperties_.size();
-        std::vector<propertyid_t> indexSubPropertyIdList(indexSubPropertySize);
-        std::transform(
-            properyConfig.subProperties_.begin(),
-            properyConfig.subProperties_.end(),
-            indexSubPropertyIdList.begin(),
-            boost::bind(&QueryBuilder::getPropertyIdByName, this, _1)
-        );
-        VirtualPropertyScorer* pVirtualScorer = new VirtualPropertyScorer(propertyWeightMap, indexSubPropertyIdList);
-        pVirtualScorer->add(pIter);
-
-        sf1r::TextRankingType& pTextRankingType = actionOperation.actionItem_.rankingType_;
-        // references for property term info
-        const property_term_info_map& propertyTermInfoMap =
-            actionOperation.getPropertyTermInfoMap();
-
-        DocumentFrequencyInProperties dfmap;
-        CollectionTermFrequencyInProperties ctfmap;
-        MaxTermFrequencyInProperties maxtfmap;
-        rankingManagerPtr_->createPropertyRankers(pTextRankingType, indexSubPropertySize, pVirtualScorer->propertyRankers_);
-
-        bool readTermPosition = pVirtualScorer->propertyRankers_[0]->requireTermPosition();
-        pIter->df_cmtf(dfmap, ctfmap, maxtfmap);
-        post_prepare_ranker_(
-            properyConfig.getName(),
-            properyConfig.subProperties_,
-            indexSubPropertySize,
-            propertyTermInfoMap,
-            dfmap,
-            ctfmap,
-            maxtfmap,
-            readTermPosition,
-            pVirtualScorer->rankQueryProperties_,
-            pVirtualScorer->propertyRankers_);
-        pScorer->add(properyConfig.getPropertyId(), pVirtualScorer);
-        ++success_properties;
     }
 }
 

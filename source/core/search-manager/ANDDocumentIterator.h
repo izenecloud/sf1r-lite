@@ -146,9 +146,9 @@ inline bool ANDDocumentIterator::move_together_with_not()
         {
             currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currDoc_);
             if (currDoc_ == currDocOfNOTIter_)
-                    return move_together_with_not();
-                else
-                    return ret;
+                return move_together_with_not();
+            else
+                return ret;
         }
     }
     return ret;

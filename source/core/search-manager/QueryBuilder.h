@@ -135,7 +135,7 @@ private:
         size_t & success_properties,
         const SearchKeywordOperation& actionOperation,
         collectionid_t colID,
-        const PropertyConfig& properyConfig,
+        const PropertyConfig& properyConfig, //virtual property config
         bool readPositions,
         const std::map<termid_t, unsigned>& termIndexMapInProperty,
         const property_weight_map& propertyWeightMap
@@ -156,18 +156,7 @@ private:
         bool isUnigramSearchMode,
         int parentAndOrFlag = 0
     );
-
-    void prepare_for_virtual_property_new(
-        MultiPropertyScorer* pScorer,
-        size_t & success_properties,
-        const SearchKeywordOperation& actionOperation,
-        collectionid_t colID,
-        const PropertyConfig& properyConfig, //virtual property config
-        bool readPositions,
-        const std::map<termid_t, unsigned>& termIndexMapInProperty,
-        const property_weight_map& propertyWeightMap
-    );
-    
+   
     void prepare_for_wand_property_(
         WANDDocumentIterator* pWandScorer,
         size_t & success_properties,
