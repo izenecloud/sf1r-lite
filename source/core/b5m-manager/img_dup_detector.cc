@@ -175,6 +175,7 @@ bool ImgDupDetector::DupDetectorMain()
             {
                 std::string filename = std::string(event->name);
                 BeginToDupDetect(filename);
+                LOG(INFO)<<"Finish processing: "<<filename<<std::endl;
             }
             index += sizeof(struct inotify_event)+event->len;
         }
