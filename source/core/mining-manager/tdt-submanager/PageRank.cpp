@@ -259,7 +259,10 @@ PageRank::~PageRank()
 
 void PageRank::InitMap()
 {
+
     set<int>::const_iterator citr = SubGraph_.begin();
+    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
+    cout<<"Init"<<time_now<<endl;
     for (; citr != SubGraph_.end(); ++citr)
     {
            // cout<<"Link in"<<(*citr)<<endl;
@@ -289,6 +292,20 @@ void PageRank::InitMap()
            
            }
            */
+           vector<uint64_t> ret;
+
+           wa_.QuantileRangeAll(node->offStart, node->offStop, ret);
+           for(unsigned i=0;i<ret.size();i++)
+           {
+                int index=ret[i];
+                if(SubGraph_.find(index)!=SubGraph_.end())
+                {
+                     linkin.push_back(index);
+                     
+                }
+           }
+
+           /*
            for(unsigned i=node->offStart;i<=node->offStop;i++)
            {
                 int index=wa_.Lookup(i);
@@ -298,7 +315,7 @@ void PageRank::InitMap()
                      
                 }
            }
-
+           */
            CalText temp;
            temp.linkin_=linkin;
            temp.pr_=1.0;
@@ -308,6 +325,8 @@ void PageRank::InitMap()
            //node->PrintNode();
            //cout<<"innumber"<<iN<<endl;
     }
+    time_now = boost::posix_time::microsec_clock::local_time();
+    cout<<"End"<<time_now<<endl;
     citr = SubGraph_.begin();
     for (; citr != SubGraph_.end(); ++citr)
     {
