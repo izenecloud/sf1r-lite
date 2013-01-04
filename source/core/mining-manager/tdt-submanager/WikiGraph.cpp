@@ -26,9 +26,10 @@ WikiGraph::WikiGraph(const string& wiki_path,cma::OpenCC* opencc)
     init();
     //sort(nodes_.begin(),nodes_end(),NodeCmpOperator);
 
-    cout<<"simplifyTitle...."<<endl;
-    simplifyTitle();
-    //  flush();
+    //cout<<"simplifyTitle...."<<endl;
+    //cout<<"蘋果 喬布斯"<<endl;
+    //simplifyTitle();
+    flush();
     cout<<"buildMap...."<<endl;
     BuildMap();
     cout<<"SetAdvertise...."<<endl;
@@ -37,6 +38,7 @@ WikiGraph::WikiGraph(const string& wiki_path,cma::OpenCC* opencc)
     //cout<<"title2id"<<title2id.size()<<endl;
     InitOutLink();
     //test();
+
     //pr_.PrintPageRank(nodes_);
     //InitGraph();
     // flush();
@@ -93,7 +95,7 @@ void WikiGraph::init()
 void WikiGraph::flush()
 {
     if (path_.empty()) return;
-    std::ofstream ofs(path_.c_str());
+    std::ofstream ofs("wikigraph");
     if (ofs) save(ofs);
     ofs.close();
 }
@@ -115,7 +117,7 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
     SetContentBias(relativeWords,pr,NotInGraph);
 
     //pr_.PrintPageRank(nodes_);
-   // cout<<"SubGraph size"<<SubGraph.size()<<endl;
+    //cout<<"SubGraph size"<<SubGraph.size()<<endl;
     //cout<<"CalPageRank"<<endl;
     CalPageRank(pr);
     //cout<<"finish"<<endl;

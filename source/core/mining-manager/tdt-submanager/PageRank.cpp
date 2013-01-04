@@ -18,9 +18,10 @@ std::ostream& operator<<(std::ostream &f, const Node &node)
     //ReadLock lock(mutex_);
     f.write((const char*)&node.id_, sizeof(node.id_));
     f.write((const char*)&node.outNumber_, sizeof(node.outNumber_));
-    size_t len=sizeof(node.name_[0])*(node.name_.size()+1);
+    size_t len=sizeof(node.name_[0])*(node.name_.size());
+   // cout<<node.name_<<endl;
     f.write((const char*)&len, sizeof(len));
-    f.write((const char*)&node.name_[0], sizeof(node.name_[0])*(node.name_.size()+1) );
+    f.write((const char*)&node.name_[0], sizeof(node.name_[0])*(node.name_.size()) );
 
     len=node.linkin_index_.size();
     f.write((const char*)&len, sizeof(len));
@@ -79,6 +80,7 @@ void simplify(Node &node, cma::OpenCC* opencc)
     std::string simplified_content;
     long ret = opencc->convert(lowercase_content, simplified_content);
     if(-1 == ret) simplified_content = lowercase_content;
+    //if(node.name_!=simplified_content){cout<<node.name_<<simplified_content<<"endtag"<<endl;}
     node.name_=simplified_content;
 }
 
