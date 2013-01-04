@@ -267,7 +267,8 @@ bool ProductMatcher::KeywordTag::Combine(const KeywordTag& another)
 }
 
 ProductMatcher::ProductMatcher()
-:is_open_(false), use_price_sim_(true),
+:is_open_(false), 
+ use_price_sim_(true), matcher_only_(false), category_max_depth_(0),
  aid_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL), chars_analyzer_(NULL),
  test_docid_("7bc999f5d10830d0c59487bd48a73cae"),
  left_bracket_("("), right_bracket_(")"),
@@ -1549,6 +1550,20 @@ uint32_t ProductMatcher::GetCidBySpuId_(uint32_t spu_id)
     return category_index_[scategory];
 }
 
+uint32_t ProductMatcher::GetCidByMaxDepth_(uint32_t cid)
+{
+    while(true)
+    {
+        const Category& c = category_list_[cid];
+        if(c.depth<=category_max_depth_)
+        {
+            return cid;
+        }
+        cid = c.parent_cid;
+    }
+    return 0;
+}
+
 bool ProductMatcher::EqualOrIsParent_(uint32_t parent, uint32_t child) const
 {
     uint32_t cid = child;
@@ -1581,6 +1596,7 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
     }
     SimObject title_obj;
     string_similarity_.Convert(title, title_obj);
+    bool matcher_only = matcher_only_;
     uint32_t given_cid = 0;
     UString given_category;
     doc.getProperty("Category", given_category);
@@ -1594,10 +1610,9 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             given_cid = it->second;
         }
     }
-    bool matcher_only = false;
-    if(doc.hasProperty(MatcherOnlyPropertyName()))
+    else
     {
-        matcher_only = true;
+        matcher_only = false;
     }
     if(matcher_only && given_cid==0) return;
     //std::string soid;
@@ -1874,12 +1889,17 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
     
     bool match_found = false;
     uint32_t i=0;
+    double score_limit = 0.9;
+    if(limit>1)
+    {
+        score_limit = 0.6;
+    }
     for(;i<result_vector.size();i++)
     {
         uint32_t spu_id = result_vector[i].spu_id;
         const Product& p = products_[spu_id];
         double score = result_vector[i].score;
-        if(i>=MAX_CANDIDATE_RESULT||score<max_score*0.9) break;
+        if(i>=MAX_CANDIDATE_RESULT||score<max_score*score_limit) break;
         const WeightType& weight = result_vector[i].weight;
         //double paweight = result_vector[i].paweight;
 #ifdef B5M_DEBUG
@@ -1891,7 +1911,14 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
 #ifdef B5M_DEBUG
             std::cerr<<"[MATCHED]"<<std::endl;
 #endif
-            result_products.resize(1,p);
+            Product matched_p(p);
+            if(category_max_depth_>0)
+            {
+                matched_p.cid = GetCidByMaxDepth_(matched_p.cid);
+                if(matched_p.cid==0) continue;
+                matched_p.scategory = category_list_[matched_p.cid].name;
+            }
+            result_products.resize(1,matched_p);
             match_found = true;
             break;
         }
@@ -1901,6 +1928,7 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
     if(result_vector.empty()) return;
     if(!match_found)
     {
+        boost::unordered_set<uint32_t> cid_set;
         for(uint32_t r=0;r<result_vector.size();r++)
         {
             if(result_products.size()>=limit) break;
@@ -1909,6 +1937,13 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             uint32_t spu_id = item.spu_id;
             const Product& p = products_[spu_id];
             uint32_t cid = item.cid;
+            if(category_max_depth_>0)
+            {
+                cid = GetCidByMaxDepth_(cid);
+                if(cid==0) continue;
+                if(cid_set.find(cid)!=cid_set.end()) continue;
+                cid_set.insert(cid);
+            }
             const WeightType& weight = item.weight;
             if(weight.brand_match)
             {
