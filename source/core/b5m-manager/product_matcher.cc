@@ -1889,12 +1889,17 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
     
     bool match_found = false;
     uint32_t i=0;
+    double score_limit = 0.9;
+    if(limit>1)
+    {
+        score_limit = 0.6;
+    }
     for(;i<result_vector.size();i++)
     {
         uint32_t spu_id = result_vector[i].spu_id;
         const Product& p = products_[spu_id];
         double score = result_vector[i].score;
-        if(i>=MAX_CANDIDATE_RESULT||score<max_score*0.9) break;
+        if(i>=MAX_CANDIDATE_RESULT||score<max_score*score_limit) break;
         const WeightType& weight = result_vector[i].weight;
         //double paweight = result_vector[i].paweight;
 #ifdef B5M_DEBUG

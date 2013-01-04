@@ -649,10 +649,11 @@ int do_main(int ac, char** av)
         else
         {
             matcher.SetUsePriceSim(false);
-            std::cerr<<"input text:"<<std::endl;
-            std::string line;
-            while( getline(std::cin, line) )
+            while(true)
             {
+                std::string line;
+                std::cerr<<"input text:"<<std::endl;
+                getline(std::cin, line);
                 boost::algorithm::trim(line);
                 Document doc;
                 doc.property("Title") = UString(line, UString::UTF_8);
