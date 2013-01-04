@@ -141,7 +141,33 @@ private:
         const property_weight_map& propertyWeightMap
     );
 
+    bool do_prepare_for_virtual_property_(
+        QueryTreePtr& queryTree, 
+        collectionid_t colID,
+        const std::vector<std::string>& properties,
+        std::vector<unsigned int>& propertyIds,
+        std::vector<PropertyDataType>& propertyDataTypes,
+        bool isNumericFilter,
+        bool isReadPosition,
+        std::map<termid_t, unsigned> termIndexMap,
+        DocumentIteratorPointer& pDocIterator,
+        std::vector<std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> > >& termDocReadersList,
+        bool hasUnigramProperty,
+        bool isUnigramSearchMode,
+        int parentAndOrFlag = 0
+    );
 
+    void prepare_for_virtual_property_new(
+        MultiPropertyScorer* pScorer,
+        size_t & success_properties,
+        const SearchKeywordOperation& actionOperation,
+        collectionid_t colID,
+        const PropertyConfig& properyConfig, //virtual property config
+        bool readPositions,
+        const std::map<termid_t, unsigned>& termIndexMapInProperty,
+        const property_weight_map& propertyWeightMap
+    );
+    
     void prepare_for_wand_property_(
         WANDDocumentIterator* pWandScorer,
         size_t & success_properties,

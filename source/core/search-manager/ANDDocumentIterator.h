@@ -117,17 +117,40 @@ protected:
 
 inline bool ANDDocumentIterator::move_together_with_not()
 {
-    bool ret;
-    do
+    bool ret = true;
+
+    while(1)
     {
         ret = do_next();
-//        currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currDoc_);
+        if (!ret)
+        {
+            return false;
+        }
+
         if (pNOTDocIterator_->next())
+        {
             currDocOfNOTIter_ = pNOTDocIterator_->doc();
+        }
         else
             currDocOfNOTIter_ = MAX_DOC_ID;
+
+        if (currDoc_ < currDocOfNOTIter_)
+        {
+            break;
+        }
+        else if (currDoc_ == currDocOfNOTIter_)
+        {
+            continue;
+        }
+        else
+        {
+            currDocOfNOTIter_ = pNOTDocIterator_->skipTo(currDoc_);
+            if (currDoc_ == currDocOfNOTIter_)
+                    return move_together_with_not();
+                else
+                    return ret;
+        }
     }
-    while (ret&&(currDoc_ == currDocOfNOTIter_));
     return ret;
 }
 
