@@ -32,6 +32,8 @@ public:
 
     bool insertDocument(const Document& doc);
 
+    void clearTableMap();
+
 private:
     PropertyDataType getPropertyType_(const std::string& prop) const;
 

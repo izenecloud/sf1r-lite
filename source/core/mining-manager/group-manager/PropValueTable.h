@@ -11,7 +11,7 @@
 #define SF1R_PROP_VALUE_TABLE_H_
 
 #include <common/inttypes.h>
-#include "PropSharedLock.h"
+#include <common/PropSharedLock.h>
 #include "PropIdTable.h"
 #include "../faceted-submanager/faceted_types.h"
 

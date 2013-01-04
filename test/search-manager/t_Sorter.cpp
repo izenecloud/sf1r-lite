@@ -8,6 +8,7 @@
 #include <search-manager/Sorter.h>
 #include <search-manager/HitQueue.h>
 #include <common/NumericPropertyTable.h>
+#include <common/PropSharedLockSet.h>
 
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
@@ -65,8 +66,11 @@ BOOST_AUTO_TEST_CASE(sorter1)
     boost::shared_ptr<Sorter> pSorter(new Sorter(NULL));
     SortProperty* pSortProperty = new SortProperty("date", INT64_PROPERTY_TYPE, pComparator, SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty);
-    PropertySortedHitQueue* scoreItemQueue = new PropertySortedHitQueue(pSorter, MAXDOC);
-    //ScoreSortedHitQueue* scoreItemQueue = new ScoreSortedHitQueue(MAXDOC);
+
+    PropSharedLockSet propSharedLockSet;
+    PropertySortedHitQueue* scoreItemQueue =
+        new PropertySortedHitQueue(pSorter, MAXDOC, propSharedLockSet);
+
     for(size_t i = 0; i < MAXDOC; i++)
     {
         ScoreDoc d(i, i);
@@ -102,7 +106,10 @@ BOOST_AUTO_TEST_CASE(sorter2)
     pSorter->addSortProperty(pSortProperty1);
     SortProperty* pSortProperty2 = new SortProperty("count", INT64_PROPERTY_TYPE,pComparator2,SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty2);
-    PropertySortedHitQueue* scoreItemQueue = new PropertySortedHitQueue(pSorter, MAXDOC);
+
+    PropSharedLockSet propSharedLockSet;
+    PropertySortedHitQueue* scoreItemQueue =
+        new PropertySortedHitQueue(pSorter, MAXDOC, propSharedLockSet);
 
     for(size_t i = 0; i < MAXDOC; i++)
     {
@@ -139,7 +146,10 @@ BOOST_AUTO_TEST_CASE(sorter3)
     pSorter->addSortProperty(pSortProperty2);
     SortProperty* pSortProperty1 = new SortProperty("date", INT64_PROPERTY_TYPE, pComparator1, SortProperty::AUTO, false);
     pSorter->addSortProperty(pSortProperty1);
-    PropertySortedHitQueue* scoreItemQueue = new PropertySortedHitQueue(pSorter, MAXDOC);
+
+    PropSharedLockSet propSharedLockSet;
+    PropertySortedHitQueue* scoreItemQueue =
+        new PropertySortedHitQueue(pSorter, MAXDOC, propSharedLockSet);
 
     for(size_t i = 0; i < MAXDOC; i++)
     {

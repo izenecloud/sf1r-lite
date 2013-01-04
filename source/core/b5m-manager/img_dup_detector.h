@@ -14,30 +14,26 @@
 #include <idmlib/duplicate-detection/dup_detector.h>
 #include <idmlib/duplicate-detection/psm.h>
 #include <common/ScdWriter.h>
-//#include <idmlib/ise/psm.hpp>
-//#include <idmlib/ise/extractor.hpp>
 
 
 namespace sf1r {
 
     class ImgDupDetector
     {
-        struct CacheType
-        {
-            CacheType(){}
-            CacheType(const std::string& p1, const std::vector<std::pair<std::string, double> >& p2, const PsmAttach& p3)
-            :key(p1), doc_vector(p2), attach(p3)
-            {
-            }
-            std::string key;
-            std::vector<std::pair<std::string, double> > doc_vector;
-            PsmAttach attach;
-        };
     public:
-        typedef idmlib::dd::DupDetector<uint32_t, uint32_t, PsmAttach> DDType;
-        typedef DDType::GroupTableType GroupTableType;
         typedef idmlib::dd::PSM<64, 0, 24, uint32_t, std::string, PsmAttach> PsmType;
+
         ImgDupDetector();
+        ImgDupDetector(std::string sp,
+                std::string op,
+                std::string sn,
+                bool li,
+                bool im,
+                int con,
+                int icl
+                );
+        ~ImgDupDetector();
+
         void SetPsmK(uint32_t k) {psmk_ = k;}
 
         static ImgDupDetector* get()
@@ -45,13 +41,63 @@ namespace sf1r {
             return izenelib::util::Singleton<ImgDupDetector>::get();
         }
 
-        bool DupDetectByImgUrlIncre(const std::string& scd_path, const std::string& output_path, std::string& toDelete, const int& controller);
-        bool DupDetectByImgUrlNotIn(const std::string& scd_path, const std::string& output_path, std::string& toDelete, const int& controller);
-        bool DupDelectByImgCon(const std::string& scd_path, const std::string& output_path, std::string& filename, std::string& toDelete);
-//        bool DupDetectByImgSift(const std::string& scd_path,  const std::string& output_path, bool test);
+        bool SetParams(std::string sp,
+                std::string op,
+                std::string sn,
+                bool li,
+                bool im,
+                int con,
+                int icl
+                );
+
+        bool SetController();
+        bool ClearHistory();
+        bool ClearHistoryCon();
+        bool ClearHistoryUrl();
+        bool SetPath();
+        bool DupDetectorMain();
+        bool BeginToDupDetect(const std::string& filename);
+        bool BuildUrlIndex(const std::string& scd_file, const std::string& psm_path);
+        bool BuildConIndex(const std::string& scd_file, const std::string& psm_path);
+        bool DetectUrl(const std::string& scd_file, const std::string& psm_path, const std::string& res_file, const std::string& output_path);
+        bool DetectCon(const std::string& scd_file, const std::string& psm_path, const std::string& res_file, const std::string& output_path);
+
+    public:
+
+        std::string scd_path_;
+        std::string scd_temp_path_;
+        std::string output_path_;
+        std::string source_name_;
+        bool log_info_;
+        bool incremental_mode_;
+
+        int controller_;
+        uint32_t image_content_length_;
 
         std::string cma_path_;
         uint32_t psmk_;
+
+        std::string psm_path_;
+        std::string psm_path_incr_;
+        std::string psm_path_noin_;
+        std::string psm_path_incr_url_;
+        std::string psm_path_noin_url_;
+        std::string psm_path_incr_con_;
+        std::string psm_path_noin_con_;
+
+        bool dup_by_url_;
+        bool dup_by_con_;
+
+        std::map<std::string, uint32_t> con_docid_key_;
+        std::map<uint32_t, std::string> con_key_docid_;
+        uint32_t con_key_;
+
+        std::map<std::string, uint32_t> url_docid_key_;
+        std::map<uint32_t, std::string> url_key_docid_;
+        uint32_t url_key_;
+
+        std::map<uint32_t, UString> key_con_map_;
+        std::map<uint32_t, UString> key_url_map_;
     };
 }
 

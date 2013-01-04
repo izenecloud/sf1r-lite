@@ -84,16 +84,21 @@ private:
     Queue_ queue_;
 };
 
+class PropSharedLockSet;
+
 class PropertySortedHitQueue : public HitQueue
 {
     class Queue_ : public izenelib::util::PriorityQueue<ScoreDoc>
     {
     public:
-        Queue_(boost::shared_ptr<Sorter>& pSorter, size_t size)
+        Queue_(
+            boost::shared_ptr<Sorter>& pSorter,
+            size_t size,
+            PropSharedLockSet& propSharedLockSet)
             : pSorter_(pSorter)
         {
             if(pSorter)
-                pSorter->getComparators();
+                pSorter->getComparators(propSharedLockSet);
             initialize(size);
         }
     protected:
@@ -106,8 +111,11 @@ class PropertySortedHitQueue : public HitQueue
     };
 
 public:
-    PropertySortedHitQueue(boost::shared_ptr<Sorter>& pSorter, size_t size)
-        : queue_(pSorter, size)
+    PropertySortedHitQueue(
+        boost::shared_ptr<Sorter>& pSorter,
+        size_t size,
+        PropSharedLockSet& propSharedLockSet)
+        : queue_(pSorter, size, propSharedLockSet)
     {
     }
 

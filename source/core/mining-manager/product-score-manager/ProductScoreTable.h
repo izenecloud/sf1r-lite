@@ -8,7 +8,7 @@
 #ifndef SF1R_PRODUCT_SCORE_TABLE_H
 #define SF1R_PRODUCT_SCORE_TABLE_H
 
-#include "../group-manager/PropSharedLock.h"
+#include <common/PropSharedLock.h>
 #include <common/inttypes.h>
 #include <string>
 #include <vector>
@@ -16,7 +16,7 @@
 namespace sf1r
 {
 
-class ProductScoreTable : public faceted::PropSharedLock
+class ProductScoreTable : public PropSharedLock
 {
 public:
     ProductScoreTable(

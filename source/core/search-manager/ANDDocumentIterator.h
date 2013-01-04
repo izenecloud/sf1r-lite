@@ -229,6 +229,7 @@ inline docid_t ANDDocumentIterator::do_skipTo(docid_t target)
         currDoc_ = target;
         return nFoundId;
     }
+    currDoc_ = MAX_DOC_ID;
     return MAX_DOC_ID;
 }
 #endif

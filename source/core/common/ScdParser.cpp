@@ -370,9 +370,14 @@ std::size_t ScdParser::getScdDocCount(const std::string& path)
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string file = scd_list[i];
-        std::string cmd = "grep -c '^<DOCID>' "+file;
+        std::cerr<<"counting "<<file<<std::endl;
+        std::string cmd = "grep -c '<DOCID>' "+file;
         FILE* pipe = popen(cmd.c_str(), "r");
-        if(!pipe) continue;
+        if(!pipe) 
+        {
+            std::cerr<<"pipe error"<<std::endl;
+            continue;
+        }
         char buffer[128];
         std::string result = "";
         while(!feof(pipe))
@@ -385,6 +390,7 @@ std::size_t ScdParser::getScdDocCount(const std::string& path)
         pclose(pipe);
         boost::algorithm::trim(result);
         std::size_t c = boost::lexical_cast<std::size_t>(result);
+        std::cerr<<"find "<<c<<std::endl;
         count+=c;
     }
     return count;

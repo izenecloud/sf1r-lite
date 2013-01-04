@@ -60,6 +60,10 @@ public:
 
     std::string detect_by_imgcontent_;
 
+    uint32_t img_con_len_;
+
+    std::string log_info_;
+
 };
 
 #endif /* IMGDUPCFG_H_ */

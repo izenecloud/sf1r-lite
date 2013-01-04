@@ -1,5 +1,6 @@
 #include <configuration-manager/PropertyConfig.h>
 #include <document-manager/DocumentManager.h>
+#include <common/PropSharedLockSet.h>
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
 #include "MiningTaskBuilder.h"
@@ -30,7 +31,6 @@
 #include "group-manager/GroupManager.h"
 #include "group-manager/GroupFilterBuilder.h"
 #include "group-manager/GroupFilter.h"
-#include "group-manager/PropSharedLockSet.h"
 #include "attr-manager/AttrManager.h"
 #include "faceted-submanager/ctr_manager.h"
 
@@ -652,21 +652,21 @@ bool MiningManager::open()
                 matcher->SetUsePriceSim(false);
             }
             //test
-            //std::ifstream ifs("./querylog.txt");
-            //std::string line;
-            //while (getline(ifs, line))
-            //{
-                //boost::algorithm::trim(line);
-                //UString query(line, UString::UTF_8);
-                //UString category;
-                //if (GetProductCategory(query, category))
-                //{
-                    //std::string scategory;
-                    //category.convertString(scategory, UString::UTF_8);
-                    //LOG(ERROR) << "!!!!!!!!!!!query category " << line << "," << scategory;
-                //}
-            //}
-            //ifs.close();
+            std::ifstream ifs("./querylog.txt");
+            std::string line;
+            while (getline(ifs, line))
+            {
+                boost::algorithm::trim(line);
+                UString query(line, UString::UTF_8);
+                UString category;
+                if (GetProductCategory(query, category))
+                {
+                    std::string scategory;
+                    category.convertString(scategory, UString::UTF_8);
+                    LOG(ERROR) << "!!!!!!!!!!!query category " << line << "," << scategory;
+                }
+            }
+            ifs.close();
         }
 
         /** KV */
@@ -2003,7 +2003,7 @@ bool MiningManager::GetSuffixMatch(
                 groupFilterBuilder_.reset(filterBuilder);
             }
 
-            faceted::PropSharedLockSet propSharedLockSet;
+            PropSharedLockSet propSharedLockSet;
             boost::scoped_ptr<faceted::GroupFilter> groupFilter;
             if (groupFilterBuilder_)
             {

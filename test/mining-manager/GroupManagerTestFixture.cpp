@@ -7,7 +7,7 @@
 #include <mining-manager/group-manager/GroupManager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
-#include <mining-manager/group-manager/PropSharedLockSet.h>
+#include <common/PropSharedLockSet.h>
 
 #include <util/ustring/UString.h>
 
@@ -432,10 +432,9 @@ void GroupManagerTestFixture::createDocument(int num)
 
     checkCollection_();
 
-    
-
     BOOST_CHECK(miningTaskBuilder_->buildCollection());
-    //BOOST_CHECK(groupManager_->processCollection());
+
+    numericTableBuilder_->clearTableMap();
 }
 
 void GroupManagerTestFixture::checkGetGroupRep()
@@ -618,7 +617,7 @@ void GroupManagerTestFixture::createGroupRep_(
     }
     groupParam.groupLabels_ = labels;
 
-    faceted::PropSharedLockSet propSharedLockSet;
+    PropSharedLockSet propSharedLockSet;
     faceted::GroupFilter* filter =
         filterBuilder.createFilter(groupParam, propSharedLockSet);
 

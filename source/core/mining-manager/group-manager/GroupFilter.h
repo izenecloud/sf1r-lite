@@ -10,6 +10,8 @@
 
 #include "../faceted-submanager/faceted_types.h"
 
+namespace sf1r { class PropSharedLockSet; }
+
 NS_FACETED_BEGIN
 
 class GroupManager;
@@ -22,7 +24,6 @@ class AttrLabel;
 class GroupCounter;
 class AttrCounter;
 class GroupCounterLabelBuilder;
-class PropSharedLockSet;
 
 class GroupFilter
 {

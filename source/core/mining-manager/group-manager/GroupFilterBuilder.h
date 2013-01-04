@@ -16,6 +16,7 @@
 namespace sf1r
 {
 class NumericPropertyTableBuilder;
+class PropSharedLockSet;
 }
 
 NS_FACETED_BEGIN
@@ -25,7 +26,6 @@ class AttrManager;
 class GroupFilter;
 class AttrTable;
 class GroupParam;
-class PropSharedLockSet;
 
 class GroupFilterBuilder
 {

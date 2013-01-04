@@ -48,6 +48,7 @@ class CustomRankManager;
 class ScoreDocEvaluator;
 class ProductScorerFactory;
 class ProductRankerFactory;
+class PropSharedLockSet;
 
 namespace faceted
 {
@@ -169,7 +170,8 @@ private:
         SearchThreadParam& pParam,
         CombinedDocumentIterator* pDocIterator,
         faceted::GroupFilter* groupFilter,
-        ScoreDocEvaluator& scoreDocEvaluator);
+        ScoreDocEvaluator& scoreDocEvaluator,
+        PropSharedLockSet& propSharedLockSet);
 
     void doSearchInThreadOneParam(
         SearchThreadParam* pParam,

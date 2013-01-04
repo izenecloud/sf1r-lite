@@ -7,6 +7,7 @@
 #include <boost/unordered_set.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
+#include <boost/serialization/hash_map.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <algorithm>
 #include <cmath>
@@ -23,7 +24,7 @@ namespace bfs = boost::filesystem;
 
 //#define B5M_DEBUG
 
-const std::string ProductMatcher::VERSION("20121225");
+const std::string ProductMatcher::AVERSION("20121230");
 
 ProductMatcher::KeywordTag::KeywordTag():type_app(0), kweight(0.0), ngram(1)
 {
@@ -267,7 +268,7 @@ bool ProductMatcher::KeywordTag::Combine(const KeywordTag& another)
 
 ProductMatcher::ProductMatcher()
 :is_open_(false), use_price_sim_(true),
- tid_(1), aid_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL), chars_analyzer_(NULL),
+ aid_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL), chars_analyzer_(NULL),
  test_docid_("7bc999f5d10830d0c59487bd48a73cae"),
  left_bracket_("("), right_bracket_(")"),
  left_bracket_term_(0), right_bracket_term_(0)
@@ -312,16 +313,7 @@ bool ProductMatcher::Open(const std::string& kpath)
         path_ = kpath;
         try
         {
-            boost::filesystem::create_directories(path_);
-            idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path_, "");
-            aconfig.symbol = true;
-            analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
-            idmlib::util::IDMAnalyzerConfig cconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
-            //cconfig.symbol = true;
-            char_analyzer_ = new idmlib::util::IDMAnalyzer(cconfig);
-            idmlib::util::IDMAnalyzerConfig csconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
-            csconfig.symbol = true;
-            chars_analyzer_ = new idmlib::util::IDMAnalyzer(csconfig);
+            Init_();
             std::string path = path_+"/products";
             izenelib::am::ssf::Util<>::Load(path, products_);
             LOG(INFO)<<"products size "<<products_.size()<<std::endl;
@@ -339,33 +331,11 @@ bool ProductMatcher::Open(const std::string& kpath)
             path = path_+"/keyword_trie";
             izenelib::am::ssf::Util<>::Load(path, trie_);
             LOG(INFO)<<"trie size "<<trie_.size()<<std::endl;
-            //path = path_+"/attrib_id";
-            //boost::filesystem::create_directories(path);
-            //aid_manager_ = new AttributeIdManager(path+"/id");
-
-            left_bracket_term_ = GetTerm_(left_bracket_);
-            right_bracket_term_ = GetTerm_(right_bracket_);
-            //std::string logger_file = path_+"/logger";
-            //logger_.open(logger_file.c_str(), std::ios::out | std::ios::app );
-            //std::string cidset_path = path_+"/cid_set";
-            //izenelib::am::ssf::Util<>::Load(cidset_path, cid_set_);
-            //std::string a2p_path = path_+"/a2p";
-            //izenelib::am::ssf::Util<>::Load(a2p_path, a2p_);
-            //std::string category_group_file = path_+"/category_group";
-            //if(boost::filesystem::exists(category_group_file))
-            //{
-                //LoadCategoryGroup(category_group_file);
-            //}
-            //std::string category_keywords_file = path_+"/category_keywords";
-            //if(boost::filesystem::exists(category_keywords_file))
-            //{
-                //LoadCategoryKeywords_(category_keywords_file);
-            //}
-            //std::string category_file = path_+"/category.txt";
-            //if(boost::filesystem::exists(category_file))
-            //{
-                //LoadCategories_(category_file);
-            //}
+            path = path_+"/back2front";
+            std::map<std::string, std::string> b2f_map;
+            izenelib::am::ssf::Util<>::Load(path, b2f_map);
+            back2front_.insert(b2f_map.begin(), b2f_map.end());
+            LOG(INFO)<<"back2front size "<<back2front_.size()<<std::endl;
         }
         catch(std::exception& ex)
         {
@@ -377,29 +347,29 @@ bool ProductMatcher::Open(const std::string& kpath)
     return true;
 }
 
-void ProductMatcher::Clear(const std::string& path, int omode)
-{
-    int mode = omode;
-    std::string version = GetVersion(path);
-    if(version!=VERSION)
-    {
-        mode = 3;
-    }
-    if(mode==3)
-    {
-        B5MHelper::PrepareEmptyDir(path);
-    }
-    else if(mode>0)
-    {
-        std::string bdb_path = path+"/bdb";
-        B5MHelper::PrepareEmptyDir(bdb_path);
-        if(mode==2)
-        {
-            std::string odb_path = path+"/odb";
-            B5MHelper::PrepareEmptyDir(odb_path);
-        }
-    }
-}
+//void ProductMatcher::Clear(const std::string& path, int omode)
+//{
+    //int mode = omode;
+    //std::string version = GetVersion(path);
+    //if(version!=VERSION)
+    //{
+        //mode = 3;
+    //}
+    //if(mode>=2)
+    //{
+        //B5MHelper::PrepareEmptyDir(path);
+    //}
+    //else if(mode>0)
+    //{
+        //std::string bdb_path = path+"/bdb";
+        //B5MHelper::PrepareEmptyDir(bdb_path);
+        ////if(mode>=2)
+        ////{
+            ////std::string odb_path = path+"/odb";
+            ////B5MHelper::PrepareEmptyDir(odb_path);
+        ////}
+    //}
+//}
 std::string ProductMatcher::GetVersion(const std::string& path)
 {
     std::string version_file = path+"/VERSION";
@@ -420,47 +390,109 @@ bool ProductMatcher::GetProduct(const std::string& pid, Product& product)
     return true;
 }
 
-bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path)
+bool ProductMatcher::GetFrontendCategory(const UString& backend, UString& frontend) const
 {
+    if(back2front_.empty()) return false;
+    std::string b;
+    backend.convertString(b, UString::UTF_8);
+    std::string ob = b;//original
+    while(!b.empty())
+    {
+        Back2Front::const_iterator it = back2front_.find(b);
+        if(it!=back2front_.end())
+        {
+            frontend = UString(it->second, UString::UTF_8);
+            break;
+        }
+        std::size_t pos = b.find_last_of('>');
+        if(pos==std::string::npos) b.clear();
+        else
+        {
+            b = b.substr(0, pos);
+        }
+    }
+    if(b==ob) return true;
+    return false;
+}
+
+void ProductMatcher::SetIndexDone_(const std::string& path, bool b)
+{
+    static const std::string file(path+"/index.done");
+    if(b)
+    {
+        std::ofstream ofs(file.c_str());
+        ofs<<"a"<<std::endl;
+        ofs.close();
+    }
+    else
+    {
+        boost::filesystem::remove_all(file);
+    }
+}
+bool ProductMatcher::IsIndexDone_(const std::string& path)
+{
+    static const std::string file(path+"/index.done");
+    return boost::filesystem::exists(file);
+}
+void ProductMatcher::Init_()
+{
+    boost::filesystem::create_directories(path_);
+    idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path_, "");
+    aconfig.symbol = true;
+    analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
+    idmlib::util::IDMAnalyzerConfig cconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
+    //cconfig.symbol = true;
+    char_analyzer_ = new idmlib::util::IDMAnalyzer(cconfig);
+    idmlib::util::IDMAnalyzerConfig csconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
+    csconfig.symbol = true;
+    chars_analyzer_ = new idmlib::util::IDMAnalyzer(csconfig);
+    left_bracket_term_ = GetTerm_(left_bracket_);
+    right_bracket_term_ = GetTerm_(right_bracket_);
+    products_.clear();
+    keywords_thirdparty_.clear();
+    not_keywords_.clear();
+    category_list_.clear();
+    cid_to_pids_.clear();
+    category_index_.clear();
+    product_index_.clear();
+    keyword_set_.clear();
+    trie_.clear();
+    back2front_.clear();
+
+}
+bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path, int omode)
+{
+    std::string rversion = GetVersion(scd_path);
+    LOG(INFO)<<"rversion "<<rversion<<std::endl;
+    LOG(INFO)<<"aversion "<<AVERSION<<std::endl;
+    std::string version = std::max(AVERSION, rversion);
+    LOG(INFO)<<"version "<<version<<std::endl;
+    std::string kversion = GetVersion(kpath);
+    LOG(INFO)<<"kversion "<<kversion<<std::endl;
+    int mode = omode;
+    if(version>kversion)
+    {
+        if(mode<2) mode = 2;
+    }
+    LOG(INFO)<<"mode "<<mode<<std::endl;
+    if(mode==3)
+    {
+        B5MHelper::PrepareEmptyDir(kpath);
+    }
+    else if(mode==2)
+    {
+        SetIndexDone_(kpath, false);
+        std::string bdb_path = kpath+"/bdb";
+        B5MHelper::PrepareEmptyDir(bdb_path);
+    }
     path_ = kpath;
-    if(!trie_.empty())
+    if(IsIndexDone_(path_))
     {
         std::cout<<"product trained at "<<path_<<std::endl;
         return true;
     }
-    //std::string from_file = scd_path+"/category_group";
-    //std::string to_file = path_+"/category_group";
-    //if(boost::filesystem::exists(from_file))
-    //{
-        //if(boost::filesystem::exists(to_file))
-        //{
-            //boost::filesystem::remove_all(to_file);
-        //}
-        //boost::filesystem::copy_file(from_file, to_file);
-        //LoadCategoryGroup(to_file);
-    //}
-    //from_file = scd_path+"/category_keywords";
-    //to_file = path_+"/category_keywords";
-    //if(boost::filesystem::exists(from_file))
-    //{
-        //if(boost::filesystem::exists(to_file))
-        //{
-            //boost::filesystem::remove_all(to_file);
-        //}
-        //boost::filesystem::copy_file(from_file, to_file);
-        //LoadCategoryKeywords_(to_file);
-    //}
-    //from_file = scd_path+"/category.txt";
-    //to_file = path_+"/category.txt";
-    //if(boost::filesystem::exists(from_file))
-    //{
-        //if(boost::filesystem::exists(to_file))
-        //{
-            //boost::filesystem::remove_all(to_file);
-        //}
-        //boost::filesystem::copy_file(from_file, to_file);
-        //LoadCategories_(to_file);
-    //}
+    SetIndexDone_(kpath, false);
+    Init_();
     std::string keywords_file = scd_path+"/keywords.txt";
     if(boost::filesystem::exists(keywords_file))
     {
@@ -484,6 +516,24 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             TermList tl;
             GetTerms_(line, tl);
             not_keywords_.insert(tl);
+        }
+        ifs.close();
+    }
+    std::string back2front_file= scd_path+"/back2front";
+    std::map<std::string, std::string> b2f_map;
+    if(boost::filesystem::exists(back2front_file))
+    {
+        std::ifstream ifs(back2front_file.c_str());
+        std::string line;
+        while( getline(ifs, line))
+        {
+            boost::algorithm::trim(line);
+            std::vector<std::string> vec;
+            boost::algorithm::split(vec, line, boost::algorithm::is_any_of(","));
+            if(vec.size()!=2) continue;
+            std::pair<std::string, std::string> value(vec[0], vec[1]);
+            b2f_map.insert(value);
+            back2front_.insert(value);
         }
         ifs.close();
     }
@@ -579,8 +629,8 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
                     parent_name+=cs_list[i];
                 }
                 c.parent_cid = category_index_[parent_name];
-                std::cerr<<"cid "<<c.cid<<std::endl;
-                std::cerr<<"parent cid "<<c.parent_cid<<std::endl;
+                //std::cerr<<"cid "<<c.cid<<std::endl;
+                //std::cerr<<"parent cid "<<c.parent_cid<<std::endl;
             }
             category_list_.push_back(c);
             category_index_[c.name] = cid;
@@ -778,10 +828,13 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     izenelib::am::ssf::Util<>::Save(path, product_index_);
     path = path_+"/keyword_trie";
     izenelib::am::ssf::Util<>::Save(path, trie_);
+    path = path_+"/back2front";
+    izenelib::am::ssf::Util<>::Save(path, b2f_map);
     std::string version_file = path_+"/VERSION";
     std::ofstream ofs(version_file.c_str());
-    ofs<<VERSION<<std::endl;
+    ofs<<version<<std::endl;
     ofs.close();
+    SetIndexDone_(path_, true);
     
     return true;
 }
@@ -1081,12 +1134,22 @@ bool ProductMatcher::ProcessBook(const Document& doc, Product& result_product)
         }
         return true;
     }
+    else if(scategory.empty())
+    {
+        std::string isbn_value;
+        GetIsbnAttribute(doc, isbn_value);
+        if(!isbn_value.empty())
+        {
+            result_product.spid = B5MHelper::GetPidByIsbn(isbn_value);
+            return true;
+        }
+    }
     return false;
 }
 
 bool ProductMatcher::Process(const Document& doc, Product& result_product)
 {
-    uint32_t limit = 1;
+    static const uint32_t limit = 1;
     std::vector<Product> products;
     if(Process(doc, limit, products) && !products.empty())
     {
@@ -1098,6 +1161,7 @@ bool ProductMatcher::Process(const Document& doc, Product& result_product)
 
 bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products)
 {
+    if(!IsOpen()) return false;
     if(limit==0) return false;
     Product pbook;
     if(ProcessBook(doc, pbook))
@@ -1485,6 +1549,18 @@ uint32_t ProductMatcher::GetCidBySpuId_(uint32_t spu_id)
     return category_index_[scategory];
 }
 
+bool ProductMatcher::EqualOrIsParent_(uint32_t parent, uint32_t child) const
+{
+    uint32_t cid = child;
+    while(true)
+    {
+        if(cid==0) return false;
+        if(cid==parent) return true;
+        const Category& c = category_list_[cid];
+        cid = c.parent_cid;
+    }
+    return false;
+}
 
 void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& result_products)
 {
@@ -1518,6 +1594,15 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             given_cid = it->second;
         }
     }
+    bool matcher_only = false;
+    if(doc.hasProperty(MatcherOnlyPropertyName()))
+    {
+        matcher_only = true;
+    }
+    if(matcher_only && given_cid==0) return;
+    //std::string soid;
+    //doc.getString("DOCID", soid);
+    //std::cerr<<soid<<",matcher only:"<<matcher_only<<std::endl;
     //firstly do cid;
     typedef dmap<uint32_t, double> IdToScore;
     typedef dmap<uint32_t, WeightType> IdToWeight;
@@ -1571,6 +1656,10 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
         for(uint32_t i=0;i<tag.category_name_apps.size();i++)
         {
             const CategoryNameApp& app = tag.category_name_apps[i];
+            if(matcher_only)
+            {
+                if(!EqualOrIsParent_(given_cid, app.cid)) continue;
+            }
             double depth_ratio = 1.0-0.2*(app.depth-1);
             double times = 1.0;
             if(weight>=0.8) times = 2.5;
@@ -1589,6 +1678,10 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             if(app.spu_id==0) continue;
             //if(app.is_optional) continue;
             const Product& p = products_[app.spu_id];
+            if(matcher_only)
+            {
+                if(!EqualOrIsParent_(given_cid, p.cid)) continue;
+            }
 #ifdef B5M_DEBUG
             //std::cout<<"[PID]"<<p.spid<<","<<p.stitle<<","<<text<<std::endl;
 #endif
@@ -1639,6 +1732,10 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
             //std::cout<<"[TS]"<<products_[app.spu_id].stitle<<std::endl;
 #endif
             const Product& p = products_[app.spu_id];
+            if(matcher_only)
+            {
+                if(!EqualOrIsParent_(given_cid, p.cid)) continue;
+            }
             double psim = PriceSim_(price, p.price);
             pid_weight[app.spu_id].tweight+=0.2*weight*psim;
             //pid_score[app.spu_id]+=0.2;

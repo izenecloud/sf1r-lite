@@ -9,7 +9,7 @@
 #define SF1R_PRODUCT_SCORE_READER_H
 
 #include "../product-scorer/ProductScorer.h"
-#include "../group-manager/PropSharedLock.h"
+#include <common/PropSharedLock.h>
 
 namespace sf1r
 {
@@ -27,7 +27,7 @@ public:
 private:
     const ProductScoreTable& productScoreTable_;
 
-    faceted::PropSharedLock::ScopedReadLock lock_;
+    PropSharedLock::ScopedReadLock lock_;
 };
 
 } // namespace sf1r

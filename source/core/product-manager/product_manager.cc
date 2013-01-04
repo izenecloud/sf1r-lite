@@ -286,9 +286,10 @@ bool ProductManager::FinishHook()
             if (max_in_group > 0 && in_group.size() > max_in_group) continue;
             std::sort(in_group.begin(), in_group.end());
             izenelib::util::UString docname(in_group[0], izenelib::util::UString::UTF_8);
-            UuidType uuid;
+            UuidType uuid = docname;
             std::string uuidstr;
-            UuidGenerator::Gen(uuidstr, uuid);
+            uuid.convertString(uuidstr, izenelib::util::UString::UTF_8);
+            //UuidGenerator::Gen(docname, uuidstr, uuid);
             PMDocumentType doc;
             doc.property(config_.docid_property_name) = docname;
             doc.property(config_.source_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
@@ -388,10 +389,11 @@ bool ProductManager::FinishHook()
             }
             else
             {
-                UString uuid;
                 //not in any group
+                UuidType uuid = udocid;
                 std::string uuidstr;
-                UuidGenerator::Gen(uuidstr, uuid);
+                uuid.convertString(uuidstr, izenelib::util::UString::UTF_8);
+                //UuidGenerator::Gen(udocid, uuidstr, uuid);
                 doc.property(config_.uuid_property_name) = uuid;
                 uuid_update_list.push_back(std::make_pair(docid, uuid));
                 PMDocumentType new_doc(doc);

@@ -15,7 +15,7 @@
 #define SF1R_MERCHANT_COUNT_EVALUATOR_H
 
 #include "ProductScoreEvaluator.h"
-#include "../group-manager/PropSharedLock.h"
+#include <common/PropSharedLock.h>
 
 namespace sf1r
 {
@@ -31,7 +31,7 @@ public:
 private:
     const faceted::PropValueTable& merchantValueTable_;
 
-    faceted::PropSharedLock::ScopedReadLock lock_;
+    PropSharedLock::ScopedReadLock lock_;
 };
 
 } // namespace sf1r
