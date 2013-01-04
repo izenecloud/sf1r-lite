@@ -303,6 +303,7 @@ int do_main(int ac, char** av)
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
         ("test", "specify test flag")
         ("noprice", "no price flag")
+        ("depth", po::value<uint16_t>(), "specify category max depth while categorizing")
         ("force", "specify force flag")
         ("trie", "do trie test")
         ("cr-train", "do category recognizer training")
@@ -347,6 +348,7 @@ int do_main(int ac, char** av)
     bool test_flag = false;
     bool force_flag = false;
     bool noprice = false;
+    uint16_t max_depth = 0;
     if (vm.count("mdb-instance")) {
         mdb_instance = vm["mdb-instance"].as<std::string>();
     } 
@@ -511,6 +513,10 @@ int do_main(int ac, char** av)
     {
         noprice = true;
     }
+    if(vm.count("depth"))
+    {
+        max_depth = vm["depth"].as<uint16_t>();
+    }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
 
     if(vm.count("raw-generate"))
@@ -631,6 +637,10 @@ int do_main(int ac, char** av)
         if(noprice)
         {
             matcher.SetUsePriceSim(false);
+        }
+        if(max_depth>0)
+        {
+            matcher.SetCategoryMaxDepth(max_depth);
         }
         if(!scd_path.empty())
         {

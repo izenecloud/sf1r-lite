@@ -146,15 +146,7 @@ void B5moProcessor::Process(Document& doc, int& type)
         ProductMatcher::Product product;
         if(need_do_match)
         {
-            if(!category.empty())
-            {
-                doc.property(ProductMatcher::MatcherOnlyPropertyName()) = (int64_t)1;
-            }
             matcher_->Process(doc, product);
-            if(!category.empty())
-            {
-                doc.eraseProperty(ProductMatcher::MatcherOnlyPropertyName());
-            }
         }
         else
         {
@@ -307,6 +299,7 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
         //}
     //}
 
+    matcher_->SetMatcherOnly(true);
     if(img_server_cfg_)
     {
         LOG(INFO) << "Got Image Server Cfg, begin Init server connection." << std::endl;
