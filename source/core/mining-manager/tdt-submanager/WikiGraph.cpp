@@ -10,6 +10,7 @@ WikiGraph::WikiGraph(const string& wiki_path,cma::OpenCC* opencc)
     : advertiseBias_((boost::filesystem::path(wiki_path)/=boost::filesystem::path("AdvertiseWord.txt")).c_str())
     , opencc_(opencc)
 {
+    
     boost::filesystem::path wikigraph_path(wiki_path);
     wikigraph_path /= boost::filesystem::path("wikigraph");
     path_ = wikigraph_path.c_str();
@@ -29,11 +30,13 @@ WikiGraph::WikiGraph(const string& wiki_path,cma::OpenCC* opencc)
     //cout<<"simplifyTitle...."<<endl;
     //cout<<"蘋果 喬布斯"<<endl;
     //simplifyTitle();
-    flush();
+    //flush();
+    
     cout<<"buildMap...."<<endl;
     BuildMap();
     cout<<"SetAdvertise...."<<endl;
     SetAdvertiseAll();
+    /*
     //cout<<"InitOutLink...."<<endl;
     //cout<<"title2id"<<title2id.size()<<endl;
     // InitOutLink();
@@ -46,7 +49,7 @@ WikiGraph::WikiGraph(const string& wiki_path,cma::OpenCC* opencc)
     //  init();
 
     //delete a;
-
+    */
     cout<<"wikipediaGraphDone"<<endl;
 }
 

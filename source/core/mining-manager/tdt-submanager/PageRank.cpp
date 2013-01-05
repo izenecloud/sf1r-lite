@@ -263,6 +263,18 @@ void PageRank::InitMap()
     set<int>::const_iterator citr = SubGraph_.begin();
     boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
     cout<<"Init"<<time_now<<endl;
+    wat_array::BitTrie SubTrie( nodes_.size());//wa_.alphabet_num()
+    //SubTrie.insert(1312342);
+    //cout<<"1312342 exsit"<<SubTrie.exist(1312342)<<endl;
+    //cout<<"1312331 exsit"<<SubTrie.exist(1312331)<<endl;
+    for (; citr != SubGraph_.end(); ++citr)
+    {
+           // cout<<"Link in"<<(*citr)<<endl;
+         SubTrie.insert(*citr);
+         //cout<<(*citr)<<"exsit"<<SubTrie.exist(*citr)<<endl;
+    }
+    citr = SubGraph_.begin();
+   
     for (; citr != SubGraph_.end(); ++citr)
     {
            // cout<<"Link in"<<(*citr)<<endl;
@@ -293,8 +305,9 @@ void PageRank::InitMap()
            }
            */
            vector<uint64_t> ret;
-
-           wa_.QuantileRangeAll(node->offStart, node->offStop, ret);
+           //cout<<"QuantileRangeAll"<<endl;
+           wa_.QuantileRangeAll(node->offStart, node->offStop, ret,SubTrie);
+           //cout<<"ret size"<<ret.size()<<endl;
            for(unsigned i=0;i<ret.size();i++)
            {
                 int index=ret[i];
@@ -304,7 +317,7 @@ void PageRank::InitMap()
                      
                 }
            }
-
+          // cout<<"linkin size"<<linkin.size()<<endl;
            /*
            for(unsigned i=node->offStart;i<=node->offStop;i++)
            {
