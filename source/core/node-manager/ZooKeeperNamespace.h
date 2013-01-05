@@ -64,6 +64,8 @@ class ZooKeeperNamespace
     // Define znode names for zookeeper namespace of SF1
     static std::string sf1rCluster_;
 
+    static const std::string primaryNodes_;
+    static const std::string primary_;
     static const std::string searchTopology_;
     static const std::string searchServers_;
     static const std::string recommendTopology_;
@@ -84,6 +86,21 @@ public:
     static std::string getSF1RClusterPath()
     {
         return sf1rCluster_;
+    }
+
+    static std::string getPrimaryBasePath()
+    {
+        return sf1rCluster_ + primaryNodes_;
+    }
+    static std::string getPrimaryNodeParentPath(nodeid_t nodeId)
+    {
+        std::stringstream ss;
+        ss << sf1rCluster_ << primaryNodes_ << node_ << nodeId;
+        return ss.str();
+    }
+    static std::string getPrimaryNodePath(nodeid_t nodeId)
+    {
+        return getPrimaryNodeParentPath(nodeId) + primary_;
     }
 
     /// Search
@@ -170,6 +187,7 @@ public:
     const static char* KEY_MASTER_PORT;
     const static char* KEY_WORKER_PORT;
     const static char* KEY_SHARD_ID;
+    const static char* KEY_REPLICA_ID;
     const static char* KEY_COLLECTION;
 
     const static char* KEY_FILE;

@@ -63,6 +63,7 @@ public:
     {
         return sf1rTopology_.curNode_.master_.totalShardNum_;
     }
+    bool isPrimary() const;
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -88,6 +89,7 @@ protected:
 
     void enterCluster(bool start_master = true);
 
+    void registerPrimary(ZNode& znode);
     /**
      * Deregister SF1 node on exit
      */
@@ -106,10 +108,14 @@ protected:
     std::string topologyPath_;
     std::string replicaPath_;
     std::string nodePath_;
+    std::string primaryBasePath_;
+    std::string primaryNodeParentPath_;
+    std::string primaryNodePath_;
 
     boost::mutex mutex_;
 
     std::string CLASSNAME;
+    std::string self_primary_path_;
 };
 
 }

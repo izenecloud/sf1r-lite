@@ -98,6 +98,7 @@ void NodeManagerBase::tryInitZkNameSpace()
     std::stringstream ss;
     ss << sf1rTopology_.curNode_.replicaId_;
     zookeeper_->createZNode(replicaPath_, ss.str());
+    zookeeper_->createZNode(primaryBasePath_);
 }
 
 bool NodeManagerBase::checkZooKeeperService()
@@ -124,6 +125,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     znode.setValue(ZNode::KEY_HOST, sf1rTopology_.curNode_.host_);
     znode.setValue(ZNode::KEY_BA_PORT, sf1rTopology_.curNode_.baPort_);
     znode.setValue(ZNode::KEY_DATA_PORT, sf1rTopology_.curNode_.dataPort_);
+    znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
 
     if (sf1rTopology_.curNode_.worker_.isEnabled_)
     {
@@ -149,6 +151,23 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
                 collections += "," + (*it).name_;
         }
         znode.setValue(ZNode::KEY_COLLECTION, collections);
+    }
+}
+
+void NodeManagerBase::registerPrimary(ZNode& znode)
+{
+    if (!zookeeper_->isZNodeExists(primaryNodeParentPath_))
+    {
+        zookeeper_->createZNode(primaryNodeParentPath_);
+    }
+    if (zookeeper_->createZNode(primaryNodePath_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
+    {
+        self_primary_path_ = zookeeper_->getLastCreatedNodePath();
+        LOG(INFO) << "current self node primary path is : " << self_primary_path_;
+    }
+    else
+    {
+        LOG(ERROR) << "register primary failed. " << sf1rTopology_.curNode_.toString();
     }
 }
 
@@ -212,6 +231,8 @@ void NodeManagerBase::enterCluster(bool start_master)
                        (std::string("worker") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
                << curNode.userName_ << "@" << curNode.host_ << "}";
 
+    registerPrimary(znode);
+
     if(start_master)
     {
         // Start Master manager
@@ -255,6 +276,22 @@ void NodeManagerBase::leaveCluster()
     {
         zookeeper_->deleteZNode(clusterPath_);
     }
+}
+
+bool NodeManagerBase::isPrimary() const
+{
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return false;
+    std::vector<std::string> primaryList;
+    std::string primary_list_path = ZooKeeperNamespace::getPrimaryNodeParentPath(sf1rTopology_.curNode_.nodeId_);
+    zookeeper_->getZNodeChildren(primary_list_path, primaryList, ZooKeeper::NOT_WATCH);
+    if (primaryList.empty())
+    {
+        LOG(ERROR) << "no primary node for : " << primary_list_path;
+        return false;
+    }
+    LOG(INFO) << "current primary is : " << primaryList[0];
+    return primaryList[0] == self_primary_path_;
 }
 
 }

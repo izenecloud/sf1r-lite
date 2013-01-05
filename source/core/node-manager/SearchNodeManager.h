@@ -40,6 +40,9 @@ protected:
         topologyPath_ = ZooKeeperNamespace::getSearchTopologyPath();
         replicaPath_ = ZooKeeperNamespace::getSearchReplicaPath(sf1rTopology_.curNode_.replicaId_);
         nodePath_ = ZooKeeperNamespace::getSearchNodePath(sf1rTopology_.curNode_.replicaId_, sf1rTopology_.curNode_.nodeId_);
+        primaryBasePath_ = ZooKeeperNamespace::getPrimaryBasePath();
+        primaryNodeParentPath_ = ZooKeeperNamespace::getPrimaryNodeParentPath(sf1rTopology_.curNode_.nodeId_);
+        primaryNodePath_ = ZooKeeperNamespace::getPrimaryNodePath(sf1rTopology_.curNode_.nodeId_);
     }
 
     virtual void startMasterManager()
