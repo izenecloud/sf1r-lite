@@ -70,6 +70,16 @@ public:
 
     void print(int level=0);
 
+    DocumentIteratorQueue* getDocumentIteratorQueue()
+    {
+        return pDocIteratorQueue_;
+    }
+
+    std::vector<DocumentIterator*> getdocIteratorList_()
+    {
+        return docIteratorList_;
+    }
+
 #if SKIP_ENABLED
     docid_t skipTo(docid_t target);
 
