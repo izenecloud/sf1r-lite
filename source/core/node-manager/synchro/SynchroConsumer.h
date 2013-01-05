@@ -58,6 +58,8 @@ public:
 
     virtual void onDataChanged(const std::string& path);
 
+    virtual void onNodeDeleted(const std::string& path);
+
     virtual void onMonitor();
 
 private:

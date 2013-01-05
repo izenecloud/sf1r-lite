@@ -277,6 +277,7 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
     std::string data;
     if (!zookeeper_->getZNodeData(consumerZnodePath, data))
     {
+        LOG(ERROR) << "get consumer node data failed while transfer data : " << consumerZnodePath;
         return false;
     }
 
