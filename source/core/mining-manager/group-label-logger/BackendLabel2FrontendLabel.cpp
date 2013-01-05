@@ -6,10 +6,11 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <map>
 
 namespace sf1r
 {
-std::map<UString, UString> BackendLabelToFrontendLabel::back2front_;
+izenelib::am::succinct::ux::Map<UString> BackendLabelToFrontendLabel::back2front_;
 BackendLabelToFrontendLabel::BackendLabelToFrontendLabel()
 {
 }
@@ -28,6 +29,7 @@ void BackendLabelToFrontendLabel::InitOnce_(const std::string& path)
 {
     std::ifstream in;
     in.open(path.c_str(), ios::in);
+    std::map<std::string, UString> map;
     if(in.is_open())
     {
         while(!in.eof())
@@ -38,16 +40,31 @@ void BackendLabelToFrontendLabel::InitOnce_(const std::string& path)
             boost::algorithm::split( labels, line, boost::algorithm::is_any_of(",") );
             if(2 == labels.size())
             {
-                UString backend( labels[0], UString::UTF_8);
+                //UString backend( labels[0], UString::UTF_8);
+                std::string backend(labels[0]);
+                //std::string frontend(labels[1]);
                 UString frontend( labels[1], UString::UTF_8);
-                back2front_[backend] = frontend;
+                map[backend] = frontend;
             }
         }
     }
+    back2front_.build(map);
 }
 
-bool BackendLabelToFrontendLabel::Map(const izenelib::util::UString&backend,  izenelib::util::UString&frontend)
+bool BackendLabelToFrontendLabel::Map(const UString&backend,  UString&frontend)
 {
+    std::string backend_str;
+    backend.convertString(backend_str, UString::UTF_8);
+
+    izenelib::am::succinct::ux::id_t retID;
+    std::string result;
+    retID = back2front_.get(backend_str.c_str(), backend_str.size(), frontend);
+    if(retID == 0)
+    {
+        return true;
+    }
+    return false;
+/*
     std::map<UString, UString>::const_iterator mit = back2front_.find(backend);
     if(mit == back2front_.end()) return false;
     else
@@ -55,6 +72,23 @@ bool BackendLabelToFrontendLabel::Map(const izenelib::util::UString&backend,  iz
         frontend = mit->second;
         return true;
     }
+*/
+}
+
+bool BackendLabelToFrontendLabel::PrefixMap(const UString&backend,  UString&frontend)
+{
+    std::string backend_str;
+    backend.convertString(backend_str, UString::UTF_8);
+
+    izenelib::am::succinct::ux::id_t retID;
+    std::string result;
+    size_t retLen;
+    retID = back2front_.prefixSearch(backend_str.c_str(), backend_str.size(), retLen, frontend);
+    if(retID == 0)
+    {
+        return true;
+    }
+    return false;
 }
 
 }

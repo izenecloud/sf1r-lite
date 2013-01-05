@@ -1,15 +1,12 @@
 #include "ProductScorerFactory.h"
+#include "ProductScoreParam.h"
 #include "ProductScoreSum.h"
 #include "CustomScorer.h"
 #include "CategoryScorer.h"
 #include "../MiningManager.h"
 #include "../custom-rank-manager/CustomRankManager.h"
-#include "../group-label-logger/GroupLabelLogger.h"
-#include "../group-label-logger/BackendLabel2FrontendLabel.h"
-#include "../group-label-logger/GroupLabelKnowledge.h"
-#include "../group-manager/PropSharedLockSet.h"
 #include "../product-score-manager/ProductScoreManager.h"
-#include "../util/split_ustr.h"
+#include <common/PropSharedLockSet.h>
 #include <configuration-manager/ProductRankingConfig.h>
 #include <memory> // auto_ptr
 #include <glog/logging.h>
@@ -29,25 +26,31 @@ ProductScorerFactory::ProductScorerFactory(
     const ProductRankingConfig& config,
     MiningManager& miningManager)
     : config_(config)
-    , miningManager_(&miningManager)
     , customRankManager_(miningManager.GetCustomRankManager())
-    , categoryClickLogger_(NULL)
     , categoryValueTable_(NULL)
-    , groupLabelKnowledge_(miningManager.GetGroupLabelKnowledge())
     , productScoreManager_(miningManager.GetProductScoreManager())
 {
     const ProductScoreConfig& categoryScoreConfig =
         config.scores[CATEGORY_SCORE];
     const std::string& categoryProp = categoryScoreConfig.propName;
-    categoryClickLogger_ = miningManager.GetGroupLabelLogger(categoryProp);
     categoryValueTable_ = miningManager.GetPropValueTable(categoryProp);
+
+    if (categoryValueTable_)
+    {
+        GroupLabelLogger* clickLogger =
+            miningManager.GetGroupLabelLogger(categoryProp);
+        const GroupLabelKnowledge* labelKnowledge =
+            miningManager.GetGroupLabelKnowledge();
+
+        labelSelector_.reset(new BoostLabelSelector(miningManager,
+                                                    *categoryValueTable_,
+                                                    clickLogger,
+                                                    labelKnowledge));
+    }
 }
 
 ProductScorer* ProductScorerFactory::createScorer(
-    const std::string& query,
-    const std::string& querySource,
-    faceted::PropSharedLockSet& propSharedLockSet,
-    ProductScorer* relevanceScorer)
+    const ProductScoreParam& scoreParam)
 {
     std::auto_ptr<ProductScoreSum> scoreSum(new ProductScoreSum);
 
@@ -55,10 +58,7 @@ ProductScorer* ProductScorerFactory::createScorer(
     for (int i = 0; i < PRODUCT_SCORE_NUM; ++i)
     {
         ProductScorer* scorer = createScorerImpl_(config_.scores[i],
-                                                  query,
-                                                  querySource,
-                                                  propSharedLockSet,
-                                                  relevanceScorer);
+                                                  scoreParam);
         if (scorer)
         {
             scoreSum->addScorer(scorer);
@@ -74,10 +74,7 @@ ProductScorer* ProductScorerFactory::createScorer(
 
 ProductScorer* ProductScorerFactory::createScorerImpl_(
     const ProductScoreConfig& scoreConfig,
-    const std::string& query,
-    const std::string& querySource,
-    faceted::PropSharedLockSet& propSharedLockSet,
-    ProductScorer* relevanceScorer)
+    const ProductScoreParam& scoreParam)
 {
     if (scoreConfig.weight == 0)
         return NULL;
@@ -85,16 +82,13 @@ ProductScorer* ProductScorerFactory::createScorerImpl_(
     switch(scoreConfig.type)
     {
     case CUSTOM_SCORE:
-        return createCustomScorer_(scoreConfig, query);
+        return createCustomScorer_(scoreConfig, scoreParam.query_);
 
     case CATEGORY_SCORE:
-        return createCategoryScorer_(scoreConfig,
-                                     query,
-                                     querySource,
-                                     propSharedLockSet);
+        return createCategoryScorer_(scoreConfig, scoreParam);
 
     case RELEVANCE_SCORE:
-        return createRelevanceScorer_(scoreConfig, relevanceScorer);
+        return createRelevanceScorer_(scoreConfig, scoreParam.relevanceScorer_);
 
     case POPULARITY_SCORE:
         return createPopularityScorer_(scoreConfig);
@@ -122,48 +116,18 @@ ProductScorer* ProductScorerFactory::createCustomScorer_(
 
 ProductScorer* ProductScorerFactory::createCategoryScorer_(
     const ProductScoreConfig& scoreConfig,
-    const std::string& query,
-    const std::string& querySource,
-    faceted::PropSharedLockSet& propSharedLockSet)
+    const ProductScoreParam& scoreParam)
 {
-    if (categoryClickLogger_ == NULL ||
-        categoryValueTable_ == NULL)
+    if (!labelSelector_)
         return NULL;
 
-    std::vector<faceted::PropValueTable::pvid_t> topLabels;
-    std::vector<int> topFreqs;
-    categoryClickLogger_->getFreqLabel(query, kTopLabelLimit,
-                                       topLabels, topFreqs);
-
-    if (topLabels.empty())
+    std::vector<category_id_t> boostLabels;
+    if (labelSelector_->selectLabel(scoreParam, kTopLabelLimit, boostLabels))
     {
-        UString ustrQuery(query, UString::UTF_8);
-        UString backendCategory;
-        if(miningManager_->GetProductCategory(ustrQuery, backendCategory))
-        {
-            UString frontendCategory;
-            if(BackendLabelToFrontendLabel::Get()->Map(backendCategory,frontendCategory))
-            {
-                std::vector<std::vector<izenelib::util::UString> > groupPaths;
-                split_group_path(frontendCategory, groupPaths);
-                if(1 == groupPaths.size())
-                {
-                    faceted::PropValueTable::pvid_t topLabel = categoryValueTable_->propValueId(groupPaths[0]);
-                    topLabels.push_back(topLabel);
-                }
-            }
-        }
-    }
-
-    if (topLabels.empty() && !querySource.empty() && groupLabelKnowledge_)
-    {
-        groupLabelKnowledge_->getKnowledgeLabel(querySource, topLabels);
-    }
-
-    if (!topLabels.empty())
-    {
-        propSharedLockSet.insertSharedLock(categoryValueTable_);
-        return new CategoryScorer(scoreConfig, *categoryValueTable_, topLabels);
+        scoreParam.propSharedLockSet_.insertSharedLock(categoryValueTable_);
+        return new CategoryScorer(scoreConfig,
+                                  *categoryValueTable_,
+                                  boostLabels);
     }
 
     return NULL;

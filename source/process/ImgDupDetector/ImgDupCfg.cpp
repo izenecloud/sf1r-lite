@@ -90,16 +90,37 @@ void ImgDupCfg::parseServerCfg(properties& props)
 
     if (!props.getValue("imgdupdetector.inputpath", scd_input_dir_))
     {
-        throw std::runtime_error("Log Server Configuration missing property: imgdupdetector.inputpath");
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.inputpath");
     }
 
     if (!props.getValue("imgdupdetector.outputpath", scd_output_dir_))
     {
-        throw std::runtime_error("Log Server Configuration missing property: imgdupdetector.outputpath");
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.outputpath");
     }
 
     if (!props.getValue("imgdupdetector.sourcename", source_name_))
     {
-        throw std::runtime_error("Log Server Configuration missing property: imgdupdetector.sourcename");
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.sourcename");
+    }
+
+    if(!props.getValue("imgdupdetector.mode.incremental", incremental_mode_))
+    {
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.mode.incremental");
+    }
+    if(!props.getValue("imgdupdetector.detect.by.imgurl", detect_by_imgurl_))
+    {
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetecor.detect.by.imgurl");
+    }
+    if(!props.getValue("imgdupdetector.detect.by.imgcontent", detect_by_imgcontent_))
+    {
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.detect.by.imgcontent");
+    }
+    if(!props.getValue("imgdupdetector.imgcontent.length", img_con_len_))
+    {
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.imgcontent.length");
+    }
+    if(!props.getValue("imgdupdetector.loginfo", log_info_))
+    {
+        throw std::runtime_error("Img Dup Configuration missing property: imgdupdetector.loginfo");
     }
 }

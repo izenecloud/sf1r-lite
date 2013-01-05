@@ -3,7 +3,7 @@ username='dev'
 password='izene123'
 
 usage() {
-  echo "usage: update-resource-push.sh <branchname> [--all|--kpe|--nec|--speller-support|--ise|--sim]"
+  echo "usage: update-resource-push.sh <branchname> [--all|--kpe|--nec|--speller-support|--ise|--sim|--product-matcher]"
   echo "      <branchname> will include 'kite-1', 'kite-2', etc.."
   echo "      no module specific means all(--all)"
 }
@@ -48,6 +48,9 @@ then
   elif [ "$2" = '--sim' ]
   then
     dir_name='sim'
+  elif [ "$2" = '--product-matcher' ]
+  then
+    dir_name='product-matcher'
   elif [ "$2" = '--all' ]
   then
     dir_name='all'

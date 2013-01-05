@@ -77,7 +77,7 @@ template<typename CounterType>
 void NumericGroupCounter<CounterType>::addDoc(docid_t doc)
 {
     double value = 0;
-    if (numericPropertyTable_->getDoubleValue(doc, value))
+    if (numericPropertyTable_->getDoubleValue(doc, value, false))
     {
         ++countTable_[value];
     }
@@ -87,7 +87,7 @@ template<>
 void NumericGroupCounter<SubGroupCounter>::addDoc(docid_t doc)
 {
     double value = 0;
-    if (numericPropertyTable_->getDoubleValue(doc, value))
+    if (numericPropertyTable_->getDoubleValue(doc, value, false))
     {
         initSubCounterPair_.first = value;
         SubGroupCounter& subCounter = countTable_.insert(initSubCounterPair_).first->second;

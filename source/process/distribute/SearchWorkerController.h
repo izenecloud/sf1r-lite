@@ -38,7 +38,7 @@ public:
 
     WORKER_CONTROLLER_METHOD_2(getDistSearchInfo, searchWorker_->getDistSearchInfo, KeywordSearchActionItem, DistKeywordSearchInfo)
 
-    WORKER_CONTROLLER_METHOD_2(getDistSearchResult, searchWorker_->getDistSearchResult, KeywordSearchActionItem, DistKeywordSearchResult)
+    WORKER_CONTROLLER_METHOD_2(getDistSearchResult, searchWorker_->getDistSearchResult, KeywordSearchActionItem, KeywordSearchResult)
 
     WORKER_CONTROLLER_METHOD_2(getSummaryResult, searchWorker_->getSummaryResult, KeywordSearchActionItem, KeywordSearchResult)
 

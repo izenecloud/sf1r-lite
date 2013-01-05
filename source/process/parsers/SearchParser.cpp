@@ -101,6 +101,13 @@ using driver::Keys;
  *   for <ProductRanking><Score type="random"> in collection config file.
  * - @b query_source (@c String): Where does the query come from, used to decide
  *   the categories to boost in product ranking.
+ * - @b boost_group_label (@c Array): The group labels to boost product rankings.@n
+ *   It's an array of group labels, each element is an array of the label path
+ *   started from root node. As an example, two labels could be written as
+ *   [["手机数码", "手机通讯", "手机"], ["电脑办公", "电脑整机"]].@n
+ *   In order to enable this feature, in collection config file
+ *   <ProductRanking><Score type="category">, you need to configure the property
+ *   name of these group labels, and also a non-zero weight.
  *
  * Example
  * @code
@@ -169,7 +176,9 @@ bool SearchParser::parse(const Value& search)
         return false;
     }
 
-    if (!parseGroupLabel_(search) || !parseAttrLabel_(search))
+    if (!parseGroupLabel_(search) ||
+        !parseAttrLabel_(search) ||
+        !parseBoostGroupLabel_(search))
         return false;
 
     logKeywords_ = asBoolOr(search[Keys::log_keywords], true);
@@ -493,6 +502,42 @@ bool SearchParser::parseAttrLabel_(const Value& search)
         }
 
         attrLabels_[attrName].push_back(attrValue);
+    }
+
+    return true;
+}
+
+bool SearchParser::parseBoostGroupLabel_(const Value& search)
+{
+    const Value& boostLabelValue = search[Keys::boost_group_label];
+
+    if (nullValue(boostLabelValue))
+        return true;
+
+    if (boostLabelValue.type() != Value::kArrayType)
+    {
+        error() = "Require an array for search parameter boost_group_label.";
+        return false;
+    }
+
+    for (std::size_t i = 0; i < boostLabelValue.size(); ++i)
+    {
+        const Value& pathValue = boostLabelValue(i);
+
+        if (pathValue.type() != Value::kArrayType)
+        {
+            error() = "Require an array for each element in search parameter boost_group_label.";
+            return false;
+        }
+
+        faceted::GroupParam::GroupPath groupPath;
+        for (std::size_t j = 0; j < pathValue.size(); ++j)
+        {
+            std::string nodeStr = asString(pathValue(j));
+            groupPath.push_back(nodeStr);
+        }
+
+        boostGroupLabels_.push_back(groupPath);
     }
 
     return true;

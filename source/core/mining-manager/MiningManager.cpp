@@ -1,5 +1,6 @@
 #include <configuration-manager/PropertyConfig.h>
 #include <document-manager/DocumentManager.h>
+#include <common/PropSharedLockSet.h>
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
 #include "MiningTaskBuilder.h"
@@ -30,10 +31,10 @@
 #include "group-manager/GroupManager.h"
 #include "group-manager/GroupFilterBuilder.h"
 #include "group-manager/GroupFilter.h"
-#include "group-manager/PropSharedLockSet.h"
 #include "attr-manager/AttrManager.h"
 #include "faceted-submanager/ctr_manager.h"
 
+#include "util/split_ustr.h"
 #include "group-label-logger/GroupLabelLogger.h"
 #include "group-label-logger/BackendLabel2FrontendLabel.h"
 #include "group-label-logger/GroupLabelKnowledge.h"
@@ -154,7 +155,6 @@ MiningManager::MiningManager(
     , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
-    , productMatcher_(NULL)
     , kvManager_(NULL)
     , miningTaskBuilder_(NULL)
     , deleted_doc_before_mining_(0)
@@ -181,7 +181,6 @@ MiningManager::~MiningManager()
     if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
-    if (productMatcher_) delete productMatcher_;
     if (kvManager_) delete kvManager_;
     if (miningTaskBuilder_) delete miningTaskBuilder_;
     close();
@@ -511,7 +510,8 @@ bool MiningManager::open()
             boost::filesystem::path cma_tdt_dic(system_resource_path_);
             cma_tdt_dic /= boost::filesystem::path("dict");
             cma_tdt_dic /= boost::filesystem::path(mining_schema_.tdt_config.tdt_tokenize_dicpath);
-            topicDetector_ = new NaiveTopicDetector(cma_tdt_dic.c_str());
+            topicDetector_ = new NaiveTopicDetector(
+                system_resource_path_, cma_tdt_dic.c_str(),mining_schema_.tdt_config.enable_semantic);
         }
 
 
@@ -622,34 +622,35 @@ bool MiningManager::open()
         if (mining_schema_.product_matcher_enable)
         {
             std::vector<std::string> restrict_vector;
-            restrict_vector.push_back("^手机$");
-            restrict_vector.push_back("^数码相机/单反相机/摄像机");
-            restrict_vector.push_back("^MP3/MP4/iPod/录音笔$");
-            restrict_vector.push_back("^笔记本电脑$");
-            restrict_vector.push_back("^平板电脑/MID$");
-            restrict_vector.push_back("^台式机/一体机/服务器.*$");
-            restrict_vector.push_back("^电脑硬件/显示器/电脑周边.*$");
-            restrict_vector.push_back("^网络设备/网络相关.*$");
-            restrict_vector.push_back("^闪存卡/U盘/存储/移动硬盘.*$");
-            restrict_vector.push_back("^办公设备/耗材/相关服务>打印机$");
-            restrict_vector.push_back("^办公设备/耗材/相关服务>投影机$");
-            restrict_vector.push_back("^办公设备/耗材/相关服务>扫描仪$");
-            restrict_vector.push_back("^办公设备/耗材/相关服务>复合复印机$");
-            restrict_vector.push_back("^大家电.*$");
+            //restrict_vector.push_back("^手机$");
+            //restrict_vector.push_back("^数码相机/单反相机/摄像机");
+            //restrict_vector.push_back("^MP3/MP4/iPod/录音笔$");
+            //restrict_vector.push_back("^笔记本电脑$");
+            //restrict_vector.push_back("^平板电脑/MID$");
+            //restrict_vector.push_back("^台式机/一体机/服务器.*$");
+            //restrict_vector.push_back("^电脑硬件/显示器/电脑周边.*$");
+            //restrict_vector.push_back("^网络设备/网络相关.*$");
+            //restrict_vector.push_back("^闪存卡/U盘/存储/移动硬盘.*$");
+            //restrict_vector.push_back("^办公设备/耗材/相关服务>打印机$");
+            //restrict_vector.push_back("^办公设备/耗材/相关服务>投影机$");
+            //restrict_vector.push_back("^办公设备/耗材/相关服务>扫描仪$");
+            //restrict_vector.push_back("^办公设备/耗材/相关服务>复合复印机$");
+            //restrict_vector.push_back("^大家电.*$");
             for (uint32_t i=0;i<restrict_vector.size();i++)
             {
                 match_category_restrict_.push_back(boost::regex(restrict_vector[i]));
             }
             std::string res_path = system_resource_path_+"/product-matcher";
             BackendLabelToFrontendLabel::Get()->Init(res_path + "/backend_category_2_frontend_category.txt");
-            productMatcher_ = new ProductMatcher(res_path);
-            if (!productMatcher_->Open())
+            ProductMatcher* matcher = ProductMatcherInstance::get();
+            if (!matcher->Open(res_path))
             {
                 std::cerr<<"product matcher open failed"<<std::endl;
-                delete productMatcher_;
-                productMatcher_ = NULL;
             }
-            productMatcher_->SetUsePriceSim(false);
+            else
+            {
+                matcher->SetUsePriceSim(false);
+            }
             //test
             std::ifstream ifs("./querylog.txt");
             std::string line;
@@ -1623,13 +1624,9 @@ faceted::PropValueTable::pvid_t MiningManager::propValueId_(
         (propValueTable = groupManager_->getPropValueTable(propName)))
     {
         std::vector<izenelib::util::UString> ustrPath;
-        for (std::vector<std::string>::const_iterator it = groupPath.begin();
-                it != groupPath.end(); ++it)
-        {
-            ustrPath.push_back(izenelib::util::UString(*it, UString::UTF_8));
-        }
-
+        convert_to_ustr_path(groupPath, ustrPath);
         pvId = propValueTable->propValueId(ustrPath);
+
         if (pvId == 0)
         {
             std::string pathStr;
@@ -2006,7 +2003,7 @@ bool MiningManager::GetSuffixMatch(
                 groupFilterBuilder_.reset(filterBuilder);
             }
 
-            faceted::PropSharedLockSet propSharedLockSet;
+            PropSharedLockSet propSharedLockSet;
             boost::scoped_ptr<faceted::GroupFilter> groupFilter;
             if (groupFilterBuilder_)
             {
@@ -2045,40 +2042,94 @@ bool MiningManager::GetSuffixMatch(
     return true;
 }
 
-bool MiningManager::GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category)
+bool MiningManager::GetProductCategory(
+    const std::string& query,
+    int limit,
+    std::vector<std::vector<std::string> >& pathVec
+)
 {
-    if (productMatcher_==NULL)
-    {
+    const UString ustrQuery(query, UString::UTF_8);
+    std::vector<UString> backendCategories;
+    if (!GetProductCategory(ustrQuery,limit, backendCategories))
         return false;
-    }
-    Document doc;
-    doc.property("Title") = query;
-    ProductMatcher::Product result_product;
-    if (productMatcher_->Process(doc, result_product))
+    for(std::vector<UString>::iterator bcit = backendCategories.begin();
+        bcit != backendCategories.end(); ++bcit)
     {
-        const std::string& category_name = result_product.scategory;
-        if (!category_name.empty())
+        UString frontendCategory;
+        if (!BackendLabelToFrontendLabel::Get()->Map(*bcit, frontendCategory))
         {
-            bool valid = true;
-            if (!match_category_restrict_.empty())
-            {
-                valid = false;
-                for (uint32_t i=0;i<match_category_restrict_.size();i++)
-                {
-                    if (boost::regex_match(category_name, match_category_restrict_[i]))
-                    {
-                        valid = true;
-                        break;
-                    }
+            if(!BackendLabelToFrontendLabel::Get()->PrefixMap(*bcit, frontendCategory))
+                continue;
+        }
+        std::vector<std::vector<UString> > groupPaths;
+        split_group_path(frontendCategory, groupPaths);
+        if (groupPaths.empty())
+            continue;
+        std::vector<std::string> path;
+        const std::vector<UString>& topGroup = groupPaths[0];
+        for (std::vector<UString>::const_iterator it = topGroup.begin();
+             it != topGroup.end(); ++it)
+        {
+            std::string str;
+            it->convertString(str, UString::UTF_8);
+            path.push_back(str);
+        }
+        pathVec.push_back(path);
+    }
+    return true;
+}
 
+bool MiningManager::GetProductCategory(
+    const izenelib::util::UString& query, 
+    int limit, 
+    std::vector<UString>& categories)
+{
+    if (mining_schema_.product_matcher_enable)
+    {
+        ProductMatcher* matcher = ProductMatcherInstance::get();
+        Document doc;
+        doc.property("Title") = query;
+        std::vector<ProductMatcher::Product> result_products;
+        if (matcher->Process(doc, (uint32_t)limit, result_products))
+        {
+            for(uint32_t i=0;i<result_products.size();i++)
+            {
+                const std::string& category_name = result_products[i].scategory;
+                if (!category_name.empty())
+                {
+                    bool valid = true;
+                    if (!match_category_restrict_.empty())
+                    {
+                        valid = false;
+                        for (uint32_t i=0;i<match_category_restrict_.size();i++)
+                        {
+                            if (boost::regex_match(category_name, match_category_restrict_[i]))
+                            {
+                                valid = true;
+                                break;
+                            }
+
+                        }
+                    }
+                    if(valid)
+                    {
+                        categories.push_back(UString(category_name, UString::UTF_8));
+                    }
                 }
             }
-            if (valid)
-            {
-                category = izenelib::util::UString(category_name, izenelib::util::UString::UTF_8);
-                return true;
-            }
         }
+    }
+    if(!categories.empty()) return true;
+    return false;
+}
+
+bool MiningManager::GetProductCategory(const izenelib::util::UString& query, UString& category)
+{
+    std::vector<UString> vec;
+    if(GetProductCategory(query, 1, vec) && !vec.empty())
+    {
+        category = vec.front();
+        return true;
     }
     return false;
 }

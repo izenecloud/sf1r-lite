@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
         if (po.setLogServerProcessArgs(argv[0], args))
         {
             __pid_t pid = getPid();
-            LOG(INFO) << "\tLog Server Process : pid=" << pid;
+            LOG(INFO) << "Image DD Server Process : pid=" << pid;
 
             ImgDupProcess imgDupProcess;
 

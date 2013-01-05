@@ -126,6 +126,9 @@ public:
     /// @brief whether the parallel searching
     bool enable_parallel_searching_;
 
+    /// @brief force get document even if it has been deleted
+    bool enable_forceget_doc_;
+
     /// @brief document cache number
     size_t documentCacheNum_;
 

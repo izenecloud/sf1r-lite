@@ -54,6 +54,16 @@ public:
 
     std::string source_name_;
 
+    std::string incremental_mode_;
+
+    std::string detect_by_imgurl_;
+
+    std::string detect_by_imgcontent_;
+
+    uint32_t img_con_len_;
+
+    std::string log_info_;
+
 };
 
 #endif /* IMGDUPCFG_H_ */

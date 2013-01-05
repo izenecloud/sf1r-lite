@@ -4,6 +4,7 @@
 #include <index-manager/IndexManager.h>
 #include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <bundles/index/IndexBundleConfiguration.h>
+#include <common/PropSharedLockSet.h>
 
 namespace sf1r
 {
@@ -159,7 +160,9 @@ boost::shared_ptr<NumericPropertyTableBase>& SortPropertyCache::getCTRPropertyDa
     return numericPropertyTable;
 }
 
-SortPropertyComparator* SortPropertyCache::getComparator(SortProperty* pSortProperty)
+SortPropertyComparator* SortPropertyCache::getComparator(
+    SortProperty* pSortProperty,
+    PropSharedLockSet& propSharedLockSet)
 {
     SortProperty::SortPropertyType propSortType = pSortProperty->getType();
     const std::string& propName = pSortProperty->getProperty();
@@ -181,7 +184,10 @@ SortPropertyComparator* SortPropertyCache::getComparator(SortProperty* pSortProp
     }
 
     if (numericPropertyTable)
+    {
+        propSharedLockSet.insertSharedLock(numericPropertyTable.get());
         return new SortPropertyComparator(numericPropertyTable);
+    }
 
     return NULL;
 }
@@ -213,7 +219,7 @@ void Sorter::addSortProperty(SortProperty* pSortProperty)
     sortProperties_.push_back(pSortProperty);
 }
 
-void Sorter::getComparators()
+void Sorter::getComparators(PropSharedLockSet& propSharedLockSet)
 {
     SortProperty* pSortProperty;
     nNumProperties_ = sortProperties_.size();
@@ -234,7 +240,8 @@ void Sorter::getComparators()
                 break;
             case SortProperty::AUTO:
                 if (!pSortProperty->pComparator_)
-                    pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty);
+                    pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty,
+                                                                         propSharedLockSet);
                 if (!pSortProperty->pComparator_)
                     ++numOfInValidComparators;
                 break;
@@ -242,7 +249,8 @@ void Sorter::getComparators()
                 pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
                 break;
             case SortProperty::CTR:
-                pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty);
+                pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty,
+                                                                     propSharedLockSet);
                 if (!pSortProperty->pComparator_)
                     ++numOfInValidComparators;
                 break;

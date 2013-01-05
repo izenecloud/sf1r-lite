@@ -9,7 +9,7 @@
 #include "DateGroupCounter.h"
 #include "DateGroupLabel.h"
 #include "DateStrParser.h"
-#include "PropSharedLockSet.h"
+#include <common/PropSharedLockSet.h>
 #include <search-manager/NumericPropertyTableBuilder.h>
 
 #include <limits>
@@ -133,7 +133,8 @@ GroupCounter* GroupCounterLabelBuilder::createGroupCounter(
 
     if (groupPropParam.isRange_)
     {
-        counter = createNumericRangeCounter_(groupPropParam.property_);
+        counter = createNumericRangeCounter_(groupPropParam.property_,
+                                             sharedLockSet);
     }
     else
     {
@@ -181,12 +182,14 @@ GroupCounter* GroupCounterLabelBuilder::createValueCounter_(
     }
     else if (groupConfig.isNumericType())
     {
-        counter = createNumericCounter_(propName, subCounter);
+        counter = createNumericCounter_(propName, sharedLockSet, subCounter);
     }
     else if (groupConfig.isDateTimeType())
     {
-        counter = createDateCounter_(propName, groupPropParam.unit_,
-            sharedLockSet, subCounter);
+        counter = createDateCounter_(propName,
+                                     groupPropParam.unit_,
+                                     sharedLockSet,
+                                     subCounter);
     }
     else
     {
@@ -228,6 +231,7 @@ GroupCounter* GroupCounterLabelBuilder::createStringCounter_(
 
 GroupCounter* GroupCounterLabelBuilder::createNumericCounter_(
     const std::string& prop,
+    PropSharedLockSet& sharedLockSet,
     GroupCounter* subCounter) const
 {
     GroupCounter* counter = NULL;
@@ -235,6 +239,8 @@ GroupCounter* GroupCounterLabelBuilder::createNumericCounter_(
 
     if (numericPropertyTable)
     {
+        sharedLockSet.insertSharedLock(numericPropertyTable.get());
+
         if (subCounter)
         {
             SubGroupCounter subGroupCounter(subCounter);
@@ -253,7 +259,9 @@ GroupCounter* GroupCounterLabelBuilder::createNumericCounter_(
     return counter;
 }
 
-GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter_(const std::string& prop) const
+GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter_(
+    const std::string& prop,
+    PropSharedLockSet& sharedLockSet) const
 {
     GroupConfigMap::const_iterator it = groupConfigMap_.find(prop);
 
@@ -268,6 +276,7 @@ GroupCounter* GroupCounterLabelBuilder::createNumericRangeCounter_(const std::st
     boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = numericTableBuilder_->createPropertyTable(prop);
     if (numericPropertyTable)
     {
+        sharedLockSet.insertSharedLock(numericPropertyTable.get());
         return new NumericRangeGroupCounter(prop, numericPropertyTable.get());
     }
     return NULL;
@@ -333,7 +342,7 @@ GroupLabel* GroupCounterLabelBuilder::createGroupLabel(
     }
     else if (groupConfig.isNumericType())
     {
-        label = createNumericRangeLabel_(labelParam);
+        label = createNumericRangeLabel_(labelParam, sharedLockSet);
     }
     else if (groupConfig.isDateTimeType())
     {
@@ -368,7 +377,9 @@ GroupLabel* GroupCounterLabelBuilder::createStringLabel_(
     return label;
 }
 
-GroupLabel* GroupCounterLabelBuilder::createNumericRangeLabel_(const GroupParam::GroupLabelParam& labelParam) const
+GroupLabel* GroupCounterLabelBuilder::createNumericRangeLabel_(
+    const GroupParam::GroupLabelParam& labelParam,
+    PropSharedLockSet& sharedLockSet) const
 {
     const std::string& propName = labelParam.first;
     bool isRange = false;
@@ -380,12 +391,14 @@ GroupLabel* GroupCounterLabelBuilder::createNumericRangeLabel_(const GroupParam:
     }
 
     if (isRange)
-        return createRangeLabel_(labelParam);
+        return createRangeLabel_(labelParam, sharedLockSet);
 
-    return createNumericLabel_(labelParam);
+    return createNumericLabel_(labelParam, sharedLockSet);
 }
 
-GroupLabel* GroupCounterLabelBuilder::createNumericLabel_(const GroupParam::GroupLabelParam& labelParam) const
+GroupLabel* GroupCounterLabelBuilder::createNumericLabel_(
+    const GroupParam::GroupLabelParam& labelParam,
+    PropSharedLockSet& sharedLockSet) const
 {
     const std::string& propName = labelParam.first;
     const GroupParam::GroupPathVec& paths = labelParam.second;
@@ -416,10 +429,13 @@ GroupLabel* GroupCounterLabelBuilder::createNumericLabel_(const GroupParam::Grou
         targetValues.push_back(value);
     }
 
+    sharedLockSet.insertSharedLock(numericPropertyTable.get());
     return new NumericRangeGroupLabel(numericPropertyTable.get(), targetValues);
 }
 
-GroupLabel* GroupCounterLabelBuilder::createRangeLabel_(const GroupParam::GroupLabelParam& labelParam) const
+GroupLabel* GroupCounterLabelBuilder::createRangeLabel_(
+    const GroupParam::GroupLabelParam& labelParam,
+    PropSharedLockSet& sharedLockSet) const
 {
     const std::string& propName = labelParam.first;
     const GroupParam::GroupPathVec& paths = labelParam.second;
@@ -450,6 +466,7 @@ GroupLabel* GroupCounterLabelBuilder::createRangeLabel_(const GroupParam::GroupL
         ranges.push_back(range);
     }
 
+    sharedLockSet.insertSharedLock(numericPropertyTable.get());
     return new NumericRangeGroupLabel(numericPropertyTable.get(), ranges);
 }
 

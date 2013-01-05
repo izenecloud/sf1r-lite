@@ -75,9 +75,9 @@ void SegmentToSentece(const UString& Segment, vector<std::pair<double,UString> >
             {
                 templen = min(len1,len2);
             }
-            if(temp.substr(0,templen).length()>0&&temp.substr(0,templen).length()<28)
+            if(temp.substr(0,templen).length()>0 && temp.substr(0,templen).length()<28)
             {
-                Sentence.push_back(std::make_pair(1.0,UString(temp.substr(0,templen), UString::UTF_8)) );
+                Sentence.push_back(std::make_pair(1.0, UString(temp.substr(0,templen), UString::UTF_8)) );
             }
             temp = temp.substr(templen + dot.length());
         }
@@ -85,7 +85,7 @@ void SegmentToSentece(const UString& Segment, vector<std::pair<double,UString> >
         {   
             if(temp.length()>0&&temp.length()<28)
             {
-               Sentence.push_back(std::make_pair(1.0,UString(temp, UString::UTF_8)));
+               Sentence.push_back(std::make_pair(1.0, UString(temp, UString::UTF_8)));
             }
             break;
         }
@@ -133,7 +133,7 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
     delete corpus_;
 }
 
-void MultiDocSummarizationSubManager::EvaluateSummarization()
+void MultiDocSummarizationSubManager::EvaluateSummarization() // Here start ...
 {
     std::vector<docid_t> del_docid_list;
     document_manager_->getDeletedDocIdList(del_docid_list);
@@ -152,7 +152,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
-    Opc_ = new OpinionsClassificationManager(cma_path, schema_.opinionWorkingPath);
+    Opc_ = new OpinionsClassificationManager(cma_path, schema_.opinionWorkingPath); //  Here get advantage or disvantage opintion;
     float score;
     boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = document_manager_->getNumericPropertyTable(schema_.scorePropName);
     for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
@@ -183,17 +183,18 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         //const AdvantageType& advantage = ait->second.get<AdvantageType>();
         //const DisadvantageType& disadvantage = dit->second.get<DisadvantageType>();
         UString us(cit->second.get<UString>());
-        string str;
+        std::string str;
         us.convertString(str, izenelib::util::UString::UTF_8);
-        std::pair<UString,UString> advantagepair;
-        Opc_->Classify(str,advantagepair);
+        std::pair<UString, UString> advantagepair;
+        Opc_->Classify(str, advantagepair);
 
-        AdvantageType advantage=advantagepair.first;
-        DisadvantageType disadvantage=advantagepair.second;
+        AdvantageType advantage = advantagepair.first;
+        DisadvantageType disadvantage = advantagepair.second;
 
         UString us_title(title_it->second.get<UString>());
         us_title.convertString(str, izenelib::util::UString::UTF_8);
         Opc_->Classify(str,advantagepair);
+
         if(advantage.find(advantagepair.first) == UString::npos)
         {
             advantage.append(advantagepair.first);
@@ -438,33 +439,55 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
         std::vector< std::pair<double, UString> > advantage_opinions = Op->getOpinion();
         Op->setComment(disadvantage_comments);
         std::vector< std::pair<double, UString> > disadvantage_opinions = Op->getOpinion();
-        
-        if(advantage_opinions.empty()&&(!advantage_comments.empty()))
+
+        if(advantage_opinions.empty() && (!advantage_comments.empty()))
         {
-            for(unsigned i=0;i<min(advantage_comments.size(),5);i++)
-            {   /*
-                 std::vector< std::pair<double, UString> > temp=SegmentToSentece(advantage_comments[i]);
-                 for(unsigned i=0;i<=min(5-advantage_opinions.size(),temp.size());i++)
-                 {
-                    advantage_opinions.push_back(temp[i]);
-                 }
-                */
-                 std::vector< std::pair<double, UString> > temp;
-                 SegmentToSentece(advantage_comments[i], temp);
-                 advantage_opinions.insert(advantage_opinions.end(),temp.begin(),temp.end());
-                 if(advantage_opinions.size()>=5)
-                     break;
+            for(unsigned i = 0; i < min(advantage_comments.size(), 4);i++)
+            {
+                std::vector< std::pair<double, UString> > temp;
+                SegmentToSentece(advantage_comments[i], temp);
+                for (std::vector< std::pair<double, UString> >::iterator iter = temp.begin(); iter != temp.end(); ++iter)
+                {
+                    bool isIN = false;
+                    for (unsigned int j = 0; j < advantage_opinions.size(); ++j)
+                    {
+                        if (advantage_opinions[j].second == iter->second)
+                        {
+                            isIN = true;
+                            advantage_opinions[j].first += 1.0;
+                            break;
+                        }
+                    }
+                    if (!isIN)
+                        advantage_opinions.push_back(*iter);
+                }
+                if(advantage_opinions.size() >= 4)
+                    break;
             }
         }
         
-        if(disadvantage_opinions.empty()&&(!disadvantage_comments.empty()))
+        if(disadvantage_opinions.empty() && (!disadvantage_comments.empty()))
         {
-            for(unsigned i=0;i<min(disadvantage_comments.size(),5);i++)
+            for(unsigned i = 0;i < min(disadvantage_comments.size(), 4); i++)
             {
-                 std::vector< std::pair<double, UString> > temp;
-                 SegmentToSentece(disadvantage_comments[i], temp);
-                 disadvantage_opinions.insert(disadvantage_opinions.end(),temp.begin(),temp.end());
-                 if(disadvantage_opinions.size()>5)
+                std::vector< std::pair<double, UString> > temp;
+                SegmentToSentece(disadvantage_comments[i], temp);
+                for (std::vector< std::pair<double, UString> >::iterator iter = temp.begin(); iter != temp.end(); ++iter)
+                {
+                    bool isIN = false;
+                    for (unsigned int j = 0; j < disadvantage_opinions.size(); ++j)
+                    {
+                        if (disadvantage_opinions[j].second == iter->second)
+                        {
+                            isIN = true;
+                            disadvantage_opinions[j].first += 1.0;
+                            break;
+                        }
+                    }
+                    if (!isIN)
+                        disadvantage_opinions.push_back(*iter);
+                }
+                 if(disadvantage_opinions.size() > 4)
                     break;
             }
         }
@@ -627,6 +650,7 @@ bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(
 {
     std::string key_str;
     rawKey.convertString(key_str, UString::UTF_8);
+LOG(INFO)<<"key_str:"<<key_str<<endl;
     return summarization_storage_->Get(Utilities::uuidToUint128(key_str), result);
 }
 

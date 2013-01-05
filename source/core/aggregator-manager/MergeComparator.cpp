@@ -4,7 +4,7 @@ namespace sf1r{
 
 
 
-DocumentComparator::DocumentComparator(const DistKeywordSearchResult& distSearchResult)
+DocumentComparator::DocumentComparator(const KeywordSearchResult& distSearchResult)
 {
     const DistKeywordSearchInfo& distSearchInfo = distSearchResult.distSearchInfo_;
     const std::vector<std::pair<std::string , bool> >& sortPropertyList = distSearchInfo.sortPropertyList_;

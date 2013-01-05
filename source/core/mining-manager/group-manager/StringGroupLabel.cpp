@@ -1,4 +1,5 @@
 #include "StringGroupLabel.h"
+#include "../util/split_ustr.h"
 #include <util/ustring/UString.h>
 
 #include <set>
@@ -38,11 +39,7 @@ void StringGroupLabel::getTargetValueIds_(const GroupParam::GroupPathVec& labelP
         pathIt != labelPaths.end(); ++pathIt)
     {
         std::vector<izenelib::util::UString> ustrPath;
-        for (std::vector<std::string>::const_iterator nodeIt = pathIt->begin();
-            nodeIt != pathIt->end(); ++nodeIt)
-        {
-            ustrPath.push_back(izenelib::util::UString(*nodeIt, izenelib::util::UString::UTF_8));
-        }
+        convert_to_ustr_path(*pathIt, ustrPath);
 
         PropValueTable::pvid_t targetId =
             propValueTable_.propValueId(ustrPath, false);

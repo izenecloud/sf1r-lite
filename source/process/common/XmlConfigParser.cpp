@@ -1209,7 +1209,7 @@ void CollectionConfig::parseIndexBundleParam(const ticpp::Element * index, Colle
 
     params.Get("Sia/triggerqa", indexBundleConfig.bTriggerQA_);
     params.Get("Sia/enable_parallel_searching", indexBundleConfig.enable_parallel_searching_);
-
+    params.Get("Sia/enable_forceget_doc", indexBundleConfig.enable_forceget_doc_);
     params.Get<std::size_t>("Sia/doccachenum", indexBundleConfig.documentCacheNum_);
     params.Get<std::size_t>("Sia/searchcachenum", indexBundleConfig.searchCacheNum_);
     params.Get("Sia/refreshsearchcache", indexBundleConfig.refreshSearchCache_);
@@ -1883,6 +1883,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             mining_schema.tdt_config.perform_tdt_task= true;
         else
             mining_schema.tdt_config.perform_tdt_task= false;
+
+        std::string enable_semantic;
+        getAttribute(task_node, "enablesemantic", enable_semantic, false);
+        enable = parseTruth(enable_semantic);
+        if (1 == enable)
+            mining_schema.tdt_config.enable_semantic= true;
+        else
+            mining_schema.tdt_config.enable_semantic= false;
 
         ticpp::Element* subNode = getUniqChildElement(task_node, "TokenizeDictionary", true);
         if (subNode)

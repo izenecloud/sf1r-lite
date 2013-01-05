@@ -15,69 +15,66 @@ namespace sf1r {
 
     struct PsmAttach
     {
-        ProductPrice price;
-        uint32_t id; //id should be different
-        uint32_t cid;
-        std::string docid;
-        std::string img_url;
-        std::string source_name;
+        uint8_t id;
         friend class boost::serialization::access;
         template<class Archive>
         void serialize(Archive & ar, const unsigned int version)
         {
-            ar & price & id & cid;
+            ar & id;
         }
 
         bool dd(const PsmAttach& other) const
         {
             return true;
-            if(img_url.compare(other.img_url) == 0)
-                return true;
-            return false;
         }
         friend std::ostream& operator<<(std::ostream& out, const PsmAttach& attach)
         {
-            out<<"price "<<attach.price.ToString()<<", id "<<attach.id<<", cid "<<attach.cid;
+            out<<"id "<<attach.id;
             return out;
         }
     };
 
     class PsmHelper
     {
-    public:
-        static bool GetPsmItem(ProductTermAnalyzer& analyzer
-          , std::map<std::string, izenelib::util::UString>& doc
-          , std::string& key, std::vector<std::pair<std::string, double> >& doc_vector, PsmAttach& attach)
-        {
-            if(doc["Img"].length()==0)
+        public:
+            static bool GetPsmItem(ProductTermAnalyzer& analyzer
+                    , std::map<std::string, izenelib::util::UString>& doc
+                    , std::string& key, std::vector<std::pair<std::string, double> >& doc_vector, PsmAttach& attach)
             {
-                LOG(INFO)<<"There is no Img ... "<<std::endl;
-                return false;
+                if(doc["Img"].length()==0)
+                {
+                    LOG(INFO)<<"There is no Img ... "<<std::endl;
+                    return false;
+                }
+                doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
+                std::string img_url;
+                doc["Img"].convertString(img_url, izenelib::util::UString::UTF_8);
+                analyzer.Analyze(doc["Img"].substr(7), doc_vector);
+                uint32_t i;
+                uint32_t size = img_url.size();
+                if(size < 60)
+                {
+                    for(i=20;i<size-6;i++)
+                    {
+                        doc_vector.push_back(make_pair(img_url.substr(i, 7), 1.0));
+                    }
+                }
+                return true;
             }
-            doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
 
-            doc["DOCID"].convertString(attach.docid, izenelib::util::UString::UTF_8);
-            izenelib::util::UString prefix;
-
-            analyzer.Analyze(doc["Img"], doc_vector);
-
-            doc["Img"].convertString(attach.img_url, izenelib::util::UString::UTF_8);
-            doc["ShareSourceName"].convertString(attach.source_name, izenelib::util::UString::UTF_8);
-/*            if(doc["Img"].length() > 50)
-                analyzer.Analyze(doc["Img"], doc_vector);
-            else
+            static bool GetPsmItemCon(ProductTermAnalyzer& analyzer
+                    , std::map<std::string, izenelib::util::UString>& doc
+                    , std::string& key, std::vector<std::pair<std::string, double> >& doc_vector, PsmAttach& attach, uint32_t length)
             {
-                analyzer.Analyze(doc["Img"].substr(25, 18), doc_vector);
+                if(doc["Content"].length()<=length)
+                {
+//                    LOG(INFO)<<"Content Empty... "<<std::endl;
+                    return false;
+                }
+                doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
+                analyzer.Analyze(doc["Content"], doc_vector);
+                return true;
             }
-            if( doc_vector.empty() )
-            {
-                LOG(INFO)<<"Doc Vector empty ... "<<std::endl;
-                return false;
-            }
-*/
-            return true;
-        }
-
     };
 
 }

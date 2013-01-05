@@ -125,12 +125,7 @@ PropValueTable::pvid_t PropValueTable::propValueId(
     const std::vector<izenelib::util::UString>& path,
     bool isLock) const
 {
-    ScopedReadLock lock(mutex_, boost::defer_lock);
-
-    if (isLock)
-    {
-        lock.lock();
-    }
+    ScopedReadBoolLock lock(mutex_, isLock);
 
     pvid_t pvId = 0;
 

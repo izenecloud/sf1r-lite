@@ -371,7 +371,11 @@ public:
             sf1r::faceted::OntologyRep& attrRep
             );
 
-    bool GetProductCategory(const izenelib::util::UString& query, izenelib::util::UString& category);
+    bool GetProductCategory(const std::string& query, int limit, std::vector<std::vector<std::string> >& pathVec );
+
+    bool GetProductCategory(const izenelib::util::UString& query, int limit, std::vector<UString>& categories);
+    bool GetProductCategory(const izenelib::util::UString& query, UString& category);
+
 
     bool SetKV(const std::string& key, const std::string& value);
 
@@ -650,7 +654,6 @@ private:
     IncrementalManager* incrementalManager_;
 
     /** Product Matcher */
-    ProductMatcher* productMatcher_;
     std::vector<boost::regex> match_category_restrict_;
 
     /** KV */

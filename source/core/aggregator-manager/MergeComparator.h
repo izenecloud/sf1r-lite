@@ -70,7 +70,7 @@ private:
 class DocumentComparator
 {
 public:
-    DocumentComparator(const DistKeywordSearchResult& distSearchResult);
+    DocumentComparator(const KeywordSearchResult& distSearchResult);
 
     ~DocumentComparator();
 

@@ -46,7 +46,11 @@ void GroupLabelPreProcessor::pushTopLabels_(
     {
         LOG(ERROR) << "failed to get frequent label for group property: "
                    << propName << ", query: " << query;
-        return;
+    }
+
+    if (pathVec.empty())
+    {
+        miningSearchService_->GetProductCategory(query, limit, pathVec);
     }
 
     for (GroupPathVec::const_iterator pathIt = pathVec.begin();

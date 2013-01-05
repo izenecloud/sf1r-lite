@@ -4,8 +4,7 @@ namespace sf1r
 {
 
 SortPropertyComparator::SortPropertyComparator()
-    : propertyTableLock_(NULL)
-    , type_(UNKNOWN_DATA_PROPERTY_TYPE)
+    : type_(UNKNOWN_DATA_PROPERTY_TYPE)
     , size_(0)
 {
     initComparator();
@@ -13,28 +12,17 @@ SortPropertyComparator::SortPropertyComparator()
 
 SortPropertyComparator::SortPropertyComparator(const boost::shared_ptr<NumericPropertyTableBase>& propData)
     : propertyTable_(propData)
-    , propertyTableLock_(& propertyTable_->mutex_)
     , type_(propData->getType())
     , size_(propData->size())
 {
-    propertyTableLock_->lock_shared();
     initComparator();
 }
 
 SortPropertyComparator::SortPropertyComparator(PropertyDataType dataType)
-    : propertyTableLock_(NULL)
-    , type_(dataType)
+    : type_(dataType)
     , size_(0)
 {
     initComparator();
-}
-
-SortPropertyComparator::~SortPropertyComparator()
-{
-    if(propertyTableLock_)
-    {
-        propertyTableLock_->unlock_shared();
-    }
 }
 
 void SortPropertyComparator::initComparator()
@@ -76,7 +64,7 @@ int SortPropertyComparator::compareImplDefault(const ScoreDoc& doc1, const Score
 int SortPropertyComparator::compareImplNumeric(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
     if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
-    return propertyTable_->compareValues(doc1.docId, doc2.docId);
+    return propertyTable_->compareValues(doc1.docId, doc2.docId, false);
 }
 
 int SortPropertyComparator::compareImplUnknown(const ScoreDoc& doc1, const ScoreDoc& doc2) const

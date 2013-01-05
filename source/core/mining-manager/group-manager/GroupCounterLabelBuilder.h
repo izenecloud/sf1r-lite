@@ -18,6 +18,7 @@
 namespace sf1r
 {
 class NumericPropertyTableBuilder;
+class PropSharedLockSet;
 }
 
 NS_FACETED_BEGIN
@@ -25,7 +26,6 @@ NS_FACETED_BEGIN
 class GroupManager;
 class GroupCounter;
 class GroupLabel;
-class PropSharedLockSet;
 
 class GroupCounterLabelBuilder
 {
@@ -49,7 +49,9 @@ private:
         PropSharedLockSet& sharedLockSet,
         GroupCounter* subCounter = NULL) const;
 
-    GroupCounter* createNumericRangeCounter_(const std::string& prop) const;
+    GroupCounter* createNumericRangeCounter_(
+        const std::string& prop,
+        PropSharedLockSet& sharedLockSet) const;
 
     GroupCounter* createStringCounter_(
         const std::string& prop,
@@ -58,6 +60,7 @@ private:
 
     GroupCounter* createNumericCounter_(
         const std::string& prop,
+        PropSharedLockSet& sharedLockSet,
         GroupCounter* subCounter) const;
 
     GroupCounter* createDateCounter_(
@@ -70,9 +73,17 @@ private:
         const GroupParam::GroupLabelParam& labelParam,
         PropSharedLockSet& sharedLockSet) const;
 
-    GroupLabel* createNumericRangeLabel_(const GroupParam::GroupLabelParam& labelParam) const;
-    GroupLabel* createNumericLabel_(const GroupParam::GroupLabelParam& labelParam) const;
-    GroupLabel* createRangeLabel_(const GroupParam::GroupLabelParam& labelParam) const;
+    GroupLabel* createNumericRangeLabel_(
+        const GroupParam::GroupLabelParam& labelParam,
+        PropSharedLockSet& sharedLockSet) const;
+
+    GroupLabel* createNumericLabel_(
+        const GroupParam::GroupLabelParam& labelParam,
+        PropSharedLockSet& sharedLockSet) const;
+
+    GroupLabel* createRangeLabel_(
+        const GroupParam::GroupLabelParam& labelParam,
+        PropSharedLockSet& sharedLockSet) const;
 
     GroupLabel* createDateLabel_(
         const GroupParam::GroupLabelParam& labelParam,

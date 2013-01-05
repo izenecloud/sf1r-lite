@@ -48,7 +48,7 @@ bool IndexManager::convertStringPropertyDataForSorting(const string& property, b
         numericPropertyTable.reset(new NumericPropertyTable<uint32_t>(STRING_PROPERTY_TYPE));
     numericPropertyTable->resize(size);
 
-    NumericPropertyTableBase::WriteLock lock(numericPropertyTable->mutex_);
+    PropSharedLock::ScopedWriteLock lock(numericPropertyTable->getMutex());
     uint32_t* data = (uint32_t *)numericPropertyTable->getValueList();
     return pBTreeIndexer->convertAllValue(size, data);
 }

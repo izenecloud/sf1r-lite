@@ -28,11 +28,7 @@ class RankQueryProperty;
 class PropertyRanker;
 class ProductScorerFactory;
 class ProductScorer;
-
-namespace faceted
-{
 class PropSharedLockSet;
-}
 
 class SearchManagerPreProcessor
 {
@@ -104,7 +100,7 @@ private:
 
     ProductScorer* createProductScorer(
         const KeywordSearchActionItem& actionItem,
-        faceted::PropSharedLockSet& propSharedLockSet,
+        PropSharedLockSet& propSharedLockSet,
         ProductScorer* relevanceScorer);
 
     bool isProductRanking(const KeywordSearchActionItem& actionItem) const;

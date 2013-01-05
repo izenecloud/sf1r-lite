@@ -1,5 +1,4 @@
 #include "img_dup_detector.h"
-//#include <product-manager/product_term_analyzer.h>
 #include <util/ClockTimer.h>
 #include <util/filesystem.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -16,65 +15,155 @@ ImgDupDetector::ImgDupDetector()
 {
 }
 
-bool findTheOneToLeft(sf1r::PsmAttach& attach, std::vector<sf1r::PsmAttach>& match_attach, std::string& toDelete)
+ImgDupDetector::ImgDupDetector(std::string sp,
+        std::string op,
+        std::string sn,
+        bool li,
+        bool im,
+        int con,
+        int icl)
+:scd_path_(sp), output_path_(op), source_name_(sn), log_info_(li), incremental_mode_(im), controller_(con), image_content_length_(icl), dup_by_url_(false), dup_by_con_(false)
 {
-    uint32_t i;
-    for(i=0;i<match_attach.size();i++)
-    {
-        if(match_attach[i].source_name != toDelete)
-            break;
-    }
-    if(i < match_attach.size())
-    {
-        if(attach.docid.compare(match_attach[i].docid) == 0)
-            return true;
-    }
-    if(i == match_attach.size())
-    {
-        if(attach.docid.compare(match_attach[0].docid) == 0)
-            return true;
-    }
-    return false;
+    SetPsmK(400);
 }
 
-bool ImgDupDetector::DupDetectByImgUrl(const std::string& scd_path, const std::string& output_path, std::string& toDelete)
+bool ImgDupDetector::SetParams(std::string sp,
+        std::string op,
+        std::string sn,
+        bool li,
+        bool im,
+        int con,
+        int icl)
 {
-    ProductTermAnalyzer analyzer(cma_path_);
-/*
-    std::vector<std::string> scd_list;
-    B5MHelper::GetIUScdList(scd_path, scd_list);
-    if(scd_list.empty())
-    {
-        LOG(ERROR)<<"scd empty"<<std::endl;
-        return false;
-    }
-*/
-    boost::filesystem::create_directories(output_path);
-    std::string psm_path = output_path+"/psm";
-    B5MHelper::PrepareEmptyDir(psm_path);
+    SetPsmK(400);
+    scd_path_ = sp;
+    scd_path_ = sp;
+    output_path_ = op;
+    source_name_ = sn;
+    log_info_ = li;
+    incremental_mode_ = im;
+    controller_ = con;
+    image_content_length_ = icl;
+    dup_by_url_ = false;
+    dup_by_con_ = false;
+    return true;
+}
 
-    PsmType psm(psm_path);
-    psm.SetK(psmk_);
-    psm.Open();
+ImgDupDetector::~ImgDupDetector()
+{
+}
+
+bool ImgDupDetector::SetController()
+{
+    if( (controller_ % 2) == 1)
+        dup_by_url_ = true;
+    if( ((controller_/2) %2) == 1)
+        dup_by_con_ = true;
+    return true;
+}
+
+bool ImgDupDetector::ClearHistory()
+{
+    if( !ClearHistoryCon()) return false;
+    if( !ClearHistoryUrl()) return false;
+    return true;
+}
+
+bool ImgDupDetector::ClearHistoryCon()
+{
+    if( !(con_docid_key_.empty()) )
+        con_docid_key_.clear();
+    if( !(con_key_docid_.empty()) )
+        con_key_docid_.clear();
+    if( !(key_con_map_.empty()) )
+        key_con_map_.clear();
+    if( !(key_url_map_.empty()) )
+        key_url_map_.clear();
+    con_key_ = 0;
+    return true;
+}
+
+bool ImgDupDetector::ClearHistoryUrl()
+{
+    if( !(url_docid_key_.empty()) )
+        url_docid_key_.clear();
+    if( !(url_key_docid_.empty()) )
+        url_key_docid_.clear();
+    if( !(key_con_map_.empty()) )
+        key_con_map_.clear();
+    if( !(key_url_map_.empty()) )
+        key_url_map_.clear();
+    url_key_ = 0;
+    return true;
+}
+
+bool ImgDupDetector::SetPath()
+{
+    scd_temp_path_ = output_path_ + "/temp";
+
+    psm_path_ = output_path_ + "/psm";
+    psm_path_incr_ = psm_path_ + "/incr";
+    psm_path_noin_ = psm_path_ + "/noin";
+    psm_path_incr_url_ = psm_path_ + "/incr/url";
+    psm_path_noin_url_ = psm_path_ + "/noin/url";
+    psm_path_incr_con_ = psm_path_ + "/incr/con";
+    psm_path_noin_con_ = psm_path_ + "/noin/con";
+
+    boost::filesystem::create_directories(output_path_);
+    boost::filesystem::create_directories(psm_path_);
+    boost::filesystem::create_directories(psm_path_incr_);
+    boost::filesystem::create_directories(psm_path_incr_url_);
+    boost::filesystem::create_directories(psm_path_incr_con_);
+
+    B5MHelper::PrepareEmptyDir(scd_temp_path_);
+    B5MHelper::PrepareEmptyDir(psm_path_noin_);
+    B5MHelper::PrepareEmptyDir(psm_path_noin_url_);
+    B5MHelper::PrepareEmptyDir(psm_path_noin_con_);
+
+    return true;
+}
+
+bool ImgDupDetector::DupDetectorMain()
+{
+    ImgDupDetector::SetController();
+    ImgDupDetector::SetPath();
+    ImgDupDetector::ClearHistory();
+
+    if(log_info_ || !log_info_)
+    {
+        if(incremental_mode_)
+            LOG(INFO) << "The image dd server works in incremental mode! " << std::endl;
+        else
+            LOG(INFO) << "The image dd server does not work in incremental mode! " << std::endl;
+        if(dup_by_url_)
+            LOG(INFO) << "Dup detected by image url ... " << std::endl;
+        if(dup_by_con_)
+            LOG(INFO) << "Dup detected by image content ..." << std::endl;
+
+        LOG(INFO)<<"ShareSourceName to be deleted: " << source_name_ << std::endl;
+
+        LOG(INFO)<<"Image content length: " << image_content_length_ << std::endl;
+    }
 
     int fd, wd;
     int len, index;
     char buffer[1024];
     struct inotify_event *event;
     fd = inotify_init();
+
     if(fd < 0)
     {
-        LOG(ERROR)<<"Failed to initialize inotify."<<std::endl;
+        LOG(ERROR) << "Failed to initialize inotify." << std::endl;
         return false;
     }
-    wd = inotify_add_watch(fd, scd_path.c_str(), IN_CLOSE_WRITE | IN_CREATE);
+    wd = inotify_add_watch(fd, scd_path_.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_MOVED_TO);
+
     if(wd < 0)
     {
-        LOG(ERROR)<<"Can't add watch for: "<<scd_path<<std::endl;
+        LOG(ERROR)<<"Can't add watch for: "<<scd_path_<<std::endl;
         return false;
     }
-
-    while(len = read(fd, buffer, MAX_BUF_SIZE))
+    while((len = read(fd, buffer, MAX_BUF_SIZE)) > 0)
     {
         index = 0;
         while(index < len)
@@ -82,524 +171,458 @@ bool ImgDupDetector::DupDetectByImgUrl(const std::string& scd_path, const std::s
             event = (struct inotify_event *)(buffer+index);
             if(event->wd != wd)
                 continue;
-            if(event -> mask & IN_CLOSE_WRITE)
+            if(event -> mask & IN_CLOSE_WRITE || event -> mask & IN_MOVED_TO)
             {
-                LOG(INFO)<<"File "<<event->name<<" is closed for write. " << std::endl;
-                std::map<std::string, UString> imgurl_list;
-                std::map<std::string, UString> source_name_list;
-                for(uint32_t i=0;i<1;i++)
-                {
-                    std::string scd_file = scd_path + "/" + std::string(event->name);
-                    LOG(INFO)<<"Processing "<<scd_file<<std::endl;
-                    ScdParser parser(izenelib::util::UString::UTF_8);
-                    parser.load(scd_file);
-                    uint32_t n=0;
-                    for( ScdParser::iterator doc_iter = parser.begin();
-                    doc_iter!= parser.end(); ++doc_iter, ++n)
-                    {
-                        if(n%10000==0)
-                        {
-                            LOG(INFO)<<"Find Documents "<<n<<std::endl;
-                        }
-                        std::map<std::string, UString> doc;
-                        SCDDoc& scddoc = *(*doc_iter);
-                        SCDDoc::iterator p = scddoc.begin();
-                        for(; p!=scddoc.end(); ++p)
-                        {
-                            const std::string& property_name = p->first;
-                            doc[property_name] = p->second;
-                        }
-                        std::string key;
-                        std::vector<std::pair<std::string, double> > doc_vector;
-                        PsmAttach attach;
-                        if(!PsmHelper::GetPsmItem(analyzer, doc, key, doc_vector, attach))
-                        {
-//                          LOG(INFO)<<"Get psm item Error ... "<<std::endl;
-                            continue;
-                        }
-                        psm.Insert(key, doc_vector, attach);
-                        imgurl_list[key] =doc["Img"];
-                        source_name_list[key] = doc["ShareSourceName"];
-                    }
-                }
-                if(!psm.Build())
-                {
-                    LOG(ERROR)<<"psm build error"<<std::endl;
-                    return false;
-                }
-                psm.Open();
-                for(uint32_t i=0;i<1;i++)
-                {
-                    std::string scd_file =  scd_path + "/" + std::string(event->name);
-                    LOG(INFO)<<"Processing "<<scd_file<<std::endl;
-                    ScdParser parser(izenelib::util::UString::UTF_8);
-                    parser.load(scd_file);
-                    uint32_t n=0;
-                    uint32_t rest=0;
-                    ScdWriter writer(output_path, 2);
-                    std::string outfilename = std::string(event->name);
-                    writer.SetFileName(outfilename);
-                    for( ScdParser::iterator doc_iter = parser.begin();
-                    doc_iter!= parser.end(); ++doc_iter, ++n)
-                    {
-                        if(n%10000==0)
-                        {
-                            LOG(INFO)<<"Find Documents "<<n<<std::endl;
-                        }
-                        std::map<std::string, UString> doc;
-                        SCDDoc& scddoc = *(*doc_iter);
-                        SCDDoc::iterator p = scddoc.begin();
-                        for(; p!=scddoc.end(); ++p)
-                        {
-                            const std::string& property_name = p->first;
-                            doc[property_name] = p->second;
-                        }
-                        std::string key;
-                        std::vector<std::pair<std::string, double> > doc_vector;
-                        PsmAttach attach;
-                        if(!PsmHelper::GetPsmItem(analyzer, doc, key, doc_vector, attach))
-                        {
-                            LOG(INFO)<<"Get psm item Error ... "<<std::endl;
-                            if(writer.Append(scddoc)) rest++;
-                            continue;
-                        }
-                        std::string match_key;
-                        if(!psm.Search(doc_vector, attach, match_key))
-                        {
-                            if(writer.Append(scddoc)) rest++;
-                        }
-                        else if(key == match_key)
-                        {
-                            if(writer.Append(scddoc)) rest++;
-                        }
-                        else
-                        {
-                            std::string current_url;
-                            std::string match_url;
-                            doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
-                            imgurl_list[match_key].convertString(match_url, izenelib::util::UString::UTF_8);
-                            if(current_url.compare(match_url) == 0)
-                            {
-                                LOG(INFO)<<std::endl<<key<<":  "<<doc["Img"]
-                                         <<std::endl<<match_key<<":  "<<imgurl_list[match_key]
-                                         <<std::endl<<"Matches "<<std::endl;
-                                std::cout<<std::endl<<key<<":  "<<doc["Img"]
-                                         <<std::endl<<match_key<<":  "<<imgurl_list[match_key]
-                                         <<std::endl<<"Matches "<<std::endl;
-                            }
-                            else
-                            {
-                                if(writer.Append(scddoc)) rest++;
-                            }
-                        }
-
-                    }
-/*
-                        std::string key;
-                        std::vector<std::pair<std::string, double> > doc_vector;
-                        PsmAttach attach;
-                        if(!PsmHelper::GetPsmItem(analyzer, doc, key, doc_vector, attach))
-                        {
-                            LOG(INFO)<<"Get psm item Error ... "<<std::endl;
-                            if(writer.Append(scddoc)) rest++;
-                            continue;
-                        }
-                        std::vector<std::string> match_key;
-                        if(!psm.Search(doc_vector, attach, match_key))
-                        {
-                            if(writer.Append(scddoc)) rest++;
-                        }
-                        else if(match_key.size() == 1)
-                        {
-                            if(writer.Append(scddoc)) rest++;
-                        }
-                        else
-                        {
-                            uint32_t i;
-                            for(i=0;i<match_key.size();i++)
-                            {
-                                if(source_name_list.find(match_key[i]) == source_name_list.end() || source_name_list[match_key[i]] != toDelete)
-                                    break;
-                            }
-                            if(i < match_key.size())
-                            {
-                                if(match_key[i] == key)
-                                    if(writer.Append(scddoc)) rest++;
-                            }
-                            if(i == match_key.size())
-                            {
-                                if(match_key[0] == key)
-                                    if(writer.Append(scddoc)) rest++;
-                            }
-                        }
-                    }
-*/
-                    LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<<std::endl;
-                }
-
+                std::string filename = std::string(event->name);
+                BeginToDupDetect(filename);
+                LOG(INFO)<<"Finish processing: "<<filename<<std::endl;
             }
             index += sizeof(struct inotify_event)+event->len;
         }
     }
-/*
-    std::map<std::string, UString> imgurl_list;
-    for(uint32_t i=0;i<scd_list.size();i++)
-    {
-        std::string scd_file = scd_list[i];
-        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
-        ScdParser parser(izenelib::util::UString::UTF_8);
-        parser.load(scd_file);
-        uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin();
-          doc_iter!= parser.end(); ++doc_iter, ++n)
-        {
-            if(n%10000==0)
-            {
-                LOG(INFO)<<"Find Documents "<<n<<std::endl;
-            }
-            std::map<std::string, UString> doc;
-            SCDDoc& scddoc = *(*doc_iter);
-            SCDDoc::iterator p = scddoc.begin();
-            for(; p!=scddoc.end(); ++p)
-            {
-                const std::string& property_name = p->first;
-                doc[property_name] = p->second;
-            }
-            std::string key;
-            std::vector<std::pair<std::string, double> > doc_vector;
-            PsmAttach attach;
-            if(!PsmHelper::GetPsmItem(analyzer, doc, key, doc_vector, attach))
-            {
-//                LOG(INFO)<<"Get psm item Error ... "<<std::endl;
-                continue;
-            }
-            psm.Insert(key, doc_vector, attach);
-            imgurl_list[key] =doc["Img"];
-        }
-    }
-    if(!psm.Build())
-    {
-        LOG(ERROR)<<"psm build error"<<std::endl;
-        return false;
-    }
-    psm.Open();
-    for(uint32_t i=0;i<scd_list.size();i++)
-    {
-        std::string scd_file = scd_list[i];
-        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
-        ScdParser parser(izenelib::util::UString::UTF_8);
-        parser.load(scd_file);
-        uint32_t n=0;
-        uint32_t rest=0;
-        ScdWriter writer(output_path, 2);
-        writer.SetFileName("SCDres.SCD");
-        for( ScdParser::iterator doc_iter = parser.begin();
-          doc_iter!= parser.end(); ++doc_iter, ++n)
-        {
-            if(n%10000==0)
-            {
-                LOG(INFO)<<"Find Documents "<<n<<std::endl;
-            }
-            std::map<std::string, UString> doc;
-            SCDDoc& scddoc = *(*doc_iter);
-            SCDDoc::iterator p = scddoc.begin();
-            for(; p!=scddoc.end(); ++p)
-            {
-                const std::string& property_name = p->first;
-                doc[property_name] = p->second;
-            }
-            std::string key;
-            std::vector<std::pair<std::string, double> > doc_vector;
-            PsmAttach attach;
-            if(!PsmHelper::GetPsmItem(analyzer, doc, key, doc_vector, attach))
-            {
-                LOG(INFO)<<"Get psm item Error ... "<<std::endl;
-                if(writer.Append(scddoc)) rest++;
-                continue;
-            }
-            std::string match_key;
-            if(!psm.Search(doc_vector, attach, match_key))
-            {
-                if(writer.Append(scddoc)) rest++;
-            }
-            else if(key == match_key)
-            {
-                if(writer.Append(scddoc)) rest++;
-            }
-            else
-            {
-                std::string current_url;
-                std::string match_url;
-                doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
-                imgurl_list[match_key].convertString(match_url, izenelib::util::UString::UTF_8);
-                if(current_url.compare(match_url) == 0)
-                {
-                    LOG(INFO)<<std::endl<<key<<":  "<<doc["Img"]
-                             <<std::endl<<match_key<<":  "<<imgurl_list[match_key]
-                             <<std::endl<<"Matches "<<std::endl;
-                    std::cout<<std::endl<<key<<":  "<<doc["Img"]
-                             <<std::endl<<match_key<<":  "<<imgurl_list[match_key]
-                             <<std::endl<<"Matches "<<std::endl;
-                }
-                else
-                {
-                    if(writer.Append(scddoc)) rest++;
-                }
-            }
 
-        }
-        LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<<std::endl;
-    }
-    if(!psm.Build())
-    {
-        LOG(ERROR)<<"psm build error"<<std::endl;
-        return false;
-    }
-*/
     return true;
 }
 
-bool ImgDupDetector::DupDetectByImgSift(const std::string& scd_path, const std::string& output_path, bool test = false)
+bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
 {
-    if(test)
+    if(dup_by_url_ && !dup_by_con_)
     {
-
-        DIR* dir;
-        if(!(dir = opendir(scd_path.c_str())))
+        std::string scd_file = scd_path_ + "/" + filename;
+        std::string res_file = filename;
+        std::string output_path = output_path_;
+        if(incremental_mode_)
         {
-            LOG(INFO)<<"empty"<<std::endl;
-            return false;
+            ImgDupDetector::BuildUrlIndex(scd_file, psm_path_incr_url_);
+            ImgDupDetector::DetectUrl(scd_file, psm_path_incr_url_, res_file, output_path);
         }
-        struct dirent* d_ent;
-
-        boost::filesystem::create_directories(output_path);
-        std::string psm_path = output_path+"/psm";
-        B5MHelper::PrepareEmptyDir(psm_path);
-
-        idmlib::ise::ProbSimMatch psm(psm_path);
-        psm.Init();
-
-        idmlib::ise::Extractor extractor;
-
-        unsigned i = 0;
-        std::map<unsigned, std::string> path_list;
-        while((d_ent = readdir(dir)) != NULL)
+        else
         {
-            if(strncmp(d_ent->d_name, ".", 1) == 0 || strncmp(d_ent->d_name, "", 1) == 0 || strncmp(d_ent->d_name, "..", 1) == 0 )
-                continue;
-            std::string filename(d_ent->d_name);
-            std::string path = scd_path + "/" + filename;
-            std::vector<idmlib::ise::Sift::Feature> sift;
-
-            extractor.ExtractSift(path, sift);
-            LOG(INFO)<<"sift "<<sift[0].desc[0]<<std::endl;
-
-            psm.Insert(i, sift);
-            path_list[i] = path;
-            i++;
-
+            ImgDupDetector::BuildUrlIndex(scd_file, psm_path_noin_url_);
+            ImgDupDetector::DetectUrl(scd_file, psm_path_noin_url_, res_file, output_path);
+            B5MHelper::PrepareEmptyDir(psm_path_noin_url_);
+            ImgDupDetector::ClearHistoryUrl();
         }
-        closedir(dir);
-        psm.Finish();
-
-        DIR* match_dir;
-        std::string match_path = scd_path + "2";
-        if(!(match_dir = opendir(match_path.c_str())))
-        {
-            LOG(INFO)<<"empty"<<std::endl;
-            return false;
-        }
-
-
-
-
-        i = 0;
-        unsigned matches = 0;
-        unsigned no_matches = 0;
-        while((d_ent = readdir(match_dir)) != NULL)
-        {
-            if(strncmp(d_ent->d_name, ".", 1) == 0 || strncmp(d_ent->d_name, "", 1) == 0 || strncmp(d_ent->d_name, "..", 1) == 0 )
-                continue;
-            std::string filename(d_ent->d_name);
-            std::string path = match_path + "/" + filename;
-            std::vector<idmlib::ise::Sift::Feature> sift;
-
-            extractor.ExtractSift(path, sift);
-
-            std::vector<unsigned> results;
-            psm.Search(sift, results);
-            if(results.size() == 0)
-            {
-                LOG(INFO)<<"no match!!!"<<std::endl;
-                no_matches++;
-            }
-            else if(results.size() > 1)
-            {
-                unsigned min = i;
-                unsigned j;
-                for(j=0;j<results.size();j++)
-                    if(min > results[j]) break;
-                if(j == results.size())
-                {
-                }
-                else
-                {
-                    LOG(INFO)<<std::endl<<i<<":  "<<path
-                             <<std::endl<<results[j]<<":  "<<path_list[results[j]]
-                             <<std::endl<<" Matches "<<std::endl;
-                    std::cout<<std::endl<<i<<":  "<<path
-                             <<std::endl<<results[j]<<":  "<<path_list[results[j]]
-                             <<std::endl<<" Matches "<<std::endl;
-                    matches++;
-                }
-
-            }
-            i++;
-
-        }
-        LOG(INFO)<<"TOTAL: "<<i<<" REST: "<<i-matches<<" NO MATCH: "<<no_matches<<endl;
-        return true;
     }
-    std::vector<std::string> scd_list;
-    B5MHelper::GetIUScdList(scd_path, scd_list);
-    if(scd_list.empty())
+
+    if(dup_by_url_ && dup_by_con_)
     {
-        LOG(ERROR)<<"scd empty"<<std::endl;
+        std::string scd_file = scd_path_ + "/" + filename;
+        std::string res_file = filename;
+        std::string output_path = scd_temp_path_;
+        if(incremental_mode_)
+        {
+            ImgDupDetector::BuildUrlIndex(scd_file, psm_path_incr_url_);
+            ImgDupDetector::DetectUrl(scd_file, psm_path_incr_url_, res_file, output_path);
+        }
+        else
+        {
+            ImgDupDetector::BuildUrlIndex(scd_file, psm_path_noin_url_);
+            ImgDupDetector::DetectUrl(scd_file, psm_path_noin_url_, res_file, output_path);
+            B5MHelper::PrepareEmptyDir(psm_path_noin_url_);
+            ImgDupDetector::ClearHistoryUrl();
+        }
+
+        scd_file = output_path + "/" + res_file;
+        res_file = filename;
+        output_path = output_path_;
+
+        if(incremental_mode_)
+        {
+            ImgDupDetector::BuildConIndex(scd_file, psm_path_incr_con_);
+            ImgDupDetector::DetectCon(scd_file, psm_path_incr_con_, res_file, output_path);
+        }
+        else
+        {
+            ImgDupDetector::BuildConIndex(scd_file, psm_path_noin_con_);
+            ImgDupDetector::DetectCon(scd_file, psm_path_noin_con_, res_file, output_path);
+            B5MHelper::PrepareEmptyDir(psm_path_noin_con_);
+            ImgDupDetector::ClearHistoryCon();
+        }
+
+//        B5MHelper::PrepareEmptyDir(scd_temp_path_);
+
+    }
+
+    if(!dup_by_url_ && dup_by_con_)
+    {
+        std::string scd_file = scd_path_ + "/" + filename;
+        std::string res_file = filename;
+        std::string output_path = output_path_;
+        if(incremental_mode_)
+        {
+            ImgDupDetector::BuildConIndex(scd_file, psm_path_incr_con_);
+            ImgDupDetector::DetectCon(scd_file, psm_path_incr_con_, res_file, output_path);
+        }
+        else
+        {
+            ImgDupDetector::BuildConIndex(scd_file, psm_path_noin_con_);
+            ImgDupDetector::DetectCon(scd_file, psm_path_noin_con_, res_file, output_path);
+            B5MHelper::PrepareEmptyDir(psm_path_noin_con_);
+            ImgDupDetector::ClearHistoryCon();
+        }
+    }
+    return true;
+}
+
+bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::string& psm_path)
+{
+    ProductTermAnalyzer analyzer(cma_path_);
+    PsmType psm(psm_path);
+    psm.SetK(psmk_);
+    psm.Open();
+
+    LOG(INFO) << "Processing " << scd_file << std::endl;
+
+    ScdParser parser(izenelib::util::UString::UTF_8);
+    parser.load(scd_file);
+    uint32_t n = 0;
+
+    for( ScdParser::iterator doc_iter = parser.begin();
+            doc_iter!= parser.end(); ++doc_iter, ++n)
+    {
+        if(n%10000==0)
+        {
+            LOG(INFO)<<"Find Documents "<<n<<std::endl;
+        }
+        std::map<std::string, UString> doc;
+        SCDDoc& scddoc = *(*doc_iter);
+        SCDDoc::iterator p = scddoc.begin();
+        for(; p!=scddoc.end(); ++p)
+        {
+            const std::string& property_name = p->first;
+            doc[property_name] = p->second;
+        }
+        std::string sourceName;
+        doc["ShareSourceName"].convertString(sourceName, izenelib::util::UString::UTF_8);
+        if(sourceName.compare(source_name_) == 0)
+        {
+            continue;
+        }
+        std::string docID;
+        std::vector<std::pair<std::string, double> > doc_vector;
+        PsmAttach attach;
+        if(!PsmHelper::GetPsmItem(analyzer, doc, docID, doc_vector, attach))
+        {
+            continue;
+        }
+        psm.Insert(url_key_, doc_vector, attach);
+        url_docid_key_[docID] = url_key_;
+        if(log_info_ && !log_info_)
+        {
+            url_key_docid_[url_key_] = docID;
+            key_url_map_[url_key_] = doc["Img"];
+            key_con_map_[url_key_] = doc["Content"];
+        }
+        url_key_++;
+    }
+
+    n = 0;
+
+    for( ScdParser::iterator doc_iter = parser.begin();
+            doc_iter!= parser.end(); ++doc_iter, ++n)
+    {
+        if(n%10000==0)
+        {
+            LOG(INFO)<<"Find Documents "<<n<<std::endl;
+        }
+        std::map<std::string, UString> doc;
+        SCDDoc& scddoc = *(*doc_iter);
+        SCDDoc::iterator p = scddoc.begin();
+        for(; p!=scddoc.end(); ++p)
+        {
+            const std::string& property_name = p->first;
+            doc[property_name] = p->second;
+        }
+        std::string sourceName;
+        doc["ShareSourceName"].convertString(sourceName, izenelib::util::UString::UTF_8);
+        if(sourceName.compare(source_name_) != 0)
+        {
+            continue;
+        }
+        std::string docID;
+        std::vector<std::pair<std::string, double> > doc_vector;
+        PsmAttach attach;
+        if(!PsmHelper::GetPsmItem(analyzer, doc, docID, doc_vector, attach))
+        {
+            continue;
+        }
+        psm.Insert(url_key_, doc_vector, attach);
+        url_docid_key_[docID] = url_key_;
+        if(log_info_ && !log_info_)
+        {
+            url_key_docid_[url_key_] = docID;
+            key_url_map_[url_key_] = doc["Img"];
+            key_con_map_[url_key_] = doc["Content"];
+        }
+        url_key_++;
+    }
+
+    if(!psm.Build())
+    {
+        LOG(ERROR) << "psm build error " << std::endl;
         return false;
     }
-    boost::filesystem::create_directories(output_path);
-    std::string psm_path = output_path+"/psm";
-    B5MHelper::PrepareEmptyDir(psm_path);
+    return true;
+}
 
-    idmlib::ise::ProbSimMatch psm(psm_path);
-    psm.Init();
+bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::string& psm_path)
+{
+    ProductTermAnalyzer analyzer(cma_path_);
+    PsmType psm(psm_path);
+    psm.SetK(psmk_);
+    psm.Open();
 
-    idmlib::ise::Extractor extractor;
+    LOG(INFO) << "Processing " << scd_file << std::endl;
 
-    std::map<unsigned, UString> imgurl_list;
-    for(uint32_t i=0;i<scd_list.size();i++)
+    ScdParser parser(izenelib::util::UString::UTF_8);
+    parser.load(scd_file);
+    uint32_t n = 0;
+
+    for( ScdParser::iterator doc_iter = parser.begin();
+            doc_iter!= parser.end(); ++doc_iter, ++n)
     {
-        std::string scd_file = scd_list[i];
-        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
-        ScdParser parser(izenelib::util::UString::UTF_8);
-        parser.load(scd_file);
-        uint32_t n=0;
-        for( ScdParser::iterator doc_iter = parser.begin();
-          doc_iter!= parser.end(); ++doc_iter, ++n)
+        if(n%10000==0)
         {
-            if(n%10000==0)
-            {
-                LOG(INFO)<<"Find Documents "<<n<<std::endl;
-            }
-            if(n>200)break;
             LOG(INFO)<<"Find Documents "<<n<<std::endl;
-            std::map<std::string, UString> doc;
-            SCDDoc& scddoc = *(*doc_iter);
-            SCDDoc::iterator p = scddoc.begin();
-            for(; p!=scddoc.end(); ++p)
-            {
-                const std::string& property_name = p->first;
-                doc[property_name] = p->second;
-            }
-            std::string key_str;
-            unsigned key;
-            std::string imgurl;
-            if(doc["Img"].length()==0)
-            {
-                LOG(INFO)<<"There is no Img ... "<<std::endl;
-                continue;
-            }
-            std::vector<idmlib::ise::Sift::Feature> sift;
-            doc["Img"].convertString(imgurl,izenelib::util::UString::UTF_8);
-
-            extractor.ExtractSift(imgurl, sift);
-            LOG(INFO)<<"sift "<<sift[0].desc[0]<<std::endl;
-
-            doc["DOCID"].convertString(key_str, izenelib::util::UString::UTF_8);
-            key = atoi(key_str.c_str());
-            psm.Insert(key, sift);
-            imgurl_list[key] =doc["Img"];
         }
-    }
-    psm.Finish();
-    for(uint32_t i=0;i<scd_list.size();i++)
-    {
-        std::string scd_file = scd_list[i];
-        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
-        ScdParser parser(izenelib::util::UString::UTF_8);
-        parser.load(scd_file);
-        uint32_t n=0;
-        uint32_t rest=0;
-        ScdWriter writer(output_path, 2);
-        writer.SetFileName("SCDres.SCD");
-        for( ScdParser::iterator doc_iter = parser.begin();
-          doc_iter!= parser.end(); ++doc_iter, ++n)
+        std::map<std::string, UString> doc;
+        SCDDoc& scddoc = *(*doc_iter);
+        SCDDoc::iterator p = scddoc.begin();
+        for(; p!=scddoc.end(); ++p)
         {
-            if(n%10000==0)
-            {
-                LOG(INFO)<<"Find Documents "<<n<<std::endl;
-            }
-            if(n>200)break;
-            std::map<std::string, UString> doc;
-            SCDDoc& scddoc = *(*doc_iter);
-            SCDDoc::iterator p = scddoc.begin();
-            for(; p!=scddoc.end(); ++p)
-            {
-                const std::string& property_name = p->first;
-                doc[property_name] = p->second;
-            }
-            if(doc["Img"].length()==0)
-            {
-                LOG(INFO)<<"There is no Img ... "<<std::endl;
-                if(writer.Append(scddoc)) rest++;
-                continue;
-            }
+            const std::string& property_name = p->first;
+            doc[property_name] = p->second;
+        }
+        std::string sourceName;
+        doc["ShareSourceName"].convertString(sourceName, izenelib::util::UString::UTF_8);
+        if(sourceName.compare(source_name_) == 0)
+        {
+            continue;
+        }
+        std::string docID;
+        std::vector<std::pair<std::string, double> > doc_vector;
+        PsmAttach attach;
+        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
+        {
+            continue;
+        }
+        psm.Insert(con_key_, doc_vector, attach);
+        con_docid_key_[docID] = con_key_;
+        if(log_info_)
+        {
+            con_key_docid_[con_key_] = docID;
+            key_con_map_[con_key_] = doc["Content"];
+            key_url_map_[con_key_] = doc["Img"];
+        }
+        con_key_++;
+    }
 
-            std::string key_str;
-            unsigned key;
-            std::string imgurl;
-            doc["Img"].convertString(imgurl,izenelib::util::UString::UTF_8);
-            std::vector<idmlib::ise::Sift::Feature> sift;
+    n = 0;
 
-            extractor.ExtractSift(imgurl, sift);
+    for( ScdParser::iterator doc_iter = parser.begin();
+            doc_iter!= parser.end(); ++doc_iter, ++n)
+    {
+        if(n%10000==0)
+        {
+            LOG(INFO)<<"Find Documents "<<n<<std::endl;
+        }
+        std::map<std::string, UString> doc;
+        SCDDoc& scddoc = *(*doc_iter);
+        SCDDoc::iterator p = scddoc.begin();
+        for(; p!=scddoc.end(); ++p)
+        {
+            const std::string& property_name = p->first;
+            doc[property_name] = p->second;
+        }
+        std::string sourceName;
+        doc["ShareSourceName"].convertString(sourceName, izenelib::util::UString::UTF_8);
+        if(sourceName.compare(source_name_) != 0)
+        {
+            continue;
+        }
+        std::string docID;
+        std::vector<std::pair<std::string, double> > doc_vector;
+        PsmAttach attach;
+        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
+        {
+            continue;
+        }
+        psm.Insert(con_key_, doc_vector, attach);
+        con_docid_key_[docID] = con_key_;
+        if(log_info_)
+        {
+            con_key_docid_[con_key_] = docID;
+            key_con_map_[con_key_] = doc["Content"];
+            key_url_map_[con_key_] = doc["Img"];
+        }
+        con_key_++;
+    }
 
-            doc["DOCID"].convertString(key_str, izenelib::util::UString::UTF_8);
-            key = atoi(key_str.c_str());
+    if(!psm.Build())
+    {
+        LOG(ERROR) << "psm build error " << std::endl;
+        return false;
+    }
+    return true;
+}
 
-            std::vector<unsigned> results;
-            unsigned i;
-            psm.Search(sift, results);
-            if(results.size() == 0)
+bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& psm_path, const std::string& res_file, const std::string& output_path)
+{
+    ProductTermAnalyzer analyzer(cma_path_);
+    PsmType psm(psm_path);
+    psm.SetK(psmk_);
+    psm.Open();
+
+    LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+
+    ScdParser parser(izenelib::util::UString::UTF_8);
+    parser.load(scd_file);
+    uint32_t n=0;
+    uint32_t rest=0;
+    ScdWriter writer(output_path, 2);
+    writer.SetFileName(res_file);
+
+    for( ScdParser::iterator doc_iter = parser.begin();
+            doc_iter!= parser.end(); ++doc_iter, ++n)
+    {
+        if(n%10000==0)
+        {
+            LOG(INFO)<<"Find Documents "<<n<<std::endl;
+        }
+        std::map<std::string, UString> doc;
+        SCDDoc& scddoc = *(*doc_iter);
+        SCDDoc::iterator p = scddoc.begin();
+        for(; p!=scddoc.end(); ++p)
+        {
+            const std::string& property_name = p->first;
+            doc[property_name] = p->second;
+        }
+        std::string docID;
+        std::vector<std::pair<std::string, double> > doc_vector;
+        PsmAttach attach;
+        if(!PsmHelper::GetPsmItem(analyzer, doc, docID, doc_vector, attach))
+        {
+            LOG(INFO)<<"Get psm item Error ... "<<std::endl;
+            if(writer.Append(scddoc)) rest++;
+            continue;
+        }
+        uint32_t match_key;
+        if(!psm.Search(doc_vector, attach, match_key))
+        {
+            if(writer.Append(scddoc)) rest++;
+        }
+        else if(url_docid_key_[docID] == match_key)
+        {
+            if(writer.Append(scddoc)) rest++;
+        }
+        else
+        {
+            /****Matches****/
+            if(log_info_ && !log_info_)
             {
-                LOG(INFO)<<"Find no match !!!!"<<std::endl;
-                if(writer.Append(scddoc)) rest++;
+                std::string current_url;
+                std::string current_content;
+                std::string match_url;
+                std::string match_content;
+                doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
+                doc["Content"].convertString(current_content, izenelib::util::UString::UTF_8);
+                key_url_map_[match_key].convertString(match_url, izenelib::util::UString::UTF_8);
+                key_con_map_[match_key].convertString(match_content, izenelib::util::UString::UTF_8);
+
+
+                LOG(INFO)<<std::endl<<"DOCID: "<<docID
+                         <<std::endl<<"ImgUrl: "<<current_url
+                         <<std::endl<<"Content: "<<current_content
+                         <<std::endl<<std::endl<<"DOCID: "<<url_key_docid_[match_key]
+                         <<std::endl<<"ImgUrl: "<<match_url
+                         <<std::endl<<"Content: "<<match_content
+                         <<std::endl<<"Image URL Matches "<<std::endl<<std::endl<<std::endl;
+
+
             }
-            else if(results.size() == 1)
+        }
+    }
+    LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<< std::endl;
+    return true;
+}
+
+bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& psm_path, const std::string& res_file, const std::string& output_path)
+{
+    ProductTermAnalyzer analyzer(cma_path_);
+    PsmType psm(psm_path);
+    psm.SetK(psmk_);
+    psm.Open();
+
+    LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+
+    ScdParser parser(izenelib::util::UString::UTF_8);
+    parser.load(scd_file);
+    uint32_t n=0;
+    uint32_t rest=0;
+    ScdWriter writer(output_path, 2);
+    writer.SetFileName(res_file);
+
+    for( ScdParser::iterator doc_iter = parser.begin();
+            doc_iter!= parser.end(); ++doc_iter, ++n)
+    {
+        if(n%10000==0)
+        {
+            LOG(INFO)<<"Find Documents "<<n<<std::endl;
+        }
+        std::map<std::string, UString> doc;
+        SCDDoc& scddoc = *(*doc_iter);
+        SCDDoc::iterator p = scddoc.begin();
+        for(; p!=scddoc.end(); ++p)
+        {
+            const std::string& property_name = p->first;
+            doc[property_name] = p->second;
+        }
+        std::string docID;
+        std::vector<std::pair<std::string, double> > doc_vector;
+        PsmAttach attach;
+        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
+        {
+            if(writer.Append(scddoc)) rest++;
+            continue;
+        }
+        uint32_t match_key;
+        if(!psm.Search(doc_vector, attach, match_key))
+        {
+            if(writer.Append(scddoc)) rest++;
+        }
+        else if(con_docid_key_[docID] == match_key)
+        {
+            if(writer.Append(scddoc)) rest++;
+        }
+        else
+        {
+            /****Matches****/
+            if(log_info_)
             {
-                if(writer.Append(scddoc)) rest++;
-            }
-            else if(results.size() > 1)
-            {
-                unsigned min = key;
-                for(i=0;i<results.size();i++)
-                    if(min > results[i]) break;
-                if(i == results.size())
-                {
-                    if(writer.Append(scddoc)) rest++;
-                }
-                else
-                {
-                    LOG(INFO)<<std::endl<<key<<":  "<<doc["Img"]
-                             <<std::endl<<results[i]<<":  "<<imgurl_list[results[i]]
-                             <<std::endl<<" Matches "<<std::endl;
-                    std::cout<<std::endl<<key<<":  "<<doc["Img"]
-                             <<std::endl<<results[i]<<":  "<<imgurl_list[results[i]]
-                             <<std::endl<<" Matches "<<std::endl;
-                }
+                std::string current_url;
+                std::string current_content;
+                std::string match_url;
+                std::string match_content;
+                doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
+                doc["Content"].convertString(current_content, izenelib::util::UString::UTF_8);
+                key_url_map_[match_key].convertString(match_url, izenelib::util::UString::UTF_8);
+                key_con_map_[match_key].convertString(match_content, izenelib::util::UString::UTF_8);
+
+
+                LOG(INFO)<<std::endl<<"DOCID: "<<docID
+                         <<std::endl<<"ImgUrl: "<<current_url
+                         <<std::endl<<"Content: "<<current_content
+                         <<std::endl<<std::endl<<"DOCID: "<<con_key_docid_[match_key]
+                         <<std::endl<<"ImgUrl: "<<match_url
+                         <<std::endl<<"Content: "<<match_content
+                         <<std::endl<<"Image Content Matches "<<std::endl<<std::endl<<std::endl;
+
+
             }
 
         }
-        LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<<std::endl;
     }
+    LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<< std::endl;
     return true;
 }

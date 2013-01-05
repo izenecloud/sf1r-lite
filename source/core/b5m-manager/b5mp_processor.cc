@@ -18,7 +18,6 @@ B5mpProcessor::B5mpProcessor(const std::string& mdb_instance,
 : mdb_instance_(mdb_instance), last_mdb_instance_(last_mdb_instance), odoc_count_(0)
 {
     //random_properties will not be updated while SPU matched, they're not SPU related
-    random_properties_.push_back("Source");
     random_properties_.push_back("Content");
     random_properties_.push_back("OriginalCategory");
     random_properties_.push_back("Picture");//remove if we use SPU picture in future.
@@ -97,7 +96,11 @@ void B5mpProcessor::B5moOutput_(ValueType& value, int status)
     if(!B5moValid_(value.doc)) return;
     bool independent_mode = false;
     uint128_t oid = GetOid_(value.doc);
-    if(oid==pid && last_mdb_instance_.empty()) independent_mode = true;
+    std::string spu_title;
+    value.doc.getString(B5MHelper::GetSPTPropertyName(), spu_title);
+    bool is_play = false;
+    if(value.doc.hasProperty("PlayName")) is_play = true;
+    if(oid==pid && spu_title.empty() && !is_play && last_mdb_instance_.empty()) independent_mode = true;
     if(!independent_mode)
     {
         PValueType& pvalue = cache_[pid];
@@ -227,11 +230,6 @@ void B5mpProcessor::GetOutputP_(ValueType& value)
         doc.property("Title") = ptitle;
         doc.eraseProperty(B5MHelper::GetSPTPropertyName());
     }
-
-    doc.eraseProperty("Source");
-    doc.eraseProperty("DATE");
-    doc.eraseProperty("DATE");
-
 
     if(itemcount<=0)
     {
