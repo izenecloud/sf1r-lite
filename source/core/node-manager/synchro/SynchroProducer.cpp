@@ -112,10 +112,10 @@ bool SynchroProducer::wait(int timeout)
     }
 
     // wait synchronizing to finish
-    while (isSynchronizing_)
+    while (isSynchronizing_ && zookeeper_->isConnected())
     {
-        LOG(INFO) << SYNCHRO_PRODUCER << " is synchronizing, "
-                  << "sleeping for 1 second ...";
+        LOG(INFO) << SYNCHRO_PRODUCER << " is synchronizing, finished - total :" <<
+            consumedCount_ << " - " << consumersMap_.size() << ",sleeping for 1 second ...";
         //boost::this_thread::sleep(boost::posix_time::seconds(1));
         ::sleep(1);
     }
@@ -140,7 +140,7 @@ void SynchroProducer::onNodeDeleted(const std::string& path)
 {
     if (consumersMap_.find(path) != consumersMap_.end())
     {
-        DLOG(INFO) << SYNCHRO_PRODUCER << " on node deleted: " << path;
+        LOG(INFO) << SYNCHRO_PRODUCER << " on node deleted: " << path;
         // check if consumer broken down
         checkConsumers();
     }
@@ -149,7 +149,7 @@ void SynchroProducer::onDataChanged(const std::string& path)
 {
     if (consumersMap_.find(path) != consumersMap_.end())
     {
-        DLOG(INFO) << SYNCHRO_PRODUCER << " on data changed: " << path;
+        LOG(INFO) << SYNCHRO_PRODUCER << " on data changed: " << path;
         // check if consumer finished
         checkConsumers();
     }
@@ -158,7 +158,7 @@ void SynchroProducer::onChildrenChanged(const std::string& path)
 {
     if (path == syncZkNode_)
     {
-        DLOG(INFO) << SYNCHRO_PRODUCER << " on children changed: " << path;
+        LOG(INFO) << SYNCHRO_PRODUCER << " on children changed: " << path;
         // whether new consumer comes, or consumer break down.
         watchConsumers();
         checkConsumers();
@@ -227,44 +227,46 @@ bool SynchroProducer::doProduce(SynchroData& syncData)
 
 void SynchroProducer::watchConsumers()
 {
-    boost::unique_lock<boost::mutex> lock(consumers_mutex_);
-
-    if (!isSynchronizing_)
-        return;
-
-    LOG(INFO) << SYNCHRO_PRODUCER << " watching for consumers";
-    // [Synchro Node]
-    //  |--- Producer
-    //  |--- Consumer00000000
-    //  |--- Consumer0000000x
-    //
-    std::vector<std::string> childrenList;
-    zookeeper_->getZNodeChildren(syncZkNode_, childrenList, ZooKeeper::WATCH);
-
-    // If watched any consumer
-    if (childrenList.size() > 1)
+    std::vector<std::string> new_added_consume;
     {
-        LOG(INFO) << SYNCHRO_PRODUCER << " found (" << childrenList.size() << ") children";
-        if (!watchedConsumer_)
-            watchedConsumer_ = true;
+        boost::unique_lock<boost::mutex> lock(consumers_mutex_);
 
-        for (size_t i = 0; i < childrenList.size(); i++)
+        if (!isSynchronizing_)
+            return;
+
+        LOG(INFO) << SYNCHRO_PRODUCER << " watching for consumers";
+        // [Synchro Node]
+        //  |--- Producer
+        //  |--- Consumer00000000
+        //  |--- Consumer0000000x
+        //
+        std::vector<std::string> childrenList;
+        zookeeper_->getZNodeChildren(syncZkNode_, childrenList, ZooKeeper::WATCH);
+
+        // If watched any consumer
+        if (childrenList.size() > 1)
         {
-            // Produer is also a child and shoud be excluded.
-            if (producerZkNode_ != childrenList[i] &&
-                consumersMap_.find(childrenList[i]) == consumersMap_.end())
+            LOG(INFO) << SYNCHRO_PRODUCER << " found (" << childrenList.size() << ") children";
+            if (!watchedConsumer_)
+                watchedConsumer_ = true;
+
+            for (size_t i = 0; i < childrenList.size(); i++)
             {
-                consumersMap_[childrenList[i]] = std::make_pair(false, false);
-                LOG(INFO) << SYNCHRO_PRODUCER << " watched a consumer: " << childrenList[i];
+                // Produer is also a child and shoud be excluded.
+                if (producerZkNode_ != childrenList[i] &&
+                    consumersMap_.find(childrenList[i]) == consumersMap_.end())
+                {
+                    consumersMap_[childrenList[i]] = std::make_pair(false, false);
+                    new_added_consume.push_back(childrenList[i]);
+                    LOG(INFO) << SYNCHRO_PRODUCER << " watched a new consumer: " << childrenList[i];
+                }
             }
         }
     }
-
     // transfer data
-    consumermap_t::iterator it;
-    for (it = consumersMap_.begin(); it != consumersMap_.end(); it++)
+    for (size_t i = 0; i < new_added_consume.size(); i++)
     {
-        if (!transferData(it->first))
+        if (!transferData(new_added_consume[i]))
         {
             // xxx set failed status
             LOG(WARNING) << SYNCHRO_PRODUCER << " set failed status";
@@ -411,7 +413,7 @@ void SynchroProducer::checkConsumers()
                   << "/" << consumersMap_.size() << " consumers";
     }
 
-    if (consumedCount_ == consumersMap_.size())
+    if (consumedCount_ >= consumersMap_.size())
     {
         result_on_consumed_ = true;
         std::string info = "process succeeded";
