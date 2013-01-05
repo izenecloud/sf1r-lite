@@ -86,7 +86,7 @@ void SynchroConsumer::onNodeDeleted(const std::string& path)
     if (path == producerZkNode_)
     {
         boost::unique_lock<boost::mutex> lock(mutex_);
-        LOG(INFO) << "producer deleted, stopping consuming.";
+        LOG(INFO) << "producer deleted, stopping consuming." << path;
         consumerStatus_ = CONSUMER_STATUS_WATCHING;
     }
 }
@@ -173,7 +173,7 @@ void SynchroConsumer::doWatchProducer()
                 ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
         {
             consumerNodePath_ = zookeeper_->getLastCreatedNodePath();
-            DLOG(INFO) << SYNCHRO_CONSUMER << " register consumer: " << consumerNodePath_;
+            LOG(INFO) << SYNCHRO_CONSUMER << " register consumer: " << consumerNodePath_;
         }
 
         // Synchronizing
@@ -250,7 +250,13 @@ bool SynchroConsumer::consume(SynchroData& producerMsg)
     if (callback_on_produced_)
     {
         DLOG(INFO) << SYNCHRO_CONSUMER << " calling consume callback";
-        ret = callback_on_produced_(producerMsg.getStrValue(SynchroData::KEY_DATA_PATH));
+        std::string src_path = producerMsg.getStrValue(SynchroData::KEY_DATA_PATH);
+        if (producerMsg.getStrValue(SynchroData::KEY_HOST) != SuperNodeManager::get()->getLocalHostIP())
+        {
+            LOG(INFO) << "source path is only needed for local consume and producer.";
+            src_path.clear();
+        }
+        ret = callback_on_produced_(src_path);
     }
 
     return ret;

@@ -35,33 +35,36 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
     {
         return false;
     }
-    std::string index_scd_dir = index_service_->getScdDir();
-    bfs::create_directories(index_scd_dir);
-    //copy scds in scd_source_dir/ to index_scd_dir/
-    ScdParser parser(izenelib::util::UString::UTF_8);
-    static const bfs::directory_iterator kItrEnd;
-    std::vector<bfs::path> scd_list;
-    for (bfs::directory_iterator itr(scd_source_dir); itr != kItrEnd; ++itr)
+    if (!scd_source_dir.empty())
     {
-        if (bfs::is_regular_file(itr->status()))
+        std::string index_scd_dir = index_service_->getScdDir();
+        bfs::create_directories(index_scd_dir);
+        //copy scds in scd_source_dir/ to index_scd_dir/
+        ScdParser parser(izenelib::util::UString::UTF_8);
+        static const bfs::directory_iterator kItrEnd;
+        std::vector<bfs::path> scd_list;
+        for (bfs::directory_iterator itr(scd_source_dir); itr != kItrEnd; ++itr)
         {
-            std::string fileName = itr->path().filename().string();
-            if (parser.checkSCDFormat(fileName) )
+            if (bfs::is_regular_file(itr->status()))
             {
-                LOG(INFO)<<"[ProductScdReceiver] find SCD "<<fileName<<std::endl;
-                scd_list.push_back(itr->path());
+                std::string fileName = itr->path().filename().string();
+                if (parser.checkSCDFormat(fileName) )
+                {
+                    LOG(INFO)<<"[ProductScdReceiver] find SCD "<<fileName<<std::endl;
+                    scd_list.push_back(itr->path());
+                }
             }
         }
-    }
-    if(scd_list.empty())
-    {
-        LOG(INFO)<<"[ProductScdReceiver] No SCD file found."<<std::endl;
-        return true;
-    }
-    bfs::path to_dir(index_scd_dir);
-    if(!CopyFileListToDir_(scd_list, to_dir))
-    {
-        return false;
+        if(scd_list.empty())
+        {
+            LOG(INFO)<<"[ProductScdReceiver] No SCD file found."<<std::endl;
+            return true;
+        }
+        bfs::path to_dir(index_scd_dir);
+        if(!CopyFileListToDir_(scd_list, to_dir))
+        {
+            return false;
+        }
     }
 
     //call buildCollection
