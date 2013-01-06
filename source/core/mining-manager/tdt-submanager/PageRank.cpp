@@ -1,4 +1,5 @@
 #include "PageRank.hpp"
+#include "WikiGraph.hpp"
 
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
@@ -35,10 +36,12 @@ std::ostream& operator<<(std::ostream &f, const Node &node)
     f.write((const char*)&node.id_, sizeof(node.id_));
     int outNumber_;
     f.write((const char*)&outNumber_, sizeof(outNumber_));
-    size_t len=sizeof(node.name_[0])*(node.name_.size());
-   // cout<<node.name_<<endl;
+    std::string name;
+    name = WikiGraph::getInstance()->GetTitleById(node.id_);
+    size_t len=sizeof(name[0])*(name.size());
+   // cout<<name<<endl;
     f.write((const char*)&len, sizeof(len));
-    f.write((const char*)&node.name_[0], sizeof(node.name_[0])*(node.name_.size()) );
+    f.write((const char*)&name[0], sizeof(name[0])*(name.size()) );
 /*
     len=node.linkin_index_.size();
     f.write((const char*)&len, sizeof(len));
@@ -49,8 +52,9 @@ std::ostream& operator<<(std::ostream &f, const Node &node)
         //cout<<"citr"<<index<<endl;
         f.write((const char*)&index, sizeof(index));
     }
-    return f;
 */
+    return f;
+
 }
 
 std::istream& operator>>(std::istream &f, Node &node )
@@ -63,11 +67,12 @@ std::istream& operator>>(std::istream &f, Node &node )
     int outNumber_;
     f.read(( char*)&outNumber_, sizeof(outNumber_));
 
-    //size_t len=sizeof(node.name_);
+    //size_t len=sizeof(name);
     f.read(( char*)&len, sizeof(len));
-
-    node.name_.resize(len);
-    f.read(( char*)&node.name_[0], len);
+    std::string name;
+    name.resize(len);
+    f.read(( char*)&name[0], len);
+    WikiGraph::getInstance()->AddTitleIdRelation(name, node.id_);
    /*
     //string namestr(name,len);
     //node.name_=namestr;
@@ -94,6 +99,7 @@ std::istream& operator>>(std::istream &f, Node &node )
 }
 void simplify(Node &node, cma::OpenCC* opencc)
 {
+/*
     std::string lowercase_content = node.name_;
     boost::to_lower(lowercase_content);
     std::string simplified_content;
@@ -101,11 +107,11 @@ void simplify(Node &node, cma::OpenCC* opencc)
     if(-1 == ret) simplified_content = lowercase_content;
     //if(node.name_!=simplified_content){cout<<node.name_<<simplified_content<<"endtag"<<endl;}
     node.name_=simplified_content;
+*/
 }
 
 Node::Node(string name, int id)
-    : name_(name)
-    , id_(id)
+    : id_(id)
     , advertiRelevancy_(0)
 {
 }
@@ -217,7 +223,7 @@ double Node::GetAdvertiRelevancy()
 
 string Node::GetName()
 {
-    return name_;
+    return WikiGraph::getInstance()->GetTitleById(id_);
 }
 /*
 void Node::InsertLinkOutNode(int i)
@@ -229,7 +235,7 @@ void Node::InsertLinkOutNode(int i)
 void Node::PrintNode()
 {
 
-    cout << "Node:" <<name_ <<"advertiRelevancy"<<advertiRelevancy_<<"id"<<id_;//<<"outNumber_"<<outNumber_<<"inNumber"<< linkin_index_.size()<<endl;
+    cout << "Node:" <<GetName() <<"advertiRelevancy"<<advertiRelevancy_<<"id"<<id_;//<<"outNumber_"<<outNumber_<<"inNumber"<< linkin_index_.size()<<endl;
 }
 void Node::SetId(int id)
 {
@@ -284,7 +290,7 @@ void PageRank::InitMap()
           /*
             vector<int>::const_iterator sitr = node->linkout_index_.begin();
             vector<int> linkin;
-         /*
+         
            for (; sitr !=node->linkout_index_.end(); ++sitr)
            {
                 if(SubGraph_.find(*sitr)!=SubGraph_.end())

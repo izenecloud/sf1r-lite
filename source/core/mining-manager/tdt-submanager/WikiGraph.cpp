@@ -316,7 +316,7 @@ void WikiGraph::SetContentBias(const std::vector<std::pair<std::string,uint32_t>
    // cout<<relativeWords.size()<<endl;
     for(uint32_t i=0; i<relativeWords.size(); i++)
     {
-        int id=Title2Id(relativeWords[i].first);
+        int id=GetIdByTitle(relativeWords[i].first);
         // cout<<"id"<<id<<endl;
         //cout<<relativeWords[i].first<<" "<<relativeWords[i].second<<"       ";
         if(id>=0)
@@ -334,8 +334,8 @@ void WikiGraph::SetContentBias(const std::vector<std::pair<std::string,uint32_t>
             }
         }
         //cout<<endl;
-        //cout<<"id"<<Title2Id(RelativeWords[i].first)<<endl;
-        //cout<<"Index"<<getIndex(Title2Id(RelativeWords[i].first))<<endl;
+        //cout<<"id"<<GetIdByTitle(RelativeWords[i].first)<<endl;
+        //cout<<"Index"<<getIndex(GetIdByTitle(RelativeWords[i].first))<<endl;
 
         if(stopword_.find( relativeWords[i].first)==stopword_.end())
             ret.push_back(make_pair(log(double(advertiseBias_->GetCount(relativeWords[i].first)+1.0))*0.25*relativeWords[i].second +0.5,relativeWords[i].first));
@@ -345,7 +345,7 @@ void WikiGraph::SetContentBias(const std::vector<std::pair<std::string,uint32_t>
     // cout<<"init"<<endl;
     for(uint32_t i=0; i<relativeWords.size(); i++)
     {
-        int id=Title2Id(relativeWords[i].first);
+        int id=GetIdByTitle(relativeWords[i].first);
 
         if(id>=0)
         {
@@ -448,7 +448,7 @@ int  WikiGraph::getIndex(const int&  id)
 
 Node* WikiGraph::getNode(const string&  str,bool& HaveGet)
 {
-    int id=Title2Id(str);
+    int id=GetIdByTitle(str);
     // cout<<title2id.size();
     // cout<<str<<"id"<<id<<"   "<<endl;
     if(id==-1)
@@ -471,6 +471,7 @@ void WikiGraph::SetAdvertiseBias(Node* node)
     node->SetAdvertiRelevancy(advertiseBias_->GetCount(node->GetName()) );
 };
 /* */
+/*
 int WikiGraph::Title2Id(const string& title,const int i)
 {
     map<string, int>::iterator titleit;
@@ -495,7 +496,7 @@ int WikiGraph::Title2Id(const string& title,const int i)
         return -1;
     }
 }
-
+*/
 void WikiGraph::CalPageRank(PageRank& pr)
 {
     pr.CalcAll(5);
@@ -504,7 +505,7 @@ void WikiGraph::CalPageRank(PageRank& pr)
 
 void WikiGraph::BuildMap()
 {
-
+/*
     for(unsigned i=0; i<nodes_.size(); i++)
     {
 
@@ -513,6 +514,7 @@ void WikiGraph::BuildMap()
         //if(i%10000==0){cout<<"have build map"<<i<<endl;}
         //if(nodes_[i]->GetName()=="奥斯卡"){cout<<i<<"   "<<nodes_[i]->GetId()<<"  "<<Title2Id("奥斯卡")<<endl;}奧斯卡
     }
+*/
     ifstream ifs(redirpath_.c_str());
     loadAll(ifs);
 
@@ -600,6 +602,41 @@ string WikiGraph::ToSimplified(const string& name)
     long ret = opencc_->convert(lowercase_content, simplified_content);
     if(-1 == ret) simplified_content = lowercase_content;
     return simplified_content;
+}
+
+bool WikiGraph::AddTitleIdRelation(const std::string& name, const int& id)
+{
+    title_id.insert(boost::bimap<std::string, int>::value_type(name, id));
+    return true;
+}
+
+std::string WikiGraph::GetTitleById(const int& id)
+{
+    std::string ret = "";
+    boost::bimap<std::string, int>::right_const_iterator iter;
+    iter = title_id.right.find(id);
+    if(iter!=title_id.right.end())
+    {
+        ret = iter->second;
+    }
+    return ret;
+}
+
+int WikiGraph::GetIdByTitle(const std::string& title, const int i)
+{
+    boost::bimap<std::string, int>::left_const_iterator iter;
+    iter = title_id.left.find(title);
+    if(iter!=title_id.left.end())
+    {
+        map<int,string>::iterator redirit;
+        redirit = redirect.find(iter->second);
+        if(redirit !=redirect.end()&&i<5)
+        {
+            return  GetIdByTitle(redirit->second,i+1);
+        }
+        return iter->second;
+    }
+    return -1;
 }
 
 }
