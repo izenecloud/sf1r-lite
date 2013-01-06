@@ -67,6 +67,7 @@ public:
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
+    virtual void onNodeDeleted(const std::string& path);
 
 protected:
     virtual void setZNodePaths() = 0;
@@ -116,6 +117,7 @@ protected:
 
     std::string CLASSNAME;
     std::string self_primary_path_;
+    std::string cur_primary_path_;
 };
 
 }
