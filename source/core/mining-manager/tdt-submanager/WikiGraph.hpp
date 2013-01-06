@@ -11,7 +11,8 @@
 #include <algorithm>
 #include <icma/icma.h>
 #include <icma/openccxx.h>
-
+#include <am/succinct/wat_array/wat_array.hpp>
+#include <util/singleton.h>
 namespace sf1r
 {
 
@@ -36,12 +37,23 @@ class WikiGraph
     std::string redirpath_;
     std::string stopwordpath_;
     //ConBias contentBias_;
-    AdBias advertiseBias_;
+    AdBias* advertiseBias_;
     set<string> stopword_;
+    wat_array::WatArray wa_;
 public:
+
+    static WikiGraph* getInstance()
+    {
+        return izenelib::util::Singleton<WikiGraph>::get();
+    }
+
     cma::OpenCC* opencc_;
 
+    WikiGraph();
+
     WikiGraph(const std::string& wiki_path, cma::OpenCC* opencc);
+
+    void SetParam(const std::string& wiki_path, cma::OpenCC* opencc);
 
     ~WikiGraph();
 
@@ -61,7 +73,7 @@ public:
     //  void InitGraph();
 
 
-    void link2nodes(const int& i,const int& j);
+    //  void link2nodes(const int& i,const int& j);
 
     void GetTopics(const std::vector<std::pair<std::string,uint32_t> >& relativeWords, std::vector<std::string>& topic_list, size_t limit);
 
@@ -74,6 +86,8 @@ public:
     Node* getNode(const int&  id,bool& HaveGet);
 
     int  getIndex(const int&  id);
+
+    int  getIndexByOffset(const int&  offSet);
 
     void SetAdvertiseAll();
 
@@ -91,7 +105,7 @@ public:
 
     void load(std::istream &f, int& id,std::string& name );
 
-    void InitOutLink();
+    //void InitOutLink();
 
     std::string ToSimplified(const std::string& name);
 

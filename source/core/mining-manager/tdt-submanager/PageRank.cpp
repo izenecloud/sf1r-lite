@@ -13,15 +13,33 @@ using namespace std;
 namespace sf1r
 {
 
+std::istream& operator>>(std::istream &f, vector<uint64_t>& A)
+{
+      size_t len;
+      f.read(( char*)&len, sizeof(len));
+      int size=len;
+      int index;
+      //node.linkin_index_.resize(size);
+      for(int i=0;i<size;i++)
+      {
+        f.read(( char*)&index, sizeof(index));
+        A.push_back(index);
+      }
+ 
+      return f;
+}
+
 std::ostream& operator<<(std::ostream &f, const Node &node)
 {
     //ReadLock lock(mutex_);
     f.write((const char*)&node.id_, sizeof(node.id_));
-    f.write((const char*)&node.outNumber_, sizeof(node.outNumber_));
-    size_t len=sizeof(node.name_[0])*(node.name_.size()+1);
+    int outNumber_;
+    f.write((const char*)&outNumber_, sizeof(outNumber_));
+    size_t len=sizeof(node.name_[0])*(node.name_.size());
+   // cout<<node.name_<<endl;
     f.write((const char*)&len, sizeof(len));
-    f.write((const char*)&node.name_[0], sizeof(node.name_[0])*(node.name_.size()+1) );
-
+    f.write((const char*)&node.name_[0], sizeof(node.name_[0])*(node.name_.size()) );
+/*
     len=node.linkin_index_.size();
     f.write((const char*)&len, sizeof(len));
     vector<int>::const_iterator citr = node.linkin_index_.begin();
@@ -32,7 +50,7 @@ std::ostream& operator<<(std::ostream &f, const Node &node)
         f.write((const char*)&index, sizeof(index));
     }
     return f;
-
+*/
 }
 
 std::istream& operator>>(std::istream &f, Node &node )
@@ -42,14 +60,15 @@ std::istream& operator>>(std::istream &f, Node &node )
 
 
     f.read(( char*)&node.id_, sizeof(node.id_));
-
-    f.read(( char*)&node.outNumber_, sizeof(node.outNumber_));
+    int outNumber_;
+    f.read(( char*)&outNumber_, sizeof(outNumber_));
 
     //size_t len=sizeof(node.name_);
     f.read(( char*)&len, sizeof(len));
 
     node.name_.resize(len);
     f.read(( char*)&node.name_[0], len);
+   /*
     //string namestr(name,len);
     //node.name_=namestr;
     // cout<<node.name_<<endl;
@@ -69,6 +88,7 @@ std::istream& operator>>(std::istream &f, Node &node )
         //cout<<index<<endl;
         // node.linkin_index_.insert(index);
     }
+   */
     return f;
 
 }
@@ -79,21 +99,20 @@ void simplify(Node &node, cma::OpenCC* opencc)
     std::string simplified_content;
     long ret = opencc->convert(lowercase_content, simplified_content);
     if(-1 == ret) simplified_content = lowercase_content;
+    //if(node.name_!=simplified_content){cout<<node.name_<<simplified_content<<"endtag"<<endl;}
     node.name_=simplified_content;
 }
 
 Node::Node(string name, int id)
-    : outNumber_(0)
-    , name_(name)
+    : name_(name)
     , id_(id)
-    , contentRelevancy_(0)
     , advertiRelevancy_(0)
 {
 }
 
 Node::~Node()
 {
-    linkin_index_.clear();
+    //linkin_index_.clear();
 }
 /*
 void InsertLinkdInNode(Node* node)
@@ -114,7 +133,7 @@ void InsertLinkOutNode(Node* node)
         linkout_nodes_.insert(node);
     }
 }
-*/
+
 
 void Node::InsertLinkInNode(int i)
 {
@@ -122,7 +141,7 @@ void Node::InsertLinkInNode(int i)
     linkin_index_.push_back(i);
 }
 
-/*
+
     double Node::GetPageRank()
     {
         return page_rank_;
@@ -173,7 +192,7 @@ void Node::SetAdvertiRelevancy(double advertiRelevancy)
 
         return pr;
     }
-*/
+
 size_t Node::GetOutBoundNum()
 {
     return  outNumber_;
@@ -184,7 +203,7 @@ size_t Node::GetInBoundNum()
     return  linkin_index_.size();
 }
 
-/*
+
     double Node::GetContentRelevancy()
     {
         return contentRelevancy_;
@@ -200,13 +219,13 @@ string Node::GetName()
 {
     return name_;
 }
-
+/*
 void Node::InsertLinkOutNode(int i)
 {
     linkout_index_.push_back(i);
     outNumber_++;
 }
-
+*/
 void Node::PrintNode()
 {
 
@@ -222,9 +241,10 @@ int Node::GetId()
     return id_;
 }
 
-PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph,double alpha,double beta)
+PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph, wat_array::WatArray& wa,double alpha,double beta)
     : SubGraph_(SubGraph)
     , nodes_(nodes)
+    , wa_(wa)
     , alpha_(alpha)
     , beta_(beta)
 {
@@ -239,116 +259,119 @@ PageRank::~PageRank()
 
 void PageRank::InitMap()
 {
+
     set<int>::const_iterator citr = SubGraph_.begin();
+    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
+    cout<<"Init"<<time_now<<endl;
+    wat_array::BitTrie SubTrie( nodes_.size());//wa_.alphabet_num()
+    //SubTrie.insert(1312342);
+    //cout<<"1312342 exsit"<<SubTrie.exist(1312342)<<endl;
+    //cout<<"1312331 exsit"<<SubTrie.exist(1312331)<<endl;
     for (; citr != SubGraph_.end(); ++citr)
     {
-        // cout<<"Link in"<<(*citr)<<endl;
-        Node * node =nodes_[(*citr)];
+           // cout<<"Link in"<<(*citr)<<endl;
+         SubTrie.insert(*citr);
+         //cout<<(*citr)<<"exsit"<<SubTrie.exist(*citr)<<endl;
+    }
+    citr = SubGraph_.begin();
+   
+    for (; citr != SubGraph_.end(); ++citr)
+    {
+           // cout<<"Link in"<<(*citr)<<endl;
+            Node * node =nodes_[(*citr)];
+            vector<int> linkin;
+          //  int oN=0,iN=0;
+          /*
+            vector<int>::const_iterator sitr = node->linkout_index_.begin();
+            vector<int> linkin;
+         /*
+           for (; sitr !=node->linkout_index_.end(); ++sitr)
+           {
+                if(SubGraph_.find(*sitr)!=SubGraph_.end())
+                {oN++;}
+           
+           }
+         
+           sitr = node->linkin_index_.begin();
+           
+           for (; sitr !=node->linkin_index_.end(); ++sitr)
+           {
+                if(SubGraph_.find(*sitr)!=SubGraph_.end())
+                {
+                     linkin.push_back(*sitr);
+                     
+                }
+           
+           }
+           */
+           vector<uint64_t> ret;
+           //cout<<"QuantileRangeAll"<<endl;
+           wa_.QuantileRangeAll(node->offStart, node->offStop, ret,SubTrie);
+           //cout<<"ret size"<<ret.size()<<endl;
+           for(unsigned i=0;i<ret.size();i++)
+           {
+                int index=ret[i];
+                if(SubGraph_.find(index)!=SubGraph_.end())
+                {
+                     linkin.push_back(index);
+                     
+                }
+           }
+          // cout<<"linkin size"<<linkin.size()<<endl;
+           /*
+           for(unsigned i=node->offStart;i<=node->offStop;i++)
+           {
+                int index=wa_.Lookup(i);
+                if(SubGraph_.find(index)!=SubGraph_.end())
+                {
+                     linkin.push_back(index);
+                     
+                }
+           }
+           */
+           CalText temp;
+           temp.linkin_=linkin;
+           temp.pr_=1.0;
+           temp.contentRelevancy_=0.0;
+           temp.outNumber_=0;
+           linkinMap_.insert(pair<int,CalText>((*citr), temp));
+           //node->PrintNode();
+           //cout<<"innumber"<<iN<<endl;
+    }
+    time_now = boost::posix_time::microsec_clock::local_time();
+    cout<<"End"<<time_now<<endl;
+    citr = SubGraph_.begin();
+    for (; citr != SubGraph_.end(); ++citr)
+    {
+           // cout<<"Link in"<<(*citr)<<endl;
 
-        int oN=0,iN=0;
-        vector<int>::const_iterator sitr = node->linkout_index_.begin();
-        vector<int> linkin;
+           vector<int>::const_iterator sitr =getLinkin(*citr).linkin_.begin();
+           for (; sitr !=getLinkin(*citr).linkin_.end(); ++sitr)
+           {
+                addON(*sitr);
+           }
 
-        for (; sitr !=node->linkout_index_.end(); ++sitr)
-        {
-            if(SubGraph_.find(*sitr)!=SubGraph_.end())
-            {
-                oN++;
-            }
-
-        }
-
-        sitr = node->linkin_index_.begin();
-
-        for (; sitr !=node->linkin_index_.end(); ++sitr)
-        {
-            if(SubGraph_.find(*sitr)!=SubGraph_.end())
-            {
-                linkin.push_back(*sitr);
-                iN++;
-            }
-
-        }
-
-        CalText temp;
-        temp.linkin_=linkin;
-        temp.pr_=1.0;
-        temp.contentRelevancy_=0.0;
-        temp.outNumber_=oN;
-        linkinMap_.insert(pair<int,CalText>((*citr), temp));
-        // node->PrintNode();
-        //cout<<"innumber"<<iN<<endl;
+         
     }
 }
 // 迭代计算n次
 void PageRank::CalcAll(int n)
 {
-    /*
-      set<int>::const_iterator citr = SubGraph_.begin();
-      for (; citr != SubGraph_.end(); ++citr)
-      {
-             // cout<<"Link in"<<(*citr)<<endl;
-              Node * node =nodes_[(*citr)];
-              node->outNumberOrg_=node->outNumber_;
-              int oN=0,iN=0;
-              vector<int>::const_iterator sitr = node->linkout_index_.begin();
-              vector<int> linkin;
 
-             for (; sitr !=node->linkout_index_.end(); ++sitr)
-             {
-                  if(SubGraph_.find(*sitr)!=SubGraph_.end())
-                  {oN++;}
-
-             }
-
-             sitr = node->linkin_index_.begin();
-
-             for (; sitr !=node->linkin_index_.end(); ++sitr)
-             {
-                  if(SubGraph_.find(*sitr)!=SubGraph_.end())
-                  {
-                       linkin.push_back(*sitr);
-                       iN++;
-                  }
-
-             }
-
-             CalText_=oN;
-             linkinMap_.insert(pair<int,vector<int> >((*citr), linkin));
-             //node->PrintNode();
-             //cout<<"innumber"<<iN<<endl;
-      }
-    */
-    /**/
     set<int>::const_iterator citr;
     boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
     // cout<<"subset"<<time_now<<endl;
     for (int i=0; i<n; ++i)
     {
-        //  cout<<"for"<<i<<"time"<<endl;
-        /* vector<Node*>::iterator citr = nodes_.begin();
 
-
-         // cout<<"pr"<<pr<<endl;
-
-          for (; citr != nodes_.end(); ++citr)
-          {
-             // cout<<"Link in"<<(*citr)<<endl;
-              Node * node =(*citr);
-              //node->PrintNode();
-             // cout<<"pr"<<pr<<endl;
-             Calc(node);
-          }
-         */
-        //if(i==n-1){alpha_=0.7,beta_=0.15;}
         citr = SubGraph_.begin();
         // cout<<"pr"<<pr<<endl;
         for (; citr != SubGraph_.end(); ++citr)
         {
             // cout<<"Link in"<<(*citr)<<endl;
 
-            //node->PrintNode();
-            // cout<<"pr"<<pr<<endl;
+           // node->PrintNode();
+           // cout<<"pr"<<pr<<endl;
             Calc(*citr);
         }
         /**/
@@ -451,15 +474,39 @@ void PageRank::setContentRelevancy(int index,double contentRelevancy)
     if(contentRelevancy>=1)
     {
         //CalText &linkinSub=getLinkin(index);
-        vector<int>::const_iterator citr = nodes_[index]->linkout_index_.begin();
-        // cout<<"pr"<<pr<<endl;
-        for (; citr != nodes_[index]->linkout_index_.end(); ++citr)
+        int size=wa_.Freq(index) ; 
+        for (int i=0; i<size ; i++)
         {
-            setContentRelevancy(*citr,0.01);
-
+             setContentRelevancy(getIndexByOffset(wa_.Select(index,i)),0.01);
         }
+                
     }
 }
+int  PageRank::getIndexByOffset(const int&  offSet)
+{
+       
+       int front=0;
+       int end=nodes_.size()-1;
+       int mid=(front+end)/2;
+       while(front<end && (nodes_[mid]->offStart>offSet||nodes_[mid]->offStop<offSet))
+       {
+          if(nodes_[mid]->offStop<offSet)front=mid+1;
+          if(nodes_[mid]->offStart>offSet)end=mid-1;
+          mid=front + (end - front)/2;
+       }
+      // cout<<"mid"<<mid<<endl;
+       if(nodes_[mid]->offStart>offSet||nodes_[mid]->offStop<offSet)
+       {
+         // HaveGet=false;
+          cout<<"offset false"<<endl;
+          return  -1;
+       }
+       else
+       {
+         // HaveGet=true;
+          return mid;
+       }
+};
 
 double PageRank::getContentRelevancy(int index)
 {
@@ -470,6 +517,14 @@ double PageRank::getON(int index)
 {
     // cout<<"getON"<<index<<endl;
     return double(getLinkin(index).outNumber_);
+}
+
+void PageRank::addON(int index)
+{
+       // cout<<"getON"<<index<<endl;
+          
+     getLinkin(index).outNumber_++;
+            
 }
 
 double PageRank::CalcRank(const CalText& linkinSub)
