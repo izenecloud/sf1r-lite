@@ -5,12 +5,17 @@
 
 namespace sf1r
 {
-
-WikiGraph::WikiGraph(const string& wiki_path,cma::OpenCC* opencc)
-    : advertiseBias_((boost::filesystem::path(wiki_path)/=boost::filesystem::path("AdvertiseWord.txt")).c_str())
-    , opencc_(opencc)
+WikiGraph::WikiGraph()
 {
-    
+}
+
+void WikiGraph::SetParam(const string& wiki_path,cma::OpenCC* opencc)
+   // : advertiseBias_((boost::filesystem::path(wiki_path)/=boost::filesystem::path("AdvertiseWord.txt")).c_str())
+   // , opencc_(opencc)
+{
+    if(advertiseBias_){return;}
+    advertiseBias_=new AdBias((boost::filesystem::path(wiki_path)/=boost::filesystem::path("AdvertiseWord.txt")).c_str()) ;
+    opencc_=opencc;   
     boost::filesystem::path wikigraph_path(wiki_path);
     wikigraph_path /= boost::filesystem::path("wikigraph");
     path_ = wikigraph_path.c_str();
@@ -21,7 +26,7 @@ WikiGraph::WikiGraph(const string& wiki_path,cma::OpenCC* opencc)
     stopword_path /= boost::filesystem::path("StopWord.txt");
     stopwordpath_ = stopword_path.c_str();
 
-    //cout<<"wikipediaGraphBuild"<<endl;
+    cout<<"wikipediaGraphBuild"<<endl;
     //cout<<"init wiki_path"<<wiki_path<<" "<<path_<<endl;
     initStopword();
     init();
@@ -287,12 +292,13 @@ void WikiGraph::InitSubGaph(const int& index,set<int>& SubGraph,int itertime)
         if(itertime==1)
         {
             //cout<<wa_.Freq(index)<<endl;
-            if(wa_.Freq(index)==1)
+            int size=wa_.Freq(index);
+            if(size==1)
             {
                 if(SubGraph.find(wa_.Select(index,0))!=SubGraph.end())
                     itertime--;
             }
-            for (int i=0;i<wa_.Freq(index) ; i++)
+            for (int i=0;i<size ; i++)
             {
                 InitSubGaph(getIndexByOffset(wa_.Select(index,i)),SubGraph,itertime+1);
             }
@@ -332,7 +338,7 @@ void WikiGraph::SetContentBias(const std::vector<std::pair<std::string,uint32_t>
         //cout<<"Index"<<getIndex(Title2Id(RelativeWords[i].first))<<endl;
 
         if(stopword_.find( relativeWords[i].first)==stopword_.end())
-            ret.push_back(make_pair(log(double(advertiseBias_.GetCount(relativeWords[i].first)+1.0))*0.25*relativeWords[i].second +0.5,relativeWords[i].first));
+            ret.push_back(make_pair(log(double(advertiseBias_->GetCount(relativeWords[i].first)+1.0))*0.25*relativeWords[i].second +0.5,relativeWords[i].first));
     }
     // cout<<pr.SubGraph_.size()<<endl;
     pr.InitMap();
@@ -462,7 +468,7 @@ void WikiGraph::SetAdvertiseAll()
 
 void WikiGraph::SetAdvertiseBias(Node* node)
 {
-    node->SetAdvertiRelevancy(advertiseBias_.GetCount(node->GetName()) );
+    node->SetAdvertiRelevancy(advertiseBias_->GetCount(node->GetName()) );
 };
 /* */
 int WikiGraph::Title2Id(const string& title,const int i)

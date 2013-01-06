@@ -12,7 +12,7 @@
 #include <icma/icma.h>
 #include <icma/openccxx.h>
 #include <am/succinct/wat_array/wat_array.hpp>
-
+#include <util/singleton.h>
 namespace sf1r
 {
 
@@ -37,13 +37,23 @@ class WikiGraph
     std::string redirpath_;
     std::string stopwordpath_;
     //ConBias contentBias_;
-    AdBias advertiseBias_;
+    AdBias* advertiseBias_;
     set<string> stopword_;
     wat_array::WatArray wa_;
 public:
+
+    static WikiGraph* getInstance()
+    {
+        return izenelib::util::Singleton<WikiGraph>::get();
+    }
+
     cma::OpenCC* opencc_;
 
+    WikiGraph();
+
     WikiGraph(const std::string& wiki_path, cma::OpenCC* opencc);
+
+    void SetParam(const std::string& wiki_path, cma::OpenCC* opencc);
 
     ~WikiGraph();
 

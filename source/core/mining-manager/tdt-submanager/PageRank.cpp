@@ -474,7 +474,8 @@ void PageRank::setContentRelevancy(int index,double contentRelevancy)
     if(contentRelevancy>=1)
     {
         //CalText &linkinSub=getLinkin(index);
-        for (int i=0;i<wa_.Freq(index) ; i++)
+        int size=wa_.Freq(index) ; 
+        for (int i=0; i<size ; i++)
         {
              setContentRelevancy(getIndexByOffset(wa_.Select(index,i)),0.01);
         }
