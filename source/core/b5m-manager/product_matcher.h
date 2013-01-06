@@ -326,6 +326,10 @@ namespace sf1r {
 
         struct Category
         {
+            Category()
+            : cid(0), parent_cid(0), is_parent(true), depth(0), has_spu(false)
+            {
+            }
             std::string name;
             uint32_t cid;//inner cid starts with 1, not specified by category file.
             uint32_t parent_cid;//also inner cid
@@ -432,10 +436,14 @@ namespace sf1r {
         void SetUsePriceSim(bool sim)
         { use_price_sim_ = sim; }
 
-        static std::string MatcherOnlyPropertyName()
-        {
-            static const std::string p("matcher_only");
-            return p;
+        //if given category empty, do SPU matching only
+        void SetMatcherOnly(bool m)
+        { matcher_only_ = m; }
+
+        void SetCategoryMaxDepth(uint16_t d)
+        { 
+            category_max_depth_ = d;
+            LOG(INFO)<<"set category max depth to "<<d<<std::endl;
         }
 
     private:
@@ -468,6 +476,7 @@ namespace sf1r {
         bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
         void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
+        uint32_t GetCidByMaxDepth_(uint32_t cid);
 
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
@@ -509,6 +518,8 @@ namespace sf1r {
         bool is_open_;
         std::string cma_path_;
         bool use_price_sim_;
+        bool matcher_only_;
+        uint16_t category_max_depth_;
         idmlib::sim::StringSimilarity string_similarity_;
         AttributeIdManager* aid_manager_;
         IdManager id_manager_;

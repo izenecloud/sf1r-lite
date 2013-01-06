@@ -13,6 +13,8 @@
  *     - Query Adjustment. Rank document item one by one.
  *   - 2010-04-07 Jia Guo
  *     - Corrent the formula.
+ *   - 2012-12-15 Hongliang Zhao
+ *     - If df is big than nDocs in virtual search, set df = nDocs.
  */
 #include "BM25Ranker.h"
 #include <glog/logging.h>
@@ -31,7 +33,10 @@ void BM25Ranker::setupStats(const RankQueryProperty& queryProperty)
     {
         float df = queryProperty.documentFreqAt(i);
         float nDocs = queryProperty.getNumDocs();
-
+        if (df > nDocs)
+        {
+            df = nDocs;
+        }
         if ((idfParts_[i] = std::log((nDocs - df + 0.5F) / (df + 0.5F))) < minIdf_)
         {
             idfParts_[i] = minIdf_;
@@ -91,7 +96,7 @@ float BM25Ranker::getScore(
             float tf_LNPart = (k1_ + 1) * tfInDoc / denominatorTF_LN;
             float qtfPart = (k3_ + 1) * tfInQuery / (k3_ + tfInQuery);
             score += idfParts_[i] * qtfPart * tf_LNPart;
-           // LOG(INFO) << "the "<<i<<"'th term's --->idfParts_, qtfPart, tf_LNPart:"<<idfParts_[i] <<", "<<qtfPart<<"," << tf_LNPart;
+            //LOG(INFO) << "the "<<i<<"'th term's --->idfParts_, qtfPart, tf_LNPart:"<<idfParts_[i] <<", "<<qtfPart<<"," << tf_LNPart;
         }
     }
     return score;

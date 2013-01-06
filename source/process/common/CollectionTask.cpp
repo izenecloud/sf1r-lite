@@ -130,14 +130,21 @@ void ExpirationCheckTask::doTask()
         CollectionManager::ScopedReadLock collLock(*collMutex);
         CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collectionName_);
         if (!collectionHandler)
+        {
+        	LOG(INFO) << "## startCollection: " << collectionName_;
         	CollectionManager::get()->startCollection(collectionName_, configFile);
+        }
     }
     // Check if the time is expired
     if (endDate_ < currentDate)
     {
+    	LOG(INFO) << "## stopCollection: " << collectionName_;
     	CollectionManager::get()->stopCollection(collectionName_);
+    	LOG(INFO) << "## deleteCollection: " << collectionName_;
     	LicenseCustManager::get()->deleteCollection(collectionName_);
     }
+    LOG(INFO) << "## end ExpirationCheckTask for " << collectionName_;
+    isRunning_ = false;
 }
 
 }

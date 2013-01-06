@@ -977,9 +977,16 @@ void DocumentsSearchKeywordsLogger::log(
         actionItem.env_.queryString_,
         izenelib::util::UString::UTF_8
     );
-
+    for (unsigned int i = 0; i < queryString.size(); ++i)
+    {
+        if (queryString.isPunctuationChar(i))
+        {
+            return;
+        }
+    }
     // log for mining features, such as recent keywords
     UserQuery queryLog;
+
     queryLog.setQuery(actionItem.env_.queryString_);
     queryLog.setCollection(actionItem.collectionName_);
     queryLog.setHitDocsNum(searchResult.totalCount_);

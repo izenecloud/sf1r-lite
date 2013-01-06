@@ -386,8 +386,20 @@ bool AutoFillChildManager::InitFromLog()
     std::vector<UserQuery>::const_iterator it = query_records.begin();
     for (; it != query_records.end(); ++it)
     {
+        bool isNormalString = true;
         izenelib::util::UString UStringQuery_(it->getQuery(),izenelib::util::UString::UTF_8);
-        querylist.push_back(boost::make_tuple(it->getCount(), it->getHitDocsNum(), UStringQuery_));
+        for (unsigned int i = 0; i < UStringQuery_.size(); ++i)
+        {
+            if (UStringQuery_.isPunctuationChar(i))
+            {
+                isNormalString = false;
+                break;
+            }
+        }
+        if (isNormalString)
+        {
+            querylist.push_back(boost::make_tuple(it->getCount(), it->getHitDocsNum(), UStringQuery_));
+        }
     }
     buildIndex(querylist);
     return true;
@@ -1146,10 +1158,23 @@ void AutoFillChildManager::updateFromLog()
     for ( ; it != query_records.end(); ++it)
     {
         QueryType TempQuery;
-        TempQuery.strQuery_ = it->getQuery();
-        TempQuery.freq_ = it->getCount();
-        TempQuery.HitNum_ = it->getHitDocsNum();
-        querylist.push_back(TempQuery );
+        bool isNormalString = true;
+        izenelib::util::UString UStringQuery_(it->getQuery(),izenelib::util::UString::UTF_8);
+        for (unsigned int i = 0; i < UStringQuery_.size(); ++i)
+        {
+            if (UStringQuery_.isPunctuationChar(i))
+            {
+                isNormalString = false;
+                break;
+            }
+        }
+        if (isNormalString)
+        {
+            TempQuery.strQuery_ = it->getQuery();
+            TempQuery.freq_ = it->getCount();
+            TempQuery.HitNum_ = it->getHitDocsNum();
+            querylist.push_back(TempQuery );
+        }
     }
     LoadItem();
     buildItemVector();//erase same

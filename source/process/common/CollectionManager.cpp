@@ -71,6 +71,8 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
     }
 #endif
 
+    LOG(INFO) << "Start Collection: " << collectionName;
+
     std::auto_ptr<CollectionHandler> collectionHandler(new CollectionHandler(collectionName));
 
     boost::shared_ptr<IndexBundleConfiguration> indexBundleConfig(new IndexBundleConfiguration(collectionName));
@@ -181,6 +183,8 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
 bool CollectionManager::stopCollection(const std::string& collectionName, bool clear)
 {
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
+
+    LOG(INFO) << "Stop Collection: " << collectionName;
 
     JobScheduler::get()->removeTask(collectionName);
 
