@@ -58,6 +58,7 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
     else
     {
         isSynchronizing_ = true;
+        syncData.setValue(SynchroData::KEY_HOST, SuperNodeManager::get()->getLocalHostIP());
         syncData_ = syncData;
         init();
     }

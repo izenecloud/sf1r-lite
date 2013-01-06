@@ -134,6 +134,7 @@ boost::shared_ptr<NumericPropertyTableBase>& SortPropertyCache::getSortPropertyD
                 iter != sortDataCache_.end(); ++iter)
         {
             LOG(INFO) << "dirty sort data cache on property: " << iter->first;
+            if (iter->first == faceted::CTRManager::kCtrPropName) continue;
             if (iter->second) loadSortData(iter->first, iter->second->getType());
         }
         dirty_ = false;
