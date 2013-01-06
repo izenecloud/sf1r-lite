@@ -280,6 +280,7 @@ void WikiGraph::InitSubGaph(const int& index,set<int>& SubGraph,int itertime)
     else if( SubGraph.find(index) == SubGraph.end() )
     {
         SubGraph.insert(index);
+        //cout<<nodes_[index]->GetName()<<"out"<<wa_.Freq(index)<<"in"<<(nodes_[index]->offStop-nodes_[index]->offStart)<<endl;
         //nodes_[index]->SetPageRank(1.0);
         //vector<int>::const_iterator citr ;//=nodes_[index]->linkin_index_.begin();
         /*
@@ -355,6 +356,8 @@ void WikiGraph::SetContentBias(const std::vector<std::pair<std::string,uint32_t>
             //  pr.setContentRelevancy(getIndex(id),0.1);
         }
     }
+    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
+    cout<<"setContentRelevancy end"<<time_now<<endl;
     //cout<<"SetContentBiasEnd"<<endl;
     //cout<<endl;
 }
