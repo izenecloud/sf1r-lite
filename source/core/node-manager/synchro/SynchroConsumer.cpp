@@ -254,6 +254,8 @@ bool SynchroConsumer::consume(SynchroData& producerMsg)
         if (producerMsg.getStrValue(SynchroData::KEY_HOST) != SuperNodeManager::get()->getLocalHostIP())
         {
             LOG(INFO) << "source path is only needed for local consume and producer.";
+            LOG(INFO) << "local consume is : " << SuperNodeManager::get()->getLocalHostIP();
+            LOG(INFO) << "producer is : " << producerMsg.getStrValue(SynchroData::KEY_HOST);
             src_path.clear();
         }
         ret = callback_on_produced_(src_path);
