@@ -52,11 +52,11 @@ public:
 
     WikiGraph();
 
-    WikiGraph(const std::string& wiki_path, cma::OpenCC* opencc);
+    ~WikiGraph();
+
+    void Init(const std::string& wiki_path, cma::OpenCC* opencc);
 
     void SetParam(const std::string& wiki_path, cma::OpenCC* opencc);
-
-    ~WikiGraph();
 
     void load(std::istream& is);
 

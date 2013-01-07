@@ -2,11 +2,28 @@
 #include <math.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/bind.hpp>
+#include <boost/thread/once.hpp>
 
 namespace sf1r
 {
 WikiGraph::WikiGraph()
 {
+}
+
+WikiGraph::~WikiGraph()
+{
+
+    for(unsigned i=0; i<nodes_.size(); i++)
+    {
+        delete nodes_[i];
+    }
+}
+
+void WikiGraph::Init(const string& wiki_path,cma::OpenCC* opencc)
+{
+    static boost::once_flag once = BOOST_ONCE_INIT;
+    boost::call_once(once, boost::bind(&WikiGraph::SetParam, this, wiki_path, opencc));
 }
 
 void WikiGraph::SetParam(const string& wiki_path,cma::OpenCC* opencc)
@@ -56,15 +73,6 @@ void WikiGraph::SetParam(const string& wiki_path,cma::OpenCC* opencc)
     //delete a;
     */
     cout<<"wikipediaGraphDone"<<endl;
-}
-
-WikiGraph::~WikiGraph()
-{
-
-    for(unsigned i=0; i<nodes_.size(); i++)
-    {
-        delete nodes_[i];
-    }
 }
 
 void WikiGraph::load(std::istream& is)
