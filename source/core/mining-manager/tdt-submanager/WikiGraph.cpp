@@ -15,7 +15,7 @@ void WikiGraph::SetParam(const string& wiki_path,cma::OpenCC* opencc)
 {
     if(advertiseBias_){return;}
     advertiseBias_=new AdBias((boost::filesystem::path(wiki_path)/=boost::filesystem::path("AdvertiseWord.txt")).c_str()) ;
-    opencc_=opencc;   
+    opencc_=opencc;
     boost::filesystem::path wikigraph_path(wiki_path);
     wikigraph_path /= boost::filesystem::path("wikigraph");
     path_ = wikigraph_path.c_str();
@@ -25,6 +25,11 @@ void WikiGraph::SetParam(const string& wiki_path,cma::OpenCC* opencc)
     boost::filesystem::path stopword_path(wiki_path);
     stopword_path /= boost::filesystem::path("StopWord.txt");
     stopwordpath_ = stopword_path.c_str();
+
+    titleIdDbTable = new TitleIdDbTable(wiki_path+"/titleid");
+    idTitleDbTable = new IdTitleDbTable(wiki_path+"/idtitle");
+    titleIdDbTable->open();
+    idTitleDbTable->open();
 
     cout<<"wikipediaGraphBuild"<<endl;
     //cout<<"init wiki_path"<<wiki_path<<" "<<path_<<endl;
@@ -36,7 +41,7 @@ void WikiGraph::SetParam(const string& wiki_path,cma::OpenCC* opencc)
     //cout<<"蘋果 喬布斯"<<endl;
     //simplifyTitle();
     //flush();
-    
+
     cout<<"buildMap...."<<endl;
     BuildMap();
     cout<<"SetAdvertise...."<<endl;
@@ -75,7 +80,7 @@ void WikiGraph::load(std::istream& is)
         nodes_.resize(nodesize);
 
         for(unsigned int i=0;i<nodesize;i++)
-        { 
+        {
           //if(i%10000==0){cout<<"load "<<i<<"nodes"<<endl;}
           nodes_[i]=new Node("");
           is>>(*nodes_[i]);
@@ -83,7 +88,7 @@ void WikiGraph::load(std::istream& is)
           is>>A;
           nodes_[i]->offStop  =A.size()-1;
         }
-        
+
         wa_.Init(A);
 }
 
@@ -398,7 +403,7 @@ Node*  WikiGraph::getNode(const int&  id,bool& HaveGet)
 }
 int  WikiGraph::getIndexByOffset(const int&  offSet)
 {
-       
+
        int front=0;
        int end=nodes_.size()-1;
        int mid=(front+end)/2;
@@ -606,35 +611,32 @@ string WikiGraph::ToSimplified(const string& name)
 
 bool WikiGraph::AddTitleIdRelation(const std::string& name, const int& id)
 {
-    title_id.insert(boost::bimap<std::string, int>::value_type(name, id));
+    int temp_id;
+    std::string temp_name;
+    if( !(titleIdDbTable->get_item(name, temp_id)) ) titleIdDbTable->add_item(name, id);
+    if( !(idTitleDbTable->get_item(id, temp_name)) ) idTitleDbTable->add_item(id, name);
     return true;
 }
 
 std::string WikiGraph::GetTitleById(const int& id)
 {
     std::string ret = "";
-    boost::bimap<std::string, int>::right_const_iterator iter;
-    iter = title_id.right.find(id);
-    if(iter!=title_id.right.end())
-    {
-        ret = iter->second;
-    }
+    idTitleDbTable->get_item(id, ret);
     return ret;
 }
 
 int WikiGraph::GetIdByTitle(const std::string& title, const int i)
 {
-    boost::bimap<std::string, int>::left_const_iterator iter;
-    iter = title_id.left.find(title);
-    if(iter!=title_id.left.end())
+    int id;
+    if(titleIdDbTable->get_item(title, id))
     {
         map<int,string>::iterator redirit;
-        redirit = redirect.find(iter->second);
+        redirit = redirect.find(id);
         if(redirit !=redirect.end()&&i<5)
         {
             return  GetIdByTitle(redirit->second,i+1);
         }
-        return iter->second;
+        return id;
     }
     return -1;
 }
