@@ -43,6 +43,11 @@ void WikiGraph::SetParam_(const string& wiki_path,cma::OpenCC* opencc)
     stopword_path /= boost::filesystem::path("StopWord.txt");
     stopwordpath_ = stopword_path.c_str();
 
+    titleIdDbTable_ = new TitleIdDbTable(wiki_path+"/titleid");
+    idTitleDbTable_ = new IdTitleDbTable(wiki_path+"/idtitle");
+    titleIdDbTable_->open();
+    idTitleDbTable_->open();
+
     cout<<"wikipediaGraphBuild"<<endl;
     //cout<<"init wiki_path"<<wiki_path<<" "<<path_<<endl;
     InitStopword_();
@@ -474,7 +479,7 @@ void WikiGraph::SetAdvertiseAll_()
 void WikiGraph::SetAdvertiseBias_(Node* node)
 {
     node->SetAdvertiRelevancy(advertiseBias_->GetCount(node->GetName()) );
-};
+}
 
 void WikiGraph::CalPageRank_(PageRank& pr)
 {
@@ -560,35 +565,32 @@ string WikiGraph::ToSimplified_(const string& name)
 
 bool WikiGraph::AddTitleIdRelation(const std::string& name, const int& id)
 {
-    title_id_.insert(boost::bimap<std::string, int>::value_type(name, id));
+    int temp_id;
+    std::string temp_name;
+    if( !(titleIdDbTable_->get_item(name, temp_id)) ) titleIdDbTable_->add_item(name, id);
+    if( !(idTitleDbTable_->get_item(id, temp_name)) ) idTitleDbTable_->add_item(id, name);
     return true;
 }
 
 std::string WikiGraph::GetTitleById(const int& id)
 {
     std::string ret = "";
-    boost::bimap<std::string, int>::right_const_iterator iter;
-    iter = title_id_.right.find(id);
-    if(iter!=title_id_.right.end())
-    {
-        ret = iter->second;
-    }
+    idTitleDbTable_->get_item(id, ret);
     return ret;
 }
 
 int WikiGraph::GetIdByTitle(const std::string& title, const int i)
 {
-    boost::bimap<std::string, int>::left_const_iterator iter;
-    iter = title_id_.left.find(title);
-    if(iter!=title_id_.left.end())
+    int id;
+    if(titleIdDbTable_->get_item(title, id))
     {
         map<int,string>::iterator redirit;
-        redirit = redirect_.find(iter->second);
+        redirit = redirect_.find(id);
         if(redirit !=redirect_.end()&&i<5)
         {
             return  GetIdByTitle(redirit->second,i+1);
         }
-        return iter->second;
+        return id;
     }
     return -1;
 }

@@ -6,6 +6,7 @@
 #include <map>
 #include "PageRank.hpp"
 #include "AdBias.hpp"
+#include "LevelDbTable.hpp"
 //#include "ConBias.hpp"
 //#include "database.h"
 #include <algorithm>
@@ -42,6 +43,8 @@ class WikiGraph
     AdBias* advertiseBias_;
     set<string> stopword_;
     wat_array::WatArray wa_;
+    TitleIdDbTable* titleIdDbTable_;
+    IdTitleDbTable* idTitleDbTable_;
 public:
     static WikiGraph* GetInstance()
     {
