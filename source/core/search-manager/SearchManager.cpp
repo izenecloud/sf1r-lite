@@ -120,6 +120,11 @@ void SearchManager::setProductRankerFactory(ProductRankerFactory* productRankerF
     productRankerFactory_ = productRankerFactory;
 }
 
+void SearchManager::setNumericTableBuilder(NumericPropertyTableBuilder* numericTableBuilder)
+{
+    preprocessor_->numericTableBuilder_ = numericTableBuilder;
+}
+
 bool SearchManager::rerank(
     const KeywordSearchActionItem& actionItem,
     KeywordSearchResult& resultItem)
@@ -168,11 +173,6 @@ void SearchManager::setMiningManager(
     boost::shared_ptr<MiningManager> miningManagerPtr)
 {
     miningManagerPtr_ = miningManagerPtr;
-}
-
-boost::shared_ptr<NumericPropertyTableBase>& SearchManager::createPropertyTable(const std::string& propertyName)
-{
-    return preprocessor_->createPropertyTable(propertyName, pSorterCache_);
 }
 
 bool SearchManager::search(

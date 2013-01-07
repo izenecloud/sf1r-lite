@@ -29,6 +29,7 @@ class PropertyRanker;
 class ProductScorerFactory;
 class ProductScorer;
 class PropSharedLockSet;
+class NumericPropertyTableBuilder;
 
 class SearchManagerPreProcessor
 {
@@ -40,10 +41,7 @@ private:
 
     boost::unordered_map<std::string, PropertyConfig> schemaMap_;
     ProductScorerFactory* productScorerFactory_;
-
-    boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(
-        const std::string& propertyName,
-        SortPropertyCache* pSorterCache);
+    NumericPropertyTableBuilder* numericTableBuilder_;
 
     bool getPropertyTypeByName_(
         const std::string& name,

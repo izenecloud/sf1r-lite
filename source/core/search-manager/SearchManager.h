@@ -8,7 +8,6 @@
 #include <common/ResultType.h>
 #include "ANDDocumentIterator.h"
 #include "Sorter.h"
-#include "NumericPropertyTableBuilder.h"
 
 #include <ir/id_manager/IDManager.h>
 
@@ -49,6 +48,7 @@ class ScoreDocEvaluator;
 class ProductScorerFactory;
 class ProductRankerFactory;
 class PropSharedLockSet;
+class NumericPropertyTableBuilder;
 
 namespace faceted
 {
@@ -57,7 +57,7 @@ class OntologyRep;
 class GroupFilter;
 }
 
-class SearchManager : public NumericPropertyTableBuilder
+class SearchManager
 {
     enum IndexLevel
     {
@@ -124,13 +124,13 @@ public:
 
     void setMiningManager(boost::shared_ptr<MiningManager> miningManagerPtr);
 
-    boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(const std::string& propertyName);
-
     void setCustomRankManager(CustomRankManager* customRankManager);
 
     void setProductScorerFactory(ProductScorerFactory* productScorerFactory);
 
     void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
+
+    void setNumericTableBuilder(NumericPropertyTableBuilder* numericTableBuilder);
 
     QueryBuilder* getQueryBuilder()
     {

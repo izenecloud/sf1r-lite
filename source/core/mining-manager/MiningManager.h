@@ -105,6 +105,7 @@ class IncrementalManager;
 class ProductMatcher;
 class MiningTaskBuilder;
 class GroupLabelKnowledge;
+class NumericPropertyTableBuilder;
 
 namespace sim
 {
@@ -604,6 +605,8 @@ private:
 
     /** CTR */
     boost::shared_ptr<faceted::CTRManager> ctrManager_;
+
+    NumericPropertyTableBuilder* numericTableBuilder_;
 
     /** GROUP BY */
     faceted::GroupManager* groupManager_;
