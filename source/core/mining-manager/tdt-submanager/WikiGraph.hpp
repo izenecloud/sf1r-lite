@@ -13,6 +13,7 @@
 #include <icma/openccxx.h>
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <util/singleton.h>
+#include <boost/bimap.hpp>
 namespace sf1r
 {
 
@@ -29,7 +30,7 @@ class WikiGraph
     std::vector<Node*> nodes_;
 
     //database db_;
-    std::map<std::string,int> title2id;
+    boost::bimap<std::string, int> title_id;
     std::map<int,std::string> redirect;
     // PageRank pr_;
     //set<int> SubGraph_;
@@ -99,7 +100,7 @@ public:
 
     void BuildMap();
 
-    void simplifyTitle();
+   // void simplifyTitle();
 
     void loadAll(std::istream &f );
 
@@ -109,6 +110,11 @@ public:
 
     std::string ToSimplified(const std::string& name);
 
+    bool AddTitleIdRelation(const std::string& name, const int& id);
+
+    std::string GetTitleById(const int& id);
+
+    int GetIdByTitle(const std::string& title, const int i=0);
 };
 
 }

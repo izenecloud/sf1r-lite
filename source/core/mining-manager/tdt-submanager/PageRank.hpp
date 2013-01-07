@@ -8,6 +8,8 @@
 #include <icma/icma.h>
 #include <icma/openccxx.h>
 #include <am/succinct/wat_array/wat_array.hpp>
+
+
 using namespace std;
 namespace sf1r
 {
@@ -74,7 +76,6 @@ public:
   // int outNumber_;
   // int outNumberOrg_;
 private:
-    string name_;
     int id_;
     double advertiRelevancy_;
 
