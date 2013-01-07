@@ -269,7 +269,7 @@ void NaiveTopicDetector::InitKnowledge_()
         boost::filesystem::path wiki_graph_path(sys_resource_path_);
         wiki_graph_path /= boost::filesystem::path("wikigraph");
         LOG(INFO) << "wiki graph knowledge path : " << wiki_graph_path.c_str() << endl;
-        wg_ = WikiGraph::getInstance();
+        wg_ = WikiGraph::GetInstance();
         wg_->Init(wiki_graph_path.c_str(),opencc_);
     }
 }
