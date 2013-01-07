@@ -62,8 +62,6 @@ public:
             const std::vector<unsigned int>& docIdList,
             std::vector<count_t>& clickCountList);
 
-    void loadCtrData(boost::shared_ptr<NumericPropertyTableBase>& rTypeTable);
-
     boost::shared_ptr<NumericPropertyTableBase> getPropertyTable() const
     {
         return docClickCountList_;

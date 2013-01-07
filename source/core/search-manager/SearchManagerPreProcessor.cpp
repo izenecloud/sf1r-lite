@@ -7,7 +7,6 @@
 #include <mining-manager/product-scorer/ProductScorerFactory.h>
 #include <mining-manager/product-scorer/ProductScoreParam.h>
 #include <mining-manager/faceted-submanager/ctr_manager.h>
-#include <mining-manager/MiningManager.h>
 #include <common/SFLogger.h>
 #include <util/get.h>
 #include <util/ClockTimer.h>
@@ -34,12 +33,10 @@ SearchManagerPreProcessor::~SearchManagerPreProcessor()
 void SearchManagerPreProcessor::prepare_sorter_customranker_(
     const SearchKeywordOperation& actionOperation,
     CustomRankerPtr& customRanker,
-    boost::shared_ptr<Sorter> &pSorter,
-    SortPropertyCache* pSorterCache,
-    boost::weak_ptr<MiningManager> miningManagerPtr)
+    boost::shared_ptr<Sorter>& pSorter)
 {
     std::vector<std::pair<std::string, bool> >& sortPropertyList
-    = actionOperation.actionItem_.sortPriorityList_;
+        = actionOperation.actionItem_.sortPriorityList_;
     if (!sortPropertyList.empty())
     {
         std::vector<std::pair<std::string, bool> >::iterator iter = sortPropertyList.begin();
@@ -54,14 +51,14 @@ void SearchManagerPreProcessor::prepare_sorter_customranker_(
                 customRanker = actionOperation.actionItem_.customRanker_;
                 if (!customRanker)
                     customRanker = buildCustomRanker_(actionOperation.actionItem_);
-                if (!customRanker->setPropertyData(pSorterCache))
+                if (!customRanker->setPropertyData(numericTableBuilder_))
                 {
                     LOG(ERROR) << customRanker->getErrorInfo() ;
                     continue;
                 }
                 //customRanker->printESTree();
 
-                if (!pSorter) pSorter.reset(new Sorter(pSorterCache));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     "CUSTOM_RANK",
                     CUSTOM_RANKING_PROPERTY_TYPE,
@@ -73,7 +70,7 @@ void SearchManagerPreProcessor::prepare_sorter_customranker_(
             // sort by rank
             if (fieldNameL == RANK_PROPERTY)
             {
-                if (!pSorter) pSorter.reset(new Sorter(pSorterCache));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     "RANK",
                     UNKNOWN_DATA_PROPERTY_TYPE,
@@ -85,7 +82,7 @@ void SearchManagerPreProcessor::prepare_sorter_customranker_(
             // sort by date
             if (fieldNameL == DATE_PROPERTY)
             {
-                if (!pSorter) pSorter.reset(new Sorter(pSorterCache));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     iter->first,
                     INT64_PROPERTY_TYPE,
@@ -96,23 +93,7 @@ void SearchManagerPreProcessor::prepare_sorter_customranker_(
             // sort by ctr (click through rate)
             if (fieldNameL == faceted::CTRManager::kCtrPropName)
             {
-                if (miningManagerPtr.expired())
-                {
-                    DLOG(ERROR)<<"Skipped CTR sort property: Mining Manager was not initialized";
-                    continue;
-                }
-                boost::shared_ptr<MiningManager> resourceMiningManagerPtr = miningManagerPtr.lock();
-                boost::shared_ptr<faceted::CTRManager>& ctrManangerPtr
-                = resourceMiningManagerPtr->GetCtrManager();
-                if (!ctrManangerPtr)
-                {
-                    DLOG(ERROR)<<"Skipped CTR sort property: CTR Manager was not initialized";
-                    continue;
-                }
-
-                pSorterCache->setCtrManager(ctrManangerPtr.get());
-                if (!pSorter) pSorter.reset(new Sorter(pSorterCache));
-
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     iter->first,
                     INT32_PROPERTY_TYPE,
@@ -145,7 +126,7 @@ void SearchManagerPreProcessor::prepare_sorter_customranker_(
             case DOUBLE_PROPERTY_TYPE:
             case NOMINAL_PROPERTY_TYPE:
             {
-                if (!pSorter) pSorter.reset(new Sorter(pSorterCache));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     iter->first,
                     propertyType,
@@ -202,8 +183,7 @@ SearchManagerPreProcessor::buildCustomRanker_(KeywordSearchActionItem& actionIte
 void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData_(
     Sorter* pSorter,
     std::vector<unsigned int>& docIdList,
-    DistKeywordSearchInfo& distSearchInfo,
-    SortPropertyCache* pSorterCache)
+    DistKeywordSearchInfo& distSearchInfo)
 {
     if (!pSorter) return;
 

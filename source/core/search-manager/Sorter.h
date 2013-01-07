@@ -26,6 +26,7 @@ class DocumentManager;
 class IndexManager;
 class IndexBundleConfiguration;
 class PropSharedLockSet;
+class NumericPropertyTableBuilder;
 
 namespace faceted
 {
@@ -105,69 +106,12 @@ private:
 };
 
 /*
-* @brief SortPropertyCache, load data for property to be sorted
-* it will be reloaded if index has been changed
-*/
-class SortPropertyCache
-{
-public:
-    SortPropertyCache(DocumentManager* pDocumentManager, IndexManager* pIndexer, IndexBundleConfiguration* config);
-
-    void setCtrManager(faceted::CTRManager* pCTRManager);
-
-public:
-    ///If index has been changed, we should reload
-    void setDirty(bool dirty)
-    {
-        dirty_ = dirty;
-    }
-
-    SortPropertyComparator* getComparator(
-        SortProperty* pSortProperty,
-        PropSharedLockSet& propSharedLockSet);
-
-    boost::shared_ptr<NumericPropertyTableBase>& getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType);
-
-    boost::shared_ptr<NumericPropertyTableBase>& getCTRPropertyData(const std::string& propertyName, PropertyDataType propertyType);
-
-private:
-    void loadSortData(const std::string& property, PropertyDataType type);
-
-private:
-    DocumentManager* pDocumentManager_;
-
-    IndexManager* pIndexer_;
-
-    ///CTR data will be get from CTRManager
-    faceted::CTRManager* pCTRManager_;
-
-    ///Time interval (seconds) to refresh cache for properties which update frequently (e.g. CTR).
-    time_t updateInterval_;
-
-    bool dirty_;
-
-    ///key: the name of sorted property
-    ///value: memory pool containing the property data
-    typedef std::map<std::string, boost::shared_ptr<NumericPropertyTableBase> > SortDataCache;
-    SortDataCache sortDataCache_;
-
-    boost::mutex mutex_;
-
-    IndexBundleConfiguration* config_;
-
-    enum SeparatorChar { BrokenLine, WaveLine, Comma, EoC };
-    static const char Separator[EoC];
-
-    friend class SearchManager;
-};
-
-/*
 * @brief Sorter main interface exposed.
 */
 class Sorter
 {
 public:
-    Sorter(SortPropertyCache* pCache);
+    Sorter(NumericPropertyTableBuilder* numericTableBuilder);
 
     ~Sorter();
 
@@ -208,12 +152,17 @@ public:
 //    return c < 0;
     }
 
-    ///This interface would be called after an instance of Sorter is established, it will generate SortPropertyComparator
-    /// for internal usage
-    void getComparators(PropSharedLockSet& propSharedLockSet);
+    ///This interface would be called after an instance of Sorter is established,
+    /// it will generate SortPropertyComparator for internal usage
+    void createComparators(PropSharedLockSet& propSharedLockSet);
 
 private:
-    SortPropertyCache* pCache_;
+    SortPropertyComparator* createNumericComparator_(
+        const std::string& propName,
+        PropSharedLockSet& propSharedLockSet);
+
+private:
+    NumericPropertyTableBuilder* numericTableBuilder_;
 
     std::list<SortProperty*> sortProperties_;
 

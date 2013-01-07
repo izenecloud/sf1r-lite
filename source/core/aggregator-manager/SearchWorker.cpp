@@ -761,8 +761,6 @@ void SearchWorker::reset_all_property_cache()
 {
     searchCache_->clear();
 
-    searchManager_->reset_all_property_cache();
-
     searchManager_->reset_filter_cache();
 }
 

@@ -10,7 +10,6 @@
 #include <types.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <algorithm>
@@ -19,10 +18,8 @@
 namespace sf1r
 {
 
-class SortPropertyCache;
 class Sorter;
 class NumericPropertyTableBase;
-class MiningManager;
 class DocumentIterator;
 class RankQueryProperty;
 class PropertyRanker;
@@ -50,9 +47,7 @@ private:
     void prepare_sorter_customranker_(
         const SearchKeywordOperation& actionOperation,
         CustomRankerPtr& customRanker,
-        boost::shared_ptr<Sorter> &pSorter,
-        SortPropertyCache* pSorterCache,
-        boost::weak_ptr<MiningManager> miningManagerPtr);
+        boost::shared_ptr<Sorter>& pSorter);
 
     /**
      * rebuild custom ranker.
@@ -71,8 +66,7 @@ private:
     void fillSearchInfoWithSortPropertyData_(
         Sorter* pSorter,
         std::vector<unsigned int>& docIdList,
-        DistKeywordSearchInfo& distSearchInfo,
-        SortPropertyCache* pSorterCache);
+        DistKeywordSearchInfo& distSearchInfo);
 
     template<class UnaryOperator>
     void PreparePropertyList(
