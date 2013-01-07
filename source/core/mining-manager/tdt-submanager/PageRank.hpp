@@ -86,26 +86,26 @@ std::istream& operator>>(std::istream &f, vector<uint64_t>& A);
 class PageRank
 {
 public:
-    PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,wat_array::WatArray& wa,double alpha=0.7,double beta=0.05);
+    explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,wat_array::WatArray& wa,double alpha=0.7,double beta=0.0);
     ~PageRank(void);
     void CalcAll(int n);
     double Calc(int index);
     void PrintPageRank(std::vector<Node*> & nodes);
-    CalText& getLinkin(int index);
-    double CalcRank(const CalText& linkinSub);
-    double getON(int index);
-    void addON(int index);
-    double getPr(int index);
-    void setContentRelevancy(int index,double contentRelevancy);
-    double getContentRelevancy(int index);
     void InitMap();
-    void setPr(int index,double pr);
-    //void setVec(vector<Node*>& nodes)
-    //{nodes_=&nodes;}
+    CalText& GetLinkin(int index);
+    double CalcRank(const CalText& linkinSub);
+    double GetPr(int index);
+    void SetPr(int index,double pr);
+    double GetContentRelevancy(int index);
+    void SetContentRelevancy(int index,double contentRelevancy);
+    double GetON(int index);
+    void AddON(int index);
+
     std::set<int> &SubGraph_;
-    int  getIndexByOffset(const int&  offSet);
 private:
-    std::map<int,CalText>  linkinMap_;
+    int GetIndexByOffset_(const int&  offSet);
+
+    std::map<int,CalText> linkinMap_;
     std::vector<Node*> &nodes_;
     wat_array::WatArray &wa_;
     double alpha_; //内容阻尼系数

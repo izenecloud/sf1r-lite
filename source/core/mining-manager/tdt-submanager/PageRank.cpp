@@ -37,7 +37,7 @@ std::ostream& operator<<(std::ostream &f, const Node &node)
     int outNumber_;
     f.write((const char*)&outNumber_, sizeof(outNumber_));
     std::string name;
-    name = WikiGraph::getInstance()->GetTitleById(node.id_);
+    name = WikiGraph::GetInstance()->GetTitleById(node.id_);
     size_t len=sizeof(name[0])*(name.size());
    // cout<<name<<endl;
     f.write((const char*)&len, sizeof(len));
@@ -72,7 +72,7 @@ std::istream& operator>>(std::istream &f, Node &node )
     std::string name;
     name.resize(len);
     f.read(( char*)&name[0], len);
-    WikiGraph::getInstance()->AddTitleIdRelation(name, node.id_);
+    WikiGraph::GetInstance()->AddTitleIdRelation(name, node.id_);
    /*
     //string namestr(name,len);
     //node.name_=namestr;
@@ -223,7 +223,7 @@ double Node::GetAdvertiRelevancy()
 
 string Node::GetName()
 {
-    return WikiGraph::getInstance()->GetTitleById(id_);
+    return WikiGraph::GetInstance()->GetTitleById(id_);
 }
 /*
 void Node::InsertLinkOutNode(int i)
@@ -305,7 +305,6 @@ void PageRank::InitMap()
            temp.contentRelevancy_=0.0;
            temp.outNumber_=0;
            linkinMap_.insert(pair<int,CalText>((*citr), temp));
-           /**/
            //node->PrintNode();
            //cout<<"innumber"<<iN<<endl;
     }
@@ -316,10 +315,10 @@ void PageRank::InitMap()
     {
            // cout<<"Link in"<<(*citr)<<endl;
 
-           vector<int>::const_iterator sitr =getLinkin(*citr).linkin_.begin();
-           for (; sitr !=getLinkin(*citr).linkin_.end(); ++sitr)
+           vector<int>::const_iterator sitr =GetLinkin(*citr).linkin_.begin();
+           for (; sitr !=GetLinkin(*citr).linkin_.end(); ++sitr)
            {
-                addON(*sitr);
+                AddON(*sitr);
            }
 
          
@@ -367,17 +366,16 @@ void PageRank::CalcAll(int n)
 }
 
 void PageRank::PrintPageRank(vector<Node*> & nodes)
-{   /*
+{
     //double total_pr = 0;
     vector<Node*>::const_iterator citr = nodes.begin();
     for (; citr!=nodes.end(); ++citr)
     {
-        Node * node = *citr;
+        //Node * node = *citr;
         //node->PrintNode();
         //total_pr += node->GetPageRank();
     }
     //cout << "Total PR:" << total_pr << endl;
-   */
 }
 
 double PageRank::Calc(int index)
@@ -385,7 +383,7 @@ double PageRank::Calc(int index)
     // cout<<"CalcRank(nodes_)"<<endl;
     //cout<<"nodes size()"<<nodes_.size()<<endl;
     Node * node =nodes_[index];
-    CalText &temp=getLinkin(index);
+    CalText &temp=GetLinkin(index);
     double pr = CalcRank(temp);
     // cout<<"pr"<<pr<<endl;
     if (pr < 0.00000000000000000000001 && pr > -0.00000000000000000000001) //pr == 0
@@ -403,7 +401,7 @@ double PageRank::Calc(int index)
     return pr;
 }
 
-CalText& PageRank::getLinkin(int index)
+CalText& PageRank::GetLinkin(int index)
 {
     map<int,CalText >::iterator it;
     it = linkinMap_.find(index);
@@ -414,52 +412,52 @@ CalText& PageRank::getLinkin(int index)
     }
     else
     {
-        //cout<<"error getLinkin"<<endl;
+        //cout<<"error GetLinkin"<<endl;
         static CalText null;
         return null;
     }
 }
 
-double PageRank::getPr(int index)
+double PageRank::GetPr(int index)
 {
-    //cout<<"getPr"<<index<<endl;
-    return getLinkin(index).pr_;
+    //cout<<"GetPr"<<index<<endl;
+    return GetLinkin(index).pr_;
 }
 
-void PageRank::setPr(int index,double pr)
+void PageRank::SetPr(int index,double pr)
 {
     // cout<<"SetPr"<<index<<endl;
-    getLinkin(index).pr_=pr;
+    GetLinkin(index).pr_=pr;
 }
 
-void PageRank::setContentRelevancy(int index,double contentRelevancy)
+void PageRank::SetContentRelevancy(int index,double contentRelevancy)
 {
     // cout<<"setContentRelevancy"<<index<<endl;
     if(nodes_[index]->GetName()=="upload_log")
         return;
-    if(getLinkin(index).contentRelevancy_>0.0&&contentRelevancy<1.0)
+    if(GetLinkin(index).contentRelevancy_>0.0&&contentRelevancy<1.0)
     {
-      if(getLinkin(index).contentRelevancy_<0.6)
-        getLinkin(index).contentRelevancy_+=0.3;
+      if(GetLinkin(index).contentRelevancy_<0.6)
+        GetLinkin(index).contentRelevancy_+=0.3;
       else
-        getLinkin(index).contentRelevancy_=0.9;
+        GetLinkin(index).contentRelevancy_=0.9;
     }
     else
     {
        
        if(contentRelevancy<1.0)
-        getLinkin(index).contentRelevancy_=min(contentRelevancy*contentRelevancy*getLinkin(index).linkin_.size()*getLinkin(index).outNumber_,0.2)+0.01;
+        GetLinkin(index).contentRelevancy_=min(contentRelevancy*contentRelevancy*GetLinkin(index).linkin_.size()*GetLinkin(index).outNumber_,0.2)+0.01;
        else
-        getLinkin(index).contentRelevancy_=contentRelevancy;
+        GetLinkin(index).contentRelevancy_=contentRelevancy;
     }
     if(contentRelevancy>=1)
     {
-        //CalText &linkinSub=getLinkin(index);
+        //CalText &linkinSub=GetLinkin(index);
         /*
         int size=wa_.Freq(index) ; 
         for (int i=0; i<size ; i++)
         {
-             setContentRelevancy(getIndexByOffset(wa_.Select(index,i)),0.01);
+             SetContentRelevancy(GetIndexByOffset_(wa_.Select(index,i)),0.01);
         }
         */
         set<int>::const_iterator citr = SubGraph_.begin();
@@ -467,10 +465,10 @@ void PageRank::setContentRelevancy(int index,double contentRelevancy)
         {
            // cout<<"Link in"<<(*citr)<<endl;
 
-           vector<int> vectemp=getLinkin(*citr).linkin_;
+           vector<int> vectemp=GetLinkin(*citr).linkin_;
            if (find(vectemp.begin(), vectemp.end(),index )!=vectemp.end())
            {
-              setContentRelevancy((*citr),0.01);
+              SetContentRelevancy((*citr),0.01);
            }
 
          
@@ -478,7 +476,8 @@ void PageRank::setContentRelevancy(int index,double contentRelevancy)
       
     }
 }
-int  PageRank::getIndexByOffset(const int&  offSet)
+
+int PageRank::GetIndexByOffset_(const int&  offSet)
 {
        
        int front=0;
@@ -504,22 +503,22 @@ int  PageRank::getIndexByOffset(const int&  offSet)
        }
 };
 
-double PageRank::getContentRelevancy(int index)
+double PageRank::GetContentRelevancy(int index)
 {
-    return getLinkin(index).contentRelevancy_;
+    return GetLinkin(index).contentRelevancy_;
 }
 
-double PageRank::getON(int index)
+double PageRank::GetON(int index)
 {
-    // cout<<"getON"<<index<<endl;
-    return double(getLinkin(index).outNumber_);
+    // cout<<"GetON"<<index<<endl;
+    return double(GetLinkin(index).outNumber_);
 }
 
-void PageRank::addON(int index)
+void PageRank::AddON(int index)
 {
-       // cout<<"getON"<<index<<endl;
+       // cout<<"GetON"<<index<<endl;
           
-     getLinkin(index).outNumber_++;
+     GetLinkin(index).outNumber_++;
             
 }
 
@@ -534,7 +533,7 @@ double PageRank::CalcRank(const CalText& linkinSub)
         // cout<<"Link in"<<(*citr)<<endl;
         // Node * node = nodes_[(*citr)];
         //node->PrintNode();
-        pr += getPr(*citr)/getON(*citr);
+        pr += GetPr(*citr)/GetON(*citr);
         // cout<<"pr"<<pr<<endl;
     }
 
