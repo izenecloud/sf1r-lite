@@ -77,8 +77,7 @@ DocumentManager::DocumentManager(
         {
             initRTypeStringPropTable(it->getName());
         }
-        else if (it->isIndex() && !it->isAnalyzed() &&
-                 it->getIsFilter() && !it->getIsMultiValue())
+        else if (it->isRTypeNumeric())
         {
             initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
         }

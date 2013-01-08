@@ -173,7 +173,11 @@ SortPropertyComparator* Sorter::createNumericComparator_(
         numericTableBuilder_->createPropertyTable(propName);
 
     if (!numericTable)
+    {
+        LOG(ERROR) << "failed to get NumericPropertyTableBase for property: "
+                   << propName;
         return NULL;
+    }
 
     propSharedLockSet.insertSharedLock(numericTable.get());
     return new SortPropertyComparator(numericTable);
