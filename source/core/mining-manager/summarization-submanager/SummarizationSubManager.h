@@ -37,6 +37,7 @@ public:
     MultiDocSummarizationSubManager(
             const std::string& homePath,
             const std::string& collectionName,
+            const std::string& scdPath,
             SummarizeConfig schema,
             boost::shared_ptr<DocumentManager> document_manager,
             boost::shared_ptr<IndexManager> index_manager,
@@ -54,6 +55,10 @@ public:
             Summarization& result);
 
 private:
+    void dealTotalScd(const std::string& filename 
+            , const std::set<docid_t>& del_docid_set
+            , fstream& os);
+
     bool DoEvaluateSummarization_(
             Summarization& summarization,
             const KeyType& key,
@@ -74,11 +79,13 @@ private:
 
 private:
     std::string last_docid_path_;
-
+    std::string total_scd_path_;
     std::string collectionName_;
+    std::string homePath_;
     SummarizeConfig schema_;
 
-
+    fstream total_Opinion_Scd_;
+    fstream total_Score_Scd_;
     boost::shared_ptr<DocumentManager> document_manager_;
     boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<ScdWriter> score_scd_writer_;

@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <boost/filesystem.hpp>
 #include "OpinionsManager.h"
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <node-manager/synchro/SynchroFactory.h>
@@ -35,7 +36,7 @@ namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
-
+static const char* SUMMARY_SCD_BACKUP_DIR = "summary_backup";
 static const UString DOCID("DOCID", UString::UTF_8);
 
 bool CheckParentKeyLogFormat(
@@ -110,12 +111,15 @@ struct IsParentKeyFilterProperty
 MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& homePath,
         const std::string& collectionName,
+        const std::string& scdPath,
         SummarizeConfig schema,
         boost::shared_ptr<DocumentManager> document_manager,
         boost::shared_ptr<IndexManager> index_manager,
         idmlib::util::IDMAnalyzer* analyzer)
     : last_docid_path_(homePath + "/last_docid.txt")
+    , total_scd_path_(scdPath + "/index/" + SUMMARY_SCD_BACKUP_DIR)
     , collectionName_(collectionName)
+    , homePath_(homePath)
     , schema_(schema)
     , document_manager_(document_manager)
     , index_manager_(index_manager)
@@ -133,12 +137,84 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
     delete corpus_;
 }
 
-void MultiDocSummarizationSubManager::EvaluateSummarization() // Here start ...
+void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename 
+                                , const std::set<docid_t>& del_docid_set
+                                , fstream& os)
 {
+    std::string ScdName_new = opinion_scd_writer_->GenSCDFileName(UPDATE_SCD);
+    ofstream outNewScd;
+    outNewScd.open((total_scd_path_ + "/" + ScdName_new).c_str(), ios::out|ios::app);
+    if (!outNewScd.good())
+    {
+        LOG(ERROR) << "Disk is full..." <<endl; 
+        return;
+    }
+    ScdParser parser;
+    if (!parser.load(total_scd_path_ + "/" + filename))
+    {
+        os.open((total_scd_path_ + "/" + filename).c_str(), ios::out|ios::app);//for create file
+        outNewScd.close();
+        boost::filesystem::path outNewScdPath((total_scd_path_ + "/" + ScdName_new).c_str());
+        boost::filesystem::remove(outNewScdPath);
+    }
+    else
+    {
+        for (ScdParser::iterator doc_iter = parser.begin();
+                doc_iter != parser.end(); ++doc_iter)
+        {
+            if (*doc_iter == NULL)
+            {
+                LOG(WARNING) << "SCD File not valid.";
+                return;
+            }
+            SCDDocPtr SCDdoc = (*doc_iter);
+            SCDDoc::iterator p = SCDdoc->begin();
+            for (; p != SCDdoc->end(); p++)
+            {
+                const std::string& fieldStr = p->first;// preventing copy
+                if (fieldStr == "DOCID")
+                {
+                    std::string key_str;
+                    const izenelib::util::UString & propertyValueU = p->second; // preventing copy
+                    propertyValueU.convertString(key_str, izenelib::util::UString::UTF_8);
+                    docid_t docid = Utilities::uuidToUint128(key_str);
+                    if (del_docid_set.find(docid) != del_docid_set.end())
+                        break;
+                    outNewScd << "<" << fieldStr << ">" << key_str << endl;
+                }
+                else
+                {
+                    std::string content_str;
+                    p->second.convertString(content_str, izenelib::util::UString::UTF_8);
+                    outNewScd << "<" << p->first << ">" << content_str << endl;
+                }
+            }
+        }
+        boost::filesystem::path old_path(total_scd_path_ + "/" + filename);
+        boost::filesystem::path new_path(total_scd_path_ + "/" + ScdName_new);
+        boost::filesystem::remove(old_path);
+        boost::filesystem::rename(new_path, old_path);
+        outNewScd.close();
+        boost::filesystem::remove(new_path);
+        os.open((total_scd_path_ + "/" + filename).c_str(), ios::out|ios::app);
+    }
+}
+void MultiDocSummarizationSubManager::EvaluateSummarization()
+{
+    boost::filesystem::path totalscdPath(total_scd_path_);
+    if (!boost::filesystem::exists(totalscdPath))
+    {
+        boost::filesystem::create_directory(totalscdPath);
+    }
+    std::string opinionScdName = "B-00-201001071530-00000-U-C.SCD";
+    std::string scoreScdName = "B-00-201001071530-00001-U-C.SCD";
+    
     std::vector<docid_t> del_docid_list;
+    std::set<docid_t> del_docid_set;
     document_manager_->getDeletedDocIdList(del_docid_list);
     for(unsigned int i = 0; i < del_docid_list.size();++i)
     {
+        del_docid_set.insert(del_docid_list[i]);
         Document doc;
         bool b = document_manager_->getDocument(i, doc);
         if(!b) continue;
@@ -150,11 +226,15 @@ void MultiDocSummarizationSubManager::EvaluateSummarization() // Here start ...
         comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key), i);
     }
 
+    dealTotalScd(opinionScdName, del_docid_set, total_Opinion_Scd_);
+    dealTotalScd(scoreScdName, del_docid_set, total_Score_Scd_);
+
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
     Opc_ = new OpinionsClassificationManager(cma_path, schema_.opinionWorkingPath); //  Here get advantage or disvantage opintion;
     float score;
     boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = document_manager_->getNumericPropertyTable(schema_.scorePropName);
+
     for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
     {
         Document doc;
@@ -243,7 +323,6 @@ void MultiDocSummarizationSubManager::EvaluateSummarization() // Here start ...
         boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
         can_quit_compute_ = false;
     }
-
 
     std::vector<UString> filters;
     std::vector<UString> synonym_strs;
@@ -372,13 +451,17 @@ void MultiDocSummarizationSubManager::EvaluateSummarization() // Here start ...
     }
 
     comment_cache_storage_->ClearDirtyKey();
-
     SynchroData syncData;
     syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
     syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
     syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
 
-    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
+
+    SynchroData syncTotalData;
+    syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+    syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX); // why only this type of data; shoul support more kinds of data;
+    syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
+    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);//b5mp_indexworker;
     if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
     {
         syncProducer->wait();
@@ -388,6 +471,17 @@ void MultiDocSummarizationSubManager::EvaluateSummarization() // Here start ...
         LOG(WARNING) << "produce syncData error";
     }
 
+    if (syncProducer->produce(syncTotalData))
+    {
+        syncProducer->wait();
+    }
+    else
+    {
+        LOG(WARNING) << "produce syncData error";
+    }
+
+    total_Opinion_Scd_.close();
+    total_Score_Scd_.close();
     LOG(INFO) << "Finish evaluating summarization.";
 }
 
@@ -586,6 +680,14 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
                     doc.property(schema_.opinionPropName) = final_opinion_str;
                     opinion_scd_writer_->Append(doc);
                 }
+
+                if ( total_Opinion_Scd_.good())
+                {cout<<"insert one"<<endl;
+                    total_Opinion_Scd_ << "<DOCID>" << key_str <<endl;
+                    std::string content_str;
+                    final_opinion_str.convertString(content_str, UString::UTF_8);
+                    total_Opinion_Scd_ << "<" << schema_.opinionPropName << ">" << content_str <<endl;
+                }
             }
 
             // result.summarization.updateProperty("overview", result.result_opinions);
@@ -640,6 +742,25 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
                 doc.property(schema_.commentCountPropName) = UString(boost::lexical_cast<std::string>(count), UString::UTF_8);
             score_scd_writer_->Append(doc);
         }
+        if (total_Score_Scd_.good())
+        {
+            total_Score_Scd_ << "<DOCID>" << key_str << endl;
+            total_Score_Scd_ << "<" << schema_.scorePropName << ">" << boost::lexical_cast<std::string>(avg_score) << endl;
+            if(!schema_.commentCountPropName.empty())
+            {
+                total_Score_Scd_ << "<" << schema_.commentCountPropName << ">" << boost::lexical_cast<std::string>(count) << endl;
+            }
+         }
+        /*if ( total_score_scd_writer )
+        {
+            Document doc;
+            doc.property("DOCID") = key_ustr;
+            doc.property(schema_.scorePropName) = UString(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
+            if(!schema_.commentCountPropName.empty())
+                doc.property(schema_.commentCountPropName) = UString(boost::lexical_cast<std::string>(count), UString::UTF_8);
+            total_score_scd_writer->Append(doc);  // take care about the same key_ustr;
+        }
+        */
     }
     return true;
 }
