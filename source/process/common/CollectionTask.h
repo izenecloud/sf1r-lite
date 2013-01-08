@@ -97,6 +97,9 @@ public:
 	void doTask();
 
 private:
+	bool checkCollectionHandler(const std::string& collectionName) const;
+
+private:
 	uint32_t startDate_;
 	uint32_t endDate_;
 };

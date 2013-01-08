@@ -126,25 +126,32 @@ void ExpirationCheckTask::doTask()
     if (currentDate >= startDate_ && endDate_ >= currentDate)
     {
     	// Check collection handler
-        CollectionManager::MutexType* collMutex = CollectionManager::get()->getCollectionMutex(collectionName_);
-        CollectionManager::ScopedReadLock collLock(*collMutex);
-        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collectionName_);
-        if (!collectionHandler)
+        if (!checkCollectionHandler(collectionName_))
         {
-        	LOG(INFO) << "## startCollection: " << collectionName_;
         	CollectionManager::get()->startCollection(collectionName_, configFile);
         }
     }
     // Check if the time is expired
     if (endDate_ < currentDate)
     {
-    	LOG(INFO) << "## stopCollection: " << collectionName_;
     	CollectionManager::get()->stopCollection(collectionName_);
-    	LOG(INFO) << "## deleteCollection: " << collectionName_;
+    	LOG(INFO) << "## deleteCollectionInfo: " << collectionName_;
     	LicenseCustManager::get()->deleteCollection(collectionName_);
+    	setIsCronTask(false);
     }
     LOG(INFO) << "## end ExpirationCheckTask for " << collectionName_;
     isRunning_ = false;
+}
+
+bool ExpirationCheckTask::checkCollectionHandler(const std::string& collectionName) const
+{
+	CollectionManager::MutexType* collMutex = CollectionManager::get()->getCollectionMutex(collectionName);
+	CollectionManager::ScopedReadLock collLock(*collMutex);
+
+	CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collectionName);
+	if (collectionHandler != NULL)
+		return true;
+	return false;
 }
 
 }
