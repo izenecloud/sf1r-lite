@@ -27,6 +27,7 @@
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <node-manager/synchro/SynchroFactory.h>
 
+
 #define OPINION_COMPUTE_THREAD_NUM 4
 #define OPINION_COMPUTE_QUEUE_SIZE 200
 
@@ -37,6 +38,7 @@ namespace bfs = boost::filesystem;
 namespace sf1r
 {
 static const char* SUMMARY_SCD_BACKUP_DIR = "summary_backup";
+static const char* scd_control_recevier = "full";
 static const UString DOCID("DOCID", UString::UTF_8);
 
 bool CheckParentKeyLogFormat(
@@ -117,7 +119,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         boost::shared_ptr<IndexManager> index_manager,
         idmlib::util::IDMAnalyzer* analyzer)
     : last_docid_path_(homePath + "/last_docid.txt")
-    , total_scd_path_(scdPath + "/index/" + SUMMARY_SCD_BACKUP_DIR)
+    , total_scd_path_(homePath + "/" + SUMMARY_SCD_BACKUP_DIR)
     , collectionName_(collectionName)
     , homePath_(homePath)
     , schema_(schema)
@@ -128,6 +130,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
+    scd_control_recevier_ = new ScdControlRecevier("b5m_control", "b5mc", homePath_ + "/full");
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
@@ -451,35 +454,53 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     }
 
     comment_cache_storage_->ClearDirtyKey();
-    SynchroData syncData;
-    syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-    syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-    syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
 
+    std::string controlfilePath_str = homePath_ + "/" + scd_control_recevier;
+    boost::filesystem::path controlfilePath(controlfilePath_str);
+    bool isFull = false;
+    if (boost::filesystem::exists(controlfilePath))
+    {cout<<"full"<<endl;
+        isFull = true;
+        boost::filesystem::remove_all(controlfilePath);
+    }
+    else
+    {cout<<"not full"<<endl;
+        isFull = false;
+    }
 
-    SynchroData syncTotalData;
-    syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-    syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX); // why only this type of data; shoul support more kinds of data;
-    syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
-    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);//b5mp_indexworker;
-    if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
+    if (!isFull)
     {
-        syncProducer->wait();
+        SynchroData syncData;
+        syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+        syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+        syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
+        if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+        {
+            syncProducer->wait();
+        }
+        else
+        {
+            LOG(WARNING) << "produce syncData error";
+        }
     }
     else
     {
-        LOG(WARNING) << "produce syncData error";
-    }
+        LOG(INFO) << "Send Total SCD files..." << endl;
+        SynchroData syncTotalData;
+        syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+        syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+        syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
 
-    if (syncProducer->produce(syncTotalData))
-    {
-        syncProducer->wait();
+        if (syncProducer->produce(syncTotalData))
+        {
+            syncProducer->wait();
+        }
+        else
+        {
+            LOG(WARNING) << "produce syncData error";
+        }
     }
-    else
-    {
-        LOG(WARNING) << "produce syncData error";
-    }
-
     total_Opinion_Scd_.close();
     total_Score_Scd_.close();
     LOG(INFO) << "Finish evaluating summarization.";

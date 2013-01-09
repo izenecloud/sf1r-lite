@@ -23,7 +23,7 @@
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
-
+#include <node-manager/synchro/SynchroFactory.h>
 #include <util/profiler/ProfilerGroup.h>
 
 #include <la/util/UStringUtil.h>
@@ -193,6 +193,29 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             miningTaskService_->DoContinue();
         }
         return false;
+    }
+
+    if ( bundleConfig_->collectionName_ == "b5mp" && documentManager_->getMaxDocId() < 1) //
+    {
+        std::string control_scd_path_ = bundleConfig_->indexSCDPath() + "/full";
+        fstream outControlFile;
+        outControlFile.open(control_scd_path_.c_str(), ios::out);
+        //outControlFile<<"full"<<endl;
+        outControlFile.close();
+
+        SynchroData syncTotalData;
+        syncTotalData.setValue(SynchroData::KEY_COLLECTION, "b5mp");
+        syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+        syncTotalData.setValue(SynchroData::KEY_DATA_PATH, control_scd_path_.c_str());
+        SynchroProducerPtr syncProducer = SynchroFactory::getProducer("b5m_control");//
+        if (syncProducer->produce(syncTotalData, boost::bind(boost::filesystem::remove_all, control_scd_path_.c_str())))
+        {
+            syncProducer->wait();
+        }
+        else
+        {
+            LOG(WARNING) << "produce syncData error";
+        }
     }
 
     indexProgress_.currentFileIdx = 1;

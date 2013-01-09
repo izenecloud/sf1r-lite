@@ -2,7 +2,7 @@
 #define SF1R_MINING_MANAGER_MULTI_DOC_SUMMARIZATION_SUBMANAGER_H
 
 #include "Summarization.h"
-
+#include "ScdControlRecevier.h"
 #include <configuration-manager/SummarizeConfig.h>
 #include <query-manager/QueryTypeDef.h>
 
@@ -10,8 +10,8 @@
 #include <queue>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
-#include "OpinionsClassificationManager.h"
 
+#include "OpinionsClassificationManager.h"
 namespace idmlib
 {
 namespace util
@@ -83,6 +83,8 @@ private:
     std::string collectionName_;
     std::string homePath_;
     SummarizeConfig schema_;
+
+    ScdControlRecevier* scd_control_recevier_;
 
     fstream total_Opinion_Scd_;
     fstream total_Score_Scd_;
