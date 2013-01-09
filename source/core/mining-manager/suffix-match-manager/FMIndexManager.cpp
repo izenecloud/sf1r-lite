@@ -8,18 +8,6 @@
 #include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"
 
-namespace
-{
-struct RangeSorter
-{
-    bool operator()(const sf1r::FMIndexManager::RangeT& t1, const sf1r::FMIndexManager::RangeT& t2)
-    {
-        return t1.first < t2.first ||
-            (t1.first == t2.first && t1.second < t2.second);
-    }
-} RangeSorter_;
-}
-
 using namespace cma;
 namespace sf1r
 {

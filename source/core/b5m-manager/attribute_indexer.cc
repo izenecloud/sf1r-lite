@@ -897,8 +897,8 @@ void AttributeIndexer::ProductMatchingSVM()
     //{
         //ss_list[i] = new StringSimilarity(product_list_[i].property["Title"]);
     //}
-    static const double price_ratio = 2.2;
-    static const double invert_price_ratio = 1.0/price_ratio;
+    //static const double price_ratio = 2.2;
+    //static const double invert_price_ratio = 1.0/price_ratio;
     uint32_t n=0;
     uint32_t num_for_match = 0;
     boost::unordered_map<std::string, std::vector<std::string> > p2o_map;
