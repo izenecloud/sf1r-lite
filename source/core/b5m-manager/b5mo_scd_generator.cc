@@ -166,7 +166,6 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
             else
             {
                 std::string scd_file = last_b5mo_scd_list[0];
-                int scd_type = ScdParser::checkSCDType(scd_file);
                 ScdParser parser(izenelib::util::UString::UTF_8);
                 parser.load(scd_file);
                 uint32_t n=0;
