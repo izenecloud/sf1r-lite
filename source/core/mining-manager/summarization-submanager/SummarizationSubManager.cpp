@@ -37,6 +37,7 @@ namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
+static const char* SUMMARY_CONTROL_FLAG = "b5m_control";
 static const char* SUMMARY_SCD_BACKUP_DIR = "summary_backup";
 static const char* scd_control_recevier = "full";
 static const UString DOCID("DOCID", UString::UTF_8);
@@ -130,11 +131,12 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
-    scd_control_recevier_ = new ScdControlRecevier("b5m_control", "b5mc", homePath_ + "/full");
+    scd_control_recevier_ = new ScdControlRecevier(SUMMARY_CONTROL_FLAG, "collectionName", homePath_ + "/full");
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 {
+    delete scd_control_recevier_;
     delete summarization_storage_;
     delete comment_cache_storage_;
     delete corpus_;
@@ -202,6 +204,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
         os.open((total_scd_path_ + "/" + filename).c_str(), ios::out|ios::app);
     }
 }
+
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     boost::filesystem::path totalscdPath(total_scd_path_);
@@ -459,12 +462,12 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     boost::filesystem::path controlfilePath(controlfilePath_str);
     bool isFull = false;
     if (boost::filesystem::exists(controlfilePath))
-    {cout<<"full"<<endl;
+    {
         isFull = true;
         boost::filesystem::remove_all(controlfilePath);
     }
     else
-    {cout<<"not full"<<endl;
+    {
         isFull = false;
     }
 
@@ -703,7 +706,7 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
                 }
 
                 if ( total_Opinion_Scd_.good())
-                {cout<<"insert one"<<endl;
+                {
                     total_Opinion_Scd_ << "<DOCID>" << key_str <<endl;
                     std::string content_str;
                     final_opinion_str.convertString(content_str, UString::UTF_8);
@@ -772,16 +775,6 @@ bool MultiDocSummarizationSubManager::DoEvaluateSummarization_(
                 total_Score_Scd_ << "<" << schema_.commentCountPropName << ">" << boost::lexical_cast<std::string>(count) << endl;
             }
          }
-        /*if ( total_score_scd_writer )
-        {
-            Document doc;
-            doc.property("DOCID") = key_ustr;
-            doc.property(schema_.scorePropName) = UString(boost::lexical_cast<std::string>(avg_score), UString::UTF_8);
-            if(!schema_.commentCountPropName.empty())
-                doc.property(schema_.commentCountPropName) = UString(boost::lexical_cast<std::string>(count), UString::UTF_8);
-            total_score_scd_writer->Append(doc);  // take care about the same key_ustr;
-        }
-        */
     }
     return true;
 }

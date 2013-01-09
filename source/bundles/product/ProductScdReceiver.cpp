@@ -4,7 +4,6 @@
 #include <boost/format.hpp>
 
 using namespace sf1r;
-static const char* SUMMARY_SCD_BACKUP_DIR = "summary_backup";
 namespace bfs = boost::filesystem;
 ProductScdReceiver::ProductScdReceiver(const std::string& syncID, const std::string& collectionName)
 :index_service_(NULL)
@@ -29,8 +28,6 @@ bool ProductScdReceiver::onReceived(const std::string& scd_source_dir)
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)
 {
-//     LOG(INFO)<<"ProductScdReceiver in test"<<std::endl;
-//     return true;
     LOG(INFO)<<"ProductScdReceiver::Run "<<scd_source_dir<<std::endl;
     if(index_service_==NULL)
     {
@@ -39,13 +36,6 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
     if (!scd_source_dir.empty())
     {
         std::string index_scd_dir = index_service_->getScdDir();
-        /*if (scd_source_dir.find(SUMMARY_SCD_BACKUP_DIR) != scd_source_dir.npos)
-        {
-            index_scd_dir += "/";
-            index_scd_dir += SUMMARY_SCD_BACKUP_DIR;
-            boost::filesystem::path summary_backup_path(index_scd_dir);
-            boost::filesystem::remove_all(summary_backup_path);
-        }*/
         bfs::create_directories(index_scd_dir);
         //copy scds in scd_source_dir/ to index_scd_dir/
         ScdParser parser(izenelib::util::UString::UTF_8);
@@ -76,6 +66,11 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
     }
 
     //call buildCollection
+    if (index_service_->getDocNum() < 1)
+    {
+        return true;
+    }
+
     if(!index_service_->index(0))
     {
         return false;

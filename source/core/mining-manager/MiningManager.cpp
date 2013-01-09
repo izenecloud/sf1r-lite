@@ -533,6 +533,10 @@ bool MiningManager::open()
                 //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
             }
         }
+        else // means need SummarizationData...
+        {
+            
+        }
 
         /** Suffix Match */
         if (mining_schema_.suffixmatch_schema.suffix_match_enable)

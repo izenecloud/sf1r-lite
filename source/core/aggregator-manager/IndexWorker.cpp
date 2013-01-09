@@ -43,6 +43,7 @@ namespace sf1r
 namespace
 {
 /** the directory for scd file backup */
+const char* SUMMARY_CONTROL_FLAG = "b5m_control";
 const char* SCD_BACKUP_DIR = "backup";
 const std::string DOCID("DOCID");
 const std::string DATE("DATE");
@@ -195,26 +196,29 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         return false;
     }
 
-    if ( bundleConfig_->collectionName_ == "b5mp" && documentManager_->getMaxDocId() < 1) //
+    if ( documentManager_->getMaxDocId() < 1)
     {
-        std::string control_scd_path_ = bundleConfig_->indexSCDPath() + "/full";
-        fstream outControlFile;
-        outControlFile.open(control_scd_path_.c_str(), ios::out);
-        //outControlFile<<"full"<<endl;
-        outControlFile.close();
+        if ( !(*(miningTaskService_->getMiningBundleConfig())).mining_schema_.summarization_enable)
+        {
+            std::string control_scd_path_ = bundleConfig_->indexSCDPath() + "/full";
+            fstream outControlFile;
+            outControlFile.open(control_scd_path_.c_str(), ios::out);
+            //outControlFile<<"full"<<endl;
+            outControlFile.close();
 
-        SynchroData syncTotalData;
-        syncTotalData.setValue(SynchroData::KEY_COLLECTION, "b5mp");
-        syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-        syncTotalData.setValue(SynchroData::KEY_DATA_PATH, control_scd_path_.c_str());
-        SynchroProducerPtr syncProducer = SynchroFactory::getProducer("b5m_control");//
-        if (syncProducer->produce(syncTotalData, boost::bind(boost::filesystem::remove_all, control_scd_path_.c_str())))
-        {
-            syncProducer->wait();
-        }
-        else
-        {
-            LOG(WARNING) << "produce syncData error";
+            SynchroData syncTotalData;
+            syncTotalData.setValue(SynchroData::KEY_COLLECTION, bundleConfig_->collectionName_);
+            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+            syncTotalData.setValue(SynchroData::KEY_DATA_PATH, control_scd_path_.c_str());
+            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(SUMMARY_CONTROL_FLAG);
+            if (syncProducer->produce(syncTotalData, boost::bind(boost::filesystem::remove_all, control_scd_path_.c_str())))
+            {
+                syncProducer->wait();
+            }
+            else
+            {
+                LOG(WARNING) << "produce syncData error";
+            }
         }
     }
 

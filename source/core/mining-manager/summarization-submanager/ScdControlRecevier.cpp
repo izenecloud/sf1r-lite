@@ -22,8 +22,8 @@ bool ScdControlRecevier::Run(const std::string& scd_control_path)
     LOG(INFO) << "ScdControlRecevier::Run " << scd_control_path << std::endl;
     if (!scd_control_path.empty())
     {
-        boost::filesystem::path fromPath(scd_control_path);//file
-        boost::filesystem::path toPath(controlFilePath_);// file , not dietcionay...
+        boost::filesystem::path fromPath(scd_control_path);
+        boost::filesystem::path toPath(controlFilePath_);
         if (boost::filesystem::exists(toPath))
         {
             boost::filesystem::remove(toPath);
@@ -32,7 +32,6 @@ bool ScdControlRecevier::Run(const std::string& scd_control_path)
         {
             boost::filesystem::copy_file(fromPath, toPath);
         }
-        cout<<"RUN OVER"<<endl;
     }
     else
         return false;
