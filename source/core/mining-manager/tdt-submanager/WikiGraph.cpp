@@ -161,7 +161,7 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
     SetContentBias_(relativeWords,pr,NotInGraph);
 
     //pr_.PrintPageRank(nodes_);
-   // cout<<"SubGraph size"<<SubGraph.size()<<endl;
+     cout<<"SubGraph size"<<SubGraph.size()<<endl;
     //cout<<"CalPageRank"<<endl;
     CalPageRank_(pr);
     //cout<<"finish"<<endl;
@@ -209,6 +209,8 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
             }
         }
     }
+    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
+    cout<<"Here1"<<time_now<<endl;
     bool dupicate=false;
     for(uint32_t i=0; i<min(TopicPR.size(),limit); i++)
     {
@@ -262,6 +264,8 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
         }
 
     }
+    time_now = boost::posix_time::microsec_clock::local_time();
+    cout<<"Here2"<<time_now<<endl;
     if(RetPR[0].first>=0.6)
     {
         lowbound=0.5;
@@ -276,15 +280,17 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
 
         }
     }
-   
-    SubGraph.clear();
+    time_now = boost::posix_time::microsec_clock::local_time();
+    cout<<"SubGraph clear"<<time_now<<endl;
     // cout<<"SubGraph size"<<SubGraph.size()<<endl;
+    SubGraph.clear();
+
 
 }
 
 void WikiGraph::InitSubGaph_(const int& index,set<int>& SubGraph,int itertime)
 {
-    //cout<<nodes_[index]->GetName()<<wa_.Freq(index)<<"  "<<(nodes_[index]->offStop-nodes_[index]->offStart)<<endl;
+   // cout<<nodes_[index]->GetName()<<wa_.Freq(index)<<"  "<<(nodes_[index]->offStop-nodes_[index]->offStart)<<endl;
     if(itertime>2||(itertime!=1&&(wa_.Freq(index)>1000||(nodes_[index]->offStop-nodes_[index]->offStart)>1000))){}
     else if( SubGraph.find(index) == SubGraph.end() )
     {
