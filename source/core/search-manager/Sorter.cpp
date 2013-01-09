@@ -1,15 +1,15 @@
 #include "Sorter.h"
+#include "NumericPropertyTableBuilder.h"
 
 #include <document-manager/DocumentManager.h>
 #include <index-manager/IndexManager.h>
-#include <mining-manager/faceted-submanager/ctr_manager.h>
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <common/PropSharedLockSet.h>
 
+using namespace std;
+
 namespace sf1r
 {
-
-const char SortPropertyCache::Separator[] = {'-', '~', ','};
 
 SortProperty::SortProperty(const SortProperty& src)
     : property_(src.property_)
@@ -20,7 +20,7 @@ SortProperty::SortProperty(const SortProperty& src)
 {
 }
 
-SortProperty::SortProperty(const string& property, PropertyDataType propertyType, bool reverse)
+SortProperty::SortProperty(const std::string& property, PropertyDataType propertyType, bool reverse)
     : property_(property)
     , propertyDataType_(propertyType)
     , type_(AUTO)
@@ -29,7 +29,7 @@ SortProperty::SortProperty(const string& property, PropertyDataType propertyType
 {
 }
 
-SortProperty::SortProperty(const string& property, PropertyDataType propertyType, SortPropertyType type, bool reverse)
+SortProperty::SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyType type, bool reverse)
     : property_(property)
     , propertyDataType_(propertyType)
     , type_(type)
@@ -37,7 +37,8 @@ SortProperty::SortProperty(const string& property, PropertyDataType propertyType
     , pComparator_(NULL)
 {
 }
-SortProperty::SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, bool reverse)
+
+SortProperty::SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, bool reverse)
     : property_(property)
     , propertyDataType_(propertyType)
     , type_(CUSTOM)
@@ -46,7 +47,7 @@ SortProperty::SortProperty(const string& property, PropertyDataType propertyType
 {
 }
 
-SortProperty::SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse)
+SortProperty::SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse)
     : property_(property)
     , propertyDataType_(propertyType)
     , type_(type)
@@ -61,141 +62,11 @@ SortProperty::~SortProperty()
         delete pComparator_;
 }
 
-SortPropertyCache::SortPropertyCache(DocumentManager* pDocumentManager, IndexManager* pIndexer, IndexBundleConfiguration* config)
-    : pDocumentManager_(pDocumentManager)
-    , pIndexer_(pIndexer)
-    , pCTRManager_(NULL)
-    , updateInterval_(config->sortCacheUpdateInterval_)
-    , dirty_(true)
-    , config_(config)
-{
-    std::cout << "SortPropertyCache::updateInterval_ = " << updateInterval_ << std::endl;
-}
-
-void SortPropertyCache::setCtrManager(faceted::CTRManager* pCTRManager)
-{
-    pCTRManager_ = pCTRManager;
-}
-
-void SortPropertyCache::loadSortData(const std::string& property, PropertyDataType type)
-{
-    boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = sortDataCache_[property];
-    if (type == STRING_PROPERTY_TYPE)
-    {
-        std::size_t size = pIndexer_->getIndexReader()->maxDoc();
-        if (size)
-        {
-            pIndexer_->convertStringPropertyDataForSorting(property, numericPropertyTable);
-        }
-    }
-    else
-    {
-        boost::shared_ptr<NumericPropertyTableBase>& tempTable = pDocumentManager_->getNumericPropertyTable(property);
-        if (tempTable)
-        {
-            numericPropertyTable = tempTable;
-        }
-        else
-        {
-            switch (type)
-            {
-            case INT32_PROPERTY_TYPE:
-            case INT8_PROPERTY_TYPE:
-            case INT16_PROPERTY_TYPE:
-                pIndexer_->loadPropertyDataForSorting<int32_t>(property, type, numericPropertyTable);
-                break;
-
-            case FLOAT_PROPERTY_TYPE:
-                pIndexer_->loadPropertyDataForSorting<float>(property, type, numericPropertyTable);
-                break;
-
-            case INT64_PROPERTY_TYPE:
-            case DATETIME_PROPERTY_TYPE:
-                pIndexer_->loadPropertyDataForSorting<int64_t>(property, type, numericPropertyTable);
-                break;
-
-            case DOUBLE_PROPERTY_TYPE:
-                pIndexer_->loadPropertyDataForSorting<double>(property, type, numericPropertyTable);
-                break;
-
-            default:
-                break;
-            }
-        }
-    }
-}
-
-boost::shared_ptr<NumericPropertyTableBase>& SortPropertyCache::getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType)
-{
-    boost::mutex::scoped_lock lock(this->mutex_);
-    if (dirty_)
-    {
-        for (SortDataCache::iterator iter = sortDataCache_.begin();
-                iter != sortDataCache_.end(); ++iter)
-        {
-            LOG(INFO) << "dirty sort data cache on property: " << iter->first;
-            if (iter->second) loadSortData(iter->first, iter->second->getType());
-        }
-        dirty_ = false;
-    }
-
-    SortDataCache::iterator iter = sortDataCache_.find(propertyName);
-    if (iter == sortDataCache_.end() || !iter->second)
-    {
-        LOG(INFO) << "first load sort data cache on property: " << propertyName;
-        loadSortData(propertyName, propertyType);
-    }
-
-    return sortDataCache_[propertyName];
-}
-
-boost::shared_ptr<NumericPropertyTableBase>& SortPropertyCache::getCTRPropertyData(const std::string& propertyName, PropertyDataType propertyType)
-{
-    boost::mutex::scoped_lock lock(this->mutex_);
-
-    boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = sortDataCache_[propertyName];
-    if (!numericPropertyTable)
-        pCTRManager_->loadCtrData(numericPropertyTable);
-
-    return numericPropertyTable;
-}
-
-SortPropertyComparator* SortPropertyCache::getComparator(
-    SortProperty* pSortProperty,
-    PropSharedLockSet& propSharedLockSet)
-{
-    SortProperty::SortPropertyType propSortType = pSortProperty->getType();
-    const std::string& propName = pSortProperty->getProperty();
-    const PropertyDataType propDataType = pSortProperty->getPropertyDataType();
-
-    boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable;
-    if (propSortType == SortProperty::AUTO)
-    {
-        numericPropertyTable = getSortPropertyData(propName, propDataType);
-    }
-    else if (propSortType == SortProperty::CTR)
-    {
-        if (pCTRManager_)
-            numericPropertyTable = getCTRPropertyData(propName, propDataType);
-    }
-    else
-    {
-        // to extend
-    }
-
-    if (numericPropertyTable)
-    {
-        propSharedLockSet.insertSharedLock(numericPropertyTable.get());
-        return new SortPropertyComparator(numericPropertyTable);
-    }
-
-    return NULL;
-}
-
-Sorter::Sorter(SortPropertyCache* pCache)
-    : pCache_(pCache)
+Sorter::Sorter(NumericPropertyTableBuilder* numericTableBuilder)
+    : numericTableBuilder_(numericTableBuilder)
     , ppSortProperties_(0)
     , reverseMul_(0)
+    , nNumProperties_(0)
 {
 }
 
@@ -208,55 +79,48 @@ Sorter::~Sorter()
     if (reverseMul_) delete[] reverseMul_;
 }
 
-void Sorter::addSortProperty(const string& property, PropertyDataType propertyType, bool reverse)
-{
-    SortProperty* pSortProperty = new SortProperty(property, propertyType, reverse);
-    sortProperties_.push_back(pSortProperty);
-}
-
 void Sorter::addSortProperty(SortProperty* pSortProperty)
 {
     sortProperties_.push_back(pSortProperty);
 }
 
-void Sorter::getComparators(PropSharedLockSet& propSharedLockSet)
+void Sorter::createComparators(PropSharedLockSet& propSharedLockSet)
 {
     SortProperty* pSortProperty;
     nNumProperties_ = sortProperties_.size();
     ppSortProperties_ = new SortProperty*[nNumProperties_];
     size_t i = 0;
     size_t numOfInValidComparators = 0;
+
     for (std::list<SortProperty*>::iterator iter = sortProperties_.begin();
             iter != sortProperties_.end(); ++iter, ++i)
     {
         pSortProperty = *iter;
         ppSortProperties_[i] = pSortProperty;
-        if (pSortProperty)
+        const std::string& propName = pSortProperty->getProperty();
+
+        if (pSortProperty->pComparator_)
+            continue;
+
+        switch (pSortProperty->getType())
         {
-            switch (pSortProperty->getType())
-            {
-            case SortProperty::SCORE:
-                pSortProperty->pComparator_= new SortPropertyComparator();
-                break;
-            case SortProperty::AUTO:
-                if (!pSortProperty->pComparator_)
-                    pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty,
-                                                                         propSharedLockSet);
-                if (!pSortProperty->pComparator_)
-                    ++numOfInValidComparators;
-                break;
-            case SortProperty::CUSTOM:
-                pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
-                break;
-            case SortProperty::CTR:
-                pSortProperty->pComparator_ = pCache_->getComparator(pSortProperty,
-                                                                     propSharedLockSet);
-                if (!pSortProperty->pComparator_)
-                    ++numOfInValidComparators;
-                break;
-            }
+        case SortProperty::SCORE:
+            pSortProperty->pComparator_= new SortPropertyComparator();
+            break;
+        case SortProperty::AUTO:
+        case SortProperty::CTR:
+            pSortProperty->pComparator_ = createNumericComparator_(propName,
+                                                                   propSharedLockSet);
+            break;
+        case SortProperty::CUSTOM:
+            pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
+            break;
         }
+
+        if (!pSortProperty->pComparator_)
+            ++numOfInValidComparators;
     }
+
     if (numOfInValidComparators > 0)
     {
         SortProperty** ppSortProperties = NULL;
@@ -291,6 +155,27 @@ void Sorter::getComparators(PropSharedLockSet& propSharedLockSet)
     {
         reverseMul_[i] = ppSortProperties_[i]->isReverse() ? -1 : 1;
     }
+}
+
+SortPropertyComparator* Sorter::createNumericComparator_(
+    const std::string& propName,
+    PropSharedLockSet& propSharedLockSet)
+{
+    if (!numericTableBuilder_)
+        return NULL;
+
+    boost::shared_ptr<NumericPropertyTableBase> numericTable =
+        numericTableBuilder_->createPropertyTable(propName);
+
+    if (!numericTable)
+    {
+        LOG(ERROR) << "failed to get NumericPropertyTableBase for property: "
+                   << propName;
+        return NULL;
+    }
+
+    propSharedLockSet.insertSharedLock(numericTable.get());
+    return new SortPropertyComparator(numericTable);
 }
 
 }

@@ -17,8 +17,6 @@
 #include <map>
 #include <string>
 
-using namespace std;
-
 namespace sf1r
 {
 
@@ -26,6 +24,7 @@ class DocumentManager;
 class IndexManager;
 class IndexBundleConfiguration;
 class PropSharedLockSet;
+class NumericPropertyTableBuilder;
 
 namespace faceted
 {
@@ -48,33 +47,34 @@ public:
 public:
     SortProperty(const SortProperty& src);
 
-    SortProperty(const string& property, PropertyDataType propertyType, bool reverse = false);
+    SortProperty(const std::string& property, PropertyDataType propertyType, bool reverse = false);
 
-    SortProperty(const string& property, PropertyDataType propertyType, SortPropertyType type, bool reverse = false);
+    SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyType type, bool reverse = false);
+
     ///pComparator is generated outside by customer
-    SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, bool reverse = false);
+    SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, bool reverse = false);
 
-    SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse);
+    SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse);
 
     ~SortProperty();
 
 public:
-    string& getProperty()
+    const std::string& getProperty() const
     {
         return property_;
     }
 
-    PropertyDataType getPropertyDataType()
+    PropertyDataType getPropertyDataType() const
     {
         return propertyDataType_;
     }
 
-    SortPropertyType getType()
+    SortPropertyType getType() const
     {
         return type_;
     }
 
-    bool isReverse()
+    bool isReverse() const
     {
         return reverse_;
     }
@@ -91,7 +91,7 @@ public:
 
 private:
     ///name of property to be sorted
-    string property_;
+    std::string property_;
     ///type of data of this sorted proeprty
     PropertyDataType propertyDataType_;
 
@@ -105,81 +105,21 @@ private:
 };
 
 /*
-* @brief SortPropertyCache, load data for property to be sorted
-* it will be reloaded if index has been changed
-*/
-class SortPropertyCache
-{
-public:
-    SortPropertyCache(DocumentManager* pDocumentManager, IndexManager* pIndexer, IndexBundleConfiguration* config);
-
-    void setCtrManager(faceted::CTRManager* pCTRManager);
-
-public:
-    ///If index has been changed, we should reload
-    void setDirty(bool dirty)
-    {
-        dirty_ = dirty;
-    }
-
-    SortPropertyComparator* getComparator(
-        SortProperty* pSortProperty,
-        PropSharedLockSet& propSharedLockSet);
-
-    boost::shared_ptr<NumericPropertyTableBase>& getSortPropertyData(const std::string& propertyName, PropertyDataType propertyType);
-
-    boost::shared_ptr<NumericPropertyTableBase>& getCTRPropertyData(const std::string& propertyName, PropertyDataType propertyType);
-
-private:
-    void loadSortData(const std::string& property, PropertyDataType type);
-
-private:
-    DocumentManager* pDocumentManager_;
-
-    IndexManager* pIndexer_;
-
-    ///CTR data will be get from CTRManager
-    faceted::CTRManager* pCTRManager_;
-
-    ///Time interval (seconds) to refresh cache for properties which update frequently (e.g. CTR).
-    time_t updateInterval_;
-
-    bool dirty_;
-
-    ///key: the name of sorted property
-    ///value: memory pool containing the property data
-    typedef std::map<std::string, boost::shared_ptr<NumericPropertyTableBase> > SortDataCache;
-    SortDataCache sortDataCache_;
-
-    boost::mutex mutex_;
-
-    IndexBundleConfiguration* config_;
-
-    enum SeparatorChar { BrokenLine, WaveLine, Comma, EoC };
-    static const char Separator[EoC];
-
-    friend class SearchManager;
-};
-
-/*
 * @brief Sorter main interface exposed.
 */
 class Sorter
 {
 public:
-    Sorter(SortPropertyCache* pCache);
+    Sorter(NumericPropertyTableBuilder* numericTableBuilder);
 
     ~Sorter();
 
 public:
-
-    void addSortProperty(const string& property, PropertyDataType propertyType, bool reverse = false);
-
     void addSortProperty(SortProperty* pSortProperty);
 
     bool requireScorer()
     {
-        for(size_t i = 0; i < nNumProperties_; ++i)
+        for(std::size_t i = 0; i < nNumProperties_; ++i)
         {
             if(ppSortProperties_[i]->getProperty()== "RANK")
                 return true;
@@ -189,7 +129,7 @@ public:
 
     bool lessThan(const ScoreDoc& doc1,const ScoreDoc& doc2)
     {
-        size_t i=0;
+        std::size_t i = 0;
         for(; i < nNumProperties_; ++i)
         {
             //int c = (reverseMul_[i]) * ppSortProperties_[i]->compare(doc1, doc2);
@@ -208,12 +148,17 @@ public:
 //    return c < 0;
     }
 
-    ///This interface would be called after an instance of Sorter is established, it will generate SortPropertyComparator
-    /// for internal usage
-    void getComparators(PropSharedLockSet& propSharedLockSet);
+    ///This interface would be called after an instance of Sorter is established,
+    /// it will generate SortPropertyComparator for internal usage
+    void createComparators(PropSharedLockSet& propSharedLockSet);
 
 private:
-    SortPropertyCache* pCache_;
+    SortPropertyComparator* createNumericComparator_(
+        const std::string& propName,
+        PropSharedLockSet& propSharedLockSet);
+
+private:
+    NumericPropertyTableBuilder* numericTableBuilder_;
 
     std::list<SortProperty*> sortProperties_;
 
@@ -221,7 +166,7 @@ private:
 
     int* reverseMul_;
 
-    size_t nNumProperties_;
+    std::size_t nNumProperties_;
 
     friend class SearchManager;
     friend class SearchManagerPreProcessor;

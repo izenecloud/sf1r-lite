@@ -23,17 +23,18 @@ void JobScheduler::close()
 
 void JobScheduler::removeTask(const std::string& collection)
 {
-    if (collection != runCollectionName_)
+    RemoveTaskPred removePred(collection);
+    IsOtherCollection isOtherCollection(currentTaskCollection_, collection);
+
+    if (!asynchronousTasks_.remove_if_when(removePred, isOtherCollection))
     {
-        asynchronousTasks_.remove_if(RemoveTaskPred(collection));
-    }
-    else
-    {
+        // as there is a running task of the same "collection",
+        // it is necessary to wait for its completion.
         close();
-        asynchronousTasks_.remove_if(RemoveTaskPred(collection));
+
+        asynchronousTasks_.remove_if(removePred);
         asynchronousWorker_ = boost::thread(
-                &JobScheduler::runAsynchronousTasks_, this
-        );
+            &JobScheduler::runAsynchronousTasks_, this);
     }
 }
 
@@ -52,14 +53,11 @@ void JobScheduler::runAsynchronousTasks_()
 {
     try
     {
-        task_collection_name_type taskCollectionPair;
         while (true)
         {
-            asynchronousTasks_.pop(taskCollectionPair);
+            asynchronousTasks_.pop(currentTaskCollection_);
 
-            runCollectionName_ = taskCollectionPair.second;
-            (taskCollectionPair.first)();
-            runCollectionName_.clear();
+            (currentTaskCollection_.first)();
 
             // terminate execution if interrupted
             boost::this_thread::interruption_point();

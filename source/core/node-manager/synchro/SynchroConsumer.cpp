@@ -81,6 +81,16 @@ void SynchroConsumer::process(ZooKeeperEvent& zkEvent)
     }
 }
 
+void SynchroConsumer::onNodeDeleted(const std::string& path)
+{
+    if (path == producerZkNode_)
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        LOG(INFO) << "producer deleted, stopping consuming." << path;
+        consumerStatus_ = CONSUMER_STATUS_WATCHING;
+    }
+}
+
 void SynchroConsumer::onNodeCreated(const std::string& path)
 {
     if (path == producerZkNode_)
@@ -126,49 +136,52 @@ void SynchroConsumer::onMonitor()
 
 void SynchroConsumer::doWatchProducer()
 {
-    boost::unique_lock<boost::mutex> lock(mutex_);
-
-    LOG(INFO) << SYNCHRO_CONSUMER << " watching for producer ...";
-
-    if (consumerStatus_ == CONSUMER_STATUS_CONSUMING) {
-        return;
-    }
-    else {
-        consumerStatus_ = CONSUMER_STATUS_CONSUMING;
-    }
-
-    // Watch producer
     SynchroData producerMsg;
-    if (zookeeper_->isZNodeExists(producerZkNode_, ZooKeeper::WATCH))
     {
-        LOG(INFO) << SYNCHRO_CONSUMER << " watch " << producerZkNode_;
-        std::string dataStr;
-        zookeeper_->getZNodeData(producerZkNode_, dataStr, ZooKeeper::WATCH);
-        producerMsg.loadKvString(dataStr);
-    }
-    else
-    {
-        consumerStatus_ = CONSUMER_STATUS_WATCHING; // reset status!
-        return;
-    }
+        boost::unique_lock<boost::mutex> lock(mutex_);
 
-    // Register consumer
-    SynchroData consumerMsg;
-    consumerMsg.setValue(SynchroData::KEY_CONSUMER_STATUS, SynchroData::CONSUMER_STATUS_READY);
-    consumerMsg.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-    consumerMsg.setValue(SynchroData::KEY_HOST, SuperNodeManager::get()->getLocalHostIP());
-    consumerMsg.setValue(SynchroData::KEY_DATA_PORT, SuperNodeManager::get()->getDataReceiverPort());
-    if (zookeeper_->createZNode(syncZkNode_ + SynchroZkNode::CONSUMER, consumerMsg.serialize(),
-            ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
-    {
-        consumerNodePath_ = zookeeper_->getLastCreatedNodePath();
-        DLOG(INFO) << SYNCHRO_CONSUMER << " register consumer: " << consumerNodePath_;
-    }
+        LOG(INFO) << SYNCHRO_CONSUMER << " watching for producer ...";
 
-    // Synchronizing
-    LOG(INFO) << SYNCHRO_CONSUMER << " receiving data";
+        if (consumerStatus_ == CONSUMER_STATUS_CONSUMING) {
+            return;
+        }
+        else {
+            consumerStatus_ = CONSUMER_STATUS_CONSUMING;
+        }
+
+        // Watch producer
+        if (zookeeper_->isZNodeExists(producerZkNode_, ZooKeeper::WATCH))
+        {
+            LOG(INFO) << SYNCHRO_CONSUMER << " watch " << producerZkNode_;
+            std::string dataStr;
+            zookeeper_->getZNodeData(producerZkNode_, dataStr, ZooKeeper::WATCH);
+            producerMsg.loadKvString(dataStr);
+        }
+        else
+        {
+            consumerStatus_ = CONSUMER_STATUS_WATCHING; // reset status!
+            return;
+        }
+
+        // Register consumer
+        SynchroData consumerMsg;
+        consumerMsg.setValue(SynchroData::KEY_CONSUMER_STATUS, SynchroData::CONSUMER_STATUS_READY);
+        consumerMsg.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+        consumerMsg.setValue(SynchroData::KEY_HOST, SuperNodeManager::get()->getLocalHostIP());
+        consumerMsg.setValue(SynchroData::KEY_DATA_PORT, SuperNodeManager::get()->getDataReceiverPort());
+        if (zookeeper_->createZNode(syncZkNode_ + SynchroZkNode::CONSUMER, consumerMsg.serialize(),
+                ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
+        {
+            consumerNodePath_ = zookeeper_->getLastCreatedNodePath();
+            LOG(INFO) << SYNCHRO_CONSUMER << " register consumer: " << consumerNodePath_;
+        }
+
+        // Synchronizing
+        LOG(INFO) << SYNCHRO_CONSUMER << " receiving data";
+    }
     bool ret = synchronize();
 
+    boost::unique_lock<boost::mutex> lock(mutex_);
     // Post processing
     if (ret)
     {
@@ -195,6 +208,12 @@ bool SynchroConsumer::synchronize()
         LOG(INFO) << SYNCHRO_CONSUMER << " sleeping for " << step << " seconds ...";
         ::sleep(step);
 
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        if (consumerStatus_ == CONSUMER_STATUS_WATCHING)
+        {
+            LOG(WARNING) << "consuming interrupt for status changed.";
+            return false;
+        }
         std::string data;
         if (zookeeper_->getZNodeData(consumerNodePath_, data))
         {
@@ -213,6 +232,12 @@ bool SynchroConsumer::synchronize()
                 return false;
             }
         }
+        else
+        {
+            LOG(ERROR) << "get consumer data failed: " << consumerNodePath_;
+            LOG(ERROR) << "stop synchronize.";
+            return false;
+        }
     }
 
     return false;
@@ -225,7 +250,15 @@ bool SynchroConsumer::consume(SynchroData& producerMsg)
     if (callback_on_produced_)
     {
         DLOG(INFO) << SYNCHRO_CONSUMER << " calling consume callback";
-        ret = callback_on_produced_(producerMsg.getStrValue(SynchroData::KEY_DATA_PATH));
+        std::string src_path = producerMsg.getStrValue(SynchroData::KEY_DATA_PATH);
+        if (producerMsg.getStrValue(SynchroData::KEY_HOST) != SuperNodeManager::get()->getLocalHostIP())
+        {
+            LOG(INFO) << "source path is only needed for local consume and producer.";
+            LOG(INFO) << "local consume is : " << SuperNodeManager::get()->getLocalHostIP();
+            LOG(INFO) << "producer is : " << producerMsg.getStrValue(SynchroData::KEY_HOST);
+            src_path.clear();
+        }
+        ret = callback_on_produced_(src_path);
     }
 
     return ret;

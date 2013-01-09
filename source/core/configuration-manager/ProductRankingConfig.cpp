@@ -55,13 +55,8 @@ bool isNumericFilter(
     propConfig.setName(propName);
 
     IndexBundleSchema::const_iterator propIt = indexSchema.find(propConfig);
-    if (propIt != indexSchema.end() &&
-        propIt->getIsFilter() &&
-        propIt->isIndex() &&
-        (propIt->isNumericType() || propIt->getType() == DATETIME_PROPERTY_TYPE))
-    {
+    if (propIt != indexSchema.end() && propIt->isRTypeNumeric())
         return true;
-    }
 
     error = "Property [" + propName +
         "] in <ProductRanking> is not numeric filter property.";

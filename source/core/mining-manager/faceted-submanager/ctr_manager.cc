@@ -121,13 +121,6 @@ bool CTRManager::getClickCountListByDocIdList(
     return result;
 }
 
-void CTRManager::loadCtrData(boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable)
-{
-    ScopedReadLock lock(mutex_);
-
-    numericPropertyTable = static_pointer_cast<NumericPropertyTableBase>(docClickCountList_);
-}
-
 count_t CTRManager::getClickCountByDocId(docid_t docId)
 {
     if (docId < docClickCountList_->size())

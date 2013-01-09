@@ -55,6 +55,7 @@
 #include "suffix-match-manager/FMIndexManager.h"
 
 #include <search-manager/SearchManager.h>
+#include <search-manager/NumericPropertyTableBuilderImpl.h>
 #include <index-manager/IndexManager.h>
 #include <common/SearchCache.h>
 
@@ -140,6 +141,7 @@ MiningManager::MiningManager(
     , searchCache_(searchCache)
     , tgInfo_(NULL)
     , idManager_(idManager)
+    , numericTableBuilder_(NULL)
     , groupManager_(NULL)
     , attrManager_(NULL)
     , merchantScoreManager_(NULL)
@@ -176,6 +178,7 @@ MiningManager::~MiningManager()
     if (merchantScoreManager_) delete merchantScoreManager_;
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
+    if (numericTableBuilder_) delete numericTableBuilder_;
     if (tdt_storage_) delete tdt_storage_;
     if (topicDetector_) delete topicDetector_;
     if (summarizationManager_) delete summarizationManager_;
@@ -396,6 +399,10 @@ bool MiningManager::open()
             }
         }
 
+        numericTableBuilder_ = new NumericPropertyTableBuilderImpl(
+            *document_manager_, ctrManager_.get());
+        searchManager_->setNumericTableBuilder(numericTableBuilder_);
+
         /** group */
         if (mining_schema_.group_enable)
         {
@@ -441,7 +448,7 @@ bool MiningManager::open()
                         mining_schema_.group_config_map,
                         groupManager_,
                         attrManager_,
-                        searchManager_.get());
+                        numericTableBuilder_);
             searchManager_->setGroupFilterBuilder(filterBuilder);
         }
 
@@ -540,7 +547,7 @@ bool MiningManager::open()
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                    document_manager_, groupManager_, attrManager_, searchManager_.get());
+                    document_manager_, groupManager_, attrManager_, numericTableBuilder_);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
@@ -1999,7 +2006,7 @@ bool MiningManager::GetSuffixMatch(
                         mining_schema_.group_config_map,
                         groupManager_,
                         attrManager_,
-                        searchManager_.get());
+                        numericTableBuilder_);
                 groupFilterBuilder_.reset(filterBuilder);
             }
 
@@ -2312,7 +2319,8 @@ bool MiningManager::initProductScorerFactory_(const ProductRankingConfig& rankCo
                                                *customDocIdConverter_,
                                                document_manager_.get());
 
-    offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(*this);
+    offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(
+        numericTableBuilder_);
 
     const bfs::path scoreDir(parentDir / "product_score");
     productScoreManager_ = new ProductScoreManager(

@@ -106,7 +106,6 @@ bool CategoryScdSpliter::Split(const std::string& scd_path)
     {
         std::string scd_file = scd_list[i];
         LOG(INFO)<<"Spliting "<<scd_file<<std::endl;
-        int scd_type = ScdParser::checkSCDType(scd_list[i]);
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
         uint32_t n=0;
