@@ -87,6 +87,7 @@ void Sorter::createComparators(PropSharedLockSet& propSharedLockSet)
     ppSortProperties_ = new SortProperty*[nNumProperties_];
     size_t i = 0;
     size_t numOfInValidComparators = 0;
+
     for (std::list<SortProperty*>::iterator iter = sortProperties_.begin();
             iter != sortProperties_.end(); ++iter, ++i)
     {
@@ -94,32 +95,28 @@ void Sorter::createComparators(PropSharedLockSet& propSharedLockSet)
         ppSortProperties_[i] = pSortProperty;
         const std::string& propName = pSortProperty->getProperty();
 
-        if (pSortProperty)
+        if (pSortProperty->pComparator_)
+            continue;
+
+        switch (pSortProperty->getType())
         {
-            switch (pSortProperty->getType())
-            {
-            case SortProperty::SCORE:
-                pSortProperty->pComparator_= new SortPropertyComparator();
-                break;
-            case SortProperty::AUTO:
-                if (!pSortProperty->pComparator_)
-                    pSortProperty->pComparator_ = createNumericComparator_(propName,
-                                                                           propSharedLockSet);
-                if (!pSortProperty->pComparator_)
-                    ++numOfInValidComparators;
-                break;
-            case SortProperty::CUSTOM:
-                pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
-                break;
-            case SortProperty::CTR:
-                pSortProperty->pComparator_ = createNumericComparator_(propName,
-                                                                       propSharedLockSet);
-                if (!pSortProperty->pComparator_)
-                    ++numOfInValidComparators;
-                break;
-            }
+        case SortProperty::SCORE:
+            pSortProperty->pComparator_= new SortPropertyComparator();
+            break;
+        case SortProperty::AUTO:
+        case SortProperty::CTR:
+            pSortProperty->pComparator_ = createNumericComparator_(propName,
+                                                                   propSharedLockSet);
+            break;
+        case SortProperty::CUSTOM:
+            pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
+            break;
         }
+
+        if (!pSortProperty->pComparator_)
+            ++numOfInValidComparators;
     }
+
     if (numOfInValidComparators > 0)
     {
         SortProperty** ppSortProperties = NULL;
