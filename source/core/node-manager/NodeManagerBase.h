@@ -128,6 +128,8 @@ public:
 protected:
     virtual void setZNodePaths() = 0;
 
+    virtual void setMasterDistributeState(bool enable) = 0;
+
     virtual void startMasterManager() {}
 
     virtual void stopMasterManager() {}

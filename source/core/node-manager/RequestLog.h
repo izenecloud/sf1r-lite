@@ -37,10 +37,11 @@ struct CommonReqData
 {
     uint32_t inc_id;
     uint32_t reqtype;
-    std::string controller_action;
+    std::string controller;
+    std::string action;
     std::string req_acl_tokens;
     std::string req_json_data;
-    MSGPACK_DEFINE(inc_id, reqtype, controller_action, req_acl_tokens, req_json_data);
+    MSGPACK_DEFINE(inc_id, reqtype, controller, action, req_acl_tokens, req_json_data);
 };
 
 // note: head data will not be packed to msgpack.
@@ -50,7 +51,8 @@ struct IndexReqLog
     IndexReqLog()
     {
         common_data.reqtype = Req_Index;
-        common_data.controller_action = "/commands/index";
+        common_data.controller = "commands";
+        common_data.action = "index";
     }
     CommonReqData common_data;
     std::vector<std::string> scd_list;
@@ -62,7 +64,8 @@ struct CreateDocReqLog
     CreateDocReqLog()
     {
         common_data.reqtype = Req_CreateDoc;
-        common_data.controller_action = "/documents/create";
+        common_data.controller = "documents";
+        common_data.action = "create";
     }
     CommonReqData common_data;
     MSGPACK_DEFINE(common_data);
@@ -120,12 +123,12 @@ public:
 
     static void initWriteRequestSet()
     {
-        write_req_set_.insert("/documents/create");
+        write_req_set_.insert("documents_create");
     }
 
-    static inline bool isWriteRequest(const std::string& controller_action)
+    static inline bool isWriteRequest(const std::string& controller, const std::string& action)
     {
-        if (write_req_set_.find(controller_action) != write_req_set_.end())
+        if (write_req_set_.find(controller + "_" + action) != write_req_set_.end())
             return true;
         return false;
     }

@@ -48,6 +48,11 @@ protected:
         primaryNodePath_ = ZooKeeperNamespace::getSearchPrimaryNodePath(sf1rTopology_.curNode_.nodeId_);
     }
 
+    virtual void setMasterDistributeState(bool enable)
+    {
+        SearchMasterManager::get()->enableDistribute(enable);
+    }
+
     virtual void startMasterManager()
     {
         SearchMasterManager::get()->start();

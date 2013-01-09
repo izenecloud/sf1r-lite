@@ -10,6 +10,9 @@
 #include <bundles/index/IndexSearchService.h>
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/mining/MiningSearchService.h>
+#include <node-manager/SearchMasterManager.h>
+#include <node-manager/RequestLog.h>
+
 #include <common/Keys.h>
 #include <common/Utilities.h>
 
@@ -74,6 +77,12 @@ bool DocumentsController::checkCollectionService(std::string& error)
         return false;
     }
 
+    bool is_write_req = ReqLogMgr::isWriteRequest(controller_name(), action_name());
+    if (is_write_req && !SearchMasterManager::get()->isMinePrimary())
+    {
+        error = "Request failed, write request can only be sent to Primary master.";
+        return false;
+    }
     return true;
 }
 

@@ -45,6 +45,10 @@ protected:
         primaryNodePath_ = ZooKeeperNamespace::getRecommendPrimaryNodePath(sf1rTopology_.curNode_.nodeId_);
     }
 
+    virtual void setMasterDistributeState(bool enable)
+    {
+        RecommendMasterManager::get()->enableDistribute(enable);
+    }
     virtual void startMasterManager()
     {
         RecommendMasterManager* recMasterManager = RecommendMasterManager::get();

@@ -6,7 +6,8 @@
 using namespace sf1r;
 
 MasterManagerBase::MasterManagerBase()
-: masterState_(MASTER_STATE_INIT)
+: isDistributeEnable_(false)
+, masterState_(MASTER_STATE_INIT)
 , CLASSNAME("MasterManagerBase")
 {
 }
@@ -701,6 +702,9 @@ bool MasterManagerBase::isPrimaryWorker(replicaid_t replicaId, nodeid_t nodeId)
 
 bool MasterManagerBase::isMinePrimary()
 {
+    if(!isDistributeEnable_)
+        return true;
+
     if (!zookeeper_ || !zookeeper_->isConnected())
         return false;
     return isPrimaryWorker(sf1rTopology_.curNode_.replicaId_,  sf1rTopology_.curNode_.nodeId_);

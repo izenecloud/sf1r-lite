@@ -31,6 +31,7 @@ void NodeManagerBase::init(const DistributedTopologyConfig& distributedTopologyC
 
     zookeeper_ = ZooKeeperManager::get()->createClient(this);
     setZNodePaths();
+    setMasterDistributeState(isDistributionEnabled_);
 }
 
 void NodeManagerBase::start()

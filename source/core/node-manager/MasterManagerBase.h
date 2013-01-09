@@ -79,6 +79,13 @@ public:
 
     void registerIndexStatus(const std::string& collection, bool isIndexing);
 
+    void enableDistribute(bool enable)
+    {
+        isDistributeEnable_ = enable;
+    }
+
+    bool isMinePrimary();
+
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
 
@@ -106,7 +113,6 @@ protected:
 
     void doStart();
 
-    bool isMinePrimary();
     bool isPrimaryWorker(replicaid_t replicaId, nodeid_t nodeId);
 
 protected:
@@ -141,6 +147,7 @@ protected:
 
 protected:
     Sf1rTopology sf1rTopology_;
+    bool isDistributeEnable_;
 
     ZooKeeperClientPtr zookeeper_;
 
