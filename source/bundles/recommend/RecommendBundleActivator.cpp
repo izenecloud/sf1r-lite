@@ -298,7 +298,7 @@ void RecommendBundleActivator::createSharder_()
 
     if (config_->recommendNodeConfig_.isWorkerNode_)
     {
-        shardid_t workerShardId = sf1rNode.worker_.shardId_;
+        shardid_t workerShardId = sf1rNode.nodeId_;
         matrixSharder_.reset(new RecommendMatrixSharder(workerShardId, shardStrategy_.get()));
     }
 }

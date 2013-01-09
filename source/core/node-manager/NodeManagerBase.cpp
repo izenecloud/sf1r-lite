@@ -133,7 +133,6 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     if (sf1rTopology_.curNode_.worker_.isEnabled_)
     {
         znode.setValue(ZNode::KEY_WORKER_PORT, sf1rTopology_.curNode_.worker_.port_);
-        znode.setValue(ZNode::KEY_SHARD_ID, sf1rTopology_.curNode_.worker_.shardId_);
     }
 
     if (sf1rTopology_.curNode_.master_.isEnabled_)
@@ -169,9 +168,9 @@ void NodeManagerBase::updateCurrentPrimary()
     curr_primary_path_ = primaryList[0];
     LOG(INFO) << "current primary is : " << curr_primary_path_;
     getPrimaryState();
-    IndexReqLog testlog;
-    reqlog_mgr_->appendTypedReqLog<IndexReqLog>(testlog);
-    reqlog_mgr_->unpackReqLogData<IndexReqLog>("", testlog);
+    //IndexReqLog testlog;
+    //reqlog_mgr_->appendTypedReqLog<IndexReqLog>(testlog);
+    //reqlog_mgr_->unpackReqLogData<IndexReqLog>("", testlog);
 }
 
 void NodeManagerBase::registerPrimary(ZNode& znode)
@@ -288,7 +287,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
                << "] node[" << curNode.nodeId_
                << "]{"
                << (curNode.worker_.isEnabled_ ?
-                       (std::string("worker") + boost::lexical_cast<std::string>(curNode.worker_.shardId_) + " ") : "")
+                       (std::string("worker") + boost::lexical_cast<std::string>(curNode.nodeId_) + " ") : "")
                << curNode.userName_ << "@" << curNode.host_ << "}";
 
 

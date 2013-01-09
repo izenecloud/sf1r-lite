@@ -797,7 +797,6 @@ void SF1Config::parseNodeWorker(const ticpp::Element * worker, Sf1rNodeWorker& s
     if (worker)
     {
         getAttribute(worker, "enable", sf1rNodeWorker.isEnabled_);
-        getAttribute(worker, "shardid", sf1rNodeWorker.shardId_);
 
         Iterator<Element> collection_it("Collection");
         for (collection_it = collection_it.begin(worker); collection_it != collection_it.end(); collection_it++)

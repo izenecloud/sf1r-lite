@@ -160,8 +160,7 @@ public:
 
         ss << "[Worker]" << std::endl
            << "enabled: " << isEnabled_ << std::endl
-           << "port: " << port_ << std::endl
-           << "shardid (workerid):" << shardId_ << std::endl;
+           << "port: " << port_ << std::endl;
 
         for (size_t i = 0; i < collectionList_.size(); i++)
         {
@@ -175,7 +174,7 @@ public:
     bool isEnabled_;
     bool isGood_;
     port_t port_;
-    shardid_t shardId_; // id of shard resides on this worker.
+    //shardid_t shardId_; // id of shard resides on this worker.
 
     std::vector<std::string> collectionList_;
 };

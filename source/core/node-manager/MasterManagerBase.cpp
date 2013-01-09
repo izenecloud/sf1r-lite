@@ -264,6 +264,7 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
     bool mine_primary = isMinePrimary();
     if (mine_primary)
         LOG(INFO) << "I am primary master ";
+
     for (uint32_t nodeid = 1; nodeid <= sf1rTopology_.nodeNum_; nodeid++)
     {
         std::string data;
@@ -286,36 +287,22 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
                     }
                 }
 
-                shardid_t shardid = znode.getUInt32Value(ZNode::KEY_SHARD_ID);
-                if (shardid > 0 && shardid <= sf1rTopology_.curNode_.master_.totalShardNum_)
+                if (nodeid > 0 && nodeid <= sf1rTopology_.curNode_.master_.totalShardNum_)
                 {
-                    if (workerMap_.find(shardid) != workerMap_.end())
+                    if (workerMap_.find(nodeid) != workerMap_.end())
                     {
-                        // check if shard id is reduplicated with existed node
-                        if (workerMap_[shardid]->nodeId_ != nodeid)
-                        {
-                            std::stringstream ss;
-                            ss << "[" << CLASSNAME << "] conflict detected: shardid " << shardid
-                               << " is configured in both node" << nodeid << " and node" << workerMap_[shardid]->nodeId_ << endl;
-
-                            throw std::runtime_error(ss.str());
-                        }
-                        else
-                        {
-                            workerMap_[shardid]->worker_.isGood_ = true;
-                        }
+                        workerMap_[nodeid]->worker_.isGood_ = true;
                     }
                     else
                     {
                         // insert new worker
                         boost::shared_ptr<Sf1rNode> sf1rNode(new Sf1rNode);
                         sf1rNode->worker_.isGood_ = true;
-                        workerMap_[shardid] = sf1rNode;
+                        workerMap_[nodeid] = sf1rNode;
                     }
 
                     // update worker info
-                    boost::shared_ptr<Sf1rNode>& workerNode = workerMap_[shardid];
-                    workerNode->worker_.shardId_ = shardid;
+                    boost::shared_ptr<Sf1rNode>& workerNode = workerMap_[nodeid];
                     workerNode->nodeId_ = nodeid;
                     updateWorkerNode(workerNode, znode);
 
@@ -328,11 +315,11 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
                 else
                 {
                     std::stringstream ss;
-                    ss << "shardid \""<< shardid << "\" in node[" << nodeid << "] @ " << znode.getStrValue(ZNode::KEY_HOST)
+                    ss << "in node[" << nodeid << "] @ " << znode.getStrValue(ZNode::KEY_HOST)
                        << " is out of range for current master (max shardid is " << sf1rTopology_.curNode_.master_.totalShardNum_ << ")"; 
 
-                    //throw std::runtime_error(ss.str());
                     LOG (WARNING) << ss.str();
+                    throw std::runtime_error(ss.str());
                 }
             }
         }
@@ -397,33 +384,30 @@ void MasterManagerBase::updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode
     try
     {
         workerNode->worker_.port_ =
-                boost::lexical_cast<shardid_t>(znode.getStrValue(ZNode::KEY_WORKER_PORT));
+                boost::lexical_cast<port_t>(znode.getStrValue(ZNode::KEY_WORKER_PORT));
     }
     catch (std::exception& e)
     {
         workerNode->worker_.isGood_ = false;
         LOG (ERROR) << "failed to convert workerPort \"" << znode.getStrValue(ZNode::KEY_WORKER_PORT)
-                    << "\" got from worker " << workerNode->worker_.shardId_
-                    << " on node " << workerNode->nodeId_
+                    << "\" got from worker on node " << workerNode->nodeId_
                     << " @" << workerNode->host_;
     }
 
     try
     {
         workerNode->dataPort_ =
-                boost::lexical_cast<shardid_t>(znode.getStrValue(ZNode::KEY_DATA_PORT));
+                boost::lexical_cast<port_t>(znode.getStrValue(ZNode::KEY_DATA_PORT));
     }
     catch (std::exception& e)
     {
         workerNode->worker_.isGood_ = false;
         LOG (ERROR) << "failed to convert dataPort \"" << znode.getStrValue(ZNode::KEY_DATA_PORT)
-                    << "\" got from worker " << workerNode->worker_.shardId_
-                    << " on node " << workerNode->nodeId_
+                    << "\" got from worker on node " << workerNode->nodeId_
                     << " @" << workerNode->host_;
     }
 
-    LOG (INFO) << CLASSNAME << " detected worker" << workerNode->worker_.shardId_
-               << " (node" << workerNode->nodeId_ <<") "
+    LOG (INFO) << CLASSNAME << " detected worker on (node" << workerNode->nodeId_ <<") "
                << workerNode->host_ << ":" << workerNode->worker_.port_ << std::endl;
 }
 
@@ -530,8 +514,7 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
                     }
                 }
                 znode.loadKvString(sdata);
-                shardid_t shardid = znode.getUInt32Value(ZNode::KEY_SHARD_ID);
-                if (shardid == sf1rNode->worker_.shardId_)
+                if (znode.hasKey(ZNode::KEY_WORKER_PORT))
                 {
                     LOG (INFO) << "switching node " << sf1rNode->nodeId_ << " from replica " << sf1rNode->replicaId_
                                <<" to " << replicaIdList_[i];
@@ -541,7 +524,7 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
                     try
                     {
                         sf1rNode->worker_.port_ =
-                                boost::lexical_cast<shardid_t>(znode.getStrValue(ZNode::KEY_WORKER_PORT));
+                                boost::lexical_cast<port_t>(znode.getStrValue(ZNode::KEY_WORKER_PORT));
                     }
                     catch (std::exception& e)
                     {
@@ -558,9 +541,9 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
                 else
                 {
                     LOG (ERROR) << "[Replica " << replicaIdList_[i] << "] [Node " << sf1rNode->nodeId_
-                                << "] has shard id: " << shardid
-                                << ", but corresponding shard id is " << sf1rNode->worker_.shardId_
-                                << " in Replica " << sf1rNode->replicaId_;
+                                << "] did not enable worker server, this happened because of the mismatch configuration.";
+                    LOG (ERROR) << "In the same cluster, the sf1r node with the same nodeid must have the same configuration.";
+                    throw std::runtime_error("error configuration : mismatch with the same nodeid.");
                 }
             }
         }
@@ -614,7 +597,7 @@ void MasterManagerBase::recover(const std::string& zpath)
                 try
                 {
                     sf1rNode->worker_.port_ =
-                            boost::lexical_cast<shardid_t>(znode.getStrValue(ZNode::KEY_WORKER_PORT));
+                            boost::lexical_cast<port_t>(znode.getStrValue(ZNode::KEY_WORKER_PORT));
                 }
                 catch (std::exception& e)
                 {
