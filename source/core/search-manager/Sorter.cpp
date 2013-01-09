@@ -75,12 +75,6 @@ Sorter::~Sorter()
     if (reverseMul_) delete[] reverseMul_;
 }
 
-void Sorter::addSortProperty(const string& property, PropertyDataType propertyType, bool reverse)
-{
-    SortProperty* pSortProperty = new SortProperty(property, propertyType, reverse);
-    sortProperties_.push_back(pSortProperty);
-}
-
 void Sorter::addSortProperty(SortProperty* pSortProperty)
 {
     sortProperties_.push_back(pSortProperty);

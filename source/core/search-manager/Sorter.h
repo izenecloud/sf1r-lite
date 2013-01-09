@@ -116,9 +116,6 @@ public:
     ~Sorter();
 
 public:
-
-    void addSortProperty(const string& property, PropertyDataType propertyType, bool reverse = false);
-
     void addSortProperty(SortProperty* pSortProperty);
 
     bool requireScorer()
