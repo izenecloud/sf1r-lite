@@ -150,7 +150,7 @@ void B5moProcessor::Process(Document& doc, int& type)
         }
         else
         {
-            if(spid!=sdocid)//maybe a book
+            if(!spid.empty()&&spid!=sdocid)//maybe a book
             {
                 product.spid = spid;
             }
