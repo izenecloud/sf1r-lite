@@ -6,6 +6,8 @@
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <common/PropSharedLockSet.h>
 
+using namespace std;
+
 namespace sf1r
 {
 
@@ -18,7 +20,7 @@ SortProperty::SortProperty(const SortProperty& src)
 {
 }
 
-SortProperty::SortProperty(const string& property, PropertyDataType propertyType, bool reverse)
+SortProperty::SortProperty(const std::string& property, PropertyDataType propertyType, bool reverse)
     : property_(property)
     , propertyDataType_(propertyType)
     , type_(AUTO)
@@ -27,7 +29,7 @@ SortProperty::SortProperty(const string& property, PropertyDataType propertyType
 {
 }
 
-SortProperty::SortProperty(const string& property, PropertyDataType propertyType, SortPropertyType type, bool reverse)
+SortProperty::SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyType type, bool reverse)
     : property_(property)
     , propertyDataType_(propertyType)
     , type_(type)
@@ -35,7 +37,8 @@ SortProperty::SortProperty(const string& property, PropertyDataType propertyType
     , pComparator_(NULL)
 {
 }
-SortProperty::SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, bool reverse)
+
+SortProperty::SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, bool reverse)
     : property_(property)
     , propertyDataType_(propertyType)
     , type_(CUSTOM)
@@ -44,7 +47,7 @@ SortProperty::SortProperty(const string& property, PropertyDataType propertyType
 {
 }
 
-SortProperty::SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse)
+SortProperty::SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse)
     : property_(property)
     , propertyDataType_(propertyType)
     , type_(type)
@@ -63,6 +66,7 @@ Sorter::Sorter(NumericPropertyTableBuilder* numericTableBuilder)
     : numericTableBuilder_(numericTableBuilder)
     , ppSortProperties_(0)
     , reverseMul_(0)
+    , nNumProperties_(0)
 {
 }
 

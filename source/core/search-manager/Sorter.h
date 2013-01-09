@@ -17,8 +17,6 @@
 #include <map>
 #include <string>
 
-using namespace std;
-
 namespace sf1r
 {
 
@@ -49,33 +47,34 @@ public:
 public:
     SortProperty(const SortProperty& src);
 
-    SortProperty(const string& property, PropertyDataType propertyType, bool reverse = false);
+    SortProperty(const std::string& property, PropertyDataType propertyType, bool reverse = false);
 
-    SortProperty(const string& property, PropertyDataType propertyType, SortPropertyType type, bool reverse = false);
+    SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyType type, bool reverse = false);
+
     ///pComparator is generated outside by customer
-    SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, bool reverse = false);
+    SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, bool reverse = false);
 
-    SortProperty(const string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse);
+    SortProperty(const std::string& property, PropertyDataType propertyType, SortPropertyComparator* pComparator, SortPropertyType type, bool reverse);
 
     ~SortProperty();
 
 public:
-    string& getProperty()
+    const std::string& getProperty() const
     {
         return property_;
     }
 
-    PropertyDataType getPropertyDataType()
+    PropertyDataType getPropertyDataType() const
     {
         return propertyDataType_;
     }
 
-    SortPropertyType getType()
+    SortPropertyType getType() const
     {
         return type_;
     }
 
-    bool isReverse()
+    bool isReverse() const
     {
         return reverse_;
     }
@@ -92,7 +91,7 @@ public:
 
 private:
     ///name of property to be sorted
-    string property_;
+    std::string property_;
     ///type of data of this sorted proeprty
     PropertyDataType propertyDataType_;
 
@@ -120,7 +119,7 @@ public:
 
     bool requireScorer()
     {
-        for(size_t i = 0; i < nNumProperties_; ++i)
+        for(std::size_t i = 0; i < nNumProperties_; ++i)
         {
             if(ppSortProperties_[i]->getProperty()== "RANK")
                 return true;
@@ -130,7 +129,7 @@ public:
 
     bool lessThan(const ScoreDoc& doc1,const ScoreDoc& doc2)
     {
-        size_t i=0;
+        std::size_t i = 0;
         for(; i < nNumProperties_; ++i)
         {
             //int c = (reverseMul_[i]) * ppSortProperties_[i]->compare(doc1, doc2);
@@ -167,7 +166,7 @@ private:
 
     int* reverseMul_;
 
-    size_t nNumProperties_;
+    std::size_t nNumProperties_;
 
     friend class SearchManager;
     friend class SearchManagerPreProcessor;
