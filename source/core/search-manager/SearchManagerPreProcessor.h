@@ -31,6 +31,8 @@ class NumericPropertyTableBuilder;
 class SearchManagerPreProcessor
 {
     friend class SearchManager;
+    friend class SearchThreadMaster;
+    friend class SearchThreadWorker;
 private:
     DISALLOW_COPY_AND_ASSIGN(SearchManagerPreProcessor);
     SearchManagerPreProcessor();

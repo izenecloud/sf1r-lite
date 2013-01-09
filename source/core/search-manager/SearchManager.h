@@ -1,74 +1,40 @@
 #ifndef CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
 #define CORE_SEARCH_MANAGER_SEARCH_MANAGER_H
 
+#include "QueryBuilder.h"
+#include "SearchManagerPreProcessor.h"
+#include "SearchThreadWorker.h"
+#include "SearchThreadMaster.h"
 #include <configuration-manager/PropertyConfig.h>
-#include <query-manager/SearchKeywordOperation.h>
-#include <query-manager/ActionItem.h>
-#include <ranking-manager/RankQueryProperty.h>
-#include <common/ResultType.h>
-#include "ANDDocumentIterator.h"
-#include "Sorter.h"
-
 #include <ir/id_manager/IDManager.h>
 
-#include <util/ustring/UString.h>
-
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/function.hpp>
-#include <boost/threadpool.hpp>
-
+#include <boost/weak_ptr.hpp>
 #include <vector>
-#include <deque>
-#include <set>
 
 using izenelib::ir::idmanager::IDManager;
 
 namespace sf1r
 {
-
-class QueryBuilder;
+class IndexBundleConfiguration;
+class SearchKeywordOperation;
+class KeywordSearchActionItem;
+class KeywordSearchResult;
 class DocumentManager;
 class RankingManager;
 class IndexManager;
 class MiningManager;
-class Sorter;
-class IndexBundleConfiguration;
-class PropertyRanker;
-class MultiPropertyScorer;
-class WANDDocumentIterator;
-class CombinedDocumentIterator;
-class HitQueue;
-struct SearchThreadParam;
-class SearchManagerPreProcessor;
 class CustomRankManager;
-class ScoreDocEvaluator;
 class ProductScorerFactory;
 class ProductRankerFactory;
-class PropSharedLockSet;
 class NumericPropertyTableBuilder;
 
-namespace faceted
-{
-class GroupFilterBuilder;
-class OntologyRep;
-class GroupFilter;
-}
+namespace faceted { class GroupFilterBuilder; }
 
 class SearchManager
 {
-    enum IndexLevel
-    {
-        DOCLEVEL,  /// position posting does not create
-        WORDLEVEL ///  position postings create
-    };
-    typedef std::map<std::string, PropertyTermInfo> property_term_info_map;
-
 public:
-    typedef boost::function< void( std::vector<QueryFiltering::FilteringType>& ) > filter_hook_t;
-
     SearchManager(
         const IndexBundleSchema& indexSchema,
         const boost::shared_ptr<IDManager>& idManager,
@@ -76,8 +42,6 @@ public:
         const boost::shared_ptr<IndexManager>& indexManager,
         const boost::shared_ptr<RankingManager>& rankingManager,
         IndexBundleConfiguration* config);
-
-    ~SearchManager();
 
     void rankDocIdListForFuzzySearch(const SearchKeywordOperation& actionOperation,
                                      uint32_t start, std::vector<uint32_t>& docid_list, std::vector<float>& result_score_list,
@@ -113,11 +77,6 @@ public:
 
     void reset_filter_cache();
 
-    void set_filter_hook(filter_hook_t filter_hook)
-    {
-        filter_hook_ = filter_hook;
-    }
-
     void setGroupFilterBuilder(faceted::GroupFilterBuilder* builder);
 
     void setMiningManager(boost::shared_ptr<MiningManager> miningManagerPtr);
@@ -126,9 +85,9 @@ public:
 
     void setProductScorerFactory(ProductScorerFactory* productScorerFactory);
 
-    void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
-
     void setNumericTableBuilder(NumericPropertyTableBuilder* numericTableBuilder);
+
+    void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
 
     QueryBuilder* getQueryBuilder()
     {
@@ -136,85 +95,16 @@ public:
     }
 
 private:
-    void prepareThreadParams_(
-        const SearchKeywordOperation& actionOperation,
-        DistKeywordSearchInfo& distSearchInfo,
-        std::size_t heapSize,
-        std::vector<SearchThreadParam>& threadParams);
-
-    void getThreadInfo_(
-        const DistKeywordSearchInfo& distSearchInfo,
-        std::size_t& threadNum,
-        std::size_t& runningNode);
-
-    bool runThreadParams_(
-        std::vector<SearchThreadParam>& threadParams);
-
-    bool runSingleThread_(
-        SearchThreadParam& threadParam);
-
-    bool runMultiThreads_(
-        std::vector<SearchThreadParam>& threadParams);
-
-    bool mergeThreadParams_(
-        std::vector<SearchThreadParam>& threadParams) const;
-
-    bool fetchSearchResult_(
-        std::size_t offset,
-        SearchThreadParam& threadParam,
-        KeywordSearchResult& searchResult);
-
-    bool doSearch_(
-        SearchThreadParam& pParam,
-        CombinedDocumentIterator* pDocIterator,
-        faceted::GroupFilter* groupFilter,
-        ScoreDocEvaluator& scoreDocEvaluator,
-        PropSharedLockSet& propSharedLockSet);
-
-    void doSearchInThreadOneParam(
-        SearchThreadParam* pParam,
-        boost::detail::atomic_count* finishedJobs);
-
-    bool doSearchInThread(SearchThreadParam& pParam);
-
-    /**
-     * combine the @p originDocIterator with the customized doc iterator.
-     * @return the combined doc iterator instance, it would be just
-     *         @p originDocIterator if no customized doc iterator is created.
-     */
-    DocumentIterator* combineCustomDocIterator_(
-        const KeywordSearchActionItem& actionItem,
-        DocumentIterator* originDocIterator);
-
     score_t getFuzzyScoreWeight_() const;
 
 private:
-    /**
-     * @brief for testing
-     */
-    void printDFCTF_(
-        DocumentFrequencyInProperties& dfmap,
-        CollectionTermFrequencyInProperties ctfmap);
+    SearchManagerPreProcessor preprocessor_;
 
-private:
-    IndexBundleConfiguration* config_;
-    const bool isParallelEnabled_;
-    std::string collectionName_;
-    boost::shared_ptr<IndexManager> indexManagerPtr_;
-    boost::shared_ptr<DocumentManager> documentManagerPtr_;
-    boost::shared_ptr<RankingManager> rankingManagerPtr_;
-    boost::weak_ptr<MiningManager> miningManagerPtr_;
     boost::scoped_ptr<QueryBuilder> queryBuilder_;
-    std::map<propertyid_t, float> propertyWeightMap_;
+    boost::scoped_ptr<SearchThreadWorker> searchThreadWorker_;
+    boost::scoped_ptr<SearchThreadMaster> searchThreadMaster_;
 
-    filter_hook_t filter_hook_;
-
-    boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
-    CustomRankManager* customRankManager_;
-
-    boost::threadpool::pool  threadpool_;
-    SearchManagerPreProcessor*  preprocessor_;
-
+    boost::weak_ptr<MiningManager> miningManagerPtr_;
     ProductRankerFactory* productRankerFactory_;
 };
 
