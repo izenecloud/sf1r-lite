@@ -22,7 +22,8 @@ class NumericPropertyTableBuilder
 public:
     virtual ~NumericPropertyTableBuilder() {}
 
-    virtual boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(const std::string& propertyName) = 0;
+    virtual boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(
+        const std::string& propertyName) = 0;
 };
 
 }

@@ -13,7 +13,7 @@ SortPropertyComparator::SortPropertyComparator()
 SortPropertyComparator::SortPropertyComparator(const boost::shared_ptr<NumericPropertyTableBase>& propData)
     : propertyTable_(propData)
     , type_(propData->getType())
-    , size_(propData->size())
+    , size_(propData->size(false))
 {
     initComparator();
 }

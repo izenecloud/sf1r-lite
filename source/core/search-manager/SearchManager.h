@@ -8,7 +8,6 @@
 #include <common/ResultType.h>
 #include "ANDDocumentIterator.h"
 #include "Sorter.h"
-#include "NumericPropertyTableBuilder.h"
 
 #include <ir/id_manager/IDManager.h>
 
@@ -49,6 +48,7 @@ class ScoreDocEvaluator;
 class ProductScorerFactory;
 class ProductRankerFactory;
 class PropSharedLockSet;
+class NumericPropertyTableBuilder;
 
 namespace faceted
 {
@@ -57,7 +57,7 @@ class OntologyRep;
 class GroupFilter;
 }
 
-class SearchManager : public NumericPropertyTableBuilder
+class SearchManager
 {
     enum IndexLevel
     {
@@ -111,8 +111,6 @@ public:
         const KeywordSearchActionItem& actionItem,
         KeywordSearchResult& resultItem);
 
-    void reset_all_property_cache();
-
     void reset_filter_cache();
 
     void set_filter_hook(filter_hook_t filter_hook)
@@ -124,13 +122,13 @@ public:
 
     void setMiningManager(boost::shared_ptr<MiningManager> miningManagerPtr);
 
-    boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(const std::string& propertyName);
-
     void setCustomRankManager(CustomRankManager* customRankManager);
 
     void setProductScorerFactory(ProductScorerFactory* productScorerFactory);
 
     void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
+
+    void setNumericTableBuilder(NumericPropertyTableBuilder* numericTableBuilder);
 
     QueryBuilder* getQueryBuilder()
     {
@@ -179,23 +177,6 @@ private:
 
     bool doSearchInThread(SearchThreadParam& pParam);
 
-    void prepare_sorter_customranker_(
-        const SearchKeywordOperation& actionOperation,
-        CustomRankerPtr& customRanker,
-        boost::shared_ptr<Sorter> &pSorter);
-
-    /**
-     * @brief get data list of each sort property for documents referred by docIdList,
-     * used in distributed search for merging topk results.
-     * @param pSorter [OUT]
-     * @param docIdList [IN]
-     * @param distSearchInfo [OUT]
-     */
-    void fillSearchInfoWithSortPropertyData_(
-        Sorter* pSorter,
-        std::vector<unsigned int>& docIdList,
-        DistKeywordSearchInfo& distSearchInfo);
-
     /**
      * combine the @p originDocIterator with the customized doc iterator.
      * @return the combined doc iterator instance, it would be just
@@ -225,8 +206,6 @@ private:
     boost::weak_ptr<MiningManager> miningManagerPtr_;
     boost::scoped_ptr<QueryBuilder> queryBuilder_;
     std::map<propertyid_t, float> propertyWeightMap_;
-
-    SortPropertyCache* pSorterCache_;
 
     filter_hook_t filter_hook_;
 

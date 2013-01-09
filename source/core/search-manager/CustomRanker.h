@@ -19,8 +19,7 @@ using namespace BOOST_SPIRIT_CLASSIC_NS;
 
 namespace sf1r
 {
-
-class SortPropertyCache;
+class NumericPropertyTableBuilder;
 
 class CustomRanker
 {
@@ -170,11 +169,7 @@ public:
     /**
      * @brief Build expression syntax tree with sort property data.
      */
-    bool setPropertyData(SortPropertyCache* pPropertyData)
-    {
-        cout << "[CustomRanker] setting PropertyData ..." << endl;
-        return setInnerPropertyData(ESTree_, pPropertyData);
-    }
+    bool setPropertyData(NumericPropertyTableBuilder* numericTableBuilder);
 
     /**
      * @brief Evaluate the custom ranking score for a document
@@ -197,7 +192,9 @@ private:
     /**
      * @brief Set property data to Expression Syntax Tree recursively.
      */
-    bool setInnerPropertyData(ExpSyntaxTreePtr& estree, SortPropertyCache* pPropertyData);
+    bool setInnerPropertyData(
+        ExpSyntaxTreePtr& estree,
+        NumericPropertyTableBuilder& numericTableBuilder);
 
     /**
      * @brief evaluate custom ranking score recursively from EST

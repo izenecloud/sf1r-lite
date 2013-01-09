@@ -96,32 +96,8 @@ bool isPropertySortable(
         propertyConfig.setName(property);
 
         IndexBundleSchema::iterator it = schema.find(propertyConfig);
-        if (it == schema.end())
-        {
+        if (it == schema.end() || !it->isRTypeNumeric())
             return false;
-        }
-        propertyConfig = *it;
-        if (!propertyConfig.bIndex_ ||
-            propertyConfig.isAnalyzed())
-        {
-            return false;
-        }
-
-        switch (propertyConfig.propertyType_)
-        {
-        case STRING_PROPERTY_TYPE:
-        case INT32_PROPERTY_TYPE:
-        case FLOAT_PROPERTY_TYPE:
-        case DATETIME_PROPERTY_TYPE:
-        case INT8_PROPERTY_TYPE:
-        case INT16_PROPERTY_TYPE:
-        case INT64_PROPERTY_TYPE:
-        case DOUBLE_PROPERTY_TYPE:
-        case NOMINAL_PROPERTY_TYPE:
-            break;
-        default:
-            return false;
-        }
     }
 
     return true;

@@ -1,9 +1,7 @@
 #include "OfflineProductScorerFactoryImpl.h"
 #include "../product-scorer/ProductScoreAverage.h"
 #include "../product-scorer/NumericPropertyScorer.h"
-#include "../faceted-submanager/ctr_manager.h"
-#include "../MiningManager.h"
-#include <search-manager/SearchManager.h>
+#include <search-manager/NumericPropertyTableBuilder.h>
 #include <configuration-manager/ProductScoreConfig.h>
 #include <memory> // auto_ptr
 #include <glog/logging.h>
@@ -11,9 +9,8 @@
 using namespace sf1r;
 
 OfflineProductScorerFactoryImpl::OfflineProductScorerFactoryImpl(
-    MiningManager& miningManager)
-    : searchManager_(miningManager.GetSearchManager())
-    , ctrManager_(miningManager.GetCtrManager())
+    NumericPropertyTableBuilder* numericTableBuilder)
+    : numericTableBuilder_(numericTableBuilder)
 {
 }
 
@@ -54,11 +51,12 @@ ProductScorer* OfflineProductScorerFactoryImpl::createNumericPropertyScorer_(
     const ProductScoreConfig& scoreConfig)
 {
     const std::string& propName = scoreConfig.propName;
-    if (propName.empty() || scoreConfig.weight == 0)
+    if (propName.empty() || scoreConfig.weight == 0 ||
+        !numericTableBuilder_)
         return NULL;
 
     boost::shared_ptr<NumericPropertyTableBase> numericTable =
-        createNumericPropertyTable_(propName);
+        numericTableBuilder_->createPropertyTable(propName);
 
     if (!numericTable)
     {
@@ -69,35 +67,4 @@ ProductScorer* OfflineProductScorerFactoryImpl::createNumericPropertyScorer_(
 
     LOG(INFO) << "createNumericPropertyScorer_(), propName: " << propName;
     return new NumericPropertyScorer(scoreConfig, numericTable);
-}
-
-boost::shared_ptr<NumericPropertyTableBase> OfflineProductScorerFactoryImpl::createNumericPropertyTable_(
-    const std::string& propName)
-{
-    boost::shared_ptr<NumericPropertyTableBase> numericTable;
-
-    if (propName == faceted::CTRManager::kCtrPropName)
-    {
-        if (ctrManager_)
-        {
-            ctrManager_->loadCtrData(numericTable);
-        }
-        else
-        {
-            LOG(WARNING) << "failed to get CTRManager";
-        }
-    }
-    else
-    {
-        if (searchManager_)
-        {
-            numericTable = searchManager_->createPropertyTable(propName);
-        }
-        else
-        {
-            LOG(WARNING) << "failed to get SearchManager";
-        }
-    }
-
-    return numericTable;
 }

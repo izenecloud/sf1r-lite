@@ -9,7 +9,6 @@
 
 #include <common/type_defs.h>
 #include <common/SFLogger.h>
-#include <common/NumericPropertyTable.h>
 #include <query-manager/ActionItem.h>
 
 #include <ir/index_manager/index/Indexer.h>
@@ -19,9 +18,6 @@
 #include <util/string/StringUtils.h>
 
 #include <boost/shared_ptr.hpp>
-
-using namespace std;
-using namespace izenelib::ir::indexmanager;
 
 namespace sf1r
 {
@@ -111,31 +107,6 @@ public:
     ~IndexManager();
 
 public:
-    ///load data for BTree index.
-    ///@param data - the buffer provided by user
-    template<typename T>
-    bool loadPropertyDataForSorting(const string& property, PropertyDataType type, boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable)
-    {
-        BTreeIndexer<T>* pBTreeIndexer = pBTreeIndexer_->getIndexer<T>(property);
-        std::size_t size = getIndexReader()->maxDoc();
-        if (!size)
-        {
-            return false;
-        }
-        size += 1;
-        if (!numericPropertyTable)
-            numericPropertyTable.reset(new NumericPropertyTable<T>(type));
-        numericPropertyTable->resize(size);
-
-        PropSharedLock::ScopedWriteLock lock(numericPropertyTable->getMutex());
-        T* data = (T *)numericPropertyTable->getValueList();
-        T low = NumericUtil<T>::Low();
-        T high = NumericUtil<T>::High();
-        return pBTreeIndexer->getValueBetween(low, high, size, data);
-    }
-
-    bool convertStringPropertyDataForSorting(const string& property, boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable);
-
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
            const std::vector<PropertyValue>& filterParam, boost::shared_ptr<BitVector> docIdSet);
