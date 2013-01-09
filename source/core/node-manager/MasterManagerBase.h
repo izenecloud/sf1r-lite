@@ -95,6 +95,7 @@ protected:
     virtual std::string getReplicaPath(replicaid_t replicaId) = 0;
 
     virtual std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId) = 0;
+    virtual std::string getPrimaryNodeParentPath(nodeid_t nodeId) = 0;
 
 protected:
     std::string state2string(MasterStateType e);
@@ -105,8 +106,13 @@ protected:
 
     void doStart();
 
+    bool isMinePrimary();
+    bool isPrimaryWorker(replicaid_t replicaId, nodeid_t nodeId);
+
 protected:
     int detectWorkers();
+
+    int detectWorkersInReplica(replicaid_t replicaId, size_t& detected, size_t& good);
 
     void updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode, ZNode& znode);
 

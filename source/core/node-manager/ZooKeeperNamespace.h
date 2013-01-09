@@ -64,10 +64,11 @@ class ZooKeeperNamespace
     // Define znode names for zookeeper namespace of SF1
     static std::string sf1rCluster_;
 
-    static const std::string primaryNodes_;
     static const std::string primary_;
+    static const std::string searchPrimaryNodes_;
     static const std::string searchTopology_;
     static const std::string searchServers_;
+    static const std::string recommendPrimaryNodes_;
     static const std::string recommendTopology_;
     static const std::string recommendServers_;
     static const std::string replica_;
@@ -88,19 +89,20 @@ public:
         return sf1rCluster_;
     }
 
-    static std::string getPrimaryBasePath()
+    static std::string getSearchPrimaryBasePath()
     {
-        return sf1rCluster_ + primaryNodes_;
+        return sf1rCluster_ + searchPrimaryNodes_;
     }
-    static std::string getPrimaryNodeParentPath(nodeid_t nodeId)
+    static std::string getSearchPrimaryNodeParentPath(nodeid_t nodeId)
     {
         std::stringstream ss;
-        ss << sf1rCluster_ << primaryNodes_ << node_ << nodeId;
+        ss << sf1rCluster_ << searchPrimaryNodes_ << node_ << nodeId;
         return ss.str();
     }
-    static std::string getPrimaryNodePath(nodeid_t nodeId)
+
+    static std::string getSearchPrimaryNodePath(nodeid_t nodeId)
     {
-        return getPrimaryNodeParentPath(nodeId) + primary_;
+        return getSearchPrimaryNodeParentPath(nodeId) + primary_;
     }
 
     /// Search
@@ -133,6 +135,22 @@ public:
         ss <<sf1rCluster_<<searchTopology_<<replica_<<replicaId<<node_<<nodeId;
 
         return ss.str();
+    }
+
+    static std::string getRecommendPrimaryBasePath()
+    {
+        return sf1rCluster_ + recommendPrimaryNodes_;
+    }
+    static std::string getRecommendPrimaryNodeParentPath(nodeid_t nodeId)
+    {
+        std::stringstream ss;
+        ss << sf1rCluster_ << recommendPrimaryNodes_ << node_ << nodeId;
+        return ss.str();
+    }
+
+    static std::string getRecommendPrimaryNodePath(nodeid_t nodeId)
+    {
+        return getRecommendPrimaryNodeParentPath(nodeId) + primary_;
     }
 
     /// Recommend
@@ -189,6 +207,8 @@ public:
     const static char* KEY_SHARD_ID;
     const static char* KEY_REPLICA_ID;
     const static char* KEY_COLLECTION;
+    const static char* KEY_NODE_STATE;
+    const static char* KEY_SELF_REG_PRIMARY_PATH;
 
     const static char* KEY_FILE;
     const static char* KEY_DIR;

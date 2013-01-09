@@ -9,6 +9,7 @@
 
 #include "NodeManagerBase.h"
 #include "RecommendMasterManager.h"
+#include "RequestLog.h"
 #include <aggregator-manager/MasterServerConnector.h>
 
 #include <util/singleton.h>
@@ -22,6 +23,8 @@ public:
     RecommendNodeManager()
     {
         CLASSNAME = "RecommendNodeManager";
+        reqlog_mgr_.reset(new ReqLogMgr());
+        reqlog_mgr_->init("./request_log/" + CLASSNAME);
     }
 
     static RecommendNodeManager* get()
@@ -37,6 +40,9 @@ protected:
         topologyPath_ = ZooKeeperNamespace::getRecommendTopologyPath();
         replicaPath_ = ZooKeeperNamespace::getRecommendReplicaPath(sf1rTopology_.curNode_.replicaId_);
         nodePath_ = ZooKeeperNamespace::getRecommendNodePath(sf1rTopology_.curNode_.replicaId_, sf1rTopology_.curNode_.nodeId_);
+        primaryBasePath_ = ZooKeeperNamespace::getRecommendPrimaryBasePath();
+        primaryNodeParentPath_ = ZooKeeperNamespace::getRecommendPrimaryNodeParentPath(sf1rTopology_.curNode_.nodeId_);
+        primaryNodePath_ = ZooKeeperNamespace::getRecommendPrimaryNodePath(sf1rTopology_.curNode_.nodeId_);
     }
 
     virtual void startMasterManager()

@@ -36,6 +36,13 @@ protected:
     {
         return ZooKeeperNamespace::getSearchNodePath(replicaId, nodeId);
     }
+
+    virtual std::string getPrimaryNodeParentPath(nodeid_t nodeId)
+    {
+        return ZooKeeperNamespace::getSearchPrimaryNodeParentPath(nodeId);
+    }
+
+
 };
 
 

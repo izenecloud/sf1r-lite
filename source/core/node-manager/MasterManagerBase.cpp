@@ -143,12 +143,12 @@ void MasterManagerBase::onNodeCreated(const std::string& path)
         // try recover
         recover(path);
     }
-    else if (masterState_ == MASTER_STATE_STARTED
-                 && masterState_ != MASTER_STATE_FAILOVERING)
-    {
-        // try recover
-        failover(path);
-    }
+    //else if (masterState_ == MASTER_STATE_STARTED
+    //             && masterState_ != MASTER_STATE_FAILOVERING)
+    //{
+    //    // try recover
+    //    failover(path);
+    //}
 }
 
 void MasterManagerBase::onNodeDeleted(const std::string& path)
@@ -259,14 +259,11 @@ void MasterManagerBase::doStart()
     registerSearchServer();
 }
 
-int MasterManagerBase::detectWorkers()
+int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& detected, size_t& good)
 {
-    boost::lock_guard<boost::mutex> lock(workers_mutex_);
-
-    // detect workers from "current" replica, may check other replica
-    replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
-
-    size_t detected = 0, good = 0;
+    bool mine_primary = isMinePrimary();
+    if (mine_primary)
+        LOG(INFO) << "I am primary master ";
     for (uint32_t nodeid = 1; nodeid <= sf1rTopology_.nodeNum_; nodeid++)
     {
         std::string data;
@@ -279,6 +276,16 @@ int MasterManagerBase::detectWorkers()
             // if this sf1r node provides worker server
             if (znode.hasKey(ZNode::KEY_WORKER_PORT))
             {
+                if (mine_primary)
+                {
+                    if(!isPrimaryWorker(replicaId, nodeid))
+                    {
+                        LOG(INFO) << "primary master need detect primary worker, ignore non-primary worker";
+                        LOG (INFO) << "node " << nodeid << ", replica: " << replicaId;
+                        continue;
+                    }
+                }
+
                 shardid_t shardid = znode.getUInt32Value(ZNode::KEY_SHARD_ID);
                 if (shardid > 0 && shardid <= sf1rTopology_.curNode_.master_.totalShardNum_)
                 {
@@ -348,7 +355,33 @@ int MasterManagerBase::detectWorkers()
         LOG (INFO) << CLASSNAME << " detected " << detected << " workers (good " << good
                    << "), all " << sf1rTopology_.curNode_.master_.totalShardNum_ << std::endl;
     }
+    return good;
+}
 
+int MasterManagerBase::detectWorkers()
+{
+    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+
+    size_t detected = 0;
+    size_t good = 0;
+    // detect workers from "current" replica first
+    replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
+    detectWorkersInReplica(replicaId, detected, good);
+
+    for (size_t i = 0; i < replicaIdList_.size(); i++)
+    {
+        if (masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
+        {
+            LOG(INFO) << "detected worker enough, stop detect other replica.";
+            break;
+        }
+        if (replicaId == replicaIdList_[i])
+            continue;
+        // not enough, check other replica
+        LOG(INFO) << "begin detect workers in other replica : " << replicaIdList_[i];
+        detectWorkersInReplica(replicaIdList_[i], detected, good);
+    }
+    //
     // update workers' info to aggregators
     resetAggregatorConfig();
 
@@ -410,6 +443,8 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
         try
         {
             replicaIdList_.push_back(boost::lexical_cast<replicaid_t>(sreplicaId));
+            LOG (INFO) << " detected replica id \"" << sreplicaId
+                        << "\" for " << childrenList[i];
         }
         catch (std::exception& e) {
             LOG (ERROR) << CLASSNAME << " failed to parse replica id \"" << sreplicaId
@@ -471,6 +506,9 @@ void MasterManagerBase::failover(const std::string& zpath)
 bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
 {
     sf1rNode->worker_.isGood_ = false;
+    bool mine_primary = isMinePrimary();
+    if (mine_primary)
+        LOG(INFO) << "I am primary master ";
     for (size_t i = 0; i < replicaIdList_.size(); i++)
     {
         if (replicaIdList_[i] != sf1rNode->replicaId_)
@@ -482,6 +520,15 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
             // get node data
             if (zookeeper_->getZNodeData(nodePath, sdata, ZooKeeper::WATCH))
             {
+                if (mine_primary)
+                {
+                    if(!isPrimaryWorker(replicaIdList_[i], sf1rNode->nodeId_))
+                    {
+                        LOG(INFO) << "primary master need failover to primary worker, ignore non-primary worker";
+                        LOG (INFO) << "node " << sf1rNode->nodeId_ << " ,replica: " << replicaIdList_[i];
+                        continue;
+                    }
+                }
                 znode.loadKvString(sdata);
                 shardid_t shardid = znode.getUInt32Value(ZNode::KEY_SHARD_ID);
                 if (shardid == sf1rNode->worker_.shardId_)
@@ -534,11 +581,25 @@ void MasterManagerBase::recover(const std::string& zpath)
     masterState_ = MASTER_STATE_RECOVERING;
 
     WorkerMapT::iterator it;
+    bool mine_primary = isMinePrimary();
+    if (mine_primary)
+        LOG(INFO) << "I am primary master ";
+
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
         boost::shared_ptr<Sf1rNode>& sf1rNode = it->second;
         if (zpath == getNodePath(sf1rTopology_.curNode_.replicaId_, sf1rNode->nodeId_))
         {
+            if (mine_primary)
+            {
+                if(!isPrimaryWorker(sf1rTopology_.curNode_.replicaId_, sf1rNode->nodeId_))
+                {
+                    LOG(INFO) << "primary master need recover to primary worker, ignore non-primary worker";
+                    LOG (INFO) << "node " << sf1rNode->nodeId_ << " ,replica: " << sf1rTopology_.curNode_.replicaId_;
+                    continue;
+                }
+            }
+
             LOG (INFO) << "recover: node " << sf1rNode->nodeId_
                        << " recovered in current replica " << sf1rTopology_.curNode_.replicaId_;
 
@@ -633,6 +694,34 @@ void MasterManagerBase::resetAggregatorConfig()
     }
 }
 
+bool MasterManagerBase::isPrimaryWorker(replicaid_t replicaId, nodeid_t nodeId)
+{
+    std::string nodepath = getNodePath(replicaId,  nodeId);
+    std::string sdata;
+    if (zookeeper_->getZNodeData(nodepath, sdata))
+    {
+        ZNode znode;
+        znode.loadKvString(sdata);
+        std::string self_reg_primary = znode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
+        std::vector<std::string> node_list;
+        zookeeper_->getZNodeChildren(getPrimaryNodeParentPath(nodeId), node_list);
+        if (node_list.empty())
+        {
+            LOG(INFO) << "no any primary node for node id: " << nodeId;
+            return false;
+        }
+        return self_reg_primary == node_list[0];
+    }
+    else
+        return false;
+}
+
+bool MasterManagerBase::isMinePrimary()
+{
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return false;
+    return isPrimaryWorker(sf1rTopology_.curNode_.replicaId_,  sf1rTopology_.curNode_.nodeId_);
+}
 
 
 

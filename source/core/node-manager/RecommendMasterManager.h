@@ -39,6 +39,11 @@ protected:
     {
         return ZooKeeperNamespace::getRecommendNodePath(replicaId, nodeId);
     }
+
+    virtual std::string getPrimaryNodeParentPath(nodeid_t nodeId)
+    {
+        return ZooKeeperNamespace::getRecommendPrimaryNodeParentPath(nodeId);
+    }
 };
 
 }
