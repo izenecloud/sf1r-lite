@@ -1142,6 +1142,7 @@ bool ProductMatcher::ProcessBook(const Document& doc, Product& result_product)
         if(!isbn_value.empty())
         {
             result_product.spid = B5MHelper::GetPidByIsbn(isbn_value);
+            result_product.scategory = B5MHelper::BookCategoryName();
             return true;
         }
     }
