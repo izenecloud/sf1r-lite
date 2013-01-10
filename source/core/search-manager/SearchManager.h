@@ -5,6 +5,7 @@
 #include "SearchManagerPreProcessor.h"
 #include "SearchThreadWorker.h"
 #include "SearchThreadMaster.h"
+#include "TopKReranker.h"
 #include <configuration-manager/PropertyConfig.h>
 #include <ir/id_manager/IDManager.h>
 
@@ -24,7 +25,6 @@ class DocumentManager;
 class RankingManager;
 class IndexManager;
 class MiningManager;
-class ProductRankerFactory;
 
 class SearchManager
 {
@@ -65,10 +65,6 @@ public:
         std::size_t limit,
         std::size_t offset);
 
-    bool rerank(
-        const KeywordSearchActionItem& actionItem,
-        KeywordSearchResult& resultItem);
-
     void reset_filter_cache();
 
     void setMiningManager(
@@ -93,6 +89,9 @@ private:
     ProductRankerFactory* productRankerFactory_;
 
     score_t fuzzyScoreWeight_;
+
+public:
+    TopKReranker topKReranker_;
 };
 
 } // end - namespace sf1r

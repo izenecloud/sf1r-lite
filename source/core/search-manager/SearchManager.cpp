@@ -9,15 +9,10 @@
 #include <query-manager/SearchKeywordOperation.h>
 #include <query-manager/ActionItem.h>
 #include <common/ResultType.h>
-
 #include <common/PropSharedLockSet.h>
 #include <mining-manager/MiningManager.h>
-#include <mining-manager/group-manager/GroupFilterBuilder.h>
-#include <mining-manager/product-ranker/ProductRankerFactory.h>
-#include <mining-manager/product-ranker/ProductRanker.h>
-#include <mining-manager/product-ranker/ProductRankParam.h>
 
-#include <util/ClockTimer.h>
+#include <glog/logging.h>
 
 namespace sf1r
 {
@@ -31,6 +26,7 @@ SearchManager::SearchManager(
     IndexBundleConfiguration* config)
     : productRankerFactory_(NULL)
     , fuzzyScoreWeight_(0)
+    , topKReranker_(preprocessor_)
 {
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
             iter != indexSchema.end(); ++iter)
@@ -59,35 +55,6 @@ SearchManager::SearchManager(
                                                      *searchThreadWorker_));
 }
 
-bool SearchManager::rerank(
-    const KeywordSearchActionItem& actionItem,
-    KeywordSearchResult& resultItem)
-{
-    if (productRankerFactory_ &&
-            resultItem.topKCustomRankScoreList_.empty() &&
-            preprocessor_.isNeedRerank(actionItem))
-    {
-        izenelib::util::ClockTimer timer;
-
-        ProductRankParam rankParam(resultItem.topKDocs_,
-                                   resultItem.topKRankScoreList_,
-                                   actionItem.isRandomRank_);
-
-        boost::scoped_ptr<ProductRanker> productRanker(
-            productRankerFactory_->createProductRanker(rankParam));
-
-        productRanker->rank();
-
-        LOG(INFO) << "topK doc num: " << resultItem.topKDocs_.size()
-                  << ", product rerank costs: " << timer.elapsed()
-                  << " seconds";
-
-        return true;
-    }
-
-    return false;
-}
-
 void SearchManager::reset_filter_cache()
 {
     queryBuilder_->reset_cache();
@@ -103,8 +70,8 @@ void SearchManager::setMiningManager(
         return;
     }
 
-    productRankerFactory_ =
-        miningManager->GetProductRankerFactory();
+    topKReranker_.setProductRankerFactory(
+        miningManager->GetProductRankerFactory());
 
     preprocessor_.productScorerFactory_ =
         miningManager->GetProductScorerFactory();
