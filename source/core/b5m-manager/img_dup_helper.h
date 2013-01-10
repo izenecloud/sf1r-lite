@@ -15,6 +15,7 @@ namespace sf1r {
 
     struct PsmAttach
     {
+
         uint8_t id;
         friend class boost::serialization::access;
         template<class Archive>
@@ -27,11 +28,13 @@ namespace sf1r {
         {
             return true;
         }
+
         friend std::ostream& operator<<(std::ostream& out, const PsmAttach& attach)
         {
             out<<"id "<<attach.id;
             return out;
         }
+
     };
 
     class PsmHelper

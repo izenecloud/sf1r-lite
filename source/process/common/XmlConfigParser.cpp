@@ -1811,11 +1811,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 isRTypeNumeric = propIt->isRTypeNumeric();
             }
 
-            if (groupConfig.isNumericType() && !isRTypeNumeric)
+            if (groupConfig.isNumericType())
             {
-                throw XmlConfigParserException("As property ["+property_name+"] in <Group> is int or float type, "
-                                               "it needs to be configured as a filter property like below:\n"
-                                               "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
+                if (!isRTypeNumeric)
+                {
+                    throw XmlConfigParserException("As property ["+property_name+"] in <Group> is int or float type, "
+                                                   "it needs to be configured as a filter property like below:\n"
+                                                   "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
+                }
             }
             else if (!groupConfig.isStringType() &&
                      !groupConfig.isDateTimeType())

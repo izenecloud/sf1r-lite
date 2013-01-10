@@ -21,6 +21,7 @@ public:
     typedef boost::unique_lock<MutexType> ScopedWriteLock;
 
     class ScopedReadBoolLock;
+    class ScopedWriteBoolLock;
 
     virtual ~PropSharedLock() {}
 
@@ -48,6 +49,22 @@ public:
 
 private:
     PropSharedLock::ScopedReadLock lock_;
+};
+
+class PropSharedLock::ScopedWriteBoolLock
+{
+public:
+    ScopedWriteBoolLock(PropSharedLock::MutexType& mutex, bool isLock)
+        : lock_(mutex, boost::defer_lock)
+    {
+        if (isLock)
+        {
+            lock_.lock();
+        }
+    }
+
+private:
+    PropSharedLock::ScopedWriteLock lock_;
 };
 
 } // namespace sf1r
