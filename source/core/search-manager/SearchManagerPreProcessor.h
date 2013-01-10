@@ -10,7 +10,6 @@
 #include <types.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <algorithm>
@@ -19,16 +18,15 @@
 namespace sf1r
 {
 
-class SortPropertyCache;
 class Sorter;
 class NumericPropertyTableBase;
-class MiningManager;
 class DocumentIterator;
 class RankQueryProperty;
 class PropertyRanker;
 class ProductScorerFactory;
 class ProductScorer;
 class PropSharedLockSet;
+class NumericPropertyTableBuilder;
 
 class SearchManagerPreProcessor
 {
@@ -40,10 +38,7 @@ private:
 
     boost::unordered_map<std::string, PropertyConfig> schemaMap_;
     ProductScorerFactory* productScorerFactory_;
-
-    boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(
-        const std::string& propertyName,
-        SortPropertyCache* pSorterCache);
+    NumericPropertyTableBuilder* numericTableBuilder_;
 
     bool getPropertyTypeByName_(
         const std::string& name,
@@ -52,9 +47,7 @@ private:
     void prepare_sorter_customranker_(
         const SearchKeywordOperation& actionOperation,
         CustomRankerPtr& customRanker,
-        boost::shared_ptr<Sorter> &pSorter,
-        SortPropertyCache* pSorterCache,
-        boost::weak_ptr<MiningManager> miningManagerPtr);
+        boost::shared_ptr<Sorter>& pSorter);
 
     /**
      * rebuild custom ranker.
@@ -73,8 +66,7 @@ private:
     void fillSearchInfoWithSortPropertyData_(
         Sorter* pSorter,
         std::vector<unsigned int>& docIdList,
-        DistKeywordSearchInfo& distSearchInfo,
-        SortPropertyCache* pSorterCache);
+        DistKeywordSearchInfo& distSearchInfo);
 
     template<class UnaryOperator>
     void PreparePropertyList(

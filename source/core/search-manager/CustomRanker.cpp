@@ -1,5 +1,5 @@
 #include "CustomRanker.h"
-#include "Sorter.h"
+#include "NumericPropertyTableBuilder.h"
 
 using namespace sf1r;
 
@@ -116,14 +116,31 @@ bool CustomRanker::buildExpSyntaxTree(const ast_info_trees& astrees, ExpSyntaxTr
     return true;
 }
 
-bool CustomRanker::setInnerPropertyData(ExpSyntaxTreePtr& estree, SortPropertyCache* pPropertyData)
+bool CustomRanker::setPropertyData(NumericPropertyTableBuilder* numericTableBuilder)
+{
+    cout << "[CustomRanker] setting PropertyData ..." << endl;
+
+    if (!numericTableBuilder)
+    {
+        errorInfo_ = "NumericPropertyTableBuilder is NULL";
+        return false;
+    }
+
+    return setInnerPropertyData(ESTree_, *numericTableBuilder);
+}
+
+bool CustomRanker::setInnerPropertyData(
+    ExpSyntaxTreePtr& estree,
+    NumericPropertyTableBuilder& numericTableBuilder)
 {
     if (estree->type_ == ExpSyntaxTree::PARAMETER)
     {
-        PropertyDataType dataType = propertyDataTypeMap_[estree->name_];
-        estree->propertyData_ = pPropertyData->getSortPropertyData(estree->name_, dataType);
+        estree->propertyData_ =
+            numericTableBuilder.createPropertyTable(estree->name_);
+
         if (!estree->propertyData_)
         {
+            PropertyDataType dataType = propertyDataTypeMap_[estree->name_];
             stringstream ss;
             ss << "Failed to get sort data for property: " << estree->name_
                << " with data type: " << dataType << endl;
@@ -134,7 +151,7 @@ bool CustomRanker::setInnerPropertyData(ExpSyntaxTreePtr& estree, SortPropertyCa
 
     for (est_iterator iter = estree->children_.begin(); iter != estree->children_.end(); iter++)
     {
-        if (!setInnerPropertyData(*iter, pPropertyData))
+        if (!setInnerPropertyData(*iter, numericTableBuilder))
             return false;
     }
 

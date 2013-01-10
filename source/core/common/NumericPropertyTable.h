@@ -232,45 +232,55 @@ public:
 
     void setInt32Value(std::size_t pos, const int32_t& value)
     {
-        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
+        {
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
+        }
 
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
     void setFloatValue(std::size_t pos, const float& value)
     {
-        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
+        {
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
+        }
 
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
     void setInt64Value(std::size_t pos, const int64_t& value)
     {
-        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
+        {
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
+        }
 
-        data_[pos] = static_cast<T>(value);
+	data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
     void setDoubleValue(std::size_t pos, const double& value)
     {
-        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
+        {
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
+        }
 
         data_[pos] = static_cast<T>(value);
         dirty_ = true;
     }
     bool setStringValue(std::size_t pos, const std::string& value)
     {
-        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
+        {
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
+        }
 
         try
         {
@@ -286,9 +296,11 @@ public:
 
     void setValue(std::size_t pos, const T& value)
     {
-        ScopedWriteLock lock(mutex_);
         if (pos >= data_.size())
+        {
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
+        }
 
         data_[pos] = value;
         dirty_ = true;
@@ -400,9 +412,11 @@ inline bool NumericPropertyTable<float>::getStringValue(std::size_t pos, std::st
 template <>
 inline bool NumericPropertyTable<int8_t>::setStringValue(std::size_t pos, const std::string& value)
 {
-    ScopedWriteLock lock(mutex_);
     if (pos >= data_.size())
+    {
+        ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
         data_.resize(pos + 1, invalidValue_);
+    }
 
     try
     {

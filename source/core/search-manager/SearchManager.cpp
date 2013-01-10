@@ -78,7 +78,6 @@ SearchManager::SearchManager(
         preprocessor_->schemaMap_[iter->getName()] = *iter;
     }
 
-    pSorterCache_ = new SortPropertyCache(documentManagerPtr_.get(), indexManagerPtr_.get(), config);
     queryBuilder_.reset(new QueryBuilder(
                             indexManager,
                             documentManager,
@@ -100,8 +99,6 @@ SearchManager::SearchManager(
 
 SearchManager::~SearchManager()
 {
-    if (pSorterCache_)
-        delete pSorterCache_;
     delete preprocessor_;
 }
 
@@ -118,6 +115,11 @@ void SearchManager::setProductScorerFactory(ProductScorerFactory* productScorerF
 void SearchManager::setProductRankerFactory(ProductRankerFactory* productRankerFactory)
 {
     productRankerFactory_ = productRankerFactory;
+}
+
+void SearchManager::setNumericTableBuilder(NumericPropertyTableBuilder* numericTableBuilder)
+{
+    preprocessor_->numericTableBuilder_ = numericTableBuilder;
 }
 
 bool SearchManager::rerank(
@@ -149,11 +151,6 @@ bool SearchManager::rerank(
     return false;
 }
 
-void SearchManager::reset_all_property_cache()
-{
-    pSorterCache_->setDirty(true);
-}
-
 void SearchManager::reset_filter_cache()
 {
     queryBuilder_->reset_cache();
@@ -168,11 +165,6 @@ void SearchManager::setMiningManager(
     boost::shared_ptr<MiningManager> miningManagerPtr)
 {
     miningManagerPtr_ = miningManagerPtr;
-}
-
-boost::shared_ptr<NumericPropertyTableBase>& SearchManager::createPropertyTable(const std::string& propertyName)
-{
-    return preprocessor_->createPropertyTable(propertyName, pSorterCache_);
 }
 
 bool SearchManager::search(
@@ -442,9 +434,9 @@ bool SearchManager::fetchSearchResult_(
         {
             // all sorters will be the same after searching,
             // so we can just use any sorter.
-            fillSearchInfoWithSortPropertyData_(pSorter.get(),
-                                                docIdList,
-                                                distSearchInfo);
+            preprocessor_->fillSearchInfoWithSortPropertyData_(pSorter.get(),
+                                                               docIdList,
+                                                               distSearchInfo);
         }
         catch (const std::exception& e)
         {
@@ -578,7 +570,10 @@ bool SearchManager::doSearchInThread(SearchThreadParam& pParam)
 
     try
     {
-        prepare_sorter_customranker_(actionOperation, pParam.customRanker, pParam.pSorter);
+        preprocessor_->prepare_sorter_customranker_(actionOperation,
+                                                    pParam.customRanker,
+                                                    pParam.pSorter);
+
     }
     catch (std::exception& e)
     {
@@ -860,23 +855,6 @@ bool SearchManager::doSearch_(
     return true;
 }
 
-void SearchManager::prepare_sorter_customranker_(
-    const SearchKeywordOperation& actionOperation,
-    CustomRankerPtr& customRanker,
-    boost::shared_ptr<Sorter> &pSorter)
-{
-    preprocessor_->prepare_sorter_customranker_(actionOperation, customRanker, pSorter,
-            pSorterCache_, miningManagerPtr_);
-}
-
-void SearchManager::fillSearchInfoWithSortPropertyData_(
-    Sorter* pSorter,
-    std::vector<unsigned int>& docIdList,
-    DistKeywordSearchInfo& distSearchInfo)
-{
-    preprocessor_->fillSearchInfoWithSortPropertyData_(pSorter, docIdList, distSearchInfo, pSorterCache_);
-}
-
 DocumentIterator* SearchManager::combineCustomDocIterator_(
     const KeywordSearchActionItem& actionItem,
     DocumentIterator* originDocIterator)
@@ -917,7 +895,9 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     boost::shared_ptr<Sorter> pSorter;
     try
     {
-        prepare_sorter_customranker_(actionOperation, customRanker, pSorter);
+        preprocessor_->prepare_sorter_customranker_(actionOperation,
+                                                    customRanker,
+                                                    pSorter);
     }
     catch (std::exception& e)
     {

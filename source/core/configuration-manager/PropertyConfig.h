@@ -209,6 +209,13 @@ public:
         brtype_ = rtype;
     }
 
+    inline bool isRTypeNumeric() const
+    {
+        return isIndex() && !isAnalyzed() &&
+            getIsFilter() && !getIsMultiValue() &&
+            (isNumericType() || propertyType_ == DATETIME_PROPERTY_TYPE);
+    }
+
     inline bool isNumericType() const
     {
         return (propertyType_ == INT32_PROPERTY_TYPE

@@ -98,7 +98,7 @@ class PropertySortedHitQueue : public HitQueue
             : pSorter_(pSorter)
         {
             if(pSorter)
-                pSorter->getComparators(propSharedLockSet);
+                pSorter->createComparators(propSharedLockSet);
             initialize(size);
         }
     protected:
