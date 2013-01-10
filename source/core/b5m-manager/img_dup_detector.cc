@@ -856,7 +856,7 @@ bool ImgDupDetector::WriteFile(const std::string& filename)
             {
                 UString itemcount;
                 itemcount.assign("1", izenelib::util::UString::UTF_8);
-                scddoc.push_back(std::pair<std::string, UString>("ItemCount", itemcount));
+                scddoc.push_back(std::pair<std::string, UString>("GMemCount", itemcount));
                 writer1.Append(scddoc);
             }
             else
@@ -864,7 +864,7 @@ bool ImgDupDetector::WriteFile(const std::string& filename)
                 UString itemcount;
                 std::string count = boost::lexical_cast<std::string> (iter->second.size()+1);
                 itemcount.assign(count, izenelib::util::UString::UTF_8);
-                scddoc.push_back(std::pair<std::string, UString>("ItemCount", itemcount));
+                scddoc.push_back(std::pair<std::string, UString>("GMemCount", itemcount));
                 writer1.Append(scddoc);
             }
         }
