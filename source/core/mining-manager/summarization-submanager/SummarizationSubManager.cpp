@@ -143,7 +143,7 @@ MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 }
 
 void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename 
-                                , const std::set<docid_t>& del_docid_set
+                                , const std::set<KeyType>& del_docid_set
                                 , fstream& os)
 {
     std::string ScdName_new = opinion_scd_writer_->GenSCDFileName(UPDATE_SCD);
@@ -182,7 +182,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
                     std::string key_str;
                     const izenelib::util::UString & propertyValueU = p->second; // preventing copy
                     propertyValueU.convertString(key_str, izenelib::util::UString::UTF_8);
-                    docid_t docid = Utilities::uuidToUint128(key_str);
+                    KeyType docid = Utilities::uuidToUint128(key_str);
                     if (del_docid_set.find(docid) != del_docid_set.end())
                         break;
                     outNewScd << "<" << fieldStr << ">" << key_str << endl;
@@ -216,11 +216,10 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     std::string scoreScdName = "B-00-201001071530-00001-U-C.SCD";
     
     std::vector<docid_t> del_docid_list;
-    std::set<docid_t> del_docid_set;
+    std::set<KeyType> del_key_set;
     document_manager_->getDeletedDocIdList(del_docid_list);
     for(unsigned int i = 0; i < del_docid_list.size();++i)
     {
-        del_docid_set.insert(del_docid_list[i]);
         Document doc;
         bool b = document_manager_->getDocument(i, doc);
         if(!b) continue;
@@ -230,10 +229,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         const UString& key = kit->second.get<UString>();
         if (key.empty()) continue;
         comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key), i);
+        del_key_set.insert(Utilities::md5ToUint128(key));
     }
 
-    dealTotalScd(opinionScdName, del_docid_set, total_Opinion_Scd_);
-    dealTotalScd(scoreScdName, del_docid_set, total_Score_Scd_);
+    dealTotalScd(opinionScdName, del_key_set, total_Opinion_Scd_);
+    dealTotalScd(scoreScdName, del_key_set, total_Score_Scd_);
 
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
@@ -457,7 +457,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     }
 
     comment_cache_storage_->ClearDirtyKey();
-
+    //sync data;
     std::string controlfilePath_str = homePath_ + "/" + scd_control_recevier;
     boost::filesystem::path controlfilePath(controlfilePath_str);
     bool isFull = false;
@@ -507,6 +507,25 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     total_Opinion_Scd_.close();
     total_Score_Scd_.close();
     LOG(INFO) << "Finish evaluating summarization.";
+}
+
+void MultiDocSummarizationSubManager::syncFullSummScd()
+{
+    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
+    LOG(INFO) << "Send Total SCD files..." << endl;
+    SynchroData syncTotalData;
+    syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+    syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+    syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
+
+    if (syncProducer->produce(syncTotalData))
+    {
+        syncProducer->wait();
+    }
+    else
+    {
+        LOG(WARNING) << "produce syncData error";
+    }
 }
 
 void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)

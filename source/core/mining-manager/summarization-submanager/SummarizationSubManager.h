@@ -53,10 +53,11 @@ public:
     bool GetSummarizationByRawKey(
             const izenelib::util::UString& rawKey,
             Summarization& result);
-
+    
+    void syncFullSummScd();
 private:
     void dealTotalScd(const std::string& filename 
-            , const std::set<docid_t>& del_docid_set
+            , const std::set<KeyType>& del_docid_set
             , fstream& os);
 
     bool DoEvaluateSummarization_(

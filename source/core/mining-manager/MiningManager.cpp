@@ -533,10 +533,6 @@ bool MiningManager::open()
                 //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
             }
         }
-        else // means need SummarizationData...
-        {
-            
-        }
 
         /** Suffix Match */
         if (mining_schema_.suffixmatch_schema.suffix_match_enable)
@@ -734,15 +730,29 @@ void MiningManager::DoContinue()
     try
     {
         std::string continue_file = collectionDataPath_+"/continue";
+        std::string syncFullScd_file = collectionDataPath_ + "/summarization" + "/full";
         if (boost::filesystem::exists(continue_file))
         {
             boost::filesystem::remove_all(continue_file);
             DoMiningCollection();
         }
+        if (boost::filesystem::exists(syncFullScd_file))
+        {
+            boost::filesystem::remove_all(syncFullScd_file);
+            DoSyncFullSummScd();
+        }
     }
     catch (std::exception& ex)
     {
         std::cerr<<ex.what()<<std::endl;
+    }
+}
+
+void MiningManager::DoSyncFullSummScd()
+{
+    if (mining_schema_.summarization_enable)
+    {
+        summarizationManager_->syncFullSummScd();
     }
 }
 
