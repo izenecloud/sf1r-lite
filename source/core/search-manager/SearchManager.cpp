@@ -30,6 +30,7 @@ SearchManager::SearchManager(
     const boost::shared_ptr<RankingManager>& rankingManager,
     IndexBundleConfiguration* config)
     : productRankerFactory_(NULL)
+    , fuzzyScoreWeight_(0)
 {
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
             iter != indexSchema.end(); ++iter)
@@ -56,26 +57,6 @@ SearchManager::SearchManager(
                                                      preprocessor_,
                                                      documentManager,
                                                      *searchThreadWorker_));
-}
-
-void SearchManager::setCustomRankManager(CustomRankManager* customRankManager)
-{
-    searchThreadWorker_->setCustomRankManager(customRankManager);
-}
-
-void SearchManager::setProductScorerFactory(ProductScorerFactory* productScorerFactory)
-{
-    preprocessor_.productScorerFactory_ = productScorerFactory;
-}
-
-void SearchManager::setNumericTableBuilder(NumericPropertyTableBuilder* numericTableBuilder)
-{
-    preprocessor_.numericTableBuilder_ = numericTableBuilder;
-}
-
-void SearchManager::setProductRankerFactory(ProductRankerFactory* productRankerFactory)
-{
-    productRankerFactory_ = productRankerFactory;
 }
 
 bool SearchManager::rerank(
@@ -112,15 +93,32 @@ void SearchManager::reset_filter_cache()
     queryBuilder_->reset_cache();
 }
 
-void SearchManager::setGroupFilterBuilder(faceted::GroupFilterBuilder* builder)
-{
-    searchThreadWorker_->setGroupFilterBuilder(builder);
-}
-
 void SearchManager::setMiningManager(
-    boost::shared_ptr<MiningManager> miningManagerPtr)
+    const boost::shared_ptr<MiningManager>& miningManager)
 {
-    miningManagerPtr_ = miningManagerPtr;
+    if (!miningManager)
+    {
+        LOG(WARNING) << "as MininghManager is uninitialized, "
+                     << "some functions in SearchManager would not work!";
+        return;
+    }
+
+    productRankerFactory_ =
+        miningManager->GetProductRankerFactory();
+
+    preprocessor_.productScorerFactory_ =
+        miningManager->GetProductScorerFactory();
+
+    preprocessor_.numericTableBuilder_ =
+        miningManager->GetNumericTableBuilder();
+
+    searchThreadWorker_->setGroupFilterBuilder(
+        miningManager->GetGroupFilterBuilder());
+
+    searchThreadWorker_->setCustomRankManager(
+        miningManager->GetCustomRankManager());
+
+    fuzzyScoreWeight_ = getFuzzyScoreWeight_(miningManager);
 }
 
 bool SearchManager::search(
@@ -186,16 +184,14 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     }
 
     ScoreDocEvaluator scoreDocEvaluator(productScorer, customRanker);
-    const score_t fuzzyScoreWeight = getFuzzyScoreWeight_();
-
     const std::size_t count = docid_list.size();
     result_score_list.resize(count);
     custom_score_list.resize(count);
 
     boost::scoped_ptr<HitQueue> scoreItemQueue;
-    ///sortby
     if (pSorter)
     {
+        ///sortby
         scoreItemQueue.reset(new PropertySortedHitQueue(pSorter,
                                                         count,
                                                         propSharedLockSet));
@@ -218,7 +214,7 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
         }
         else
         {
-            tmpdoc.score += fuzzyScore * fuzzyScoreWeight;
+            tmpdoc.score += fuzzyScore * fuzzyScoreWeight_;
         }
 
         scoreItemQueue->insert(tmpdoc);
@@ -240,17 +236,9 @@ void SearchManager::rankDocIdListForFuzzySearch(const SearchKeywordOperation& ac
     }
 }
 
-score_t SearchManager::getFuzzyScoreWeight_() const
+score_t SearchManager::getFuzzyScoreWeight_(
+    const boost::shared_ptr<MiningManager>& miningManager) const
 {
-    boost::shared_ptr<MiningManager> miningManager = miningManagerPtr_.lock();
-
-    if (!miningManager)
-    {
-        LOG(WARNING) << "as SearchManager::miningManagerPtr_ is uninitialized, "
-                     << "the fuzzy score weight would be zero";
-        return 0;
-    }
-
     const MiningSchema& miningSchema = miningManager->getMiningSchema();
     const ProductScoreConfig& fuzzyConfig =
         miningSchema.product_ranking_config.scores[FUZZY_SCORE];

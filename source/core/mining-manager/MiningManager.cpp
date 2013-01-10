@@ -144,6 +144,7 @@ MiningManager::MiningManager(
     , numericTableBuilder_(NULL)
     , groupManager_(NULL)
     , attrManager_(NULL)
+    , groupFilterBuilder_(NULL)
     , merchantScoreManager_(NULL)
     , customDocIdConverter_(NULL)
     , customRankManager_(NULL)
@@ -176,6 +177,7 @@ MiningManager::~MiningManager()
     if (customRankManager_) delete customRankManager_;
     if (customDocIdConverter_) delete customDocIdConverter_;
     if (merchantScoreManager_) delete merchantScoreManager_;
+    if (groupFilterBuilder_) delete groupFilterBuilder_;
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
     if (numericTableBuilder_) delete numericTableBuilder_;
@@ -399,9 +401,9 @@ bool MiningManager::open()
             }
         }
 
+        if (numericTableBuilder_) delete numericTableBuilder_;
         numericTableBuilder_ = new NumericPropertyTableBuilderImpl(
             *document_manager_, ctrManager_.get());
-        searchManager_->setNumericTableBuilder(numericTableBuilder_);
 
         /** group */
         if (mining_schema_.group_enable)
@@ -443,13 +445,13 @@ bool MiningManager::open()
 
         if (groupManager_ || attrManager_)
         {
-            faceted::GroupFilterBuilder* filterBuilder =
-                new faceted::GroupFilterBuilder(
-                        mining_schema_.group_config_map,
-                        groupManager_,
-                        attrManager_,
-                        numericTableBuilder_);
-            searchManager_->setGroupFilterBuilder(filterBuilder);
+            if (groupFilterBuilder_) delete groupFilterBuilder_;
+
+            groupFilterBuilder_ = new faceted::GroupFilterBuilder(
+                mining_schema_.group_config_map,
+                groupManager_,
+                attrManager_,
+                numericTableBuilder_);
         }
 
         /** group label log */
@@ -1999,17 +2001,6 @@ bool MiningManager::GetSuffixMatch(
 
         if (groupManager_ || attrManager_)
         {
-            if (!groupFilterBuilder_)
-            {
-                faceted::GroupFilterBuilder* filterBuilder =
-                    new faceted::GroupFilterBuilder(
-                        mining_schema_.group_config_map,
-                        groupManager_,
-                        attrManager_,
-                        numericTableBuilder_);
-                groupFilterBuilder_.reset(filterBuilder);
-            }
-
             PropSharedLockSet propSharedLockSet;
             boost::scoped_ptr<faceted::GroupFilter> groupFilter;
             if (groupFilterBuilder_)
@@ -2339,8 +2330,6 @@ bool MiningManager::initProductScorerFactory_(const ProductRankingConfig& rankCo
     }
 
     productScorerFactory_ = new ProductScorerFactory(rankConfig, *this);
-    searchManager_->setCustomRankManager(customRankManager_);
-    searchManager_->setProductScorerFactory(productScorerFactory_);
     return true;
 }
 
@@ -2370,6 +2359,5 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
     if (productRankerFactory_) delete productRankerFactory_;
     productRankerFactory_ = new ProductRankerFactory(rankConfig,
                                                      diversityValueTable);
-    searchManager_->setProductRankerFactory(productRankerFactory_);
     return true;
 }

@@ -14,6 +14,7 @@
 #include <document-manager/DocumentManager.h>
 #include <index-manager/IndexManager.h>
 #include <ranking-manager/RankingManager.h>
+#include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
 #include <mining-manager/product-scorer/RelevanceScorer.h>
 #include <mining-manager/custom-rank-manager/CustomRankManager.h>
@@ -37,14 +38,15 @@ SearchThreadWorker::SearchThreadWorker(
     , rankingManagerPtr_(rankingManager)
     , preprocessor_(preprocessor)
     , queryBuilder_(queryBuilder)
+    , groupFilterBuilder_(NULL)
     , customRankManager_(NULL)
 {
     rankingManagerPtr_->getPropertyWeightMap(propertyWeightMap_);
 }
 
-void SearchThreadWorker::setGroupFilterBuilder(faceted::GroupFilterBuilder* builder)
+void SearchThreadWorker::setGroupFilterBuilder(const faceted::GroupFilterBuilder* builder)
 {
-    groupFilterBuilder_.reset(builder);
+    groupFilterBuilder_ = builder;
 }
 
 void SearchThreadWorker::setCustomRankManager(CustomRankManager* customRankManager)

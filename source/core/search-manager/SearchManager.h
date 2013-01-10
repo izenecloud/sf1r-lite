@@ -10,7 +10,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #include <vector>
 
 using izenelib::ir::idmanager::IDManager;
@@ -25,12 +24,7 @@ class DocumentManager;
 class RankingManager;
 class IndexManager;
 class MiningManager;
-class CustomRankManager;
-class ProductScorerFactory;
 class ProductRankerFactory;
-class NumericPropertyTableBuilder;
-
-namespace faceted { class GroupFilterBuilder; }
 
 class SearchManager
 {
@@ -77,17 +71,8 @@ public:
 
     void reset_filter_cache();
 
-    void setGroupFilterBuilder(faceted::GroupFilterBuilder* builder);
-
-    void setMiningManager(boost::shared_ptr<MiningManager> miningManagerPtr);
-
-    void setCustomRankManager(CustomRankManager* customRankManager);
-
-    void setProductScorerFactory(ProductScorerFactory* productScorerFactory);
-
-    void setNumericTableBuilder(NumericPropertyTableBuilder* numericTableBuilder);
-
-    void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
+    void setMiningManager(
+        const boost::shared_ptr<MiningManager>& miningManager);
 
     QueryBuilder* getQueryBuilder()
     {
@@ -95,7 +80,8 @@ public:
     }
 
 private:
-    score_t getFuzzyScoreWeight_() const;
+    score_t getFuzzyScoreWeight_(
+        const boost::shared_ptr<MiningManager>& miningManager) const;
 
 private:
     SearchManagerPreProcessor preprocessor_;
@@ -104,8 +90,9 @@ private:
     boost::scoped_ptr<SearchThreadWorker> searchThreadWorker_;
     boost::scoped_ptr<SearchThreadMaster> searchThreadMaster_;
 
-    boost::weak_ptr<MiningManager> miningManagerPtr_;
     ProductRankerFactory* productRankerFactory_;
+
+    score_t fuzzyScoreWeight_;
 };
 
 } // end - namespace sf1r

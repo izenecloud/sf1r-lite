@@ -8,11 +8,9 @@
 #ifndef SF1R_SEARCH_THREAD_WORKER_H
 #define SF1R_SEARCH_THREAD_WORKER_H
 
-#include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <common/inttypes.h>
 #include <map>
 #include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 
 namespace sf1r
 {
@@ -30,7 +28,11 @@ class IndexBundleConfiguration;
 class RankingManager;
 struct SearchThreadParam;
 
-namespace faceted { class GroupFilter; }
+namespace faceted
+{
+class GroupFilter;
+class GroupFilterBuilder;
+}
 
 class SearchThreadWorker
 {
@@ -43,7 +45,7 @@ public:
         SearchManagerPreProcessor& preprocessor,
         QueryBuilder& queryBuilder);
 
-    void setGroupFilterBuilder(faceted::GroupFilterBuilder* builder);
+    void setGroupFilterBuilder(const faceted::GroupFilterBuilder* builder);
 
     void setCustomRankManager(CustomRankManager* customRankManager);
 
@@ -77,7 +79,7 @@ private:
 
     QueryBuilder& queryBuilder_;
 
-    boost::scoped_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
+    const faceted::GroupFilterBuilder* groupFilterBuilder_;
 
     CustomRankManager* customRankManager_;
 

@@ -433,6 +433,11 @@ public:
         return customRankManager_;
     }
 
+    ProductScorerFactory* GetProductScorerFactory()
+    {
+        return productScorerFactory_;
+    }
+
     boost::shared_ptr<SearchManager>& GetSearchManager()
     {
         return searchManager_;
@@ -446,6 +451,21 @@ public:
     const GroupLabelKnowledge* GetGroupLabelKnowledge() const
     {
         return groupLabelKnowledge_;
+    }
+
+    const faceted::GroupFilterBuilder* GetGroupFilterBuilder() const
+    {
+        return groupFilterBuilder_;
+    }
+
+    ProductRankerFactory* GetProductRankerFactory()
+    {
+        return productRankerFactory_;
+    }
+
+    NumericPropertyTableBuilder* GetNumericTableBuilder()
+    {
+        return numericTableBuilder_;
     }
 
 private:
@@ -614,7 +634,8 @@ private:
     /** ATTR BY */
     faceted::AttrManager* attrManager_;
 
-    boost::shared_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
+    faceted::GroupFilterBuilder* groupFilterBuilder_;
+
     /** property name => group label click logger */
     typedef std::map<std::string, GroupLabelLogger*> GroupLabelLoggerMap;
     GroupLabelLoggerMap groupLabelLoggerMap_;
