@@ -380,12 +380,28 @@ bool ProductManager::FinishHook()
                 doc.getProperty(config_.source_property_name, source);
                 combine_doc.getProperty(config_.source_property_name, combine_source);
                 util_->AddSource(combine_source, source);
+                combine_doc.property(config_.source_property_name) = combine_source;
                 if (udocid == base_udocid)
                 {
                     combine_doc.copyPropertiesFromDocument(doc, false);
                 }
                 g2doc_it->second.second = combine_price;
                 uuid_update_list.push_back(std::make_pair(docid, uuid));
+
+                //std::string suuid;
+                //uuid.convertString(suuid, UString::UTF_8);
+                //if(suuid=="170a27507844214ab15a6527629ede8f")
+                //{
+                    //std::string ssource;
+                    //std::string scsource;
+                    //source.convertString(ssource, UString::UTF_8);
+                    //combine_source.convertString(scsource, UString::UTF_8);
+                    //std::cerr<<"sdocid : "<<sdocid<<std::endl;
+                    //std::cerr<<"suuid : "<<suuid<<std::endl;
+                    //std::cerr<<"source : "<<ssource<<std::endl;
+                    //std::cerr<<"csource : "<<scsource<<std::endl;
+                    //std::cerr<<"price : "<<combine_price.ToString()<<std::endl;
+                //}
             }
             else
             {

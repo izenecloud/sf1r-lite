@@ -249,7 +249,7 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteLock lock(mutex_);
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
         }
 
@@ -260,7 +260,7 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteLock lock(mutex_);
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
         }
 
@@ -271,7 +271,7 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteLock lock(mutex_);
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
         }
 
@@ -282,7 +282,7 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteLock lock(mutex_);
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
         }
 
@@ -293,7 +293,7 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteLock lock(mutex_);
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
         }
 
@@ -309,7 +309,7 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteLock lock(mutex_);
+            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
             data_.resize(pos + 1, invalidValue_);
         }
 
