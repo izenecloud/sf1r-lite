@@ -14,8 +14,11 @@
 #include <icma/openccxx.h>
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <am/succinct/wat_array/wavelet_matrix.hpp>
+#include <am/succinct/fm-index/wavelet_matrix.hpp>
 #include <util/singleton.h>
 #include <boost/bimap.hpp>
+using namespace izenelib::am::succinct::fm_index;
+
 namespace sf1r
 {
 
@@ -44,7 +47,8 @@ class WikiGraph
     AdBias* advertiseBias_;
     set<string> stopword_;
     //wat_array::WatArray wa_;
-    wavelet_matrix::WaveletMatrix wa_;
+    //wavelet_matrix::WaveletMatrix wa_;
+    WaveletMatrix<uint64_t> wa_;
     TitleIdDbTable* titleIdDbTable_;
     IdTitleDbTable* idTitleDbTable_;
 public:

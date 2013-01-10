@@ -63,20 +63,7 @@ void WikiGraph::SetParam_(const string& wiki_path,cma::OpenCC* opencc)
     BuildMap_();
     cout<<"SetAdvertise...."<<endl;
     SetAdvertiseAll_();
-    /*
-    //cout<<"InitOutLink...."<<endl;
-    //cout<<"title2id"<<title2id.size()<<endl;
-    // InitOutLink();
-    //test();
 
-    //pr_.PrintPageRank(nodes_);
-    //InitGraph();
-    // Flush_();
-
-    //  Init_();
-
-    //delete a;
-    */
     cout<<"wikipediaGraphDone"<<endl;
 }
 
@@ -98,6 +85,7 @@ void WikiGraph::Load_(std::istream& is)
         }
         
         wa_.Init(A);
+        
 }
 void WikiGraph::Save_(std::ostream& os)
 {
@@ -310,7 +298,7 @@ void WikiGraph::InitSubGaph_(const int& index,set<int>& SubGraph,int itertime)
             int size=wa_.Freq(index);
             if(size==1)
             {
-                if(SubGraph.find(wa_.Select(index,0))!=SubGraph.end())
+                //if(SubGraph.find(wa_.Select(index,0))!=SubGraph.end())
                     itertime--;
             }
             for (int i=0;i<size ; i++)

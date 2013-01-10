@@ -10,6 +10,7 @@
 #include <algorithm>
 
 using namespace std;
+using namespace izenelib::am::succinct::fm_index;
 
 namespace sf1r
 {
@@ -120,101 +121,11 @@ Node::~Node()
 {
     //linkin_index_.clear();
 }
-/*
-void InsertLinkdInNode(Node* node)
-{
-    //如果没有链接
-    if (linkin_nodes_.find(node) == linkin_nodes_.end())
-    {
-        linkin_nodes_.insert(node);
-    }
-    node->InsertLinkOutNode(this);
-}
 
-void InsertLinkOutNode(Node* node)
-{
-    //如果没有链接
-    if (linkout_nodes_.find(node) == linkout_nodes_.end())
-    {
-        linkout_nodes_.insert(node);
-    }
-}
-
-
-void Node::InsertLinkInNode(int i)
-{
-    //如果没有链接top
-    linkin_index_.push_back(i);
-}
-
-
-    double Node::GetPageRank()
-    {
-        return page_rank_;
-    }
-
-    void Node::SetPageRank(double pr)
-    {
-        page_rank_ = pr;
-    }
-
-    void Node::SetContentRelevancy(double contentRelevancy)
-    {
-        contentRelevancy_ = contentRelevancy;
-    }
-*/
 void Node::SetAdvertiRelevancy(double advertiRelevancy)
 {
     advertiRelevancy_ = log(log(advertiRelevancy+1.0)+1.0);
 }
-/*
-    double Node::CalcRank(const vector<Node*>& vecNode,const CalText& linkinSub)
-    {
-        double pr = 0;
-
-        vector<int>::const_iterator citr = linkin_index_.begin();
-       // cout<<"pr"<<pr<<endl;
-        for (; citr != linkin_index_.end(); ++citr)
-        {
-           // cout<<"Link in"<<(*citr)<<endl;
-            Node * node = vecNode[(*citr)];
-            //node->PrintNode();
-           // if(node->GetPageRank()>0.0)
-            pr += node->GetPageRank()/double(node->GetOutBoundNum());
-           // cout<<"pr"<<pr<<endl;
-        }
-
-
-        vector<int>::const_iterator citr = linkinSub.linkin_.begin();
-       // cout<<"pr"<<pr<<endl;
-        for (; citr != linkinSub.linkin_.end(); ++citr)
-        {
-           // cout<<"Link in"<<(*citr)<<endl;
-            Node * node = vecNode[(*citr)];
-            //node->PrintNode();
-            pr += node->GetPageRank()/double(node->GetOutBoundNum());
-           // cout<<"pr"<<pr<<endl;
-        }
-
-        return pr;
-    }
-
-size_t Node::GetOutBoundNum()
-{
-    return  outNumber_;
-}
-
-size_t Node::GetInBoundNum()
-{
-    return  linkin_index_.size();
-}
-
-
-    double Node::GetContentRelevancy()
-    {
-        return contentRelevancy_;
-    }
-*/
 
 double Node::GetAdvertiRelevancy()
 {
@@ -248,7 +159,8 @@ int Node::GetId()
 }
 
 //PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph, wat_array::WatArray& wa,double alpha,double beta)
-PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph,wavelet_matrix::WaveletMatrix& wa,double alpha,double beta)
+//PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph,wavelet_matrix::WaveletMatrix& wa,double alpha,double beta)
+PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph, WaveletMatrix<uint64_t>& wa,double alpha,double beta)
     : SubGraph_(SubGraph)
     , nodes_(nodes)
     , wa_(wa)
@@ -290,7 +202,7 @@ void PageRank::InitMap()
            vector<int> linkin;
            vector<uint64_t> ret;
            //cout<<"QuantileRangeAll"<<endl;
-           /*
+              /*
            for(unsigned i=node->offStart;i<=node->offStop;i++)
            {
                 int index=wa_.Lookup(i);
@@ -300,8 +212,8 @@ void PageRank::InitMap()
                      
                 }
            }
-           */
-           wa_.QuantileRangeAll(node->offStart, node->offStop+1, ret,SubTrie);
+            /**/
+           wa_.QuantileRangeAll(node->offStart, node->offStop, ret,SubTrie);
            //cout<<"ret size"<<ret.size()<<endl;
            
            for(unsigned i=0;i<ret.size();i++)
@@ -316,7 +228,7 @@ void PageRank::InitMap()
            }
            
            //cout<<"linkin size"<<linkin.size()<<endl;
-           /**/
+         
            CalText temp;
            temp.linkin_=linkin;
            temp.pr_=1.0;
@@ -474,13 +386,13 @@ void PageRank::SetContentRelevancy(int index,double contentRelevancy)
     if(contentRelevancy>=1)
     {
         //CalText &linkinSub=GetLinkin(index);
-        /*
+        
         int size=wa_.Freq(index) ; 
         for (int i=0; i<size ; i++)
         {
              SetContentRelevancy(GetIndexByOffset_(wa_.Select(index,i)),0.01);
         }
-        */
+        /*
         set<int>::const_iterator citr = SubGraph_.begin();
         for (; citr != SubGraph_.end(); ++citr)
         {
@@ -494,7 +406,7 @@ void PageRank::SetContentRelevancy(int index,double contentRelevancy)
 
          
         }
-      
+        */
     }
 }
 
