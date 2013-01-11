@@ -10,6 +10,7 @@
 #include "b5m_helper.h"
 #include <types.h>
 #include <am/succinct/fujimap/fujimap.hpp>
+#include <util/singleton.h>
 #include <glog/logging.h>
 #include <boost/unordered_map.hpp>
 #include <idmlib/duplicate-detection/dup_detector.h>
