@@ -10,6 +10,7 @@
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <am/succinct/wat_array/wavelet_matrix.hpp>
 #include <am/succinct/fm-index/wavelet_matrix.hpp>
+#include "WavletFactory.hpp"
 using namespace std;
 using namespace izenelib::am::succinct::fm_index;
 
@@ -89,8 +90,9 @@ class PageRank
 {
 public:
     //explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,wat_array::WatArray& wa,double alpha=0.7,double beta=0.0);
-    //explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph, wavelet_matrix::WaveletMatrix& wa,double alpha=0.7,double beta=0.0);
-    explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,  WaveletMatrix<uint64_t>& wa,double alpha=0.7,double beta=0.0);
+    // explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph, wavelet_matrix::WaveletMatrix& wa,double alpha=0.7,double beta=0.0);
+    //explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,  WaveletMatrix<uint64_t>& wa,double alpha=0.7,double beta=0.0);
+    explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,  WavletTree* wa,double alpha=0.7,double beta=0.0);
     ~PageRank(void);
     void CalcAll(int n);
     double Calc(int index);
@@ -113,7 +115,8 @@ private:
     std::vector<Node*> &nodes_;
     //wat_array::WatArray &wa_;
     //wavelet_matrix::WaveletMatrix  &wa_;
-    WaveletMatrix<uint64_t>  &wa_;
+    //WaveletMatrix<uint64_t>  &wa_;
+    WavletTree* wa_;
     double alpha_; //内容阻尼系数
     double beta_; //广告阻尼系数
     bool InCludeList_;

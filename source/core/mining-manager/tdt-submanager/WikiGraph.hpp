@@ -7,6 +7,7 @@
 #include "PageRank.hpp"
 #include "AdBias.hpp"
 #include "LevelDbTable.hpp"
+#include "WavletFactory.hpp"
 //#include "ConBias.hpp"
 //#include "database.h"
 #include <algorithm>
@@ -14,9 +15,10 @@
 #include <icma/openccxx.h>
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <am/succinct/wat_array/wavelet_matrix.hpp>
-#include <am/succinct/fm-index/wavelet_matrix.hpp>
+//#include <am/succinct/fm-index/wavelet_matrix.hpp>
 #include <util/singleton.h>
 #include <boost/bimap.hpp>
+
 using namespace izenelib::am::succinct::fm_index;
 
 namespace sf1r
@@ -48,9 +50,11 @@ class WikiGraph
     set<string> stopword_;
     //wat_array::WatArray wa_;
     //wavelet_matrix::WaveletMatrix wa_;
-    WaveletMatrix<uint64_t> wa_;
+    WavletTree* wa_;
+    //WaveletMatrix<uint64_t> wa_;
     TitleIdDbTable* titleIdDbTable_;
     IdTitleDbTable* idTitleDbTable_;
+    ofstream out;
 public:
     static WikiGraph* GetInstance()
     {
