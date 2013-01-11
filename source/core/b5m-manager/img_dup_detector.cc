@@ -137,6 +137,7 @@ bool ImgDupDetector::SetPath()
 
 bool ImgDupDetector::InitFujiMap()
 {
+    boost::filesystem::create_directories(output_path_+"/fujimap");
     con_docid_key_ = new ImgDupFujiMap(output_path_ + "/fujimap/tmp0.kf");
     con_docid_key_->open();
 
@@ -410,7 +411,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         LOG(ERROR) << "psm build error " << std::endl;
         return false;
     }
-/*
+
     if( url_docid_key_->build() < 0 )
     {
         LOG(ERROR) << "FujiMap build error [url_docid_key_]" <<endl;
@@ -424,7 +425,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         LOG(ERROR) << "Error info: " << url_key_docid_->what() << endl;
         return false;
     }
-*/
+
     return true;
 }
 
@@ -530,20 +531,21 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         LOG(ERROR) << "psm build error " << std::endl;
         return false;
     }
-/*
+
     if( con_key_docid_->build() < 0 )
     {
         LOG(ERROR) <<"FujiMap build error [con_key_docid_]"<<endl;
         LOG(ERROR) <<"Error info: " << con_key_docid_->what() <<endl;
         return false;
     }
+
     if( con_docid_key_->build() < 0 )
     {
         LOG(ERROR) <<"FujiMap build error [con_docid_key_]" <<endl;
         LOG(ERROR) <<"Error info: " <<con_docid_key_->what() <<endl;
         return false;
     }
-*/
+
     return true;
 }
 
@@ -584,7 +586,8 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
         if(!PsmHelper::GetPsmItem(analyzer, doc, docID, doc_vector, attach))
         {
             LOG(INFO)<<"Get psm item Error ... "<<std::endl;
-            if(writer.Append(scddoc)) rest++;
+            writer.Append(scddoc);
+            rest++;
             continue;
         }
         uint32_t match_key;
@@ -592,18 +595,21 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
         uint32_t current_docid = DocidToUint(docID);
         if(!psm.Search(doc_vector, attach, match_key))
         {
-            if(writer.Append(scddoc)) rest++;
+            writer.Append(scddoc);
+            rest++;
         }
         else if(!url_docid_key_->get(current_docid, current_key))
         {
             LOG(INFO) << "FujiMap Get ERROR: docID[" << docID << "]"
                       << "current_key[" << current_key <<"]"
                       << "match_key" << match_key <<"]" <<endl;
-            if(writer.Append(scddoc)) rest++;
+            writer.Append(scddoc);
+            rest++;
         }
         else if(current_key == match_key)
         {
-            if(writer.Append(scddoc)) rest++;
+            writer.Append(scddoc);
+            rest++;
         }
         else
         {
@@ -709,7 +715,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         PsmAttach attach;
         if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
         {
-            if(writer.Append(scddoc)) rest++;
+//            if(writer.Append(scddoc)) rest++;
             continue;
         }
         uint32_t match_key;
@@ -717,18 +723,18 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         uint32_t current_docid = DocidToUint(docID);
         if(!psm.Search(doc_vector, attach, match_key))
         {
-            if(writer.Append(scddoc)) rest++;
+//            if(writer.Append(scddoc)) rest++;
         }
         else if( !con_docid_key_->get(current_docid, current_key) )
         {
             LOG(INFO) << "FujiMap Get ERROR: docID[" << docID << "]"
                       << "current_key[" << current_key <<"]"
                       << "match_key" << match_key <<"]" <<endl;
-            if(writer.Append(scddoc)) rest++;
+//            if(writer.Append(scddoc)) rest++;
         }
         else if(current_key == match_key)
         {
-            if(writer.Append(scddoc)) rest++;
+//            if(writer.Append(scddoc)) rest++;
         }
         else
         {
@@ -800,6 +806,13 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
 
 bool ImgDupDetector::WriteFile(const std::string& filename)
 {
+    if( docid_docid_->build() < 0 )
+    {
+        LOG(ERROR) <<"FujiMap build error [docid_docid_]" <<endl;
+        LOG(ERROR) <<"Error info: " <<docid_docid_->what() <<endl;
+        return false;
+    }
+
     std::string scd_file = scd_path_ + "/" + filename;
     LOG(INFO)<<"Processing (WriteFile) "<<scd_file<<std::endl;
     ScdParser parser(izenelib::util::UString::UTF_8);
@@ -854,17 +867,17 @@ bool ImgDupDetector::WriteFile(const std::string& filename)
             std::map<uint32_t, std::vector<uint32_t> >::iterator iter = gid_docids_.find(current_docid);
             if(iter == gid_docids_.end())
             {
-                UString itemcount;
-                itemcount.assign("1", izenelib::util::UString::UTF_8);
-                scddoc.push_back(std::pair<std::string, UString>("GMemCount", itemcount));
+                UString gmemcount;
+                gmemcount.assign("1", izenelib::util::UString::UTF_8);
+                scddoc.push_back(std::pair<std::string, UString>("GMemCount", gmemcount));
                 writer1.Append(scddoc);
             }
             else
             {
-                UString itemcount;
+                UString gmemcount;
                 std::string count = boost::lexical_cast<std::string> (iter->second.size()+1);
-                itemcount.assign(count, izenelib::util::UString::UTF_8);
-                scddoc.push_back(std::pair<std::string, UString>("GMemCount", itemcount));
+                gmemcount.assign(count, izenelib::util::UString::UTF_8);
+                scddoc.push_back(std::pair<std::string, UString>("GMemCount", gmemcount));
                 writer1.Append(scddoc);
             }
         }
