@@ -485,12 +485,11 @@ IndexBundleActivator::createSearchManager_() const
 {
     boost::shared_ptr<SearchManager> ret;
 
-    if (indexManager_ && idManager_ && documentManager_ && rankingManager_)
+    if (indexManager_ && documentManager_ && rankingManager_)
     {
         ret.reset(
             new SearchManager(
                 *config_,
-                idManager_,
                 documentManager_,
                 indexManager_,
                 rankingManager_));

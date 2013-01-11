@@ -10,7 +10,6 @@ namespace sf1r
 
 SearchManager::SearchManager(
     const IndexBundleConfiguration& config,
-    const boost::shared_ptr<IDManager>& idManager,
     const boost::shared_ptr<DocumentManager>& documentManager,
     const boost::shared_ptr<IndexManager>& indexManager,
     const boost::shared_ptr<RankingManager>& rankingManager)
@@ -18,13 +17,10 @@ SearchManager::SearchManager(
     , topKReranker_(preprocessor_)
     , fuzzySearchRanker_(preprocessor_)
 {
-    queryBuilder_.reset(new QueryBuilder(
-                            indexManager,
-                            documentManager,
-                            idManager,
-                            rankingManager,
-                            preprocessor_.getSchemaMap(),
-                            config.filterCacheNum_));
+    queryBuilder_.reset(new QueryBuilder(documentManager,
+                                         indexManager,
+                                         preprocessor_.getSchemaMap(),
+                                         config.filterCacheNum_));
 
     searchBase_.reset(new NormalSearch(config,
                                        documentManager,

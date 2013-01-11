@@ -6,12 +6,9 @@
 #include "FuzzySearchRanker.h"
 #include "QueryBuilder.h"
 #include "SearchBase.h"
-#include <ir/id_manager/IDManager.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-
-using izenelib::ir::idmanager::IDManager;
 
 namespace sf1r
 {
@@ -26,7 +23,6 @@ class SearchManager
 public:
     SearchManager(
         const IndexBundleConfiguration& config,
-        const boost::shared_ptr<IDManager>& idManager,
         const boost::shared_ptr<DocumentManager>& documentManager,
         const boost::shared_ptr<IndexManager>& indexManager,
         const boost::shared_ptr<RankingManager>& rankingManager);

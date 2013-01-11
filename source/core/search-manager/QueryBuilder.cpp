@@ -40,21 +40,17 @@ namespace sf1r
 {
 
 QueryBuilder::QueryBuilder(
-    const boost::shared_ptr<IndexManager> indexManager,
     const boost::shared_ptr<DocumentManager> documentManager,
-    const boost::shared_ptr<IDManager> idManager,
-    const boost::shared_ptr<RankingManager>& rankingManager,
+    const boost::shared_ptr<IndexManager> indexManager,
     const schema_map& schemaMap,
     size_t filterCacheNum
 )
-    :indexManagerPtr_(indexManager)
-    ,documentManagerPtr_(documentManager)
-    ,idManagerPtr_(idManager)
-    ,rankingManagerPtr_(rankingManager)
+    :documentManagerPtr_(documentManager)
+    ,indexManagerPtr_(indexManager)
+    ,pIndexReader_(indexManager->pIndexReader_)
     ,schemaMap_(schemaMap)
+    ,filterCache_(new FilterCache(filterCacheNum))
 {
-    pIndexReader_ = indexManager->pIndexReader_;
-    filterCache_.reset(new FilterCache(filterCacheNum));
 }
 
 QueryBuilder::~QueryBuilder()

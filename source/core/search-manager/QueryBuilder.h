@@ -19,8 +19,6 @@
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 
-#include <ir/id_manager/IDManager.h>
-
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
@@ -28,7 +26,6 @@
 
 #include <vector>
 
-using namespace izenelib::ir::idmanager;
 using namespace izenelib::ir::indexmanager;
 using namespace sf1r::QueryFiltering;
 
@@ -45,10 +42,8 @@ public:
     typedef schema_map::const_iterator schema_iterator;
 
     QueryBuilder(
-        const boost::shared_ptr<IndexManager> indexManager,
         const boost::shared_ptr<DocumentManager> documentManager,
-        const boost::shared_ptr<IDManager> idManager,
-        const boost::shared_ptr<RankingManager>& rankingManager,
+        const boost::shared_ptr<IndexManager> indexManager,
         const schema_map& schemaMap,
         size_t filterCacheNum
     );
@@ -200,13 +195,9 @@ private:
     );
 
 private:
-    boost::shared_ptr<IndexManager> indexManagerPtr_;
-
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
 
-    boost::shared_ptr<IDManager> idManagerPtr_;
-
-    boost::shared_ptr<RankingManager> rankingManagerPtr_;
+    boost::shared_ptr<IndexManager> indexManagerPtr_;
 
     IndexReader* pIndexReader_;
 
