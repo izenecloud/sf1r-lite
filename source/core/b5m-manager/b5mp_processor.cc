@@ -91,9 +91,17 @@ bool B5mpProcessor::B5moValid_(const Document& doc)
 
 void B5mpProcessor::B5moOutput_(ValueType& value, int status)
 {
+    if(value.type==DELETE_SCD) value.type = NOT_SCD;
+    if(status==PairwiseScdMerger::OLD) value.type=NOT_SCD;
     uint128_t pid = GetPid_(value.doc);
-    if(pid==0) return;
-    if(!B5moValid_(value.doc)) return;
+    if(pid==0)
+    {
+        return;
+    }
+    if(!B5moValid_(value.doc)) 
+    {
+        return;
+    }
     bool independent_mode = false;
     uint128_t oid = GetOid_(value.doc);
     std::string spu_title;
