@@ -36,11 +36,11 @@ void SearchManager::setMiningManager(
     preprocessor_.setNumericTableBuilder(
         miningManager->GetNumericTableBuilder());
 
-    searchBase_->setMiningManager(miningManager);
-
     topKReranker_.setProductRankerFactory(
         miningManager->GetProductRankerFactory());
 
     fuzzySearchRanker_.setFuzzyScoreWeight(
         miningManager->getMiningSchema().product_ranking_config);
+
+    searchBase_->setMiningManager(miningManager);
 }
