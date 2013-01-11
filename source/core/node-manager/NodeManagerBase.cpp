@@ -717,6 +717,8 @@ void NodeManagerBase::checkSecondaryReqAbort()
     {
         LOG(INFO) << "all secondary abort request. primary is ready for new request: " << curr_primary_path_;
         nodeState_ = NODE_STATE_STARTED;
+        if(cb_on_wait_replica_abort_)
+            cb_on_wait_replica_abort_();
     }
     updateNodeState();
 }

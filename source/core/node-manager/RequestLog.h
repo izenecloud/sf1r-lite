@@ -44,11 +44,8 @@ struct CommonReqData
 {
     uint32_t inc_id;
     uint32_t reqtype;
-    std::string controller;
-    std::string action;
-    std::string req_acl_tokens;
     std::string req_json_data;
-    MSGPACK_DEFINE(inc_id, reqtype, controller, action, req_acl_tokens, req_json_data);
+    MSGPACK_DEFINE(inc_id, reqtype, req_json_data);
 };
 
 // note: head data will not be packed to msgpack.
@@ -58,8 +55,6 @@ struct IndexReqLog
     IndexReqLog()
     {
         common_data.reqtype = Req_Index;
-        common_data.controller = "commands";
-        common_data.action = "index";
     }
     CommonReqData common_data;
     std::vector<std::string> scd_list;
@@ -71,8 +66,6 @@ struct CreateDocReqLog
     CreateDocReqLog()
     {
         common_data.reqtype = Req_CreateDoc;
-        common_data.controller = "documents";
-        common_data.action = "create";
     }
     CommonReqData common_data;
     MSGPACK_DEFINE(common_data);
@@ -155,9 +148,8 @@ public:
             inc_id_ = prepared_reqdata.inc_id + 1;
         }
         prepared_req_.push_back(prepared_reqdata);
-        printf("prepare request success, isprimary %d, (id:%u, type:%u, /%s/%s) ", isprimary,
-            prepared_reqdata.inc_id, prepared_reqdata.reqtype, prepared_reqdata.controller.c_str(),
-            prepared_reqdata.action.c_str());
+        printf("prepare request success, isprimary %d, (id:%u, type:%u) ", isprimary,
+            prepared_reqdata.inc_id, prepared_reqdata.reqtype);
         std::cout << endl;
         return true;
     }

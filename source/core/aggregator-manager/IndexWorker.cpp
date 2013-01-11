@@ -18,6 +18,7 @@
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
 #include <aggregator-manager/MasterNotifier.h>
+#include <node-manager/SearchNodeManager.h>
 
 // xxx
 #include <bundles/index/IndexBundleConfiguration.h>
@@ -108,7 +109,9 @@ IndexWorker::~IndexWorker()
 
 void IndexWorker::HookDistributeRequest(const std::string& reqdata, bool& result)
 {
-    distribute_req_hooker_.setCurrentReq(reqdata);
+    distribute_req_hooker_.hookCurrentReq(bundleConfig_->collectionName_,
+        bundleConfig_->collPath_, reqdata,
+        SearchNodeManager::get()->getReqLogMgr());
     LOG(INFO) << "got hook request on the worker.";
     result = true;
 }
