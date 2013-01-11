@@ -29,8 +29,8 @@ class SearchThreadMaster
 public:
     SearchThreadMaster(
         const IndexBundleConfiguration& config,
-        SearchManagerPreProcessor& preprocessor,
         const boost::shared_ptr<DocumentManager>& documentManager,
+        SearchManagerPreProcessor& preprocessor,
         SearchThreadWorker& searchThreadWorker);
 
     void prepareThreadParams(
@@ -71,9 +71,9 @@ private:
 
     boost::threadpool::pool threadpool_;
 
-    SearchManagerPreProcessor& preprocessor_;
-
     boost::shared_ptr<DocumentManager> documentManagerPtr_;
+
+    SearchManagerPreProcessor& preprocessor_;
 
     SearchThreadWorker& searchThreadWorker_;
 };

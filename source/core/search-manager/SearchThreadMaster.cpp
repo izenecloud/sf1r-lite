@@ -22,12 +22,12 @@ static int s_cpunum = 0;
 
 SearchThreadMaster::SearchThreadMaster(
     const IndexBundleConfiguration& config,
-    SearchManagerPreProcessor& preprocessor,
     const boost::shared_ptr<DocumentManager>& documentManager,
+    SearchManagerPreProcessor& preprocessor,
     SearchThreadWorker& searchThreadWorker)
     : isParallelEnabled_(config.enable_parallel_searching_)
-    , preprocessor_(preprocessor)
     , documentManagerPtr_(documentManager)
+    , preprocessor_(preprocessor)
     , searchThreadWorker_(searchThreadWorker)
 {
     izenelib::util::CpuInfo::InitCpuTopologyInfo(s_cpu_topology_info);

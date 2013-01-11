@@ -8,6 +8,7 @@
 #include <common/Utilities.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
+#include <search-manager/SearchBase.h>
 #include <search-manager/PersonalizedSearchInfo.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
@@ -386,10 +387,10 @@ bool SearchWorker::getSearchResult_(
         break;
 
     default:
-        if (!searchManager_->search(actionOperation,
-                                    resultItem,
-                                    TOP_K_NUM,
-                                    topKStart))
+        if (!searchManager_->searchBase_->search(actionOperation,
+                                                 resultItem,
+                                                 TOP_K_NUM,
+                                                 topKStart))
         {
             std::string newQuery;
 
@@ -404,10 +405,10 @@ bool SearchWorker::getSearchResult_(
                 return true;
             }
 
-            if (!searchManager_->search(actionOperation,
-                                        resultItem,
-                                        TOP_K_NUM,
-                                        topKStart))
+            if (!searchManager_->searchBase_->search(actionOperation,
+                                                     resultItem,
+                                                     TOP_K_NUM,
+                                                     topKStart))
             {
                 return true;
             }
@@ -759,9 +760,9 @@ bool SearchWorker::removeDuplicateDocs(
 
 void SearchWorker::reset_all_property_cache()
 {
-    searchCache_->clear();
+    clearSearchCache();
 
-    searchManager_->reset_filter_cache();
+    clearFilterCache();
 }
 
 void SearchWorker::clearSearchCache()
@@ -771,7 +772,7 @@ void SearchWorker::clearSearchCache()
 
 void SearchWorker::clearFilterCache()
 {
-    searchManager_->reset_filter_cache();
+    searchManager_->queryBuilder_->reset_cache();
 }
 
 }

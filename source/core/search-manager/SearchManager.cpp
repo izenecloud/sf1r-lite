@@ -1,10 +1,7 @@
 #include "SearchManager.h"
-#include "SearchThreadParam.h"
-
-#include <bundles/index/IndexBundleConfiguration.h>
-#include <query-manager/SearchKeywordOperation.h>
-#include <common/ResultType.h>
+#include "NormalSearch.h"
 #include <mining-manager/MiningManager.h>
+#include <bundles/index/IndexBundleConfiguration.h>
 
 #include <glog/logging.h>
 
@@ -12,13 +9,12 @@ namespace sf1r
 {
 
 SearchManager::SearchManager(
-    const IndexBundleSchema& indexSchema,
+    const IndexBundleConfiguration& config,
     const boost::shared_ptr<IDManager>& idManager,
     const boost::shared_ptr<DocumentManager>& documentManager,
     const boost::shared_ptr<IndexManager>& indexManager,
-    const boost::shared_ptr<RankingManager>& rankingManager,
-    IndexBundleConfiguration* config)
-    : preprocessor_(indexSchema)
+    const boost::shared_ptr<RankingManager>& rankingManager)
+    : preprocessor_(config.indexSchema_)
     , topKReranker_(preprocessor_)
     , fuzzySearchRanker_(preprocessor_)
 {
@@ -28,24 +24,14 @@ SearchManager::SearchManager(
                             idManager,
                             rankingManager,
                             preprocessor_.getSchemaMap(),
-                            config->filterCacheNum_));
+                            config.filterCacheNum_));
 
-    searchThreadWorker_.reset(new SearchThreadWorker(*config,
-                                                     documentManager,
-                                                     indexManager,
-                                                     rankingManager,
-                                                     preprocessor_,
-                                                     *queryBuilder_));
-
-    searchThreadMaster_.reset(new SearchThreadMaster(*config,
-                                                     preprocessor_,
-                                                     documentManager,
-                                                     *searchThreadWorker_));
-}
-
-void SearchManager::reset_filter_cache()
-{
-    queryBuilder_->reset_cache();
+    searchBase_.reset(new NormalSearch(config,
+                                       documentManager,
+                                       indexManager,
+                                       rankingManager,
+                                       preprocessor_,
+                                       *queryBuilder_));
 }
 
 void SearchManager::setMiningManager(
@@ -64,49 +50,13 @@ void SearchManager::setMiningManager(
     preprocessor_.setNumericTableBuilder(
         miningManager->GetNumericTableBuilder());
 
-    searchThreadWorker_->setGroupFilterBuilder(
-        miningManager->GetGroupFilterBuilder());
-
-    searchThreadWorker_->setCustomRankManager(
-        miningManager->GetCustomRankManager());
+    searchBase_->setMiningManager(miningManager);
 
     topKReranker_.setProductRankerFactory(
         miningManager->GetProductRankerFactory());
 
     fuzzySearchRanker_.setFuzzyScoreWeight(
         miningManager->getMiningSchema().product_ranking_config);
-}
-
-bool SearchManager::search(
-    const SearchKeywordOperation& actionOperation,
-    KeywordSearchResult& searchResult,
-    std::size_t limit,
-    std::size_t offset)
-{
-    if (!actionOperation.noError())
-        return false;
-
-    const std::size_t heapSize = limit + offset;
-    std::vector<SearchThreadParam> threadParams;
-    DistKeywordSearchInfo& distSearchInfo = searchResult.distSearchInfo_;
-
-    searchThreadMaster_->prepareThreadParams(actionOperation,
-                                             distSearchInfo,
-                                             heapSize,
-                                             threadParams);
-
-    if (!searchThreadMaster_->runThreadParams(threadParams))
-        return false;
-
-    if (distSearchInfo.isOptionGatherInfo())
-        return true;
-
-    bool result = searchThreadMaster_->mergeThreadParams(threadParams) &&
-                  searchThreadMaster_->fetchSearchResult(offset,
-                                                         threadParams.front(),
-                                                         searchResult);
-    REPORT_PROFILE_TO_SCREEN();
-    return result;
 }
 
 } // namespace sf1r

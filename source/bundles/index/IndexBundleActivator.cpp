@@ -489,14 +489,11 @@ IndexBundleActivator::createSearchManager_() const
     {
         ret.reset(
             new SearchManager(
-                config_->indexSchema_,
+                *config_,
                 idManager_,
                 documentManager_,
                 indexManager_,
-                rankingManager_,
-                config_
-            )
-        );
+                rankingManager_));
     }
     return ret;
 }
