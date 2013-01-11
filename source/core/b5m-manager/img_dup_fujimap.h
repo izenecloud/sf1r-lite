@@ -11,6 +11,10 @@
 #include <glog/logging.h>
 
 namespace sf1r{
+    /*
+     *    KeyType:     uint32_t
+     *    ValueType:   uint32_t
+     */
     class ImgDupFujiMap
     {
         typedef uint32_t KeyType;
@@ -71,12 +75,12 @@ namespace sf1r{
             {
                 return false;
             }
-            imgDupFujiMap->setInteger(key, value, true);
+            imgDupFujiMap->setInteger(key, value);
             return true;
         }
         bool update(const KeyType& key, const ValueType& value)
         {
-            imgDupFujiMap->setInteger(key, value, true);
+            imgDupFujiMap->setInteger(key, value);
             return true;
         }
         bool close()
