@@ -1,10 +1,16 @@
 #include "MasterManagerBase.h"
 #include "SuperNodeManager.h"
+#include "NodeManagerBase.h"
+#include "ZooKeeperNamespace.h"
 
 #include <boost/lexical_cast.hpp>
 
 using namespace sf1r;
 
+// note lock:
+// the lock sequence is state_mutex_ and then workers_mutex_
+// so you should never lock state_mutex_ after the workers_mutex_ is locked.
+//
 MasterManagerBase::MasterManagerBase()
 : isDistributeEnable_(false)
 , masterState_(MASTER_STATE_INIT)
@@ -161,6 +167,7 @@ void MasterManagerBase::onNodeDeleted(const std::string& path)
         // try failover
         failover(path);
     }
+    checkForWriteReq();
 }
 
 void MasterManagerBase::onChildrenChanged(const std::string& path)
@@ -171,8 +178,194 @@ void MasterManagerBase::onChildrenChanged(const std::string& path)
     {
         detectReplicaSet(path);
     }
+    checkForWriteReq();
 }
 
+bool MasterManagerBase::prepareWriteReq()
+{
+    if (!isDistributeEnable_)
+        return true;
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return false;
+    if (!isMinePrimary())
+    {
+        LOG(WARNING) << "non-primary master can not prepare a write request!";
+        return false;
+    }
+    ZNode znode;
+    znode.setValue(ZNode::KEY_MASTER_SERVER_REAL_PATH, serverRealPath_);
+    if (!zookeeper_->createZNode(ZooKeeperNamespace::getWriteReqNode(), znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
+    {
+        if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
+        {
+            LOG(INFO) << "There is another write request running, prepareWriteReq failed on server: " << serverRealPath_;
+        }
+        else
+        {
+            LOG (ERROR) <<" Failed to prepare write request for (" << zookeeper_->getErrorString()
+                << "), please retry. on server : " << serverRealPath_;
+        }
+        return false;
+    }
+    LOG(INFO) << "prepareWriteReq success on server : " << serverRealPath_;
+    return true;
+}
+
+// check if last request finished, if so then check if any new request waiting
+void MasterManagerBase::checkForWriteReq()
+{
+    if (!isDistributeEnable_)
+        return;
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return;
+    if (!isMinePrimary())
+        return;
+    if (!isAllWorkerIdle())
+        return;
+    endWriteReq();
+
+    if (masterState_ != MASTER_STATE_STARTED && masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
+        return;
+
+    std::vector<std::string> reqchild;
+    zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild);
+    if (!reqchild.empty())
+    {
+        LOG(INFO) << "there are some write request waiting: " << reqchild.size();
+        if (on_new_req_available_)
+            on_new_req_available_();
+    }
+    else
+    {
+        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+    }
+}
+
+// make sure prepare success before call this.
+bool MasterManagerBase::popWriteReq(std::string& reqdata)
+{
+    if (!isDistributeEnable_)
+        return false;
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return false;
+    std::vector<std::string> reqchild;
+    zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild);
+    if (reqchild.empty())
+    {
+        LOG(INFO) << "no write request anymore while pop request on server: " << serverRealPath_;
+        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+        return false;
+    }
+    ZNode znode;
+    std::string sdata;
+    zookeeper_->getZNodeData(reqchild[0], sdata);
+    znode.loadKvString(sdata);
+    reqdata = znode.getStrValue(ZNode::KEY_REQ_DATA);
+    LOG(INFO) << "a request poped : " << reqchild[0] << " on the server: " << serverRealPath_;
+    zookeeper_->deleteZNode(reqchild[0]);
+    return true;
+}
+
+void MasterManagerBase::pushWriteReq(const std::string& reqdata)
+{
+    if (!isDistributeEnable_)
+    {
+        LOG(ERROR) << "Master is not configured as distributed, write request pushed failed." <<
+            "," << reqdata;
+        return;
+    }
+    if (!zookeeper_ || !zookeeper_->isConnected())
+    {
+        LOG(ERROR) << "Master is not connecting to ZooKeeper, write request pushed failed." <<
+            "," << reqdata;
+        return;
+    }
+    ZNode znode;
+    //znode.setValue(ZNode::KEY_REQ_CONTROLLER, controller_name);
+    //znode.setValue(ZNode::KEY_REQ_ACTION, action_name);
+    znode.setValue(ZNode::KEY_REQ_DATA, reqdata);
+    if(zookeeper_->createZNode(write_req_queue_, znode.serialize(), ZooKeeper::ZNODE_SEQUENCE))
+    {
+        LOG(INFO) << "a write request pushed to the queue : " << zookeeper_->getLastCreatedNodePath();
+    }
+    else
+    {
+        LOG(ERROR) << "write request pushed failed." <<
+            "," << reqdata;
+    }
+}
+
+void MasterManagerBase::endWriteReq()
+{
+    if (!isDistributeEnable_)
+        return;
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return;
+    if (!isMinePrimary())
+    {
+        LOG(INFO) << "non-primary master can not end a write request.";
+        return;
+    }
+    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode()))
+    {
+        LOG(INFO) << "There is no any write request while end request";
+        return;
+    }
+    std::string sdata;
+    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata))
+    {
+        ZNode znode;
+        znode.loadKvString(sdata);
+        std::string write_server = znode.getStrValue(ZNode::KEY_MASTER_SERVER_REAL_PATH);
+        if (write_server != serverRealPath_)
+        {
+            LOG(WARNING) << "end request mismatch server. " << write_server << " vs " << serverRealPath_;
+            return;
+        }
+        zookeeper_->deleteZNode(write_server);
+        LOG(INFO) << "end write request success on server : " << serverRealPath_;
+    }
+    else
+    {
+        LOG(WARNING) << "get write request data failed while end request on server :" << serverRealPath_;
+    }
+}
+
+bool MasterManagerBase::isAllWorkerIdle()
+{
+    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+    WorkerMapT::iterator it;
+    for (it = workerMap_.begin(); it != workerMap_.end(); it++)
+    {
+        std::string nodepath = getNodePath(it->second->replicaId_,  it->first);
+        std::string sdata;
+        if (zookeeper_->getZNodeData(nodepath, sdata))
+        {
+            ZNode nodedata;
+            nodedata.loadKvString(sdata);
+            if (nodedata.getUInt32Value(ZNode::KEY_NODE_STATE) != NodeManagerBase::NODE_STATE_STARTED)
+            {
+                LOG(INFO) << "one of primary worker not ready for write request : " << nodepath;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool MasterManagerBase::isBusy()
+{
+    if (!isDistributeEnable_)
+        return false;
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return true;
+    if (zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode()))
+    {
+        LOG(INFO) << "Master is busy because there is another write request running";
+        return true;
+    }
+    return !isAllWorkerIdle();
+}
 
 void MasterManagerBase::showWorkers()
 {
@@ -635,6 +828,13 @@ void MasterManagerBase::registerSearchServer()
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
     }
+
+    if (!zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::WATCH))
+    {
+        zookeeper_->createZNode(write_req_queue_parent_);
+    }
+    std::vector<string> reqchild;
+    zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
 }
 
 void MasterManagerBase::resetAggregatorConfig()

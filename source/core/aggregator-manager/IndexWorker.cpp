@@ -106,6 +106,13 @@ IndexWorker::~IndexWorker()
     delete scd_writer_;
 }
 
+void IndexWorker::HookDistributeRequest(const std::string& reqdata, bool& result)
+{
+    distribute_req_hooker_.setCurrentReq(reqdata);
+    LOG(INFO) << "got hook request on the worker.";
+    result = true;
+}
+
 void IndexWorker::index(unsigned int numdoc, bool& result)
 {
     task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);

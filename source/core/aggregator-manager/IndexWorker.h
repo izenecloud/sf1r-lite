@@ -17,6 +17,7 @@
 #include <common/IndexingProgress.h>
 #include <common/ScdParser.h>
 #include <common/ScdWriterController.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 #include <ir/id_manager/IDManager.h>
 #include <ir/index_manager/index/IndexerDocument.h>
@@ -84,8 +85,11 @@ public:
     {
         BIND_CALL_PROXY_BEGIN(IndexWorker, proxy)
         BIND_CALL_PROXY_2(index, unsigned int, bool)
+        BIND_CALL_PROXY_2(HookDistributeRequest, std::string, bool)
         BIND_CALL_PROXY_END()
     }
+
+    void HookDistributeRequest(const std::string& reqdata, bool& result);
 
     void index(unsigned int numdoc, bool& result);
 
@@ -283,6 +287,7 @@ private:
     size_t totalSCDSizeSinceLastBackup_;
 
     UpdateBufferType updateBuffer_;
+    DistributeRequestHooker distribute_req_hooker_;
 
     friend class IndexSearchService;
     friend class IndexBundleActivator;

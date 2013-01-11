@@ -66,9 +66,11 @@ class ZooKeeperNamespace
 
     static const std::string primary_;
     static const std::string searchPrimaryNodes_;
+    static const std::string search_write_req_queue_;
     static const std::string searchTopology_;
     static const std::string searchServers_;
     static const std::string recommendPrimaryNodes_;
+    static const std::string recommend_write_req_queue_;
     static const std::string recommendTopology_;
     static const std::string recommendServers_;
     static const std::string replica_;
@@ -76,6 +78,8 @@ class ZooKeeperNamespace
     static const std::string server_;
 
     static const std::string Synchro_;
+    static const std::string write_req_node_;
+    static const std::string write_req_seq_;
 
 public:
 
@@ -105,6 +109,14 @@ public:
         return getSearchPrimaryNodeParentPath(nodeId) + primary_;
     }
 
+    static std::string getSearchWriteReqQueueParent()
+    {
+        return sf1rCluster_ + search_write_req_queue_;
+    }
+    static std::string getSearchWriteReqQueueNode()
+    {
+        return sf1rCluster_ + search_write_req_queue_ + write_req_seq_;
+    }
     /// Search
     static std::string getSearchTopologyPath()
     {
@@ -152,6 +164,14 @@ public:
     {
         return getRecommendPrimaryNodeParentPath(nodeId) + primary_;
     }
+    static std::string getRecommendWriteReqQueueParent()
+    {
+        return sf1rCluster_ + recommend_write_req_queue_;
+    }
+    static std::string getRecommendWriteReqQueueNode()
+    {
+        return sf1rCluster_ + recommend_write_req_queue_ + write_req_seq_;
+    }
 
     /// Recommend
     static std::string getRecommendTopologyPath()
@@ -190,6 +210,10 @@ public:
     {
         return sf1rCluster_ + Synchro_;
     }
+    static std::string getWriteReqNode()
+    {
+        return sf1rCluster_ + write_req_node_;
+    }
 };
 
 /// ZooKeeper Node
@@ -208,6 +232,10 @@ public:
     const static char* KEY_COLLECTION;
     const static char* KEY_NODE_STATE;
     const static char* KEY_SELF_REG_PRIMARY_PATH;
+    const static char* KEY_MASTER_SERVER_REAL_PATH;
+    const static char* KEY_REQ_CONTROLLER;
+    const static char* KEY_REQ_ACTION;
+    const static char* KEY_REQ_DATA;
 
     const static char* KEY_FILE;
     const static char* KEY_DIR;

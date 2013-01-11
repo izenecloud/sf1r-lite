@@ -28,6 +28,8 @@ public:
 
     ~IndexTaskService();
 
+    bool HookDistributeRequest(const std::string& collectionName, const std::string& reqdata);
+
     bool index(unsigned int numdoc);
 
     bool index(boost::shared_ptr<DocumentManager>& documentManager);

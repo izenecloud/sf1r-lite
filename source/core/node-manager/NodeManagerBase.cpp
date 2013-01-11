@@ -377,7 +377,8 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
     {
         LOG(WARNING) << "primary node was deleted : " << path;
         updateCurrentPrimary();
-        if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
+        if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
+            nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
         {
             LOG(INFO) << "stop waiting primary for current processing request.";
             if (cb_on_abort_request_)
@@ -446,6 +447,29 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                 nodeState_ = NODE_STATE_STARTED;
                 updateNodeState();
             }
+            else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
+            {
+                LOG(INFO) << "primary aborted the request while waiting primary." << self_primary_path_;
+                if (cb_on_abort_request_)
+                    cb_on_abort_request_();
+                nodeState_ = NODE_STATE_STARTED;
+                updateNodeState();
+            }
+            else
+            {
+                LOG(INFO) << "wait primary node state not need, ignore";
+            }
+        }
+        else if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
+        {
+            if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
+            {
+                LOG(INFO) << "primary aborted the request while waiting primary." << self_primary_path_;
+                if (cb_on_abort_request_)
+                    cb_on_abort_request_();
+                nodeState_ = NODE_STATE_STARTED;
+                updateNodeState();
+            }
             else
             {
                 LOG(INFO) << "wait primary node state not need, ignore";
@@ -483,6 +507,9 @@ void NodeManagerBase::checkSecondaryState()
     {
     case NODE_STATE_ELECTING:
         checkSecondaryElecting();
+        break;
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
+        checkSecondaryReqAbort();
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
         checkSecondaryReqProcess();
@@ -539,7 +566,8 @@ void NodeManagerBase::setNodeState(NodeStateType state)
     boost::unique_lock<boost::mutex> lock(mutex_);
     if (getPrimaryState() == NODE_STATE_ELECTING)
     {
-        if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
+        if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
+            state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
         {
             if (cb_on_abort_request_)
                 cb_on_abort_request_();
@@ -590,6 +618,16 @@ void NodeManagerBase::checkSecondaryReqProcess()
                 node_list[i] << ", state: " << state << ", keep waiting.";
             break;
         }
+        else if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
+        {
+            all_secondary_ready = false;
+            LOG(WARNING) << "request aborted by one replica while waiting finish process. " << node_list[i];
+            LOG(INFO) << "begin abort the request on primary and wait all replica to abort it.";
+            nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT;
+            if(cb_on_abort_request_)
+                cb_on_abort_request_();
+            break;
+        }
     }
     if (all_secondary_ready)
     {
@@ -626,6 +664,16 @@ void NodeManagerBase::checkSecondaryReqFinishLog()
                 node_list[i] << ", state: " << state << ", keep waiting.";
             break;
         }
+        else if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
+        {
+            all_secondary_ready = false;
+            LOG(WARNING) << "request aborted by one replica when waiting finish log." << node_list[i];
+            LOG(INFO) << "begin abort the request on primary and wait all replica to abort it.";
+            nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT;
+            if(cb_on_abort_request_)
+                cb_on_abort_request_();
+            break;
+        }
     }
     if (all_secondary_ready)
     {
@@ -636,6 +684,39 @@ void NodeManagerBase::checkSecondaryReqFinishLog()
         nodeState_ = NODE_STATE_STARTED;
         checkSecondaryRecovery();
         LOG(INFO) << "all replica finished write log, ready for next new request.";
+    }
+    updateNodeState();
+}
+
+void NodeManagerBase::checkSecondaryReqAbort()
+{
+    if (nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
+    {
+        LOG(INFO) << "only in abort state, check secondary abort need. state: " << nodeState_;
+        return;
+    }
+    std::vector<std::string> node_list;
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+    LOG(INFO) << "in abort state found " << node_list.size() << " children in node " << primaryNodeParentPath_;
+    bool all_secondary_ready = true;
+    for (size_t i = 0; i < node_list.size(); ++i)
+    {
+        if (node_list[i] == curr_primary_path_)
+            continue;
+        NodeStateType state = getNodeState(node_list[i]);
+        if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
+            state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
+        {
+            all_secondary_ready = false;
+            LOG(INFO) << "one secondary node did not abort while waiting abort request: " <<
+                node_list[i] << ", state: " << state << ", keep waiting.";
+            break;
+        }
+    }
+    if (all_secondary_ready)
+    {
+        LOG(INFO) << "all secondary abort request. primary is ready for new request: " << curr_primary_path_;
+        nodeState_ = NODE_STATE_STARTED;
     }
     updateNodeState();
 }

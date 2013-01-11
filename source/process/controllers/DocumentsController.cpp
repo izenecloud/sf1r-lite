@@ -10,8 +10,6 @@
 #include <bundles/index/IndexSearchService.h>
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/mining/MiningSearchService.h>
-#include <node-manager/SearchMasterManager.h>
-#include <node-manager/RequestLog.h>
 
 #include <common/Keys.h>
 #include <common/Utilities.h>
@@ -74,13 +72,6 @@ bool DocumentsController::checkCollectionService(std::string& error)
     if (! miningSearchService_)
     {
         error = "Request failed, no mining search service found.";
-        return false;
-    }
-
-    bool is_write_req = ReqLogMgr::isWriteRequest(controller_name(), action_name());
-    if (is_write_req && !SearchMasterManager::get()->isMinePrimary())
-    {
-        error = "Request failed, write request can only be sent to Primary master.";
         return false;
     }
     return true;
@@ -434,6 +425,8 @@ void DocumentsController::duplicate_with()
 void DocumentsController::create()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
+    if (callDistribute())
+        return;
     bool requestSent = collectionHandler_->create(
             request()[Keys::resource]
     );

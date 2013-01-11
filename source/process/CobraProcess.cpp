@@ -12,6 +12,7 @@
 #include <node-manager/SuperNodeManager.h>
 #include <node-manager/SearchNodeManager.h>
 #include <node-manager/RecommendNodeManager.h>
+#include <node-manager/DistributeDriver.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
 #include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
@@ -223,6 +224,12 @@ bool CobraProcess::initDriverServer()
     driverServer_.reset(
         new DriverServer(endpoint, factory, threadPoolSize)
     );
+
+    if (SF1Config::get()->isDistributedSearchNode() ||
+        SF1Config::get()->isDistributedRecommendNode())
+    {
+        DistributeDriver::get()->init(driverRouter_);
+    }
 
     addExitHook(boost::bind(&CobraProcess::stopDriver, this));
 

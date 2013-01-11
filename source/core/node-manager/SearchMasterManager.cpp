@@ -23,6 +23,8 @@ bool SearchMasterManager::init()
         return false;
 
     sf1rTopology_ = SearchNodeManager::get()->getSf1rTopology();
+    write_req_queue_ = ZooKeeperNamespace::getSearchWriteReqQueueNode();
+    write_req_queue_parent_ = ZooKeeperNamespace::getSearchWriteReqQueueParent();
     return true;
 }
 

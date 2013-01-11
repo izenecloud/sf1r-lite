@@ -15,6 +15,13 @@
 namespace sf1r
 {
 
+enum ReqSource
+{
+    Normal = 0,
+    FromPrimary = 1,
+    FromLog = 2,
+};
+
 enum ReqLogType
 {
     Req_Index = 0,
@@ -148,6 +155,10 @@ public:
             inc_id_ = prepared_reqdata.inc_id + 1;
         }
         prepared_req_.push_back(prepared_reqdata);
+        printf("prepare request success, isprimary %d, (id:%u, type:%u, /%s/%s) ", isprimary,
+            prepared_reqdata.inc_id, prepared_reqdata.reqtype, prepared_reqdata.controller.c_str(),
+            prepared_reqdata.action.c_str());
+        std::cout << endl;
         return true;
     }
 

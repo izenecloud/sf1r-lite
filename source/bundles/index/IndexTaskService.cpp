@@ -27,6 +27,17 @@ IndexTaskService::~IndexTaskService()
 {
 }
 
+bool IndexTaskService::HookDistributeRequest(const std::string& collectionName, const std::string& reqdata)
+{
+    bool ret = false;
+    indexAggregator_->distributeRequest(collectionName, "HookDistributeRequest", reqdata, ret);
+    if (!ret)
+    {
+        LOG(WARNING) << "Request failed, HookDistributeRequest failed.";
+    }
+    return ret;
+}
+
 bool IndexTaskService::index(unsigned int numdoc)
 {
     bool result = true;

@@ -64,6 +64,8 @@ protected:
         const std::string& propName,
         std::string& propValue);
 
+    bool callDistribute();
+
 private:
     /**
      * @brief do collection related check, such as ACL, handler, etc.

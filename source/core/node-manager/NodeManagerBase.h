@@ -38,6 +38,8 @@ public:
         // primary finished write request and
         // ditribute the request to all replica nodes.
         NODE_STATE_PROCESSING_REQ_NOTIFY_REPLICA_START,
+        // primary abort the request and wait all replica to abort the current request.
+        NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT,
         // waiting all replica finish request.
         NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS,
         // all replica finished request and notify
@@ -46,6 +48,9 @@ public:
         // current node finished the write request and
         // waiting primary notify when all node finished this request.
         NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY,
+        // abort a request on non-primary and wait primary to 
+        // respond and abort current request to all replica node.
+        NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT,
         // primary is down, begin new primary election.
         NODE_STATE_ELECTING,
         // restarting after down and begin running the
@@ -160,6 +165,7 @@ protected:
     void checkSecondaryElecting();
     void checkSecondaryReqProcess();
     void checkSecondaryReqFinishLog();
+    void checkSecondaryReqAbort();
     void checkSecondaryRecovery();
     /**
      * Deregister SF1 node on exit

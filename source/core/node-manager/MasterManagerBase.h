@@ -40,6 +40,7 @@ public:
     };
 
     typedef std::map<shardid_t, boost::shared_ptr<Sf1rNode> > WorkerMapT;
+    typedef boost::function<void()>  EventCBType;
 
 public:
     MasterManagerBase();
@@ -84,7 +85,21 @@ public:
         isDistributeEnable_ = enable;
     }
 
+    inline bool isDistribute()
+    {
+        return isDistributeEnable_;
+    }
     bool isMinePrimary();
+    bool isBusy();
+    bool prepareWriteReq();
+    void pushWriteReq(const std::string& reqdata);
+    // make sure prepare success before call this.
+    bool popWriteReq(std::string& reqdata);
+
+    void setCallback(EventCBType on_new_req_available)
+    {
+        on_new_req_available_ = on_new_req_available;
+    }
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -145,6 +160,10 @@ protected:
     /***/
     void resetAggregatorConfig();
 
+    void checkForWriteReq();
+    void endWriteReq();
+    bool isAllWorkerIdle();
+
 protected:
     Sf1rTopology sf1rTopology_;
     bool isDistributeEnable_;
@@ -167,6 +186,9 @@ protected:
     boost::mutex workers_mutex_;
 
     std::vector<boost::shared_ptr<AggregatorBase> > aggregatorList_;
+    EventCBType on_new_req_available_;
+    std::string write_req_queue_parent_;
+    std::string write_req_queue_;
 
     std::string CLASSNAME;
 };

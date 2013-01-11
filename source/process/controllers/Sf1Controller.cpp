@@ -5,6 +5,10 @@
  */
 #include "Sf1Controller.h"
 #include "CollectionHandler.h"
+#include <bundles/index/IndexTaskService.h>
+#include <node-manager/SearchMasterManager.h>
+#include <node-manager/RequestLog.h>
+#include <util/driver/writers/JsonWriter.h>
 
 #include <common/Keys.h>
 #include <common/XmlConfigParser.h>
@@ -46,6 +50,31 @@ bool Sf1Controller::preprocess()
         return true;
 
     response().addError(error);
+    return false;
+}
+
+bool Sf1Controller::callDistribute()
+{
+    if(request().callType() == Request::FromLog)
+        return false;
+    if (SearchMasterManager::get()->isDistribute())
+    {
+        bool is_write_req = ReqLogMgr::isWriteRequest(request().controller(), request().action());
+        if (is_write_req)
+        {
+            std::string reqdata;
+            izenelib::driver::JsonWriter writer;
+            writer.write(request().get(), reqdata);
+            if (request().callType() == Request::FromDistribute)
+            {
+                // return true to ignore this request on local.
+                // return false to handle the request on local.
+                return !collectionHandler_->indexTaskService_->HookDistributeRequest(collectionName_, reqdata);
+            }
+            SearchMasterManager::get()->pushWriteReq(reqdata);
+            return true;
+        }
+    }
     return false;
 }
 

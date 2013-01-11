@@ -23,6 +23,9 @@ bool RecommendMasterManager::init()
         return false;
 
     sf1rTopology_ = RecommendNodeManager::get()->getSf1rTopology();
+
+    write_req_queue_ = ZooKeeperNamespace::getRecommendWriteReqQueueNode();
+    write_req_queue_parent_ = ZooKeeperNamespace::getRecommendWriteReqQueueParent();
     return true;
 }
 
