@@ -18,7 +18,7 @@ class KeywordSearchResult;
 class TopKReranker
 {
 public:
-    TopKReranker(SearchManagerPreProcessor& preprocessor);
+    TopKReranker(const SearchManagerPreProcessor& preprocessor);
 
     void setProductRankerFactory(ProductRankerFactory* productRankerFactory);
 
@@ -30,7 +30,7 @@ public:
         KeywordSearchResult& resultItem);
 
 private:
-    SearchManagerPreProcessor& preprocessor_;
+    const SearchManagerPreProcessor& preprocessor_;
 
     ProductRankerFactory* productRankerFactory_;
 };

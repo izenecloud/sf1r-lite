@@ -44,7 +44,7 @@ QueryBuilder::QueryBuilder(
     const boost::shared_ptr<DocumentManager> documentManager,
     const boost::shared_ptr<IDManager> idManager,
     const boost::shared_ptr<RankingManager>& rankingManager,
-    boost::unordered_map<std::string, PropertyConfig>& schemaMap,
+    const schema_map& schemaMap,
     size_t filterCacheNum
 )
     :indexManagerPtr_(indexManager)
@@ -194,8 +194,7 @@ void QueryBuilder::prepare_for_wand_property_(
 )
 {
     typedef std::map<termid_t, unsigned>::const_iterator const_iter;
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-    iterator found = schemaMap_.find(property);
+    schema_iterator found = schemaMap_.find(property);
     if (found == schemaMap_.end())
         return;
 
@@ -258,7 +257,6 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
     }
 
     size_t success_properties = 0;
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator schema_iterator;
 
     for (size_t i = 0; i < size_of_properties; i++)
     {
@@ -455,7 +453,6 @@ void QueryBuilder::post_prepare_ranker_(
     for (unsigned i = 0; i < indexPropertySize; ++i)
     {
         const std::string& currentProperty = indexPropertyList[i];
-        typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator schema_iterator;
         schema_iterator found = schemaMap_.find(currentProperty);
         if (found == schemaMap_.end())
             continue;
@@ -609,7 +606,6 @@ void QueryBuilder::prepare_for_virtual_property_(
     QueryTreePtr queryTree;
     if (! actionOperation.getQueryTree(properyConfig.getName(), queryTree) ) 
         return;
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator schema_iterator;
     DocumentIterator* pIter = NULL;
 
     std::vector<pair<termid_t, string> > termList;
@@ -1183,8 +1179,7 @@ bool QueryBuilder::do_prepare_for_property_(
             unigramProperty += "_unigram";
         }
         unsigned int unigramPropertyId = 0;
-        typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-        iterator found = schemaMap_.find(unigramProperty);
+        schema_iterator found = schemaMap_.find(unigramProperty);
         if (found != schemaMap_.end())
         {
             unigramPropertyId = found->second.getPropertyId();
@@ -1522,8 +1517,7 @@ bool QueryBuilder::do_prepare_for_property_(
             unigramProperty += "_unigram";
         }
         unsigned int unigramPropertyId = 0;
-        typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-        iterator found = schemaMap_.find(unigramProperty);
+        schema_iterator found = schemaMap_.find(unigramProperty);
         if (found != schemaMap_.end())
         {
             unigramPropertyId = found->second.getPropertyId();
@@ -1639,9 +1633,7 @@ void QueryBuilder::getTermIdsAndIndexesOfSiblings(
 
 propertyid_t QueryBuilder::getPropertyIdByName(const std::string& name) const
 {
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator
-    iterator;
-    iterator found = schemaMap_.find(name);
+    schema_iterator found = schemaMap_.find(name);
     if (found != schemaMap_.end())
     {
         return found->second.getPropertyId();

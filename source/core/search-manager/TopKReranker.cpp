@@ -12,7 +12,7 @@
 
 using namespace sf1r;
 
-TopKReranker::TopKReranker(SearchManagerPreProcessor& preprocessor)
+TopKReranker::TopKReranker(const SearchManagerPreProcessor& preprocessor)
     : preprocessor_(preprocessor)
     , productRankerFactory_(NULL)
 {

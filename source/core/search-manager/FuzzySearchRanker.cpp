@@ -40,9 +40,9 @@ void FuzzySearchRanker::rank(
     boost::shared_ptr<Sorter> pSorter;
     try
     {
-        preprocessor_.prepare_sorter_customranker_(actionOperation,
-                                                   customRanker,
-                                                   pSorter);
+        preprocessor_.prepareSorterCustomRanker(actionOperation,
+                                                pSorter,
+                                                customRanker);
     }
     catch (std::exception& e)
     {

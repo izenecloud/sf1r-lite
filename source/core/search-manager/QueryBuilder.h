@@ -41,12 +41,15 @@ class QueryBuilder
     typedef std::map<std::string, PropertyTermInfo> property_term_info_map;
 
 public:
+    typedef boost::unordered_map<std::string, PropertyConfig> schema_map;
+    typedef schema_map::const_iterator schema_iterator;
+
     QueryBuilder(
         const boost::shared_ptr<IndexManager> indexManager,
         const boost::shared_ptr<DocumentManager> documentManager,
         const boost::shared_ptr<IDManager> idManager,
         const boost::shared_ptr<RankingManager>& rankingManager,
-        boost::unordered_map<std::string, PropertyConfig>& schemaMap,
+        const schema_map& schemaMap,
         size_t filterCacheNum
     );
 
@@ -207,7 +210,7 @@ private:
 
     IndexReader* pIndexReader_;
 
-    boost::unordered_map<std::string, PropertyConfig>& schemaMap_;
+    const schema_map& schemaMap_;
 
     boost::scoped_ptr<FilterCache> filterCache_;
 };

@@ -67,7 +67,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     unsigned indexPropertySize = indexPropertyList.size();
     std::vector<propertyid_t> indexPropertyIdList(indexPropertySize);
 
-    preprocessor_.PreparePropertyList(indexPropertyList,
+    preprocessor_.preparePropertyList(indexPropertyList,
                                       indexPropertyIdList,
                                       boost::bind(&QueryBuilder::getPropertyIdByName, &queryBuilder_, _1));
 
@@ -75,7 +75,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     const std::map<std::string,PropertyTermInfo>& propertyTermInfoMap =
         actionOperation.getPropertyTermInfoMap();
     std::vector<std::map<termid_t, unsigned> > termIndexMaps(indexPropertySize);
-    preprocessor_.PreparePropertyTermIndex(propertyTermInfoMap,
+    preprocessor_.preparePropertyTermIndex(propertyTermInfoMap,
                                            indexPropertyList, termIndexMaps);
 
 
@@ -154,9 +154,9 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
 
     try
     {
-        preprocessor_.prepare_sorter_customranker_(actionOperation,
-                                                   param.customRanker,
-                                                   param.pSorter);
+        preprocessor_.prepareSorterCustomRanker(actionOperation,
+                                                param.pSorter,
+                                                param.customRanker);
     }
     catch (std::exception& e)
     {

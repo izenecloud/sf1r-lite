@@ -18,21 +18,16 @@ SearchManager::SearchManager(
     const boost::shared_ptr<IndexManager>& indexManager,
     const boost::shared_ptr<RankingManager>& rankingManager,
     IndexBundleConfiguration* config)
-    : topKReranker_(preprocessor_)
+    : preprocessor_(indexSchema)
+    , topKReranker_(preprocessor_)
     , fuzzySearchRanker_(preprocessor_)
 {
-    for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
-            iter != indexSchema.end(); ++iter)
-    {
-        preprocessor_.schemaMap_[iter->getName()] = *iter;
-    }
-
     queryBuilder_.reset(new QueryBuilder(
                             indexManager,
                             documentManager,
                             idManager,
                             rankingManager,
-                            preprocessor_.schemaMap_,
+                            preprocessor_.getSchemaMap(),
                             config->filterCacheNum_));
 
     searchThreadWorker_.reset(new SearchThreadWorker(*config,
@@ -63,11 +58,11 @@ void SearchManager::setMiningManager(
         return;
     }
 
-    preprocessor_.productScorerFactory_ =
-        miningManager->GetProductScorerFactory();
+    preprocessor_.setProductScorerFactory(
+        miningManager->GetProductScorerFactory());
 
-    preprocessor_.numericTableBuilder_ =
-        miningManager->GetNumericTableBuilder();
+    preprocessor_.setNumericTableBuilder(
+        miningManager->GetNumericTableBuilder());
 
     searchThreadWorker_->setGroupFilterBuilder(
         miningManager->GetGroupFilterBuilder());

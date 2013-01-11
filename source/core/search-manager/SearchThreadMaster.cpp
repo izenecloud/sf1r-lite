@@ -199,9 +199,9 @@ bool SearchThreadMaster::fetchSearchResult(
         {
             // all sorters will be the same after searching,
             // so we can just use any sorter.
-            preprocessor_.fillSearchInfoWithSortPropertyData_(pSorter.get(),
-                                                              docIdList,
-                                                              distSearchInfo);
+            preprocessor_.fillSearchInfoWithSortPropertyData(pSorter.get(),
+                                                             docIdList,
+                                                             distSearchInfo);
         }
         catch (const std::exception& e)
         {
