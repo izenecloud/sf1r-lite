@@ -3,7 +3,8 @@
 
 #include <util/ustring/UString.h>
 #include <util/singleton.h>
-#include <am/succinct/ux-trie/uxMap.hpp>
+//#include <am/succinct/ux-trie/uxMap.hpp>
+#include <am/succinct/marisa/map.h>
 
 #include <boost/thread/once.hpp>
 
@@ -28,7 +29,7 @@ public:
     bool PrefixMap(const UString&backend, UString&frontend);
 private:
     void InitOnce_(const std::string& path);
-    static izenelib::am::succinct::ux::Map<UString> back2front_;		
+    static marisa::Map<UString> back2front_;		
 };
 
 }
