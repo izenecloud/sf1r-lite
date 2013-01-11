@@ -1,33 +1,23 @@
 #include "SearchManager.h"
-#include "NormalSearch.h"
+#include "SearchFactory.h"
 #include <mining-manager/MiningManager.h>
 #include <bundles/index/IndexBundleConfiguration.h>
 
 #include <glog/logging.h>
 
-namespace sf1r
-{
+using namespace sf1r;
 
 SearchManager::SearchManager(
     const IndexBundleConfiguration& config,
-    const boost::shared_ptr<DocumentManager>& documentManager,
-    const boost::shared_ptr<IndexManager>& indexManager,
-    const boost::shared_ptr<RankingManager>& rankingManager)
+    const SearchFactory& searchFactory)
     : preprocessor_(config.indexSchema_)
     , topKReranker_(preprocessor_)
     , fuzzySearchRanker_(preprocessor_)
+    , queryBuilder_(searchFactory.createQueryBuilder(
+                        preprocessor_.getSchemaMap()))
+    , searchBase_(searchFactory.createSearchBase(
+                      preprocessor_, *queryBuilder_))
 {
-    queryBuilder_.reset(new QueryBuilder(documentManager,
-                                         indexManager,
-                                         preprocessor_.getSchemaMap(),
-                                         config.filterCacheNum_));
-
-    searchBase_.reset(new NormalSearch(config,
-                                       documentManager,
-                                       indexManager,
-                                       rankingManager,
-                                       preprocessor_,
-                                       *queryBuilder_));
 }
 
 void SearchManager::setMiningManager(
@@ -54,5 +44,3 @@ void SearchManager::setMiningManager(
     fuzzySearchRanker_.setFuzzyScoreWeight(
         miningManager->getMiningSchema().product_ranking_config);
 }
-
-} // namespace sf1r

@@ -13,9 +13,7 @@
 namespace sf1r
 {
 class IndexBundleConfiguration;
-class DocumentManager;
-class IndexManager;
-class RankingManager;
+class SearchFactory;
 class MiningManager;
 
 class SearchManager
@@ -23,9 +21,7 @@ class SearchManager
 public:
     SearchManager(
         const IndexBundleConfiguration& config,
-        const boost::shared_ptr<DocumentManager>& documentManager,
-        const boost::shared_ptr<IndexManager>& indexManager,
-        const boost::shared_ptr<RankingManager>& rankingManager);
+        const SearchFactory& searchFactory);
 
     void setMiningManager(
         const boost::shared_ptr<MiningManager>& miningManager);
