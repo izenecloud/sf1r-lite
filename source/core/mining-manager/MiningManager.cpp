@@ -2030,7 +2030,7 @@ bool MiningManager::GetSuffixMatch(
         docIdList[i] = res_list[i].second;
     }
 
-    searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
+    searchManager_->fuzzySearchRanker_.rank(actionOperation, start, docIdList,
             rankScoreList, customRankScoreList);
 
     docIdList.erase(docIdList.begin(), docIdList.begin() + start);

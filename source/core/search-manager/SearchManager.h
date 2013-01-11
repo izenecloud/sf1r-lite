@@ -6,6 +6,7 @@
 #include "SearchThreadWorker.h"
 #include "SearchThreadMaster.h"
 #include "TopKReranker.h"
+#include "FuzzySearchRanker.h"
 #include <configuration-manager/PropertyConfig.h>
 #include <ir/id_manager/IDManager.h>
 
@@ -19,7 +20,6 @@ namespace sf1r
 {
 class IndexBundleConfiguration;
 class SearchKeywordOperation;
-class KeywordSearchActionItem;
 class KeywordSearchResult;
 class DocumentManager;
 class RankingManager;
@@ -36,10 +36,6 @@ public:
         const boost::shared_ptr<IndexManager>& indexManager,
         const boost::shared_ptr<RankingManager>& rankingManager,
         IndexBundleConfiguration* config);
-
-    void rankDocIdListForFuzzySearch(const SearchKeywordOperation& actionOperation,
-                                     uint32_t start, std::vector<uint32_t>& docid_list, std::vector<float>& result_score_list,
-                                     std::vector<float>& custom_score_list);
 
     /**
      * get search results.
@@ -76,22 +72,16 @@ public:
     }
 
 private:
-    score_t getFuzzyScoreWeight_(
-        const boost::shared_ptr<MiningManager>& miningManager) const;
-
-private:
     SearchManagerPreProcessor preprocessor_;
 
     boost::scoped_ptr<QueryBuilder> queryBuilder_;
     boost::scoped_ptr<SearchThreadWorker> searchThreadWorker_;
     boost::scoped_ptr<SearchThreadMaster> searchThreadMaster_;
 
-    ProductRankerFactory* productRankerFactory_;
-
-    score_t fuzzyScoreWeight_;
-
 public:
     TopKReranker topKReranker_;
+
+    FuzzySearchRanker fuzzySearchRanker_;
 };
 
 } // end - namespace sf1r

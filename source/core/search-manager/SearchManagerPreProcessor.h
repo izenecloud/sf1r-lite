@@ -34,6 +34,7 @@ class SearchManagerPreProcessor
     friend class SearchThreadMaster;
     friend class SearchThreadWorker;
     friend class TopKReranker;
+    friend class FuzzySearchRanker;
 private:
     DISALLOW_COPY_AND_ASSIGN(SearchManagerPreProcessor);
     SearchManagerPreProcessor();
