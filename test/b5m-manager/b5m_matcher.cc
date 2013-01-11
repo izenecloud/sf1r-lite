@@ -308,6 +308,7 @@ int do_main(int ac, char** av)
         ("trie", "do trie test")
         ("cr-train", "do category recognizer training")
         ("cr", "do category recognizer")
+        ("odb-test", "do odb test")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -518,6 +519,17 @@ int do_main(int ac, char** av)
         max_depth = vm["depth"].as<uint16_t>();
     }
     std::cout<<"cma-path is "<<cma_path<<std::endl;
+
+    if(vm.count("odb-test"))
+    {
+        if(!odb->is_open())
+        {
+            odb->open();
+        }
+        std::string pid;
+        odb->get(name, pid);
+        std::cout<<"pid:"<<pid<<std::endl;
+    }
 
     if(vm.count("raw-generate"))
     {
@@ -798,7 +810,7 @@ int do_main(int ac, char** av)
     }
     if(vm.count("b5mo-generate") && !scd_path.empty())
     {
-        if( scd_path.empty() || !odb || !bdb || mdb_instance.empty() || knowledge_dir.empty())
+        if( scd_path.empty() || !odb || mdb_instance.empty() || knowledge_dir.empty())
         {
             return EXIT_FAILURE;
         }

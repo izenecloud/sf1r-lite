@@ -89,17 +89,23 @@ bool B5mpProcessor::B5moValid_(const Document& doc)
 
 }
 
-void B5mpProcessor::B5moOutput_(ValueType& value, int status)
+void B5mpProcessor::B5moPost_(ValueType& value, int status)                     
 {
     if(value.type==DELETE_SCD) value.type = NOT_SCD;
     if(status==PairwiseScdMerger::OLD) value.type=NOT_SCD;
+}
+
+void B5mpProcessor::B5moOutput_(ValueType& value, int status)
+{
     uint128_t pid = GetPid_(value.doc);
     if(pid==0)
     {
+        B5moPost_(value, status);
         return;
     }
     if(!B5moValid_(value.doc)) 
     {
+        B5moPost_(value, status);
         return;
     }
     bool independent_mode = false;
@@ -127,6 +133,7 @@ void B5mpProcessor::B5moOutput_(ValueType& value, int status)
         ProductMerge_(pvalue.second, value);
         ProductOutput_(pvalue);
     }
+    B5moPost_(value, status);
 }
 
 void B5mpProcessor::ProductMerge_(ValueType& value, const ValueType& another_value)
