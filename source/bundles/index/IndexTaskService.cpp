@@ -27,10 +27,13 @@ IndexTaskService::~IndexTaskService()
 {
 }
 
-bool IndexTaskService::HookDistributeRequest(const std::string& collectionName, const std::string& reqdata)
+bool IndexTaskService::HookDistributeRequest(const std::string& collectionName, const std::string& reqdata, bool shard)
 {
     bool ret = false;
-    indexAggregator_->distributeRequest(collectionName, "HookDistributeRequest", reqdata, ret);
+    if (shard)
+        indexAggregator_->distributeRequest(collectionName, "HookDistributeRequest", reqdata, ret);
+    else
+        indexWorker_->HookDistributeRequest(reqdata, ret);
     if (!ret)
     {
         LOG(WARNING) << "Request failed, HookDistributeRequest failed.";

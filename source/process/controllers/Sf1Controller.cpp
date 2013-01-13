@@ -69,7 +69,11 @@ bool Sf1Controller::callDistribute()
             {
                 // return true to ignore this request on local.
                 // return false to handle the request on local.
-                return !collectionHandler_->indexTaskService_->HookDistributeRequest(collectionName_, reqdata);
+                return !collectionHandler_->indexTaskService_->HookDistributeRequest(collectionName_, reqdata, true);
+            }
+            else if (request().callType() == Request::FromPrimaryWorker)
+            {
+                return !collectionHandler_->indexTaskService_->HookDistributeRequest(collectionName_, request().primaryAddition(), false);
             }
             SearchMasterManager::get()->pushWriteReq(reqdata);
             return true;

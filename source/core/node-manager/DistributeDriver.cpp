@@ -2,6 +2,8 @@
 #include "SearchMasterManager.h"
 #include "RecommendMasterManager.h"
 
+#include <util/driver/Reader.h>
+#include <util/driver/Writer.h>
 #include <util/driver/writers/JsonWriter.h>
 #include <util/driver/readers/JsonReader.h>
 #include <util/driver/Keys.h>
@@ -19,22 +21,11 @@ void DistributeDriver::init(const RouterPtr& router)
     SearchMasterManager::get()->setCallback(boost::bind(&DistributeDriver::on_new_req_available, this));
 }
 
-void DistributeDriver::on_new_req_available()
+void DistributeDriver::handleRequest(const std::string& reqjsondata, const std::string& packed_data, Request::kCallType calltype)
 {
-    if (!SearchMasterManager::get()->prepareWriteReq())
-    {
-        LOG(WARNING) << "prepare new request failed. maybe some other primary master prepared first. ";
-        return;
-    }
-    std::string reqdata;
-    if(!SearchMasterManager::get()->popWriteReq(reqdata))
-    {
-        LOG(INFO) << "pop request data failed.";
-        return;
-    }
     static izenelib::driver::JsonReader reader;
     Value requestValue;
-    if(reader.read(reqdata, requestValue))
+    if(reader.read(reqjsondata, requestValue))
     {
         if (requestValue.type() != Value::kObjectType)
         {
@@ -58,7 +49,9 @@ void DistributeDriver::on_new_req_available()
         try
         {
             // prepare request
-            request.setCallType(Request::FromDistribute);
+            request.setCallType(calltype);
+            if (calltype == Request::FromPrimaryWorker)
+                request.setPrimaryAddition(packed_data);
             handler->invoke(request,
                 response,
                 tmp_poller);
@@ -74,6 +67,29 @@ void DistributeDriver::on_new_req_available()
         // malformed request
         LOG(WARNING) << "read request data error: " << reader.errorMessages();
     }
+
+
+}
+
+void DistributeDriver::handleReqFromPrimary(const std::string& reqjsondata, const std::string& packed_data)
+{
+    handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker);
+}
+
+void DistributeDriver::on_new_req_available()
+{
+    if (!SearchMasterManager::get()->prepareWriteReq())
+    {
+        LOG(WARNING) << "prepare new request failed. maybe some other primary master prepared first. ";
+        return;
+    }
+    std::string reqdata;
+    if(!SearchMasterManager::get()->popWriteReq(reqdata))
+    {
+        LOG(INFO) << "pop request data failed.";
+        return;
+    }
+    handleRequest(reqdata, "", Request::FromDistribute);
 }
 
 }

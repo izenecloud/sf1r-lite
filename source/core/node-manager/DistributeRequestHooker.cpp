@@ -1,4 +1,5 @@
 #include "DistributeRequestHooker.h"
+#include "DistributeDriver.h"
 #include <boost/filesystem.hpp>
 #include <util/driver/writers/JsonWriter.h>
 #include <util/driver/readers/JsonReader.h>
@@ -16,7 +17,14 @@ namespace sf1r
 DistributeRequestHooker::DistributeRequestHooker()
 {
     // init callback for distribute request.
-
+    SearchNodeManager::get()->setCallback(
+        boost::bind(&DistributeRequestHooker::onElectingFinished, this),
+        boost::bind(&DistributeRequestHooker::waitReplicasProcessCallback, this),
+        boost::bind(&DistributeRequestHooker::waitReplicasLogCallback, this),
+        boost::bind(&DistributeRequestHooker::waitPrimaryCallback, this),
+        boost::bind(&DistributeRequestHooker::abortRequestCallback, this),
+        boost::bind(&DistributeRequestHooker::waitReplicasAbortCallback, this),
+        boost::bind(&DistributeRequestHooker::onRequestFromPrimary, this, _1, _2));
 }
 
 void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const CollectionPath& colpath,
@@ -27,6 +35,22 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const C
     colpath_ = colpath;
     current_req_ = reqdata;
     req_log_mgr_ = req_log_mgr;
+}
+
+void DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& packed_reqdata)
+{
+    LOG(INFO) << "callback for new request from primary";
+    if (type == Req_CreateDoc)
+    {
+        CreateDocReqLog reqlog;
+        if(!ReqLogMgr::unpackReqLogData(packed_reqdata, reqlog))
+        {
+            LOG(ERROR) << "unpack request data from primary failed.";
+            abortRequest();
+            return;
+        }
+        DistributeDriver::get()->handleReqFromPrimary(reqlog.common_data.req_json_data, packed_reqdata);
+    }
 }
 
 bool DistributeRequestHooker::isHooked()
@@ -50,6 +74,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     //request.assignTmp(requestValue);
     prepared_req.req_json_data = current_req_;
     prepared_req.reqtype = type;
+    type_ = type;
     if (!req_log_mgr_->prepareReqLog(prepared_req, SearchNodeManager::get()->isPrimary()))
     {
         return false;
@@ -85,13 +110,19 @@ void DistributeRequestHooker::processLocalBegin()
     SearchNodeManager::get()->beginReqProcess();
 }
 
-void DistributeRequestHooker::processLocalFinished(const std::string& packed_req_data)
+void DistributeRequestHooker::processLocalFinished(bool finishsuccess, const std::string& packed_req_data)
 {
     if (!isHooked())
         return;
     LOG(INFO) << "begin process request on local worker finished.";
     current_req_ = packed_req_data;
-    SearchNodeManager::get()->finishLocalReqProcess(packed_req_data);
+    if (!finishsuccess)
+    {
+        LOG(INFO) << "process finished fail.";
+        abortRequest();
+        return;
+    }
+    SearchNodeManager::get()->finishLocalReqProcess(type_, packed_req_data);
 }
 
 bool DistributeRequestHooker::waitReplicasProcessCallback()
@@ -183,6 +214,13 @@ bool DistributeRequestHooker::waitReplicasLogCallback()
     writeLocalLog();
     finish();
     return true;
+}
+
+void DistributeRequestHooker::onElectingFinished()
+{
+    if(!isHooked())
+        return;
+    LOG(INFO) << "an electing has finished. notify ready to master.";
 }
 
 void DistributeRequestHooker::finish()

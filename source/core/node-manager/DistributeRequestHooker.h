@@ -18,7 +18,8 @@ public:
 
     bool prepare(ReqLogType type, CommonReqData& prepared_req);
     void processLocalBegin();
-    void processLocalFinished(const std::string& packed_reqdata);
+    void processLocalFinished(bool finishsuccess, const std::string& packed_reqdata);
+    void onRequestFromPrimary(int type, const std::string& packed_reqdata);
 
     bool waitReplicasProcessCallback();
     bool waitPrimaryCallback();
@@ -30,6 +31,8 @@ public:
     bool writeLocalLog();
     void writeLog2Replicas();
     bool waitReplicasLogCallback();
+
+    void onElectingFinished();
     void finish();
 
 private:
@@ -37,6 +40,7 @@ private:
     std::string colname_;
     CollectionPath colpath_;
     std::string current_req_;
+    ReqLogType type_;
     boost::shared_ptr<ReqLogMgr> req_log_mgr_;
 };
 

@@ -181,6 +181,12 @@ void MasterManagerBase::onChildrenChanged(const std::string& path)
     checkForWriteReq();
 }
 
+void MasterManagerBase::onDataChanged(const std::string& path)
+{
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    checkForWriteReq();
+}
+
 bool MasterManagerBase::prepareWriteReq()
 {
     if (!isDistributeEnable_)
@@ -222,10 +228,11 @@ void MasterManagerBase::checkForWriteReq()
         return;
     if (!isAllWorkerIdle())
         return;
-    endWriteReq();
-
     if (masterState_ != MASTER_STATE_STARTED && masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
         return;
+
+    endWriteReq();
+
 
     std::vector<std::string> reqchild;
     zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild);

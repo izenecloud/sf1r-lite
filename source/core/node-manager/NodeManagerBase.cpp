@@ -391,12 +391,18 @@ void NodeManagerBase::abortRequest()
 
 }
 
-void NodeManagerBase::finishLocalReqProcess(const std::string& reqdata)
+void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_reqdata)
 {
     if (isPrimary())
     {
         LOG(INFO) << "send request to other replicas from primary.";
         // write request data to node to notify replica.
+        nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS;
+        ZNode znode;
+        setSf1rNodeData(znode);
+        znode.setValue(ZNode::KEY_REQ_DATA, packed_reqdata);
+        znode.setValue(ZNode::KEY_REQ_TYPE, (uint32_t)type);
+        zookeeper_->setZNodeData(self_primary_path_, znode.serialize());
     }
     else
     {
@@ -467,6 +473,33 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     {
         NodeStateType primary_state = getPrimaryState();
         LOG(INFO) << "current primary node changed : " << primary_state;
+        if (nodeState_ == NODE_STATE_STARTED)
+        {
+            if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
+            {
+                LOG(INFO) << "got primary request notify, begin processing on current replica. " << self_primary_path_;
+                nodeState_ = NODE_STATE_PROCESSING_REQ_RUNNING;
+                ZNode znode;
+                std::string sdata;
+                std::string packed_reqdata;
+                int type;
+                if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
+                {
+                    znode.loadKvString(sdata);
+                    packed_reqdata = znode.getStrValue(ZNode::KEY_REQ_DATA);
+                    type = znode.getUInt32Value(ZNode::KEY_REQ_TYPE);
+                }
+                else
+                {
+                    LOG(ERROR) << "fatal error, got request data from primary failed while processing request.";
+                    LOG(ERROR) << zookeeper_->getErrorString();
+                    throw -1;
+                }
+                if(cb_on_new_req_from_primary_)
+                    cb_on_new_req_from_primary_(type, packed_reqdata);
+                updateNodeState();
+            }
+        }
         if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
         {
             if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)

@@ -109,6 +109,7 @@ public:
     virtual void onNodeDeleted(const std::string& path);
 
     virtual void onChildrenChanged(const std::string& path);
+    virtual void onDataChanged(const std::string& path);
 
     /// test
     void showWorkers();

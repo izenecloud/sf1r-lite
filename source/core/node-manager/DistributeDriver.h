@@ -2,8 +2,7 @@
 #define SF1R_DISTRIBUTE_DRIVER_H
 
 #include <util/driver/Router.h>
-#include <util/driver/Reader.h>
-#include <util/driver/Writer.h>
+#include <util/driver/Request.h>
 #include <util/singleton.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -22,8 +21,10 @@ public:
 
     void init(const RouterPtr& router);
     void on_new_req_available();
+    void handleReqFromPrimary(const std::string& reqjsondata, const std::string& packed_data);
 
 private:
+    void handleRequest(const std::string& reqjsondata, const std::string& packed_data, izenelib::driver::Request::kCallType calltype);
     RouterPtr router_;
 };
 

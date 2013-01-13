@@ -175,7 +175,14 @@ public:
         msgpack::pack(buf, reqdata);
         return appendReqData(std::string(buf.data(), buf.size()));
     }
-    template <typename TypedReqLog> bool unpackReqLogData(const std::string& packed_data, TypedReqLog& reqdata)
+    template <typename TypedReqLog> static void packReqLogData(const TypedReqLog& reqdata, std::string& packed_data)
+    {
+        msgpack::sbuffer buf;
+        msgpack::pack(buf, reqdata);
+        packed_data.assign(buf.data(), buf.size());
+    }
+
+    template <typename TypedReqLog> static bool unpackReqLogData(const std::string& packed_data, TypedReqLog& reqdata)
     {
         try
         {
@@ -388,6 +395,7 @@ private:
     uint32_t  inc_id_;
     uint32_t  last_writed_id_;
     std::vector<CommonReqData> prepared_req_;
+    std::map<uint32_t, size_t> cached_head_offset_;
     boost::mutex  lock_;
 
     static std::set<std::string> write_req_set_;

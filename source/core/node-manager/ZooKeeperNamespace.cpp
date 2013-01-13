@@ -36,9 +36,8 @@ const char* ZNode::KEY_COLLECTION = "collection";
 const char* ZNode::KEY_NODE_STATE = "nodestate";
 const char* ZNode::KEY_SELF_REG_PRIMARY_PATH = "self_primary_nodepath";
 const char* ZNode::KEY_MASTER_SERVER_REAL_PATH = "master_server_realpath";
-const char* ZNode::KEY_REQ_CONTROLLER = "req_controller";
-const char* ZNode::KEY_REQ_ACTION = "req_action";
 const char* ZNode::KEY_REQ_DATA = "req_data";
+const char* ZNode::KEY_REQ_TYPE = "req_type";
 
 const char* ZNode::KEY_FILE = "file";
 const char* ZNode::KEY_DIR = "dir";

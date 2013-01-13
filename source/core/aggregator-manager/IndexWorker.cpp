@@ -19,6 +19,7 @@
 #include <common/Utilities.h>
 #include <aggregator-manager/MasterNotifier.h>
 #include <node-manager/SearchNodeManager.h>
+#include <node-manager/RequestLog.h>
 
 // xxx
 #include <bundles/index/IndexBundleConfiguration.h>
@@ -546,6 +547,17 @@ bool IndexWorker::createDocument(const Value& documentValue)
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
+
+    CreateDocReqLog reqlog;
+    if(!distribute_req_hooker_.prepare(Req_CreateDoc, reqlog.common_data))
+    {
+        LOG(ERROR) << "prepare createDocument failed.";
+        return false;
+    }
+    distribute_req_hooker_.processLocalBegin();
+    std::string packed_data;
+    ReqLogMgr::packReqLogData(reqlog, packed_data);
+
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
     scd_writer_->Write(scddoc, INSERT_SCD);
@@ -558,7 +570,11 @@ bool IndexWorker::createDocument(const Value& documentValue)
     std::string source = "";
     IndexWorker::UpdateType updateType;
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType))
+    {
+        distribute_req_hooker_.processLocalFinished(false, packed_data);
         return false;
+    }
+
 
     if(!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
@@ -569,6 +585,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
         doMining_();
     }
 
+    distribute_req_hooker_.processLocalFinished(ret, packed_data);
     return ret;
 }
 
