@@ -40,6 +40,7 @@ private:
     std::string colname_;
     CollectionPath colpath_;
     std::string current_req_;
+    std::string primary_addition_;
     ReqLogType type_;
     boost::shared_ptr<ReqLogMgr> req_log_mgr_;
 };

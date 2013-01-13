@@ -72,7 +72,28 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     //}
     //Request request;
     //request.assignTmp(requestValue);
-    prepared_req.req_json_data = current_req_;
+    if (SearchNodeManager::get()->isPrimary())
+        prepared_req.req_json_data = current_req_;
+    else
+    {
+        // get addition data from primary
+        if (type == Req_CreateDoc)
+        {
+            CreateDocReqLog reqlog;
+            ReqLogMgr::unpackReqLogData(current_req_, reqlog);
+            prepared_req.inc_id = reqlog.common_data.inc_id;
+            prepared_req.req_json_data = reqlog.common_data.req_json_data;
+            LOG(INFO) << "got create document request from primary, inc_id :" << prepared_req.inc_id;
+        }
+        else if(type == Req_Index)
+        {
+        }
+        else
+        {
+            assert(false);
+            forceExit();
+        }
+    }
     prepared_req.reqtype = type;
     type_ = type;
     if (!req_log_mgr_->prepareReqLog(prepared_req, SearchNodeManager::get()->isPrimary()))
