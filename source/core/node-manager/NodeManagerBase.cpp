@@ -370,6 +370,46 @@ NodeManagerBase::NodeStateType NodeManagerBase::getPrimaryState()
     return state;
 }
 
+void NodeManagerBase::beginReqProcess()
+{
+    setNodeState(NodeManagerBase::NODE_STATE_PROCESSING_REQ_RUNNING);
+}
+
+void NodeManagerBase::abortRequest()
+{
+    // notify abort and wait other aborting.
+    if (isPrimary())
+    {
+        LOG(INFO) << "primary abort the request.";
+        setNodeState(NodeManagerBase::NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
+    }
+    else
+    {
+        LOG(INFO) << "replica abort the request.";
+        setNodeState(NodeManagerBase::NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
+    }
+
+}
+
+void NodeManagerBase::finishLocalReqProcess(const std::string& reqdata)
+{
+    if (isPrimary())
+    {
+        LOG(INFO) << "send request to other replicas from primary.";
+        // write request data to node to notify replica.
+    }
+    else
+    {
+        LOG(INFO) << "replica finished local and begin waiting from primary.";
+        setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY);
+    }
+}
+
+void NodeManagerBase::notifyWriteReqLog2Replicas()
+{
+    setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG);
+}
+
 void NodeManagerBase::onNodeDeleted(const std::string& path)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
@@ -571,7 +611,8 @@ void NodeManagerBase::setNodeState(NodeStateType state)
         {
             if (cb_on_abort_request_)
                 cb_on_abort_request_();
-            state = NODE_STATE_STARTED;
+            if (!isPrimaryWithoutLock())
+                state = NODE_STATE_STARTED;
             LOG(INFO) << "change state to waiting primary while primary is electing : " << self_primary_path_;
             LOG(INFO) << "It means the old primary is down and new primary is upping, so we must abort the last request process";
         }

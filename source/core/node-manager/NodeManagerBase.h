@@ -102,10 +102,15 @@ public:
 
     bool isPrimary();
 
-    void setNodeState(NodeStateType state);
+
+    void beginReqProcess();
+    void abortRequest();
+    void finishLocalReqProcess(const std::string& reqdata);
+    void notifyWriteReqLog2Replicas();
 
     void setCallback(CBFuncT on_elect_finished, CBFuncT on_wait_finish_process,
         CBFuncT on_wait_finish_log, CBFuncT on_wait_primary, CBFuncT on_abort_request,
+        CBFuncT on_wait_replica_abort,
         CBFuncT on_recovering, CBFuncT on_recover_wait_primary,
         CBFuncT on_recover_wait_replica_finish)
     {
@@ -114,6 +119,7 @@ public:
         cb_on_wait_finish_log_ = on_wait_finish_log;
         cb_on_wait_primary_ = on_wait_primary;
         cb_on_abort_request_ = on_abort_request;
+        cb_on_wait_replica_abort_ = on_wait_replica_abort;
         cb_on_recovering_ = on_recovering;
         cb_on_recover_wait_primary_ = on_recover_wait_primary;
         cb_on_recover_wait_replica_finish_ = on_recover_wait_replica_finish;
@@ -143,6 +149,7 @@ protected:
 
     bool isPrimaryWithoutLock() const;
 
+    void setNodeState(NodeStateType state);
 protected:
     /**
      * Make sure Zookeeper namespace is initialized properly
@@ -199,6 +206,7 @@ protected:
     CBFuncT cb_on_wait_finish_log_;
     CBFuncT cb_on_wait_primary_;
     CBFuncT cb_on_abort_request_;
+    CBFuncT cb_on_wait_replica_abort_;
     CBFuncT cb_on_recovering_;
     CBFuncT cb_on_recover_wait_primary_;
     CBFuncT cb_on_recover_wait_replica_finish_;

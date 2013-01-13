@@ -173,7 +173,7 @@ public:
     {
         msgpack::sbuffer buf;
         msgpack::pack(buf, reqdata);
-        return appendReqData(reqdata.common_data.inc_id, reqdata.common_data.reqtype, std::string(buf.data(), buf.size()));
+        return appendReqData(std::string(buf.data(), buf.size()));
     }
     template <typename TypedReqLog> bool unpackReqLogData(const std::string& packed_data, TypedReqLog& reqdata)
     {
@@ -191,18 +191,21 @@ public:
         return true;
     }
 
-    bool appendReqData(uint32_t inc_id, uint32_t reqtype, const std::string& req_packed_data)
+    bool appendReqData(const std::string& req_packed_data)
     {
         boost::lock_guard<boost::mutex> lock(lock_);
-        if (inc_id < last_writed_id_)
+        if (prepared_req_.empty())
+            return false;
+        const CommonReqData& reqdata = prepared_req_.back();
+        if (reqdata.inc_id < last_writed_id_)
         {
             std::cout << "append error!!! Request log must append in order by inc_id. " << std::endl;
             return false;
         }
         ReqLogHead whead;
-        whead.inc_id = inc_id;
-        whead.reqtype = reqtype;
-        std::ofstream ofs(getDataPath(inc_id).c_str(), ios::app|ios::binary|ios::ate);
+        whead.inc_id = reqdata.inc_id;
+        whead.reqtype = reqdata.reqtype;
+        std::ofstream ofs(getDataPath(whead.inc_id).c_str(), ios::app|ios::binary|ios::ate);
         std::ofstream ofs_head(head_log_path_.c_str(), ios::app|ios::binary|ios::ate);
         if (!ofs.good() || !ofs_head.good())
         {
@@ -223,7 +226,7 @@ public:
         memcpy(&whead.reqtime[0], time_str.data(), 16);
         ofs.write(req_packed_data.data(), req_packed_data.size());
         ofs_head.write((const char*)&whead, sizeof(whead));
-        last_writed_id_ = inc_id;
+        last_writed_id_ = whead.inc_id;
         return true;
     }
 

@@ -1,6 +1,7 @@
 #ifndef SF1R_DISTRIBUTE_REQUEST_HOOKER_H
 #define SF1R_DISTRIBUTE_REQUEST_HOOKER_H
 
+#include "RequestLog.h"
 #include <string>
 #include <configuration-manager/CollectionPath.h>
 
@@ -15,15 +16,15 @@ public:
         const std::string& reqdata, boost::shared_ptr<ReqLogMgr> req_log_mgr);
     bool isHooked();
 
-    bool prepare();
+    bool prepare(ReqLogType type, CommonReqData& prepared_req);
     void processLocalBegin();
-    void processLocalFinished();
+    void processLocalFinished(const std::string& packed_reqdata);
 
-    bool process2Replicas();
     bool waitReplicasProcessCallback();
     bool waitPrimaryCallback();
 
     void abortRequest();
+    void abortRequestCallback();
     bool waitReplicasAbortCallback();
 
     bool writeLocalLog();
@@ -32,6 +33,7 @@ public:
     void finish();
 
 private:
+    void forceExit();
     std::string colname_;
     CollectionPath colpath_;
     std::string current_req_;

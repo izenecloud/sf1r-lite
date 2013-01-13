@@ -34,7 +34,7 @@ bool DistributeRequestHooker::isHooked()
     return !current_req_.empty();
 }
 
-bool DistributeRequestHooker::prepare()
+bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_req)
 {
     if (!isHooked())
         return true;
@@ -48,9 +48,9 @@ bool DistributeRequestHooker::prepare()
     //}
     //Request request;
     //request.assignTmp(requestValue);
-    CommonReqData req_common_data;
-    req_common_data.req_json_data = current_req_;
-    if (!req_log_mgr_->prepareReqLog(req_common_data, SearchNodeManager::get()->isPrimary()))
+    prepared_req.req_json_data = current_req_;
+    prepared_req.reqtype = type;
+    if (!req_log_mgr_->prepareReqLog(prepared_req, SearchNodeManager::get()->isPrimary()))
     {
         return false;
     }
@@ -62,9 +62,9 @@ bool DistributeRequestHooker::prepare()
     try
     {
         boost::filesystem3::copy(coldata_path, coldata_path + "req-backup-" +
-            boost::lexical_cast<std::string>(req_common_data.inc_id));
+            boost::lexical_cast<std::string>(prepared_req.inc_id));
         boost::filesystem3::copy(querydata_path, querydata_path + "req-backup-" +
-            boost::lexical_cast<std::string>(req_common_data.inc_id));
+            boost::lexical_cast<std::string>(prepared_req.inc_id));
     }
     catch(const std::exception& e)
     {
@@ -82,39 +82,23 @@ void DistributeRequestHooker::processLocalBegin()
     if (!isHooked())
         return;
     LOG(INFO) << "begin process request on worker";
-    SearchNodeManager::get()->setNodeState(NodeManagerBase::NODE_STATE_PROCESSING_REQ_RUNNING);
+    SearchNodeManager::get()->beginReqProcess();
 }
 
-void DistributeRequestHooker::processLocalFinished()
+void DistributeRequestHooker::processLocalFinished(const std::string& packed_req_data)
 {
     if (!isHooked())
         return;
     LOG(INFO) << "begin process request on local worker finished.";
-    if (SearchNodeManager::get()->isPrimary())
-    {
-        process2Replicas();
-    }
-    else
-    {
-        SearchNodeManager::get()->setNodeState(NodeManagerBase::NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY);
-    }
-}
-
-bool DistributeRequestHooker::process2Replicas()
-{
-    if (!isHooked())
-        return true;
-    LOG(INFO) << "send request to other replicas.";
-    SearchNodeManager::get()->updateWriteReqForReplicas(current_req_);
-    return true;
+    current_req_ = packed_req_data;
+    SearchNodeManager::get()->finishLocalReqProcess(packed_req_data);
 }
 
 bool DistributeRequestHooker::waitReplicasProcessCallback()
 {
     if (!isHooked())
         return true;
-    LOG(INFO) << "all replicas finished the request.";
-    writeLocalLog();
+    LOG(INFO) << "all replicas finished the request. Begin write log";
     writeLog2Replicas();
     return true;
 }
@@ -129,6 +113,13 @@ bool DistributeRequestHooker::waitPrimaryCallback()
 }
 
 void DistributeRequestHooker::abortRequest()
+{
+    if (!isHooked())
+        return;
+    SearchNodeManager::get()->abortRequest();
+}
+
+void DistributeRequestHooker::abortRequestCallback()
 {
     if (!isHooked())
         return;
@@ -165,6 +156,13 @@ bool DistributeRequestHooker::writeLocalLog()
     if (!isHooked())
         return true;
     LOG(INFO) << "begin write request log to local.";
+    bool ret = req_log_mgr_->appendReqData(current_req_);
+    if (!ret)
+    {
+        LOG(ERROR) << "write local log failed. something wrong on this node, must exit.";
+        forceExit();
+        return false;
+    }
     return true;
 }
 
@@ -173,6 +171,7 @@ void DistributeRequestHooker::writeLog2Replicas()
     if (!isHooked())
         return;
     LOG(INFO) << "begin notify all replicas to write request log to local.";
+    SearchNodeManager::get()->notifyWriteReqLog2Replicas();
 }
 
 bool DistributeRequestHooker::waitReplicasLogCallback()
@@ -181,13 +180,19 @@ bool DistributeRequestHooker::waitReplicasLogCallback()
         return true;
     LOG(INFO) << "all replicas finished write request log to local.";
     LOG(INFO) << "The request has finally finished both on primary and replicas.";
+    writeLocalLog();
     finish();
     return true;
 }
 
 void DistributeRequestHooker::finish()
 {
-    // remove backup for current request.
+    // remove backup if needed for current request.
+}
+
+void DistributeRequestHooker::forceExit()
+{
+    throw -1;
 }
 
 }
