@@ -40,17 +40,14 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const C
 void DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& packed_reqdata)
 {
     LOG(INFO) << "callback for new request from primary";
-    if (type == Req_CreateDoc)
+    CommonReqData reqloghead;
+    if(!ReqLogMgr::unpackReqLogData(packed_reqdata, reqloghead))
     {
-        CreateDocReqLog reqlog;
-        if(!ReqLogMgr::unpackReqLogData(packed_reqdata, reqlog))
-        {
-            LOG(ERROR) << "unpack request data from primary failed.";
-            abortRequest();
-            return;
-        }
-        DistributeDriver::get()->handleReqFromPrimary(reqlog.common_data.req_json_data, packed_reqdata);
+        LOG(ERROR) << "unpack request data from primary failed.";
+        abortRequest();
+        return;
     }
+    DistributeDriver::get()->handleReqFromPrimary(reqloghead.req_json_data, packed_reqdata);
 }
 
 bool DistributeRequestHooker::isHooked()
@@ -77,22 +74,11 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     else
     {
         // get addition data from primary
-        if (type == Req_CreateDoc)
-        {
-            CreateDocReqLog reqlog;
-            ReqLogMgr::unpackReqLogData(current_req_, reqlog);
-            prepared_req.inc_id = reqlog.common_data.inc_id;
-            prepared_req.req_json_data = reqlog.common_data.req_json_data;
-            LOG(INFO) << "got create document request from primary, inc_id :" << prepared_req.inc_id;
-        }
-        else if(type == Req_Index)
-        {
-        }
-        else
-        {
-            assert(false);
-            forceExit();
-        }
+        CommonReqData reqloghead;
+        ReqLogMgr::unpackReqLogData(current_req_, reqloghead);
+        prepared_req.inc_id = reqloghead.inc_id;
+        prepared_req.req_json_data = reqloghead.req_json_data;
+        LOG(INFO) << "got create document request from primary, inc_id :" << prepared_req.inc_id;
     }
     prepared_req.reqtype = type;
     type_ = type;
