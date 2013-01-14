@@ -183,7 +183,7 @@ void PageRank::InitMap()
 
     set<int>::const_iterator citr = SubGraph_.begin();
     boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
-    wat_array::BitTrie SubTrie( nodes_.size());//wa_->alphabet_num()
+    BitTrie SubTrie( nodes_.size());//wa_->alphabet_num()
 
 
     for (; citr != SubGraph_.end(); ++citr)
