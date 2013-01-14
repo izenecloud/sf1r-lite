@@ -13,6 +13,7 @@
 #include "EkQueryCorrection.h"
 #include <idmlib/query-correction/cn_query_correction.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 
 using namespace izenelib::util::ustring_tool;
 namespace sf1r
@@ -227,9 +228,6 @@ bool QueryCorrectionSubmanager::getRefinedQuery(
         refinedQueryUString = it->second;
         return true;
     }
-
-    CREATE_SCOPED_PROFILER(getRealRefinedQuery, "QueryCorrectionSubmanager",
-                           "QueryCorrectionSubmanager :: getRealRefinedQuery");
 
     typedef boost::tokenizer<boost::char_separator<char> > tokenizers;
     boost::char_separator<char> sep;

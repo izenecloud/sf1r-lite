@@ -7,6 +7,7 @@
 #include <common/parsers/OrderArrayParser.h>
 #include <common/parsers/ConditionArrayParser.h>
 #include <common/parsers/SelectArrayParser.h>
+#include <cache/IzeneCache.h>
 
 #include <list>
 #include <vector>
