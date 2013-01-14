@@ -19,7 +19,7 @@ public:
     AdBias(const std::string& path)
     {
         std::cout<<"AdBiasBuild"<<std::endl;
-        //InitFromDB_();
+        InitFromDB_();
         InitFromTxt_(path);
     }
 
