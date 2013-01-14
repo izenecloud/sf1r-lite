@@ -377,13 +377,13 @@ void PageRank::SetContentRelevancy(int index,double contentRelevancy)
     if(contentRelevancy>=1)
     {
         //CalText &linkinSub=GetLinkin(index);
-        
+        /*
         int size=wa_->Freq(index) ; 
         for (int i=0; i<size ; i++)
         {
              SetContentRelevancy(GetIndexByOffset_(wa_->Select(index,i)),0.01);
         }
-        /*
+        */
         set<int>::const_iterator citr = SubGraph_.begin();
         for (; citr != SubGraph_.end(); ++citr)
         {
@@ -397,7 +397,7 @@ void PageRank::SetContentRelevancy(int index,double contentRelevancy)
 
          
         }
-        */
+       
     }
 }
 

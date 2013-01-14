@@ -33,7 +33,7 @@ void BitTrie::insert(int val)
 {
     //cout<<"insert"<<val<<endl;
     BitNode* temp=Root_;
-    for(int i=0; i<=height_-1; i++)
+    for(int i=height_-1; i>=0; i--)
     {
         if(val&(1<<i))
         {
@@ -70,7 +70,7 @@ bool BitTrie::exist(int val)
     int value=0;
     BitNode* temp=Root_;
     //cout<<"height_"<<height_<<endl;
-    for(int i=0; i<=height_-1; i++)
+    for(int i=height_-1; i>=0; i--)
     {
         if(val&(1<<i))
         {
