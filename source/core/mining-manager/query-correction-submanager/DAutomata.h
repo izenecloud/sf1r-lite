@@ -11,7 +11,6 @@
 #define __D_AUTOMATA_H_
 #include "DictState.h"
 #include <am/3rdparty/rde_hash.h>
-#include <sdb/SequentialDB.h>
 namespace sf1r
 {
 
@@ -37,11 +36,6 @@ public:
                           vector<mychar>& phonemes,
                           rde_map& alphabet,
                           rde_hash& lexicon_);
-
-    DictState *buildTrie(izenelib::am::sdb_btree<izenelib::util::UString>& dictSDB,
-                         vector<mychar>& phonemes,
-                         rde_map& alphabet,
-                         rde_hash& lexicon_);
 
     /**@brief  Prints words in an automaton.
      * @param  s    initial state.

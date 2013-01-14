@@ -10,7 +10,6 @@
 #include <types.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <algorithm>
@@ -18,50 +17,33 @@
 
 namespace sf1r
 {
-
-class SortPropertyCache;
 class Sorter;
 class NumericPropertyTableBase;
-class MiningManager;
 class DocumentIterator;
 class RankQueryProperty;
 class PropertyRanker;
 class ProductScorerFactory;
 class ProductScorer;
 class PropSharedLockSet;
+class NumericPropertyTableBuilder;
 
 class SearchManagerPreProcessor
 {
-    friend class SearchManager;
-private:
-    DISALLOW_COPY_AND_ASSIGN(SearchManagerPreProcessor);
-    SearchManagerPreProcessor();
-    ~SearchManagerPreProcessor();
+public:
+    SearchManagerPreProcessor(const IndexBundleSchema& indexSchema);
 
-    boost::unordered_map<std::string, PropertyConfig> schemaMap_;
-    ProductScorerFactory* productScorerFactory_;
+    typedef boost::unordered_map<std::string, PropertyConfig> SchemaMap;
+    const SchemaMap& getSchemaMap() const { return schemaMap_; }
 
-    boost::shared_ptr<NumericPropertyTableBase>& createPropertyTable(
-        const std::string& propertyName,
-        SortPropertyCache* pSorterCache);
+    void setProductScorerFactory(ProductScorerFactory* factory)
+    {
+        productScorerFactory_ = factory;
+    }
 
-    bool getPropertyTypeByName_(
-        const std::string& name,
-        PropertyDataType& type) const;
-
-    void prepare_sorter_customranker_(
-        const SearchKeywordOperation& actionOperation,
-        CustomRankerPtr& customRanker,
-        boost::shared_ptr<Sorter> &pSorter,
-        SortPropertyCache* pSorterCache,
-        boost::weak_ptr<MiningManager> miningManagerPtr);
-
-    /**
-     * rebuild custom ranker.
-     * @param actionItem
-     * @return
-     */
-    CustomRankerPtr buildCustomRanker_(KeywordSearchActionItem& actionItem);
+    void setNumericTableBuilder(NumericPropertyTableBuilder* builder)
+    {
+        numericTableBuilder_ = builder;
+    }
 
     /**
      * @brief get data list of each sort property for documents referred by docIdList,
@@ -70,14 +52,18 @@ private:
      * @param docIdList [IN]
      * @param distSearchInfo [OUT]
      */
-    void fillSearchInfoWithSortPropertyData_(
+    void fillSearchInfoWithSortPropertyData(
         Sorter* pSorter,
         std::vector<unsigned int>& docIdList,
-        DistKeywordSearchInfo& distSearchInfo,
-        SortPropertyCache* pSorterCache);
+        DistKeywordSearchInfo& distSearchInfo);
+
+    void prepareSorterCustomRanker(
+        const SearchKeywordOperation& actionOperation,
+        boost::shared_ptr<Sorter>& pSorter,
+        CustomRankerPtr& customRanker);
 
     template<class UnaryOperator>
-    void PreparePropertyList(
+    void preparePropertyList(
         std::vector<std::string>& indexPropertyList,
         std::vector<propertyid_t>& indexPropertyIdList,
         UnaryOperator op)
@@ -93,7 +79,7 @@ private:
 
     }
 
-    void PreparePropertyTermIndex(
+    void preparePropertyTermIndex(
         const std::map<std::string, PropertyTermInfo>& propertyTermInfoMap,
         const std::vector<std::string>& indexPropertyList,
         std::vector<std::map<termid_t, unsigned> >& termIndexMaps);
@@ -103,13 +89,10 @@ private:
         PropSharedLockSet& propSharedLockSet,
         ProductScorer* relevanceScorer);
 
-    bool isProductRanking(const KeywordSearchActionItem& actionItem) const;
-
     bool isNeedCustomDocIterator(const KeywordSearchActionItem& actionItem) const;
 
     bool isNeedRerank(const KeywordSearchActionItem& actionItem) const;
 
-public:
     /**
      * @return true when @p sortPriorityList_ contains "_rank" property.
      */
@@ -121,6 +104,29 @@ public:
      */
     static bool isSortByRankProp(
         const KeywordSearchActionItem::SortPriorityList& sortPriorityList);
+
+private:
+    DISALLOW_COPY_AND_ASSIGN(SearchManagerPreProcessor);
+
+    bool getPropertyTypeByName_(
+        const std::string& name,
+        PropertyDataType& type) const;
+
+    /**
+     * rebuild custom ranker.
+     * @param actionItem
+     * @return
+     */
+    CustomRankerPtr buildCustomRanker_(KeywordSearchActionItem& actionItem);
+
+    bool isProductRanking_(const KeywordSearchActionItem& actionItem) const;
+
+private:
+    SchemaMap schemaMap_;
+
+    ProductScorerFactory* productScorerFactory_;
+
+    NumericPropertyTableBuilder* numericTableBuilder_;
 };
 
 } // end of sf1r

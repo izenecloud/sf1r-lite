@@ -1804,20 +1804,20 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             PropertyConfig propConfig;
             propConfig.setName(property_name);
             IndexBundleSchema::const_iterator propIt = indexSchema.find(propConfig);
+            bool isRTypeNumeric = false;
             if (propIt != indexSchema.end())
             {
                 groupConfig.isRTypeStr = propIt->isRTypeString();
+                isRTypeNumeric = propIt->isRTypeNumeric();
             }
 
             if (groupConfig.isNumericType())
             {
-                if (propIt == indexSchema.end() ||
-                    !propIt->isIndex() ||
-                    !propIt->getIsFilter())
+                if (!isRTypeNumeric)
                 {
                     throw XmlConfigParserException("As property ["+property_name+"] in <Group> is int or float type, "
-                            "it needs to be configured as a filter property like below:\n"
-                            "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
+                                                   "it needs to be configured as a filter property like below:\n"
+                                                   "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
                 }
             }
             else if (!groupConfig.isStringType() &&

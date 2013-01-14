@@ -55,6 +55,7 @@
 #include "suffix-match-manager/FMIndexManager.h"
 
 #include <search-manager/SearchManager.h>
+#include <search-manager/NumericPropertyTableBuilderImpl.h>
 #include <index-manager/IndexManager.h>
 #include <common/SearchCache.h>
 
@@ -140,8 +141,10 @@ MiningManager::MiningManager(
     , searchCache_(searchCache)
     , tgInfo_(NULL)
     , idManager_(idManager)
+    , numericTableBuilder_(NULL)
     , groupManager_(NULL)
     , attrManager_(NULL)
+    , groupFilterBuilder_(NULL)
     , merchantScoreManager_(NULL)
     , customDocIdConverter_(NULL)
     , customRankManager_(NULL)
@@ -174,8 +177,10 @@ MiningManager::~MiningManager()
     if (customRankManager_) delete customRankManager_;
     if (customDocIdConverter_) delete customDocIdConverter_;
     if (merchantScoreManager_) delete merchantScoreManager_;
+    if (groupFilterBuilder_) delete groupFilterBuilder_;
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
+    if (numericTableBuilder_) delete numericTableBuilder_;
     if (tdt_storage_) delete tdt_storage_;
     if (topicDetector_) delete topicDetector_;
     if (summarizationManager_) delete summarizationManager_;
@@ -396,6 +401,10 @@ bool MiningManager::open()
             }
         }
 
+        if (numericTableBuilder_) delete numericTableBuilder_;
+        numericTableBuilder_ = new NumericPropertyTableBuilderImpl(
+            *document_manager_, ctrManager_.get());
+
         /** group */
         if (mining_schema_.group_enable)
         {
@@ -436,13 +445,13 @@ bool MiningManager::open()
 
         if (groupManager_ || attrManager_)
         {
-            faceted::GroupFilterBuilder* filterBuilder =
-                new faceted::GroupFilterBuilder(
-                        mining_schema_.group_config_map,
-                        groupManager_,
-                        attrManager_,
-                        searchManager_.get());
-            searchManager_->setGroupFilterBuilder(filterBuilder);
+            if (groupFilterBuilder_) delete groupFilterBuilder_;
+
+            groupFilterBuilder_ = new faceted::GroupFilterBuilder(
+                mining_schema_.group_config_map,
+                groupManager_,
+                attrManager_,
+                numericTableBuilder_);
         }
 
         /** group label log */
@@ -540,7 +549,7 @@ bool MiningManager::open()
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                    document_manager_, groupManager_, attrManager_, searchManager_.get());
+                    document_manager_, groupManager_, attrManager_, numericTableBuilder_);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
@@ -1992,17 +2001,6 @@ bool MiningManager::GetSuffixMatch(
 
         if (groupManager_ || attrManager_)
         {
-            if (!groupFilterBuilder_)
-            {
-                faceted::GroupFilterBuilder* filterBuilder =
-                    new faceted::GroupFilterBuilder(
-                        mining_schema_.group_config_map,
-                        groupManager_,
-                        attrManager_,
-                        searchManager_.get());
-                groupFilterBuilder_.reset(filterBuilder);
-            }
-
             PropSharedLockSet propSharedLockSet;
             boost::scoped_ptr<faceted::GroupFilter> groupFilter;
             if (groupFilterBuilder_)
@@ -2032,7 +2030,7 @@ bool MiningManager::GetSuffixMatch(
         docIdList[i] = res_list[i].second;
     }
 
-    searchManager_->rankDocIdListForFuzzySearch(actionOperation, start, docIdList,
+    searchManager_->fuzzySearchRanker_.rank(actionOperation, start, docIdList,
             rankScoreList, customRankScoreList);
 
     docIdList.erase(docIdList.begin(), docIdList.begin() + start);
@@ -2312,7 +2310,8 @@ bool MiningManager::initProductScorerFactory_(const ProductRankingConfig& rankCo
                                                *customDocIdConverter_,
                                                document_manager_.get());
 
-    offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(*this);
+    offlineScorerFactory_ = new OfflineProductScorerFactoryImpl(
+        numericTableBuilder_);
 
     const bfs::path scoreDir(parentDir / "product_score");
     productScoreManager_ = new ProductScoreManager(
@@ -2331,8 +2330,6 @@ bool MiningManager::initProductScorerFactory_(const ProductRankingConfig& rankCo
     }
 
     productScorerFactory_ = new ProductScorerFactory(rankConfig, *this);
-    searchManager_->setCustomRankManager(customRankManager_);
-    searchManager_->setProductScorerFactory(productScorerFactory_);
     return true;
 }
 
@@ -2362,6 +2359,5 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
     if (productRankerFactory_) delete productRankerFactory_;
     productRankerFactory_ = new ProductRankerFactory(rankConfig,
                                                      diversityValueTable);
-    searchManager_->setProductRankerFactory(productRankerFactory_);
     return true;
 }

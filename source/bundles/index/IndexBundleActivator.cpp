@@ -7,6 +7,7 @@
 #include <common/Utilities.h>
 #include <query-manager/QueryManager.h>
 #include <index-manager/IndexManager.h>
+#include <search-manager/SearchFactory.h>
 #include <search-manager/SearchManager.h>
 #include <ranking-manager/RankingManager.h>
 #include <document-manager/DocumentManager.h>
@@ -485,18 +486,14 @@ IndexBundleActivator::createSearchManager_() const
 {
     boost::shared_ptr<SearchManager> ret;
 
-    if (indexManager_ && idManager_ && documentManager_ && rankingManager_)
+    if (documentManager_ && indexManager_ && rankingManager_)
     {
-        ret.reset(
-            new SearchManager(
-                config_->indexSchema_,
-                idManager_,
-                documentManager_,
-                indexManager_,
-                rankingManager_,
-                config_
-            )
-        );
+        SearchFactory factory(*config_,
+                              documentManager_,
+                              indexManager_,
+                              rankingManager_);
+
+        ret.reset(new SearchManager(*config_, factory));
     }
     return ret;
 }

@@ -10,20 +10,16 @@
 #define SF1R_OFFLINE_PRODUCT_SCORER_FACTORY_IMPL_H
 
 #include "OfflineProductScorerFactory.h"
-#include <string>
-#include <boost/shared_ptr.hpp>
 
 namespace sf1r
 {
-class SearchManager;
-class NumericPropertyTableBase;
-class MiningManager;
-namespace faceted { class CTRManager; }
+class NumericPropertyTableBuilder;
 
 class OfflineProductScorerFactoryImpl : public OfflineProductScorerFactory
 {
 public:
-    OfflineProductScorerFactoryImpl(MiningManager& miningManager);
+    OfflineProductScorerFactoryImpl(
+        NumericPropertyTableBuilder* numericTableBuilder);
 
     virtual ProductScorer* createScorer(
         const ProductScoreConfig& scoreConfig);
@@ -35,13 +31,8 @@ private:
     ProductScorer* createNumericPropertyScorer_(
         const ProductScoreConfig& scoreConfig);
 
-    boost::shared_ptr<NumericPropertyTableBase> createNumericPropertyTable_(
-        const std::string& propName);
-
 private:
-    boost::shared_ptr<SearchManager> searchManager_;
-
-    boost::shared_ptr<faceted::CTRManager> ctrManager_;
+    NumericPropertyTableBuilder* numericTableBuilder_;
 };
 
 } // namespace sf1r

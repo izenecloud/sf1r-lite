@@ -167,7 +167,6 @@ void CollectionProductDataSource::Flush()
 {
     document_manager_->flush();
     index_manager_->flush();
-    search_manager_->reset_all_property_cache();
 }
 
 bool CollectionProductDataSource::AddCurUuidToHistory(uint32_t docid)
