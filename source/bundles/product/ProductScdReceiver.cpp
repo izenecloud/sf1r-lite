@@ -28,8 +28,6 @@ bool ProductScdReceiver::onReceived(const std::string& scd_source_dir)
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)
 {
-//     LOG(INFO)<<"ProductScdReceiver in test"<<std::endl;
-//     return true;
     LOG(INFO)<<"ProductScdReceiver::Run "<<scd_source_dir<<std::endl;
     if(index_service_==NULL)
     {
@@ -68,6 +66,11 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
     }
 
     //call buildCollection
+    if (index_service_->getDocNum() < 1)
+    {
+        return true;
+    }
+
     if(!index_service_->index(0))
     {
         return false;

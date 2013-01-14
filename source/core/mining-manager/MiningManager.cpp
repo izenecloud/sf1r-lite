@@ -531,6 +531,7 @@ bool MiningManager::open()
             boost::filesystem::create_directories(summarization_path_);
             summarizationManager_ =
                 new MultiDocSummarizationSubManager(summarization_path_, collectionName_,
+                                                    collectionPath_.getScdPath(),
                                                     mining_schema_.summarization_schema,
                                                     document_manager_,
                                                     index_manager_,
@@ -738,15 +739,29 @@ void MiningManager::DoContinue()
     try
     {
         std::string continue_file = collectionDataPath_+"/continue";
+        std::string syncFullScd_file = collectionDataPath_ + "/summarization" + "/full";
         if (boost::filesystem::exists(continue_file))
         {
             boost::filesystem::remove_all(continue_file);
             DoMiningCollection();
         }
+        if (boost::filesystem::exists(syncFullScd_file))
+        {
+            boost::filesystem::remove_all(syncFullScd_file);
+            DoSyncFullSummScd();
+        }
     }
     catch (std::exception& ex)
     {
         std::cerr<<ex.what()<<std::endl;
+    }
+}
+
+void MiningManager::DoSyncFullSummScd()
+{
+    if (mining_schema_.summarization_enable)
+    {
+        summarizationManager_->syncFullSummScd();
     }
 }
 
