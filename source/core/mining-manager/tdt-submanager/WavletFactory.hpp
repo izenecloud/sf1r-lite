@@ -8,6 +8,7 @@
 #include <am/succinct/wat_array/bit_trie.hpp>
 using namespace wat_array;
 using namespace wavelet_matrix;
+
 namespace sf1r
 {
 
@@ -32,10 +33,10 @@ class WavletTree
 
 public:    
     virtual void Init(const std::vector<uint64_t>& array){};
-    virtual uint64_t Freq(uint64_t c) const{};
-    virtual uint64_t Rank(uint64_t c, uint64_t pos) const{};
-    virtual uint64_t Lookup(uint64_t pos) const{};
-    virtual uint64_t Select(uint64_t c, uint64_t rank) const{};
+    virtual uint64_t Freq(uint64_t c) const{return -1;};
+    virtual uint64_t Rank(uint64_t c, uint64_t pos) const{return -1;};
+    virtual uint64_t Lookup(uint64_t pos) const{return -1;};
+    virtual uint64_t Select(uint64_t c, uint64_t rank) const{return -1;};
     //virtual void QuantileRangeEach(uint64_t begin_pos, uint64_t end_pos, size_t i, uint64_t val,int k,vector<uint64_t>& ret,BitNode* node) const;
     virtual void QuantileRangeAll(uint64_t begin_pos,uint64_t end_pos, vector<uint64_t>& ret,const BitTrie& filter) const{};
     WavletTree(){};

@@ -99,26 +99,18 @@ bool NaiveTopicDetector::GetTopics(const std::string& content, std::vector<std::
 {
     if(!analyzer_) return false;
     ///convert from traditional chinese to simplified chinese
-    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
-    cout<<"NaiveTopicDetector start"<<time_now<<endl;
     std::string lowercase_content = content;
     boost::to_lower(lowercase_content);
     std::string simplified_content;
     long ret = opencc_->convert(lowercase_content, simplified_content);
     if(-1 == ret) simplified_content = lowercase_content;
     std::vector<std::pair<std::string, uint32_t> > topics;
-    cout<<"simplified stop"<<time_now<<endl;
     GetCMAResults_(simplified_content, topics);
-    cout<<"GetCMAResults stop"<<time_now<<endl;
     if(wg_)
     {
         if(topics.empty()){return true;}
         if(0 == limit) limit = 5;
-        boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
-        cout<<"wg start"<<time_now<<endl;
         wg_->GetTopics(topics, topic_list, limit);
-        time_now = boost::posix_time::microsec_clock::local_time();
-        cout<<"wg stop"<<time_now<<endl;
         return true;
     }
     else
@@ -270,7 +262,9 @@ void NaiveTopicDetector::InitKnowledge_()
         wiki_graph_path /= boost::filesystem::path("wikigraph");
         LOG(INFO) << "wiki graph knowledge path : " << wiki_graph_path.c_str() << endl;
         wg_ = WikiGraph::GetInstance();
+
         wg_->Init(wiki_graph_path.c_str(),opencc_);
+
     }
 }
 
