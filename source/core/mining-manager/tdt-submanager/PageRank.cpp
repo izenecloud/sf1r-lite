@@ -10,6 +10,7 @@
 #include <algorithm>
 
 using namespace std;
+using namespace izenelib::am::succinct::fm_index;
 
 namespace sf1r
 {
@@ -120,101 +121,11 @@ Node::~Node()
 {
     //linkin_index_.clear();
 }
-/*
-void InsertLinkdInNode(Node* node)
-{
-    //如果没有链接
-    if (linkin_nodes_.find(node) == linkin_nodes_.end())
-    {
-        linkin_nodes_.insert(node);
-    }
-    node->InsertLinkOutNode(this);
-}
 
-void InsertLinkOutNode(Node* node)
-{
-    //如果没有链接
-    if (linkout_nodes_.find(node) == linkout_nodes_.end())
-    {
-        linkout_nodes_.insert(node);
-    }
-}
-
-
-void Node::InsertLinkInNode(int i)
-{
-    //如果没有链接top
-    linkin_index_.push_back(i);
-}
-
-
-    double Node::GetPageRank()
-    {
-        return page_rank_;
-    }
-
-    void Node::SetPageRank(double pr)
-    {
-        page_rank_ = pr;
-    }
-
-    void Node::SetContentRelevancy(double contentRelevancy)
-    {
-        contentRelevancy_ = contentRelevancy;
-    }
-*/
 void Node::SetAdvertiRelevancy(double advertiRelevancy)
 {
     advertiRelevancy_ = log(log(advertiRelevancy+1.0)+1.0);
 }
-/*
-    double Node::CalcRank(const vector<Node*>& vecNode,const CalText& linkinSub)
-    {
-        double pr = 0;
-
-        vector<int>::const_iterator citr = linkin_index_.begin();
-       // cout<<"pr"<<pr<<endl;
-        for (; citr != linkin_index_.end(); ++citr)
-        {
-           // cout<<"Link in"<<(*citr)<<endl;
-            Node * node = vecNode[(*citr)];
-            //node->PrintNode();
-           // if(node->GetPageRank()>0.0)
-            pr += node->GetPageRank()/double(node->GetOutBoundNum());
-           // cout<<"pr"<<pr<<endl;
-        }
-
-
-        vector<int>::const_iterator citr = linkinSub.linkin_.begin();
-       // cout<<"pr"<<pr<<endl;
-        for (; citr != linkinSub.linkin_.end(); ++citr)
-        {
-           // cout<<"Link in"<<(*citr)<<endl;
-            Node * node = vecNode[(*citr)];
-            //node->PrintNode();
-            pr += node->GetPageRank()/double(node->GetOutBoundNum());
-           // cout<<"pr"<<pr<<endl;
-        }
-
-        return pr;
-    }
-
-size_t Node::GetOutBoundNum()
-{
-    return  outNumber_;
-}
-
-size_t Node::GetInBoundNum()
-{
-    return  linkin_index_.size();
-}
-
-
-    double Node::GetContentRelevancy()
-    {
-        return contentRelevancy_;
-    }
-*/
 
 double Node::GetAdvertiRelevancy()
 {
@@ -247,12 +158,16 @@ int Node::GetId()
     return id_;
 }
 
-PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph, wat_array::WatArray& wa,double alpha,double beta)
+//PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph, wat_array::WatArray& wa,double alpha,double beta)
+//PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph,wavelet_matrix::WaveletMatrix& wa,double alpha,double beta)
+//PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph, WaveletMatrix<uint64_t>& wa,double alpha,double beta)
+PageRank::PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,  WavletTree* wa,double alpha,double beta)
     : SubGraph_(SubGraph)
     , nodes_(nodes)
     , wa_(wa)
     , alpha_(alpha)
     , beta_(beta)
+    , InCludeList_(false)
 {
     // cout<<"PageRankBuild"<<endl;
     // q_ must < 1
@@ -268,11 +183,9 @@ void PageRank::InitMap()
 
     set<int>::const_iterator citr = SubGraph_.begin();
     boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
-    cout<<"Init"<<time_now<<endl;
-    wat_array::BitTrie SubTrie( nodes_.size());//wa_.alphabet_num()
-    //SubTrie.insert(1312342);
-    //cout<<"1312342 exsit"<<SubTrie.exist(1312342)<<endl;
-    //cout<<"1312331 exsit"<<SubTrie.exist(1312331)<<endl;
+    wat_array::BitTrie SubTrie( nodes_.size());//wa_->alphabet_num()
+
+
     for (; citr != SubGraph_.end(); ++citr)
     {
            // cout<<"Link in"<<(*citr)<<endl;
@@ -280,61 +193,40 @@ void PageRank::InitMap()
          //cout<<(*citr)<<"exsit"<<SubTrie.exist(*citr)<<endl;
     }
     citr = SubGraph_.begin();
-   
     for (; citr != SubGraph_.end(); ++citr)
     {
            // cout<<"Link in"<<(*citr)<<endl;
-            Node * node =nodes_[(*citr)];
-            vector<int> linkin;
-          //  int oN=0,iN=0;
-          /*
-            vector<int>::const_iterator sitr = node->linkout_index_.begin();
-            vector<int> linkin;
-         
-           for (; sitr !=node->linkout_index_.end(); ++sitr)
-           {
-                if(SubGraph_.find(*sitr)!=SubGraph_.end())
-                {oN++;}
-           
-           }
-         
-           sitr = node->linkin_index_.begin();
-           
-           for (; sitr !=node->linkin_index_.end(); ++sitr)
-           {
-                if(SubGraph_.find(*sitr)!=SubGraph_.end())
-                {
-                     linkin.push_back(*sitr);
-                     
-                }
-           
-           }
-           */
+           Node * node =nodes_[(*citr)];
+           vector<int> linkin;
            vector<uint64_t> ret;
            //cout<<"QuantileRangeAll"<<endl;
-           wa_.QuantileRangeAll(node->offStart, node->offStop, ret,SubTrie);
-           //cout<<"ret size"<<ret.size()<<endl;
-           for(unsigned i=0;i<ret.size();i++)
-           {
-                int index=ret[i];
-                if(SubGraph_.find(index)!=SubGraph_.end())
-                {
-                     linkin.push_back(index);
-                     
-                }
-           }
-          // cout<<"linkin size"<<linkin.size()<<endl;
-           /*
+          /*
            for(unsigned i=node->offStart;i<=node->offStop;i++)
            {
-                int index=wa_.Lookup(i);
+                int index=wa_->Lookup(i);
                 if(SubGraph_.find(index)!=SubGraph_.end())
                 {
                      linkin.push_back(index);
                      
                 }
            }
-           */
+                       */
+           wa_->QuantileRangeAll(node->offStart, node->offStop, ret,SubTrie);
+           //cout<<"ret size"<<ret.size()<<endl;
+           
+           for(unsigned i=0;i<ret.size();i++)
+           {
+               int index=ret[i];
+               //if(SubGraph_.find(index)!=SubGraph_.end())
+               //{
+                     linkin.push_back(index);
+                     
+               //}
+               
+           }
+
+           //cout<<"linkin size"<<linkin.size()<<endl;
+         
            CalText temp;
            temp.linkin_=linkin;
            temp.pr_=1.0;
@@ -344,29 +236,28 @@ void PageRank::InitMap()
            //node->PrintNode();
            //cout<<"innumber"<<iN<<endl;
     }
-    time_now = boost::posix_time::microsec_clock::local_time();
-    cout<<"End"<<time_now<<endl;
     citr = SubGraph_.begin();
+    int RelativeNum=0;
     for (; citr != SubGraph_.end(); ++citr)
     {
-           // cout<<"Link in"<<(*citr)<<endl;
 
            vector<int>::const_iterator sitr =GetLinkin(*citr).linkin_.begin();
            for (; sitr !=GetLinkin(*citr).linkin_.end(); ++sitr)
            {
                 AddON(*sitr);
            }
-
-         
+           if(GetLinkin(*citr).linkin_.size()>100)
+           {RelativeNum++;}
     }
+    if(RelativeNum>50){InCludeList_=true;}
+    time_now = boost::posix_time::microsec_clock::local_time();
 }
 // 迭代计算n次
 void PageRank::CalcAll(int n)
 {
 
     set<int>::const_iterator citr;
-    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
-    // cout<<"subset"<<time_now<<endl;
+
     for (int i=0; i<n; ++i)
     {
 
@@ -395,8 +286,7 @@ void PageRank::CalcAll(int n)
     }
     */
     //linkinMap_.clear();
-    time_now = boost::posix_time::microsec_clock::local_time();
-    // cout<<"done"<<time_now<<endl;
+
 }
 
 void PageRank::PrintPageRank(vector<Node*> & nodes)
@@ -471,21 +361,43 @@ void PageRank::SetContentRelevancy(int index,double contentRelevancy)
         return;
     if(GetLinkin(index).contentRelevancy_>0.0&&contentRelevancy<1.0)
     {
+      if(GetLinkin(index).contentRelevancy_<0.4)
         GetLinkin(index).contentRelevancy_+=0.3;
+      else
+        GetLinkin(index).contentRelevancy_=0.7;
     }
     else
     {
+       
+       if(contentRelevancy<1.0&&((!InCludeList_)||GetLinkin(index).linkin_.size()<100))
+        GetLinkin(index).contentRelevancy_=min(contentRelevancy*contentRelevancy*GetLinkin(index).linkin_.size()*GetLinkin(index).outNumber_,0.20)+0.01;
+       else
         GetLinkin(index).contentRelevancy_=contentRelevancy;
     }
     if(contentRelevancy>=1)
     {
         //CalText &linkinSub=GetLinkin(index);
-        int size=wa_.Freq(index) ; 
+        
+        int size=wa_->Freq(index) ; 
         for (int i=0; i<size ; i++)
         {
-             SetContentRelevancy(GetIndexByOffset_(wa_.Select(index,i)),0.01);
+             SetContentRelevancy(GetIndexByOffset_(wa_->Select(index,i)),0.01);
         }
-                
+        /*
+        set<int>::const_iterator citr = SubGraph_.begin();
+        for (; citr != SubGraph_.end(); ++citr)
+        {
+           // cout<<"Link in"<<(*citr)<<endl;
+
+           vector<int> vectemp=GetLinkin(*citr).linkin_;
+           if (find(vectemp.begin(), vectemp.end(),index )!=vectemp.end())
+           {
+              SetContentRelevancy((*citr),0.01);
+           }
+
+         
+        }
+        */
     }
 }
 
