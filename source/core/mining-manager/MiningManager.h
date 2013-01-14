@@ -167,6 +167,8 @@ public:
 
     void DoContinue();
 
+    void DoSyncFullSummScd();
+
     const MiningSchema& getMiningSchema() const { return mining_schema_; }
 
     /**
