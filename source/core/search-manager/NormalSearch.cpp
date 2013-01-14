@@ -56,6 +56,5 @@ bool NormalSearch::search(
                   searchThreadMaster_.fetchSearchResult(offset,
                                                         threadParams.front(),
                                                         searchResult);
-    REPORT_PROFILE_TO_SCREEN();
     return result;
 }
