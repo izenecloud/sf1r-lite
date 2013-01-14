@@ -203,15 +203,15 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             std::string control_scd_path_ = bundleConfig_->indexSCDPath() + "/full";
             fstream outControlFile;
             outControlFile.open(control_scd_path_.c_str(), ios::out);
-            //outControlFile<<"full"<<endl;
+            outControlFile<<"full"<<endl;
             outControlFile.close();
 
-            SynchroData syncTotalData;
-            syncTotalData.setValue(SynchroData::KEY_COLLECTION, bundleConfig_->collectionName_);
-            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-            syncTotalData.setValue(SynchroData::KEY_DATA_PATH, control_scd_path_.c_str());
+            SynchroData syncControlFile;
+            syncControlFile.setValue(SynchroData::KEY_COLLECTION, bundleConfig_->collectionName_);
+            syncControlFile.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::COMMENT_TYPE_FLAG);
+            syncControlFile.setValue(SynchroData::KEY_DATA_PATH, control_scd_path_.c_str());
             SynchroProducerPtr syncProducer = SynchroFactory::getProducer(SUMMARY_CONTROL_FLAG);
-            if (syncProducer->produce(syncTotalData, boost::bind(boost::filesystem::remove_all, control_scd_path_.c_str())))
+            if (syncProducer->produce(syncControlFile, boost::bind(boost::filesystem::remove_all, control_scd_path_.c_str())))
             {
                 syncProducer->wait();
             }
