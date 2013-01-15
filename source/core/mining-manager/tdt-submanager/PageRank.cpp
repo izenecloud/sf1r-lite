@@ -43,17 +43,7 @@ std::ostream& operator<<(std::ostream &f, const Node &node)
    // cout<<name<<endl;
     f.write((const char*)&len, sizeof(len));
     f.write((const char*)&name[0], sizeof(name[0])*(name.size()) );
-/*
-    len=node.linkin_index_.size();
-    f.write((const char*)&len, sizeof(len));
-    vector<int>::const_iterator citr = node.linkin_index_.begin();
-    for (; citr !=node.linkin_index_.end(); ++citr)
-    {
-        int  index=(*citr);
-        //cout<<"citr"<<index<<endl;
-        f.write((const char*)&index, sizeof(index));
-    }
-*/
+
     return f;
 
 }
@@ -73,28 +63,8 @@ std::istream& operator>>(std::istream &f, Node &node )
     std::string name;
     name.resize(len);
     f.read(( char*)&name[0], len);
-    WikiGraph::GetInstance()->AddTitleIdRelation(name, node.id_);
-   /*
-    //string namestr(name,len);
-    //node.name_=namestr;
-    // cout<<node.name_<<endl;
-    f.read(( char*)&len, sizeof(len));
-    int size=len;
-    //cout<<"len"<<len<<endl;
-    int index;
-// node.linkin_index_.reserve(size);
-    node.linkin_index_.resize(size);
-    for(int i=0; i<size; i++)
-    {
-
-        // cout<<"i"<<i<<endl;
-        f.read(( char*)&index, sizeof(index));
-        // cout<<"das"<<endl;
-        node.linkin_index_[i]=index;
-        //cout<<index<<endl;
-        // node.linkin_index_.insert(index);
-    }
-   */
+   //WikiGraph::GetInstance()->AddTitleIdRelation(name, node.id_);
+  
     return f;
 
 }
@@ -158,9 +128,6 @@ int Node::GetId()
     return id_;
 }
 
-//PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph, wat_array::WatArray& wa,double alpha,double beta)
-//PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph,wavelet_matrix::WaveletMatrix& wa,double alpha,double beta)
-//PageRank::PageRank(vector<Node*>& nodes,set<int>& SubGraph, WaveletMatrix<uint64_t>& wa,double alpha,double beta)
 PageRank::PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,  WavletTree* wa,double alpha,double beta)
     : SubGraph_(SubGraph)
     , nodes_(nodes)
@@ -199,18 +166,7 @@ void PageRank::InitMap()
            Node * node =nodes_[(*citr)];
            vector<int> linkin;
            vector<uint64_t> ret;
-           //cout<<"QuantileRangeAll"<<endl;
-          /*
-           for(unsigned i=node->offStart;i<=node->offStop;i++)
-           {
-                int index=wa_->Lookup(i);
-                if(SubGraph_.find(index)!=SubGraph_.end())
-                {
-                     linkin.push_back(index);
-                     
-                }
-           }
-                       */
+          
            wa_->QuantileRangeAll(node->offStart, node->offStop, ret,SubTrie);
            //cout<<"ret size"<<ret.size()<<endl;
            
@@ -265,10 +221,6 @@ void PageRank::CalcAll(int n)
         // cout<<"pr"<<pr<<endl;
         for (; citr != SubGraph_.end(); ++citr)
         {
-            // cout<<"Link in"<<(*citr)<<endl;
-
-           // node->PrintNode();
-           // cout<<"pr"<<pr<<endl;
             Calc(*citr);
         }
         /**/
@@ -276,30 +228,11 @@ void PageRank::CalcAll(int n)
     }
 
 
-    /*
-     for (; citr != SubGraph_.end(); ++citr)
-    {
-           // cout<<"Link in"<<(*citr)<<endl;
-            Node * node =nodes_[(*citr)];
-            node->outNumber_=node->outNumberOrg_;
-
-    }
-    */
-    //linkinMap_.clear();
-
 }
 
 void PageRank::PrintPageRank(vector<Node*> & nodes)
 {
-    //double total_pr = 0;
-    vector<Node*>::const_iterator citr = nodes.begin();
-    for (; citr!=nodes.end(); ++citr)
-    {
-        //Node * node = *citr;
-        //node->PrintNode();
-        //total_pr += node->GetPageRank();
-    }
-    //cout << "Total PR:" << total_pr << endl;
+   
 }
 
 double PageRank::Calc(int index)
@@ -376,14 +309,7 @@ void PageRank::SetContentRelevancy(int index,double contentRelevancy)
     }
     if(contentRelevancy>=1)
     {
-        //CalText &linkinSub=GetLinkin(index);
-        /*
-        int size=wa_->Freq(index) ; 
-        for (int i=0; i<size ; i++)
-        {
-             SetContentRelevancy(GetIndexByOffset_(wa_->Select(index,i)),0.01);
-        }
-        */
+       
         set<int>::const_iterator citr = SubGraph_.begin();
         for (; citr != SubGraph_.end(); ++citr)
         {

@@ -7,7 +7,7 @@
 #include <vector>
 #include <log-manager/UserQuery.h>
 #include <log-manager/LogAnalysis.h>
-
+#include <glog/logging.h>
 namespace sf1r
 {
 
@@ -18,8 +18,8 @@ class AdBias
 public:
     AdBias(const std::string& path)
     {
-        std::cout<<"AdBiasBuild"<<std::endl;
-        InitFromDB_();
+        LOG(INFO)<<"AdBiasBuild"<<std::endl;
+        //InitFromDB_();
         InitFromTxt_(path);
     }
 

@@ -19,7 +19,9 @@ public:
     virtual uint64_t Rank(uint64_t c, uint64_t pos) const = 0;
     virtual uint64_t Lookup(uint64_t pos) const = 0;
     virtual uint64_t Select(uint64_t c, uint64_t rank) const = 0;
+    virtual void Clear()  = 0;
     virtual void QuantileRangeAll(uint64_t begin_pos,uint64_t end_pos, vector<uint64_t>& ret,const BitTrie& filter) const = 0;
+
 };    
 
 class WavletTree1: public WavletTree 
@@ -33,6 +35,7 @@ public:
      uint64_t Rank(uint64_t c, uint64_t pos) const{return wa_.Rank(c,pos);}
      uint64_t Lookup(uint64_t pos) const{return wa_.Lookup(pos);}
      uint64_t Select(uint64_t c, uint64_t rank) const{return wa_.Select(c,rank);}
+     void Clear() { wa_.Clear();};
      void QuantileRangeAll(uint64_t begin_pos,uint64_t end_pos, vector<uint64_t>& ret,const BitTrie& filter) const{ wa_.QuantileRangeAll(begin_pos,end_pos,ret,filter);}
 };    
 
@@ -47,6 +50,7 @@ public:
      uint64_t Rank(uint64_t c, uint64_t pos) const{return wa_.Rank(c,pos);};
      uint64_t Lookup(uint64_t pos) const{return wa_.Lookup(pos);};
      uint64_t Select(uint64_t c, uint64_t rank) const{return wa_.Select(c,rank);};
+     void Clear() { wa_.Clear();};
      void QuantileRangeAll(uint64_t begin_pos,uint64_t end_pos, vector<uint64_t>& ret,const BitTrie& filter) const{ wa_.QuantileRangeAll(begin_pos,end_pos,ret,filter);};
 };    
 

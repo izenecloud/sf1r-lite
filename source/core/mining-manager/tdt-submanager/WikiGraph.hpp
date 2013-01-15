@@ -38,7 +38,6 @@ class WikiGraph
     std::vector<Node*> nodes_;
 
     //database db_;
-    boost::bimap<std::string, int> title_id_;
     std::map<int,std::string> redirect_;
     // PageRank pr_;
     //set<int> SubGraph_;
@@ -54,7 +53,6 @@ class WikiGraph
     //WaveletMatrix<uint64_t> wa_;
     TitleIdDbTable* titleIdDbTable_;
     IdTitleDbTable* idTitleDbTable_;
-    ofstream out;
 public:
     static WikiGraph* GetInstance()
     {
