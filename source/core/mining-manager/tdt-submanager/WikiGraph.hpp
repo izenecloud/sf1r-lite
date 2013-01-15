@@ -53,6 +53,7 @@ class WikiGraph
     //WaveletMatrix<uint64_t> wa_;
     TitleIdDbTable* titleIdDbTable_;
     IdTitleDbTable* idTitleDbTable_;
+    bool UseWavlet;
 public:
     static WikiGraph* GetInstance()
     {

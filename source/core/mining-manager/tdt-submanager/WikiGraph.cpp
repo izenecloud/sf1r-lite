@@ -13,6 +13,7 @@ WikiGraph::WikiGraph()
      enum WAVLETTYPE test=WAVLET_MATRIX;
      wa_=factorytemp.CreateWavletTree(test);//
      advertiseBias_=NULL;
+     UseWavlet=true;
 }
 
 WikiGraph::~WikiGraph()
