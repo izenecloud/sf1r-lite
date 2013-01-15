@@ -488,14 +488,33 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                 {
                     LOG(ERROR) << "fatal error, got request data from primary failed while processing request.";
                     LOG(ERROR) << zookeeper_->getErrorString();
+                    // maybe primary down
+                    if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNONODE)
+                    {
+                        LOG(ERROR) << "primary node is gone while getting new request data on replica.";
+                        return;
+                    }
+                    // primary is ok, this error can not handle. 
                     throw -1;
                 }
-                if(cb_on_new_req_from_primary_)
-                    cb_on_new_req_from_primary_(type, packed_reqdata);
                 updateNodeState();
+                if(cb_on_new_req_from_primary_)
+                {
+                    if(!cb_on_new_req_from_primary_(type, packed_reqdata))
+                    {
+                        LOG(ERROR) << "handle request on replica failed, aborting request from replica";
+                        nodeState_ = NodeManagerBase::NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT;
+                        updateNodeState();
+                    }
+                }
+                else
+                {
+                    LOG(ERROR) << "replica did not have callback on new request from primary.";
+                    throw -1;
+                }
             }
         }
-        if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
+        else if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
         {
             if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
             {
@@ -557,6 +576,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
             }
         }
     }
+
 }
 
 void NodeManagerBase::onChildrenChanged(const std::string& path)

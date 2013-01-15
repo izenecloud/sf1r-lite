@@ -26,7 +26,7 @@ class NodeManagerBase : public ZooKeeperEventHandler
 public:
     typedef boost::function<void()> NoFailCBFuncT;
     typedef boost::function<bool()> CanFailCBFuncT;
-    typedef boost::function<void(int, const std::string&)> NewReqCBFuncT;
+    typedef boost::function<bool(int, const std::string&)> NewReqCBFuncT;
     enum NodeStateType
     {
         NODE_STATE_INIT,

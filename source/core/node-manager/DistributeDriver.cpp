@@ -2,6 +2,7 @@
 #include "SearchMasterManager.h"
 #include "RecommendMasterManager.h"
 #include "DistributeRequestHooker.h"
+#include "RequestLog.h"
 
 #include <util/driver/Reader.h>
 #include <util/driver/Writer.h>
@@ -16,13 +17,58 @@ using namespace izenelib::driver;
 namespace sf1r
 {
 
+DistributeDriver::DistributeDriver()
+{
+    async_task_worker_ = boost::thread(&DistributeDriver::run, this);
+    // only one write task can exist in distribute system.
+    asyncWriteTasks_.resize(1);
+}
+
+void DistributeDriver::run()
+{
+    try
+    {
+        while(true)
+        {
+            boost::function<void()> task;
+            asyncWriteTasks_.pop(task);
+            task();
+            boost::this_thread::interruption_point();
+        }
+    }
+    catch (boost::thread_interrupted&)
+    {
+        return;
+    }
+}
+
 void DistributeDriver::init(const RouterPtr& router)
 {
     router_ = router;
     SearchMasterManager::get()->setCallback(boost::bind(&DistributeDriver::on_new_req_available, this));
 }
 
-void DistributeDriver::handleRequest(const std::string& reqjsondata, const std::string& packed_data, Request::kCallType calltype)
+static void callHandlerAsync(izenelib::driver::Router::handler_ptr handler,
+    Request::kCallType calltype, const std::string& packed_data,
+    Request& request)
+{
+    try
+    {
+        static Response response;
+        static Poller tmp_poller;
+        // prepare request
+        handler->invoke(request,
+            response,
+            tmp_poller);
+        LOG(INFO) << "write request send in DistributeDriver success.";
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "call request handler exception: " << e.what();
+    }
+}
+
+bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::string& packed_data, Request::kCallType calltype)
 {
     static izenelib::driver::JsonReader reader;
     Value requestValue;
@@ -31,11 +77,9 @@ void DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
         if (requestValue.type() != Value::kObjectType)
         {
             LOG(ERROR) << "read request data type error: Malformed request: require an object as input.";
-            return;
+            return false;
         }
         Request request;
-        static Response response;
-        static Poller tmp_poller;
         request.assignTmp(requestValue);
         izenelib::driver::Router::handler_ptr handler = router_->find(
             request.controller(),
@@ -45,17 +89,20 @@ void DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
         {
             LOG(ERROR) << "Handler not found for the request : " << request.controller() <<
                 "," << request.action();
-            return;
+            return false;
+        }
+        if (!ReqLogMgr::isWriteRequest(request.controller(), request.action()))
+        {
+            LOG(ERROR) << "=== Wrong, not a write request in DistributeDriver!!";
+            return false;
         }
         try
         {
-            // prepare request
             DistributeRequestHooker::get()->setHook(calltype, packed_data);
             request.setCallType(calltype);
-            handler->invoke(request,
-                response,
-                tmp_poller);
-            LOG(INFO) << "write request send from primary master success.";
+            asyncWriteTasks_.push(boost::bind(&callHandlerAsync,
+                    handler, calltype, packed_data, request));
+            return true;
         }
         catch (const std::exception& e)
         {
@@ -67,13 +114,17 @@ void DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
         // malformed request
         LOG(WARNING) << "read request data error: " << reader.errorMessages();
     }
-
-
+    return false;
 }
 
-void DistributeDriver::handleReqFromPrimary(const std::string& reqjsondata, const std::string& packed_data)
+bool DistributeDriver::handleReqFromLog(const std::string& reqjsondata, const std::string& packed_data)
 {
-    handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker);
+    return handleRequest(reqjsondata, packed_data, Request::FromLog);
+}
+
+bool DistributeDriver::handleReqFromPrimary(const std::string& reqjsondata, const std::string& packed_data)
+{
+    return handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker);
 }
 
 void DistributeDriver::on_new_req_available()

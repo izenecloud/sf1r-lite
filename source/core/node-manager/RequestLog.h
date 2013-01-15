@@ -107,13 +107,6 @@ public:
     {
     }
 
-    void init(const std::string& basepath)
-    {
-        base_path_ = basepath;
-        head_log_path_ = basepath + "/head.req.log";
-        loadLastData();
-    }
-
     static void initWriteRequestSet()
     {
         write_req_set_.insert("documents_create");
@@ -124,6 +117,13 @@ public:
         if (write_req_set_.find(controller + "_" + action) != write_req_set_.end())
             return true;
         return false;
+    }
+
+    void init(const std::string& basepath)
+    {
+        base_path_ = basepath;
+        head_log_path_ = basepath + "/head.req.log";
+        loadLastData();
     }
 
     bool prepareReqLog(CommonReqData& prepared_reqdata, bool isprimary)
@@ -202,6 +202,7 @@ public:
             std::cout << "append error!!! Request log must append in order by inc_id. " << std::endl;
             return false;
         }
+        assert(reqdata == req_packed_data.common_data);
         ReqLogHead whead;
         whead.inc_id = reqdata.inc_id;
         whead.reqtype = reqdata.reqtype;
@@ -229,6 +230,7 @@ public:
         last_writed_id_ = whead.inc_id;
         ofs.close();
         ofs_head.close();
+        std::cout << "append request log success: " << whead.inc_id << "," << whead.reqtime << std::endl;
         return true;
     }
 

@@ -96,17 +96,24 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const C
     req_log_mgr_ = req_log_mgr;
 }
 
-void DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& packed_reqdata)
+bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& packed_reqdata)
 {
     LOG(INFO) << "callback for new request from primary";
     CommonReqData reqloghead;
     if(!ReqLogMgr::unpackReqLogData(packed_reqdata, reqloghead))
     {
         LOG(ERROR) << "unpack request data from primary failed.";
-        abortRequest();
-        return;
+        // return false to abortRequest.
+        return false;
     }
-    DistributeDriver::get()->handleReqFromPrimary(reqloghead.req_json_data, packed_reqdata);
+    bool ret = DistributeDriver::get()->handleReqFromPrimary(reqloghead.req_json_data, packed_reqdata);
+    if (!ret)
+    {
+        LOG(ERROR) << "send request come from primary failed in replica. " << reqloghead.req_json_data;
+        return false;
+    }
+    LOG(INFO) << "send the request come from primary success in replica.";
+    return true;
 }
 
 void DistributeRequestHooker::setHook(int calltype, const std::string& addition_data)

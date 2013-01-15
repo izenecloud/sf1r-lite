@@ -36,7 +36,7 @@ public:
     bool prepare(ReqLogType type, CommonReqData& prepared_req);
     void processLocalBegin();
     void processLocalFinished(bool finishsuccess, const std::string& packed_reqdata);
-    void onRequestFromPrimary(int type, const std::string& packed_reqdata);
+    bool onRequestFromPrimary(int type, const std::string& packed_reqdata);
 
     void waitReplicasProcessCallback();
     void waitPrimaryCallback();
