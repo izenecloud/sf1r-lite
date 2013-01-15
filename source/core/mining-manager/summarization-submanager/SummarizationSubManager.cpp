@@ -131,7 +131,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
-    scd_control_recevier_ = new ScdControlRecevier(SUMMARY_CONTROL_FLAG, "collectionName", homePath_ + "/full");
+    scd_control_recevier_ = new ScdControlRecevier(SUMMARY_CONTROL_FLAG, collectionName, homePath_ + "/full");
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
@@ -164,6 +164,15 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
     }
     else
     {
+        if (del_docid_set.size() == 0)
+        {
+            LOG(INFO) << "No comments need to delete..."<<endl;
+            os.open((total_scd_path_ + "/" + filename).c_str(), ios::out|ios::app);
+            outNewScd.close();
+            boost::filesystem::path new_path(total_scd_path_ + "/" + ScdName_new);
+            boost::filesystem::remove(new_path);
+            return;
+        }
         for (ScdParser::iterator doc_iter = parser.begin();
                 doc_iter != parser.end(); ++doc_iter)
         {
@@ -174,7 +183,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
             }
             SCDDocPtr SCDdoc = (*doc_iter);
             SCDDoc::iterator p = SCDdoc->begin();
-            for (; p != SCDdoc->end(); p++)
+            for (; p != SCDdoc->end(); p++)//for eache line
             {
                 const std::string& fieldStr = p->first;// preventing copy
                 if (fieldStr == "DOCID")
@@ -194,7 +203,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
                     outNewScd << "<" << p->first << ">" << content_str << endl;
                 }
             }
-        }
+        }//add to NewScdFile;
         boost::filesystem::path old_path(total_scd_path_ + "/" + filename);
         boost::filesystem::path new_path(total_scd_path_ + "/" + ScdName_new);
         boost::filesystem::remove(old_path);
@@ -470,7 +479,6 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     {
         isFull = false;
     }
-
     SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
     if (!isFull)
     {

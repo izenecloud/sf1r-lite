@@ -18,6 +18,7 @@ public:
     static const char* KEY_DATA_PORT;
     static const char* KEY_DATA_TYPE;
     static const char* DATA_TYPE_SCD_INDEX;
+    static const char* COMMENT_TYPE_FLAG;
     static const char* KEY_DATA_PATH;
     static const char* KEY_COLLECTION;
     static const char* KEY_RETURN;

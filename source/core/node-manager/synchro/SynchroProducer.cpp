@@ -317,9 +317,13 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
             {
                 recvDir = consumerCollection+"/scd/index";
             }
+            else if (dataType == SynchroData::COMMENT_TYPE_FLAG)
+            {
+                recvDir = consumerCollection+"/collection-data/default-collection-dir/mining/summarization";
+            }
             else
             {
-                //xxx extend
+                //xx extend;
             }
 
             LOG(INFO) << SYNCHRO_PRODUCER << " transfer data " << dataPath
