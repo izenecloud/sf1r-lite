@@ -15,17 +15,11 @@
 namespace sf1r
 {
 
-enum ReqSource
-{
-    Normal = 0,
-    FromPrimary = 1,
-    FromLog = 2,
-};
-
 enum ReqLogType
 {
-    Req_Index = 0,
-    Req_CreateDoc = 1,
+    Req_None =0,
+    Req_Index = 1,
+    Req_CreateDoc = 2,
 };
 
 #pragma pack(1)
@@ -101,14 +95,14 @@ static const uint32_t _crc32tab[] = {
 
 
 // each log file will store 1000 write request.
-// 0 - 999  saved in 0.req.log
+// 1 - 999  saved in 0.req.log
 // 1000 - 1999 saved in 1.req.log and so on.
 // head.req.log store the offset, length and some other info for each write request.
 class ReqLogMgr
 {
 public:
     ReqLogMgr()
-        :inc_id_(0),
+        :inc_id_(1),
         last_writed_id_(0)
     {
     }
@@ -117,7 +111,6 @@ public:
     {
         base_path_ = basepath;
         head_log_path_ = basepath + "/head.req.log";
-        initWriteRequestSet();
         loadLastData();
     }
 
@@ -234,9 +227,15 @@ public:
         ofs.write(req_packed_data.data(), req_packed_data.size());
         ofs_head.write((const char*)&whead, sizeof(whead));
         last_writed_id_ = whead.inc_id;
+        ofs.close();
+        ofs_head.close();
         return true;
     }
 
+    inline uint32_t getLastSuccessReqId()
+    {
+        return last_writed_id_;
+    }
     // you can use this to read all request data in sequence.
     bool getReqDataByHeadOffset(size_t& headoffset, ReqLogHead& rethead, std::string& req_packed_data)
     {

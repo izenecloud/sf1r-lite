@@ -55,7 +55,7 @@ bool Sf1Controller::preprocess()
 
 bool Sf1Controller::callDistribute()
 {
-    if(request().callType() == Request::FromLog)
+    if(request().callType() != Request::FromAPI)
         return false;
     if (SearchMasterManager::get()->isDistribute())
     {
@@ -65,16 +65,6 @@ bool Sf1Controller::callDistribute()
             std::string reqdata;
             izenelib::driver::JsonWriter writer;
             writer.write(request().get(), reqdata);
-            if (request().callType() == Request::FromDistribute)
-            {
-                // return true to ignore this request on local.
-                // return false to handle the request on local.
-                return !collectionHandler_->indexTaskService_->HookDistributeRequest(collectionName_, reqdata, true);
-            }
-            else if (request().callType() == Request::FromPrimaryWorker)
-            {
-                return !collectionHandler_->indexTaskService_->HookDistributeRequest(collectionName_, request().primaryAddition(), false);
-            }
             SearchMasterManager::get()->pushWriteReq(reqdata);
             return true;
         }

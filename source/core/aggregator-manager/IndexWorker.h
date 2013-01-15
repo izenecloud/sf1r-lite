@@ -287,7 +287,7 @@ private:
     size_t totalSCDSizeSinceLastBackup_;
 
     UpdateBufferType updateBuffer_;
-    DistributeRequestHooker distribute_req_hooker_;
+    DistributeRequestHooker *distribute_req_hooker_;
 
     friend class IndexSearchService;
     friend class IndexBundleActivator;

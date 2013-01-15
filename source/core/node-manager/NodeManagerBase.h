@@ -24,7 +24,8 @@ class ReqLogMgr;
 class NodeManagerBase : public ZooKeeperEventHandler
 {
 public:
-    typedef boost::function<void()> CBFuncT;
+    typedef boost::function<void()> NoFailCBFuncT;
+    typedef boost::function<bool()> CanFailCBFuncT;
     typedef boost::function<void(int, const std::string&)> NewReqCBFuncT;
     enum NodeStateType
     {
@@ -107,11 +108,10 @@ public:
     void beginReqProcess();
     void abortRequest();
     void finishLocalReqProcess(int type, const std::string& reqdata);
-    void notifyWriteReqLog2Replicas();
 
-    void setCallback(CBFuncT on_elect_finished, CBFuncT on_wait_finish_process,
-        CBFuncT on_wait_finish_log, CBFuncT on_wait_primary, CBFuncT on_abort_request,
-        CBFuncT on_wait_replica_abort, NewReqCBFuncT on_new_req_from_primary)
+    void setCallback(NoFailCBFuncT on_elect_finished, NoFailCBFuncT on_wait_finish_process,
+        NoFailCBFuncT on_wait_finish_log, NoFailCBFuncT on_wait_primary, NoFailCBFuncT on_abort_request,
+        NoFailCBFuncT on_wait_replica_abort, NewReqCBFuncT on_new_req_from_primary)
     {
         cb_on_elect_finished_ = on_elect_finished;
         cb_on_wait_finish_process_ = on_wait_finish_process;
@@ -122,8 +122,8 @@ public:
         cb_on_new_req_from_primary_ = on_new_req_from_primary;
     }
 
-    void setRecoveryCallback(CBFuncT on_recovering, CBFuncT on_recover_wait_primary,
-        CBFuncT on_recover_wait_replica_finish)
+    void setRecoveryCallback(CanFailCBFuncT on_recovering, NoFailCBFuncT on_recover_wait_primary,
+        NoFailCBFuncT on_recover_wait_replica_finish)
     {
         cb_on_recovering_ = on_recovering;
         cb_on_recover_wait_primary_ = on_recover_wait_primary;
@@ -206,15 +206,15 @@ protected:
     std::string CLASSNAME;
     std::string self_primary_path_;
     std::string curr_primary_path_;
-    CBFuncT cb_on_elect_finished_;
-    CBFuncT cb_on_wait_finish_process_;
-    CBFuncT cb_on_wait_finish_log_;
-    CBFuncT cb_on_wait_primary_;
-    CBFuncT cb_on_abort_request_;
-    CBFuncT cb_on_wait_replica_abort_;
-    CBFuncT cb_on_recovering_;
-    CBFuncT cb_on_recover_wait_primary_;
-    CBFuncT cb_on_recover_wait_replica_finish_;
+    NoFailCBFuncT cb_on_elect_finished_;
+    NoFailCBFuncT cb_on_wait_finish_process_;
+    NoFailCBFuncT cb_on_wait_finish_log_;
+    NoFailCBFuncT cb_on_wait_primary_;
+    NoFailCBFuncT cb_on_abort_request_;
+    NoFailCBFuncT cb_on_wait_replica_abort_;
+    CanFailCBFuncT cb_on_recovering_;
+    NoFailCBFuncT cb_on_recover_wait_primary_;
+    NoFailCBFuncT cb_on_recover_wait_replica_finish_;
     NewReqCBFuncT cb_on_new_req_from_primary_;
     boost::shared_ptr<ReqLogMgr> reqlog_mgr_;
     //typedef std::map<std::string, NodeStateType> ElectingNodeMapT;

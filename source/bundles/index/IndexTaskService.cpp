@@ -7,6 +7,7 @@
 #include <node-manager/sharding/ScdSharder.h>
 #include <node-manager/sharding/ShardingStrategy.h>
 #include <node-manager/sharding/ScdDispatcher.h>
+#include <util/driver/Request.h>
 
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
@@ -27,13 +28,26 @@ IndexTaskService::~IndexTaskService()
 {
 }
 
-bool IndexTaskService::HookDistributeRequest(const std::string& collectionName, const std::string& reqdata, bool shard)
+bool IndexTaskService::HookDistributeRequest(bool shard)
 {
+    Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
+    if (hooktype == Request::FromAPI)
+    {
+        // from api do not need hook, just process as usually.
+        return true;
+    }
+    const std::string& reqdata = DistributeRequestHooker::get()->getAdditionData();
     bool ret = false;
-    if (shard)
-        indexAggregator_->distributeRequest(collectionName, "HookDistributeRequest", reqdata, ret);
+    if (hooktype == Request::FromDistribute && shard)
+    {
+        indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "HookDistributeRequest", reqdata, ret);
+    }
     else
+    {
+        // hook from primary and log redo means replica is processing the request.
+        // So do not distribute the request to shard worker.
         indexWorker_->HookDistributeRequest(reqdata, ret);
+    }
     if (!ret)
     {
         LOG(WARNING) << "Request failed, HookDistributeRequest failed.";
@@ -45,14 +59,21 @@ bool IndexTaskService::index(unsigned int numdoc)
 {
     bool result = true;
 
-    if (bundleConfig_->isMasterAggregator() && indexAggregator_->isNeedDistribute())
+    if(!HookDistributeRequest(true))
+        return false;
+
+    Request::kCallType calltype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
+
+    if (bundleConfig_->isMasterAggregator() && indexAggregator_->isNeedDistribute() &&
+        (calltype == Request::FromAPI || calltype == Request::FromDistribute) )
     {
         task_type task = boost::bind(&IndexTaskService::distributedIndex_, this, numdoc);
         JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
     }
     else
     {
-        if (bundleConfig_->isMasterAggregator())
+        if (bundleConfig_->isMasterAggregator() &&
+            (calltype == Request::FromAPI || calltype == Request::FromDistribute) )
         {
             LOG(INFO) << "only local worker available, copy master scd files and indexing local.";
             // search the directory for files
@@ -93,31 +114,42 @@ bool IndexTaskService::index(unsigned int numdoc)
 
 bool IndexTaskService::index(boost::shared_ptr<DocumentManager>& documentManager)
 {
+    if(!HookDistributeRequest(false))
+        return false;
     return indexWorker_->reindex(documentManager);
 }
 
 bool IndexTaskService::optimizeIndex()
 {
+    if(!HookDistributeRequest(false))
+        return false;
     return indexWorker_->optimizeIndex();
 }
 
 bool IndexTaskService::createDocument(const Value& documentValue)
 {
-
+    if(!HookDistributeRequest(false))
+        return false;
     return indexWorker_->createDocument(documentValue);
 }
 
 bool IndexTaskService::updateDocument(const Value& documentValue)
 {
+    if(!HookDistributeRequest(false))
+        return false;
     return indexWorker_->updateDocument(documentValue);
 }
 bool IndexTaskService::updateDocumentInplace(const Value& request)
 {
+    if(!HookDistributeRequest(false))
+        return false;
     return indexWorker_->updateDocumentInplace(request);
 }
 
 bool IndexTaskService::destroyDocument(const Value& documentValue)
 {
+    if(!HookDistributeRequest(false))
+        return false;
     return indexWorker_->destroyDocument(documentValue);
 }
 

@@ -69,6 +69,7 @@ IndexWorker::IndexWorker(
     , numUpdatedDocs_(0)
     , totalSCDSizeSinceLastBackup_(0)
 {
+    distribute_req_hooker_ = DistributeRequestHooker::get();
     bool hasDateInConfig = false;
     const IndexBundleSchema& indexSchema = bundleConfig_->indexSchema_;
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin(), iterEnd = indexSchema.end();
@@ -110,7 +111,7 @@ IndexWorker::~IndexWorker()
 
 void IndexWorker::HookDistributeRequest(const std::string& reqdata, bool& result)
 {
-    distribute_req_hooker_.hookCurrentReq(bundleConfig_->collectionName_,
+    distribute_req_hooker_->hookCurrentReq(bundleConfig_->collectionName_,
         bundleConfig_->collPath_, reqdata,
         SearchNodeManager::get()->getReqLogMgr());
     LOG(INFO) << "got hook request on the worker.";
@@ -119,8 +120,16 @@ void IndexWorker::HookDistributeRequest(const std::string& reqdata, bool& result
 
 void IndexWorker::index(unsigned int numdoc, bool& result)
 {
-    task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
-    JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+    if (distribute_req_hooker_->isHooked())
+    {
+        // hooked request need excute sync.
+        result = buildCollection(numdoc);
+    }
+    else
+    {
+        task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
+        JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+    }
     result = true;
 }
 
@@ -549,12 +558,12 @@ bool IndexWorker::createDocument(const Value& documentValue)
     }
 
     CreateDocReqLog reqlog;
-    if(!distribute_req_hooker_.prepare(Req_CreateDoc, reqlog.common_data))
+    if(!distribute_req_hooker_->prepare(Req_CreateDoc, reqlog.common_data))
     {
         LOG(ERROR) << "prepare createDocument failed.";
         return false;
     }
-    distribute_req_hooker_.processLocalBegin();
+    distribute_req_hooker_->processLocalBegin();
     std::string packed_data;
     ReqLogMgr::packReqLogData(reqlog, packed_data);
 
@@ -571,7 +580,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
     IndexWorker::UpdateType updateType;
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType))
     {
-        distribute_req_hooker_.processLocalFinished(false, packed_data);
+        distribute_req_hooker_->processLocalFinished(false, packed_data);
         return false;
     }
 
@@ -585,7 +594,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
         doMining_();
     }
 
-    distribute_req_hooker_.processLocalFinished(ret, packed_data);
+    distribute_req_hooker_->processLocalFinished(ret, packed_data);
     return ret;
 }
 

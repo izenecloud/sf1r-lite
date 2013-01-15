@@ -13,6 +13,9 @@
 #include <node-manager/SearchNodeManager.h>
 #include <node-manager/RecommendNodeManager.h>
 #include <node-manager/DistributeDriver.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/RequestLog.h>
+
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
 #include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
@@ -244,6 +247,9 @@ bool CobraProcess::initNodeManager()
         std::cout << "ZooKeeper is disabled!" << std::endl;
         return true;
     }
+
+    DistributeRequestHooker::init();
+    ReqLogMgr::initWriteRequestSet();
 
     // Start node management
     ZooKeeperManager::get()->init(

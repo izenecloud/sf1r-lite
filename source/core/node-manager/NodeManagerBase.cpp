@@ -400,7 +400,7 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS;
         ZNode znode;
         setSf1rNodeData(znode);
-        znode.setValue(ZNode::KEY_REQ_DATA, packed_reqdata);
+        znode.setValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA, packed_reqdata);
         znode.setValue(ZNode::KEY_REQ_TYPE, (uint32_t)type);
         zookeeper_->setZNodeData(self_primary_path_, znode.serialize());
     }
@@ -409,11 +409,6 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         LOG(INFO) << "replica finished local and begin waiting from primary.";
         setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY);
     }
-}
-
-void NodeManagerBase::notifyWriteReqLog2Replicas()
-{
-    setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG);
 }
 
 void NodeManagerBase::onNodeDeleted(const std::string& path)
@@ -427,9 +422,9 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
             nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
         {
             LOG(INFO) << "stop waiting primary for current processing request.";
+            nodeState_ = NODE_STATE_STARTED;
             if (cb_on_abort_request_)
                 cb_on_abort_request_();
-            nodeState_ = NODE_STATE_STARTED;
         }
         else if (nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
         {
@@ -486,7 +481,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                 if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
                 {
                     znode.loadKvString(sdata);
-                    packed_reqdata = znode.getStrValue(ZNode::KEY_REQ_DATA);
+                    packed_reqdata = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
                     type = znode.getUInt32Value(ZNode::KEY_REQ_TYPE);
                 }
                 else
@@ -705,8 +700,7 @@ void NodeManagerBase::checkSecondaryReqProcess()
     }
     if (all_secondary_ready)
     {
-        // all replica finished request, write log to local
-        // and notify and wait replica to write log.
+        // all replica finished request, wait replica to write log.
         if (cb_on_wait_finish_process_)
             cb_on_wait_finish_process_();
         nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG;

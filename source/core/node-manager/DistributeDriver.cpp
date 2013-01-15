@@ -1,6 +1,7 @@
 #include "DistributeDriver.h"
 #include "SearchMasterManager.h"
 #include "RecommendMasterManager.h"
+#include "DistributeRequestHooker.h"
 
 #include <util/driver/Reader.h>
 #include <util/driver/Writer.h>
@@ -49,9 +50,8 @@ void DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
         try
         {
             // prepare request
+            DistributeRequestHooker::get()->setHook(calltype, packed_data);
             request.setCallType(calltype);
-            if (calltype == Request::FromPrimaryWorker)
-                request.setPrimaryAddition(packed_data);
             handler->invoke(request,
                 response,
                 tmp_poller);

@@ -96,6 +96,7 @@ public:
     // make sure prepare success before call this.
     bool popWriteReq(std::string& reqdata);
 
+    //bool getWriteReqDataFromPreparedNode(std::string& req_json_data);
     void setCallback(EventCBType on_new_req_available)
     {
         on_new_req_available_ = on_new_req_available;
@@ -161,6 +162,7 @@ protected:
     /***/
     void resetAggregatorConfig();
 
+    //void putWriteReqDataToPreparedNode(const std::string& req_json_data);
     void checkForWriteReq();
     void endWriteReq();
     bool isAllWorkerIdle();

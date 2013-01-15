@@ -268,6 +268,8 @@ bool MasterManagerBase::popWriteReq(std::string& reqdata)
     zookeeper_->getZNodeData(reqchild[0], sdata);
     znode.loadKvString(sdata);
     reqdata = znode.getStrValue(ZNode::KEY_REQ_DATA);
+    // put the reqdata into the prepared unique write node.
+    //putWriteReqDataToPreparedNode(reqdata);
     LOG(INFO) << "a request poped : " << reqchild[0] << " on the server: " << serverRealPath_;
     zookeeper_->deleteZNode(reqchild[0]);
     return true;
@@ -301,6 +303,50 @@ void MasterManagerBase::pushWriteReq(const std::string& reqdata)
             "," << reqdata;
     }
 }
+
+//void MasterManagerBase::putWriteReqDataToPreparedNode(const std::string& req_json_data)
+//{
+//    // make sure prepare is called.
+//    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode()))
+//    {
+//        LOG(ERROR) << "There is no any write request while put request data to it";
+//        return;
+//    }
+//    std::string sdata;
+//    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata))
+//    {
+//        ZNode znode;
+//        znode.loadKvString(sdata);
+//        znode.setValue(ZNode::KEY_MASTER_REQ_DATA, req_json_data);
+//        zookeeper_->setZNodeData(ZooKeeperNamespace::getWriteReqNode(), znode.serialize(), ZooKeeper::WATCH);
+//    }
+//    else
+//    {
+//        LOG(WARNING) << "get write request data failed from prepared write node.";
+//    }
+//}
+//
+//bool MasterManagerBase::getWriteReqDataFromPreparedNode(std::string& req_json_data)
+//{
+//    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode()))
+//    {
+//        LOG(INFO) << "There is no any write request while get request data";
+//        return false;
+//    }
+//    std::string sdata;
+//    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata))
+//    {
+//        ZNode znode;
+//        znode.loadKvString(sdata);
+//        req_json_data = znode.getStrValue(ZNode::KEY_MASTER_REQ_DATA);
+//    }
+//    else
+//    {
+//        LOG(WARNING) << "get write request data failed.";
+//        return false;
+//    }
+//    return true;
+//}
 
 void MasterManagerBase::endWriteReq()
 {

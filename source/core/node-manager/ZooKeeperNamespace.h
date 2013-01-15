@@ -233,6 +233,7 @@ public:
     const static char* KEY_NODE_STATE;
     const static char* KEY_SELF_REG_PRIMARY_PATH;
     const static char* KEY_MASTER_SERVER_REAL_PATH;
+    const static char* KEY_PRIMARY_WORKER_REQ_DATA;
     const static char* KEY_REQ_DATA;
     const static char* KEY_REQ_TYPE;
 

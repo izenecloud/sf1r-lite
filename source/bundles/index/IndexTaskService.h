@@ -28,7 +28,6 @@ public:
 
     ~IndexTaskService();
 
-    bool HookDistributeRequest(const std::string& collectionName, const std::string& reqdata, bool shard);
 
     bool index(unsigned int numdoc);
 
@@ -58,6 +57,7 @@ public:
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
 private:
+    bool HookDistributeRequest(bool shard);
     bool distributedIndex_(unsigned int numdoc);
     bool distributedIndexImpl_(
         unsigned int numdoc,
