@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/inotify.h>
 #include <boost/lexical_cast.hpp>
+#include <fstream>
 
 #define MAX_BUF_SIZE 1024
 
@@ -167,6 +168,11 @@ bool ImgDupDetector::SaveFujiMap()
     url_key_docid_->save(output_path_ + "/../fujimap/tmp3.index");
     docid_docid_->save(output_path_ + "/../fujimap/tmp4.index");
     gid_memcount_->save(output_path_ + "/../fujimap/tmp5.index");
+
+    std::string statefile = output_path_ + "/../fujimap/state";
+    ofstream fout(statefile.c_str());
+    fout << url_key_ << " " << con_key_;
+
     return true;
 }
 
@@ -178,6 +184,11 @@ bool ImgDupDetector::LoadFujiMap()
     url_key_docid_->load(output_path_ + "/../fujimap/tmp3.index");
     docid_docid_->load(output_path_ + "/../fujimap/tmp4.index");
     gid_memcount_->load(output_path_ + "/../fujimap/tmp5.index");
+
+    std::string statefile = output_path_ + "/../fujimap/state";
+    ifstream fin(statefile.c_str());
+    fin >> url_key_ >> con_key_;
+
     return true;
 }
 

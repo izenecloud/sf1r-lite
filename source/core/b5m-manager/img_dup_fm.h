@@ -80,10 +80,15 @@ namespace sf1r {
             return true;
         }
 
+        bool GetFileNameFromPathName(const std::string& pathname, std::string& filename)
+        {
+            filename = pathname.substr(pathname.find_last_of("/")+1);
+            return true;
+        }
         bool ReBuildFile(const std::string& filename)
         {
 
-            std::string scd_file = input_path_ + "/" + filename;
+            std::string scd_file = filename;
             LOG(INFO)<<"ReBuild "<<scd_file<<std::endl;
             ScdParser parser(izenelib::util::UString::UTF_8);
             parser.load(scd_file);
@@ -96,8 +101,13 @@ namespace sf1r {
             ScdWriter writer0(current_output_path_+"/0", 2);
             ScdWriter writer1(current_output_path_+"/1", 2);
 
-            writer0.SetFileName(filename);
-            writer1.SetFileName(filename);
+
+            std::string writefile;
+            GetFileNameFromPathName(filename, writefile);
+
+            writer0.SetFileName(writefile);
+            writer1.SetFileName(writefile);
+            LOG(INFO) << "WriteFileName: " << writefile << std::endl;
 
             for( ScdParser::iterator doc_iter = parser.begin();
                 doc_iter!= parser.end(); ++doc_iter, ++n)
@@ -158,18 +168,8 @@ namespace sf1r {
 
         bool ReBuildAll()
         {
-            if( docid_docid_->build() < 0 )
-            {
-                LOG(ERROR) <<"FujiMap build error [docid_docid_]" <<endl;
-                LOG(ERROR) <<"Error info: " <<docid_docid_->what() <<endl;
-                return false;
-            }
-            if( gid_memcount_->build() < 0 )
-            {
-                LOG(INFO) << "FUjiMap build error [gid_memcount_]" <<endl;
-                LOG(INFO) << "Error info: " <<gid_memcount_->what() <<endl;
-                return false;
-            }
+            docid_docid_->load(output_path_+"/../fujimap/tmp4.index");
+            gid_memcount_->load(output_path_+"/../fujimap/tmp5.index");
 
             ImgDupFileManager::GetCurrentOutputPath(current_output_path_);
 
