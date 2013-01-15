@@ -108,36 +108,36 @@ class Sf1rProcess: public Fastcgipp::Request<char>
         assert(driver);
         try
         {
-            std::string log_content;
-            rj::Document document;
-            rj::Document::AllocatorType& allocator = document.GetAllocator();
-            document.SetObject();
-            rj::Value& top = document;
-            rj::Value tag(log_tag.c_str(), log_tag.length(), allocator);
-            top.AddMember("tag", tag, allocator);
-            rj::Value request_body(body.c_str(), body.length(), allocator);
-            top.AddMember("request", request_body, allocator);
-            rj::Value request_uri(requri.c_str(), requri.length(), allocator);
-            top.AddMember("uri", request_uri, allocator);
-            static ptime epoch(boost::gregorian::date(1970, 1, 1));
-            ptime current_time = microsec_clock::universal_time();
-            time_duration td = current_time - epoch;
-            std::string time_str = boost::lexical_cast<std::string>(double(td.total_milliseconds())/1000);
-            rj::Value msec(time_str.c_str(), time_str.length(), allocator);
-            top.AddMember("msec", msec, allocator);
+            //std::string log_content;
+            //rj::Document document;
+            //rj::Document::AllocatorType& allocator = document.GetAllocator();
+            //document.SetObject();
+            //rj::Value& top = document;
+            //rj::Value tag(log_tag.c_str(), log_tag.length(), allocator);
+            //top.AddMember("tag", tag, allocator);
+            //rj::Value request_body(body.c_str(), body.length(), allocator);
+            //top.AddMember("request", request_body, allocator);
+            //rj::Value request_uri(requri.c_str(), requri.length(), allocator);
+            //top.AddMember("uri", request_uri, allocator);
+            //static ptime epoch(boost::gregorian::date(1970, 1, 1));
+            //ptime current_time = microsec_clock::universal_time();
+            //time_duration td = current_time - epoch;
+            //std::string time_str = boost::lexical_cast<std::string>(double(td.total_milliseconds())/1000);
+            //rj::Value msec(time_str.c_str(), time_str.length(), allocator);
+            //top.AddMember("msec", msec, allocator);
 
-            rj::StringBuffer stream;
-            rj::Writer<rj::StringBuffer> writer(stream);
-            document.Accept(writer);
-            log_content.assign(stream.GetString(), stream.GetSize());
-            boost::system::error_code ec;
-            s.send_to(boost::asio::buffer(log_content.data(), log_content.size()),
-                destination, 0, ec);
+            //rj::StringBuffer stream;
+            //rj::Writer<rj::StringBuffer> writer(stream);
+            //document.Accept(writer);
+            //log_content.assign(stream.GetString(), stream.GetSize());
+            //boost::system::error_code ec;
+            //s.send_to(boost::asio::buffer(log_content.data(), log_content.size()),
+            //    destination, 0, ec);
 
-            if(ec)
-            {
-                error_log("send log to fluentd failed.");
-            }
+            //if(ec)
+            //{
+            //    error_log("send log to fluentd failed.");
+            //}
 
             response = driver->call(requri, tokens, body);
         }
