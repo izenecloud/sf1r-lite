@@ -35,6 +35,16 @@ namespace sf1r {
             return izenelib::util::Singleton<ImgDupFileManager>::get();
         }
 
+        ImgDupFileManager(std::string ip,
+                std::string op,
+                ImgDupFujiMap* gm,
+                ImgDupFujiMap* dd)
+        {
+            input_path_ = ip;
+            output_path_ = op;
+            gid_memcount_ = gm;
+            docid_docid_ = dd;
+        }
         bool SetParam(std::string ip,
                 std::string op,
                 ImgDupFujiMap* gm,
@@ -169,7 +179,9 @@ namespace sf1r {
         bool ReBuildAll()
         {
             docid_docid_->load(output_path_+"/../fujimap/tmp4.index");
+            docid_docid_->build();
             gid_memcount_->load(output_path_+"/../fujimap/tmp5.index");
+            gid_memcount_->build();
 
             ImgDupFileManager::GetCurrentOutputPath(current_output_path_);
 

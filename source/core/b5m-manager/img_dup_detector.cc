@@ -251,9 +251,9 @@ bool ImgDupDetector::DupDetectorMain()
                 BeginToDupDetect(filename);
                 LOG(INFO)<<"Finish processing: "<<filename<<std::endl;
                 if(incremental_mode_)
-                    ImgDupFileManager::get()->ReBuildAll();
-                if(incremental_mode_)
                     ImgDupDetector::SaveFujiMap();
+//                if(incremental_mode_)
+//                    ImgDupFileManager::get()->ReBuildAll();
             }
             index += sizeof(struct inotify_event)+event->len;
         }
