@@ -28,7 +28,7 @@ public:
     BitTrie(int alphbatNum);
     ~BitTrie();
     void insert(int val);
-    bool exist(int val);
+    bool exist(int val) const;
 
 };
 

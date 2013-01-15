@@ -9,11 +9,10 @@ namespace sf1r
 {
 WikiGraph::WikiGraph()
 {
-     WavletFactory factorytemp;
-     enum WAVLETTYPE test=WAVLET_MATRIX;
-     wa_=factorytemp.CreateWavletTree(test);//
+
+     wa_=NULL;
      advertiseBias_=NULL;
-     UseWavlet=true;
+
 }
 
 WikiGraph::~WikiGraph()
@@ -31,20 +30,33 @@ WikiGraph::~WikiGraph()
     delete idTitleDbTable_;
 }
 
-void WikiGraph::Init(const string& wiki_path,cma::OpenCC* opencc)
+void WikiGraph::Init(const string& wiki_path,cma::OpenCC* opencc,const string& tdttype)
 {
     static boost::once_flag once = BOOST_ONCE_INIT;
 
-    boost::call_once(once, boost::bind(&WikiGraph::SetParam_, this, wiki_path, opencc));
+    boost::call_once(once, boost::bind(&WikiGraph::SetParam_, this, wiki_path, opencc,tdttype));
 }
 
-void WikiGraph::SetParam_(const string& wiki_path,cma::OpenCC* opencc)
+void WikiGraph::SetParam_(const string& wiki_path,cma::OpenCC* opencc,const string& tdttype)
    // : advertiseBias_((boost::filesystem::path(wiki_path)/=boost::filesystem::path("AdvertiseWord.txt")).c_str())
    // , opencc_(opencc)
 {
+    enum TDTTYPE tType=WAVLET_MATRIX;
+    if (tdttype == "WatArray")
+        tType = WAT_ARRAY;
+    else if (tdttype == "WavletMatrix")
+        tType = WAVLET_MATRIX;
+    else if (tdttype == "NonWavletTree")
+        tType = NON_WAVLET;//
+    TdtFactory factorytemp;
+    wa_=factorytemp.CreateTdtMemory(tType);//
     if(advertiseBias_){return;}
 
     advertiseBias_=new AdBias((boost::filesystem::path(wiki_path)/=boost::filesystem::path("AdvertiseWord.txt")).c_str()) ;
+    
+    boost::filesystem::path tdtmemory_path(wiki_path);
+    tdtmemory_path /= boost::filesystem::path(tdttype.c_str());
+    tdtmemorypath_ = tdtmemory_path.c_str();
 
     opencc_=opencc;   
     boost::filesystem::path wikigraph_path(wiki_path);
@@ -54,6 +66,7 @@ void WikiGraph::SetParam_(const string& wiki_path,cma::OpenCC* opencc)
     boost::filesystem::path redirect_path(wiki_path);
     redirect_path /= boost::filesystem::path("redirect");
     redirpath_ = redirect_path.c_str();
+
     boost::filesystem::path stopword_path(wiki_path);
     stopword_path /= boost::filesystem::path("StopWord.txt");
     stopwordpath_ = stopword_path.c_str();
@@ -66,9 +79,13 @@ void WikiGraph::SetParam_(const string& wiki_path,cma::OpenCC* opencc)
 
     LOG(INFO)<<"wikipediaGraphBuild"<<endl;
     //LOG(INFO)<<"init wiki_path"<<wiki_path<<" "<<path_<<endl;
-
+    
     Init_();
-
+    if(!boost::filesystem::exists(tdtmemorypath_))
+    {
+        ofstream os(tdtmemorypath_.c_str(),ios::out);
+        wa_->Save(os);
+    }
     BuildMap_();
    
     SetAdvertiseAll_();
@@ -94,8 +111,15 @@ void WikiGraph::Load_(std::istream& is)
           is>>A;
           nodes_[i]->offStop  =A.size()-1;
         }
-        
-        wa_->Init(A);
+        if(boost::filesystem::exists(tdtmemorypath_))
+        {
+           ifstream is(tdtmemorypath_.c_str(),ios::in);
+           wa_->Load(is);
+        }
+        else
+        {
+           wa_->Init(A);
+        }
         
 }
 void WikiGraph::Save_(std::ostream& os)
@@ -370,11 +394,13 @@ void WikiGraph::SetContentBias_(const std::vector<std::pair<std::string,uint32_t
         {
             if(relativeWords[i].second>0)
             {
+                /*
                 if(advertiseBias_->GetCount(relativeWords[i].first)>0)
                 {
                     pr.SetContentRelevancy(GetIndex_(id),relativeWords[i].second+1);
                 }
                 else
+                */
                 {
                     pr.SetContentRelevancy(GetIndex_(id),relativeWords[i].second);
                 }

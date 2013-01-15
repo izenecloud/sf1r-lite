@@ -7,7 +7,7 @@
 #include "PageRank.hpp"
 #include "AdBias.hpp"
 #include "LevelDbTable.hpp"
-#include "WavletFactory.hpp"
+#include "TdtFactory.hpp"
 //#include "ConBias.hpp"
 //#include "database.h"
 #include <algorithm>
@@ -44,16 +44,17 @@ class WikiGraph
     std::string path_;
     std::string redirpath_;
     std::string stopwordpath_;
+    std::string tdtmemorypath_;
     //ConBias contentBias_;
     AdBias* advertiseBias_;
     set<string> stopword_;
     //wat_array::WatArray wa_;
     //wavelet_matrix::WaveletMatrix wa_;
-    WavletTree* wa_;
+    TdtMemory* wa_;
     //WaveletMatrix<uint64_t> wa_;
     TitleIdDbTable* titleIdDbTable_;
     IdTitleDbTable* idTitleDbTable_;
-    bool UseWavlet;
+    
 public:
     static WikiGraph* GetInstance()
     {
@@ -66,7 +67,7 @@ public:
 
     ~WikiGraph();
 
-    void Init(const std::string& wiki_path, cma::OpenCC* opencc);
+    void Init(const std::string& wiki_path, cma::OpenCC* opencc,const string& tdttype);
 
     void GetTopics(const std::vector<std::pair<std::string,uint32_t> >& relativeWords, std::vector<std::string>& topic_list, size_t limit);
 
@@ -77,7 +78,7 @@ public:
     int GetIdByTitle(const std::string& title, const int i=0);
 
 protected:
-    void SetParam_(const std::string& wiki_path, cma::OpenCC* opencc);
+    void SetParam_(const std::string& wiki_path, cma::OpenCC* opencc,const string& tdttype);
 
     void Init_();
 

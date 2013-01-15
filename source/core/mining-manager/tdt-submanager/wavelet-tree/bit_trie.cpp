@@ -64,7 +64,7 @@ void BitTrie::insert(int val)
 
     }
 }
-bool BitTrie::exist(int val)
+bool BitTrie::exist(int val) const
 {
     //cout<<"insert"<<val<<endl;
     int value=0;

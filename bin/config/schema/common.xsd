@@ -7,6 +7,14 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="TdtType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="WatArray"/>
+            <xs:enumeration value="WavletMatrix"/>
+            <xs:enumeration value="NonWavletTree"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="YesNoType">
         <xs:restriction base="xs:string">
             <xs:pattern value="yes|no|y|n"/>

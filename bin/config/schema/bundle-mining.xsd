@@ -343,6 +343,7 @@
             </xs:sequence>
         <xs:attribute name="enabletdt" type="YesNoType" use="required"/>
         <xs:attribute name="enablesemantic" type="YesNoType" use="optional"/>
+        <xs:attribute name="tdtmemory" type="TdtType" use="optional"/>
         </xs:complexType>
     </xs:element>
 

@@ -69,7 +69,8 @@ ForwardIterator unique_merge(ForwardIterator first, ForwardIterator last, Binary
 NaiveTopicDetector::NaiveTopicDetector(
         const std::string& sys_resource_path, 
         const std::string& dict_path,
-        bool enable_semantic)
+        bool enable_semantic,
+        const std::string& tdt_type)
     :sys_resource_path_(sys_resource_path)
     ,tokenize_dicpath_(dict_path)
     ,analyzer_(NULL)
@@ -79,6 +80,7 @@ NaiveTopicDetector::NaiveTopicDetector(
     ,kpe_trie_(NULL)
     ,related_map_(NULL)
     ,enable_semantic_(enable_semantic)
+    ,tdt_type_(tdt_type)
 {
 
     InitKnowledge_();
@@ -263,7 +265,7 @@ void NaiveTopicDetector::InitKnowledge_()
         LOG(INFO) << "wiki graph knowledge path : " << wiki_graph_path.c_str() << endl;
         wg_ = WikiGraph::GetInstance();
 
-        wg_->Init(wiki_graph_path.c_str(),opencc_);
+        wg_->Init(wiki_graph_path.c_str(),opencc_,tdt_type_);
 
     }
 }

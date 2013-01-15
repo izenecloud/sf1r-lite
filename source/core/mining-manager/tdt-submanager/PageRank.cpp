@@ -128,7 +128,7 @@ int Node::GetId()
     return id_;
 }
 
-PageRank::PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,  WavletTree* wa,double alpha,double beta)
+PageRank::PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,  TdtMemory* wa,double alpha,double beta)
     : SubGraph_(SubGraph)
     , nodes_(nodes)
     , wa_(wa)

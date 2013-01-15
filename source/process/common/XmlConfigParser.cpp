@@ -1892,6 +1892,10 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         else
             mining_schema.tdt_config.enable_semantic= false;
 
+        std::string tdt_type;
+        getAttribute(task_node, "tdtmemory", tdt_type, false);
+        mining_schema.tdt_config.tdt_type= tdt_type;
+
         ticpp::Element* subNode = getUniqChildElement(task_node, "TokenizeDictionary", true);
         if (subNode)
         {
