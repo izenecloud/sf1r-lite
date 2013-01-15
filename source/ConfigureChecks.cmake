@@ -37,7 +37,6 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   ticpp
   am
   compressor
-  beansdb
   aggregator
   distribute
   msgpack
