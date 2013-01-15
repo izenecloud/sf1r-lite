@@ -67,14 +67,6 @@ void WikiGraph::SetParam_(const string& wiki_path,cma::OpenCC* opencc)
     //LOG(INFO)<<"init wiki_path"<<wiki_path<<" "<<path_<<endl;
 
     Init_();
-   
-    //sort(nodes_.begin(),nodes_end(),NodeCmpOperator);
-
-    //LOG(INFO)<<"simplifyTitle...."<<endl;
-    //LOG(INFO)<<"蘋果 喬布斯"<<endl;
-    //simplifyTitle();
-    //Flush_();
-    
 
     BuildMap_();
    
@@ -267,7 +259,6 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
         {
             if(NotInGraph[i].first>RetPR[j].first&&NotInGraph[i].first>lowbound)
             {
-
                 //nodes_[i]->PrintNode();
                 RetPR.insert(RetPR.begin()+j ,NotInGraph[i]);
                 break;
@@ -286,6 +277,7 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
 
         if(RetPR[i].first>lowbound)
         {
+            if(stopword_.find( RetPR[i].second)==stopword_.end())
             topic_list.push_back(RetPR[i].second);
         }
     }
@@ -376,7 +368,16 @@ void WikiGraph::SetContentBias_(const std::vector<std::pair<std::string,uint32_t
         if(id>=0)
         {
             if(relativeWords[i].second>0)
-                pr.SetContentRelevancy(GetIndex_(id),relativeWords[i].second);
+            {
+                if(advertiseBias_->GetCount(relativeWords[i].first)>0)
+                {
+                    pr.SetContentRelevancy(GetIndex_(id),relativeWords[i].second+1);
+                }
+                else
+                {
+                    pr.SetContentRelevancy(GetIndex_(id),relativeWords[i].second);
+                }
+            }
             //  if(relativeWords[i].second==0)
             //  pr.SetContentRelevancy(GetIndex_(id),0.1);
         }
@@ -591,6 +592,8 @@ std::string WikiGraph::GetTitleById(const int& id)
 int WikiGraph::GetIdByTitle(const std::string& title, const int i)
 {
     int id;
+    if(stopword_.find(title)!=stopword_.end())
+    return -1;
     if(titleIdDbTable_->get_item(title, id))
     {
         map<int,string>::iterator redirit;

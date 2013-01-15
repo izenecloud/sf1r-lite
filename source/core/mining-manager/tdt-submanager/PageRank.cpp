@@ -303,7 +303,7 @@ void PageRank::SetContentRelevancy(int index,double contentRelevancy)
     {
        
        if(contentRelevancy<1.0&&((!InCludeList_)||GetLinkin(index).linkin_.size()<100))
-        GetLinkin(index).contentRelevancy_=min(contentRelevancy*contentRelevancy*GetLinkin(index).linkin_.size()*GetLinkin(index).outNumber_,0.20)+0.01;
+        GetLinkin(index).contentRelevancy_=min(contentRelevancy*contentRelevancy*GetLinkin(index).linkin_.size()*GetLinkin(index).outNumber_,20*contentRelevancy)+0.01;
        else
         GetLinkin(index).contentRelevancy_=contentRelevancy;
     }
@@ -318,7 +318,7 @@ void PageRank::SetContentRelevancy(int index,double contentRelevancy)
            vector<int> vectemp=GetLinkin(*citr).linkin_;
            if (find(vectemp.begin(), vectemp.end(),index )!=vectemp.end())
            {
-              SetContentRelevancy((*citr),0.01);
+              SetContentRelevancy((*citr),0.01*contentRelevancy);
            }
 
          
