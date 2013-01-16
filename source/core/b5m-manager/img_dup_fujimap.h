@@ -39,7 +39,7 @@ namespace sf1r{
     public:
         ImgDupFujiMap(const std::string& path)
             :path_(path)
-            ,fplen(16)
+            ,fplen(32)
             ,tmpN(30000000)
         {
         }
