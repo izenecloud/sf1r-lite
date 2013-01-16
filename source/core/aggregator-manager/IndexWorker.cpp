@@ -199,7 +199,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     if ( documentManager_->getMaxDocId() < 1)
     {
         if ( (*(miningTaskService_->getMiningBundleConfig())).mining_schema_.summarization_enable
-            && (*(miningTaskService_->getMiningBundleConfig())).mining_schema_.summarization_schema.isForSyncFullSCD)
+            && (*(miningTaskService_->getMiningBundleConfig())).mining_schema_.summarization_schema.isSyncSCDOnly)
         {
             std::string control_scd_path_ = bundleConfig_->indexSCDPath() + "/full";
             fstream outControlFile;

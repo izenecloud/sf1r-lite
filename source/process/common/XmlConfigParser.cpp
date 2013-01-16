@@ -1623,6 +1623,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     mining_schema.summarization_enable= false;
     if (task_node)
     {
+        std::string syncflagonly_flag;
+        getAttribute(task_node, "syncflagonly", syncflagonly_flag);
+        int enable = parseTruth(syncflagonly_flag);
+        if (1 == enable)
+            mining_schema.summarization_schema.isSyncSCDOnly= true;
+        else
+            mining_schema.summarization_schema.isSyncSCDOnly= false;
+    
         {
             Iterator<Element> it("DocidProperty");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -1722,19 +1730,6 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
             {
                 getAttribute(it.Get(), "name", property_name);
                 mining_schema.summarization_schema.commentCountPropName = property_name;
-            }
-        }
-        {
-            ticpp::Element* subNodeInc = getUniqChildElement(task_node, "ForSendFullSyncFlag", true);
-            if (subNodeInc)
-            {
-                bool bisForSyncFullSCD = false;
-                getAttribute(subNodeInc, "enable", bisForSyncFullSCD, false);
-                mining_schema.summarization_schema.isForSyncFullSCD = bisForSyncFullSCD;
-            }
-            else
-            {
-                throw XmlConfigParserException("NeedSyncFullSCD used in Summarization is missing.");
             }
         }
 
