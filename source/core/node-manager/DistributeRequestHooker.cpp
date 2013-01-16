@@ -1,5 +1,6 @@
 #include "DistributeRequestHooker.h"
 #include "DistributeDriver.h"
+#include "RecoveryChecker.h"
 #include <boost/filesystem.hpp>
 #include <util/driver/writers/JsonWriter.h>
 #include <util/driver/readers/JsonReader.h>
@@ -7,8 +8,6 @@
 #include <node-manager/SearchNodeManager.h>
 
 #include "RequestLog.h"
-
-#define MAX_BACKUP_NUM 3
 
 using namespace izenelib::driver;
 using namespace izenelib;
@@ -23,48 +22,6 @@ void DistributeRequestHooker::init()
 {
     need_backup_types_.insert(Req_Index);
     need_backup_types_.insert(Req_CreateDoc);
-}
-
-std::string DistributeRequestHooker::getRollbackFile(const CollectionPath& colpath, uint32_t inc_id)
-{
-    return colpath.getBasePath() + "/rollback-flag-" + boost::lexical_cast<std::string>(inc_id);
-}
-
-void DistributeRequestHooker::getBackupList(const CollectionPath& colpath, std::vector<uint32_t>& backup_req_incids)
-{
-    // only keep the lastest 3 backups.
-    std::string backup_basepath = colpath.getBasePath() + "/req-backup/";
-    static bfs::directory_iterator end_dir = bfs::directory_iterator();
-    bfs::directory_iterator backup_dirs_it = bfs::directory_iterator(bfs::path(backup_basepath));
-    while(backup_dirs_it != end_dir)
-    {
-        if (!bfs::is_directory(*backup_dirs_it))
-        {
-            ++backup_dirs_it;
-            continue;
-        }
-        try
-        {
-            uint32_t inc_id = boost::lexical_cast<uint32_t>((*backup_dirs_it).path().relative_path());
-            backup_req_incids.push_back(inc_id);
-        }
-        catch(const boost::bad_lexical_cast& e)
-        {
-        }
-        ++backup_dirs_it;
-    }
-    std::sort(backup_req_incids.begin(), backup_req_incids.end(), std::greater<uint32_t>());
-}
-
-bool DistributeRequestHooker::getLastBackup(const CollectionPath& colpath, std::string& backup_path, uint32_t& backup_inc_id)
-{
-    std::vector<uint32_t> backup_req_incids;
-    getBackupList(colpath, backup_req_incids);
-    if (backup_req_incids.empty())
-        return false;
-    backup_inc_id = backup_req_incids.front();
-    backup_path = colpath.getBasePath() + "/req-backup/" + boost::lexical_cast<std::string>(backup_inc_id);
-    return true;
 }
 
 DistributeRequestHooker::DistributeRequestHooker()
@@ -84,6 +41,13 @@ DistributeRequestHooker::DistributeRequestHooker()
 bool DistributeRequestHooker::isNeedBackup(ReqLogType type)
 {
     return need_backup_types_.find(type) != need_backup_types_.end();
+}
+
+bool DistributeRequestHooker::isValid()
+{
+    if (SearchMasterManager::get()->isDistribute() && hook_type_ == 0)
+        return false;
+    return true;
 }
 
 void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const CollectionPath& colpath,
@@ -135,24 +99,11 @@ bool DistributeRequestHooker::isHooked()
     return (hook_type_ > 0) && !current_req_.empty();
 }
 
-void DistributeRequestHooker::cleanUnnessesaryBackup()
-{
-    // only keep the lastest 3 backups.
-    std::string backup_path = colpath_.getBasePath() + "/req-backup/";
-    std::vector<uint32_t> backup_req_incids;
-    getBackupList(colpath_, backup_req_incids);
-    for (size_t i = MAX_BACKUP_NUM; i < backup_req_incids.size(); ++i)
-    {
-        bfs::remove_all(backup_path + boost::lexical_cast<std::string>(backup_req_incids[i]));
-    }
-}
-
 bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_req)
 {
     if (!isHooked())
         return true;
-    if (!req_log_mgr_)
-        return false;
+    assert(req_log_mgr_);
     bool isprimary = SearchNodeManager::get()->isPrimary();
     if (isprimary)
         prepared_req.req_json_data = current_req_;
@@ -179,38 +130,39 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     type_ = type;
     if (!req_log_mgr_->prepareReqLog(prepared_req, isprimary))
     {
+        LOG(ERROR) << "prepare request log failed.";
+        if (!isprimary)
+        {
+            assert(false);
+            forceExit();
+        }
+        finish(false);
         return false;
     }
     std::string basepath = colpath_.getBasePath();
     
     if (isNeedBackup(type))
     {
-        // backup changeable data first, so that we can rollback if old data corrupt while process the request.
-        // Ignore SCD files and any other files that will not change during processing.
-        std::string coldata_path = colpath_.getCollectionDataPath();
-        std::string querydata_path = colpath_.getQueryDataPath();
-
-        try
+        if(!RecoveryChecker::backup(colpath_, req_log_mgr_.get()))
         {
-            boost::filesystem3::copy(coldata_path, basepath + "/req-backup/" +
-                boost::lexical_cast<std::string>(req_log_mgr_->getLastSuccessReqId()) + "/");
-            boost::filesystem3::copy(querydata_path, basepath + "/req-backup/" +
-                boost::lexical_cast<std::string>(req_log_mgr_->getLastSuccessReqId()) + "/");
-        }
-        catch(const std::exception& e)
-        {
-            // clear state.
-            std::cerr << "backup for write request failed. " << e.what() << std::endl;
-            abortRequest();
+            LOG(ERROR) << "backup failed. Maybe not enough space.";
+            if (!isprimary)
+            {
+                forceExit();
+            }
+            finish(false);
             return false;
         }
-        cleanUnnessesaryBackup();
     }
     // set rollback flag.
-    if(!setRollbackFlag(prepared_req.inc_id))
+    if(!RecoveryChecker::setRollbackFlag(prepared_req.inc_id, colpath_))
     {
         LOG(ERROR) << "set rollback failed.";
-        abortRequest();
+        if (!isprimary)
+        {
+            forceExit();
+        }
+        finish(false);
         return false; 
     }
     return true;
@@ -219,6 +171,8 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
 void DistributeRequestHooker::processLocalBegin()
 {
     if (!isHooked())
+        return;
+    if (hook_type_ == Request::FromLog)
         return;
     LOG(INFO) << "begin process request on worker";
     SearchNodeManager::get()->beginReqProcess();
@@ -236,6 +190,8 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess, const std
         abortRequest();
         return;
     }
+    if (hook_type_ == Request::FromLog)
+        return;
     SearchNodeManager::get()->finishLocalReqProcess(type_, packed_req_data);
 }
 
@@ -258,26 +214,13 @@ void DistributeRequestHooker::abortRequest()
 {
     if (!isHooked())
         return;
-    SearchNodeManager::get()->abortRequest();
-}
-
-bool DistributeRequestHooker::setRollbackFlag(uint32_t inc_id)
-{
-    std::string rollback_file = getRollbackFile(colpath_, inc_id);
-    ofstream ofs(rollback_file.c_str());
-    if (ofs.good())
+    if (hook_type_ == Request::FromLog)
     {
-        ofs.write((const char*)&inc_id, sizeof(inc_id));
-        return true;
+        LOG(ERROR) << "redo log failed, must exit.";
+        forceExit();
+        return;
     }
-    return false;
-}
-
-void DistributeRequestHooker::clearRollbackFlag(uint32_t inc_id)
-{
-    std::string rollback_file = getRollbackFile(colpath_, inc_id);
-    if (bfs::exists(rollback_file))
-        bfs::remove(rollback_file);
+    SearchNodeManager::get()->abortRequest();
 }
 
 void DistributeRequestHooker::abortRequestCallback()
@@ -285,13 +228,7 @@ void DistributeRequestHooker::abortRequestCallback()
     if (!isHooked())
         return;
     LOG(INFO) << "got abort request.";
-    CommonReqData prepared_req;
-    if (!req_log_mgr_->getPreparedReqLog(prepared_req))
-    {
-        LOG(ERROR) << "get prepare request log data failed while abort request.";
-        forceExit();
-    }
-    finish(false, prepared_req);
+    finish(false);
 }
 
 void DistributeRequestHooker::waitReplicasAbortCallback()
@@ -299,6 +236,7 @@ void DistributeRequestHooker::waitReplicasAbortCallback()
     if (!isHooked())
         return;
     LOG(INFO) << "all replicas finished the abort request.";
+    finish(false);
 }
 
 void DistributeRequestHooker::writeLocalLog()
@@ -307,20 +245,13 @@ void DistributeRequestHooker::writeLocalLog()
         return;
 
     LOG(INFO) << "begin write request log to local.";
-    CommonReqData prepared_req;
-    if (!req_log_mgr_->getPreparedReqLog(prepared_req))
-    {
-        LOG(ERROR) << "get prepare request log data failed.";
-        forceExit();
-    }
-
     bool ret = req_log_mgr_->appendReqData(current_req_);
     if (!ret)
     {
         LOG(ERROR) << "write local log failed. something wrong on this node, must exit.";
         forceExit();
     }
-    finish(true, prepared_req);
+    finish(true);
 }
 
 void DistributeRequestHooker::waitReplicasLogCallback()
@@ -338,7 +269,7 @@ void DistributeRequestHooker::onElectingFinished()
     LOG(INFO) << "an electing has finished. notify ready to master.";
 }
 
-void DistributeRequestHooker::finish(bool success, const CommonReqData& prepared_req)
+void DistributeRequestHooker::finish(bool success)
 {
     try
     {
@@ -352,26 +283,9 @@ void DistributeRequestHooker::finish(bool success, const CommonReqData& prepared
             // rollback from backup.
             // rename current and move restore.
             // all the file need to be reopened to make effective.
-            std::string last_backup_path;
-            uint32_t last_backup_id;
-            if (!getLastBackup(colpath_, last_backup_path, last_backup_id))
+            if (!RecoveryChecker::get()->rollbackLastFail(req_log_mgr_.get()))
             {
-                LOG(ERROR) << "no backup available while rollback.";
-                forceExit();
-            }
-            if (last_backup_id > req_log_mgr_->getLastSuccessReqId())
-            {
-                LOG(ERROR) << "wrong data, this node is unrecoverable.";
-                forceExit();
-            }
-            else if (last_backup_id == req_log_mgr_->getLastSuccessReqId())
-            {
-                LOG(INFO) << "rollback to last backup and no log redo needed.";
-            }
-            else
-            {
-                LOG(INFO) << "backup is not the newest, log redo needed";
-                LOG(INFO) << "must restart to begin recovery process";
+                LOG(ERROR) << "failed to rollback! must exit.";
                 forceExit();
             }
         }
@@ -381,10 +295,14 @@ void DistributeRequestHooker::finish(bool success, const CommonReqData& prepared
         LOG(ERROR) << "failed finish. must exit.";
         forceExit();
     }
-    clearRollbackFlag(prepared_req.inc_id);
     req_log_mgr_->delPreparedReqLog();
     current_req_.clear();
     req_log_mgr_.reset();
+    if (hook_type_ == Request::FromLog && !success)
+    {
+        LOG(ERROR) << "redo log failed. must exit";
+        forceExit();
+    }
     hook_type_ = 0;
     primary_addition_.clear();
 }

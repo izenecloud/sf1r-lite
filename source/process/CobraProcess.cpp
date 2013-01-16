@@ -15,6 +15,7 @@
 #include <node-manager/DistributeDriver.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/RequestLog.h>
+#include <node-manager/RecoveryChecker.h>
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
@@ -263,6 +264,7 @@ bool CobraProcess::initNodeManager()
     if (SF1Config::get()->isDistributedRecommendNode())
         RecommendNodeManager::get()->init(SF1Config::get()->recommendTopologyConfig_);
 
+
     return true;
 }
 
@@ -281,6 +283,10 @@ bool CobraProcess::startDistributedServer()
         std::cout << "ZooKeeper is disabled!" << std::endl;
         return true;
     }
+
+    RecoveryChecker::get()->init();
+    // check any rollback .
+    RecoveryChecker::get()->rollbackLastFail(SearchNodeManager::get()->getReqLogMgr().get());
 
     // Start worker server
     if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())

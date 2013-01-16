@@ -163,8 +163,9 @@ void NodeManagerBase::updateCurrentPrimary()
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, primaryList, ZooKeeper::NOT_WATCH);
     if (primaryList.empty())
     {
-        LOG(ERROR) << "primary is empty, unexpected, must exit";
-        throw -1;
+        LOG(ERROR) << "primary is empty";
+        curr_primary_path_.clear();
+        return;
     }
     curr_primary_path_ = primaryList[0];
     LOG(INFO) << "current primary is : " << curr_primary_path_;
@@ -172,6 +173,19 @@ void NodeManagerBase::updateCurrentPrimary()
     //IndexReqLog testlog;
     //reqlog_mgr_->appendTypedReqLog<IndexReqLog>(testlog);
     //reqlog_mgr_->unpackReqLogData<IndexReqLog>("", testlog);
+}
+
+void NodeManagerBase::unregisterPrimary()
+{
+    if (self_primary_path_.empty())
+    {
+        return;
+    }
+    zookeeper_->deleteZNode(self_primary_path_);
+    self_primary_path_.clear();
+    ZNode znode;
+    setSf1rNodeData(znode);
+    zookeeper_->setZNodeData(nodePath_, znode.serialize());
 }
 
 void NodeManagerBase::registerPrimary(ZNode& znode)
@@ -188,6 +202,8 @@ void NodeManagerBase::registerPrimary(ZNode& znode)
     {
         self_primary_path_ = zookeeper_->getLastCreatedNodePath();
         LOG(INFO) << "current self node primary path is : " << self_primary_path_;
+        znode.setValue(ZNode::KEY_SELF_REG_PRIMARY_PATH, self_primary_path_);
+        zookeeper_->setZNodeData(nodePath_, znode.serialize());
     }
     else
     {
@@ -224,12 +240,6 @@ void NodeManagerBase::enterCluster(bool start_master)
         // register current sf1r node to ZooKeeper
         ZNode znode;
         setSf1rNodeData(znode);
-        // first register a sequence primary node, so that 
-        // we can store this path to current node. the other
-        // node can tell which primary path current node belong to.
-        registerPrimary(znode);
-        // set again to write self primary node path to the node data.
-        setSf1rNodeData(znode);
 
         if (!zookeeper_->createZNode(nodePath_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
         {
@@ -263,23 +273,55 @@ void NodeManagerBase::enterCluster(bool start_master)
     }
     LOG(INFO) << "begin recovering callback : " << self_primary_path_;
     if (cb_on_recovering_)
+    {
         cb_on_recovering_();
+    }
 
     boost::unique_lock<boost::mutex> lock(mutex_);
-    if (nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
+    // first register a sequence primary node, so that 
+    // we can store this path to current node. the other
+    // node can tell which primary path current node belong to.
+    updateCurrentPrimary();
+    if (curr_primary_path_.empty())
     {
-        LOG(INFO) << "recover done all request and wait to sync primary after primary is idle." << self_primary_path_;
-        return;
+        LOG(INFO) << "no primary worker currently.";
+        LOG(INFO) << "I am starting as primary worker.";
     }
-    LOG(INFO) << "recovering callback finished. now this node is synced to primary";
+    else
+    {
+        nodeState_ = NODE_STATE_RECOVER_WAIT_PRIMARY;
+        LOG(INFO) << "recover done and wait to sync primary after primary is idle." << self_primary_path_;
+        if (getPrimaryState() == NODE_STATE_ELECTING)
+        {
+            LOG(INFO) << "primary changed while I am recovering, sync to new primary.";
+            if (cb_on_recover_wait_primary_)
+                cb_on_recover_wait_primary_();
+        }
+        else
+        {
+            ZNode znode;
+            setSf1rNodeData(znode);
+            registerPrimary(znode);
+            updateNodeState();
+            return;
+        }
+    }
+    nodeState_ = NODE_STATE_STARTED;
     enterClusterAfterRecovery(start_master);
 }
 
 void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 {
+    if (self_primary_path_.empty())
+    {
+        ZNode znode;
+        setSf1rNodeData(znode);
+        registerPrimary(znode);
+    }
+
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
-    nodeState_ = NODE_STATE_STARTED;
     updateNodeState();
+    updateCurrentPrimary();
 
     Sf1rNode& curNode = sf1rTopology_.curNode_;
     LOG (INFO) << CLASSNAME
@@ -347,6 +389,8 @@ bool NodeManagerBase::isPrimaryWithoutLock() const
 {
     if (!zookeeper_ || !zookeeper_->isConnected())
         return false;
+    if (nodeState_ == NODE_STATE_RECOVER_RUNNING || self_primary_path_.empty())
+        return false;
     return curr_primary_path_ == self_primary_path_;
 }
 
@@ -372,7 +416,7 @@ NodeManagerBase::NodeStateType NodeManagerBase::getPrimaryState()
 
 void NodeManagerBase::beginReqProcess()
 {
-    setNodeState(NodeManagerBase::NODE_STATE_PROCESSING_REQ_RUNNING);
+    setNodeState(NODE_STATE_PROCESSING_REQ_RUNNING);
 }
 
 void NodeManagerBase::abortRequest()
@@ -381,12 +425,13 @@ void NodeManagerBase::abortRequest()
     if (isPrimary())
     {
         LOG(INFO) << "primary abort the request.";
-        setNodeState(NodeManagerBase::NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
+        setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
+        checkSecondaryReqAbort();
     }
     else
     {
         LOG(INFO) << "replica abort the request.";
-        setNodeState(NodeManagerBase::NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
+        setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
     }
 
 }
@@ -422,22 +467,31 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
             nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
         {
             LOG(INFO) << "stop waiting primary for current processing request.";
-            nodeState_ = NODE_STATE_STARTED;
             if (cb_on_abort_request_)
                 cb_on_abort_request_();
+            nodeState_ = NODE_STATE_STARTED;
         }
         else if (nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
         {
             LOG(INFO) << "primary changed while recovery waiting primary";
-            // primary is waiting sync to recovery.
-            if (cb_on_recover_wait_primary_)
-                cb_on_recover_wait_primary_();
+            if (curr_primary_path_ != self_primary_path_)
+            {
+                // primary is waiting sync to recovery.
+                if (cb_on_recover_wait_primary_)
+                    cb_on_recover_wait_primary_();
+                nodeState_ = NODE_STATE_STARTED;
+            }
+            else
+            {
+                nodeState_ = NODE_STATE_ELECTING;
+            }
             LOG(INFO) << "recovery node sync to new primary finished, begin re-enter to the cluster";
             enterClusterAfterRecovery();
         }
         if (isPrimaryWithoutLock())
         {
             nodeState_ = NODE_STATE_ELECTING;
+            updateNodeState();
             LOG(INFO) << "begin electing, wait all secondary agree on primary : " << curr_primary_path_;
             checkSecondaryElecting();
         }
@@ -536,7 +590,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
             }
             else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
             {
-                LOG(INFO) << "primary aborted the request while waiting primary." << self_primary_path_;
+                LOG(INFO) << "primary aborted the request while waiting finish process." << self_primary_path_;
                 if (cb_on_abort_request_)
                     cb_on_abort_request_();
                 nodeState_ = NODE_STATE_STARTED;
@@ -572,6 +626,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                 if (cb_on_recover_wait_primary_)
                     cb_on_recover_wait_primary_();
                 LOG(INFO) << "begin re-enter to the cluster after sync to new primary";
+                nodeState_ = NODE_STATE_STARTED;
                 enterClusterAfterRecovery();
             }
         }
@@ -659,7 +714,7 @@ void NodeManagerBase::setNodeState(NodeStateType state)
         {
             if (cb_on_abort_request_)
                 cb_on_abort_request_();
-            if (!isPrimaryWithoutLock())
+            if (curr_primary_path_ != self_primary_path_)
                 state = NODE_STATE_STARTED;
             LOG(INFO) << "change state to waiting primary while primary is electing : " << self_primary_path_;
             LOG(INFO) << "It means the old primary is down and new primary is upping, so we must abort the last request process";
@@ -667,8 +722,17 @@ void NodeManagerBase::setNodeState(NodeStateType state)
         else if(state == NODE_STATE_RECOVER_WAIT_PRIMARY)
         {
             LOG(INFO) << "change state to recovery wait primary while new primary electing : " << self_primary_path_;
-            if (cb_on_recover_wait_primary_)
-                cb_on_recover_wait_primary_();
+            if (curr_primary_path_ != self_primary_path_)
+            {
+                if (cb_on_recover_wait_primary_)
+                    cb_on_recover_wait_primary_();
+                nodeState_ = NODE_STATE_STARTED;
+            }
+            else
+            {
+                LOG(INFO) << "I become primary while waiting recovery finish.";
+                nodeState_ = NODE_STATE_ELECTING;
+            }
             enterClusterAfterRecovery();
             return;
         }
@@ -838,6 +902,8 @@ void NodeManagerBase::checkSecondaryRecovery()
     else
     {
         nodeState_ = NODE_STATE_STARTED;
+        if (cb_on_recover_wait_replica_finish_)
+            cb_on_recover_wait_replica_finish_();
     }
     updateNodeState();
 }

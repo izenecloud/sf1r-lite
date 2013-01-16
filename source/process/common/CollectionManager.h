@@ -35,6 +35,7 @@ public:
         return ::izenelib::util::Singleton<CollectionManager>::get();
     }
 
+    CollectionManager();
     ~CollectionManager();
 
     OSGILauncher& getOSGILauncher()

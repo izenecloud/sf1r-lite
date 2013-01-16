@@ -48,7 +48,7 @@ void DistributeDriver::init(const RouterPtr& router)
     SearchMasterManager::get()->setCallback(boost::bind(&DistributeDriver::on_new_req_available, this));
 }
 
-static void callHandlerAsync(izenelib::driver::Router::handler_ptr handler,
+static void callHandler(izenelib::driver::Router::handler_ptr handler,
     Request::kCallType calltype, const std::string& packed_data,
     Request& request)
 {
@@ -100,8 +100,16 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
         {
             DistributeRequestHooker::get()->setHook(calltype, packed_data);
             request.setCallType(calltype);
-            asyncWriteTasks_.push(boost::bind(&callHandlerAsync,
-                    handler, calltype, packed_data, request));
+            if (calltype == Request::FromLog)
+            {
+                // redo log must process the request one by one, so sync needed.
+                callHandler(handler, calltype, packed_data, request);
+            }
+            else
+            {
+                asyncWriteTasks_.push(boost::bind(&callHandler,
+                        handler, calltype, packed_data, request));
+            }
             return true;
         }
         catch (const std::exception& e)

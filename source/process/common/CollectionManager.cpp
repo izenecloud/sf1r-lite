@@ -11,6 +11,7 @@
 #include <common/JobScheduler.h>
 #include <license-manager/LicenseCustManager.h>
 #include <license-manager/LicenseTool.h>
+#include <node-manager/RecoveryChecker.h>
 
 #include <boost/filesystem.hpp>
 #include <memory> // for std::auto_ptr
@@ -21,6 +22,15 @@ namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
+
+CollectionManager::CollectionManager()
+{
+    RecoveryChecker::get()->setRestartCallback(
+        boost::bind(&CollectionManager::startCollection, this, _1, _2, false),
+        boost::bind(&CollectionManager::stopCollection, this, _1, false),
+        boost::bind(&CollectionManager::stopCollection, this, _1, true));
+
+}
 
 CollectionManager::~CollectionManager()
 {

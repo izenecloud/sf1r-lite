@@ -119,8 +119,16 @@ public:
         return false;
     }
 
+    std::string getRequestLogPath()
+    {
+        return base_path_;
+    }
+
     void init(const std::string& basepath)
     {
+        boost::lock_guard<boost::mutex> lock(lock_);
+        inc_id_ = 1;
+        last_writed_id_ = 0;
         base_path_ = basepath;
         head_log_path_ = basepath + "/head.req.log";
         loadLastData();
@@ -246,6 +254,7 @@ public:
         if (!ifs.good())
         {
             std::cerr << "error!!! Request log open failed. " << std::endl;
+            throw -1;
             return false;
         }
         ifs.seekg(0, ios::end);
@@ -280,13 +289,13 @@ public:
     }
 
 
-private:
     bool getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset)
     {
         std::ifstream ifs(head_log_path_.c_str(), ios::binary);
         if (!ifs.good())
         {
             std::cerr << "error!!! Request log open failed. " << std::endl;
+            throw -1;
             return false;
         }
         ifs.seekg(0, ios::end);
@@ -325,12 +334,14 @@ private:
         return true;
     }
 
+private:
     bool getReqPackedDataByHead(const ReqLogHead& head, std::string& req_packed_data)
     {
         std::ifstream ifs_data(getDataPath(head.inc_id).c_str(), ios::binary);
         if (!ifs_data.good())
         {
             std::cerr << "error!!! Request log open failed. " << std::endl;
+            throw -1;
             return false;
         }
         req_packed_data.resize(head.req_data_len);
@@ -339,6 +350,7 @@ private:
         if (crc(0, req_packed_data.data(), req_packed_data.size()) != head.req_data_crc)
         {
             std::cout << "warning: crc check failed for request log data." << std::endl;
+            throw -1;
             return false;
         }
         return true;

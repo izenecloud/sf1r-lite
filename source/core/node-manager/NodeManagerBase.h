@@ -65,6 +65,11 @@ public:
         NODE_STATE_RECOVER_WAIT_REPLICA_FINISH,
         // recovery finished correctly.
         NODE_STATE_RECOVER_FINISH,
+
+        //NODE_STATE_ROLLBACK_RUNNING,
+        //NODE_STATE_ROLLBACK_WAIT_PRIMARY,
+        //NODE_STATE_ROLLBACK_WAIT_REPLICA_FINISH,
+
         NODE_STATE_UNKNOWN,
     };
 
@@ -122,7 +127,7 @@ public:
         cb_on_new_req_from_primary_ = on_new_req_from_primary;
     }
 
-    void setRecoveryCallback(CanFailCBFuncT on_recovering, NoFailCBFuncT on_recover_wait_primary,
+    void setRecoveryCallback(NoFailCBFuncT on_recovering, NoFailCBFuncT on_recover_wait_primary,
         NoFailCBFuncT on_recover_wait_replica_finish)
     {
         cb_on_recovering_ = on_recovering;
@@ -168,6 +173,7 @@ protected:
     void enterCluster(bool start_master = true);
     void enterClusterAfterRecovery(bool start_master = true);
 
+    void unregisterPrimary();
     void registerPrimary(ZNode& znode);
     void updateCurrentPrimary();
     void updateNodeState();
@@ -212,7 +218,7 @@ protected:
     NoFailCBFuncT cb_on_wait_primary_;
     NoFailCBFuncT cb_on_abort_request_;
     NoFailCBFuncT cb_on_wait_replica_abort_;
-    CanFailCBFuncT cb_on_recovering_;
+    NoFailCBFuncT cb_on_recovering_;
     NoFailCBFuncT cb_on_recover_wait_primary_;
     NoFailCBFuncT cb_on_recover_wait_replica_finish_;
     NewReqCBFuncT cb_on_new_req_from_primary_;

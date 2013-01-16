@@ -14,8 +14,6 @@ class DistributeRequestHooker
 {
 public:
     static void init();
-    static std::string getRollbackFile(const CollectionPath& colpath, uint32_t inc_id);
-    static bool getLastBackup(const CollectionPath& colpath, std::string& backuppath, uint32_t& backup_inc_id);
     static DistributeRequestHooker* get()
     {
         return izenelib::util::Singleton<DistributeRequestHooker>::get();
@@ -23,6 +21,7 @@ public:
 
 
     DistributeRequestHooker();
+    bool isValid();
     void hookCurrentReq(const std::string& colname, const CollectionPath& colpath,
         const std::string& reqdata, boost::shared_ptr<ReqLogMgr> req_log_mgr);
     bool isHooked();
@@ -49,15 +48,10 @@ public:
     void waitReplicasLogCallback();
 
     void onElectingFinished();
-    void finish(bool success, const CommonReqData& prepared_req);
 
 private:
-    static void getBackupList(const CollectionPath& colpath, std::vector<uint32_t>& backup_req_incids);
     static bool isNeedBackup(ReqLogType type);
-
-    void cleanUnnessesaryBackup();
-    bool setRollbackFlag(uint32_t inc_id);
-    void clearRollbackFlag(uint32_t inc_id);
+    void finish(bool success);
     void forceExit();
 
     std::string colname_;

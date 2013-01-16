@@ -120,6 +120,12 @@ void IndexWorker::HookDistributeRequest(const std::string& reqdata, bool& result
 
 void IndexWorker::index(unsigned int numdoc, bool& result)
 {
+    if (!distribute_req_hooker_->isValid())
+    {
+        LOG(ERROR) << "index call invalid.";
+        result = false;
+        return;
+    }
     if (distribute_req_hooker_->isHooked())
     {
         // hooked request need excute sync.
@@ -550,6 +556,11 @@ void IndexWorker::doMining_()
 
 bool IndexWorker::createDocument(const Value& documentValue)
 {
+    if (!distribute_req_hooker_->isValid())
+    {
+        LOG(ERROR) << "createDocument call invalid.";
+        return false;
+    }
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
