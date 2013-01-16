@@ -237,7 +237,14 @@
                 <xs:element name="OpinionProperty" type="PropertyType" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="OpinionWorkingPath" minOccurs="1" maxOccurs="1"/>
                 <xs:element ref="OpinionSyncId" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="ForSendFullSyncFlag" minOccurs="0" maxOccurs="1"/>
             </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="ForSendFullSyncFlag">
+        <xs:complexType>
+            <xs:attribute name="enable" type="YesNoType" use="required" />
         </xs:complexType>
     </xs:element>
 

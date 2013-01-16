@@ -1724,6 +1724,19 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 mining_schema.summarization_schema.commentCountPropName = property_name;
             }
         }
+        {
+            ticpp::Element* subNodeInc = getUniqChildElement(task_node, "ForSendFullSyncFlag", true);
+            if (subNodeInc)
+            {
+                bool bisForSyncFullSCD = false;
+                getAttribute(subNodeInc, "enable", bisForSyncFullSCD, false);
+                mining_schema.summarization_schema.isForSyncFullSCD = bisForSyncFullSCD;
+            }
+            else
+            {
+                throw XmlConfigParserException("NeedSyncFullSCD used in Summarization is missing.");
+            }
+        }
 
         ticpp::Element* opinionProp_node = getUniqChildElement(task_node, "OpinionProperty", false);
         if (opinionProp_node)

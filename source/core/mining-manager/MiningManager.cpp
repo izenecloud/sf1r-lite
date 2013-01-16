@@ -525,7 +525,7 @@ bool MiningManager::open()
 
 
         /** Summarization */
-        if (mining_schema_.summarization_enable)
+        if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isForSyncFullSCD)
         {
             summarization_path_ = prefix_path + "/summarization";
             boost::filesystem::create_directories(summarization_path_);
@@ -759,7 +759,7 @@ void MiningManager::DoContinue()
 
 void MiningManager::DoSyncFullSummScd()
 {
-    if (mining_schema_.summarization_enable)
+    if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isForSyncFullSCD)
     {
         summarizationManager_->syncFullSummScd();
     }
@@ -922,7 +922,7 @@ bool MiningManager::DoMiningCollection()
     }
 
     // do Summarization
-    if (mining_schema_.summarization_enable)
+    if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isForSyncFullSCD)
     {
         summarizationManager_->EvaluateSummarization();
     }
