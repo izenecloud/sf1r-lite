@@ -284,9 +284,7 @@ bool CobraProcess::startDistributedServer()
         return true;
     }
 
-    RecoveryChecker::get()->init();
-    // check any rollback .
-    RecoveryChecker::get()->rollbackLastFail(SearchNodeManager::get()->getReqLogMgr().get());
+    RecoveryChecker::get()->init(SF1Config::get()->getWorkingDir());
 
     // Start worker server
     if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())

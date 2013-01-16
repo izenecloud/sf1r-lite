@@ -564,7 +564,7 @@ public:
         return false;
     }
 
-    const CollectionMetaMap& getCollectionMetaMap()
+    const CollectionMetaMap& getCollectionMetaMap() const
     {
         return collectionMetaMap_;
     }
@@ -584,7 +584,7 @@ public:
         return homeDir_;
     }
 
-    std::string getCollectionConfigFile(const std::string& collection)
+    std::string getCollectionConfigFile(const std::string& collection) const
     {
         boost::filesystem::path configFile(homeDir_);
         configFile /= (collection + ".xml");

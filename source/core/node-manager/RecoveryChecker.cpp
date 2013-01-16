@@ -4,6 +4,8 @@
 #include <boost/filesystem.hpp>
 #include "RequestLog.h"
 #include "SearchNodeManager.h"
+#include <process/common/XmlConfigParser.h>
+
 #include <glog/logging.h>
 
 #define MAX_BACKUP_NUM 3
@@ -11,6 +13,18 @@ namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
+
+void RecoveryChecker::updateCollection(const SF1Config& sf1_config)
+{
+    all_col_info_.clear();
+    SF1Config::CollectionMetaMap::const_iterator cit = sf1_config.getCollectionMetaMap().begin();
+    while(cit != sf1_config.getCollectionMetaMap().end())
+    {
+        all_col_info_[cit->first] = std::make_pair(cit->second.getCollectionPath(),
+            sf1_config.getCollectionConfigFile(cit->first));
+        ++cit;
+    }
+}
 
 void RecoveryChecker::cleanUnnessesaryBackup(const std::string& backup_basepath)
 {
@@ -23,27 +37,17 @@ void RecoveryChecker::cleanUnnessesaryBackup(const std::string& backup_basepath)
     }
 }
 
-std::string RecoveryChecker::getRollbackFile()
+bool RecoveryChecker::setRollbackFlag(uint32_t inc_id)
 {
-    return "./rollback-flag";
-}
-
-bool RecoveryChecker::setRollbackFlag(uint32_t inc_id, const CollectionPath& colpath)
-{
-    std::string rollback_file = getRollbackFile();
-    if (bfs::exists(rollback_file))
+    if (bfs::exists(rollback_file_))
     {
         LOG(ERROR) << "rollback_file already exist, this mean last rollback is not finished. must exit.";
         throw -1;
     }
-    ofstream ofs(rollback_file.c_str());
+    ofstream ofs(rollback_file_.c_str());
     if (ofs.good())
     {
         ofs.write((const char*)&inc_id, sizeof(inc_id));
-        std::string backup_basepath = colpath.getBasePath() + "/req-backup/";
-        const size_t &len = backup_basepath.size();
-        ofs.write((const char*)&len, sizeof(len));
-        ofs.write(backup_basepath.c_str(), backup_basepath.size());
         return true;
     }
     return false;
@@ -51,9 +55,8 @@ bool RecoveryChecker::setRollbackFlag(uint32_t inc_id, const CollectionPath& col
 
 void RecoveryChecker::clearRollbackFlag()
 {
-    std::string rollback_file = getRollbackFile();
-    if (bfs::exists(rollback_file))
-        bfs::remove(rollback_file);
+    if (bfs::exists(rollback_file_))
+        bfs::remove(rollback_file_);
 }
 
 void RecoveryChecker::getBackupList(const std::string& backup_basepath, std::vector<uint32_t>& backup_req_incids)
@@ -92,94 +95,154 @@ bool RecoveryChecker::getLastBackup(const std::string& backup_basepath, std::str
     return true;
 }
 
-bool RecoveryChecker::backup(const CollectionPath& colpath, ReqLogMgr* reqlogmgr)
+bool RecoveryChecker::backup()
 {
     // backup changeable data first, so that we can rollback if old data corrupt while process the request.
     // Ignore SCD files and any other files that will not change during processing.
-    std::string basepath = colpath.getBasePath() + "/req-backup/";
-    std::string coldata_path = colpath.getCollectionDataPath();
-    std::string querydata_path = colpath.getQueryDataPath();
-    std::string req_log_path = reqlogmgr->getRequestLogPath();
 
+    // find all collection and backup.
+    CollInfoMapT::const_iterator cit = all_col_info_.begin();
+    std::string dest_path = backup_basepath_ + boost::lexical_cast<std::string>(reqlog_mgr_->getLastSuccessReqId()) + "/";
+    while(cit != all_col_info_.end())
+    {
+        LOG(INFO) << "backing up the collection: " << cit->first;
+        std::string dest_col_backup = dest_path + cit->first + "_backup/";
+        const CollectionPath &colpath = cit->second.first;
+
+        std::string col_basepath = colpath.getBasePath();
+        std::string coldata_path = colpath.getCollectionDataPath();
+        std::string querydata_path = colpath.getQueryDataPath();
+
+        try
+        {
+            boost::filesystem3::copy(col_basepath + coldata_path, dest_col_backup + coldata_path);
+            boost::filesystem3::copy(col_basepath + querydata_path, dest_col_backup + querydata_path);
+        }
+        catch(const std::exception& e)
+        {
+            // clear state.
+            LOG(ERROR) << "backup collection data failed. " << e.what() << std::endl;
+            return false;
+        }
+        ++cit;
+    }
     try
     {
-        std::string dest_path = basepath + boost::lexical_cast<std::string>(reqlogmgr->getLastSuccessReqId()) + "/";
-        boost::filesystem3::copy(coldata_path, dest_path + bfs::path(coldata_path).relative_path().c_str());
-        boost::filesystem3::copy(querydata_path, dest_path + bfs::path(querydata_path).relative_path().c_str());
-        boost::filesystem3::copy(req_log_path, dest_path + bfs::path(req_log_path).relative_path().c_str());
+        boost::filesystem3::copy(request_log_basepath_, dest_path + bfs::path(request_log_basepath_).relative_path().c_str());
     }
     catch(const std::exception& e)
     {
         // clear state.
-        std::cerr << "backup for write request failed. " << e.what() << std::endl;
+        LOG(ERROR) << "backup request log failed. " << e.what() << std::endl;
         return false;
     }
-    cleanUnnessesaryBackup(basepath);
+    cleanUnnessesaryBackup(backup_basepath_);
     return true;
 }
 
 // note : if there are more than one collection we need backup
 // all collection data. only in this way we can rollback and redo log to 
 // rollback the data before last failed request.
-bool RecoveryChecker::rollbackLastFail(ReqLogMgr* reqlogmgr)
+bool RecoveryChecker::rollbackLastFail()
 {
     // not all inc_id has a backup, so we just find the newest backup.
-    std::string rollback_file = getRollbackFile();
-    if (!bfs::exists(rollback_file))
+    if (!bfs::exists(rollback_file_))
     {
         LOG(INFO) << "rollback flag not exist, no need to rollback.";
         return true;
     }
-    ifstream ifs(rollback_file.c_str());
+    ifstream ifs(rollback_file_.c_str());
     if (!ifs.good())
     {
         LOG(ERROR) << "read rollback flag file error.";
         return false;
     }
+    if (bfs::exists(redo_log_basepath_))
+    {
+        LOG(INFO) << "clean redo log path !!";
+        bfs::remove_all(redo_log_basepath_);
+    }
     uint32_t rollback_id;
-    size_t len;
-    std::string rollback_backup_basepath;
     ifs.read((char*)&rollback_id, sizeof(rollback_id));
-    ifs.read((char*)&len, sizeof(len));
-    rollback_backup_basepath.resize(len);
-    ifs.read(&rollback_backup_basepath[0], len);
-
     LOG(INFO) << "last failed request inc_id is :" << rollback_id;
+
     std::string last_backup_path;
     uint32_t last_backup_id;
-    std::string req_log_path = reqlogmgr->getRequestLogPath();
-    uint32_t  last_write_id = reqlogmgr->getLastSuccessReqId();
+    uint32_t  last_write_id = reqlog_mgr_->getLastSuccessReqId();
     // mv current log to redo log, copy backup log to current, 
-    bfs::rename(req_log_path, "./redo-reqlog/");
+    bfs::rename(request_log_basepath_, redo_log_basepath_);
     ReqLogMgr redo_req_log_mgr;
-    redo_req_log_mgr.init("./redo-reqlog/");
-    std::string colname = "test";
-    // copy backup data to replace current and reopen all file.
-    if (!getLastBackup(rollback_backup_basepath, last_backup_path, last_backup_id))
+    redo_req_log_mgr.init(redo_log_basepath_);
+    if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
     {
         LOG(ERROR) << "no backup available while rollback.";
         LOG(ERROR) << "need restart to redo all log or get full data from primary.";
+        // remove all data and redo all log.
         last_backup_id = 0;
-        stop_clean_col_(colname);
-        return false;
     }
-    else
+
+    // stop collection will change the metamap so we need a copy. 
+    CollInfoMapT tmp_all_col_info = all_col_info_;
+    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
+    while(cit != tmp_all_col_info.end())
     {
-        // copy backup data to replace current and reopen all file.
-        stop_col_(colname);
-        boost::filesystem3::copy(last_backup_path, bfs::path(last_backup_path)/bfs::path("..")/bfs::path(".."));
+        stop_col_(cit->first, last_backup_id == 0);
+        ++cit;
     }
-    reqlogmgr->init(req_log_path);
+
+    // copy backup data to replace current and reopen all file.
+    if (last_backup_id > 0)
+    {
+        try
+        {
+            // copy backup log to current .
+            boost::filesystem3::copy(last_backup_path + bfs::path(request_log_basepath_).relative_path().c_str(),
+                request_log_basepath_);
+            CollInfoMapT::const_iterator inner_cit = tmp_all_col_info.begin();
+            while(inner_cit != tmp_all_col_info.end())
+            {
+                LOG(INFO) << "restoring the backup for the collection: " << inner_cit->first;
+                std::string dest_col_backup = last_backup_path + cit->first + "_backup/";
+                const CollectionPath &colpath = inner_cit->second.first;
+
+                std::string col_basepath = colpath.getBasePath();
+                std::string coldata_path = colpath.getCollectionDataPath();
+                std::string querydata_path = colpath.getQueryDataPath();
+
+                boost::filesystem3::copy(dest_col_backup + coldata_path, col_basepath + coldata_path);
+                boost::filesystem3::copy(dest_col_backup + querydata_path, col_basepath + querydata_path);
+                ++inner_cit;
+            }
+        }
+        catch(const std::exception& e)
+        {
+            LOG(ERROR) << "copy backup to current working path failed." << e.what();
+            bfs::rename(redo_log_basepath_, request_log_basepath_);
+            return false;
+        }
+    }
+
     assert(last_backup_id < rollback_id);
     LOG(INFO) << "rollback from " << rollback_id << " to backup: " << last_backup_id;
-    start_col_(colname, colname + ".xml");
+    reqlog_mgr_->init(request_log_basepath_);
+
+    clearRollbackFlag();
+    LOG(INFO) << "rollback to last backup finished, begin redo from backup to sync to last fail request.";
+    cit = tmp_all_col_info.begin();
+    while(cit != tmp_all_col_info.end())
+    {
+        if(!start_col_(cit->first, cit->second.second))
+            return false;
+        ++cit;
+    }
+
     if (last_backup_id == last_write_id)
     {
-        LOG(INFO) << "last backup is up to newest log. just replace data with backup.";
+        LOG(INFO) << "last backup is up to newest log. no redo need.";
     }
     else
     {
-        LOG(INFO) << "last backup is out of date. replace data with backup and redo request.";
+        LOG(INFO) << "last backup is out of date. begin redo request.";
         // read redo log and do request to current log.
         last_backup_id++;
         ReqLogHead rethead;
@@ -201,13 +264,20 @@ bool RecoveryChecker::rollbackLastFail(ReqLogMgr* reqlogmgr)
             }
         }
     }
-    clearRollbackFlag();
-    LOG(INFO) << "rollback to last failed finished.";
+    bfs::remove_all(redo_log_basepath_);
     return true;
 }
 
-void RecoveryChecker::init()
+void RecoveryChecker::init(const std::string& workdir)
 {
+    backup_basepath_ = workdir + "/req-backup/";
+    request_log_basepath_ = workdir + "/req-log/";
+    redo_log_basepath_ = workdir + "/redo-log/";
+    rollback_file_ = workdir + "/rollback_flag";
+
+    reqlog_mgr_.reset(new ReqLogMgr());
+    reqlog_mgr_->init(request_log_basepath_);
+
     SearchNodeManager::get()->setRecoveryCallback(
         boost::bind(&RecoveryChecker::onRecoverCallback, this),
         boost::bind(&RecoveryChecker::onRecoverWaitPrimaryCallback, this),
@@ -217,6 +287,7 @@ void RecoveryChecker::init()
 void RecoveryChecker::onRecoverCallback()
 {
     LOG(INFO) << "recovery callback, begin recovery before enter cluster.";
+    rollbackLastFail();
     syncToNewestReqLog();
     // if failed, must exit.
     LOG(INFO) << "recovery finished, wait primary agree before enter cluster.";
@@ -237,7 +308,7 @@ void RecoveryChecker::syncToNewestReqLog()
     LOG(INFO) << "begin sync to newest log.";
     while(true)
     {
-        DistributeFileSyncMgr::get()->getNewestReqLog(0, "./redo-reqlog");
+        DistributeFileSyncMgr::get()->getNewestReqLog(0, redo_log_basepath_);
         // redo new request from newest log file.
         // 
         // if no any new request break while.

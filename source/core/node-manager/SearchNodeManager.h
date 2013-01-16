@@ -26,8 +26,6 @@ public:
     SearchNodeManager()
     {
         CLASSNAME = "SearchNodeManager";
-        reqlog_mgr_.reset(new ReqLogMgr());
-        reqlog_mgr_->init("./request_log/" + CLASSNAME);
     }
 
     static SearchNodeManager* get()

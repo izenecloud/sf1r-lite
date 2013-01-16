@@ -20,6 +20,7 @@
 #include <aggregator-manager/MasterNotifier.h>
 #include <node-manager/SearchNodeManager.h>
 #include <node-manager/RequestLog.h>
+#include <node-manager/RecoveryChecker.h>
 
 // xxx
 #include <bundles/index/IndexBundleConfiguration.h>
@@ -113,7 +114,7 @@ void IndexWorker::HookDistributeRequest(const std::string& reqdata, bool& result
 {
     distribute_req_hooker_->hookCurrentReq(bundleConfig_->collectionName_,
         bundleConfig_->collPath_, reqdata,
-        SearchNodeManager::get()->getReqLogMgr());
+        RecoveryChecker::get()->getReqLogMgr());
     LOG(INFO) << "got hook request on the worker.";
     result = true;
 }

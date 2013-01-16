@@ -23,8 +23,6 @@ public:
     RecommendNodeManager()
     {
         CLASSNAME = "RecommendNodeManager";
-        reqlog_mgr_.reset(new ReqLogMgr());
-        reqlog_mgr_->init("./request_log/" + CLASSNAME);
     }
 
     static RecommendNodeManager* get()

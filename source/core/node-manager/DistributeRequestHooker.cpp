@@ -143,7 +143,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     
     if (isNeedBackup(type))
     {
-        if(!RecoveryChecker::backup(colpath_, req_log_mgr_.get()))
+        if(!RecoveryChecker::get()->backup())
         {
             LOG(ERROR) << "backup failed. Maybe not enough space.";
             if (!isprimary)
@@ -155,7 +155,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         }
     }
     // set rollback flag.
-    if(!RecoveryChecker::setRollbackFlag(prepared_req.inc_id, colpath_))
+    if(!RecoveryChecker::get()->setRollbackFlag(prepared_req.inc_id))
     {
         LOG(ERROR) << "set rollback failed.";
         if (!isprimary)
@@ -271,6 +271,11 @@ void DistributeRequestHooker::onElectingFinished()
 
 void DistributeRequestHooker::finish(bool success)
 {
+    if (hook_type_ == Request::FromLog && !success)
+    {
+        LOG(ERROR) << "redo log failed. must exit";
+        forceExit();
+    }
     try
     {
         if (success)
@@ -283,7 +288,7 @@ void DistributeRequestHooker::finish(bool success)
             // rollback from backup.
             // rename current and move restore.
             // all the file need to be reopened to make effective.
-            if (!RecoveryChecker::get()->rollbackLastFail(req_log_mgr_.get()))
+            if (!RecoveryChecker::get()->rollbackLastFail())
             {
                 LOG(ERROR) << "failed to rollback! must exit.";
                 forceExit();
@@ -295,14 +300,10 @@ void DistributeRequestHooker::finish(bool success)
         LOG(ERROR) << "failed finish. must exit.";
         forceExit();
     }
+    RecoveryChecker::get()->clearRollbackFlag();
     req_log_mgr_->delPreparedReqLog();
     current_req_.clear();
     req_log_mgr_.reset();
-    if (hook_type_ == Request::FromLog && !success)
-    {
-        LOG(ERROR) << "redo log failed. must exit";
-        forceExit();
-    }
     hook_type_ = 0;
     primary_addition_.clear();
 }

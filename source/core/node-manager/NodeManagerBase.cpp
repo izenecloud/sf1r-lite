@@ -170,9 +170,6 @@ void NodeManagerBase::updateCurrentPrimary()
     curr_primary_path_ = primaryList[0];
     LOG(INFO) << "current primary is : " << curr_primary_path_;
     getPrimaryState();
-    //IndexReqLog testlog;
-    //reqlog_mgr_->appendTypedReqLog<IndexReqLog>(testlog);
-    //reqlog_mgr_->unpackReqLogData<IndexReqLog>("", testlog);
 }
 
 void NodeManagerBase::unregisterPrimary()

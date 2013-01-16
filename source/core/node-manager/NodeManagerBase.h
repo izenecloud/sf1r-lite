@@ -20,7 +20,6 @@
 namespace sf1r
 {
 
-class ReqLogMgr;
 class NodeManagerBase : public ZooKeeperEventHandler
 {
 public:
@@ -135,11 +134,6 @@ public:
         cb_on_recover_wait_replica_finish_ = on_recover_wait_replica_finish;
     }
 
-    boost::shared_ptr<ReqLogMgr> getReqLogMgr()
-    {
-        return reqlog_mgr_;
-    }
-
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
     virtual void onNodeDeleted(const std::string& path);
@@ -222,7 +216,6 @@ protected:
     NoFailCBFuncT cb_on_recover_wait_primary_;
     NoFailCBFuncT cb_on_recover_wait_replica_finish_;
     NewReqCBFuncT cb_on_new_req_from_primary_;
-    boost::shared_ptr<ReqLogMgr> reqlog_mgr_;
     //typedef std::map<std::string, NodeStateType> ElectingNodeMapT;
     //ElectingNodeMapT electing_secondaries_;
 };
