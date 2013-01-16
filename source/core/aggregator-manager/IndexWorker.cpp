@@ -214,7 +214,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             SynchroProducerPtr syncProducer = SynchroFactory::getProducer(SUMMARY_CONTROL_FLAG);
             if (syncProducer->produce(syncControlFile, boost::bind(boost::filesystem::remove_all, control_scd_path_.c_str())))
             {
-                syncProducer->wait();
+                syncProducer->wait(10);
             }
             else
             {
