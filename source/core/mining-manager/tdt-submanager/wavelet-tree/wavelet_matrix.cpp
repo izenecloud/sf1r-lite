@@ -20,7 +20,7 @@ void MyWaveletMatrix::QuantileRangeAll(uint64_t begin_pos, uint64_t end_pos, vec
     size_t i = 0;
     //uint64_t k=0;Schema
     //cout<<"alphabet_bit_num_"<<alphabet_bit_num_<<endl;
-    QuantileRangeEach(begin_pos, end_pos, i,val, end_pos - begin_pos-1,ret,filter.Root_);
+    QuantileRangeEach(begin_pos, end_pos, i,val, end_pos - begin_pos+1,ret,filter.Root_);
 
     //QuantileRangeEach_NonRecursive(begin_pos, end_pos, i,beg_node ,end_node, val,ret);
 

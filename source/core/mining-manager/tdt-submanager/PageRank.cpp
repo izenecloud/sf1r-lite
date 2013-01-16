@@ -169,14 +169,14 @@ void PageRank::InitMap()
           
            wa_->QuantileRangeAll(node->offStart, node->offStop, ret,SubTrie);
            //cout<<"ret size"<<ret.size()<<endl;
-           
+
            for(unsigned i=0;i<ret.size();i++)
            {
                int index=ret[i];
                //if(SubGraph_.find(index)!=SubGraph_.end())
                //{
                      linkin.push_back(index);
-                     
+
                //}
                
            }

@@ -315,7 +315,7 @@ void WikiGraph::GetTopics(const std::vector<std::pair<std::string,uint32_t> >& r
 
 void WikiGraph::InitSubGaph_(const int& index,set<int>& SubGraph,int itertime)
 {
-    //LOG(INFO)<<nodes_[index]->GetName()<<wa_->Freq(index)<<"  "<<(nodes_[index]->offStop-nodes_[index]->offStart)<<endl;
+
     if(itertime>2||(itertime!=1&&(wa_->Freq(index)>1000||(nodes_[index]->offStop-nodes_[index]->offStart)>1000))){}
     else if( SubGraph.find(index) == SubGraph.end() )
     {
