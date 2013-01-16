@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/inotify.h>
 #include <boost/lexical_cast.hpp>
+#include <fstream>
 
 #define MAX_BUF_SIZE 1024
 
@@ -111,9 +112,9 @@ bool ImgDupDetector::ClearHistoryUrl()
 
 bool ImgDupDetector::SetPath()
 {
-    scd_temp_path_ = output_path_ + "/temp";
+    scd_temp_path_ = output_path_ + "/../temp";
 
-    psm_path_ = output_path_ + "/psm";
+    psm_path_ = output_path_ + "/../psm";
     psm_path_incr_ = psm_path_ + "/incr";
     psm_path_noin_ = psm_path_ + "/noin";
     psm_path_incr_url_ = psm_path_ + "/incr/url";
@@ -137,21 +138,56 @@ bool ImgDupDetector::SetPath()
 
 bool ImgDupDetector::InitFujiMap()
 {
-    boost::filesystem::create_directories(output_path_+"/fujimap");
-    con_docid_key_ = new ImgDupFujiMap(output_path_ + "/fujimap/tmp0.kf");
+    boost::filesystem::create_directories(output_path_+"/../fujimap");
+    con_docid_key_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp0.kf");
     con_docid_key_->open();
 
-    con_key_docid_ = new ImgDupFujiMap(output_path_ + "/fujimap/tmp1.kf");
+    con_key_docid_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp1.kf");
     con_key_docid_->open();
 
-    url_docid_key_ = new ImgDupFujiMap(output_path_ + "/fujimap/tmp2.kf");
+    url_docid_key_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp2.kf");
     url_docid_key_->open();
 
-    url_key_docid_ = new ImgDupFujiMap(output_path_ + "/fujimap/tmp3.kf");
+    url_key_docid_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp3.kf");
     url_key_docid_->open();
 
-    docid_docid_ = new ImgDupFujiMap(output_path_ + "/fujimap/tmp4.kf");
+    docid_docid_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp4.kf");
     docid_docid_->open();
+
+    gid_memcount_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp5.kf");
+    gid_memcount_->open();
+
+    return true;
+}
+
+bool ImgDupDetector::SaveFujiMap()
+{
+    con_docid_key_->save(output_path_ + "/../fujimap/tmp0.index");
+    con_key_docid_->save(output_path_ + "/../fujimap/tmp1.index");
+    url_docid_key_->save(output_path_ + "/../fujimap/tmp2.index");
+    url_key_docid_->save(output_path_ + "/../fujimap/tmp3.index");
+    docid_docid_->save(output_path_ + "/../fujimap/tmp4.index");
+    gid_memcount_->save(output_path_ + "/../fujimap/tmp5.index");
+
+    std::string statefile = output_path_ + "/../fujimap/state";
+    ofstream fout(statefile.c_str());
+    fout << url_key_ << " " << con_key_;
+
+    return true;
+}
+
+bool ImgDupDetector::LoadFujiMap()
+{
+    con_docid_key_->load(output_path_ + "/../fujimap/tmp0.index");
+    con_key_docid_->load(output_path_ + "/../fujimap/tmp1.index");
+    url_docid_key_->load(output_path_ + "/../fujimap/tmp2.index");
+    url_key_docid_->load(output_path_ + "/../fujimap/tmp3.index");
+    docid_docid_->load(output_path_ + "/../fujimap/tmp4.index");
+    gid_memcount_->load(output_path_ + "/../fujimap/tmp5.index");
+
+    std::string statefile = output_path_ + "/../fujimap/state";
+    ifstream fin(statefile.c_str());
+    fin >> url_key_ >> con_key_;
 
     return true;
 }
@@ -162,6 +198,7 @@ bool ImgDupDetector::DupDetectorMain()
     ImgDupDetector::SetPath();
     ImgDupDetector::InitFujiMap();
     ImgDupDetector::ClearHistory();
+    ImgDupFileManager::get()->SetParam(scd_path_, output_path_, docid_docid_, gid_memcount_);
 
 
     if(log_info_ || !log_info_)
@@ -208,9 +245,15 @@ bool ImgDupDetector::DupDetectorMain()
                 continue;
             if(event -> mask & IN_CLOSE_WRITE || event -> mask & IN_MOVED_TO)
             {
+                if(incremental_mode_)
+                    ImgDupDetector::LoadFujiMap();
                 std::string filename = std::string(event->name);
                 BeginToDupDetect(filename);
                 LOG(INFO)<<"Finish processing: "<<filename<<std::endl;
+                if(incremental_mode_)
+                    ImgDupDetector::SaveFujiMap();
+//                if(incremental_mode_)
+//                    ImgDupFileManager::get()->ReBuildAll();
             }
             index += sizeof(struct inotify_event)+event->len;
         }
@@ -230,13 +273,13 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
         {
             ImgDupDetector::BuildUrlIndex(scd_file, psm_path_incr_url_);
             ImgDupDetector::DetectUrl(scd_file, psm_path_incr_url_, res_file, output_path);
-            ImgDupDetector::WriteFile(filename);
+            ImgDupDetector::WriteCurrentFile(filename);
         }
         else
         {
             ImgDupDetector::BuildUrlIndex(scd_file, psm_path_noin_url_);
             ImgDupDetector::DetectUrl(scd_file, psm_path_noin_url_, res_file, output_path);
-            ImgDupDetector::WriteFile(filename);
+            ImgDupDetector::WriteCurrentFile(filename);
             B5MHelper::PrepareEmptyDir(psm_path_noin_url_);
             ImgDupDetector::ClearHistoryUrl();
         }
@@ -268,13 +311,13 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
         {
             ImgDupDetector::BuildConIndex(scd_file, psm_path_incr_con_);
             ImgDupDetector::DetectCon(scd_file, psm_path_incr_con_, res_file, output_path);
-            ImgDupDetector::WriteFile(filename);
+            ImgDupDetector::WriteCurrentFile(filename);
         }
         else
         {
             ImgDupDetector::BuildConIndex(scd_file, psm_path_noin_con_);
             ImgDupDetector::DetectCon(scd_file, psm_path_noin_con_, res_file, output_path);
-            ImgDupDetector::WriteFile(filename);
+            ImgDupDetector::WriteCurrentFile(filename);
             B5MHelper::PrepareEmptyDir(psm_path_noin_con_);
             ImgDupDetector::ClearHistoryCon();
         }
@@ -292,13 +335,13 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
         {
             ImgDupDetector::BuildConIndex(scd_file, psm_path_incr_con_);
             ImgDupDetector::DetectCon(scd_file, psm_path_incr_con_, res_file, output_path);
-            ImgDupDetector::WriteFile(filename);
+            ImgDupDetector::WriteCurrentFile(filename);
         }
         else
         {
             ImgDupDetector::BuildConIndex(scd_file, psm_path_noin_con_);
             ImgDupDetector::DetectCon(scd_file, psm_path_noin_con_, res_file, output_path);
-            ImgDupDetector::WriteFile(filename);
+            ImgDupDetector::WriteCurrentFile(filename);
             B5MHelper::PrepareEmptyDir(psm_path_noin_con_);
             ImgDupDetector::ClearHistoryCon();
         }
@@ -352,7 +395,8 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         psm.Insert(url_key_, doc_vector, attach);
         //url_docid_key_[boost::lexical_cast<uint32_t>(docID)] = url_key_;
         //url_key_docid_[url_key_] = boost::lexical_cast<uint32_t>(docID);
-        url_key_docid_->insert(url_key_, DocidToUint(docID));
+        if( !url_key_docid_->insert(url_key_, DocidToUint(docID)))
+            LOG(INFO) << "Item exist! " << std::endl;
         url_docid_key_->insert(DocidToUint(docID), url_key_);
         if(log_info_ && !log_info_)
         {
@@ -405,7 +449,6 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         url_key_++;
     }
 
-
     if(!psm.Build())
     {
         LOG(ERROR) << "psm build error " << std::endl;
@@ -425,7 +468,6 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         LOG(ERROR) << "Error info: " << url_key_docid_->what() << endl;
         return false;
     }
-
     return true;
 }
 
@@ -804,7 +846,26 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
     return true;
 }
 
-bool ImgDupDetector::WriteFile(const std::string& filename)
+bool ImgDupDetector::BuildGidMem()
+{
+    std::map<uint32_t, std::vector<uint32_t> >::iterator iter = gid_docids_.begin();
+    for(;iter != gid_docids_.end(); iter++)
+    {
+        uint32_t count;
+        if(gid_memcount_->get(iter->first, count))
+        {
+            gid_memcount_->update(iter->first, count + iter->second.size());
+        }
+        else
+        {
+            gid_memcount_->update(iter->first, iter->second.size());
+        }
+    }
+    gid_memcount_->build();
+    return true;
+}
+
+bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
 {
     if( docid_docid_->build() < 0 )
     {

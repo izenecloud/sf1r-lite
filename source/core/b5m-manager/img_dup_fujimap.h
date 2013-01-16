@@ -39,7 +39,7 @@ namespace sf1r{
     public:
         ImgDupFujiMap(const std::string& path)
             :path_(path)
-            ,fplen(32)
+            ,fplen(16)
             ,tmpN(30000000)
         {
         }
@@ -106,6 +106,14 @@ namespace sf1r{
         std::string what()
         {
             return imgDupFujiMap->what();
+        }
+        int save(const std::string& index)
+        {
+            return imgDupFujiMap->save(index.c_str());
+        }
+        int load(const std::string& index)
+        {
+            return imgDupFujiMap->load(index.c_str());
         }
     };
 }

@@ -1,4 +1,5 @@
 #include <b5m-manager/img_dup_detector.h>
+#include <b5m-manager/img_dup_fm.h>
 
 #include <iostream>
 #include <cstdlib>
@@ -19,8 +20,14 @@ int main(int argc, char **argv)
 
   parse_parameters(argc, argv);
 
-  ImgDupDetector imgdupdetector(scd_path, output_path, source_name, true, false, 3, 6);
-  imgdupdetector.DupDetectorMain();
+//  ImgDupDetector imgdupdetector(scd_path, output_path, source_name, true, false, 3, 6);
+//  imgdupdetector.DupDetectorMain();
+  ImgDupFujiMap* docid_docid_ = new ImgDupFujiMap(output_path + "/../fujimap/tmp4.kf");
+  ImgDupFujiMap* gid_memcount_ = new ImgDupFujiMap(output_path + "/../fujimap/tmp5.kf");
+  docid_docid_->open();
+  gid_memcount_->open();
+  ImgDupFileManager imgDupFileManager(scd_path, output_path, docid_docid_, gid_memcount_);
+  imgDupFileManager.ReBuildAll();
   return 0;
 }
 
@@ -29,7 +36,7 @@ void version(){
             << "Written by Kuilong Liu" << std::endl << std::endl;
 }
 
-void usage(){
+void usage2(){
   std::cerr << std::endl
        << "Usage: ./t_img_dup_detector scd-path output-path source-name" << std::endl << std::endl
        << "             scd-path       is the position of input scd files" << std::endl
@@ -38,10 +45,16 @@ void usage(){
        << std::endl;
   exit(0);
 }
-
+void usage(){
+  std::cerr << std::endl
+       << "Usage: ./t_img_dup_detector scd-path output-path" << std::endl << std::endl
+       << "             scd-path       is the position of input scd files" << std::endl
+       << "             output-path    is the position of output scd files" << std::endl
+       << std::endl;
+  exit(0);
+}
 void parse_parameters (int argc, char **argv){
   if (argc != 3) usage();
   scd_path = argv[1];
   output_path = argv[2];
-  source_name = argv[3];
 }
