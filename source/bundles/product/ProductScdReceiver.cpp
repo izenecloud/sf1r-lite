@@ -65,12 +65,6 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
         }
     }
 
-    //call buildCollection
-    if (index_service_->getDocNum() < 1)
-    {
-        return true;
-    }
-
     if(!index_service_->index(0))
     {
         return false;
