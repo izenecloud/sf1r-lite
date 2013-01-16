@@ -41,6 +41,10 @@ void WikiGraph::SetParam_(const string& wiki_path,cma::OpenCC* opencc,const stri
    // : advertiseBias_((boost::filesystem::path(wiki_path)/=boost::filesystem::path("AdvertiseWord.txt")).c_str())
    // , opencc_(opencc)
 {
+    boost::filesystem::path tdtmemory_path(wiki_path);
+    tdtmemory_path /= boost::filesystem::path(tdttype.c_str());
+
+
     enum TDTTYPE tType=WAVLET_MATRIX;
     if (tdttype == "WatArray")
         tType = WAT_ARRAY;
@@ -48,16 +52,18 @@ void WikiGraph::SetParam_(const string& wiki_path,cma::OpenCC* opencc,const stri
         tType = WAVLET_MATRIX;
     else if (tdttype == "NonWavletTree")
         tType = NON_WAVLET;//
+    else 
+        tdtmemory_path = (boost::filesystem::path(wiki_path)/=boost::filesystem::path("WavletMatrix"));
     TdtFactory factorytemp;
     wa_=factorytemp.CreateTdtMemory(tType);//
+    tdtmemorypath_ = tdtmemory_path.c_str();
+
     if(advertiseBias_){return;}
 
     advertiseBias_=new AdBias((boost::filesystem::path(wiki_path)/=boost::filesystem::path("AdvertiseWord.txt")).c_str()) ;
     
-    boost::filesystem::path tdtmemory_path(wiki_path);
-    tdtmemory_path /= boost::filesystem::path(tdttype.c_str());
-    tdtmemorypath_ = tdtmemory_path.c_str();
 
+   
     opencc_=opencc;   
     boost::filesystem::path wikigraph_path(wiki_path);
     wikigraph_path /= boost::filesystem::path("wikigraph");
