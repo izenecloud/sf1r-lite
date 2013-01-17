@@ -183,6 +183,7 @@ void MasterManagerBase::onChildrenChanged(const std::string& path)
 
 void MasterManagerBase::onDataChanged(const std::string& path)
 {
+    LOG(INFO) << "node data changed : " << path;
     boost::lock_guard<boost::mutex> lock(state_mutex_);
     checkForWriteReq();
 }

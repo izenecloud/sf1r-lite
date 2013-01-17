@@ -264,8 +264,6 @@ void DistributeRequestHooker::waitReplicasLogCallback()
 
 void DistributeRequestHooker::onElectingFinished()
 {
-    if(!isHooked())
-        return;
     LOG(INFO) << "an electing has finished. notify ready to master.";
 }
 

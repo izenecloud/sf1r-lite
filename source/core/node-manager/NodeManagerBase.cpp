@@ -474,12 +474,10 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
     if (path == nodePath_ || path == self_primary_path_)
     {
         LOG(INFO) << "myself node was deleted : " << path;
-        return;
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)
     {
         LOG(INFO) << "node was deleted, but I did not care : " << path;
-        return;
     }
     else if (path == curr_primary_path_)
     {
@@ -538,12 +536,11 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     boost::unique_lock<boost::mutex> lock(mutex_);
     if (path == self_primary_path_ || path == nodePath_)
     {
-        return;
+        LOG(INFO) << "myself node was changed: " << path;
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)
     {
         LOG(INFO) << "node was deleted, but I did not care : " << path;
-        return;
     }
     else if (isPrimaryWithoutLock())
     {
@@ -776,6 +773,11 @@ void NodeManagerBase::updateNodeState()
     ZNode nodedata;
     setSf1rNodeData(nodedata);
     zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+    if (nodeState_ == NODE_STATE_STARTED || nodeState_ == NODE_STATE_UNKNOWN)
+    {
+        // update to nodepath to make master got notified.
+        zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
+    }
 }
 
 void NodeManagerBase::checkSecondaryReqProcess()
