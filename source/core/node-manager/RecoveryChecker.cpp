@@ -334,7 +334,14 @@ void RecoveryChecker::syncToNewestReqLog()
         // redo new request from newest log file.
         // 
         // if no any new request break while.
+        if (!bfs::exists(redo_log_basepath_))
+            break;
+        // do new redo RequestLog.
+        //
+        //
+        bfs::remove_all(redo_log_basepath_);
     }
+    LOG(INFO) << "no more new log to redo.";
 }
 
 void RecoveryChecker::wait()

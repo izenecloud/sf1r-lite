@@ -254,7 +254,7 @@ public:
         if (!ifs.good())
         {
             std::cerr << "error!!! Request log open failed. " << std::endl;
-            throw -1;
+            throw std::runtime_error("open request log failed.");
             return false;
         }
         ifs.seekg(0, ios::end);
@@ -295,7 +295,7 @@ public:
         if (!ifs.good())
         {
             std::cerr << "error!!! Request log open failed. " << std::endl;
-            throw -1;
+            throw std::runtime_error("open request log file failed.");
             return false;
         }
         ifs.seekg(0, ios::end);
@@ -341,7 +341,7 @@ private:
         if (!ifs_data.good())
         {
             std::cerr << "error!!! Request log open failed. " << std::endl;
-            throw -1;
+            throw std::runtime_error("open request log file failed.");
             return false;
         }
         req_packed_data.resize(head.req_data_len);
@@ -350,7 +350,7 @@ private:
         if (crc(0, req_packed_data.data(), req_packed_data.size()) != head.req_data_crc)
         {
             std::cout << "warning: crc check failed for request log data." << std::endl;
-            throw -1;
+            throw std::runtime_error("request log data corrupt.");
             return false;
         }
         return true;
