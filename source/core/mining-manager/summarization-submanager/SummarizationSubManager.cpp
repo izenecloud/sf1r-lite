@@ -407,7 +407,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         opinion_compute_threads_.push_back(new boost::thread(&MultiDocSummarizationSubManager::DoComputeOpinion,
                     this, Ops_[i]));
     }
-
+    
     LOG(INFO) << "====== Evaluating summarization begin ======" << std::endl;
     {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
@@ -497,6 +497,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     }
     else
     {
+        boost::filesystem::remove_all(generated_scds_path);
         LOG(INFO) << "Send Total SCD files..." << endl;
         SynchroData syncTotalData;
         syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
