@@ -11,6 +11,7 @@
 #define MAX_BUF_SIZE 1024
 
 using namespace sf1r;
+uint32_t history = 0;
 
 ImgDupDetector::ImgDupDetector()
 :psmk_(400)
@@ -171,7 +172,7 @@ bool ImgDupDetector::SaveFujiMap()
 
     std::string statefile = output_path_ + "/../fujimap/state";
     ofstream fout(statefile.c_str());
-    fout << url_key_ << " " << con_key_;
+    fout << url_key_ << " " << con_key_ << " " << history;
 
     return true;
 }
@@ -661,16 +662,26 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
               /****Matches****/
             uint32_t match_docid;
             if( docid_docid_->get(current_docid, match_docid) )
+            {
                 continue;
+            }
+
             if( !url_key_docid_->get(match_key, match_docid))
             {
                 LOG(INFO) << "FujiMap Get ERROR: match_key[" << match_key <<"]"
                           << "match_docid["<<match_docid<<"]"<<endl;
             }
+
+            uint32_t match_match;
+            if( docid_docid_->get(match_docid, match_match) )
+            {
+                match_docid = match_match;
+            }
             if(current_docid == match_docid)
             {
                 writer.Append(scddoc);
                 rest++;
+                history++;
                 continue;
             }
 
@@ -686,9 +697,17 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
                 {
                     docid_docid_->update(iter->second[i], match_docid);
                     temp_v.push_back(iter->second[i]);
+                    docid_docid_->update(iter->second[i], match_docid);
                 }
                 gid_docids_.erase(iter);
             }
+
+            uint32_t gmemcount;
+            if( gid_memcount_->get(current_docid, gmemcount) )
+            {
+                gid_memcount_->update(current_docid, 0);
+            }
+
             iter = gid_docids_.find(match_docid);
             if(iter != gid_docids_.end() )
             {
@@ -799,16 +818,25 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
             /****Matches****/
             uint32_t match_docid;
             if( docid_docid_->get(current_docid, match_docid) )
+            {
                 continue;
-
+            }
             if( !con_key_docid_->get(match_key, match_docid))
             {
                 LOG(INFO) << "FujiMap Get ERROR: match_key[" << match_key <<"]"
                           << "match_docid["<<match_docid<<"]"<<endl;
             }
+
+            uint32_t match_match;
+            if( docid_docid_->get(match_docid, match_match))
+            {
+                match_docid = match_match;
+            }
+
             if(current_docid == match_docid)
             {
 //              if(writer.Append(scddoc)) rest++;
+                history++;
                 rest++;
                 continue;
             }
@@ -824,8 +852,15 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
                 {
                     docid_docid_->update(iter->second[i], match_docid);
                     temp_v.push_back(iter->second[i]);
+                    docid_docid_->update(iter->second[i], match_docid);
                 }
                 gid_docids_.erase(iter);
+            }
+
+            uint32_t gmemcount;
+            if( gid_memcount_->get(current_docid, gmemcount) )
+            {
+                gid_memcount_->update(current_docid, 0);
             }
 
             iter = gid_docids_.find(match_docid);
@@ -835,6 +870,11 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
                 for(i=0;i<temp_v.size();i++)
                 {
                     iter->second.push_back(temp_v[i]);
+                    LOG(INFO) <<"match_docid: " << match_docid << " push_back temp_v[" << i << "]: " << temp_v[i] << endl;
+                }
+                for(i=0;i<iter->second.size();i++)
+                {
+                    LOG(INFO) <<"match_docid: " <<match_docid << " iter->second["<<i<<"]: "<<iter->second[i] <<endl;
                 }
             }
             else
@@ -887,6 +927,8 @@ bool ImgDupDetector::BuildGidMem()
         }
     }
     gid_memcount_->build();
+    if(!gid_docids_.empty())
+        gid_docids_.clear();
     return true;
 }
 
