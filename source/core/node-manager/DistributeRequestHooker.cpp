@@ -54,6 +54,7 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const C
     const std::string& reqdata,
     boost::shared_ptr<ReqLogMgr> req_log_mgr)
 {
+    LOG(INFO) << "current request hooked: " << colname_ << "," << current_req_;
     colname_ = colname;
     colpath_ = colpath;
     current_req_ = reqdata;
@@ -82,6 +83,7 @@ bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& 
 
 void DistributeRequestHooker::setHook(int calltype, const std::string& addition_data)
 {
+    LOG(INFO) << "setting hook : " << hook_type_ << ", data:" << primary_addition_;
     hook_type_ = calltype;
     // for request for primary master, the addition_data is the original request json data.
     // for request from primary worker to replicas, the addition_data is original request
@@ -128,6 +130,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     }
     prepared_req.reqtype = type;
     type_ = type;
+    LOG(INFO) << "begin prepare log ";
     if (!req_log_mgr_->prepareReqLog(prepared_req, isprimary))
     {
         LOG(ERROR) << "prepare request log failed.";
@@ -143,6 +146,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     
     if (isNeedBackup(type))
     {
+        LOG(INFO) << "begin backup";
         if(!RecoveryChecker::get()->backup())
         {
             LOG(ERROR) << "backup failed. Maybe not enough space.";
@@ -220,6 +224,7 @@ void DistributeRequestHooker::abortRequest()
         forceExit();
         return;
     }
+    LOG(INFO) << "abortRequest...";
     SearchNodeManager::get()->abortRequest();
 }
 

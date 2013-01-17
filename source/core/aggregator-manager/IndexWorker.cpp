@@ -110,8 +110,9 @@ IndexWorker::~IndexWorker()
     delete scd_writer_;
 }
 
-void IndexWorker::HookDistributeRequest(const std::string& reqdata, bool& result)
+void IndexWorker::HookDistributeRequest(int hooktype, const std::string& reqdata, bool& result)
 {
+    distribute_req_hooker_->setHook(hooktype, reqdata);
     distribute_req_hooker_->hookCurrentReq(bundleConfig_->collectionName_,
         bundleConfig_->collPath_, reqdata,
         RecoveryChecker::get()->getReqLogMgr());

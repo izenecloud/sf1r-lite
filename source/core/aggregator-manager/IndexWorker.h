@@ -85,11 +85,11 @@ public:
     {
         BIND_CALL_PROXY_BEGIN(IndexWorker, proxy)
         BIND_CALL_PROXY_2(index, unsigned int, bool)
-        BIND_CALL_PROXY_2(HookDistributeRequest, std::string, bool)
+        BIND_CALL_PROXY_3(HookDistributeRequest, int, std::string, bool)
         BIND_CALL_PROXY_END()
     }
 
-    void HookDistributeRequest(const std::string& reqdata, bool& result);
+    void HookDistributeRequest(int hooktype, const std::string& reqdata, bool& result);
 
     void index(unsigned int numdoc, bool& result);
 

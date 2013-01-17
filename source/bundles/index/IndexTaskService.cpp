@@ -40,13 +40,13 @@ bool IndexTaskService::HookDistributeRequest(bool shard)
     bool ret = false;
     if (hooktype == Request::FromDistribute && shard)
     {
-        indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "HookDistributeRequest", reqdata, ret);
+        indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "HookDistributeRequest", (int)hooktype, reqdata, ret);
     }
     else
     {
         // hook from primary and log redo means replica is processing the request.
         // So do not distribute the request to shard worker.
-        indexWorker_->HookDistributeRequest(reqdata, ret);
+        indexWorker_->HookDistributeRequest((int)hooktype, reqdata, ret);
     }
     if (!ret)
     {
