@@ -201,6 +201,7 @@ void NodeManagerBase::registerPrimary(ZNode& znode)
         LOG(INFO) << "current self node primary path is : " << self_primary_path_;
         znode.setValue(ZNode::KEY_SELF_REG_PRIMARY_PATH, self_primary_path_);
         zookeeper_->setZNodeData(nodePath_, znode.serialize());
+        updateCurrentPrimary();
     }
     else
     {
@@ -314,6 +315,20 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         ZNode znode;
         setSf1rNodeData(znode);
         registerPrimary(znode);
+        if (curr_primary_path_ == self_primary_path_)
+        {
+            LOG(INFO) << "I enter as primary success." << self_primary_path_;
+            nodeState_ = NODE_STATE_ELECTING;
+            checkSecondaryElecting();
+        }
+        else
+        {
+            LOG(INFO) << "enter as primary fail, maybe another node is entering at the same time.";
+            nodeState_ = NODE_STATE_RECOVER_WAIT_PRIMARY;
+            updateNodeState();
+            LOG(INFO) << "begin wait new entered primary and try re-enter when sync to new primary.";
+            return;
+        }
     }
 
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
