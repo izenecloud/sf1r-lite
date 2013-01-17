@@ -163,12 +163,14 @@ bool ImgDupDetector::InitFujiMap()
 
 bool ImgDupDetector::SaveFujiMap()
 {
+/*
     con_docid_key_->save(output_path_ + "/../fujimap/tmp0.index");
     con_key_docid_->save(output_path_ + "/../fujimap/tmp1.index");
     url_docid_key_->save(output_path_ + "/../fujimap/tmp2.index");
     url_key_docid_->save(output_path_ + "/../fujimap/tmp3.index");
+*/
     docid_docid_->save(output_path_ + "/../fujimap/tmp4.index");
-    gid_memcount_->save(output_path_ + "/../fujimap/tmp5.index");
+//    gid_memcount_->save(output_path_ + "/../fujimap/tmp5.index");
 
     std::string statefile = output_path_ + "/../fujimap/state";
     ofstream fout(statefile.c_str());
@@ -298,6 +300,8 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
         {
             ImgDupDetector::BuildUrlIndex(scd_file, psm_path_incr_url_);
             ImgDupDetector::DetectUrl(scd_file, psm_path_incr_url_, res_file, output_path);
+            url_docid_key_->save(output_path_ + "/../fujimap/tmp2.index");
+            url_key_docid_->save(output_path_ + "/../fujimap/tmp3.index");
         }
         else
         {
@@ -315,6 +319,8 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
         {
             ImgDupDetector::BuildConIndex(scd_file, psm_path_incr_con_);
             ImgDupDetector::DetectCon(scd_file, psm_path_incr_con_, res_file, output_path);
+            con_docid_key_->load(output_path_ + "/../fujimap/tmp0.index");
+            con_key_docid_->load(output_path_ + "/../fujimap/tmp1.index");
             ImgDupDetector::WriteCurrentFile(filename);
         }
         else
@@ -325,8 +331,6 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
             B5MHelper::PrepareEmptyDir(psm_path_noin_con_);
             ImgDupDetector::ClearHistoryCon();
         }
-
-//        B5MHelper::PrepareEmptyDir(scd_temp_path_);
 
     }
 
@@ -397,8 +401,6 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
             continue;
         }
         psm.Insert(url_key_, doc_vector, attach);
-        //url_docid_key_[boost::lexical_cast<uint32_t>(docID)] = url_key_;
-        //url_key_docid_[url_key_] = boost::lexical_cast<uint32_t>(docID);
         if( !url_key_docid_->insert(url_key_, DocidToUint(docID)))
             LOG(INFO) << "Item exist! " << std::endl;
         url_docid_key_->insert(DocidToUint(docID), url_key_);
@@ -441,8 +443,6 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
             continue;
         }
         psm.Insert(url_key_, doc_vector, attach);
-        //url_docid_key_[boost::lexical_cast<uint32_t>(docID)] = url_key_;
-        //url_key_docid_[url_key_] = boost::lexical_cast<uint32_t>(docID);
         url_key_docid_->insert(url_key_, DocidToUint(docID));
         url_docid_key_->insert(DocidToUint(docID), url_key_);
         if(log_info_ && !log_info_)
@@ -517,8 +517,6 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
             continue;
         }
         psm.Insert(con_key_, doc_vector, attach);
-        //con_docid_key_[boost::lexical_cast<uint32_t>(docID)] = con_key_;
-        //con_key_docid_[con_key_] = boost::lexical_cast<uint32_t>(docID);
         con_key_docid_->insert(con_key_, DocidToUint(docID));
         con_docid_key_->insert(DocidToUint(docID), con_key_);
         if(log_info_)
@@ -560,8 +558,6 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
             continue;
         }
         psm.Insert(con_key_, doc_vector, attach);
-        //con_docid_key_[boost::lexical_cast<uint32_t>(docID)] = con_key_;
-        //con_key_docid_[con_key_] = boost::lexical_cast<uint32_t>(docID);
         con_key_docid_->insert(con_key_, DocidToUint(docID));
         con_docid_key_->insert(DocidToUint(docID), con_key_);
         if(log_info_)
@@ -663,6 +659,7 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
             uint32_t match_docid;
             if( docid_docid_->get(current_docid, match_docid) )
             {
+                LOG(INFO) << current_docid << endl;
                 continue;
             }
 
@@ -679,6 +676,7 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
             }
             if(current_docid == match_docid)
             {
+                LOG(INFO) << current_docid <<endl;
                 writer.Append(scddoc);
                 rest++;
                 history++;
@@ -721,31 +719,6 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
             {
                 gid_docids_[match_docid] = temp_v;
             }
-
-/*
-            if(log_info_ && !log_info_)
-            {
-                std::string current_url;
-                std::string current_content;
-                std::string match_url;
-                std::string match_content;
-                doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
-                doc["Content"].convertString(current_content, izenelib::util::UString::UTF_8);
-                key_url_map_[match_key].convertString(match_url, izenelib::util::UString::UTF_8);
-                key_con_map_[match_key].convertString(match_content, izenelib::util::UString::UTF_8);
-
-
-                LOG(INFO)<<std::endl<<"DOCID: "<<docID
-                         <<std::endl<<"ImgUrl: "<<current_url
-                         <<std::endl<<"Content: "<<current_content
-                         <<std::endl<<std::endl<<"DOCID: "<<url_key_docid_[match_key]
-                         <<std::endl<<"ImgUrl: "<<match_url
-                         <<std::endl<<"Content: "<<match_content
-                         <<std::endl<<"Image URL Matches "<<std::endl<<std::endl<<std::endl;
-
-
-            }
-*/
         }
     }
     LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<< std::endl;
@@ -788,7 +761,6 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         PsmAttach attach;
         if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
         {
-//            if(writer.Append(scddoc)) rest++;
             rest++;
             continue;
         }
@@ -797,7 +769,6 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         uint32_t current_docid = DocidToUint(docID);
         if(!psm.Search(doc_vector, attach, match_key))
         {
-//            if(writer.Append(scddoc)) rest++;i
             rest++;
         }
         else if( !con_docid_key_->get(current_docid, current_key) )
@@ -805,12 +776,10 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
             LOG(INFO) << "FujiMap Get ERROR: docID[" << docID << "]"
                       << "current_key[" << current_key <<"]"
                       << "match_key" << match_key <<"]" <<endl;
-//            if(writer.Append(scddoc)) rest++;
             rest++;
         }
         else if(current_key == match_key)
         {
-//            if(writer.Append(scddoc)) rest++;
             rest++;
         }
         else
@@ -819,6 +788,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
             uint32_t match_docid;
             if( docid_docid_->get(current_docid, match_docid) )
             {
+                LOG(INFO) << current_docid << endl;
                 continue;
             }
             if( !con_key_docid_->get(match_key, match_docid))
@@ -835,7 +805,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
 
             if(current_docid == match_docid)
             {
-//              if(writer.Append(scddoc)) rest++;
+                LOG(INFO) << current_docid << endl;
                 history++;
                 rest++;
                 continue;
@@ -870,41 +840,12 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
                 for(i=0;i<temp_v.size();i++)
                 {
                     iter->second.push_back(temp_v[i]);
-                    LOG(INFO) <<"match_docid: " << match_docid << " push_back temp_v[" << i << "]: " << temp_v[i] << endl;
-                }
-                for(i=0;i<iter->second.size();i++)
-                {
-                    LOG(INFO) <<"match_docid: " <<match_docid << " iter->second["<<i<<"]: "<<iter->second[i] <<endl;
                 }
             }
             else
             {
                 gid_docids_[match_docid] = temp_v;
             }
-/*
-            if(log_info_)
-            {
-                std::string current_url;
-                std::string current_content;
-                std::string match_url;
-                std::string match_content;
-                doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
-                doc["Content"].convertString(current_content, izenelib::util::UString::UTF_8);
-                key_url_map_[match_key].convertString(match_url, izenelib::util::UString::UTF_8);
-                key_con_map_[match_key].convertString(match_content, izenelib::util::UString::UTF_8);
-
-
-                LOG(INFO)<<std::endl<<"DOCID: "<<docID
-                         <<std::endl<<"ImgUrl: "<<current_url
-                         <<std::endl<<"Content: "<<current_content
-                         <<std::endl<<std::endl<<"DOCID: "<<con_key_docid_[match_key]
-                         <<std::endl<<"ImgUrl: "<<match_url
-                         <<std::endl<<"Content: "<<match_content
-                         <<std::endl<<"Image Content Matches "<<std::endl<<std::endl<<std::endl;
-
-
-            }
-*/
         }
     }
     LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<< std::endl;
@@ -927,6 +868,7 @@ bool ImgDupDetector::BuildGidMem()
         }
     }
     gid_memcount_->build();
+    gid_memcount_->save(output_path_ + "/../fujimap/tmp5.index");
     if(!gid_docids_.empty())
         gid_docids_.clear();
     return true;
@@ -978,8 +920,6 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
         uint32_t match_docid;
         if( docid_docid_->get(current_docid, match_docid) )
         {
-            if(current_docid == match_docid)
-                LOG(INFO) << "current_docid: " << current_docid <<" match docid: " << match_docid <<endl;
             //deleted
             UString gid;
             gid.assign(UintToDocid(match_docid), izenelib::util::UString::UTF_8);
