@@ -32,7 +32,7 @@ public:
 };
 
 
-void MyWatArray::QuantileRangeAll(uint64_t begin_pos, uint64_t end_pos, vector<uint64_t>& ret,const BitTrie& filter) const
+void TDTWatArray::QuantileRangeAll(uint64_t begin_pos, uint64_t end_pos, vector<uint64_t>& ret,const BitTrie& filter) const
 {
     uint64_t val;
     if (end_pos > length_ || begin_pos >= end_pos)
@@ -54,7 +54,7 @@ void MyWatArray::QuantileRangeAll(uint64_t begin_pos, uint64_t end_pos, vector<u
 
 
 }
-void MyWatArray::QuantileRangeEach(uint64_t begin_pos, uint64_t end_pos, size_t i,uint64_t beg_node ,uint64_t end_node, uint64_t val,vector<uint64_t>& ret,BitNode* node) const
+void TDTWatArray::QuantileRangeEach(uint64_t begin_pos, uint64_t end_pos, size_t i,uint64_t beg_node ,uint64_t end_node, uint64_t val,vector<uint64_t>& ret,BitNode* node) const
 {
     //cout<<"QuantileRangeEach"<<"begin_pos"<<begin_pos<<"end_pos"<<end_pos<<"i"<<i<<"beg_node"<<beg_node<<"end_node"<<end_node<<"val"<<val<<"ret"<<ret.size()<<"grade"<<node->grade_<<endl;
     if(i==bit_arrays_.size())
@@ -112,7 +112,7 @@ void MyWatArray::QuantileRangeEach(uint64_t begin_pos, uint64_t end_pos, size_t 
 
 }
 
-void MyWatArray::QuantileRangeEach_NonRecursive(uint64_t begin_pos, uint64_t end_pos, size_t i,uint64_t beg_node ,uint64_t end_node, uint64_t val,vector<uint64_t>& ret) const
+void TDTWatArray::QuantileRangeEach_NonRecursive(uint64_t begin_pos, uint64_t end_pos, size_t i,uint64_t beg_node ,uint64_t end_node, uint64_t val,vector<uint64_t>& ret) const
 {
     //cout<<"QuantileRangeEach"<<"begin_pos"<<begin_pos<<"end_pos"<<end_pos<<"i"<<i<<"beg_node"<<beg_node<<"end_node"<<end_node<<"val"<<val<<"ret"<<ret.size()<<endl;
     stack<Parameter> Params;

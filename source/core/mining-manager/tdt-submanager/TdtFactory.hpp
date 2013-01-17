@@ -29,7 +29,7 @@ public:
 
 class WavletTree1: public TdtMemory 
 {    
-     MyWatArray wa_;
+     TDTWatArray wa_;
 public:    
      WavletTree1(){}
      ~WavletTree1(){}
@@ -46,7 +46,7 @@ public:
 
 class WavletTree2: public TdtMemory
 {    
-     MyWaveletMatrix wa_;
+     TDTWaveletMatrix wa_;
 public: 
      WavletTree2(){};
      ~WavletTree2(){};   

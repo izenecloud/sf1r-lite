@@ -5,7 +5,7 @@ using namespace wavelet_matrix;
 namespace sf1r
 {
 
-void MyWaveletMatrix::QuantileRangeAll(uint64_t begin_pos, uint64_t end_pos, vector<uint64_t>& ret,const BitTrie& filter) const
+void TDTWaveletMatrix::QuantileRangeAll(uint64_t begin_pos, uint64_t end_pos, vector<uint64_t>& ret,const BitTrie& filter) const
 {
     uint64_t val;
     if ((end_pos > length_ || begin_pos >= end_pos))
@@ -26,7 +26,7 @@ void MyWaveletMatrix::QuantileRangeAll(uint64_t begin_pos, uint64_t end_pos, vec
 
 
 }
-void MyWaveletMatrix::QuantileRangeEach(uint64_t begin_pos, uint64_t end_pos, size_t i,uint64_t val,int k,vector<uint64_t>& ret,BitNode* node) const
+void TDTWaveletMatrix::QuantileRangeEach(uint64_t begin_pos, uint64_t end_pos, size_t i,uint64_t val,int k,vector<uint64_t>& ret,BitNode* node) const
 {
 
     if(i==alphabet_bit_num_)

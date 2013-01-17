@@ -7,7 +7,7 @@
 namespace sf1r
 {
 
-class MyWaveletMatrix : public wavelet_matrix::WaveletMatrix
+class TDTWaveletMatrix : public wavelet_matrix::WaveletMatrix
 {
 public:
     void QuantileRangeEach(uint64_t begin_pos, uint64_t end_pos, size_t i, uint64_t val,int k,vector<uint64_t>& ret,BitNode* node) const;

@@ -6,7 +6,7 @@
 
 namespace sf1r
 {
-class MyWatArray : public wat_array::WatArray
+class TDTWatArray : public wat_array::WatArray
 {
 public:
     //add qian wang
