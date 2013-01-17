@@ -7,7 +7,7 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="TdtType">
+    <xs:simpleType name="TdtStorage">
         <xs:restriction base="xs:string">
             <xs:enumeration value="WatArray"/>
             <xs:enumeration value="WavletMatrix"/>
