@@ -6,11 +6,20 @@
 #include <map>
 #include "PageRank.hpp"
 #include "AdBias.hpp"
+#include "LevelDbTable.hpp"
+#include "TdtFactory.hpp"
 //#include "ConBias.hpp"
 //#include "database.h"
 #include <algorithm>
 #include <icma/icma.h>
 #include <icma/openccxx.h>
+#include <am/succinct/wat_array/wat_array.hpp>
+#include <am/succinct/wat_array/wavelet_matrix.hpp>
+//#include <am/succinct/fm-index/wavelet_matrix.hpp>
+#include <util/singleton.h>
+#include <boost/bimap.hpp>
+
+using namespace izenelib::am::succinct::fm_index;
 
 namespace sf1r
 {
@@ -25,75 +34,89 @@ class WikiGraph
         }
 
     } NodeCmpOperator;
+
     std::vector<Node*> nodes_;
 
     //database db_;
-    std::map<std::string,int> title2id;
-    std::map<int,std::string> redirect;
+    std::map<int,std::string> redirect_;
     // PageRank pr_;
     //set<int> SubGraph_;
     std::string path_;
     std::string redirpath_;
     std::string stopwordpath_;
+    std::string tdtmemorypath_;
     //ConBias contentBias_;
-    AdBias advertiseBias_;
+    AdBias* advertiseBias_;
     set<string> stopword_;
+    //wat_array::WatArray wa_;
+    //wavelet_matrix::WaveletMatrix wa_;
+    TdtMemory* wa_;
+    //WaveletMatrix<uint64_t> wa_;
+    TitleIdDbTable* titleIdDbTable_;
+    IdTitleDbTable* idTitleDbTable_;
+    
 public:
+    static WikiGraph* GetInstance()
+    {
+        return izenelib::util::Singleton<WikiGraph>::get();
+    }
+
     cma::OpenCC* opencc_;
 
-    WikiGraph(const std::string& wiki_path, cma::OpenCC* opencc);
+    WikiGraph();
 
     ~WikiGraph();
 
-    void load(std::istream& is);
-
-    void save(std::ostream& os);
-
-    void initFromDb();
-
-    void init();
-
-    void initStopword();
-
-    void flush();
-
-    void InitSubGaph(const int& index,set<int>& SubGraph,int itertime=1);
-    //  void InitGraph();
-
-
-    void link2nodes(const int& i,const int& j);
+    void Init(const std::string& wiki_path, cma::OpenCC* opencc,const string& tdttype);
 
     void GetTopics(const std::vector<std::pair<std::string,uint32_t> >& relativeWords, std::vector<std::string>& topic_list, size_t limit);
 
-    void SetContentBias(const std::vector<std::pair<std::string,uint32_t> >& relativeWords,PageRank& pr,std::vector<pair<double,std::string> >& ret);
+    bool AddTitleIdRelation(const std::string& name, const int& id);
 
-    // void pairBias(pair<string,uint32_t>& ReLativepair,bool reset=false);
+    std::string GetTitleById(const int& id);
 
-    Node* getNode(const std::string&  str,bool& HaveGet);
+    int GetIdByTitle(const std::string& title, const int i=0);
 
-    Node* getNode(const int&  id,bool& HaveGet);
+protected:
+    void SetParam_(const std::string& wiki_path, cma::OpenCC* opencc,const string& tdttype);
 
-    int  getIndex(const int&  id);
+    void Init_();
 
-    void SetAdvertiseAll();
+    void InitStopword_();
 
-    void SetAdvertiseBias(Node* node);
+    void Flush_();
 
-    int Title2Id(const std::string& title,const int i=0);
+    void Load_(std::istream& is);
 
-    void CalPageRank(PageRank& pr);
+    void Save_(std::ostream& os);
 
-    void BuildMap();
+    void LoadAll_(std::istream &f );
 
-    void simplifyTitle();
+    void Load_(std::istream &f, int& id,std::string& name );
 
-    void loadAll(std::istream &f );
+    void InitSubGaph_(const int& index,set<int>& SubGraph,int itertime=1);
 
-    void load(std::istream &f, int& id,std::string& name );
+    void SetContentBias_(const std::vector<std::pair<std::string,uint32_t> >& relativeWords,PageRank& pr,std::vector<pair<double,std::string> >& ret);
 
-    void InitOutLink();
+    Node* GetNode_(const std::string&  str,bool& HaveGet);
 
-    std::string ToSimplified(const std::string& name);
+    Node* GetNode_(const int&  id,bool& HaveGet);
+
+    int GetIndex_(const int&  id);
+
+    int GetIndexByOffset_(const int&  offSet);
+
+    void SetAdvertiseAll_();
+
+    void SetAdvertiseBias_(Node* node);
+
+    void CalPageRank_(PageRank& pr);
+
+    void BuildMap_();
+
+    void SimplifyTitle_();
+
+    std::string ToSimplified_(const std::string& name);
 
 };
 

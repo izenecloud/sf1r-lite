@@ -22,7 +22,8 @@ public:
     NaiveTopicDetector(
         const std::string& sys_resource_path, 
         const std::string& dict_path,
-        bool enable_semantic = false);
+        bool enable_semantic = false,
+        const std::string& tdt_type="WavletMaxtrix");
 
     ~NaiveTopicDetector();
 
@@ -41,6 +42,7 @@ private:
     izenelib::am::succinct::ux::Trie* kpe_trie_;
     izenelib::am::succinct::ux::Map<std::vector<std::string> >* related_map_;	
     bool enable_semantic_;
+    std::string tdt_type_;
 };
 }
 

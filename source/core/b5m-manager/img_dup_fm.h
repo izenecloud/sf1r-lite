@@ -143,6 +143,9 @@ namespace sf1r {
                     if(current_docid == match_docid)
                         LOG(INFO) << "current_docid: " << current_docid << " match_docid: "<<match_docid <<endl;
                     //deleted
+                    uint32_t count;
+                    if(!gid_memcount_->get(match_docid, count))
+                        LOG(INFO) << "Error: " << match_docid << "does not exist" <<endl;
                     UString gid;
                     gid.assign(UintToDocid(match_docid), izenelib::util::UString::UTF_8);
 

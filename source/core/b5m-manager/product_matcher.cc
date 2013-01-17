@@ -486,6 +486,10 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         std::string bdb_path = kpath+"/bdb";
         B5MHelper::PrepareEmptyDir(bdb_path);
     }
+    if(!boost::filesystem::exists(kpath))
+    {
+        boost::filesystem::create_directories(kpath);
+    }
     path_ = kpath;
     if(IsIndexDone_(path_))
     {
