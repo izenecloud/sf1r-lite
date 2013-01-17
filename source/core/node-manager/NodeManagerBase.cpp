@@ -471,9 +471,15 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
 void NodeManagerBase::onNodeDeleted(const std::string& path)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
-    if (path == nodePath_)
+    if (path == nodePath_ || path == self_primary_path_)
     {
         LOG(INFO) << "myself node was deleted : " << path;
+        return;
+    }
+    else if (path.find(primaryNodeParentPath_) == std::string::npos)
+    {
+        LOG(INFO) << "node was deleted, but I did not care : " << path;
+        return;
     }
     else if (path == curr_primary_path_)
     {
@@ -532,6 +538,11 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     boost::unique_lock<boost::mutex> lock(mutex_);
     if (path == self_primary_path_ || path == nodePath_)
     {
+        return;
+    }
+    else if (path.find(primaryNodeParentPath_) == std::string::npos)
+    {
+        LOG(INFO) << "node was deleted, but I did not care : " << path;
         return;
     }
     else if (isPrimaryWithoutLock())
