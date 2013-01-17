@@ -330,6 +330,7 @@ public:
                 break;
             }
         }
+        std::cout << "get head offset by inc_id: " << inc_id << ", returned nearest id:" << ret_id << std::endl;
         inc_id = ret_id;
         return true;
     }

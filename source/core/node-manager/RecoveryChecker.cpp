@@ -16,12 +16,14 @@ namespace sf1r
 
 void RecoveryChecker::updateCollection(const SF1Config& sf1_config)
 {
+    LOG(INFO) << "collection changed, updating in RecoveryChecker.";
     all_col_info_.clear();
     SF1Config::CollectionMetaMap::const_iterator cit = sf1_config.getCollectionMetaMap().begin();
     while(cit != sf1_config.getCollectionMetaMap().end())
     {
         all_col_info_[cit->first] = std::make_pair(cit->second.getCollectionPath(),
             sf1_config.getCollectionConfigFile(cit->first));
+        LOG(INFO) << "add collection: " << cit->first;
         ++cit;
     }
 }
@@ -140,6 +142,50 @@ bool RecoveryChecker::backup()
     return true;
 }
 
+bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
+{
+    bool ret = true;
+    try
+    {
+        // read redo log and do request to current log.
+        if (start_id > redolog->getLastSuccessReqId())
+        {
+            LOG(ERROR) << "backup id should not larger than last write id. " << start_id;
+            LOG(ERROR) << "leaving old backup and do not redo log. restart and wait to sync to newest log";
+            throw std::runtime_error("redo start id is larger than last writed id.");
+        }
+        ReqLogHead rethead;
+        size_t redo_offset = 0;
+        if(!redolog->getHeadOffset(start_id, rethead, redo_offset))
+        {
+            assert(false);
+            LOG(ERROR) << "get head failed. This should never happen.";
+            throw std::runtime_error("redo get head info failed.");
+        }
+        while(true)
+        {
+            std::string req_packed_data; 
+            bool hasmore = redolog->getReqDataByHeadOffset(redo_offset, rethead, req_packed_data);
+            if (!hasmore)
+                break;
+            LOG(INFO) << "redoing for request id : " << rethead.inc_id;
+            CommonReqData req_commondata;
+            ReqLogMgr::unpackReqLogData(req_packed_data, req_commondata);
+            if(!DistributeDriver::get()->handleReqFromLog(req_commondata.req_json_data, req_packed_data))
+            {
+                LOG(INFO) << "redoing from log failed: " << rethead.inc_id;
+                throw std::runtime_error("handleReqFromLog failed.");
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        ret = false;
+    }
+    bfs::remove_all(redo_log_basepath_);
+    return ret;
+}
+
 // note : if there are more than one collection we need backup
 // all collection data. only in this way we can rollback and redo log to 
 // rollback the data before last failed request.
@@ -243,7 +289,7 @@ bool RecoveryChecker::rollbackLastFail()
     {
         LOG(INFO) << "last backup is up to newest log. no redo need.";
     }
-    else if (rollback_id == 0)
+    else if (rollback_id == 0 || last_write_id == 0)
     {
         LOG(INFO) << "rollback id is 0, this rollback caused by corrupt request log, no redo need.";
     }
@@ -252,24 +298,7 @@ bool RecoveryChecker::rollbackLastFail()
         LOG(INFO) << "last backup is out of date. begin redo request.";
         // read redo log and do request to current log.
         last_backup_id++;
-        ReqLogHead rethead;
-        size_t redo_offset;
-        redo_req_log_mgr.getHeadOffset(last_backup_id, rethead, redo_offset);
-        while(true)
-        {
-            std::string req_packed_data; 
-            bool hasmore = redo_req_log_mgr.getReqDataByHeadOffset(redo_offset, rethead, req_packed_data);
-            if (!hasmore)
-                break;
-            LOG(INFO) << "redoing for request id : " << rethead.inc_id;
-            CommonReqData req_commondata;
-            ReqLogMgr::unpackReqLogData(req_packed_data, req_commondata);
-            if(!DistributeDriver::get()->handleReqFromLog(req_commondata.req_json_data, req_packed_data))
-            {
-                LOG(INFO) << "redoing from log failed: " << rethead.inc_id;
-                return false;
-            }
-        }
+        return redoLog(&redo_req_log_mgr, last_backup_id);
     }
     bfs::remove_all(redo_log_basepath_);
     return true;
@@ -317,29 +346,43 @@ void RecoveryChecker::onRecoverCallback()
 
 void RecoveryChecker::onRecoverWaitPrimaryCallback()
 {
-    LOG(INFO) << "primary agreed my recovery finished, begin enter cluster";
+    LOG(INFO) << "primary agreed , sync new request druing waiting recovery.";
+    // check new request during wait recovery.
+    syncToNewestReqLog();
+    LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
 }
 
 void RecoveryChecker::onRecoverWaitReplicasCallback()
 {
-    LOG(INFO) << "wait replica enter cluster after recovery finished.";
+    LOG(INFO) << "all recovery replicas has entered the cluster after recovery finished.";
+    LOG(INFO) << "wait recovery finished , primary ready to server";
 }
 
 void RecoveryChecker::syncToNewestReqLog()
 {
     LOG(INFO) << "begin sync to newest log.";
+    uint32_t reqid = reqlog_mgr_->getLastSuccessReqId();
     while(true)
     {
-        DistributeFileSyncMgr::get()->getNewestReqLog(0, redo_log_basepath_);
+        DistributeFileSyncMgr::get()->getNewestReqLog(reqid + 1, redo_log_basepath_);
         // redo new request from newest log file.
         // 
         // if no any new request break while.
         if (!bfs::exists(redo_log_basepath_))
             break;
         // do new redo RequestLog.
-        //
+        ReqLogMgr redo_req_log_mgr;
+        redo_req_log_mgr.init(redo_log_basepath_);
+        if (redo_req_log_mgr.getLastSuccessReqId() == reqid)
+            break;
+        if(!redoLog(&redo_req_log_mgr, reqid + 1))
+        {
+            LOG(ERROR) << "redo log failed while sync to newest request log. must exit";
+            throw -1;
+        }
         //
         bfs::remove_all(redo_log_basepath_);
+        reqid = reqlog_mgr_->getLastSuccessReqId();
     }
     LOG(INFO) << "no more new log to redo.";
 }

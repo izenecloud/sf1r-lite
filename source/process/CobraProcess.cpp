@@ -274,6 +274,7 @@ void CobraProcess::stopDriver()
     {
         driverServer_->stop();
     }
+    DistributeDriver::get()->stop();
 }
 
 bool CobraProcess::startDistributedServer()

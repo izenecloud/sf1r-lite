@@ -23,6 +23,7 @@ public:
 
     DistributeDriver();
     void init(const RouterPtr& router);
+    void stop();
     void on_new_req_available();
     bool handleReqFromPrimary(const std::string& reqjsondata, const std::string& packed_data);
     bool handleReqFromLog(const std::string& reqjsondata, const std::string& packed_data);

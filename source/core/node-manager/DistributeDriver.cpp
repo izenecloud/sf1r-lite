@@ -24,6 +24,13 @@ DistributeDriver::DistributeDriver()
     asyncWriteTasks_.resize(1);
 }
 
+void DistributeDriver::stop()
+{
+    async_task_worker_.interrupt();
+    async_task_worker_.join();
+    asyncWriteTasks_.clear();
+}
+
 void DistributeDriver::run()
 {
     try
@@ -107,8 +114,11 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
             }
             else
             {
-                asyncWriteTasks_.push(boost::bind(&callHandler,
-                        handler, calltype, packed_data, request));
+                if (!async_task_worker_.interruption_requested())
+                {
+                    asyncWriteTasks_.push(boost::bind(&callHandler,
+                            handler, calltype, packed_data, request));
+                }
             }
             return true;
         }

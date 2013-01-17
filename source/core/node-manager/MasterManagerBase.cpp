@@ -225,11 +225,17 @@ void MasterManagerBase::checkForWriteReq()
     if (!zookeeper_ || !zookeeper_->isConnected())
         return;
     if (!isMinePrimary())
+    {
+        LOG(INFO) << "not a primary master while check write, ignore." << serverRealPath_;
         return;
+    }
     if (!isAllWorkerIdle())
         return;
     if (masterState_ != MASTER_STATE_STARTED && masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
+    {
+        LOG(INFO) << "current master state is not ready while check write, state:" << masterState_;
         return;
+    }
 
     endWriteReq();
 
