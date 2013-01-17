@@ -107,6 +107,14 @@ namespace sf1r{
         {
             return imgDupFujiMap->what();
         }
+        int save(const std::string& index)
+        {
+            return imgDupFujiMap->save(index.c_str());
+        }
+        int load(const std::string& index)
+        {
+            return imgDupFujiMap->load(index.c_str());
+        }
     };
 }
 

@@ -19,21 +19,21 @@ const std::string RANK_PROPERTY("_rank");
 const std::string DATE_PROPERTY("date");
 const std::string CUSTOM_RANK_PROPERTY("custom_rank");
 
-SearchManagerPreProcessor::SearchManagerPreProcessor()
-    : schemaMap_()
-    , productScorerFactory_(NULL)
+SearchManagerPreProcessor::SearchManagerPreProcessor(const IndexBundleSchema& indexSchema)
+    : productScorerFactory_(NULL)
     , numericTableBuilder_(NULL)
 {
+    for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
+         iter != indexSchema.end(); ++iter)
+    {
+        schemaMap_[iter->getName()] = *iter;
+    }
 }
 
-SearchManagerPreProcessor::~SearchManagerPreProcessor()
-{
-}
-
-void SearchManagerPreProcessor::prepare_sorter_customranker_(
+void SearchManagerPreProcessor::prepareSorterCustomRanker(
     const SearchKeywordOperation& actionOperation,
-    CustomRankerPtr& customRanker,
-    boost::shared_ptr<Sorter>& pSorter)
+    boost::shared_ptr<Sorter>& pSorter,
+    CustomRankerPtr& customRanker)
 {
     std::vector<std::pair<std::string, bool> >& sortPropertyList
         = actionOperation.actionItem_.sortPriorityList_;
@@ -104,12 +104,11 @@ void SearchManagerPreProcessor::prepare_sorter_customranker_(
             }
 
             // sort by arbitrary property
-            boost::unordered_map<std::string, PropertyConfig>::iterator it
-            = schemaMap_.find(iter->first);
+            SchemaMap::const_iterator it = schemaMap_.find(iter->first);
             if (it == schemaMap_.end())
                 continue;
 
-            PropertyConfig& propertyConfig = it->second;
+            const PropertyConfig& propertyConfig = it->second;
             if (!propertyConfig.isIndex() || propertyConfig.isAnalyzed())
                 continue;
 
@@ -146,8 +145,7 @@ bool SearchManagerPreProcessor::getPropertyTypeByName_(
     const std::string& name,
     PropertyDataType& type) const
 {
-    boost::unordered_map<std::string, PropertyConfig>::const_iterator it
-    = schemaMap_.find(name);
+    SchemaMap::const_iterator it = schemaMap_.find(name);
 
     if (it != schemaMap_.end())
     {
@@ -180,7 +178,7 @@ SearchManagerPreProcessor::buildCustomRanker_(KeywordSearchActionItem& actionIte
     return customRanker;
 }
 
-void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData_(
+void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData(
     Sorter* pSorter,
     std::vector<unsigned int>& docIdList,
     DistKeywordSearchInfo& distSearchInfo)
@@ -265,7 +263,7 @@ void SearchManagerPreProcessor::fillSearchInfoWithSortPropertyData_(
     }
 }
 
-void SearchManagerPreProcessor::PreparePropertyTermIndex(
+void SearchManagerPreProcessor::preparePropertyTermIndex(
     const std::map<std::string, PropertyTermInfo>& propertyTermInfoMap,
     const std::vector<std::string>& indexPropertyList,
     std::vector<std::map<termid_t, unsigned> >& termIndexMaps)
@@ -304,7 +302,7 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
     if (!hasSortByRankProp(actionItem.sortPriorityList_))
         return NULL;
 
-    if (!isProductRanking(actionItem))
+    if (!isProductRanking_(actionItem))
         return relevanceScorerPtr.release();
 
     ProductScoreParam scoreParam(actionItem.env_.queryString_,
@@ -315,7 +313,7 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
     return productScorerFactory_->createScorer(scoreParam);
 }
 
-bool SearchManagerPreProcessor::isProductRanking(
+bool SearchManagerPreProcessor::isProductRanking_(
     const KeywordSearchActionItem& actionItem) const
 {
     if (productScorerFactory_ == NULL)
@@ -334,14 +332,14 @@ bool SearchManagerPreProcessor::isNeedCustomDocIterator(
     const KeywordSearchActionItem& actionItem) const
 {
     return hasSortByRankProp(actionItem.sortPriorityList_) &&
-        isProductRanking(actionItem);
+        isProductRanking_(actionItem);
 }
 
 bool SearchManagerPreProcessor::isNeedRerank(
     const KeywordSearchActionItem& actionItem) const
 {
     return isSortByRankProp(actionItem.sortPriorityList_) &&
-        isProductRanking(actionItem);
+        isProductRanking_(actionItem);
 }
 
 bool SearchManagerPreProcessor::hasSortByRankProp(

@@ -1623,6 +1623,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     mining_schema.summarization_enable= false;
     if (task_node)
     {
+        std::string syncflagonly_flag;
+        getAttribute(task_node, "syncflagonly", syncflagonly_flag, false);
+        int enable = parseTruth(syncflagonly_flag);
+        if (1 == enable)
+            mining_schema.summarization_schema.isSyncSCDOnly= true;
+        else
+            mining_schema.summarization_schema.isSyncSCDOnly= false;
+    
         {
             Iterator<Element> it("DocidProperty");
             for (it = it.begin(task_node); it != it.end(); it++)

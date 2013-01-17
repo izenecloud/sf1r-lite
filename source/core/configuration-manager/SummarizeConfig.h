@@ -26,6 +26,7 @@ public:
     std::string opinionPropName;
     std::string opinionWorkingPath;
     std::string opinionSyncId;
+    bool isSyncSCDOnly;
 
     friend class boost::serialization::access;
 
@@ -43,6 +44,7 @@ public:
         ar & opinionPropName;
         ar & opinionWorkingPath;
         ar & opinionSyncId;
+        ar & isSyncSCDOnly;
     }
 };
 

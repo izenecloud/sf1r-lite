@@ -227,6 +227,7 @@ public:
     void LoadItem();
     void SaveWat();
     bool LoadWat();
+    void buildDbItem();
     bool openDB(string path, string path2);
     void closeDB();
 
