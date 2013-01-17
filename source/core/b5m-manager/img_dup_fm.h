@@ -140,12 +140,7 @@ namespace sf1r {
                 uint32_t match_docid;
                 if( docid_docid_->get(current_docid, match_docid))
                 {
-                    if(current_docid == match_docid)
-                        LOG(INFO) << "current_docid: " << current_docid << " match_docid: "<<match_docid <<endl;
                     //deleted
-                    uint32_t count;
-                    if(!gid_memcount_->get(match_docid, count))
-                        LOG(INFO) << "Error: " << match_docid << "does not exist" <<endl;
                     UString gid;
                     gid.assign(UintToDocid(match_docid), izenelib::util::UString::UTF_8);
 
@@ -184,9 +179,7 @@ namespace sf1r {
         bool ReBuildAll()
         {
             docid_docid_->load(output_path_+"/../fujimap/tmp4.index");
-//            docid_docid_->build();
             gid_memcount_->load(output_path_+"/../fujimap/tmp5.index");
-//            gid_memcount_->build();
 
             ImgDupFileManager::GetCurrentOutputPath(current_output_path_);
 
