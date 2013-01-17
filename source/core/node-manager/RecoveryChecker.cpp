@@ -186,7 +186,7 @@ bool RecoveryChecker::rollbackLastFail()
     CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
     while(cit != tmp_all_col_info.end())
     {
-        stop_col_(cit->first, last_backup_id == 0);
+        stop_col_(cit->first, true);
         ++cit;
     }
 
@@ -222,7 +222,10 @@ bool RecoveryChecker::rollbackLastFail()
         }
     }
 
-    assert(last_backup_id < rollback_id);
+    if (rollback_id != 0)
+    {
+        assert(last_backup_id < rollback_id);
+    }
     LOG(INFO) << "rollback from " << rollback_id << " to backup: " << last_backup_id;
     reqlog_mgr_->init(request_log_basepath_);
 
@@ -239,6 +242,10 @@ bool RecoveryChecker::rollbackLastFail()
     if (last_backup_id == last_write_id)
     {
         LOG(INFO) << "last backup is up to newest log. no redo need.";
+    }
+    else if (rollback_id == 0)
+    {
+        LOG(INFO) << "rollback id is 0, this rollback caused by corrupt request log, no redo need.";
     }
     else
     {
@@ -276,7 +283,22 @@ void RecoveryChecker::init(const std::string& workdir)
     rollback_file_ = workdir + "/rollback_flag";
 
     reqlog_mgr_.reset(new ReqLogMgr());
-    reqlog_mgr_->init(request_log_basepath_);
+    try
+    {
+        reqlog_mgr_->init(request_log_basepath_);
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "request log init error, need clear corrupt data and rollback to last backup.";
+        setRollbackFlag(0);
+        bfs::remove_all(request_log_basepath_);
+        reqlog_mgr_->init(request_log_basepath_);
+        if(!rollbackLastFail())
+        {
+            LOG(ERROR) << "corrupt data and rollback failed. Unrecoverable!!";
+            throw -1;
+        }
+    }
 
     SearchNodeManager::get()->setRecoveryCallback(
         boost::bind(&RecoveryChecker::onRecoverCallback, this),

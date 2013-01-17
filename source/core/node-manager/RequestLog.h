@@ -387,8 +387,13 @@ private:
                 }
                 else if (length < (int)sizeof(ReqLogHead))
                 {
-                    std::cout << "read request log head file error. length :" << length;
-                    throw -1;
+                    std::cout << "read request log head file error. length :" << length << std::endl;
+                    throw std::runtime_error("read request log head file error");
+                }
+                else if ( length % sizeof(ReqLogHead) != 0)
+                {
+                    std::cout << "The head file is corrupt. need restore from last backup. len:" << length << std::endl;
+                    throw std::runtime_error("read request log head file error");
                 }
                 ifs.seekg(sizeof(ReqLogHead), ios::end);
                 ReqLogHead lasthead;

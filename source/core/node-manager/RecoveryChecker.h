@@ -17,7 +17,7 @@ class RecoveryChecker
 {
 public:
     typedef boost::function<bool(const std::string&, const std::string&)> StartColCBFuncT;
-    typedef boost::function<bool(const std::string&)> StopColCBFuncT;
+    typedef boost::function<bool(const std::string&, bool)> StopColCBFuncT;
     static RecoveryChecker* get()
     {
         return ::izenelib::util::Singleton<RecoveryChecker>::get();
@@ -28,11 +28,10 @@ public:
     void clearRollbackFlag();
     bool rollbackLastFail();
 
-    void setRestartCallback(StartColCBFuncT start_col, StopColCBFuncT stop_col, StopColCBFuncT stop_clean_col)
+    void setRestartCallback(StartColCBFuncT start_col, StopColCBFuncT stop_col)
     {
         start_col_ = start_col;
         stop_col_ = stop_col;
-        stop_clean_col_ = stop_clean_col;
     }
     void init(const std::string& workdir);
     void updateCollection(const SF1Config& sf1_config);
@@ -51,7 +50,6 @@ private:
     static void cleanUnnessesaryBackup(const std::string& backup_basepath);
     StartColCBFuncT start_col_;
     StopColCBFuncT stop_col_;
-    StopColCBFuncT stop_clean_col_;
     std::string backup_basepath_;
     std::string request_log_basepath_;
     std::string redo_log_basepath_;
