@@ -176,50 +176,53 @@ size_t SuffixMatchManager::longestSuffixMatch(
     size_t max_match;
     size_t total_match = 0;
 
-    for (size_t i = 0; i < search_in_properties.size(); ++i)
     {
-        const std::string& property = search_in_properties[i];
-        FMIndexManager::RangeListT match_ranges;
-        max_match = 0;
+        ReadLock lock(mutex_);
+        for (size_t i = 0; i < search_in_properties.size(); ++i)
         {
-            ReadLock lock(mutex_);
-            max_match = fmi_manager_->longestSuffixMatch(property, pattern, match_ranges);
-            if (max_match == 0)
-                continue;
-            LOG(INFO) << "longestSuffixMatch on property: " << property <<
-                ", length: " << max_match;
-            for (size_t i = 0; i < match_ranges.size(); ++i)
+            const std::string& property = search_in_properties[i];
+            FMIndexManager::RangeListT match_ranges;
+            max_match = 0;
             {
-                LOG(INFO) << "range " << i << ": " << match_ranges[i].first << "-" << match_ranges[i].second;
+                max_match = fmi_manager_->longestSuffixMatch(property, pattern, match_ranges);
+                if (max_match == 0)
+                    continue;
+                LOG(INFO) << "longestSuffixMatch on property: " << property <<
+                    ", length: " << max_match;
+                for (size_t i = 0; i < match_ranges.size(); ++i)
+                {
+                    LOG(INFO) << "range " << i << ": " << match_ranges[i].first << "-" << match_ranges[i].second;
+                }
+                std::vector<double> max_match_list(match_ranges.size(), max_match);
+                fmi_manager_->convertMatchRanges(property, max_docs, match_ranges, max_match_list);
+                fmi_manager_->getMatchedDocIdList(property, match_ranges, max_docs, docid_list, doclen_list);
             }
-            std::vector<double> max_match_list(match_ranges.size(), max_match);
-            fmi_manager_->convertMatchRanges(property, max_docs, match_ranges, max_match_list);
-            fmi_manager_->getMatchedDocIdList(property, match_ranges, max_docs, docid_list, doclen_list);
-        }
 
-        for (size_t j = 0; j < docid_list.size(); ++j)
-        {
-            double score = 0;
-            if (doclen_list[j] > 0)
-                score = double(max_match) / double(doclen_list[j]);
-            std::map<uint32_t, double>::iterator res_it = res_list_map.find(docid_list[j]);
-            if (res_it != res_list_map.end())
+            for (size_t j = 0; j < docid_list.size(); ++j)
             {
-                res_it->second += score;
+                double score = 0;
+                if (doclen_list[j] > 0)
+                    score = double(max_match) / double(doclen_list[j]);
+                std::map<uint32_t, double>::iterator res_it = res_list_map.find(docid_list[j]);
+                if (res_it != res_list_map.end())
+                {
+                    res_it->second += score;
+                }
+                else
+                {
+                    res_list_map[docid_list[i]] = score;
+                }
             }
-            else
-            {
-                res_list_map[docid_list[i]] = score;
-            }
-        }
 
-        for (size_t j = 0; j < match_ranges.size(); ++j)
-        {
-            total_match += match_ranges[i].second - match_ranges[i].first;
+            for (size_t j = 0; j < match_ranges.size(); ++j)
+            {
+                total_match += match_ranges[i].second - match_ranges[i].first;
+            }
+            std::vector<uint32_t>().swap(docid_list);
+            std::vector<size_t>().swap(doclen_list);
         }
-        std::vector<uint32_t>().swap(docid_list);
-        std::vector<size_t>().swap(doclen_list);
     }
+
     res_list.reserve(res_list_map.size());
     for (std::map<uint32_t, double>::const_iterator cit = res_list_map.begin();
         cit != res_list_map.end(); ++cit)
@@ -295,73 +298,76 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     }
 
     size_t total_match = 0;
-    for (size_t prop_i = 0; prop_i < search_in_properties.size(); ++prop_i)
+
     {
-        const std::string& search_property = search_in_properties[prop_i];
-        match_ranges_list.reserve(all_sub_strpatterns.size());
-        max_match_list.reserve(all_sub_strpatterns.size());
         ReadLock lock(mutex_);
-        LOG(INFO) << "query tokenize match ranges in property : " << search_property;
-        for (size_t i = 0; i < all_sub_strpatterns.size(); ++i)
+        for (size_t prop_i = 0; prop_i < search_in_properties.size(); ++prop_i)
         {
-            if (all_sub_strpatterns[i].empty())
-                continue;
-            std::pair<size_t, size_t> sub_match_range;
-            size_t matched = fmi_manager_->backwardSearch(search_property, all_sub_strpatterns[i], sub_match_range);
-            LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
-            if (matched == all_sub_strpatterns[i].length())
+            const std::string& search_property = search_in_properties[prop_i];
+            match_ranges_list.reserve(all_sub_strpatterns.size());
+            max_match_list.reserve(all_sub_strpatterns.size());
+            LOG(INFO) << "query tokenize match ranges in property : " << search_property;
+            for (size_t i = 0; i < all_sub_strpatterns.size(); ++i)
             {
-                match_ranges_list.push_back(sub_match_range);
-                if (i < match_dic_pattern_num)
-                    max_match_list.push_back((double)2.0);
-                else
-                    max_match_list.push_back((double)1.0);
+                if (all_sub_strpatterns[i].empty())
+                    continue;
+                std::pair<size_t, size_t> sub_match_range;
+                size_t matched = fmi_manager_->backwardSearch(search_property, all_sub_strpatterns[i], sub_match_range);
+                LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
+                if (matched == all_sub_strpatterns[i].length())
+                {
+                    match_ranges_list.push_back(sub_match_range);
+                    if (i < match_dic_pattern_num)
+                        max_match_list.push_back((double)2.0);
+                    else
+                        max_match_list.push_back((double)1.0);
+                }
             }
-        }
-        fmi_manager_->convertMatchRanges(search_property, max_docs, match_ranges_list, max_match_list);
-        if (filter_mode == SearchingMode::OR_Filter)
-        {
-            fmi_manager_->getTopKDocIdListByFilter(
-                search_property,
-                prop_id_list,
-                filter_range_list,
-                match_ranges_list,
-                max_match_list,
-                max_docs,
-                single_res_list);
-        }
-        else if (filter_mode == SearchingMode::AND_Filter)
-        {
-            // TODO: implement it when fm-index is ready for AND filter.
-            assert(false);
-        }
-        else
-        {
-            LOG(ERROR) << "unknown filter mode.";
-        }
-        LOG(INFO) << "topk finished in property : " << search_property;
-        size_t oldsize = res_list_map.size();
-        for (size_t i = 0; i < single_res_list.size(); ++i)
-        {
-            std::map<uint32_t, double>::iterator res_it = res_list_map.find(single_res_list[i].second);
-            if (res_it != res_list_map.end())
+            fmi_manager_->convertMatchRanges(search_property, max_docs, match_ranges_list, max_match_list);
+            if (filter_mode == SearchingMode::OR_Filter)
             {
-                res_it->second += single_res_list[i].first;
+                fmi_manager_->getTopKDocIdListByFilter(
+                        search_property,
+                        prop_id_list,
+                        filter_range_list,
+                        match_ranges_list,
+                        max_match_list,
+                        max_docs,
+                        single_res_list);
+            }
+            else if (filter_mode == SearchingMode::AND_Filter)
+            {
+                // TODO: implement it when fm-index is ready for AND filter.
+                assert(false);
             }
             else
             {
-                res_list_map[single_res_list[i].second] = single_res_list[i].first;
+                LOG(ERROR) << "unknown filter mode.";
             }
-        }
-        std::vector<std::pair<double, uint32_t> >().swap(single_res_list);
+            LOG(INFO) << "topk finished in property : " << search_property;
+            size_t oldsize = res_list_map.size();
+            for (size_t i = 0; i < single_res_list.size(); ++i)
+            {
+                std::map<uint32_t, double>::iterator res_it = res_list_map.find(single_res_list[i].second);
+                if (res_it != res_list_map.end())
+                {
+                    res_it->second += single_res_list[i].first;
+                }
+                else
+                {
+                    res_list_map[single_res_list[i].second] = single_res_list[i].first;
+                }
+            }
+            std::vector<std::pair<double, uint32_t> >().swap(single_res_list);
 
-        for (size_t i = 0; i < match_ranges_list.size(); ++i)
-        {
-            total_match += match_ranges_list[i].second - match_ranges_list[i].first;
+            for (size_t i = 0; i < match_ranges_list.size(); ++i)
+            {
+                total_match += match_ranges_list[i].second - match_ranges_list[i].first;
+            }
+            std::vector<std::pair<size_t, size_t> >().swap(match_ranges_list);
+            std::vector<double>().swap(max_match_list);
+            LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
         }
-        std::vector<std::pair<size_t, size_t> >().swap(match_ranges_list);
-        std::vector<double>().swap(max_match_list);
-        LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
     }
 
     res_list.reserve(res_list_map.size());
