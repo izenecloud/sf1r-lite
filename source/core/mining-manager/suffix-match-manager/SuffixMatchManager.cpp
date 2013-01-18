@@ -279,28 +279,28 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     }
     cout << endl;
 
-    std::vector<size_t> prop_id_list;
-    std::vector<RangeListT> filter_range_list;
-    if (!group_param.isGroupEmpty())
-    {
-        if (!getAllFilterRangeFromGroupLable_(group_param, prop_id_list, filter_range_list))
-            return 0;
-    }
-    if (!group_param.isAttrEmpty())
-    {
-        if (!getAllFilterRangeFromAttrLable_(group_param, prop_id_list, filter_range_list))
-            return 0;
-    }
-    if (!filter_param.empty())
-    {
-        if (!getAllFilterRangeFromFilterParam_(filter_param, prop_id_list, filter_range_list))
-            return 0;
-    }
-
     size_t total_match = 0;
 
     {
         ReadLock lock(mutex_);
+        std::vector<size_t> prop_id_list;
+        std::vector<RangeListT> filter_range_list;
+        if (!group_param.isGroupEmpty())
+        {
+            if (!getAllFilterRangeFromGroupLable_(group_param, prop_id_list, filter_range_list))
+                return 0;
+        }
+        if (!group_param.isAttrEmpty())
+        {
+            if (!getAllFilterRangeFromAttrLable_(group_param, prop_id_list, filter_range_list))
+                return 0;
+        }
+        if (!filter_param.empty())
+        {
+            if (!getAllFilterRangeFromFilterParam_(filter_param, prop_id_list, filter_range_list))
+                return 0;
+        }
+
         for (size_t prop_i = 0; prop_i < search_in_properties.size(); ++prop_i)
         {
             const std::string& search_property = search_in_properties[prop_i];
