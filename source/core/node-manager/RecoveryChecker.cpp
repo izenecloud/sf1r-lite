@@ -1,31 +1,44 @@
 #include "RecoveryChecker.h"
 #include "DistributeFileSyncMgr.h"
 #include "DistributeDriver.h"
-#include <boost/filesystem.hpp>
 #include "RequestLog.h"
 #include "SearchNodeManager.h"
-#include <process/common/XmlConfigParser.h>
 
 #include <glog/logging.h>
 
+#undef BOOST_FILESYSTEM_VERSION
+#define BOOST_FILESYSTEM_VERSION 3
+
+#include <boost/filesystem.hpp>
 #define MAX_BACKUP_NUM 3
 namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
 
-void RecoveryChecker::updateCollection(const SF1Config& sf1_config)
+//void RecoveryChecker::updateCollection(const SF1Config& sf1_config)
+//{
+//    all_col_info_.clear();
+//    SF1Config::CollectionMetaMap::const_iterator cit = sf1_config.getCollectionMetaMap().begin();
+//    while(cit != sf1_config.getCollectionMetaMap().end())
+//    {
+//        all_col_info_[cit->first] = std::make_pair(cit->second.getCollectionPath(),
+//            sf1_config.getCollectionConfigFile(cit->first));
+//        LOG(INFO) << "add collection: " << cit->first;
+//        ++cit;
+//    }
+//}
+
+void RecoveryChecker::addCollection(const std::string& colname, const CollectionPath& colpath, const std::string& configfile)
 {
-    LOG(INFO) << "collection changed, updating in RecoveryChecker.";
-    all_col_info_.clear();
-    SF1Config::CollectionMetaMap::const_iterator cit = sf1_config.getCollectionMetaMap().begin();
-    while(cit != sf1_config.getCollectionMetaMap().end())
-    {
-        all_col_info_[cit->first] = std::make_pair(cit->second.getCollectionPath(),
-            sf1_config.getCollectionConfigFile(cit->first));
-        LOG(INFO) << "add collection: " << cit->first;
-        ++cit;
-    }
+    LOG(INFO) << "collection added, updating in RecoveryChecker." << colname;
+    all_col_info_[colname] = std::make_pair(colpath, configfile);
+}
+
+void RecoveryChecker::removeCollection(const std::string& colname)
+{
+    LOG(INFO) << "collection removed, updating in RecoveryChecker." << colname;
+    all_col_info_.erase(colname);
 }
 
 void RecoveryChecker::cleanUnnessesaryBackup(const std::string& backup_basepath)
@@ -105,20 +118,25 @@ bool RecoveryChecker::backup()
     // find all collection and backup.
     CollInfoMapT::const_iterator cit = all_col_info_.begin();
     std::string dest_path = backup_basepath_ + boost::lexical_cast<std::string>(reqlog_mgr_->getLastSuccessReqId()) + "/";
+    std::string dest_coldata_backup = dest_path + "backup_data/";
+
+    if (bfs::exists(dest_path))
+        bfs::remove_all(dest_path);
+    bfs::create_directories(dest_path);
+    bfs::create_directories(dest_coldata_backup);
+
     while(cit != all_col_info_.end())
     {
         LOG(INFO) << "backing up the collection: " << cit->first;
-        std::string dest_col_backup = dest_path + cit->first + "_backup/";
         const CollectionPath &colpath = cit->second.first;
 
-        std::string col_basepath = colpath.getBasePath();
         std::string coldata_path = colpath.getCollectionDataPath();
         std::string querydata_path = colpath.getQueryDataPath();
 
         try
         {
-            boost::filesystem3::copy(col_basepath + coldata_path, dest_col_backup + coldata_path);
-            boost::filesystem3::copy(col_basepath + querydata_path, dest_col_backup + querydata_path);
+            boost::filesystem3::copy(coldata_path, dest_coldata_backup + coldata_path);
+            boost::filesystem3::copy(querydata_path, dest_coldata_backup + querydata_path);
         }
         catch(const std::exception& e)
         {
@@ -245,18 +263,17 @@ bool RecoveryChecker::rollbackLastFail()
             boost::filesystem3::copy(last_backup_path + bfs::path(request_log_basepath_).relative_path().c_str(),
                 request_log_basepath_);
             CollInfoMapT::const_iterator inner_cit = tmp_all_col_info.begin();
+            std::string dest_coldata_backup = last_backup_path + "backup_data/";
             while(inner_cit != tmp_all_col_info.end())
             {
                 LOG(INFO) << "restoring the backup for the collection: " << inner_cit->first;
-                std::string dest_col_backup = last_backup_path + cit->first + "_backup/";
                 const CollectionPath &colpath = inner_cit->second.first;
 
-                std::string col_basepath = colpath.getBasePath();
                 std::string coldata_path = colpath.getCollectionDataPath();
                 std::string querydata_path = colpath.getQueryDataPath();
 
-                boost::filesystem3::copy(dest_col_backup + coldata_path, col_basepath + coldata_path);
-                boost::filesystem3::copy(dest_col_backup + querydata_path, col_basepath + querydata_path);
+                boost::filesystem3::copy(dest_coldata_backup + coldata_path, coldata_path);
+                boost::filesystem3::copy(dest_coldata_backup + querydata_path, querydata_path);
                 ++inner_cit;
             }
         }

@@ -54,11 +54,11 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const C
     const std::string& reqdata,
     boost::shared_ptr<ReqLogMgr> req_log_mgr)
 {
-    LOG(INFO) << "current request hooked: " << colname_ << "," << current_req_;
     colname_ = colname;
     colpath_ = colpath;
     current_req_ = reqdata;
     req_log_mgr_ = req_log_mgr;
+    LOG(INFO) << "current request hooked: " << colname_ << "," << current_req_;
 }
 
 bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& packed_reqdata)

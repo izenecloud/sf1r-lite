@@ -158,7 +158,7 @@ void DistributeDriver::on_new_req_available()
         LOG(INFO) << "pop request data failed.";
         return;
     }
-    handleRequest(reqdata, "", Request::FromDistribute);
+    handleRequest(reqdata, reqdata, Request::FromDistribute);
 }
 
 }

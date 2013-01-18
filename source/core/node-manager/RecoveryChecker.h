@@ -34,7 +34,10 @@ public:
         stop_col_ = stop_col;
     }
     void init(const std::string& workdir);
-    void updateCollection(const SF1Config& sf1_config);
+    void addCollection(const std::string& colname, const CollectionPath& colpath, const std::string& configfile);
+    void removeCollection(const std::string& colname);
+
+    //void updateCollection(const SF1Config& sf1_config);
     boost::shared_ptr<ReqLogMgr> getReqLogMgr()
     {
         return reqlog_mgr_;

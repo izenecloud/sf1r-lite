@@ -181,12 +181,15 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
     }
 
     collectionHandlers_[collectionName] = collectionHandler.release();
+
+    RecoveryChecker::get()->addCollection(collectionName, collectionMeta.getCollectionPath(),
+        SF1Config::get()->getCollectionConfigFile(collectionName));
+
     }catch (std::exception& e)
     {
         stopCollection(collectionName);
         throw;
     }
-    RecoveryChecker::get()->updateCollection(*(SF1Config::get()));
     return true;
 }
 
@@ -253,7 +256,7 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
     {
         collectionMetaMap.erase(findIt);
     }
-    RecoveryChecker::get()->updateCollection(*(SF1Config::get()));
+    RecoveryChecker::get()->removeCollection(collectionName);
     if(clear)
     {
         namespace bfs = boost::filesystem;
