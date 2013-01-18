@@ -659,7 +659,7 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
             uint32_t match_docid;
             if( docid_docid_->get(current_docid, match_docid) )
             {
-                LOG(INFO) << current_docid << endl;
+//                LOG(INFO) << current_docid << endl;
                 continue;
             }
 
@@ -676,7 +676,7 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
             }
             if(current_docid == match_docid)
             {
-                LOG(INFO) << current_docid <<endl;
+//                LOG(INFO) << current_docid <<endl;
                 writer.Append(scddoc);
                 rest++;
                 history++;
@@ -788,7 +788,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
             uint32_t match_docid;
             if( docid_docid_->get(current_docid, match_docid) )
             {
-                LOG(INFO) << current_docid << endl;
+//                LOG(INFO) << current_docid << endl;
                 continue;
             }
             if( !con_key_docid_->get(match_key, match_docid))
@@ -805,7 +805,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
 
             if(current_docid == match_docid)
             {
-                LOG(INFO) << current_docid << endl;
+//                LOG(INFO) << current_docid << endl;
                 history++;
                 rest++;
                 continue;
