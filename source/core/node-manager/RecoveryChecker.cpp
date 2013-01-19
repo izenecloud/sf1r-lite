@@ -16,18 +16,111 @@ namespace bfs = boost::filesystem;
 namespace sf1r
 {
 
-//void RecoveryChecker::updateCollection(const SF1Config& sf1_config)
-//{
-//    all_col_info_.clear();
-//    SF1Config::CollectionMetaMap::const_iterator cit = sf1_config.getCollectionMetaMap().begin();
-//    while(cit != sf1_config.getCollectionMetaMap().end())
-//    {
-//        all_col_info_[cit->first] = std::make_pair(cit->second.getCollectionPath(),
-//            sf1_config.getCollectionConfigFile(cit->first));
-//        LOG(INFO) << "add collection: " << cit->first;
-//        ++cit;
-//    }
-//}
+static void getBackupList(const bfs::path& backup_basepath, std::vector<uint32_t>& backup_req_incids)
+{
+    // only keep the lastest 3 backups.
+    static bfs::directory_iterator end_dir = bfs::directory_iterator();
+    bfs::directory_iterator backup_dirs_it = bfs::directory_iterator(backup_basepath);
+    while(backup_dirs_it != end_dir)
+    {
+        if (!bfs::is_directory(*backup_dirs_it))
+        {
+            ++backup_dirs_it;
+            continue;
+        }
+        try
+        {
+            uint32_t inc_id = boost::lexical_cast<uint32_t>((*backup_dirs_it).path().filename().string());
+            backup_req_incids.push_back(inc_id);
+        }
+        catch(const boost::bad_lexical_cast& e)
+        {
+            LOG(INFO) << "not a backup dir : " << (*backup_dirs_it).path().filename();
+        }
+        ++backup_dirs_it;
+    }
+    std::sort(backup_req_incids.begin(), backup_req_incids.end(), std::greater<uint32_t>());
+}
+
+static void cleanUnnessesaryBackup(const bfs::path& backup_basepath)
+{
+    // only keep the lastest 3 backups.
+    std::vector<uint32_t> backup_req_incids;
+    getBackupList(backup_basepath, backup_req_incids);
+    for (size_t i = MAX_BACKUP_NUM; i < backup_req_incids.size(); ++i)
+    {
+        bfs::remove_all(bfs::path(backup_basepath)/bfs::path(boost::lexical_cast<std::string>(backup_req_incids[i])));
+    }
+}
+
+static bool getLastBackup(const bfs::path& backup_basepath, std::string& backup_path, uint32_t& backup_inc_id)
+{
+    std::vector<uint32_t> backup_req_incids;
+    getBackupList(backup_basepath, backup_req_incids);
+    if (backup_req_incids.empty())
+        return false;
+    backup_inc_id = backup_req_incids.front();
+    backup_path = (backup_basepath/bfs::path(boost::lexical_cast<std::string>(backup_inc_id))).string() + "/";
+    return true;
+}
+
+static void copyDir(bfs::path src, bfs::path dest)
+{
+    if( !bfs::exists(src) ||
+        !bfs::is_directory(src) )
+    {
+        throw std::runtime_error("Source directory " + src.string() +
+            " does not exist or is not a directory.");
+    }
+    if( bfs::exists(dest) )
+    {
+        throw std::runtime_error("Destination directory " + dest.string() +
+            " already exists.");
+    }
+    bfs::create_directory(dest);
+    // Iterate through the source directory
+    bfs::directory_iterator end_it = bfs::directory_iterator();
+    for( bfs::directory_iterator file(src); file != end_it; ++file )
+    {
+        bfs::path current(file->path());
+        if(bfs::is_directory(current))
+        {
+            // copy recursion
+            copyDir(current, dest / current.filename());
+        }
+        else
+        {
+            // Found file: Copy
+            bfs::copy_file(current, dest / current.filename());
+        }
+    }
+}
+
+// copy_dir will keep src path filename
+// src = xxx/xxx/src_name
+// dest = xxx/xxx/xxx
+// copy xxx/xxx/src_name to dest/src
+// with copy_only_filename copy xxx/xxx/src_name to dest/src_name
+// if dest = xxx/xxx/xxx/src_name
+// then copy src to dest
+static void copy_dir(const bfs::path& src, const bfs::path& dest, bool keep_full_path = true)
+{
+    bfs::path dest_path = dest;
+    if (src.filename() == dest_path.filename())
+    {
+    }
+    else if (!keep_full_path)
+    {
+        dest_path /= src.filename();
+    }
+    else
+    {
+        dest_path /= src;
+    }
+    bfs::create_directories(dest_path);
+    bfs::remove_all(dest_path);
+    copyDir(src, dest_path);
+}
 
 void RecoveryChecker::addCollection(const std::string& colname, const CollectionPath& colpath, const std::string& configfile)
 {
@@ -41,16 +134,6 @@ void RecoveryChecker::removeCollection(const std::string& colname)
     all_col_info_.erase(colname);
 }
 
-void RecoveryChecker::cleanUnnessesaryBackup(const std::string& backup_basepath)
-{
-    // only keep the lastest 3 backups.
-    std::vector<uint32_t> backup_req_incids;
-    getBackupList(backup_basepath, backup_req_incids);
-    for (size_t i = MAX_BACKUP_NUM; i < backup_req_incids.size(); ++i)
-    {
-        bfs::remove_all(backup_basepath + boost::lexical_cast<std::string>(backup_req_incids[i]));
-    }
-}
 
 bool RecoveryChecker::setRollbackFlag(uint32_t inc_id)
 {
@@ -73,43 +156,6 @@ void RecoveryChecker::clearRollbackFlag()
     if (bfs::exists(rollback_file_))
         bfs::remove(rollback_file_);
 }
-
-void RecoveryChecker::getBackupList(const std::string& backup_basepath, std::vector<uint32_t>& backup_req_incids)
-{
-    // only keep the lastest 3 backups.
-    static bfs::directory_iterator end_dir = bfs::directory_iterator();
-    bfs::directory_iterator backup_dirs_it = bfs::directory_iterator(bfs::path(backup_basepath));
-    while(backup_dirs_it != end_dir)
-    {
-        if (!bfs::is_directory(*backup_dirs_it))
-        {
-            ++backup_dirs_it;
-            continue;
-        }
-        try
-        {
-            uint32_t inc_id = boost::lexical_cast<uint32_t>((*backup_dirs_it).path().relative_path());
-            backup_req_incids.push_back(inc_id);
-        }
-        catch(const boost::bad_lexical_cast& e)
-        {
-        }
-        ++backup_dirs_it;
-    }
-    std::sort(backup_req_incids.begin(), backup_req_incids.end(), std::greater<uint32_t>());
-}
-
-bool RecoveryChecker::getLastBackup(const std::string& backup_basepath, std::string& backup_path, uint32_t& backup_inc_id)
-{
-    std::vector<uint32_t> backup_req_incids;
-    getBackupList(backup_basepath, backup_req_incids);
-    if (backup_req_incids.empty())
-        return false;
-    backup_inc_id = backup_req_incids.front();
-    backup_path = backup_basepath + boost::lexical_cast<std::string>(backup_inc_id);
-    return true;
-}
-
 bool RecoveryChecker::backup()
 {
     // backup changeable data first, so that we can rollback if old data corrupt while process the request.
@@ -117,8 +163,8 @@ bool RecoveryChecker::backup()
 
     // find all collection and backup.
     CollInfoMapT::const_iterator cit = all_col_info_.begin();
-    std::string dest_path = backup_basepath_ + boost::lexical_cast<std::string>(reqlog_mgr_->getLastSuccessReqId()) + "/";
-    std::string dest_coldata_backup = dest_path + "backup_data/";
+    bfs::path dest_path = backup_basepath_ + "/" + boost::lexical_cast<std::string>(reqlog_mgr_->getLastSuccessReqId());
+    bfs::path dest_coldata_backup = dest_path/bfs::path("backup_data");
 
     if (bfs::exists(dest_path))
         bfs::remove_all(dest_path);
@@ -130,13 +176,13 @@ bool RecoveryChecker::backup()
         LOG(INFO) << "backing up the collection: " << cit->first;
         const CollectionPath &colpath = cit->second.first;
 
-        std::string coldata_path = colpath.getCollectionDataPath();
-        std::string querydata_path = colpath.getQueryDataPath();
+        bfs::path coldata_path(colpath.getCollectionDataPath());
+        bfs::path querydata_path(colpath.getQueryDataPath());
 
         try
         {
-            boost::filesystem3::copy(coldata_path, dest_coldata_backup + coldata_path);
-            boost::filesystem3::copy(querydata_path, dest_coldata_backup + querydata_path);
+            copy_dir(coldata_path, dest_coldata_backup);
+            copy_dir(querydata_path, dest_coldata_backup);
         }
         catch(const std::exception& e)
         {
@@ -148,7 +194,7 @@ bool RecoveryChecker::backup()
     }
     try
     {
-        boost::filesystem3::copy(request_log_basepath_, dest_path + bfs::path(request_log_basepath_).relative_path().c_str());
+        copy_dir(request_log_basepath_, dest_path, false);
     }
     catch(const std::exception& e)
     {
@@ -231,7 +277,7 @@ bool RecoveryChecker::rollbackLastFail()
     LOG(INFO) << "last failed request inc_id is :" << rollback_id;
 
     std::string last_backup_path;
-    uint32_t last_backup_id;
+    uint32_t last_backup_id = 0;
     uint32_t  last_write_id = reqlog_mgr_->getLastSuccessReqId();
     // mv current log to redo log, copy backup log to current, 
     bfs::rename(request_log_basepath_, redo_log_basepath_);
@@ -260,20 +306,20 @@ bool RecoveryChecker::rollbackLastFail()
         try
         {
             // copy backup log to current .
-            boost::filesystem3::copy(last_backup_path + bfs::path(request_log_basepath_).relative_path().c_str(),
-                request_log_basepath_);
+            copy_dir(last_backup_path + bfs::path(request_log_basepath_).filename().c_str(),
+                request_log_basepath_, false);
             CollInfoMapT::const_iterator inner_cit = tmp_all_col_info.begin();
-            std::string dest_coldata_backup = last_backup_path + "backup_data/";
+            bfs::path dest_coldata_backup(last_backup_path + "/backup_data");
             while(inner_cit != tmp_all_col_info.end())
             {
                 LOG(INFO) << "restoring the backup for the collection: " << inner_cit->first;
                 const CollectionPath &colpath = inner_cit->second.first;
 
-                std::string coldata_path = colpath.getCollectionDataPath();
-                std::string querydata_path = colpath.getQueryDataPath();
+                bfs::path coldata_path(colpath.getCollectionDataPath());
+                bfs::path querydata_path(colpath.getQueryDataPath());
 
-                boost::filesystem3::copy(dest_coldata_backup + coldata_path, coldata_path);
-                boost::filesystem3::copy(dest_coldata_backup + querydata_path, querydata_path);
+                copy_dir(dest_coldata_backup/coldata_path, coldata_path);
+                copy_dir(dest_coldata_backup/querydata_path, querydata_path);
                 ++inner_cit;
             }
         }
@@ -323,9 +369,9 @@ bool RecoveryChecker::rollbackLastFail()
 
 void RecoveryChecker::init(const std::string& workdir)
 {
-    backup_basepath_ = workdir + "/req-backup/";
-    request_log_basepath_ = workdir + "/req-log/";
-    redo_log_basepath_ = workdir + "/redo-log/";
+    backup_basepath_ = workdir + "/req-backup";
+    request_log_basepath_ = workdir + "/req-log";
+    redo_log_basepath_ = workdir + "/redo-log";
     rollback_file_ = workdir + "/rollback_flag";
 
     reqlog_mgr_.reset(new ReqLogMgr());

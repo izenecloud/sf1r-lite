@@ -63,7 +63,7 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const C
 
 bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& packed_reqdata)
 {
-    LOG(INFO) << "callback for new request from primary";
+    LOG(INFO) << "callback for new request from primary, packeddata len: " << packed_reqdata.size();
     CommonReqData reqloghead;
     if(!ReqLogMgr::unpackReqLogData(packed_reqdata, reqloghead))
     {
@@ -126,7 +126,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         }
         prepared_req.inc_id = reqloghead.inc_id;
         prepared_req.req_json_data = reqloghead.req_json_data;
-        LOG(INFO) << "got create document request from primary, inc_id :" << prepared_req.inc_id;
+        LOG(INFO) << "got write request from primary, inc_id :" << prepared_req.inc_id;
     }
     prepared_req.reqtype = type;
     type_ = type;
@@ -186,7 +186,7 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess, const std
 {
     if (!isHooked())
         return;
-    LOG(INFO) << "begin process request on local worker finished.";
+    LOG(INFO) << "process request on local worker finished.";
     current_req_ = packed_req_data;
     if (!finishsuccess)
     {
@@ -196,6 +196,7 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess, const std
     }
     if (hook_type_ == Request::FromLog)
         return;
+    LOG(INFO) << "send packed data len from local. len: " << packed_req_data.size();
     SearchNodeManager::get()->finishLocalReqProcess(type_, packed_req_data);
 }
 

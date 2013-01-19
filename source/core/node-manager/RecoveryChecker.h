@@ -48,9 +48,6 @@ public:
     void syncToNewestReqLog();
     void wait();
 private:
-    static bool getLastBackup(const std::string& backup_basepath, std::string& backuppath, uint32_t& backup_inc_id);
-    static void getBackupList(const std::string& backup_basepath, std::vector<uint32_t>& backup_req_incids);
-    static void cleanUnnessesaryBackup(const std::string& backup_basepath);
     bool redoLog(ReqLogMgr* redolog, uint32_t start_id);
     StartColCBFuncT start_col_;
     StopColCBFuncT stop_col_;

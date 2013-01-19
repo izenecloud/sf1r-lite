@@ -34,12 +34,49 @@ struct ReqLogHead
 };
 #pragma pack()
 
+//struct CommonReqDataFixPart
+//{
+//    uint32_t inc_id;
+//    uint32_t reqtype;
+//    uint32_t json_data_size;
+//    MSGPACK_DEFINE(inc_id, reqtype, json_data_size);
+//};
+
 struct CommonReqData
 {
     uint32_t inc_id;
     uint32_t reqtype;
+    //uint32_t json_data_size;
     std::string req_json_data;
-    MSGPACK_DEFINE(inc_id, reqtype, req_json_data);
+    //MSGPACK_DEFINE(inc_id, reqtype, req_json_data);
+    void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        pk.pack(inc_id);
+        pk.pack(reqtype);
+        pk.pack(req_json_data);
+    }
+    bool unpack(msgpack::unpacker& unpak)
+    {
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&inc_id);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&reqtype);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&req_json_data);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack common data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
 };
 
 // note: head data will not be packed to msgpack.
@@ -52,7 +89,30 @@ struct IndexReqLog
     }
     CommonReqData common_data;
     std::vector<std::string> scd_list;
-    MSGPACK_DEFINE(common_data, scd_list);
+    void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        common_data.pack(pk);
+        pk.pack(scd_list);
+    }
+    bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!common_data.unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&scd_list);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack index data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+    //MSGPACK_DEFINE(common_data, scd_list);
 };
 
 struct CreateDocReqLog
@@ -62,7 +122,15 @@ struct CreateDocReqLog
         common_data.reqtype = Req_CreateDoc;
     }
     CommonReqData common_data;
-    MSGPACK_DEFINE(common_data);
+    void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        common_data.pack(pk);
+    }
+    bool unpack(msgpack::unpacker& unpak)
+    {
+        return common_data.unpack(unpak);
+    }
+    //MSGPACK_DEFINE(common_data);
 };
 
 static const uint32_t _crc32tab[] = {
@@ -107,11 +175,7 @@ public:
     {
     }
 
-    static void initWriteRequestSet()
-    {
-        write_req_set_.insert("documents_create");
-    }
-
+    static void initWriteRequestSet();
     static inline bool isWriteRequest(const std::string& controller, const std::string& action)
     {
         if (write_req_set_.find(controller + "_" + action) != write_req_set_.end())
@@ -119,164 +183,48 @@ public:
         return false;
     }
 
-    std::string getRequestLogPath()
+    inline std::string getRequestLogPath() const
     {
         return base_path_;
     }
-
-    void init(const std::string& basepath)
-    {
-        boost::lock_guard<boost::mutex> lock(lock_);
-        inc_id_ = 1;
-        last_writed_id_ = 0;
-        base_path_ = basepath;
-        head_log_path_ = basepath + "/head.req.log";
-        loadLastData();
-    }
-
-    bool prepareReqLog(CommonReqData& prepared_reqdata, bool isprimary)
-    {
-        boost::lock_guard<boost::mutex> lock(lock_);
-        if (!prepared_req_.empty())
-        {
-            std::cout << "already has a prepared Request, only one write request allowed." << endl;
-            return false;
-        }
-        if (isprimary)
-            prepared_reqdata.inc_id = inc_id_++;
-        else
-        {
-            inc_id_ = prepared_reqdata.inc_id + 1;
-        }
-        prepared_req_.push_back(prepared_reqdata);
-        printf("prepare request success, isprimary %d, (id:%u, type:%u) ", isprimary,
-            prepared_reqdata.inc_id, prepared_reqdata.reqtype);
-        std::cout << endl;
-        return true;
-    }
-
-    bool getPreparedReqLog(CommonReqData& reqdata)
-    {
-        boost::lock_guard<boost::mutex> lock(lock_);
-        if (prepared_req_.empty())
-            return false;
-        reqdata = prepared_req_.back();
-        return true;
-    }
-
-    void delPreparedReqLog()
-    {
-        boost::lock_guard<boost::mutex> lock(lock_);
-        prepared_req_.clear();
-    }
-
+    void init(const std::string& basepath);
+    bool prepareReqLog(CommonReqData& prepared_reqdata, bool isprimary);
+    bool getPreparedReqLog(CommonReqData& reqdata);
+    void delPreparedReqLog();
     template <typename TypedReqLog> bool appendTypedReqLog(const TypedReqLog& reqdata)
     {
-        msgpack::sbuffer buf;
-        msgpack::pack(buf, reqdata);
-        return appendReqData(std::string(buf.data(), buf.size()));
+        std::string packed_data;
+        packReqLogData(reqdata, packed_data);
+        return appendReqData(packed_data);
     }
+
     template <typename TypedReqLog> static void packReqLogData(const TypedReqLog& reqdata, std::string& packed_data)
     {
         msgpack::sbuffer buf;
-        msgpack::pack(buf, reqdata);
+        msgpack::packer<msgpack::sbuffer> pk(&buf);
+        reqdata.pack(pk);
         packed_data.assign(buf.data(), buf.size());
     }
 
     template <typename TypedReqLog> static bool unpackReqLogData(const std::string& packed_data, TypedReqLog& reqdata)
     {
-        try
-        {
-            msgpack::unpacked msg;
-            msgpack::unpack(&msg, packed_data.data(), packed_data.size());
-            msg.get().convert(&reqdata);
-        }
-        catch(const std::exception& e)
-        {
-            std::cout << "unpack request data failed: " << e.what() << endl;
-            return false;
-        }
-        return true;
+        msgpack::unpacker unpak;
+        unpak.reserve_buffer(packed_data.size());
+        memcpy(unpak.buffer(), packed_data.data(), packed_data.size());
+        unpak.buffer_consumed(packed_data.size());
+        return reqdata.unpack(unpak);
     }
 
-    bool appendReqData(const std::string& req_packed_data)
-    {
-        boost::lock_guard<boost::mutex> lock(lock_);
-        if (prepared_req_.empty())
-            return false;
-        const CommonReqData& reqdata = prepared_req_.back();
-        if (reqdata.inc_id < last_writed_id_)
-        {
-            std::cout << "append error!!! Request log must append in order by inc_id. " << std::endl;
-            return false;
-        }
-        assert(reqdata == req_packed_data.common_data);
-        ReqLogHead whead;
-        whead.inc_id = reqdata.inc_id;
-        whead.reqtype = reqdata.reqtype;
-        std::ofstream ofs(getDataPath(whead.inc_id).c_str(), ios::app|ios::binary|ios::ate);
-        std::ofstream ofs_head(head_log_path_.c_str(), ios::app|ios::binary|ios::ate);
-        if (!ofs.good() || !ofs_head.good())
-        {
-            std::cerr << "append error!!! Request log open failed. " << std::endl;
-            return false;
-        }
-        whead.req_data_offset = ofs.tellp();
-        whead.req_data_len = req_packed_data.size();
-        whead.req_data_crc = crc(0, req_packed_data.data(), req_packed_data.size());
-
-        using namespace boost::posix_time;
-        static ptime epoch(boost::gregorian::date(1970, 1, 1));
-        ptime current_time = microsec_clock::universal_time();
-        time_duration td = current_time - epoch;
-        std::string time_str = boost::lexical_cast<std::string>(double(td.total_milliseconds())/1000);
-        time_str.resize(15, '\0');
-        time_str.append('\0');
-        memcpy(&whead.reqtime[0], time_str.data(), 16);
-        ofs.write(req_packed_data.data(), req_packed_data.size());
-        ofs_head.write((const char*)&whead, sizeof(whead));
-        last_writed_id_ = whead.inc_id;
-        ofs.close();
-        ofs_head.close();
-        std::cout << "append request log success: " << whead.inc_id << "," << whead.reqtime << std::endl;
-        return true;
-    }
-
-    inline uint32_t getLastSuccessReqId()
+    bool appendReqData(const std::string& req_packed_data);
+    inline uint32_t getLastSuccessReqId() const
     {
         return last_writed_id_;
     }
     // you can use this to read all request data in sequence.
-    bool getReqDataByHeadOffset(size_t& headoffset, ReqLogHead& rethead, std::string& req_packed_data)
-    {
-        boost::lock_guard<boost::mutex> lock(lock_);
-        std::ifstream ifs(head_log_path_.c_str(), ios::binary);
-        if (!ifs.good())
-        {
-            std::cerr << "error!!! Request log open failed. " << std::endl;
-            throw std::runtime_error("open request log failed.");
-            return false;
-        }
-        ifs.seekg(0, ios::end);
-        size_t length = ifs.tellg();
-        if (headoffset > length - sizeof(ReqLogHead))
-            return false;
-        rethead = getHeadData(ifs, headoffset);
-        // update offset to next head position.
-        headoffset += sizeof(ReqLogHead);
-        return getReqPackedDataByHead(rethead, req_packed_data);
-    }
-
+    bool getReqDataByHeadOffset(size_t& headoffset, ReqLogHead& rethead, std::string& req_packed_data);
     // get request with inc_id or the minimize that not less than inc_id if not exist.
     // if no more request return false.
-    bool getReqData(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset, std::string& req_packed_data)
-    {
-        boost::lock_guard<boost::mutex> lock(lock_);
-        if (!getHeadOffset(inc_id, rethead, headoffset))
-            return false;
-        return getReqPackedDataByHead(rethead, req_packed_data);
-    }
-
+    bool getReqData(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset, std::string& req_packed_data);
     uint32_t crc(uint32_t crc, const char* data, const int32_t len)
     {
         int32_t i;
@@ -287,128 +235,13 @@ public:
         }
         return (crc);
     }
-
-
-    bool getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset)
-    {
-        std::ifstream ifs(head_log_path_.c_str(), ios::binary);
-        if (!ifs.good())
-        {
-            std::cerr << "error!!! Request log open failed. " << std::endl;
-            throw std::runtime_error("open request log file failed.");
-            return false;
-        }
-        ifs.seekg(0, ios::end);
-        size_t length = ifs.tellg();
-        assert(length%sizeof(ReqLogHead) == 0);
-        size_t start = 0;
-        size_t end = length/sizeof(ReqLogHead) - 1;
-        ReqLogHead cur = getHeadData(ifs, end*sizeof(ReqLogHead));
-        if (inc_id > cur.inc_id)
-            return false;
-        uint32_t ret_id = inc_id;
-        while(end >= start)
-        {
-            size_t mid = (end - start)/2 + start;
-            cur = getHeadData(ifs, mid*sizeof(ReqLogHead));
-            if (cur.inc_id > inc_id)
-            {
-                ret_id = cur.inc_id;
-                rethead = cur;
-                headoffset = mid*sizeof(ReqLogHead);
-                end = mid - 1;
-            }
-            else if (cur.inc_id < inc_id)
-            {
-                start = mid + 1;
-            }
-            else
-            {
-                ret_id = inc_id;
-                rethead = cur;
-                headoffset = mid*sizeof(ReqLogHead);
-                break;
-            }
-        }
-        std::cout << "get head offset by inc_id: " << inc_id << ", returned nearest id:" << ret_id << std::endl;
-        inc_id = ret_id;
-        return true;
-    }
-
+    bool getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset);
 private:
-    bool getReqPackedDataByHead(const ReqLogHead& head, std::string& req_packed_data)
-    {
-        std::ifstream ifs_data(getDataPath(head.inc_id).c_str(), ios::binary);
-        if (!ifs_data.good())
-        {
-            std::cerr << "error!!! Request log open failed. " << std::endl;
-            throw std::runtime_error("open request log file failed.");
-            return false;
-        }
-        req_packed_data.resize(head.req_data_len);
-        ifs_data.seekg(head.req_data_offset, ios::beg);
-        ifs_data.read((char*)req_packed_data[0], head.req_data_len);
-        if (crc(0, req_packed_data.data(), req_packed_data.size()) != head.req_data_crc)
-        {
-            std::cout << "warning: crc check failed for request log data." << std::endl;
-            throw std::runtime_error("request log data corrupt.");
-            return false;
-        }
-        return true;
-    }
-    std::string getDataPath(uint32_t inc_id)
-    {
-        std::stringstream ss;
-        ss << base_path_ << "/" << inc_id/1000 << ".req.log";
-        return ss.str();
-    }
+    bool getReqPackedDataByHead(const ReqLogHead& head, std::string& req_packed_data);
+    std::string getDataPath(uint32_t inc_id);
+    ReqLogHead getHeadData(std::ifstream& ifs, size_t offset);
+    void loadLastData();
 
-    ReqLogHead getHeadData(std::ifstream& ifs, size_t offset)
-    {
-        ReqLogHead head;
-        assert(offset%sizeof(ReqLogHead) == 0);
-        ifs.seekg(offset, ios::beg);
-        ifs.read((char*)&head, sizeof(head));
-        return head;
-    }
-
-    void loadLastData()
-    {
-        if (boost::filesystem::exists(base_path_))
-        {
-            std::ifstream ifs(head_log_path_.c_str(), ios::binary);
-            if (ifs.good())
-            {
-                ifs.seekg(0, ios::end);
-                int length = ifs.tellg();
-                if (length == 0)
-                {
-                    std::cout << "no request since last down." << std::endl;
-                    return;
-                }
-                else if (length < (int)sizeof(ReqLogHead))
-                {
-                    std::cout << "read request log head file error. length :" << length << std::endl;
-                    throw std::runtime_error("read request log head file error");
-                }
-                else if ( length % sizeof(ReqLogHead) != 0)
-                {
-                    std::cout << "The head file is corrupt. need restore from last backup. len:" << length << std::endl;
-                    throw std::runtime_error("read request log head file error");
-                }
-                ifs.seekg(sizeof(ReqLogHead), ios::end);
-                ReqLogHead lasthead;
-                ifs.read((char*)&lasthead, sizeof(ReqLogHead));
-                inc_id_ = lasthead.inc_id;
-                std::cout << "loading request log for last request: inc_id : " <<
-                    inc_id_ << ", type:" << lasthead.reqtype << std::endl;
-                last_writed_id_ = inc_id_;
-                ++inc_id_;
-            }
-        }
-        else
-            boost::filesystem::create_directories(base_path_);
-    }
     std::string base_path_;
     std::string head_log_path_;
     uint32_t  inc_id_;
