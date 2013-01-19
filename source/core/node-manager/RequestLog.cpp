@@ -16,6 +16,7 @@ void ReqLogMgr::init(const std::string& basepath)
     last_writed_id_ = 0;
     base_path_ = basepath;
     head_log_path_ = basepath + "/head.req.log";
+    std::vector<CommonReqData>().swap(prepared_req_);
     loadLastData();
 }
 
@@ -53,7 +54,7 @@ bool ReqLogMgr::getPreparedReqLog(CommonReqData& reqdata)
 void ReqLogMgr::delPreparedReqLog()
 {
     boost::lock_guard<boost::mutex> lock(lock_);
-    prepared_req_.clear();
+    std::vector<CommonReqData>().swap(prepared_req_);
 }
 
 bool ReqLogMgr::appendReqData(const std::string& req_packed_data)
@@ -95,6 +96,7 @@ bool ReqLogMgr::appendReqData(const std::string& req_packed_data)
     last_writed_id_ = whead.inc_id;
     ofs.close();
     ofs_head.close();
+    std::vector<CommonReqData>().swap(prepared_req_);
     std::cout << "append request log success: " << whead.inc_id << "," << whead.reqtime << std::endl;
     return true;
 }

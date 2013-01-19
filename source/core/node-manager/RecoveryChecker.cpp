@@ -140,7 +140,7 @@ bool RecoveryChecker::setRollbackFlag(uint32_t inc_id)
     if (bfs::exists(rollback_file_))
     {
         LOG(ERROR) << "rollback_file already exist, this mean last rollback is not finished. must exit.";
-        throw -1;
+        throw std::runtime_error("set rollback flag failed for existed flag.");
     }
     ofstream ofs(rollback_file_.c_str());
     if (ofs.good())
@@ -156,8 +156,14 @@ void RecoveryChecker::clearRollbackFlag()
     if (bfs::exists(rollback_file_))
         bfs::remove(rollback_file_);
 }
+
 bool RecoveryChecker::backup()
 {
+    if (!reqlog_mgr_)
+    {
+        LOG(ERROR) << "RecoveryChecker did not init!";
+        return false;
+    }
     // backup changeable data first, so that we can rollback if old data corrupt while process the request.
     // Ignore SCD files and any other files that will not change during processing.
 
@@ -388,7 +394,20 @@ void RecoveryChecker::init(const std::string& workdir)
         if(!rollbackLastFail())
         {
             LOG(ERROR) << "corrupt data and rollback failed. Unrecoverable!!";
-            throw -1;
+            throw std::runtime_error("corrupt data and rollback failed. Unrecoverable!!");
+        }
+    }
+
+    std::string backup_path;
+    uint32_t backup_inc_id = 0;
+    if (!getLastBackup(backup_basepath_, backup_path, backup_inc_id))
+    {
+        // first init.
+        LOG(INFO) << "No backup found, do the backup for the first time.";
+        if (!backup())
+        {
+            LOG(ERROR) << "First backup failed, must exit.";
+            throw std::runtime_error("backup for the first time failed.");
         }
     }
 
@@ -441,7 +460,7 @@ void RecoveryChecker::syncToNewestReqLog()
         if(!redoLog(&redo_req_log_mgr, reqid + 1))
         {
             LOG(ERROR) << "redo log failed while sync to newest request log. must exit";
-            throw -1;
+            throw std::runtime_error("redo log failed while recovering.");
         }
         //
         bfs::remove_all(redo_log_basepath_);

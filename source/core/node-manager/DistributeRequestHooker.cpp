@@ -314,7 +314,7 @@ void DistributeRequestHooker::finish(bool success)
 
 void DistributeRequestHooker::forceExit()
 {
-    throw -1;
+    throw std::runtime_error("force exit in hooker.");
 }
 
 }

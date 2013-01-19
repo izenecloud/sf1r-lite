@@ -93,7 +93,7 @@ void MasterManagerBase::registerIndexStatus(const std::string& collection, bool 
     }
 
     std::string nodePath = getNodePath(sf1rTopology_.curNode_.replicaId_,  sf1rTopology_.curNode_.nodeId_);
-    if (zookeeper_ && zookeeper_->getZNodeData(nodePath, data))
+    if (zookeeper_ && zookeeper_->getZNodeData(nodePath, data, ZooKeeper::WATCH))
     {
         ZNode znode;
         znode.loadKvString(data);
@@ -160,6 +160,7 @@ void MasterManagerBase::onNodeCreated(const std::string& path)
 
 void MasterManagerBase::onNodeDeleted(const std::string& path)
 {
+    LOG(INFO) << "node deleted: " << path;
     boost::lock_guard<boost::mutex> lock(state_mutex_);
 
     if (masterState_ == MASTER_STATE_STARTED)
@@ -172,6 +173,7 @@ void MasterManagerBase::onNodeDeleted(const std::string& path)
 
 void MasterManagerBase::onChildrenChanged(const std::string& path)
 {
+    LOG(INFO) << "node children changed : " << path;
     boost::lock_guard<boost::mutex> lock(state_mutex_);
 
     if (masterState_ > MASTER_STATE_STARTING_WAIT_ZOOKEEPER)
@@ -311,50 +313,6 @@ void MasterManagerBase::pushWriteReq(const std::string& reqdata)
     }
 }
 
-//void MasterManagerBase::putWriteReqDataToPreparedNode(const std::string& req_json_data)
-//{
-//    // make sure prepare is called.
-//    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode()))
-//    {
-//        LOG(ERROR) << "There is no any write request while put request data to it";
-//        return;
-//    }
-//    std::string sdata;
-//    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata))
-//    {
-//        ZNode znode;
-//        znode.loadKvString(sdata);
-//        znode.setValue(ZNode::KEY_MASTER_REQ_DATA, req_json_data);
-//        zookeeper_->setZNodeData(ZooKeeperNamespace::getWriteReqNode(), znode.serialize(), ZooKeeper::WATCH);
-//    }
-//    else
-//    {
-//        LOG(WARNING) << "get write request data failed from prepared write node.";
-//    }
-//}
-//
-//bool MasterManagerBase::getWriteReqDataFromPreparedNode(std::string& req_json_data)
-//{
-//    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode()))
-//    {
-//        LOG(INFO) << "There is no any write request while get request data";
-//        return false;
-//    }
-//    std::string sdata;
-//    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata))
-//    {
-//        ZNode znode;
-//        znode.loadKvString(sdata);
-//        req_json_data = znode.getStrValue(ZNode::KEY_MASTER_REQ_DATA);
-//    }
-//    else
-//    {
-//        LOG(WARNING) << "get write request data failed.";
-//        return false;
-//    }
-//    return true;
-//}
-
 void MasterManagerBase::endWriteReq()
 {
     if (!isDistributeEnable_)
@@ -366,13 +324,13 @@ void MasterManagerBase::endWriteReq()
         LOG(INFO) << "non-primary master can not end a write request.";
         return;
     }
-    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode()))
+    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode(), ZooKeeper::WATCH))
     {
         LOG(INFO) << "There is no any write request while end request";
         return;
     }
     std::string sdata;
-    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata))
+    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata, ZooKeeper::WATCH))
     {
         ZNode znode;
         znode.loadKvString(sdata);
@@ -382,7 +340,7 @@ void MasterManagerBase::endWriteReq()
             LOG(WARNING) << "end request mismatch server. " << write_server << " vs " << serverRealPath_;
             return;
         }
-        zookeeper_->deleteZNode(write_server);
+        zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqNode());
         LOG(INFO) << "end write request success on server : " << serverRealPath_;
     }
     else
@@ -399,7 +357,7 @@ bool MasterManagerBase::isAllWorkerIdle()
     {
         std::string nodepath = getNodePath(it->second->replicaId_,  it->first);
         std::string sdata;
-        if (zookeeper_->getZNodeData(nodepath, sdata))
+        if (zookeeper_->getZNodeData(nodepath, sdata, ZooKeeper::WATCH))
         {
             ZNode nodedata;
             nodedata.loadKvString(sdata);
@@ -419,7 +377,7 @@ bool MasterManagerBase::isBusy()
         return false;
     if (!zookeeper_ || !zookeeper_->isConnected())
         return true;
-    if (zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode()))
+    if (zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode(), ZooKeeper::WATCH))
     {
         LOG(INFO) << "Master is busy because there is another write request running";
         return true;
@@ -942,7 +900,7 @@ bool MasterManagerBase::isPrimaryWorker(replicaid_t replicaId, nodeid_t nodeId)
 {
     std::string nodepath = getNodePath(replicaId,  nodeId);
     std::string sdata;
-    if (zookeeper_->getZNodeData(nodepath, sdata))
+    if (zookeeper_->getZNodeData(nodepath, sdata, ZooKeeper::WATCH))
     {
         ZNode znode;
         znode.loadKvString(sdata);
