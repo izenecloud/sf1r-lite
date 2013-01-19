@@ -1,4 +1,7 @@
 #include "RequestLog.h"
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 namespace sf1r
 {
@@ -72,8 +75,8 @@ bool ReqLogMgr::appendReqData(const std::string& req_packed_data)
     ReqLogHead whead;
     whead.inc_id = reqdata.inc_id;
     whead.reqtype = reqdata.reqtype;
-    std::ofstream ofs(getDataPath(whead.inc_id).c_str(), ios::app|ios::binary|ios::ate);
-    std::ofstream ofs_head(head_log_path_.c_str(), ios::app|ios::binary|ios::ate);
+    std::ofstream ofs(getDataPath(whead.inc_id).c_str(), ios::app|ios::binary|ios::ate|ios::out);
+    std::ofstream ofs_head(head_log_path_.c_str(), ios::app|ios::binary|ios::ate|ios::out);
     if (!ofs.good() || !ofs_head.good())
     {
         std::cerr << "append error!!! Request log open failed. " << std::endl;
@@ -105,7 +108,7 @@ bool ReqLogMgr::appendReqData(const std::string& req_packed_data)
 bool ReqLogMgr::getReqDataByHeadOffset(size_t& headoffset, ReqLogHead& rethead, std::string& req_packed_data)
 {
     boost::lock_guard<boost::mutex> lock(lock_);
-    std::ifstream ifs(head_log_path_.c_str(), ios::binary);
+    std::ifstream ifs(head_log_path_.c_str(), ios::binary|ios::in);
     if (!ifs.good())
     {
         std::cerr << "error!!! Request log open failed. " << std::endl;
@@ -133,7 +136,7 @@ bool ReqLogMgr::getReqData(uint32_t& inc_id, ReqLogHead& rethead, size_t& headof
 
 bool ReqLogMgr::getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset)
 {
-    std::ifstream ifs(head_log_path_.c_str(), ios::binary);
+    std::ifstream ifs(head_log_path_.c_str(), ios::binary|ios::in);
     if (!ifs.good())
     {
         std::cerr << "error!!! Request log open failed. " << std::endl;
@@ -178,15 +181,15 @@ bool ReqLogMgr::getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& hea
 
 bool ReqLogMgr::getReqPackedDataByHead(const ReqLogHead& head, std::string& req_packed_data)
 {
-    std::ifstream ifs_data(getDataPath(head.inc_id).c_str(), ios::binary);
+    std::ifstream ifs_data(getDataPath(head.inc_id).c_str(), ios::binary|ios::in);
     if (!ifs_data.good())
     {
         std::cerr << "error!!! Request log open failed. " << std::endl;
         throw std::runtime_error("open request log file failed.");
     }
-    req_packed_data.resize(head.req_data_len);
+    req_packed_data.resize(head.req_data_len, '\0');
     ifs_data.seekg(head.req_data_offset, ios::beg);
-    ifs_data.read((char*)req_packed_data[0], head.req_data_len);
+    ifs_data.read((char*)&req_packed_data[0], head.req_data_len);
     if (crc(0, req_packed_data.data(), req_packed_data.size()) != head.req_data_crc)
     {
         std::cerr << "warning: crc check failed for request log data." << std::endl;
@@ -215,7 +218,7 @@ void ReqLogMgr::loadLastData()
 {
     if (boost::filesystem::exists(base_path_))
     {
-        std::ifstream ifs(head_log_path_.c_str(), ios::binary);
+        std::ifstream ifs(head_log_path_.c_str(), ios::binary|ios::in);
         if (ifs.good())
         {
             ifs.seekg(0, ios::end);
@@ -235,7 +238,7 @@ void ReqLogMgr::loadLastData()
                 std::cerr << "The head file is corrupt. need restore from last backup. len:" << length << std::endl;
                 throw std::runtime_error("read request log head file error");
             }
-            ifs.seekg(sizeof(ReqLogHead), ios::end);
+            ifs.seekg(0 - sizeof(ReqLogHead), ios::end);
             ReqLogHead lasthead;
             ifs.read((char*)&lasthead, sizeof(ReqLogHead));
             inc_id_ = lasthead.inc_id;

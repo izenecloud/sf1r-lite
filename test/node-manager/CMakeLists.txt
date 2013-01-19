@@ -1,6 +1,6 @@
 INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/core
+  ${CMAKE_SOURCE_DIR}/core/
   ${Boost_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
     )
@@ -53,6 +53,20 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   TARGET_LINK_LIBRARIES(t_scd_sharding      
       sf1r_node_manager
       sf1r_common    
+      ${izenelib_LIBRARIES}      
+      #external
+      ${Boost_LIBRARIES}
+      ${Glog_LIBRARIES}
+      )
+
+  ADD_EXECUTABLE(t_request_log
+    t_request_log.cpp
+    ${CMAKE_SOURCE_DIR}/core/node-manager/RequestLog.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_request_log
+      ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+      #sf1r_node_manager
+      #sf1r_common    
       ${izenelib_LIBRARIES}      
       #external
       ${Boost_LIBRARIES}
