@@ -18,6 +18,8 @@ namespace sf1r
 
 static void getBackupList(const bfs::path& backup_basepath, std::vector<uint32_t>& backup_req_incids)
 {
+    if (!bfs::exists(backup_basepath))
+        return;
     // only keep the lastest 3 backups.
     static bfs::directory_iterator end_dir = bfs::directory_iterator();
     bfs::directory_iterator backup_dirs_it = bfs::directory_iterator(backup_basepath);

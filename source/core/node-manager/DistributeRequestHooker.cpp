@@ -280,36 +280,28 @@ void DistributeRequestHooker::finish(bool success)
         LOG(ERROR) << "redo log failed. must exit";
         forceExit();
     }
-    try
-    {
-        if (success)
-        {
-            LOG(INFO) << "The request has finally finished both on primary and replicas.";
-        }
-        else
-        {
-            LOG(INFO) << "The request failed to finish. rollback from backup.";
-            // rollback from backup.
-            // rename current and move restore.
-            // all the file need to be reopened to make effective.
-            if (!RecoveryChecker::get()->rollbackLastFail())
-            {
-                LOG(ERROR) << "failed to rollback! must exit.";
-                forceExit();
-            }
-        }
-    }
-    catch(const std::exception& e)
-    {
-        LOG(ERROR) << "failed finish. must exit.";
-        forceExit();
-    }
-    RecoveryChecker::get()->clearRollbackFlag();
     req_log_mgr_->delPreparedReqLog();
     current_req_.clear();
     req_log_mgr_.reset();
     hook_type_ = 0;
     primary_addition_.clear();
+    if (success)
+    {
+        LOG(INFO) << "The request has finally finished both on primary and replicas.";
+        RecoveryChecker::get()->clearRollbackFlag();
+    }
+    else
+    {
+        LOG(INFO) << "The request failed to finish. rollback from backup.";
+        // rollback from backup.
+        // rename current and move restore.
+        // all the file need to be reopened to make effective.
+        if (!RecoveryChecker::get()->rollbackLastFail())
+        {
+            LOG(ERROR) << "failed to rollback asyn! must exit.";
+            forceExit();
+        }
+    }
 }
 
 void DistributeRequestHooker::forceExit()

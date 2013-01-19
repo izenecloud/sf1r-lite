@@ -438,7 +438,6 @@ void NodeManagerBase::abortRequest()
     {
         LOG(INFO) << "primary abort the request.";
         setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
-        checkSecondaryReqAbort();
     }
     else
     {
@@ -534,17 +533,19 @@ void NodeManagerBase::onDataChanged(const std::string& path)
 {
     LOG(INFO) << "node data changed: " << path;
     boost::unique_lock<boost::mutex> lock(mutex_);
-    if (path == self_primary_path_ || path == nodePath_)
+    // for primary, need handle the self data changed event.
+    // because there may only one node in distribute system.
+    if (isPrimaryWithoutLock())
+    {
+        checkSecondaryState();
+    }
+    else if (path == self_primary_path_ || path == nodePath_)
     {
         LOG(INFO) << "myself node was changed: " << path;
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)
     {
-        LOG(INFO) << "node was deleted, but I did not care : " << path;
-    }
-    else if (isPrimaryWithoutLock())
-    {
-        checkSecondaryState();
+        LOG(INFO) << "node data changed, but I did not care : " << path;
     }
     else if (path == curr_primary_path_)
     {
@@ -671,6 +672,9 @@ void NodeManagerBase::onChildrenChanged(const std::string& path)
     }
 }
 
+// note : all check is for primary node. and they 
+// should be called only in the thread of event handler in ZooKeeper(like onDataChanged)
+//  or when start up and stopping. Any other call may cause deadlock.
 void NodeManagerBase::checkSecondaryState()
 {
     switch(nodeState_)
