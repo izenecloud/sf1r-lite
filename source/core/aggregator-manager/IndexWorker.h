@@ -96,6 +96,8 @@ public:
     bool reindex(boost::shared_ptr<DocumentManager>& documentManager);
 
     bool buildCollection(unsigned int numdoc);
+    bool buildCollectionOnReplica(unsigned int numdoc);
+    bool buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList);
 
     bool rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager);
 

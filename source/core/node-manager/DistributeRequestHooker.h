@@ -34,7 +34,7 @@ public:
 
     bool prepare(ReqLogType type, CommonReqData& prepared_req);
     void processLocalBegin();
-    void processLocalFinished(bool finishsuccess, const std::string& packed_reqdata);
+    void processLocalFinished(bool finishsuccess);
     bool onRequestFromPrimary(int type, const std::string& packed_reqdata);
 
     void waitReplicasProcessCallback();
@@ -56,6 +56,8 @@ private:
 
     std::string colname_;
     CollectionPath colpath_;
+    // for primary worker, this is raw json request data.
+    // for replica worker, this is packed request data with addition data from primary.
     std::string current_req_;
     std::string primary_addition_;
     ReqLogType type_;

@@ -21,6 +21,7 @@
 #include <node-manager/SearchNodeManager.h>
 #include <node-manager/RequestLog.h>
 #include <node-manager/RecoveryChecker.h>
+#include <util/driver/Request.h>
 
 // xxx
 #include <bundles/index/IndexBundleConfiguration.h>
@@ -129,16 +130,13 @@ void IndexWorker::flushData()
 
 void IndexWorker::index(unsigned int numdoc, bool& result)
 {
-    if (!distribute_req_hooker_->isValid())
-    {
-        LOG(ERROR) << "index call invalid.";
-        result = false;
-        return;
-    }
     if (distribute_req_hooker_->isHooked())
     {
         // hooked request need excute sync.
-        result = buildCollection(numdoc);
+        if (distribute_req_hooker_->getHookType() == Request::FromDistribute)
+            result = buildCollection(numdoc);
+        else
+            result = buildCollectionOnReplica(numdoc);
     }
     else
     {
@@ -158,7 +156,12 @@ bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
 
 bool IndexWorker::buildCollection(unsigned int numdoc)
 {
-    size_t currTotalSCDSize = getTotalScdSize_();
+    if (!distribute_req_hooker_->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     ///If current directory is the one rotated from the backup directory,
     ///there should exist some missed SCDs since the last backup time,
     ///so we move those SCDs from backup directory, so that these data
@@ -167,18 +170,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 
     string scdPath = bundleConfig_->indexSCDPath();
     Status::Guard statusGuard(indexStatus_);
-    CREATE_PROFILER(buildIndex, "Index:SIAProcess", "Indexer : buildIndex")
-
-    START_PROFILER(buildIndex);
-
-    LOG(INFO) << "start BuildCollection";
-
-    izenelib::util::ClockTimer timer;
-
-    //flush all writing SCDs
-    scd_writer_->Flush();
-
-    indexProgress_.reset();
 
     ScdParser parser(bundleConfig_->encoding_);
 
@@ -217,7 +208,72 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             }
         }
     }
+    //sort scdList
+    sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
 
+    IndexReqLog reqlog;
+    reqlog.scd_list = scdList;
+    if(!distribute_req_hooker_->prepare(Req_Index, dynamic_cast<CommonReqData&>(reqlog)))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    distribute_req_hooker_->processLocalBegin();
+
+    bool ret = buildCollection(numdoc, scdList);
+
+    distribute_req_hooker_->processLocalFinished(ret);
+
+    return ret;
+}
+
+bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
+{
+    if (!distribute_req_hooker_->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
+    recoverSCD_();
+    Status::Guard statusGuard(indexStatus_);
+
+    IndexReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_Index, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    distribute_req_hooker_->processLocalBegin();
+
+    LOG(INFO) << "got index from primary/log, scd list is : ";
+    for (size_t i = 0; i < reqlog.scd_list.size(); ++i)
+    {
+        LOG(INFO) << reqlog.scd_list[i];
+    }
+
+    bool ret = buildCollection(numdoc, reqlog.scd_list);
+
+    distribute_req_hooker_->processLocalFinished(ret);
+    return ret;
+}
+
+bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList)
+{
+    CREATE_PROFILER(buildIndex, "Index:SIAProcess", "Indexer : buildIndex")
+
+    START_PROFILER(buildIndex);
+    LOG(INFO) << "start BuildCollection";
+    izenelib::util::ClockTimer timer;
+
+    //flush all writing SCDs
+    scd_writer_->Flush();
+    indexProgress_.reset();
+
+    size_t currTotalSCDSize = getTotalScdSize_();
+    string scdPath = bundleConfig_->indexSCDPath();
     indexProgress_.totalFileNum = scdList.size();
 
     if (indexProgress_.totalFileNum == 0)
@@ -227,13 +283,11 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         {
             miningTaskService_->DoContinue();
         }
-        return false;
+        return true;
     }
 
     indexProgress_.currentFileIdx = 1;
 
-    //sort scdList
-    sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
 
     //here, try to set the index mode(default[batch] or realtime)
     //The threshold is set to the scd_file_size/exist_doc_num, if smaller or equal than this threshold then realtime mode will turn on.
@@ -260,12 +314,13 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         }
 
         LOG(INFO) << "SCD Files in Path processed in given order. Path " << scdPath;
-        vector<string>::iterator scd_it;
+        vector<string>::const_iterator scd_it;
         for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
             LOG(INFO) << "SCD File " << bfs::path(*scd_it).stem();
 
         try
         {
+            ScdParser parser(bundleConfig_->encoding_);
             // loops the list of SCD files that belongs to this collection
             long proccessedFileSize = 0;
             idManager_->warmUp();
@@ -567,9 +622,10 @@ bool IndexWorker::createDocument(const Value& documentValue)
 {
     if (!distribute_req_hooker_->isValid())
     {
-        LOG(ERROR) << "createDocument call invalid.";
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
         return false;
     }
+
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
@@ -577,15 +633,14 @@ bool IndexWorker::createDocument(const Value& documentValue)
         return false;
     }
 
-    CreateDocReqLog reqlog;
-    if(!distribute_req_hooker_->prepare(Req_CreateDoc, reqlog.common_data))
+    NoAdditionNeedBackupReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_NoAdditionData_NeedBackup_Req, dynamic_cast<CommonReqData&>(reqlog)))
     {
-        LOG(ERROR) << "prepare createDocument failed.";
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
+
     distribute_req_hooker_->processLocalBegin();
-    std::string packed_data;
-    ReqLogMgr::packReqLogData(reqlog, packed_data);
 
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
@@ -600,7 +655,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
     IndexWorker::UpdateType updateType;
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType))
     {
-        distribute_req_hooker_->processLocalFinished(false, packed_data);
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -614,18 +669,34 @@ bool IndexWorker::createDocument(const Value& documentValue)
         doMining_();
     }
 
-    distribute_req_hooker_->processLocalFinished(ret, packed_data);
+    distribute_req_hooker_->processLocalFinished(ret);
     return ret;
 }
 
 bool IndexWorker::updateDocument(const Value& documentValue)
 {
+    if (!distribute_req_hooker_->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
+
+    NoAdditionNeedBackupReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_NoAdditionData_NeedBackup_Req, dynamic_cast<CommonReqData&>(reqlog)))
+    {
+        LOG(ERROR) << "prepare failed in: " << __FUNCTION__;
+        return false;
+    }
+
+    distribute_req_hooker_->processLocalBegin();
+
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
 
@@ -639,6 +710,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
 
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType, false))
     {
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -665,6 +737,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     }
     scd_writer_->Write(scddoc, UPDATE_SCD);
 
+    distribute_req_hooker_->processLocalFinished(ret);
     return ret;
 }
 

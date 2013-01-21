@@ -71,7 +71,6 @@ bool ReqLogMgr::appendReqData(const std::string& req_packed_data)
         std::cerr << "append error!!! Request log must append in order by inc_id. " << std::endl;
         return false;
     }
-    assert(reqdata == req_packed_data.common_data);
     ReqLogHead whead;
     whead.inc_id = reqdata.inc_id;
     whead.reqtype = reqdata.reqtype;

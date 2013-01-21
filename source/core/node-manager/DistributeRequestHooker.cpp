@@ -20,8 +20,8 @@ std::set<ReqLogType> DistributeRequestHooker::need_backup_types_;
 
 void DistributeRequestHooker::init()
 {
+    need_backup_types_.insert(Req_NoAdditionData_NeedBackup_Req);
     need_backup_types_.insert(Req_Index);
-    need_backup_types_.insert(Req_CreateDoc);
 }
 
 DistributeRequestHooker::DistributeRequestHooker()
@@ -108,24 +108,23 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     assert(req_log_mgr_);
     bool isprimary = SearchNodeManager::get()->isPrimary();
     if (isprimary)
+    {
         prepared_req.req_json_data = current_req_;
+    }
     else
     {
         // get addition data from primary
-        CommonReqData reqloghead;
-        if(!ReqLogMgr::unpackReqLogData(current_req_, reqloghead))
+        if(!ReqLogMgr::unpackReqLogData(current_req_, prepared_req))
         {
             LOG(ERROR) << "unpack log data failed while prepare the data from primary.";
             forceExit();
         }
-        if (type != (ReqLogType)reqloghead.reqtype)
+        if (type != (ReqLogType)prepared_req.reqtype)
         {
             LOG(ERROR) << "log type mismatch with primary while prepare the data from primary.";
             LOG(ERROR) << "It may happen when the code is not the same. Must exit.";
             forceExit();
         }
-        prepared_req.inc_id = reqloghead.inc_id;
-        prepared_req.req_json_data = reqloghead.req_json_data;
         LOG(INFO) << "got write request from primary, inc_id :" << prepared_req.inc_id;
     }
     prepared_req.reqtype = type;
@@ -144,6 +143,13 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     }
     std::string basepath = colpath_.getBasePath();
     
+    if (isprimary)
+    {
+        // save primary prepared data to current_req_ and 
+        // after primary finished, send it to replica.
+        ReqLogMgr::packReqLogData(prepared_req, current_req_);
+    }
+
     if (isNeedBackup(type))
     {
         LOG(INFO) << "begin backup";
@@ -182,12 +188,12 @@ void DistributeRequestHooker::processLocalBegin()
     SearchNodeManager::get()->beginReqProcess();
 }
 
-void DistributeRequestHooker::processLocalFinished(bool finishsuccess, const std::string& packed_req_data)
+void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
 {
     if (!isHooked())
         return;
     LOG(INFO) << "process request on local worker finished.";
-    current_req_ = packed_req_data;
+    //current_req_ = packed_req_data;
     if (!finishsuccess)
     {
         LOG(INFO) << "process finished fail.";
@@ -199,8 +205,8 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess, const std
         writeLocalLog();
         return;
     }
-    LOG(INFO) << "send packed data len from local. len: " << packed_req_data.size();
-    SearchNodeManager::get()->finishLocalReqProcess(type_, packed_req_data);
+    LOG(INFO) << "send packed data len from local. len: " << current_req_.size();
+    SearchNodeManager::get()->finishLocalReqProcess(type_, current_req_);
 }
 
 void DistributeRequestHooker::waitReplicasProcessCallback()

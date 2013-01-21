@@ -18,8 +18,15 @@ namespace sf1r
 enum ReqLogType
 {
     Req_None =0,
-    Req_Index = 1,
-    Req_CreateDoc = 2,
+    // if the write request can be redo correctly just using the json data from the
+    // request then you can use this type of request. Otherwise, you should define a new
+    // request type and add addition member data to it.
+    Req_NoAdditionDataReq = 1,
+    // this kind of request need backup before processing.
+    Req_NoAdditionData_NeedBackup_Req = 2,
+    // index request need the scd file list which is not included in the request json data,
+    // so we define a new request type, and add addition member.
+    Req_Index,
 };
 
 #pragma pack(1)
@@ -34,28 +41,19 @@ struct ReqLogHead
 };
 #pragma pack()
 
-//struct CommonReqDataFixPart
-//{
-//    uint32_t inc_id;
-//    uint32_t reqtype;
-//    uint32_t json_data_size;
-//    MSGPACK_DEFINE(inc_id, reqtype, json_data_size);
-//};
-
 struct CommonReqData
 {
     uint32_t inc_id;
     uint32_t reqtype;
-    //uint32_t json_data_size;
     std::string req_json_data;
-    //MSGPACK_DEFINE(inc_id, reqtype, req_json_data);
-    void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    virtual ~CommonReqData(){}
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
     {
         pk.pack(inc_id);
         pk.pack(reqtype);
         pk.pack(req_json_data);
     }
-    bool unpack(msgpack::unpacker& unpak)
+    virtual bool unpack(msgpack::unpacker& unpak)
     {
         try
         {
@@ -79,24 +77,58 @@ struct CommonReqData
     }
 };
 
-// note: head data will not be packed to msgpack.
-// head data will store separately for index.
-struct IndexReqLog
+struct NoAdditionReqLog: public CommonReqData
+{
+    NoAdditionReqLog()
+    {
+        reqtype = Req_NoAdditionDataReq;
+    }
+    //CommonReqData common_data;
+    //void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    //{
+    //    common_data.pack(pk);
+    //}
+    //bool unpack(msgpack::unpacker& unpak)
+    //{
+    //    return common_data.unpack(unpak);
+    //}
+};
+
+struct NoAdditionNeedBackupReqLog: public CommonReqData
+{
+    NoAdditionNeedBackupReqLog()
+    {
+        reqtype = Req_NoAdditionData_NeedBackup_Req;
+    }
+    //CommonReqData common_data;
+    //void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    //{
+    //    common_data.pack(pk);
+    //}
+    //bool unpack(msgpack::unpacker& unpak)
+    //{
+    //    return common_data.unpack(unpak);
+    //}
+};
+
+struct IndexReqLog: public CommonReqData
 {
     IndexReqLog()
     {
-        common_data.reqtype = Req_Index;
+        reqtype = Req_Index;
     }
-    CommonReqData common_data;
+    //CommonReqData common_data;
+    // index request addition member for scd file list.
     std::vector<std::string> scd_list;
-    void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
     {
-        common_data.pack(pk);
+        CommonReqData::pack(pk);
         pk.pack(scd_list);
     }
-    bool unpack(msgpack::unpacker& unpak)
+    virtual bool unpack(msgpack::unpacker& unpak)
     {
-        if (!common_data.unpack(unpak))
+        if (!CommonReqData::unpack(unpak))
             return false;
         try
         {
@@ -112,25 +144,6 @@ struct IndexReqLog
         }
         return true;
     }
-    //MSGPACK_DEFINE(common_data, scd_list);
-};
-
-struct CreateDocReqLog
-{
-    CreateDocReqLog()
-    {
-        common_data.reqtype = Req_CreateDoc;
-    }
-    CommonReqData common_data;
-    void pack(msgpack::packer<msgpack::sbuffer>& pk) const
-    {
-        common_data.pack(pk);
-    }
-    bool unpack(msgpack::unpacker& unpak)
-    {
-        return common_data.unpack(unpak);
-    }
-    //MSGPACK_DEFINE(common_data);
 };
 
 static const uint32_t _crc32tab[] = {
@@ -191,22 +204,44 @@ public:
     bool prepareReqLog(CommonReqData& prepared_reqdata, bool isprimary);
     bool getPreparedReqLog(CommonReqData& reqdata);
     void delPreparedReqLog();
-    template <typename TypedReqLog> bool appendTypedReqLog(const TypedReqLog& reqdata)
+    //template <typename TypedReqLog> bool appendTypedReqLog(const TypedReqLog& reqdata)
+    //{
+    //    std::string packed_data;
+    //    packReqLogData(reqdata, packed_data);
+    //    return appendReqData(packed_data);
+    //}
+
+    //template <typename TypedReqLog> static void packReqLogData(const TypedReqLog& reqdata, std::string& packed_data)
+    //{
+    //    msgpack::sbuffer buf;
+    //    msgpack::packer<msgpack::sbuffer> pk(&buf);
+    //    reqdata.pack(pk);
+    //    packed_data.assign(buf.data(), buf.size());
+    //}
+
+    //template <typename TypedReqLog> static bool unpackReqLogData(const std::string& packed_data, TypedReqLog& reqdata)
+    //{
+    //    msgpack::unpacker unpak;
+    //    unpak.reserve_buffer(packed_data.size());
+    //    memcpy(unpak.buffer(), packed_data.data(), packed_data.size());
+    //    unpak.buffer_consumed(packed_data.size());
+    //    return reqdata.unpack(unpak);
+    //}
+    bool appendTypedReqLog(CommonReqData& reqdata)
     {
         std::string packed_data;
         packReqLogData(reqdata, packed_data);
         return appendReqData(packed_data);
     }
 
-    template <typename TypedReqLog> static void packReqLogData(const TypedReqLog& reqdata, std::string& packed_data)
+    static void packReqLogData(CommonReqData& reqdata, std::string& packed_data)
     {
         msgpack::sbuffer buf;
         msgpack::packer<msgpack::sbuffer> pk(&buf);
         reqdata.pack(pk);
         packed_data.assign(buf.data(), buf.size());
     }
-
-    template <typename TypedReqLog> static bool unpackReqLogData(const std::string& packed_data, TypedReqLog& reqdata)
+    static bool unpackReqLogData(const std::string& packed_data, CommonReqData& reqdata)
     {
         msgpack::unpacker unpak;
         unpak.reserve_buffer(packed_data.size());
