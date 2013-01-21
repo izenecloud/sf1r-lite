@@ -51,6 +51,11 @@ static void cleanUnnessesaryBackup(const bfs::path& backup_basepath)
     getBackupList(backup_basepath, backup_req_incids);
     for (size_t i = MAX_BACKUP_NUM; i < backup_req_incids.size(); ++i)
     {
+        if (backup_req_incids[i] == 0)
+        {
+            // keep the first backup.
+            continue;
+        }
         bfs::remove_all(bfs::path(backup_basepath)/bfs::path(boost::lexical_cast<std::string>(backup_req_incids[i])));
     }
 }
@@ -352,7 +357,6 @@ bool RecoveryChecker::rollbackLastFail()
     LOG(INFO) << "rollback from " << rollback_id << " to backup: " << last_backup_id;
     reqlog_mgr_->init(request_log_basepath_);
 
-    clearRollbackFlag();
     LOG(INFO) << "rollback to last backup finished, begin redo from backup to sync to last fail request.";
     cit = tmp_all_col_info.begin();
     while(cit != tmp_all_col_info.end())
@@ -361,6 +365,7 @@ bool RecoveryChecker::rollbackLastFail()
             return false;
         ++cit;
     }
+    clearRollbackFlag();
 
     if (last_backup_id == last_write_id)
     {
