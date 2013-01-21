@@ -57,6 +57,7 @@ public:
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
     void flushData();
+    bool reLoadData();
 
 private:
     bool HookDistributeRequest(bool shard);

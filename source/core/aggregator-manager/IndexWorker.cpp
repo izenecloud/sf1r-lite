@@ -128,6 +128,19 @@ void IndexWorker::flushData()
     indexManager_->flush();
 }
 
+bool IndexWorker::reLoadData()
+{
+    if(!documentManager_->reLoadData())
+        return false;
+
+    idManager_->close();
+    idManager_->warmUp();
+
+    indexManager_->setDirty();
+    indexManager_->getIndexReader();
+    return true;
+}
+
 void IndexWorker::index(unsigned int numdoc, bool& result)
 {
     if (distribute_req_hooker_->isHooked())

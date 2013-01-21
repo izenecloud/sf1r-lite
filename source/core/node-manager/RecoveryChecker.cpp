@@ -307,7 +307,10 @@ bool RecoveryChecker::rollbackLastFail()
     CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
     while(cit != tmp_all_col_info.end())
     {
-        stop_col_(cit->first, true);
+        flush_col_(cit->first);
+        // remove old data.
+        bfs::remove_all(cit->second.first.getCollectionDataPath());
+        bfs::remove_all(cit->second.first.getQueryDataPath());
         ++cit;
     }
 
@@ -354,7 +357,7 @@ bool RecoveryChecker::rollbackLastFail()
     cit = tmp_all_col_info.begin();
     while(cit != tmp_all_col_info.end())
     {
-        if(!start_col_(cit->first, cit->second.second))
+        if(!reopen_col_(cit->first))
             return false;
         ++cit;
     }

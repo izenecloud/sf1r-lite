@@ -92,6 +92,7 @@ public:
      */
     bool flush();
 
+    bool reLoadData();
     /**
      * @brief inserts a new document. Has no effect if a document with the same
      * id exists

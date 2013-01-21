@@ -16,9 +16,10 @@ class SF1Config;
 class RecoveryChecker
 {
 public:
-    typedef boost::function<bool(const std::string&, const std::string&)> StartColCBFuncT;
-    typedef boost::function<bool(const std::string&, bool)> StopColCBFuncT;
+    //typedef boost::function<bool(const std::string&, const std::string&)> StartColCBFuncT;
+    //typedef boost::function<bool(const std::string&, bool)> StopColCBFuncT;
     typedef boost::function<void(const std::string&)> FlushColCBFuncT;
+    typedef boost::function<bool(const std::string&)> ReopenColCBFuncT;
 
     static RecoveryChecker* get()
     {
@@ -30,14 +31,16 @@ public:
     void clearRollbackFlag();
     bool rollbackLastFail();
 
-    void setRestartCallback(StartColCBFuncT start_col, StopColCBFuncT stop_col)
+    //void setRestartCallback(StartColCBFuncT start_col, StopColCBFuncT stop_col)
+    //{
+    //    start_col_ = start_col;
+    //    stop_col_ = stop_col;
+    //}
+
+    void setColCallback(ReopenColCBFuncT reopen_cb, FlushColCBFuncT flush_cb)
     {
-        start_col_ = start_col;
-        stop_col_ = stop_col;
-    }
-    void setFlushColCallback(FlushColCBFuncT cb)
-    {
-        flush_col_ = cb;
+        reopen_col_ = reopen_cb;
+        flush_col_ = flush_cb;
     }
 
     void init(const std::string& workdir);
@@ -56,8 +59,9 @@ public:
     void wait();
 private:
     bool redoLog(ReqLogMgr* redolog, uint32_t start_id);
-    StartColCBFuncT start_col_;
-    StopColCBFuncT stop_col_;
+    //StartColCBFuncT start_col_;
+    //StopColCBFuncT stop_col_;
+    ReopenColCBFuncT reopen_col_;
     FlushColCBFuncT flush_col_;
     std::string backup_basepath_;
     std::string request_log_basepath_;
