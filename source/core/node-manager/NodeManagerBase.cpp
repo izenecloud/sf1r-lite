@@ -163,7 +163,7 @@ void NodeManagerBase::updateCurrentPrimary()
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, primaryList, ZooKeeper::NOT_WATCH);
     if (primaryList.empty())
     {
-        LOG(ERROR) << "primary is empty";
+        LOG(INFO) << "primary is empty";
         curr_primary_path_.clear();
         return;
     }
@@ -194,6 +194,8 @@ void NodeManagerBase::registerPrimary(ZNode& znode)
     if (!self_primary_path_.empty() && zookeeper_->isZNodeExists(self_primary_path_))
     {
         LOG(WARNING) << "the node has register already, reregister will leaving duplicate primary node. old register path: " << self_primary_path_;
+        LOG(WARNING) << "delete old primary and register new path";
+        unregisterPrimary();
     }
     if (zookeeper_->createZNode(primaryNodePath_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
@@ -310,7 +312,7 @@ void NodeManagerBase::enterCluster(bool start_master)
 
 void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 {
-    if (self_primary_path_.empty())
+    if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
     {
         ZNode znode;
         setSf1rNodeData(znode);

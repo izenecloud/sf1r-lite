@@ -83,12 +83,12 @@ bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& 
 
 void DistributeRequestHooker::setHook(int calltype, const std::string& addition_data)
 {
-    LOG(INFO) << "setting hook : " << hook_type_ << ", data:" << primary_addition_;
     hook_type_ = calltype;
     // for request for primary master, the addition_data is the original request json data.
     // for request from primary worker to replicas, the addition_data is original request
     // json data plus the data used for this request.
     primary_addition_ = addition_data;
+    LOG(INFO) << "setting hook : " << hook_type_ << ", data:" << primary_addition_;
 }
 
 int  DistributeRequestHooker::getHookType()
@@ -306,7 +306,7 @@ void DistributeRequestHooker::finish(bool success)
 
 void DistributeRequestHooker::forceExit()
 {
-    throw std::runtime_error("force exit in hooker.");
+    throw std::runtime_error("force exit in DistributeRequestHooker.");
 }
 
 }
