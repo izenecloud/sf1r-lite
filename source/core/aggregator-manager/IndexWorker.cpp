@@ -120,6 +120,13 @@ void IndexWorker::HookDistributeRequest(int hooktype, const std::string& reqdata
     result = true;
 }
 
+void IndexWorker::flushData()
+{
+    documentManager_->flush();
+    idManager_->flush();
+    indexManager_->flush();
+}
+
 void IndexWorker::index(unsigned int numdoc, bool& result)
 {
     if (!distribute_req_hooker_->isValid())

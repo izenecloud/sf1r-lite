@@ -195,7 +195,10 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess, const std
         return;
     }
     if (hook_type_ == Request::FromLog)
+    {
+        writeLocalLog();
         return;
+    }
     LOG(INFO) << "send packed data len from local. len: " << packed_req_data.size();
     SearchNodeManager::get()->finishLocalReqProcess(type_, packed_req_data);
 }

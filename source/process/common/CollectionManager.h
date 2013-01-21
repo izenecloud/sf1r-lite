@@ -51,6 +51,7 @@ public:
             bool fixBasePath = false);
 
     bool stopCollection(const std::string& collectionName, bool clear = false);
+    void flushCollection(const std::string& collectionName);
 
     void deleteCollection(const std::string& collectionName);
 

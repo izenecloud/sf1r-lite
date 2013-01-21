@@ -28,6 +28,8 @@ CollectionManager::CollectionManager()
     RecoveryChecker::get()->setRestartCallback(
         boost::bind(&CollectionManager::startCollection, this, _1, _2, false),
         boost::bind(&CollectionManager::stopCollection, this, _1, _2));
+    RecoveryChecker::get()->setFlushColCallback(
+        boost::bind(&CollectionManager::flushCollection, this, _1));
 
 }
 
@@ -294,6 +296,23 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
         }
     }
     return true;
+}
+
+void CollectionManager::flushCollection(const std::string& collectionName)
+{
+    // flush all changed data to disk.
+    handler_const_iterator iter = collectionHandlers_.find(collectionName);
+    if (iter != collectionHandlers_.end())
+    {
+        if(iter->second->indexTaskService_)
+            iter->second->indexTaskService_->flushData();
+        //if(iter->second->miningSearchService_)
+        //    iter->second->miningSearchService_->flushData();
+
+        //if(iter->second->recommendTaskService_)
+        //    iter->second->recommendTaskService_->flushData();
+        // other service need to add flush interface.
+    }
 }
 
 void CollectionManager::deleteCollection(const std::string& collectionName)

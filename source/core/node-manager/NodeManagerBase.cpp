@@ -80,7 +80,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         // closed by zookeeper because of session expired
         LOG(WARNING) << "worker node disconnected by zookeeper, state: " << zookeeper_->getStateString();
         LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
-        zookeeper_->disconnect();
+        //zookeeper_->disconnect();
         nodeState_ = NODE_STATE_STARTING;
         enterCluster(false);
         LOG (WARNING) << " restarted in NodeManagerBase for ZooKeeper Service finished";
@@ -160,7 +160,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
 void NodeManagerBase::updateCurrentPrimary()
 {
     std::vector<std::string> primaryList;
-    zookeeper_->getZNodeChildren(primaryNodeParentPath_, primaryList, ZooKeeper::NOT_WATCH);
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, primaryList, ZooKeeper::WATCH);
     if (primaryList.empty())
     {
         LOG(INFO) << "primary is empty";
@@ -187,7 +187,7 @@ void NodeManagerBase::unregisterPrimary()
 
 void NodeManagerBase::registerPrimary(ZNode& znode)
 {
-    if (!zookeeper_->isZNodeExists(primaryNodeParentPath_))
+    if (!zookeeper_->isZNodeExists(primaryNodeParentPath_, ZooKeeper::WATCH))
     {
         zookeeper_->createZNode(primaryNodeParentPath_);
     }
@@ -460,6 +460,7 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         setSf1rNodeData(znode);
         znode.setValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA, packed_reqdata);
         znode.setValue(ZNode::KEY_REQ_TYPE, (uint32_t)type);
+        zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
         zookeeper_->setZNodeData(self_primary_path_, znode.serialize());
     }
     else

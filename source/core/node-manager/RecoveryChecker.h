@@ -18,6 +18,8 @@ class RecoveryChecker
 public:
     typedef boost::function<bool(const std::string&, const std::string&)> StartColCBFuncT;
     typedef boost::function<bool(const std::string&, bool)> StopColCBFuncT;
+    typedef boost::function<void(const std::string&)> FlushColCBFuncT;
+
     static RecoveryChecker* get()
     {
         return ::izenelib::util::Singleton<RecoveryChecker>::get();
@@ -33,6 +35,11 @@ public:
         start_col_ = start_col;
         stop_col_ = stop_col;
     }
+    void setFlushColCallback(FlushColCBFuncT cb)
+    {
+        flush_col_ = cb;
+    }
+
     void init(const std::string& workdir);
     void addCollection(const std::string& colname, const CollectionPath& colpath, const std::string& configfile);
     void removeCollection(const std::string& colname);
@@ -51,6 +58,7 @@ private:
     bool redoLog(ReqLogMgr* redolog, uint32_t start_id);
     StartColCBFuncT start_col_;
     StopColCBFuncT stop_col_;
+    FlushColCBFuncT flush_col_;
     std::string backup_basepath_;
     std::string request_log_basepath_;
     std::string redo_log_basepath_;

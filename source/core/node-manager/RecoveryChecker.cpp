@@ -182,6 +182,9 @@ bool RecoveryChecker::backup()
     while(cit != all_col_info_.end())
     {
         LOG(INFO) << "backing up the collection: " << cit->first;
+        // flush collection to make sure all changes have been saved to disk.
+        if (flush_col_)
+            flush_col_(cit->first);
         const CollectionPath &colpath = cit->second.first;
 
         bfs::path coldata_path(colpath.getCollectionDataPath());
