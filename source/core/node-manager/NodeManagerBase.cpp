@@ -803,10 +803,10 @@ void NodeManagerBase::checkSecondaryReqProcess()
         NodeStateType state = getNodeState(node_list[i]);
         if (node_list[i] == curr_primary_path_)
             continue;
-        if (state == NODE_STATE_PROCESSING_REQ_RUNNING)
+        if (state == NODE_STATE_PROCESSING_REQ_RUNNING || state == NODE_STATE_STARTED)
         {
             all_secondary_ready = false;
-            LOG(INFO) << "one secondary node not ready during processing request: " <<
+            LOG(INFO) << "one secondary node has not finished during processing request: " <<
                 node_list[i] << ", state: " << state << ", keep waiting.";
             break;
         }

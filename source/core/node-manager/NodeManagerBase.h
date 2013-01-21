@@ -38,7 +38,7 @@ public:
         NODE_STATE_PROCESSING_REQ_RUNNING,
         // primary finished write request and
         // ditribute the request to all replica nodes.
-        NODE_STATE_PROCESSING_REQ_NOTIFY_REPLICA_START,
+        //NODE_STATE_PROCESSING_REQ_NOTIFY_REPLICA_START,
         // primary abort the request and wait all replica to abort the current request.
         NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT,
         // waiting all replica finish request.
