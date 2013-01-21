@@ -200,6 +200,7 @@ void NodeManagerBase::registerPrimary(ZNode& znode)
     if (zookeeper_->createZNode(primaryNodePath_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
         self_primary_path_ = zookeeper_->getLastCreatedNodePath();
+        zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
         LOG(INFO) << "current self node primary path is : " << self_primary_path_;
         znode.setValue(ZNode::KEY_SELF_REG_PRIMARY_PATH, self_primary_path_);
         zookeeper_->setZNodeData(nodePath_, znode.serialize());
@@ -326,8 +327,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         else
         {
             LOG(INFO) << "enter as primary fail, maybe another node is entering at the same time.";
-            nodeState_ = NODE_STATE_RECOVER_WAIT_PRIMARY;
-            updateNodeState();
+            updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_PRIMARY);
             LOG(INFO) << "begin wait new entered primary and try re-enter when sync to new primary.";
             return;
         }
@@ -511,8 +511,7 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
         }
         if (isPrimaryWithoutLock())
         {
-            nodeState_ = NODE_STATE_ELECTING;
-            updateNodeState();
+            updateNodeStateToNewState(NODE_STATE_ELECTING);
             LOG(INFO) << "begin electing, wait all secondary agree on primary : " << curr_primary_path_;
             checkSecondaryElecting();
         }
@@ -558,7 +557,6 @@ void NodeManagerBase::onDataChanged(const std::string& path)
             if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
             {
                 LOG(INFO) << "got primary request notify, begin processing on current replica. " << self_primary_path_;
-                nodeState_ = NODE_STATE_PROCESSING_REQ_RUNNING;
                 ZNode znode;
                 std::string sdata;
                 std::string packed_reqdata;
@@ -580,22 +578,21 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                         return;
                     }
                     // primary is ok, this error can not handle. 
-                    throw -1;
+                    throw std::runtime_error("exit for unrecovery node state.");
                 }
-                updateNodeState();
+                updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_RUNNING);
                 if(cb_on_new_req_from_primary_)
                 {
                     if(!cb_on_new_req_from_primary_(type, packed_reqdata))
                     {
                         LOG(ERROR) << "handle request on replica failed, aborting request from replica";
-                        nodeState_ = NodeManagerBase::NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT;
-                        updateNodeState();
+                        updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
                     }
                 }
                 else
                 {
                     LOG(ERROR) << "replica did not have callback on new request from primary.";
-                    throw -1;
+                    throw std::runtime_error("exit for unrecovery node state.");
                 }
             }
         }
@@ -606,9 +603,8 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                 // write request log to local. and ready for new request.
                 if (cb_on_wait_primary_)
                     cb_on_wait_primary_();
-                nodeState_ = NODE_STATE_STARTED;
                 LOG(INFO) << "wait and write request log success on replica: " << self_primary_path_;
-                updateNodeState();
+                updateNodeStateToNewState(NODE_STATE_STARTED);
             }
             else if (primary_state == NODE_STATE_ELECTING)
             {
@@ -616,16 +612,14 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                 LOG(INFO) << "current request aborted !";
                 if (cb_on_abort_request_)
                     cb_on_abort_request_();
-                nodeState_ = NODE_STATE_STARTED;
-                updateNodeState();
+                updateNodeStateToNewState(NODE_STATE_STARTED);
             }
             else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
             {
                 LOG(INFO) << "primary aborted the request while waiting finish process." << self_primary_path_;
                 if (cb_on_abort_request_)
                     cb_on_abort_request_();
-                nodeState_ = NODE_STATE_STARTED;
-                updateNodeState();
+                updateNodeStateToNewState(NODE_STATE_STARTED);
             }
             else
             {
@@ -639,8 +633,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                 LOG(INFO) << "primary aborted the request while waiting primary." << self_primary_path_;
                 if (cb_on_abort_request_)
                     cb_on_abort_request_();
-                nodeState_ = NODE_STATE_STARTED;
-                updateNodeState();
+                updateNodeStateToNewState(NODE_STATE_STARTED);
             }
             else
             {
@@ -715,9 +708,9 @@ void NodeManagerBase::checkSecondaryElecting()
     bool all_secondary_ready = true;
     for (size_t i = 0; i < node_list.size(); ++i)
     {
+        NodeStateType state = getNodeState(node_list[i]);
         if (node_list[i] == curr_primary_path_)
             continue;
-        NodeStateType state = getNodeState(node_list[i]);
         if (state != NODE_STATE_STARTED && state != NODE_STATE_UNKNOWN)
         {
             all_secondary_ready = false;
@@ -729,11 +722,10 @@ void NodeManagerBase::checkSecondaryElecting()
     if (all_secondary_ready)
     {
         LOG(INFO) << "all secondary ready, ending electing, primary is ready for new request: " << curr_primary_path_;
-        nodeState_ = NODE_STATE_STARTED;
         if (cb_on_elect_finished_)
             cb_on_elect_finished_();
+        updateNodeStateToNewState(NODE_STATE_STARTED);
     }
-    updateNodeState();
 }
 
 // for out caller
@@ -767,10 +759,18 @@ void NodeManagerBase::setNodeState(NodeStateType state)
                 nodeState_ = NODE_STATE_ELECTING;
             }
             enterClusterAfterRecovery();
+            // 
             return;
         }
     }
-    nodeState_ = state;
+    updateNodeStateToNewState(state);
+}
+
+void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
+{
+    if (new_state == nodeState_)
+        return;
+    nodeState_ = new_state;
     updateNodeState();
 }
 
@@ -799,9 +799,9 @@ void NodeManagerBase::checkSecondaryReqProcess()
     bool all_secondary_ready = true;
     for (size_t i = 0; i < node_list.size(); ++i)
     {
+        NodeStateType state = getNodeState(node_list[i]);
         if (node_list[i] == curr_primary_path_)
             continue;
-        NodeStateType state = getNodeState(node_list[i]);
         if (state == NODE_STATE_PROCESSING_REQ_RUNNING)
         {
             all_secondary_ready = false;
@@ -825,10 +825,9 @@ void NodeManagerBase::checkSecondaryReqProcess()
         // all replica finished request, wait replica to write log.
         if (cb_on_wait_finish_process_)
             cb_on_wait_finish_process_();
-        nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG;
+        updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG);
         LOG(INFO) << "all replica finished request, notify and wait replica to write log.";
     }
-    updateNodeState();
 }
 
 void NodeManagerBase::checkSecondaryReqFinishLog()
@@ -844,9 +843,10 @@ void NodeManagerBase::checkSecondaryReqFinishLog()
     bool all_secondary_ready = true;
     for (size_t i = 0; i < node_list.size(); ++i)
     {
+        NodeStateType state = getNodeState(node_list[i]);
+
         if (node_list[i] == curr_primary_path_)
             continue;
-        NodeStateType state = getNodeState(node_list[i]);
         if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
         {
             all_secondary_ready = false;
@@ -871,11 +871,10 @@ void NodeManagerBase::checkSecondaryReqFinishLog()
         // ready for next new request.
         if (cb_on_wait_finish_log_)
             cb_on_wait_finish_log_();
-        nodeState_ = NODE_STATE_STARTED;
+        //updateNodeStateToNewState(NODE_STATE_STARTED);
         checkSecondaryRecovery();
         LOG(INFO) << "all replica finished write log, ready for next new request.";
     }
-    updateNodeState();
 }
 
 void NodeManagerBase::checkSecondaryReqAbort()
@@ -891,9 +890,10 @@ void NodeManagerBase::checkSecondaryReqAbort()
     bool all_secondary_ready = true;
     for (size_t i = 0; i < node_list.size(); ++i)
     {
+        NodeStateType state = getNodeState(node_list[i]);
+
         if (node_list[i] == curr_primary_path_)
             continue;
-        NodeStateType state = getNodeState(node_list[i]);
         if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
             state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
         {
@@ -906,11 +906,10 @@ void NodeManagerBase::checkSecondaryReqAbort()
     if (all_secondary_ready)
     {
         LOG(INFO) << "all secondary abort request. primary is ready for new request: " << curr_primary_path_;
-        nodeState_ = NODE_STATE_STARTED;
         if(cb_on_wait_replica_abort_)
             cb_on_wait_replica_abort_();
+        updateNodeStateToNewState(NODE_STATE_STARTED);
     }
-    updateNodeState();
 }
 
 void NodeManagerBase::checkSecondaryRecovery()
@@ -922,9 +921,10 @@ void NodeManagerBase::checkSecondaryRecovery()
     bool is_any_recovery_waiting = false;
     for (size_t i = 0; i < node_list.size(); ++i)
     {
+        NodeStateType state = getNodeState(node_list[i]);
+
         if (node_list[i] == curr_primary_path_)
             continue;
-        NodeStateType state = getNodeState(node_list[i]);
         if (state == NODE_STATE_RECOVER_WAIT_PRIMARY)
         {
             is_any_recovery_waiting = true;
@@ -933,17 +933,18 @@ void NodeManagerBase::checkSecondaryRecovery()
             break;
         }
     }
+    NodeStateType new_state;
     if (is_any_recovery_waiting)
     {
-        nodeState_ = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
+        new_state = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
     }
     else
     {
-        nodeState_ = NODE_STATE_STARTED;
+        new_state = NODE_STATE_STARTED;
         if (cb_on_recover_wait_replica_finish_)
             cb_on_recover_wait_replica_finish_();
     }
-    updateNodeState();
+    updateNodeStateToNewState(new_state);
 }
 
 }

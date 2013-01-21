@@ -170,6 +170,7 @@ protected:
     void unregisterPrimary();
     void registerPrimary(ZNode& znode);
     void updateCurrentPrimary();
+    void updateNodeStateToNewState(NodeStateType new_state);
     void updateNodeState();
     NodeStateType getPrimaryState();
     NodeStateType getNodeState(const std::string& nodepath);
