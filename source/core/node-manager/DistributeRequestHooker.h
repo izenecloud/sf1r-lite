@@ -27,6 +27,7 @@ public:
     bool isHooked();
     void setHook(int calltype, const std::string& addition_data);
     int  getHookType();
+    void clearHook();
     const std::string& getAdditionData()
     {
         return primary_addition_;
@@ -54,8 +55,8 @@ private:
     void finish(bool success);
     void forceExit();
 
-    std::string colname_;
-    CollectionPath colpath_;
+    //std::string colname_;
+    //CollectionPath colpath_;
     // for primary worker, this is raw json request data.
     // for replica worker, this is packed request data with addition data from primary.
     std::string current_req_;

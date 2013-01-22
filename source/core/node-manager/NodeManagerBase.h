@@ -134,6 +134,11 @@ public:
         cb_on_recover_wait_replica_finish_ = on_recover_wait_replica_finish;
     }
 
+    inline bool isDistributed() const
+    {
+        return isDistributionEnabled_;
+    }
+
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
     virtual void onNodeDeleted(const std::string& path);

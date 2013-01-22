@@ -227,33 +227,51 @@ void MasterManagerBase::checkForWriteReq()
         return;
     if (!zookeeper_ || !zookeeper_->isConnected())
         return;
-    if (!isMinePrimary())
+    while (true)
     {
-        LOG(INFO) << "not a primary master while check write, ignore." << serverRealPath_;
-        return;
-    }
-    if (!isAllWorkerIdle())
-        return;
-    if (masterState_ != MASTER_STATE_STARTED && masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
-    {
-        LOG(INFO) << "current master state is not ready while check write, state:" << masterState_;
-        return;
-    }
-
-    endWriteReq();
-
-
-    std::vector<std::string> reqchild;
-    zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild);
-    if (!reqchild.empty())
-    {
-        LOG(INFO) << "there are some write request waiting: " << reqchild.size();
-        if (on_new_req_available_)
-            on_new_req_available_();
-    }
-    else
-    {
-        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+        if (!isMinePrimary())
+        {
+            LOG(INFO) << "not a primary master while check write, ignore." << serverRealPath_;
+            return;
+        }
+        if (!isAllWorkerIdle())
+            return;
+        if (masterState_ != MASTER_STATE_STARTED && masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
+        {
+            LOG(INFO) << "current master state is not ready while check write, state:" << masterState_;
+            return;
+        }
+        if (!endWriteReq())
+            return;
+        std::vector<std::string> reqchild;
+        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild);
+        if (!reqchild.empty())
+        {
+            LOG(INFO) << "there are some write request waiting: " << reqchild.size();
+            if (on_new_req_available_)
+            {
+                bool ret = on_new_req_available_();
+                if (!ret)
+                {
+                    LOG(INFO) << "the write request handler return failed.";
+                }
+                else
+                {
+                    LOG(INFO) << "the write request has been delivered success.";
+                }
+                continue;
+            }
+            else
+            {
+                LOG(ERROR) << "the new request handler not set!!";
+                return;
+            }
+        }
+        else
+        {
+            zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+            return;
+        }
     }
 }
 
@@ -313,21 +331,17 @@ void MasterManagerBase::pushWriteReq(const std::string& reqdata)
     }
 }
 
-void MasterManagerBase::endWriteReq()
+bool MasterManagerBase::endWriteReq()
 {
-    if (!isDistributeEnable_)
-        return;
-    if (!zookeeper_ || !zookeeper_->isConnected())
-        return;
     if (!isMinePrimary())
     {
         LOG(INFO) << "non-primary master can not end a write request.";
-        return;
+        return false;
     }
     if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode(), ZooKeeper::WATCH))
     {
         LOG(INFO) << "There is no any write request while end request";
-        return;
+        return true;
     }
     std::string sdata;
     if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata, ZooKeeper::WATCH))
@@ -338,7 +352,7 @@ void MasterManagerBase::endWriteReq()
         if (write_server != serverRealPath_)
         {
             LOG(WARNING) << "end request mismatch server. " << write_server << " vs " << serverRealPath_;
-            return;
+            return false;
         }
         zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqNode());
         LOG(INFO) << "end write request success on server : " << serverRealPath_;
@@ -346,7 +360,9 @@ void MasterManagerBase::endWriteReq()
     else
     {
         LOG(WARNING) << "get write request data failed while end request on server :" << serverRealPath_;
+        return false;
     }
+    return true;
 }
 
 bool MasterManagerBase::isAllWorkerIdle()

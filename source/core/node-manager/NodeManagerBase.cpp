@@ -129,6 +129,10 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     znode.setValue(ZNode::KEY_DATA_PORT, sf1rTopology_.curNode_.dataPort_);
     znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
     znode.setValue(ZNode::KEY_NODE_STATE, (uint32_t)nodeState_);
+
+    // put the registered sequence primary node path to 
+    // current node so that the other node can tell 
+    // which primary path current node belong to.
     znode.setValue(ZNode::KEY_SELF_REG_PRIMARY_PATH, self_primary_path_);
 
     if (sf1rTopology_.curNode_.worker_.isEnabled_)
@@ -279,9 +283,6 @@ void NodeManagerBase::enterCluster(bool start_master)
     }
 
     boost::unique_lock<boost::mutex> lock(mutex_);
-    // first register a sequence primary node, so that 
-    // we can store this path to current node. the other
-    // node can tell which primary path current node belong to.
     updateCurrentPrimary();
     if (curr_primary_path_.empty())
     {

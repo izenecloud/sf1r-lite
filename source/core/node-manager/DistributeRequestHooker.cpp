@@ -54,11 +54,9 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const C
     const std::string& reqdata,
     boost::shared_ptr<ReqLogMgr> req_log_mgr)
 {
-    colname_ = colname;
-    colpath_ = colpath;
     current_req_ = reqdata;
     req_log_mgr_ = req_log_mgr;
-    LOG(INFO) << "current request hooked: " << colname_ << "," << current_req_;
+    LOG(INFO) << "current request hooked: " << current_req_;
 }
 
 bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& packed_reqdata)
@@ -98,7 +96,7 @@ int  DistributeRequestHooker::getHookType()
 
 bool DistributeRequestHooker::isHooked()
 {
-    return (hook_type_ > 0) && !current_req_.empty();
+    return (hook_type_ > 0) && !current_req_.empty() && req_log_mgr_;
 }
 
 bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_req)
@@ -141,7 +139,6 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         finish(false);
         return false;
     }
-    std::string basepath = colpath_.getBasePath();
     
     if (isprimary)
     {
@@ -290,10 +287,7 @@ void DistributeRequestHooker::finish(bool success)
         forceExit();
     }
     req_log_mgr_->delPreparedReqLog();
-    current_req_.clear();
-    req_log_mgr_.reset();
-    hook_type_ = 0;
-    primary_addition_.clear();
+    clearHook();
     if (success)
     {
         LOG(INFO) << "The request has finally finished both on primary and replicas.";
@@ -311,6 +305,14 @@ void DistributeRequestHooker::finish(bool success)
             forceExit();
         }
     }
+}
+
+void DistributeRequestHooker::clearHook()
+{
+    current_req_.clear();
+    req_log_mgr_.reset();
+    hook_type_ = 0;
+    primary_addition_.clear();
 }
 
 void DistributeRequestHooker::forceExit()

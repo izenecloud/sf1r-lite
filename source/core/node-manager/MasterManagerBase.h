@@ -40,7 +40,7 @@ public:
     };
 
     typedef std::map<shardid_t, boost::shared_ptr<Sf1rNode> > WorkerMapT;
-    typedef boost::function<void()>  EventCBType;
+    typedef boost::function<bool()>  EventCBType;
 
 public:
     MasterManagerBase();
@@ -164,7 +164,7 @@ protected:
 
     //void putWriteReqDataToPreparedNode(const std::string& req_json_data);
     void checkForWriteReq();
-    void endWriteReq();
+    bool endWriteReq();
     bool isAllWorkerIdle();
 
 protected:

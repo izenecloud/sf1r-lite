@@ -646,6 +646,17 @@ bool IndexWorker::createDocument(const Value& documentValue)
         return false;
     }
 
+    docid_t docid;
+    uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
+    if (idManager_->getDocIdByDocName(num_docid, docid, false))
+    {
+        if (!documentManager_->isDeleted(docid))
+        {
+            LOG(INFO) << "the document already exist for : " << docid;
+            return false;
+        }
+    }
+
     NoAdditionNeedBackupReqLog reqlog;
     if(!distribute_req_hooker_->prepare(Req_NoAdditionData_NeedBackup_Req, dynamic_cast<CommonReqData&>(reqlog)))
     {

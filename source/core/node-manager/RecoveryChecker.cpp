@@ -393,6 +393,9 @@ void RecoveryChecker::init(const std::string& workdir)
     redo_log_basepath_ = workdir + "/redo-log";
     rollback_file_ = workdir + "/rollback_flag";
 
+    if (!SearchNodeManager::get()->isDistributed())
+        return;
+
     reqlog_mgr_.reset(new ReqLogMgr());
     try
     {

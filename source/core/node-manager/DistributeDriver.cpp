@@ -68,6 +68,8 @@ static void callHandler(izenelib::driver::Router::handler_ptr handler,
             response,
             tmp_poller);
         LOG(INFO) << "write request send in DistributeDriver success.";
+
+        DistributeRequestHooker::get()->clearHook();
     }
     catch(const std::exception& e)
     {
@@ -109,6 +111,11 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
             request.setCallType(calltype);
             if (calltype == Request::FromLog)
             {
+                if (!asyncWriteTasks_.empty())
+                {
+                    LOG(ERROR) << "another write task is running in async_task_worker_!!";
+                    return false;
+                }
                 // redo log must process the request one by one, so sync needed.
                 callHandler(handler, calltype, packed_data, request);
             }
@@ -145,20 +152,20 @@ bool DistributeDriver::handleReqFromPrimary(const std::string& reqjsondata, cons
     return handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker);
 }
 
-void DistributeDriver::on_new_req_available()
+bool DistributeDriver::on_new_req_available()
 {
     if (!SearchMasterManager::get()->prepareWriteReq())
     {
         LOG(WARNING) << "prepare new request failed. maybe some other primary master prepared first. ";
-        return;
+        return false;
     }
     std::string reqdata;
     if(!SearchMasterManager::get()->popWriteReq(reqdata))
     {
         LOG(INFO) << "pop request data failed.";
-        return;
+        return false;
     }
-    handleRequest(reqdata, reqdata, Request::FromDistribute);
+    return handleRequest(reqdata, reqdata, Request::FromDistribute);
 }
 
 }
