@@ -67,8 +67,15 @@ bool IndexTaskService::index(unsigned int numdoc)
     if (bundleConfig_->isMasterAggregator() && indexAggregator_->isNeedDistribute() &&
         (calltype == Request::FromAPI || calltype == Request::FromDistribute) )
     {
-        task_type task = boost::bind(&IndexTaskService::distributedIndex_, this, numdoc);
-        JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+        if (DistributeRequestHooker::get()->isHooked())
+        {
+            distributedIndex_(numdoc);
+        }
+        else
+        {
+            task_type task = boost::bind(&IndexTaskService::distributedIndex_, this, numdoc);
+            JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+        }
     }
     else
     {
