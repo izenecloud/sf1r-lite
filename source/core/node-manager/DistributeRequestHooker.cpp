@@ -96,7 +96,7 @@ int  DistributeRequestHooker::getHookType()
 
 bool DistributeRequestHooker::isHooked()
 {
-    return (hook_type_ > 0) && !current_req_.empty() && req_log_mgr_;
+    return (hook_type_ > 0) && (!current_req_.empty() || !primary_addition_.empty());
 }
 
 bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_req)

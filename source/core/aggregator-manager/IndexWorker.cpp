@@ -767,6 +767,12 @@ bool IndexWorker::updateDocument(const Value& documentValue)
 
 bool IndexWorker::updateDocumentInplace(const Value& request)
 {
+    if (!distribute_req_hooker_->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     docid_t docid;
     uint128_t num_docid = Utilities::md5ToUint128(asString(request[DOCID]));
     if (!idManager_->getDocIdByDocName(num_docid, docid, false))
@@ -899,14 +905,18 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
 
 bool IndexWorker::destroyDocument(const Value& documentValue)
 {
+    if (!distribute_req_hooker_->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
-    SCDDoc scddoc;
-    value2SCDDoc(documentValue, scddoc);
 
     docid_t docid;
     uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
@@ -914,6 +924,16 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     if (!idManager_->getDocIdByDocName(num_docid, docid, false))
         return false;
 
+    NoAdditionNeedBackupReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_NoAdditionData_NeedBackup_Req, dynamic_cast<CommonReqData&>(reqlog)))
+    {
+        LOG(ERROR) << "prepare failed in: " << __FUNCTION__;
+        return false;
+    }
+    distribute_req_hooker_->processLocalBegin();
+
+    SCDDoc scddoc;
+    value2SCDDoc(documentValue, scddoc);
     scd_writer_->Write(scddoc, DELETE_SCD);
     time_t timestamp = Utilities::createTimeStamp();
     bool ret = deleteDoc_(docid, timestamp);
@@ -946,6 +966,8 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         LogServerConnection::instance().asynRequest(deleteReq);
         LogServerConnection::instance().flushRequests();
     }
+
+    distribute_req_hooker_->processLocalFinished(ret);
 
     return ret;
 }

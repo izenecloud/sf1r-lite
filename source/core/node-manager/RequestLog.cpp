@@ -7,9 +7,25 @@ namespace sf1r
 {
 std::set<std::string> ReqLogMgr::write_req_set_;
 
+// to handle write request correctly , you need do things below:
+// 1. add controller_action string to ReqLogMgr, and define the log type for it if neccesary.
+// 2. In Controller Handler, make sure the handler called sync (not in JobScheduler)
+// 3. In Service (such as IndexTaskService or RecommendTaskService), make sure 
+// hook the request using DistributeRequestHooker before call the handler.
+// 4. In worker handler, make sure hooked request called sync, 
+// make sure using DistributeRequestHooker to check valid call and
+// prepare if allowed, and call processBegin and processFinish to make sure the 
+// request is hooked to handle correctly both on the primary and replicas.
 void ReqLogMgr::initWriteRequestSet()
 {
     write_req_set_.insert("documents_create");
+    write_req_set_.insert("documents_destroy");
+    write_req_set_.insert("documents_update");
+    write_req_set_.insert("documents_update_inplace");
+    write_req_set_.insert("commands_index");
+    write_req_set_.insert("commands_index_query_log");
+    write_req_set_.insert("commands_mining");
+    write_req_set_.insert("commands_optimize_index");
 }
 
 void ReqLogMgr::init(const std::string& basepath)
