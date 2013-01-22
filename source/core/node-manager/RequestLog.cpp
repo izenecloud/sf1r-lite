@@ -19,6 +19,7 @@ std::set<std::string> ReqLogMgr::write_req_set_;
 // make sure using DistributeRequestHooker to check valid call and
 // prepare if allowed, and call processBegin and processFinish to make sure the 
 // request is hooked to handle correctly both on the primary and replicas.
+// If returned before prepared,make sure clearHook called.
 void ReqLogMgr::initWriteRequestSet()
 {
     write_req_set_.insert("documents_create");

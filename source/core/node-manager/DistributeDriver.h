@@ -34,7 +34,7 @@ private:
     void run();
     RouterPtr router_;
     boost::thread  async_task_worker_;
-    izenelib::util::concurrent_queue<boost::function<void()> > asyncWriteTasks_;
+    izenelib::util::concurrent_queue<boost::function<bool()> > asyncWriteTasks_;
 };
 
 }

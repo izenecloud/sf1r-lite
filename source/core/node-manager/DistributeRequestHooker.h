@@ -27,7 +27,7 @@ public:
     bool isHooked();
     void setHook(int calltype, const std::string& addition_data);
     int  getHookType();
-    void clearHook();
+    void clearHook(bool force = false);
     const std::string& getAdditionData()
     {
         return primary_addition_;

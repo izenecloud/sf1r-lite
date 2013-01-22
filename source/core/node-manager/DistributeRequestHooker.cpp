@@ -287,7 +287,7 @@ void DistributeRequestHooker::finish(bool success)
         forceExit();
     }
     req_log_mgr_->delPreparedReqLog();
-    clearHook();
+    clearHook(true);
     if (success)
     {
         LOG(INFO) << "The request has finally finished both on primary and replicas.";
@@ -301,14 +301,20 @@ void DistributeRequestHooker::finish(bool success)
         // all the file need to be reopened to make effective.
         if (!RecoveryChecker::get()->rollbackLastFail())
         {
-            LOG(ERROR) << "failed to rollback asyn! must exit.";
+            LOG(ERROR) << "failed to rollback ! must exit.";
             forceExit();
         }
     }
 }
 
-void DistributeRequestHooker::clearHook()
+void DistributeRequestHooker::clearHook(bool force)
 {
+    CommonReqData reqlog;
+    if (!force && req_log_mgr_->getPreparedReqLog(reqlog))
+    {
+        // if prepared , we will clear hook after finish .
+        return;
+    }
     current_req_.clear();
     req_log_mgr_.reset();
     hook_type_ = 0;

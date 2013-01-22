@@ -37,7 +37,7 @@ void DistributeDriver::run()
     {
         while(true)
         {
-            boost::function<void()> task;
+            boost::function<bool()> task;
             asyncWriteTasks_.pop(task);
             task();
             boost::this_thread::interruption_point();
@@ -55,7 +55,7 @@ void DistributeDriver::init(const RouterPtr& router)
     SearchMasterManager::get()->setCallback(boost::bind(&DistributeDriver::on_new_req_available, this));
 }
 
-static void callHandler(izenelib::driver::Router::handler_ptr handler,
+static bool callHandler(izenelib::driver::Router::handler_ptr handler,
     Request::kCallType calltype, const std::string& packed_data,
     Request& request)
 {
@@ -70,11 +70,13 @@ static void callHandler(izenelib::driver::Router::handler_ptr handler,
         LOG(INFO) << "write request send in DistributeDriver success.";
 
         DistributeRequestHooker::get()->clearHook();
+        return response.success();
     }
     catch(const std::exception& e)
     {
         LOG(ERROR) << "call request handler exception: " << e.what();
     }
+    return false;
 }
 
 bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::string& packed_data, Request::kCallType calltype)
@@ -117,7 +119,7 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
                     return false;
                 }
                 // redo log must process the request one by one, so sync needed.
-                callHandler(handler, calltype, packed_data, request);
+                return callHandler(handler, calltype, packed_data, request);
             }
             else
             {
