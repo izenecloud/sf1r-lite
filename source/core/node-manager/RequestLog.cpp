@@ -9,7 +9,10 @@ std::set<std::string> ReqLogMgr::write_req_set_;
 
 // to handle write request correctly , you need do things below:
 // 1. add controller_action string to ReqLogMgr, and define the log type for it if neccesary.
-// 2. In Controller Handler, make sure the handler called sync (not in JobScheduler)
+// 2. In Controller Handler, after checking the valid,
+// make sure callDistribute first, if callDistribute return true, the request will be push to queue 
+// and wait primary master to process. if callDistribute return false then 
+// the handler should be called sync (not in JobScheduler) if configured as distribute mode.
 // 3. In Service (such as IndexTaskService or RecommendTaskService), make sure 
 // hook the request using DistributeRequestHooker before call the handler.
 // 4. In worker handler, make sure hooked request called sync, 
