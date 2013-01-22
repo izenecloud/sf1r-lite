@@ -37,11 +37,12 @@ class NumericPropertyTableBuilder;
 class SuffixMatchMiningTask: public MiningTask
 {
 public:
-    SuffixMatchMiningTask(
+    explicit SuffixMatchMiningTask(
             boost::shared_ptr<DocumentManager>& document_manager,
             boost::shared_ptr<FMIndexManager>& fmi_manager,
             boost::shared_ptr<FilterManager>& filter_manager,
-            std::string data_root_path);
+            std::string data_root_path,
+            boost::shared_mutex& mutex);
 
     ~SuffixMatchMiningTask();
 
@@ -51,6 +52,7 @@ public:
     docid_t getLastDocId();
 
 private:
+    DISALLOW_COPY_AND_ASSIGN(SuffixMatchMiningTask);
     boost::shared_ptr<DocumentManager> document_manager_;
 
     boost::shared_ptr<FMIndexManager>& fmi_manager_;
@@ -63,7 +65,7 @@ private:
     bool need_rebuild;
 
     typedef boost::shared_mutex MutexType;
-    mutable MutexType mutex_;
+    MutexType& mutex_;
     typedef boost::shared_lock<MutexType> ReadLock;
     typedef boost::unique_lock<MutexType> WriteLock;
 };
