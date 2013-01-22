@@ -70,6 +70,7 @@ private:
     boost::shared_ptr<ReqLogMgr> reqlog_mgr_;
     typedef std::map<std::string, std::pair<CollectionPath, std::string> > CollInfoMapT;
     CollInfoMapT all_col_info_;
+    boost::mutex mutex_;
 };
 
 }

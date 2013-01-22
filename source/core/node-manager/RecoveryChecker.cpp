@@ -79,12 +79,10 @@ static void copyDir(bfs::path src, bfs::path dest)
         throw std::runtime_error("Source directory " + src.string() +
             " does not exist or is not a directory.");
     }
-    if( bfs::exists(dest) )
+    if( !bfs::exists(dest) )
     {
-        throw std::runtime_error("Destination directory " + dest.string() +
-            " already exists.");
+        bfs::create_directory(dest);
     }
-    bfs::create_directory(dest);
     // Iterate through the source directory
     bfs::directory_iterator end_it = bfs::directory_iterator();
     for( bfs::directory_iterator file(src); file != end_it; ++file )
@@ -98,7 +96,20 @@ static void copyDir(bfs::path src, bfs::path dest)
         else
         {
             // Found file: Copy
-            bfs::copy_file(current, dest / current.filename());
+            bfs::copy_file(current, dest / current.filename(), bfs::copy_option::overwrite_if_exists);
+            //LOG(INFO) << "copying : " << current << " to " << dest;
+        }
+    }
+    // remove the file that exists in dest but not in src.
+    for ( bfs::directory_iterator file(dest); file != end_it; ++file )
+    {
+        bfs::path current(file->path());
+        if (!bfs::exists(src / current.filename()))
+        {
+            if (bfs::exists(current.string() + "_removed.rollback"))
+                bfs::remove_all(current.string() + "_removed.rollback");
+            bfs::rename( current, current.string() + "_removed.rollback");
+            LOG(INFO) << "rename : " << current << " to rollback file";
         }
     }
 }
@@ -125,7 +136,7 @@ static void copy_dir(const bfs::path& src, const bfs::path& dest, bool keep_full
         dest_path /= src;
     }
     bfs::create_directories(dest_path);
-    bfs::remove_all(dest_path);
+    //bfs::remove_all(dest_path);
     copyDir(src, dest_path);
 }
 
@@ -144,6 +155,7 @@ void RecoveryChecker::removeCollection(const std::string& colname)
 
 bool RecoveryChecker::setRollbackFlag(uint32_t inc_id)
 {
+    boost::unique_lock<boost::mutex> lock(mutex_);
     if (bfs::exists(rollback_file_))
     {
         LOG(ERROR) << "rollback_file already exist, this mean last rollback is not finished. must exit.";
@@ -166,6 +178,7 @@ void RecoveryChecker::clearRollbackFlag()
 
 bool RecoveryChecker::backup()
 {
+    boost::unique_lock<boost::mutex> lock(mutex_);
     if (!reqlog_mgr_)
     {
         LOG(ERROR) << "RecoveryChecker did not init!";
@@ -271,6 +284,7 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
 // rollback the data before last failed request.
 bool RecoveryChecker::rollbackLastFail()
 {
+    boost::unique_lock<boost::mutex> lock(mutex_);
     // not all inc_id has a backup, so we just find the newest backup.
     if (!bfs::exists(rollback_file_))
     {
@@ -299,12 +313,14 @@ bool RecoveryChecker::rollbackLastFail()
     bfs::rename(request_log_basepath_, redo_log_basepath_);
     ReqLogMgr redo_req_log_mgr;
     redo_req_log_mgr.init(redo_log_basepath_);
+    bool has_backup = true;
     if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
     {
         LOG(ERROR) << "no backup available while rollback.";
         LOG(ERROR) << "need restart to redo all log or get full data from primary.";
         // remove all data and redo all log.
         last_backup_id = 0;
+        has_backup = false;
     }
 
     // stop collection will change the metamap so we need a copy. 
@@ -314,13 +330,13 @@ bool RecoveryChecker::rollbackLastFail()
     {
         flush_col_(cit->first);
         // remove old data.
-        bfs::remove_all(cit->second.first.getCollectionDataPath());
-        bfs::remove_all(cit->second.first.getQueryDataPath());
+        //bfs::remove_all(cit->second.first.getCollectionDataPath());
+        //bfs::remove_all(cit->second.first.getQueryDataPath());
         ++cit;
     }
 
     // copy backup data to replace current and reopen all file.
-    if (last_backup_id > 0)
+    if (has_backup)
     {
         try
         {
@@ -394,7 +410,9 @@ void RecoveryChecker::init(const std::string& workdir)
     rollback_file_ = workdir + "/rollback_flag";
 
     if (!SearchNodeManager::get()->isDistributed())
+    {
         return;
+    }
 
     reqlog_mgr_.reset(new ReqLogMgr());
     try
@@ -431,6 +449,7 @@ void RecoveryChecker::init(const std::string& workdir)
         boost::bind(&RecoveryChecker::onRecoverCallback, this),
         boost::bind(&RecoveryChecker::onRecoverWaitPrimaryCallback, this),
         boost::bind(&RecoveryChecker::onRecoverWaitReplicasCallback, this));
+
 }
 
 void RecoveryChecker::onRecoverCallback()
