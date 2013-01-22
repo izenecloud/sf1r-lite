@@ -313,6 +313,7 @@ void DistributeRequestHooker::clearHook()
     req_log_mgr_.reset();
     hook_type_ = 0;
     primary_addition_.clear();
+    LOG(INFO) << "request hook cleard.";
 }
 
 void DistributeRequestHooker::forceExit()

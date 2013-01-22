@@ -65,10 +65,6 @@ public:
         // recovery finished correctly.
         NODE_STATE_RECOVER_FINISH,
 
-        //NODE_STATE_ROLLBACK_RUNNING,
-        //NODE_STATE_ROLLBACK_WAIT_PRIMARY,
-        //NODE_STATE_ROLLBACK_WAIT_REPLICA_FINISH,
-
         NODE_STATE_UNKNOWN,
     };
 

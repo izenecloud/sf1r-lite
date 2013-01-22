@@ -109,7 +109,7 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
         {
             DistributeRequestHooker::get()->setHook(calltype, packed_data);
             request.setCallType(calltype);
-            if (calltype == Request::FromLog)
+            if (calltype == Request::FromLog || calltype == Request::FromDistribute)
             {
                 if (!asyncWriteTasks_.empty())
                 {
@@ -159,13 +159,31 @@ bool DistributeDriver::on_new_req_available()
         LOG(WARNING) << "prepare new request failed. maybe some other primary master prepared first. ";
         return false;
     }
-    std::string reqdata;
-    if(!SearchMasterManager::get()->popWriteReq(reqdata))
+    while(true)
     {
-        LOG(INFO) << "pop request data failed.";
-        return false;
+        std::string reqdata;
+        if(!SearchMasterManager::get()->popWriteReq(reqdata))
+        {
+            LOG(INFO) << "no more request.";
+            break;
+        }
+        if( !handleRequest(reqdata, reqdata, Request::FromDistribute) )
+        {
+            LOG(WARNING) << "one write request failed to deliver :" << reqdata;
+            // a write request failed to deliver means the worker did not 
+            // started to handle this request, so the request is ignored, and
+            // continue to deliver next write request in the queue.
+        }
+        else
+        {
+            // a write request deliver success from master to worker.
+            // this mean the worker has started to process this request,
+            // may be not finish writing, so we break here to wait the finished
+            // event from primary worker.
+            break;
+        }
     }
-    return handleRequest(reqdata, reqdata, Request::FromDistribute);
+    return true;
 }
 
 }

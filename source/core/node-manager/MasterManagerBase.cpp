@@ -203,6 +203,7 @@ bool MasterManagerBase::prepareWriteReq()
     }
     ZNode znode;
     znode.setValue(ZNode::KEY_MASTER_SERVER_REAL_PATH, serverRealPath_);
+    //znode.setValue(ZNode::KEY_MASTER_STATE, MASTER_STATE_WAIT_WORKER_FINISH_REQ);
     if (!zookeeper_->createZNode(ZooKeeperNamespace::getWriteReqNode(), znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
     {
         if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
@@ -217,59 +218,121 @@ bool MasterManagerBase::prepareWriteReq()
         return false;
     }
     LOG(INFO) << "prepareWriteReq success on server : " << serverRealPath_;
+    //masterState_ = MASTER_STATE_WAIT_WORKER_FINISH_REQ;
     return true;
 }
 
-// check if last request finished, if so then check if any new request waiting
+bool MasterManagerBase::getWriteReqNodeData(ZNode& znode)
+{
+    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode(), ZooKeeper::WATCH))
+    {
+        LOG(INFO) << "There is no any write request";
+        return true;
+    }
+    std::string sdata;
+    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata, ZooKeeper::WATCH))
+    {
+        ZNode znode;
+        znode.loadKvString(sdata);
+    }
+    else
+    {
+        LOG(WARNING) << "get write request data failed on :" << serverRealPath_;
+    }
+    return false;
+}
+
 void MasterManagerBase::checkForWriteReq()
 {
     if (!isDistributeEnable_)
         return;
     if (!zookeeper_ || !zookeeper_->isConnected())
         return;
-    while (true)
+
+    if (!isMinePrimary())
     {
-        if (!isMinePrimary())
+        LOG(INFO) << "not a primary master while check write request, ignore." << serverRealPath_;
+        return;
+    }
+
+    switch(masterState_)
+    {
+    //case MASTER_STATE_WAIT_WORKER_FINISH_REQ:
+    //    checkForWriteReqFinished();
+    //    break;
+    case MASTER_STATE_STARTED:
+    case MASTER_STATE_STARTING_WAIT_WORKERS:
+        checkForNewWriteReq();
+        break;
+    default:
+        break;
+    }
+}
+
+// check if last request finished
+//void MasterManagerBase::checkForWriteReqFinished()
+//{
+//    if (masterState_ != MASTER_STATE_WAIT_WORKER_FINISH_REQ)
+//    {
+//        LOG(ERROR) << "master is not waiting worker finish request while check finish, state:" << masterState_;
+//        return;
+//    }
+//    if (!isAllWorkerFinished())
+//    {
+//        LOG(INFO) << "not all worker finished current request, keep waiting.";
+//        return;
+//    }
+//    masterState_ = MASTER_STATE_STARTED;
+//    // update write request state to notify all primary worker.
+//    ZNode znode;
+//    if (getWriteReqNodeData(znode))
+//    {
+//        std::string write_server = znode.getStrValue(ZNode::KEY_MASTER_SERVER_REAL_PATH);
+//        if (write_server != serverRealPath_)
+//        {
+//            LOG(WARNING) << "change write request state mismatch server. " << write_server << " vs " << serverRealPath_;
+//            return;
+//        }
+//        znode.setValue(ZNode::KEY_MASTER_STATE, masterState_);
+//        zookeeper_->setZNodeData(ZooKeeperNamespace::getWriteReqNode(), znode.serialize());
+//        LOG(INFO) << "write request state changed success on server : " << serverRealPath_;
+//    }
+//}
+
+// check if any new request can be processed.
+void MasterManagerBase::checkForNewWriteReq()
+{
+    if (masterState_ != MASTER_STATE_STARTED || masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
+    {
+        LOG(INFO) << "current master state is not ready while check write, state:" << masterState_;
+        return;
+    }
+    if (!isAllWorkerIdle())
+    {
+        return;
+    }
+    if (!endWriteReq())
+        return;
+    std::vector<std::string> reqchild;
+    zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+    if (!reqchild.empty())
+    {
+        LOG(INFO) << "there are some write request waiting: " << reqchild.size();
+        if (on_new_req_available_)
         {
-            LOG(INFO) << "not a primary master while check write, ignore." << serverRealPath_;
-            return;
-        }
-        if (!isAllWorkerIdle())
-            return;
-        if (masterState_ != MASTER_STATE_STARTED && masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
-        {
-            LOG(INFO) << "current master state is not ready while check write, state:" << masterState_;
-            return;
-        }
-        if (!endWriteReq())
-            return;
-        std::vector<std::string> reqchild;
-        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild);
-        if (!reqchild.empty())
-        {
-            LOG(INFO) << "there are some write request waiting: " << reqchild.size();
-            if (on_new_req_available_)
+            bool ret = on_new_req_available_();
+            if (!ret)
             {
-                bool ret = on_new_req_available_();
-                if (!ret)
-                {
-                    LOG(INFO) << "the write request handler return failed.";
-                }
-                else
-                {
-                    LOG(INFO) << "the write request has been delivered success.";
-                }
-                continue;
+                LOG(INFO) << "the write request handler return failed.";
             }
             else
             {
-                LOG(ERROR) << "the new request handler not set!!";
-                return;
+                LOG(INFO) << "all new write requests have been delivered success.";
             }
         }
         else
         {
-            zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+            LOG(ERROR) << "the new request handler not set!!";
             return;
         }
     }
@@ -365,7 +428,27 @@ bool MasterManagerBase::endWriteReq()
     return true;
 }
 
+//bool MasterManagerBase::isAllWorkerFinished()
+//{
+//    if (!isAllWorkerInState(NodeManagerBase::NODE_STATE_WAIT_MASTER_FINISH_REQ))
+//    {
+//        LOG(INFO) << "one of primary worker not finish write request : ";
+//        return false;
+//    }
+//    return true;
+//}
+
 bool MasterManagerBase::isAllWorkerIdle()
+{
+    if (!isAllWorkerInState(NodeManagerBase::NODE_STATE_STARTED))
+    {
+        LOG(INFO) << "one of primary worker not ready for new write request.";
+        return false;
+    }
+    return true;
+}
+
+bool MasterManagerBase::isAllWorkerInState(int state)
 {
     boost::lock_guard<boost::mutex> lock(workers_mutex_);
     WorkerMapT::iterator it;
@@ -377,9 +460,8 @@ bool MasterManagerBase::isAllWorkerIdle()
         {
             ZNode nodedata;
             nodedata.loadKvString(sdata);
-            if (nodedata.getUInt32Value(ZNode::KEY_NODE_STATE) != NodeManagerBase::NODE_STATE_STARTED)
+            if (nodedata.getUInt32Value(ZNode::KEY_NODE_STATE) != (uint32_t)state)
             {
-                LOG(INFO) << "one of primary worker not ready for write request : " << nodepath;
                 return false;
             }
         }

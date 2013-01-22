@@ -36,7 +36,8 @@ public:
         MASTER_STATE_STARTING_WAIT_WORKERS,
         MASTER_STATE_STARTED,
         MASTER_STATE_FAILOVERING,
-        MASTER_STATE_RECOVERING
+        MASTER_STATE_RECOVERING,
+        //MASTER_STATE_WAIT_WOKER_FINISH_REQ,
     };
 
     typedef std::map<shardid_t, boost::shared_ptr<Sf1rNode> > WorkerMapT;
@@ -162,10 +163,15 @@ protected:
     /***/
     void resetAggregatorConfig();
 
+    bool getWriteReqNodeData(ZNode& znode);
     //void putWriteReqDataToPreparedNode(const std::string& req_json_data);
     void checkForWriteReq();
+    //void checkForWriteReqFinished();
+    void checkForNewWriteReq();
     bool endWriteReq();
     bool isAllWorkerIdle();
+    //bool isAllWorkerFinished();
+    bool isAllWorkerInState(int state);
 
 protected:
     Sf1rTopology sf1rTopology_;
