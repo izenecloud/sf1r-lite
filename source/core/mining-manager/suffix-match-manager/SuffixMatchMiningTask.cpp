@@ -14,11 +14,13 @@ SuffixMatchMiningTask::SuffixMatchMiningTask(
         boost::shared_ptr<DocumentManager>& document_manager,
         boost::shared_ptr<FMIndexManager>& fmi_manager,
         boost::shared_ptr<FilterManager>& filter_manager,
-        std::string data_root_path)
+        std::string data_root_path,
+        boost::shared_mutex& mutex)
     : document_manager_(document_manager)
     , fmi_manager_(fmi_manager)
     , filter_manager_(filter_manager)
     , data_root_path_(data_root_path)
+    , mutex_(mutex)
 {
 }
 

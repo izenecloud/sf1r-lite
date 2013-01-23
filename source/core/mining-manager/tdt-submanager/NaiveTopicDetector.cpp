@@ -76,7 +76,7 @@ NaiveTopicDetector::NaiveTopicDetector(
     ,analyzer_(NULL)
     ,knowledge_(NULL)
     ,opencc_(NULL)
-   // ,wg_(NULL)
+    ,wg_(NULL)
     ,kpe_trie_(NULL)
     ,related_map_(NULL)
     ,enable_semantic_(enable_semantic)
@@ -92,7 +92,6 @@ NaiveTopicDetector::~NaiveTopicDetector()
     if (analyzer_) delete analyzer_;
     if (knowledge_) delete knowledge_;
     if (opencc_) delete opencc_;
-    if (wg_) delete wg_;
     if (kpe_trie_) delete kpe_trie_;
     if (related_map_) delete related_map_;
 }

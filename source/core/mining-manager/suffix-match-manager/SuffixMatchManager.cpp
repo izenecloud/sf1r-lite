@@ -731,7 +731,8 @@ bool SuffixMatchManager::buildMiningTask()
             document_manager_,
             fmi_manager_,
             filter_manager_,
-            data_root_path_);
+            data_root_path_,
+            mutex_);
 
     if (!suffixMatchTask_)
     {

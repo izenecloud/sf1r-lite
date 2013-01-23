@@ -66,10 +66,6 @@ void QueryBuilder::prepare_filter(
     const std::vector<QueryFiltering::FilteringType>& filtingList,
     boost::shared_ptr<EWAHBoolArray<uint32_t> >& pDocIdSet)
 {
-    boost::shared_ptr<BitVector> pBitVector;
-    unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
-    unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8) + (bitsNum % (sizeof(uint32_t) * 8) == 0 ? 0 : 1);
-
     if (filtingList.size() == 1)
     {
         const QueryFiltering::FilteringType& filteringItem= filtingList[0];
@@ -79,15 +75,14 @@ void QueryBuilder::prepare_filter(
         if (!filterCache_->get(filteringItem, pDocIdSet))
         {
             pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
-            pBitVector.reset(new BitVector(bitsNum));
-            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pBitVector);
-            //Compress bit vector
-            pBitVector->compressed(*pDocIdSet);
+            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pDocIdSet);
             filterCache_->set(filteringItem, pDocIdSet);
         }
     }
     else
     {
+        unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
+        unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8) + (bitsNum % (sizeof(uint32_t) * 8) == 0 ? 0 : 1);
         pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
         pDocIdSet->addStreamOfEmptyWords(true, wordsNum);
         boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet2;
@@ -103,9 +98,7 @@ void QueryBuilder::prepare_filter(
                 if (!filterCache_->get(*iter, pDocIdSet2))
                 {
                     pDocIdSet2.reset(new EWAHBoolArray<uint32_t>());
-                    pBitVector.reset(new BitVector(bitsNum));
-                    indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pBitVector);
-                    pBitVector->compressed(*pDocIdSet2);
+                    indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pDocIdSet2);
                     filterCache_->set(*iter, pDocIdSet2);
                 }
                 pDocIdSet3.reset(new EWAHBoolArray<uint32_t>());
