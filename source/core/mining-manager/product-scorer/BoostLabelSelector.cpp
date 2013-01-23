@@ -58,7 +58,7 @@ bool BoostLabelSelector::convertLabelIds_(
         convert_to_ustr_path(*pathIt, ustrPath);
 
         faceted::PropValueTable::pvid_t labelId =
-            propValueTable_.propValueId(ustrPath);
+            propValueTable_.propValueId(ustrPath, false);
 
         if (labelId == 0)
             continue;
@@ -103,7 +103,7 @@ bool BoostLabelSelector::classifyQueryToLabel_(
         return false;
 
     faceted::PropValueTable::pvid_t topLabel =
-        propValueTable_.propValueId(groupPaths[0]);
+        propValueTable_.propValueId(groupPaths[0], false);
     if (topLabel == 0)
         return false;
 

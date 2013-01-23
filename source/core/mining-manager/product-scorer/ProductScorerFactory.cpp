@@ -121,10 +121,11 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
     if (!labelSelector_)
         return NULL;
 
+    scoreParam.propSharedLockSet_.insertSharedLock(categoryValueTable_);
+
     std::vector<category_id_t> boostLabels;
     if (labelSelector_->selectLabel(scoreParam, kTopLabelLimit, boostLabels))
     {
-        scoreParam.propSharedLockSet_.insertSharedLock(categoryValueTable_);
         return new CategoryScorer(scoreConfig,
                                   *categoryValueTable_,
                                   boostLabels);
