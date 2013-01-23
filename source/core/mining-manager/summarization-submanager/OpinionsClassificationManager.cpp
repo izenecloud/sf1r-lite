@@ -37,7 +37,7 @@ OpinionsClassificationManager::OpinionsClassificationManager(const string& cma_p
     knowledge_->loadModel( "utf8", modelPath_.data());
     analyzer_ = factory_->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
-    analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE,77);//100
+    analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE,100);//100
     analyzer_->setKnowledge(knowledge_);
     analyzer_->setPOSDelimiter("/");
     string logpath=path+"/OpinionsClassificationManager.log";
@@ -705,7 +705,7 @@ int OpinionsClassificationManager::GetResult(const string& Sentence)
     vector<string> wordvec;
     SegQuery(Sentence, wordvec);
     int reverse=1;
-    int score=1;
+    int score=0;
     for(unsigned j=0; j<wordvec.size(); j++)
     {
         string wordpair;
