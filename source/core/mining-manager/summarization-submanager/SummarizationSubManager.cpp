@@ -29,7 +29,7 @@
 
 
 #define OPINION_COMPUTE_THREAD_NUM 4
-#define OPINION_COMPUTE_QUEUE_SIZE 200
+#define OPINION_COMPUTE_QUEUE_SIZE 2000
 
 using izenelib::util::UString;
 using namespace izenelib::ir::indexmanager;
@@ -214,6 +214,93 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
     }
 }
 
+void MultiDocSummarizationSubManager::commentsClassify(int x)
+{
+    while(true)
+    {
+    int i = 0;
+    Document doc;
+    {
+        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+
+        while(docList_.empty())
+        {
+            if(can_quit_compute_)
+            {
+                LOG(INFO) << "!!!---compute thread:" << (long)pthread_self() << " finished. ---!!!" << endl;
+                return;
+            }
+            waiting_opinion_cond_.wait(g);
+        }
+        doc = docList_.front().first;
+        i = docList_.front().second;
+        docList_.pop();
+    }
+    Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
+    if (kit == doc.propertyEnd()) continue;
+
+    Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
+    if (cit == doc.propertyEnd()) continue;
+
+    Document::property_const_iterator ait = doc.findProperty(schema_.advantagePropName);
+    if (ait == doc.propertyEnd()) continue;
+
+    Document::property_const_iterator dit = doc.findProperty(schema_.disadvantagePropName);
+    if (dit == doc.propertyEnd()) continue;
+
+    Document::property_const_iterator title_it = doc.findProperty(schema_.titlePropName);
+    if (title_it == doc.propertyEnd()) continue;
+
+    const UString& key = kit->second.get<UString>();
+    if (key.empty()) continue;
+
+    ContentType content ;
+
+    UString us(cit->second.get<UString>());
+    std::string str;
+    us.convertString(str, izenelib::util::UString::UTF_8);
+    std::pair<UString, UString> advantagepair;
+    OpcList_[x]->Classify(str, advantagepair);
+
+    AdvantageType advantage = advantagepair.first;
+    DisadvantageType disadvantage = advantagepair.second;
+
+    UString us_title(title_it->second.get<UString>());
+    us_title.convertString(str, izenelib::util::UString::UTF_8);
+    OpcList_[x]->Classify(str,advantagepair);
+
+    if(advantage.find(advantagepair.first) == UString::npos)
+    {
+        advantage.append(advantagepair.first);
+    }
+    if(disadvantage.find(advantagepair.second) == UString::npos)
+    {
+        disadvantage.append(advantagepair.second);
+    }
+    UString  usa(ait->second.get<AdvantageType>());
+    usa.convertString(str, izenelib::util::UString::UTF_8);
+    OpcList_[x]->Classify(str,advantagepair);
+    if(advantage.find(advantagepair.first) == UString::npos)
+    {
+        advantage.append(advantagepair.first);
+    }
+
+    UString  usd(dit->second.get<DisadvantageType>());
+    usd.convertString(str, izenelib::util::UString::UTF_8);
+    OpcList_[x]->Classify(str,advantagepair);
+    if(disadvantage.find(advantagepair.second) == UString::npos)
+    disadvantage.append(advantagepair.second);
+    float score = 0.0f;
+    document_manager_->getNumericPropertyTable(schema_.scorePropName)->getFloatValue(i, score);
+    {
+        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+        comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,
+        advantage, disadvantage, score);
+    }
+    }
+}
+
+
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
     boost::filesystem::path totalscdPath(total_scd_path_);
@@ -246,84 +333,48 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
-    Opc_ = new OpinionsClassificationManager(cma_path, schema_.opinionWorkingPath); //  Here get advantage or disvantage opintion;
-    float score;
-    boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable = document_manager_->getNumericPropertyTable(schema_.scorePropName);
+    
+    for (int i = 0; i < OPINION_COMPUTE_THREAD_NUM; ++i)
+    {
+        OpcList_.push_back(new OpinionsClassificationManager(cma_path, schema_.opinionWorkingPath));
+    }
+
+    std::vector<boost::thread*> comment_classify_threads;
+    for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
+    {
+        comment_classify_threads.push_back(new boost::thread(&MultiDocSummarizationSubManager::commentsClassify, this, i));
+    }
 
     for (uint32_t i = GetLastDocid_() + 1, count = 0; i <= document_manager_->getMaxDocId(); i++)
     {
         Document doc;
         bool b = document_manager_->getDocument(i, doc);
-        if(!b) continue;
-        Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
-        if (kit == doc.propertyEnd()) continue;
-
-        Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
-        if (cit == doc.propertyEnd()) continue;
-
-        Document::property_const_iterator ait = doc.findProperty(schema_.advantagePropName);
-        if (ait == doc.propertyEnd()) continue;
-
-        Document::property_const_iterator dit = doc.findProperty(schema_.disadvantagePropName);
-        if (dit == doc.propertyEnd()) continue;
-
-        Document::property_const_iterator title_it = doc.findProperty(schema_.titlePropName);
-        if (title_it == doc.propertyEnd()) continue;
-
-        const UString& key = kit->second.get<UString>();
-        if (key.empty()) continue;
-
-        ContentType content ;//= cit->second.get<UString>();
-
-        //const AdvantageType& advantage = ait->second.get<AdvantageType>();
-        //const DisadvantageType& disadvantage = dit->second.get<DisadvantageType>();
-        UString us(cit->second.get<UString>());
-        std::string str;
-        us.convertString(str, izenelib::util::UString::UTF_8);
-        std::pair<UString, UString> advantagepair;
-        Opc_->Classify(str, advantagepair);
-
-        AdvantageType advantage = advantagepair.first;
-        DisadvantageType disadvantage = advantagepair.second;
-
-        UString us_title(title_it->second.get<UString>());
-        us_title.convertString(str, izenelib::util::UString::UTF_8);
-        Opc_->Classify(str,advantagepair);
-
-        if(advantage.find(advantagepair.first) == UString::npos)
+        if (!b) continue;
+        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+        while(docList_.size() > OPINION_COMPUTE_QUEUE_SIZE)
         {
-            advantage.append(advantagepair.first);
+            waiting_opinion_cond_.timed_wait(g, boost::posix_time::millisec(30));
         }
-        if(disadvantage.find(advantagepair.second) == UString::npos)
-        {
-            disadvantage.append(advantagepair.second);
-        }
-
-        UString  usa(ait->second.get<AdvantageType>());
-        usa.convertString(str, izenelib::util::UString::UTF_8);
-        Opc_->Classify(str,advantagepair);
-        if(advantage.find(advantagepair.first) == UString::npos)
-        {
-            advantage.append(advantagepair.first);
-        }
-       
-        UString  usd(dit->second.get<DisadvantageType>());
-        usd.convertString(str, izenelib::util::UString::UTF_8);
-        Opc_->Classify(str,advantagepair);
-        if(disadvantage.find(advantagepair.second) == UString::npos)
-            disadvantage.append(advantagepair.second);
-        score = 0.0f;
-        numericPropertyTable->getFloatValue(i, score);
-        comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,
-                advantage, disadvantage, score);
-
+        docList_.push(std::make_pair(doc, i));
+        waiting_opinion_cond_.notify_one();
         if (++count % 100000 == 0)
         {
             LOG(INFO) << "Caching comments: " << count;
         }
     }
 
-    delete Opc_;
+    LOG(INFO) << "Finish document iterator....";
+
+    for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
+    {
+        delete comment_classify_threads[i];
+    }
+
+    for (int i = 0; i < OPINION_COMPUTE_THREAD_NUM; ++i)
+    {
+        delete OpcList_[i];
+    }
+
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush(true);
 
@@ -407,7 +458,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
         opinion_compute_threads_.push_back(new boost::thread(&MultiDocSummarizationSubManager::DoComputeOpinion,
                     this, Ops_[i]));
     }
-    
+
     LOG(INFO) << "====== Evaluating summarization begin ======" << std::endl;
     {
         CommentCacheStorage::DirtyKeyIteratorType dirtyKeyIt(comment_cache_storage_->dirty_key_db_);
@@ -427,7 +478,7 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             Summarization summarization(commentCacheItem);
             DoEvaluateSummarization_(summarization, key, commentCacheItem);
 
-            DoOpinionExtraction(summarization, key, commentCacheItem);
+            DoOpinionExtraction(summarization, key, commentCacheItem);// add data for process....
             if (++count % 1000 == 0)
             {
                 std::cout << "\r === Evaluating summarization and opinion count: " << count << " ===" << std::flush;
@@ -554,7 +605,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
                     LOG(INFO) << "!!!---compute thread:" << (long)pthread_self() << " finished. ---!!!" << endl;
                     return;
                 }
-                waiting_opinion_cond_.wait(g);
+                waiting_opinion_cond_.wait(g);// this may waiting in all line;
             }
             opinion_data = waiting_opinion_comments_.front();
             waiting_opinion_comments_.pop();
@@ -670,9 +721,11 @@ void MultiDocSummarizationSubManager::DoOpinionExtraction(
     item.summarization.swap(summarization);
     boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
     while(waiting_opinion_comments_.size() > OPINION_COMPUTE_QUEUE_SIZE)
-        waiting_opinion_cond_.timed_wait(g, boost::posix_time::millisec(500));
+    {
+        waiting_opinion_cond_.timed_wait(g, boost::posix_time::millisec(500));//wait for time;
+    }
     waiting_opinion_comments_.push(item);
-    waiting_opinion_cond_.notify_one();
+    waiting_opinion_cond_.notify_one();//condition_ wake up 
 }
 
 void MultiDocSummarizationSubManager::DoWriteOpinionResult()
