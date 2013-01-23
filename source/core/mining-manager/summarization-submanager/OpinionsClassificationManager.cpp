@@ -202,7 +202,7 @@ void OpinionsClassificationManager::initWordStatuMap()
         if ((*i).size() > 0)
         {
             
-            wordStatuMap_.insert(*i, x);
+            wordStatuMap_.insert(*i, 0);
         }
     }
 }
