@@ -106,6 +106,7 @@ public:
 
 
     void beginReqProcess();
+    void notifyMasterReadyForNew();
     void abortRequest();
     void finishLocalReqProcess(int type, const std::string& reqdata);
 

@@ -69,8 +69,7 @@ static bool callHandler(izenelib::driver::Router::handler_ptr handler,
             tmp_poller);
         LOG(INFO) << "write request send in DistributeDriver success.";
 
-        DistributeRequestHooker::get()->clearHook();
-        return response.success();
+        return true;
     }
     catch(const std::exception& e)
     {

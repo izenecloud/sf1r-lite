@@ -135,28 +135,20 @@ bool IndexTaskService::optimizeIndex()
 
 bool IndexTaskService::createDocument(const Value& documentValue)
 {
-    if(!HookDistributeRequest(false))
-        return false;
     return indexWorker_->createDocument(documentValue);
 }
 
 bool IndexTaskService::updateDocument(const Value& documentValue)
 {
-    if(!HookDistributeRequest(false))
-        return false;
     return indexWorker_->updateDocument(documentValue);
 }
 bool IndexTaskService::updateDocumentInplace(const Value& request)
 {
-    if(!HookDistributeRequest(false))
-        return false;
     return indexWorker_->updateDocumentInplace(request);
 }
 
 bool IndexTaskService::destroyDocument(const Value& documentValue)
 {
-    if(!HookDistributeRequest(false))
-        return false;
     return indexWorker_->destroyDocument(documentValue);
 }
 

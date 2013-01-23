@@ -12,14 +12,14 @@ std::set<std::string> ReqLogMgr::write_req_set_;
 // 2. In Controller Handler, after checking the valid,
 // make sure callDistribute first, if callDistribute return true, the request will be push to queue 
 // and wait primary master to process. if callDistribute return false then 
-// the handler should be called sync (not in JobScheduler) if configured as distribute mode.
+// the handler can be called directly, before call make sure call the HookDistributeRequest first.
 // 3. In Service (such as IndexTaskService or RecommendTaskService), make sure 
-// hook the request using DistributeRequestHooker before call the handler.
-// 4. In worker handler, make sure hooked request called sync, 
-// make sure using DistributeRequestHooker to check valid call and
-// prepare if allowed, and call processBegin and processFinish to make sure the 
+// the request was hooked before call the worker handler.
+// 4. In worker handler, make sure using DistributeRequestHooker to check valid call and
+// prepare before do actual work, call processLocalFinished after finish to make sure the 
 // request is hooked to handle correctly both on the primary and replicas.
-// If returned before prepared,make sure clearHook called.
+// If returned before prepared, make sure processLocalFinished also called.
+// 5. make sure if the hooktype == FromLog, all the handler should be called sync. (not in JobScheduler)
 void ReqLogMgr::initWriteRequestSet()
 {
     write_req_set_.insert("documents_create");

@@ -434,6 +434,11 @@ void NodeManagerBase::beginReqProcess()
     setNodeState(NODE_STATE_PROCESSING_REQ_RUNNING);
 }
 
+void NodeManagerBase::notifyMasterReadyForNew()
+{
+    setNodeState(NODE_STATE_STARTED);
+}
+
 void NodeManagerBase::abortRequest()
 {
     // notify abort and wait other aborting.

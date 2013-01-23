@@ -117,6 +117,8 @@ void IndexWorker::HookDistributeRequest(int hooktype, const std::string& reqdata
     distribute_req_hooker_->hookCurrentReq(bundleConfig_->collectionName_,
         bundleConfig_->collPath_, reqdata,
         RecoveryChecker::get()->getReqLogMgr());
+
+    distribute_req_hooker_->processLocalBegin();
     LOG(INFO) << "got hook request on the worker.";
     result = true;
 }
@@ -143,20 +145,24 @@ bool IndexWorker::reLoadData()
 
 void IndexWorker::index(unsigned int numdoc, bool& result)
 {
-    if (distribute_req_hooker_->isHooked())
-    {
-        // hooked request need excute sync.
-        if (distribute_req_hooker_->getHookType() == Request::FromDistribute)
-            result = buildCollection(numdoc);
-        else
-            result = buildCollectionOnReplica(numdoc);
-    }
-    else
+    result = true;
+    if (!distribute_req_hooker_->isHooked() || distribute_req_hooker_->getHookType() == Request::FromDistribute)
     {
         task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
         JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
     }
-    result = true;
+    else
+    {
+        if (distribute_req_hooker_->getHookType() == Request::FromLog)
+        {
+            result = buildCollectionOnReplica(numdoc);
+        }
+        else
+        {
+            task_type task = boost::bind(&IndexWorker::buildCollectionOnReplica, this, numdoc);
+            JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+        }
+    }
 }
 
 bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
@@ -193,12 +199,14 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         if (!bfs::is_directory(scdPath))
         {
             LOG(ERROR) << "SCD Path does not exist. Path " << scdPath;
+            distribute_req_hooker_->processLocalFinished(false);
             return false;
         }
     }
     catch (bfs::filesystem_error& e)
     {
         LOG(ERROR) << "Error while opening directory " << e.what();
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -232,8 +240,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         return false;
     }
 
-    distribute_req_hooker_->processLocalBegin();
-
     bool ret = buildCollection(numdoc, scdList);
 
     distribute_req_hooker_->processLocalFinished(ret);
@@ -258,8 +264,6 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
-
-    distribute_req_hooker_->processLocalBegin();
 
     LOG(INFO) << "got index from primary/log, scd list is : ";
     for (size_t i = 0; i < reqlog.scd_list.size(); ++i)
@@ -643,6 +647,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -653,6 +658,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
         if (!documentManager_->isDeleted(docid))
         {
             LOG(INFO) << "the document already exist for : " << docid;
+            distribute_req_hooker_->processLocalFinished(false);
             return false;
         }
     }
@@ -663,8 +669,6 @@ bool IndexWorker::createDocument(const Value& documentValue)
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
-
-    distribute_req_hooker_->processLocalBegin();
 
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
@@ -709,6 +713,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -719,7 +724,6 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
-    distribute_req_hooker_->processLocalBegin();
 
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
@@ -778,6 +782,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
     if (!idManager_->getDocIdByDocName(num_docid, docid, false))
     {
         LOG(WARNING) << "updating in place error, document not exist, DOCID: " << asString(request[DOCID]) << std::endl;
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
     // get the update property detail
@@ -786,6 +791,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
     if (update_propertys == NULL || update_propertys->size() == 0)
     {
         LOG(WARNING) << "updating in place error, detail property empty." << std::endl;
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -840,6 +846,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                 default:
                     {
                         LOG(INFO) << "property type: " << iter->propertyType_ << " does not support the inplace update." << std::endl;
+                        distribute_req_hooker_->processLocalFinished(false);
                         return false;
                     }
                 }
@@ -847,6 +854,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
             else
             {
                 LOG(INFO) << "property : " << propname << " does not support the inplace update." << std::endl;
+                distribute_req_hooker_->processLocalFinished(false);
                 return false;
             }
 
@@ -882,6 +890,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                 else
                 {
                     LOG(INFO) << "not supported update method inplace. method: "  << op << std::endl;
+                    distribute_req_hooker_->processLocalFinished(false);
                     return false;
                 }
                 new_document[propname] = new_propvalue;
@@ -889,12 +898,14 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
             catch(boost::bad_lexical_cast& e)
             {
                 LOG(WARNING) << "do inplace update failed. " << e.what() << endl;
+                distribute_req_hooker_->processLocalFinished(false);
                 return false;
             }
         }
         else
         {
             LOG(INFO) << "update property not found in document, property: " << propname << std::endl;
+            distribute_req_hooker_->processLocalFinished(false);
             return false;
         }
     }
@@ -915,6 +926,7 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -922,7 +934,10 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
 
     if (!idManager_->getDocIdByDocName(num_docid, docid, false))
+    {
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
+    }
 
     NoAdditionNeedBackupReqLog reqlog;
     if(!distribute_req_hooker_->prepare(Req_NoAdditionData_NeedBackup_Req, dynamic_cast<CommonReqData&>(reqlog)))
@@ -930,7 +945,6 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         LOG(ERROR) << "prepare failed in: " << __FUNCTION__;
         return false;
     }
-    distribute_req_hooker_->processLocalBegin();
 
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);

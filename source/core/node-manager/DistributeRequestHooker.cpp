@@ -54,6 +54,10 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const C
     const std::string& reqdata,
     boost::shared_ptr<ReqLogMgr> req_log_mgr)
 {
+    if (!current_req_.empty() || req_log_mgr_)
+    {
+        LOG(WARNING) << "last hooked request should clear !!";
+    }
     current_req_ = reqdata;
     req_log_mgr_ = req_log_mgr;
     LOG(INFO) << "current request hooked: " << current_req_;
@@ -193,6 +197,14 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
     //current_req_ = packed_req_data;
     if (!finishsuccess)
     {
+        static CommonReqData reqlog;
+        if (SearchNodeManager::get()->isPrimary() && !req_log_mgr_->getPreparedReqLog(reqlog))
+        {
+            LOG(INFO) << "primary end request before prepared, request ignored.";
+            SearchNodeManager::get()->notifyMasterReadyForNew();
+            clearHook(true);
+            return;
+        }
         LOG(INFO) << "process finished fail.";
         abortRequest();
         return;
@@ -309,7 +321,7 @@ void DistributeRequestHooker::finish(bool success)
 
 void DistributeRequestHooker::clearHook(bool force)
 {
-    CommonReqData reqlog;
+    static CommonReqData reqlog;
     if (!force && req_log_mgr_->getPreparedReqLog(reqlog))
     {
         // if prepared , we will clear hook after finish .

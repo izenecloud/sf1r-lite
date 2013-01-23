@@ -85,7 +85,12 @@ bool CollectionHandler::create(const ::izenelib::driver::Value& document)
 {
     if (DistributeRequestHooker::get()->isHooked())
     {
-        return indexTaskService_->createDocument(document);
+        if(!indexTaskService_->HookDistributeRequest(false))
+            return false;
+        if (DistributeRequestHooker::get()->getHookType() == Request::FromLog)
+        {
+            return indexTaskService_->createDocument(document);
+        }
     }
     task_type task = boost::bind(&IndexTaskService::createDocument, indexTaskService_, document);
     JobScheduler::get()->addTask(task, collection_);
@@ -96,7 +101,12 @@ bool CollectionHandler::update(const ::izenelib::driver::Value& document)
 {
     if (DistributeRequestHooker::get()->isHooked())
     {
-        return indexTaskService_->updateDocument(document);
+        if(!indexTaskService_->HookDistributeRequest(false))
+            return false;
+        if (DistributeRequestHooker::get()->getHookType() == Request::FromLog)
+        {
+            return indexTaskService_->updateDocument(document);
+        }
     }
     task_type task = boost::bind(&IndexTaskService::updateDocument, indexTaskService_, document);
     JobScheduler::get()->addTask(task, collection_);
@@ -107,7 +117,12 @@ bool CollectionHandler::update_inplace(const ::izenelib::driver::Value& request)
 {
     if (DistributeRequestHooker::get()->isHooked())
     {
-        return indexTaskService_->updateDocumentInplace(request);
+        if(!indexTaskService_->HookDistributeRequest(false))
+            return false;
+        if (DistributeRequestHooker::get()->getHookType() == Request::FromLog)
+        {
+            return indexTaskService_->updateDocumentInplace(request);
+        }
     }
     task_type task = boost::bind(&IndexTaskService::updateDocumentInplace, indexTaskService_, request);
     JobScheduler::get()->addTask(task, collection_);
@@ -118,7 +133,12 @@ bool CollectionHandler::destroy(const ::izenelib::driver::Value& document)
 {
     if (DistributeRequestHooker::get()->isHooked())
     {
-        return indexTaskService_->destroyDocument(document);
+        if(!indexTaskService_->HookDistributeRequest(false))
+            return false;
+        if (DistributeRequestHooker::get()->getHookType() == Request::FromLog)
+        {
+            return indexTaskService_->destroyDocument(document);
+        }
     }
     task_type task = boost::bind(&IndexTaskService::destroyDocument, indexTaskService_, document);
     JobScheduler::get()->addTask(task, collection_);
