@@ -377,6 +377,7 @@ namespace sf1r {
             std::string spid;
             std::string stitle;
             std::string scategory;
+            std::string fcategory; //front-end category
             uint32_t cid;
             double price; 
             std::vector<Attribute> attributes;
@@ -428,7 +429,7 @@ namespace sf1r {
         bool GetProduct(const std::string& pid, Product& product);
         static void ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes);
         //return true if this is a complete match, else false: to return parent nodes
-        bool GetFrontendCategory(const UString& backend, UString& frontend) const;
+        bool GetFrontendCategory(UString& backend, UString& frontend) const;
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }

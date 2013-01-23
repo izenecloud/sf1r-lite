@@ -374,11 +374,11 @@ public:
             sf1r::faceted::OntologyRep& attrRep
             );
 
-    bool GetProductCategory(const std::string& query, int limit, std::vector<std::vector<std::string> >& pathVec );
+    bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
 
-    bool GetProductCategory(const izenelib::util::UString& query, int limit, std::vector<UString>& categories);
-    bool GetProductCategory(const izenelib::util::UString& query, UString& category);
-
+    bool GetProductFrontendCategory(const izenelib::util::UString& query, int limit, std::vector<UString>& frontends);
+    bool GetProductFrontendCategory(const izenelib::util::UString& query, UString& frontend);
+    bool GetProductCategory(const UString& query, UString& backend);
 
     bool SetKV(const std::string& key, const std::string& value);
 

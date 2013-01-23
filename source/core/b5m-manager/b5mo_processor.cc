@@ -40,6 +40,7 @@ void B5moProcessor::LoadMobileSource(const std::string& file)
 
 void B5moProcessor::Process(Document& doc, int& type)
 {
+    static const std::string tcp(B5MHelper::GetTargetCategoryPropertyName());
     //return;
     //reset type
     if(mode_!=B5MMode::INC)
@@ -166,16 +167,20 @@ void B5moProcessor::Process(Document& doc, int& type)
                 {
                     category = UString(product.scategory, UString::UTF_8);
                     doc.property("Category") = category;
-                    if(!category.empty())
+                    if(!product.fcategory.empty())
                     {
-                        UString front;
-                        matcher_->GetFrontendCategory(category, front);
-                        if(!front.empty())
-                        {
-                            const std::string& tcp = B5MHelper::GetTargetCategoryPropertyName();
-                            doc.property(tcp) = front;
-                        }
+                        UString front(product.fcategory, UString::UTF_8);
+                        doc.property(tcp) = front;
                     }
+                    //if(!category.empty())
+                    //{
+                        //UString front;
+                        //matcher_->GetFrontendCategory(category, front);
+                        //if(!front.empty())
+                        //{
+                            //doc.property(tcp) = front;
+                        //}
+                    //}
                 }
                 //if(scategory!=product.scategory)
                 //{

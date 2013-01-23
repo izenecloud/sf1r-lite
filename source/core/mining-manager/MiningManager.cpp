@@ -651,7 +651,7 @@ bool MiningManager::open()
                 match_category_restrict_.push_back(boost::regex(restrict_vector[i]));
             }
             std::string res_path = system_resource_path_+"/product-matcher";
-            BackendLabelToFrontendLabel::Get()->Init(res_path + "/backend_category_2_frontend_category.txt");
+            //BackendLabelToFrontendLabel::Get()->Init(res_path + "/backend_category_2_frontend_category.txt");
             ProductMatcher* matcher = ProductMatcherInstance::get();
             if (!matcher->Open(res_path))
             {
@@ -669,7 +669,7 @@ bool MiningManager::open()
                 boost::algorithm::trim(line);
                 UString query(line, UString::UTF_8);
                 UString category;
-                if (GetProductCategory(query, category))
+                if (GetProductFrontendCategory(query, category))
                 {
                     std::string scategory;
                     category.convertString(scategory, UString::UTF_8);
@@ -2056,24 +2056,24 @@ bool MiningManager::GetSuffixMatch(
 }
 
 bool MiningManager::GetProductCategory(
-    const std::string& query,
+    const std::string& squery,
     int limit,
     std::vector<std::vector<std::string> >& pathVec
 )
 {
-    const UString ustrQuery(query, UString::UTF_8);
-    std::vector<UString> backendCategories;
-    if (!GetProductCategory(ustrQuery,limit, backendCategories))
-        return false;
-    for(std::vector<UString>::iterator bcit = backendCategories.begin();
-        bcit != backendCategories.end(); ++bcit)
+    UString query(squery, UString::UTF_8);
+    std::vector<UString> frontends;
+    if (!GetProductFrontendCategory(query,limit, frontends)) return false;
+    for(std::vector<UString>::const_iterator it = frontends.begin();
+        it != frontends.end(); ++it)
     {
-        UString frontendCategory;
-        if (!BackendLabelToFrontendLabel::Get()->Map(*bcit, frontendCategory))
-        {
-            if(!BackendLabelToFrontendLabel::Get()->PrefixMap(*bcit, frontendCategory))
-                continue;
-        }
+        UString frontendCategory = *it;
+        if(frontendCategory.empty()) continue;
+        //if (!BackendLabelToFrontendLabel::Get()->Map(*bcit, frontendCategory))
+        //{
+            //if(!BackendLabelToFrontendLabel::Get()->PrefixMap(*bcit, frontendCategory))
+                //continue;
+        //}
         std::vector<std::vector<UString> > groupPaths;
         split_group_path(frontendCategory, groupPaths);
         if (groupPaths.empty())
@@ -2092,10 +2092,47 @@ bool MiningManager::GetProductCategory(
     return true;
 }
 
-bool MiningManager::GetProductCategory(
+bool MiningManager::GetProductCategory(const UString& query, UString& backend)
+{
+    if (mining_schema_.product_matcher_enable)
+    {
+        ProductMatcher* matcher = ProductMatcherInstance::get();
+        Document doc;
+        doc.property("Title") = query;
+        ProductMatcher::Product result_product;
+        if (matcher->Process(doc, result_product))
+        {
+            const std::string& category_name = result_product.scategory;
+            if (!category_name.empty())
+            {
+                bool valid = true;
+                if (!match_category_restrict_.empty())
+                {
+                    valid = false;
+                    for (uint32_t i=0;i<match_category_restrict_.size();i++)
+                    {
+                        if (boost::regex_match(category_name, match_category_restrict_[i]))
+                        {
+                            valid = true;
+                            break;
+                        }
+                    }
+                }
+                if(valid)
+                {
+                    backend = UString(result_product.scategory, UString::UTF_8);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool MiningManager::GetProductFrontendCategory(
     const izenelib::util::UString& query, 
     int limit, 
-    std::vector<UString>& categories)
+    std::vector<UString>& frontends)
 {
     if (mining_schema_.product_matcher_enable)
     {
@@ -2121,27 +2158,26 @@ bool MiningManager::GetProductCategory(
                                 valid = true;
                                 break;
                             }
-
                         }
                     }
                     if(valid)
                     {
-                        categories.push_back(UString(category_name, UString::UTF_8));
+                        frontends.push_back(UString(result_products[i].fcategory, UString::UTF_8));
                     }
                 }
             }
         }
     }
-    if(!categories.empty()) return true;
+    if(!frontends.empty()) return true;
     return false;
 }
-
-bool MiningManager::GetProductCategory(const izenelib::util::UString& query, UString& category)
+bool MiningManager::GetProductFrontendCategory(const izenelib::util::UString& query, UString& frontend)
 {
-    std::vector<UString> vec;
-    if(GetProductCategory(query, 1, vec) && !vec.empty())
+    std::vector<UString> frontends;
+    GetProductFrontendCategory(query,1, frontends);
+    if(frontends.size()>0)
     {
-        category = vec.front();
+        frontend = frontends[0];
         return true;
     }
     return false;
