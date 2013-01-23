@@ -924,6 +924,7 @@ bool IndexWorker::doBuildCollection_(
         if (!deleteSCD_(parser, timestamp))
             return false;
     }
+    searchWorker_->reset_all_property_cache();
 
     clearMasterCache_();
 
@@ -1003,7 +1004,6 @@ bool IndexWorker::insertOrUpdateSCD_(
         boost::this_thread::interruption_point();
     } // end of for loop for all documents
     flushUpdateBuffer_();
-    searchWorker_->reset_all_property_cache();
     return true;
 }
 
