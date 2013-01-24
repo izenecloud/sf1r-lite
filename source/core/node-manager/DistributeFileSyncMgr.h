@@ -60,13 +60,14 @@ public:
     void init();
     bool getNewestReqLog(uint32_t start_from, std::vector<std::string>& saved_log);
     bool syncNewestSCDFileList(const std::string& colname);
-    bool getFileFromOther(const std::string& filepath);
+    bool getFileFromOther(const std::string& filepath, bool force_overwrite = false);
     void notifyFinishReceive(const std::string& filepath);
     bool waitFinishReceive(const std::string& filepath, uint64_t filesize);
     void sendFinishNotifyToReceiver(const std::string& ip, uint16_t port, const FinishReceiveRequest& req);
 
 private:
-    bool getFileFromOther(const std::string& ip, uint16_t port, const std::string& filepath, uint64_t filesize);
+    bool getFileInfo(const std::string& ip, uint16_t port, GetFileData& filepath);
+    bool getFileFromOther(const std::string& ip, uint16_t port, const std::string& filepath, uint64_t filesize, bool force_overwrite = false);
     RpcServerConnection* conn_mgr_;
     boost::shared_ptr<FileSyncServer> transfer_rpcserver_;
     boost::mutex mutex_;

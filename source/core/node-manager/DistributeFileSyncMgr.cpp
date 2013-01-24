@@ -133,7 +133,8 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             if (ret)
             {
                 reqdata.success = true;
-                bfs::path backup_path = colpath.getScdPath() + "/index/backup/";
+                bfs::path backup_path = colpath.getScdPath();
+                backup_path /= bfs::path("index/backup/");
                 if (bfs::exists(backup_path))
                 {
                     static bfs::directory_iterator end_dir = bfs::directory_iterator();
@@ -304,41 +305,16 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
             LOG(INFO) << "send request error, will retry : " << e.what();
             continue;
         }
+
         if (rsp.success)
         {
             for (size_t i = 0; i < rsp.scd_list.size(); ++i)
             {
-                GetFileRequest file_req;
-                file_req.param_.filepath = rsp.scd_list[i];
                 GetFileData file_rsp;
-                try
-                {
-                    conn_mgr_->syncRequest(ip, port, file_req, file_rsp);
-                }
-                catch(const std::exception& e)
-                {
-                    LOG(INFO) << "send request error, will retry : " << e.what();
+                file_rsp.filepath = rsp.scd_list[i];
+                if (!getFileInfo(ip, port, file_rsp))
                     break;
-                }
-                if (!rsp.success)
-                {
-                    LOG(INFO) << "get file data info failed, retry next.";
-                    break;
-                }
-                if (bfs::exists(file_rsp.filepath))
-                {
-                    if (!bfs::is_regular_file(file_rsp.filepath))
-                    {
-                        LOG(INFO) << "found a file with same name but not a scd file.";
-                        bfs::remove_all(file_rsp.filepath + "_renamed");
-                        bfs::rename(file_rsp.filepath, file_rsp.filepath + "_renamed");
-                    }
-                    else if(bfs::file_size(file_rsp.filepath) == file_rsp.filesize)
-                    {
-                        LOG(INFO) << "local scd file is the same size , no need copy: " << file_rsp.filepath;
-                        continue;
-                    }
-                }
+
                 if(!getFileFromOther(ip, port, file_rsp.filepath, file_rsp.filesize))
                 {
                     LOG(INFO) << "get file from other failed, retry next." << file_rsp.filepath;
@@ -354,16 +330,85 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
     return false;
 }
 
-bool DistributeFileSyncMgr::getFileFromOther(const std::string& filepath)
+bool DistributeFileSyncMgr::getFileInfo(const std::string& ip, uint16_t port, GetFileData& file_rsp)
 {
+    LOG(INFO) << "try get file from: " << ip << ":" << port;
+    GetFileRequest file_req;
+    file_req.param_.filepath = file_rsp.filepath;
+    try
+    {
+        conn_mgr_->syncRequest(ip, port, file_req, file_rsp);
+    }
+    catch(const std::exception& e)
+    {
+        LOG(INFO) << "send request error while get file info : " << e.what();
+        return false;
+    }
+    if (!file_rsp.success)
+    {
+        LOG(INFO) << "get file info failed for :" << file_rsp.filepath;
+        return false;
+    }
+    return true;
+}
+
+bool DistributeFileSyncMgr::getFileFromOther(const std::string& filepath, bool force_overwrite)
+{
+    int retry = 3;
+    srand( time(NULL) );
+
+    while(retry-- > 0)
+    {
+        std::string ip;
+        uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
+        if(!SearchNodeManager::get()->getCurrNodeSyncServerInfo(ip, rand()))
+        {
+            LOG(ERROR) << "get file sync server failed.";
+            return false;
+        }
+        GetFileData file_rsp;
+        file_rsp.filepath = filepath;
+        if (!getFileInfo(ip, port, file_rsp))
+            continue;
+
+        if(!getFileFromOther(ip, port, file_rsp.filepath, file_rsp.filesize))
+        {
+            LOG(INFO) << "get file from other failed, retry next." << file_rsp.filepath;
+            continue;
+        }
+
+        LOG(INFO) << "get file finished :" << file_rsp.filepath;
+        return true;
+    }
     return false;
 }
 
 bool DistributeFileSyncMgr::getFileFromOther(const std::string& ip, uint16_t port,
-    const std::string& filepath, uint64_t filesize)
+    const std::string& filepath, uint64_t filesize, bool force_overwrite)
 {
     if (!transfer_rpcserver_)
         return false;
+
+    if (bfs::exists(filepath))
+    {
+        if (!bfs::is_regular_file(filepath))
+        {
+            LOG(INFO) << "found a file with same name but not a regular file." << filepath;
+            bfs::remove_all(filepath + "_renamed");
+            bfs::rename(filepath, filepath + "_renamed");
+        }
+        else
+        {
+            if(bfs::file_size(filepath) == filesize)
+            {
+                LOG(INFO) << "local file is the same size : " << filepath;
+                if (!force_overwrite)
+                    return true;
+            }
+            bfs::remove(filepath);
+        }
+    }
+
     ReadyReceiveRequest req;
     req.param_.receiver_ip = SuperNodeManager::get()->getLocalHostIP();
     req.param_.receiver_port = SuperNodeManager::get()->getDataReceiverPort();
@@ -430,6 +475,7 @@ bool DistributeFileSyncMgr::waitFinishReceive(const std::string& filepath, uint6
     wait_finish_notify_.erase(filepath);
     if (bfs::exists(filepath) && bfs::is_regular_file(filepath) && bfs::file_size(filepath) == filesize)
         return true;
+    LOG(WARNING) << "file failed pass check: " << filepath;
     return false;
 }
 
