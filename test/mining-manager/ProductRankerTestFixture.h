@@ -10,6 +10,7 @@
 
 #include <configuration-manager/ProductRankingConfig.h>
 #include <mining-manager/group-manager/PropValueTable.h>
+#include <mining-manager/merchant-score-manager/MerchantScoreManager.h>
 #include <string>
 #include <vector>
 
@@ -29,6 +30,8 @@ public:
     void setMultiDocMerchantId(const std::string& merchantList);
     void setSingleDocMerchantId(const std::string& merchantList);
 
+    void setMerchantScore(const std::string& merchantScoreList);
+
     void rank();
 
     void checkDocId(const std::string& goldDocIdList);
@@ -42,9 +45,17 @@ public:
         const std::string& goldScoreList,
         int equalNum);
 
+private:
+    typedef std::vector<faceted::PropValueTable::pvid_t> PropValueIdList;
+
+    void convertMerchantId_(
+        const std::string& merchantList,
+        PropValueIdList& idList);
+
 protected:
     ProductRankingConfig rankConfig_;
     faceted::PropValueTable merchantValueTable_;
+    MerchantScoreManager merchantScoreManager_;
 
     std::vector<docid_t> docIds_;
     std::vector<score_t> topKScores_;

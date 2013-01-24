@@ -4,6 +4,7 @@
 #include "CategoryScoreEvaluator.h"
 #include "MerchantCountEvaluator.h"
 #include "DiversityRoundEvaluator.h"
+#include "MerchantScoreEvaluator.h"
 #include "RandomScoreEvaluator.h"
 #include "../group-manager/PropValueTable.h"
 #include <configuration-manager/ProductRankingConfig.h>
@@ -33,9 +34,13 @@ score_t minCustomCategoryWeight(const ProductRankingConfig& config)
 
 ProductRankerFactory::ProductRankerFactory(
     const ProductRankingConfig& config,
-    const faceted::PropValueTable* merchantValueTable)
+    const faceted::PropValueTable* merchantValueTable,
+    const faceted::PropValueTable* categoryValueTable,
+    const MerchantScoreManager* merchantScoreManager)
     : config_(config)
     , merchantValueTable_(merchantValueTable)
+    , categoryValueTable_(categoryValueTable)
+    , merchantScoreManager_(merchantScoreManager)
     , isRandomScoreConfig_(config.scores[RANDOM_SCORE].weight != 0)
 {
 }
@@ -81,4 +86,13 @@ void ProductRankerFactory::addDiversityEvaluator_(ProductRanker& ranker) const
 
     ranker.addEvaluator(new MerchantCountEvaluator(*merchantValueTable_));
     ranker.addEvaluator(new DiversityRoundEvaluator);
+
+    if (!merchantScoreManager_)
+        return;
+
+    MerchantScoreEvaluator* merchantScoreEvaluator = categoryValueTable_ ?
+        new MerchantScoreEvaluator(*merchantScoreManager_, *categoryValueTable_) :
+        new MerchantScoreEvaluator(*merchantScoreManager_);
+
+    ranker.addEvaluator(merchantScoreEvaluator);
 }

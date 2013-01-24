@@ -2407,8 +2407,15 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
         return false;
     }
 
+    const std::string& categoryPropName =
+        rankConfig.scores[CATEGORY_SCORE].propName;
+    const faceted::PropValueTable* categoryValueTable =
+        GetPropValueTable(categoryPropName);
+
     if (productRankerFactory_) delete productRankerFactory_;
     productRankerFactory_ = new ProductRankerFactory(rankConfig,
-                                                     diversityValueTable);
+                                                     diversityValueTable,
+                                                     categoryValueTable,
+                                                     merchantScoreManager_);
     return true;
 }

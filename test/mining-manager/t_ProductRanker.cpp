@@ -4,6 +4,7 @@
  * 1. category score
  * 2. merchant count
  * 3. diversity round
+ * 4. merchant score
  * @author Jun Jiang
  * @date Created 2012-12-06
  */
@@ -38,13 +39,16 @@ BOOST_AUTO_TEST_CASE(testAllFactors)
     setTopKScore(         "12.1  1.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  0.1");
     setMultiDocMerchantId("1     1    1    2    2    3    3    2    1");
     setSingleDocMerchantId("1 3");
+    setMerchantScore("6 8 7");
     //diversity round:     0     0    1    1    2    1    2    3    2    0
+    //merchant score:      6     6    6    8    8    7    7    8    6    0
 
     rank();
 
     //diversity round:     0     0    0    1    1    1    2    2    2    3
-    checkDocId(           "1     2    10   3    4    6    5    7    9    8");
-    checkTopKScore(       "12.1  1.2  0.1  0.3  0.4  0.6  0.5  0.7  0.9  0.8");
+    //merchant score:      6     6    0    8    7    6    8    7    6    8
+    checkDocId(           "1     2    10   4    6    3    5    7    9    8");
+    checkTopKScore(       "12.1  1.2  0.1  0.4  0.6  0.3  0.5  0.7  0.9  0.8");
 }
 
 BOOST_AUTO_TEST_CASE(testRandomScore)
