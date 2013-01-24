@@ -532,7 +532,7 @@ void FacetedController::set_merchant_score()
     boost::shared_ptr<MiningManager> miningManager = miningSearchService_->GetMiningManager();
     const MerchantStrScoreMap& scoreMap = parser.merchantStrScoreMap();
 
-    if (! miningManager->setMerchantScore(scoreMap))
+    if (! miningSearchService_->setMerchantScore(scoreMap))
     {
         response().addError("Failed to set merchant score.");
     }
@@ -595,11 +595,9 @@ void FacetedController::get_merchant_score()
         return;
     }
 
-    boost::shared_ptr<MiningManager> miningManager = miningSearchService_->GetMiningManager();
     const std::vector<std::string>& merchantNames = parser.merchantNames();
     MerchantStrScoreMap merchantStrScoreMap;
-
-    if (! miningManager->getMerchantScore(merchantNames, merchantStrScoreMap))
+    if (! miningSearchService_->getMerchantScore(merchantNames, merchantStrScoreMap))
     {
         response().addError("Failed to get merchant score.");
         return;

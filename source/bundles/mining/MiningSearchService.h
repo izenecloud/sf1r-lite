@@ -13,6 +13,7 @@
 #include <mining-manager/faceted-submanager/manmade_doc_category_item.h>
 #include <mining-manager/summarization-submanager/Summarization.h>
 #include <mining-manager/custom-rank-manager/CustomRankValue.h>
+#include <mining-manager/merchant-score-manager/MerchantScore.h>
 #include <idmlib/tdt/tdt_types.h>
 #include <boost/shared_ptr.hpp>
 
@@ -161,6 +162,12 @@ public:
      * @return true for success, false for failure
      */
     bool getCustomQueries(std::vector<std::string>& queries);
+
+    bool setMerchantScore(const MerchantStrScoreMap& scoreMap);
+
+    bool getMerchantScore(
+        const std::vector<std::string>& merchantNames,
+        MerchantStrScoreMap& merchantScoreMap) const;
 
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info);
