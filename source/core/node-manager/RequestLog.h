@@ -195,45 +195,6 @@ public:
             return true;
         return false;
     }
-
-    inline std::string getRequestLogPath() const
-    {
-        return base_path_;
-    }
-    void init(const std::string& basepath);
-    bool prepareReqLog(CommonReqData& prepared_reqdata, bool isprimary);
-    bool getPreparedReqLog(CommonReqData& reqdata);
-    void delPreparedReqLog();
-    //template <typename TypedReqLog> bool appendTypedReqLog(const TypedReqLog& reqdata)
-    //{
-    //    std::string packed_data;
-    //    packReqLogData(reqdata, packed_data);
-    //    return appendReqData(packed_data);
-    //}
-
-    //template <typename TypedReqLog> static void packReqLogData(const TypedReqLog& reqdata, std::string& packed_data)
-    //{
-    //    msgpack::sbuffer buf;
-    //    msgpack::packer<msgpack::sbuffer> pk(&buf);
-    //    reqdata.pack(pk);
-    //    packed_data.assign(buf.data(), buf.size());
-    //}
-
-    //template <typename TypedReqLog> static bool unpackReqLogData(const std::string& packed_data, TypedReqLog& reqdata)
-    //{
-    //    msgpack::unpacker unpak;
-    //    unpak.reserve_buffer(packed_data.size());
-    //    memcpy(unpak.buffer(), packed_data.data(), packed_data.size());
-    //    unpak.buffer_consumed(packed_data.size());
-    //    return reqdata.unpack(unpak);
-    //}
-    bool appendTypedReqLog(CommonReqData& reqdata)
-    {
-        std::string packed_data;
-        packReqLogData(reqdata, packed_data);
-        return appendReqData(packed_data);
-    }
-
     static void packReqLogData(CommonReqData& reqdata, std::string& packed_data)
     {
         msgpack::sbuffer buf;
@@ -249,6 +210,31 @@ public:
         unpak.buffer_consumed(packed_data.size());
         return reqdata.unpack(unpak);
     }
+    static uint32_t crc(uint32_t crc, const char* data, const int32_t len)
+    {
+        int32_t i;
+        for (i = 0; i < len; ++i)
+        {
+            crc = (crc >> 8) ^ _crc32tab[(crc ^ (*data)) & 0xff];
+            data++;
+        }
+        return (crc);
+    }
+
+    inline std::string getRequestLogPath() const
+    {
+        return base_path_;
+    }
+    void init(const std::string& basepath);
+    bool prepareReqLog(CommonReqData& prepared_reqdata, bool isprimary);
+    bool getPreparedReqLog(CommonReqData& reqdata);
+    void delPreparedReqLog();
+    bool appendTypedReqLog(CommonReqData& reqdata)
+    {
+        std::string packed_data;
+        packReqLogData(reqdata, packed_data);
+        return appendReqData(packed_data);
+    }
 
     bool appendReqData(const std::string& req_packed_data);
     inline uint32_t getLastSuccessReqId() const
@@ -260,16 +246,6 @@ public:
     // get request with inc_id or the minimize that not less than inc_id if not exist.
     // if no more request return false.
     bool getReqData(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset, std::string& req_packed_data);
-    uint32_t crc(uint32_t crc, const char* data, const int32_t len)
-    {
-        int32_t i;
-        for (i = 0; i < len; ++i)
-        {
-            crc = (crc >> 8) ^ _crc32tab[(crc ^ (*data)) & 0xff];
-            data++;
-        }
-        return (crc);
-    }
     bool getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset);
 private:
     bool getReqPackedDataByHead(const ReqLogHead& head, std::string& req_packed_data);

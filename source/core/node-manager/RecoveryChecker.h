@@ -46,6 +46,7 @@ public:
     void init(const std::string& workdir);
     void addCollection(const std::string& colname, const CollectionPath& colpath, const std::string& configfile);
     void removeCollection(const std::string& colname);
+    bool getCollPath(const std::string& colname, CollectionPath& colpath);
 
     //void updateCollection(const SF1Config& sf1_config);
     boost::shared_ptr<ReqLogMgr> getReqLogMgr()
@@ -55,9 +56,9 @@ public:
     void onRecoverCallback();
     void onRecoverWaitPrimaryCallback();
     void onRecoverWaitReplicasCallback();
-    void syncToNewestReqLog();
-    void wait();
 private:
+    void syncToNewestReqLog();
+    void syncSCDFiles();
     bool redoLog(ReqLogMgr* redolog, uint32_t start_id);
     //StartColCBFuncT start_col_;
     //StopColCBFuncT stop_col_;

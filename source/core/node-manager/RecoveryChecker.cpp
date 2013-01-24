@@ -5,11 +5,8 @@
 #include "SearchNodeManager.h"
 
 #include <glog/logging.h>
-
-#undef BOOST_FILESYSTEM_VERSION
-#define BOOST_FILESYSTEM_VERSION 3
-
 #include <boost/filesystem.hpp>
+
 #define MAX_BACKUP_NUM 3
 namespace bfs = boost::filesystem;
 
@@ -88,6 +85,11 @@ static void copyDir(bfs::path src, bfs::path dest)
     for( bfs::directory_iterator file(src); file != end_it; ++file )
     {
         bfs::path current(file->path());
+        if (!bfs::exists(current))
+        {
+            LOG(WARNING) << "the file disappeared while coping: " << current;
+            continue;
+        }
         if(bfs::is_directory(current))
         {
             // copy recursion
@@ -140,14 +142,26 @@ static void copy_dir(const bfs::path& src, const bfs::path& dest, bool keep_full
     copyDir(src, dest_path);
 }
 
+bool RecoveryChecker::getCollPath(const std::string& colname, CollectionPath& colpath)
+{
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    CollInfoMapT::const_iterator cit = all_col_info_.find(colname);
+    if (cit == all_col_info_.end())
+        return false;
+    colpath = cit->second.first;
+    return true;
+}
+
 void RecoveryChecker::addCollection(const std::string& colname, const CollectionPath& colpath, const std::string& configfile)
 {
+    boost::unique_lock<boost::mutex> lock(mutex_);
     LOG(INFO) << "collection added, updating in RecoveryChecker." << colname;
     all_col_info_[colname] = std::make_pair(colpath, configfile);
 }
 
 void RecoveryChecker::removeCollection(const std::string& colname)
 {
+    boost::unique_lock<boost::mutex> lock(mutex_);
     LOG(INFO) << "collection removed, updating in RecoveryChecker." << colname;
     all_col_info_.erase(colname);
 }
@@ -456,6 +470,7 @@ void RecoveryChecker::onRecoverCallback()
 {
     LOG(INFO) << "recovery callback, begin recovery before enter cluster.";
     rollbackLastFail();
+    syncSCDFiles();
     syncToNewestReqLog();
     // if failed, must exit.
     LOG(INFO) << "recovery finished, wait primary agree before enter cluster.";
@@ -465,6 +480,7 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
 {
     LOG(INFO) << "primary agreed , sync new request druing waiting recovery.";
     // check new request during wait recovery.
+    syncSCDFiles();
     syncToNewestReqLog();
     LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
 }
@@ -475,37 +491,52 @@ void RecoveryChecker::onRecoverWaitReplicasCallback()
     LOG(INFO) << "wait recovery finished , primary ready to server";
 }
 
+void RecoveryChecker::syncSCDFiles()
+{
+    CollInfoMapT tmp_all_col_info;
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        tmp_all_col_info = all_col_info_;
+    }
+    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
+    while(cit != tmp_all_col_info.end())
+    {
+        LOG(INFO) << "begin sync scd files for collection : " << cit->first;
+        DistributeFileSyncMgr::get()->syncNewestSCDFileList(cit->first);
+        ++cit;
+    }
+}
+
 void RecoveryChecker::syncToNewestReqLog()
 {
     LOG(INFO) << "begin sync to newest log.";
-    uint32_t reqid = reqlog_mgr_->getLastSuccessReqId();
+    std::vector<std::string> newlogdata_list;
     while(true)
     {
-        DistributeFileSyncMgr::get()->getNewestReqLog(reqid + 1, redo_log_basepath_);
-        // redo new request from newest log file.
-        // 
-        // if no any new request break while.
-        if (!bfs::exists(redo_log_basepath_))
+        uint32_t reqid = reqlog_mgr_->getLastSuccessReqId();
+        DistributeFileSyncMgr::get()->getNewestReqLog(reqid + 1, newlogdata_list);
+        if (newlogdata_list.empty())
             break;
-        // do new redo RequestLog.
-        ReqLogMgr redo_req_log_mgr;
-        redo_req_log_mgr.init(redo_log_basepath_);
-        if (redo_req_log_mgr.getLastSuccessReqId() == reqid)
-            break;
-        if(!redoLog(&redo_req_log_mgr, reqid + 1))
+        for (size_t i = 0; i < newlogdata_list.size(); ++i)
         {
-            LOG(ERROR) << "redo log failed while sync to newest request log. must exit";
-            throw std::runtime_error("redo log failed while recovering.");
+            // do new redo RequestLog.
+            CommonReqData req_commondata;
+            ReqLogMgr::unpackReqLogData(newlogdata_list[i], req_commondata);
+            LOG(INFO) << "redoing for request id : " << req_commondata.inc_id;
+            if (req_commondata.inc_id <= reqid)
+            {
+                LOG(ERROR) << "get new log data is out of order.";
+                throw std::runtime_error("syncToNewestReqLog failed.");
+            }
+            reqid = req_commondata.inc_id;
+            if(!DistributeDriver::get()->handleReqFromLog(req_commondata.req_json_data, newlogdata_list[i]))
+            {
+                LOG(INFO) << "redoing from log failed: " << req_commondata.inc_id;
+                throw std::runtime_error("handleReqFromLog failed.");
+            }
         }
-        //
-        bfs::remove_all(redo_log_basepath_);
-        reqid = reqlog_mgr_->getLastSuccessReqId();
     }
     LOG(INFO) << "no more new log to redo.";
-}
-
-void RecoveryChecker::wait()
-{
 }
 
 }

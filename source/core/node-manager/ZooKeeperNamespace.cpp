@@ -31,6 +31,7 @@ const char* ZNode::KEY_DATA_PORT = "dataport";
 const char* ZNode::KEY_MASTER_NAME = "mastername";
 const char* ZNode::KEY_MASTER_PORT = "masterport";
 const char* ZNode::KEY_WORKER_PORT = "workerport";
+const char* ZNode::KEY_FILESYNC_RPCPORT = "filesync_rpcport";
 const char* ZNode::KEY_REPLICA_ID = "replicaid";
 const char* ZNode::KEY_COLLECTION = "collection";
 const char* ZNode::KEY_NODE_STATE = "nodestate";

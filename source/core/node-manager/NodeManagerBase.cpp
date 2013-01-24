@@ -127,6 +127,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     znode.setValue(ZNode::KEY_HOST, sf1rTopology_.curNode_.host_);
     znode.setValue(ZNode::KEY_BA_PORT, sf1rTopology_.curNode_.baPort_);
     znode.setValue(ZNode::KEY_DATA_PORT, sf1rTopology_.curNode_.dataPort_);
+    znode.setValue(ZNode::KEY_FILESYNC_RPCPORT, (uint32_t)SuperNodeManager::get()->getFileSyncRpcPort());
     znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
     znode.setValue(ZNode::KEY_NODE_STATE, (uint32_t)nodeState_);
 
@@ -159,6 +160,40 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
         }
         znode.setValue(ZNode::KEY_COLLECTION, collections);
     }
+}
+
+bool NodeManagerBase::getCurrNodeSyncServerInfo(std::string& ip, int randnum)
+{
+    std::vector<std::string> node_list;
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+    if (node_list.empty())
+    {
+        return false;
+    }
+    int selected = randnum % node_list.size();
+    for (size_t i = selected; i <= node_list.size(); ++i)
+    {
+        if (i == node_list.size())
+        {
+            // using primary 
+            i = 0;
+        }
+        std::string data;
+        if(!zookeeper_->getZNodeData(node_list[i], data, ZooKeeper::WATCH))
+        {
+            LOG(INFO) << "get node data failed while get filesync server, try next : " << node_list[i];
+            continue;
+        }
+        ZNode node;
+        node.loadKvString(data);
+
+        if (i == 0 || node.getUInt32Value(ZNode::KEY_NODE_STATE) == NODE_STATE_STARTED)
+        {
+            ip = node.getStrValue(ZNode::KEY_HOST);
+            return true;
+        }
+    }
+    return false;
 }
 
 void NodeManagerBase::updateCurrentPrimary()

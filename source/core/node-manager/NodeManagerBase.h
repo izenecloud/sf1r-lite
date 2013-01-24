@@ -104,6 +104,7 @@ public:
 
     bool isPrimary();
 
+    bool getCurrNodeSyncServerInfo(std::string& ip, int randnum);
 
     void beginReqProcess();
     void notifyMasterReadyForNew();
