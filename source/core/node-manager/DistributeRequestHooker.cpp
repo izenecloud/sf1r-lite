@@ -127,7 +127,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
             LOG(ERROR) << "It may happen when the code is not the same. Must exit.";
             forceExit();
         }
-        LOG(INFO) << "got write request from primary, inc_id :" << prepared_req.inc_id;
+        LOG(INFO) << "got hooked write request, inc_id :" << prepared_req.inc_id;
     }
     prepared_req.reqtype = type;
     type_ = type;

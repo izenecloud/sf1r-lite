@@ -240,7 +240,7 @@
         1) ids are started at 1
     -->
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
-                       workerport="18151" masterport="18131" datarecvport="18121"/>
+                       workerport="18151" masterport="18131" datarecvport="18121" filesyncport="18141"/>
 
     <DistributedTopology enable="n" type="search" nodenum="2">
       <CurrentSf1rNode nodeid="1" replicaid="1">

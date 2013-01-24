@@ -536,7 +536,7 @@ void RecoveryChecker::syncToNewestReqLog()
             }
         }
     }
-    LOG(INFO) << "no more new log to redo.";
+    LOG(INFO) << "no more new log to redo. syncd to : " << reqlog_mgr_->getLastSuccessReqId();
 }
 
 }
