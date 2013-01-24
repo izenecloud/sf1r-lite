@@ -226,6 +226,7 @@
             <xs:attribute name="workerport" type="PortType" use="required"/>
             <xs:attribute name="masterport" type="PortType" use="required"/>
             <xs:attribute name="datarecvport" type="PortType" use="required"/>
+            <xs:attribute name="filesyncport" type="PortType" use="required"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="DistributedTopology">

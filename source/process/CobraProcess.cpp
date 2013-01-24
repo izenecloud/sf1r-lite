@@ -16,6 +16,7 @@
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/RequestLog.h>
 #include <node-manager/RecoveryChecker.h>
+#include <node-manager/DistributeFileSyncMgr.h>
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
@@ -249,9 +250,6 @@ bool CobraProcess::initNodeManager()
         return true;
     }
 
-    DistributeRequestHooker::init();
-    ReqLogMgr::initWriteRequestSet();
-
     // Start node management
     ZooKeeperManager::get()->init(
         SF1Config::get()->distributedUtilConfig_.zkConfig_,
@@ -264,6 +262,8 @@ bool CobraProcess::initNodeManager()
     if (SF1Config::get()->isDistributedRecommendNode())
         RecommendNodeManager::get()->init(SF1Config::get()->recommendTopologyConfig_);
 
+    DistributeRequestHooker::init();
+    ReqLogMgr::initWriteRequestSet();
 
     return true;
 }
@@ -325,6 +325,8 @@ bool CobraProcess::startDistributedServer()
     unsigned int dataPort = SF1Config::get()->distributedCommonConfig_.dataRecvPort_;
     CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
     CollectionDataReceiver::get()->start();
+
+    DistributeFileSyncMgr::get()->init();
 
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));
     return true;

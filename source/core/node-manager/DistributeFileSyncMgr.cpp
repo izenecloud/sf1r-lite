@@ -208,6 +208,8 @@ DistributeFileSyncMgr::DistributeFileSyncMgr()
 
 void DistributeFileSyncMgr::init()
 {
+    if (!SearchNodeManager::get()->isDistributed())
+        return;
     transfer_rpcserver_.reset(new FileSyncServer(SuperNodeManager::get()->getLocalHostIP(),
             SuperNodeManager::get()->getFileSyncRpcPort(), 4));
     transfer_rpcserver_->start();

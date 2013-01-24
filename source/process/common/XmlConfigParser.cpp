@@ -656,6 +656,7 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
     getAttribute(distributedCommon, "workerport", distributedCommonConfig_.workerPort_);
     getAttribute(distributedCommon, "masterport", distributedCommonConfig_.masterPort_);
     getAttribute(distributedCommon, "datarecvport", distributedCommonConfig_.dataRecvPort_);
+    getAttribute(distributedCommon, "filesyncport", distributedCommonConfig_.filesync_rpcport_);
     distributedCommonConfig_.baPort_ = brokerAgentConfig_.port_;
 
     if (!net::distribute::Util::getLocalHostIp(distributedCommonConfig_.localHost_))
