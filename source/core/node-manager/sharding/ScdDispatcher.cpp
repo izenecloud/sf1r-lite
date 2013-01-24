@@ -1,6 +1,7 @@
 #include "ScdDispatcher.h"
 
 #include <node-manager/SearchMasterManager.h>
+#include <node-manager/RecoveryChecker.h>
 
 #include <net/distribute/DataTransfer2.hpp>
 
@@ -231,7 +232,10 @@ bool BatchScdDispatcher::finish()
                       <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";
 
             izenelib::net::distribute::DataTransfer2 transfer(host, recvPort);
-            if (not transfer.syncSend(shardScdfileMap_[shardid], collectionName_+"/scd/index"))
+            CollectionPath colpath;
+            ret = RecoveryChecker::get()->getCollPath(collectionName_, colpath);
+
+            if ( ret && not transfer.syncSend(shardScdfileMap_[shardid], colpath.getScdPath() + "/index"))
             {
                 ret = false;
                 LOG(ERROR) << "Failed to transfer scd"<<shardid;

@@ -200,7 +200,7 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
 
 DistributeFileSyncMgr::DistributeFileSyncMgr()
 {
-    RpcServerConnection *conn_mgr_ = new RpcServerConnection();
+    conn_mgr_ = new RpcServerConnection();
     RpcServerConnectionConfig config;
     config.rpcThreadNum = 4;
     conn_mgr_->init(config);
@@ -339,7 +339,7 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
                 }
                 if(!getFileFromOther(ip, port, file_rsp.filepath, file_rsp.filesize))
                 {
-                    LOG(INFO) << "get file from other failed, retry next.";
+                    LOG(INFO) << "get file from other failed, retry next." << file_rsp.filepath;
                     break;
                 }
                 LOG(INFO) << "a scd file finished :" << file_rsp.filepath;
