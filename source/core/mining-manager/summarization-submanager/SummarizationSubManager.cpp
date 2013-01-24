@@ -218,85 +218,85 @@ void MultiDocSummarizationSubManager::commentsClassify(int x)
 {
     while(true)
     {
-    int i = 0;
-    Document doc;
-    {
-        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
-
-        while(docList_.empty())
+        int i = 0;
+        Document doc;
         {
-            if(can_quit_compute_)
+            boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+
+            while(docList_.empty())
             {
-                LOG(INFO) << "!!!---compute thread:" << (long)pthread_self() << " finished. ---!!!" << endl;
-                return;
+                if(can_quit_compute_)
+                {
+                    LOG(INFO) << "!!!---compute thread:" << (long)pthread_self() << " finished. ---!!!" << endl;
+                    return;
+                }
+                waiting_opinion_cond_.wait(g);
             }
-            waiting_opinion_cond_.wait(g);
+            doc = docList_.front().first;
+            i = docList_.front().second;
+            docList_.pop();
         }
-        doc = docList_.front().first;
-        i = docList_.front().second;
-        docList_.pop();
-    }
-    Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
-    if (kit == doc.propertyEnd()) continue;
+        Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
+        if (kit == doc.propertyEnd()) continue;
 
-    Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
-    if (cit == doc.propertyEnd()) continue;
+        Document::property_const_iterator cit = doc.findProperty(schema_.contentPropName);
+        if (cit == doc.propertyEnd()) continue;
 
-    Document::property_const_iterator ait = doc.findProperty(schema_.advantagePropName);
-    if (ait == doc.propertyEnd()) continue;
+        Document::property_const_iterator ait = doc.findProperty(schema_.advantagePropName);
+        if (ait == doc.propertyEnd()) continue;
 
-    Document::property_const_iterator dit = doc.findProperty(schema_.disadvantagePropName);
-    if (dit == doc.propertyEnd()) continue;
+        Document::property_const_iterator dit = doc.findProperty(schema_.disadvantagePropName);
+        if (dit == doc.propertyEnd()) continue;
 
-    Document::property_const_iterator title_it = doc.findProperty(schema_.titlePropName);
-    if (title_it == doc.propertyEnd()) continue;
+        Document::property_const_iterator title_it = doc.findProperty(schema_.titlePropName);
+        if (title_it == doc.propertyEnd()) continue;
 
-    const UString& key = kit->second.get<UString>();
-    if (key.empty()) continue;
+        const UString& key = kit->second.get<UString>();
+        if (key.empty()) continue;
 
-    ContentType content ;
+        ContentType content ;
 
-    UString us(cit->second.get<UString>());
-    std::string str;
-    us.convertString(str, izenelib::util::UString::UTF_8);
-    std::pair<UString, UString> advantagepair;
-    OpcList_[x]->Classify(str, advantagepair);
+        UString us(cit->second.get<UString>());
+        std::string str;
+        us.convertString(str, izenelib::util::UString::UTF_8);
+        std::pair<UString, UString> advantagepair;
+        OpcList_[x]->Classify(str, advantagepair);
 
-    AdvantageType advantage = advantagepair.first;
-    DisadvantageType disadvantage = advantagepair.second;
+        AdvantageType advantage = advantagepair.first;
+        DisadvantageType disadvantage = advantagepair.second;
 
-    UString us_title(title_it->second.get<UString>());
-    us_title.convertString(str, izenelib::util::UString::UTF_8);
-    OpcList_[x]->Classify(str,advantagepair);
+        UString us_title(title_it->second.get<UString>());
+        us_title.convertString(str, izenelib::util::UString::UTF_8);
+        OpcList_[x]->Classify(str,advantagepair);
 
-    if(advantage.find(advantagepair.first) == UString::npos)
-    {
-        advantage.append(advantagepair.first);
-    }
-    if(disadvantage.find(advantagepair.second) == UString::npos)
-    {
+        if(advantage.find(advantagepair.first) == UString::npos)
+        {
+            advantage.append(advantagepair.first);
+        }
+        if(disadvantage.find(advantagepair.second) == UString::npos)
+        {
+            disadvantage.append(advantagepair.second);
+        }
+        UString  usa(ait->second.get<AdvantageType>());
+        usa.convertString(str, izenelib::util::UString::UTF_8);
+        OpcList_[x]->Classify(str,advantagepair);
+        if(advantage.find(advantagepair.first) == UString::npos)
+        {
+            advantage.append(advantagepair.first);
+        }
+
+        UString  usd(dit->second.get<DisadvantageType>());
+        usd.convertString(str, izenelib::util::UString::UTF_8);
+        OpcList_[x]->Classify(str,advantagepair);
+        if(disadvantage.find(advantagepair.second) == UString::npos)
         disadvantage.append(advantagepair.second);
-    }
-    UString  usa(ait->second.get<AdvantageType>());
-    usa.convertString(str, izenelib::util::UString::UTF_8);
-    OpcList_[x]->Classify(str,advantagepair);
-    if(advantage.find(advantagepair.first) == UString::npos)
-    {
-        advantage.append(advantagepair.first);
-    }
-
-    UString  usd(dit->second.get<DisadvantageType>());
-    usd.convertString(str, izenelib::util::UString::UTF_8);
-    OpcList_[x]->Classify(str,advantagepair);
-    if(disadvantage.find(advantagepair.second) == UString::npos)
-    disadvantage.append(advantagepair.second);
-    float score = 0.0f;
-    document_manager_->getNumericPropertyTable(schema_.scorePropName)->getFloatValue(i, score);
-    {
-        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
-        comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,
-        advantage, disadvantage, score);
-    }
+        float score = 0.0f;
+        document_manager_->getNumericPropertyTable(schema_.scorePropName)->getFloatValue(i, score);
+        {
+            boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+            comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,
+            advantage, disadvantage, score);
+        }
     }
 }
 
@@ -333,6 +333,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
     std::string cma_path;
     LAPool::getInstance()->get_cma_path(cma_path);
+
+    {
+        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+        can_quit_compute_ = false;
+    }
     
     for (int i = 0; i < OPINION_COMPUTE_THREAD_NUM; ++i)
     {
@@ -365,6 +370,19 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
     LOG(INFO) << "Finish document iterator....";
 
+    {
+        boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
+        can_quit_compute_ = true;
+        waiting_opinion_cond_.notify_all();
+    }
+
+    for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
+    {
+        comment_classify_threads[i]->timed_join(boost::posix_time::seconds(15));
+    }
+
+    LOG(INFO) << "All document iterator lines finished" ;
+    
     for(int i = 0; i < OPINION_COMPUTE_THREAD_NUM; i++)
     {
         delete comment_classify_threads[i];
