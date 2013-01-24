@@ -232,10 +232,7 @@ bool BatchScdDispatcher::finish()
                       <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";
 
             izenelib::net::distribute::DataTransfer2 transfer(host, recvPort);
-            CollectionPath colpath;
-            ret = RecoveryChecker::get()->getCollPath(collectionName_, colpath);
-
-            if ( ret && not transfer.syncSend(shardScdfileMap_[shardid], colpath.getScdPath() + "/index"))
+            if (not transfer.syncSend(shardScdfileMap_[shardid], collectionName_ + "/scd/index"))
             {
                 ret = false;
                 LOG(ERROR) << "Failed to transfer scd"<<shardid;

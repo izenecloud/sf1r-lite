@@ -53,6 +53,7 @@ void FileSyncServer::start()
 {
     instance.listen(host_, port_);
     instance.start(threadNum_);
+    LOG(INFO) << "starting file sync server on : " << host_ << ":" << port_;
 }
 
 void FileSyncServer::join()
@@ -329,6 +330,7 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
                     if (!bfs::is_regular_file(file_rsp.filepath))
                     {
                         LOG(INFO) << "found a file with same name but not a scd file.";
+                        bfs::remove_all(file_rsp.filepath + "_renamed");
                         bfs::rename(file_rsp.filepath, file_rsp.filepath + "_renamed");
                     }
                     else if(bfs::file_size(file_rsp.filepath) == file_rsp.filesize)

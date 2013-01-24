@@ -286,6 +286,12 @@ bool CobraProcess::startDistributedServer()
     }
 
     RecoveryChecker::get()->init(SF1Config::get()->getWorkingDir());
+    // Start data receiver
+    unsigned int dataPort = SF1Config::get()->distributedCommonConfig_.dataRecvPort_;
+    CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
+    CollectionDataReceiver::get()->start();
+
+    DistributeFileSyncMgr::get()->init();
 
     // Start worker server
     if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
@@ -320,13 +326,6 @@ bool CobraProcess::startDistributedServer()
         SearchNodeManager::get()->start();
     if (SF1Config::get()->isDistributedRecommendNode())
         RecommendNodeManager::get()->start();
-
-    // Start data receiver
-    unsigned int dataPort = SF1Config::get()->distributedCommonConfig_.dataRecvPort_;
-    CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
-    CollectionDataReceiver::get()->start();
-
-    DistributeFileSyncMgr::get()->init();
 
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));
     return true;

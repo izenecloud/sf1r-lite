@@ -315,7 +315,7 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
             std::string recvDir;
             if (dataType == SynchroData::DATA_TYPE_SCD_INDEX)
             {
-                recvDir = "./collection/" + consumerCollection+"/scd/index";
+                recvDir = consumerCollection+"/scd/index";
             }
             else
             {
