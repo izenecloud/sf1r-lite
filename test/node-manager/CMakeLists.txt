@@ -41,6 +41,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   TARGET_LINK_LIBRARIES(t_node_manager_manual      
       sf1r_node_manager
       sf1r_common    
+      sf1r_net
       ${izenelib_LIBRARIES}      
       #external
       ${Boost_LIBRARIES}
@@ -53,6 +54,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   TARGET_LINK_LIBRARIES(t_scd_sharding      
       sf1r_node_manager
       sf1r_common    
+      sf1r_net
       ${izenelib_LIBRARIES}      
       #external
       ${Boost_LIBRARIES}
