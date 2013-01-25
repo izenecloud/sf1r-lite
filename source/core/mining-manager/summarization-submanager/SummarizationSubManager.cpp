@@ -227,7 +227,7 @@ void MultiDocSummarizationSubManager::commentsClassify(int x)
             {
                 if(can_quit_compute_)
                 {
-                    LOG(INFO) << "!!!---compute thread:" << (long)pthread_self() << " finished. ---!!!" << endl;
+                    LOG(INFO) << "!!!---Classify thread:" << (long)pthread_self() << " finished. ---!!!" << endl;
                     return;
                 }
                 waiting_opinion_cond_.wait(g);
@@ -295,11 +295,10 @@ void MultiDocSummarizationSubManager::commentsClassify(int x)
         {
             boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
             comment_cache_storage_->AppendUpdate(Utilities::md5ToUint128(key), i, content,
-            advantage, disadvantage, score);
+                advantage, disadvantage, score);
         }
     }
 }
-
 
 void MultiDocSummarizationSubManager::EvaluateSummarization()
 {
@@ -397,6 +396,12 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     comment_cache_storage_->Flush(true);
 
     string OpPath = schema_.opinionWorkingPath;
+    boost::filesystem::path opPath(OpPath);
+    if (!boost::filesystem::exists(opPath))
+    {
+        boost::filesystem::create_directory(opPath);
+    }
+
     boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
     boost::filesystem::create_directory(generated_scds_path);
 
