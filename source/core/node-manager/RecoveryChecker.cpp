@@ -18,7 +18,7 @@ static void getBackupList(const bfs::path& backup_basepath, std::vector<uint32_t
     if (!bfs::exists(backup_basepath))
         return;
     // only keep the lastest 3 backups.
-    static bfs::directory_iterator end_dir = bfs::directory_iterator();
+    static const bfs::directory_iterator end_dir = bfs::directory_iterator();
     bfs::directory_iterator backup_dirs_it = bfs::directory_iterator(backup_basepath);
     while(backup_dirs_it != end_dir)
     {
@@ -120,7 +120,7 @@ static void copyDir(bfs::path src, bfs::path dest)
 // src = xxx/xxx/src_name
 // dest = xxx/xxx/xxx
 // copy xxx/xxx/src_name to dest/src
-// with copy_only_filename copy xxx/xxx/src_name to dest/src_name
+// with keep_full_path = false copy xxx/xxx/src_name to dest/src_name
 // if dest = xxx/xxx/xxx/src_name
 // then copy src to dest
 static void copy_dir(const bfs::path& src, const bfs::path& dest, bool keep_full_path = true)

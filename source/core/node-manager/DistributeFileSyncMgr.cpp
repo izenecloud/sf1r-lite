@@ -391,7 +391,7 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& filepath, bool f
         if (!getFileInfo(ip, port, file_rsp))
             continue;
 
-        if(!getFileFromOther(ip, port, file_rsp.filepath, file_rsp.filesize))
+        if(!getFileFromOther(ip, port, file_rsp.filepath, file_rsp.filesize, force_overwrite))
         {
             LOG(INFO) << "get file from other failed, retry next." << file_rsp.filepath;
             continue;

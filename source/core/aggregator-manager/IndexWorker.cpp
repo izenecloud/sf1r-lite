@@ -244,6 +244,8 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         else
         {
             LOG(WARNING) << "push index scd file to the replicas failed for:" << scdList[file_index]; 
+            distribute_req_hooker_->processLocalFinished(false);
+            return false;
         }
     }
 
@@ -284,6 +286,23 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
     for (size_t i = 0; i < reqlog.scd_list.size(); ++i)
     {
         LOG(INFO) << reqlog.scd_list[i];
+        bfs::path backup_scd = bfs::path(reqlog.scd_list[i]);
+        backup_scd = backup_scd.parent_path()/bfs::path("backup")/backup_scd.filename();
+        if (bfs::exists(reqlog.scd_list[i]))
+        {
+            LOG(INFO) << "found index scd file in index directory.";
+        }
+        else if (bfs::exists(backup_scd))
+        {
+            // try to find in backup
+            LOG(INFO) << "found index scd file in backup, move to index";
+            bfs::rename(backup_scd, reqlog.scd_list[i]);
+        }
+        else if (!DistributeFileSyncMgr::get()->getFileFromOther(reqlog.scd_list[i]))
+        {
+            LOG(INFO) << "index scd file missing." << reqlog.scd_list[i];
+            throw std::runtime_error("index scd file missing!");
+        }
     }
 
     bool ret = buildCollection(numdoc, reqlog.scd_list);
