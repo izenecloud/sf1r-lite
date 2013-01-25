@@ -29,15 +29,10 @@ MerchantScoreEvaluator::MerchantScoreEvaluator(
 
 score_t MerchantScoreEvaluator::evaluate(ProductScore& productScore)
 {
-    const std::vector<score_t>& rankScores = productScore.rankScores_;
-
-    if (rankScores.size() < 2)
-        return 0;
-
-    score_t merchantCount = rankScores[1];
+    const merchant_id_t singleMerchantId = productScore.singleMerchantId_;
 
     // ignore multiple merchants
-    if (merchantCount != 1)
+    if (singleMerchantId == 0)
         return 0;
 
     category_id_t categoryId = 0;
@@ -47,6 +42,5 @@ score_t MerchantScoreEvaluator::evaluate(ProductScore& productScore)
         categoryId = categoryValueTable_->getRootValueId(docId);
     }
 
-    return merchantScoreManager_.getIdScore(productScore.singleMerchantId_,
-                                            categoryId);
+    return merchantScoreManager_.getIdScore(singleMerchantId, categoryId);
 }

@@ -10,24 +10,20 @@ DiversityRoundEvaluator::DiversityRoundEvaluator()
 
 score_t DiversityRoundEvaluator::evaluate(ProductScore& productScore)
 {
+    const merchant_id_t singleMerchantId = productScore.singleMerchantId_;
     const std::vector<score_t>& rankScores = productScore.rankScores_;
 
-    if (rankScores.size() < 2)
-        return 0;
-
-    score_t categoryScore = rankScores[0];
-    score_t merchantCount = rankScores[1];
-
     // ignore multiple merchants
-    if (merchantCount != 1)
+    if (singleMerchantId == 0 || rankScores.empty())
         return 0;
 
     // reset the round status when "category score" is changed
+    const score_t categoryScore = rankScores.front();
     if (lastCategoryScore_ != categoryScore)
     {
         roundMap_.clear();
         lastCategoryScore_ = categoryScore;
     }
 
-    return --roundMap_[productScore.singleMerchantId_];
+    return --roundMap_[singleMerchantId];
 }
