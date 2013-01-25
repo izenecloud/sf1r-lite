@@ -3,7 +3,6 @@
 
 #include <common/Keys.h>
 #include <bundles/mining/MiningSearchService.h>
-#include <mining-manager/MiningManager.h>
 #include <mining-manager/merchant-score-manager/MerchantScore.h>
 #include <mining-manager/merchant-score-manager/MerchantScoreParser.h>
 #include <mining-manager/merchant-score-manager/MerchantScoreRenderer.h>
@@ -529,9 +528,7 @@ void FacetedController::set_merchant_score()
         return;
     }
 
-    boost::shared_ptr<MiningManager> miningManager = miningSearchService_->GetMiningManager();
     const MerchantStrScoreMap& scoreMap = parser.merchantStrScoreMap();
-
     if (! miningSearchService_->setMerchantScore(scoreMap))
     {
         response().addError("Failed to set merchant score.");
