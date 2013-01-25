@@ -166,8 +166,12 @@ bool SearchThreadMaster::fetchSearchResult(
     std::vector<float>& customRankScoreList = searchResult.topKCustomRankScoreList_;
     boost::shared_ptr<HitQueue> scoreItemQueue(threadParam.scoreItemQueue);
     CustomRankerPtr customRanker = threadParam.customRanker;
-
-    const std::size_t count = scoreItemQueue->size() - offset;
+    
+    std::size_t count = 0;
+    if (offset < scoreItemQueue->size())
+    {
+        count = scoreItemQueue->size() - offset;
+    }
     docIdList.resize(count);
     rankScoreList.resize(count);
 
