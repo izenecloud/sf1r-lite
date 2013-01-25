@@ -308,6 +308,11 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
 
         if (rsp.success)
         {
+            if (rsp.scd_list.empty())
+            {
+                LOG(INFO) << "no scd file need sync.";
+                return true;
+            }
             for (size_t i = 0; i < rsp.scd_list.size(); ++i)
             {
                 GetFileData file_rsp;
