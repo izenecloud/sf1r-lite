@@ -56,6 +56,8 @@ public:
     
     void syncFullSummScd();
 private:
+    void commentsClassify(int x);
+
     void dealTotalScd(const std::string& filename 
             , const std::set<KeyType>& del_docid_set
             , fstream& os);
@@ -101,7 +103,7 @@ private:
 
     Corpus* corpus_;
     std::vector<OpinionsManager*> Ops_;
-    OpinionsClassificationManager* Opc_;
+    std::vector<OpinionsClassificationManager*> OpcList_;
     boost::mutex  waiting_opinion_lock_;
     boost::mutex  opinion_results_lock_;
     boost::condition_variable  waiting_opinion_cond_;
@@ -123,6 +125,7 @@ private:
     std::queue< WaitingComputeCommentItem >  waiting_opinion_comments_;
     std::queue< OpinionResultItem >  opinion_results_;
     std::vector<boost::thread*>  opinion_compute_threads_;
+    std::queue<std::pair<Document, docid_t> > docList_;
     bool  can_quit_compute_;
 };
 
