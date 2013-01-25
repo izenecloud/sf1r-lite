@@ -29,7 +29,8 @@ public:
     bool backup();
     bool setRollbackFlag(uint32_t inc_id);
     void clearRollbackFlag();
-    bool rollbackLastFail();
+    bool rollbackLastFail(bool need_restore_backupfile = true);
+    bool checkAndRestoreBackupFile(const CollectionPath& colpath);
 
     //void setRestartCallback(StartColCBFuncT start_col, StopColCBFuncT stop_col)
     //{

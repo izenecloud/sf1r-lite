@@ -71,6 +71,7 @@ public:
     bool addUser(const User& user);
     bool updateUser(const User& user);
     bool removeUser(const std::string& userIdStr);
+    void flushData();
 
     /**
      * @p sessionIdStr, @p userIdStr and @p itemIdStr must not be empty.

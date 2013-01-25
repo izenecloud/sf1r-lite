@@ -174,7 +174,7 @@ bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas)
     std::string sdata;
     replicas.clear();
     std::string ip;
-    for (size_t i = 1; i <= node_list.size(); ++i)
+    for (size_t i = 1; i < node_list.size(); ++i)
     {
         if (zookeeper_->getZNodeData(node_list[i], sdata, ZooKeeper::WATCH))
         {

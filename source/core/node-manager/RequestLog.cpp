@@ -20,6 +20,8 @@ std::set<std::string> ReqLogMgr::write_req_set_;
 // request is hooked to handle correctly both on the primary and replicas.
 // If returned before prepared, make sure processLocalFinished also called.
 // 5. make sure if the hooktype == FromLog, all the handler should be called sync. (not in JobScheduler)
+// 6. if a write request need to chain with another request , you should put subsequence 
+// write request to the node queue using SearchMasterManager::get()->pushWriteReq(reqdata).
 void ReqLogMgr::initWriteRequestSet()
 {
     write_req_set_.insert("documents_create");

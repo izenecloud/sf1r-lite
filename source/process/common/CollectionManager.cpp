@@ -120,6 +120,11 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
         recommendBundleConfig->collPath_ =  indexBundleConfig->collPath_;
     }
 
+    if(!RecoveryChecker::get()->checkAndRestoreBackupFile(collectionMeta.getCollectionPath()))
+    {
+        throw std::runtime_error("start collection failed while check backup file and restore.");
+    }
+
     ///createIndexBundle
     if (indexBundleConfig->isSchemaEnable_)
     {
@@ -315,11 +320,8 @@ void CollectionManager::flushCollection(const std::string& collectionName)
     {
         if(iter->second->indexTaskService_)
             iter->second->indexTaskService_->flushData();
-        //if(iter->second->miningSearchService_)
-        //    iter->second->miningSearchService_->flushData();
-
-        //if(iter->second->recommendTaskService_)
-        //    iter->second->recommendTaskService_->flushData();
+        if(iter->second->recommendTaskService_)
+            iter->second->recommendTaskService_->flushData();
         // other service need to add flush interface.
     }
 }

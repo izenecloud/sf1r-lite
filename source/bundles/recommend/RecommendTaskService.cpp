@@ -769,6 +769,11 @@ void RecommendTaskService::cronJob_()
     }
 }
 
+void RecommendTaskService::flushData()
+{
+    flush_();
+}
+
 void RecommendTaskService::flush_()
 {
     LOG(INFO) << "start flushing recommend data for collection " << bundleConfig_.collectionName_;

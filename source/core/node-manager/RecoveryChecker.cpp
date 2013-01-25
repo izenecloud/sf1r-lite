@@ -293,10 +293,54 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
     return ret;
 }
 
+bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
+{
+    if (!bfs::exists(rollback_file_))
+    {
+        return true;
+    }
+    ifstream ifs(rollback_file_.c_str());
+    if (!ifs.good())
+    {
+        return false;
+    }
+
+    std::string last_backup_path;
+    uint32_t last_backup_id = 0;
+    bool has_backup = true;
+    if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
+    {
+        last_backup_id = 0;
+        has_backup = false;
+    }
+
+    // copy backup data to replace current and reopen all file.
+    if (has_backup)
+    {
+        try
+        {
+            bfs::path dest_coldata_backup(last_backup_path + "/backup_data");
+            LOG(INFO) << "restoring the backup for the collection.";
+
+            bfs::path coldata_path(colpath.getCollectionDataPath());
+            bfs::path querydata_path(colpath.getQueryDataPath());
+
+            copy_dir(dest_coldata_backup/coldata_path, coldata_path);
+            copy_dir(dest_coldata_backup/querydata_path, querydata_path);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(ERROR) << "copy backup to current working path failed." << e.what();
+            return false;
+        }
+    }
+    return true;
+}
+
 // note : if there are more than one collection we need backup
 // all collection data. only in this way we can rollback and redo log to 
 // rollback the data before last failed request.
-bool RecoveryChecker::rollbackLastFail()
+bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
     // not all inc_id has a backup, so we just find the newest backup.
@@ -337,26 +381,29 @@ bool RecoveryChecker::rollbackLastFail()
         has_backup = false;
     }
 
-    // stop collection will change the metamap so we need a copy. 
-    CollInfoMapT tmp_all_col_info = all_col_info_;
-    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
-    while(cit != tmp_all_col_info.end())
-    {
-        flush_col_(cit->first);
-        // remove old data.
-        //bfs::remove_all(cit->second.first.getCollectionDataPath());
-        //bfs::remove_all(cit->second.first.getQueryDataPath());
-        ++cit;
-    }
-
-    // copy backup data to replace current and reopen all file.
     if (has_backup)
     {
+        // copy backup log to current .
+        copy_dir(last_backup_path + bfs::path(request_log_basepath_).filename().c_str(),
+            request_log_basepath_, false);
+    }
+    if (has_backup && need_restore_backupfile)
+    {
+        // stop collection will change the metamap so we need a copy. 
+        CollInfoMapT tmp_all_col_info = all_col_info_;
+        CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
+        while(cit != tmp_all_col_info.end())
+        {
+            flush_col_(cit->first);
+            // remove old data.
+            //bfs::remove_all(cit->second.first.getCollectionDataPath());
+            //bfs::remove_all(cit->second.first.getQueryDataPath());
+            ++cit;
+        }
+
+        // copy backup data to replace current and reopen all file.
         try
         {
-            // copy backup log to current .
-            copy_dir(last_backup_path + bfs::path(request_log_basepath_).filename().c_str(),
-                request_log_basepath_, false);
             CollInfoMapT::const_iterator inner_cit = tmp_all_col_info.begin();
             bfs::path dest_coldata_backup(last_backup_path + "/backup_data");
             while(inner_cit != tmp_all_col_info.end())
@@ -378,6 +425,14 @@ bool RecoveryChecker::rollbackLastFail()
             bfs::rename(redo_log_basepath_, request_log_basepath_);
             return false;
         }
+
+        cit = tmp_all_col_info.begin();
+        while(cit != tmp_all_col_info.end())
+        {
+            if(!reopen_col_(cit->first))
+                return false;
+            ++cit;
+        }
     }
 
     if (rollback_id != 0)
@@ -388,13 +443,6 @@ bool RecoveryChecker::rollbackLastFail()
     reqlog_mgr_->init(request_log_basepath_);
 
     LOG(INFO) << "rollback to last backup finished, begin redo from backup to sync to last fail request.";
-    cit = tmp_all_col_info.begin();
-    while(cit != tmp_all_col_info.end())
-    {
-        if(!reopen_col_(cit->first))
-            return false;
-        ++cit;
-    }
     clearRollbackFlag();
 
     if (last_backup_id == last_write_id)
@@ -428,6 +476,7 @@ void RecoveryChecker::init(const std::string& workdir)
         return;
     }
 
+
     reqlog_mgr_.reset(new ReqLogMgr());
     try
     {
@@ -439,11 +488,6 @@ void RecoveryChecker::init(const std::string& workdir)
         setRollbackFlag(0);
         bfs::remove_all(request_log_basepath_);
         reqlog_mgr_->init(request_log_basepath_);
-        if(!rollbackLastFail())
-        {
-            LOG(ERROR) << "corrupt data and rollback failed. Unrecoverable!!";
-            throw std::runtime_error("corrupt data and rollback failed. Unrecoverable!!");
-        }
     }
 
     std::string backup_path;
@@ -469,7 +513,12 @@ void RecoveryChecker::init(const std::string& workdir)
 void RecoveryChecker::onRecoverCallback()
 {
     LOG(INFO) << "recovery callback, begin recovery before enter cluster.";
-    rollbackLastFail();
+
+    if(!rollbackLastFail(false))
+    {
+        LOG(ERROR) << "corrupt data and rollback failed. Unrecoverable!!";
+        throw std::runtime_error("corrupt data and rollback failed. Unrecoverable!!");
+    }
     syncSCDFiles();
     syncToNewestReqLog();
     // if failed, must exit.

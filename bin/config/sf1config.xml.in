@@ -276,7 +276,7 @@
     </DistributedTopology>
 
     <DistributedUtil>
-      <ZooKeeper disable="n" servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="2000"/>
+      <ZooKeeper disable="n" servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="20000"/>
       <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000"/>
     </DistributedUtil>
   </Deployment>
