@@ -58,6 +58,8 @@ void CommandsController::index()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(checkCollectionName());
 
+    if (callDistribute())
+        return;
     indexSearch_();
     indexRecommend_();
 }
