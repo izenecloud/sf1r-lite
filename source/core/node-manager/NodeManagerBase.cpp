@@ -162,6 +162,31 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     }
 }
 
+bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas)
+{
+    std::vector<std::string> node_list;
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+    if (node_list.size() <= 1)
+    {
+        // no replica for this node.
+        return true;
+    }
+    std::string sdata;
+    replicas.clear();
+    std::string ip;
+    for (size_t i = 1; i <= node_list.size(); ++i)
+    {
+        if (zookeeper_->getZNodeData(node_list[i], sdata, ZooKeeper::WATCH))
+        {
+            replicas.push_back(ip);
+            ZNode node;
+            node.loadKvString(sdata);
+            replicas.back() = node.getStrValue(ZNode::KEY_HOST);
+        }
+    }
+    return true;
+}
+
 bool NodeManagerBase::getCurrNodeSyncServerInfo(std::string& ip, int randnum)
 {
     std::vector<std::string> node_list;
@@ -821,11 +846,8 @@ void NodeManagerBase::updateNodeState()
     ZNode nodedata;
     setSf1rNodeData(nodedata);
     zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
-    if (nodeState_ == NODE_STATE_STARTED || nodeState_ == NODE_STATE_UNKNOWN)
-    {
-        // update to nodepath to make master got notified.
-        zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
-    }
+    // update to nodepath to make master got notified.
+    zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
 }
 
 void NodeManagerBase::checkSecondaryReqProcess()

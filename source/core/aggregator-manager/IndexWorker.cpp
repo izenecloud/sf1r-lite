@@ -21,6 +21,7 @@
 #include <node-manager/SearchNodeManager.h>
 #include <node-manager/RequestLog.h>
 #include <node-manager/RecoveryChecker.h>
+#include <node-manager/DistributeFileSyncMgr.h>
 #include <util/driver/Request.h>
 
 // xxx
@@ -231,6 +232,20 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     }
     //sort scdList
     sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
+
+    // push scd files to replicas
+    for (size_t file_index = 0; file_index < scdList.size(); ++file_index)
+    {
+        if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scdList[file_index],
+                scdList[file_index]))
+        {
+            LOG(INFO) << "Transfer index scd to the replicas finished for: " << scdList[file_index];
+        }
+        else
+        {
+            LOG(WARNING) << "push index scd file to the replicas failed for:" << scdList[file_index]; 
+        }
+    }
 
     IndexReqLog reqlog;
     reqlog.scd_list = scdList;

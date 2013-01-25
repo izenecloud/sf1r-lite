@@ -105,6 +105,7 @@ public:
     bool isPrimary();
 
     bool getCurrNodeSyncServerInfo(std::string& ip, int randnum);
+    bool getAllReplicaInfo(std::vector<std::string>& replicas);
 
     void beginReqProcess();
     void notifyMasterReadyForNew();

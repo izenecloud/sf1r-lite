@@ -64,9 +64,10 @@ public:
     void notifyFinishReceive(const std::string& filepath);
     bool waitFinishReceive(const std::string& filepath, uint64_t filesize);
     void sendFinishNotifyToReceiver(const std::string& ip, uint16_t port, const FinishReceiveRequest& req);
+    bool pushFileToAllReplicas(const std::string& srcpath, const std::string& destpath, bool recrusive = false);
 
 private:
-    bool getFileInfo(const std::string& ip, uint16_t port, GetFileData& filepath);
+    bool getFileInfo(const std::string& ip, uint16_t port, GetFileData& fileinfo);
     bool getFileFromOther(const std::string& ip, uint16_t port, const std::string& filepath, uint64_t filesize, bool force_overwrite = false);
     RpcServerConnection* conn_mgr_;
     boost::shared_ptr<FileSyncServer> transfer_rpcserver_;

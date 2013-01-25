@@ -330,6 +330,26 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
     return false;
 }
 
+bool DistributeFileSyncMgr::pushFileToAllReplicas(const std::string& srcpath,
+    const std::string& destpath, bool recrusive)
+{
+    std::vector<std::string> replica_info;
+    SearchNodeManager::get()->getAllReplicaInfo(replica_info);
+    bool all_success = true;
+    uint16_t port = SuperNodeManager::get()->getDataReceiverPort();
+    for (size_t i = 0; i < replica_info.size(); ++i)
+    {
+        izenelib::net::distribute::DataTransfer2 transfer(replica_info[i], port);
+        if (not transfer.syncSend(srcpath, destpath, recrusive))
+        {
+            LOG(WARNING) << "push file to replica failed: " << replica_info[i];
+            all_success = false;
+        }
+        LOG(INFO) << "push file to replica success : " << replica_info[i];
+    }
+    return all_success;
+}
+
 bool DistributeFileSyncMgr::getFileInfo(const std::string& ip, uint16_t port, GetFileData& file_rsp)
 {
     LOG(INFO) << "try get file from: " << ip << ":" << port;

@@ -243,7 +243,6 @@ bool BatchScdDispatcher::finish()
             ret = false;
             LOG(ERROR) << "Not found server info for shard "<<shardid;
         }
-
         if (!ret)
             break;
     }
