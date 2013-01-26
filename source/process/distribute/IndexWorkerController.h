@@ -24,11 +24,13 @@ public:
         ADD_WORKER_HANDLER_BEGIN(IndexWorkerController, router)
 
         ADD_WORKER_HANDLER(index)
+        ADD_WORKER_HANDLER(HookDistributeRequest)
 
         ADD_WORKER_HANDLER_END()
     }
 
     WORKER_CONTROLLER_METHOD_2(index, indexWorker_->index, unsigned int, bool)
+    WORKER_CONTROLLER_METHOD_3(HookDistributeRequest, indexWorker_->HookDistributeRequest, int, std::string, bool)
 
 protected:
     virtual bool checkWorker(std::string& error);
