@@ -114,7 +114,7 @@ IF (CMAKE_COMPILER_IS_GNUCXX)
 
   MACRO_SET_BUILD_TYPES(
     RelWithDebInfo
-    "-march=native -mtune=native -fopenmp -O0 -g -Wno-deprecated -DNDEBUG"
+    "-march=native -mtune=native -fopenmp -O2 -g -Wno-deprecated -DNDEBUG"
     "Flags used by the compiler during Release with Debug Info builds."
 
     Release
