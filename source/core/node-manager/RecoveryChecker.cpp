@@ -2,7 +2,7 @@
 #include "DistributeFileSyncMgr.h"
 #include "DistributeDriver.h"
 #include "RequestLog.h"
-#include "SearchNodeManager.h"
+#include "NodeManagerBase.h"
 
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
@@ -471,7 +471,7 @@ void RecoveryChecker::init(const std::string& workdir)
     redo_log_basepath_ = workdir + "/redo-log";
     rollback_file_ = workdir + "/rollback_flag";
 
-    if (!SearchNodeManager::get()->isDistributed())
+    if (!NodeManagerBase::get()->isDistributed())
     {
         return;
     }
@@ -503,7 +503,7 @@ void RecoveryChecker::init(const std::string& workdir)
         }
     }
 
-    SearchNodeManager::get()->setRecoveryCallback(
+    NodeManagerBase::get()->setRecoveryCallback(
         boost::bind(&RecoveryChecker::onRecoverCallback, this),
         boost::bind(&RecoveryChecker::onRecoverWaitPrimaryCallback, this),
         boost::bind(&RecoveryChecker::onRecoverWaitReplicasCallback, this));

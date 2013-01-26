@@ -681,11 +681,11 @@ void SF1Config::parseDistributedTopologies(const ticpp::Element * deploy)
         getAttribute(topology, "type", type);
         if (type == "search")
         {
-            parseDistributedTopology(topology, searchTopologyConfig_);
+            parseDistributedTopology(topology, topologyConfig_);
         }
         else if (type == "recommend")
         {
-            parseDistributedTopology(topology, recommendTopologyConfig_);
+            parseDistributedTopology(topology, topologyConfig_);
         }
     }
 }
@@ -703,8 +703,8 @@ void SF1Config::parseDistributedTopology(
         }
 
         getAttribute(topology, "enable", topologyConfig.enabled_);
-        getAttribute(topology, "type", topologyConfig.type_);
-        topologyConfig.sf1rTopology_.setType(topologyConfig.type_);
+        //getAttribute(topology, "type", topologyConfig.type_);
+        //topologyConfig.sf1rTopology_.setType(topologyConfig.type_);
 
         Sf1rTopology& sf1rTopology = topologyConfig.sf1rTopology_;
         sf1rTopology.clusterId_ = distributedCommonConfig_.clusterId_;
@@ -736,9 +736,9 @@ void SF1Config::parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& s
 {
     if (master)
     {
-        getAttribute(master, "enable", sf1rNodeMaster.isEnabled_);
-        getAttribute(master, "name", sf1rNodeMaster.name_);
-        getAttribute(master, "shardnum", sf1rNodeMaster.totalShardNum_);
+        //getAttribute(master, "enable", sf1rNodeMaster.isEnabled_);
+        //getAttribute(master, "name", sf1rNodeMaster.name_);
+        //getAttribute(master, "shardnum", sf1rNodeMaster.totalShardNum_);
 
         Iterator<Element> collection_it("Collection");
         for (collection_it = collection_it.begin(master); collection_it != collection_it.end(); collection_it++)
@@ -761,13 +761,13 @@ void SF1Config::parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& s
                         try
                         {
                             shardid = boost::lexical_cast<shardid_t>(*it);
-                            if (shardid < 1 || shardid > sf1rNodeMaster.totalShardNum_)
-                            {
-                                std::stringstream ss;
-                                ss << "invalid shardid \"" << shardid << "\" in <MasterServer ...> <Collection name=\""
-                                   << masterCollection.name_ << "\" shardids=\"" << shardids << "\"";
-                                throw std::runtime_error(ss.str());
-                            }
+                            //if (shardid < 1 || shardid > sf1rNodeMaster.totalShardNum_)
+                            //{
+                            //    std::stringstream ss;
+                            //    ss << "invalid shardid \"" << shardid << "\" in <MasterServer ...> <Collection name=\""
+                            //       << masterCollection.name_ << "\" shardids=\"" << shardids << "\"";
+                            //    throw std::runtime_error(ss.str());
+                            //}
                         }
                         catch (const std::exception& e)
                         {
@@ -780,15 +780,15 @@ void SF1Config::parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& s
                 else
                 {
                     // set to all shards as default
-                    for (uint32_t i = 1; i <= sf1rNodeMaster.totalShardNum_; i++)
-                    {
-                        masterCollection.shardList_.push_back(i);
-                    }
+                    //for (uint32_t i = 1; i <= sf1rNodeMaster.totalShardNum_; i++)
+                    //{
+                    //    masterCollection.shardList_.push_back(i);
+                    //}
                 }
             }
 
             downCase(masterCollection.name_);
-            sf1rNodeMaster.collectionList_.push_back(masterCollection);
+            //sf1rNodeMaster.collectionList_.push_back(masterCollection);
         }
     }
 }
@@ -797,7 +797,7 @@ void SF1Config::parseNodeWorker(const ticpp::Element * worker, Sf1rNodeWorker& s
 {
     if (worker)
     {
-        getAttribute(worker, "enable", sf1rNodeWorker.isEnabled_);
+        //getAttribute(worker, "enable", sf1rNodeWorker.isEnabled_);
 
         Iterator<Element> collection_it("Collection");
         for (collection_it = collection_it.begin(worker); collection_it != collection_it.end(); collection_it++)
@@ -805,7 +805,7 @@ void SF1Config::parseNodeWorker(const ticpp::Element * worker, Sf1rNodeWorker& s
             std::string collection;
             getAttribute(collection_it.Get(), "name", collection);
             downCase(collection);
-            sf1rNodeWorker.collectionList_.push_back(collection);
+            //sf1rNodeWorker.collectionList_.push_back(collection);
         }
     }
 }

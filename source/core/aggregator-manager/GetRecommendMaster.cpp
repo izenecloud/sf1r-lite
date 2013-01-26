@@ -1,5 +1,5 @@
 #include "GetRecommendMaster.h"
-#include <node-manager/RecommendMasterManager.h>
+#include <node-manager/MasterManagerBase.h>
 #include <node-manager/sharding/RecommendShardStrategy.h>
 
 #include <memory> // for auto_ptr
@@ -48,7 +48,7 @@ GetRecommendMaster::GetRecommendMaster(
     mergerProxy.release();
     localWorkerProxy.release();
 
-    RecommendMasterManager::get()->registerAggregator(aggregator_);
+    MasterManagerBase::get()->registerAggregator(aggregator_);
 }
 
 void GetRecommendMaster::recommendPurchase(

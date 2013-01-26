@@ -18,7 +18,6 @@
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
 #include <aggregator-manager/MasterNotifier.h>
-#include <node-manager/SearchNodeManager.h>
 #include <node-manager/RequestLog.h>
 #include <node-manager/RecoveryChecker.h>
 #include <node-manager/DistributeFileSyncMgr.h>

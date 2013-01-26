@@ -2,8 +2,8 @@
 
 #include <common/JobScheduler.h>
 #include <aggregator-manager/IndexWorker.h>
-#include <node-manager/SearchNodeManager.h>
-#include <node-manager/SearchMasterManager.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 #include <node-manager/sharding/ScdSharder.h>
 #include <node-manager/sharding/ShardingStrategy.h>
 #include <node-manager/sharding/ScdDispatcher.h>
@@ -22,6 +22,7 @@ static const char* SCD_BACKUP_DIR = "backup";
 IndexTaskService::IndexTaskService(IndexBundleConfiguration* bundleConfig)
 : bundleConfig_(bundleConfig)
 {
+    service_ = Sf1rTopology::getServiceName(Sf1rTopology::SearchService);
 }
 
 IndexTaskService::~IndexTaskService()
@@ -202,7 +203,7 @@ bool IndexTaskService::distributedIndex_(unsigned int numdoc)
     // notify that current master is indexing for the specified collection,
     // we may need to check that whether other Master it's indexing this collection in some cases,
     // or it's depends on Nginx router strategy.
-    SearchMasterManager::get()->registerIndexStatus(bundleConfig_->collectionName_, true);
+    MasterManagerBase::get()->registerIndexStatus(bundleConfig_->collectionName_, true);
 
     bool ret = distributedIndexImpl_(
                     numdoc,
@@ -210,7 +211,7 @@ bool IndexTaskService::distributedIndex_(unsigned int numdoc)
                     bundleConfig_->masterIndexSCDPath(),
                     bundleConfig_->indexShardKeys_);
 
-    SearchMasterManager::get()->registerIndexStatus(bundleConfig_->collectionName_, false);
+    MasterManagerBase::get()->registerIndexStatus(bundleConfig_->collectionName_, false);
 
     return ret;
 }
@@ -267,10 +268,10 @@ bool IndexTaskService::createScdSharder(
 
     // sharding configuration
     ShardingConfig cfg;
-    if (SearchMasterManager::get()->getCollectionShardids(bundleConfig_->collectionName_, cfg.shardidList_))
+    if (MasterManagerBase::get()->getCollectionShardids(service_, bundleConfig_->collectionName_, cfg.shardidList_))
     {
         cfg.shardNum_ = cfg.shardidList_.size();
-        cfg.totalShardNum_ = SearchNodeManager::get()->getTotalShardNum();
+        cfg.totalShardNum_ = NodeManagerBase::get()->getTotalShardNum();
     }
     else
     {

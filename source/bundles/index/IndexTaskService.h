@@ -73,6 +73,7 @@ private:
         const std::vector<std::string>& shardKeyList);
 
 private:
+    std::string service_;
     IndexBundleConfiguration* bundleConfig_;
 
     boost::shared_ptr<IndexAggregator> indexAggregator_;

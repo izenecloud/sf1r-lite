@@ -20,7 +20,7 @@
 #include <aggregator-manager/GetRecommendWorker.h>
 #include <aggregator-manager/UpdateRecommendMaster.h>
 #include <aggregator-manager/UpdateRecommendWorker.h>
-#include <node-manager/RecommendNodeManager.h>
+#include <node-manager/NodeManagerBase.h>
 #include <node-manager/sharding/RecommendShardStrategy.h>
 #include <node-manager/sharding/RecommendMatrixSharder.h>
 
@@ -290,10 +290,10 @@ void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchServic
 
 void RecommendBundleActivator::createSharder_()
 {
-    const RecommendNodeManager* nodeManager = RecommendNodeManager::get();
+    const NodeManagerBase* nodeManager = NodeManagerBase::get();
     const Sf1rNode& sf1rNode = nodeManager->getCurrentSf1rNode();
 
-    shardid_t shardNum = sf1rNode.master_.totalShardNum_;
+    shardid_t shardNum = nodeManager->getTotalShardNum();
     shardStrategy_.reset(new RecommendShardMod(shardNum));
 
     if (config_->recommendNodeConfig_.isWorkerNode_)

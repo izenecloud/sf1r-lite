@@ -1,5 +1,5 @@
 #include "UpdateRecommendMaster.h"
-#include <node-manager/RecommendMasterManager.h>
+#include <node-manager/MasterManagerBase.h>
 #include <node-manager/sharding/RecommendShardStrategy.h>
 
 #include <glog/logging.h>
@@ -41,12 +41,13 @@ UpdateRecommendMaster::UpdateRecommendMaster(
     }
 
     aggregator_.reset(
-        new UpdateRecommendAggregator(mergerProxy.get(), localWorkerProxy.get(), collection));
+        new UpdateRecommendAggregator(mergerProxy.get(), localWorkerProxy.get(),
+            Sf1rTopology::getServiceName(Sf1rTopology::RecommendService), collection));
 
     mergerProxy.release();
     localWorkerProxy.release();
 
-    RecommendMasterManager::get()->registerAggregator(aggregator_);
+    MasterManagerBase::get()->registerAggregator(aggregator_);
 }
 
 void UpdateRecommendMaster::updatePurchaseMatrix(

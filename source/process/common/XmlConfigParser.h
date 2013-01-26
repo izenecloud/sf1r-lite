@@ -449,26 +449,26 @@ public:
     /// @{
 
     /// Dsitributed search config
-    bool isDistributedSearchNode() { return isDistributedNode(searchTopologyConfig_); }
-    bool isSearchMaster() { return isMaster(searchTopologyConfig_); }
+    //bool isDistributedSearchService() { return isDistributedNode(); }
+    bool isSearchMaster() { return isServiceMaster("search"); }
     bool checkSearchMasterAggregator(const std::string& collectionName)
-    { return checkMasterAggregator(searchTopologyConfig_, collectionName); }
-    bool isSearchWorker() { return isWorker(searchTopologyConfig_); }
+    { return checkMasterAggregator("search", collectionName); }
+    bool isSearchWorker() { return isServiceWorker("search"); }
     bool checkSearchWorker(const std::string& collectionName)
-    { return checkWorker(searchTopologyConfig_, collectionName); }
+    { return checkWorker("search", collectionName); }
 
     /// Dsitributed recommend config
-    bool isDistributedRecommendNode() { return isDistributedNode(recommendTopologyConfig_); }
-    bool isRecommendMaster() { return isMaster(recommendTopologyConfig_); }
+    //bool isDistributedRecommendService() { return isDistributedNode(recommendTopologyConfig_); }
+    bool isRecommendMaster() { return isServiceMaster("recommend"); }
     bool checkRecommendMasterAggregator(const std::string& collectionName)
-    { return checkMasterAggregator(recommendTopologyConfig_, collectionName); }
-    bool isRecommendWorker() { return isWorker(recommendTopologyConfig_); }
+    { return checkMasterAggregator("recommend", collectionName); }
+    bool isRecommendWorker() { return isServiceWorker("recommend"); }
     bool checkRecommendWorker(const std::string& collectionName)
-    { return checkWorker(recommendTopologyConfig_, collectionName); }
+    { return checkWorker("recommend", collectionName); }
 
     bool isDisableZooKeeper()
     {
-        if (isDistributedSearchNode() || isDistributedRecommendNode())
+        if (isDistributedNode())
         {
             return false;
         }
@@ -476,56 +476,62 @@ public:
         return distributedUtilConfig_.zkConfig_.disabled_;
     }
 
-    bool isDistributedNode(DistributedTopologyConfig& rTopologyConfig)
+    bool isDistributedNode()
     {
-        if (rTopologyConfig.enabled_)
+        if (topologyConfig_.enabled_)
         {
             return true;
         }
         return false;
     }
 
-    bool isMaster(DistributedTopologyConfig& rTopologyConfig)
+    bool isServiceMaster(const std::string& service)
     {
-        if (rTopologyConfig.enabled_ && rTopologyConfig.sf1rTopology_.curNode_.master_.isEnabled_)
+        if (topologyConfig_.enabled_)
         {
-            return true;
+            Sf1rNodeMaster::MasterServiceMapT::const_iterator cit = topologyConfig_.sf1rTopology_.curNode_.master_.masterServices_.find(service);
+            if (cit != topologyConfig_.sf1rTopology_.curNode_.master_.masterServices_.end())
+            {
+                return cit->second.enabled_;
+            }
         }
         return false;
     }
 
-    bool checkMasterAggregator(DistributedTopologyConfig& rTopologyConfig, const std::string& collectionName)
+    bool checkMasterAggregator(const std::string& service,
+        const std::string& collectionName)
     {
         std::string downcaseName = collectionName;
         downCase(downcaseName);
 
-        if (rTopologyConfig.enabled_
-            && rTopologyConfig.sf1rTopology_.curNode_.master_.isEnabled_
-            && rTopologyConfig.sf1rTopology_.curNode_.master_.checkCollection(downcaseName))
+        if (topologyConfig_.enabled_
+            && topologyConfig_.sf1rTopology_.curNode_.master_.checkCollection(service, downcaseName))
         {
             return true;
         }
         return false;
     }
 
-    bool isWorker(DistributedTopologyConfig& rTopologyConfig)
+    bool isServiceWorker(const std::string& service)
     {
-        if (rTopologyConfig.enabled_
-            && rTopologyConfig.sf1rTopology_.curNode_.worker_.isEnabled_)
+        if (topologyConfig_.enabled_)
         {
-            return true;
+            Sf1rNodeWorker::WorkerServiceMapT::const_iterator cit = topologyConfig_.sf1rTopology_.curNode_.worker_.workerServices_.find(service);
+            if (cit != topologyConfig_.sf1rTopology_.curNode_.worker_.workerServices_.end())
+            {
+                return cit->second.enabled_;
+            }
         }
         return false;
     }
 
-    bool checkWorker(DistributedTopologyConfig& rTopologyConfig, const std::string& collectionName)
+    bool checkWorker(const std::string& service, const std::string& collectionName)
     {
         std::string downcaseName = collectionName;
         downCase(downcaseName);
 
-        if (rTopologyConfig.enabled_
-            && rTopologyConfig.sf1rTopology_.curNode_.worker_.isEnabled_
-            && rTopologyConfig.sf1rTopology_.curNode_.worker_.checkCollection(downcaseName))
+        if (topologyConfig_.enabled_
+            && topologyConfig_.sf1rTopology_.curNode_.worker_.checkCollection(service, downcaseName))
         {
             return true;
         }
@@ -667,8 +673,7 @@ public:
 
     /// @brief Configurations for distributed topologies
     DistributedCommonConfig distributedCommonConfig_;
-    DistributedTopologyConfig searchTopologyConfig_;
-    DistributedTopologyConfig recommendTopologyConfig_;
+    DistributedTopologyConfig topologyConfig_;
 
     /// @brief Configurations for distributed util
     DistributedUtilConfig distributedUtilConfig_;

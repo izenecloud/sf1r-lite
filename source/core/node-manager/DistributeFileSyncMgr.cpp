@@ -1,5 +1,5 @@
 #include "DistributeFileSyncMgr.h"
-#include "SearchNodeManager.h"
+#include "NodeManagerBase.h"
 #include "SuperNodeManager.h"
 #include "RequestLog.h"
 #include "RecoveryChecker.h"
@@ -210,7 +210,7 @@ DistributeFileSyncMgr::DistributeFileSyncMgr()
 
 void DistributeFileSyncMgr::init()
 {
-    if (!SearchNodeManager::get()->isDistributed())
+    if (!NodeManagerBase::get()->isDistributed())
         return;
     transfer_rpcserver_.reset(new FileSyncServer(SuperNodeManager::get()->getLocalHostIP(),
             SuperNodeManager::get()->getFileSyncRpcPort(), 4));
@@ -239,7 +239,7 @@ bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std
         // so the rpc ports for all file sync servers are the same.
         uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
 
-        if(!SearchNodeManager::get()->getCurrNodeSyncServerInfo(ip, rand()))
+        if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
         {
             LOG(ERROR) << "get file sync server failed.";
             return false;
@@ -287,7 +287,7 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
     {
         std::string ip;
         uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
-        if(!SearchNodeManager::get()->getCurrNodeSyncServerInfo(ip, rand()))
+        if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
         {
             LOG(ERROR) << "get file sync server failed.";
             return false;
@@ -339,7 +339,7 @@ bool DistributeFileSyncMgr::pushFileToAllReplicas(const std::string& srcpath,
     const std::string& destpath, bool recrusive)
 {
     std::vector<std::string> replica_info;
-    SearchNodeManager::get()->getAllReplicaInfo(replica_info);
+    NodeManagerBase::get()->getAllReplicaInfo(replica_info);
     bool all_success = true;
     uint16_t port = SuperNodeManager::get()->getDataReceiverPort();
     for (size_t i = 0; i < replica_info.size(); ++i)
@@ -386,7 +386,7 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& filepath, bool f
     {
         std::string ip;
         uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
-        if(!SearchNodeManager::get()->getCurrNodeSyncServerInfo(ip, rand()))
+        if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
         {
             LOG(ERROR) << "get file sync server failed.";
             return false;

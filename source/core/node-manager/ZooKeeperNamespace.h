@@ -25,35 +25,44 @@ namespace sf1r {
 /                                  # Root of zookeeper namespace
 |--- SF1R-[CLUSTERID]              # Root of distributed SF1 namesapce, [CLUSTERID] is specified by user configuration.
 
-      |--- SearchTopology          # Topology of distributed search cluster
-           |--- Replica1           # A replica of search cluster
-                |--- Node1         # A SF1 node in the replica of search cluster, it can be a Master or Worker or both.
-                     |--- Master
-                     |--- Worker
+      |--- Topology          # Topology of distributed service cluster
+           |--- Replica1           # A replica of service cluster
+                |--- Node1         # A SF1 node in the replica of cluster, it can be a Master or Worker or both.
+                     |--- Search   # A node supply the distributed search service.
+                          |--- Master
+                          |--- Worker
+                     |--- Recommend  # A node supply the distributed Recommend service.
+                          |--- Master
+                          |--- Worker
                 |--- Node2
-                     |--- Worker
-                |--- ...
+                     |--- Search
+                          |--- Worker
+                |--- Node3
+                     |--- Recommend
+                         |--- Worker
            |--- Replica2
                 |--- Node1
-                     |--- Master
-                     |--- Worker
+                     |--- Search
+                          |--- Master
+                          |--- Worker
+                     |--- Recommend
+                          |--- Master
+                          |--- Worker
                 |--- Node2
-                     |--- Worker
-                |--- ...
+                     |--- Search
+                          |--- Worker
+                |--- Node3
+                     |--- Recommend
+                         |--- Worker
 
-      |--- SearchServers           # Each Master node in search topology is a search server. xxx, maybe we can remove this node.
-           |--- Server00000000
-           |--- Server00000001
-           |--- ...
 
-      |--- RecommendTopology       # Topology of distributed recommend cluster, similar to Search.
-           |--- Replica1
-           |--- Replica2
-
-      |--- RecommendServers        # Each Master node in recommend topology is a recommend server. xxx, maybe we can remove this node.
-           |--- Server00000000
-           |--- Server00000001
-           |--- ...
+      |--- Servers           # Each Master service node in topology is a service server. xxx, maybe we can remove this node.
+           |--- Search       # A master node supply Search service as master
+                |--- Server00000000
+                |--- Server00000001
+           |--- Recommend
+                |--- Server00000000
+                |--- Server00000001
 
       |--- Synchro                 # For synchronization task
 
@@ -65,14 +74,10 @@ class ZooKeeperNamespace
     static std::string sf1rCluster_;
 
     static const std::string primary_;
-    static const std::string searchPrimaryNodes_;
-    static const std::string search_write_req_queue_;
-    static const std::string searchTopology_;
-    static const std::string searchServers_;
-    static const std::string recommendPrimaryNodes_;
-    static const std::string recommend_write_req_queue_;
-    static const std::string recommendTopology_;
-    static const std::string recommendServers_;
+    static const std::string primaryNodes_;
+    static const std::string write_req_queue_;
+    static const std::string topology_;
+    static const std::string servers_;
     static const std::string replica_;
     static const std::string node_;
     static const std::string server_;
@@ -93,114 +98,57 @@ public:
         return sf1rCluster_;
     }
 
-    static std::string getSearchPrimaryBasePath()
+    static std::string getPrimaryBasePath()
     {
-        return sf1rCluster_ + searchPrimaryNodes_;
+        return sf1rCluster_ + primaryNodes_;
     }
-    static std::string getSearchPrimaryNodeParentPath(nodeid_t nodeId)
+    static std::string getPrimaryNodeParentPath(nodeid_t nodeId)
     {
         std::stringstream ss;
-        ss << sf1rCluster_ << searchPrimaryNodes_ << node_ << nodeId;
+        ss << sf1rCluster_ << primaryNodes_ << node_ << nodeId;
         return ss.str();
     }
 
-    static std::string getSearchPrimaryNodePath(nodeid_t nodeId)
+    static std::string getPrimaryNodePath(nodeid_t nodeId)
     {
-        return getSearchPrimaryNodeParentPath(nodeId) + primary_;
+        return getPrimaryNodeParentPath(nodeId) + primary_;
     }
 
-    static std::string getSearchWriteReqQueueParent()
+    static std::string getWriteReqQueueParent()
     {
-        return sf1rCluster_ + search_write_req_queue_;
+        return sf1rCluster_ + write_req_queue_;
     }
-    static std::string getSearchWriteReqQueueNode()
+    static std::string getWriteReqQueueNode()
     {
-        return sf1rCluster_ + search_write_req_queue_ + write_req_seq_;
+        return sf1rCluster_ + write_req_queue_ + write_req_seq_;
     }
-    /// Search
-    static std::string getSearchTopologyPath()
+    static std::string getTopologyPath()
     {
-        return sf1rCluster_ + searchTopology_;
-    }
-
-    static std::string getSearchServerParentPath()
-    {
-        return sf1rCluster_ + searchServers_;
+        return sf1rCluster_ + topology_;
     }
 
-    static std::string getSearchServerPath()
+    static std::string getServerParentPath()
     {
-        return sf1rCluster_ + searchServers_ + server_;
+        return sf1rCluster_ + servers_;
     }
 
-    static std::string getSearchReplicaPath(replicaid_t replicaId)
+    static std::string getServerPath()
+    {
+        return sf1rCluster_ + servers_ + server_;
+    }
+
+    static std::string getReplicaPath(replicaid_t replicaId)
     {
         std::stringstream ss;
-        ss <<sf1rCluster_<<searchTopology_<<replica_<<replicaId;
-
-        return ss.str();
-    }
-
-    static std::string getSearchNodePath(replicaid_t replicaId, nodeid_t nodeId)
-    {
-        std::stringstream ss;
-        ss <<sf1rCluster_<<searchTopology_<<replica_<<replicaId<<node_<<nodeId;
+        ss <<sf1rCluster_<<topology_<<replica_<<replicaId;
 
         return ss.str();
     }
 
-    static std::string getRecommendPrimaryBasePath()
-    {
-        return sf1rCluster_ + recommendPrimaryNodes_;
-    }
-    static std::string getRecommendPrimaryNodeParentPath(nodeid_t nodeId)
+    static std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId)
     {
         std::stringstream ss;
-        ss << sf1rCluster_ << recommendPrimaryNodes_ << node_ << nodeId;
-        return ss.str();
-    }
-
-    static std::string getRecommendPrimaryNodePath(nodeid_t nodeId)
-    {
-        return getRecommendPrimaryNodeParentPath(nodeId) + primary_;
-    }
-    static std::string getRecommendWriteReqQueueParent()
-    {
-        return sf1rCluster_ + recommend_write_req_queue_;
-    }
-    static std::string getRecommendWriteReqQueueNode()
-    {
-        return sf1rCluster_ + recommend_write_req_queue_ + write_req_seq_;
-    }
-
-    /// Recommend
-    static std::string getRecommendTopologyPath()
-    {
-        return sf1rCluster_ + recommendTopology_;
-    }
-
-    static std::string getRecommendServerParentPath()
-    {
-        return sf1rCluster_ + recommendServers_;
-    }
-
-    static std::string getRecommendServerPath()
-    {
-        return sf1rCluster_ + recommendServers_ + server_;
-    }
-
-    static std::string getRecommendReplicaPath(replicaid_t replicaId)
-    {
-        std::stringstream ss;
-        ss <<sf1rCluster_<<recommendTopology_<<replica_<<replicaId;
-
-        return ss.str();
-    }
-
-    static std::string getRecommendNodePath(replicaid_t replicaId, nodeid_t nodeId)
-    {
-        std::stringstream ss;
-        ss <<sf1rCluster_<<recommendTopology_<<replica_<<replicaId<<node_<<nodeId;
+        ss <<sf1rCluster_<<topology_<<replica_<<replicaId<<node_<<nodeId;
 
         return ss.str();
     }

@@ -18,6 +18,23 @@ MasterManagerBase::MasterManagerBase()
 {
 }
 
+bool MasterManagerBase::init()
+{
+    // initialize zookeeper client
+    topologyPath_ = ZooKeeperNamespace::getTopologyPath();
+    serverParentPath_ = ZooKeeperNamespace::getServerParentPath();
+    serverPath_ = ZooKeeperNamespace::getServerPath();
+    zookeeper_ = ZooKeeperManager::get()->createClient(this);
+
+    if (!zookeeper_)
+        return false;
+
+    sf1rTopology_ = NodeManagerBase::get()->getSf1rTopology();
+    write_req_queue_ = ZooKeeperNamespace::getWriteReqQueueNode();
+    write_req_queue_parent_ = ZooKeeperNamespace::getWriteReqQueueParent();
+    return true;
+}
+
 void MasterManagerBase::start()
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
@@ -39,6 +56,14 @@ void MasterManagerBase::start()
 
         doStart();
     }
+    // call init for all service.
+    ServiceMapT::const_iterator cit = all_distributed_services_.begin();
+    while(cit != all_distributed_services_.end())
+    {
+        cit->second->initMaster();
+        ++cit;
+    }
+
 }
 
 void MasterManagerBase::stop()
@@ -68,16 +93,16 @@ bool MasterManagerBase::getShardReceiver(
     }
 }
 
-bool MasterManagerBase::getCollectionShardids(const std::string& collection, std::vector<shardid_t>& shardidList)
+bool MasterManagerBase::getCollectionShardids(const std::string& service, const std::string& collection, std::vector<shardid_t>& shardidList)
 {
     boost::lock_guard<boost::mutex> lock(workers_mutex_);
-    return sf1rTopology_.curNode_.master_.getShardidList(collection, shardidList);
+    return sf1rTopology_.curNode_.master_.getShardidList(service, collection, shardidList);
 }
 
-bool MasterManagerBase::checkCollectionShardid(const std::string& collection, unsigned int shardid)
+bool MasterManagerBase::checkCollectionShardid(const std::string& service, const std::string& collection, unsigned int shardid)
 {
     boost::lock_guard<boost::mutex> lock(workers_mutex_);
-    return sf1rTopology_.curNode_.master_.checkCollectionWorker(collection, shardid);
+    return sf1rTopology_.curNode_.master_.checkCollectionWorker(service, collection, shardid);
 }
 
 void MasterManagerBase::registerIndexStatus(const std::string& collection, bool isIndexing)
@@ -597,7 +622,7 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
                     }
                 }
 
-                if (nodeid > 0 && nodeid <= sf1rTopology_.curNode_.master_.totalShardNum_)
+                if (nodeid > 0 && nodeid <= sf1rTopology_.nodeNum_)
                 {
                     if (workerMap_.find(nodeid) != workerMap_.end())
                     {
@@ -626,7 +651,7 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
                 {
                     std::stringstream ss;
                     ss << "in node[" << nodeid << "] @ " << znode.getStrValue(ZNode::KEY_HOST)
-                       << " is out of range for current master (max shardid is " << sf1rTopology_.curNode_.master_.totalShardNum_ << ")"; 
+                       << " is out of range for current master (max is " << sf1rTopology_.nodeNum_ << ")"; 
 
                     LOG (WARNING) << ss.str();
                     throw std::runtime_error(ss.str());
@@ -640,17 +665,17 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
         }
     }
 
-    if (detected >= sf1rTopology_.curNode_.master_.totalShardNum_)
+    if (detected >= sf1rTopology_.nodeNum_)
     {
         masterState_ = MASTER_STATE_STARTED;
-        LOG (INFO) << CLASSNAME << " detected " << sf1rTopology_.curNode_.master_.totalShardNum_
+        LOG (INFO) << CLASSNAME << " detected " << sf1rTopology_.nodeNum_
                    << " all workers (good " << good << ")" << std::endl;
     }
     else
     {
         masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
         LOG (INFO) << CLASSNAME << " detected " << detected << " workers (good " << good
-                   << "), all " << sf1rTopology_.curNode_.master_.totalShardNum_ << std::endl;
+                   << "), all " << sf1rTopology_.nodeNum_ << std::endl;
     }
     return good;
 }
@@ -928,6 +953,80 @@ void MasterManagerBase::recover(const std::string& zpath)
     masterState_ = MASTER_STATE_STARTED;
 }
 
+void MasterManagerBase::createServiceNodes()
+{
+    if (!zookeeper_->isZNodeExists(serverRealPath_, ZooKeeper::WATCH))
+    {
+        LOG(ERROR) << "current master server path not exist while write service node data.";
+        return;
+    }
+
+    ServiceMapT::const_iterator cit = all_distributed_services_.begin();
+    while(cit != all_distributed_services_.end())
+    {
+        //std::string collections;
+        //std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.masterServices_[cit->first]->second.collectionList_;
+        //for (std::vector<MasterCollection>::iterator it = collectionList.begin();
+        //        it != collectionList.end(); it++)
+        //{
+        //    if (collections.empty())
+        //        collections = (*it).name_;
+        //    else
+        //        collections += "," + (*it).name_;
+        //}
+        ZNode znode;
+        //znode.setValue(ZNode::KEY_COLLECTION, collections);
+        zookeeper_->createZNode(serverRealPath_ + "/" + cit->first, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL);
+        ++cit;
+    }
+}
+
+void MasterManagerBase::registerDistributeServiceMaster(boost::shared_ptr<IDistributeService> sp_service, bool enable_master)
+{
+    if (enable_master)
+    {
+        if (all_distributed_services_.find(sp_service->getServiceName()) != 
+            all_distributed_services_.end() )
+        {
+            LOG(WARNING) << "duplicate service name!!!!!!!";
+            throw std::runtime_error("duplicate service!");
+        }
+        all_distributed_services_[sp_service->getServiceName()] = sp_service;
+    }
+}
+
+bool MasterManagerBase::findServiceMasterAddress(const std::string& service, std::string& host, uint32_t& port)
+{
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return false;
+
+    std::vector<std::string> children;
+    zookeeper_->getZNodeChildren(serverParentPath_, children);
+
+    for (size_t i = 0; i < children.size(); ++i)
+    {
+        std::string serviceMasterPath = children[i];
+        if (!zookeeper_->isZNodeExists(serviceMasterPath + "/" + service))
+        {
+            // no this service on this master server.
+            continue;
+        }
+
+        LOG(INFO) << "find service master address success : " << service << ", on server :" << serviceMasterPath;
+        std::string data;
+        if (zookeeper_->getZNodeData(serviceMasterPath, data))
+        {
+            ZNode znode;
+            znode.loadKvString(data);
+
+            host = znode.getStrValue(ZNode::KEY_HOST);
+            port = znode.getUInt32Value(ZNode::KEY_MASTER_PORT);
+            return true;
+        }
+    }
+    return false;
+}
+
 void MasterManagerBase::registerSearchServer()
 {
     // Master server provide search service
@@ -944,6 +1043,8 @@ void MasterManagerBase::registerSearchServer()
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
     }
+
+    createServiceNodes();
 
     if (!zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::WATCH))
     {
@@ -962,7 +1063,8 @@ void MasterManagerBase::resetAggregatorConfig()
 
         // get shardids for collection of aggregator
         std::vector<shardid_t> shardidList;
-        if (!sf1rTopology_.curNode_.master_.getShardidList(aggregator->collection(), shardidList))
+        if (!sf1rTopology_.curNode_.master_.getShardidList(aggregator->service(),
+                aggregator->collection(), shardidList))
         {
             continue;
         }
@@ -985,7 +1087,7 @@ void MasterManagerBase::resetAggregatorConfig()
             else
             {
                 LOG (ERROR) << "worker " << shardidList[i] << " was not found for Aggregator of "
-                            << aggregator->collection();
+                            << aggregator->collection() << " in service " << aggregator->service();
             }
         }
 

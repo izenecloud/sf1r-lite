@@ -57,7 +57,6 @@ public:
     {
         std::stringstream ss;
         ss << "==== [DistributedTopology] ====" << std::endl;
-        ss << "**** " << type_ << " ****" << std::endl;
         ss << (enabled_ ? "enabled":"disabled") << std::endl;
         ss << sf1rTopology_.toString();
         ss << "==============================="<<std::endl;
@@ -66,7 +65,6 @@ public:
 
 public:
     bool enabled_;
-    std::string type_;
     Sf1rTopology sf1rTopology_;
 };
 

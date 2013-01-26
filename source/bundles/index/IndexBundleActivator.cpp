@@ -15,7 +15,7 @@
 #include <aggregator-manager/SearchMerger.h>
 #include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/IndexWorker.h>
-#include <node-manager/SearchMasterManager.h>
+#include <node-manager/MasterManagerBase.h>
 #include <util/singleton.h>
 
 #include <question-answering/QuestionAnalysis.h>
@@ -537,7 +537,7 @@ IndexBundleActivator::createSearchAggregator_()
     localWorkerProxy.release();
 
     // workers will be detected and set by master node manager
-    SearchMasterManager::get()->registerAggregator(ret);
+    MasterManagerBase::get()->registerAggregator(ret);
     return ret;
 }
 
@@ -565,7 +565,7 @@ IndexBundleActivator::createIndexAggregator_()
     mergerProxy.release();
     localWorkerProxy.release();
 
-    SearchMasterManager::get()->registerAggregator(ret);
+    MasterManagerBase::get()->registerAggregator(ret);
     return ret;
 }
 

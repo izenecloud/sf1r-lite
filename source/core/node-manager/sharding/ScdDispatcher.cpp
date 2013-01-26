@@ -1,6 +1,7 @@
 #include "ScdDispatcher.h"
 
-#include <node-manager/SearchMasterManager.h>
+#include <node-manager/MasterManagerBase.h>
+#include <node-manager/DistributeSearchService.h>
 #include <node-manager/RecoveryChecker.h>
 
 #include <net/distribute/DataTransfer2.hpp>
@@ -134,6 +135,7 @@ BatchScdDispatcher::BatchScdDispatcher(
 : ScdDispatcher(scdSharder)
 , collectionName_(collectionName)
 {
+    service_ = Sf1rTopology::getServiceName(Sf1rTopology::SearchService);
 }
 
 BatchScdDispatcher::~BatchScdDispatcher()
@@ -219,14 +221,14 @@ bool BatchScdDispatcher::finish()
     for (unsigned int shardid = scdSharder_->getMinShardID();
             shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
-        if (!SearchMasterManager::get()->checkCollectionShardid(collectionName_, shardid))
+        if (!MasterManagerBase::get()->checkCollectionShardid(service_, collectionName_, shardid))
         {
             continue;
         }
 
         std::string host;
         unsigned int recvPort;
-        if (SearchMasterManager::get()->getShardReceiver(shardid, host, recvPort))
+        if (MasterManagerBase::get()->getShardReceiver(shardid, host, recvPort))
         {
             LOG(INFO) << "Transfer scd from "<<shardScdfileMap_[shardid]
                       <<"/ to shard "<<shardid<<" ["<<host<<":"<<recvPort<<"]";
@@ -261,7 +263,7 @@ bool BatchScdDispatcher::initTempDir(const std::string& tempDir)
             shardid <= scdSharder_->getMaxShardID(); shardid++)
     {
         // shards are collection related
-        if (!SearchMasterManager::get()->checkCollectionShardid(collectionName_, shardid))
+        if (!MasterManagerBase::get()->checkCollectionShardid(service_, collectionName_, shardid))
         {
             continue;
         }

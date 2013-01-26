@@ -1,6 +1,5 @@
 #include "DistributeDriver.h"
-#include "SearchMasterManager.h"
-#include "RecommendMasterManager.h"
+#include "MasterManagerBase.h"
 #include "DistributeRequestHooker.h"
 #include "RequestLog.h"
 
@@ -52,7 +51,7 @@ void DistributeDriver::run()
 void DistributeDriver::init(const RouterPtr& router)
 {
     router_ = router;
-    SearchMasterManager::get()->setCallback(boost::bind(&DistributeDriver::on_new_req_available, this));
+    MasterManagerBase::get()->setCallback(boost::bind(&DistributeDriver::on_new_req_available, this));
 }
 
 static bool callHandler(izenelib::driver::Router::handler_ptr handler,
@@ -155,7 +154,7 @@ bool DistributeDriver::handleReqFromPrimary(const std::string& reqjsondata, cons
 
 bool DistributeDriver::on_new_req_available()
 {
-    if (!SearchMasterManager::get()->prepareWriteReq())
+    if (!MasterManagerBase::get()->prepareWriteReq())
     {
         LOG(WARNING) << "prepare new request failed. maybe some other primary master prepared first. ";
         return false;
@@ -163,7 +162,7 @@ bool DistributeDriver::on_new_req_available()
     while(true)
     {
         std::string reqdata;
-        if(!SearchMasterManager::get()->popWriteReq(reqdata))
+        if(!MasterManagerBase::get()->popWriteReq(reqdata))
         {
             LOG(INFO) << "no more request.";
             break;

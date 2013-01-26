@@ -6,7 +6,7 @@
 #include "Sf1Controller.h"
 #include "CollectionHandler.h"
 #include <bundles/index/IndexTaskService.h>
-#include <node-manager/SearchMasterManager.h>
+#include <node-manager/MasterManagerBase.h>
 #include <node-manager/RequestLog.h>
 #include <util/driver/writers/JsonWriter.h>
 
@@ -57,7 +57,7 @@ bool Sf1Controller::callDistribute()
 {
     if(request().callType() != Request::FromAPI)
         return false;
-    if (SearchMasterManager::get()->isDistribute())
+    if (MasterManagerBase::get()->isDistribute())
     {
         bool is_write_req = ReqLogMgr::isWriteRequest(request().controller(), request().action());
         if (is_write_req)
@@ -65,7 +65,7 @@ bool Sf1Controller::callDistribute()
             std::string reqdata;
             izenelib::driver::JsonWriter writer;
             writer.write(request().get(), reqdata);
-            SearchMasterManager::get()->pushWriteReq(reqdata);
+            MasterManagerBase::get()->pushWriteReq(reqdata);
             return true;
         }
     }

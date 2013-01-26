@@ -5,7 +5,7 @@
 #include <util/driver/writers/JsonWriter.h>
 #include <util/driver/readers/JsonReader.h>
 #include <bundles/index/IndexBundleConfiguration.h>
-#include <node-manager/SearchNodeManager.h>
+#include <node-manager/NodeManagerBase.h>
 
 #include "RequestLog.h"
 
@@ -28,7 +28,7 @@ DistributeRequestHooker::DistributeRequestHooker()
     :type_(Req_None), hook_type_(0)
 {
     // init callback for distribute request.
-    SearchNodeManager::get()->setCallback(
+    NodeManagerBase::get()->setCallback(
         boost::bind(&DistributeRequestHooker::onElectingFinished, this),
         boost::bind(&DistributeRequestHooker::waitReplicasProcessCallback, this),
         boost::bind(&DistributeRequestHooker::waitReplicasLogCallback, this),
@@ -45,7 +45,7 @@ bool DistributeRequestHooker::isNeedBackup(ReqLogType type)
 
 bool DistributeRequestHooker::isValid()
 {
-    if (SearchMasterManager::get()->isDistribute() && hook_type_ == 0)
+    if (NodeManagerBase::get()->isDistributed() && hook_type_ == 0)
         return false;
     return true;
 }
@@ -108,7 +108,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     if (!isHooked())
         return true;
     assert(req_log_mgr_);
-    bool isprimary = SearchNodeManager::get()->isPrimary();
+    bool isprimary = NodeManagerBase::get()->isPrimary();
     if (isprimary)
     {
         prepared_req.req_json_data = current_req_;
@@ -186,7 +186,7 @@ void DistributeRequestHooker::processLocalBegin()
     if (hook_type_ == Request::FromLog)
         return;
     LOG(INFO) << "begin process request on worker";
-    SearchNodeManager::get()->beginReqProcess();
+    NodeManagerBase::get()->beginReqProcess();
 }
 
 void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
@@ -198,10 +198,10 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
     if (!finishsuccess)
     {
         static CommonReqData reqlog;
-        if (SearchNodeManager::get()->isPrimary() && !req_log_mgr_->getPreparedReqLog(reqlog))
+        if (NodeManagerBase::get()->isPrimary() && !req_log_mgr_->getPreparedReqLog(reqlog))
         {
             LOG(INFO) << "primary end request before prepared, request ignored.";
-            SearchNodeManager::get()->notifyMasterReadyForNew();
+            NodeManagerBase::get()->notifyMasterReadyForNew();
             clearHook(true);
             return;
         }
@@ -215,7 +215,7 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
         return;
     }
     LOG(INFO) << "send packed data len from local. len: " << current_req_.size();
-    SearchNodeManager::get()->finishLocalReqProcess(type_, current_req_);
+    NodeManagerBase::get()->finishLocalReqProcess(type_, current_req_);
 }
 
 void DistributeRequestHooker::waitReplicasProcessCallback()
@@ -244,7 +244,7 @@ void DistributeRequestHooker::abortRequest()
         return;
     }
     LOG(INFO) << "abortRequest...";
-    SearchNodeManager::get()->abortRequest();
+    NodeManagerBase::get()->abortRequest();
 }
 
 void DistributeRequestHooker::abortRequestCallback()

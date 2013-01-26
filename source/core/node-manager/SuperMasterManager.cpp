@@ -14,10 +14,7 @@ void SuperMasterManager::start()
         return;
     }
 
-    if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_SEARCH)
         detectSearchMasters();
-
-    if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_RECOMMEND)
         detectRecommendMasters();
 }
 
@@ -37,7 +34,7 @@ void SuperMasterManager::detectSearchMasters()
     for (nodeid_t nodeId = 1; nodeId <= sf1rTopology_.nodeNum_; nodeId++)
     {
         std::string data;
-        std::string nodePath = ZooKeeperNamespace::getSearchNodePath(replicaId, nodeId);
+        std::string nodePath = ZooKeeperNamespace::getNodePath(replicaId, nodeId);
         if (zookeeper_->getZNodeData(nodePath, data, ZooKeeper::WATCH))
         {
             ZNode znode;
@@ -52,7 +49,7 @@ void SuperMasterManager::detectSearchMasters()
 
                     // get master info
                     sf1rNode->host_ = znode.getStrValue(ZNode::KEY_HOST);
-                    sf1rNode->master_.name_ = znode.getStrValue(ZNode::KEY_MASTER_NAME);
+                    //sf1rNode->master_.name_ = znode.getStrValue(ZNode::KEY_MASTER_NAME);
                     try
                     {
                         sf1rNode->baPort_ =
@@ -61,7 +58,7 @@ void SuperMasterManager::detectSearchMasters()
                     catch (std::exception& e)
                     {
                         LOG (ERROR) << "failed to convert baPort \"" << znode.getStrValue(ZNode::KEY_BA_PORT)
-                                    << "\" got from master \"" << sf1rNode->master_.name_
+                                    //<< "\" got from master \"" << sf1rNode->master_.name_
                                     << "\" on node " << nodeId
                                     << " @" << sf1rNode->host_;
                         continue;
@@ -77,7 +74,6 @@ void SuperMasterManager::detectSearchMasters()
     }
 
     LOG (INFO) << "detected " << masterMap_.size() 
-               << ((sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_RECOMMEND) ? " recommend" : " search") 
                << " master(s) in cluster.";
 }
 
@@ -101,11 +97,8 @@ void SuperMasterManager::process(ZooKeeperEvent& zkEvent)
     }
     if (restarted)
     {
-        if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_SEARCH)
-            detectSearchMasters();
-
-        if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_RECOMMEND)
-            detectRecommendMasters();
+        detectSearchMasters();
+        detectRecommendMasters();
         LOG (WARNING) << "restarted ZooKeeper for SuperMasterManager finished";
     }
 }

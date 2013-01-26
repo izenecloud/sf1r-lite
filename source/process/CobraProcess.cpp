@@ -10,8 +10,9 @@
 #include <aggregator-manager/CollectionDataReceiver.h>
 #include <node-manager/ZooKeeperManager.h>
 #include <node-manager/SuperNodeManager.h>
-#include <node-manager/SearchNodeManager.h>
-#include <node-manager/RecommendNodeManager.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/DistributeSearchService.h>
+#include <node-manager/DistributeRecommendService.h>
 #include <node-manager/DistributeDriver.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/RequestLog.h>
@@ -230,8 +231,7 @@ bool CobraProcess::initDriverServer()
         new DriverServer(endpoint, factory, threadPoolSize)
     );
 
-    if (SF1Config::get()->isDistributedSearchNode() ||
-        SF1Config::get()->isDistributedRecommendNode())
+    if (SF1Config::get()->isDistributedNode())
     {
         DistributeDriver::get()->init(driverRouter_);
     }
@@ -257,13 +257,12 @@ bool CobraProcess::initNodeManager()
 
     SuperNodeManager::get()->init(SF1Config::get()->distributedCommonConfig_);
 
-    if (SF1Config::get()->isDistributedSearchNode())
-        SearchNodeManager::get()->init(SF1Config::get()->searchTopologyConfig_);
-    if (SF1Config::get()->isDistributedRecommendNode())
-        RecommendNodeManager::get()->init(SF1Config::get()->recommendTopologyConfig_);
-
-    DistributeRequestHooker::init();
-    ReqLogMgr::initWriteRequestSet();
+    if (SF1Config::get()->isDistributedNode())
+    {
+        NodeManagerBase::get()->init(SF1Config::get()->topologyConfig_);
+        DistributeRequestHooker::init();
+        ReqLogMgr::initWriteRequestSet();
+    }
 
     return true;
 }
@@ -320,12 +319,19 @@ bool CobraProcess::startDistributedServer()
         masterServer_.reset(new MasterServer);
         masterServer_->start(localHost, masterPort);
     }
+    // register distribute services.
+    NodeManagerBase::get()->registerDistributeService(
+        boost::shared_ptr<IDistributeService>(new DistributeSearchService()),
+        SF1Config::get()->isSearchWorker(),
+        SF1Config::get()->isSearchMaster());
+    NodeManagerBase::get()->registerDistributeService(
+        boost::shared_ptr<IDistributeService>(new DistributeRecommendService()),
+        SF1Config::get()->isRecommendWorker(),
+        SF1Config::get()->isRecommendMaster());
 
     // Start distributed topology node manager(s)
-    if (SF1Config::get()->isDistributedSearchNode())
-        SearchNodeManager::get()->start();
-    if (SF1Config::get()->isDistributedRecommendNode())
-        RecommendNodeManager::get()->start();
+    if (SF1Config::get()->isDistributedNode())
+        NodeManagerBase::get()->start();
 
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));
     return true;
@@ -338,10 +344,8 @@ void CobraProcess::stopDistributedServer()
     if (workerServer_)
         workerServer_->stop();
 
-    if (SF1Config::get()->isDistributedSearchNode())
-        SearchNodeManager::get()->stop();
-    if (SF1Config::get()->isDistributedRecommendNode())
-        RecommendNodeManager::get()->stop();
+    if (SF1Config::get()->isDistributedNode())
+        NodeManagerBase::get()->stop();
 
     CollectionDataReceiver::get()->stop();
 }

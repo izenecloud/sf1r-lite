@@ -10,10 +10,12 @@
 #include "ZooKeeperNamespace.h"
 #include "ZooKeeperManager.h"
 
+#include "IDistributeService.h"
 #include <map>
 #include <vector>
 #include <sstream>
 
+#include <util/singleton.h>
 #include <net/aggregator/AggregatorConfig.h>
 #include <net/aggregator/Aggregator.h>
 
@@ -44,11 +46,16 @@ public:
     typedef boost::function<bool()>  EventCBType;
 
 public:
+    static MasterManagerBase* get()
+    {
+        return izenelib::util::Singleton<MasterManagerBase>::get();
+    }
+
     MasterManagerBase();
 
     virtual ~MasterManagerBase() { stop(); };
 
-    virtual bool init() = 0;
+    bool init();
 
     void start();
 
@@ -75,9 +82,9 @@ public:
             std::string& host,
             unsigned int& recvPort);
 
-    bool getCollectionShardids(const std::string& collection, std::vector<shardid_t>& shardidList);
+    bool getCollectionShardids(const std::string& service, const std::string& collection, std::vector<shardid_t>& shardidList);
 
-    bool checkCollectionShardid(const std::string& collection, unsigned int shardid);
+    bool checkCollectionShardid(const std::string& service, const std::string& collection, unsigned int shardid);
 
     void registerIndexStatus(const std::string& collection, bool isIndexing);
 
@@ -102,6 +109,8 @@ public:
     {
         on_new_req_available_ = on_new_req_available;
     }
+    void registerDistributeServiceMaster(boost::shared_ptr<IDistributeService> sp_service, bool enable_master);
+    bool findServiceMasterAddress(const std::string& service, std::string& host, uint32_t& port);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -117,10 +126,18 @@ public:
     void showWorkers();
 
 protected:
-    virtual std::string getReplicaPath(replicaid_t replicaId) = 0;
-
-    virtual std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId) = 0;
-    virtual std::string getPrimaryNodeParentPath(nodeid_t nodeId) = 0;
+    static std::string getReplicaPath(replicaid_t replicaId)
+    {
+        return ZooKeeperNamespace::getReplicaPath(replicaId);
+    }
+    static std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId)
+    {
+        return ZooKeeperNamespace::getNodePath(replicaId, nodeId);
+    }
+    static std::string getPrimaryNodeParentPath(nodeid_t nodeId)
+    {
+        return ZooKeeperNamespace::getPrimaryNodeParentPath(nodeId);
+    }
 
 protected:
     std::string state2string(MasterStateType e);
@@ -159,6 +176,7 @@ protected:
      * Register SF1 Server atfer master ready.
      */
     void registerSearchServer();
+    void createServiceNodes();
 
     /***/
     void resetAggregatorConfig();
@@ -200,6 +218,8 @@ protected:
     std::string write_req_queue_;
 
     std::string CLASSNAME;
+    typedef std::map<std::string, boost::shared_ptr<IDistributeService> > ServiceMapT;
+    ServiceMapT  all_distributed_services_;
 };
 
 

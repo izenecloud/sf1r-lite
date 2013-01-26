@@ -10,6 +10,9 @@
 #include "ZooKeeperNamespace.h"
 #include "ZooKeeperManager.h"
 
+#include "IDistributeService.h"
+
+#include <util/singleton.h>
 #include <configuration-manager/DistributedTopologyConfig.h>
 #include <configuration-manager/DistributedUtilConfig.h>
 
@@ -23,6 +26,11 @@ namespace sf1r
 class NodeManagerBase : public ZooKeeperEventHandler
 {
 public:
+    static NodeManagerBase* get()
+    {
+        return izenelib::util::Singleton<NodeManagerBase>::get();
+    }
+
     typedef boost::function<void()> NoFailCBFuncT;
     typedef boost::function<bool()> CanFailCBFuncT;
     typedef boost::function<bool(int, const std::string&)> NewReqCBFuncT;
@@ -99,7 +107,7 @@ public:
 
     unsigned int getTotalShardNum() const
     {
-        return sf1rTopology_.curNode_.master_.totalShardNum_;
+        return sf1rTopology_.nodeNum_;
     }
 
     bool isPrimary();
@@ -138,6 +146,8 @@ public:
         return isDistributionEnabled_;
     }
 
+    void registerDistributeService(boost::shared_ptr<IDistributeService> sp_service, bool enable_worker, bool enable_master);
+
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
     virtual void onNodeDeleted(const std::string& path);
@@ -145,15 +155,13 @@ public:
     virtual void onChildrenChanged(const std::string& path);
 
 protected:
-    virtual void setZNodePaths() = 0;
+    void setZNodePaths();
 
-    virtual void setMasterDistributeState(bool enable) = 0;
+    void startMasterManager();
 
-    virtual void startMasterManager() {}
+    void stopMasterManager();
 
-    virtual void stopMasterManager() {}
-
-    virtual void detectMasters() {}
+    void detectMasters();
 
     bool isPrimaryWithoutLock() const;
 
@@ -167,6 +175,7 @@ protected:
     bool checkZooKeeperService();
 
     void setSf1rNodeData(ZNode& znode);
+    void createServiceNodes();
 
     void enterCluster(bool start_master = true);
     void enterClusterAfterRecovery(bool start_master = true);
@@ -223,6 +232,8 @@ protected:
     NewReqCBFuncT cb_on_new_req_from_primary_;
     //typedef std::map<std::string, NodeStateType> ElectingNodeMapT;
     //ElectingNodeMapT electing_secondaries_;
+    typedef std::map<std::string, boost::shared_ptr<IDistributeService> > ServiceMapT;
+    ServiceMapT  all_distributed_services_;
 };
 
 }

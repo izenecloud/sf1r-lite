@@ -7,14 +7,10 @@ namespace sf1r {
 std::string ZooKeeperNamespace::sf1rCluster_ = "/SF1R-unknown";  // specify by configuration
 
 const std::string ZooKeeperNamespace::primary_ = "/Primary";
-const std::string ZooKeeperNamespace::searchPrimaryNodes_ = "/SearchPrimaryNodes";
-const std::string ZooKeeperNamespace::search_write_req_queue_ = "/SearchWriteRequestQueue";
-const std::string ZooKeeperNamespace::searchTopology_ = "/SearchTopology";
-const std::string ZooKeeperNamespace::searchServers_ = "/SearchServers";
-const std::string ZooKeeperNamespace::recommendPrimaryNodes_ = "/RecommendPrimaryNodes";
-const std::string ZooKeeperNamespace::recommend_write_req_queue_ = "/RecommendWriteRequestQueue";
-const std::string ZooKeeperNamespace::recommendTopology_ = "/RecommendTopology";
-const std::string ZooKeeperNamespace::recommendServers_ = "/RecommendServers";
+const std::string ZooKeeperNamespace::primaryNodes_ = "/PrimaryNodes";
+const std::string ZooKeeperNamespace::write_req_queue_ = "/WriteRequestQueue";
+const std::string ZooKeeperNamespace::topology_ = "/Topology";
+const std::string ZooKeeperNamespace::servers_ = "/Servers";
 const std::string ZooKeeperNamespace::replica_ = "/Replica";
 const std::string ZooKeeperNamespace::node_ = "/Node";
 const std::string ZooKeeperNamespace::server_ = "/Server";
