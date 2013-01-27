@@ -29,6 +29,25 @@ require "izenesoft/tasks"
 
 task :default => :cmake
 
+task :install do
+  require 'fileutils'
+  begin
+    top_dir = File.dirname(File.expand_path(__FILE__))
+    tools = [File.join(top_dir, "tool", "ScdMergeTool")]
+    gem_home = ENV['GEM_HOME']
+    abort 'GEM_HOME not found' if gem_home.nil?
+    dest_dir = File.join(gem_home, "bin")
+    STDERR.puts "dest dir #{dest_dir}"
+    tools.each do |tool|
+      dest = File.join(dest_dir, File.basename(tool))
+      STDERR.puts "installing #{dest}"
+      FileUtils.cp tool, dest
+    end
+  rescue Exception => e
+    STDERR.puts "install err #{e}"
+  end
+end
+
 IZENESOFT::CMake.new
 
 IZENESOFT::BoostTest.new
