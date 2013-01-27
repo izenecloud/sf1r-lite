@@ -319,8 +319,8 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
         {
             ImgDupDetector::BuildConIndex(scd_file, psm_path_incr_con_);
             ImgDupDetector::DetectCon(scd_file, psm_path_incr_con_, res_file, output_path);
-            con_docid_key_->load(output_path_ + "/../fujimap/tmp0.index");
-            con_key_docid_->load(output_path_ + "/../fujimap/tmp1.index");
+            con_docid_key_->save(output_path_ + "/../fujimap/tmp0.index");
+            con_key_docid_->save(output_path_ + "/../fujimap/tmp1.index");
             ImgDupDetector::WriteCurrentFile(filename);
         }
         else

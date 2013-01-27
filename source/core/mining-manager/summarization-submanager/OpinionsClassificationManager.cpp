@@ -31,18 +31,18 @@ OpinionsClassificationManager::OpinionsClassificationManager(const string& cma_p
     dictPath_=system_resource_path_+"/opinion";
     factory_ = CMA_Factory::instance();
     knowledge_ = factory_->createKnowledge();
-    knowledge_->loadModel( "utf8", modelPath_.data() );
+    knowledge_->loadModel( "utf8", modelPath_.data());
     analyzer_ = factory_->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
-    analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE,77);
+    analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE,100);
     analyzer_->setKnowledge(knowledge_);
     analyzer_->setPOSDelimiter("/");
     string logpath=path+"/OpinionsClassificationManager.log";
     log_.open(logpath.c_str(),ios::out);
     dbTable_=new LevelDBType(path+"/leveldb");
-    //log_<<" open"<<dbTable_->open()<<endl;
     LoadAll(dictPath_);
     Sort();
+    initWordStatuMap();
 }
 
 OpinionsClassificationManager::~OpinionsClassificationManager()
@@ -107,7 +107,7 @@ void OpinionsClassificationManager::Load(const string& pathname, vector<pair<str
     }
     else
     {
-        LOG(ERROR)<<"Load "<<pathname<<" error!"<<endl;
+        ///LOG(ERROR)<<"Load "<<pathname<<" error!"<<endl;
     }
 }
 
@@ -171,9 +171,42 @@ void  OpinionsClassificationManager::SaveAll(const string& path)
     SaveSelect( path+"/WordSelfLearn", wordSelfLearn_);
 }
 
+
+void OpinionsClassificationManager::initWordStatuMap()
+{
+
+    int x = 0;
+    for (std::vector<string>::iterator i = goodWord_.begin(); i != goodWord_.end(); ++i)
+    {
+        x++;
+        if ((*i).size() != 0)
+        {
+            wordStatuMap_.insert(*i, x);
+        }
+    }
+    x = 0;
+    for (std::vector<string>::iterator i = badWord_.begin(); i != badWord_.end(); ++i)
+    {
+        x--;
+        if ((*i).size() > 0)
+        {
+            
+            wordStatuMap_.insert(*i, x);
+        }
+    }
+    for (std::vector<string>::iterator i = reverseWord_.begin(); i != reverseWord_.end(); ++i)
+    {
+        if ((*i).size() > 0)
+        {
+            
+            wordStatuMap_.insert(*i, 0);
+        }
+    }
+}
+
 void OpinionsClassificationManager::SegQuery(const std::string& query, vector<string>& ret)
 {
-    const char* result = analyzer_->runWithString(query.data());
+    const char* result = analyzer_->runWithString(query.data());// concurrent....
     string res(result);
     //log_<<res<<"  ";
     string temp=res;
@@ -183,7 +216,6 @@ void OpinionsClassificationManager::SegQuery(const std::string& query, vector<st
         if(templen!=0)
         {
             ret.push_back(temp.substr(0,templen));
-            //SegWord(temp.substr(0,templen));
         }
         temp=temp.substr(templen+1);
         templen = temp.find(" ");
@@ -670,11 +702,7 @@ int OpinionsClassificationManager::GetResult(const string& Sentence)
     vector<string> wordvec;
     SegQuery(Sentence, wordvec);
     int reverse=1;
-    //reverseDeal(wordvec,reverse);
     int score=0;
-    vector<string> temp;
-    //log_<<reverse<<"  ";
-    int reversenum=0;
     for(unsigned j=0; j<wordvec.size(); j++)
     {
         string wordpair;
@@ -686,13 +714,57 @@ int OpinionsClassificationManager::GetResult(const string& Sentence)
         {
             wordpair=wordvec[j];
         }
+        int wordStatu = 0;
+        
+        int *value = NULL;
+        if ((value = wordStatuMap_.find(wordpair)) != NULL)
+        {
+            wordStatu = *value;
+            if (wordStatu == 0)
+            {
+                reverse = -reverse;
+            }
+            else
+            {
+                if (wordStatu > 0)
+                {
+                    score += reverse;
+                }
+                else if (wordStatu < 0)
+                {
+                    score -= reverse;
+                }
+            }
+            j++;
+        }
+        else if ((value = wordStatuMap_.find(wordvec[j])) != NULL)
+        {
+            wordStatu = *value;
+            if (wordStatu == 0)
+            {
+                reverse = -reverse;
+            }
+            else
+            {
+                if (wordStatu > 0)
+                {
+                    score += reverse;
+                }
+                else if (wordStatu < 0)
+                {
+                    score -= reverse;
+                }
+            }
+        }
+    }
+///==============
+/*
         if(Include(wordpair,reverseWord_))
         {
             //log_<<wordpair<<"(-1)*(";
             reverse=-reverse;
             j++;
             reversenum++;
-
         }
         else
         {
@@ -757,53 +829,7 @@ int OpinionsClassificationManager::GetResult(const string& Sentence)
             }
         }
     }
-    for(int j=0; j<reversenum; j++)
-    {
-        //log_<<")";
-    }
-    if((score>0))
-    {
-        //log_<<"优点"<<endl;
-    }
-    else
-    {
-        if(score==0)
-        {
-            //log_<<"无法评价！"<<endl;
-        }
-        else
-        {
-            //log_<<"缺点"<<endl;
-        }
-    }
-    //log_<<"未识别"<<temp.size()<<endl;
-    /*
-       if(score>0)
-       {
-       for(int i=0;i<temp.size();i++)
-       {
-
-       insert(temp[i],0);
-       }
-       }
-       if(score<0)
-       {
-       for(int i=0;i<temp.size();i++)
-       {
-
-       insert(temp[i],1);
-       }
-       }
-
-       if(score==0)
-       {
-       for(int i=0;i<temp.size();i++)
-       {
-
-       insert(temp[i],2);
-       }
-       }
-       */
+*/
     return score;
 }
 
@@ -874,17 +900,17 @@ void OpinionsClassificationManager::Classify(const string& Segment, std::pair<US
     string disadvantage="";
 
     vector<string> Sentence;
-    SegmentToSentece(Segment, Sentence);
+    SegmentToSentece(Segment, Sentence); // 1s for one
     //log_<<"Sentence"<<Sentence.size()<<endl;
     if(Segment.length()<200)
     {
-        for(unsigned i=0; i<Sentence.size(); i++)
+        for(unsigned i=0; i< Sentence.size(); i++)
         {
             //log_<<Sentence[i]<<"  ";
-            int score=GetResult(Sentence[i]);
+            int score = GetResult(Sentence[i]);
             if(score>0)
             {
-                advantage=advantage+Sentence[i]+",";
+                advantage = advantage+Sentence[i]+",";
             }
             else
             {

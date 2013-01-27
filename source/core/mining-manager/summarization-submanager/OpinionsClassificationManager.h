@@ -12,6 +12,9 @@
 #include <icma/icma.h>
 #include <string>
 #include <iostream>
+#include <3rdparty/am/rde_hashmap/hash_map.h>
+#include <3rdparty/am/rde_hashmap/pair.h>
+#include <am/3rdparty/rde_hash.h>
 
 namespace sf1r
 {
@@ -50,9 +53,15 @@ class OpinionsClassificationManager
     string modelPath_;
     string indexPath_;
     string dictPath_;
+
+    izenelib::am::rde_hash<std::string, int> wordStatuMap_;
+
 public:
     OpinionsClassificationManager(const string& cma_path,const string& path);
     ~OpinionsClassificationManager();
+
+    void initWordStatuMap(); 
+
     void GetWordFromTrainData();
     void ClassifyWord(const string& word);
     void ClassifyWordVector();

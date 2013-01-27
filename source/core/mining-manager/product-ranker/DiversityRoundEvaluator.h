@@ -7,7 +7,7 @@
  * "A A A B B B C C C".
  *
  * Then their round scores could be assigned as "-1 -2 -3 -1 -2 -3 -1 -2 -3",
- * after sorting the search results by this round score in descening order,
+ * after sorting the search results by this round score in descending order,
  * the search results would be "A B C A B C A B C".
  *
  * @author Jun Jiang

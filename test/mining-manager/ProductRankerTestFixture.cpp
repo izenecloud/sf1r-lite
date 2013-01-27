@@ -3,8 +3,10 @@
 #include <mining-manager/product-ranker/ProductRankerFactory.h>
 #include <mining-manager/product-ranker/ProductRankParam.h>
 #include <mining-manager/product-ranker/ProductRanker.h>
+#include <util/ustring/UString.h>
 #include <boost/test/unit_test.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/lexical_cast.hpp>
 #include <algorithm> // sort
 
 using namespace sf1r;
@@ -13,12 +15,13 @@ namespace
 {
 const std::string kTestDir = "test_product_ranker";
 const std::string kMerchantPropName = "Source";
-
-typedef std::vector<faceted::PropValueTable::pvid_t> PropValueIdList;
+const izenelib::util::UString::EncodingType ENCODING_TYPE =
+    izenelib::util::UString::UTF_8;
 }
 
 ProductRankerTestFixture::ProductRankerTestFixture()
     : merchantValueTable_(kTestDir, kMerchantPropName)
+    , merchantScoreManager_(&merchantValueTable_, NULL)
 {
     rankConfig_.scores[CUSTOM_SCORE].weight = 10;
     rankConfig_.scores[CATEGORY_SCORE].weight = 1;
@@ -44,7 +47,7 @@ void ProductRankerTestFixture::setTopKScore(const std::string& scoreList)
 void ProductRankerTestFixture::setMultiDocMerchantId(const std::string& merchantList)
 {
     PropValueIdList merchantIds;
-    split_str_to_items(merchantList, merchantIds);
+    convertMerchantId_(merchantList, merchantIds);
 
     for (PropValueIdList::const_iterator it = merchantIds.begin();
          it != merchantIds.end(); ++it)
@@ -58,16 +61,54 @@ void ProductRankerTestFixture::setMultiDocMerchantId(const std::string& merchant
 void ProductRankerTestFixture::setSingleDocMerchantId(const std::string& merchantList)
 {
     PropValueIdList merchantIds;
-    split_str_to_items(merchantList, merchantIds);
+    convertMerchantId_(merchantList, merchantIds);
 
     merchantValueTable_.appendPropIdList(merchantIds);
 }
 
+void ProductRankerTestFixture::convertMerchantId_(
+    const std::string& merchantList,
+    PropValueIdList& idList)
+{
+    typedef std::vector<std::string> StrList;
+    StrList strList;
+    split_str_to_items(merchantList, strList);
+
+    for (StrList::const_iterator it = strList.begin(); it != strList.end(); ++it)
+    {
+        merchant_id_t merchantId = 0;
+        std::vector<izenelib::util::UString> path;
+        path.push_back(izenelib::util::UString(*it, ENCODING_TYPE));
+
+        merchantId = merchantValueTable_.insertPropValueId(path);
+        idList.push_back(merchantId);
+    }
+}
+
+void ProductRankerTestFixture::setMerchantScore(const std::string& merchantScoreList)
+{
+    std::vector<score_t> scoreList;
+    split_str_to_items(merchantScoreList, scoreList);
+
+    MerchantStrScoreMap merchantScoreMap;
+    for (std::size_t i = 0; i < scoreList.size(); ++i)
+    {
+        category_id_t merchantId = i + 1;
+        std::string merchantStr = boost::lexical_cast<std::string>(merchantId);
+        merchantScoreMap.map[merchantStr].generalScore = scoreList[i];
+    }
+
+    merchantScoreManager_.setScore(merchantScoreMap);
+}
+
 void ProductRankerTestFixture::rank()
 {
-    ProductRankerFactory rankerFactory(rankConfig_, &merchantValueTable_);
     const bool isRandomRank = (rankConfig_.scores[RANDOM_SCORE].weight != 0);
     ProductRankParam param(docIds_, topKScores_, isRandomRank);
+    ProductRankerFactory rankerFactory(rankConfig_,
+                                       &merchantValueTable_,
+                                       NULL,
+                                       &merchantScoreManager_);
 
     boost::scoped_ptr<ProductRanker> ranker(
         rankerFactory.createProductRanker(param));
