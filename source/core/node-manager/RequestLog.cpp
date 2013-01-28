@@ -166,6 +166,8 @@ bool ReqLogMgr::getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& hea
     }
     ifs.seekg(0, ios::end);
     size_t length = ifs.tellg();
+    if (length < sizeof(ReqLogHead))
+        return false;
     assert(length%sizeof(ReqLogHead) == 0);
     size_t start = 0;
     size_t end = length/sizeof(ReqLogHead) - 1;
@@ -271,7 +273,13 @@ void ReqLogMgr::loadLastData()
         }
     }
     else
+    {
         boost::filesystem::create_directories(base_path_);
+        std::ofstream ofs_head(head_log_path_.c_str(), ios::app|ios::binary|ios::ate|ios::out);
+        if (!ofs_head.good())
+            throw std::runtime_error("init log head file failed.");
+        ofs_head.close();
+    }
 }
 
 }
