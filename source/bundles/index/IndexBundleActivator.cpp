@@ -17,6 +17,7 @@
 #include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/IndexWorker.h>
 #include <node-manager/MasterManagerBase.h>
+#include <node-manager/Sf1rTopology.h>
 #include <util/singleton.h>
 
 #include <question-answering/QuestionAnalysis.h>
@@ -528,7 +529,8 @@ IndexBundleActivator::createSearchAggregator_()
     searchWorker_->bindCallProxy(*localWorkerProxy);
 
     boost::shared_ptr<SearchAggregator> ret(
-        new SearchAggregator(mergerProxy.get(), localWorkerProxy.get(), config_->collectionName_));
+        new SearchAggregator(mergerProxy.get(), localWorkerProxy.get(),
+            Sf1rTopology::getServiceName(Sf1rTopology::SearchService), config_->collectionName_));
 
     mergerProxy.release();
     localWorkerProxy.release();
@@ -557,7 +559,8 @@ IndexBundleActivator::createIndexAggregator_()
     indexWorker_->bindCallProxy(*localWorkerProxy);
 
     boost::shared_ptr<IndexAggregator> ret(
-        new IndexAggregator(mergerProxy.get(), localWorkerProxy.get(), config_->collectionName_));
+        new IndexAggregator(mergerProxy.get(), localWorkerProxy.get(),
+            Sf1rTopology::getServiceName(Sf1rTopology::SearchService), config_->collectionName_));
 
     mergerProxy.release();
     localWorkerProxy.release();

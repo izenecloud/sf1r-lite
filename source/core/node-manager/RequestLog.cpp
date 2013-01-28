@@ -278,6 +278,7 @@ void ReqLogMgr::loadLastData()
         std::ofstream ofs_head(head_log_path_.c_str(), ios::app|ios::binary|ios::ate|ios::out);
         if (!ofs_head.good())
             throw std::runtime_error("init log head file failed.");
+        ofs_head << std::flush;
         ofs_head.close();
     }
 }
