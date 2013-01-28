@@ -22,11 +22,6 @@ void DistributeRequestHooker::init()
 {
     need_backup_types_.insert(Req_NoAdditionData_NeedBackup_Req);
     need_backup_types_.insert(Req_Index);
-}
-
-DistributeRequestHooker::DistributeRequestHooker()
-    :type_(Req_None), hook_type_(0)
-{
     // init callback for distribute request.
     NodeManagerBase::get()->setCallback(
         boost::bind(&DistributeRequestHooker::onElectingFinished, this),
@@ -36,6 +31,11 @@ DistributeRequestHooker::DistributeRequestHooker()
         boost::bind(&DistributeRequestHooker::abortRequestCallback, this),
         boost::bind(&DistributeRequestHooker::waitReplicasAbortCallback, this),
         boost::bind(&DistributeRequestHooker::onRequestFromPrimary, this, _1, _2));
+}
+
+DistributeRequestHooker::DistributeRequestHooker()
+    :type_(Req_None), hook_type_(0)
+{
 }
 
 bool DistributeRequestHooker::isNeedBackup(ReqLogType type)

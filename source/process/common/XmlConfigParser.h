@@ -487,13 +487,11 @@ public:
 
     bool isServiceMaster(const std::string& service)
     {
-        if (topologyConfig_.enabled_)
+        if (topologyConfig_.enabled_ && topologyConfig_.sf1rTopology_.curNode_.master_.enabled_)
         {
             Sf1rNodeMaster::MasterServiceMapT::const_iterator cit = topologyConfig_.sf1rTopology_.curNode_.master_.masterServices_.find(service);
             if (cit != topologyConfig_.sf1rTopology_.curNode_.master_.masterServices_.end())
-            {
-                return cit->second.enabled_;
-            }
+                return true;
         }
         return false;
     }
@@ -514,12 +512,12 @@ public:
 
     bool isServiceWorker(const std::string& service)
     {
-        if (topologyConfig_.enabled_)
+        if (topologyConfig_.enabled_ && topologyConfig_.sf1rTopology_.curNode_.worker_.enabled_)
         {
             Sf1rNodeWorker::WorkerServiceMapT::const_iterator cit = topologyConfig_.sf1rTopology_.curNode_.worker_.workerServices_.find(service);
             if (cit != topologyConfig_.sf1rTopology_.curNode_.worker_.workerServices_.end())
             {
-                return cit->second.enabled_;
+                return true;
             }
         }
         return false;
@@ -629,12 +627,13 @@ private:
     void parseDistributedCommon(const ticpp::Element * distributedCommon);
     /// @brief                  Parse <DistributedTopology> settings
     /// @param system           Pointer to the Element
-    void parseDistributedTopologies(const ticpp::Element * deploy);
-    void parseDistributedTopology(const ticpp::Element * topology, DistributedTopologyConfig& topologyConfig);
+    void parseDistributedTopology(const ticpp::Element * topology);
     /// @brief                  Parse <Sf1rNode> settings
     /// @param system           Pointer to the Element
     void parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& sf1rNodeMaster);
     void parseNodeWorker(const ticpp::Element * worker, Sf1rNodeWorker& sf1rNodeWorker);
+    void parseServiceMaster(const ticpp::Element * service, Sf1rNodeMaster& sf1rNodeMaster);
+    void parseServiceWorker(const ticpp::Element * service, Sf1rNodeWorker& sf1rNodeWorker);
     /// @brief                  Parse <Broker> settings
     /// @param system           Pointer to the Element
     void parseDistributedUtil(const ticpp::Element * distributedUtil);

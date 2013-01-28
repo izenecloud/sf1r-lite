@@ -260,7 +260,9 @@ bool CobraProcess::initNodeManager()
     if (SF1Config::get()->isDistributedNode())
     {
         NodeManagerBase::get()->init(SF1Config::get()->topologyConfig_);
-        DistributeRequestHooker::init();
+
+        RecoveryChecker::get()->init(SF1Config::get()->getWorkingDir());
+        DistributeRequestHooker::get()->init();
         ReqLogMgr::initWriteRequestSet();
     }
 
@@ -284,7 +286,6 @@ bool CobraProcess::startDistributedServer()
         return true;
     }
 
-    RecoveryChecker::get()->init(SF1Config::get()->getWorkingDir());
     // Start data receiver
     unsigned int dataPort = SF1Config::get()->distributedCommonConfig_.dataRecvPort_;
     CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
@@ -319,19 +320,22 @@ bool CobraProcess::startDistributedServer()
         masterServer_.reset(new MasterServer);
         masterServer_->start(localHost, masterPort);
     }
-    // register distribute services.
-    NodeManagerBase::get()->registerDistributeService(
-        boost::shared_ptr<IDistributeService>(new DistributeSearchService()),
-        SF1Config::get()->isSearchWorker(),
-        SF1Config::get()->isSearchMaster());
-    NodeManagerBase::get()->registerDistributeService(
-        boost::shared_ptr<IDistributeService>(new DistributeRecommendService()),
-        SF1Config::get()->isRecommendWorker(),
-        SF1Config::get()->isRecommendMaster());
 
     // Start distributed topology node manager(s)
     if (SF1Config::get()->isDistributedNode())
+    {
+        // register distribute services.
+        NodeManagerBase::get()->registerDistributeService(
+            boost::shared_ptr<IDistributeService>(new DistributeSearchService()),
+            SF1Config::get()->isSearchWorker(),
+            SF1Config::get()->isSearchMaster());
+        NodeManagerBase::get()->registerDistributeService(
+            boost::shared_ptr<IDistributeService>(new DistributeRecommendService()),
+            SF1Config::get()->isRecommendWorker(),
+            SF1Config::get()->isRecommendMaster());
+
         NodeManagerBase::get()->start();
+    }
 
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));
     return true;

@@ -13,7 +13,6 @@ class ReqLogMgr;
 class DistributeRequestHooker
 {
 public:
-    static void init();
     static DistributeRequestHooker* get()
     {
         return izenelib::util::Singleton<DistributeRequestHooker>::get();
@@ -21,6 +20,7 @@ public:
 
 
     DistributeRequestHooker();
+    void init();
     bool isValid();
     void hookCurrentReq(const std::string& colname, const CollectionPath& colpath,
         const std::string& reqdata, boost::shared_ptr<ReqLogMgr> req_log_mgr);

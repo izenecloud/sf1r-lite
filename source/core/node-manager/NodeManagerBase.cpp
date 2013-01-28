@@ -42,7 +42,6 @@ void NodeManagerBase::init(const DistributedTopologyConfig& distributedTopologyC
     isDistributionEnabled_ = distributedTopologyConfig.enabled_;
     sf1rTopology_ = distributedTopologyConfig.sf1rTopology_;
 
-    zookeeper_ = ZooKeeperManager::get()->createClient(this);
     setZNodePaths();
     MasterManagerBase::get()->enableDistribute(isDistributionEnabled_);
 }
@@ -122,6 +121,10 @@ void NodeManagerBase::start()
     }
 
     boost::unique_lock<boost::mutex> lock(mutex_);
+    if (!zookeeper_)
+    {
+        zookeeper_ = ZooKeeperManager::get()->createClient(this);
+    }
     if (nodeState_ == NODE_STATE_INIT)
     {
         nodeState_ = NODE_STATE_STARTING;
@@ -257,7 +260,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     if (sf1rTopology_.curNode_.master_.hasAnyService())
     {
         znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
-        //znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
+        znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
     }
 }
 

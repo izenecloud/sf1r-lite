@@ -241,7 +241,7 @@ bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std
 
         if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
         {
-            LOG(ERROR) << "get file sync server failed.";
+            LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
             return false;
         }
         LOG(INFO) << "try get newest log from: " << ip << ":" << port;
@@ -289,7 +289,7 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
         uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
         if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
         {
-            LOG(ERROR) << "get file sync server failed.";
+            LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
             return false;
         }
         LOG(INFO) << "try get scd file list from: " << ip << ":" << port;
@@ -388,7 +388,7 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& filepath, bool f
         uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
         if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
         {
-            LOG(ERROR) << "get file sync server failed.";
+            LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
             return false;
         }
         GetFileData file_rsp;

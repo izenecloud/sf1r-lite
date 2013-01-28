@@ -49,7 +49,7 @@ void SuperMasterManager::detectSearchMasters()
 
                     // get master info
                     sf1rNode->host_ = znode.getStrValue(ZNode::KEY_HOST);
-                    //sf1rNode->master_.name_ = znode.getStrValue(ZNode::KEY_MASTER_NAME);
+                    sf1rNode->master_.name_ = znode.getStrValue(ZNode::KEY_MASTER_NAME);
                     try
                     {
                         sf1rNode->baPort_ =
@@ -58,7 +58,7 @@ void SuperMasterManager::detectSearchMasters()
                     catch (std::exception& e)
                     {
                         LOG (ERROR) << "failed to convert baPort \"" << znode.getStrValue(ZNode::KEY_BA_PORT)
-                                    //<< "\" got from master \"" << sf1rNode->master_.name_
+                                    << "\" got from master \"" << sf1rNode->master_.name_
                                     << "\" on node " << nodeId
                                     << " @" << sf1rNode->host_;
                         continue;

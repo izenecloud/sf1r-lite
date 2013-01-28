@@ -58,6 +58,7 @@ public:
     void onRecoverWaitPrimaryCallback();
     void onRecoverWaitReplicasCallback();
 private:
+    bool backupColl(const CollectionPath& colpath, const bfs::path& dest_path);
     void syncToNewestReqLog();
     void syncSCDFiles();
     bool redoLog(ReqLogMgr* redolog, uint32_t start_id);

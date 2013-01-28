@@ -217,20 +217,8 @@ bool RecoveryChecker::backup()
         // flush collection to make sure all changes have been saved to disk.
         if (flush_col_)
             flush_col_(cit->first);
-        const CollectionPath &colpath = cit->second.first;
-
-        bfs::path coldata_path(colpath.getCollectionDataPath());
-        bfs::path querydata_path(colpath.getQueryDataPath());
-
-        try
+        if(!backupColl(cit->second.first, dest_path))
         {
-            copy_dir(coldata_path, dest_coldata_backup);
-            copy_dir(querydata_path, dest_coldata_backup);
-        }
-        catch(const std::exception& e)
-        {
-            // clear state.
-            LOG(ERROR) << "backup collection data failed. " << e.what() << std::endl;
             return false;
         }
         ++cit;
@@ -293,6 +281,33 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
     return ret;
 }
 
+bool RecoveryChecker::backupColl(const CollectionPath& colpath, const bfs::path& dest_path)
+{
+    // find all collection and backup.
+    bfs::path dest_coldata_backup = dest_path/bfs::path("backup_data");
+
+    if (!bfs::exists(dest_path))
+    {
+        bfs::create_directories(dest_path);
+        bfs::create_directories(dest_coldata_backup);
+    }
+
+    bfs::path coldata_path(colpath.getCollectionDataPath());
+    bfs::path querydata_path(colpath.getQueryDataPath());
+
+    try
+    {
+        copy_dir(coldata_path, dest_coldata_backup);
+        copy_dir(querydata_path, dest_coldata_backup);
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "backup collection data failed. " << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
 bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
 {
     if (!bfs::exists(rollback_file_))
@@ -313,10 +328,9 @@ bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
         last_backup_id = 0;
         has_backup = false;
     }
-
-    // copy backup data to replace current and reopen all file.
     if (has_backup)
     {
+        // copy backup data to replace current and reopen all file.
         try
         {
             bfs::path dest_coldata_backup(last_backup_path + "/backup_data");
@@ -471,12 +485,6 @@ void RecoveryChecker::init(const std::string& workdir)
     redo_log_basepath_ = workdir + "/redo-log";
     rollback_file_ = workdir + "/rollback_flag";
 
-    if (!NodeManagerBase::get()->isDistributed())
-    {
-        return;
-    }
-
-
     reqlog_mgr_.reset(new ReqLogMgr());
     try
     {
@@ -488,19 +496,6 @@ void RecoveryChecker::init(const std::string& workdir)
         setRollbackFlag(0);
         bfs::remove_all(request_log_basepath_);
         reqlog_mgr_->init(request_log_basepath_);
-    }
-
-    std::string backup_path;
-    uint32_t backup_inc_id = 0;
-    if (!getLastBackup(backup_basepath_, backup_path, backup_inc_id))
-    {
-        // first init.
-        LOG(INFO) << "No backup found, do the backup for the first time.";
-        if (!backup())
-        {
-            LOG(ERROR) << "First backup failed, must exit.";
-            throw std::runtime_error("backup for the first time failed.");
-        }
     }
 
     NodeManagerBase::get()->setRecoveryCallback(

@@ -242,37 +242,32 @@
     <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
                        workerport="18151" masterport="18131" datarecvport="18121" filesyncport="18141"/>
 
-    <DistributedTopology enable="n" type="search" nodenum="2">
-      <CurrentSf1rNode nodeid="1" replicaid="1">
-        <!--master names for B5M are www|stage|beta-->
-        <MasterServer enable="y" name="undefined" shardnum="2">
-          <!--for distributive collection, shardid is set to all as default-->
-          <Collection name="web" distributive="n"/>
-          <Collection name="qa" distributive="n"/>
-          <Collection name="b5mo" distributive="n"/>
-          <Collection name="b5mc" distributive="n"/>
-          <Collection name="b5mp" distributive="y" shardids="1,2"/>
-        </MasterServer>
+    <DistributedTopology enable="n" nodenum="2">
+        <CurrentSf1rNode nodeid="1" replicaid="1">
+            <!--master names for B5M are www|stage|beta-->
+            <MasterServer enable="n" name="undefined">
+                <DistributedService type="search" >
+                    <!--for distributive collection, shardid is set to all as default-->
+                    <Collection name="web" distributive="n"/>
+                    <Collection name="qa" distributive="n"/>
+                    <Collection name="b5mo" distributive="n"/>
+                    <Collection name="b5mc" distributive="n"/>
+                    <Collection name="b5mp" distributive="y" shardids="1,2"/>
+                </DistributedService>
+                <!--<DistributedService type="recommend">
+                    <Collection name="b5mp" distributive="y"/>
+                </DistributedService>-->
+            </MasterServer>
 
-        <WorkerServer enable="y" shardid="1">
-          <Collection name="web"/>
-          <Collection name="b5mp"/>
-        </WorkerServer>
-      </CurrentSf1rNode>
-    </DistributedTopology>
-
-    <DistributedTopology enable="n" type="recommend" nodenum="2">
-      <CurrentSf1rNode nodeid="1" replicaid="1">
-        <MasterServer enable="y" name="undefined" shardnum="1">
-          <Collection name="b5mo" distributive="n"/>
-          <Collection name="b5mc" distributive="n"/>
-          <Collection name="b5mp" distributive="y"/>
-        </MasterServer>
-
-        <WorkerServer enable="y" shardid="1">
-          <Collection name="b5mp"/>
-        </WorkerServer>
-      </CurrentSf1rNode>
+            <WorkerServer enable="n">
+                <DistributedService type="search" >
+                    <Collection name="b5mp"/>
+                </DistributedService>
+                <!--<DistributedService type="recommend" >
+                    <Collection name="b5mp"/>
+                </DistributedService>-->
+            </WorkerServer>
+        </CurrentSf1rNode>
     </DistributedTopology>
 
     <DistributedUtil>

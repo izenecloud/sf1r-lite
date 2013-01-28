@@ -637,7 +637,7 @@ void SF1Config::parseDeploymentSettings(const ticpp::Element * deploy)
     parseBrokerAgent(getUniqChildElement(deploy, "BrokerAgent"));
 
     parseDistributedCommon(getUniqChildElement(deploy, "DistributedCommon"));
-    parseDistributedTopologies(deploy); // Make sure "DistributedCommon" parsed first.
+    parseDistributedTopology(getUniqChildElement(deploy, "DistributedTopology")); // Make sure "DistributedCommon" parsed first.
     parseDistributedUtil(getUniqChildElement(deploy, "DistributedUtil"));
 }
 
@@ -670,29 +670,7 @@ void SF1Config::parseDistributedCommon(const ticpp::Element * distributedCommon)
     std::cout << "cluster id : " << distributedCommonConfig_.clusterId_ << std::endl;
 }
 
-void SF1Config::parseDistributedTopologies(const ticpp::Element * deploy)
-{
-    Iterator<Element> it("DistributedTopology");
-    for (it = it.begin(deploy); it != it.end(); it++)
-    {
-        ticpp::Element* topology = it.Get();
-
-        std::string type;
-        getAttribute(topology, "type", type);
-        if (type == "search")
-        {
-            parseDistributedTopology(topology, topologyConfig_);
-        }
-        else if (type == "recommend")
-        {
-            parseDistributedTopology(topology, topologyConfig_);
-        }
-    }
-}
-
-void SF1Config::parseDistributedTopology(
-        const ticpp::Element * topology,
-        DistributedTopologyConfig& topologyConfig)
+void SF1Config::parseDistributedTopology(const ticpp::Element * topology)
 {
     if (topology)
     {
@@ -702,11 +680,9 @@ void SF1Config::parseDistributedTopology(
                                      "make sure \"DistributedCommon\" has been parsed first.");
         }
 
-        getAttribute(topology, "enable", topologyConfig.enabled_);
-        //getAttribute(topology, "type", topologyConfig.type_);
-        //topologyConfig.sf1rTopology_.setType(topologyConfig.type_);
+        getAttribute(topology, "enable", topologyConfig_.enabled_);
 
-        Sf1rTopology& sf1rTopology = topologyConfig.sf1rTopology_;
+        Sf1rTopology& sf1rTopology = topologyConfig_.sf1rTopology_;
         sf1rTopology.clusterId_ = distributedCommonConfig_.clusterId_;
         getAttribute(topology, "nodenum", sf1rTopology.nodeNum_);
 
@@ -736,59 +712,14 @@ void SF1Config::parseNodeMaster(const ticpp::Element * master, Sf1rNodeMaster& s
 {
     if (master)
     {
-        //getAttribute(master, "enable", sf1rNodeMaster.isEnabled_);
-        //getAttribute(master, "name", sf1rNodeMaster.name_);
+        getAttribute(master, "enable", sf1rNodeMaster.enabled_);
+        getAttribute(master, "name", sf1rNodeMaster.name_);
         //getAttribute(master, "shardnum", sf1rNodeMaster.totalShardNum_);
 
-        Iterator<Element> collection_it("Collection");
-        for (collection_it = collection_it.begin(master); collection_it != collection_it.end(); collection_it++)
+        Iterator<Element> service_it("DistributedService");
+        for (service_it = service_it.begin(master); service_it != service_it.end(); service_it++)
         {
-            MasterCollection masterCollection;
-            getAttribute(collection_it.Get(), "name", masterCollection.name_);
-            getAttribute(collection_it.Get(), "distributive", masterCollection.isDistributive_, false);
-            if (masterCollection.isDistributive_)
-            {
-                std::string shardids;
-                if (getAttribute(collection_it.Get(), "shardids", shardids, false))
-                {
-                    boost::char_separator<char> sep(", ");
-                    boost::tokenizer<boost::char_separator<char> > tokens(shardids, sep);
-
-                    boost::tokenizer<boost::char_separator<char> >::iterator it;
-                    for (it = tokens.begin(); it != tokens.end(); ++it)
-                    {
-                        shardid_t shardid;
-                        try
-                        {
-                            shardid = boost::lexical_cast<shardid_t>(*it);
-                            //if (shardid < 1 || shardid > sf1rNodeMaster.totalShardNum_)
-                            //{
-                            //    std::stringstream ss;
-                            //    ss << "invalid shardid \"" << shardid << "\" in <MasterServer ...> <Collection name=\""
-                            //       << masterCollection.name_ << "\" shardids=\"" << shardids << "\"";
-                            //    throw std::runtime_error(ss.str());
-                            //}
-                        }
-                        catch (const std::exception& e)
-                        {
-                            throw std::runtime_error(
-                                    std::string("failed to parse shardids: ") + shardids + ", " + e.what());
-                        }
-                        masterCollection.shardList_.push_back(shardid);
-                    }
-                }
-                else
-                {
-                    // set to all shards as default
-                    //for (uint32_t i = 1; i <= sf1rNodeMaster.totalShardNum_; i++)
-                    //{
-                    //    masterCollection.shardList_.push_back(i);
-                    //}
-                }
-            }
-
-            downCase(masterCollection.name_);
-            //sf1rNodeMaster.collectionList_.push_back(masterCollection);
+            parseServiceMaster(service_it.Get(), sf1rNodeMaster);
         }
     }
 }
@@ -797,17 +728,87 @@ void SF1Config::parseNodeWorker(const ticpp::Element * worker, Sf1rNodeWorker& s
 {
     if (worker)
     {
-        //getAttribute(worker, "enable", sf1rNodeWorker.isEnabled_);
+        getAttribute(worker, "enable", sf1rNodeWorker.enabled_);
 
-        Iterator<Element> collection_it("Collection");
-        for (collection_it = collection_it.begin(worker); collection_it != collection_it.end(); collection_it++)
+        Iterator<Element> service_it("DistributedService");
+        for (service_it = service_it.begin(worker); service_it != service_it.end(); service_it++)
         {
-            std::string collection;
-            getAttribute(collection_it.Get(), "name", collection);
-            downCase(collection);
-            //sf1rNodeWorker.collectionList_.push_back(collection);
+            parseServiceWorker(service_it.Get(), sf1rNodeWorker);
         }
+   }
+}
+
+void SF1Config::parseServiceMaster(const ticpp::Element * service, Sf1rNodeMaster& sf1rNodeMaster)
+{
+    MasterServiceInfo service_info;
+    getAttribute(service, "type", service_info.serviceName_);
+
+    Iterator<Element> collection_it("Collection");
+    for (collection_it = collection_it.begin(service); collection_it != collection_it.end(); collection_it++)
+    {
+        MasterCollection masterCollection;
+        getAttribute(collection_it.Get(), "name", masterCollection.name_);
+        getAttribute(collection_it.Get(), "distributive", masterCollection.isDistributive_, false);
+        if (masterCollection.isDistributive_)
+        {
+            std::string shardids;
+            if (getAttribute(collection_it.Get(), "shardids", shardids, false))
+            {
+                boost::char_separator<char> sep(", ");
+                boost::tokenizer<boost::char_separator<char> > tokens(shardids, sep);
+
+                boost::tokenizer<boost::char_separator<char> >::iterator it;
+                for (it = tokens.begin(); it != tokens.end(); ++it)
+                {
+                    shardid_t shardid;
+                    try
+                    {
+                        shardid = boost::lexical_cast<shardid_t>(*it);
+                        if (shardid < 1 || shardid > topologyConfig_.sf1rTopology_.nodeNum_)
+                        {
+                            std::stringstream ss;
+                            ss << "invalid shardid \"" << shardid << "\" in <MasterServer ...> <Collection name=\""
+                               << masterCollection.name_ << "\" shardids=\"" << shardids << "\"";
+                            throw std::runtime_error(ss.str());
+                        }
+                    }
+                    catch (const std::exception& e)
+                    {
+                        throw std::runtime_error(
+                            std::string("failed to parse shardids: ") + shardids + ", " + e.what());
+                    }
+                    masterCollection.shardList_.push_back(shardid);
+                }
+            }
+            else
+            {
+                // set to all shards as default
+                for (uint32_t i = 1; i <= topologyConfig_.sf1rTopology_.nodeNum_; i++)
+                {
+                    masterCollection.shardList_.push_back(i);
+                }
+            }
+        }
+
+        downCase(masterCollection.name_);
+        service_info.collectionList_.push_back(masterCollection);
     }
+    sf1rNodeMaster.masterServices_[service_info.serviceName_] = service_info;
+}
+
+void SF1Config::parseServiceWorker(const ticpp::Element * service, Sf1rNodeWorker& sf1rNodeWorker)
+{
+    WorkerServiceInfo service_info;
+    getAttribute(service, "type", service_info.serviceName_);
+    Iterator<Element> collection_it("Collection");
+    for (collection_it = collection_it.begin(service); collection_it != collection_it.end(); collection_it++)
+    {
+        std::string collection;
+        getAttribute(collection_it.Get(), "name", collection);
+        downCase(collection);
+        service_info.collectionList_.push_back(collection);
+    }
+    sf1rNodeWorker.workerServices_[service_info.serviceName_] = service_info;
 }
 
 void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
