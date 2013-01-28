@@ -69,7 +69,8 @@ ForwardIterator unique_merge(ForwardIterator first, ForwardIterator last, Binary
 NaiveTopicDetector::NaiveTopicDetector(
         const std::string& sys_resource_path, 
         const std::string& dict_path,
-        bool enable_semantic)
+        bool enable_semantic,
+        const std::string& tdt_type)
     :sys_resource_path_(sys_resource_path)
     ,tokenize_dicpath_(dict_path)
     ,analyzer_(NULL)
@@ -79,7 +80,9 @@ NaiveTopicDetector::NaiveTopicDetector(
     ,kpe_trie_(NULL)
     ,related_map_(NULL)
     ,enable_semantic_(enable_semantic)
+    ,tdt_type_(tdt_type)
 {
+
     InitKnowledge_();
     
 }
@@ -89,7 +92,6 @@ NaiveTopicDetector::~NaiveTopicDetector()
     if (analyzer_) delete analyzer_;
     if (knowledge_) delete knowledge_;
     if (opencc_) delete opencc_;
-    if (wg_) delete wg_;
     if (kpe_trie_) delete kpe_trie_;
     if (related_map_) delete related_map_;
 }
@@ -260,7 +262,10 @@ void NaiveTopicDetector::InitKnowledge_()
         boost::filesystem::path wiki_graph_path(sys_resource_path_);
         wiki_graph_path /= boost::filesystem::path("wikigraph");
         LOG(INFO) << "wiki graph knowledge path : " << wiki_graph_path.c_str() << endl;
-        wg_=new WikiGraph(wiki_graph_path.c_str(),opencc_);
+        wg_ = WikiGraph::GetInstance();
+
+        wg_->Init(wiki_graph_path.c_str(),opencc_,tdt_type_);
+
     }
 }
 

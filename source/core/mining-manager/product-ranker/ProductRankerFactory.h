@@ -13,6 +13,7 @@ namespace sf1r
 struct ProductRankParam;
 class ProductRanker;
 class ProductRankingConfig;
+class MerchantScoreManager;
 
 namespace faceted { class PropValueTable; }
 
@@ -21,7 +22,9 @@ class ProductRankerFactory
 public:
     ProductRankerFactory(
         const ProductRankingConfig& config,
-        const faceted::PropValueTable* merchantValueTable);
+        const faceted::PropValueTable* merchantValueTable,
+        const faceted::PropValueTable* categoryValueTable,
+        const MerchantScoreManager* merchantScoreManager);
 
     ProductRanker* createProductRanker(ProductRankParam& param);
 
@@ -34,6 +37,8 @@ private:
     const ProductRankingConfig& config_;
 
     const faceted::PropValueTable* merchantValueTable_;
+    const faceted::PropValueTable* categoryValueTable_;
+    const MerchantScoreManager* merchantScoreManager_;
 
     /** true when the weight in <Score type="random"> is non-zero */
     const bool isRandomScoreConfig_;

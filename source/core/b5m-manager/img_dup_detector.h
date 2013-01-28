@@ -2,6 +2,8 @@
 #define IMG_DUP_DETECTOR_H_
 
 #include "img_dup_helper.h"
+#include "img_dup_fujimap.h"
+#include "img_dup_fm.h"
 #include <string>
 #include <vector>
 #include <product-manager/product_price.h>
@@ -9,6 +11,7 @@
 #include "b5m_helper.h"
 #include <types.h>
 #include <am/succinct/fujimap/fujimap.hpp>
+#include <util/singleton.h>
 #include <glog/logging.h>
 #include <boost/unordered_map.hpp>
 #include <idmlib/duplicate-detection/dup_detector.h>
@@ -55,12 +58,17 @@ namespace sf1r {
         bool ClearHistoryCon();
         bool ClearHistoryUrl();
         bool SetPath();
+        bool InitFujiMap();
+        bool SaveFujiMap();
+        bool LoadFujiMap();
         bool DupDetectorMain();
         bool BeginToDupDetect(const std::string& filename);
         bool BuildUrlIndex(const std::string& scd_file, const std::string& psm_path);
         bool BuildConIndex(const std::string& scd_file, const std::string& psm_path);
         bool DetectUrl(const std::string& scd_file, const std::string& psm_path, const std::string& res_file, const std::string& output_path);
         bool DetectCon(const std::string& scd_file, const std::string& psm_path, const std::string& res_file, const std::string& output_path);
+        bool BuildGidMem();
+        bool WriteCurrentFile(const std::string& filename);
 
     public:
 
@@ -88,16 +96,26 @@ namespace sf1r {
         bool dup_by_url_;
         bool dup_by_con_;
 
-        std::map<std::string, uint32_t> con_docid_key_;
-        std::map<uint32_t, std::string> con_key_docid_;
+//        std::map<uint32_t, uint32_t> con_docid_key_;
+//        std::map<uint32_t, uint32_t> con_key_docid_;
+        ImgDupFujiMap* con_docid_key_;
+        ImgDupFujiMap* con_key_docid_;
         uint32_t con_key_;
 
-        std::map<std::string, uint32_t> url_docid_key_;
-        std::map<uint32_t, std::string> url_key_docid_;
+//        std::map<uint32_t, uint32_t> url_docid_key_;
+//        std::map<uint32_t, uint32_t> url_key_docid_;
+        ImgDupFujiMap* url_docid_key_;
+        ImgDupFujiMap* url_key_docid_;
         uint32_t url_key_;
+
+        ImgDupFujiMap* docid_docid_;
+        std::map<uint32_t, std::vector<uint32_t> > gid_docids_;
+
+        ImgDupFujiMap* gid_memcount_;
 
         std::map<uint32_t, UString> key_con_map_;
         std::map<uint32_t, UString> key_url_map_;
+
     };
 }
 

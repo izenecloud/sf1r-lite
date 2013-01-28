@@ -35,10 +35,13 @@ void IndexManager::convertData(const std::string& property, const PropertyValue&
 }
 
 void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
-        const std::vector<PropertyValue>& filterParam, boost::shared_ptr<BitVector> docIdSet)
+        const std::vector<PropertyValue>& filterParam, boost::shared_ptr<EWAHBoolArray<uint32_t> > docIdSet)
 {
     collectionid_t colId = 1;
     std::string propertyL = boost::to_upper_copy(property);
+    boost::scoped_ptr<BitVector> pBitVector;
+    if(QueryFiltering::EQUAL != filterOperation) pBitVector.reset(new BitVector(pIndexReader_->maxDoc() + 1));
+
     switch (filterOperation)
     {
     case QueryFiltering::EQUAL:
@@ -47,15 +50,15 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL,filterParam[0], value);
         getDocsByPropertyValue(colId, property, value, *docIdSet);
+        return;
     }
-        break;
     case QueryFiltering::INCLUDE:
     {
         for(std::vector<PropertyValue>::const_iterator iter = filterParam.begin(); iter != filterParam.end(); ++iter)
         {
             PropertyType value;
             convertData(propertyL, *iter, value);
-            getDocsByPropertyValue(colId, property, value, *docIdSet);
+            getDocsByPropertyValue(colId, property, value, *pBitVector);
         }
     }
         break;
@@ -65,9 +68,9 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         {
             PropertyType value;
             convertData(propertyL, *iter, value);
-            getDocsByPropertyValue(colId, property, value, *docIdSet);
+            getDocsByPropertyValue(colId, property, value, *pBitVector);
         }
-        docIdSet->toggle();
+        pBitVector->toggle();
     }
         break;
     case QueryFiltering::NOT_EQUAL:
@@ -75,7 +78,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueNotEqual(colId, property, value, *docIdSet);
+        getDocsByPropertyValueNotEqual(colId, property, value, *pBitVector);
     }
         break;
     case QueryFiltering::GREATER_THAN:
@@ -83,7 +86,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueGreaterThan(colId, property, value, *docIdSet);
+        getDocsByPropertyValueGreaterThan(colId, property, value, *pBitVector);
     }
         break;
     case QueryFiltering::GREATER_THAN_EQUAL:
@@ -91,7 +94,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueGreaterThanOrEqual(colId, property, value, *docIdSet);
+        getDocsByPropertyValueGreaterThanOrEqual(colId, property, value, *pBitVector);
     }
         break;
     case QueryFiltering::LESS_THAN:
@@ -99,7 +102,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueLessThan(colId, property, value, *docIdSet);
+        getDocsByPropertyValueLessThan(colId, property, value, *pBitVector);
     }
         break;
     case QueryFiltering::LESS_THAN_EQUAL:
@@ -107,7 +110,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueLessThanOrEqual(colId, property, value, *docIdSet);
+        getDocsByPropertyValueLessThanOrEqual(colId, property, value, *pBitVector);
     }
         break;
     case QueryFiltering::RANGE:
@@ -118,7 +121,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         convertData(propertyL, filterParam[0], value1);
         convertData(propertyL, filterParam[1], value2);
 
-        getDocsByPropertyValueRange(colId, property, value1, value2, *docIdSet);
+        getDocsByPropertyValueRange(colId, property, value1, value2, *pBitVector);
     }
         break;
     case QueryFiltering::PREFIX:
@@ -126,7 +129,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueStart(colId, property, value, *docIdSet);
+        getDocsByPropertyValueStart(colId, property, value, *pBitVector);
     }
         break;
     case QueryFiltering::SUFFIX:
@@ -134,7 +137,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueEnd(colId, property, value, *docIdSet);
+        getDocsByPropertyValueEnd(colId, property, value, *pBitVector);
     }
         break;
     case QueryFiltering::SUB_STRING:
@@ -142,12 +145,15 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL, filterParam[0], value);
-        getDocsByPropertyValueSubString(colId, property, value, *docIdSet);
+        getDocsByPropertyValueSubString(colId, property, value, *pBitVector);
     }
         break;
     default:
         break;
     }
+    //Compress bit vector
+    BOOST_ASSERT(!pBitVector);
+    pBitVector->compressed(*docIdSet);
 }
 
 }

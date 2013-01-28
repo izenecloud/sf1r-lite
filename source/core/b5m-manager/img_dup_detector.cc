@@ -5,10 +5,13 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/inotify.h>
+#include <boost/lexical_cast.hpp>
+#include <fstream>
 
 #define MAX_BUF_SIZE 1024
 
 using namespace sf1r;
+uint32_t history = 0;
 
 ImgDupDetector::ImgDupDetector()
 :psmk_(400)
@@ -53,6 +56,15 @@ ImgDupDetector::~ImgDupDetector()
 {
 }
 
+uint32_t DocidToUint(const std::string& docid )
+{
+    return boost::lexical_cast<uint32_t>(docid);
+}
+std::string UintToDocid(const uint32_t docid)
+{
+    return boost::lexical_cast<std::string>(docid);
+}
+
 bool ImgDupDetector::SetController()
 {
     if( (controller_ % 2) == 1)
@@ -71,10 +83,11 @@ bool ImgDupDetector::ClearHistory()
 
 bool ImgDupDetector::ClearHistoryCon()
 {
-    if( !(con_docid_key_.empty()) )
-        con_docid_key_.clear();
-    if( !(con_key_docid_.empty()) )
-        con_key_docid_.clear();
+    if( !(con_docid_key_->empty()) )
+        con_docid_key_->clear();
+    if( !(con_key_docid_->empty()) )
+        con_key_docid_->clear();
+
     if( !(key_con_map_.empty()) )
         key_con_map_.clear();
     if( !(key_url_map_.empty()) )
@@ -85,10 +98,11 @@ bool ImgDupDetector::ClearHistoryCon()
 
 bool ImgDupDetector::ClearHistoryUrl()
 {
-    if( !(url_docid_key_.empty()) )
-        url_docid_key_.clear();
-    if( !(url_key_docid_.empty()) )
-        url_key_docid_.clear();
+    if( !(url_docid_key_->empty()) )
+        url_docid_key_->clear();
+    if( !(url_key_docid_->empty()) )
+        url_key_docid_->clear();
+
     if( !(key_con_map_.empty()) )
         key_con_map_.clear();
     if( !(key_url_map_.empty()) )
@@ -99,9 +113,9 @@ bool ImgDupDetector::ClearHistoryUrl()
 
 bool ImgDupDetector::SetPath()
 {
-    scd_temp_path_ = output_path_ + "/temp";
+    scd_temp_path_ = output_path_ + "/../temp";
 
-    psm_path_ = output_path_ + "/psm";
+    psm_path_ = output_path_ + "/../psm";
     psm_path_incr_ = psm_path_ + "/incr";
     psm_path_noin_ = psm_path_ + "/noin";
     psm_path_incr_url_ = psm_path_ + "/incr/url";
@@ -123,11 +137,72 @@ bool ImgDupDetector::SetPath()
     return true;
 }
 
+bool ImgDupDetector::InitFujiMap()
+{
+    boost::filesystem::create_directories(output_path_+"/../fujimap");
+    con_docid_key_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp0.kf");
+    con_docid_key_->open();
+
+    con_key_docid_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp1.kf");
+    con_key_docid_->open();
+
+    url_docid_key_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp2.kf");
+    url_docid_key_->open();
+
+    url_key_docid_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp3.kf");
+    url_key_docid_->open();
+
+    docid_docid_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp4.kf");
+    docid_docid_->open();
+
+    gid_memcount_ = new ImgDupFujiMap(output_path_ + "/../fujimap/tmp5.kf");
+    gid_memcount_->open();
+
+    return true;
+}
+
+bool ImgDupDetector::SaveFujiMap()
+{
+/*
+    con_docid_key_->save(output_path_ + "/../fujimap/tmp0.index");
+    con_key_docid_->save(output_path_ + "/../fujimap/tmp1.index");
+    url_docid_key_->save(output_path_ + "/../fujimap/tmp2.index");
+    url_key_docid_->save(output_path_ + "/../fujimap/tmp3.index");
+*/
+    docid_docid_->save(output_path_ + "/../fujimap/tmp4.index");
+//    gid_memcount_->save(output_path_ + "/../fujimap/tmp5.index");
+
+    std::string statefile = output_path_ + "/../fujimap/state";
+    ofstream fout(statefile.c_str());
+    fout << url_key_ << " " << con_key_ << " " << history;
+
+    return true;
+}
+
+bool ImgDupDetector::LoadFujiMap()
+{
+    con_docid_key_->load(output_path_ + "/../fujimap/tmp0.index");
+    con_key_docid_->load(output_path_ + "/../fujimap/tmp1.index");
+    url_docid_key_->load(output_path_ + "/../fujimap/tmp2.index");
+    url_key_docid_->load(output_path_ + "/../fujimap/tmp3.index");
+    docid_docid_->load(output_path_ + "/../fujimap/tmp4.index");
+    gid_memcount_->load(output_path_ + "/../fujimap/tmp5.index");
+
+    std::string statefile = output_path_ + "/../fujimap/state";
+    ifstream fin(statefile.c_str());
+    fin >> url_key_ >> con_key_;
+
+    return true;
+}
+
 bool ImgDupDetector::DupDetectorMain()
 {
     ImgDupDetector::SetController();
     ImgDupDetector::SetPath();
+    ImgDupDetector::InitFujiMap();
     ImgDupDetector::ClearHistory();
+    ImgDupFileManager::get()->SetParam(scd_path_, output_path_, docid_docid_, gid_memcount_);
+
 
     if(log_info_ || !log_info_)
     {
@@ -173,9 +248,18 @@ bool ImgDupDetector::DupDetectorMain()
                 continue;
             if(event -> mask & IN_CLOSE_WRITE || event -> mask & IN_MOVED_TO)
             {
+                if(incremental_mode_)
+                    ImgDupDetector::LoadFujiMap();
                 std::string filename = std::string(event->name);
                 BeginToDupDetect(filename);
                 LOG(INFO)<<"Finish processing: "<<filename<<std::endl;
+                if(incremental_mode_)
+                {
+                    ImgDupDetector::BuildGidMem();
+                    ImgDupDetector::SaveFujiMap();
+                }
+//                if(incremental_mode_)
+//                    ImgDupFileManager::get()->ReBuildAll();
             }
             index += sizeof(struct inotify_event)+event->len;
         }
@@ -195,11 +279,13 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
         {
             ImgDupDetector::BuildUrlIndex(scd_file, psm_path_incr_url_);
             ImgDupDetector::DetectUrl(scd_file, psm_path_incr_url_, res_file, output_path);
+            ImgDupDetector::WriteCurrentFile(filename);
         }
         else
         {
             ImgDupDetector::BuildUrlIndex(scd_file, psm_path_noin_url_);
             ImgDupDetector::DetectUrl(scd_file, psm_path_noin_url_, res_file, output_path);
+            ImgDupDetector::WriteCurrentFile(filename);
             B5MHelper::PrepareEmptyDir(psm_path_noin_url_);
             ImgDupDetector::ClearHistoryUrl();
         }
@@ -214,6 +300,8 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
         {
             ImgDupDetector::BuildUrlIndex(scd_file, psm_path_incr_url_);
             ImgDupDetector::DetectUrl(scd_file, psm_path_incr_url_, res_file, output_path);
+            url_docid_key_->save(output_path_ + "/../fujimap/tmp2.index");
+            url_key_docid_->save(output_path_ + "/../fujimap/tmp3.index");
         }
         else
         {
@@ -231,16 +319,18 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
         {
             ImgDupDetector::BuildConIndex(scd_file, psm_path_incr_con_);
             ImgDupDetector::DetectCon(scd_file, psm_path_incr_con_, res_file, output_path);
+            con_docid_key_->save(output_path_ + "/../fujimap/tmp0.index");
+            con_key_docid_->save(output_path_ + "/../fujimap/tmp1.index");
+            ImgDupDetector::WriteCurrentFile(filename);
         }
         else
         {
             ImgDupDetector::BuildConIndex(scd_file, psm_path_noin_con_);
             ImgDupDetector::DetectCon(scd_file, psm_path_noin_con_, res_file, output_path);
+            ImgDupDetector::WriteCurrentFile(filename);
             B5MHelper::PrepareEmptyDir(psm_path_noin_con_);
             ImgDupDetector::ClearHistoryCon();
         }
-
-//        B5MHelper::PrepareEmptyDir(scd_temp_path_);
 
     }
 
@@ -253,11 +343,13 @@ bool ImgDupDetector::BeginToDupDetect(const std::string& filename)
         {
             ImgDupDetector::BuildConIndex(scd_file, psm_path_incr_con_);
             ImgDupDetector::DetectCon(scd_file, psm_path_incr_con_, res_file, output_path);
+            ImgDupDetector::WriteCurrentFile(filename);
         }
         else
         {
             ImgDupDetector::BuildConIndex(scd_file, psm_path_noin_con_);
             ImgDupDetector::DetectCon(scd_file, psm_path_noin_con_, res_file, output_path);
+            ImgDupDetector::WriteCurrentFile(filename);
             B5MHelper::PrepareEmptyDir(psm_path_noin_con_);
             ImgDupDetector::ClearHistoryCon();
         }
@@ -293,12 +385,14 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
             const std::string& property_name = p->first;
             doc[property_name] = p->second;
         }
+
         std::string sourceName;
         doc["ShareSourceName"].convertString(sourceName, izenelib::util::UString::UTF_8);
         if(sourceName.compare(source_name_) == 0)
         {
             continue;
         }
+
         std::string docID;
         std::vector<std::pair<std::string, double> > doc_vector;
         PsmAttach attach;
@@ -307,10 +401,11 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
             continue;
         }
         psm.Insert(url_key_, doc_vector, attach);
-        url_docid_key_[docID] = url_key_;
+        if( !url_key_docid_->insert(url_key_, DocidToUint(docID)))
+            LOG(INFO) << "Item exist! " << std::endl;
+        url_docid_key_->insert(DocidToUint(docID), url_key_);
         if(log_info_ && !log_info_)
         {
-            url_key_docid_[url_key_] = docID;
             key_url_map_[url_key_] = doc["Img"];
             key_con_map_[url_key_] = doc["Content"];
         }
@@ -348,10 +443,10 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
             continue;
         }
         psm.Insert(url_key_, doc_vector, attach);
-        url_docid_key_[docID] = url_key_;
+        url_key_docid_->insert(url_key_, DocidToUint(docID));
+        url_docid_key_->insert(DocidToUint(docID), url_key_);
         if(log_info_ && !log_info_)
         {
-            url_key_docid_[url_key_] = docID;
             key_url_map_[url_key_] = doc["Img"];
             key_con_map_[url_key_] = doc["Content"];
         }
@@ -361,6 +456,20 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
     if(!psm.Build())
     {
         LOG(ERROR) << "psm build error " << std::endl;
+        return false;
+    }
+
+    if( url_docid_key_->build() < 0 )
+    {
+        LOG(ERROR) << "FujiMap build error [url_docid_key_]" <<endl;
+        LOG(ERROR) << "Error info: " << url_docid_key_->what() << endl;
+        return false;
+    }
+
+    if( url_key_docid_->build() < 0 )
+    {
+        LOG(ERROR) << "FujiMap build error [url_key_docid_]" <<endl;
+        LOG(ERROR) << "Error info: " << url_key_docid_->what() << endl;
         return false;
     }
     return true;
@@ -408,10 +517,10 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
             continue;
         }
         psm.Insert(con_key_, doc_vector, attach);
-        con_docid_key_[docID] = con_key_;
+        con_key_docid_->insert(con_key_, DocidToUint(docID));
+        con_docid_key_->insert(DocidToUint(docID), con_key_);
         if(log_info_)
         {
-            con_key_docid_[con_key_] = docID;
             key_con_map_[con_key_] = doc["Content"];
             key_url_map_[con_key_] = doc["Img"];
         }
@@ -449,10 +558,10 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
             continue;
         }
         psm.Insert(con_key_, doc_vector, attach);
-        con_docid_key_[docID] = con_key_;
+        con_key_docid_->insert(con_key_, DocidToUint(docID));
+        con_docid_key_->insert(DocidToUint(docID), con_key_);
         if(log_info_)
         {
-            con_key_docid_[con_key_] = docID;
             key_con_map_[con_key_] = doc["Content"];
             key_url_map_[con_key_] = doc["Img"];
         }
@@ -464,6 +573,21 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         LOG(ERROR) << "psm build error " << std::endl;
         return false;
     }
+
+    if( con_key_docid_->build() < 0 )
+    {
+        LOG(ERROR) <<"FujiMap build error [con_key_docid_]"<<endl;
+        LOG(ERROR) <<"Error info: " << con_key_docid_->what() <<endl;
+        return false;
+    }
+
+    if( con_docid_key_->build() < 0 )
+    {
+        LOG(ERROR) <<"FujiMap build error [con_docid_key_]" <<endl;
+        LOG(ERROR) <<"Error info: " <<con_docid_key_->what() <<endl;
+        return false;
+    }
+
     return true;
 }
 
@@ -504,42 +628,96 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
         if(!PsmHelper::GetPsmItem(analyzer, doc, docID, doc_vector, attach))
         {
             LOG(INFO)<<"Get psm item Error ... "<<std::endl;
-            if(writer.Append(scddoc)) rest++;
+            writer.Append(scddoc);
+            rest++;
             continue;
         }
         uint32_t match_key;
+        uint32_t current_key;
+        uint32_t current_docid = DocidToUint(docID);
         if(!psm.Search(doc_vector, attach, match_key))
         {
-            if(writer.Append(scddoc)) rest++;
+            writer.Append(scddoc);
+            rest++;
         }
-        else if(url_docid_key_[docID] == match_key)
+        else if(!url_docid_key_->get(current_docid, current_key))
         {
-            if(writer.Append(scddoc)) rest++;
+            LOG(INFO) << "FujiMap Get ERROR: docID[" << docID << "]"
+                      << "current_key[" << current_key <<"]"
+                      << "match_key" << match_key <<"]" <<endl;
+            writer.Append(scddoc);
+            rest++;
+        }
+        else if(current_key == match_key)
+        {
+            writer.Append(scddoc);
+            rest++;
         }
         else
         {
-            /****Matches****/
-            if(log_info_ && !log_info_)
+              /****Matches****/
+            uint32_t match_docid;
+            if( docid_docid_->get(current_docid, match_docid) )
             {
-                std::string current_url;
-                std::string current_content;
-                std::string match_url;
-                std::string match_content;
-                doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
-                doc["Content"].convertString(current_content, izenelib::util::UString::UTF_8);
-                key_url_map_[match_key].convertString(match_url, izenelib::util::UString::UTF_8);
-                key_con_map_[match_key].convertString(match_content, izenelib::util::UString::UTF_8);
+//                LOG(INFO) << current_docid << endl;
+                continue;
+            }
 
+            if( !url_key_docid_->get(match_key, match_docid))
+            {
+                LOG(INFO) << "FujiMap Get ERROR: match_key[" << match_key <<"]"
+                          << "match_docid["<<match_docid<<"]"<<endl;
+            }
 
-                LOG(INFO)<<std::endl<<"DOCID: "<<docID
-                         <<std::endl<<"ImgUrl: "<<current_url
-                         <<std::endl<<"Content: "<<current_content
-                         <<std::endl<<std::endl<<"DOCID: "<<url_key_docid_[match_key]
-                         <<std::endl<<"ImgUrl: "<<match_url
-                         <<std::endl<<"Content: "<<match_content
-                         <<std::endl<<"Image URL Matches "<<std::endl<<std::endl<<std::endl;
+            uint32_t match_match;
+            if( docid_docid_->get(match_docid, match_match) )
+            {
+                match_docid = match_match;
+            }
+            if(current_docid == match_docid)
+            {
+//                LOG(INFO) << current_docid <<endl;
+                writer.Append(scddoc);
+                rest++;
+                history++;
+                continue;
+            }
 
+            docid_docid_->update(current_docid, match_docid);
+            std::map<uint32_t, std::vector<uint32_t> >::iterator iter = gid_docids_.find(current_docid);
+            std::vector<uint32_t> temp_v;
+            temp_v.push_back(current_docid);
 
+            if( iter != gid_docids_.end() )
+            {
+                uint32_t i;
+                for(i=0;i<iter->second.size();i++)
+                {
+                    docid_docid_->update(iter->second[i], match_docid);
+                    temp_v.push_back(iter->second[i]);
+                    docid_docid_->update(iter->second[i], match_docid);
+                }
+                gid_docids_.erase(iter);
+            }
+
+            uint32_t gmemcount;
+            if( gid_memcount_->get(current_docid, gmemcount) )
+            {
+                gid_memcount_->update(current_docid, 0);
+            }
+
+            iter = gid_docids_.find(match_docid);
+            if(iter != gid_docids_.end() )
+            {
+                uint32_t i;
+                for(i=0;i<temp_v.size();i++)
+                {
+                    iter->second.push_back(temp_v[i]);
+                }
+            }
+            else
+            {
+                gid_docids_[match_docid] = temp_v;
             }
         }
     }
@@ -583,44 +761,195 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         PsmAttach attach;
         if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
         {
-            if(writer.Append(scddoc)) rest++;
+            rest++;
             continue;
         }
         uint32_t match_key;
+        uint32_t current_key;
+        uint32_t current_docid = DocidToUint(docID);
         if(!psm.Search(doc_vector, attach, match_key))
         {
-            if(writer.Append(scddoc)) rest++;
+            rest++;
         }
-        else if(con_docid_key_[docID] == match_key)
+        else if( !con_docid_key_->get(current_docid, current_key) )
         {
-            if(writer.Append(scddoc)) rest++;
+            LOG(INFO) << "FujiMap Get ERROR: docID[" << docID << "]"
+                      << "current_key[" << current_key <<"]"
+                      << "match_key" << match_key <<"]" <<endl;
+            rest++;
+        }
+        else if(current_key == match_key)
+        {
+            rest++;
         }
         else
         {
             /****Matches****/
-            if(log_info_)
+            uint32_t match_docid;
+            if( docid_docid_->get(current_docid, match_docid) )
             {
-                std::string current_url;
-                std::string current_content;
-                std::string match_url;
-                std::string match_content;
-                doc["Img"].convertString(current_url,izenelib::util::UString::UTF_8);
-                doc["Content"].convertString(current_content, izenelib::util::UString::UTF_8);
-                key_url_map_[match_key].convertString(match_url, izenelib::util::UString::UTF_8);
-                key_con_map_[match_key].convertString(match_content, izenelib::util::UString::UTF_8);
-
-
-                LOG(INFO)<<std::endl<<"DOCID: "<<docID
-                         <<std::endl<<"ImgUrl: "<<current_url
-                         <<std::endl<<"Content: "<<current_content
-                         <<std::endl<<std::endl<<"DOCID: "<<con_key_docid_[match_key]
-                         <<std::endl<<"ImgUrl: "<<match_url
-                         <<std::endl<<"Content: "<<match_content
-                         <<std::endl<<"Image Content Matches "<<std::endl<<std::endl<<std::endl;
-
-
+//                LOG(INFO) << current_docid << endl;
+                continue;
+            }
+            if( !con_key_docid_->get(match_key, match_docid))
+            {
+                LOG(INFO) << "FujiMap Get ERROR: match_key[" << match_key <<"]"
+                          << "match_docid["<<match_docid<<"]"<<endl;
             }
 
+            uint32_t match_match;
+            if( docid_docid_->get(match_docid, match_match))
+            {
+                match_docid = match_match;
+            }
+
+            if(current_docid == match_docid)
+            {
+//                LOG(INFO) << current_docid << endl;
+                history++;
+                rest++;
+                continue;
+            }
+            docid_docid_->update(current_docid, match_docid);
+            std::map<uint32_t, std::vector<uint32_t> >::iterator iter = gid_docids_.find(current_docid);
+            std::vector<uint32_t> temp_v;
+            temp_v.push_back(current_docid);
+
+            if( iter != gid_docids_.end() )
+            {
+                uint32_t i;
+                for(i=0;i<iter->second.size();i++)
+                {
+                    docid_docid_->update(iter->second[i], match_docid);
+                    temp_v.push_back(iter->second[i]);
+                    docid_docid_->update(iter->second[i], match_docid);
+                }
+                gid_docids_.erase(iter);
+            }
+
+            uint32_t gmemcount;
+            if( gid_memcount_->get(current_docid, gmemcount) )
+            {
+                gid_memcount_->update(current_docid, 0);
+            }
+
+            iter = gid_docids_.find(match_docid);
+            if(iter != gid_docids_.end() )
+            {
+                uint32_t i;
+                for(i=0;i<temp_v.size();i++)
+                {
+                    iter->second.push_back(temp_v[i]);
+                }
+            }
+            else
+            {
+                gid_docids_[match_docid] = temp_v;
+            }
+        }
+    }
+    LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<< std::endl;
+    return true;
+}
+
+bool ImgDupDetector::BuildGidMem()
+{
+    std::map<uint32_t, std::vector<uint32_t> >::iterator iter = gid_docids_.begin();
+    for(;iter != gid_docids_.end(); iter++)
+    {
+        uint32_t count;
+        if(gid_memcount_->get(iter->first, count))
+        {
+            gid_memcount_->update(iter->first, count + iter->second.size());
+        }
+        else
+        {
+            gid_memcount_->update(iter->first, iter->second.size());
+        }
+    }
+    gid_memcount_->build();
+    gid_memcount_->save(output_path_ + "/../fujimap/tmp5.index");
+    if(!gid_docids_.empty())
+        gid_docids_.clear();
+    return true;
+}
+
+bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
+{
+    if( docid_docid_->build() < 0 )
+    {
+        LOG(ERROR) <<"FujiMap build error [docid_docid_]" <<endl;
+        LOG(ERROR) <<"Error info: " <<docid_docid_->what() <<endl;
+        return false;
+    }
+
+    std::string scd_file = scd_path_ + "/" + filename;
+    LOG(INFO)<<"Processing (WriteFile) "<<scd_file<<std::endl;
+    ScdParser parser(izenelib::util::UString::UTF_8);
+    parser.load(scd_file);
+    uint32_t n=0;
+    uint32_t rest=0;
+
+    boost::filesystem::create_directories(output_path_+"/0");
+    boost::filesystem::create_directories(output_path_+"/1");
+
+    ScdWriter writer0(output_path_+"/0", 2);
+    ScdWriter writer1(output_path_+"/1", 2);
+
+    writer0.SetFileName(filename);
+    writer1.SetFileName(filename);
+
+    for( ScdParser::iterator doc_iter = parser.begin();
+            doc_iter!= parser.end(); ++doc_iter, ++n)
+    {
+        if(n%10000==0)
+        {
+            LOG(INFO)<<"Find Documents "<<n<<std::endl;
+        }
+        std::map<std::string, UString> doc;
+        SCDDoc& scddoc = *(*doc_iter);
+        SCDDoc::iterator p = scddoc.begin();
+        for(; p!=scddoc.end(); ++p)
+        {
+            const std::string& property_name = p->first;
+            doc[property_name] = p->second;
+        }
+        std::string docID;
+        doc["DOCID"].convertString(docID, izenelib::util::UString::UTF_8);
+        uint32_t current_docid = DocidToUint(docID);
+        uint32_t match_docid;
+        if( docid_docid_->get(current_docid, match_docid) )
+        {
+            //deleted
+            UString gid;
+            gid.assign(UintToDocid(match_docid), izenelib::util::UString::UTF_8);
+
+            scddoc.push_back(std::pair<std::string, UString>("GID", gid));
+            writer0.Append(scddoc);
+        }
+        else
+        {
+            //saved
+            rest++;
+            scddoc.push_back(std::pair<std::string, UString>("GID", doc["DOCID"]));
+            writer0.Append(scddoc);
+
+            std::map<uint32_t, std::vector<uint32_t> >::iterator iter = gid_docids_.find(current_docid);
+            if(iter == gid_docids_.end())
+            {
+                UString gmemcount;
+                gmemcount.assign("1", izenelib::util::UString::UTF_8);
+                scddoc.push_back(std::pair<std::string, UString>("GMemCount", gmemcount));
+                writer1.Append(scddoc);
+            }
+            else
+            {
+                UString gmemcount;
+                std::string count = boost::lexical_cast<std::string> (iter->second.size()+1);
+                gmemcount.assign(count, izenelib::util::UString::UTF_8);
+                scddoc.push_back(std::pair<std::string, UString>("GMemCount", gmemcount));
+                writer1.Append(scddoc);
+            }
         }
     }
     LOG(INFO)<<"Total: "<<n<<" Rest: "<<rest<< std::endl;

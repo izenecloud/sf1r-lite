@@ -1624,6 +1624,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     mining_schema.summarization_enable= false;
     if (task_node)
     {
+        std::string syncflagonly_flag;
+        getAttribute(task_node, "syncflagonly", syncflagonly_flag, false);
+        int enable = parseTruth(syncflagonly_flag);
+        if (1 == enable)
+            mining_schema.summarization_schema.isSyncSCDOnly= true;
+        else
+            mining_schema.summarization_schema.isSyncSCDOnly= false;
+    
         {
             Iterator<Element> it("DocidProperty");
             for (it = it.begin(task_node); it != it.end(); it++)
@@ -1812,11 +1820,14 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 isRTypeNumeric = propIt->isRTypeNumeric();
             }
 
-            if (groupConfig.isNumericType() && !isRTypeNumeric)
+            if (groupConfig.isNumericType())
             {
-                throw XmlConfigParserException("As property ["+property_name+"] in <Group> is int or float type, "
-                                               "it needs to be configured as a filter property like below:\n"
-                                               "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
+                if (!isRTypeNumeric)
+                {
+                    throw XmlConfigParserException("As property ["+property_name+"] in <Group> is int or float type, "
+                                                   "it needs to be configured as a filter property like below:\n"
+                                                   "<IndexBundle> <Schema> <Property name=\"Price\"> <Indexing filter=\"yes\" ...");
+                }
             }
             else if (!groupConfig.isStringType() &&
                      !groupConfig.isDateTimeType())
@@ -1890,6 +1901,10 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         else
             mining_schema.tdt_config.enable_semantic= false;
 
+        std::string tdt_type;
+        if(!getAttribute(task_node, "tdtmemory", tdt_type, false))
+            tdt_type = "NonWavletTree";
+        mining_schema.tdt_config.tdt_type= tdt_type;
         ticpp::Element* subNode = getUniqChildElement(task_node, "TokenizeDictionary", true);
         if (subNode)
         {

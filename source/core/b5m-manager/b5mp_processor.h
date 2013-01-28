@@ -52,6 +52,8 @@ namespace sf1r {
         void Preprocess_(ValueType& value);
 
         void B5moOutput_(ValueType& value, int status);
+        void B5moPost_(ValueType& value, int status);                           
+
 
         static uint128_t GetPid_(const Document& doc);
         static uint128_t GetOid_(const Document& doc);

@@ -109,7 +109,7 @@ public:
 public:
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
-           const std::vector<PropertyValue>& filterParam, boost::shared_ptr<BitVector> docIdSet);
+           const std::vector<PropertyValue>& filterParam, boost::shared_ptr<EWAHBoolArray<uint32_t> > docIdSet);
 
 private:
     static void convertData(const std::string& property, const PropertyValue& in, PropertyType& out);

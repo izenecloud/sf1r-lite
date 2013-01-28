@@ -1,0 +1,20 @@
+server: dev@izenesoft.cn
+remote_path: /data/sf1r-resource
+local_path: ./package/resource
+branch: kite-2
+branch_suffix: resource
+sub_modules:
+    - ise
+    - kpe
+    - nec
+    - opinion
+    - product-matcher
+    - qa
+    - sim
+    - speller-support
+push_sub_modules:
+    - ise
+    - kpe
+    - nec
+    - opinion
+    - qa

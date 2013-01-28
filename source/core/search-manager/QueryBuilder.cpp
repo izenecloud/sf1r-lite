@@ -40,21 +40,17 @@ namespace sf1r
 {
 
 QueryBuilder::QueryBuilder(
-    const boost::shared_ptr<IndexManager> indexManager,
     const boost::shared_ptr<DocumentManager> documentManager,
-    const boost::shared_ptr<IDManager> idManager,
-    const boost::shared_ptr<RankingManager>& rankingManager,
-    boost::unordered_map<std::string, PropertyConfig>& schemaMap,
+    const boost::shared_ptr<IndexManager> indexManager,
+    const schema_map& schemaMap,
     size_t filterCacheNum
 )
-    :indexManagerPtr_(indexManager)
-    ,documentManagerPtr_(documentManager)
-    ,idManagerPtr_(idManager)
-    ,rankingManagerPtr_(rankingManager)
+    :documentManagerPtr_(documentManager)
+    ,indexManagerPtr_(indexManager)
+    ,pIndexReader_(indexManager->pIndexReader_)
     ,schemaMap_(schemaMap)
+    ,filterCache_(new FilterCache(filterCacheNum))
 {
-    pIndexReader_ = indexManager->pIndexReader_;
-    filterCache_.reset(new FilterCache(filterCacheNum));
 }
 
 QueryBuilder::~QueryBuilder()
@@ -70,10 +66,6 @@ void QueryBuilder::prepare_filter(
     const std::vector<QueryFiltering::FilteringType>& filtingList,
     boost::shared_ptr<EWAHBoolArray<uint32_t> >& pDocIdSet)
 {
-    boost::shared_ptr<BitVector> pBitVector;
-    unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
-    unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8) + (bitsNum % (sizeof(uint32_t) * 8) == 0 ? 0 : 1);
-
     if (filtingList.size() == 1)
     {
         const QueryFiltering::FilteringType& filteringItem= filtingList[0];
@@ -83,15 +75,14 @@ void QueryBuilder::prepare_filter(
         if (!filterCache_->get(filteringItem, pDocIdSet))
         {
             pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
-            pBitVector.reset(new BitVector(bitsNum));
-            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pBitVector);
-            //Compress bit vector
-            pBitVector->compressed(*pDocIdSet);
+            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pDocIdSet);
             filterCache_->set(filteringItem, pDocIdSet);
         }
     }
     else
     {
+        unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
+        unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8) + (bitsNum % (sizeof(uint32_t) * 8) == 0 ? 0 : 1);
         pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
         pDocIdSet->addStreamOfEmptyWords(true, wordsNum);
         boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet2;
@@ -107,9 +98,7 @@ void QueryBuilder::prepare_filter(
                 if (!filterCache_->get(*iter, pDocIdSet2))
                 {
                     pDocIdSet2.reset(new EWAHBoolArray<uint32_t>());
-                    pBitVector.reset(new BitVector(bitsNum));
-                    indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pBitVector);
-                    pBitVector->compressed(*pDocIdSet2);
+                    indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pDocIdSet2);
                     filterCache_->set(*iter, pDocIdSet2);
                 }
                 pDocIdSet3.reset(new EWAHBoolArray<uint32_t>());
@@ -194,8 +183,7 @@ void QueryBuilder::prepare_for_wand_property_(
 )
 {
     typedef std::map<termid_t, unsigned>::const_iterator const_iter;
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-    iterator found = schemaMap_.find(property);
+    schema_iterator found = schemaMap_.find(property);
     if (found == schemaMap_.end())
         return;
 
@@ -258,7 +246,6 @@ MultiPropertyScorer* QueryBuilder::prepare_dociterator(
     }
 
     size_t success_properties = 0;
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator schema_iterator;
 
     for (size_t i = 0; i < size_of_properties; i++)
     {
@@ -455,7 +442,6 @@ void QueryBuilder::post_prepare_ranker_(
     for (unsigned i = 0; i < indexPropertySize; ++i)
     {
         const std::string& currentProperty = indexPropertyList[i];
-        typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator schema_iterator;
         schema_iterator found = schemaMap_.find(currentProperty);
         if (found == schemaMap_.end())
             continue;
@@ -609,7 +595,6 @@ void QueryBuilder::prepare_for_virtual_property_(
     QueryTreePtr queryTree;
     if (! actionOperation.getQueryTree(properyConfig.getName(), queryTree) ) 
         return;
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator schema_iterator;
     DocumentIterator* pIter = NULL;
 
     std::vector<pair<termid_t, string> > termList;
@@ -1183,8 +1168,7 @@ bool QueryBuilder::do_prepare_for_property_(
             unigramProperty += "_unigram";
         }
         unsigned int unigramPropertyId = 0;
-        typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-        iterator found = schemaMap_.find(unigramProperty);
+        schema_iterator found = schemaMap_.find(unigramProperty);
         if (found != schemaMap_.end())
         {
             unigramPropertyId = found->second.getPropertyId();
@@ -1522,8 +1506,7 @@ bool QueryBuilder::do_prepare_for_property_(
             unigramProperty += "_unigram";
         }
         unsigned int unigramPropertyId = 0;
-        typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator iterator;
-        iterator found = schemaMap_.find(unigramProperty);
+        schema_iterator found = schemaMap_.find(unigramProperty);
         if (found != schemaMap_.end())
         {
             unigramPropertyId = found->second.getPropertyId();
@@ -1639,9 +1622,7 @@ void QueryBuilder::getTermIdsAndIndexesOfSiblings(
 
 propertyid_t QueryBuilder::getPropertyIdByName(const std::string& name) const
 {
-    typedef boost::unordered_map<std::string, PropertyConfig>::const_iterator
-    iterator;
-    iterator found = schemaMap_.find(name);
+    schema_iterator found = schemaMap_.find(name);
     if (found != schemaMap_.end())
     {
         return found->second.getPropertyId();

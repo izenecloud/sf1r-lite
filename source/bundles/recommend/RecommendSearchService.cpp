@@ -43,7 +43,7 @@ RecommendSearchService::RecommendSearchService(
     if (indexSearchService)
     {
         queryBuilder_ = indexSearchService->searchWorker_->
-            searchManager_->getQueryBuilder();
+            searchManager_->queryBuilder_.get();
     }
 }
 

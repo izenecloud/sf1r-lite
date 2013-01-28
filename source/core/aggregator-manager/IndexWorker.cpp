@@ -27,7 +27,7 @@
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
-
+#include <node-manager/synchro/SynchroFactory.h>
 #include <util/profiler/ProfilerGroup.h>
 
 #include <la/util/UStringUtil.h>
@@ -47,6 +47,7 @@ namespace sf1r
 namespace
 {
 /** the directory for scd file backup */
+const char* SUMMARY_CONTROL_FLAG = "b5m_control";
 const char* SCD_BACKUP_DIR = "backup";
 const std::string DOCID("DOCID");
 const std::string DATE("DATE");
@@ -334,6 +335,33 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
             miningTaskService_->DoContinue();
         }
         return true;
+    }
+
+    if ( documentManager_->getMaxDocId() < 1)
+    {
+        if ( (*(miningTaskService_->getMiningBundleConfig())).mining_schema_.summarization_enable
+            && (*(miningTaskService_->getMiningBundleConfig())).mining_schema_.summarization_schema.isSyncSCDOnly)
+        {
+            std::string control_scd_path_ = bundleConfig_->indexSCDPath() + "/full";
+            fstream outControlFile;
+            outControlFile.open(control_scd_path_.c_str(), ios::out);
+            outControlFile<<"full"<<endl;
+            outControlFile.close();
+
+            SynchroData syncControlFile;
+            syncControlFile.setValue(SynchroData::KEY_COLLECTION, bundleConfig_->collectionName_);
+            syncControlFile.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::COMMENT_TYPE_FLAG);
+            syncControlFile.setValue(SynchroData::KEY_DATA_PATH, control_scd_path_.c_str());
+            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(SUMMARY_CONTROL_FLAG);
+            if (syncProducer->produce(syncControlFile, boost::bind(boost::filesystem::remove_all, control_scd_path_.c_str())))
+            {
+                syncProducer->wait(10);
+            }
+            else
+            {
+                LOG(WARNING) << "produce syncData error";
+            }
+        }
     }
 
     indexProgress_.currentFileIdx = 1;
@@ -1118,6 +1146,7 @@ bool IndexWorker::doBuildCollection_(
         if (!deleteSCD_(parser, timestamp))
             return false;
     }
+    searchWorker_->reset_all_property_cache();
 
     clearMasterCache_();
 
@@ -1197,7 +1226,6 @@ bool IndexWorker::insertOrUpdateSCD_(
         boost::this_thread::interruption_point();
     } // end of for loop for all documents
     flushUpdateBuffer_();
-    searchWorker_->reset_all_property_cache();
     return true;
 }
 

@@ -40,6 +40,7 @@ void B5moProcessor::LoadMobileSource(const std::string& file)
 
 void B5moProcessor::Process(Document& doc, int& type)
 {
+    static const std::string tcp(B5MHelper::GetTargetCategoryPropertyName());
     //return;
     //reset type
     if(mode_!=B5MMode::INC)
@@ -150,6 +151,10 @@ void B5moProcessor::Process(Document& doc, int& type)
         }
         else
         {
+            if(!spid.empty()&&spid!=sdocid)//maybe a book
+            {
+                product.spid = spid;
+            }
             matcher_->GetProduct(spid, product);
         }
         if(!product.spid.empty())
@@ -158,16 +163,34 @@ void B5moProcessor::Process(Document& doc, int& type)
             spid = product.spid;
             if(!title.empty()) 
             {
-                doc.property("Category") = UString(product.scategory, UString::UTF_8);
-                if(scategory!=product.scategory)
+                if(category.empty())
                 {
-                    const std::string& tcp = B5MHelper::GetTargetCategoryPropertyName();
-                    if(doc.hasProperty(tcp))
+                    category = UString(product.scategory, UString::UTF_8);
+                    doc.property("Category") = category;
+                    if(!product.fcategory.empty())
                     {
-                        doc.property(tcp) = UString("", UString::UTF_8);
+                        UString front(product.fcategory, UString::UTF_8);
+                        doc.property(tcp) = front;
                     }
-
+                    //if(!category.empty())
+                    //{
+                        //UString front;
+                        //matcher_->GetFrontendCategory(category, front);
+                        //if(!front.empty())
+                        //{
+                            //doc.property(tcp) = front;
+                        //}
+                    //}
                 }
+                //if(scategory!=product.scategory)
+                //{
+                    //const std::string& tcp = B5MHelper::GetTargetCategoryPropertyName();
+                    //if(doc.hasProperty(tcp))
+                    //{
+                        //doc.property(tcp) = UString("", UString::UTF_8);
+                    //}
+
+                //}
                 //process attributes
                 
                 const std::vector<ProductMatcher::Attribute>& attributes = product.attributes;

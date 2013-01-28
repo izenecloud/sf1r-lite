@@ -335,7 +335,10 @@ bool ProductMatcher::Open(const std::string& kpath)
             path = path_+"/back2front";
             std::map<std::string, std::string> b2f_map;
             izenelib::am::ssf::Util<>::Load(path, b2f_map);
-            back2front_.insert(b2f_map.begin(), b2f_map.end());
+            if(!b2f_map.empty())
+            {
+                back2front_.insert(b2f_map.begin(), b2f_map.end());
+            }
             LOG(INFO)<<"back2front size "<<back2front_.size()<<std::endl;
         }
         catch(std::exception& ex)
@@ -391,7 +394,7 @@ bool ProductMatcher::GetProduct(const std::string& pid, Product& product)
     return true;
 }
 
-bool ProductMatcher::GetFrontendCategory(const UString& backend, UString& frontend) const
+bool ProductMatcher::GetFrontendCategory(UString& backend, UString& frontend) const
 {
     if(back2front_.empty()) return false;
     std::string b;
@@ -411,6 +414,10 @@ bool ProductMatcher::GetFrontendCategory(const UString& backend, UString& fronte
         {
             b = b.substr(0, pos);
         }
+    }
+    if(frontend.length()>0 && b!=ob)
+    {
+        backend = UString(b, UString::UTF_8);
     }
     if(b==ob) return true;
     return false;
@@ -485,6 +492,10 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         SetIndexDone_(kpath, false);
         std::string bdb_path = kpath+"/bdb";
         B5MHelper::PrepareEmptyDir(bdb_path);
+    }
+    if(!boost::filesystem::exists(kpath))
+    {
+        boost::filesystem::create_directories(kpath);
     }
     path_ = kpath;
     if(IsIndexDone_(path_))
@@ -1142,6 +1153,7 @@ bool ProductMatcher::ProcessBook(const Document& doc, Product& result_product)
         if(!isbn_value.empty())
         {
             result_product.spid = B5MHelper::GetPidByIsbn(isbn_value);
+            result_product.scategory = B5MHelper::BookCategoryName();
             return true;
         }
     }
@@ -1186,6 +1198,16 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     KeywordVector keyword_vector;
     GetKeywordVector_(term_list, keyword_vector);
     Compute_(doc, term_list, keyword_vector, limit, result_products);
+    for(uint32_t i=0;i<result_products.size();i++)
+    {
+        //gen frontend category
+        Product& p = result_products[i];
+        UString frontend;
+        UString backend(p.scategory, UString::UTF_8);
+        GetFrontendCategory(backend, frontend);
+        backend.convertString(p.scategory, UString::UTF_8);
+        frontend.convertString(p.fcategory, UString::UTF_8);
+    }
     return true;
 }
 

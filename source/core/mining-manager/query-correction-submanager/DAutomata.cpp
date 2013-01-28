@@ -70,60 +70,6 @@ DictState* DAutomata::buildTrie(string dictFileName, vector<mychar>& phonemes,
     return start;
 }//end of buildTrie
 
-DictState *DAutomata::buildTrie(izenelib::am::sdb_btree<izenelib::util::UString>& dictSDB,
-                                vector<mychar>& phonemes,
-                                rde_map& alphabet,
-                                rde_hash& lexicon_)
-{
-    phonemes.clear();
-    alphabet.clear();
-    lexicon_.clear();
-
-    DictState *start = new DictState;
-    izenelib::util::UString srcWord;
-    int num = 0;
-
-    if ( !dictSDB.is_open() )
-        dictSDB.open();
-    izenelib::am::sdb_btree<izenelib::util::UString>::SDBCursor locn = dictSDB.get_first_locn();
-    izenelib::am::NullType nul;
-    while (dictSDB.get(locn, srcWord, nul) )
-    {
-        dictSDB.seq(locn);
-        //izenelib::util::UString srcWord(w, izenelib::util::UString::UTF_8);
-        //srcWord.toLowerString();
-        lexicon_.insert(srcWord, ' ');
-
-        UString ustrWord;
-        izenelib::util::ustring_tool::processKoreanDecomposerWithCharacterCheck(srcWord, ustrWord);
-        DictState *s = start;
-        unsigned int p = 0;
-        while ( p<ustrWord.length() && s->next(ustrWord[p])!=NULL)
-        {
-            s = s->next(ustrWord[p]);
-            p++;
-        }
-        DictState *s1;
-        while (p < ustrWord.length())
-        {
-            s->setNext(ustrWord[p], (s1 = new DictState));
-            p++;
-            s = s1;
-        }
-        s->setFinal();
-        for (int i=0; i<(int)ustrWord.length(); i++)
-        {
-            if (alphabet.find(ustrWord[i])!=alphabet.end())
-                continue;
-            else
-                alphabet.insert(rde::pair<mychar, int>(ustrWord[i], num++));
-        }
-    }
-    phonemes.resize(alphabet.size(), 0);
-    for (rde::hash_map<mychar,int>::iterator it = alphabet.begin();it!=alphabet.end();it++)
-        phonemes[it->second] = it->first;
-    return start;
-}
 
 int DictState::TOTAL_STATES = 0;
 }

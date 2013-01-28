@@ -25,6 +25,7 @@
 #include  <common/SFLogger.h>
 #include  <fstream>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/filesystem.hpp>
 namespace
 {
 

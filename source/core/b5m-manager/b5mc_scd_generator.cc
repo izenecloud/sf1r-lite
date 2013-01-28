@@ -23,13 +23,6 @@ B5mcScdGenerator::B5mcScdGenerator(CommentDb* cdb, OfferDbRecorder* odb, BrandDb
 
 bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& mdb_instance)
 {
-    std::vector<std::string> scd_list;
-    B5MHelper::GetScdList(scd_path, scd_list);
-    if(scd_list.empty())
-    {
-        LOG(WARNING)<<"scd path empty"<<std::endl;
-        return true;
-    }
     if(!cdb_->is_open())
     {
         if(!cdb_->open())
@@ -56,6 +49,13 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
                 return false;
             }
         }
+    }
+    std::vector<std::string> scd_list;
+    B5MHelper::GetScdList(scd_path, scd_list);
+    if(scd_list.empty())
+    {
+        LOG(WARNING)<<"scd path empty"<<std::endl;
+        return true;
     }
     static const std::string oid_property_name = "ProdDocid";
     std::string output_dir = B5MHelper::GetB5mcPath(mdb_instance);

@@ -286,6 +286,22 @@ bool MiningSearchService::getCustomQueries(std::vector<std::string>& queries)
     return miningManager_->getCustomQueries(queries);
 }
 
+bool MiningSearchService::setMerchantScore(const MerchantStrScoreMap& scoreMap)
+{
+    bool result = miningManager_->setMerchantScore(scoreMap);
+
+    searchWorker_->clearSearchCache();
+
+    return result;
+}
+
+bool MiningSearchService::getMerchantScore(
+    const std::vector<std::string>& merchantNames,
+    MerchantStrScoreMap& merchantScoreMap) const
+{
+    return miningManager_->getMerchantScore(merchantNames, merchantScoreMap);
+}
+
 bool MiningSearchService::GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list)
 {
     return miningManager_->GetTdtInTimeRange(start, end, topic_list);

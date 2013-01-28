@@ -10,7 +10,7 @@
 
 namespace sf1r
 {
-izenelib::am::succinct::ux::Map<UString> BackendLabelToFrontendLabel::back2front_;
+marisa::Map<UString> BackendLabelToFrontendLabel::back2front_;
 BackendLabelToFrontendLabel::BackendLabelToFrontendLabel()
 {
 }
@@ -56,7 +56,8 @@ bool BackendLabelToFrontendLabel::Map(const UString&backend,  UString&frontend)
     std::string backend_str;
     backend.convertString(backend_str, UString::UTF_8);
 
-    izenelib::am::succinct::ux::id_t retID;
+    //izenelib::am::succinct::ux::id_t retID;
+    int retID;
     std::string result;
     retID = back2front_.get(backend_str.c_str(), backend_str.size(), frontend);
     if(retID == 0)
@@ -80,10 +81,10 @@ bool BackendLabelToFrontendLabel::PrefixMap(const UString&backend,  UString&fron
     std::string backend_str;
     backend.convertString(backend_str, UString::UTF_8);
 
-    izenelib::am::succinct::ux::id_t retID;
+    //izenelib::am::succinct::ux::id_t retID;
+    int retID;
     std::string result;
-    size_t retLen;
-    retID = back2front_.prefixSearch(backend_str.c_str(), backend_str.size(), retLen, frontend);
+    retID = back2front_.prefixSearch(backend_str.c_str(), backend_str.size(), frontend);
     if(retID == 0)
     {
         return true;

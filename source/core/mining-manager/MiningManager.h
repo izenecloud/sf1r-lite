@@ -167,6 +167,8 @@ public:
 
     void DoContinue();
 
+    void DoSyncFullSummScd();
+
     const MiningSchema& getMiningSchema() const { return mining_schema_; }
 
     /**
@@ -372,11 +374,11 @@ public:
             sf1r::faceted::OntologyRep& attrRep
             );
 
-    bool GetProductCategory(const std::string& query, int limit, std::vector<std::vector<std::string> >& pathVec );
+    bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
 
-    bool GetProductCategory(const izenelib::util::UString& query, int limit, std::vector<UString>& categories);
-    bool GetProductCategory(const izenelib::util::UString& query, UString& category);
-
+    bool GetProductFrontendCategory(const izenelib::util::UString& query, int limit, std::vector<UString>& frontends);
+    bool GetProductFrontendCategory(const izenelib::util::UString& query, UString& frontend);
+    bool GetProductCategory(const UString& query, UString& backend);
 
     bool SetKV(const std::string& key, const std::string& value);
 
@@ -433,6 +435,11 @@ public:
         return customRankManager_;
     }
 
+    ProductScorerFactory* GetProductScorerFactory()
+    {
+        return productScorerFactory_;
+    }
+
     boost::shared_ptr<SearchManager>& GetSearchManager()
     {
         return searchManager_;
@@ -446,6 +453,21 @@ public:
     const GroupLabelKnowledge* GetGroupLabelKnowledge() const
     {
         return groupLabelKnowledge_;
+    }
+
+    const faceted::GroupFilterBuilder* GetGroupFilterBuilder() const
+    {
+        return groupFilterBuilder_;
+    }
+
+    ProductRankerFactory* GetProductRankerFactory()
+    {
+        return productRankerFactory_;
+    }
+
+    NumericPropertyTableBuilder* GetNumericTableBuilder()
+    {
+        return numericTableBuilder_;
     }
 
 private:
@@ -614,7 +636,8 @@ private:
     /** ATTR BY */
     faceted::AttrManager* attrManager_;
 
-    boost::shared_ptr<faceted::GroupFilterBuilder> groupFilterBuilder_;
+    faceted::GroupFilterBuilder* groupFilterBuilder_;
+
     /** property name => group label click logger */
     typedef std::map<std::string, GroupLabelLogger*> GroupLabelLoggerMap;
     GroupLabelLoggerMap groupLabelLoggerMap_;
