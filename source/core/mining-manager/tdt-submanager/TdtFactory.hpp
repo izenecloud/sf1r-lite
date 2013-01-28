@@ -8,7 +8,7 @@ using namespace std;
 namespace sf1r
 {
 
-enum TDTTYPE{WAT_ARRAY,WAVLET_MATRIX,NON_WAVLET};
+enum TDTTYPE{WAVLET,NON_WAVLET};
 
 class TdtMemory    
 {    
@@ -27,29 +27,12 @@ public:
 
 };    
 
-class WavletTree1: public TdtMemory 
-{    
-     TDTWatArray wa_;
-public:    
-     WavletTree1(){}
-     ~WavletTree1(){}
-     void Init(const std::vector<uint64_t>& array){ wa_.Init(array);}
-     uint64_t Freq(uint64_t c) const{return wa_.Freq(c);}
-     //uint64_t Rank(uint64_t c, uint64_t pos) const{return wa_.Rank(c,pos);}
-     //uint64_t Lookup(uint64_t pos) const{return wa_.Lookup(pos);}
-     uint64_t Select(uint64_t c, uint64_t rank) const{return wa_.Select(c,rank);}
-     void Clear() { wa_.Clear();};
-     void QuantileRangeAll(uint64_t begin_pos,uint64_t end_pos, vector<uint64_t>& ret,const BitTrie& filter) const{ wa_.QuantileRangeAll(begin_pos,end_pos,ret,filter);}
-     void Save(ostream& os) const { wa_.Save(os);};
-     void Load(istream& is) { wa_.Load(is);};
-};    
-
-class WavletTree2: public TdtMemory
+class WavletTree: public TdtMemory
 {    
      TDTWaveletMatrix wa_;
 public: 
-     WavletTree2(){};
-     ~WavletTree2(){};   
+     WavletTree(){};
+     ~WavletTree(){};   
      void Init(const std::vector<uint64_t>& array){ wa_.Init(array);};
      uint64_t Freq(uint64_t c) const{return wa_.Freq(c);};
      //uint64_t Rank(uint64_t c, uint64_t pos) const{return wa_.Rank(c,pos);};
@@ -143,10 +126,8 @@ public:
     ~TdtFactory(){};   
     TdtMemory* CreateTdtMemory(enum TDTTYPE wavlettype)    
     {    
-        if(wavlettype == WAT_ARRAY)   
-          return new WavletTree1();    
-        else if(wavlettype == WAVLET_MATRIX)    
-          return new WavletTree2();   
+        if(wavlettype == WAVLET)    
+          return new WavletTree();   
         else if(wavlettype == NON_WAVLET)    
           return new NonWavletTree();  
         else 

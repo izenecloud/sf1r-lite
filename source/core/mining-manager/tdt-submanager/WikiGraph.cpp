@@ -45,11 +45,9 @@ void WikiGraph::SetParam_(const string& wiki_path,cma::OpenCC* opencc,const stri
     tdtmemory_path /= boost::filesystem::path(tdttype.c_str());
 
 
-    enum TDTTYPE tType=WAVLET_MATRIX;
-    if (tdttype == "WatArray")
-        tType = WAT_ARRAY;
-    else if (tdttype == "WavletMatrix")
-        tType = WAVLET_MATRIX;
+    enum TDTTYPE tType=WAVLET;
+    if (tdttype == "WavletMatrix")
+        tType = WAVLET;
     else if (tdttype == "NonWavletTree")
         tType = NON_WAVLET;//
     else 
