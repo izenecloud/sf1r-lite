@@ -68,6 +68,8 @@ public:
     void registerAggregator(boost::shared_ptr<AggregatorBase> aggregator)
     {
         aggregatorList_.push_back(aggregator);
+        boost::lock_guard<boost::mutex> lock(workers_mutex_);
+        resetAggregatorConfig();
     }
 
     /**

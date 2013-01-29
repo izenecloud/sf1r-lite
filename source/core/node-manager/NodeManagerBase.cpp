@@ -528,6 +528,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 
 void NodeManagerBase::leaveCluster()
 {
+    unregisterPrimary();
     zookeeper_->deleteZNode(nodePath_, true);
 
     std::string replicaPath = replicaPath_;

@@ -25,6 +25,10 @@ namespace sf1r
 
 CollectionManager::CollectionManager()
 {
+    RecoveryChecker::get()->setRestartCallback(
+        boost::bind(&CollectionManager::startCollection, this, _1, _2, false),
+        boost::bind(&CollectionManager::stopCollection, this, _1, _2));
+
     RecoveryChecker::get()->setColCallback(
         boost::bind(&CollectionManager::reopenCollection, this, _1),
         boost::bind(&CollectionManager::flushCollection, this, _1));

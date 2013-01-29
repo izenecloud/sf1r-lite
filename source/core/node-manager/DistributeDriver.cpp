@@ -60,7 +60,7 @@ static bool callHandler(izenelib::driver::Router::handler_ptr handler,
 {
     try
     {
-        static Response response;
+        Response response;
         static Poller tmp_poller;
         // prepare request
         handler->invoke(request,

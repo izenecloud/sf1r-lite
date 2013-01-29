@@ -408,7 +408,7 @@ bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
         CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
         while(cit != tmp_all_col_info.end())
         {
-            flush_col_(cit->first);
+            stop_col_(cit->first, true);
             // remove old data.
             //bfs::remove_all(cit->second.first.getCollectionDataPath());
             //bfs::remove_all(cit->second.first.getQueryDataPath());
@@ -443,7 +443,7 @@ bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
         cit = tmp_all_col_info.begin();
         while(cit != tmp_all_col_info.end())
         {
-            if(!reopen_col_(cit->first))
+            if(!start_col_(cit->first, cit->second.second))
                 return false;
             ++cit;
         }
