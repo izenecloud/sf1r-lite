@@ -10,6 +10,7 @@
 #include <queue>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+#include "../MiningTask.h"
 
 #include "OpinionsClassificationManager.h"
 namespace idmlib
@@ -31,7 +32,7 @@ class CommentCacheStorage;
 class Corpus;
 class OpinionsManager;
 
-class MultiDocSummarizationSubManager
+class MultiDocSummarizationSubManager: public MiningTask
 {
 public:
     MultiDocSummarizationSubManager(
@@ -55,6 +56,15 @@ public:
             Summarization& result);
     
     void syncFullSummScd();
+
+    virtual bool buildDocument(docid_t docID, const Document& doc);
+
+    virtual bool preProcess();
+
+    virtual bool postProcess();
+
+    virtual docid_t getLastDocId();
+
 private:
     void commentsClassify(int x);
 
@@ -124,7 +134,8 @@ private:
     };
     std::queue< WaitingComputeCommentItem >  waiting_opinion_comments_;
     std::queue< OpinionResultItem >  opinion_results_;
-    std::vector<boost::thread*>  opinion_compute_threads_;
+    std::vector<boost::thread*> opinion_compute_threads_;
+    std::vector<boost::thread*> comment_classify_threads_;
     std::queue<std::pair<Document, docid_t> > docList_;
     bool  can_quit_compute_;
 };

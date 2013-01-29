@@ -536,7 +536,7 @@ bool MiningManager::open()
                                                     document_manager_,
                                                     index_manager_,
                                                     c_analyzer_);
-
+            miningTaskBuilder_->addTask(summarizationManager_);
             if (!mining_schema_.summarization_schema.uuidPropName.empty())
             {
                 //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
@@ -922,10 +922,10 @@ bool MiningManager::DoMiningCollection()
     }
 
     // do Summarization
-    if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isSyncSCDOnly)
+    /*if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isSyncSCDOnly)
     {
         summarizationManager_->EvaluateSummarization();
-    }
+    }*/
 
     deleted_doc_before_mining_ = 0;
     return true;
