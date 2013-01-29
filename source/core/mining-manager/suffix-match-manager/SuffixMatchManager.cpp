@@ -218,8 +218,8 @@ size_t SuffixMatchManager::longestSuffixMatch(
             {
                 total_match += match_ranges[i].second - match_ranges[i].first;
             }
-            std::vector<uint32_t>().swap(docid_list);
-            std::vector<size_t>().swap(doclen_list);
+            docid_list.clear();
+            doclen_list.clear();
         }
     }
 
@@ -358,14 +358,14 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     res_list_map[single_res_list[i].second] = single_res_list[i].first;
                 }
             }
-            std::vector<std::pair<double, uint32_t> >().swap(single_res_list);
+            single_res_list.clear();
 
             for (size_t i = 0; i < match_ranges_list.size(); ++i)
             {
                 total_match += match_ranges_list[i].second - match_ranges_list[i].first;
             }
-            std::vector<std::pair<size_t, size_t> >().swap(match_ranges_list);
-            std::vector<double>().swap(max_match_list);
+            match_ranges_list.clear();
+            max_match_list.clear();
             LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
         }
     }
