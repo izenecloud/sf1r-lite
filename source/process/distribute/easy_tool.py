@@ -23,7 +23,7 @@ sf1r_bin_dir = sf1r_dir + '/bin'
 start_prog = './sf1-revolution.sh start'
 stop_prog = './sf1-revolution.sh stop'
 update_src_prog = 'git pull '
-compile_prog = 'nohup make -j4 > easy_tool.log 2>&1 '
+compile_prog = ' make -j4 > easy_tool.log 2>&1 '
 all_project = ['izenelib', 'icma', 'ijma', 'ilplib', 'imllib', 'idmlib', 'sf1r-engine']
 
 loginssh = 'ssh -n -f ' + loginuser + '@'

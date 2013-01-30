@@ -142,6 +142,7 @@ controllers:
     actions:
       - start_collection
       - stop_collection
+      - check_collection
       - rebuild_collection
       - create_collection
       - delete_collection
