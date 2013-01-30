@@ -206,6 +206,7 @@ public:
         int limit, 
         std::vector<std::vector<std::string> >& pathVec );
 
+    void flushData();
 private:
     MiningBundleConfiguration* bundleConfig_;
     boost::shared_ptr<MiningManager> miningManager_;

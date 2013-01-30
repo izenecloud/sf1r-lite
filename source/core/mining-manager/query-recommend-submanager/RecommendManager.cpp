@@ -108,6 +108,18 @@ bool RecommendManager::open()
     return true;
 }
 
+void RecommendManager::flush()
+{
+    if (isOpen_)
+    {
+        serInfo_.flush();
+        if(recommend_db_)
+            recommend_db_->flush();
+        if (concept_id_manager_)
+            concept_id_manager_->Flush();
+    }
+}
+
 void RecommendManager::close()
 {
     if (isOpen_)

@@ -5,6 +5,7 @@ namespace sf1r
 
 JobScheduler::JobScheduler()
 {
+    wait_event_id_ = 0;
     asynchronousWorker_ = boost::thread(
         &JobScheduler::runAsynchronousTasks_, this
     );
@@ -19,6 +20,30 @@ void JobScheduler::close()
 {
     asynchronousWorker_.interrupt();
     asynchronousWorker_.join();
+}
+
+void JobScheduler::notifyFinish(int waitid)
+{
+    boost::unique_lock<boost::mutex> lk(mutex_);
+    wait_finish_events_[waitid] = true;
+    cond_.notify_all();
+}
+
+void JobScheduler::waitCurrentFinish(const std::string& collection)
+{
+    if (boost::this_thread::get_id() == asynchronousWorker_.get_id())
+        return;
+    int current_id = 0;
+    {
+        boost::unique_lock<boost::mutex> lk(mutex_);
+        current_id = ++wait_event_id_;
+        wait_finish_events_[current_id] = false;
+    }
+    asynchronousTasks_.push(task_collection_name_type(boost::bind(&JobScheduler::notifyFinish, this, current_id), collection));
+
+    boost::unique_lock<boost::mutex> lk(mutex_);
+    while (!wait_finish_events_[current_id])
+        cond_.wait(lk);
 }
 
 void JobScheduler::removeTask(const std::string& collection)

@@ -28,8 +28,9 @@ all_project = ['izenelib', 'icma', 'ijma', 'ilplib', 'imllib', 'idmlib', 'sf1r-e
 
 loginssh = 'ssh -n -f ' + loginuser + '@'
 loginssh_stay = 'ssh ' + loginuser + '@'
-scp_local = 'scp -r '
-scp_remote = 'scp -3 -r ' + loginuser + '@'
+
+scp_local = 'rsync -av '
+scp_remote = 'scp -r ' + loginuser + '@'
 
 primary_host = ["172.16.5.195"]
 replicas_host = ["172.16.5.191", "172.16.5.192", "172.16.5.194"]
@@ -123,7 +124,11 @@ def check_build_finish(args):
 
 def check_running(args):
     host = [args[2]]
-    cmdstr = 'tail -f ' + sf1r_bin_dir + '/consolelog/' + args[3]
+    if len(args) > 3:
+        logfile = args[3]
+    else:
+        logfile = '`ls -tr | tail -n 1`'
+    cmdstr = ' cd ' + sf1r_bin_dir + '/consolelog; echo ' + logfile + '; tail -f ./' + logfile
     send_cmd_andstay(host, cmdstr)
 
 handler_dict = { 'syncfile':syncfiles,
@@ -160,7 +165,8 @@ print 'syncfile [\"file1\", \"file2\"] src_host [\"ip1\", \"ip2\"]. ## if no src
 print ''
 print 'check_build  # check if all build finished by tail the build log on all host.'
 print ''
-print 'check_running host logfile_name  # check the host running status by tail the running log on host.'
+print 'check_running host logfile_name  # check the host running status by tail the running log on host. \
+        if no logfile_name, the newest log will be checked.'
 print ''
 print 'send_cmd cmdstr  # send cmdstr to all hosts'
 print ''

@@ -376,4 +376,9 @@ bool MiningSearchService::GetProductCategory(
     return miningManager_->GetProductCategory(query, limit, pathVec);
 }
 
+void MiningSearchService::flushData()
+{
+    miningManager_->flushData();
+}
+
 }

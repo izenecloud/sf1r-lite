@@ -55,6 +55,9 @@ void UpdateRecommendWorker::flushRecommendMatrix(bool& result)
 {
     jobScheduler_.addTask(boost::bind(&UpdateRecommendWorker::flushImpl_, this));
     result = true;
+    LOG(INFO) << "UpdateRecommendWorker waiting flush ";
+    jobScheduler_.waitCurrentFinish();
+    LOG(INFO) << "UpdateRecommendWorker wait flush success";
 }
 
 void UpdateRecommendWorker::flushImpl_()

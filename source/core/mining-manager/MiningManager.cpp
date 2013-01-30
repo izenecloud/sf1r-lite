@@ -2419,3 +2419,23 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
                                                      merchantScoreManager_);
     return true;
 }
+
+void MiningManager::flushData()
+{
+    if (customRankManager_) customRankManager_->flush();
+    if (merchantScoreManager_) merchantScoreManager_->flush();
+    if (kvManager_) kvManager_->flush();
+    if (labelManager_) labelManager_->flush();
+    if (label_sim_collector_) label_sim_collector_->Flush();
+    if (rmDb_) rmDb_->flush();
+    if (idManager_) idManager_->flush();
+
+    if (deleted_doc_before_mining_ > 0)
+    {
+        std::ofstream ofs((collectionDataPath_ + "/deleted_doc_before_mining_.data").c_str());
+        if (ofs)
+        {
+            ofs.write((const char*)&deleted_doc_before_mining_, sizeof(deleted_doc_before_mining_));
+        }
+    }
+}

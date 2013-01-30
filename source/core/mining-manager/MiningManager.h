@@ -161,6 +161,8 @@ public:
 
     bool open();
 
+    void flushData();
+
     bool DoMiningCollection();
 
     bool DOMiningTask();

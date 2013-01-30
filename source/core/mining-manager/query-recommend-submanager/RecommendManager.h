@@ -80,6 +80,8 @@ public:
     */
     void close();
 
+    void flush();
+
     void insertQuery(
             const izenelib::util::UString& queryStr,
             uint32_t freq = 1);

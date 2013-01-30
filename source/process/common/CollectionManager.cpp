@@ -326,6 +326,8 @@ void CollectionManager::flushCollection(const std::string& collectionName)
             iter->second->indexTaskService_->flushData();
         if(iter->second->recommendTaskService_)
             iter->second->recommendTaskService_->flushData();
+        if (iter->second->miningSearchService_)
+            iter->second->miningSearchService_->flushData();
         // other service need to add flush interface.
     }
 }
