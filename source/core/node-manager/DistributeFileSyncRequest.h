@@ -54,6 +54,23 @@ struct FinishReceiveData : public RpcServerRequestData
     MSGPACK_DEFINE(success, filepath);
 };
 
+struct ReportStatusReqData : public RpcServerRequestData
+{
+    std::string req_host;
+    std::vector<std::string> check_file_list;
+    std::vector<std::string> check_key_list;
+    MSGPACK_DEFINE(req_host, check_file_list, check_key_list);
+};
+
+struct ReportStatusRspData : public RpcServerRequestData
+{
+    bool success;
+    std::string  rsp_host;
+    std::vector<std::string> check_file_result;
+    std::vector<std::string> check_key_result;
+    MSGPACK_DEFINE(success, rsp_host, check_file_result, check_key_result);
+};
+
 class FileSyncServerRequest : public RpcServerRequest
 {
 public:
@@ -67,6 +84,8 @@ public:
         METHOD_GET_FILE,
         METHOD_READY_RECEIVE,
         METHOD_FINISH_RECEIVE,
+        METHOD_REPORT_STATUS_REQ,
+        METHOD_REPORT_STATUS_RSP,
         COUNT_OF_METHODS
     };
     static const method_t method_names[COUNT_OF_METHODS];
@@ -118,6 +137,25 @@ public:
     {
     }
 };
+
+class ReportStatusRequest : public RpcRequestRequestT<ReportStatusReqData, FileSyncServerRequest>
+{
+public:
+    ReportStatusRequest()
+        :RpcRequestRequestT<ReportStatusReqData, FileSyncServerRequest>(METHOD_REPORT_STATUS_REQ)
+    {
+    }
+};
+
+class ReportStatusRsp : public RpcRequestRequestT<ReportStatusRspData, FileSyncServerRequest>
+{
+public:
+    ReportStatusRsp()
+        :RpcRequestRequestT<ReportStatusRspData, FileSyncServerRequest>(METHOD_REPORT_STATUS_RSP)
+    {
+    }
+};
+
 
 
 }

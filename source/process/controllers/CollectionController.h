@@ -33,6 +33,8 @@ public:
     void start_collection();
 
     void stop_collection();
+
+    void check_collection();
     
     void rebuild_collection();
 

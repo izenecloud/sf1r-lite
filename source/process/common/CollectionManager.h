@@ -53,7 +53,7 @@ public:
     bool stopCollection(const std::string& collectionName, bool clear = false);
     void flushCollection(const std::string& collectionName);
     bool reopenCollection(const std::string& collectionName);
-
+    std::string checkCollectionConsistency(const std::string& collectionName);
     void deleteCollection(const std::string& collectionName);
 
     CollectionHandler* findHandler(const std::string& key) const;

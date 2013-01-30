@@ -66,6 +66,10 @@ public:
     void sendFinishNotifyToReceiver(const std::string& ip, uint16_t port, const FinishReceiveRequest& req);
     bool pushFileToAllReplicas(const std::string& srcpath, const std::string& destpath, bool recrusive = false);
 
+    void checkReplicasStatus(const std::string& colname, std::string& check_errinfo);
+    void notifyReportStatusRsp(const ReportStatusRspData& rspdata);
+    void sendReportStatusRsp(const std::string& ip, uint16_t port, const ReportStatusRsp& rsp);
+
 private:
     bool getFileInfo(const std::string& ip, uint16_t port, GetFileData& fileinfo);
     bool getFileFromOther(const std::string& ip, uint16_t port, const std::string& filepath, uint64_t filesize, bool force_overwrite = false);
@@ -74,6 +78,10 @@ private:
     boost::mutex mutex_;
     boost::condition_variable cond_;
     std::map<std::string, bool> wait_finish_notify_;
+    boost::mutex status_report_mutex_;
+    bool  reporting_;
+    boost::condition_variable status_report_cond_;
+    std::vector<ReportStatusRspData>  status_rsp_list_;
 };
 
 }

@@ -103,6 +103,47 @@ void CollectionController::stop_collection()
     }
     CollectionManager::get()->stopCollection(collection, clear);
 }
+/**
+ * @brief Action @b check_collection. Used for consistency check for distribute.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ * - No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "collection": "chwiki"
+ * }
+ * @endcode
+ *
+ */
+void CollectionController::check_collection()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    if (collection.empty())
+    {
+        response().addError("Require field collection in request.");
+        return;
+    }
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+    std::string errinfo = CollectionManager::get()->checkCollectionConsistency(collection);
+    if (!errinfo.empty())
+    {
+        response().addError(errinfo);
+    }
+}
 
 /**
  * @brief Action @b rebuild_collection. To clear these deleted Document;

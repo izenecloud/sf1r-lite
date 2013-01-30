@@ -113,7 +113,7 @@ public:
     bool isPrimary();
 
     bool getCurrNodeSyncServerInfo(std::string& ip, int randnum);
-    bool getAllReplicaInfo(std::vector<std::string>& replicas);
+    bool getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary = false);
 
     void beginReqProcess();
     void notifyMasterReadyForNew();

@@ -12,6 +12,7 @@
 #include <license-manager/LicenseCustManager.h>
 #include <license-manager/LicenseTool.h>
 #include <node-manager/RecoveryChecker.h>
+#include <node-manager/DistributeFileSyncMgr.h>
 
 #include <boost/filesystem.hpp>
 #include <memory> // for std::auto_ptr
@@ -330,6 +331,13 @@ void CollectionManager::flushCollection(const std::string& collectionName)
             iter->second->miningSearchService_->flushData();
         // other service need to add flush interface.
     }
+}
+
+std::string CollectionManager::checkCollectionConsistency(const std::string& collectionName)
+{
+    std::string errinfo;
+    DistributeFileSyncMgr::get()->checkReplicasStatus(collectionName, errinfo);
+    return errinfo;
 }
 
 void CollectionManager::deleteCollection(const std::string& collectionName)

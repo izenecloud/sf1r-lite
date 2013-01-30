@@ -10,9 +10,12 @@
 #include <boost/shared_ptr.hpp>
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
+#include <boost/crc.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace bfs = boost::filesystem;
 namespace ba = boost::asio;
+using namespace boost::posix_time;
 
 namespace sf1r
 {
@@ -33,6 +36,72 @@ static void doTransferFile(const ReadyReceiveData& reqdata)
     }
     req.param_.filepath = reqdata.filepath;
     DistributeFileSyncMgr::get()->sendFinishNotifyToReceiver(reqdata.receiver_rpcip, reqdata.receiver_rpcport, req);
+}
+
+static void getFileList(const std::string& dir, std::vector<std::string>& file_list, bool recrusive)
+{
+    static const bfs::directory_iterator end_it = bfs::directory_iterator();
+    for( bfs::directory_iterator file(dir); file != end_it; ++file )
+    {
+        bfs::path current(file->path());
+        if (bfs::is_directory(current))
+        {
+            if (recrusive)
+                getFileList(current.string(), file_list, recrusive);
+        }
+        else if (bfs::is_regular_file(current))
+        {
+            file_list.push_back(current.string());
+        }
+        else
+        {
+            LOG(INFO) << "checking ignore file : " << current;
+        }
+    }
+}
+
+static uint32_t getFileCRC(const std::string& file)
+{
+    if (!bfs::exists(file))
+        return 0;
+    boost::crc_32_type crc_computer;
+    static const size_t bufsize = 1024*512;
+    char *buf = new char[bufsize];
+    try
+    {
+        ifstream ifs(file.c_str());
+        size_t readed = 0;
+        while(ifs.good())
+        {
+            readed = ifs.readsome(buf, bufsize);
+            crc_computer.process_bytes(buf, readed);
+        }
+    }
+    catch(const std::exception& e)
+    {
+        LOG(INFO) << "error while get crc for file:" << file << ", err:" << e.what();
+        delete[] buf;
+        return 0;
+    }
+    delete[] buf;
+    return crc_computer.checksum();
+}
+
+static void doReportStatus(const ReportStatusReqData& reqdata)
+{
+    //
+    ReportStatusRsp rsp_req;
+    rsp_req.param_.rsp_host = SuperNodeManager::get()->getLocalHostIP();
+    rsp_req.param_.success = true;
+    rsp_req.param_.check_file_result.resize(reqdata.check_file_list.size());
+    for (size_t i = 0; i < reqdata.check_file_list.size(); ++i)
+    {
+        const std::string& file = reqdata.check_file_list[i];
+        rsp_req.param_.check_file_result[i] = boost::lexical_cast<std::string>(getFileCRC(file));
+        LOG(INFO) << "file : " << file << ", checksum:" << rsp_req.param_.check_file_result[i];
+    }
+
+    DistributeFileSyncMgr::get()->sendReportStatusRsp(reqdata.req_host, SuperNodeManager::get()->getFileSyncRpcPort(), rsp_req);
 }
 
 FileSyncServer::FileSyncServer(const std::string& host, uint16_t port, uint32_t threadNum)
@@ -185,6 +254,22 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             DistributeFileSyncMgr::get()->notifyFinishReceive(reqdata.filepath);
             req.result(reqdata);
         }
+        else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_REPORT_STATUS_REQ])
+        {
+            msgpack::type::tuple<ReportStatusReqData> params;
+            req.params().convert(&params);
+            ReportStatusReqData& reqdata = params.get<0>();
+            threadpool_.schedule(boost::bind(&doReportStatus, reqdata));
+            req.result(true);
+        }
+        else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_REPORT_STATUS_RSP])
+        {
+            msgpack::type::tuple<ReportStatusRspData> params;
+            req.params().convert(&params);
+            ReportStatusRspData& rspdata = params.get<0>();
+            DistributeFileSyncMgr::get()->notifyReportStatusRsp(rspdata);
+            req.result(true);
+        }
         else
         {
             req.error(msgpack::rpc::NO_METHOD_ERROR);
@@ -222,6 +307,143 @@ DistributeFileSyncMgr::~DistributeFileSyncMgr()
     delete conn_mgr_;
     if (transfer_rpcserver_)
         transfer_rpcserver_->stop();
+}
+
+void DistributeFileSyncMgr::notifyReportStatusRsp(const ReportStatusRspData& rspdata)
+{
+    //
+    boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+    status_rsp_list_.push_back(rspdata);
+    status_report_cond_.notify_all();
+}
+
+void DistributeFileSyncMgr::sendReportStatusRsp(const std::string& ip, uint16_t port, const ReportStatusRsp& rsp)
+{
+    bool rsp_ret = false;
+    try
+    {
+        conn_mgr_->syncRequest(ip, port, rsp, rsp_ret);
+    }
+    catch(const std::exception& e)
+    {
+        LOG(ERROR) << "send report status response failed.";
+    }
+}
+
+void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std::string& check_errinfo)
+{
+    if (!NodeManagerBase::get()->isDistributed())
+        return;
+
+    CollectionPath colpath;
+    bool ret = RecoveryChecker::get()->getCollPath(colname, colpath);
+    if (!ret)
+    {
+        check_errinfo = "check collection not exist for  " + colname;
+        LOG(INFO) << check_errinfo;
+        return;
+    }
+    {
+        boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+        if (reporting_)
+        {
+            check_errinfo = "there is already a report request processing.";
+            LOG(INFO) << check_errinfo;
+            return;
+        }
+        reporting_ = true;
+    }
+    std::vector<std::string> replica_info;
+    NodeManagerBase::get()->getAllReplicaInfo(replica_info, true);
+    uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
+
+    ReportStatusRequest req;
+    req.param_.req_host = SuperNodeManager::get()->getLocalHostIP();
+
+    getFileList(colpath.getCollectionDataPath(), req.param_.check_file_list, true);
+    LOG(INFO) << "checking got file num :" << req.param_.check_file_list.size();
+    std::vector<std::string> file_checksum_list(req.param_.check_file_list.size());
+
+    // calculate local.
+    for (size_t i = 0; i < req.param_.check_file_list.size(); ++i)
+    {
+        const std::string& file = req.param_.check_file_list[i];
+        file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file));
+        LOG(INFO) << "file : " << file << ", checksum:" << file_checksum_list[i];
+    }
+
+    size_t self = 0;
+    int wait_num = 0;
+    for( size_t i = 0; i < replica_info.size(); ++i)
+    {
+        if (replica_info[i] == SuperNodeManager::get()->getLocalHostIP())
+        {
+            self = i;
+            continue;
+        }
+        bool rsp_ret = false;
+        try
+        {
+            conn_mgr_->syncRequest(replica_info[i], port, req, rsp_ret);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(INFO) << "send request error while checking status: " << e.what();
+            continue;
+        }
+        if (rsp_ret)
+            ++wait_num;
+    }
+    int max_wait = 10;
+    // wait for response.
+    while(wait_num > 0)
+    {
+        std::vector<ReportStatusRspData> rspdata;
+        {
+            boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+            while (status_rsp_list_.empty())
+            {
+                if (--max_wait < 0)
+                {
+                    LOG(INFO) << "wait max time!! no longer wait, no rsp num: " << wait_num;
+                    reporting_ = false;
+                    check_errinfo = "wait report status timeout!!";
+                    return;
+                }
+                status_report_cond_.timed_wait(lk, boost::posix_time::seconds(10));
+            }
+            // reset wait time if got any rsp.
+            max_wait = 10;
+            rspdata.swap(status_rsp_list_);
+        }
+        LOG(INFO) << "status report got rsp: " << rspdata.size();
+        for(size_t i = 0; i < rspdata.size(); ++i)
+        {
+            LOG(INFO) << "checking rsp for host :" << rspdata[i].rsp_host;
+            if (rspdata[i].success)
+            {
+                LOG(WARNING) << "rsp return false from this host!!";
+                continue;
+            }
+            if (rspdata[i].check_file_result.size() != file_checksum_list.size())
+            {
+                LOG(WARNING) << "rsp file check result size if not matched!!!!";
+                continue;
+            }
+            for (size_t j = 0; j < file_checksum_list.size(); ++j)
+            {
+                if (file_checksum_list[j] != rspdata[i].check_file_result[j])
+                {
+                    LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
+                    check_errinfo = "at least one of file not the same status between replicas.";
+                }
+            }
+        }
+        wait_num -= rspdata.size();
+    }
+    LOG(INFO) << "report request finished";
+    boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+    reporting_ = false;
 }
 
 bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std::string>& saved_log)

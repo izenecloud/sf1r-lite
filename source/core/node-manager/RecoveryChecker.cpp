@@ -81,7 +81,7 @@ static void copyDir(bfs::path src, bfs::path dest)
         bfs::create_directory(dest);
     }
     // Iterate through the source directory
-    bfs::directory_iterator end_it = bfs::directory_iterator();
+    static const bfs::directory_iterator end_it = bfs::directory_iterator();
     for( bfs::directory_iterator file(src); file != end_it; ++file )
     {
         bfs::path current(file->path());

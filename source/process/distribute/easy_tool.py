@@ -120,7 +120,11 @@ def send_cmd(args):
 
 def check_build_finish(args):
     cmdstr = 'tail -f ' + sf1r_dir + '/build/easy_tool.log'
-    send_cmd_andstay(primary_host + replicas_host, cmdstr)
+    if len(args) <=2:
+        send_cmd_afterssh(primary_host + replicas_host, cmdstr)
+    else:
+        host = [args[2]]
+        send_cmd_andstay(host, cmdstr)
 
 def check_running(args):
     host = [args[2]]

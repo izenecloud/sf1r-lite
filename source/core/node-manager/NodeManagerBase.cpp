@@ -264,11 +264,14 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     }
 }
 
-bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas)
+bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary)
 {
+    size_t start_node = 1;
+    if (includeprimary)
+        start_node = 0;
     std::vector<std::string> node_list;
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
-    if (node_list.size() <= 1)
+    if (node_list.size() <= start_node)
     {
         // no replica for this node.
         return true;
@@ -276,7 +279,7 @@ bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas)
     std::string sdata;
     replicas.clear();
     std::string ip;
-    for (size_t i = 1; i < node_list.size(); ++i)
+    for (size_t i = start_node; i < node_list.size(); ++i)
     {
         if (zookeeper_->getZNodeData(node_list[i], sdata, ZooKeeper::WATCH))
         {
