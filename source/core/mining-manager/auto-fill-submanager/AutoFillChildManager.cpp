@@ -1237,6 +1237,15 @@ void AutoFillChildManager::updateFromLog()
     buildWat_array(false);
 }
 
+void AutoFillChildManager::flush()
+{
+    dbTable_.flush();
+    dbItem_.flush();
+    SaveItem();
+    SaveWat();
+    if (idManager_) idManager_->flush();
+}
+
 bool AutoFillChildManager::buildIndex(const std::list<ItemValueType>& queryList)
 {
     QueryType Query;

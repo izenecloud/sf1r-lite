@@ -230,6 +230,7 @@ public:
     void buildDbItem();
     bool openDB(string path, string path2);
     void closeDB();
+    void flush();
 
     bool buildDbIndex(const std::list<QueryType>& queryList);
 

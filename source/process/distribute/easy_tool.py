@@ -41,6 +41,7 @@ def send_cmd_afterssh(hosts, cmdstr):
 
 def send_cmd_andstay(hosts, cmdstr):
     for host in hosts:
+        print "sending command to host : " + host
         os.system(loginssh_stay + host + ' \'' + cmdstr + ' \'')
 
 def syncfiles(args):
@@ -79,7 +80,7 @@ def syncfiles(args):
 def start_all(args):
     # start primary first
     send_cmd_andstay(primary_host,  'cd ' + sf1r_bin_dir + ';' + start_prog)
-    time.sleep(5)
+    time.sleep(10)
     send_cmd_afterssh(replicas_host,  'cd ' + sf1r_bin_dir + ';' + start_prog)
     print 'start all finished.'
 
@@ -116,24 +117,31 @@ def compile_all(args):
 
 def send_cmd(args):
     cmdstr = args[2]
-    send_cmd_andstay(primary_host + replicas_host, cmdstr)
+    if len(args) <= 3:
+        send_cmd_andstay(primary_host + replicas_host, cmdstr)
+    else:
+        send_cmd_andstay(args[3:], cmdstr)
+    print 'finished.'
 
 def check_build_finish(args):
     cmdstr = 'tail -f ' + sf1r_dir + '/build/easy_tool.log'
     if len(args) <=2:
         send_cmd_afterssh(primary_host + replicas_host, cmdstr)
     else:
-        host = [args[2]]
+        host = args[2:]
         send_cmd_andstay(host, cmdstr)
+    print 'finished.'
 
 def check_running(args):
-    host = [args[2]]
-    if len(args) > 3:
-        logfile = args[3]
-    else:
-        logfile = '`ls -tr | tail -n 1`'
+    logfile = '`ls -tr | tail -n 1`'
     cmdstr = ' cd ' + sf1r_bin_dir + '/consolelog; echo ' + logfile + '; tail -f ./' + logfile
-    send_cmd_andstay(host, cmdstr)
+
+    if len(args) <= 2:
+        send_cmd_afterssh(primary_host + replicas_host, cmdstr)
+    else:
+        host = args[2:]
+        send_cmd_andstay(host, cmdstr)
+    print 'finished.'
 
 handler_dict = { 'syncfile':syncfiles,
         'start_all':start_all,

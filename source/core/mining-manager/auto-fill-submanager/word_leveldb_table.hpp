@@ -59,6 +59,12 @@ public:
     {
 	dbTable->clear();
     }
+
+    void flush()
+    {
+        if(dbTable)
+            dbTable->flush();
+    }
     /*
     *@brief insert a k-v and freq into db;
     *@param key 

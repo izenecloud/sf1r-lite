@@ -69,12 +69,15 @@ static uint32_t getFileCRC(const std::string& file)
     char *buf = new char[bufsize];
     try
     {
-        ifstream ifs(file.c_str());
+        ifstream ifs(file.c_str(), ios::binary);
         size_t readed = 0;
         while(ifs.good())
         {
-            readed = ifs.readsome(buf, bufsize);
+            ifs.read(buf, bufsize);
+            readed = ifs.gcount();
             crc_computer.process_bytes(buf, readed);
+            if ((readed == 0) && ifs.eof())
+                break;
         }
     }
     catch(const std::exception& e)
@@ -420,7 +423,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
         for(size_t i = 0; i < rspdata.size(); ++i)
         {
             LOG(INFO) << "checking rsp for host :" << rspdata[i].rsp_host;
-            if (rspdata[i].success)
+            if (!rspdata[i].success)
             {
                 LOG(WARNING) << "rsp return false from this host!!";
                 continue;
@@ -448,6 +451,8 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
 
 bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std::string>& saved_log)
 {
+    if (!NodeManagerBase::get()->isDistributed())
+        return true;
     // note : for optimize, we can get log from any node that has entered the cluster and 
     // current state is ready.
     int retry = 3;
@@ -492,6 +497,8 @@ bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std
 
 bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
 {
+    if (!NodeManagerBase::get()->isDistributed())
+        return true;
     // get the backup scd file list used for index.
     
     // get primary file sync ip:port
@@ -560,6 +567,8 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
 bool DistributeFileSyncMgr::pushFileToAllReplicas(const std::string& srcpath,
     const std::string& destpath, bool recrusive)
 {
+    if (!NodeManagerBase::get()->isDistributed())
+        return true;
     std::vector<std::string> replica_info;
     NodeManagerBase::get()->getAllReplicaInfo(replica_info);
     bool all_success = true;

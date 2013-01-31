@@ -266,6 +266,8 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
 
 bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary)
 {
+    if (!isDistributionEnabled_)
+        return true;
     size_t start_node = 1;
     if (includeprimary)
         start_node = 0;
@@ -294,6 +296,8 @@ bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool
 
 bool NodeManagerBase::getCurrNodeSyncServerInfo(std::string& ip, int randnum)
 {
+    if (!isDistributionEnabled_)
+        return false;
     std::vector<std::string> node_list;
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
     if (node_list.empty())

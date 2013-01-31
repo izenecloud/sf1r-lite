@@ -118,6 +118,7 @@ void RecommendManager::flush()
         if (concept_id_manager_)
             concept_id_manager_->Flush();
     }
+    if (autofill_) autofill_->flush();
 }
 
 void RecommendManager::close()
