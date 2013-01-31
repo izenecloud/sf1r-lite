@@ -348,15 +348,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             size_t oldsize = res_list_map.size();
             for (size_t i = 0; i < single_res_list.size(); ++i)
             {
-                std::map<uint32_t, double>::iterator res_it = res_list_map.find(single_res_list[i].second);
-                if (res_it != res_list_map.end())
-                {
-                    res_it->second += single_res_list[i].first;
-                }
-                else
-                {
-                    res_list_map[single_res_list[i].second] = single_res_list[i].first;
-                }
+                res_list_map[single_res_list[i].second] += single_res_list[i].first;
             }
             single_res_list.clear();
 

@@ -54,6 +54,8 @@
 #include "suffix-match-manager/IncrementalManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
 
+#include "product-classifier/SPUProductClassifier.hpp"
+
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
 #include <index-manager/IndexManager.h>
@@ -651,7 +653,6 @@ bool MiningManager::open()
                 match_category_restrict_.push_back(boost::regex(restrict_vector[i]));
             }
             std::string res_path = system_resource_path_+"/product-matcher";
-            //BackendLabelToFrontendLabel::Get()->Init(res_path + "/backend_category_2_frontend_category.txt");
             ProductMatcher* matcher = ProductMatcherInstance::get();
             if (!matcher->Open(res_path))
             {
@@ -660,7 +661,10 @@ bool MiningManager::open()
             else
             {
                 matcher->SetUsePriceSim(false);
+                matcher->SetCategoryMaxDepth(2);
             }
+            SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
+            product_classifier->Open(res_path+"/spu-classifier");
             //test
             std::ifstream ifs("./querylog.txt");
             std::string line;
@@ -2063,11 +2067,16 @@ bool MiningManager::GetProductCategory(
 {
     UString query(squery, UString::UTF_8);
     std::vector<UString> frontends;
-    if (!GetProductFrontendCategory(query,limit, frontends)) return false;
+    GetProductFrontendCategory(query,limit, frontends);
+    SPUProductClassifier::Get()->GetProductCategory(squery, limit, frontends);
+    if(frontends.empty())
+        return false;
+
     for(std::vector<UString>::const_iterator it = frontends.begin();
         it != frontends.end(); ++it)
     {
         UString frontendCategory = *it;
+		
         if(frontendCategory.empty()) continue;
         //if (!BackendLabelToFrontendLabel::Get()->Map(*bcit, frontendCategory))
         //{
@@ -2160,7 +2169,7 @@ bool MiningManager::GetProductFrontendCategory(
                             }
                         }
                     }
-                    if(valid)
+                    if(valid&& !result_products[i].fcategory.empty())
                     {
                         frontends.push_back(UString(result_products[i].fcategory, UString::UTF_8));
                     }
