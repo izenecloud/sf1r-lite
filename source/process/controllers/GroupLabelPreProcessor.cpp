@@ -50,7 +50,7 @@ void GroupLabelPreProcessor::pushTopLabels_(
 
     if (pathVec.empty())
     {
-        if(limit <3) limit = 3;
+        //if(limit <3) limit = 3;
         miningSearchService_->GetProductCategory(query, limit, pathVec);
     }
 
