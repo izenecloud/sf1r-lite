@@ -82,6 +82,7 @@ private:
     bool  reporting_;
     boost::condition_variable status_report_cond_;
     std::vector<ReportStatusRspData>  status_rsp_list_;
+    std::set<std::string>  ignore_list_;
 };
 
 }

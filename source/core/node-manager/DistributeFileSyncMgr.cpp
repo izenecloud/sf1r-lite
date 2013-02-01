@@ -38,7 +38,8 @@ static void doTransferFile(const ReadyReceiveData& reqdata)
     DistributeFileSyncMgr::get()->sendFinishNotifyToReceiver(reqdata.receiver_rpcip, reqdata.receiver_rpcport, req);
 }
 
-static void getFileList(const std::string& dir, std::vector<std::string>& file_list, bool recrusive)
+static void getFileList(const std::string& dir, std::vector<std::string>& file_list,
+    const std::set<std::string>& ignore_list, bool recrusive)
 {
     static const bfs::directory_iterator end_it = bfs::directory_iterator();
     for( bfs::directory_iterator file(dir); file != end_it; ++file )
@@ -47,10 +48,15 @@ static void getFileList(const std::string& dir, std::vector<std::string>& file_l
         if (bfs::is_directory(current))
         {
             if (recrusive)
-                getFileList(current.string(), file_list, recrusive);
+                getFileList(current.string(), file_list, ignore_list, recrusive);
         }
         else if (bfs::is_regular_file(current))
         {
+            if (ignore_list.find(current.filename().string()) != ignore_list.end())
+            {
+                LOG(INFO) << "ignore checking file: " << current;
+                continue;
+            }
             file_list.push_back(current.string());
         }
         else
@@ -294,6 +300,9 @@ DistributeFileSyncMgr::DistributeFileSyncMgr()
     RpcServerConnectionConfig config;
     config.rpcThreadNum = 4;
     conn_mgr_->init(config);
+    ignore_list_.insert("LOG");
+    ignore_list_.insert("LOG.old");
+    ignore_list_.insert("cookie");
 }
 
 void DistributeFileSyncMgr::init()
@@ -363,7 +372,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     ReportStatusRequest req;
     req.param_.req_host = SuperNodeManager::get()->getLocalHostIP();
 
-    getFileList(colpath.getCollectionDataPath(), req.param_.check_file_list, true);
+    getFileList(colpath.getCollectionDataPath(), req.param_.check_file_list, ignore_list_, true);
     LOG(INFO) << "checking got file num :" << req.param_.check_file_list.size();
     std::vector<std::string> file_checksum_list(req.param_.check_file_list.size());
 

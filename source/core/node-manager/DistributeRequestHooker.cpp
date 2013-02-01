@@ -108,7 +108,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     if (!isHooked())
         return true;
     assert(req_log_mgr_);
-    bool isprimary = NodeManagerBase::get()->isPrimary();
+    bool isprimary = (hook_type_ != Request::FromLog) && NodeManagerBase::get()->isPrimary();
     if (isprimary)
     {
         prepared_req.req_json_data = current_req_;
@@ -197,6 +197,12 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
     //current_req_ = packed_req_data;
     if (!finishsuccess)
     {
+        if (hook_type_ == Request::FromLog)
+        {
+            LOG(ERROR) << "redo log failed finished, must exit.";
+            forceExit();
+            return;
+        }
         static CommonReqData reqlog;
         if (NodeManagerBase::get()->isPrimary() && !req_log_mgr_->getPreparedReqLog(reqlog))
         {
