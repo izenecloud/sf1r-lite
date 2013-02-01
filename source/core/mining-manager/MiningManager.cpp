@@ -94,6 +94,7 @@
 
 #include <fstream>
 #include <iterator>
+#include <set>
 #include <ctime>
 #include <sys/time.h>
 #include <unistd.h>
@@ -2072,6 +2073,7 @@ bool MiningManager::GetProductCategory(
     if(frontends.empty())
         return false;
 
+    std::set<UString> cat_set;
     for(std::vector<UString>::const_iterator it = frontends.begin();
         it != frontends.end(); ++it)
     {
@@ -2083,12 +2085,16 @@ bool MiningManager::GetProductCategory(
             //if(!BackendLabelToFrontendLabel::Get()->PrefixMap(*bcit, frontendCategory))
                 //continue;
         //}
+        if(cat_set.find(frontendCategory) != cat_set.end()) continue;
+        cat_set.insert(frontendCategory);
+		
         std::vector<std::vector<UString> > groupPaths;
         split_group_path(frontendCategory, groupPaths);
         if (groupPaths.empty())
             continue;
         std::vector<std::string> path;
         const std::vector<UString>& topGroup = groupPaths[0];
+        if(topGroup.size() < 3) continue; //only return leaf node
         for (std::vector<UString>::const_iterator it = topGroup.begin();
              it != topGroup.end(); ++it)
         {

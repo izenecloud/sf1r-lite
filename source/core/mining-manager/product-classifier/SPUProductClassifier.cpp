@@ -180,7 +180,7 @@ bool SPUProductClassifier::GetProductCategory(
         res_list.erase(res_list.begin() + max_docs, res_list.end());
 
     ProductMatcher* matcher = ProductMatcherInstance::get();
-    std::vector<UString> categories;
+    //std::vector<UString> categories;
     for(size_t i = 0; i < res_list.size(); ++i)
     {
         uint32_t docId = res_list[i].second;
@@ -201,33 +201,13 @@ bool SPUProductClassifier::GetProductCategory(
         UString frontCategory;
         if(matcher->GetFrontendCategory(backend, frontCategory))
         {
-            categories.push_back(frontCategory);
+            frontCategories.push_back(frontCategory);
             std::string front_str;
             frontCategory.convertString(front_str, UString::UTF_8);
             LOG(INFO) << front_str;
         }
     }
-    if(!categories.empty())
-    {
-        std::set<UString> cat_set;
-        for(size_t i = 0; i < frontCategories.size(); ++i)
-        {
-            cat_set.insert(frontCategories[i]);
-        }
-        for(size_t i = 0; i < categories.size(); ++i)
-        {
-            if(cat_set.find(categories[i]) == cat_set.end())
-            {
-                frontCategories.push_back(categories[i]);
-                cat_set.insert(categories[i]);
-            }
-        }
-        if(frontCategories.size() > (size_t)limit)
-            frontCategories.resize(limit);
-        return true;
-    }
-    else
-        return false;
+    return frontCategories.empty() ? false : true;
 }
 
 }
