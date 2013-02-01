@@ -50,6 +50,7 @@ public:
         std::vector<UString>& frontCategories);
 
 private:
+    void InitOnce_(const std::string& resource);
 
     std::string resource_path_;
     cma::Analyzer* analyzer_;

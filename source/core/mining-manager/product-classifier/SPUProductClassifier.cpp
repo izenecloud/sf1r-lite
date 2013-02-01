@@ -31,6 +31,12 @@ SPUProductClassifier::~SPUProductClassifier()
 
 void SPUProductClassifier::Open(const std::string& resource)
 {
+    static boost::once_flag once = BOOST_ONCE_INIT;
+    boost::call_once(once, boost::bind(&SPUProductClassifier::InitOnce_, this, resource));
+}
+
+void SPUProductClassifier::InitOnce_(const std::string& resource)
+{
     LOG(INFO)<<"Loading SPU classifier resource "<<resource_path_;
     resource_path_ = resource;
     doc_container_ = new DocContainer(resource_path_+"/dm/");
