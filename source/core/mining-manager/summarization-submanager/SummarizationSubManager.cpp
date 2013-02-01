@@ -391,6 +391,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     {
         delete OpcList_[i];
     }
+    comment_classify_threads.clear();
+    OpcList_.clear();
 
     SetLastDocid_(document_manager_->getMaxDocId());
     comment_cache_storage_->Flush(true);

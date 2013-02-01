@@ -74,7 +74,7 @@ public:
         CREATE_SCOPED_PROFILER(insert_document, "Index:SIAProcess", "Indexer : insert_document")
         CREATE_PROFILER(proDocumentCompression, "Index:SIAProcess", "Indexer : DocumentCompression")
         maxDocID_ = docId>maxDocID_? docId:maxDocID_;
-        izene_serialization<Document> izs(doc);
+        izenelib::util::izene_serialization<Document> izs(doc);
         char* src;
         size_t srcLen;
         izs.write_image(src, srcLen);
@@ -137,7 +137,7 @@ public:
         nsz = allocSize; //
         //STOP_PROFILER(proDocumentDecompression)
 
-        izene_deserialization<Document> izd((char*)p, nsz);
+        izenelib::util::izene_deserialization<Document> izd((char*)p, nsz);
         izd.read_image(doc);
         delete[] p;
         containerPtr_->clean_data(val_p);
@@ -166,7 +166,7 @@ public:
         if (docId > maxDocID_)
             return false;
 
-        izene_serialization<Document> izs(doc);
+        izenelib::util::izene_serialization<Document> izs(doc);
         char* src;
         size_t srcLen;
         izs.write_image(src, srcLen);

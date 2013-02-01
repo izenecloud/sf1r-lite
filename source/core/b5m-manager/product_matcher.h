@@ -26,11 +26,12 @@
 
 namespace sf1r {
 
+    using izenelib::util::UString;
+
     class ProductMatcher {
 
 
     public:
-        typedef izenelib::util::UString UString;
         typedef idmlib::sim::StringSimilarity::Object SimObject;
         typedef uint32_t term_t;
         typedef std::vector<term_t> TermList;

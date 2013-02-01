@@ -89,9 +89,6 @@ std::istream& operator>>(std::istream &f, vector<uint64_t>& A);
 class PageRank
 {
 public:
-    //explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,wat_array::WatArray& wa,double alpha=0.7,double beta=0.0);
-    // explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph, wavelet_matrix::WaveletMatrix& wa,double alpha=0.7,double beta=0.0);
-    //explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,  WaveletMatrix<uint64_t>& wa,double alpha=0.7,double beta=0.0);
     explicit PageRank(std::vector<Node*>& nodes,std::set<int>& SubGraph,  TdtMemory* wa,double alpha=0.7,double beta=0.0);
     ~PageRank(void);
     void CalcAll(int n);
