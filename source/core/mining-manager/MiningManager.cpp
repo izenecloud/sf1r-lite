@@ -2069,10 +2069,10 @@ bool MiningManager::GetProductCategory(
     UString query(squery, UString::UTF_8);
     std::vector<UString> frontends;
     GetProductFrontendCategory(query,limit, frontends);
-    SPUProductClassifier::Get()->GetProductCategory(squery, limit, frontends);
+    if(!SPUProductClassifier::Get()->GetProductCategory(squery, limit, frontends))
+		return false;
     if(frontends.empty())
         return false;
-
     std::set<UString> cat_set;
     for(std::vector<UString>::const_iterator it = frontends.begin();
         it != frontends.end(); ++it)
@@ -2104,6 +2104,7 @@ bool MiningManager::GetProductCategory(
         }
         pathVec.push_back(path);
     }
+	if(pathVec.size() > limit) pathVec.resize(limit);
     return true;
 }
 
