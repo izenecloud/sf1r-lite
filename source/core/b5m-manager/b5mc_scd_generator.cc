@@ -14,7 +14,7 @@
 #include <glog/logging.h>
 
 using namespace sf1r;
-#define B5MC_DEBUG
+//#define B5MC_DEBUG
 
 
 B5mcScdGenerator::B5mcScdGenerator(CommentDb* cdb, OfferDbRecorder* odb, BrandDb* bdb, ProductMatcher* matcher, int mode)
