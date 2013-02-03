@@ -65,15 +65,15 @@ bool BackendLabelToFrontendLabel::Map(const UString&backend,  UString&frontend)
         return true;
     }
     return false;
-/*
-    std::map<UString, UString>::const_iterator mit = back2front_.find(backend);
-    if(mit == back2front_.end()) return false;
-    else
-    {
-        frontend = mit->second;
-        return true;
-    }
-*/
+    /*
+        std::map<UString, UString>::const_iterator mit = back2front_.find(backend);
+        if(mit == back2front_.end()) return false;
+        else
+        {
+            frontend = mit->second;
+            return true;
+        }
+    */
 }
 
 bool BackendLabelToFrontendLabel::PrefixMap(const UString&backend,  UString&frontend)

@@ -48,10 +48,7 @@ class WikiGraph
     //ConBias contentBias_;
     AdBias* advertiseBias_;
     set<string> stopword_;
-    //wat_array::WatArray wa_;
-    //wavelet_matrix::WaveletMatrix wa_;
     TdtMemory* wa_;
-    //WaveletMatrix<uint64_t> wa_;
     TitleIdDbTable* titleIdDbTable_;
     IdTitleDbTable* idTitleDbTable_;
     

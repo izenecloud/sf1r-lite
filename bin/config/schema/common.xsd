@@ -9,7 +9,6 @@
 
     <xs:simpleType name="TdtStorage">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="WatArray"/>
             <xs:enumeration value="WavletMatrix"/>
             <xs:enumeration value="NonWavletTree"/>
         </xs:restriction>

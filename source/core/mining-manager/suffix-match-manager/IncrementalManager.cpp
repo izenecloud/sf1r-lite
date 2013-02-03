@@ -45,10 +45,9 @@ bool IndexBarrel::buildIndex_(docid_t docId, std::string& text)
 
     if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
         return false;
-    LAInput::const_iterator it;
     std::vector<uint32_t> termidList;
     std::vector<unsigned short> posList;
-    for ( it = laInput.begin(); it != laInput.end(); ++it)
+    for (LAInput::const_iterator it = laInput.begin(); it != laInput.end(); ++it)
     {
         termidList.push_back(it->termid_);
         posList.push_back(it->wordOffset_);
@@ -56,12 +55,12 @@ bool IndexBarrel::buildIndex_(docid_t docId, std::string& text)
     if (pForwardIndex_)
         pForwardIndex_->addDocForwardIndex_(docId, termidList, posList);
     else
-        LOG(INFO) <<" E:ForwardIndex is empty"<<endl;
+        LOG(INFO) << "E:ForwardIndex is empty";
 
     if (pIncrementIndex_)
         pIncrementIndex_->addIndex_(docId, termidList , posList);
     else
-        LOG(INFO) <<" E:IncrementIndex is empty"<<endl;
+        LOG(INFO) << "E:IncrementIndex is empty";
     return true;
 }
 
@@ -85,9 +84,8 @@ bool IndexBarrel::score(const std::string& query, std::vector<uint32_t>& resultL
         izenelib::util::UString utext(str, izenelib::util::UString::UTF_8);
         if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
             return false;
-        LAInput::const_iterator it = laInput.begin();
         std::vector<uint32_t> termidList;
-        for (; it != laInput.end(); ++it)
+        for (LAInput::const_iterator it = laInput.begin(); it != laInput.end(); ++it)
         {
             termidList.push_back(it->termid_);
         }
@@ -103,9 +101,8 @@ bool IndexBarrel::score(const std::string& query, std::vector<uint32_t>& resultL
         laInput.setDocId(0);
         if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
             return false;
-        LAInput::const_iterator it = laInput.begin();
         std::vector<uint32_t> termidList;
-        for (; it != laInput.end(); ++it)
+        for (LAInput::const_iterator it = laInput.begin(); it != laInput.end(); ++it)
         {
             termidList.push_back(it->termid_);
         }
@@ -116,15 +113,15 @@ bool IndexBarrel::score(const std::string& query, std::vector<uint32_t>& resultL
     for (uint32_t i = 0; i < resultList.size(); ++i)
     {
         rank = 0;
-        std::vector<std::vector<uint32_t> >::iterator it = termIN.begin();
-        for (; it != termIN.end(); ++it)
+        for (std::vector<std::vector<uint32_t> >::iterator it = termIN.begin();
+                it != termIN.end(); ++it)
         {
             rank += getScore(*it, resultList[i])*double(2.0);
         }
-        std::vector<std::vector<uint32_t> >::iterator iter = termNotIN.begin();
-        for (; iter != termNotIN.end(); ++iter)
+        for (std::vector<std::vector<uint32_t> >::iterator it = termNotIN.begin();
+                it != termNotIN.end(); ++it)
         {
-            rank += getScore(*iter, resultList[i])*double(1.0);
+            rank += getScore(*it, resultList[i])*double(1.0);
         }
         ResultListSimilarity.push_back(rank);
     }
@@ -168,7 +165,7 @@ void IncrementalManager::buildTokenizeDic()
     cma_fmindex_dic /= boost::filesystem::path(tokenize_path_);
 
     knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
+    knowledge_->loadModel("utf8", cma_fmindex_dic.c_str(), false);
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
     // using the maxprefix analyzer
@@ -182,13 +179,13 @@ bool IncrementalManager::fuzzySearch_(const std::string& query, std::vector<uint
     izenelib::util::ClockTimer timer;
     if (BarrelNum_ == 0)
     {
-        std::cout<<"[NOTICE]:THERE IS NOT Berral"<<endl;
+        LOG(INFO) << "[NOTICE]:THERE IS NOT Berral";
     }
     else
     {
         if (isMergingIndex_)
         {
-            LOG(INFO)<< " Merging Index..."<<endl;
+            LOG(INFO) << "Merging Index...";
             return true;
         }
         izenelib::util::UString utext(query, izenelib::util::UString::UTF_8);
@@ -198,11 +195,10 @@ bool IncrementalManager::fuzzySearch_(const std::string& query, std::vector<uint
         laInput.setDocId(0);
         if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
             return false;
-        LAInput::const_iterator it = laInput.begin();
         std::set<termid_t> setDocId;
         std::vector<termid_t> termidList;
 
-        for (; it != laInput.end(); ++it)
+        for (LAInput::const_iterator it = laInput.begin(); it != laInput.end(); ++it)
         {
             setDocId.insert(it->termid_);
         }
@@ -223,13 +219,13 @@ bool IncrementalManager::fuzzySearch_(const std::string& query, std::vector<uint
         if (pTmpBarrel_ != NULL && isAddingIndex_ == false)
         {
             {
-                cout<<"get temp"<<endl;
+                LOG(INFO) << "get temp";
                 ScopedReadLock lock(mutex_);
                 //pTmpBarrel_->getFuzzyResult_(termidList, resultList, ResultListSimilarity);
             }
         }
-        LOG(INFO)<<"INC Search ResulList Number:"<<resultList.size()<<endl;
-        LOG(INFO)<<"INC Search Time Cost: "<<timer.elapsed()<<" seconds"<<endl;
+        LOG(INFO) << "INC Search ResulList Number:" << resultList.size();
+        LOG(INFO) << "INC Search Time Cost: " << timer.elapsed() << " seconds";
     }
     return true;
 }
@@ -238,13 +234,13 @@ bool IncrementalManager::exactSearch_(const std::string& query, std::vector<uint
 {
     if (BarrelNum_ == 0)
     {
-        std::cout<<"[NOTICE]:THERE IS NOT Berral"<<endl;
+        LOG(INFO) << "[NOTICE]:THERE IS NOT Berral";
     }
     else
     {
         if (isMergingIndex_)
         {
-            LOG(INFO)<< " Merging Index..."<<endl;
+            LOG(INFO) << "Merging Index...";
             return true;
         }
         izenelib::util::UString utext(query, izenelib::util::UString::UTF_8);
@@ -260,11 +256,10 @@ bool IncrementalManager::exactSearch_(const std::string& query, std::vector<uint
         else
             return false;
 
-        LAInput::const_iterator it = laInput.begin();
         std::set<termid_t> setDocId;
         std::vector<termid_t> termidList;
 
-        for (; it != laInput.end(); ++it)
+        for (LAInput::const_iterator it = laInput.begin(); it != laInput.end(); ++it)
         {
             setDocId.insert(it->termid_);
         }
@@ -284,12 +279,12 @@ bool IncrementalManager::exactSearch_(const std::string& query, std::vector<uint
         if (pTmpBarrel_ != NULL && isAddingIndex_ == false)
         {
             {
-                cout<<"get temp"<<endl;
+                LOG(INFO) << "get temp";
                 ScopedReadLock lock(mutex_);
                 pTmpBarrel_->getExactResult_(termidList, resultList, ResultListSimilarity);
             }
         }
-        cout<<"search ResulList number:"<<resultList.size()<<endl;
+        LOG(INFO) << "search ResulList number: " << resultList.size();
     }
     return true;
 }
@@ -304,7 +299,7 @@ void IncrementalManager::InitManager_()
 {
     startIncrementalManager();
     init_();
-    LOG(INFO)<<"Init IncrementalManager...."<<endl;
+    LOG(INFO) << "Init IncrementalManager....";
 }
 
 void IncrementalManager::doCreateIndex_()
@@ -327,9 +322,8 @@ void IncrementalManager::doCreateIndex_()
     {
         ScopedWriteLock lock(mutex_);
 
-        uint32_t i = 0;
-        LOG(INFO) << "Adding new documnent to index......"<<endl;
-        for(i = last_docid_ + 1; i <= document_manager_->getMaxDocId(); i++)
+        LOG(INFO) << "Adding new documnent to index......";
+        for (uint32_t i = last_docid_ + 1; i <= document_manager_->getMaxDocId(); i++)
         {
             if (i % 100000 == 0)
             {
@@ -346,9 +340,9 @@ void IncrementalManager::doCreateIndex_()
             const izenelib::util::UString& text = it->second.get<UString>();//text.length();
             std::string textStr;
             text.convertString(textStr, izenelib::util::UString::UTF_8);
-            if(!index_(i, textStr))
+            if (!index_(i, textStr))
             {
-                LOG(INFO)<< " Add index error"<<endl;
+                LOG(INFO) << "Add index error";
                 return;
             }
             last_docid_++;
@@ -356,19 +350,19 @@ void IncrementalManager::doCreateIndex_()
         saveLastDocid_();
         save_();
         izenelib::util::ClockTimer timer;
-        LOG(INFO) <<"Begin prepare_index_....."<<endl;
+        LOG(INFO) << "Begin prepare_index_.....";
         prepare_index_();
         isInitIndex_ = false;
         //isAddingIndex_= false; there is only one Barrel now.
-        LOG(INFO) <<"Prepare_index_ total elapsed:"<<timer.elapsed()<<" seconds"<<endl;
+        LOG(INFO) << "Prepare_index_ total elapsed:" << timer.elapsed() << " seconds";
     }
     pMainBarrel_->print();
-    if(pTmpBarrel_) pTmpBarrel_->print();
+    if (pTmpBarrel_) pTmpBarrel_->print();
 }
 
 void IncrementalManager::createIndex_()
 {
-    cout<<"document_manager_->getMaxDocId()"<<document_manager_->getMaxDocId()<<endl;
+    LOG(INFO) << "document_manager_->getMaxDocId()" << document_manager_->getMaxDocId();
     string name = "createIndex_";
     task_type task = boost::bind(&IncrementalManager::doCreateIndex_, this);
     JobScheduler::get()->addTask(task, name);
@@ -381,15 +375,14 @@ void IncrementalManager::mergeIndex()
         ScopedWriteLock lock(mutex_);
         if (pMainBarrel_ != NULL && pTmpBarrel_ != NULL)
         {
-            std::vector<IndexItem>::const_iterator i = pTmpBarrel_->getForwardIndex()->getIndexItem_().begin();
-            for ( ; i != pTmpBarrel_->getForwardIndex()->getIndexItem_().end(); ++i)
+            for (std::vector<IndexItem>::const_iterator it = pTmpBarrel_->getForwardIndex()->getIndexItem_().begin();
+                    it != pTmpBarrel_->getForwardIndex()->getIndexItem_().end(); ++it)
             {
-                pMainBarrel_->getForwardIndex()->addIndexItem_(*i);
+                pMainBarrel_->getForwardIndex()->addIndexItem_(*it);
             }
 
-            for (std::set<std::pair<uint32_t, uint32_t>, pairLess>::const_iterator it = pTmpBarrel_->getIncrementIndex()->gettermidList_().begin()
-                    ; it != pTmpBarrel_->getIncrementIndex()->gettermidList_().end()
-                    ; ++it)
+            for (std::set<std::pair<uint32_t, uint32_t>, pairLess>::const_iterator it = pTmpBarrel_->getIncrementIndex()->gettermidList_().begin();
+                    it != pTmpBarrel_->getIncrementIndex()->gettermidList_().end(); ++it)
             {
                 pMainBarrel_->getIncrementIndex()->addTerm_(*it, pTmpBarrel_->getIncrementIndex()->getdocidLists_()[it->second]);////xxx
             }

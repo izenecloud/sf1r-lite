@@ -25,11 +25,11 @@ public:
         return ::izenelib::util::Singleton<BackendLabelToFrontendLabel>::get();
     }
     void Init(const std::string& path);
-    bool Map(const UString&backend, UString&frontend);  
+    bool Map(const UString&backend, UString&frontend);
     bool PrefixMap(const UString&backend, UString&frontend);
 private:
     void InitOnce_(const std::string& path);
-    static marisa::Map<UString> back2front_;		
+    static marisa::Map<UString> back2front_;
 };
 
 }

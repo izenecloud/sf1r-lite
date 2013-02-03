@@ -559,8 +559,8 @@ void FMIndexManager::convertMatchRanges(
             converted_match_ranges.push_back(doc_array_filterrange);
             converted_max_match_list.push_back(max_match_list[i]);
         }
-        std::vector<uint32_t>().swap(tmp_docid_list);
-        std::vector<size_t>().swap(tmp_doclen_list);
+        tmp_docid_list.clear();
+        tmp_doclen_list.clear();
     }
     converted_match_ranges.swap(match_ranges);
     converted_max_match_list.swap(max_match_list);

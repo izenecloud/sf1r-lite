@@ -3,9 +3,9 @@
 #include "../MiningManager.h"
 #include "../group-manager/PropValueTable.h"
 #include "../group-label-logger/GroupLabelLogger.h"
-#include "../group-label-logger/BackendLabel2FrontendLabel.h"
 #include "../group-label-logger/GroupLabelKnowledge.h"
 #include "../util/split_ustr.h"
+#include <b5m-manager/product_matcher.h>
 #include <util/ustring/UString.h>
 
 using namespace sf1r;
@@ -93,8 +93,9 @@ bool BoostLabelSelector::classifyQueryToLabel_(
         return false;
 
     izenelib::util::UString frontendCategory;
-    if (!BackendLabelToFrontendLabel::Get()->Map(backendCategory,
-                                                 frontendCategory))
+    ProductMatcher* matcher = ProductMatcherInstance::get();
+
+    if (!matcher->GetFrontendCategory(backendCategory, frontendCategory))
         return false;
 
     std::vector<std::vector<izenelib::util::UString> > groupPaths;
