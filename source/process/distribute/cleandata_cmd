@@ -1,0 +1,4 @@
+rm -rf ~/codebase/sf1r-engine/bin/collection/b5mp/collection-data
+rm -rf ~/codebase/sf1r-engine/bin/collection/b5mp/query-data
+rm -rf ~/codebase/sf1r-engine/bin/req-backup
+rm -rf ~/codebase/sf1r-engine/bin/req-log
