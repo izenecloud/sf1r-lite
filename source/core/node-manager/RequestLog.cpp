@@ -10,12 +10,12 @@ std::set<std::string> ReqLogMgr::write_req_set_;
 // to handle write request correctly , you need do things below:
 // 1. add controller_action string to ReqLogMgr, and define the log type for it if neccesary.
 // If this kind of request need backup data before processing, you should add it to DistributeRequestHooker.
-// 2. In Controller Handler, after checking the valid,
-// make sure callDistribute first, if callDistribute return true, the request will be push to queue 
-// and wait primary master to process. if callDistribute return false then 
-// the handler can be called directly, before call make sure call the HookDistributeRequest first.
+// 2. In Controller Handler, the preprocess in base Sf1Controller will handle the distribute properly,
+//  and hook the request if needed. But if the request need to be sharded to other
+//  node, make sure call the rpc method HookDistributeRequest again first to make sure all 
+//  sharded node hooked this request.
 // 3. In Service (such as IndexTaskService or RecommendTaskService), make sure 
-// the request was hooked before call the worker handler.
+// the request was hooked to shard node before call the worker handler.
 // 4. In worker handler, make sure using DistributeRequestHooker to check valid call and
 // prepare before do actual work, call processLocalFinished after finish to make sure the 
 // request is hooked to handle correctly both on the primary and replicas.
@@ -29,8 +29,11 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("documents_destroy");
     write_req_set_.insert("documents_update");
     write_req_set_.insert("documents_update_inplace");
+    write_req_set_.insert("collection_start_collection");
+    write_req_set_.insert("collection_stop_collection");
+    write_req_set_.insert("collection_rebuild_collection");
+    write_req_set_.insert("collection_set_kv");
     write_req_set_.insert("commands_index");
-    write_req_set_.insert("commands_index_query_log");
     write_req_set_.insert("commands_mining");
     write_req_set_.insert("commands_optimize_index");
 }

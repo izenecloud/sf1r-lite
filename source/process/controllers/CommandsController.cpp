@@ -58,8 +58,6 @@ void CommandsController::index()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(checkCollectionName());
 
-    if (callDistribute())
-        return;
     indexSearch_();
     indexRecommend_();
 }
@@ -69,6 +67,10 @@ void CommandsController::indexSearch_()
     IndexTaskService* taskService = collectionHandler_->indexTaskService_;
     if (taskService)
     {
+        if (request().callType() != Request::FromAPI)
+        {
+            DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainBegin);
+        }
         // 0 indicates no limit
         Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
@@ -81,8 +83,25 @@ void CommandsController::indexRecommend_()
     RecommendTaskService* taskService = collectionHandler_->recommendTaskService_;
     if (taskService)
     {
-        task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
-        JobScheduler::get()->addTask(task, collectionName_);
+        if (request().callType() == Request::FromLog)
+        {
+            DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
+            taskService->buildCollection();
+        }
+        else
+        {
+            if (request().callType() != Request::FromAPI)
+            {
+                JobScheduler::get()->waitCurrentFinish(collectionName_);
+                DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
+            }
+            task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
+            JobScheduler::get()->addTask(task, collectionName_);
+        }
+    }
+    else
+    {
+        DistributeRequestHooker::get()->processEndChain(false);
     }
 }
 

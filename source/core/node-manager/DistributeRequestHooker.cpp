@@ -50,16 +50,17 @@ bool DistributeRequestHooker::isValid()
     return true;
 }
 
-void DistributeRequestHooker::hookCurrentReq(const std::string& colname, const CollectionPath& colpath,
-    const std::string& reqdata,
-    boost::shared_ptr<ReqLogMgr> req_log_mgr)
+void DistributeRequestHooker::hookCurrentReq(const std::string& reqdata)
 {
     if (!current_req_.empty() || req_log_mgr_)
     {
-        LOG(WARNING) << "last hooked request should clear !!";
+        // for the request that will shard to different node, 
+        // it is normal to be hook twice. 
+        // If no sharding it should be some wrong if hook again.
+        LOG(INFO) << "hooked request again!!";
     }
     current_req_ = reqdata;
-    req_log_mgr_ = req_log_mgr;
+    req_log_mgr_ = RecoveryChecker::get()->getReqLogMgr();
     LOG(INFO) << "current request hooked: " << current_req_;
 }
 
@@ -189,6 +190,30 @@ void DistributeRequestHooker::processLocalBegin()
     NodeManagerBase::get()->beginReqProcess();
 }
 
+bool DistributeRequestHooker::processFailedBeforePrepare()
+{
+    if (!isHooked())
+        return false;
+    if (hook_type_ == Request::FromLog)
+    {
+        LOG(ERROR) << "redo log failed finished, must exit.";
+        forceExit();
+    }
+    static CommonReqData reqlog;
+    if (NodeManagerBase::get()->isPrimary() && !req_log_mgr_->getPreparedReqLog(reqlog))
+    {
+        LOG(INFO) << "primary end request before prepared, request ignored.";
+        NodeManagerBase::get()->notifyMasterReadyForNew();
+        clearHook(true);
+        return true;
+    }
+    return false;
+}
+
+void DistributeRequestHooker::processEndChain(bool success)
+{
+}
+
 void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
 {
     if (!isHooked())
@@ -197,20 +222,8 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
     //current_req_ = packed_req_data;
     if (!finishsuccess)
     {
-        if (hook_type_ == Request::FromLog)
-        {
-            LOG(ERROR) << "redo log failed finished, must exit.";
-            forceExit();
+        if (processFailedBeforePrepare())
             return;
-        }
-        static CommonReqData reqlog;
-        if (NodeManagerBase::get()->isPrimary() && !req_log_mgr_->getPreparedReqLog(reqlog))
-        {
-            LOG(INFO) << "primary end request before prepared, request ignored.";
-            NodeManagerBase::get()->notifyMasterReadyForNew();
-            clearHook(true);
-            return;
-        }
         LOG(INFO) << "process finished fail.";
         abortRequest();
         return;

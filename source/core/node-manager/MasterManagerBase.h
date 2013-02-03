@@ -95,7 +95,7 @@ public:
         isDistributeEnable_ = enable;
     }
 
-    inline bool isDistribute()
+    inline bool isDistributed()
     {
         return isDistributeEnable_;
     }

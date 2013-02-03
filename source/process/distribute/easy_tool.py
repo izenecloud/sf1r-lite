@@ -23,7 +23,9 @@ sf1r_bin_dir = sf1r_dir + '/bin'
 start_prog = './sf1-revolution.sh start'
 stop_prog = './sf1-revolution.sh stop'
 update_src_prog = 'git pull '
-compile_prog = ' make -j4 > easy_tool.log 2>&1 '
+
+setting_path = ' export EXTRA_CMAKE_MODULES_DIRS=~/codebase/cmake/;'
+compile_prog = setting_path + ' make -j4 > easy_tool.log 2>&1 '
 all_project = ['izenelib', 'icma', 'ijma', 'ilplib', 'imllib', 'idmlib', 'sf1r-engine']
 
 loginssh = 'ssh -n -f ' + loginuser + '@'
@@ -33,7 +35,7 @@ scp_local = 'rsync -av '
 scp_remote = 'scp -r ' + loginuser + '@'
 
 primary_host = ["172.16.5.195"]
-replicas_host = ["172.16.5.191", "172.16.5.192", "172.16.5.194"]
+replicas_host = ["172.16.5.192", "172.16.5.194"]
 
 def send_cmd_afterssh(hosts, cmdstr):
     for host in hosts:

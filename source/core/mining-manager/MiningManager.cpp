@@ -91,6 +91,8 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/timer.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 #include <fstream>
 #include <iterator>
@@ -2200,13 +2202,29 @@ bool MiningManager::GetProductFrontendCategory(const izenelib::util::UString& qu
 
 bool MiningManager::SetKV(const std::string& key, const std::string& value)
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     if (kvManager_)
     {
+        NoAdditionReqLog reqlog;
+        if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+        {
+            LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+            return false;
+        }
+
         kvManager_->update(key, value);
+        DistributeRequestHooker::get()->processLocalFinished(true);
+
         return true;
     }
     else
     {
+        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 }

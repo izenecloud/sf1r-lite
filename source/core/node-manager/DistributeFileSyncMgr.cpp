@@ -107,7 +107,7 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
     {
         const std::string& file = reqdata.check_file_list[i];
         rsp_req.param_.check_file_result[i] = boost::lexical_cast<std::string>(getFileCRC(file));
-        LOG(INFO) << "file : " << file << ", checksum:" << rsp_req.param_.check_file_result[i];
+        //LOG(INFO) << "file : " << file << ", checksum:" << rsp_req.param_.check_file_result[i];
     }
 
     DistributeFileSyncMgr::get()->sendReportStatusRsp(reqdata.req_host, SuperNodeManager::get()->getFileSyncRpcPort(), rsp_req);
@@ -303,6 +303,7 @@ DistributeFileSyncMgr::DistributeFileSyncMgr()
     ignore_list_.insert("LOG");
     ignore_list_.insert("LOG.old");
     ignore_list_.insert("cookie");
+    reporting_ = false;
 }
 
 void DistributeFileSyncMgr::init()
@@ -381,7 +382,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     {
         const std::string& file = req.param_.check_file_list[i];
         file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file));
-        LOG(INFO) << "file : " << file << ", checksum:" << file_checksum_list[i];
+        //LOG(INFO) << "file : " << file << ", checksum:" << file_checksum_list[i];
     }
 
     size_t self = 0;

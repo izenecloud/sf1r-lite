@@ -425,8 +425,6 @@ void DocumentsController::duplicate_with()
 void DocumentsController::create()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
-    if (callDistribute())
-        return;
     bool requestSent = collectionHandler_->create(
             request()[Keys::resource]
     );
@@ -470,8 +468,6 @@ void DocumentsController::create()
 void DocumentsController::update()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
-    if (callDistribute())
-        return;
     bool requestSent = collectionHandler_->update(
         request()[Keys::resource]
     );
@@ -528,8 +524,6 @@ void DocumentsController::update()
 void DocumentsController::update_inplace()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
-    if (callDistribute())
-        return;
     bool requestSent = collectionHandler_->update_inplace(
         request()[Keys::resource]
     );
@@ -571,8 +565,6 @@ void DocumentsController::destroy()
 {
     IZENELIB_DRIVER_BEFORE_HOOK(requireDOCID());
 
-    if (callDistribute())
-        return;
     bool requestSent = collectionHandler_->destroy(
         request()[Keys::resource]
     );

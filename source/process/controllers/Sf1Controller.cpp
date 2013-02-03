@@ -8,6 +8,8 @@
 #include <bundles/index/IndexTaskService.h>
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+
 #include <util/driver/writers/JsonWriter.h>
 
 #include <common/Keys.h>
@@ -43,21 +45,45 @@ bool Sf1Controller::preprocess()
 {
     std::string error;
 
-    if (doCollectionCheck(error))
+    if (doCollectionCheck(error) || (!requireCollectionName_ && collectionName_.empty()))
+    {
+        // need call in distribute, so we push it to queue and return false to ignore this request.
+        if(callDistribute())
+            return false;
+        // hook request if needed.
+        Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
+        if (hooktype == Request::FromAPI)
+        {
+            // from api do not need hook, just process as usually. all read only request 
+            // will return from here.
+            return true;
+        }
+        const std::string& reqdata = DistributeRequestHooker::get()->getAdditionData();
+        DistributeRequestHooker::get()->hookCurrentReq(reqdata);
+        DistributeRequestHooker::get()->processLocalBegin();
+        // note: if the request need to shard to different node.
+        // you should do hook again to all shard before you actually do the processing.
         return true;
-
-    if (!requireCollectionName_ && collectionName_.empty())
-        return true;
+    }
 
     response().addError(error);
     return false;
+}
+
+void Sf1Controller::postprocess()
+{
+    if (!response().success() && DistributeRequestHooker::get()->isHooked())
+    {
+        DistributeRequestHooker::get()->processFailedBeforePrepare();
+        std::cout << "request failed before send!!" << std::endl;
+    }
 }
 
 bool Sf1Controller::callDistribute()
 {
     if(request().callType() != Request::FromAPI)
         return false;
-    if (MasterManagerBase::get()->isDistribute())
+    if (MasterManagerBase::get()->isDistributed())
     {
         bool is_write_req = ReqLogMgr::isWriteRequest(request().controller(), request().action());
         if (is_write_req)

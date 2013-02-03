@@ -18,15 +18,29 @@ public:
         return izenelib::util::Singleton<DistributeRequestHooker>::get();
     }
 
+    enum ChainStatus
+    {
+        NoChain = 0,
+        ChainBegin,
+        ChainMiddle,
+        ChainEnd,
+        Unknown
+    };
 
     DistributeRequestHooker();
     void init();
     bool isValid();
-    void hookCurrentReq(const std::string& colname, const CollectionPath& colpath,
-        const std::string& reqdata, boost::shared_ptr<ReqLogMgr> req_log_mgr);
+    void hookCurrentReq(const std::string& reqdata);
     bool isHooked();
     void setHook(int calltype, const std::string& addition_data);
     int  getHookType();
+
+    inline void setChainStatus(ChainStatus status)
+    {
+        chain_status_ = status;
+    }
+    void processEndChain(bool success);
+
     void clearHook(bool force = false);
     const std::string& getAdditionData()
     {
@@ -36,6 +50,7 @@ public:
     bool prepare(ReqLogType type, CommonReqData& prepared_req);
     void processLocalBegin();
     void processLocalFinished(bool finishsuccess);
+    bool processFailedBeforePrepare();
     bool onRequestFromPrimary(int type, const std::string& packed_reqdata);
 
     void waitReplicasProcessCallback();
@@ -64,6 +79,7 @@ private:
     ReqLogType type_;
     boost::shared_ptr<ReqLogMgr> req_log_mgr_;
     int hook_type_;
+    ChainStatus chain_status_;
     static std::set<ReqLogType> need_backup_types_;
 
 };

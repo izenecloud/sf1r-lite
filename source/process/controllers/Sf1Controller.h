@@ -36,6 +36,7 @@ public:
 
 public:
     bool preprocess();
+    void postprocess();
 
 protected:
     /**

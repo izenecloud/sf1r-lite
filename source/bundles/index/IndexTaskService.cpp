@@ -43,12 +43,13 @@ bool IndexTaskService::HookDistributeRequest(bool shard)
     {
         indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "HookDistributeRequest", (int)hooktype, reqdata, ret);
     }
-    else
-    {
-        // hook from primary and log redo means replica is processing the request.
-        // So do not distribute the request to shard worker.
-        indexWorker_->HookDistributeRequest((int)hooktype, reqdata, ret);
-    }
+    // local hook has been moved to the request controller.
+    //else
+    //{
+    //    // hook from primary and log redo means replica is processing the request.
+    //    // So do not distribute the request to shard worker.
+    //    indexWorker_->HookDistributeRequest((int)hooktype, reqdata, ret);
+    //}
     if (!ret)
     {
         LOG(WARNING) << "Request failed, HookDistributeRequest failed.";
@@ -122,15 +123,11 @@ bool IndexTaskService::index(unsigned int numdoc)
 
 bool IndexTaskService::index(boost::shared_ptr<DocumentManager>& documentManager)
 {
-    if(!HookDistributeRequest(false))
-        return false;
     return indexWorker_->reindex(documentManager);
 }
 
 bool IndexTaskService::optimizeIndex()
 {
-    if(!HookDistributeRequest(false))
-        return false;
     return indexWorker_->optimizeIndex();
 }
 

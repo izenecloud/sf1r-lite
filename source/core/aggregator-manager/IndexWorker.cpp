@@ -19,7 +19,6 @@
 #include <common/Utilities.h>
 #include <aggregator-manager/MasterNotifier.h>
 #include <node-manager/RequestLog.h>
-#include <node-manager/RecoveryChecker.h>
 #include <node-manager/DistributeFileSyncMgr.h>
 #include <util/driver/Request.h>
 
@@ -115,9 +114,7 @@ IndexWorker::~IndexWorker()
 void IndexWorker::HookDistributeRequest(int hooktype, const std::string& reqdata, bool& result)
 {
     distribute_req_hooker_->setHook(hooktype, reqdata);
-    distribute_req_hooker_->hookCurrentReq(bundleConfig_->collectionName_,
-        bundleConfig_->collPath_, reqdata,
-        RecoveryChecker::get()->getReqLogMgr());
+    distribute_req_hooker_->hookCurrentReq(reqdata);
 
     distribute_req_hooker_->processLocalBegin();
     LOG(INFO) << "got hook request on the worker.";

@@ -9,6 +9,8 @@
 #include "CollectionHandler.h"
 #include "process/common/XmlSchema.h"
 #include "core/license-manager/LicenseCustManager.h"
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 #include <process/common/CollectionManager.h>
 #include <bundles/mining/MiningSearchService.h>
@@ -50,6 +52,19 @@ void CollectionController::start_collection()
         response().addError("Require field collection in request.");
         return;
     }
+
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return;
+    }
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return;
+    }
+
     std::string configFile = SF1Config::get()->getHomeDirectory();
     std::string slash("");
 #ifdef WIN32
@@ -58,7 +73,9 @@ void CollectionController::start_collection()
         slash = "/";
 #endif
     configFile += slash + collection + ".xml";
-    CollectionManager::get()->startCollection(collection, configFile);
+    bool ret = CollectionManager::get()->startCollection(collection, configFile);
+
+    DistributeRequestHooker::get()->processLocalFinished(ret);
 }
 
 /**
@@ -101,7 +118,22 @@ void CollectionController::stop_collection()
         response().addError("Collection access denied");
         return;
     }
-    CollectionManager::get()->stopCollection(collection, clear);
+
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return;
+    }
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return;
+    }
+
+    bool ret = CollectionManager::get()->stopCollection(collection, clear);
+
+    DistributeRequestHooker::get()->processLocalFinished(ret);
 }
 /**
  * @brief Action @b check_collection. Used for consistency check for distribute.
@@ -181,8 +213,23 @@ void CollectionController::rebuild_collection()
         return;
     }
 
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return;
+    }
+    NoAdditionNeedBackupReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionData_NeedBackup_Req, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return;
+    }
+
+
     boost::shared_ptr<RebuildTask> task(new RebuildTask(collection));
     task->doTask();
+
+    DistributeRequestHooker::get()->processLocalFinished(true);
 }
 /**
  * @brief Action @b create_collection.
@@ -350,6 +397,7 @@ void CollectionController::delete_collection(){
         response().addError("Collection does not exists");
         return;
     }
+
     bf::remove(configFile);
     
     bf::path collection_dir("collection" + slash + collection);
@@ -405,10 +453,11 @@ void CollectionController::set_kv()
         response().addError("collection not found");
         return;
     }
-    if(!handler->miningSearchService_->SetKV(key, value))
+
+    bool ret = handler->miningSearchService_->SetKV(key, value);
+    if(!ret)
     {
         response().addError("set kv fail");
-        return;
     }
 }
 
