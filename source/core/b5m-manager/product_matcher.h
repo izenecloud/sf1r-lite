@@ -366,6 +366,10 @@ namespace sf1r {
                 }
                 return result;
             }
+            std::string GetText() const
+            {
+                return name+":"+GetValue();
+            }
         };
 
         struct Product
@@ -381,6 +385,7 @@ namespace sf1r {
             uint32_t cid;
             double price; 
             std::vector<Attribute> attributes;
+            std::vector<Attribute> dattributes; //display attributes, ignore it now.
             std::string sbrand;
             //WeightType weight;
             double aweight;
@@ -392,6 +397,12 @@ namespace sf1r {
             {
                 ar & spid & stitle & scategory & cid & price & attributes & sbrand & aweight & tweight & title_obj;
             }
+
+            //const std::vector<Attribute>& GetDisplayAttributes() const
+            //{
+                //if(!dattributes.empty()) return dattributes;
+                //return attributes;
+            //}
 
             std::string GetAttributeValue() const
             {
@@ -419,15 +430,19 @@ namespace sf1r {
         bool Open(const std::string& path);
         //static void Clear(const std::string& path, int mode=3);
         static std::string GetVersion(const std::string& path);
+        static std::string GetAVersion(const std::string& path);
+        static std::string GetRVersion(const std::string& path);
         bool Index(const std::string& path, const std::string& scd_path, int mode);
         void Test(const std::string& scd_path);
-        bool DoMatch(const std::string& scd_path);
+        bool DoMatch(const std::string& scd_path, const std::string& output_file="");
         bool Process(const Document& doc, Product& result_product);
         bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products);
         static bool GetIsbnAttribute(const Document& doc, std::string& isbn);
         static bool ProcessBook(const Document& doc, Product& result_product);
         bool GetProduct(const std::string& pid, Product& product);
         static void ParseAttributes(const UString& ustr, std::vector<Attribute>& attributes);
+        static void MergeAttributes(std::vector<Attribute>& eattributes, const std::vector<Attribute>& attributes);
+        static UString AttributesText(const std::vector<Attribute>& attributes);
         //return true if this is a complete match, else false: to return parent nodes
         bool GetFrontendCategory(UString& backend, UString& frontend) const;
 
@@ -446,6 +461,8 @@ namespace sf1r {
             category_max_depth_ = d;
             LOG(INFO)<<"set category max depth to "<<d<<std::endl;
         }
+
+        static void CategoryDepthCut(std::string& category, uint16_t d);
 
     private:
         static void SetIndexDone_(const std::string& path, bool b);

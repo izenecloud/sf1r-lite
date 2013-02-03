@@ -31,6 +31,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             return false;
         }
     }
+    LOG(INFO)<<"cdb count "<<cdb_->Count()<<std::endl;
     if(!odb_->is_open())
     {
         if(!odb_->open())
@@ -61,6 +62,8 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
     std::string output_dir = B5MHelper::GetB5mcPath(mdb_instance);
     B5MHelper::PrepareEmptyDir(output_dir);
     ScdWriter b5mc_u(output_dir, UPDATE_SCD);
+    std::size_t new_count = 0;
+    std::size_t pid_changed_count = 0;
     //boost::unordered_set<uint128_t> uset;
     for(uint32_t i=0;i<scd_list.size();i++)
     {
@@ -105,6 +108,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             }
             else {
                 cdb_->Insert(cid);
+                new_count++;
             }
             //if(mode_==B5MMode::INC&&cdb_->Count()==0)
             //{
@@ -133,6 +137,10 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             {
                 odb_->get(soid, spid, pid_changed);
             }
+            if(pid_changed)
+            {
+                pid_changed_count++;
+            }
             if(!spid.empty())
             {
                 doc.property("uuid") = UString(spid, UString::UTF_8);
@@ -149,6 +157,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
     }
     b5mc_u.Close();
     cdb_->flush();
+    LOG(INFO)<<"new cid "<<new_count<<", pid_changed "<<pid_changed_count<<std::endl;
     return true;
 }
 

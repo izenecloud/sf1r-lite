@@ -24,7 +24,7 @@ namespace bfs = boost::filesystem;
 
 //#define B5M_DEBUG
 
-const std::string ProductMatcher::AVERSION("20121230");
+const std::string ProductMatcher::AVERSION("20130125");
 
 ProductMatcher::KeywordTag::KeywordTag():type_app(0), kweight(0.0), ngram(1)
 {
@@ -383,6 +383,24 @@ std::string ProductMatcher::GetVersion(const std::string& path)
     boost::algorithm::trim(version);
     return version;
 }
+std::string ProductMatcher::GetAVersion(const std::string& path)
+{
+    std::string version_file = path+"/AVERSION";
+    std::string version;
+    std::ifstream ifs(version_file.c_str());
+    getline(ifs, version);
+    boost::algorithm::trim(version);
+    return version;
+}
+std::string ProductMatcher::GetRVersion(const std::string& path)
+{
+    std::string version_file = path+"/RVERSION";
+    std::string version;
+    std::ifstream ifs(version_file.c_str());
+    getline(ifs, version);
+    boost::algorithm::trim(version);
+    return version;
+}
 
 bool ProductMatcher::GetProduct(const std::string& pid, Product& product)
 {
@@ -392,6 +410,22 @@ bool ProductMatcher::GetProduct(const std::string& pid, Product& product)
     if(index>=products_.size()) return false;
     product = products_[index];
     return true;
+}
+void ProductMatcher::CategoryDepthCut(std::string& category, uint16_t d)
+{
+    if(d==0) return;
+    if(category.empty()) return;
+    std::vector<std::string> vec;
+    boost::algorithm::split(vec, category, boost::algorithm::is_any_of(">"));
+    if(vec.size()>d)
+    {
+        category="";
+        for(uint16_t i=0;i<d;i++)
+        {
+            if(!category.empty()) category+=">";
+            category+=vec[i];
+        }
+    }
 }
 
 bool ProductMatcher::GetFrontendCategory(UString& backend, UString& frontend) const
@@ -405,7 +439,9 @@ bool ProductMatcher::GetFrontendCategory(UString& backend, UString& frontend) co
         Back2Front::const_iterator it = back2front_.find(b);
         if(it!=back2front_.end())
         {
-            frontend = UString(it->second, UString::UTF_8);
+            std::string sfront = it->second;
+            CategoryDepthCut(sfront, category_max_depth_);
+            frontend = UString(sfront, UString::UTF_8);
             break;
         }
         std::size_t pos = b.find_last_of('>');
@@ -445,15 +481,24 @@ bool ProductMatcher::IsIndexDone_(const std::string& path)
 void ProductMatcher::Init_()
 {
     boost::filesystem::create_directories(path_);
-    idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path_, "");
-    aconfig.symbol = true;
-    analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
-    idmlib::util::IDMAnalyzerConfig cconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
-    //cconfig.symbol = true;
-    char_analyzer_ = new idmlib::util::IDMAnalyzer(cconfig);
-    idmlib::util::IDMAnalyzerConfig csconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
-    csconfig.symbol = true;
-    chars_analyzer_ = new idmlib::util::IDMAnalyzer(csconfig);
+    if(analyzer_==NULL)
+    {
+        idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path_, "");
+        aconfig.symbol = true;
+        analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
+    }
+    if(char_analyzer_==NULL)
+    {
+        idmlib::util::IDMAnalyzerConfig cconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
+        //cconfig.symbol = true;
+        char_analyzer_ = new idmlib::util::IDMAnalyzer(cconfig);
+    }
+    if(chars_analyzer_==NULL)
+    {
+        idmlib::util::IDMAnalyzerConfig csconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
+        csconfig.symbol = true;
+        chars_analyzer_ = new idmlib::util::IDMAnalyzer(csconfig);
+    }
     left_bracket_term_ = GetTerm_(left_bracket_);
     right_bracket_term_ = GetTerm_(right_bracket_);
     products_.clear();
@@ -470,17 +515,30 @@ void ProductMatcher::Init_()
 }
 bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path, int omode)
 {
+    path_ = kpath;
+    if(!boost::filesystem::exists(kpath))
+    {
+        boost::filesystem::create_directories(kpath);
+    }
     std::string rversion = GetVersion(scd_path);
     LOG(INFO)<<"rversion "<<rversion<<std::endl;
     LOG(INFO)<<"aversion "<<AVERSION<<std::endl;
-    std::string version = std::max(AVERSION, rversion);
-    LOG(INFO)<<"version "<<version<<std::endl;
-    std::string kversion = GetVersion(kpath);
-    LOG(INFO)<<"kversion "<<kversion<<std::endl;
+    std::string erversion = GetRVersion(kpath);
+    std::string eaversion = GetAVersion(kpath);
+    LOG(INFO)<<"erversion "<<erversion<<std::endl;
+    LOG(INFO)<<"eaversion "<<eaversion<<std::endl;
     int mode = omode;
-    if(version>kversion)
+    if(AVERSION>eaversion)
     {
         if(mode<2) mode = 2;
+    }
+    if(mode<2) //not re-training, try open
+    {
+        if(!Open(path_))
+        {
+            mode = 2;
+        }
+        Init_();
     }
     LOG(INFO)<<"mode "<<mode<<std::endl;
     if(mode==3)
@@ -493,11 +551,6 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         std::string bdb_path = kpath+"/bdb";
         B5MHelper::PrepareEmptyDir(bdb_path);
     }
-    if(!boost::filesystem::exists(kpath))
-    {
-        boost::filesystem::create_directories(kpath);
-    }
-    path_ = kpath;
     if(IsIndexDone_(path_))
     {
         std::cout<<"product trained at "<<path_<<std::endl;
@@ -734,6 +787,12 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         product.price = price;
         ParseAttributes(attrib_ustr, product.attributes);
         if(product.attributes.size()<2) continue;
+        UString dattribute_ustr;
+        doc.getProperty("DAttribute", dattribute_ustr);
+        if(!dattribute_ustr.empty())
+        {
+            ParseAttributes(dattribute_ustr, product.dattributes);
+        }
         product.tweight = 0.0;
         product.aweight = 0.0;
         //std::cerr<<"[SPU][Title]"<<stitle<<std::endl;
@@ -842,24 +901,38 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     izenelib::am::ssf::Util<>::Save(path, trie_);
     path = path_+"/back2front";
     izenelib::am::ssf::Util<>::Save(path, b2f_map);
-    std::string version_file = path_+"/VERSION";
-    std::ofstream ofs(version_file.c_str());
-    ofs<<version<<std::endl;
-    ofs.close();
+    {
+        std::string aversion_file = path_+"/AVERSION";
+        std::ofstream ofs(aversion_file.c_str());
+        ofs<<AVERSION<<std::endl;
+        ofs.close();
+    }
+    {
+        std::string rversion_file = path_+"/RVERSION";
+        std::ofstream ofs(rversion_file.c_str());
+        ofs<<rversion<<std::endl;
+        ofs.close();
+    }
     SetIndexDone_(path_, true);
     
     return true;
 }
 
 
-bool ProductMatcher::DoMatch(const std::string& scd_path)
+bool ProductMatcher::DoMatch(const std::string& scd_path, const std::string& output_file)
 {
     izenelib::util::ClockTimer clocker;
     std::vector<std::string> scd_list;
     B5MHelper::GetIUScdList(scd_path, scd_list);
     if(scd_list.empty()) return false;
-    std::string match_file = path_+"/match";
+    std::string match_file = output_file;
+    if(match_file.empty())
+    {
+        match_file = path_+"/match";
+    }
     std::ofstream ofs(match_file.c_str());
+    std::size_t doc_count=0;
+    std::size_t spu_matched_count=0;
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
@@ -885,6 +958,7 @@ bool ProductMatcher::DoMatch(const std::string& scd_path)
             }
             Product result_product;
             Process(doc, result_product);
+            doc_count++;
             std::string spid = result_product.spid;
             std::string sptitle = result_product.stitle;
             std::string scategory = result_product.scategory;
@@ -894,11 +968,12 @@ bool ProductMatcher::DoMatch(const std::string& scd_path)
             doc.getString("Title", stitle);
             if(spid.length()>0)
             {
-                ofs<<soid<<","<<spid<<","<<stitle<<","<<sptitle<<std::endl;
+                spu_matched_count++;
+                ofs<<soid<<","<<spid<<","<<stitle<<","<<sptitle<<","<<scategory<<std::endl;
             }
             else
             {
-                ofs<<soid<<","<<stitle<<", ["<<scategory<<"]"<<std::endl;
+                ofs<<soid<<","<<stitle<<","<<scategory<<std::endl;
             }
             //Product product;
             //if(GetMatched(doc, product))
@@ -922,6 +997,7 @@ bool ProductMatcher::DoMatch(const std::string& scd_path)
     }
     ofs.close();
     LOG(INFO)<<"clocker used "<<clocker.elapsed()<<std::endl;
+    LOG(INFO)<<"stat: doc_count:"<<doc_count<<", spu_matched_count:"<<spu_matched_count<<std::endl;
     return true;
 }
 
@@ -2135,6 +2211,41 @@ void ProductMatcher::ParseAttributes(const UString& ustr, std::vector<Attribute>
         attributes.push_back(attribute);
     }
 }
+
+void ProductMatcher::MergeAttributes(std::vector<Attribute>& eattributes, const std::vector<Attribute>& attributes)
+{
+    if(attributes.empty()) return;
+    boost::unordered_set<std::string> to_append_name;
+    for(uint32_t i=0;i<attributes.size();i++)
+    {
+        to_append_name.insert(attributes[i].name);
+    }
+    for(uint32_t i=0;i<eattributes.size();i++)
+    {
+        to_append_name.erase(eattributes[i].name);
+    }
+    for(uint32_t i=0;i<attributes.size();i++)
+    {
+        const ProductMatcher::Attribute& a = attributes[i];
+        if(to_append_name.find(a.name)!=to_append_name.end())
+        {
+            eattributes.push_back(a);
+        }
+    }
+}
+
+UString ProductMatcher::AttributesText(const std::vector<Attribute>& attributes)
+{
+    std::string str;
+    for(uint32_t i=0;i<attributes.size();i++)
+    {
+        const ProductMatcher::Attribute& a = attributes[i];
+        if(!str.empty()) str+=",";
+        str+=a.GetText();
+    }
+    return UString(str, UString::UTF_8);
+}
+
 ProductMatcher::term_t ProductMatcher::GetTerm_(const UString& text)
 {
     term_t term = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(text);
