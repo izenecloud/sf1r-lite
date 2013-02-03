@@ -41,7 +41,7 @@ def send_cmd_afterssh(hosts, cmdstr):
 
 def send_cmd_andstay(hosts, cmdstr):
     for host in hosts:
-        print "sending command to host : " + host
+        print "sending command to host : " + host + ', cmd:' + cmdstr
         os.system(loginssh_stay + host + ' \'' + cmdstr + ' \'')
 
 def syncfiles(args):
@@ -123,6 +123,20 @@ def send_cmd(args):
         send_cmd_andstay(args[3:], cmdstr)
     print 'finished.'
 
+def read_cmd_from_file(args):
+    cmdfile = args[2]
+    cmdstr = ''
+    fp = open(cmdfile, 'r')
+    print 'read cmdstr from file : ' + cmdfile
+    for line in fp:
+        cmdstr += line.strip() + ';'
+    fp.close()
+    if len(args) <= 3:
+        send_cmd_andstay(primary_host + replicas_host, cmdstr)
+    else:
+        send_cmd_andstay(args[3:], cmdstr)
+    print 'finished'
+
 def check_build_finish(args):
     cmdstr = 'tail -f ' + sf1r_dir + '/build/easy_tool.log'
     if len(args) <=2:
@@ -150,7 +164,8 @@ handler_dict = { 'syncfile':syncfiles,
         'compile_all':compile_all,
         'check_build':check_build_finish,
         'check_running':check_running,
-        'send_cmd':send_cmd
+        'send_cmd':send_cmd,
+        'read_cmd_from_file':read_cmd_from_file
         }
 
 args = sys.argv
@@ -181,5 +196,7 @@ print 'check_running host logfile_name  # check the host running status by tail 
         if no logfile_name, the newest log will be checked.'
 print ''
 print 'send_cmd cmdstr  # send cmdstr to all hosts'
+print ''
+print 'read_cmd_from_file cmdfile  # read cmd from cmdfile and send cmdstr. each cmd in a line.'
 print ''
 

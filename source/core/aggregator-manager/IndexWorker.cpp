@@ -567,11 +567,27 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
 {
     LOG(INFO) << "start BuildCollection";
 
+    if (!distribute_req_hooker_->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
+
     if (!documentManager)
     {
         LOG(ERROR) << "documentManager is not initialized!";
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
+
+    NoAdditionReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
 
     izenelib::util::ClockTimer timer;
 
@@ -662,21 +678,42 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
 
+    distribute_req_hooker_->processLocalFinished(true);
     return true;
 }
 
 bool IndexWorker::optimizeIndex()
 {
-    if (!backup_())
+    if (!distribute_req_hooker_->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
         return false;
+    }
+
+    if (!backup_())
+    {
+        distribute_req_hooker_->processLocalFinished(false);
+        return false;
+    }
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
+
+    NoAdditionReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
     indexManager_->optimizeIndex();
+
+    distribute_req_hooker_->processLocalFinished(true);
     return true;
 }
 
@@ -1000,8 +1037,8 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         return false;
     }
 
-    NoAdditionNeedBackupReqLog reqlog;
-    if(!distribute_req_hooker_->prepare(Req_NoAdditionData_NeedBackup_Req, dynamic_cast<CommonReqData&>(reqlog)))
+    NoAdditionReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_NoAdditionDataReq, dynamic_cast<CommonReqData&>(reqlog)))
     {
         LOG(ERROR) << "prepare failed in: " << __FUNCTION__;
         return false;
