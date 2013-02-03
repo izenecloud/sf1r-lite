@@ -81,6 +81,22 @@ namespace sf1r {
             spid = B5MHelper::Uint128ToString(pid);
             return true;
         }
+        bool get_last(const KeyType& key, ValueType& value) const
+        {
+            if(last_odb_!=NULL)
+            {
+                return last_odb_->get(key, value);
+            }
+            return false;
+        }
+
+        bool get_last(const std::string& soid, std::string& spid) const
+        {
+            uint128_t pid;
+            if(!get_last(B5MHelper::StringToUint128(soid), pid)) return false;
+            spid = B5MHelper::Uint128ToString(pid);
+            return true;
+        }
 
     private:
 

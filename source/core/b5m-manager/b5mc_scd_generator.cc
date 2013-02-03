@@ -14,6 +14,7 @@
 #include <glog/logging.h>
 
 using namespace sf1r;
+#define B5MC_DEBUG
 
 
 B5mcScdGenerator::B5mcScdGenerator(CommentDb* cdb, OfferDbRecorder* odb, BrandDb* bdb, ProductMatcher* matcher, int mode)
@@ -64,7 +65,6 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
     ScdWriter b5mc_u(output_dir, UPDATE_SCD);
     std::size_t new_count = 0;
     std::size_t pid_changed_count = 0;
-    //boost::unordered_set<uint128_t> uset;
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
@@ -79,9 +79,8 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
         {
             if(n%100000==0)
             {
-                LOG(INFO)<<"Find Documents "<<n<<std::endl;
+                LOG(INFO)<<"Find Documents "<<n<<","<<new_count<<","<<pid_changed_count<<std::endl;
             }
-            //if(n>=2000000) break;
             Document doc;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
@@ -140,6 +139,11 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             if(pid_changed)
             {
                 pid_changed_count++;
+#ifdef B5MC_DEBUG
+                std::string last_spid;
+                odb_->get_last(soid, last_spid);
+                LOG(INFO)<<soid<<" changed from "<<last_spid<<" to "<<spid<<std::endl;
+#endif
             }
             if(!spid.empty())
             {
