@@ -47,6 +47,10 @@ public:
 
     void load_license();
 
+    bool preprocess();
+    bool callDistribute();
+    void postprocess();
+
 private:
     static std::string getConfigPath_()
     {

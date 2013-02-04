@@ -9,8 +9,10 @@
 #include "CollectionHandler.h"
 #include "process/common/XmlSchema.h"
 #include "core/license-manager/LicenseCustManager.h"
+#include <node-manager/MasterManagerBase.h>
 #include <node-manager/RequestLog.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <util/driver/writers/JsonWriter.h>
 
 #include <process/common/CollectionManager.h>
 #include <bundles/mining/MiningSearchService.h>
@@ -21,6 +23,65 @@
 
 namespace sf1r
 {
+
+bool CollectionController::callDistribute()
+{
+    if(request().callType() != Request::FromAPI)
+        return false;
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        bool is_write_req = ReqLogMgr::isWriteRequest(request().controller(), request().action());
+        if (is_write_req)
+        {
+            std::string reqdata;
+            izenelib::driver::JsonWriter writer;
+            writer.write(request().get(), reqdata);
+            MasterManagerBase::get()->pushWriteReq(reqdata);
+            return true;
+        }
+    }
+    return false;
+
+}
+
+bool CollectionController::preprocess()
+{
+    // need call in distribute, so we push it to queue and return false to ignore this request.
+    if(callDistribute())
+        return false;
+    // hook request if needed.
+    Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
+    if (hooktype == Request::FromAPI)
+    {
+        // from api do not need hook, just process as usually. all read only request 
+        // will return from here.
+        return true;
+    }
+    const std::string& reqdata = DistributeRequestHooker::get()->getAdditionData();
+    DistributeRequestHooker::get()->hookCurrentReq(reqdata);
+    DistributeRequestHooker::get()->processLocalBegin();
+    // note: if the request need to shard to different node.
+    // you should do hook again to all shard before you actually do the processing.
+    return true;
+
+}
+
+void CollectionController::postprocess()
+{
+    if (!response().success() && DistributeRequestHooker::get()->isHooked())
+    {
+        DistributeRequestHooker::get()->processFailedBeforePrepare();
+        std::string errinfo;
+        try
+        {
+            errinfo = response()[Keys::errors].get<std::string>();
+        }
+        catch(...)
+        {
+        }
+        std::cout << "request failed before send!!" << errinfo << std::endl;
+    }
+}
 
 /**
  * @brief Action @b start_collection.
