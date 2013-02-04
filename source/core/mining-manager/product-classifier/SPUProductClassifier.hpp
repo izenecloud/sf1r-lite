@@ -47,8 +47,11 @@ public:
 
     bool GetProductCategory(
         const std::string& query,
-        int limit,
         std::vector<UString>& frontCategories);
+
+    bool GetEnrichedQuery(
+        const std::string& query,
+        std::string& enriched);
 
 private:
     void InitOnce_(const std::string& resource);

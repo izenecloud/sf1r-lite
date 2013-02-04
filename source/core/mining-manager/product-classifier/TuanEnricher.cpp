@@ -8,7 +8,6 @@
 #include <la-manager/LAPool.h>
 
 #include <glog/logging.h>
-#include <set>
 
 using namespace cma;
 
@@ -185,7 +184,6 @@ void TuanEnricher::GetEnrichedQuery(
     for(size_t i = 0; i < topK; ++i)
     {
         uint32_t docId = res_list[i].second;
-      //LOG(INFO) <<"doc "<<docId;
         Document doc;
         if (!documentCache_.getValue(docId, doc))
         {
@@ -194,19 +192,20 @@ void TuanEnricher::GetEnrichedQuery(
             else
                 documentCache_.insertValue(docId, doc);
         }
-        
+        try{
         UString enriched = doc.property("Title").get<izenelib::util::UString>();
         enriched += UString(" ");
         enriched += doc.property("Category").get<izenelib::util::UString>();
         enriched += UString(" ");		
         enriched += doc.property("SubCategory").get<izenelib::util::UString>();
-
         std::string enriched_str;
         enriched.convertString(enriched_str, UString::UTF_8);
         
         //LOG(INFO) <<"enriched_str "<<enriched_str<<docId;
         enriched_result += std::string(" ");
         enriched_result += enriched_str;
+        }catch(boost::bad_get& e)
+        {}
     }
 }
 

@@ -106,13 +106,19 @@ void SPUProductClassifier::InitOnce_(const std::string& resource)
     }
 }
 
+bool SPUProductClassifier::GetEnrichedQuery(
+        const std::string& query,
+        std::string& enriched)
+{
+    tuan_enricher_->GetEnrichedQuery(query, enriched);
+    return true;
+}
+
 bool SPUProductClassifier::GetProductCategory(
-    const std::string& rawquery,
-    int limit,
+    const std::string& query,
     std::vector<UString>& frontCategories)
 {
-    std::string query;
-    tuan_enricher_->GetEnrichedQuery(rawquery, query);
+    if(query.empty()) return false;
     std::vector<std::pair<double, uint32_t> > res_list;
     std::map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > match_ranges_list;
@@ -124,7 +130,7 @@ bool SPUProductClassifier::GetProductCategory(
     Algorithm<UString>::to_lower(pattern);
     std::string pattern_str;
     pattern.convertString(pattern_str, UString::UTF_8);
-    LOG(INFO) << "original query string: " << pattern_str;
+    //LOG(INFO) << "original query string: " << pattern_str;
     Sentence pattern_sentence(pattern_str.c_str());
     analyzer_->runWithSentence(pattern_sentence);
     std::vector<UString> all_sub_strpatterns;
