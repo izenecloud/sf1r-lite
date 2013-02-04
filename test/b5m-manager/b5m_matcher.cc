@@ -629,7 +629,7 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"matcher open failed"<<std::endl;
             return EXIT_FAILURE;
         }
-        if(!matcher.DoMatch(scd_path))
+        if(!matcher.DoMatch(scd_path, output_match))
         {
             return EXIT_FAILURE;
         }

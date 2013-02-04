@@ -112,7 +112,7 @@ bool SPUProductClassifier::GetProductCategory(
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> max_match_list;
 
-    size_t max_docs = 20;
+    size_t max_docs = 100;
     UString pattern(query, UString::UTF_8);
     Algorithm<UString>::to_lower(pattern);
     std::string pattern_str;
@@ -190,6 +190,9 @@ bool SPUProductClassifier::GetProductCategory(
     for(size_t i = 0; i < res_list.size(); ++i)
     {
         uint32_t docId = res_list[i].second;
+        double score = res_list[i].first;
+		if((0 == i) && (score < 6.0F)) return false;
+		if(score < 6.0F) break;
         //LOG(INFO) <<"doc "<<docId;
         Document doc;
         if (!documentCache_.getValue(docId, doc))
@@ -210,7 +213,7 @@ bool SPUProductClassifier::GetProductCategory(
             frontCategories.push_back(frontCategory);
             std::string front_str;
             frontCategory.convertString(front_str, UString::UTF_8);
-            LOG(INFO) << front_str;
+            LOG(INFO) << front_str << " score " << score;
         }
     }
     return frontCategories.empty() ? false : true;
