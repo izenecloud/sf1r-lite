@@ -65,6 +65,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
     ScdWriter b5mc_u(output_dir, UPDATE_SCD);
     std::size_t new_count = 0;
     std::size_t pid_changed_count = 0;
+    std::size_t pid_not_changed_count = 0;
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
@@ -79,7 +80,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
         {
             if(n%100000==0)
             {
-                LOG(INFO)<<"Find Documents "<<n<<","<<new_count<<","<<pid_changed_count<<std::endl;
+                LOG(INFO)<<"Find Documents "<<n<<","<<new_count<<","<<pid_changed_count<<","<<pid_not_changed_count<<std::endl;
             }
             Document doc;
             SCDDoc& scddoc = *(*doc_iter);
@@ -145,6 +146,13 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
                 LOG(INFO)<<soid<<" changed from "<<last_spid<<" to "<<spid<<std::endl;
 #endif
             }
+            else
+            {
+                if(!spid.empty())
+                {
+                    pid_not_changed_count++;
+                }
+            }
             if(!spid.empty())
             {
                 doc.property("uuid") = UString(spid, UString::UTF_8);
@@ -161,7 +169,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
     }
     b5mc_u.Close();
     cdb_->flush();
-    LOG(INFO)<<"new cid "<<new_count<<", pid_changed "<<pid_changed_count<<std::endl;
+    LOG(INFO)<<"new cid "<<new_count<<", pid_changed "<<pid_changed_count<<", pid_not_changed "<<pid_not_changed_count<<std::endl;
     return true;
 }
 
