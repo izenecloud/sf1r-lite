@@ -69,7 +69,16 @@ void CommandsController::indexSearch_()
     {
         if (request().callType() != Request::FromAPI)
         {
-            DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainBegin);
+            RecommendTaskService* rec_taskService = collectionHandler_->recommendTaskService_;
+            if (rec_taskService)
+            {
+                if(!DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainBegin))
+                {
+                    std::cout << "set chain status failed, stopping chain. current status: " <<
+                        DistributeRequestHooker::get()->getChainStatus() << std::endl; 
+                    return;
+                }
+            }
         }
         // 0 indicates no limit
         Value::UintType documentCount = asUint(request()[Keys::document_count]);
@@ -85,23 +94,26 @@ void CommandsController::indexRecommend_()
     {
         if (request().callType() == Request::FromLog)
         {
-            DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
+            if (!DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd))
+            {
+                std::cout << "set chain status failed, stopping chain. current status: " <<
+                   DistributeRequestHooker::get()->getChainStatus() << std::endl; 
+                return;
+            }
             taskService->buildCollection();
         }
-        else
+        else if (request().callType() != Request::FromAPI)
         {
-            if (request().callType() != Request::FromAPI)
+            JobScheduler::get()->waitCurrentFinish(collectionName_);
+            if(!DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd))
             {
-                JobScheduler::get()->waitCurrentFinish(collectionName_);
-                DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
+                std::cout << "set chain status failed, stopping chain. current status: " <<
+                   DistributeRequestHooker::get()->getChainStatus() << std::endl; 
+                return;
             }
-            task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
-            JobScheduler::get()->addTask(task, collectionName_);
         }
-    }
-    else
-    {
-        DistributeRequestHooker::get()->processEndChain(false);
+        task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
+        JobScheduler::get()->addTask(task, collectionName_);
     }
 }
 

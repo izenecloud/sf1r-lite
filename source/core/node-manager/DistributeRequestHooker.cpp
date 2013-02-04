@@ -34,7 +34,7 @@ void DistributeRequestHooker::init()
 }
 
 DistributeRequestHooker::DistributeRequestHooker()
-    :type_(Req_None), hook_type_(0)
+    :type_(Req_None), hook_type_(0), chain_status_(NoChain)
 {
 }
 
@@ -109,6 +109,12 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     if (!isHooked())
         return true;
     assert(req_log_mgr_);
+    if (chain_status_ != NoChain && chain_status_ != ChainBegin)
+    {
+        // only prepare at the begin of chain request.
+        LOG(INFO) << "no need prepare for middle of request chain.";
+        return true;
+    }
     bool isprimary = (hook_type_ != Request::FromLog) && NodeManagerBase::get()->isPrimary();
     if (isprimary)
     {
@@ -186,6 +192,12 @@ void DistributeRequestHooker::processLocalBegin()
         return;
     if (hook_type_ == Request::FromLog)
         return;
+    if (chain_status_ != NoChain && chain_status_ != ChainBegin)
+    {
+        // only need change node state at the begin of chain request.
+        LOG(INFO) << "one of chain request begin local";
+        return;
+    }
     LOG(INFO) << "begin process request on worker";
     NodeManagerBase::get()->beginReqProcess();
 }
@@ -210,15 +222,10 @@ bool DistributeRequestHooker::processFailedBeforePrepare()
     return false;
 }
 
-void DistributeRequestHooker::processEndChain(bool success)
-{
-}
-
 void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
 {
     if (!isHooked())
         return;
-    LOG(INFO) << "process request on local worker finished.";
     //current_req_ = packed_req_data;
     if (!finishsuccess)
     {
@@ -228,12 +235,20 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
         abortRequest();
         return;
     }
+
+    if (chain_status_ != NoChain && chain_status_ != ChainEnd)
+    {
+        LOG(INFO) << "request chain finished one of chain that not end.";
+        return;
+    }
+
+    LOG(INFO) << "process request on local worker finished.";
     if (hook_type_ == Request::FromLog)
     {
         writeLocalLog();
         return;
     }
-    LOG(INFO) << "send packed data len from local. len: " << current_req_.size();
+    LOG(INFO) << "send packed request data len from local. len: " << current_req_.size();
     NodeManagerBase::get()->finishLocalReqProcess(type_, current_req_);
 }
 
@@ -262,6 +277,7 @@ void DistributeRequestHooker::abortRequest()
         forceExit();
         return;
     }
+    chain_status_ = ChainStop;
     LOG(INFO) << "abortRequest...";
     NodeManagerBase::get()->abortRequest();
 }
@@ -287,6 +303,7 @@ void DistributeRequestHooker::writeLocalLog()
     if (!isHooked())
         return;
 
+    assert(chain_status_ == ChainEnd || chain_status_ == NoChain);
     LOG(INFO) << "begin write request log to local.";
     bool ret = req_log_mgr_->appendReqData(current_req_);
     if (!ret)
@@ -312,6 +329,7 @@ void DistributeRequestHooker::onElectingFinished()
 
 void DistributeRequestHooker::finish(bool success)
 {
+    assert(chain_status_ == ChainEnd || chain_status_ == NoChain);
     if (hook_type_ == Request::FromLog && !success)
     {
         LOG(ERROR) << "redo log failed. must exit";
@@ -350,6 +368,7 @@ void DistributeRequestHooker::clearHook(bool force)
     req_log_mgr_.reset();
     hook_type_ = 0;
     primary_addition_.clear();
+    chain_status_ = NoChain;
     LOG(INFO) << "request hook cleard.";
 }
 

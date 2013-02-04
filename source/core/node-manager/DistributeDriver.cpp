@@ -61,13 +61,14 @@ static bool callHandler(izenelib::driver::Router::handler_ptr handler,
     try
     {
         Response response;
+        response.setSuccess(true);
         static Poller tmp_poller;
         // prepare request
         handler->invoke(request,
             response,
             tmp_poller);
-        LOG(INFO) << "write request send in DistributeDriver success.";
 
+        LOG(INFO) << "write request send in DistributeDriver success.";
         return true;
     }
     catch(const std::exception& e)

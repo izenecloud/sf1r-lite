@@ -75,7 +75,15 @@ void Sf1Controller::postprocess()
     if (!response().success() && DistributeRequestHooker::get()->isHooked())
     {
         DistributeRequestHooker::get()->processFailedBeforePrepare();
-        std::cout << "request failed before send!!" << std::endl;
+        std::string errinfo;
+        try
+        {
+            errinfo = response()[Keys::errors].get<std::string>();
+        }
+        catch(...)
+        {
+        }
+        std::cout << "request failed before send!!" << errinfo << std::endl;
     }
 }
 

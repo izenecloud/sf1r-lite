@@ -24,6 +24,7 @@ public:
         ChainBegin,
         ChainMiddle,
         ChainEnd,
+        ChainStop,
         Unknown
     };
 
@@ -35,11 +36,21 @@ public:
     void setHook(int calltype, const std::string& addition_data);
     int  getHookType();
 
-    inline void setChainStatus(ChainStatus status)
+    inline bool setChainStatus(ChainStatus status)
     {
+        if (chain_status_ > status)
+        {
+            // chain request can only handle from begin to end.
+            // you can not set status to an older status. 
+            return false;
+        }
         chain_status_ = status;
+        return true;
     }
-    void processEndChain(bool success);
+    ChainStatus getChainStatus()
+    {
+        return chain_status_;
+    }
 
     void clearHook(bool force = false);
     const std::string& getAdditionData()
