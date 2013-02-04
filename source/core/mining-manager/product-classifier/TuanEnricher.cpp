@@ -14,8 +14,8 @@ using namespace cma;
 namespace sf1r
 {
 TuanEnricher::TuanEnricher(
-    const std::string& resource, 
-    cma::Analyzer* analyzer, 
+    const std::string& resource,
+    cma::Analyzer* analyzer,
     cma::Knowledge* knowledge)
     :resource_path_(resource)
     ,analyzer_(analyzer)
@@ -192,20 +192,22 @@ void TuanEnricher::GetEnrichedQuery(
             else
                 documentCache_.insertValue(docId, doc);
         }
-        try{
-        UString enriched = doc.property("Title").get<izenelib::util::UString>();
-        enriched += UString(" ");
-        enriched += doc.property("Category").get<izenelib::util::UString>();
-        enriched += UString(" ");		
-        enriched += doc.property("SubCategory").get<izenelib::util::UString>();
-        std::string enriched_str;
-        enriched.convertString(enriched_str, UString::UTF_8);
-        
-        //LOG(INFO) <<"enriched_str "<<enriched_str<<docId;
-        enriched_result += std::string(" ");
-        enriched_result += enriched_str;
-        }catch(boost::bad_get& e)
-        {}
+        try
+        {
+            UString enriched = doc.property("Title").get<izenelib::util::UString>();
+            enriched += UString(" ");
+            enriched += doc.property("Category").get<izenelib::util::UString>();
+            enriched += UString(" ");
+            enriched += doc.property("SubCategory").get<izenelib::util::UString>();
+            std::string enriched_str;
+            enriched.convertString(enriched_str, UString::UTF_8);
+
+            //LOG(INFO) <<"enriched_str "<<enriched_str<<docId;
+            enriched_result += std::string(" ");
+            enriched_result += enriched_str;
+        }
+        catch(boost::bad_get& e)
+            {}
     }
 }
 

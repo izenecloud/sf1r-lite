@@ -5,7 +5,6 @@
 #include <vector>
 #include <util/ustring/UString.h>
 
-
 namespace sf1r
 {
 using izenelib::util::UString;
@@ -13,15 +12,38 @@ using izenelib::util::UString;
 class ProductMatcher;
 class SPUProductClassifier;
 class SuffixMatchManager;
+class DocumentManager;
 class QueryCategorizer
 {
+enum ClassifierType
+{
+    MATCHER,
+    SEARCH_SPU,
+    SEARCH_PRODUCT
+};
+
 public:
     QueryCategorizer();
     ~QueryCategorizer();
 
-    void SetProductMatcher(ProductMatcher* matcher) { matcher_ = matcher; }
-    void SetSPUProductClassifier(SPUProductClassifier* spu_classifier) { spu_classifier_ = spu_classifier;}
-    void SetSuffixMatchManager(SuffixMatchManager* suffix_manager) { suffix_manager_ = suffix_manager;}
+    void SetProductMatcher(ProductMatcher* matcher)
+    {
+        matcher_ = matcher;
+    }
+    void SetSPUProductClassifier(SPUProductClassifier* spu_classifier)
+    {
+        spu_classifier_ = spu_classifier;
+    }
+    void SetSuffixMatchManager(SuffixMatchManager* suffix_manager)
+    {
+        suffix_manager_ = suffix_manager;
+    }
+    void SetDocumentManager(boost::shared_ptr<DocumentManager> document_manager)
+    {
+        document_manager_ = document_manager;
+    }
+
+    void SetWorkingMode(std::string& mode);
 
     bool GetProductCategory(
         const std::string& query,
@@ -51,6 +73,9 @@ private:
     ProductMatcher* matcher_;
     SPUProductClassifier* spu_classifier_;
     SuffixMatchManager* suffix_manager_;
+    boost::shared_ptr<DocumentManager> document_manager_;
+
+    std::vector<ClassifierType> modes_;
 };
 
 }

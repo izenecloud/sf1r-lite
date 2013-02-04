@@ -107,8 +107,8 @@ void SPUProductClassifier::InitOnce_(const std::string& resource)
 }
 
 bool SPUProductClassifier::GetEnrichedQuery(
-        const std::string& query,
-        std::string& enriched)
+    const std::string& query,
+    std::string& enriched)
 {
     tuan_enricher_->GetEnrichedQuery(query, enriched);
     return true;
@@ -125,7 +125,7 @@ bool SPUProductClassifier::GetProductCategory(
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> max_match_list;
 
-    size_t max_docs = 100;
+    size_t max_docs = 20;
     UString pattern(query, UString::UTF_8);
     Algorithm<UString>::to_lower(pattern);
     std::string pattern_str;
@@ -214,7 +214,7 @@ bool SPUProductClassifier::GetProductCategory(
             else
                 documentCache_.insertValue(docId, doc);
         }
-        
+
         UString backend = doc.property("Category").get<izenelib::util::UString>();
         std::string category_str;
         backend.convertString(category_str, UString::UTF_8);

@@ -34,8 +34,8 @@ public:
     typedef FMIndexType::MatchRangeListT RangeListT;
 
     TuanEnricher(
-        const std::string& resource, 
-        cma::Analyzer* analyzer, 
+        const std::string& resource,
+        cma::Analyzer* analyzer,
         cma::Knowledge* knowledge);
 
     ~TuanEnricher();

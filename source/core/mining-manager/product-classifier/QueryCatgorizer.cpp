@@ -2,8 +2,11 @@
 #include "SPUProductClassifier.hpp"
 #include <mining-manager/suffix-match-manager/SuffixMatchManager.hpp>
 #include <mining-manager/util/split_ustr.h>
+#include <document-manager/DocumentManager.h>
 #include <b5m-manager/product_matcher.h>
+#include <query-manager/ActionItem.h>
 
+#include <boost/algorithm/string.hpp>
 #include <glog/logging.h>
 #include <set>
 
@@ -11,7 +14,7 @@ namespace sf1r
 {
 
 bool HasCategoryPrefix(
-    const std::vector<UString>& category, 
+    const std::vector<UString>& category,
     std::set<std::vector<UString> >& categories)
 {
     std::set<std::vector<UString> >::iterator cit = categories.begin();
@@ -39,6 +42,9 @@ QueryCategorizer::QueryCategorizer()
     ,spu_classifier_(NULL)
     ,suffix_manager_(NULL)
 {
+    modes_.push_back(SEARCH_PRODUCT);	
+    modes_.push_back(SEARCH_SPU);
+    modes_.push_back(MATCHER);
 }
 
 QueryCategorizer::~QueryCategorizer()
@@ -54,13 +60,13 @@ bool QueryCategorizer::GetCategoryByMatcher_(
     Document doc;
     UString queryU(query, UString::UTF_8);
     doc.property("Title") = queryU;
-	
+
     std::vector<ProductMatcher::Product> result_products;
     ProductMatcher* matcher = ProductMatcherInstance::get();
-	
+
     if (matcher->Process(doc, (uint32_t)limit, result_products))
     {
-        for(uint32_t i=0;i<result_products.size();i++)
+        for(uint32_t i=0; i<result_products.size(); i++)
         {
             const std::string& category_name = result_products[i].scategory;
             if (!category_name.empty())
@@ -89,8 +95,38 @@ bool QueryCategorizer::GetCategoryBySuffixMatcher_(
     std::vector<UString>& frontCategories)
 {
     if(!suffix_manager_) return false;
+    UString queryU(query, UString::UTF_8);
+    uint32_t max_docs = 10;
+    std::vector<std::string> search_in_properties;
+    search_in_properties.push_back("Title");
+    search_in_properties.push_back("TargetCategory");
+    std::vector<QueryFiltering::FilteringType> filter_param;
+    faceted::GroupParam groupParam;
+    std::vector<std::pair<double, uint32_t> > res_list;
 
-    return true;
+    uint32_t totalCount = suffix_manager_->AllPossibleSuffixMatch(
+                              queryU, search_in_properties, max_docs,SearchingMode::DefaultFilterMode,
+                              filter_param, groupParam, res_list);
+    std::set<UString> cat_set;
+    for(unsigned i = 0; i < res_list.size(); ++i)
+    {
+        Document doc;
+        uint32_t docId = res_list[i].second;
+        if(document_manager_->getDocument(docId, doc))
+        {
+            UString category = doc.property("TargetCategory").get<izenelib::util::UString>();
+            if(cat_set.find(category) != cat_set.end()) continue;
+            cat_set.insert(category);
+
+            frontCategories.push_back(category);
+            std::string category_str;
+            category.convertString(category_str, UString::UTF_8);
+            LOG(INFO) << category_str;
+        }
+    }
+
+    LOG(INFO)<<"GetCategoryBySuffixMatcher "<<totalCount;
+    return !frontCategories.empty();
 }
 
 bool QueryCategorizer::GetSplittedCategories_(
@@ -102,11 +138,11 @@ bool QueryCategorizer::GetSplittedCategories_(
 
     std::set<std::vector<UString> > splited_cat_set;
     for(std::vector<UString>::const_iterator it = frontends.begin();
-        it != frontends.end(); ++it)
+            it != frontends.end(); ++it)
     {
         UString frontendCategory = *it;
         if(frontendCategory.empty()) continue;
-		
+
         std::vector<std::vector<UString> > groupPaths;
         split_group_path(frontendCategory, groupPaths);
         if (groupPaths.empty()) continue;
@@ -117,7 +153,7 @@ bool QueryCategorizer::GetSplittedCategories_(
         splited_cat_set.insert(topGroup);
 
         for (std::vector<UString>::const_iterator it = topGroup.begin();
-             it != topGroup.end(); ++it)
+                it != topGroup.end(); ++it)
         {
             std::string str;
             it->convertString(str, UString::UTF_8);
@@ -129,24 +165,52 @@ bool QueryCategorizer::GetSplittedCategories_(
     return true;
 }
 
+void QueryCategorizer::SetWorkingMode(std::string& mode)
+{
+    if(mode.empty()) return;
+    LOG(INFO)<<"SetWorkingMode "<<mode;
+	
+    modes_.clear();
+    std::vector<std::string> modes;
+    boost::algorithm::split( modes, mode, boost::algorithm::is_any_of("+") );
+    for(unsigned i = 0; i < modes.size(); ++i)	
+    {
+        if(modes[i] == "M") modes_.push_back(MATCHER);
+        else if(modes[i] == "S") modes_.push_back(SEARCH_SPU);
+        else if(modes[i] == "P") modes_.push_back(SEARCH_PRODUCT);
+    }
+}
+
 bool QueryCategorizer::GetProductCategory(
-        const std::string& query,
-        int limit,
-        std::vector<std::vector<std::string> >& pathVec)
+    const std::string& query,
+    int limit,
+    std::vector<std::vector<std::string> >& pathVec)
 {
     std::string enriched_query;
     std::vector<UString> frontCategories;
     assert(spu_classifier_);
+
     spu_classifier_->GetEnrichedQuery(query, enriched_query);
     LOG(INFO)<<"GetEnrichedQuery "<<enriched_query;
 
-    GetCategoryByMatcher_(enriched_query, limit, frontCategories);
-    LOG(INFO)<<"GetCategoryByMatcher "<<frontCategories.size();
-
-    GetCategoryBySPU_(enriched_query, frontCategories);
-    LOG(INFO)<<"GetCategoryBySPU "<<frontCategories.size();
-
-    GetCategoryBySuffixMatcher_(enriched_query, frontCategories);
+    for(unsigned i = 0; i < modes_.size(); ++i)
+    {
+        switch(modes_[i])
+        {
+        case MATCHER:
+            GetCategoryByMatcher_(enriched_query, limit, frontCategories);
+            LOG(INFO)<<"GetCategoryByMatcher "<<frontCategories.size();
+            break;
+        case SEARCH_SPU:
+            GetCategoryBySPU_(enriched_query, frontCategories);
+            LOG(INFO)<<"GetCategoryBySPU "<<frontCategories.size();
+            break;
+        case SEARCH_PRODUCT:
+            GetCategoryBySuffixMatcher_(enriched_query, frontCategories);
+            LOG(INFO)<<"GetCategoryByProduct "<<frontCategories.size();
+            break;
+        }
+    }
 
     return GetSplittedCategories_(frontCategories, limit, pathVec);
 }

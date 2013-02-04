@@ -562,7 +562,7 @@ bool MiningManager::open()
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
             product_categorizer_->SetSuffixMatchManager(suffixMatchManager_);
-
+            product_categorizer_->SetDocumentManager(document_manager_);
             // reading suffix config and load filter data here.
             boost::shared_ptr<FilterManager>& filter_manager = suffixMatchManager_->getFilterManager();
             filter_manager->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
@@ -674,6 +674,7 @@ bool MiningManager::open()
             SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
             product_classifier->Open(res_path+"/spu-classifier");
             product_categorizer_->SetSPUProductClassifier(product_classifier);
+            product_categorizer_->SetWorkingMode(mining_schema_.product_categorizer_mode);
             //test
             std::ifstream ifs("./querylog.txt");
             std::string line;
