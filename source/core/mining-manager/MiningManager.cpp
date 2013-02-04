@@ -36,7 +36,6 @@
 
 #include "util/split_ustr.h"
 #include "group-label-logger/GroupLabelLogger.h"
-#include "group-label-logger/BackendLabel2FrontendLabel.h"
 #include "group-label-logger/GroupLabelKnowledge.h"
 #include "merchant-score-manager/MerchantScoreManager.h"
 #include "custom-rank-manager/CustomDocIdConverter.h"
@@ -2060,6 +2059,30 @@ bool MiningManager::GetSuffixMatch(
     return true;
 }
 
+bool HasCategoryPrefix(
+    const std::vector<UString>& category, 
+    std::set<std::vector<UString> >& categories)
+{
+    std::set<std::vector<UString> >::iterator cit = categories.begin();
+    for(; cit != categories.end(); ++cit)
+    {
+        const std::vector<UString>& c = *cit;
+        size_t levels = std::min(category.size(), c.size());
+        size_t i = 0;
+        bool isPrefix = true;
+        for(; i < levels; ++i)
+        {
+            if(category[i] != c[i])
+            {
+                isPrefix = false;
+                break;
+            }
+        }
+        if(isPrefix) return true;
+    }
+    return false;
+}
+
 bool MiningManager::GetProductCategory(
     const std::string& squery,
     int limit,
@@ -2070,31 +2093,27 @@ bool MiningManager::GetProductCategory(
     std::vector<UString> frontends;
     GetProductFrontendCategory(query,limit, frontends);
     if(!SPUProductClassifier::Get()->GetProductCategory(squery, limit, frontends))
-		return false;
-    if(frontends.empty())
         return false;
-    std::set<UString> cat_set;
+    if(frontends.empty()) return false;
+    //std::set<UString> cat_set;
+    std::set<std::vector<UString> > splited_cat_set;
     for(std::vector<UString>::const_iterator it = frontends.begin();
         it != frontends.end(); ++it)
     {
         UString frontendCategory = *it;
-		
         if(frontendCategory.empty()) continue;
-        //if (!BackendLabelToFrontendLabel::Get()->Map(*bcit, frontendCategory))
-        //{
-            //if(!BackendLabelToFrontendLabel::Get()->PrefixMap(*bcit, frontendCategory))
-                //continue;
-        //}
-        if(cat_set.find(frontendCategory) != cat_set.end()) continue;
-        cat_set.insert(frontendCategory);
+        //if(cat_set.find(frontendCategory) != cat_set.end()) continue;
+        //cat_set.insert(frontendCategory);
 		
         std::vector<std::vector<UString> > groupPaths;
         split_group_path(frontendCategory, groupPaths);
-        if (groupPaths.empty())
-            continue;
+        if (groupPaths.empty()) continue;
+
         std::vector<std::string> path;
         const std::vector<UString>& topGroup = groupPaths[0];
-        if(topGroup.size() < 3) continue; //only return leaf node
+        if(HasCategoryPrefix(topGroup, splited_cat_set)) continue;
+        splited_cat_set.insert(topGroup);
+
         for (std::vector<UString>::const_iterator it = topGroup.begin();
              it != topGroup.end(); ++it)
         {
@@ -2104,7 +2123,7 @@ bool MiningManager::GetProductCategory(
         }
         pathVec.push_back(path);
     }
-	if(pathVec.size() > limit) pathVec.resize(limit);
+    if(pathVec.size() > (unsigned)limit) pathVec.resize(limit);
     return true;
 }
 
