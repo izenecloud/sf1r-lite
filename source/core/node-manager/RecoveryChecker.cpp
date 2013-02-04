@@ -169,7 +169,6 @@ void RecoveryChecker::removeCollection(const std::string& colname)
 
 bool RecoveryChecker::setRollbackFlag(uint32_t inc_id)
 {
-    boost::unique_lock<boost::mutex> lock(mutex_);
     if (bfs::exists(rollback_file_))
     {
         LOG(ERROR) << "rollback_file already exist, this mean last rollback is not finished. must exit.";
@@ -356,7 +355,8 @@ bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
 // rollback the data before last failed request.
 bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
 {
-    boost::unique_lock<boost::mutex> lock(mutex_);
+    // rollback will only happen in recovery or abort request, both of them 
+    // are protected by the lock of node state in NodeManagerBase. 
     // not all inc_id has a backup, so we just find the newest backup.
     if (!bfs::exists(rollback_file_))
     {
@@ -403,8 +403,12 @@ bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
     }
     if (has_backup && need_restore_backupfile)
     {
-        // stop collection will change the metamap so we need a copy. 
-        CollInfoMapT tmp_all_col_info = all_col_info_;
+        CollInfoMapT tmp_all_col_info;
+        {
+            boost::unique_lock<boost::mutex> lock(mutex_);
+            // stop collection will change the metamap so we need a copy. 
+            tmp_all_col_info = all_col_info_;
+        }
         CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
         while(cit != tmp_all_col_info.end())
         {
