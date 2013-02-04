@@ -27,7 +27,7 @@ namespace sf1r
 CollectionManager::CollectionManager()
 {
     RecoveryChecker::get()->setRestartCallback(
-        boost::bind(&CollectionManager::startCollection, this, _1, _2, false),
+        boost::bind(&CollectionManager::startCollection, this, _1, _2, false, false),
         boost::bind(&CollectionManager::stopCollection, this, _1, _2));
 
     RecoveryChecker::get()->setColCallback(
@@ -62,7 +62,8 @@ CollectionManager::MutexType* CollectionManager::getCollectionMutex(const std::s
     return mutex;
 }
 
-bool CollectionManager::startCollection(const string& collectionName, const std::string& configFileName, bool fixBasePath)
+bool CollectionManager::startCollection(const string& collectionName,
+    const std::string& configFileName, bool fixBasePath, bool checkdata)
 {
     try{
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
@@ -125,7 +126,7 @@ bool CollectionManager::startCollection(const string& collectionName, const std:
         recommendBundleConfig->collPath_ =  indexBundleConfig->collPath_;
     }
 
-    if(!RecoveryChecker::get()->checkAndRestoreBackupFile(collectionMeta.getCollectionPath()))
+    if(checkdata && !RecoveryChecker::get()->checkAndRestoreBackupFile(collectionMeta.getCollectionPath()))
     {
         throw std::runtime_error("start collection failed while check backup file and restore.");
     }

@@ -48,7 +48,8 @@ public:
     bool startCollection(
             const std::string& collectionName,
             const std::string& configFileName,
-            bool fixBasePath = false);
+            bool fixBasePath = false,
+            bool checkdata = false);
 
     bool stopCollection(const std::string& collectionName, bool clear = false);
     void flushCollection(const std::string& collectionName);

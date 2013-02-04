@@ -384,7 +384,8 @@ int CobraProcess::run()
                     if(!boost::iequals(bfs::path(*iter).filename().string(),"sf1config.xml"))
                     {
                         std::string collectionName = bfs::path(*iter).filename().string().substr(0,bfs::path(*iter).filename().string().rfind(".xml"));
-                        CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
+                        CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string(),
+                            false, true);
                         scheduleTask(collectionName);
                     }
             }
