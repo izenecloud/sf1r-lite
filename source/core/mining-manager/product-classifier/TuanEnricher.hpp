@@ -1,5 +1,5 @@
-#ifndef SF1R_MINING_SUFFIX_MATCH_SPU_PRODUCT_CLASSIFER_HPP_
-#define SF1R_MINING_SUFFIX_MATCH_SPU_PRODUCT_CLASSIFER_HPP_
+#ifndef SF1R_MINING_SUFFIX_MATCH_TUAN_ENRICHER_HPP_
+#define SF1R_MINING_SUFFIX_MATCH_TUAN_ENRICHER_HPP_
 
 #include <document-manager/Document.h>
 
@@ -24,9 +24,8 @@ class Knowledge;
 namespace sf1r
 {
 class DocContainer;
-class TuanEnricher;
 using izenelib::util::UString;
-class SPUProductClassifier
+class TuanEnricher
 {
 public:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
@@ -34,33 +33,25 @@ public:
     typedef FMIndexType::MatchRangeT RangeT;
     typedef FMIndexType::MatchRangeListT RangeListT;
 
-    SPUProductClassifier();
+    TuanEnricher(
+        const std::string& resource,
+        cma::Analyzer* analyzer,
+        cma::Knowledge* knowledge);
 
-    ~SPUProductClassifier();
+    ~TuanEnricher();
 
-    static SPUProductClassifier* Get()
-    {
-        return ::izenelib::util::Singleton<SPUProductClassifier>::get();
-    }
-
-    void Open(const std::string& resource);
-
-    bool GetProductCategory(
-        const std::string& query,
-        std::vector<UString>& frontCategories);
-
-    bool GetEnrichedQuery(
+    void GetEnrichedQuery(
         const std::string& query,
         std::string& enriched);
 
 private:
-    void InitOnce_(const std::string& resource);
+    void Open_(const std::string& resource);
 
     std::string resource_path_;
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
     DocContainer* doc_container_;
-    TuanEnricher* tuan_enricher_;
+
     izenelib::cache::IzeneCache<uint32_t, Document, izenelib::util::ReadWriteLock> documentCache_;
 
     struct PropertyFMIndex

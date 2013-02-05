@@ -54,7 +54,7 @@ private:
         ar & ise_enable & ise_property;
         ar & recommend_tg & recommend_querylog & recommend_properties;
         ar & summarization_enable & summarization_schema;
-        ar & product_matcher_enable;
+        ar & product_matcher_enable & product_categorizer_mode;
     }
 
 public:
@@ -99,6 +99,7 @@ public:
     SuffixMatchConfig suffixmatch_schema;
 
     bool product_matcher_enable;
+    std::string product_categorizer_mode;
 };
 
 } // namespace

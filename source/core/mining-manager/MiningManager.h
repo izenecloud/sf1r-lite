@@ -103,6 +103,7 @@ class NaiveTopicDetector;
 class SuffixMatchManager;
 class IncrementalManager;
 class ProductMatcher;
+class QueryCategorizer;
 class MiningTaskBuilder;
 class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
@@ -684,6 +685,8 @@ private:
     /** Product Matcher */
     std::vector<boost::regex> match_category_restrict_;
 
+    /** Product Query Categorizer */
+    QueryCategorizer* product_categorizer_;
     /** KV */
     std::string kv_path_;
     KVSubManager* kvManager_;

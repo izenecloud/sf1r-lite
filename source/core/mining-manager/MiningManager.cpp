@@ -36,7 +36,6 @@
 
 #include "util/split_ustr.h"
 #include "group-label-logger/GroupLabelLogger.h"
-#include "group-label-logger/BackendLabel2FrontendLabel.h"
 #include "group-label-logger/GroupLabelKnowledge.h"
 #include "merchant-score-manager/MerchantScoreManager.h"
 #include "custom-rank-manager/CustomDocIdConverter.h"
@@ -55,6 +54,7 @@
 #include "suffix-match-manager/FMIndexManager.h"
 
 #include "product-classifier/SPUProductClassifier.hpp"
+#include "product-classifier/QueryCategorizer.hpp"
 
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
@@ -163,6 +163,7 @@ MiningManager::MiningManager(
     , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
+    , product_categorizer_(NULL)
     , kvManager_(NULL)
     , miningTaskBuilder_(NULL)
     , deleted_doc_before_mining_(0)
@@ -191,6 +192,7 @@ MiningManager::~MiningManager()
     if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
+    if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
     if (miningTaskBuilder_) delete miningTaskBuilder_;
     close();
@@ -291,6 +293,8 @@ bool MiningManager::open()
         {
             miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);
         }
+
+        product_categorizer_ = new QueryCategorizer;
 
         /** TG */
         if (mining_schema_.tg_enable)
@@ -541,7 +545,7 @@ bool MiningManager::open()
                                                     document_manager_,
                                                     index_manager_,
                                                     c_analyzer_);
-
+            miningTaskBuilder_->addTask(summarizationManager_);
             if (!mining_schema_.summarization_schema.uuidPropName.empty())
             {
                 //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
@@ -559,6 +563,8 @@ bool MiningManager::open()
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
+            product_categorizer_->SetSuffixMatchManager(suffixMatchManager_);
+            product_categorizer_->SetDocumentManager(document_manager_);
             // reading suffix config and load filter data here.
             boost::shared_ptr<FilterManager>& filter_manager = suffixMatchManager_->getFilterManager();
             filter_manager->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
@@ -666,8 +672,11 @@ bool MiningManager::open()
                 matcher->SetUsePriceSim(false);
                 matcher->SetCategoryMaxDepth(2);
             }
+            product_categorizer_->SetProductMatcher(matcher);
             SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
             product_classifier->Open(res_path+"/spu-classifier");
+            product_categorizer_->SetSPUProductClassifier(product_classifier);
+            product_categorizer_->SetWorkingMode(mining_schema_.product_categorizer_mode);
             //test
             std::ifstream ifs("./querylog.txt");
             std::string line;
@@ -929,10 +938,10 @@ bool MiningManager::DoMiningCollection()
     }
 
     // do Summarization
-    if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isSyncSCDOnly)
+    /*if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isSyncSCDOnly)
     {
         summarizationManager_->EvaluateSummarization();
-    }
+    }*/
 
     deleted_doc_before_mining_ = 0;
     return true;
@@ -2065,49 +2074,9 @@ bool MiningManager::GetSuffixMatch(
 bool MiningManager::GetProductCategory(
     const std::string& squery,
     int limit,
-    std::vector<std::vector<std::string> >& pathVec
-)
+    std::vector<std::vector<std::string> >& pathVec)
 {
-    UString query(squery, UString::UTF_8);
-    std::vector<UString> frontends;
-    GetProductFrontendCategory(query,limit, frontends);
-    if(!SPUProductClassifier::Get()->GetProductCategory(squery, limit, frontends))
-		return false;
-    if(frontends.empty())
-        return false;
-    std::set<UString> cat_set;
-    for(std::vector<UString>::const_iterator it = frontends.begin();
-        it != frontends.end(); ++it)
-    {
-        UString frontendCategory = *it;
-		
-        if(frontendCategory.empty()) continue;
-        //if (!BackendLabelToFrontendLabel::Get()->Map(*bcit, frontendCategory))
-        //{
-            //if(!BackendLabelToFrontendLabel::Get()->PrefixMap(*bcit, frontendCategory))
-                //continue;
-        //}
-        if(cat_set.find(frontendCategory) != cat_set.end()) continue;
-        cat_set.insert(frontendCategory);
-		
-        std::vector<std::vector<UString> > groupPaths;
-        split_group_path(frontendCategory, groupPaths);
-        if (groupPaths.empty())
-            continue;
-        std::vector<std::string> path;
-        const std::vector<UString>& topGroup = groupPaths[0];
-        if(topGroup.size() < 3) continue; //only return leaf node
-        for (std::vector<UString>::const_iterator it = topGroup.begin();
-             it != topGroup.end(); ++it)
-        {
-            std::string str;
-            it->convertString(str, UString::UTF_8);
-            path.push_back(str);
-        }
-        pathVec.push_back(path);
-    }
-	if(pathVec.size() > limit) pathVec.resize(limit);
-    return true;
+    return product_categorizer_->GetProductCategory(squery, limit, pathVec);
 }
 
 bool MiningManager::GetProductCategory(const UString& query, UString& backend)
