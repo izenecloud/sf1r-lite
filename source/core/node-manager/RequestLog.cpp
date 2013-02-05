@@ -38,6 +38,14 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("commands_index");
     write_req_set_.insert("commands_mining");
     write_req_set_.insert("commands_optimize_index");
+    write_req_set_.insert("recommend_add_user");
+    write_req_set_.insert("recommend_update_user");
+    write_req_set_.insert("recommend_remove_user");
+    write_req_set_.insert("recommend_purchase_item");
+    write_req_set_.insert("recommend_rate_item");
+    write_req_set_.insert("recommend_visit_item");
+    write_req_set_.insert("recommend_update_shopping_cart");
+    write_req_set_.insert("recommend_track_event");
 }
 
 void ReqLogMgr::init(const std::string& basepath)

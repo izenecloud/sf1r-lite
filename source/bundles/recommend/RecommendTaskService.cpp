@@ -329,9 +329,23 @@ bool RecommendTaskService::visitItem(
     bool isRecItem
 )
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     if (sessionIdStr.empty())
     {
         LOG(ERROR) << "error in visitItem(), session id is empty";
+        DistributeRequestHooker::get()->processLocalFinished(false);
+        return false;
+    }
+
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
 
@@ -339,6 +353,7 @@ bool RecommendTaskService::visitItem(
     if (!itemIdGenerator_.strIdToItemId(itemIdStr, itemId) ||
         !visitManager_.addVisitItem(sessionIdStr, userIdStr, itemId, &visitMatrix_))
     {
+        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
@@ -346,9 +361,11 @@ bool RecommendTaskService::visitItem(
     {
         LOG(ERROR) << "error in VisitManager::visitRecommendItem(), userId: " << userIdStr
                    << ", itemId: " << itemId;
+        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
+    DistributeRequestHooker::get()->processLocalFinished(true);
     return true;
 }
 
@@ -358,7 +375,29 @@ bool RecommendTaskService::purchaseItem(
     const OrderItemVec& orderItemVec
 )
 {
-    return saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_);
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
+    std::vector<itemid_t> itemIdVec;
+    if (!prepareSaveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_, itemIdVec))
+    {
+        LOG(WARNING) << "saveOrder_ failed.";
+        DistributeRequestHooker::get()->processLocalFinished(false);
+        return false;
+    }
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_, itemIdVec);
+    DistributeRequestHooker::get()->processLocalFinished(ret);
+    return ret;
 }
 
 bool RecommendTaskService::updateShoppingCart(
@@ -366,11 +405,29 @@ bool RecommendTaskService::updateShoppingCart(
     const OrderItemVec& cartItemVec
 )
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     std::vector<itemid_t> itemIdVec;
     if (! convertOrderItemVec_(cartItemVec, itemIdVec))
+    {
+        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
+    }
 
-    return cartManager_.updateCart(userIdStr, itemIdVec);
+    NoAdditionNoRollbackReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = cartManager_.updateCart(userIdStr, itemIdVec);
+    DistributeRequestHooker::get()->processLocalFinished(ret);
+    return ret;
 }
 
 bool RecommendTaskService::trackEvent(
@@ -380,22 +437,58 @@ bool RecommendTaskService::trackEvent(
     const std::string& itemIdStr
 )
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     itemid_t itemId = 0;
     if (! itemIdGenerator_.strIdToItemId(itemIdStr, itemId))
+    {
+        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
+    }
 
-    return isAdd ? eventManager_.addEvent(eventStr, userIdStr, itemId) :
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = isAdd ? eventManager_.addEvent(eventStr, userIdStr, itemId) :
                    eventManager_.removeEvent(eventStr, userIdStr, itemId);
+
+    DistributeRequestHooker::get()->processLocalFinished(ret);
+    return ret;
 }
 
 bool RecommendTaskService::rateItem(const RateParam& param)
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     itemid_t itemId = 0;
     if (! itemIdGenerator_.strIdToItemId(param.itemIdStr, itemId))
+    {
+        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
+    }
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
 
-    return param.isAdd ? rateManager_.addRate(param.userIdStr, itemId, param.rate) :
+    bool ret = param.isAdd ? rateManager_.addRate(param.userIdStr, itemId, param.rate) :
                          rateManager_.removeRate(param.userIdStr, itemId);
+    DistributeRequestHooker::get()->processLocalFinished(ret);
+    return ret;
 }
 
 bool RecommendTaskService::buildCollection()
@@ -441,6 +534,7 @@ bool RecommendTaskService::buildCollection()
             //  remote storage enabled, so only need do recommend on primary.
             //  replica can get data from remote storage.
             ret = true;
+            LOG(INFO) << "the recommend configured as remote storage, so no need to do write on replicas.";
         }
         else
         {
@@ -758,7 +852,11 @@ void RecommendTaskService::loadOrderItem_(
     {
         OrderItemVec orderItemVec;
         orderItemVec.push_back(orderItem);
-        saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseCoVisitMatrix_);
+        std::vector<itemid_t> itemIdVec;
+        if (prepareSaveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseCoVisitMatrix_, itemIdVec))
+        {
+            saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseCoVisitMatrix_, itemIdVec);
+        }
     }
     else
     {
@@ -783,29 +881,44 @@ void RecommendTaskService::loadOrderItem_(
 
 void RecommendTaskService::saveOrderMap_(const OrderMap& orderMap)
 {
+    std::vector<itemid_t> itemIdVec;
     for (OrderMap::const_iterator it = orderMap.begin(); it != orderMap.end(); ++it)
     {
-        saveOrder_(it->first.first, it->first.second, it->second, &purchaseCoVisitMatrix_);
+        if (prepareSaveOrder_(it->first.first, it->first.second, it->second, & purchaseCoVisitMatrix_, itemIdVec))
+        {
+            saveOrder_(it->first.first, it->first.second, it->second, &purchaseCoVisitMatrix_, itemIdVec);
+        }
+        std::vector<itemid_t>().swap(itemIdVec);
     }
+}
+
+bool RecommendTaskService::prepareSaveOrder_(
+    const std::string& userIdStr,
+    const std::string& orderIdStr,
+    const OrderItemVec& orderItemVec,
+    RecommendMatrix* matrix,
+    std::vector<itemid_t>& itemIdVec
+    )
+{
+    if (orderItemVec.empty())
+    {
+        LOG(WARNING) << "empty order in " << __FUNCTION__;
+        return false;
+    }
+
+    if (! convertOrderItemVec_(orderItemVec, itemIdVec))
+        return false;
+    return true;
 }
 
 bool RecommendTaskService::saveOrder_(
     const std::string& userIdStr,
     const std::string& orderIdStr,
     const OrderItemVec& orderItemVec,
-    RecommendMatrix* matrix
+    RecommendMatrix* matrix,
+    std::vector<itemid_t>& itemIdVec
 )
 {
-    if (orderItemVec.empty())
-    {
-        LOG(WARNING) << "empty order in RecommendTaskService::saveOrder_()";
-        return false;
-    }
-
-    std::vector<itemid_t> itemIdVec;
-    if (! convertOrderItemVec_(orderItemVec, itemIdVec))
-        return false;
-
     orderManager_.addOrder(itemIdVec);
 
     if (purchaseManager_.addPurchaseItem(userIdStr, itemIdVec, matrix) &&

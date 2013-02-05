@@ -221,6 +221,14 @@ private:
      */
     void saveOrderMap_(const OrderMap& orderMap);
 
+    bool prepareSaveOrder_(
+        const std::string& userIdStr,
+        const std::string& orderIdStr,
+        const OrderItemVec& orderItemVec,
+        RecommendMatrix* matrix,
+        std::vector<itemid_t>& itemIdVec
+    );
+
     /**
      * save the order into @c orderManager_, @c purchaseManager_.
      * @param userIdStr the string of user id
@@ -232,7 +240,8 @@ private:
         const std::string& userIdStr,
         const std::string& orderIdStr,
         const OrderItemVec& orderItemVec,
-        RecommendMatrix* matrix
+        RecommendMatrix* matrix,
+        std::vector<itemid_t>& itemIdVec
     );
 
     bool insertPurchaseCounter_(
