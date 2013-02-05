@@ -4,6 +4,7 @@
 #include <boost/filesystem.hpp>
 #include <util/driver/writers/JsonWriter.h>
 #include <util/driver/readers/JsonReader.h>
+#include <util/scheduler.h>
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <node-manager/NodeManagerBase.h>
 
@@ -21,6 +22,7 @@ std::set<ReqLogType> DistributeRequestHooker::need_backup_types_;
 void DistributeRequestHooker::init()
 {
     need_backup_types_.insert(Req_NoAdditionData_NeedBackup_Req);
+    need_backup_types_.insert(Req_CronJob);
     need_backup_types_.insert(Req_Index);
     // init callback for distribute request.
     NodeManagerBase::get()->setCallback(
@@ -74,7 +76,16 @@ bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& 
         // return false to abortRequest.
         return false;
     }
-    bool ret = DistributeDriver::get()->handleReqFromPrimary(reqloghead.req_json_data, packed_reqdata);
+    bool ret = true;
+    if (reqloghead.reqtype == Req_CronJob)
+    {
+        LOG(ERROR) << "got a cron job request from primary." << reqloghead.req_json_data;
+        ret = izenelib::util::Scheduler::runJobImmediatly(reqloghead.req_json_data);
+    }
+    else
+    {
+        ret = DistributeDriver::get()->handleReqFromPrimary(reqloghead.req_json_data, packed_reqdata);
+    }
     if (!ret)
     {
         LOG(ERROR) << "send request come from primary failed in replica. " << reqloghead.req_json_data;

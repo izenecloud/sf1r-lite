@@ -71,13 +71,18 @@ bool ReqLogMgr::prepareReqLog(CommonReqData& prepared_reqdata, bool isprimary)
         prepared_reqdata.inc_id = inc_id_++;
     else
     {
+        if (prepared_reqdata.inc_id < inc_id_)
+        {
+            std::cerr << "!!!! prepared failed !!!. A prepared request from primary has lower inc_id than replica." << endl;
+            return false;
+        }
         inc_id_ = prepared_reqdata.inc_id + 1;
     }
     //prepared_reqdata.json_data_size = prepared_reqdata.req_json_data.size();
     prepared_req_.push_back(prepared_reqdata);
-    printf("prepare request success, isprimary %d, (id:%u, type:%u) ", isprimary,
-        prepared_reqdata.inc_id, prepared_reqdata.reqtype);
-    std::cout << endl;
+    //printf("prepare request success, isprimary %d, (id:%u, type:%u) ", isprimary,
+    //    prepared_reqdata.inc_id, prepared_reqdata.reqtype);
+    //std::cout << endl;
     return true;
 }
 
@@ -135,7 +140,7 @@ bool ReqLogMgr::appendReqData(const std::string& req_packed_data)
     ofs.close();
     ofs_head.close();
     std::vector<CommonReqData>().swap(prepared_req_);
-    std::cout << "append request log success: " << whead.inc_id << "," << whead.reqtime << std::endl;
+    //std::cout << "append request log success: " << whead.inc_id << "," << whead.reqtime << std::endl;
     return true;
 }
 
@@ -211,7 +216,7 @@ bool ReqLogMgr::getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& hea
             break;
         }
     }
-    std::cout << "get head offset by inc_id: " << inc_id << ", returned nearest id:" << ret_id << std::endl;
+    //std::cout << "get head offset by inc_id: " << inc_id << ", returned nearest id:" << ret_id << std::endl;
     inc_id = ret_id;
     return true;
 }
@@ -279,8 +284,8 @@ void ReqLogMgr::loadLastData()
             ReqLogHead lasthead;
             ifs.read((char*)&lasthead, sizeof(ReqLogHead));
             inc_id_ = lasthead.inc_id;
-            std::cout << "loading request log for last request: inc_id : " <<
-                inc_id_ << ", type:" << lasthead.reqtype << std::endl;
+            //std::cout << "loading request log for last request: inc_id : " <<
+            //    inc_id_ << ", type:" << lasthead.reqtype << std::endl;
             last_writed_id_ = inc_id_;
             ++inc_id_;
         }

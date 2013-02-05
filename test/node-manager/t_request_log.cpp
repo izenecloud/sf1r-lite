@@ -55,7 +55,9 @@ int main()
     bool isprimary = true;
     assert( !reqlogmgr.appendTypedReqLog(test_common_data) );
 
-    for (size_t i = 1; i < 10; ++i)
+    size_t primary_write_num = 100000;
+    size_t non_primary_write_num = 10000;
+    for (size_t i = 1; i < primary_write_num; ++i)
     {
         assert(reqlogmgr.prepareReqLog(test_common_data, isprimary));
         ReqLogMgr::packReqLogData(test_common_data, packed_data);
@@ -94,8 +96,8 @@ int main()
     }
     // test reload
     reqlogmgr.init("./test_reqlog");
-    assert( reqlogmgr.getLastSuccessReqId() == 9 );
-    for (size_t i = 1; i < 10; ++i)
+    assert( reqlogmgr.getLastSuccessReqId() == primary_write_num - 1 );
+    for (size_t i = 1; i < primary_write_num; ++i)
     {
         uint32_t inc_id = i;
         ReqLogHead head;
@@ -116,7 +118,14 @@ int main()
     }
 
     isprimary = false;
-    for (size_t i = 20; i < 200; i+=5)
+
+    for (size_t i = 1; i < primary_write_num; i+=500)
+    {
+        test_common_data.inc_id = i;
+        assert(!reqlogmgr.prepareReqLog(test_common_data, isprimary));
+        assert( !reqlogmgr.getPreparedReqLog(test_out) );
+    }
+    for (size_t i = primary_write_num + 1; i < primary_write_num + non_primary_write_num; i+=5)
     {
         test_common_data.inc_id = i;
         assert(reqlogmgr.prepareReqLog(test_common_data, isprimary));
@@ -153,7 +162,7 @@ int main()
         assert( reqlogmgr.getReqData(inc_id, head2, offset2, ret_packed_data2));
         assert( ret_packed_data == ret_packed_data2 );
     }
-    for (size_t i = 40; i < 150; i+=5)
+    for (size_t i = primary_write_num + 1; i < primary_write_num + 1 + non_primary_write_num - 10; i+=5)
     {
         uint32_t inc_id_before = i - 1;
         uint32_t inc_id_after = i + 1;

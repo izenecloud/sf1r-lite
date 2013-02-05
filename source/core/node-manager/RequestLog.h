@@ -27,6 +27,8 @@ enum ReqLogType
     // if the request will not change any data if failed.
     // Then you can use this kind. NoRollback means no backup too.
     Req_NoAdditionDataNoRollback,
+    // used for handle cron job task.
+    Req_CronJob,
     // index request need the scd file list which is not included in the request json data,
     // so we define a new request type, and add addition member.
     Req_Index,
@@ -101,6 +103,16 @@ struct NoAdditionNoRollbackReqLog: public CommonReqData
     NoAdditionNoRollbackReqLog()
     {
         reqtype = Req_NoAdditionDataNoRollback;
+    }
+};
+
+struct CronJobReqLog: public CommonReqData
+{
+    // note : for cron job, the req_json_data in CommonReqData
+    // is the job name.
+    CronJobReqLog()
+    {
+        reqtype = Req_CronJob;
     }
 };
 

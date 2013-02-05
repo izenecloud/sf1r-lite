@@ -1,5 +1,10 @@
 #include "MiningTaskService.h"
 #include <util/scheduler.h>
+#include <util/driver/Request.h>
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 
 namespace sf1r
 {
@@ -40,10 +45,34 @@ void MiningTaskService::DoContinue()
 
 void MiningTaskService::cronJob_()
 {
-    if (cronExpression_.matches_now())
+    if (cronExpression_.matches_now() || DistributeRequestHooker::get()->isHooked())
     {
+        if (NodeManagerBase::get()->isPrimary())
+        {
+            if (!MasterManagerBase::get()->prepareWriteReq())
+            {
+                LOG(INFO) << "prepare cronJob failed. maybe some other primary master prepared first. ";
+                return;
+            }
+            DistributeRequestHooker::get()->setHook(izenelib::driver::Request::FromDistribute, cronJobName_);
+            DistributeRequestHooker::get()->hookCurrentReq(cronJobName_);
+            LOG(INFO) << "cron job running on primary : " << cronJobName_;
+        }
+        if (!DistributeRequestHooker::get()->isValid())
+        {
+            LOG(INFO) << "cron job ignored : " << cronJobName_;
+            return;
+        }
+        CronJobReqLog reqlog;
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName_ << std::endl;
+            return;
+        }
+
         DoMiningCollection();
     }
+    DistributeRequestHooker::get()->processLocalFinished(true);
 }
 
 }
