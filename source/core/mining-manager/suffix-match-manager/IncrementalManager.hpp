@@ -30,7 +30,7 @@ namespace sf1r
 class DocumentManager;
 class LAManager;
 using izenelib::ir::idmanager::IDManager;
-using namespace boost::filesystem;
+namespace bfs = boost::filesystem;
 
 /**
 @brife use this 24 bit data to mark if is this position is hit or not;
@@ -137,7 +137,7 @@ public:
 
     bool checkLocalIndex_()
     {
-        if(boost::filesystem::exists(index_path_))
+        if (bfs::exists(index_path_))
         {
             if (load_())
             {
@@ -145,7 +145,7 @@ public:
             }
             else
             {
-                boost::filesystem::remove(index_path_);
+                bfs::remove(index_path_);
                 return false;
             }
         }
@@ -223,10 +223,10 @@ public:
 
     void setPosition_(std::vector<pair<uint32_t, unsigned short> >*& v)
     {
-        std::vector<pair<uint32_t, unsigned short> >::const_iterator it = (*v).begin();
-        for (; it != (*v).end(); ++it)
+        for (std::vector<pair<uint32_t, unsigned short> >::const_iterator it = v->begin();
+                it != v->end(); ++it)
         {
-            BitMapMatrix_[(*it).first - start_docid_].setBitMap((*it).second);//ADD OFFSET.....
+            BitMapMatrix_[it->first - start_docid_].setBitMap((it->second);//ADD OFFSET.....
         }
     }
 
@@ -237,22 +237,22 @@ public:
         std::vector<IndexItem>::const_iterator its = IndexItems_.begin();
         for (; it != IndexItems_.end(); ++its,++it)
         {
-            if ((*it).Docid_ == docid)
+            if (it->Docid_ == docid)
                 break;
         }
         for (std::vector<unsigned short>::const_iterator i = pos.begin(); i != pos.end(); ++i)
         {
             uint32_t k = 0;
             it = its;
-            while(k < MAX_POS_LEN)
+            while (k < MAX_POS_LEN)
             {
-                if ((*it).Docid_ == docid && (*it).Pos_ == *i)
+                if (it->Docid_ == docid && it->Pos_ == *i)
                 {
-                    termidSet.insert((*it).Termid_);
+                    termidSet.insert(it->Termid_);
                     break;
                 }
-                k++;
-                it++;
+                ++k;
+                ++it;
             }
         }
         for (std::set<uint32_t>::iterator i = termidSet.begin(); i != termidSet.end(); ++i)
@@ -290,19 +290,19 @@ public:
                 bool isNext = true;
                 for (unsigned short i = 0; i < MAX_POS_LEN; ++i)
                 {
-                    if(BitMapMatrix_[(*it).first - start_docid_].getBitMap(i))
+                    if (BitMapMatrix_[it->first - start_docid_].getBitMap(i))
                     {
                         temp.push_back(i);
                         isNext = true;
                     }
                     else
                     {
-                        if(isNext == false)
+                        if (isNext == false)
                         {
-                            if(temp.size() > longest.size())
+                            if (temp.size() > longest.size())
                             {
                                 longest = temp;
-                                resultDocid = (*it).first;
+                                resultDocid = it->first;
                             }
                             temp.clear();
                         }
@@ -312,10 +312,10 @@ public:
                         }
                     }
                 }
-                if(temp.size() > longest.size())
+                if (temp.size() > longest.size())
                 {
                     longest = temp;
-                    resultDocid = (*it).first;
+                    resultDocid = it->first;
                     temp.clear();
                 }
                 if (longest.size() > MAX_SUB_LEN)
@@ -475,7 +475,7 @@ public:
 
     bool checkLocalIndex_()
     {
-        if(boost::filesystem::exists(Increment_index_path_))
+        if (bfs::exists(Increment_index_path_))
         {
             if (load_())
             {
@@ -483,7 +483,7 @@ public:
             }
             else
             {
-                boost::filesystem::remove(Increment_index_path_);
+                bfs::remove(Increment_index_path_);
                 return false;
             }
         }
@@ -526,7 +526,7 @@ public:
         std::vector<pair<uint32_t, unsigned short> >* vresult = NULL;
         for (std::vector<uint32_t>::const_iterator i = termidList.begin(); i != termidList.end(); ++i)
         {
-            if(!getTermIdResult_(*i, vresult, size))
+            if (!getTermIdResult_(*i, vresult, size))
                 return;
             docidLists.push_back(vresult);
             sizeLists.push_back(size);
@@ -610,7 +610,7 @@ public:
             std::vector<std::vector<pair<uint32_t, unsigned short> >* >::const_iterator i = docidLists.begin();
             uint32_t count = 0;
             bool flag = true;
-            while(count < size)
+            while (count < size)
             {
                 if (count == label)
                 {
@@ -619,7 +619,7 @@ public:
                     continue;
                 }
                 iteratorList[count] = BinSearch_(**i, iteratorList[count], (**i).size(), (*iter).first);//XXXOPTIM
-                if( iteratorList[count] == -1)
+                if ( iteratorList[count] == -1)
                 {
                     flag = false;
                     break;
@@ -628,7 +628,7 @@ public:
                 count++;
             }
 
-            if(flag)
+            if (flag)
             {
                 if (resultList.size() == 0)
                 {
@@ -717,7 +717,7 @@ public:
         }
 
         unsigned int i = 0;
-        while( i < allIndexDocNum_)
+        while ( i < allIndexDocNum_)
         {
             unsigned int size = 0;
             std::vector<pair<uint32_t, unsigned short> > v;
@@ -754,7 +754,7 @@ public:
         {
             for (std::vector<pair<uint32_t, unsigned short> >::const_iterator iter = docids.begin(); iter != docids.end(); ++iter)
             {
-                docidLists_[(*it).second].push_back(*iter);
+                docidLists_[it->second].push_back(*iter);
             }
         }
         else
@@ -787,12 +787,12 @@ public:
 private:
     int BinSearch_(std::vector<pair<unsigned int, unsigned short> >&A, int min, int max, unsigned int key)
     {
-        while(min <= max)
+        while (min <= max)
         {
             int mid = (min + max)/2;
-            if(A[mid].first == key)
+            if (A[mid].first == key)
                 return mid;
-            else if(A[mid].first > key)
+            else if (A[mid].first > key)
                 max = mid - 1;
             else
                 min = mid + 1;
@@ -830,13 +830,13 @@ public:
 
     ~IndexBarrel()
     {
-        if (pForwardIndex_ != NULL)
+        if (pForwardIndex_)
         {
             delete pForwardIndex_;
             pForwardIndex_ = NULL;
         }
 
-        if (pIncrementIndex_ != NULL)
+        if (pIncrementIndex_)
         {
             delete pIncrementIndex_;
             pIncrementIndex_ = NULL;
@@ -845,22 +845,22 @@ public:
 
     void reset()
     {
-        if (pForwardIndex_ != NULL)
+        if (pForwardIndex_)
         {
             delete pForwardIndex_;
             pForwardIndex_ = NULL;
         }
 
-        if (pIncrementIndex_ != NULL)
+        if (pIncrementIndex_)
         {
             delete pIncrementIndex_;
             pIncrementIndex_ = NULL;
         }
-        path pathMainInc = doc_file_path_ + ".inc.idx";
-        path pathMainFd = doc_file_path_ + ".fd.idx";
+        bfs::path pathMainInc = doc_file_path_ + ".inc.idx";
+        bfs::path pathMainFd = doc_file_path_ + ".fd.idx";
 
-        boost::filesystem::remove(pathMainInc);
-        boost::filesystem::remove(pathMainFd);
+        bfs::remove(pathMainInc);
+        bfs::remove(pathMainFd);
     }
 
     bool init(std::string& path)
@@ -1046,10 +1046,10 @@ public:
         std::string pathTmpFd = index_path_ + "/Tmp.fd.idx";
         std::string pathLastDocid = index_path_ + "/last.docid";
 
-        if (boost::filesystem::exists(pathMainInc) && boost::filesystem::exists(pathMainFd))//main
+        if (bfs::exists(pathMainInc) && bfs::exists(pathMainFd))//main
         {
             init_();
-            if(!pMainBarrel_->load_())
+            if (!pMainBarrel_->load_())
             {
                 LOG(INFO) << "Index Wrong!!"<<endl;
                 delete_AllIndexFile();
@@ -1057,10 +1057,10 @@ public:
             }
             else
             {
-                if (boost::filesystem::exists(pathTmpInc) && boost::filesystem::exists(pathTmpFd))//tmp
+                if (bfs::exists(pathTmpInc) && bfs::exists(pathTmpFd))//tmp
                 {
                     init_tmpBerral();
-                    if(!pTmpBarrel_->load_())
+                    if (!pTmpBarrel_->load_())
                     {
                         LOG(INFO) << "Index Wrong!!"<<endl;
                         delete_AllIndexFile();
@@ -1076,7 +1076,7 @@ public:
         }
         if (flag)
         {
-            if(loadLastDocid_())
+            if (loadLastDocid_())
             {
                 isStartFromLocal_ = true;
             }
@@ -1156,11 +1156,11 @@ public:
         vector<vector<unsigned int> > d(len1 + 1, vector<unsigned int>(len2 + 1));
 
         d[0][0] = 0;
-        for(unsigned int i = 1; i <= len1; ++i) d[i][0] = i;
-        for(unsigned int i = 1; i <= len2; ++i) d[0][i] = i;
+        for (unsigned int i = 1; i <= len1; ++i) d[i][0] = i;
+        for (unsigned int i = 1; i <= len2; ++i) d[0][i] = i;
 
-        for(unsigned int i = 1; i <= len1; ++i)
-            for(unsigned int j = 1; j <= len2; ++j)
+        for (unsigned int i = 1; i <= len1; ++i)
+            for (unsigned int j = 1; j <= len2; ++j)
 
                 d[i][j] = std::min( std::min(d[i - 1][j] + 1,d[i][j - 1] + 1),
                                     d[i - 1][j - 1] + (s1[i - 1] == s2[j - 1] ? 0 : 1) );
@@ -1172,7 +1172,7 @@ public:
     bool index_(uint32_t& docId, std::string propertyString)
     {
 
-        if(IndexedDocNum_ >= MAX_INCREMENT_DOC)
+        if (IndexedDocNum_ >= MAX_INCREMENT_DOC)
             return false;
         if ( isInitIndex_ == false)
         {
@@ -1181,7 +1181,7 @@ public:
                 if (pTmpBarrel_ != NULL)
                 {
                     pTmpBarrel_->setStatus();
-                    if(!pTmpBarrel_->buildIndex_(docId, propertyString))
+                    if (!pTmpBarrel_->buildIndex_(docId, propertyString))
                         return false;
                 }
                 IndexedDocNum_++;
@@ -1193,7 +1193,7 @@ public:
                 if (pMainBarrel_ != NULL)
                 {
                     pMainBarrel_->setStatus();
-                    if(!pMainBarrel_->buildIndex_(docId, propertyString))
+                    if (!pMainBarrel_->buildIndex_(docId, propertyString))
                         return false;
                 }
                 IndexedDocNum_++;
@@ -1204,15 +1204,15 @@ public:
 
     void delete_AllIndexFile()
     {
-        path pathMainInc = index_path_ + "/Main.inc.idx";
-        path pathMainFd = index_path_ + "/Main.fd.idx";
-        path pathTmpInc = index_path_ + "/Tmp.inc.idx";
-        path pathTmpFd = index_path_ + "/Tmp.fd.idx";
+        bfs::path pathMainInc = index_path_ + "/Main.inc.idx";
+        bfs::path pathMainFd = index_path_ + "/Main.fd.idx";
+        bfs::path pathTmpInc = index_path_ + "/Tmp.inc.idx";
+        bfs::path pathTmpFd = index_path_ + "/Tmp.fd.idx";
 
-        boost::filesystem::remove(pathMainInc);
-        boost::filesystem::remove(pathMainFd);
-        boost::filesystem::remove(pathTmpInc);
-        boost::filesystem::remove(pathTmpFd);
+        bfs::remove(pathMainInc);
+        bfs::remove(pathMainFd);
+        bfs::remove(pathTmpInc);
+        bfs::remove(pathTmpFd);
     }
 
     bool fuzzySearch_(const std::string& query, std::vector<uint32_t>& resultList, std::vector<double> &ResultListSimilarity);
@@ -1256,7 +1256,7 @@ public:
 
     void reset()
     {
-        if(pMainBarrel_)
+        if (pMainBarrel_)
         {
             pMainBarrel_->reset();
             delete pMainBarrel_;

@@ -512,16 +512,12 @@ void FilterManager::buildDateFilters(
                     date_it != original_date.end(); ++date_it)
             {
                 const NumFilterKeyT& num_key = (NumFilterKeyT)(*date_it);
-                NumFilterItemMapT::iterator it = date_filter_data[j].find(num_key);
-                if (it != date_filter_data[j].end())
+                FilterDocListT& item = date_filter_data[j][num_key];
+                if (item.empty())
                 {
-                    it->second.push_back(docid);
-                }
-                else
-                {
-                    date_filter_data[j][num_key].push_back(docid);
                     num_key_set.push_back(num_key);
                 }
+                item.push_back(docid);
             }
         }
         // sort num_key_set in asc order
