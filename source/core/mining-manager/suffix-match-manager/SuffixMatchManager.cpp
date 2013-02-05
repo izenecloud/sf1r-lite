@@ -169,6 +169,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
         std::vector<std::pair<double, uint32_t> >& res_list) const
 {
     if (!fmi_manager_) return 0;
+    if (pattern.empty()) return 0;
 
     std::map<uint32_t, double> res_list_map;
     std::vector<uint32_t> docid_list;
@@ -245,7 +246,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         std::vector<std::pair<double, uint32_t> >& res_list) const
 {
     if (!analyzer_) return 0;
-
+    if (pattern_orig.empty()) return 0;
     std::map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > match_ranges_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
