@@ -314,7 +314,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     continue;
                 std::pair<size_t, size_t> sub_match_range;
                 size_t matched = fmi_manager_->backwardSearch(search_property, all_sub_strpatterns[i], sub_match_range);
-                LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
+                //LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
                 if (matched == all_sub_strpatterns[i].length())
                 {
                     match_ranges_list.push_back(sub_match_range);

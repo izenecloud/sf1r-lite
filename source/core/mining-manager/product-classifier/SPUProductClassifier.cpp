@@ -155,7 +155,7 @@ bool SPUProductClassifier::GetProductCategory(
             const UString& pattern = all_sub_strpatterns[i];
             std::pair<size_t, size_t> sub_match_range;
             size_t matched = cit->second.fmi->backwardSearch(pattern.data(), pattern.length(), sub_match_range);
-            LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
+            //LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
             if (matched == all_sub_strpatterns[i].length())
             {
                 match_ranges_list.push_back(sub_match_range);
@@ -199,11 +199,24 @@ bool SPUProductClassifier::GetProductCategory(
         res_list.erase(res_list.begin() + max_docs, res_list.end());
 
     ProductMatcher* matcher = ProductMatcherInstance::get();
-    for(size_t i = 0; i < res_list.size(); ++i)
+
+    std::map<docid_t, int> doc_idx_map;
+    const unsigned int docListSize = res_list.size();
+    std::vector<std::pair<unsigned int, double> > ids(docListSize);
+
+    for (unsigned int i=0; i<docListSize; i++)
     {
-        uint32_t docId = res_list[i].second;
+        docid_t docId = res_list[i].second;
         double score = res_list[i].first;
         if((0 == i) && (score < 6.0F)) return false;
+        doc_idx_map[docId] = i;
+        ids[i] = std::make_pair(docId,score);
+    }
+
+    for(unsigned i = 0; i < docListSize; ++i)
+    {
+        uint32_t docId = ids[i].first;
+        double score = ids[i].second;
         if(score < 6.0F) break;
         //LOG(INFO) <<"doc "<<docId;
         Document doc;

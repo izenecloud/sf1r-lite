@@ -181,9 +181,20 @@ void TuanEnricher::GetEnrichedQuery(
         res_list.erase(res_list.begin() + max_docs, res_list.end());
 
     size_t topK = res_list.size() < 4 ? res_list.size() : 4;
+
+    std::map<docid_t, int> doc_idx_map;
+    std::vector<unsigned int> ids(topK);
+
+    for (unsigned int i=0; i<topK; i++)
+    {
+        docid_t docId = res_list[i].second;
+        doc_idx_map[docId] = i;
+        ids[i] = docId;
+    }
+
     for(size_t i = 0; i < topK; ++i)
     {
-        uint32_t docId = res_list[i].second;
+        uint32_t docId = ids[i];
         Document doc;
         if (!documentCache_.getValue(docId, doc))
         {

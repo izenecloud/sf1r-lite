@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <util/ustring/UString.h>
+#include <cache/IzeneCache.h>
 
 namespace sf1r
 {
@@ -76,6 +77,7 @@ private:
     boost::shared_ptr<DocumentManager> document_manager_;
 
     std::vector<ClassifierType> modes_;
+    izenelib::cache::IzeneCache<std::string, std::vector<std::vector<std::string> >, izenelib::util::ReadWriteLock> cache_;
 };
 
 }

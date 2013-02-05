@@ -6,6 +6,8 @@
 #include <b5m-manager/product_matcher.h>
 #include <query-manager/ActionItem.h>
 
+#include <util/ClockTimer.h>
+
 #include <boost/algorithm/string.hpp>
 #include <glog/logging.h>
 #include <set>
@@ -41,6 +43,7 @@ QueryCategorizer::QueryCategorizer()
     :matcher_(NULL)
     ,spu_classifier_(NULL)
     ,suffix_manager_(NULL)
+    ,cache_(10000)
 {
     modes_.push_back(SEARCH_PRODUCT);	
     modes_.push_back(SEARCH_SPU);
@@ -107,29 +110,37 @@ bool QueryCategorizer::GetCategoryBySuffixMatcher_(
     std::vector<QueryFiltering::FilteringType> filter_param;
     faceted::GroupParam groupParam;
     std::vector<std::pair<double, uint32_t> > res_list;
-
-    uint32_t totalCount = suffix_manager_->AllPossibleSuffixMatch(
+    suffix_manager_->AllPossibleSuffixMatch(
                               queryU, search_in_properties, max_docs,SearchingMode::DefaultFilterMode,
                               filter_param, groupParam, res_list);
     std::set<UString> cat_set;
-    for(unsigned i = 0; i < res_list.size(); ++i)
-    {
-        Document doc;
-        uint32_t docId = res_list[i].second;
-        if(document_manager_->getDocument(docId, doc))
-        {
-            UString category = doc.property("TargetCategory").get<izenelib::util::UString>();
-            if(cat_set.find(category) != cat_set.end()) continue;
-            cat_set.insert(category);
 
-            frontCategories.push_back(category);
-            std::string category_str;
-            category.convertString(category_str, UString::UTF_8);
-            LOG(INFO) << category_str;
-        }
+    std::map<docid_t, int> doc_idx_map;
+    const unsigned int docListSize = res_list.size();
+    std::vector<unsigned int> ids(docListSize);
+
+    for (unsigned int i=0; i<docListSize; i++)
+    {
+        docid_t docId = res_list[i].second;
+        doc_idx_map[docId] = i;
+        ids[i] = docId;
     }
 
-    LOG(INFO)<<"GetCategoryBySuffixMatcher "<<totalCount;
+    std::vector<Document> docs;
+    document_manager_->getDocuments(ids, docs, true);
+    for(unsigned i = 0; i < docs.size(); ++i)
+    {
+        Document& doc = docs[i];
+        UString category = doc.property("TargetCategory").get<izenelib::util::UString>();
+        if(category.empty() ||cat_set.find(category) != cat_set.end()) continue;
+        cat_set.insert(category);
+
+        frontCategories.push_back(category);
+        std::string category_str;
+        category.convertString(category_str, UString::UTF_8);
+        LOG(INFO) << category_str;
+    }
+
     return !frontCategories.empty();
 }
 
@@ -190,10 +201,11 @@ bool QueryCategorizer::GetProductCategory(
     int limit,
     std::vector<std::vector<std::string> >& pathVec)
 {
+    if (cache_.getValue(query, pathVec)) return !pathVec.empty();
+
     std::string enriched_query;
     std::vector<UString> frontCategories;
     assert(spu_classifier_);
-
     spu_classifier_->GetEnrichedQuery(query, enriched_query);
     LOG(INFO)<<"GetEnrichedQuery "<<enriched_query;
 
@@ -215,8 +227,9 @@ bool QueryCategorizer::GetProductCategory(
             break;
         }
     }
-
-    return GetSplittedCategories_(frontCategories, limit, pathVec);
+    bool ret = GetSplittedCategories_(frontCategories, limit, pathVec);
+    cache_.insertValue(query, pathVec);
+    return ret;
 }
 
 }
