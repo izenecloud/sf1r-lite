@@ -52,7 +52,7 @@ bool DistributeRequestHooker::isValid()
 
 void DistributeRequestHooker::hookCurrentReq(const std::string& reqdata)
 {
-    if (!current_req_.empty() || req_log_mgr_)
+    if (req_log_mgr_)
     {
         // for the request that will shard to different node, 
         // it is normal to be hook twice. 

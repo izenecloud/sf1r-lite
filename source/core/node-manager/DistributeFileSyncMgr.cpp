@@ -227,6 +227,8 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
                         ++backup_dirs_it;
                     }
                 }
+                // get scd file for recommend.
+                getFileList((colpath.getScdPath()/bfs::path("recommend/")).string(), reqdata.scd_list, std::set<std::string>(), true);
             }
             req.result(reqdata);
         }

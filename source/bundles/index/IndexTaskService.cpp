@@ -44,13 +44,11 @@ bool IndexTaskService::HookDistributeRequest(bool shard)
     {
         indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "HookDistributeRequest", (int)hooktype, reqdata, ret);
     }
-    // local hook has been moved to the request controller.
-    //else
-    //{
-    //    // hook from primary and log redo means replica is processing the request.
-    //    // So do not distribute the request to shard worker.
-    //    indexWorker_->HookDistributeRequest((int)hooktype, reqdata, ret);
-    //}
+    else
+    {
+        // local hook has been moved to the request controller.
+        ret = true;
+    }
     if (!ret)
     {
         LOG(WARNING) << "Request failed, HookDistributeRequest failed.";
