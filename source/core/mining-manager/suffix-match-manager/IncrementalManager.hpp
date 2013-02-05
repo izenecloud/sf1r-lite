@@ -226,7 +226,7 @@ public:
         for (std::vector<pair<uint32_t, unsigned short> >::const_iterator it = v->begin();
                 it != v->end(); ++it)
         {
-            BitMapMatrix_[it->first - start_docid_].setBitMap((it->second);//ADD OFFSET.....
+            BitMapMatrix_[it->first - start_docid_].setBitMap(it->second);//ADD OFFSET.....
         }
     }
 
