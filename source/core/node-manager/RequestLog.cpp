@@ -13,7 +13,8 @@ std::set<std::string> ReqLogMgr::write_req_set_;
 // 2. In Controller Handler, the preprocess in base Sf1Controller will handle the distribute properly,
 //  and hook the request if needed. But if the request need to be sharded to other
 //  node, make sure call the rpc method HookDistributeRequest again first to make sure all 
-//  sharded node hooked this request.
+//  sharded node hooked this request. The Controller which is not derived from Sf1Controller
+//  need to handle this by themselves.
 // 3. In Service (such as IndexTaskService or RecommendTaskService), make sure 
 // the request was hooked to shard node before call the worker handler.
 // 4. In worker handler, make sure using DistributeRequestHooker to check valid call and
@@ -21,8 +22,9 @@ std::set<std::string> ReqLogMgr::write_req_set_;
 // request is hooked to handle correctly both on the primary and replicas.
 // If returned before prepared, make sure processLocalFinished also called.
 // 5. make sure if the hooktype == FromLog, all the handler should be called sync. (not in JobScheduler)
-// 6. if a write request need to chain with another request , you should put subsequence 
-// write request to the node queue using SearchMasterManager::get()->pushWriteReq(reqdata).
+// 6. if a write request need to chain with( a write after write or 
+// a write during the write ) another write request, you should 
+// set the chain status properly before you call the request.
 void ReqLogMgr::initWriteRequestSet()
 {
     write_req_set_.insert("documents_create");

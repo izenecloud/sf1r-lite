@@ -1,6 +1,8 @@
 #include "LocalUserManager.h"
 #include "../common/User.h"
 
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
 #include <glog/logging.h>
 
 namespace sf1r
@@ -26,8 +28,24 @@ void LocalUserManager::flush()
 
 bool LocalUserManager::addUser(const User& user)
 {
-    if (user.idStr_.empty())
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
         return false;
+    }
+
+    if (user.idStr_.empty())
+    {
+        DistributeRequestHooker::get()->processLocalFinished(false);
+        return false;
+    }
+
+    NoAdditionNoRollbackReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
 
     bool result = false;
     try
@@ -39,15 +57,32 @@ bool LocalUserManager::addUser(const User& user)
         LOG(ERROR) << "exception in SDB::insertValue(): " << e.what();
     }
 
+    DistributeRequestHooker::get()->processLocalFinished(result);
     return result;
 }
 
 bool LocalUserManager::updateUser(const User& user)
 {
-    if (user.idStr_.empty())
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
         return false;
+    }
+
+    if (user.idStr_.empty())
+    {
+        DistributeRequestHooker::get()->processLocalFinished(false);
+        return false;
+    }
 
     bool result = false;
+    NoAdditionNoRollbackReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
     try
     {
         result = container_.update(user.idStr_, user);
@@ -57,11 +92,24 @@ bool LocalUserManager::updateUser(const User& user)
         LOG(ERROR) << "exception in SDB::update(): " << e.what();
     }
 
+    DistributeRequestHooker::get()->processLocalFinished(result);
     return result;
 }
 
 bool LocalUserManager::removeUser(const std::string& userId)
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+    NoAdditionNoRollbackReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
     bool result = false;
     try
     {
@@ -72,6 +120,7 @@ bool LocalUserManager::removeUser(const std::string& userId)
         LOG(ERROR) << "exception in SDB::del(): " << e.what();
     }
 
+    DistributeRequestHooker::get()->processLocalFinished(result);
     return result;
 }
 

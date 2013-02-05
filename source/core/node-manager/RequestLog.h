@@ -17,13 +17,16 @@ namespace sf1r
 
 enum ReqLogType
 {
-    Req_None =0,
+    Req_None = 0,
     // if the write request can be redo correctly just using the json data from the
     // request then you can use this type of request. Otherwise, you should define a new
     // request type and add addition member data to it.
     Req_NoAdditionDataReq = 1,
     // this kind of request need backup before processing.
-    Req_NoAdditionData_NeedBackup_Req = 2,
+    Req_NoAdditionData_NeedBackup_Req,
+    // if the request will not change any data if failed.
+    // Then you can use this kind. NoRollback means no backup too.
+    Req_NoAdditionDataNoRollback,
     // index request need the scd file list which is not included in the request json data,
     // so we define a new request type, and add addition member.
     Req_Index,
@@ -83,15 +86,6 @@ struct NoAdditionReqLog: public CommonReqData
     {
         reqtype = Req_NoAdditionDataReq;
     }
-    //CommonReqData common_data;
-    //void pack(msgpack::packer<msgpack::sbuffer>& pk) const
-    //{
-    //    common_data.pack(pk);
-    //}
-    //bool unpack(msgpack::unpacker& unpak)
-    //{
-    //    return common_data.unpack(unpak);
-    //}
 };
 
 struct NoAdditionNeedBackupReqLog: public CommonReqData
@@ -100,15 +94,14 @@ struct NoAdditionNeedBackupReqLog: public CommonReqData
     {
         reqtype = Req_NoAdditionData_NeedBackup_Req;
     }
-    //CommonReqData common_data;
-    //void pack(msgpack::packer<msgpack::sbuffer>& pk) const
-    //{
-    //    common_data.pack(pk);
-    //}
-    //bool unpack(msgpack::unpacker& unpak)
-    //{
-    //    return common_data.unpack(unpak);
-    //}
+};
+
+struct NoAdditionNoRollbackReqLog: public CommonReqData
+{
+    NoAdditionNoRollbackReqLog()
+    {
+        reqtype = Req_NoAdditionDataNoRollback;
+    }
 };
 
 struct IndexReqLog: public CommonReqData
@@ -120,11 +113,16 @@ struct IndexReqLog: public CommonReqData
     //CommonReqData common_data;
     // index request addition member for scd file list.
     std::vector<std::string> scd_list;
+    // build recommend need the user and order scd file list.
+    std::vector<std::string> user_scd_list;
+    std::vector<std::string> order_scd_list;
 
     virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
     {
         CommonReqData::pack(pk);
         pk.pack(scd_list);
+        pk.pack(user_scd_list);
+        pk.pack(order_scd_list);
     }
     virtual bool unpack(msgpack::unpacker& unpak)
     {
@@ -136,6 +134,12 @@ struct IndexReqLog: public CommonReqData
             if (!unpak.next(&msg))
                 return false;
             msg.get().convert(&scd_list);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&user_scd_list);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&order_scd_list);
         }
         catch(const std::exception& e)
         {

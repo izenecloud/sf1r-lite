@@ -7,6 +7,7 @@
 #include <node-manager/sharding/ScdSharder.h>
 #include <node-manager/sharding/ShardingStrategy.h>
 #include <node-manager/sharding/ScdDispatcher.h>
+#include <node-manager/DistributeRequestHooker.h>
 #include <util/driver/Request.h>
 
 #include <glog/logging.h>

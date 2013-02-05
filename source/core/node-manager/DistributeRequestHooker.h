@@ -38,6 +38,8 @@ public:
 
     inline bool setChainStatus(ChainStatus status)
     {
+        if (!isHooked())
+            return true;
         if (chain_status_ > status)
         {
             // chain request can only handle from begin to end.
@@ -51,11 +53,12 @@ public:
     {
         return chain_status_;
     }
+    bool readPrevChainData(CommonReqData& reqlogdata);
 
     void clearHook(bool force = false);
     const std::string& getAdditionData()
     {
-        return primary_addition_;
+        return current_req_;
     }
 
     bool prepare(ReqLogType type, CommonReqData& prepared_req);
@@ -86,7 +89,6 @@ private:
     // for primary worker, this is raw json request data.
     // for replica worker, this is packed request data with addition data from primary.
     std::string current_req_;
-    std::string primary_addition_;
     ReqLogType type_;
     boost::shared_ptr<ReqLogMgr> req_log_mgr_;
     int hook_type_;

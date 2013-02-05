@@ -20,6 +20,7 @@
 #include <aggregator-manager/MasterNotifier.h>
 #include <node-manager/RequestLog.h>
 #include <node-manager/DistributeFileSyncMgr.h>
+#include <node-manager/DistributeRequestHooker.h>
 #include <util/driver/Request.h>
 
 // xxx
@@ -241,8 +242,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         else
         {
             LOG(WARNING) << "push index scd file to the replicas failed for:" << scdList[file_index]; 
-            distribute_req_hooker_->processLocalFinished(false);
-            return false;
         }
     }
 
@@ -297,8 +296,16 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
         }
         else if (!DistributeFileSyncMgr::get()->getFileFromOther(reqlog.scd_list[i]))
         {
-            LOG(INFO) << "index scd file missing." << reqlog.scd_list[i];
-            throw std::runtime_error("index scd file missing!");
+            if (!DistributeFileSyncMgr::get()->getFileFromOther(backup_scd.string()))
+            {
+                LOG(INFO) << "index scd file missing." << reqlog.scd_list[i];
+                throw std::runtime_error("index scd file missing!");
+            }
+            else
+            {
+                LOG(INFO) << "get index scd file from other's backup, move to index";
+                bfs::rename(backup_scd, reqlog.scd_list[i]);
+            }
         }
     }
 

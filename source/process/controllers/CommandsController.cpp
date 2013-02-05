@@ -15,6 +15,7 @@
 #include <bundles/recommend/RecommendTaskService.h>
 #include <aggregator-manager/SearchAggregator.h>
 #include <mining-manager/MiningQueryLogHandler.h>
+#include <node-manager/DistributeRequestHooker.h>
 #include <common/Keys.h>
 
 namespace sf1r

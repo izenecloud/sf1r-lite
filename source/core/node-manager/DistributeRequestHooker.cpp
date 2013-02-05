@@ -90,8 +90,8 @@ void DistributeRequestHooker::setHook(int calltype, const std::string& addition_
     // for request for primary master, the addition_data is the original request json data.
     // for request from primary worker to replicas, the addition_data is original request
     // json data plus the data used for this request.
-    primary_addition_ = addition_data;
-    LOG(INFO) << "setting hook : " << hook_type_ << ", data:" << primary_addition_;
+    current_req_ = addition_data;
+    LOG(INFO) << "setting hook : " << hook_type_ << ", data:" << current_req_;
 }
 
 int  DistributeRequestHooker::getHookType()
@@ -101,7 +101,21 @@ int  DistributeRequestHooker::getHookType()
 
 bool DistributeRequestHooker::isHooked()
 {
-    return (hook_type_ > 0) && (!current_req_.empty() || !primary_addition_.empty());
+    return (hook_type_ > 0) && !current_req_.empty();
+}
+
+bool DistributeRequestHooker::readPrevChainData(CommonReqData& reqlogdata)
+{
+    if (!isHooked())
+        return true;
+    if (chain_status_ == NoChain || chain_status_ == ChainBegin)
+        return true;
+    if (!ReqLogMgr::unpackReqLogData(current_req_, reqlogdata))
+    {
+        LOG(ERROR) << "unpack log data error while read from chain data.";
+        return false;
+    }
+    return true;
 }
 
 bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_req)
@@ -109,16 +123,11 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     if (!isHooked())
         return true;
     assert(req_log_mgr_);
-    if (chain_status_ != NoChain && chain_status_ != ChainBegin)
-    {
-        // only prepare at the begin of chain request.
-        LOG(INFO) << "no need prepare for middle of request chain.";
-        return true;
-    }
     bool isprimary = (hook_type_ != Request::FromLog) && NodeManagerBase::get()->isPrimary();
     if (isprimary)
     {
-        prepared_req.req_json_data = current_req_;
+        if (chain_status_ == ChainBegin)
+            prepared_req.req_json_data = current_req_;
     }
     else
     {
@@ -139,23 +148,43 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     prepared_req.reqtype = type;
     type_ = type;
     LOG(INFO) << "begin prepare log ";
-    if (!req_log_mgr_->prepareReqLog(prepared_req, isprimary))
+    if (chain_status_ == NoChain || chain_status_ == ChainBegin)
     {
-        LOG(ERROR) << "prepare request log failed.";
-        if (!isprimary)
+        if (!req_log_mgr_->prepareReqLog(prepared_req, isprimary))
         {
-            assert(false);
-            forceExit();
+            LOG(ERROR) << "prepare request log failed.";
+            if (!isprimary)
+            {
+                assert(false);
+                forceExit();
+            }
+            finish(false);
+            return false;
         }
-        finish(false);
-        return false;
     }
     
     if (isprimary)
     {
-        // save primary prepared data to current_req_ and 
-        // after primary finished, send it to replica.
-        ReqLogMgr::packReqLogData(prepared_req, current_req_);
+        bool needpack = true;
+        if (type == Req_NoAdditionData_NeedBackup_Req || type == Req_NoAdditionDataReq ||
+            type == Req_NoAdditionDataNoRollback)
+        {
+            if (chain_status_ != NoChain && chain_status_ != ChainBegin)
+                needpack = false;
+        }
+        if (needpack)
+        {
+            // save primary prepared data to current_req_ and 
+            // after primary finished, send it to replica.
+            ReqLogMgr::packReqLogData(prepared_req, current_req_);
+        }
+    }
+
+    if (chain_status_ != NoChain && chain_status_ != ChainBegin)
+    {
+        // only prepare at the begin of chain request.
+        LOG(INFO) << "no need prepare for middle of request chain.";
+        return true;
     }
 
     if (isNeedBackup(type))
@@ -173,7 +202,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         }
     }
     // set rollback flag.
-    if(!RecoveryChecker::get()->setRollbackFlag(prepared_req.inc_id))
+    if(type != Req_NoAdditionDataNoRollback && !RecoveryChecker::get()->setRollbackFlag(prepared_req.inc_id))
     {
         LOG(ERROR) << "set rollback failed.";
         if (!isprimary)
@@ -348,7 +377,7 @@ void DistributeRequestHooker::finish(bool success)
         // rollback from backup.
         // rename current and move restore.
         // all the file need to be reopened to make effective.
-        if (!RecoveryChecker::get()->rollbackLastFail())
+        if (type_ != Req_NoAdditionDataNoRollback && !RecoveryChecker::get()->rollbackLastFail())
         {
             LOG(ERROR) << "failed to rollback ! must exit.";
             forceExit();
@@ -367,7 +396,6 @@ void DistributeRequestHooker::clearHook(bool force)
     current_req_.clear();
     req_log_mgr_.reset();
     hook_type_ = 0;
-    primary_addition_.clear();
     chain_status_ = NoChain;
     LOG(INFO) << "request hook cleard.";
 }

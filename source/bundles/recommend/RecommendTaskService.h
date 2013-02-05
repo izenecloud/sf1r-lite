@@ -171,10 +171,14 @@ private:
         std::vector<itemid_t>& itemIdVec
     );
 
+    bool buildCollectionOnPrimary();
+    bool buildCollectionOnReplica();
+    bool getBuildingSCDFiles(std::vector<string>& user_scd_list,
+        std::vector<std::string>& order_scd_list);
     /**
      * Load user SCD files.
      */
-    bool loadUserSCD_();
+    bool loadUserSCD_(const std::vector<string>& scdList);
 
     /**
      * Parse user SCD file.
@@ -186,7 +190,7 @@ private:
     /**
      * Load order SCD files.
      */
-    bool loadOrderSCD_();
+    bool loadOrderSCD_(const std::vector<string> &scdList);
 
     /**
      * Parse order SCD file.

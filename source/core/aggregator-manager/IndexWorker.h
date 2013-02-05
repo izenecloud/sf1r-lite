@@ -17,7 +17,6 @@
 #include <common/IndexingProgress.h>
 #include <common/ScdParser.h>
 #include <common/ScdWriterController.h>
-#include <node-manager/DistributeRequestHooker.h>
 
 #include <ir/id_manager/IDManager.h>
 #include <ir/index_manager/index/IndexerDocument.h>
@@ -44,6 +43,7 @@ class MiningManager;
 class ScdWriterController;
 class IndexHooker;
 class SearchWorker;
+class DistributeRequestHooker;
 
 class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
 {

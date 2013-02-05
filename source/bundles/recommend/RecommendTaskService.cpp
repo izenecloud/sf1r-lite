@@ -18,6 +18,10 @@
 #include <common/ScdParser.h>
 #include <directory-manager/Directory.h>
 #include <directory-manager/DirectoryRotator.h>
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeFileSyncMgr.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <util/driver/Request.h>
 
 #include <sdb/SDBCursorIterator.h>
 #include <util/scheduler.h>
@@ -32,6 +36,7 @@
 #include <glog/logging.h>
 
 namespace bfs = boost::filesystem;
+using namespace izenelib::driver;
 
 namespace
 {
@@ -395,12 +400,20 @@ bool RecommendTaskService::rateItem(const RateParam& param)
 
 bool RecommendTaskService::buildCollection()
 {
+    DistributeRequestHooker* distribute_req_hooker = DistributeRequestHooker::get();
+    if (!distribute_req_hooker->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     LOG(INFO) << "Start building recommend collection...";
     izenelib::util::ClockTimer timer;
 
     if (! backupDataFiles(directoryRotator_))
     {
         LOG(ERROR) << "Failed in backup data files, exit recommend collection build";
+        distribute_req_hooker->processLocalFinished(false);
         return false;
     }
 
@@ -408,29 +421,154 @@ bool RecommendTaskService::buildCollection()
     if (! dirGuard)
     {
         LOG(ERROR) << "Dirty recommend collection data, exit recommend collection build";
+        distribute_req_hooker->processLocalFinished(false);
         return false;
     }
 
     boost::mutex::scoped_lock lock(buildCollectionMutex_);
+    bool ret = false;
 
-    if (loadUserSCD_() && loadOrderSCD_())
+    if (!distribute_req_hooker->isHooked() || distribute_req_hooker->getHookType() == Request::FromDistribute)
+    {
+        // on primary
+        ret = buildCollectionOnPrimary();
+    }
+    else
+    {
+        // on replica
+        if (bundleConfig_.cassandraConfig_.enable)
+        {
+            //  remote storage enabled, so only need do recommend on primary.
+            //  replica can get data from remote storage.
+            ret = true;
+        }
+        else
+        {
+            ret = buildCollectionOnReplica();
+        }
+    }
+    if (ret)
     {
         LOG(INFO) << "End recommend collection build, elapsed time: " << timer.elapsed() << " seconds";
-        return true;
+    }
+    else
+    {
+        LOG(INFO) << "recommend collection build failed: " ;
+    }
+    DistributeRequestHooker::get()->processLocalFinished(ret);
+    return ret;
+}
+
+bool RecommendTaskService::buildCollectionOnPrimary()
+{
+    IndexReqLog reqlog;
+    DistributeRequestHooker::get()->readPrevChainData(reqlog);
+    if (!getBuildingSCDFiles(reqlog.user_scd_list, reqlog.order_scd_list))
+    {
+        return false;
+    }
+    // push scd files to replicas
+    std::vector<std::string> all_scdList = reqlog.user_scd_list;
+    all_scdList.insert(all_scdList.end(), reqlog.order_scd_list.begin(), reqlog.order_scd_list.end());
+
+    for (size_t file_index = 0; file_index < all_scdList.size(); ++file_index)
+    {
+        if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(all_scdList[file_index],
+                all_scdList[file_index]))
+        {
+            LOG(INFO) << "Transfer recommend scd to the replicas finished for: " << all_scdList[file_index];
+        }
+        else
+        {
+            LOG(WARNING) << "push recommend scd file to the replicas failed for:" << all_scdList[file_index]; 
+        }
     }
 
-    LOG(ERROR) << "Failed recommend collection build";
+    if (!DistributeRequestHooker::get()->prepare(Req_Index, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle);
+    if (loadUserSCD_(reqlog.user_scd_list) && loadOrderSCD_(reqlog.order_scd_list))
+    {
+        DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
+        return true;
+    }
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
     return false;
 }
 
-bool RecommendTaskService::loadUserSCD_()
+bool RecommendTaskService::buildCollectionOnReplica()
+{
+    // build on replicas, using the data from primary.
+    IndexReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_Index, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    std::vector<std::string> all_scdList = reqlog.user_scd_list;
+    all_scdList.insert(all_scdList.end(), reqlog.order_scd_list.begin(), reqlog.order_scd_list.end());
+
+    LOG(INFO) << "got recommend from primary/log, scd list is : ";
+    for (size_t i = 0; i < all_scdList.size(); ++i)
+    {
+        LOG(INFO) << all_scdList[i];
+        bfs::path backup_scd = bfs::path(all_scdList[i]);
+        backup_scd = backup_scd.parent_path()/bfs::path(SCD_BACKUP_DIR)/backup_scd.filename();
+        if (bfs::exists(all_scdList[i]))
+        {
+            LOG(INFO) << "found recommend scd file in current directory.";
+        }
+        else if (bfs::exists(backup_scd))
+        {
+            // try to find in backup
+            LOG(INFO) << "found recommend scd file in backup, move to current";
+            bfs::rename(backup_scd, all_scdList[i]);
+        }
+        else if (!DistributeFileSyncMgr::get()->getFileFromOther(all_scdList[i]))
+        {
+            if (!DistributeFileSyncMgr::get()->getFileFromOther(backup_scd.string()))
+            {
+                LOG(INFO) << "recommend scd file missing and get from other failed." << all_scdList[i];
+                throw std::runtime_error("recommend scd file missing!");
+            }
+            else
+            {
+                LOG(INFO) << "get recommend scd file from other's backup, move to index";
+                bfs::rename(backup_scd, all_scdList[i]);
+            }
+        }
+    }
+
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle);
+    if (loadUserSCD_(reqlog.user_scd_list) && loadOrderSCD_(reqlog.order_scd_list))
+    {
+        DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
+        return true;
+    }
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
+    return false;
+}
+
+bool RecommendTaskService::getBuildingSCDFiles(std::vector<string>& user_scd_list,
+    std::vector<std::string>& order_scd_list)
 {
     std::string scdDir = bundleConfig_.userSCDPath();
-    std::vector<string> scdList;
-
-    if (scanSCDFiles(scdDir, scdList) == false)
+    if (!scanSCDFiles(scdDir, user_scd_list))
         return false;
 
+    scdDir = bundleConfig_.orderSCDPath();
+    if (!scanSCDFiles(scdDir, order_scd_list))
+        return false;
+
+    return true;
+}
+
+bool RecommendTaskService::loadUserSCD_(const std::vector<string>& scdList)
+{
     if (scdList.empty())
         return true;
 
@@ -442,6 +580,7 @@ bool RecommendTaskService::loadUserSCD_()
 
     userManager_.flush();
 
+    std::string scdDir = bundleConfig_.userSCDPath();
     backupSCDFiles(scdDir, scdList);
 
     return true;
@@ -521,14 +660,8 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
     return true;
 }
 
-bool RecommendTaskService::loadOrderSCD_()
+bool RecommendTaskService::loadOrderSCD_(const std::vector<string> &scdList)
 {
-    std::string scdDir = bundleConfig_.orderSCDPath();
-    std::vector<string> scdList;
-
-    if (scanSCDFiles(scdDir, scdList) == false)
-        return false;
-
     if (scdList.empty())
         return true;
 
@@ -547,6 +680,7 @@ bool RecommendTaskService::loadOrderSCD_()
     updateRecommendBase_.buildPurchaseSimMatrix(result);
     updateRecommendBase_.flushRecommendMatrix(result);
 
+    std::string scdDir = bundleConfig_.orderSCDPath();
     backupSCDFiles(scdDir, scdList);
 
     return true;
