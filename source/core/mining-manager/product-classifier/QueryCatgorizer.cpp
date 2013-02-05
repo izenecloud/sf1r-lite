@@ -57,6 +57,8 @@ bool QueryCategorizer::GetCategoryByMatcher_(
     std::vector<UString>& frontends)
 {
     if(!matcher_) return false;
+    if(query.empty()) return false;
+
     Document doc;
     UString queryU(query, UString::UTF_8);
     doc.property("Title") = queryU;
@@ -95,6 +97,8 @@ bool QueryCategorizer::GetCategoryBySuffixMatcher_(
     std::vector<UString>& frontCategories)
 {
     if(!suffix_manager_) return false;
+    if(query.empty()) return false;
+
     UString queryU(query, UString::UTF_8);
     uint32_t max_docs = 10;
     std::vector<std::string> search_in_properties;
