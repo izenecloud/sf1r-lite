@@ -45,9 +45,9 @@ QueryCategorizer::QueryCategorizer()
     ,suffix_manager_(NULL)
     ,cache_(10000)
 {
-    modes_.push_back(SEARCH_PRODUCT);	
-    modes_.push_back(SEARCH_SPU);
     modes_.push_back(MATCHER);
+    modes_.push_back(SEARCH_PRODUCT);	
+    //modes_.push_back(SEARCH_SPU);
 }
 
 QueryCategorizer::~QueryCategorizer()
@@ -206,7 +206,9 @@ bool QueryCategorizer::GetProductCategory(
     std::string enriched_query;
     std::vector<UString> frontCategories;
     assert(spu_classifier_);
-    spu_classifier_->GetEnrichedQuery(query, enriched_query);
+    if(modes_.size() > 1)
+        spu_classifier_->GetEnrichedQuery(query, enriched_query);
+
     LOG(INFO)<<"GetEnrichedQuery "<<enriched_query;
 
     for(unsigned i = 0; i < modes_.size(); ++i)
@@ -214,7 +216,7 @@ bool QueryCategorizer::GetProductCategory(
         switch(modes_[i])
         {
         case MATCHER:
-            GetCategoryByMatcher_(enriched_query, limit, frontCategories);
+            GetCategoryByMatcher_(query, limit, frontCategories);
             LOG(INFO)<<"GetCategoryByMatcher "<<frontCategories.size();
             break;
         case SEARCH_SPU:
