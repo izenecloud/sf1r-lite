@@ -1,4 +1,3 @@
-#include "SPUProductClassifier.hpp"
 #include "TuanEnricher.hpp"
 #include <common/type_defs.h>
 #include <b5m-manager/product_matcher.h>
@@ -9,39 +8,35 @@
 #include <la-manager/LAPool.h>
 
 #include <glog/logging.h>
-#include <set>
+
 using namespace cma;
 
 namespace sf1r
 {
-
-SPUProductClassifier::SPUProductClassifier()
-    :analyzer_(NULL)
-    ,knowledge_(NULL)
+TuanEnricher::TuanEnricher(
+    const std::string& resource,
+    cma::Analyzer* analyzer,
+    cma::Knowledge* knowledge)
+    :resource_path_(resource)
+    ,analyzer_(analyzer)
+    ,knowledge_(knowledge)
     ,doc_container_(NULL)
-    ,tuan_enricher_(NULL)
     ,documentCache_(20000)
 {
+    Open_(resource_path_);
 }
 
-SPUProductClassifier::~SPUProductClassifier()
+TuanEnricher::~TuanEnricher()
 {
-    if(analyzer_) delete analyzer_;
-    if(knowledge_) delete knowledge_;
     if(doc_container_) delete doc_container_;
-    if(tuan_enricher_) delete tuan_enricher_;
 }
 
-void SPUProductClassifier::Open(const std::string& resource)
-{
-    static boost::once_flag once = BOOST_ONCE_INIT;
-    boost::call_once(once, boost::bind(&SPUProductClassifier::InitOnce_, this, resource));
-}
-
-void SPUProductClassifier::InitOnce_(const std::string& resource)
+void TuanEnricher::Open_(const std::string& resource)
 {
     LOG(INFO)<<"Loading SPU classifier resource "<<resource_path_;
+
     resource_path_ = resource;
+
     doc_container_ = new DocContainer(resource_path_+"/dm/");
     doc_container_->open();
 
@@ -59,11 +54,7 @@ void SPUProductClassifier::InitOnce_(const std::string& resource)
     analyzer_->setKnowledge(knowledge_);
     LOG(INFO) << "load dictionary knowledge finished." << endl;
 
-    tuan_enricher_ = new TuanEnricher(resource_path_+"/tuangou-enricher", analyzer_, knowledge_);
-
     properties_.push_back("Title");
-    properties_.push_back("Category");
-    //properties_.push_back("Attribute");
     for (size_t i = 0; i < properties_.size(); ++i)
     {
         const std::string& index_prop = properties_[i];
@@ -106,31 +97,22 @@ void SPUProductClassifier::InitOnce_(const std::string& resource)
     }
 }
 
-bool SPUProductClassifier::GetEnrichedQuery(
+void TuanEnricher::GetEnrichedQuery(
     const std::string& query,
-    std::string& enriched)
+    std::string& enriched_result)
 {
-    tuan_enricher_->GetEnrichedQuery(query, enriched);
-    return true;
-}
-
-bool SPUProductClassifier::GetProductCategory(
-    const std::string& query,
-    std::vector<UString>& frontCategories)
-{
-    if(query.empty()) return false;
     std::vector<std::pair<double, uint32_t> > res_list;
     std::map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > match_ranges_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> max_match_list;
 
-    size_t max_docs = 20;
+    size_t max_docs = 50;
     UString pattern(query, UString::UTF_8);
     Algorithm<UString>::to_lower(pattern);
     std::string pattern_str;
     pattern.convertString(pattern_str, UString::UTF_8);
-    //LOG(INFO) << "original query string: " << pattern_str;
+    LOG(INFO) << "original query string: " << pattern_str;
     Sentence pattern_sentence(pattern_str.c_str());
     analyzer_->runWithSentence(pattern_sentence);
     std::vector<UString> all_sub_strpatterns;
@@ -155,7 +137,7 @@ bool SPUProductClassifier::GetProductCategory(
             const UString& pattern = all_sub_strpatterns[i];
             std::pair<size_t, size_t> sub_match_range;
             size_t matched = cit->second.fmi->backwardSearch(pattern.data(), pattern.length(), sub_match_range);
-            //LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
+            LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
             if (matched == all_sub_strpatterns[i].length())
             {
                 match_ranges_list.push_back(sub_match_range);
@@ -198,27 +180,21 @@ bool SPUProductClassifier::GetProductCategory(
     if (res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
 
-    ProductMatcher* matcher = ProductMatcherInstance::get();
+    size_t topK = res_list.size() < 4 ? res_list.size() : 4;
 
     std::map<docid_t, int> doc_idx_map;
-    const unsigned int docListSize = res_list.size();
-    std::vector<std::pair<unsigned int, double> > ids(docListSize);
+    std::vector<unsigned int> ids(topK);
 
-    for (unsigned int i=0; i<docListSize; i++)
+    for (unsigned int i=0; i<topK; i++)
     {
         docid_t docId = res_list[i].second;
-        double score = res_list[i].first;
-        if((0 == i) && (score < 6.0F)) return false;
         doc_idx_map[docId] = i;
-        ids[i] = std::make_pair(docId,score);
+        ids[i] = docId;
     }
 
-    for(unsigned i = 0; i < docListSize; ++i)
+    for(size_t i = 0; i < topK; ++i)
     {
-        uint32_t docId = ids[i].first;
-        double score = ids[i].second;
-        if(score < 6.0F) break;
-        //LOG(INFO) <<"doc "<<docId;
+        uint32_t docId = ids[i];
         Document doc;
         if (!documentCache_.getValue(docId, doc))
         {
@@ -227,21 +203,23 @@ bool SPUProductClassifier::GetProductCategory(
             else
                 documentCache_.insertValue(docId, doc);
         }
-
-        UString backend = doc.property("Category").get<izenelib::util::UString>();
-        std::string category_str;
-        backend.convertString(category_str, UString::UTF_8);
-        //LOG(INFO) << category_str;
-        UString frontCategory;
-        if(matcher->GetFrontendCategory(backend, frontCategory))
+        try
         {
-            frontCategories.push_back(frontCategory);
-            std::string front_str;
-            frontCategory.convertString(front_str, UString::UTF_8);
-            LOG(INFO) << front_str << " score " << score;
+            UString enriched = doc.property("Title").get<izenelib::util::UString>();
+            enriched += UString(" ");
+            enriched += doc.property("Category").get<izenelib::util::UString>();
+            enriched += UString(" ");
+            enriched += doc.property("SubCategory").get<izenelib::util::UString>();
+            std::string enriched_str;
+            enriched.convertString(enriched_str, UString::UTF_8);
+
+            //LOG(INFO) <<"enriched_str "<<enriched_str<<docId;
+            enriched_result += std::string(" ");
+            enriched_result += enriched_str;
         }
+        catch(boost::bad_get& e)
+            {}
     }
-    return frontCategories.empty() ? false : true;
 }
 
 }

@@ -282,7 +282,6 @@
     </xs:element>
 
 
-
     <xs:element name="OpinionWorkingPath">
         <xs:complexType>
             <xs:attribute name="path" type="xs:string" use="required" />
@@ -368,6 +367,7 @@
 
     <xs:element name="ProductMatcher">
         <xs:complexType>
+            <xs:attribute name="mode" type="xs:string" use="optional" />
         </xs:complexType>
     </xs:element>
 

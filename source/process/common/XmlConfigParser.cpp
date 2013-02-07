@@ -2116,6 +2116,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
     if (task_node)
     {
         mining_schema.product_matcher_enable = true;
+        getAttribute(task_node, "mode", mining_schema.product_categorizer_mode, false);
     }
 }
 

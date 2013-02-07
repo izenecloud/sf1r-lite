@@ -169,6 +169,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
         std::vector<std::pair<double, uint32_t> >& res_list) const
 {
     if (!fmi_manager_) return 0;
+    if (pattern.empty()) return 0;
 
     std::map<uint32_t, double> res_list_map;
     std::vector<uint32_t> docid_list;
@@ -200,18 +201,8 @@ size_t SuffixMatchManager::longestSuffixMatch(
 
             for (size_t j = 0; j < docid_list.size(); ++j)
             {
-                double score = 0;
-                if (doclen_list[j] > 0)
-                    score = double(max_match) / double(doclen_list[j]);
-                std::map<uint32_t, double>::iterator res_it = res_list_map.find(docid_list[j]);
-                if (res_it != res_list_map.end())
-                {
-                    res_it->second += score;
-                }
-                else
-                {
-                    res_list_map[docid_list[i]] = score;
-                }
+                assert(doclen_list[j] > 0);
+                res_list_map[docid_list[i]] += double(max_match) / double(doclen_list[j]);
             }
 
             for (size_t j = 0; j < match_ranges.size(); ++j)
@@ -225,7 +216,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
 
     res_list.reserve(res_list_map.size());
     for (std::map<uint32_t, double>::const_iterator cit = res_list_map.begin();
-        cit != res_list_map.end(); ++cit)
+            cit != res_list_map.end(); ++cit)
     {
         res_list.push_back(std::make_pair(cit->second, cit->first));
     }
@@ -245,7 +236,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         std::vector<std::pair<double, uint32_t> >& res_list) const
 {
     if (!analyzer_) return 0;
-
+    if (pattern_orig.empty()) return 0;
     std::map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > match_ranges_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
@@ -313,7 +304,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     continue;
                 std::pair<size_t, size_t> sub_match_range;
                 size_t matched = fmi_manager_->backwardSearch(search_property, all_sub_strpatterns[i], sub_match_range);
-                LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
+                //LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
                 if (matched == all_sub_strpatterns[i].length())
                 {
                     match_ranges_list.push_back(sub_match_range);
