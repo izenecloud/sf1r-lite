@@ -202,33 +202,49 @@ namespace sf1r {
                 //return spu_id==another.spu_id;
             }
         };
-        struct SpuTitleApp
-          : boost::less_than_comparable<SpuTitleApp> ,boost::equality_comparable<SpuTitleApp>
+
+        struct OfferCategoryApp
         {
-            uint32_t spu_id;
-            uint32_t pstart;
-            uint32_t pend;
+            uint32_t cid;
+            uint32_t count;
+            bool operator<(const OfferCategoryApp& another) const
+            {
+                return cid<another.cid;
+            }
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spu_id & pstart & pend;
-            }
-            bool operator<(const SpuTitleApp& another) const
-            {
-                if(spu_id<another.spu_id) return true;
-                else if(spu_id>another.spu_id) return false;
-                else
-                {
-                    return pstart<another.pstart;
-                }
-            }
-
-            bool operator==(const SpuTitleApp& another) const
-            {
-                return spu_id==another.spu_id&&pstart==another.pstart;
+                ar & cid & count;
             }
         };
+        //struct SpuTitleApp
+          //: boost::less_than_comparable<SpuTitleApp> ,boost::equality_comparable<SpuTitleApp>
+        //{
+            //uint32_t spu_id;
+            //uint32_t pstart;
+            //uint32_t pend;
+            //friend class boost::serialization::access;
+            //template<class Archive>
+            //void serialize(Archive & ar, const unsigned int version)
+            //{
+                //ar & spu_id & pstart & pend;
+            //}
+            //bool operator<(const SpuTitleApp& another) const
+            //{
+                //if(spu_id<another.spu_id) return true;
+                //else if(spu_id>another.spu_id) return false;
+                //else
+                //{
+                    //return pstart<another.pstart;
+                //}
+            //}
+
+            //bool operator==(const SpuTitleApp& another) const
+            //{
+                //return spu_id==another.spu_id&&pstart==another.pstart;
+            //}
+        //};
         typedef stdmap<std::string, uint32_t> KeywordTypeApp;
         struct KeywordTag
         {
@@ -236,7 +252,8 @@ namespace sf1r {
             TermList term_list;
             std::vector<CategoryNameApp> category_name_apps;
             std::vector<AttributeApp> attribute_apps;
-            std::vector<SpuTitleApp> spu_title_apps;
+            std::vector<OfferCategoryApp> offer_category_apps;
+            //std::vector<SpuTitleApp> spu_title_apps;
             KeywordTypeApp type_app;
             //double cweight; //not serialized, runtime property
             //double aweight;
@@ -257,7 +274,7 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & term_list & category_name_apps & attribute_apps & spu_title_apps & type_app;
+                ar & term_list & category_name_apps & attribute_apps & offer_category_apps & type_app;
             }
         };
 
@@ -386,7 +403,7 @@ namespace sf1r {
             uint32_t cid;
             double price; 
             std::vector<Attribute> attributes;
-            std::vector<Attribute> dattributes; //display attributes, ignore it now.
+            std::vector<Attribute> dattributes; //display attributes
             std::string sbrand;
             //WeightType weight;
             double aweight;
@@ -396,7 +413,7 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spid & stitle & scategory & cid & price & attributes & sbrand & aweight & tweight & title_obj;
+                ar & spid & stitle & scategory & cid & price & attributes & dattributes & sbrand & aweight & tweight & title_obj;
             }
 
             //const std::vector<Attribute>& GetDisplayAttributes() const
@@ -438,6 +455,7 @@ namespace sf1r {
         bool DoMatch(const std::string& scd_path, const std::string& output_file="");
         bool Process(const Document& doc, Product& result_product);
         bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products);
+        void GetFrontendCategory(const UString& text, uint32_t limit, std::vector<UString>& results);
         static bool GetIsbnAttribute(const Document& doc, std::string& isbn);
         static bool ProcessBook(const Document& doc, Product& result_product);
         bool GetProduct(const std::string& pid, Product& product);
@@ -478,6 +496,7 @@ namespace sf1r {
         void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
 
+        void IndexOffer_(const std::string& offer_scd);
 
         void GenSuffixes_(const std::vector<term_t>& term_list, Suffixes& suffixes);
         void GenSuffixes_(const std::string& text, Suffixes& suffixes);
