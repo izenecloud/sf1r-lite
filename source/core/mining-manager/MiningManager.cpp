@@ -672,7 +672,7 @@ bool MiningManager::open()
             }
             product_categorizer_->SetProductMatcher(matcher);
             SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
-            product_classifier->Open(res_path+"/spu-classifier");
+            product_classifier->Open(system_resource_path_+"/spu-classifier");
             product_categorizer_->SetSPUProductClassifier(product_classifier);
             product_categorizer_->SetWorkingMode(mining_schema_.product_categorizer_mode);
             //test
