@@ -364,7 +364,7 @@ void MasterManagerBase::checkForNewWriteReq()
 }
 
 // make sure prepare success before call this.
-bool MasterManagerBase::popWriteReq(std::string& reqdata)
+bool MasterManagerBase::popWriteReq(std::string& reqdata, std::string& type)
 {
     if (!isDistributeEnable_)
         return false;
@@ -383,14 +383,13 @@ bool MasterManagerBase::popWriteReq(std::string& reqdata)
     zookeeper_->getZNodeData(reqchild[0], sdata);
     znode.loadKvString(sdata);
     reqdata = znode.getStrValue(ZNode::KEY_REQ_DATA);
-    // put the reqdata into the prepared unique write node.
-    //putWriteReqDataToPreparedNode(reqdata);
+    type = znode.getStrValue(ZNode::KEY_REQ_TYPE);
     LOG(INFO) << "a request poped : " << reqchild[0] << " on the server: " << serverRealPath_;
     zookeeper_->deleteZNode(reqchild[0]);
     return true;
 }
 
-void MasterManagerBase::pushWriteReq(const std::string& reqdata)
+void MasterManagerBase::pushWriteReq(const std::string& reqdata, const std::string& type)
 {
     if (!isDistributeEnable_)
     {
@@ -398,6 +397,7 @@ void MasterManagerBase::pushWriteReq(const std::string& reqdata)
             "," << reqdata;
         return;
     }
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
     if (!zookeeper_ || !zookeeper_->isConnected())
     {
         LOG(ERROR) << "Master is not connecting to ZooKeeper, write request pushed failed." <<
@@ -406,7 +406,7 @@ void MasterManagerBase::pushWriteReq(const std::string& reqdata)
     }
     ZNode znode;
     //znode.setValue(ZNode::KEY_REQ_CONTROLLER, controller_name);
-    //znode.setValue(ZNode::KEY_REQ_ACTION, action_name);
+    znode.setValue(ZNode::KEY_REQ_TYPE, type);
     znode.setValue(ZNode::KEY_REQ_DATA, reqdata);
     if(zookeeper_->createZNode(write_req_queue_, znode.serialize(), ZooKeeper::ZNODE_SEQUENCE))
     {

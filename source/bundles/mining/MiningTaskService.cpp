@@ -47,16 +47,11 @@ void MiningTaskService::cronJob_()
 {
     if (cronExpression_.matches_now() || DistributeRequestHooker::get()->isHooked())
     {
-        if (NodeManagerBase::get()->isPrimary())
+        if (NodeManagerBase::get()->isPrimary() && !DistributeRequestHooker::get()->isHooked())
         {
-            if (!MasterManagerBase::get()->prepareWriteReq())
-            {
-                LOG(INFO) << "prepare cronJob failed. maybe some other primary master prepared first. ";
-                return;
-            }
-            DistributeRequestHooker::get()->setHook(izenelib::driver::Request::FromDistribute, cronJobName_);
-            DistributeRequestHooker::get()->hookCurrentReq(cronJobName_);
-            LOG(INFO) << "cron job running on primary : " << cronJobName_;
+            MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+            LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
+	    return;
         }
         if (!DistributeRequestHooker::get()->isValid())
         {
@@ -71,8 +66,8 @@ void MiningTaskService::cronJob_()
         }
 
         DoMiningCollection();
+	DistributeRequestHooker::get()->processLocalFinished(true);
     }
-    DistributeRequestHooker::get()->processLocalFinished(true);
 }
 
 }

@@ -21,6 +21,8 @@
 #include <node-manager/RequestLog.h>
 #include <node-manager/DistributeFileSyncMgr.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 #include <util/driver/Request.h>
 
 #include <sdb/SDBCursorIterator.h>
@@ -1000,8 +1002,14 @@ void RecommendTaskService::buildFreqItemSet_()
 
 void RecommendTaskService::cronJob_()
 {
-    if (cronExpression_.matches_now())
+    if (cronExpression_.matches_now()|| DistributeRequestHooker::get()->isHooked())
     {
+        if (NodeManagerBase::get()->isPrimary() && !DistributeRequestHooker::get()->isHooked())
+        {
+            MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+            LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
+	    return;
+        }
         boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
@@ -1009,10 +1017,22 @@ void RecommendTaskService::cronJob_()
             LOG(INFO) << "exit recommend cron job as still in building collection " << bundleConfig_.collectionName_;
             return;
         }
+	if (!DistributeRequestHooker::get()->isValid())
+	{
+		LOG(INFO) << "cron job ignored : " << cronJobName_;
+		return;
+	}
+	CronJobReqLog reqlog;
+	if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+	{
+		LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName_ << std::endl;
+            return;
+        }
 
         flush_();
 
         buildFreqItemSet_();
+	DistributeRequestHooker::get()->processLocalFinished(true);
     }
 }
 

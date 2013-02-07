@@ -7,6 +7,11 @@
 
 #include "MiningQueryLogHandler.h"
 #include "query-recommend-submanager/RecommendManager.h"
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
+
 
 #include <util/scheduler.h>
 
@@ -89,8 +94,28 @@ bool MiningQueryLogHandler::cronStart(const std::string& cron_job)
 
 void MiningQueryLogHandler::cronJob_()
 {
-    if (cron_expression_.matches_now())
+    if (cron_expression_.matches_now() || DistributeRequestHooker::get()->isHooked())
     {
+        if (NodeManagerBase::get()->isPrimary() && !DistributeRequestHooker::get()->isHooked())
+        {
+            MasterManagerBase::get()->pushWriteReq("MiningQueryLogHandler", "cron");
+            LOG(INFO) << "push cron job to queue on primary : " << __FUNCTION__;
+	    return;
+        }
+        if (!DistributeRequestHooker::get()->isValid())
+        {
+            LOG(INFO) << "cron job ignored : " << __FUNCTION__;
+            return;
+        }
+        CronJobReqLog reqlog;
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << __FUNCTION__ << std::endl;
+            return;
+        }
+
         runEvents();
+	DistributeRequestHooker::get()->processLocalFinished(true);
+
     }
 }

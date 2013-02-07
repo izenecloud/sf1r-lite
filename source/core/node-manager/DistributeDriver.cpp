@@ -3,6 +3,7 @@
 #include "DistributeRequestHooker.h"
 #include "RequestLog.h"
 
+#include <util/scheduler.h>
 #include <util/driver/Reader.h>
 #include <util/driver/Writer.h>
 #include <util/driver/writers/JsonWriter.h>
@@ -163,18 +164,35 @@ bool DistributeDriver::on_new_req_available()
     while(true)
     {
         std::string reqdata;
-        if(!MasterManagerBase::get()->popWriteReq(reqdata))
+	std::string reqtype;
+        if(!MasterManagerBase::get()->popWriteReq(reqdata, reqtype))
         {
             LOG(INFO) << "no more request.";
             break;
         }
-        if( !handleRequest(reqdata, reqdata, Request::FromDistribute) )
+
+        if(reqtype.empty() && !handleRequest(reqdata, reqdata, Request::FromDistribute) )
         {
             LOG(WARNING) << "one write request failed to deliver :" << reqdata;
             // a write request failed to deliver means the worker did not 
             // started to handle this request, so the request is ignored, and
             // continue to deliver next write request in the queue.
         }
+	else if (reqtype == "cron")
+	{
+	    LOG(ERROR) << "got a cron job request from queue." << reqdata;
+            DistributeRequestHooker::get()->setHook(Request::FromDistribute, reqdata);
+            DistributeRequestHooker::get()->hookCurrentReq(reqdata);
+	    bool ret = izenelib::util::Scheduler::runJobImmediatly(reqdata);
+            if (!ret)
+            {
+		LOG(ERROR) << "cron job start failed";
+	    }
+	    else
+	    {
+		    break;
+	    }
+	}
         else
         {
             // a write request deliver success from master to worker.

@@ -102,9 +102,9 @@ public:
     bool isMinePrimary();
     bool isBusy();
     bool prepareWriteReq();
-    void pushWriteReq(const std::string& reqdata);
+    void pushWriteReq(const std::string& reqdata, const std::string& type = "");
     // make sure prepare success before call this.
-    bool popWriteReq(std::string& reqdata);
+    bool popWriteReq(std::string& reqdata, std::string& type);
 
     //bool getWriteReqDataFromPreparedNode(std::string& req_json_data);
     void setCallback(EventCBType on_new_req_available)

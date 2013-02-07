@@ -22,7 +22,7 @@ std::set<ReqLogType> DistributeRequestHooker::need_backup_types_;
 void DistributeRequestHooker::init()
 {
     need_backup_types_.insert(Req_NoAdditionData_NeedBackup_Req);
-    need_backup_types_.insert(Req_CronJob);
+    //need_backup_types_.insert(Req_CronJob);
     need_backup_types_.insert(Req_Index);
     // init callback for distribute request.
     NodeManagerBase::get()->setCallback(
@@ -79,6 +79,8 @@ bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& 
     bool ret = true;
     if (reqloghead.reqtype == Req_CronJob)
     {
+	setHook(Request::FromPrimaryWorker, packed_reqdata);
+	hookCurrentReq(packed_reqdata);
         LOG(ERROR) << "got a cron job request from primary." << reqloghead.req_json_data;
         ret = izenelib::util::Scheduler::runJobImmediatly(reqloghead.req_json_data);
     }
