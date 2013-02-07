@@ -68,21 +68,22 @@ bool QueryCategorizer::GetCategoryByMatcher_(
 
     std::vector<ProductMatcher::Product> result_products;
     ProductMatcher* matcher = ProductMatcherInstance::get();
+    matcher->GetFrontendCategory(queryU, (uint32_t)limit, frontends);
 
-    if (matcher->Process(doc, (uint32_t)limit, result_products))
-    {
-        for(uint32_t i=0; i<result_products.size(); i++)
-        {
-            const std::string& category_name = result_products[i].scategory;
-            if (!category_name.empty())
-            {
-                if(!result_products[i].fcategory.empty())
-                {
-                    frontends.push_back(UString(result_products[i].fcategory, UString::UTF_8));
-                }
-            }
-        }
-    }
+    //if (matcher->Process(doc, (uint32_t)limit, result_products))
+    //{
+        //for(uint32_t i=0; i<result_products.size(); i++)
+        //{
+            //const std::string& category_name = result_products[i].scategory;
+            //if (!category_name.empty())
+            //{
+                //if(!result_products[i].fcategory.empty())
+                //{
+                    //frontends.push_back(UString(result_products[i].fcategory, UString::UTF_8));
+                //}
+            //}
+        //}
+    //}
     return frontends.empty() ? false : true;
 }
 
