@@ -270,6 +270,7 @@ int do_main(int ac, char** av)
         ("spu-process", "process and merge all spus")
         ("logserver-update", "update logserver")
         ("match-test,T", "b5m matching test")
+        ("frontend-test", "the frontend categorizing")
         ("mdb-instance", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
@@ -634,6 +635,41 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
     } 
+    if (vm.count("frontend-test")) {
+        if( knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ProductMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open(knowledge_dir))
+        {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        matcher.SetUsePriceSim(false);
+        if(max_depth>0)
+        {
+            matcher.SetCategoryMaxDepth(max_depth);
+        }
+        while(true)
+        {
+            std::string line;
+            std::cerr<<"input text:"<<std::endl;
+            getline(std::cin, line);
+            boost::algorithm::trim(line);
+            UString query(line, UString::UTF_8);
+            uint32_t limit = 3;
+            std::vector<UString> results;
+            matcher.GetFrontendCategory(query, limit, results);
+            for(uint32_t i=0;i<results.size();i++)
+            {
+                std::string str;
+                results[i].convertString(str, UString::UTF_8);
+                std::cout<<"[FCATEGORY]"<<str<<std::endl;
+            }
+        }
+    }
     if (vm.count("match-test")) {
         if( knowledge_dir.empty())
         {
