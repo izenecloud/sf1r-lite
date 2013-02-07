@@ -668,7 +668,7 @@ bool MiningManager::open()
             else
             {
                 matcher->SetUsePriceSim(false);
-                matcher->SetCategoryMaxDepth(2);
+                //matcher->SetCategoryMaxDepth(2);
             }
             product_categorizer_->SetProductMatcher(matcher);
             SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
