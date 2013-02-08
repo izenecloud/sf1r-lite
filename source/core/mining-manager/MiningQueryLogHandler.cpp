@@ -116,6 +116,5 @@ void MiningQueryLogHandler::cronJob_()
 
         runEvents();
 	DistributeRequestHooker::get()->processLocalFinished(true);
-
     }
 }

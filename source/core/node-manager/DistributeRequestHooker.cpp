@@ -77,17 +77,7 @@ bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& 
         return false;
     }
     bool ret = true;
-    if (reqloghead.reqtype == Req_CronJob)
-    {
-	setHook(Request::FromPrimaryWorker, packed_reqdata);
-	hookCurrentReq(packed_reqdata);
-        LOG(ERROR) << "got a cron job request from primary." << reqloghead.req_json_data;
-        ret = izenelib::util::Scheduler::runJobImmediatly(reqloghead.req_json_data);
-    }
-    else
-    {
-        ret = DistributeDriver::get()->handleReqFromPrimary(reqloghead.req_json_data, packed_reqdata);
-    }
+    ret = DistributeDriver::get()->handleReqFromPrimary(reqloghead.reqtype, reqloghead.req_json_data, packed_reqdata);
     if (!ret)
     {
         LOG(ERROR) << "send request come from primary failed in replica. " << reqloghead.req_json_data;

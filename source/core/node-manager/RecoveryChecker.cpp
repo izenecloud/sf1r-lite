@@ -265,7 +265,7 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
             LOG(INFO) << "redoing for request id : " << rethead.inc_id;
             CommonReqData req_commondata;
             ReqLogMgr::unpackReqLogData(req_packed_data, req_commondata);
-            if(!DistributeDriver::get()->handleReqFromLog(req_commondata.req_json_data, req_packed_data))
+            if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, req_packed_data))
             {
                 LOG(INFO) << "redoing from log failed: " << rethead.inc_id;
                 throw std::runtime_error("handleReqFromLog failed.");
@@ -577,7 +577,7 @@ void RecoveryChecker::syncToNewestReqLog()
                 throw std::runtime_error("syncToNewestReqLog failed.");
             }
             reqid = req_commondata.inc_id;
-            if(!DistributeDriver::get()->handleReqFromLog(req_commondata.req_json_data, newlogdata_list[i]))
+            if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, newlogdata_list[i]))
             {
                 LOG(INFO) << "redoing from log failed: " << req_commondata.inc_id;
                 throw std::runtime_error("handleReqFromLog failed.");

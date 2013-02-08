@@ -144,13 +144,35 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
     return false;
 }
 
-bool DistributeDriver::handleReqFromLog(const std::string& reqjsondata, const std::string& packed_data)
+bool DistributeDriver::handleReqFromLog(int reqtype, const std::string& reqjsondata, const std::string& packed_data)
 {
+    if ((ReqLogType)reqtype == Req_CronJob)
+    {
+	    LOG(INFO) << "got a cron job request in log." << reqjsondata;
+	    DistributeRequestHooker::get()->setHook(Request::FromLog, packed_data);
+	    DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+            DistributeRequestHooker::get()->processLocalBegin();
+	    bool ret = izenelib::util::Scheduler::runJobImmediatly(reqjsondata, true);
+	    if (!ret)
+	    {
+		    LOG(ERROR) << "cron job start failed";
+	    }
+	    return ret;
+    }
     return handleRequest(reqjsondata, packed_data, Request::FromLog);
 }
 
-bool DistributeDriver::handleReqFromPrimary(const std::string& reqjsondata, const std::string& packed_data)
+bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqjsondata, const std::string& packed_data)
 {
+    if ((ReqLogType)reqtype == Req_CronJob)
+    {
+	DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
+	DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+	DistributeRequestHooker::get()->processLocalBegin();
+        LOG(INFO) << "got a cron job request from primary." << reqjsondata;
+        return izenelib::util::Scheduler::runJobImmediatly(reqjsondata);
+    }
+
     return handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker);
 }
 
@@ -180,9 +202,10 @@ bool DistributeDriver::on_new_req_available()
         }
 	else if (reqtype == "cron")
 	{
-	    LOG(ERROR) << "got a cron job request from queue." << reqdata;
+	    LOG(INFO) << "got a cron job request from queue." << reqdata;
             DistributeRequestHooker::get()->setHook(Request::FromDistribute, reqdata);
             DistributeRequestHooker::get()->hookCurrentReq(reqdata);
+            DistributeRequestHooker::get()->processLocalBegin();
 	    bool ret = izenelib::util::Scheduler::runJobImmediatly(reqdata);
             if (!ret)
             {
