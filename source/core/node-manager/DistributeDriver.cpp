@@ -55,6 +55,20 @@ void DistributeDriver::init(const RouterPtr& router)
     MasterManagerBase::get()->setCallback(boost::bind(&DistributeDriver::on_new_req_available, this));
 }
 
+static bool callCronJob(Request::kCallType calltype, const std::string& jobname, const std::string& packed_data)
+{
+	DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+	DistributeRequestHooker::get()->processLocalBegin();
+	LOG(INFO) << "got a cron job request." << jobname;
+        
+	bool ret = izenelib::util::Scheduler::runJobImmediatly(jobname, calltype, calltype == Request::FromLog);
+	if (!ret)
+	{
+		LOG(ERROR) << "start cron job failed." << jobname;
+	}
+	return ret;
+}
+
 static bool callHandler(izenelib::driver::Router::handler_ptr handler,
     Request::kCallType calltype, const std::string& packed_data,
     Request& request)
@@ -150,14 +164,7 @@ bool DistributeDriver::handleReqFromLog(int reqtype, const std::string& reqjsond
     {
 	    LOG(INFO) << "got a cron job request in log." << reqjsondata;
 	    DistributeRequestHooker::get()->setHook(Request::FromLog, packed_data);
-	    DistributeRequestHooker::get()->hookCurrentReq(packed_data);
-            DistributeRequestHooker::get()->processLocalBegin();
-	    bool ret = izenelib::util::Scheduler::runJobImmediatly(reqjsondata, Request::FromLog, true);
-	    if (!ret)
-	    {
-		    LOG(ERROR) << "cron job start failed";
-	    }
-	    return ret;
+	    return callCronJob(Request::FromLog, reqjsondata, packed_data);
     }
     return handleRequest(reqjsondata, packed_data, Request::FromLog);
 }
@@ -167,10 +174,12 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
     if ((ReqLogType)reqtype == Req_CronJob)
     {
 	DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
-	DistributeRequestHooker::get()->hookCurrentReq(packed_data);
-	DistributeRequestHooker::get()->processLocalBegin();
-        LOG(INFO) << "got a cron job request from primary." << reqjsondata;
-        return izenelib::util::Scheduler::runJobImmediatly(reqjsondata, Request::FromPrimaryWorker);
+	if (!async_task_worker_.interruption_requested())
+	{
+		asyncWriteTasks_.push(boost::bind(&callCronJob,
+					Request::FromPrimaryWorker, reqjsondata, packed_data));
+	}
+        return true;
     }
 
     return handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker);
