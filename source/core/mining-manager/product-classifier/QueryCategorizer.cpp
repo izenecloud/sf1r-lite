@@ -46,7 +46,7 @@ QueryCategorizer::QueryCategorizer()
     ,cache_(10000)
 {
     //modes_.push_back(MATCHER);
-    //modes_.push_back(SEARCH_PRODUCT);	
+    modes_.push_back(SEARCH_PRODUCT);	
     //modes_.push_back(SEARCH_SPU);
 }
 
@@ -209,7 +209,7 @@ bool QueryCategorizer::GetProductCategory(
             return true;
         }
     }
-    if(!modes_.empty())
+    if(frontCategories.empty())
     {
         std::string enriched_query;
         spu_classifier_->GetEnrichedQuery(query, enriched_query);
