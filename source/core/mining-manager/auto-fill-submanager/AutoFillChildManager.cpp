@@ -2,6 +2,10 @@
 
 #include <log-manager/UserQuery.h>
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 #include <boost/algorithm/string/trim.hpp>
 #include <idmlib/util/directory_switcher.h>
 #include <am/vsynonym/QueryNormalize.h>
@@ -181,7 +185,7 @@ bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std:
         bool result = izenelib::util::Scheduler::addJob(cronJobName_,
                       60*1000, // each minute
                       0, // start from now
-                      boost::bind(&AutoFillChildManager::updateAutoFill, this));
+                      boost::bind(&AutoFillChildManager::updateAutoFill, this, _1));
         if (! result)
             LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
         else
@@ -1163,17 +1167,43 @@ bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetS
     return true;
 }
 
-void AutoFillChildManager::updateAutoFill()
+void AutoFillChildManager::updateAutoFill(int calltype)
 {
     //out<<"do one:"<<endl;
-    if (cronExpression_.matches_now())
+    if (cronExpression_.matches_now() || calltype > 0)
     {
+        if (calltype == 0)
+        {
+	    if (NodeManagerBase::get()->isPrimary())
+	    {
+		MasterManagerBase::get()->pushWriteReq("ProductCronJobHandler", "cron");
+		LOG(INFO) << "push cron job to queue on primary : ProductCronJobHandler" ;
+	    }
+	    else
+	    {
+		LOG(INFO) << "cron job on replica ignored. ";
+	    }
+	    return;
+        }
+        if (!DistributeRequestHooker::get()->isValid())
+        {
+            LOG(INFO) << "cron job ignored : " << __FUNCTION__;
+            return;
+        }
         //out<<"do one Update"<<endl;
         boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
         {
             LOG(INFO) << "Is initing ";
+	    DistributeRequestHooker::get()->processLocalFinished(false);
+            return;
+        }
+
+        CronJobReqLog reqlog;
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << __FUNCTION__ << std::endl;
             return;
         }
 
@@ -1188,6 +1218,8 @@ void AutoFillChildManager::updateAutoFill()
         }
         isUpdating_Wat_ = false;
         isUpdating_ = false;
+
+	DistributeRequestHooker::get()->processLocalFinished(true);
     }
 }
 

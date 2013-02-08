@@ -152,7 +152,7 @@ bool DistributeDriver::handleReqFromLog(int reqtype, const std::string& reqjsond
 	    DistributeRequestHooker::get()->setHook(Request::FromLog, packed_data);
 	    DistributeRequestHooker::get()->hookCurrentReq(packed_data);
             DistributeRequestHooker::get()->processLocalBegin();
-	    bool ret = izenelib::util::Scheduler::runJobImmediatly(reqjsondata, true);
+	    bool ret = izenelib::util::Scheduler::runJobImmediatly(reqjsondata, Request::FromLog, true);
 	    if (!ret)
 	    {
 		    LOG(ERROR) << "cron job start failed";
@@ -170,7 +170,7 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
 	DistributeRequestHooker::get()->hookCurrentReq(packed_data);
 	DistributeRequestHooker::get()->processLocalBegin();
         LOG(INFO) << "got a cron job request from primary." << reqjsondata;
-        return izenelib::util::Scheduler::runJobImmediatly(reqjsondata);
+        return izenelib::util::Scheduler::runJobImmediatly(reqjsondata, Request::FromPrimaryWorker);
     }
 
     return handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker);
@@ -206,7 +206,7 @@ bool DistributeDriver::on_new_req_available()
             DistributeRequestHooker::get()->setHook(Request::FromDistribute, reqdata);
             DistributeRequestHooker::get()->hookCurrentReq(reqdata);
             DistributeRequestHooker::get()->processLocalBegin();
-	    bool ret = izenelib::util::Scheduler::runJobImmediatly(reqdata);
+	    bool ret = izenelib::util::Scheduler::runJobImmediatly(reqdata, Request::FromDistribute);
             if (!ret)
             {
 		LOG(ERROR) << "cron job start failed";

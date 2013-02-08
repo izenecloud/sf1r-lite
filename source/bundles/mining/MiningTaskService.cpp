@@ -19,7 +19,7 @@ MiningTaskService::MiningTaskService(MiningBundleConfiguration* bundleConfig)
             bool result = izenelib::util::Scheduler::addJob(cronJobName_,
                                                             60*1000, // each minute
                                                             0, // start from now
-                                                            boost::bind(&MiningTaskService::cronJob_, this));
+                                                            boost::bind(&MiningTaskService::cronJob_, this, _1));
             if (!result)
             {
                 LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
@@ -43,16 +43,21 @@ void MiningTaskService::DoContinue()
     miningManager_->DoContinue();
 }
 
-void MiningTaskService::cronJob_()
+void MiningTaskService::cronJob_(int calltype)
 {
-    if (cronExpression_.matches_now() || DistributeRequestHooker::get()->isHooked())
+    if (cronExpression_.matches_now() || calltype > 0)
     {
-        if (NodeManagerBase::get()->isPrimary() && !DistributeRequestHooker::get()->isHooked())
-        {
-            MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
-            LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
-	    return;
-        }
+	if(calltype == 0)
+	{
+		if (NodeManagerBase::get()->isPrimary() && !DistributeRequestHooker::get()->isHooked())
+		{
+			MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+			LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
+		}
+		else
+			LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
+		return;
+	}
         if (!DistributeRequestHooker::get()->isValid())
         {
             LOG(INFO) << "cron job ignored : " << cronJobName_;

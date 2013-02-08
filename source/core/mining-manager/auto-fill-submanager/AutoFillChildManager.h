@@ -245,7 +245,7 @@ public:
     bool getAutoFillListFromDbTable(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
     void buildWat_array(bool _fromleveldb);
-    void updateAutoFill();
+    void updateAutoFill(int calltype);
 
     bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
     bool buildIndex(const std::list<ItemValueType>& queryList);

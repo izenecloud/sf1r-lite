@@ -3,6 +3,10 @@
 #include <product-manager/product_price_trend.h>
 #include <util/scheduler.h>
 
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -65,16 +69,42 @@ bool ProductCronJobHandler::cronStart(const std::string& cron_job)
     {
         return false;
     }
-    boost::function<void (void)> task = boost::bind(&ProductCronJobHandler::cronJob_,this);
+    boost::function<void (int)> task = boost::bind(&ProductCronJobHandler::cronJob_,this, _1);
     izenelib::util::Scheduler::addJob("ProductCronJobHandler", 60 * 1000, 0, task);
     cron_started_ = true;
     return true;
 }
 
-void ProductCronJobHandler::cronJob_()
+void ProductCronJobHandler::cronJob_(int calltype)
 {
-    if (cron_expression_.matches_now())
+    if (cron_expression_.matches_now() || calltype > 0)
     {
+        if (calltype == 0)
+        {
+	    if (NodeManagerBase::get()->isPrimary())
+	    {
+		MasterManagerBase::get()->pushWriteReq("ProductCronJobHandler", "cron");
+		LOG(INFO) << "push cron job to queue on primary : ProductCronJobHandler" ;
+	    }
+	    else
+	    {
+		LOG(INFO) << "cron job on replica ignored. ";
+	    }
+	    return;
+        }
+        if (!DistributeRequestHooker::get()->isValid())
+        {
+            LOG(INFO) << "cron job ignored : " << __FUNCTION__;
+            return;
+        }
+        CronJobReqLog reqlog;
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << __FUNCTION__ << std::endl;
+            return;
+        }
+
         runEvents();
+	DistributeRequestHooker::get()->processLocalFinished(true);
     }
 }

@@ -86,20 +86,27 @@ bool MiningQueryLogHandler::cronStart(const std::string& cron_job)
     {
         return false;
     }
-    boost::function<void (void)> task = boost::bind(&MiningQueryLogHandler::cronJob_, this);
+    boost::function<void (int)> task = boost::bind(&MiningQueryLogHandler::cronJob_, this, _1);
     izenelib::util::Scheduler::addJob("MiningQueryLogHandler", 60 * 1000, 0, task);
     cron_started_ = true;
     return true;
 }
 
-void MiningQueryLogHandler::cronJob_()
+void MiningQueryLogHandler::cronJob_(int calltype)
 {
-    if (cron_expression_.matches_now() || DistributeRequestHooker::get()->isHooked())
+    if (cron_expression_.matches_now() || calltype > 0)
     {
-        if (NodeManagerBase::get()->isPrimary() && !DistributeRequestHooker::get()->isHooked())
+        if (calltype == 0)
         {
-            MasterManagerBase::get()->pushWriteReq("MiningQueryLogHandler", "cron");
-            LOG(INFO) << "push cron job to queue on primary : " << __FUNCTION__;
+	    if (NodeManagerBase::get()->isPrimary())
+	    {
+		MasterManagerBase::get()->pushWriteReq("MiningQueryLogHandler", "cron");
+		LOG(INFO) << "push cron job to queue on primary : MiningQueryLogHandler" ;
+	    }
+	    else
+	    {
+		LOG(INFO) << "cron job on replica ignored. ";
+	    }
 	    return;
         }
         if (!DistributeRequestHooker::get()->isValid())

@@ -250,7 +250,7 @@ private:
     );
 
     void buildFreqItemSet_();
-    void cronJob_();
+    void cronJob_(int calltype);
     void flush_();
 
 private:

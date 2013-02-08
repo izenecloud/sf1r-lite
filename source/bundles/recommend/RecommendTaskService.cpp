@@ -296,7 +296,7 @@ RecommendTaskService::RecommendTaskService(
         bool result = izenelib::util::Scheduler::addJob(cronJobName_,
                                                         60*1000, // each minute
                                                         0, // start from now
-                                                        boost::bind(&RecommendTaskService::cronJob_, this));
+                                                        boost::bind(&RecommendTaskService::cronJob_, this, _1));
         if (! result)
         {
             LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
@@ -1000,16 +1000,21 @@ void RecommendTaskService::buildFreqItemSet_()
     LOG(INFO) << "finish building frequent item set for collection " << bundleConfig_.collectionName_;
 }
 
-void RecommendTaskService::cronJob_()
+void RecommendTaskService::cronJob_(int calltype)
 {
-    if (cronExpression_.matches_now()|| DistributeRequestHooker::get()->isHooked())
+    if (cronExpression_.matches_now() || calltype > 0)
     {
-        if (NodeManagerBase::get()->isPrimary() && !DistributeRequestHooker::get()->isHooked())
-        {
-            MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
-            LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
+        if(calltype == 0)
+	{
+	    if (NodeManagerBase::get()->isPrimary())
+	    {
+		MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+		LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
+	    }
+	    else
+		LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
 	    return;
-        }
+	}
         boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)

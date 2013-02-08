@@ -28,7 +28,7 @@ public:
     }
 
 private:
-    void cronJob_();
+    void cronJob_(int calltype);
 
 private:
     boost::shared_ptr<MiningManager> miningManager_;
