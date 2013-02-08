@@ -129,7 +129,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     bool isprimary = (hook_type_ != Request::FromLog) && NodeManagerBase::get()->isPrimary();
     if (isprimary)
     {
-        if (chain_status_ == ChainBegin)
+        if (chain_status_ == ChainBegin || chain_status_ == NoChain)
             prepared_req.req_json_data = current_req_;
     }
     else
