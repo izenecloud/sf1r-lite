@@ -45,8 +45,8 @@ QueryCategorizer::QueryCategorizer()
     ,suffix_manager_(NULL)
     ,cache_(10000)
 {
-    modes_.push_back(MATCHER);
-    modes_.push_back(SEARCH_PRODUCT);	
+    //modes_.push_back(MATCHER);
+    //modes_.push_back(SEARCH_PRODUCT);	
     //modes_.push_back(SEARCH_SPU);
 }
 
@@ -209,25 +209,28 @@ bool QueryCategorizer::GetProductCategory(
             return true;
         }
     }
-    std::string enriched_query;
-    spu_classifier_->GetEnrichedQuery(query, enriched_query);
-
-    for(unsigned i = 0; i < modes_.size(); ++i)
+    if(!modes_.empty())
     {
-        switch(modes_[i])
+        std::string enriched_query;
+        spu_classifier_->GetEnrichedQuery(query, enriched_query);
+
+        for(unsigned i = 0; i < modes_.size(); ++i)
         {
-        case MATCHER:
-            //GetCategoryByMatcher_(query, limit, frontCategories);
-            //LOG(INFO)<<"GetCategoryByMatcher "<<frontCategories.size();
-            break;
-        case SEARCH_SPU:
-            GetCategoryBySPU_(enriched_query, frontCategories);
-            LOG(INFO)<<"GetCategoryBySPU "<<frontCategories.size();
-            break;
-        case SEARCH_PRODUCT:
-            GetCategoryBySuffixMatcher_(enriched_query, frontCategories);
-            LOG(INFO)<<"GetCategoryByProduct "<<frontCategories.size();
-            break;
+            switch(modes_[i])
+            {
+            case MATCHER:
+                //GetCategoryByMatcher_(query, limit, frontCategories);
+                //LOG(INFO)<<"GetCategoryByMatcher "<<frontCategories.size();
+                break;
+            case SEARCH_SPU:
+                GetCategoryBySPU_(enriched_query, frontCategories);
+                LOG(INFO)<<"GetCategoryBySPU "<<frontCategories.size();
+                break;
+            case SEARCH_PRODUCT:
+                GetCategoryBySuffixMatcher_(enriched_query, frontCategories);
+                LOG(INFO)<<"GetCategoryByProduct "<<frontCategories.size();
+                break;
+            }
         }
     }
     bool ret = GetSplittedCategories_(frontCategories, limit, pathVec);
