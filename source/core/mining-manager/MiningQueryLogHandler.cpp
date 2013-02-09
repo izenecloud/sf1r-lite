@@ -17,6 +17,7 @@
 
 using namespace sf1r;
 
+static const std::string cronJobName = "MiningQueryLogHandler";
 
 MiningQueryLogHandler::MiningQueryLogHandler()
     : waitSec_(3600)
@@ -27,7 +28,7 @@ MiningQueryLogHandler::MiningQueryLogHandler()
 
 MiningQueryLogHandler::~MiningQueryLogHandler()
 {
-    izenelib::util::Scheduler::removeJob("MiningQueryLogHandler");
+    izenelib::util::Scheduler::removeJob(cronJobName);
 }
 
 void MiningQueryLogHandler::SetParam(uint32_t wait_sec, uint32_t days)
@@ -87,7 +88,7 @@ bool MiningQueryLogHandler::cronStart(const std::string& cron_job)
         return false;
     }
     boost::function<void (int)> task = boost::bind(&MiningQueryLogHandler::cronJob_, this, _1);
-    izenelib::util::Scheduler::addJob("MiningQueryLogHandler", 60 * 1000, 0, task);
+    izenelib::util::Scheduler::addJob(cronJobName, 60 * 1000, 0, task);
     cron_started_ = true;
     return true;
 }
@@ -100,8 +101,8 @@ void MiningQueryLogHandler::cronJob_(int calltype)
         {
 	    if (NodeManagerBase::get()->isPrimary())
 	    {
-		MasterManagerBase::get()->pushWriteReq("MiningQueryLogHandler", "cron");
-		LOG(INFO) << "push cron job to queue on primary : MiningQueryLogHandler" ;
+		MasterManagerBase::get()->pushWriteReq(cronJobName, "cron");
+		LOG(INFO) << "push cron job to queue on primary : " << cronJobName;
 	    }
 	    else
 	    {
@@ -111,13 +112,13 @@ void MiningQueryLogHandler::cronJob_(int calltype)
         }
         if (!DistributeRequestHooker::get()->isValid())
         {
-            LOG(INFO) << "cron job ignored : " << __FUNCTION__;
+            LOG(INFO) << "cron job ignored : " << cronJobName;
             return;
         }
         CronJobReqLog reqlog;
         if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
         {
-            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << __FUNCTION__ << std::endl;
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName << std::endl;
             return;
         }
 

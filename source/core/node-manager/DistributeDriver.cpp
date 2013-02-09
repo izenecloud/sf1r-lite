@@ -65,6 +65,7 @@ static bool callCronJob(Request::kCallType calltype, const std::string& jobname,
 	if (!ret)
 	{
 		LOG(ERROR) << "start cron job failed." << jobname;
+		DistributeRequestHooker::get()->processLocalFinished(false);
 	}
 	return ret;
 }
@@ -213,9 +214,7 @@ bool DistributeDriver::on_new_req_available()
 	{
 	    LOG(INFO) << "got a cron job request from queue." << reqdata;
             DistributeRequestHooker::get()->setHook(Request::FromDistribute, reqdata);
-            DistributeRequestHooker::get()->hookCurrentReq(reqdata);
-            DistributeRequestHooker::get()->processLocalBegin();
-	    bool ret = izenelib::util::Scheduler::runJobImmediatly(reqdata, Request::FromDistribute);
+	    bool ret = callCronJob(Request::FromDistribute, reqdata, reqdata);
             if (!ret)
             {
 		LOG(ERROR) << "cron job start failed";

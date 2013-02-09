@@ -12,6 +12,7 @@
 
 using namespace sf1r;
 
+static const std::string cronJobName = "ProductCronJobHandler";
 
 ProductCronJobHandler::ProductCronJobHandler()
     : wait_seconds_(3600)
@@ -23,7 +24,7 @@ ProductCronJobHandler::ProductCronJobHandler()
 
 ProductCronJobHandler::~ProductCronJobHandler()
 {
-    izenelib::util::Scheduler::removeJob("ProductCronJobHandler");
+    izenelib::util::Scheduler::removeJob(cronJobName);
 }
 
 void ProductCronJobHandler::setParam(uint32_t wait_seconds, uint32_t wait_days)
@@ -70,7 +71,7 @@ bool ProductCronJobHandler::cronStart(const std::string& cron_job)
         return false;
     }
     boost::function<void (int)> task = boost::bind(&ProductCronJobHandler::cronJob_,this, _1);
-    izenelib::util::Scheduler::addJob("ProductCronJobHandler", 60 * 1000, 0, task);
+    izenelib::util::Scheduler::addJob(cronJobName, 60 * 1000, 0, task);
     cron_started_ = true;
     return true;
 }
@@ -83,8 +84,8 @@ void ProductCronJobHandler::cronJob_(int calltype)
         {
 	    if (NodeManagerBase::get()->isPrimary())
 	    {
-		MasterManagerBase::get()->pushWriteReq("ProductCronJobHandler", "cron");
-		LOG(INFO) << "push cron job to queue on primary : ProductCronJobHandler" ;
+		MasterManagerBase::get()->pushWriteReq(cronJobName, "cron");
+		LOG(INFO) << "push cron job to queue on primary : " << cronJobName;
 	    }
 	    else
 	    {
