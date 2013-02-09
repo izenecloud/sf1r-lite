@@ -1176,8 +1176,8 @@ void AutoFillChildManager::updateAutoFill(int calltype)
         {
 	    if (NodeManagerBase::get()->isPrimary())
 	    {
-		MasterManagerBase::get()->pushWriteReq("ProductCronJobHandler", "cron");
-		LOG(INFO) << "push cron job to queue on primary : ProductCronJobHandler" ;
+		MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+		LOG(INFO) << "push cron job to queue on primary : " << cronJobName_ ;
 	    }
 	    else
 	    {
