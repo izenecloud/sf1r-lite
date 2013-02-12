@@ -106,7 +106,8 @@ void CommandsController::indexRecommend_()
         else if (request().callType() != Request::FromAPI)
         {
             JobScheduler::get()->waitCurrentFinish(collectionName_);
-            if(!DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd))
+            if(!DistributeRequestHooker::get()->getChainStatus() != DistributeRequestHooker::ChainBegin || 
+			    !DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd))
             {
                 std::cout << "set chain status failed, stopping chain. current status: " <<
                    DistributeRequestHooker::get()->getChainStatus() << std::endl; 

@@ -72,7 +72,7 @@ bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& 
     CommonReqData reqloghead;
     if(!ReqLogMgr::unpackReqLogData(packed_reqdata, reqloghead))
     {
-        LOG(ERROR) << "unpack request data from primary failed.";
+        LOG(ERROR) << "unpack request data from primary failed. data: " << packed_reqdata;
         // return false to abortRequest.
         return false;
     }
