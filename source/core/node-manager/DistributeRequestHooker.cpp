@@ -126,7 +126,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     if (!isHooked())
         return true;
     assert(req_log_mgr_);
-    bool isprimary = (hook_type_ != Request::FromLog) && NodeManagerBase::get()->isPrimary();
+    bool isprimary = (hook_type_ == Request::FromDistribute);
     if (isprimary)
     {
         if (chain_status_ == ChainBegin || chain_status_ == NoChain)
@@ -244,7 +244,7 @@ bool DistributeRequestHooker::processFailedBeforePrepare()
         forceExit();
     }
     static CommonReqData reqlog;
-    if (NodeManagerBase::get()->isPrimary() && !req_log_mgr_->getPreparedReqLog(reqlog))
+    if (hook_type_ == Request::FromDistribute && !req_log_mgr_->getPreparedReqLog(reqlog))
     {
         LOG(INFO) << "primary end request before prepared, request ignored.";
         NodeManagerBase::get()->notifyMasterReadyForNew();
@@ -280,6 +280,18 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
         writeLocalLog();
         return;
     }
+    // need set rollback flag after primary finished, even no rollback type.
+    if(type_ == Req_NoAdditionDataNoRollback)
+    {
+	    CommonReqData reqlog;
+	    req_log_mgr_->getPreparedReqLog(reqlog);
+	    if(!RecoveryChecker::get()->setRollbackFlag(reqlog.inc_id))
+	    {
+		    LOG(ERROR) << "set rollback failed after finish local.this node need restore by human.";
+		    forceExit();
+	    }
+    }
+ 
     LOG(INFO) << "send packed request data len from local. len: " << current_req_.size();
     NodeManagerBase::get()->finishLocalReqProcess(type_, current_req_);
 }
@@ -378,9 +390,8 @@ void DistributeRequestHooker::finish(bool success)
     {
         LOG(INFO) << "The request failed to finish. rollback from backup.";
         // rollback from backup.
-        // rename current and move restore.
         // all the file need to be reopened to make effective.
-        if (type_ != Req_NoAdditionDataNoRollback && !RecoveryChecker::get()->rollbackLastFail())
+        if (!RecoveryChecker::get()->rollbackLastFail())
         {
             LOG(ERROR) << "failed to rollback ! must exit.";
             forceExit();
