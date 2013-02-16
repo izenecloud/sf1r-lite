@@ -139,7 +139,7 @@ bool ReqLogMgr::appendReqData(const std::string& req_packed_data)
     last_writed_id_ = whead.inc_id;
     ofs.close();
     ofs_head.close();
-    std::vector<CommonReqData>().swap(prepared_req_);
+    //std::vector<CommonReqData>().swap(prepared_req_);
     //std::cout << "append request log success: " << whead.inc_id << "," << whead.reqtime << std::endl;
     return true;
 }

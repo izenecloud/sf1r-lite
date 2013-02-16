@@ -131,7 +131,7 @@ public:
     static std::string getStatusReport()
     {
         if (current_test_fail_type_ == NoAnyTest)
-            return;
+            return "";
         std::stringstream ss;
         std::map<std::string, std::string>::const_iterator cit = memory_state_info_.begin();
         ss << "Memory state info : " << std::endl;
