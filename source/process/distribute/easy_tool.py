@@ -34,8 +34,8 @@ loginssh_stay = 'ssh ' + loginuser + '@'
 scp_local = 'rsync -av '
 scp_remote = 'scp -r ' + loginuser + '@'
 
-primary_host = ["172.16.5.195"]
-replicas_host = ["172.16.5.192", "172.16.5.194"]
+primary_host = ['172.16.5.195']
+replicas_host = ['172.16.5.192', '172.16.5.194']
 
 def send_cmd_afterssh(hosts, cmdstr):
     for host in hosts:
@@ -159,6 +159,25 @@ def check_running(args):
         send_cmd_andstay(host, cmdstr)
     print 'finished.'
 
+def set_fail_test_conf(args):
+    conf_file = args[2]
+    fp = open(conf_file, 'r')
+    fail_dict = {}
+    for line in fp:
+        line = line.strip()
+        if line[0] == '#' or len(line) < 1 :
+            continue
+        [ip, failtype] = line.split(' ')
+        fail_dict[ip] = failtype
+    fp.close()
+    for host in primary_host + replicas_host:
+        failtype = '0'
+        if host in fail_dict.keys():
+            failtype = fail_dict[host]
+        cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo ' + failtype + ' > ./distribute_test.conf'
+        send_cmd_andstay([host], cmdstr)
+
+
 handler_dict = { 'syncfile':syncfiles,
         'start_all':start_all,
         'stop_all':stop_all,
@@ -167,7 +186,8 @@ handler_dict = { 'syncfile':syncfiles,
         'check_build':check_build_finish,
         'check_running':check_running,
         'send_cmd':send_cmd,
-        'read_cmd_from_file':read_cmd_from_file
+        'read_cmd_from_file':read_cmd_from_file,
+        'set_fail_test_conf':set_fail_test_conf
         }
 
 args = sys.argv

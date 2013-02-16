@@ -406,6 +406,7 @@ void DistributeRequestHooker::finish(bool success)
             forceExit();
         }
     }
+    LOG(INFO) << DistributeTestSuit::getStatusReport();
 }
 
 void DistributeRequestHooker::clearHook(bool force)
