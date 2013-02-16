@@ -45,7 +45,7 @@ QueryCategorizer::QueryCategorizer()
     ,suffix_manager_(NULL)
     ,cache_(10000)
 {
-    modes_.push_back(MATCHER);
+    //modes_.push_back(MATCHER);
     modes_.push_back(SEARCH_PRODUCT);	
     //modes_.push_back(SEARCH_SPU);
 }
@@ -70,20 +70,6 @@ bool QueryCategorizer::GetCategoryByMatcher_(
     ProductMatcher* matcher = ProductMatcherInstance::get();
     matcher->GetFrontendCategory(queryU, (uint32_t)limit, frontends);
 
-    //if (matcher->Process(doc, (uint32_t)limit, result_products))
-    //{
-        //for(uint32_t i=0; i<result_products.size(); i++)
-        //{
-            //const std::string& category_name = result_products[i].scategory;
-            //if (!category_name.empty())
-            //{
-                //if(!result_products[i].fcategory.empty())
-                //{
-                    //frontends.push_back(UString(result_products[i].fcategory, UString::UTF_8));
-                //}
-            //}
-        //}
-    //}
     return frontends.empty() ? false : true;
 }
 
@@ -151,7 +137,7 @@ bool QueryCategorizer::GetSplittedCategories_(
     std::vector<std::vector<std::string> >& pathVec)
 {
     if(frontends.empty()) return false;
-
+    pathVec.clear();
     std::set<std::vector<UString> > splited_cat_set;
     for(std::vector<UString>::const_iterator it = frontends.begin();
             it != frontends.end(); ++it)
@@ -204,30 +190,47 @@ bool QueryCategorizer::GetProductCategory(
 {
     if (cache_.getValue(query, pathVec)) return !pathVec.empty();
 
-    std::string enriched_query;
     std::vector<UString> frontCategories;
     assert(spu_classifier_);
-    if(modes_.size() > 1)
+
+    GetCategoryByMatcher_(query, limit, frontCategories);
+    if(frontCategories.size() >= (unsigned)limit)
+    {
+        for(unsigned i = 0; i < frontCategories.size(); ++i)    
+        {
+            std::string str;
+            frontCategories[i].convertString(str, UString::UTF_8);
+            LOG(INFO)<<"GetCategoryByMatcher "<<str;
+        }
+        GetSplittedCategories_(frontCategories, limit, pathVec);
+        if(pathVec.size() == (unsigned)limit) 
+        {
+            cache_.insertValue(query, pathVec);
+            return true;
+        }
+    }
+    if(frontCategories.empty())
+    {
+        std::string enriched_query;
         spu_classifier_->GetEnrichedQuery(query, enriched_query);
 
-    LOG(INFO)<<"GetEnrichedQuery "<<enriched_query;
-
-    for(unsigned i = 0; i < modes_.size(); ++i)
-    {
-        switch(modes_[i])
+        for(unsigned i = 0; i < modes_.size(); ++i)
         {
-        case MATCHER:
-            GetCategoryByMatcher_(query, limit, frontCategories);
-            LOG(INFO)<<"GetCategoryByMatcher "<<frontCategories.size();
-            break;
-        case SEARCH_SPU:
-            GetCategoryBySPU_(enriched_query, frontCategories);
-            LOG(INFO)<<"GetCategoryBySPU "<<frontCategories.size();
-            break;
-        case SEARCH_PRODUCT:
-            GetCategoryBySuffixMatcher_(enriched_query, frontCategories);
-            LOG(INFO)<<"GetCategoryByProduct "<<frontCategories.size();
-            break;
+            switch(modes_[i])
+            {
+            case MATCHER:
+                //GetCategoryByMatcher_(query, limit, frontCategories);
+                //LOG(INFO)<<"GetCategoryByMatcher "<<frontCategories.size();
+                break;
+            case SEARCH_SPU:
+                GetCategoryBySPU_(enriched_query, frontCategories);
+                LOG(INFO)<<"GetCategoryBySPU "<<frontCategories.size();
+                break;
+            case SEARCH_PRODUCT:
+                GetCategoryBySuffixMatcher_(enriched_query, frontCategories);
+                LOG(INFO)<<"GetCategoryByProduct "<<frontCategories.size();
+                break;
+            }
         }
     }
     bool ret = GetSplittedCategories_(frontCategories, limit, pathVec);

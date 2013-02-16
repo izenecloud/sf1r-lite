@@ -546,7 +546,7 @@ void WikiGraph::InitStopword_()
     {
         string word;
         getline(in,word);
-        stopword_.insert(word);
+        stopword_.insert(ToSimplified_(word));
     }
 }
 

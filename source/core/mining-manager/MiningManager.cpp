@@ -668,11 +668,11 @@ bool MiningManager::open()
             else
             {
                 matcher->SetUsePriceSim(false);
-                matcher->SetCategoryMaxDepth(2);
+                //matcher->SetCategoryMaxDepth(2);
             }
             product_categorizer_->SetProductMatcher(matcher);
             SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
-            product_classifier->Open(res_path+"/spu-classifier");
+            product_classifier->Open(system_resource_path_+"/spu-classifier");
             product_categorizer_->SetSPUProductClassifier(product_classifier);
             product_categorizer_->SetWorkingMode(mining_schema_.product_categorizer_mode);
             //test

@@ -12,6 +12,7 @@ sub_modules:
     - qa
     - sim
     - speller-support
+    - spu-classifier
 push_sub_modules:
     - ise
     - kpe
