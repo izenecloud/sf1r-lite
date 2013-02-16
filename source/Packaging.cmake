@@ -48,6 +48,7 @@ ENDMACRO(THREE_PART_VERSION_TO_VARS)
 # Macro for copying third party libraries (boost, tokyo cabinet, glog)
 ####
 MACRO(INSTALL_RELATED_LIBRARIES)
+MESSAGE(STATUS ">>>>>> ${ARGV}")
 FOREACH(thirdlib ${ARGV})
     #MESSAGE(STATUS ">>>>>> ${thirdlib}")
     IF( ${thirdlib} MATCHES ".+\\.so" OR ${thirdlib} MATCHES ".+\\.so\\..+" )
@@ -161,10 +162,6 @@ IF(NOT ENV_ONLY_PACKAGE_SF1)
     ${CMAKE_SOURCE_DIR}/../bin/sf1r-engine
     #    ${CMAKE_SOURCE_DIR}/../bin/clean.query
     DESTINATION "bin"
-    COMPONENT sf1r_packings
-    )
-  INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/../instances"
-    DESTINATION "."
     COMPONENT sf1r_packings
     )
   INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/../package/resource"
