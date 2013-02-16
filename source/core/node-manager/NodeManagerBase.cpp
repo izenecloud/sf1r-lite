@@ -3,6 +3,7 @@
 #include "SuperMasterManager.h"
 #include "RequestLog.h"
 #include "MasterManagerBase.h"
+#include "DistributeTest.hpp"
 
 #include <aggregator-manager/MasterNotifier.h>
 #include <sstream>
@@ -120,6 +121,8 @@ void NodeManagerBase::start()
         return;
     }
 
+    DistributeTestSuit::loadTestConf();
+
     boost::unique_lock<boost::mutex> lock(mutex_);
     if (!zookeeper_)
     {
@@ -166,7 +169,13 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             // closed by zookeeper because of session expired
             LOG(WARNING) << "worker node disconnected by zookeeper, state: " << zookeeper_->getStateString();
             LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
-            //zookeeper_->disconnect();
+            LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
+            if (nodeState_ == NODE_STATE_RECOVER_RUNNING)
+            {
+                LOG (INFO) << " session expired while recovering, wait recover finish.";
+                return;
+            }
+            zookeeper_->disconnect();
             nodeState_ = NODE_STATE_STARTING;
             enterCluster(false);
             LOG (WARNING) << " restarted in NodeManagerBase for ZooKeeper Service finished";
@@ -446,7 +455,12 @@ void NodeManagerBase::enterCluster(bool start_master)
     LOG(INFO) << "begin recovering callback : " << self_primary_path_;
     if (cb_on_recovering_)
     {
+        // unlock
+        mutex_.unlock();
         cb_on_recovering_();
+        DistributeTestSuit::testFail(ReplicaFail_At_Recovering);
+        // relock
+        mutex_.lock();
     }
 
     updateCurrentPrimary();
@@ -503,6 +517,8 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     updateNodeState();
     updateCurrentPrimary();
+
+    DistributeTestSuit::testFail(Fail_At_AfterEnterCluster);
 
     Sf1rNode& curNode = sf1rTopology_.curNode_;
     LOG (INFO) << CLASSNAME
@@ -599,11 +615,17 @@ NodeManagerBase::NodeStateType NodeManagerBase::getPrimaryState()
 void NodeManagerBase::beginReqProcess()
 {
     setNodeState(NODE_STATE_PROCESSING_REQ_RUNNING);
+    if (isPrimaryWithoutLock())
+        DistributeTestSuit::testFail(PrimaryFail_At_BeginReqProcess);
+    else
+        DistributeTestSuit::testFail(ReplicaFail_At_BeginReqProcess);
 }
 
 void NodeManagerBase::notifyMasterReadyForNew()
 {
     setNodeState(NODE_STATE_STARTED);
+    if (isPrimaryWithoutLock())
+        DistributeTestSuit::testFail(PrimaryFail_At_NotifyMasterReadyForNew);
 }
 
 void NodeManagerBase::abortRequest()
@@ -613,11 +635,13 @@ void NodeManagerBase::abortRequest()
     {
         LOG(INFO) << "primary abort the request.";
         setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
+        DistributeTestSuit::testFail(PrimaryFail_At_AbortReq);
     }
     else
     {
         LOG(INFO) << "replica abort the request.";
         setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
+        DistributeTestSuit::testFail(ReplicaFail_At_AbortReq);
     }
 
 }
@@ -635,11 +659,13 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         znode.setValue(ZNode::KEY_REQ_TYPE, (uint32_t)type);
         zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
         zookeeper_->setZNodeData(self_primary_path_, znode.serialize());
+        DistributeTestSuit::testFail(PrimaryFail_At_FinishReqLocal);
     }
     else
     {
         LOG(INFO) << "replica finished local and begin waiting from primary.";
         setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY);
+        DistributeTestSuit::testFail(ReplicaFail_At_FinishReqLocal);
     }
 }
 
@@ -687,10 +713,12 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
         {
             updateNodeStateToNewState(NODE_STATE_ELECTING);
             LOG(INFO) << "begin electing, wait all secondary agree on primary : " << curr_primary_path_;
+            DistributeTestSuit::testFail(PrimaryFail_At_Electing);
             checkSecondaryElecting();
         }
         else
         {
+            DistributeTestSuit::testFail(ReplicaFail_At_Electing);
             LOG(INFO) << "begin electing, secondary update self to notify new primary : " << curr_primary_path_;
             // notify new primary mine state.
             updateNodeState();
@@ -755,6 +783,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                     throw std::runtime_error("exit for unrecovery node state.");
                 }
                 updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_RUNNING);
+                DistributeTestSuit::testFail(ReplicaFail_At_ReqProcessing);
                 if(cb_on_new_req_from_primary_)
                 {
                     if(!cb_on_new_req_from_primary_(type, packed_reqdata))
@@ -772,6 +801,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
         }
         else if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
         {
+            DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary);
             if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
             {
                 // write request log to local. and ready for new request.
@@ -802,6 +832,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
         }
         else if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
         {
+            DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary_Abort);
             if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
             {
                 LOG(INFO) << "primary aborted the request while waiting primary." << self_primary_path_;
@@ -816,6 +847,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
         }
         else if (nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
         {
+            DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Recovery);
             if(primary_state == NODE_STATE_RECOVER_WAIT_REPLICA_FINISH ||
                 primary_state == NODE_STATE_ELECTING)
             {
@@ -849,19 +881,24 @@ void NodeManagerBase::checkSecondaryState()
     switch(nodeState_)
     {
     case NODE_STATE_ELECTING:
+        DistributeTestSuit::testFail(PrimaryFail_At_Electing);
         checkSecondaryElecting();
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
+        DistributeTestSuit::testFail(PrimaryFail_At_Wait_Replica_Abort);
         checkSecondaryReqAbort();
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
+        DistributeTestSuit::testFail(PrimaryFail_At_Wait_Replica_FinishReq);
         checkSecondaryReqProcess();
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG:
+        DistributeTestSuit::testFail(PrimaryFail_At_Wait_Replica_FinishReqLog);
         checkSecondaryReqFinishLog();
         break;
     case NODE_STATE_RECOVER_WAIT_REPLICA_FINISH:
     case NODE_STATE_STARTED:
+        DistributeTestSuit::testFail(PrimaryFail_At_Wait_Replica_Recovery);
         checkSecondaryRecovery();
         break;
     default:
@@ -955,6 +992,8 @@ void NodeManagerBase::updateNodeState()
     zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
     // update to nodepath to make master got notified.
     zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
+
+    DistributeTestSuit::updateMemoryState("NodeState", nodeState_);
 }
 
 void NodeManagerBase::checkSecondaryReqProcess()

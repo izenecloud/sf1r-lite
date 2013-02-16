@@ -1,6 +1,8 @@
 #include "DistributeRequestHooker.h"
 #include "DistributeDriver.h"
 #include "RecoveryChecker.h"
+#include "DistributeTest.hpp"
+
 #include <boost/filesystem.hpp>
 #include <util/driver/writers/JsonWriter.h>
 #include <util/driver/readers/JsonReader.h>
@@ -349,6 +351,7 @@ void DistributeRequestHooker::writeLocalLog()
 
     assert(chain_status_ == ChainEnd || chain_status_ == NoChain);
     LOG(INFO) << "begin write request log to local.";
+
     bool ret = req_log_mgr_->appendReqData(current_req_);
     if (!ret)
     {
@@ -379,15 +382,21 @@ void DistributeRequestHooker::finish(bool success)
         LOG(ERROR) << "redo log failed. must exit";
         forceExit();
     }
+
+    CommonReqData reqlog;
+    req_log_mgr_->getPreparedReqLog(reqlog);
+
     req_log_mgr_->delPreparedReqLog();
     clearHook(true);
     if (success)
     {
         LOG(INFO) << "The request has finally finished both on primary and replicas.";
         RecoveryChecker::get()->clearRollbackFlag();
+        DistributeTestSuit::updateMemoryState("Last_Success_Request", reqlog.inc_id);
     }
     else
     {
+        DistributeTestSuit::updateMemoryState("Last_Failed_Request", reqlog.inc_id);
         LOG(INFO) << "The request failed to finish. rollback from backup.";
         // rollback from backup.
         // all the file need to be reopened to make effective.

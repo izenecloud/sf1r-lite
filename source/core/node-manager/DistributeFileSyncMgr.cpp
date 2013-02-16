@@ -3,6 +3,8 @@
 #include "SuperNodeManager.h"
 #include "RequestLog.h"
 #include "RecoveryChecker.h"
+#include "DistributeTest.hpp"
+
 #include <net/distribute/DataTransfer2.hpp>
 #include <configuration-manager/CollectionPath.h>
 #include <sf1r-net/RpcServerConnection.h>
@@ -109,6 +111,7 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
         rsp_req.param_.check_file_result[i] = boost::lexical_cast<std::string>(getFileCRC(file));
         //LOG(INFO) << "file : " << file << ", checksum:" << rsp_req.param_.check_file_result[i];
     }
+    DistributeTestSuit::getMemoryState(reqdata.check_key_list, rsp_req.param_.check_key_result);
 
     DistributeFileSyncMgr::get()->sendReportStatusRsp(reqdata.req_host, SuperNodeManager::get()->getFileSyncRpcPort(), rsp_req);
 }
@@ -377,15 +380,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
 
     getFileList(colpath.getCollectionDataPath(), req.param_.check_file_list, ignore_list_, true);
     LOG(INFO) << "checking got file num :" << req.param_.check_file_list.size();
-    std::vector<std::string> file_checksum_list(req.param_.check_file_list.size());
-
-    // calculate local.
-    for (size_t i = 0; i < req.param_.check_file_list.size(); ++i)
-    {
-        const std::string& file = req.param_.check_file_list[i];
-        file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file));
-        //LOG(INFO) << "file : " << file << ", checksum:" << file_checksum_list[i];
-    }
+    DistributeTestSuit::getMemoryStateKeyList(req.param_.check_key_list);
 
     size_t self = 0;
     int wait_num = 0;
@@ -409,6 +404,19 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
         if (rsp_ret)
             ++wait_num;
     }
+
+    std::vector<std::string> file_checksum_list(req.param_.check_file_list.size());
+    std::vector<std::string> memory_state_list;
+    DistributeTestSuit::getMemoryState(req.param_.check_key_list, memory_state_list);
+
+    // calculate local.
+    for (size_t i = 0; i < req.param_.check_file_list.size(); ++i)
+    {
+        const std::string& file = req.param_.check_file_list[i];
+        file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file));
+        //LOG(INFO) << "file : " << file << ", checksum:" << file_checksum_list[i];
+    }
+
     int max_wait = 10;
     // wait for response.
     while(wait_num > 0)
@@ -442,7 +450,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
             }
             if (rspdata[i].check_file_result.size() != file_checksum_list.size())
             {
-                LOG(WARNING) << "rsp file check result size if not matched!!!!";
+                LOG(WARNING) << "rsp file check result size not matched!!!!";
                 continue;
             }
             for (size_t j = 0; j < file_checksum_list.size(); ++j)
@@ -451,6 +459,18 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
                 {
                     LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
                     check_errinfo = "at least one of file not the same status between replicas.";
+                }
+            }
+            if (rspdata[i].check_key_result.size() != memory_state_list.size())
+            {
+                LOG(WARNING) << "rsp memory state result size not matched!!!!";
+                continue;
+            }
+            for (size_t j = 0; j < memory_state_list.size(); ++j)
+            {
+                if (memory_state_list[j] != rspdata[i].check_key_result[j])
+                {
+                    LOG(WARNING) << "one of memory state not the same as local : " << req.param_.check_key_list[j];
                 }
             }
         }
