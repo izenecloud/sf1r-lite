@@ -64,6 +64,13 @@ TARGET_LINK_LIBRARIES(b5m_matcher ${libs})
 SET_TARGET_PROPERTIES(b5m_matcher PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
+ADD_EXECUTABLE(b5m_categorizing
+b5m_categorizing.cc
+)
+TARGET_LINK_LIBRARIES(b5m_categorizing ${libs})
+SET_TARGET_PROPERTIES(b5m_categorizing PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
+)
 
 ADD_EXECUTABLE(image_upload
 image_upload.cpp

@@ -48,6 +48,7 @@ ENDMACRO(THREE_PART_VERSION_TO_VARS)
 # Macro for copying third party libraries (boost, tokyo cabinet, glog)
 ####
 MACRO(INSTALL_RELATED_LIBRARIES)
+MESSAGE(STATUS ">>>>>> ${ARGV}")
 FOREACH(thirdlib ${ARGV})
     #MESSAGE(STATUS ">>>>>> ${thirdlib}")
     IF( ${thirdlib} MATCHES ".+\\.so" OR ${thirdlib} MATCHES ".+\\.so\\..+" )
@@ -98,12 +99,16 @@ ENDMACRO(INSTALL_RELATED_LIBRARIES)
 ####
 SET(ENV_ONLY_PACKAGE_SF1 $ENV{ONLY_PACKAGE_SF1})
 IF(NOT ENV_ONLY_PACKAGE_SF1)
-#  INSTALL_RELATED_LIBRARIES(${Boost_LIBRARIES})
+  INSTALL_RELATED_LIBRARIES(${Boost_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${izenelib_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${ilplib_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${imllib_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${idmlib_LIBRARIES})
-  INSTALL_RELATED_LIBRARIES(${Curl_LIBRARIES})
+  INSTALL_RELATED_LIBRARIES(${LibCURL_LIBRARIES})
+  INSTALL_RELATED_LIBRARIES(${ImageMagick_LIBRARIES})
+  INSTALL_RELATED_LIBRARIES(${sqlite3_LIBRARIES})
+  INSTALL_RELATED_LIBRARIES(${xml2_LIBRARIES})
+  INSTALL_RELATED_LIBRARIES(${Thrift_LIBS})
 
   IF( USE_IZENECMA )
     INSTALL_RELATED_LIBRARIES(${izenecma_LIBRARIES})
@@ -121,21 +126,6 @@ IF(NOT ENV_ONLY_PACKAGE_SF1)
   INSTALL_RELATED_LIBRARIES(${TokyoCabinet_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${Glog_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${MYSQL_LIBRARIES})
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_date_time.so.1.47.0")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_filesystem.so.1.47.0")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_iostreams.so.1.47.0")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_program_options.so.1.47.0")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_regex.so.1.47.0")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_serialization.so.1.47.0")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_system.so.1.47.0")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_thread.so.1.47.0")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libboost_unit_test_framework.so.1.47.0")
-  INSTALL_RELATED_LIBRARIES("/usr/local/lib/libthrift.so")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libmysqlclient_r.so.16")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libmysqlclient.so.16")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libicuuc.so")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libicui18n.so")
-  INSTALL_RELATED_LIBRARIES("/usr/lib/libicudata.so")
 
   IF( USE_WISEKMA )
     INSTALL( DIRECTORY ${wisekma_KNOWLEDGE}
@@ -173,10 +163,6 @@ IF(NOT ENV_ONLY_PACKAGE_SF1)
     ${CMAKE_SOURCE_DIR}/../bin/sf1r-engine
     #    ${CMAKE_SOURCE_DIR}/../bin/clean.query
     DESTINATION "bin"
-    COMPONENT sf1r_packings
-    )
-  INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/../instances"
-    DESTINATION "."
     COMPONENT sf1r_packings
     )
   INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/../package/resource"

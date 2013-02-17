@@ -235,11 +235,11 @@ IF(OpenCV_FOUND)
       COMPONENT sf1r_apps)
   ENDIF()
 ELSE(OpenCV_FOUND)
-  MESSAGE("!!!!!!! OpenCV not found, the ImageServerProcess target will not be builded. !!!!!!!!!!!!!")
+  MESSAGE("=============== OpenCV not found, the ImageServerProcess target will not be builded. =============")
 ENDIF(OpenCV_FOUND)
 
 INSTALL(TARGETS
   CobraProcess
-  LogServerProcess
+  ImgDupDetector
   RUNTIME DESTINATION bin
   COMPONENT sf1r_apps)

@@ -366,8 +366,21 @@ void CobraProcess::scheduleTask(const std::string& collection)
 #endif // COBRA_RESTRICT
 }
 
+void CobraProcess::stopCollections()
+{
+    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+    SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
+    for(; collectionIter != collectionMetaMap.end(); collectionIter++)
+    {
+        CollectionMeta& collectionMeta = collectionIter->second;
+        std::string collectionName = collectionMeta.getName();
+        CollectionManager::get()->stopCollection(collectionName);
+    }
+}
+
 int CobraProcess::run()
 {
+    addExitHook(boost::bind(&CobraProcess::stopCollections, this));
     setupDefaultSignalHandlers();
 
     bool caughtException = false;

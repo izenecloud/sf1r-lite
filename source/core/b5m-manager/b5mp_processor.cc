@@ -20,7 +20,7 @@ B5mpProcessor::B5mpProcessor(const std::string& mdb_instance,
     //random_properties will not be updated while SPU matched, they're not SPU related
     random_properties_.push_back("Content");
     random_properties_.push_back("OriginalCategory");
-    random_properties_.push_back("Picture");//remove if we use SPU picture in future.
+    //random_properties_.push_back("Picture");//remove if we use SPU picture in future.
     random_properties_.push_back("TargetCategory");
     random_properties_.push_back("Url");
 }
@@ -304,6 +304,13 @@ void B5mpProcessor::ProductOutput_(PValueType& pvalue)
         if(doc.getPropertySize()<2)
         {
             value.type = NOT_SCD;
+        }
+        else if(doc.getPropertySize()==2)//DATE only update
+        {
+            if(doc.hasProperty("DATE"))
+            {
+                value.type = NOT_SCD;
+            }
         }
     }
     writer_->Append(value.doc, value.type);
