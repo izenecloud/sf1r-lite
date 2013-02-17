@@ -218,6 +218,10 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         finish(false);
         return false; 
     }
+    if (isprimary)
+        DistributeTestSuit::testFail(PrimaryFail_At_PrepareFinished);
+    else
+        DistributeTestSuit::testFail(ReplicaFail_At_PrepareFinished);
     return true;
 }
 
