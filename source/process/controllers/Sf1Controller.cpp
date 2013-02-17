@@ -51,8 +51,7 @@ bool Sf1Controller::preprocess()
         if(callDistribute())
             return false;
         // hook request if needed.
-        Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
-        if (hooktype == Request::FromAPI)
+        if (request().callType() == Request::FromAPI)
         {
             // from api do not need hook, just process as usually. all read only request 
             // will return from here.

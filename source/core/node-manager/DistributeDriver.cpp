@@ -174,12 +174,12 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
 {
     if ((ReqLogType)reqtype == Req_CronJob)
     {
-	DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
-	if (!async_task_worker_.interruption_requested())
-	{
-		asyncWriteTasks_.push(boost::bind(&callCronJob,
-					Request::FromPrimaryWorker, reqjsondata, packed_data));
-	}
+        DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
+        if (!async_task_worker_.interruption_requested())
+        {
+            asyncWriteTasks_.push(boost::bind(&callCronJob,
+                    Request::FromPrimaryWorker, reqjsondata, packed_data));
+        }
         return true;
     }
 
