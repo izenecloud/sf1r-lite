@@ -9,9 +9,12 @@
 
 import os,sys
 from os import path
+import re
 import string,re
 import time
 import ast
+import subprocess
+
 
 local_base = '/home/vincentlee/workspace/sf1/'
 
@@ -23,6 +26,13 @@ sf1r_bin_dir = sf1r_dir + '/bin'
 start_prog = './sf1-revolution.sh start'
 stop_prog = './sf1-revolution.sh stop'
 update_src_prog = 'git pull '
+driver_ruby_dir = local_base + 'driver-ruby/'
+driver_ruby_tool = driver_ruby_dir + 'bin/distribute_tools.rb'
+driver_ruby_index = driver_ruby_dir + 'bin/distribute_test/index_col.json'
+driver_ruby_check = driver_ruby_dir + 'bin/distribute_test/check_col.json'
+driver_ruby_getstate = driver_ruby_dir + 'bin/distribute_test/get_status.json'
+ruby_bin = 'ruby1.9.1'
+auto_testfile_dir = './auto_test_file/'
 
 setting_path = ' export EXTRA_CMAKE_MODULES_DIRS=~/codebase/cmake/;'
 compile_prog = setting_path + ' make -j4 > easy_tool.log 2>&1 '
@@ -177,6 +187,162 @@ def set_fail_test_conf(args):
         cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo ' + failtype + ' > ./distribute_test.conf'
         send_cmd_andstay([host], cmdstr)
 
+def auto_restart(args):
+    while True:
+        print 'waiting next try'
+        time.sleep(60)
+        print 'try starting sf1r'
+        if len(args) < 3:
+            start_all(args)
+        else:
+            send_cmd_andstay(args[2:],  'cd ' + sf1r_bin_dir + ';' + start_prog)
+
+def mv_scd_to_index(args):
+    cmdstr = ' cd ' + sf1r_bin_dir + '/collection/b5mp/scd/index/; mv backup/*.SCD .' 
+    send_cmd_andstay(args[2:], cmdstr)
+
+def run_prog_and_getoutput(args):
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (out, err) = proc.communicate()
+    return (out, err)
+
+def reset_state_and_run():
+    stop_all([])
+    time.sleep(10)
+    # clean data. move scd file to index on primary host.
+    read_cmd_from_file(['','','./cleandata_cmd'])
+    mv_scd_to_index(['', ''] + primary_host)
+
+    allhost = primary_host + replicas_host
+    # make sure at least one node is configure as NoFail or NoAnyTest.
+    cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo 1 > ./distribute_test.conf'
+    send_cmd_andstay(allhost, cmdstr)
+    start_all([])
+    time.sleep(30)
+    # send index 
+    for host in primary_host:
+        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_index])
+        print out
+
+    while True:
+        time.sleep(60)
+        allready = True
+        for host in primary_host:
+            (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_getstate])
+            if out.find('\"NodeState\": \"3\"') == -1:
+                print 'not ready, waiting'
+                print out
+                allready = False
+                break
+        if allready:
+            break
+
+    for host in primary_host:
+        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_check])
+        if len(error) > 0:
+            print 'reset state wrong, data is not consistent.'
+            exit(0)
+    print 'reset state for cluster finished.'
+
+def check_col():
+    while True:
+        time.sleep(10)
+        allready = True
+        for host in primary_host + replicas_host:
+            (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_getstate])
+            if error.find('Connection refused') != -1:
+                # this host is down.
+                print 'host down : ' + host
+                continue
+            if out.find('\"NodeState\": \"3\"') == -1:
+                print 'not ready, waiting'
+                print out
+                allready = False
+                break
+
+        if allready:
+            break
+
+    failed_host = []
+    for host in primary_host + replicas_host:
+        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_check])
+        if error.find('Connection refused') != -1:
+            print 'host down : ' + host
+            continue
+        if len(error) > 0:
+            print 'data is not consistent after running for host : ' + host
+            failed_host += host
+    return failed_host
+
+def run_testwrite(testfail_host, testfail_type, test_writereq):
+    cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo ' + str(testfail_type) + ' > ./distribute_test.conf'
+    send_cmd_andstay(testfail_host, cmdstr)
+    for host in primary_host:
+        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', test_writereq])
+        if len(error) > 0:
+            print 'run write request error: ' + error + ', host: ' + host
+    # check collection after this request.
+    failed_host = check_col()
+    if len(failed_host) > 0:
+        print 'data not consistent while checking after write.'
+    else:
+        print 'after write , test case passed'
+    # restart any failed node.
+    start_all([])
+    time.sleep(60)
+    # check collection again.
+    failed_host = check_col()
+    if len(failed_host) > 0:
+        print 'data not consistent while checking after restart failed node.'
+    else:
+        print 'after restarting failed node, test case passed'
+
+
+def run_auto_fail_test(args):
+    test_writereq_files = []
+    jsonfile = re.compile(r'\.json$', re.IGNORECASE)
+    for root,dirs,files in os.walk(auto_testfile_dir):
+        oldlen = len(test_writereq_files)
+        test_writereq_files += filter(lambda x:jsonfile.search(x)<>None, files)
+        for i in range(oldlen, len(test_writereq_files)):
+            test_writereq_files[i] = root + '/' + test_writereq_files[i]
+
+    while True:
+        print 'waiting next fail test'
+        time.sleep(10)
+        for test_writereq in test_writereq_files:
+            print 'running fail test for write request : ' + test_writereq
+
+            # test for all kinds of primary fail
+            print 'begin test for primary fail'
+            for i in range(2, 12):
+                reset_state_and_run()
+                print 'testing for primary fail type : ' + str(i)
+                run_testwrite(primary_host, i, test_writereq)
+                            
+            print 'begin test for replica fail'
+            for i in range(31, 41):
+                reset_state_and_run()
+                print 'testing for replica fail type : ' + str(i)
+                run_testwrite([replicas_host[0]], i, test_writereq)
+
+            print 'begin test for other fail'
+            for i in range(61, 62):
+                reset_state_and_run()
+                print 'testing for other fail type on replica: ' + str(i)
+                run_testwrite([replicas_host[0]], i, test_writereq)
+                reset_state_and_run()
+                print 'testing for other fail type on primary_host: ' + str(i)
+                run_testwrite(primary_host, i, test_writereq)
+
+            # test for primary electing fail.
+            reset_state_and_run()
+            print 'testing for primary electing fail'
+            # fail primary.
+            cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo 3 > ./distribute_test.conf'
+            send_cmd_andstay(primary_host, cmdstr)
+            # fail the first backup primary to make the first electing fail.
+            run_testwrite([replicas_host[0]], 2, test_writereq)
 
 handler_dict = { 'syncfile':syncfiles,
         'start_all':start_all,
@@ -187,7 +353,9 @@ handler_dict = { 'syncfile':syncfiles,
         'check_running':check_running,
         'send_cmd':send_cmd,
         'read_cmd_from_file':read_cmd_from_file,
-        'set_fail_test_conf':set_fail_test_conf
+        'set_fail_test_conf':set_fail_test_conf,
+        'auto_restart':auto_restart,
+        'run_auto_fail_test':run_auto_fail_test
         }
 
 args = sys.argv
@@ -220,5 +388,9 @@ print ''
 print 'send_cmd cmdstr  # send cmdstr to all hosts'
 print ''
 print 'read_cmd_from_file cmdfile  # read cmd from cmdfile and send cmdstr. each cmd in a line.'
+print ''
+print 'set_fail_test_conf conf_file  # read fail test configure from conf_file and set this configure to all host.'
+print ''
+print 'auto_restart host1 host2 # make sure the sf1r in host list is running, check in every 60s and try restart if not started.'
 print ''
 
