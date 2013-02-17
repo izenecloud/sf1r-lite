@@ -661,6 +661,7 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         znode.setValue(ZNode::KEY_REQ_TYPE, (uint32_t)type);
         zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
         zookeeper_->setZNodeData(self_primary_path_, znode.serialize());
+        DistributeTestSuit::updateMemoryState("NodeState", nodeState_);
         DistributeTestSuit::testFail(PrimaryFail_At_FinishReqLocal);
     }
     else
@@ -1026,9 +1027,9 @@ void NodeManagerBase::checkSecondaryReqProcess()
             all_secondary_ready = false;
             LOG(WARNING) << "request aborted by one replica while waiting finish process. " << node_list[i];
             LOG(INFO) << "begin abort the request on primary and wait all replica to abort it.";
-            nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT;
-            if(cb_on_abort_request_)
-                cb_on_abort_request_();
+            updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
+            //if(cb_on_abort_request_)
+            //    cb_on_abort_request_();
             break;
         }
     }
@@ -1071,9 +1072,9 @@ void NodeManagerBase::checkSecondaryReqFinishLog()
             all_secondary_ready = false;
             LOG(WARNING) << "request aborted by one replica when waiting finish log." << node_list[i];
             LOG(INFO) << "begin abort the request on primary and wait all replica to abort it.";
-            nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT;
-            if(cb_on_abort_request_)
-                cb_on_abort_request_();
+            updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
+            //if(cb_on_abort_request_)
+            //    cb_on_abort_request_();
             break;
         }
     }
