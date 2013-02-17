@@ -60,7 +60,10 @@ controllers:
       - get_doc_count
       - get_key_count
 
-  StatusController: ~
+  StatusController:
+    actions:
+      - index
+      - get_distribute_status
 
   TestController:
     test: true

@@ -31,6 +31,7 @@ enum TestFailType
     PrimaryFail_At_Wait_Replica_FinishReqLog,
     PrimaryFail_At_Wait_Replica_Recovery,
 
+    ReplicaFail_Begin = 30,
     ReplicaFail_At_Electing,
     ReplicaFail_At_Recovering,
     ReplicaFail_At_BeginReqProcess,
@@ -41,6 +42,8 @@ enum TestFailType
     ReplicaFail_At_FinishReqLocal,
     ReplicaFail_At_UnpackPrimaryReq,
     ReplicaFail_At_Waiting_Recovery,
+
+    OtherFail_Begin = 60,
     Fail_At_AfterEnterCluster,
 };
 

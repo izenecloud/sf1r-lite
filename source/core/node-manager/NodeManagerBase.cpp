@@ -347,10 +347,12 @@ void NodeManagerBase::updateCurrentPrimary()
     {
         LOG(INFO) << "primary is empty";
         curr_primary_path_.clear();
+        DistributeTestSuit::updateMemoryState("IsMinePrimary", 0);
         return;
     }
     curr_primary_path_ = primaryList[0];
     LOG(INFO) << "current primary is : " << curr_primary_path_;
+    DistributeTestSuit::updateMemoryState("IsMinePrimary", self_primary_path_ == curr_primary_path_?1:0);
     getPrimaryState();
 }
 

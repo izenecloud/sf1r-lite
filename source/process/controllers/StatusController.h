@@ -24,6 +24,7 @@ class StatusController : public Sf1Controller
 public:
     StatusController();
     void index();
+    void get_distribute_status();
 
 protected:
     virtual bool checkCollectionService(std::string& error);

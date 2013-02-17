@@ -97,6 +97,7 @@ void DistributeRequestHooker::setHook(int calltype, const std::string& addition_
     // json data plus the data used for this request.
     current_req_ = addition_data;
     LOG(INFO) << "setting hook : " << hook_type_ << ", data:" << current_req_;
+    DistributeTestSuit::loadTestConf();
 }
 
 int  DistributeRequestHooker::getHookType()
