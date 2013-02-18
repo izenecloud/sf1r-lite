@@ -49,6 +49,7 @@ replicas_host = ['172.16.5.192', '172.16.5.194']
 
 def send_cmd_afterssh(hosts, cmdstr):
     for host in hosts:
+        print "sending command to host : " + host + ', cmd:' + cmdstr
         os.system(loginssh + host + ' \'' + cmdstr + ' \'')
 
 def send_cmd_andstay(hosts, cmdstr):
@@ -224,24 +225,10 @@ def reset_state_and_run():
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_index])
         print out
 
-    while True:
-        time.sleep(60)
-        allready = True
-        for host in primary_host:
-            (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_getstate])
-            if out.find('\"NodeState\": \"3\"') == -1:
-                print 'not ready, waiting'
-                print out
-                allready = False
-                break
-        if allready:
-            break
-
-    for host in primary_host:
-        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_check])
-        if len(error) > 0:
-            print 'reset state wrong, data is not consistent.'
-            exit(0)
+    failed_host = check_col()
+    if len(failed_host) > 0:
+        print 'reset state wrong, data is not consistent.'
+        exit(0)
     print 'reset state for cluster finished.'
 
 def check_col():
@@ -288,8 +275,10 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
     else:
         print 'after write , test case passed'
     # restart any failed node.
+    stop_all([])
+    time.sleep(20)
     start_all([])
-    time.sleep(60)
+    time.sleep(30)
     # check collection again.
     failed_host = check_col()
     if len(failed_host) > 0:
@@ -315,13 +304,13 @@ def run_auto_fail_test(args):
 
             # test for all kinds of primary fail
             print 'begin test for primary fail'
-            for i in range(2, 12):
+            for i in range(2, 13):
                 reset_state_and_run()
                 print 'testing for primary fail type : ' + str(i)
                 run_testwrite(primary_host, i, test_writereq)
                             
             print 'begin test for replica fail'
-            for i in range(31, 41):
+            for i in range(31, 42):
                 reset_state_and_run()
                 print 'testing for replica fail type : ' + str(i)
                 run_testwrite([replicas_host[0]], i, test_writereq)

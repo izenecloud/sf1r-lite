@@ -1123,6 +1123,10 @@ void NodeManagerBase::checkSecondaryReqAbort()
             cb_on_wait_replica_abort_();
         updateNodeStateToNewState(NODE_STATE_STARTED);
     }
+    else
+    {
+        updateNodeState();
+    }
 }
 
 void NodeManagerBase::checkSecondaryRecovery()
@@ -1149,7 +1153,9 @@ void NodeManagerBase::checkSecondaryRecovery()
     NodeStateType new_state;
     if (is_any_recovery_waiting)
     {
-        new_state = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
+        // 
+        nodeState_ = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
+        updateNodeState();
     }
     else
     {
