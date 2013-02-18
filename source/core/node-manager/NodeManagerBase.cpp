@@ -1150,7 +1150,6 @@ void NodeManagerBase::checkSecondaryRecovery()
             break;
         }
     }
-    NodeStateType new_state;
     if (is_any_recovery_waiting)
     {
         // 
@@ -1159,11 +1158,11 @@ void NodeManagerBase::checkSecondaryRecovery()
     }
     else
     {
-        new_state = NODE_STATE_STARTED;
+        NodeStateType new_state = NODE_STATE_STARTED;
         if (cb_on_recover_wait_replica_finish_)
             cb_on_recover_wait_replica_finish_();
+        updateNodeStateToNewState(new_state);
     }
-    updateNodeStateToNewState(new_state);
 }
 
 }
