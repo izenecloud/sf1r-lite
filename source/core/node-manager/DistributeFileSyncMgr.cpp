@@ -308,6 +308,8 @@ DistributeFileSyncMgr::DistributeFileSyncMgr()
     ignore_list_.insert("LOG");
     ignore_list_.insert("LOG.old");
     ignore_list_.insert("cookie");
+    ignore_list_.insert("CURRENT");
+    //ignore_list_.insert("MANIFEST-");
     reporting_ = false;
 }
 
@@ -458,6 +460,11 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
                 if (file_checksum_list[j] != rspdata[i].check_file_result[j])
                 {
                     LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
+                    if (req.param_.check_file_list[j].find("MANIFEST-") == 0)
+                    {
+                        // the MANIFEST file of level db can be ignored.
+                        continue;
+                    }
                     check_errinfo = "at least one of file not the same status between replicas.";
                 }
             }

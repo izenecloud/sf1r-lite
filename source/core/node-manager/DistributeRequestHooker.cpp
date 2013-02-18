@@ -261,6 +261,14 @@ bool DistributeRequestHooker::processFailedBeforePrepare()
     return false;
 }
 
+void DistributeRequestHooker::processLocalFinished(bool finishsuccess, CommonReqData& updated_preparedata)
+{
+    // if the prepared data has changed during processing, 
+    // we need update the current_req_ before send it to replicas. 
+    ReqLogMgr::packReqLogData(updated_preparedata, current_req_);
+    processLocalFinished(finishsuccess);
+}
+
 void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
 {
     if (!isHooked())

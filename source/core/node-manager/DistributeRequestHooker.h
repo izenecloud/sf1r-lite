@@ -64,6 +64,7 @@ public:
     bool prepare(ReqLogType type, CommonReqData& prepared_req);
     void processLocalBegin();
     void processLocalFinished(bool finishsuccess);
+    void processLocalFinished(bool finishsuccess, CommonReqData& updated_preparedata);
     bool processFailedBeforePrepare();
     bool onRequestFromPrimary(int type, const std::string& packed_reqdata);
 

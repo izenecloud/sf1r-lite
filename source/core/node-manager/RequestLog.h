@@ -32,6 +32,7 @@ enum ReqLogType
     // index request need the scd file list which is not included in the request json data,
     // so we define a new request type, and add addition member.
     Req_Index,
+    Req_CreateOrUpdate_Doc,
 };
 
 #pragma pack(1)
@@ -113,6 +114,38 @@ struct CronJobReqLog: public CommonReqData
     CronJobReqLog()
     {
         reqtype = Req_CronJob;
+    }
+};
+
+struct CreateOrUpdateDocReqLog: public CommonReqData
+{
+    CreateOrUpdateDocReqLog()
+    {
+        reqtype = Req_CreateOrUpdate_Doc;
+    }
+    int64_t timestamp;
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(timestamp);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&timestamp);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack Req_CreateOrUpdate_Doc data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
     }
 };
 

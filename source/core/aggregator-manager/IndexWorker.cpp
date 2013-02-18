@@ -765,18 +765,21 @@ bool IndexWorker::createDocument(const Value& documentValue)
         }
     }
 
-    NoAdditionNeedBackupReqLog reqlog;
-    if(!distribute_req_hooker_->prepare(Req_NoAdditionData_NeedBackup_Req, dynamic_cast<CommonReqData&>(reqlog)))
+    CreateOrUpdateDocReqLog reqlog;
+    reqlog.timestamp = Utilities::createTimeStamp();
+    if(!distribute_req_hooker_->prepare(Req_CreateOrUpdate_Doc, dynamic_cast<CommonReqData&>(reqlog)))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
 
+    time_t timestamp = reqlog.timestamp;
+    LOG(INFO) << "create doc timestamp is : " << timestamp;
+
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
     scd_writer_->Write(scddoc, INSERT_SCD);
 
-    time_t timestamp = Utilities::createTimeStamp();
 
     Document document;
     IndexerDocument indexDocument, oldIndexDocument;
@@ -800,7 +803,8 @@ bool IndexWorker::createDocument(const Value& documentValue)
     }
 
     flushData();
-    distribute_req_hooker_->processLocalFinished(ret);
+    reqlog.timestamp = timestamp;
+    distribute_req_hooker_->processLocalFinished(ret, reqlog);
     return ret;
 }
 
@@ -820,8 +824,9 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
-    NoAdditionNeedBackupReqLog reqlog;
-    if(!distribute_req_hooker_->prepare(Req_NoAdditionData_NeedBackup_Req, dynamic_cast<CommonReqData&>(reqlog)))
+    CreateOrUpdateDocReqLog reqlog;
+    reqlog.timestamp = Utilities::createTimeStamp();
+    if(!distribute_req_hooker_->prepare(Req_CreateOrUpdate_Doc, dynamic_cast<CommonReqData&>(reqlog)))
     {
         LOG(ERROR) << "prepare failed in: " << __FUNCTION__;
         return false;
@@ -831,7 +836,8 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
 
-    time_t timestamp = Utilities::createTimeStamp();
+    time_t timestamp = reqlog.timestamp;
+    LOG(INFO) << "update doc timestamp is : " << timestamp;
 
     Document document;
     IndexerDocument indexDocument, oldIndexDocument;
@@ -869,8 +875,8 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     scd_writer_->Write(scddoc, UPDATE_SCD);
 
     flushData();
-
-    distribute_req_hooker_->processLocalFinished(ret);
+    reqlog.timestamp = timestamp;
+    distribute_req_hooker_->processLocalFinished(ret, reqlog);
     return ret;
 }
 
