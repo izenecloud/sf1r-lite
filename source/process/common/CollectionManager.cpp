@@ -37,12 +37,12 @@ CollectionManager::CollectionManager()
 
 CollectionManager::~CollectionManager()
 {
-    for(handler_const_iterator iter = handlerBegin(); iter != handlerEnd(); iter++)
+    for (handler_const_iterator iter = handlerBegin(); iter != handlerEnd(); iter++)
     {
          delete iter->second;
     }
 
-    for(CollectionMutexes::iterator iter = collectionMutexes_.begin();
+    for (CollectionMutexes::iterator iter = collectionMutexes_.begin();
         iter != collectionMutexes_.end(); ++iter)
     {
         delete iter->second;
@@ -68,7 +68,7 @@ bool CollectionManager::startCollection(const string& collectionName,
     try{
     ScopedWriteLock lock(*getCollectionMutex(collectionName));
 
-    if(findHandler(collectionName) != NULL)
+    if (findHandler(collectionName) != NULL)
         return false;
 
 #ifdef COBRA_RESTRICT
@@ -126,7 +126,7 @@ bool CollectionManager::startCollection(const string& collectionName,
         recommendBundleConfig->collPath_ =  indexBundleConfig->collPath_;
     }
 
-    if(checkdata && !RecoveryChecker::get()->checkAndRestoreBackupFile(collectionMeta.getCollectionPath()))
+    if (checkdata && !RecoveryChecker::get()->checkAndRestoreBackupFile(collectionMeta.getCollectionPath()))
     {
         throw std::runtime_error("start collection failed while check backup file and restore.");
     }
@@ -213,13 +213,13 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
 
     CollectionPath cpath;
     handler_const_iterator iter = collectionHandlers_.find(collectionName);
-    if(iter != collectionHandlers_.end())
+    if (iter != collectionHandlers_.end())
     {
         CollectionHandler* handler = iter->second;
         IndexSearchService* is = handler->indexSearchService_;
-        if(is==NULL) return false;
+        if (is==NULL) return false;
         const IndexBundleConfiguration* ibc = is->getBundleConfig();
-        if(ibc==NULL) return false;
+        if (ibc==NULL) return false;
         cpath = ibc->collPath_;
         delete handler;
         collectionHandlers_.erase(collectionName);
@@ -234,28 +234,28 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
     //    osgiLauncher_->getBundleInfo(bundleName)->getBundleContext()->getBundleConfig();
     //config_ = dynamic_cast<IndexBundleConfiguration*>(bundleConfigPtr.get());
     BundleInfoBase* bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
-    if(bundleInfo)
+    if (bundleInfo)
     {
         osgiLauncher_.stopBundle(bundleName);
     }
 
     bundleName = "MiningBundle-" + collectionName;
     bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
-    if(bundleInfo)
+    if (bundleInfo)
     {
         osgiLauncher_.stopBundle(bundleName);
     }
 
     bundleName = "ProductBundle-" + collectionName;
     bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
-    if(bundleInfo)
+    if (bundleInfo)
     {
         osgiLauncher_.stopBundle(bundleName);
     }
 
     bundleName = "RecommendBundle-" + collectionName;
     bundleInfo = osgiLauncher_.getRegistry().getBundleInfo(bundleName);
-    if(bundleInfo)
+    if (bundleInfo)
     {
         osgiLauncher_.stopBundle(bundleName);
     }
@@ -267,7 +267,7 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
         collectionMetaMap.erase(findIt);
     }
     RecoveryChecker::get()->removeCollection(collectionName);
-    if(clear)
+    if (clear)
     {
         namespace bfs = boost::filesystem;
         std::string collection_data = cpath.getCollectionDataPath();
@@ -283,10 +283,10 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
             bfs::create_directory(bk_dir);
 
             LOG(INFO) << "moving " << scd_list.size() << " SCD files to directory " << bk_dir;
-            for(uint32_t i=0;i<scd_list.size();i++)
+            for (uint32_t i=0;i<scd_list.size();i++)
             {
                 bfs::path dest = bk_dir / bfs::path(scd_list[i]).filename();
-                if(bfs::exists(dest))
+                if (bfs::exists(dest))
                 {
                     LOG(WARNING) << "dest in rename file " << scd_list[i] << " exists, delete it"<<std::endl;
                     bfs::remove_all(scd_list[i]);
@@ -311,7 +311,7 @@ bool CollectionManager::reopenCollection(const std::string& collectionName)
     handler_const_iterator iter = collectionHandlers_.find(collectionName);
     if (iter != collectionHandlers_.end())
     {
-        if(iter->second->indexTaskService_ && !iter->second->indexTaskService_->reLoadData())
+        if (iter->second->indexTaskService_ && !iter->second->indexTaskService_->reload())
             return false;
         // reopen other service data if needed.
     }
@@ -324,12 +324,12 @@ void CollectionManager::flushCollection(const std::string& collectionName)
     handler_const_iterator iter = collectionHandlers_.find(collectionName);
     if (iter != collectionHandlers_.end())
     {
-        if(iter->second->indexTaskService_)
-            iter->second->indexTaskService_->flushData();
-        if(iter->second->recommendTaskService_)
-            iter->second->recommendTaskService_->flushData();
+        if (iter->second->indexTaskService_)
+            iter->second->indexTaskService_->flush();
+        if (iter->second->recommendTaskService_)
+            iter->second->recommendTaskService_->flush();
         if (iter->second->miningSearchService_)
-            iter->second->miningSearchService_->flushData();
+            iter->second->miningSearchService_->flush();
         // other service need to add flush interface.
     }
 }

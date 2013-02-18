@@ -132,10 +132,10 @@ void LogServerWorkThread::process(const UUID2DocidList& uuid2DocidList)
 
 void LogServerWorkThread::process(const SynchronizeData& syncReqData)
 {
-    flushData();
+    flush();
 }
 
-void LogServerWorkThread::flushData()
+void LogServerWorkThread::flush()
 {
     {
         boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->uuidDrumMutex());

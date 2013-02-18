@@ -576,7 +576,7 @@ bool RecommendTaskService::buildCollectionOnPrimary()
         }
         else
         {
-            LOG(WARNING) << "push recommend scd file to the replicas failed for:" << all_scdList[file_index]; 
+            LOG(WARNING) << "push recommend scd file to the replicas failed for:" << all_scdList[file_index];
         }
     }
 
@@ -1034,19 +1034,14 @@ void RecommendTaskService::cronJob_(int calltype)
             return;
         }
 
-        flush_();
+        flush();
 
         buildFreqItemSet_();
 	DistributeRequestHooker::get()->processLocalFinished(true);
     }
 }
 
-void RecommendTaskService::flushData()
-{
-    flush_();
-}
-
-void RecommendTaskService::flush_()
+void RecommendTaskService::flush()
 {
     LOG(INFO) << "start flushing recommend data for collection " << bundleConfig_.collectionName_;
 

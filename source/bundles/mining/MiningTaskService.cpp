@@ -12,9 +12,9 @@ MiningTaskService::MiningTaskService(MiningBundleConfiguration* bundleConfig)
     :bundleConfig_(bundleConfig)
     ,cronJobName_("MiningTaskService-" + bundleConfig->collectionName_)
 {
-    if(!bundleConfig_->mining_config_.dcmin_param.cron.empty())
+    if (!bundleConfig_->mining_config_.dcmin_param.cron.empty())
     {
-        if(cronExpression_.setExpression(bundleConfig_->mining_config_.dcmin_param.cron))
+        if (cronExpression_.setExpression(bundleConfig_->mining_config_.dcmin_param.cron))
         {
             bool result = izenelib::util::Scheduler::addJob(cronJobName_,
                                                             60*1000, // each minute
@@ -47,7 +47,7 @@ void MiningTaskService::cronJob_(int calltype)
 {
     if (cronExpression_.matches_now() || calltype > 0)
     {
-	if(calltype == 0)
+	if (calltype == 0)
 	{
 		if (NodeManagerBase::get()->isPrimary() && !DistributeRequestHooker::get()->isHooked())
 		{
@@ -76,4 +76,3 @@ void MiningTaskService::cronJob_(int calltype)
 }
 
 }
-

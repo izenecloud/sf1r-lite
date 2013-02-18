@@ -71,7 +71,7 @@ public:
     bool addUser(const User& user);
     bool updateUser(const User& user);
     bool removeUser(const std::string& userIdStr);
-    void flushData();
+    void flush();
 
     /**
      * @p sessionIdStr, @p userIdStr and @p itemIdStr must not be empty.
@@ -251,7 +251,6 @@ private:
 
     void buildFreqItemSet_();
     void cronJob_(int calltype);
-    void flush_();
 
 private:
     RecommendBundleConfiguration& bundleConfig_;

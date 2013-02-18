@@ -149,14 +149,14 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
     return indexWorker_->destroyDocument(documentValue);
 }
 
-void IndexTaskService::flushData()
+void IndexTaskService::flush()
 {
-    indexWorker_->flushData();
+    indexWorker_->flush();
 }
 
-bool IndexTaskService::reLoadData()
+bool IndexTaskService::reload()
 {
-    return indexWorker_->reLoadData();
+    return indexWorker_->reload();
 }
 
 bool IndexTaskService::getIndexStatus(Status& status)

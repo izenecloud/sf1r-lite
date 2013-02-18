@@ -118,8 +118,8 @@ public:
 
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
-    void flushData();
-    bool reLoadData();
+    void flush();
+    bool reload();
 
 private:
     void createPropertyList_();

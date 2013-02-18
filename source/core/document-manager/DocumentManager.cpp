@@ -93,7 +93,7 @@ DocumentManager::~DocumentManager()
     if (highlighter_) delete highlighter_;
 }
 
-bool DocumentManager::reLoadData()
+bool DocumentManager::reload()
 {
     if (propertyValueTable_) delete propertyValueTable_;
     if (snippetGenerator_) delete snippetGenerator_;
