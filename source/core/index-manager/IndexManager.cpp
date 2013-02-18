@@ -152,7 +152,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         break;
     }
     //Compress bit vector
-    BOOST_ASSERT(!pBitVector);
+    BOOST_ASSERT(pBitVector);
     pBitVector->compressed(*docIdSet);
 }
 
