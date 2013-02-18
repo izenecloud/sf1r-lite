@@ -341,7 +341,7 @@ void CobraProcess::scheduleTask(const std::string& collection)
 
 void CobraProcess::stopCollections()
 {
-    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+    SF1Config::CollectionMetaMap collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
     SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
     for(; collectionIter != collectionMetaMap.end(); collectionIter++)
     {
