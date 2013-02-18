@@ -71,8 +71,8 @@ IndexWorker::IndexWorker(
     , numDeletedDocs_(0)
     , numUpdatedDocs_(0)
     , totalSCDSizeSinceLastBackup_(0)
+    , distribute_req_hooker_(DistributeRequestHooker::get())
 {
-    distribute_req_hooker_ = DistributeRequestHooker::get();
     bool hasDateInConfig = false;
     const IndexBundleSchema& indexSchema = bundleConfig_->indexSchema_;
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin(), iterEnd = indexSchema.end();
@@ -122,16 +122,16 @@ void IndexWorker::HookDistributeRequest(int hooktype, const std::string& reqdata
     result = true;
 }
 
-void IndexWorker::flushData()
+void IndexWorker::flush()
 {
     documentManager_->flush();
     idManager_->flush();
     indexManager_->flush();
 }
 
-bool IndexWorker::reLoadData()
+bool IndexWorker::reload()
 {
-    if(!documentManager_->reLoadData())
+    if(!documentManager_->reload())
         return false;
 
     idManager_->close();
@@ -241,7 +241,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         }
         else
         {
-            LOG(WARNING) << "push index scd file to the replicas failed for:" << scdList[file_index]; 
+            LOG(WARNING) << "push index scd file to the replicas failed for:" << scdList[file_index];
         }
     }
 
@@ -802,7 +802,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
         doMining_();
     }
 
-    flushData();
+    flush();
     reqlog.timestamp = timestamp;
     distribute_req_hooker_->processLocalFinished(ret, reqlog);
     return ret;
@@ -860,9 +860,9 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         {
             searchWorker_->clearSearchCache();
             ///clear filter cache because of * queries:
-            ///filter will be added into documentiterator 
+            ///filter will be added into documentiterator
             ///together with AllDocumentIterator
-            searchWorker_->clearFilterCache();		
+            searchWorker_->clearFilterCache();
         }
         doMining_();
     }
@@ -874,7 +874,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     }
     scd_writer_->Write(scddoc, UPDATE_SCD);
 
-    flushData();
+    flush();
     reqlog.timestamp = timestamp;
     distribute_req_hooker_->processLocalFinished(ret, reqlog);
     return ret;
@@ -1068,9 +1068,9 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         {
             searchWorker_->clearSearchCache();
             ///clear filter cache because of * queries:
-            ///filter will be added into documentiterator 
+            ///filter will be added into documentiterator
             ///together with AllDocumentIterator
-            searchWorker_->clearFilterCache();		
+            searchWorker_->clearFilterCache();
         }
         doMining_();
     }
@@ -1092,7 +1092,7 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         LogServerConnection::instance().flushRequests();
     }
 
-    flushData();
+    flush();
     distribute_req_hooker_->processLocalFinished(ret);
 
     return ret;

@@ -162,7 +162,7 @@ public:
 
     bool open();
 
-    void flushData();
+    void flush();
 
     bool DoMiningCollection();
 

@@ -112,7 +112,7 @@ bool MiningSearchService::getUniqueDocIdList(
 bool MiningSearchService::SetOntology(const std::string& xml)
 {
     boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
-    if(!faceted)
+    if (!faceted)
     {
         return false;
     }
@@ -123,7 +123,7 @@ bool MiningSearchService::SetOntology(const std::string& xml)
 bool MiningSearchService::GetOntology(std::string& xml)
 {
     boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
-    if(!faceted)
+    if (!faceted)
     {
         return false;
     }
@@ -134,7 +134,7 @@ bool MiningSearchService::GetOntology(std::string& xml)
 bool MiningSearchService::GetStaticOntologyRepresentation(faceted::OntologyRep& rep)
 {
     boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
-    if(!faceted)
+    if (!faceted)
     {
         return false;
     }
@@ -146,7 +146,7 @@ bool MiningSearchService::GetStaticOntologyRepresentation(faceted::OntologyRep& 
 bool MiningSearchService::OntologyStaticClick(uint32_t cid, std::list<uint32_t>& docid_list)
 {
     boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
-    if(!faceted)
+    if (!faceted)
     {
         return false;
     }
@@ -156,12 +156,11 @@ bool MiningSearchService::OntologyStaticClick(uint32_t cid, std::list<uint32_t>&
 }
 
 bool MiningSearchService::GetOntologyRepresentation(
-    const std::vector<uint32_t>& search_result,
-    faceted::OntologyRep& rep
-)
+        const std::vector<uint32_t>& search_result,
+        faceted::OntologyRep& rep)
 {
     boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
-    if(!faceted)
+    if (!faceted)
     {
         return false;
     }
@@ -171,13 +170,12 @@ bool MiningSearchService::GetOntologyRepresentation(
 }
 
 bool MiningSearchService::OntologyClick(
-    const std::vector<uint32_t>& search_result,
-    uint32_t cid,
-    std::list<uint32_t>& docid_list
-)
+        const std::vector<uint32_t>& search_result,
+        uint32_t cid,
+        std::list<uint32_t>& docid_list)
 {
     boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
-    if(!faceted)
+    if (!faceted)
     {
         return false;
     }
@@ -187,11 +185,10 @@ bool MiningSearchService::OntologyClick(
 }
 
 bool MiningSearchService::DefineDocCategory(
-    const std::vector<faceted::ManmadeDocCategoryItem>& items
-)
+        const std::vector<faceted::ManmadeDocCategoryItem>& items)
 {
     boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
-    if(!faceted)
+    if (!faceted)
     {
         return false;
     }
@@ -225,30 +222,27 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
 }
 
 bool MiningSearchService::clickGroupLabel(
-    const std::string& query,
-    const std::string& propName,
-    const std::vector<std::string>& groupPath
-)
+        const std::string& query,
+        const std::string& propName,
+        const std::vector<std::string>& groupPath)
 {
     return miningManager_->clickGroupLabel(query, propName, groupPath);
 }
 
 bool MiningSearchService::getFreqGroupLabel(
-    const std::string& query,
-    const std::string& propName,
-    int limit,
-    std::vector<std::vector<std::string> >& pathVec,
-    std::vector<int>& freqVec
-)
+        const std::string& query,
+        const std::string& propName,
+        int limit,
+        std::vector<std::vector<std::string> >& pathVec,
+        std::vector<int>& freqVec)
 {
     return miningManager_->getFreqGroupLabel(query, propName, limit, pathVec, freqVec);
 }
 
 bool MiningSearchService::setTopGroupLabel(
-    const std::string& query,
-    const std::string& propName,
-    const std::vector<std::vector<std::string> >& groupLabels
-)
+        const std::string& query,
+        const std::string& propName,
+        const std::vector<std::vector<std::string> >& groupLabels)
 {
     bool result = miningManager_->setTopGroupLabel(query,
                                                    propName, groupLabels);
@@ -261,9 +255,8 @@ bool MiningSearchService::setTopGroupLabel(
 }
 
 bool MiningSearchService::setCustomRank(
-    const std::string& query,
-    const CustomRankDocStr& customDocStr
-)
+        const std::string& query,
+        const CustomRankDocStr& customDocStr)
 {
     bool result = miningManager_->setCustomRank(query, customDocStr);
 
@@ -273,10 +266,9 @@ bool MiningSearchService::setCustomRank(
 }
 
 bool MiningSearchService::getCustomRank(
-    const std::string& query,
-    std::vector<Document>& topDocList,
-    std::vector<Document>& excludeDocList
-)
+        const std::string& query,
+        std::vector<Document>& topDocList,
+        std::vector<Document>& excludeDocList)
 {
     return miningManager_->getCustomRank(query, topDocList, excludeDocList);
 }
@@ -296,8 +288,8 @@ bool MiningSearchService::setMerchantScore(const MerchantStrScoreMap& scoreMap)
 }
 
 bool MiningSearchService::getMerchantScore(
-    const std::vector<std::string>& merchantNames,
-    MerchantStrScoreMap& merchantScoreMap) const
+        const std::vector<std::string>& merchantNames,
+        MerchantStrScoreMap& merchantScoreMap) const
 {
     return miningManager_->getMerchantScore(merchantNames, merchantScoreMap);
 }
@@ -343,9 +335,9 @@ void MiningSearchService::FinishQueryRecommendInject()
 }
 
 bool MiningSearchService::GetSummarizationByRawKey(
-    const std::string& collection,
-    const izenelib::util::UString& rawKey, 
-    Summarization& result)
+        const std::string& collection,
+        const izenelib::util::UString& rawKey,
+        Summarization& result)
 {
     ///TODO distributed request is not available
     return miningManager_->GetSummarizationByRawKey(rawKey,result);
@@ -361,24 +353,24 @@ bool MiningSearchService::GetKV(const std::string& key, std::string& value)
 }
 
 bool MiningSearchService::GetProductScore(
-    const std::string& docIdStr,
-    const std::string& scoreType,
-    score_t& scoreValue)
+        const std::string& docIdStr,
+        const std::string& scoreType,
+        score_t& scoreValue)
 {
     return miningManager_->getProductScore(docIdStr, scoreType, scoreValue);
 }
 
 bool MiningSearchService::GetProductCategory(
-    const std::string& query, 
-    int limit, 
-    std::vector<std::vector<std::string> >& pathVec )
+        const std::string& query,
+        int limit,
+        std::vector<std::vector<std::string> >& pathVec)
 {
     return miningManager_->GetProductCategory(query, limit, pathVec);
 }
 
-void MiningSearchService::flushData()
+void MiningSearchService::flush()
 {
-    miningManager_->flushData();
+    miningManager_->flush();
 }
 
 }

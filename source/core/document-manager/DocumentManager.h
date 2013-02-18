@@ -92,7 +92,7 @@ public:
      */
     bool flush();
 
-    bool reLoadData();
+    bool reload();
     /**
      * @brief inserts a new document. Has no effect if a document with the same
      * id exists
@@ -142,7 +142,7 @@ public:
     /**
      * @brief gets one document by id
      * @param docId document id
-     * @param forceget used by mergedocument during indexing: a deleted 
+     * @param forceget used by mergedocument during indexing: a deleted
      *              document will be merged if that doc is going to be inserted again
      * @param[out] document returned document, it will not be touched if
      *                      returning \c false

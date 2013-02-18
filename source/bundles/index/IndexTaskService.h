@@ -57,8 +57,8 @@ public:
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
     bool HookDistributeRequest(bool shard);
-    void flushData();
-    bool reLoadData();
+    void flush();
+    bool reload();
 
 private:
     bool distributedIndex_(unsigned int numdoc);
