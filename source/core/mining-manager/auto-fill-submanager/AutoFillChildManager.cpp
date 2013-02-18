@@ -392,7 +392,7 @@ bool AutoFillChildManager::InitFromLog()
     {
         bool isNormalString = true;
         izenelib::util::UString UStringQuery_(it->getQuery(),izenelib::util::UString::UTF_8);
-        for (unsigned int i = 0; i < UStringQuery_.size(); ++i)
+        for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
         {
             if (UStringQuery_.isPunctuationChar(i))
             {
@@ -1213,7 +1213,7 @@ void AutoFillChildManager::updateFromLog()
         QueryType TempQuery;
         bool isNormalString = true;
         izenelib::util::UString UStringQuery_(it->getQuery(),izenelib::util::UString::UTF_8);
-        for (unsigned int i = 0; i < UStringQuery_.size(); ++i)
+        for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
         {
             if (UStringQuery_.isPunctuationChar(i))
             {

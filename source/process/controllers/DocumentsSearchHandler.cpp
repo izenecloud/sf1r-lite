@@ -977,7 +977,7 @@ void DocumentsSearchKeywordsLogger::log(
         actionItem.env_.queryString_,
         izenelib::util::UString::UTF_8
     );
-    for (unsigned int i = 0; i < queryString.size(); ++i)
+    for (unsigned int i = 0; i < queryString.length(); ++i)
     {
         if (queryString.isPunctuationChar(i))
         {
