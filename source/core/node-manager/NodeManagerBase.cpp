@@ -579,6 +579,11 @@ void NodeManagerBase::leaveCluster()
     }
 }
 
+bool NodeManagerBase::isOtherPrimaryAvailable()
+{
+    return !curr_primary_path_.empty() && (curr_primary_path_ != self_primary_path_);
+}
+
 bool NodeManagerBase::isPrimary()
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
@@ -642,6 +647,32 @@ void NodeManagerBase::abortRequest()
     else
     {
         LOG(INFO) << "replica abort the request.";
+        // check if abort is allowed, if more than half has finished processing
+        // we deny the abort.
+        std::vector<std::string> node_list;
+        zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+        LOG(INFO) << "while abort request found " << node_list.size() << " children in node " << primaryNodeParentPath_;
+        size_t ready = 0;
+        for (size_t i = 0; i < node_list.size(); ++i)
+        {
+            if (node_list[i] == curr_primary_path_)
+            {
+                // primary is sure finished before secondary can process.
+                ready++;
+                continue;
+            }
+            NodeStateType state = getNodeState(node_list[i]);
+            if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
+            {
+                ready++;
+            }
+        }
+        LOG(INFO) << "while abort request, there are " << ready << " children already finished. ";
+        if (ready >= (node_list.size() + 1)/2)
+        {
+            throw std::runtime_error("exit for deny abort request.");
+        }
+
         setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
         DistributeTestSuit::testFail(ReplicaFail_At_AbortReq);
     }

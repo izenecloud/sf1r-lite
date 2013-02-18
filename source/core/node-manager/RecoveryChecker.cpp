@@ -513,6 +513,14 @@ void RecoveryChecker::onRecoverCallback()
 {
     LOG(INFO) << "recovery callback, begin recovery before enter cluster.";
 
+    // If myself need rollback, we must make sure primary node is available.
+    //
+    if (bfs::exists(rollback_file_))
+    {
+        if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
+            throw std::runtime_error("recovery failed. No primary Node!!");
+    }
+
     if(!rollbackLastFail(false))
     {
         LOG(ERROR) << "corrupt data and rollback failed. Unrecoverable!!";
