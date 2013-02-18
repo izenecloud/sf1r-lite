@@ -799,6 +799,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
         doMining_();
     }
 
+    flushData();
     distribute_req_hooker_->processLocalFinished(ret);
     return ret;
 }
@@ -866,6 +867,8 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         document2SCDDoc(document,scddoc);
     }
     scd_writer_->Write(scddoc, UPDATE_SCD);
+
+    flushData();
 
     distribute_req_hooker_->processLocalFinished(ret);
     return ret;
@@ -1083,6 +1086,7 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         LogServerConnection::instance().flushRequests();
     }
 
+    flushData();
     distribute_req_hooker_->processLocalFinished(ret);
 
     return ret;
