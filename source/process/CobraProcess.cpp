@@ -108,7 +108,6 @@ bool CobraProcess::initLogManager()
 
 bool CobraProcess::initLAManager()
 {
-    LAPool::getInstance()->initLangAnalyzer();
     // in collection config file, each <Indexing analyzer="..."> needs to be initialized in LAPool,
     // so LAPool is initialized here after all collection config files are parsed
 
@@ -404,10 +403,13 @@ int CobraProcess::run()
 
     try
     {
+        LAPool::getInstance()->initLangAnalyzer();
+
+        startCollections();
+    
         if(!initLAManager())
             throw std::runtime_error("failed in initLAManager()");
 
-        startCollections();
 
         if (!startDistributedServer())
             throw std::runtime_error("failed in startDistributedServer()");
