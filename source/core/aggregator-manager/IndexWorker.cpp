@@ -353,14 +353,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 
     }///set cookie as true here
     try{
-#ifdef __x86_64
-        if (bundleConfig_->isTrieWildcard())
-        {
-            idManager_->startWildcardProcess();
-            idManager_->joinWildcardProcess();
-        }
-#endif
-
         if (hooker_)
         {
             if (!hooker_->FinishHook())
@@ -501,14 +493,6 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     documentManager_->flush();
     idManager_->flush();
     indexManager_->flush();
-
-#ifdef __x86_64
-    if (bundleConfig_->isTrieWildcard())
-    {
-        idManager_->startWildcardProcess();
-        idManager_->joinWildcardProcess();
-    }
-#endif
 
     if (miningTaskService_)
     {
