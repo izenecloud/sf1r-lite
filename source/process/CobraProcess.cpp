@@ -115,6 +115,10 @@ bool CobraProcess::initLogManager()
 
 bool CobraProcess::initLAManager()
 {
+    LAPool::getInstance()->initLangAnalyzer();
+    // in collection config file, each <Indexing analyzer="..."> needs to be initialized in LAPool,
+    // so LAPool is initialized here after all collection config files are parsed
+
     LAManagerConfig laConfig;
     SF1Config::get()->getLAManagerConfig(laConfig);
 
@@ -366,6 +370,46 @@ void CobraProcess::scheduleTask(const std::string& collection)
 #endif // COBRA_RESTRICT
 }
 
+void CobraProcess::startCollections()
+{
+    bfs::directory_iterator iter(configDir_), end_iter;
+    for(; iter!= end_iter; ++iter)
+    {
+        if(bfs::is_regular_file(*iter))
+        {
+            if(bfs::path(*iter).filename().string().rfind(".xml") == (bfs::path(*iter).filename().string().length() - std::string(".xml").length()))
+                if(!boost::iequals(bfs::path(*iter).filename().string(),"sf1config.xml"))
+                {
+                    std::string collectionName = bfs::path(*iter).filename().string().substr(0,bfs::path(*iter).filename().string().rfind(".xml"));
+                    CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
+                    scheduleTask(collectionName);
+                }
+        }
+    }
+
+#ifdef  EXIST_LICENSE
+    char* home = getenv("HOME");
+    std::string licenseDir = home; licenseDir += "/sf1-license/";
+
+    std::string filePath = licenseDir + LicenseManager::TOKEN_FILENAME;
+    if( boost::filesystem::exists(filePath) )
+    {
+        std::string token("");
+        LicenseManager::extract_token_from(filePath, token);
+
+        ///Insert the extracted token into the deny control lists for all collections
+        SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
+        SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
+
+        for(; collectionIter != collectionMetaMap.end(); collectionIter++)
+        {
+            CollectionMeta& collectionMeta = collectionIter->second;
+            collectionMeta.aclDeny(token);
+        }
+    }
+#endif
+}
+
 void CobraProcess::stopCollections()
 {
     SF1Config::CollectionMetaMap collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
@@ -376,67 +420,27 @@ void CobraProcess::stopCollections()
         std::string collectionName = collectionMeta.getName();
         CollectionManager::get()->stopCollection(collectionName);
     }
+    CollectionManager::get()->getOSGILauncher().stop();
 }
 
 int CobraProcess::run()
 {
-    addExitHook(boost::bind(&CobraProcess::stopCollections, this));
     setupDefaultSignalHandlers();
 
     bool caughtException = false;
 
     try
     {
-        LAPool::getInstance()->initLangAnalyzer();
-        bfs::directory_iterator iter(configDir_), end_iter;
-        for(; iter!= end_iter; ++iter)
-        {
-            if(bfs::is_regular_file(*iter))
-            {
-                if(bfs::path(*iter).filename().string().rfind(".xml") == (bfs::path(*iter).filename().string().length() - std::string(".xml").length()))
-                    if(!boost::iequals(bfs::path(*iter).filename().string(),"sf1config.xml"))
-                    {
-                        std::string collectionName = bfs::path(*iter).filename().string().substr(0,bfs::path(*iter).filename().string().rfind(".xml"));
-                        CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string(),
-                            false, true);
-                        scheduleTask(collectionName);
-                    }
-            }
-        }
-
-        // in collection config file, each <Indexing analyzer="..."> needs to be initialized in LAPool,
-        // so LAPool is initialized here after all collection config files are parsed
         if(!initLAManager())
             throw std::runtime_error("failed in initLAManager()");
 
-#ifdef  EXIST_LICENSE
-            char* home = getenv("HOME");
-            std::string licenseDir = home; licenseDir += "/sf1-license/";
-
-            {
-                std::string filePath = licenseDir + LicenseManager::TOKEN_FILENAME;
-                if( boost::filesystem::exists(filePath) )
-                {
-                    std::string token("");
-                    LicenseManager::extract_token_from(filePath, token);
-
-                    ///Insert the extracted token into the deny control lists for all collections
-                    SF1Config::CollectionMetaMap& collectionMetaMap = SF1Config::get()->mutableCollectionMetaMap();
-                    SF1Config::CollectionMetaMap::iterator collectionIter = collectionMetaMap.begin();
-
-                    for(; collectionIter != collectionMetaMap.end(); collectionIter++)
-                    {
-                        CollectionMeta& collectionMeta = collectionIter->second;
-                        collectionMeta.aclDeny(token);
-                    }
-                }
-            }
-#endif
+        startCollections();
 
         if (!startDistributedServer())
             throw std::runtime_error("failed in startDistributedServer()");
 
         driverServer_->run();
+        stopCollections();
     }
     catch (const std::exception& e)
     {

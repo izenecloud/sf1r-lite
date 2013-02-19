@@ -11,7 +11,7 @@ namespace sf1r
 {
 OSGILauncher::OSGILauncher()
 {
-    addExitHook(boost::bind(&OSGILauncher::stop, this));
+    //addExitHook(boost::bind(&OSGILauncher::stop, this));
 }
 
 OSGILauncher::~OSGILauncher()

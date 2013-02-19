@@ -41,6 +41,8 @@ private:
 
     void stopDistributedServer();
 
+    void startCollections();
+
     void stopCollections();
 
     void scheduleTask(const std::string& collection);
