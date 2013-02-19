@@ -349,11 +349,11 @@ void CobraProcess::stopCollections()
         std::string collectionName = collectionMeta.getName();
         CollectionManager::get()->stopCollection(collectionName);
     }
+    CollectionManager::get()->getOSGILauncher().stop();
 }
 
 int CobraProcess::run()
 {
-    addExitHook(boost::bind(&CobraProcess::stopCollections, this));
     setupDefaultSignalHandlers();
 
     bool caughtException = false;
@@ -409,6 +409,7 @@ int CobraProcess::run()
             throw std::runtime_error("failed in startDistributedServer()");
 
         driverServer_->run();
+        stopCollections();
     }
     catch (const std::exception& e)
     {
