@@ -43,6 +43,11 @@ void MiningTaskService::DoContinue()
     miningManager_->DoContinue();
 }
 
+void MiningTaskService::flush()
+{
+    miningManager_->flush();
+}
+
 void MiningTaskService::cronJob_(int calltype)
 {
     if (cronExpression_.matches_now() || calltype > 0)

@@ -10,10 +10,10 @@
 import os,sys
 from os import path
 import re
-import string,re
 import time
 import ast
 import subprocess
+import shlex
 
 
 local_base = '/home/vincentlee/workspace/sf1/'
@@ -47,19 +47,35 @@ scp_remote = 'scp -r ' + loginuser + '@'
 primary_host = ['172.16.5.195']
 replicas_host = ['172.16.5.192', '172.16.5.194']
 
+logfile = open('./result.log', 'w')
+
+def printtofile(*objects):
+    logfile.writelines(objects)
+    logfile.writelines(['\n'])
+    logfile.flush()
+
+def run_prog_and_getoutput(args):
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (out, err) = proc.communicate()
+    return (out, err)
+
 def send_cmd_afterssh(hosts, cmdstr):
     for host in hosts:
-        print "sending command to host : " + host + ', cmd:' + cmdstr
-        os.system(loginssh + host + ' \'' + cmdstr + ' \'')
+        printtofile ("sending command to host : " + host + ', cmd:' + cmdstr)
+        #os.system(loginssh + host + ' \'' + cmdstr + ' \'')
+        (out, err) = run_prog_and_getoutput(shlex.split(loginssh + host + ' \'' + cmdstr + ' \''))
+        printtofile (out,err)
 
 def send_cmd_andstay(hosts, cmdstr):
     for host in hosts:
-        print "sending command to host : " + host + ', cmd:' + cmdstr
-        os.system(loginssh_stay + host + ' \'' + cmdstr + ' \'')
+        printtofile ("sending command to host : " + host + ', cmd:' + cmdstr)
+        #os.system(loginssh_stay + host + ' \'' + cmdstr + ' \'')
+        (out, err) = run_prog_and_getoutput(shlex.split(loginssh_stay + host + ' \'' + cmdstr + ' \''))
+        printtofile (out,err)
 
 def syncfiles(args):
     if len(args) < 3:
-        print 'args not enough, need: files src_host dest_hosts'
+        printtofile ('args not enough, need: files src_host dest_hosts')
         return
     dest_hosts = []
     src_host = ''
@@ -78,7 +94,7 @@ def syncfiles(args):
         fullfilepath = ''
         if (src_host == ''):
             fullfilepath = base_dir + '/' + path.abspath(file).replace(path.abspath(local_base), '')
-            print 'local to remote : ' + fullfilepath
+            printtofile ('local to remote : ' + fullfilepath)
         else:
             fullfilepath = base_dir + '/' + file
         for dest_host in dest_hosts:
@@ -88,21 +104,24 @@ def syncfiles(args):
                 os.system(scp_local + file + ' ' + dest_host_path)
             else:
                 os.system(scp_remote + src_host + ':' + fullfilepath + ' ' + dest_host_path)
-    print 'finished.'
+    printtofile ('finished.')
 
 def start_all(args):
-    # start primary first
-    send_cmd_andstay(primary_host,  'cd ' + sf1r_bin_dir + ';' + start_prog)
-    time.sleep(10)
-    send_cmd_afterssh(replicas_host,  'cd ' + sf1r_bin_dir + ';' + start_prog)
-    print 'start all finished.'
+    if len(args) > 2:
+        send_cmd_andstay(args[2:], 'cd ' + sf1r_bin_dir + ';' + start_prog)
+    else:
+        # start primary first
+        send_cmd_andstay(primary_host,  'cd ' + sf1r_bin_dir + ';' + start_prog)
+        time.sleep(10)
+        send_cmd_afterssh(replicas_host,  'cd ' + sf1r_bin_dir + ';' + start_prog)
+    printtofile ('start all finished.')
 
 def stop_all(args):
     # stop replicas first.
     send_cmd_andstay(replicas_host,  'cd ' + sf1r_bin_dir + ';' + stop_prog)
     time.sleep(5)
     send_cmd_afterssh(primary_host,  'cd ' + sf1r_bin_dir + ';' + stop_prog)
-    print 'stop all finished.'
+    printtofile ('stop all finished.')
 
 def update_src(args):
     if len(args) >= 3:
@@ -112,9 +131,9 @@ def update_src(args):
     cmdstr = ''
     for target_project in target_projects:
         cmdstr += ' cd ' + base_dir + '/' + target_project + ';' + update_src_prog + '; '
-    print cmdstr
+    printtofile (cmdstr)
     send_cmd_afterssh(primary_host + replicas_host,  cmdstr)
-    print 'update source finished.'
+    printtofile ('update source finished.')
 
 def compile_all(args):
     if len(args) >= 3:
@@ -124,9 +143,9 @@ def compile_all(args):
     cmdstr = ''
     for target_project in target_projects:
         cmdstr += ' cd ' + base_dir + '/' + target_project + '/build' + ';' + compile_prog + '; '
-    print cmdstr
+    printtofile (cmdstr)
     send_cmd_afterssh(primary_host + replicas_host,  cmdstr)
-    print 'compile command send finished.'
+    printtofile ('compile command send finished.')
 
 def send_cmd(args):
     cmdstr = args[2]
@@ -140,7 +159,7 @@ def read_cmd_from_file(args):
     cmdfile = args[2]
     cmdstr = ''
     fp = open(cmdfile, 'r')
-    print 'read cmdstr from file : ' + cmdfile
+    printtofile ('read cmdstr from file : ' + cmdfile)
     for line in fp:
         cmdstr += line.strip() + ';'
     fp.close()
@@ -148,7 +167,7 @@ def read_cmd_from_file(args):
         send_cmd_andstay(primary_host + replicas_host, cmdstr)
     else:
         send_cmd_andstay(args[3:], cmdstr)
-    print 'finished'
+    printtofile('finished')
 
 def check_build_finish(args):
     cmdstr = 'tail -f ' + sf1r_dir + '/build/easy_tool.log'
@@ -189,10 +208,15 @@ def set_fail_test_conf(args):
         send_cmd_andstay([host], cmdstr)
 
 def auto_restart(args):
+
+    pid = os.fork()
+    if pid > 0:
+        sys.exit(0)
+
     while True:
-        print 'waiting next try'
+        printtofile ('waiting next try')
         time.sleep(60)
-        print 'try starting sf1r'
+        printtofile ('try starting sf1r')
         if len(args) < 3:
             start_all(args)
         else:
@@ -201,11 +225,6 @@ def auto_restart(args):
 def mv_scd_to_index(args):
     cmdstr = ' cd ' + sf1r_bin_dir + '/collection/b5mp/scd/index/; mv backup/*.SCD .' 
     send_cmd_andstay(args[2:], cmdstr)
-
-def run_prog_and_getoutput(args):
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (out, err) = proc.communicate()
-    return (out, err)
 
 def reset_state_and_run():
     stop_all([])
@@ -223,13 +242,13 @@ def reset_state_and_run():
     # send index 
     for host in primary_host:
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_index])
-        print out
+        printtofile (out)
 
     failed_host = check_col()
     if len(failed_host) > 0:
-        print 'reset state wrong, data is not consistent.'
+        printtofile ('reset state wrong, data is not consistent.')
         exit(0)
-    print 'reset state for cluster finished.'
+    printtofile ('reset state for cluster finished.')
 
 def check_col():
     while True:
@@ -239,11 +258,11 @@ def check_col():
             (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_getstate])
             if error.find('Connection refused') != -1:
                 # this host is down.
-                print 'host down : ' + host
+                printtofile ('host down : ' + host)
                 continue
             if out.find('\"NodeState\": \"3\"') == -1:
-                print 'not ready, waiting'
-                print out
+                printtofile ('not ready, waiting')
+                #printtofile out
                 allready = False
                 break
 
@@ -254,10 +273,10 @@ def check_col():
     for host in primary_host + replicas_host:
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_check])
         if error.find('Connection refused') != -1:
-            print 'host down : ' + host
+            printtofile ('host down : ' + host)
             continue
         if len(error) > 0:
-            print 'data is not consistent after running for host : ' + host
+            printtofile ('data is not consistent after running for host : ' + host)
             failed_host += host
     return failed_host
 
@@ -267,24 +286,30 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
     for host in primary_host:
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', test_writereq])
         if len(error) > 0:
-            print 'run write request error: ' + error + ', host: ' + host
+            printtofile ('run write request error: ' + error + ', host: ' + host)
     # check collection after this request.
     failed_host = check_col()
     if len(failed_host) > 0:
-        print 'data not consistent while checking after write.'
+        printtofile ('data not consistent while checking after write.' + time.asctime())
     else:
-        print 'after write , test case passed'
+        printtofile ('after write , test case passed')
     # restart any failed node.
     stop_all([])
     time.sleep(20)
-    start_all([])
+    # failed host should be started last.
+    first_start_host = primary_host + replicas_host
+    for host in testfail_host:
+        first_start_host.remove(host)
+    start_all(['',''] + first_start_host)
+    time.sleep(10)
+    start_all(['',''] + testfail_host)
     time.sleep(30)
     # check collection again.
     failed_host = check_col()
     if len(failed_host) > 0:
-        print 'data not consistent while checking after restart failed node.'
+        printtofile ('data not consistent while checking after restart failed node.' + time.asctime())
     else:
-        print 'after restarting failed node, test case passed'
+        printtofile ('after restarting failed node, test case passed')
 
 
 def run_auto_fail_test(args):
@@ -296,37 +321,41 @@ def run_auto_fail_test(args):
         for i in range(oldlen, len(test_writereq_files)):
             test_writereq_files[i] = root + '/' + test_writereq_files[i]
 
+    pid = os.fork()
+    if pid > 0:
+        sys.exit(0)
+
     while True:
-        print 'waiting next fail test'
+        printtofile ('waiting next fail test')
         time.sleep(10)
         for test_writereq in test_writereq_files:
-            print 'running fail test for write request : ' + test_writereq
+            printtofile ('running fail test for write request : ' + test_writereq)
 
             # test for all kinds of primary fail
-            print 'begin test for primary fail'
-            for i in range(2, 13):
+            printtofile ('begin test for primary fail')
+            for i in range(4, 13):
                 reset_state_and_run()
-                print 'testing for primary fail type : ' + str(i)
+                printtofile ('testing for primary fail type : ' + str(i))
                 run_testwrite(primary_host, i, test_writereq)
                             
-            print 'begin test for replica fail'
+            printtofile ('begin test for replica fail')
             for i in range(31, 42):
                 reset_state_and_run()
-                print 'testing for replica fail type : ' + str(i)
+                printtofile ('testing for replica fail type : ' + str(i))
                 run_testwrite([replicas_host[0]], i, test_writereq)
 
-            print 'begin test for other fail'
+            printtofile ('begin test for other fail')
             for i in range(61, 62):
                 reset_state_and_run()
-                print 'testing for other fail type on replica: ' + str(i)
+                printtofile ('testing for other fail type on replica: ' + str(i))
                 run_testwrite([replicas_host[0]], i, test_writereq)
                 reset_state_and_run()
-                print 'testing for other fail type on primary_host: ' + str(i)
+                printtofile ('testing for other fail type on primary_host: ' + str(i))
                 run_testwrite(primary_host, i, test_writereq)
 
             # test for primary electing fail.
             reset_state_and_run()
-            print 'testing for primary electing fail'
+            printtofile ('testing for primary electing fail')
             # fail primary.
             cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo 3 > ./distribute_test.conf'
             send_cmd_andstay(primary_host, cmdstr)
@@ -353,7 +382,10 @@ print args
 if len(args) > 1:
     if args[1] in handler_dict.keys():
         print 'begin command: ' + args[1]
-        handler_dict[args[1]](args)
+        try:
+            handler_dict[args[1]](args)
+        finally:
+            logfile.close()
         exit(0)
 
 print 'Usage:'

@@ -26,6 +26,7 @@ public:
     {
         miningManager_->incDeletedDocBeforeMining();
     }
+    void flush();
 
 private:
     void cronJob_(int calltype);

@@ -58,6 +58,7 @@ void NodeManagerBase::registerDistributeService(boost::shared_ptr<IDistributeSer
             LOG(WARNING) << "duplicate service name!!!!!!!";
             throw std::runtime_error("duplicate service!");
         }
+        LOG(INFO) << "registering service worker: " << sp_service->getServiceName();
         all_distributed_services_[sp_service->getServiceName()] = sp_service;
     }
     MasterManagerBase::get()->registerDistributeServiceMaster(sp_service, enable_master);
@@ -217,17 +218,16 @@ bool NodeManagerBase::checkZooKeeperService()
     return true;
 }
 
-void NodeManagerBase::createServiceNodes()
+void NodeManagerBase::setServicesData(ZNode& znode)
 {
-    if (!zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
-    {
-        LOG(ERROR) << "current node path not exist while write service node data.";
-        return;
-    }
+    std::string services;
     ServiceMapT::const_iterator cit = all_distributed_services_.begin();
     while(cit != all_distributed_services_.end())
     {
-        cit->second->initWorker();
+        if (services.empty())
+            services = cit->first;
+        else
+            services += "," + cit->first;
 
         std::string collections;
         std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.masterServices_[cit->first].collectionList_;
@@ -239,9 +239,18 @@ void NodeManagerBase::createServiceNodes()
             else
                 collections += "," + (*it).name_;
         }
-        ZNode znode;
-        znode.setValue(ZNode::KEY_COLLECTION, collections);
-        zookeeper_->createZNode(nodePath_ + "/" + cit->first, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL);
+        znode.setValue(cit->first + ZNode::KEY_COLLECTION, collections);
+        ++cit;
+    }
+    znode.setValue(ZNode::KEY_SERVICE_NAMES, services);
+}
+
+void NodeManagerBase::initServices()
+{
+    ServiceMapT::const_iterator cit = all_distributed_services_.begin();
+    while(cit != all_distributed_services_.end())
+    {
+        cit->second->initWorker();
         ++cit;
     }
 }
@@ -255,6 +264,36 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     znode.setValue(ZNode::KEY_FILESYNC_RPCPORT, (uint32_t)SuperNodeManager::get()->getFileSyncRpcPort());
     znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
     znode.setValue(ZNode::KEY_NODE_STATE, (uint32_t)nodeState_);
+    setServicesData(znode);
+
+    std::string service_state;
+    if (nodeState_ == NODE_STATE_RECOVER_RUNNING || 
+        nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY ||
+        nodeState_ == NODE_STATE_ELECTING ||
+        nodeState_ == NODE_STATE_UNKNOWN ||
+        nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING ||
+        nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
+        nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT ||
+        nodeState_ == NODE_STATE_INIT ||
+        nodeState_ == NODE_STATE_STARTING)
+    {
+        service_state = "BusyForSelf";
+    }
+    else
+    {
+        service_state = "BusyForShard";
+        // at least half finished processing, we can get ready to serve read.
+        if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY && canAbortRequest())
+        {
+            service_state = "BusyForReplica";
+        }
+        else if (MasterManagerBase::get()->isServiceReadyForRead(false))
+        {
+            service_state = "ReadyForRead";
+        }
+    }
+    znode.setValue(ZNode::KEY_SERVICE_STATE, service_state);
+    DistributeTestSuit::updateMemoryState("NodeState", nodeState_);
 
     // put the registered sequence primary node path to 
     // current node so that the other node can tell 
@@ -450,7 +489,7 @@ void NodeManagerBase::enterCluster(bool start_master)
             return;
         }
     }
-    createServiceNodes();
+    initServices();
 
     nodeState_ = NODE_STATE_RECOVER_RUNNING;
     updateCurrentPrimary();
@@ -635,6 +674,36 @@ void NodeManagerBase::notifyMasterReadyForNew()
         DistributeTestSuit::testFail(PrimaryFail_At_NotifyMasterReadyForNew);
 }
 
+bool NodeManagerBase::canAbortRequest()
+{
+    // check if abort is allowed, if more than half has finished processing
+    // we deny the abort.
+    std::vector<std::string> node_list;
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+    LOG(INFO) << "while check if can abort request found " << node_list.size() << " children in node " << primaryNodeParentPath_;
+    size_t ready = 0;
+    for (size_t i = 0; i < node_list.size(); ++i)
+    {
+        if (node_list[i] == curr_primary_path_)
+        {
+            // primary is sure finished before secondary can process.
+            ready++;
+            continue;
+        }
+        NodeStateType state = getNodeState(node_list[i]);
+        if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
+        {
+            ready++;
+        }
+    }
+    LOG(INFO) << "while check if can abort request, there are " << ready << " children already finished. ";
+    if (ready >= (node_list.size() + 1)/2)
+    {
+        return false;
+    }
+    return true;
+}
+
 void NodeManagerBase::abortRequest()
 {
     // notify abort and wait other aborting.
@@ -649,26 +718,7 @@ void NodeManagerBase::abortRequest()
         LOG(INFO) << "replica abort the request.";
         // check if abort is allowed, if more than half has finished processing
         // we deny the abort.
-        std::vector<std::string> node_list;
-        zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
-        LOG(INFO) << "while abort request found " << node_list.size() << " children in node " << primaryNodeParentPath_;
-        size_t ready = 0;
-        for (size_t i = 0; i < node_list.size(); ++i)
-        {
-            if (node_list[i] == curr_primary_path_)
-            {
-                // primary is sure finished before secondary can process.
-                ready++;
-                continue;
-            }
-            NodeStateType state = getNodeState(node_list[i]);
-            if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
-            {
-                ready++;
-            }
-        }
-        LOG(INFO) << "while abort request, there are " << ready << " children already finished. ";
-        if (ready >= (node_list.size() + 1)/2)
+        if (!canAbortRequest())
         {
             throw std::runtime_error("exit for deny abort request.");
         }
@@ -1026,8 +1076,6 @@ void NodeManagerBase::updateNodeState()
     zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
     // update to nodepath to make master got notified.
     zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
-
-    DistributeTestSuit::updateMemoryState("NodeState", nodeState_);
 }
 
 void NodeManagerBase::checkSecondaryReqProcess()

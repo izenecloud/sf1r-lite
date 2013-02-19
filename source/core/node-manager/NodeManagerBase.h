@@ -176,7 +176,8 @@ protected:
     bool checkZooKeeperService();
 
     void setSf1rNodeData(ZNode& znode);
-    void createServiceNodes();
+    void initServices();
+    void setServicesData(ZNode& znode);
 
     void enterCluster(bool start_master = true);
     void enterClusterAfterRecovery(bool start_master = true);
@@ -198,6 +199,7 @@ protected:
      * Deregister SF1 node on exit
      */
     void leaveCluster();
+    bool canAbortRequest();
 
 protected:
     bool isDistributionEnabled_;

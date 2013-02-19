@@ -59,6 +59,8 @@ static void getFileList(const std::string& dir, std::vector<std::string>& file_l
                 LOG(INFO) << "ignore checking file: " << current;
                 continue;
             }
+            if (current.filename().string().find("removed.rollback") != std::string::npos)
+                continue;
             file_list.push_back(current.string());
         }
         else
@@ -459,12 +461,14 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
             {
                 if (file_checksum_list[j] != rspdata[i].check_file_result[j])
                 {
-                    LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
-                    if (bfs::path(req.param_.check_file_list[j]).filename().string().find("MANIFEST-") == 0)
+                    // exclude leveldb path, leveldb need check special.
+                    std::string name = bfs::path(req.param_.check_file_list[j]).filename().string();
+                    if (name.find("MANIFEST-") == 0 || name.find(".sst") == 6 || name.find(".log") == 6)
                     {
-                        // the MANIFEST file of level db can be ignored.
+                        // the file of level db can be ignored.
                         continue;
                     }
+                    LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
                     check_errinfo = "at least one of file not the same status between replicas.";
                 }
             }

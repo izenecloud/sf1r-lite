@@ -591,7 +591,7 @@ void MasterManagerBase::doStart()
     detectWorkers();
 
     // Each Master serves as a Search Server, register it without waiting for all workers to be ready.
-    registerSearchServer();
+    registerServiceServer();
 }
 
 int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& detected, size_t& good)
@@ -953,32 +953,68 @@ void MasterManagerBase::recover(const std::string& zpath)
     masterState_ = MASTER_STATE_STARTED;
 }
 
-void MasterManagerBase::createServiceNodes()
+void MasterManagerBase::setServicesData(ZNode& znode)
 {
-    if (!zookeeper_->isZNodeExists(serverRealPath_, ZooKeeper::WATCH))
-    {
-        LOG(ERROR) << "current master server path not exist while write service node data.";
-        return;
-    }
-
+    // write service name to server node.
+    std::string services;
     ServiceMapT::const_iterator cit = all_distributed_services_.begin();
     while(cit != all_distributed_services_.end())
     {
-        //std::string collections;
-        //std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.masterServices_[cit->first]->second.collectionList_;
-        //for (std::vector<MasterCollection>::iterator it = collectionList.begin();
-        //        it != collectionList.end(); it++)
-        //{
-        //    if (collections.empty())
-        //        collections = (*it).name_;
-        //    else
-        //        collections += "," + (*it).name_;
-        //}
-        ZNode znode;
-        //znode.setValue(ZNode::KEY_COLLECTION, collections);
-        zookeeper_->createZNode(serverRealPath_ + "/" + cit->first, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL);
+        if (services.empty())
+            services = cit->first;
+        else
+            services += "," + cit->first;
+
+        std::string collections;
+        std::vector<MasterCollection>& collectionList = sf1rTopology_.curNode_.master_.masterServices_[cit->first].collectionList_;
+        for (std::vector<MasterCollection>::iterator it = collectionList.begin();
+                it != collectionList.end(); it++)
+        {
+            if (collections.empty())
+                collections = (*it).name_;
+            else
+                collections += "," + (*it).name_;
+        }
+ 
+        znode.setValue(cit->first + ZNode::KEY_COLLECTION, collections);
+
         ++cit;
     }
+    znode.setValue(ZNode::KEY_SERVICE_NAMES, services);
+}
+
+void MasterManagerBase::initServices()
+{
+}
+
+bool MasterManagerBase::isServiceReadyForRead(bool include_self)
+{
+    // service is ready for read means all shard workers current master connected are ready for read.
+    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+
+    WorkerMapT::const_iterator it = workerMap_.begin();
+    for ( ; it != workerMap_.end(); ++it)
+    {
+        if (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_)
+        {
+            if (!include_self)
+                continue;
+        }
+        std::string nodepath = getNodePath(it->second->replicaId_, it->second->nodeId_);
+        std::string sdata;
+        if (zookeeper_->getZNodeData(nodepath, sdata, ZooKeeper::WATCH))
+        {
+            ZNode znode;
+            znode.loadKvString(sdata);
+            std::string value = znode.getStrValue(ZNode::KEY_SERVICE_STATE);
+            if (value != "ReadyForRead")
+            {
+                LOG(INFO) << "one shard of master service is not ready for read:" << nodepath;
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 void MasterManagerBase::registerDistributeServiceMaster(boost::shared_ptr<IDistributeService> sp_service, bool enable_master)
@@ -991,6 +1027,7 @@ void MasterManagerBase::registerDistributeServiceMaster(boost::shared_ptr<IDistr
             LOG(WARNING) << "duplicate service name!!!!!!!";
             throw std::runtime_error("duplicate service!");
         }
+        LOG(INFO) << "registering service master: " << sp_service->getServiceName();
         all_distributed_services_[sp_service->getServiceName()] = sp_service;
     }
 }
@@ -1027,7 +1064,7 @@ bool MasterManagerBase::findServiceMasterAddress(const std::string& service, std
     return false;
 }
 
-void MasterManagerBase::registerSearchServer()
+void MasterManagerBase::registerServiceServer()
 {
     // Master server provide search service
     if (!zookeeper_->isZNodeExists(serverParentPath_))
@@ -1035,17 +1072,19 @@ void MasterManagerBase::registerSearchServer()
         zookeeper_->createZNode(serverParentPath_);
     }
 
+    initServices();
+
     ZNode znode;
     znode.setValue(ZNode::KEY_HOST, sf1rTopology_.curNode_.host_);
     znode.setValue(ZNode::KEY_BA_PORT, sf1rTopology_.curNode_.baPort_);
     znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getMasterPort());
+
+    setServicesData(znode);
+
     if (zookeeper_->createZNode(serverPath_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
     }
-
-    createServiceNodes();
-
     if (!zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::WATCH))
     {
         zookeeper_->createZNode(write_req_queue_parent_);

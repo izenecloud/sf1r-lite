@@ -97,6 +97,8 @@ static void copyDir(bfs::path src, bfs::path dest)
         }
         else
         {
+            if (current.filename().string().find("_removed.rollback") != std::string::npos)
+                continue;
             // Found file: Copy
             bfs::copy_file(current, dest / current.filename(), bfs::copy_option::overwrite_if_exists);
             //LOG(INFO) << "copying : " << current << " to " << dest;

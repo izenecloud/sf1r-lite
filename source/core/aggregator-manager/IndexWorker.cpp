@@ -127,6 +127,7 @@ void IndexWorker::flush()
     documentManager_->flush();
     idManager_->flush();
     indexManager_->flush();
+    miningTaskService_->flush();
 }
 
 bool IndexWorker::reload()
