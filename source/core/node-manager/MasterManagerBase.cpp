@@ -68,8 +68,10 @@ void MasterManagerBase::start()
 
 void MasterManagerBase::stop()
 {
-    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    // disconnect will wait other ZooKeeper event finished,
+    // so we can not do it in state_mutex_ lock.
     zookeeper_->disconnect();
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
     masterState_ = MASTER_STATE_INIT;
 }
 
@@ -131,10 +133,9 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     LOG(INFO) << CLASSNAME << ", "<< state2string(masterState_) <<", "<<zkEvent.toString();
 
-    boost::lock_guard<boost::mutex> lock(state_mutex_);
-
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
+        boost::lock_guard<boost::mutex> lock(state_mutex_);
         if (masterState_ == MASTER_STATE_STARTING_WAIT_ZOOKEEPER)
         {
             masterState_ = MASTER_STATE_STARTING;
@@ -143,6 +144,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
     }
     else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
     {
+        boost::lock_guard<boost::mutex> lock(state_mutex_);
         LOG(WARNING) << "master node disconnected by zookeeper, state : " << zookeeper_->getStateString();
         LOG(WARNING) << "try reconnect: " << sf1rTopology_.curNode_.toString();
          

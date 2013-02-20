@@ -152,35 +152,34 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     LOG (INFO) << CLASSNAME << " worker node event: " << zkEvent.toString();
 
+    if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
         boost::unique_lock<boost::mutex> lock(mutex_);
-        if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
+        if (nodeState_ == NODE_STATE_STARTING_WAIT_RETRY)
         {
-            if (nodeState_ == NODE_STATE_STARTING_WAIT_RETRY)
-            {
-                // retry start
-                nodeState_ = NODE_STATE_STARTING;
-                enterCluster();
-            }
-        }
-
-        if (zkEvent.type_ == ZOO_SESSION_EVENT && 
-            zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
-        {
-            // closed by zookeeper because of session expired
-            LOG(WARNING) << "worker node disconnected by zookeeper, state: " << zookeeper_->getStateString();
-            LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
-            LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
-            if (nodeState_ == NODE_STATE_RECOVER_RUNNING)
-            {
-                LOG (INFO) << " session expired while recovering, wait recover finish.";
-                return;
-            }
-            zookeeper_->disconnect();
+            // retry start
             nodeState_ = NODE_STATE_STARTING;
-            enterCluster(false);
-            LOG (WARNING) << " restarted in NodeManagerBase for ZooKeeper Service finished";
+            enterCluster();
         }
+    }
+
+    if (zkEvent.type_ == ZOO_SESSION_EVENT && 
+        zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        // closed by zookeeper because of session expired
+        LOG(WARNING) << "worker node disconnected by zookeeper, state: " << zookeeper_->getStateString();
+        LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
+        LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
+        if (nodeState_ == NODE_STATE_RECOVER_RUNNING)
+        {
+            LOG (INFO) << " session expired while recovering, wait recover finish.";
+            return;
+        }
+        zookeeper_->disconnect();
+        nodeState_ = NODE_STATE_STARTING;
+        enterCluster(false);
+        LOG (WARNING) << " restarted in NodeManagerBase for ZooKeeper Service finished";
     }
     if (zkEvent.type_ == ZOO_CHILD_EVENT)
     {
@@ -592,7 +591,12 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 
 void NodeManagerBase::leaveCluster()
 {
-    unregisterPrimary();
+    if (!self_primary_path_.empty())
+    {
+        zookeeper_->deleteZNode(self_primary_path_);
+    }
+    self_primary_path_.clear();
+ 
     zookeeper_->deleteZNode(nodePath_, true);
 
     std::string replicaPath = replicaPath_;
