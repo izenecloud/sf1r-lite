@@ -15,7 +15,7 @@ class AutoFillSubManager: public boost::noncopyable
     typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> ItemValueType;
     typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
 
-    boost::scoped_ptr<AutoFillChildManager> Child1_,Child2_;
+    boost::scoped_ptr<AutoFillChildManager> Child1_, Child2_;
 public:
     AutoFillSubManager()
     {
@@ -24,8 +24,7 @@ public:
     }
 
     ~AutoFillSubManager()
-    {    	
-
+    {
     }
      
     bool Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression)

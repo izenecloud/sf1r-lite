@@ -1,6 +1,6 @@
 #include "AutoFillChildManager.h"
 
-#include <log-manager/UserQuery.h>
+
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <boost/algorithm/string/trim.hpp>
 #include <idmlib/util/directory_switcher.h>
@@ -11,15 +11,15 @@ namespace sf1r
 {
 std::string AutoFillChildManager::system_resource_path_;
 
-AutoFillChildManager::AutoFillChildManager(bool fromSCD)
-    : fromSCD_(fromSCD)
+AutoFillChildManager::AutoFillChildManager(bool isfromSCD)
+    : isFromSCD_(isfromSCD)
 {
     isUpdating_ = false;
     isUpdating_Wat_ = false;
     isIniting_ = false;
 
     updatelogdays_ = 1;
-    alllogdays_ =  90;
+    alllogdays_ = 90;
     topN_ =  10;
     QN_ = new izenelib::am::QueryNormalize();
 }
@@ -29,26 +29,26 @@ AutoFillChildManager::~AutoFillChildManager()
     if(!cronJobName_.empty())
         izenelib::util::Scheduler::removeJob(cronJobName_);
     closeDB();
-    delete QN_;
+    if (QN_ != NULL)
+    {
+        delete QN_;
+    }
 }
 
 void AutoFillChildManager::SaveItem()
 {
-    fstream out1;
+    fstream outItem;
     if(!ItemVector_.empty())
     {
-        out1.open(ItemPath_.c_str(), ios::out);
-        if(out1.is_open())
+        outItem.open(ItemPath_.c_str(), ios::out);
+        if(outItem.is_open())
         {
             std::vector<ItemType>::iterator it;
             for(it = ItemVector_.begin(); it != ItemVector_.end(); it++)
             {
-                if(!((*it).strItem_).empty() && (((*it).strItem_)[0] != ' '))
-                {
-                    out1<<(*it).strItem_<<endl;
-                }
+                outItem<<(*it).strItem_<<endl;
             }
-            out1.close();
+            outItem.close();
         }
         else
         {
@@ -68,12 +68,10 @@ void AutoFillChildManager::LoadItem()
             ItemType item;
             std::string temp;
             getline(in, temp);
-            if(!temp.empty() && temp[0] != ' ')
-            {
-                item.strItem_=temp;
-                item.offset_ = 0;
-                ItemVector_.push_back(item);
-            }
+
+            item.strItem_ = temp;
+            item.offset_ = 0;
+            ItemVector_.push_back(item);
         }
         in.close();
     }
@@ -106,9 +104,13 @@ bool AutoFillChildManager::LoadWat()
         return false;
 }
 
-bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression, const string& instanceName)
+bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath 
+                                    , const std::string& collectionName
+                                    , const string& cronExpression
+                                    , const string& instanceName
+                                    , bool & isBuildFromLeveldb)
 {
-    AutofillPath_ = collectionPath.getQueryDataPath() + "/autofill" + "/"+instanceName;
+    AutofillPath_ = collectionPath.getQueryDataPath() + "/autofill" + "/" + instanceName;
     collectionName_ = collectionName;
     cronJobName_ = "Autofill-cron-" + collectionName_ + "-" + instanceName;
     if (!boost::filesystem::is_directory(AutofillPath_))
@@ -118,7 +120,7 @@ bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std:
     boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
     leveldbPath_ = AutofillPath_ + "/leveldb";
     ItemdbPath_ = AutofillPath_ + "/itemdb";
-    string IDPath = AutofillPath_ + "/id/";
+    std::string IDPath = AutofillPath_ + "/id/";
     ItemPath_ = leveldbPath_ + "/Itemlist.list";
     WatArrayPath_ = leveldbPath_ + "/wavelet.tree";
     SCDLogPath_ = AutofillPath_ +"/SCDLog";
@@ -135,7 +137,6 @@ bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std:
     }
 
     QN_->load(dictionaryFile);
-    bool leveldbBuild = false;
     try
     {
         if (!boost::filesystem::is_directory(leveldbPath_))
@@ -161,7 +162,7 @@ bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std:
         {
             if (boost::filesystem::is_directory(IDPath) && boost::filesystem::is_directory(ItemdbPath_) && boost::filesystem::exists(ItemPath_))
             {
-                leveldbBuild = true;
+                isBuildFromLeveldb = true;
             }
         }
     }
@@ -172,10 +173,6 @@ bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std:
 
     idManager_.reset(new IDManger(IDPath));
 
-    std::string temp = AutofillPath_ + "/AutoFill.log";
-    out.open(temp.c_str(), ios::out);
-    //out<<"log start"<<endl;
-    //out<<cronExpression<<endl;
     if (cronExpression_.setExpression(cronExpression))
     {
         bool result = izenelib::util::Scheduler::addJob(cronJobName_,
@@ -187,14 +184,47 @@ bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std:
         else
             LOG(INFO) << "create cron job : " << cronJobName_<<" expression: "<<cronExpression;
     }
-    else
-    {
-        //out<<"wrong cronStr"<<endl;
-    }
+
     if(!openDB(leveldbPath_, ItemdbPath_))
+    {
+        LOG (ERROR) << "open leveldb wrong..." << endl;
+        return false;
+    }
+    return true;
+}
+
+bool AutoFillChildManager::Init_ForTest(const CollectionPath& collectionPath 
+                                    , const std::string& collectionName
+                                    , const string& cronExpression
+                                    , const string& instanceName
+                                    , bool & isBuildFromLeveldb
+                                    , std::vector<UserQuery>& query_records)
+{
+    isBuildFromLeveldb = false;
+    if (!PrepareForInit(collectionPath, collectionName, cronExpression, instanceName, isBuildFromLeveldb))
         return false;
 
-    if(leveldbBuild)//&&(!fromSCD_)
+    if(isBuildFromLeveldb)
+    {
+        InitWhileHaveLeveldb();
+    }
+    else
+    {
+        if(!InitFromLog_ForTest(query_records))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression, const string& instanceName)
+{
+    bool isBuildFromLeveldb = false;
+    if (!PrepareForInit(collectionPath, collectionName, cronExpression, instanceName, isBuildFromLeveldb))
+        return false;
+
+    if(isBuildFromLeveldb)
     {
         InitWhileHaveLeveldb();
     }
@@ -206,21 +236,22 @@ bool AutoFillChildManager::Init(const CollectionPath& collectionPath, const std:
         }
     }
     isIniting_ = false;
-
     return true;
 }
 
 bool AutoFillChildManager::InitWhileHaveLeveldb()
 {
-    std::string IDPath = AutofillPath_ + "/id/";
     LoadItem();
-    buildItemVector();//erase same;
+    buildItemVector();
     isUpdating_Wat_ = true;
     if(!LoadWat())
+    {
         buildWat_array(true);
+    }
     else
     {
-        buildDbItem();
+        LOG (INFO) <<"Autofill Started from leveldb ..."<<endl;
+        //buildDbItem();
     }
     isUpdating_Wat_ = false;
     return true;
@@ -229,30 +260,17 @@ bool AutoFillChildManager::InitWhileHaveLeveldb()
 bool AutoFillChildManager::RealInit()
 {
     isIniting_ = true;
-    std::string IDPath = AutofillPath_+"/id/";
-    try
+    if(isFromSCD_)
     {
-        if (!boost::filesystem::is_directory(IDPath))
-        {
-            boost::filesystem::create_directories(IDPath);
-        }
-    }
-    catch (boost::filesystem::filesystem_error& e)
-    {
-        LOG(ERROR)<<"Path does not exist. Path "<<IDPath;
-    }
-
-    if(fromSCD_)
-    {
-        return InitFromSCD();
+        if(!InitFromSCD())
+            return false;
     }
     else
     {
-        return InitFromLog();
+        if(!InitFromLog())
+            return false;
     }
-
     isIniting_ = false;
-
     return true;
 }
 
@@ -303,7 +321,6 @@ bool AutoFillChildManager::InitFromSCD()
     {
         LoadSCDLog();
     }
-    //updateFromSCD();
     return true;
 }
 
@@ -328,7 +345,7 @@ void AutoFillChildManager::updateFromSCD()
             {
                 SCDHaveDone_.push_back(fileName);
                 std::string temp;
-                string title = "<Title>";
+                std::string title = "<Title>";
                 while(!in.eof())
                 {
                     getline(in, temp);
@@ -368,8 +385,34 @@ void AutoFillChildManager::updateFromSCD()
                 LOG(WARNING) << "exception in rename file " << *scd_it << ": " << e.what();
             }
         }
-
     }
+}
+
+bool AutoFillChildManager::InitFromLog_ForTest(std::vector<UserQuery>& query_records)
+{
+    list<ItemValueType> querylist;
+    std::vector<UserQuery>::const_iterator it = query_records.begin();
+    for (; it != query_records.end(); ++it)
+    {
+        bool isNormalString = true;
+        std::string query = it->getQuery();
+        QN_->query_Normalize(query);
+        izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
+        for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
+        {
+            if (UStringQuery_.isPunctuationChar(i))
+            {
+                isNormalString = false;
+                break;
+            }
+        }
+        if (isNormalString)
+        {
+            querylist.push_back(boost::make_tuple(it->getCount(), it->getHitDocsNum(), UStringQuery_));
+        }
+    }
+    buildIndex(querylist);
+    return true;
 }
 
 bool AutoFillChildManager::InitFromLog()
@@ -388,10 +431,15 @@ bool AutoFillChildManager::InitFromLog()
         query_records);
     list<ItemValueType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();
+
+    int count= 0;
     for (; it != query_records.end(); ++it)
     {
+        count++;
         bool isNormalString = true;
-        izenelib::util::UString UStringQuery_(it->getQuery(),izenelib::util::UString::UTF_8);
+        std::string query = it->getQuery();
+        QN_->query_Normalize(query);
+        izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
         for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
         {
             if (UStringQuery_.isPunctuationChar(i))
@@ -409,9 +457,9 @@ bool AutoFillChildManager::InitFromLog()
     return true;
 }
 
-bool AutoFillChildManager::openDB(string Tablepath, string Itempath)
+bool AutoFillChildManager::openDB(std::string Tablepath, std::string Itempath)
 {
-    return dbTable_.open(Tablepath)&&dbItem_.open(Itempath);
+    return dbTable_.open(Tablepath) && dbItem_.open(Itempath);
 }
 
 void AutoFillChildManager::closeDB()
@@ -423,25 +471,26 @@ void AutoFillChildManager::closeDB()
 bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
 {
     std::list<QueryType>::const_iterator it;
-    std::vector<std::pair<string,string> > similarList;
+    std::vector<std::pair<std::string, std::string> > similarList;
     vector<PrefixQueryType> thousandpair;
-    int querynum=0;
+    unsigned int querynum = 0;
     for(it = queryList.begin(); it != queryList.end(); it++)
     {
         querynum++;
         std::vector<izenelib::util::UString> pinyins;
+        
         FREQ_TYPE freq = (*it).freq_;
         uint32_t HitNum = (*it).HitNum_;
-        std::string strT=(*it).strQuery_;
-        boost::algorithm::trim(strT);
+        std::string strT = (*it).strQuery_;
 
+        boost::algorithm::trim(strT);
         std::transform(strT.begin(), strT.end(), strT.begin(), ::tolower);
+
         izenelib::util::UString UStringQuery(strT,izenelib::util::UString::UTF_8);
         QueryCorrectionSubmanager::getInstance().getRelativeList(UStringQuery, pinyins);
-        std::vector<izenelib::util::UString>::const_iterator itv;
-        string strO=strT;
 
-        for(itv = pinyins.begin(); itv != pinyins.end(); itv++)
+        std::vector<izenelib::util::UString>::const_iterator itv = pinyins.begin();
+        for( ; itv != pinyins.end(); itv++)
         {
             PrefixQueryType prefix;
             std::string pinyin;
@@ -450,239 +499,117 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
             {
                 continue;
             }
-            prefix.init(strO,pinyin,freq,HitNum);
+            prefix.init(strT, pinyin, freq, HitNum);
             thousandpair.push_back(prefix);
         }
         if(querynum%10000==0)
         {
-            buildDbIndexForEveryThousand(thousandpair,similarList);
+            buildDbIndexForEveryThousand(thousandpair, similarList);
             thousandpair.clear();
         }
-        /*
-        for(itv = pinyins.begin(); itv != pinyins.end(); itv++)
-        {
-            strT=strO;
-            Similar=false;
-            std::string pinyin, value,nospacepinyin,withspacepinyin;
-            (*itv).convertString(pinyin, izenelib::util::UString::UTF_8);
-            buildItemList(pinyin);
-            //izenelib::util::UString NoSpace=izenelib::util::Algorithm<izenelib::util::UString>::trim((*itv));
-            //NoSpace.convertString(nospacepinyin, izenelib::util::UString::UTF_8);
-            withspacepinyin=pinyin;
-            nospacepinyin=pinyin;
-            boost::algorithm::replace_all(nospacepinyin," ","");
-            boost::algorithm::replace_all(nospacepinyin,"","");
-            if(nospacepinyin!=pinyin)
-            {
-                  if(nospacepinyin.length()>0)//dbTable_.get_item(nospacepinyin, value)&&
-                  {
-                       //out<<"withspacepinyin:"<<withspacepinyin<<endl;
-                       //out<<"nospacepinyin"<<nospacepinyin<<endl;
-                       Similar=true;
-                       withspacepinyin=pinyin;
-                       pinyin=nospacepinyin;
-                       boost::algorithm::replace_all(strT,withspacepinyin,nospacepinyin);
-                   }
-            }
-
-            dbTable_.get_item(pinyin, value);
-            dbTable_.delete_item(pinyin);
-
-            if(value.length() == 0)
-            {
-                ValueType newValue;
-                std::string value, firstvalue;
-                firstvalue = "0000";
-                newValue.toValueType(strT, freq, HitNum);
-                newValue.toString(value);
-                firstvalue.append(value);
-                if(!dbTable_.add_item(pinyin, firstvalue));
-                //return false;
-            }
-            else
-            {
-                uint32_t len = value.length();
-                const char* str = value.data() + TOPN_LEN;
-                uint32_t offset = TOPN_LEN;
-                while(offset < len)
-                {
-                    ValueType newValue;
-                    newValue.getValueType(str);
-                    string strA=newValue.strValue_;
-                    string strB = strT;
-                    boost::algorithm::replace_all(strA, " ", "");
-                    boost::algorithm::replace_all(strB, " ", "");
-                    std::transform(strA.begin(), strA.end(), strA.begin(), ::tolower);
-                    std::transform(strB.begin(), strB.end(), strB.begin(), ::tolower);
-                    if(strA == strB)
-                    {
-                        FREQ_TYPE freq_new = freq + *(FREQ_TYPE*)(str + *(uint32_t*)str - FREQ_TYPE_LEN  - UINT32_LEN);
-
-                        *(FREQ_TYPE*)(str + *(uint32_t*)str - FREQ_TYPE_LEN  - UINT32_LEN) = freq_new;
-                        *(uint32_t*)(str + *(uint32_t*)str - UINT32_LEN) = HitNum;
-                        buildTopNDbTable(value, offset);
-                        if(!dbTable_.add_item(pinyin, value));
-                        //return false;
-                        break;
-                    }
-                    offset += *(uint32_t*)str;
-                    str += *(uint32_t*)str;
-                }
-                if(offset == len)
-                {
-                    ValueType newValue;
-                    newValue.toValueType(strT, freq, HitNum);
-                    std::string newValueStr;
-                    newValue.toString(newValueStr);
-                    value.append(newValueStr);
-                    buildTopNDbTable(value, offset);
-                    if(!dbTable_.add_item(pinyin, value));
-                    //return false;
-                }
-            }
-            if(Similar==true)
-            {
-                similarList.push_back(std::make_pair(nospacepinyin,withspacepinyin));
-                //dbTable_.get_item(nospacepinyin, value);
-                //dbTable_.add_item(withspacepinyin,value);
-            }
-
-
-        }*/
-
     }
-
-    buildDbIndexForEveryThousand(thousandpair,similarList);
+    buildDbIndexForEveryThousand(thousandpair, similarList);
     thousandpair.clear();
+
     dealWithSimilar(similarList);
     buildItemVector();
     return true;
 }
-void AutoFillChildManager::buildDbIndexForEveryThousand(vector<PrefixQueryType> thousandpair,    std::vector<std::pair<string,string> >& similarList)
+
+void AutoFillChildManager::buildDbIndexForEveryThousand(vector<PrefixQueryType> thousandpair, std::vector<std::pair<string,string> >& similarList)
 {
-    sort( thousandpair.begin(),thousandpair.end());
-    string prefixtemp="";
-    std::pair<std::string,std::vector<QueryType> > eachprefix;
-    std::vector<QueryType>  sameprefix;
-    for(unsigned i=0; i<thousandpair.size(); i++)
+    sort( thousandpair.begin(), thousandpair.end());
+    std::string prefixtemp = "";
+    std::vector<QueryType> sameprefix;
+    for(unsigned int i = 0; i < thousandpair.size(); i++)
     {
-        if(thousandpair[i].prefix_==prefixtemp)
+        if(thousandpair[i].prefix_ == prefixtemp)
         {
             sameprefix.push_back(thousandpair[i].getQueryType());
         }
         else
         {
-            buildDbIndexForEach(make_pair(prefixtemp,sameprefix),similarList);
+            buildDbIndexForEach(make_pair(prefixtemp, sameprefix), similarList);
             sameprefix.clear();
             sameprefix.push_back(thousandpair[i].getQueryType());
         }
-        prefixtemp=thousandpair[i].prefix_;
+        prefixtemp = thousandpair[i].prefix_;
     }
-    buildDbIndexForEach(make_pair(prefixtemp,sameprefix),similarList);
+    buildDbIndexForEach(make_pair(prefixtemp, sameprefix), similarList);
     sameprefix.clear();
 }
-void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vector<QueryType> > eachprefix,    std::vector<std::pair<string,string> >& similarList)
+
+void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vector<QueryType> > eachprefix, std::vector<std::pair<string,string> >& similarList)
 {
-    // string strT;
-    //  strT=strO;
-    //Similar=false;
-    bool Similar;
-    Similar=false;
-    bool check=false;
-    std::string pinyin, value,nospacepinyin,withspacepinyin;
-    //(*itv).convertString(pinyin, izenelib::util::UString::UTF_8);
-    std::vector<QueryType>  sameprefix=eachprefix.second;
-
-    pinyin=eachprefix.first;
-    /*
-    cout<<"pinyin:"<<pinyin<<"  "<<eachprefix.second.size()<<endl;
-    
-    for(unsigned i=0;i<sameprefix.size();i++)
-    {
-
-    cout<<sameprefix[i].strQuery_<<"   ";
-    }
-
-     cout<<endl;
-    */
+    bool Similar = false;
+    bool check = false;
+    std::string pinyin, value, nospacepinyin, withspacepinyin;
+    std::vector<QueryType> sameprefix = eachprefix.second;
+    pinyin = eachprefix.first;
     if (pinyin.length() > 0 && pinyin[0] != ' ')
     {
         buildItemList(pinyin);
     }
-    //izenelib::util::UString NoSpace=izenelib::util::Algorithm<izenelib::util::UString>::trim((*itv));
-    //NoSpace.convertString(nospacepinyin, izenelib::util::UString::UTF_8);
-    withspacepinyin=pinyin;
-    nospacepinyin=pinyin;
-    boost::algorithm::replace_all(nospacepinyin," ","");
-    boost::algorithm::replace_all(nospacepinyin,"","");
-    if(nospacepinyin!=pinyin)
+    withspacepinyin = pinyin;
+    nospacepinyin = pinyin;
+    if (nospacepinyin!=pinyin)
     {
-        if(nospacepinyin.length()>0)//dbTable_.get_item(nospacepinyin, value)&&
+        if (nospacepinyin.length() > 0)
         {
-            // cout<<"withspacepinyin:"<<withspacepinyin<<endl;
-            // cout<<"nospacepinyin"<<nospacepinyin<<endl;
             Similar=true;
             withspacepinyin=pinyin;
             pinyin=nospacepinyin;
             check=true;
-
         }
     }
-    if(Similar==true)
+    if (Similar == true)
     {
         similarList.push_back(std::make_pair(nospacepinyin,withspacepinyin));
-        //dbTable_.get_item(nospacepinyin, value);
-        //dbTable_.add_item(withspacepinyin,value);
     }
 
     dbTable_.get_item(pinyin, value);
     dbTable_.delete_item(pinyin);
     queryover d1;
     queryequal d2;
-    std::vector<QueryType>  havedone=valueToQueryTypeVector(value);
+    std::vector<QueryType>  havedone = valueToQueryTypeVector(value);
     sameprefix.insert(sameprefix.end(),havedone.begin(),havedone.end());
-    sort( sameprefix.begin(),sameprefix.end(),d1);
-    unsigned  indextemp=0;    
-    for(unsigned i=1; i<sameprefix.size(); i++)
+
+    sort( sameprefix.begin(), sameprefix.end(), d1);
+    unsigned int indextemp = 0;
+    for (unsigned int i = 1; i < sameprefix.size(); i++)
     {
         if(sameprefix[i].cmp(sameprefix[indextemp]))
         {
-            sameprefix[indextemp].freq_+=sameprefix[i].freq_;
+            sameprefix[indextemp].freq_ += sameprefix[i].freq_;
         }
         else
         {
-            indextemp=i;
+            indextemp = i;
         }
-        
     }
     sameprefix.erase(std::unique(sameprefix.begin(), sameprefix.end(),d2), sameprefix.end());
-    
     vector<QueryTypeToDeleteDup> qtddvec;
-     for(unsigned i=0;i<sameprefix.size();i++)
-     {   QueryTypeToDeleteDup qtdd;
-         qtdd.initfrom(sameprefix[i]);
-         qtddvec.push_back(qtdd);
-     }
-     sort( qtddvec.begin(),qtddvec.end());
-     qtddvec.erase(std::unique(qtddvec.begin(), qtddvec.end()), qtddvec.end());
-     sameprefix.clear();
-     for(unsigned i=0;i<qtddvec.size();i++)
-     {
-         sameprefix.push_back(qtddvec[i].qt_);
-     }
-    sort( sameprefix.begin(),sameprefix.end());
-    value="";
-    for(unsigned i=0; i<sameprefix.size(); i++)
+    for (unsigned i=0;i<sameprefix.size();i++)
+    {
+        QueryTypeToDeleteDup qtdd;
+        qtdd.initfrom(sameprefix[i]);
+        qtddvec.push_back(qtdd);
+    }
+    sort( qtddvec.begin(),qtddvec.end());
+
+    qtddvec.erase(std::unique(qtddvec.begin(), qtddvec.end()), qtddvec.end());
+    sameprefix.clear();
+    for (unsigned i=0;i<qtddvec.size();i++)
+    {
+        sameprefix.push_back(qtddvec[i].qt_);
+    }
+    sort(sameprefix.begin(), sameprefix.end());
+    value = "";
+    for (unsigned int i = 0; i < sameprefix.size(); i++)
     {
         FREQ_TYPE freq = sameprefix[i].freq_;
-        uint32_t HitNum =sameprefix[i]. HitNum_;
-        std::string strT=sameprefix[i].strQuery_;
-        //dbTable_.get_item(pinyin, value);
-        //dbTable_.delete_item(pinyin);
-        if(check)
-        {
-           // boost::algorithm::replace_all(strT,withspacepinyin,nospacepinyin);
-        }
+        uint32_t HitNum = sameprefix[i]. HitNum_;
+        std::string strT = sameprefix[i].strQuery_;
         if(value.length() == 0)
         {
             ValueType newValue;
@@ -691,10 +618,7 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
             newValue.toValueType(strT, freq, HitNum);
             newValue.toString(valuet);
             firstvalue.append(valuet);
-            //   if(!dbTable_.add_item(pinyin, firstvalue));
             value=firstvalue;
-            // cout<<"add"<<pinyin<<endl;
-            //  return false;
         }
         else
         {
@@ -703,16 +627,12 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
             std::string newValueStr;
             newValue.toString(newValueStr);
             value.append(newValueStr);
-            //buildTopNDbTable(value, offset);
-            // if(!dbTable_.add_item(pinyin, value));
-            //      return false;
         }
-
     }
     if (!dbTable_.add_item(pinyin, value));
-
 }
-std::vector<QueryType> AutoFillChildManager::valueToQueryTypeVector(string value)
+
+std::vector<QueryType> AutoFillChildManager::valueToQueryTypeVector(std::string value)
 {
     std::vector<QueryType> querytemp;
     uint32_t len = value.length();
@@ -722,7 +642,7 @@ std::vector<QueryType> AutoFillChildManager::valueToQueryTypeVector(string value
     while(offset < len)
     {
         ValueType newValue;
-        newValue.getValueType(str);
+        newValue.setValueType(str);
         querytemp.push_back(newValue.getQueryType());
         offset += *(uint32_t*)str;
         str += *(uint32_t*)str;
@@ -737,7 +657,6 @@ void AutoFillChildManager::dealWithSimilar(std::vector<std::pair<string,string> 
     std::string value;
     for(unsigned i=0; i<similarList.size(); i++)
     {
-        //cout<<similarList[i].first<<similarList[i].second<<endl;
         dbTable_.get_item(similarList[i].first, value);
         dbTable_.add_item(similarList[i].second,value);
         buildItemList(similarList[i].second);
@@ -762,8 +681,8 @@ void AutoFillChildManager::buildItemVector()
 
 void AutoFillChildManager::buildTopNDbTable(std::string &value, const uint32_t offset)//compare with the least one of topN
 {
-    string  MinFreqstr= value.substr(0, TOPN_LEN);
-    string  str0=MinFreqstr;
+    std::string MinFreqstr= value.substr(0, TOPN_LEN);
+    std::string str0=MinFreqstr;
     uint32_t MinFreq;
     if(MinFreqstr == "0000")
     {
@@ -774,18 +693,19 @@ void AutoFillChildManager::buildTopNDbTable(std::string &value, const uint32_t o
         MinFreq = *(uint32_t*)(MinFreqstr.data());
     }
 
-    string  sizestr = value.substr(offset, FREQ_TYPE_LEN);
+    std::string sizestr = value.substr(offset, FREQ_TYPE_LEN);
     uint32_t sizeinoffset = *(uint32_t*)(sizestr.data());
-    string  freqstr = value.substr(offset + sizeinoffset - HITNUM_LEN  - UINT32_LEN, FREQ_TYPE_LEN);
+    std::string freqstr = value.substr(offset + sizeinoffset - HITNUM_LEN  - UINT32_LEN, FREQ_TYPE_LEN);
     uint32_t freq = *(uint32_t*)(freqstr.data());
 
-    string singlefreq;
+    std::string singlefreq;
     uint32_t size = 0;
     uint32_t ThisPos = TOPN_LEN;
     uint32_t ThisFreq = freq + 1;
     uint32_t ThisOrder = 0;
     if(freq < MinFreq)
     {
+        //
     }
     else
     {
@@ -800,7 +720,7 @@ void AutoFillChildManager::buildTopNDbTable(std::string &value, const uint32_t o
         }
         uint32_t ThisPos2 = ThisPos;
 
-        while( ThisOrder <= topN_-1 && ThisPos2 < value.length())//
+        while( ThisOrder <= topN_-1 && ThisPos2 < value.length())
         {
             ThisOrder++;
             ThisPos2 = ThisPos2+size;
@@ -808,7 +728,7 @@ void AutoFillChildManager::buildTopNDbTable(std::string &value, const uint32_t o
             size = *(uint32_t*)(sizestr.data());
         }
 
-        string str1,str2,str3,str4;
+        std::string str1,str2,str3,str4;
         if(ThisPos2<value.length())
         {
             str0 = value.substr(ThisPos2 + size - HITNUM_LEN  - UINT32_LEN, FREQ_TYPE_LEN);
@@ -824,14 +744,13 @@ void AutoFillChildManager::buildTopNDbTable(std::string &value, const uint32_t o
 bool AutoFillChildManager::getAutoFillListFromOffset(uint64_t OffsetStart, uint64_t OffsetEnd, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
     izenelib::util::UString tempUString;
-    uint64_t ValueID = 0;
+    std::string ValueStr;
+    uint32_t ValueID = 0;
     for(uint64_t i = OffsetStart; i <= OffsetEnd; i++)
     {
-        ValueID = wa_.Lookup(i);
-        idManager_->getDocNameByDocId(ValueID, tempUString);
-        std::string str;
-        tempUString.convertString(str, izenelib::util::UString::UTF_8);
-        std::size_t pos = str.find("/");
+        ValueID = (uint32_t)wa_.Lookup(i);
+        idManager_->getDocNameByDocId(ValueID, ValueStr);
+        std::size_t pos = ValueStr.find("/");
         uint32_t HitNum ;
         string strquery;
         string HitNumStr;
@@ -844,8 +763,8 @@ bool AutoFillChildManager::getAutoFillListFromOffset(uint64_t OffsetStart, uint6
         }
         else
         {
-            HitNumStr = str.substr(0, pos);
-            strquery = str.substr(pos+1);
+            HitNumStr = ValueStr.substr(0, pos);
+            strquery = ValueStr.substr(pos + 1);
         }
         HitNum=boost::lexical_cast<int>(HitNumStr);
         izenelib::util::UString Ustr(strquery, izenelib::util::UString::UTF_8);
@@ -856,9 +775,10 @@ bool AutoFillChildManager::getAutoFillListFromOffset(uint64_t OffsetStart, uint6
 
 bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString& queryOrgin, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
 {
-    izenelib::util::UString query=izenelib::util::Algorithm<izenelib::util::UString>::trim1(queryOrgin);
+    izenelib::util::UString query = izenelib::util::Algorithm<izenelib::util::UString>::trim1(queryOrgin);
     if (query.length() == 0)
         return false;
+
     izenelib::util::UString tempQuery;
     bool ret = false;
     uint64_t OffsetStart;
@@ -867,7 +787,7 @@ bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString&
     bool HaveSearched = false;
     query.convertString(strQuery, izenelib::util::UString::UTF_8);
 
-    if (query.isAllChineseChar())
+    if (query.isAllChineseChar()) ///Chinese
     {
         HaveSearched = getOffset(strQuery, OffsetStart, OffsetEnd);
         if(HaveSearched)
@@ -876,7 +796,7 @@ bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString&
         }
     }
     else if (izenelib::util::ustring_tool::processKoreanDecomposerWithCharacterCheck<
-             izenelib::util::UString>(query, tempQuery))
+             izenelib::util::UString>(query, tempQuery)) ///Korean
     {
         HaveSearched = getOffset(strQuery, OffsetStart, OffsetEnd);
         if(HaveSearched)
@@ -884,7 +804,7 @@ bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString&
             ret = getAutoFillListFromOffset(OffsetStart, OffsetEnd, list);
         }
     }
-    else
+    else /// Normal
     {
         if (query.includeChineseChar())
         {
@@ -932,7 +852,7 @@ bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString&
             HaveSearched = getOffset(strQuery, OffsetStart, OffsetEnd);
             if(HaveSearched)
             {
-                ret=getAutoFillListFromOffset(OffsetStart, OffsetEnd, list);
+                ret = getAutoFillListFromOffset(OffsetStart, OffsetEnd, list);
             }
         }
     }
@@ -959,7 +879,7 @@ bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString&
         query.FuzzyFilter(list);
         query.KeepOrderDuplicateFilter(list);
     }
-    //cout<<"3"<<list.size()<<endl;
+
     if(!list.empty())
     {
         for (iter=list.begin(); iter!=list.end(); )
@@ -972,18 +892,15 @@ bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString&
                 iter++;
         }
     }
-    //cout<<"4"<<list.size()<<endl;
+
     string strQueryOrgin=strQuery;
-    boost::algorithm::replace_all(strQuery," ","");
 
     if(strQueryOrgin!=strQuery)
     {
-        std::vector<std::pair<izenelib::util::UString,uint32_t> > tempList;
+        std::vector<std::pair<izenelib::util::UString, uint32_t> > tempList;
         for(unsigned i=0; i<list.size(); i++)
         {
-            string  tempString;
-
-
+            std::string tempString;
             list[i].first.convertString(tempString, izenelib::util::UString::UTF_8);
 
             boost::algorithm::replace_all(tempString,strQuery,strQueryOrgin);
@@ -994,26 +911,25 @@ bool AutoFillChildManager::getAutoFillListFromWat(const izenelib::util::UString&
         list.clear();
         list.insert(list.end(), tempList.begin(), tempList.end());
     }
-    //cout<<"5"<<list.size()<<endl;
-    /*wq */
+
     ret = !list.empty();
     return ret;
 }
 
-bool AutoFillChildManager::getAutoFillListFromDbTable(const izenelib::util::UString& queryOrgin, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
+bool AutoFillChildManager::getAutoFillListFromDbTable(const izenelib::util::UString& queryOrgin, std::vector<std::pair<izenelib::util::UString, uint32_t> >& list)
 {
-    izenelib::util::UString query=izenelib::util::Algorithm<izenelib::util::UString>::trim1(queryOrgin);
-    string value;
+    izenelib::util::UString query = izenelib::util::Algorithm<izenelib::util::UString>::trim1(queryOrgin);
+    std::string value;
     dbTable_.get_item(query, value);
-    const char* valuestr= value.data() + TOPN_LEN;
-    string sizestr;
-    string singlevalue;
+    const char* valuestr = value.data() + TOPN_LEN;
+    std::string sizestr;
+    std::string singlevalue;
     uint32_t size = 0;
     uint32_t count = 0;
     uint32_t NextStartPos = TOPN_LEN;
     uint32_t HitNum = 0;
     bool ret = false;
-    while( NextStartPos < value.length() )
+    while (NextStartPos < value.length())
     {
         if(count >= topN_)
             break;
@@ -1030,14 +946,14 @@ bool AutoFillChildManager::getAutoFillListFromDbTable(const izenelib::util::UStr
     return ret;
 }
 
-bool AutoFillChildManager::getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list)
+bool AutoFillChildManager::getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString, uint32_t> >& list)
 {
     std::string strquery;
     query.convertString(strquery, izenelib::util::UString::UTF_8);
     QN_->query_Normalize(strquery);
     if(strquery.empty())
         return true;
-    izenelib::util::UString  queryLow(strquery, izenelib::util::UString::UTF_8);
+    izenelib::util::UString queryLow(strquery, izenelib::util::UString::UTF_8);
 
     if(!isIniting_)
     {
@@ -1060,11 +976,12 @@ void AutoFillChildManager::buildWat_array(bool _fromleveldb)
 {
     vector<uint64_t> A;
     std::vector<ItemType>::iterator it;
-    std::string itemValue, value, IDstring;
-    uint64_t ID = 0;
+    std::string itemValue, value, IDstring, oldIDstring;
+    uint32_t ID = 0;
     uint32_t offsettmp = 0;
     //if(!_fromleveldb)
     dbItem_.clear();
+    oldIDstring = "";
     for(it = ItemVector_.begin(); it != ItemVector_.end(); it++)
     {
         itemValue = (*it).strItem_;
@@ -1077,12 +994,14 @@ void AutoFillChildManager::buildWat_array(bool _fromleveldb)
             if(count >= topN_)
                 break;
             ValueType newValue;
-            newValue.getValueType(str);
+            newValue.setValueType(str);
             newValue.getHitString(IDstring);
-            izenelib::util::UString tempValue(IDstring, izenelib::util::UString::UTF_8);
-            idManager_->getDocIdByDocName(tempValue, ID);
-
-            A.push_back(ID);
+            if (IDstring != oldIDstring)
+            {
+                idManager_->getDocIdByDocName(IDstring, ID);
+                oldIDstring = IDstring;
+            }
+            A.push_back((uint64_t)ID);
             count++;
             offset += *(uint32_t*)str;
             str += *(uint32_t*)str;
@@ -1090,7 +1009,7 @@ void AutoFillChildManager::buildWat_array(bool _fromleveldb)
         (*it).offset_ = offsettmp;
         offsettmp += count;
         {
-            string offsetstring = boost::lexical_cast<string>((*it).offset_) + "/" + boost::lexical_cast<string>(count);
+            std::string offsetstring = boost::lexical_cast<string>((*it).offset_) + "/" + boost::lexical_cast<string>(count);
             dbItem_.add_item(itemValue, offsetstring);
         }
     }
@@ -1104,9 +1023,7 @@ void AutoFillChildManager::buildDbItem()
 {
     std::vector<ItemType>::iterator it;
     std::string itemValue, value, IDstring;
-    uint64_t ID = 0;
     uint32_t offsettmp = 0;
-    //if(!_fromleveldb)
     dbItem_.clear();
     for(it = ItemVector_.begin(); it != ItemVector_.end(); it++)
     {
@@ -1120,10 +1037,8 @@ void AutoFillChildManager::buildDbItem()
             if(count >= topN_)
                 break;
             ValueType newValue;
-            newValue.getValueType(str);
+            newValue.setValueType(str);
             newValue.getHitString(IDstring);
-            izenelib::util::UString tempValue(IDstring, izenelib::util::UString::UTF_8);
-            idManager_->getDocIdByDocName(tempValue, ID);
             count++;
             offset += *(uint32_t*)str;
             str += *(uint32_t*)str;
@@ -1131,7 +1046,7 @@ void AutoFillChildManager::buildDbItem()
         (*it).offset_ = offsettmp;
         offsettmp += count;
         {
-            string offsetstring = boost::lexical_cast<string>((*it).offset_) + "/" + boost::lexical_cast<string>(count);
+            std::string offsetstring = boost::lexical_cast<string>((*it).offset_) + "/" + boost::lexical_cast<string>(count);
             dbItem_.add_item(itemValue, offsetstring);
         }
     }
@@ -1139,18 +1054,17 @@ void AutoFillChildManager::buildDbItem()
     vector<ItemType>().swap(ItemVector_);
 }
 
-
-bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetStart, uint64_t& OffsetEnd)//
+bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetStart, uint64_t& OffsetEnd)
 {
     OffsetStart = 1;
     OffsetEnd = 0;
-    string offsetstr = "";
+    std::string offsetstr = "";
     dbItem_.get_item(query, offsetstr);
     if(offsetstr.length() > 0)
     {
         std::size_t pos = offsetstr.find("/");
-        string offsetbegin = offsetstr.substr(0, pos);
-        string offsetcount = offsetstr.substr(pos+1);
+        std::string offsetbegin = offsetstr.substr(0, pos);
+        std::string offsetcount = offsetstr.substr(pos + 1);
         try
         {
             OffsetStart = boost::lexical_cast<uint32_t>(offsetbegin);
@@ -1165,20 +1079,18 @@ bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetS
 
 void AutoFillChildManager::updateAutoFill()
 {
-    //out<<"do one:"<<endl;
     if (cronExpression_.matches_now())
     {
-        //out<<"do one Update"<<endl;
         boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
         {
-            LOG(INFO) << "Is initing ";
+            LOG(INFO) << "Autofill Is initing ....";
             return;
         }
 
         isUpdating_ = true;
-        if(!fromSCD_)
+        if(!isFromSCD_)
         {
             updateFromLog();
         }
@@ -1191,9 +1103,43 @@ void AutoFillChildManager::updateAutoFill()
     }
 }
 
+void AutoFillChildManager::updateFromLog_ForTest(std::vector<UserQuery>& query_records)
+{
+    list<QueryType> querylist;
+    std::vector<UserQuery>::const_iterator it = query_records.begin();
+    for ( ; it != query_records.end(); ++it)
+    {
+        QueryType TempQuery;
+        bool isNormalString = true;
+        std::string query = it->getQuery();
+        QN_->query_Normalize(query);
+        izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
+        for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
+        {
+            if (UStringQuery_.isPunctuationChar(i))
+            {
+                isNormalString = false;
+                break;
+            }
+        }
+        if (isNormalString)
+        {
+            TempQuery.strQuery_ = it->getQuery();
+            TempQuery.freq_ = it->getCount();
+            TempQuery.HitNum_ = it->getHitDocsNum();
+            querylist.push_back(TempQuery );
+        }
+    }
+    LoadItem();
+    buildItemVector();
+    buildDbIndex(querylist);
+    isUpdating_Wat_ = true;
+    wa_.Clear();
+    buildWat_array(false);
+}
+
 void AutoFillChildManager::updateFromLog()
 {
-
     boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::ptime p = time_now - boost::gregorian::days(updatelogdays_);
     std::string time_string = boost::posix_time::to_iso_string(p);
@@ -1212,7 +1158,9 @@ void AutoFillChildManager::updateFromLog()
     {
         QueryType TempQuery;
         bool isNormalString = true;
-        izenelib::util::UString UStringQuery_(it->getQuery(),izenelib::util::UString::UTF_8);
+        std::string query = it->getQuery();
+        QN_->query_Normalize(query);
+        izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
         for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
         {
             if (UStringQuery_.isPunctuationChar(i))
@@ -1230,7 +1178,7 @@ void AutoFillChildManager::updateFromLog()
         }
     }
     LoadItem();
-    buildItemVector();//erase same
+    buildItemVector();
     buildDbIndex(querylist);
     isUpdating_Wat_ = true;
     wa_.Clear();
@@ -1253,7 +1201,6 @@ bool AutoFillChildManager::buildIndex(const std::list<ItemValueType>& queryList)
         Query.HitNum_ = (*it).get<1>();
         queryLists.push_back(Query);
     }
-
     buildDbIndex(queryLists);
     isUpdating_Wat_ = true;
     buildWat_array(false);
