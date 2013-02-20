@@ -19,7 +19,7 @@ AutoFillChildManager::AutoFillChildManager(bool isfromSCD)
     isIniting_ = false;
 
     updatelogdays_ = 1;
-    alllogdays_ =  90;
+    alllogdays_ = 90;
     topN_ =  10;
     QN_ = new izenelib::am::QueryNormalize();
 }
@@ -398,7 +398,7 @@ bool AutoFillChildManager::InitFromLog_ForTest(std::vector<UserQuery>& query_rec
         std::string query = it->getQuery();
         QN_->query_Normalize(query);
         izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
-        for (unsigned int i = 0; i < UStringQuery_.size(); ++i)
+        for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
         {
             if (UStringQuery_.isPunctuationChar(i))
             {
@@ -440,7 +440,7 @@ bool AutoFillChildManager::InitFromLog()
         std::string query = it->getQuery();
         QN_->query_Normalize(query);
         izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
-        for (unsigned int i = 0; i < UStringQuery_.size(); ++i)
+        for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
         {
             if (UStringQuery_.isPunctuationChar(i))
             {
@@ -1114,7 +1114,7 @@ void AutoFillChildManager::updateFromLog_ForTest(std::vector<UserQuery>& query_r
         std::string query = it->getQuery();
         QN_->query_Normalize(query);
         izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
-        for (unsigned int i = 0; i < UStringQuery_.size(); ++i)
+        for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
         {
             if (UStringQuery_.isPunctuationChar(i))
             {
@@ -1161,7 +1161,7 @@ void AutoFillChildManager::updateFromLog()
         std::string query = it->getQuery();
         QN_->query_Normalize(query);
         izenelib::util::UString UStringQuery_(query, izenelib::util::UString::UTF_8);
-        for (unsigned int i = 0; i < UStringQuery_.size(); ++i)
+        for (unsigned int i = 0; i < UStringQuery_.length(); ++i)
         {
             if (UStringQuery_.isPunctuationChar(i))
             {
