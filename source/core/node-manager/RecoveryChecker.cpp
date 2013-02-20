@@ -3,6 +3,7 @@
 #include "DistributeDriver.h"
 #include "RequestLog.h"
 #include "NodeManagerBase.h"
+#include "DistributeTest.hpp"
 
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
@@ -73,7 +74,7 @@ static void copyDir(bfs::path src, bfs::path dest)
     if( !bfs::exists(src) ||
         !bfs::is_directory(src) )
     {
-        throw std::runtime_error("Source directory " + src.string() +
+        RecoveryChecker::forceExit("Source directory " + src.string() +
             " does not exist or is not a directory.");
     }
     if( !bfs::exists(dest) )
@@ -174,7 +175,7 @@ bool RecoveryChecker::setRollbackFlag(uint32_t inc_id)
     if (bfs::exists(rollback_file_))
     {
         LOG(ERROR) << "rollback_file already exist, this mean last rollback is not finished. must exit.";
-        throw std::runtime_error("set rollback flag failed for existed flag.");
+        forceExit("set rollback flag failed for existed flag.");
     }
     ofstream ofs(rollback_file_.c_str());
     if (ofs.good())
@@ -248,7 +249,7 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
         {
             LOG(ERROR) << "backup id should not larger than last write id. " << start_id;
             LOG(ERROR) << "leaving old backup and do not redo log. restart and wait to sync to newest log";
-            throw std::runtime_error("redo start id is larger than last writed id.");
+            forceExit("redo start id is larger than last writed id.");
         }
         ReqLogHead rethead;
         size_t redo_offset = 0;
@@ -256,7 +257,7 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
         {
             assert(false);
             LOG(ERROR) << "get head failed. This should never happen.";
-            throw std::runtime_error("redo get head info failed.");
+            forceExit("redo get head info failed.");
         }
         while(true)
         {
@@ -270,7 +271,7 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
             if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, req_packed_data))
             {
                 LOG(INFO) << "redoing from log failed: " << rethead.inc_id;
-                throw std::runtime_error("handleReqFromLog failed.");
+                forceExit("handleReqFromLog failed.");
             }
         }
     }
@@ -504,6 +505,8 @@ void RecoveryChecker::init(const std::string& workdir)
         reqlog_mgr_->init(request_log_basepath_);
     }
 
+    DistributeTestSuit::updateMemoryState("Last_Success_Request", reqlog_mgr_->getLastSuccessReqId());
+
     NodeManagerBase::get()->setRecoveryCallback(
         boost::bind(&RecoveryChecker::onRecoverCallback, this),
         boost::bind(&RecoveryChecker::onRecoverWaitPrimaryCallback, this),
@@ -517,17 +520,18 @@ void RecoveryChecker::onRecoverCallback()
 
     // If myself need rollback, we must make sure primary node is available.
     //
-    if (bfs::exists(rollback_file_))
+    if (bfs::exists(rollback_file_) || !isLastNormalExit())
     {
         if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
-            throw std::runtime_error("recovery failed. No primary Node!!");
+            forceExit("recovery failed. No primary Node!!");
     }
 
     if(!rollbackLastFail(false))
     {
         LOG(ERROR) << "corrupt data and rollback failed. Unrecoverable!!";
-        throw std::runtime_error("corrupt data and rollback failed. Unrecoverable!!");
+        forceExit("corrupt data and rollback failed. Unrecoverable!!");
     }
+    setForceExitFlag();
     syncSCDFiles();
     syncToNewestReqLog();
     // if failed, must exit.
@@ -584,17 +588,47 @@ void RecoveryChecker::syncToNewestReqLog()
             if (req_commondata.inc_id <= reqid)
             {
                 LOG(ERROR) << "get new log data is out of order.";
-                throw std::runtime_error("syncToNewestReqLog failed.");
+                forceExit("syncToNewestReqLog failed.");
             }
             reqid = req_commondata.inc_id;
             if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, newlogdata_list[i]))
             {
                 LOG(INFO) << "redoing from log failed: " << req_commondata.inc_id;
-                throw std::runtime_error("handleReqFromLog failed.");
+                forceExit("handleReqFromLog failed.");
             }
         }
     }
     LOG(INFO) << "no more new log to redo. syncd to : " << reqlog_mgr_->getLastSuccessReqId();
+}
+
+bool RecoveryChecker::isLastNormalExit()
+{
+    return !bfs::exists("./distribute_force_exit.flag");
+}
+
+void RecoveryChecker::clearForceExitFlag()
+{
+    LOG(INFO) << "forceExit flag cleared!";
+    if (bfs::exists("./distribute_force_exit.flag"))
+    {
+        bfs::remove("./distribute_force_exit.flag");
+    }
+}
+
+void RecoveryChecker::setForceExitFlag()
+{
+    LOG(INFO) << "setting forceExit flag!";
+    std::ofstream ofs("./distribute_force_exit.flag", ios::app|ios::binary|ios::ate|ios::out);
+    ofs << std::flush;
+    ofs.close();
+}
+
+void RecoveryChecker::forceExit(const std::string& err)
+{
+    setForceExitFlag();
+    if (err.empty())
+        throw std::runtime_error("force exit in RecoveryChecker.");
+    throw std::runtime_error(err.c_str());
 }
 
 }

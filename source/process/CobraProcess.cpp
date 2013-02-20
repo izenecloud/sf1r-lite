@@ -355,6 +355,7 @@ void CobraProcess::stopDistributedServer()
         NodeManagerBase::get()->stop();
 
     CollectionDataReceiver::get()->stop();
+    RecoveryChecker::clearForceExitFlag();
 }
 
 void CobraProcess::scheduleTask(const std::string& collection)

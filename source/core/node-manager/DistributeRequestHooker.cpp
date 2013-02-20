@@ -439,7 +439,7 @@ void DistributeRequestHooker::clearHook(bool force)
 
 void DistributeRequestHooker::forceExit()
 {
-    throw std::runtime_error("force exit in DistributeRequestHooker.");
+    RecoveryChecker::forceExit("force exit in DistributeRequestHooker");
 }
 
 }

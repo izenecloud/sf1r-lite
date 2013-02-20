@@ -25,6 +25,11 @@ public:
     {
         return ::izenelib::util::Singleton<RecoveryChecker>::get();
     }
+
+    static void forceExit(const std::string& err = "");
+    static void clearForceExitFlag();
+    static bool isLastNormalExit();
+
     //RecoveryChecker(const CollectionPath& colpath);
     bool backup();
     bool setRollbackFlag(uint32_t inc_id);
@@ -58,6 +63,7 @@ public:
     void onRecoverWaitPrimaryCallback();
     void onRecoverWaitReplicasCallback();
 private:
+    static void setForceExitFlag();
     bool backupColl(const CollectionPath& colpath, const bfs::path& dest_path);
     void syncToNewestReqLog();
     void syncSCDFiles();
