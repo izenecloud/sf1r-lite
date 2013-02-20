@@ -234,7 +234,7 @@ public:
         createAutoFillDic();
         CollectionPath collectionPath_;
         collectionPath_.setBasePath("./");
-        collectionPath_.setQueryDataPath("/home/lscm/codebase/sf1r-engine/testbin//querydata");
+        collectionPath_.setQueryDataPath("./querydata");
         collectionPath_.setScdPath("/scd");
 
         std::string collection_name_ = "b5m_test";
@@ -254,7 +254,7 @@ public:
     {
         CollectionPath collectionPath_;
         collectionPath_.setBasePath("./");
-        collectionPath_.setQueryDataPath("/home/lscm/codebase/sf1r-engine/testbin//querydata");
+        collectionPath_.setQueryDataPath("./querydata");
         collectionPath_.setScdPath("/scd");
 
         std::string collection_name_ = "b5m_test";
