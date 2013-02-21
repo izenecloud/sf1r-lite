@@ -524,6 +524,7 @@ void RecoveryChecker::onRecoverCallback()
     //
     if (bfs::exists(rollback_file_) || !isLastNormalExit())
     {
+        LOG(INFO) << "recovery from rollback or from last forceExit !!";
         if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
             forceExit("recovery failed. No primary Node!!");
     }
@@ -547,6 +548,36 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     syncSCDFiles();
     syncToNewestReqLog();
     LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
+    // check data consistent with primary.
+    std::string errinfo;
+    CollInfoMapT tmp_all_col_info;
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        tmp_all_col_info = all_col_info_;
+    }
+    bool sync_file = bfs::exists("./distribute_sync_file.flag");
+
+    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
+    while(cit != tmp_all_col_info.end())
+    {
+        DistributeFileSyncMgr::get()->checkReplicasStatus(cit->first, errinfo);
+        if (!errinfo.empty())
+        {
+            LOG(ERROR) << "data is not consistent after recovery, collection : " << cit->first <<
+                ", error : " << errinfo;
+            if (sync_file)
+            {
+                if(!DistributeFileSyncMgr::get()->syncCollectionData(cit->first))
+                    forceExit("recovery failed for sync collection file.");
+            }
+            else
+                forceExit("recovery failed for not consistent."); 
+        }
+        ++cit;
+    }
+    if (sync_file)
+        bfs::remove("./distribute_sync_file.flag");
+
 }
 
 void RecoveryChecker::onRecoverWaitReplicasCallback()

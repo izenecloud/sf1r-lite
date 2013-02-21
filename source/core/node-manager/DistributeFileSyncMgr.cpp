@@ -237,6 +237,23 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             }
             req.result(reqdata);
         }
+        else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_GET_COLLECTION_FILE_LIST])
+        {
+            msgpack::type::tuple<GetCollectionFileListData> params;
+            req.params().convert(&params);
+            GetCollectionFileListData& reqdata = params.get<0>();
+            reqdata.success = false;
+            CollectionPath colpath;
+            bool ret = RecoveryChecker::get()->getCollPath(reqdata.collection, colpath);
+            if (ret)
+            {
+                reqdata.success = true;
+                bfs::path coldata_path = colpath.getCollectionDataPath();
+                // get all files.
+                getFileList(coldata_path.string(), reqdata.file_list, std::set<std::string>(), true);
+            }
+            req.result(reqdata);
+        }
         else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_GET_FILE])
         {
             msgpack::type::tuple<GetFileData> params;
@@ -535,6 +552,67 @@ bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std
         }
     }
     LOG(INFO) << "get newest log data failed .";
+    return false;
+}
+
+bool DistributeFileSyncMgr::syncCollectionData(const std::string& colname)
+{
+    if (!NodeManagerBase::get()->isDistributed())
+        return true;
+
+    int retry = 3;
+    srand( time(NULL) );
+
+    while(retry-- > 0)
+    {
+        std::string ip;
+        uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
+        if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
+        {
+            LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
+            return false;
+        }
+        LOG(INFO) << "try get collection file list from: " << ip << ":" << port;
+
+        GetCollectionFileListRequest req;
+        req.param_.collection = colname;
+        GetCollectionFileListData rsp;
+        try
+        {
+            conn_mgr_->syncRequest(ip, port, req, rsp);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(INFO) << "send request error, will retry : " << e.what();
+            continue;
+        }
+
+        if (rsp.success)
+        {
+            if (rsp.file_list.empty())
+            {
+                LOG(INFO) << "no collection file need sync.";
+                return true;
+            }
+            for (size_t i = 0; i < rsp.file_list.size(); ++i)
+            {
+                GetFileData file_rsp;
+                file_rsp.filepath = rsp.file_list[i];
+                if (!getFileInfo(ip, port, file_rsp))
+                    break;
+
+                if(!getFileFromOther(ip, port, file_rsp.filepath, file_rsp.filesize))
+                {
+                    LOG(INFO) << "get file from other failed, retry next." << file_rsp.filepath;
+                    break;
+                }
+                LOG(INFO) << "a collection file finished :" << file_rsp.filepath;
+                if (i == rsp.file_list.size() - 1)
+                    return true;
+            }
+        }
+    }
+    LOG(INFO) << "sync to newest collection file failed.";
     return false;
 }
 

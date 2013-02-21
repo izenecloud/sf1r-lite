@@ -256,15 +256,15 @@ def reset_state_and_run():
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_index])
         printtofile (out)
 
-    (failed_host,down_host) = check_col()
+    (failed_host,down_host) = check_col(60)
     if len(failed_host) > 0:
         printtofile ('reset state wrong, data is not consistent.')
         exit(0)
     printtofile ('reset state for cluster finished.')
 
-def check_col():
+def check_col(check_interval = 10):
     while True:
-        time.sleep(10)
+        time.sleep(check_interval)
         allready = True
         for host in primary_host + replicas_host:
             (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_getstate])
@@ -274,7 +274,7 @@ def check_col():
                 continue
             if out.find('\"NodeState\": \"3\"') == -1:
                 printtofile ('not ready, waiting')
-                #printtofile out
+                printtofile (out)
                 allready = False
                 break
 

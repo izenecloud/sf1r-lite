@@ -60,6 +60,7 @@ public:
     void init();
     bool getNewestReqLog(uint32_t start_from, std::vector<std::string>& saved_log);
     bool syncNewestSCDFileList(const std::string& colname);
+    bool syncCollectionData(const std::string& colname);
     bool getFileFromOther(const std::string& filepath, bool force_overwrite = false);
     void notifyFinishReceive(const std::string& filepath);
     bool waitFinishReceive(const std::string& filepath, uint64_t filesize);

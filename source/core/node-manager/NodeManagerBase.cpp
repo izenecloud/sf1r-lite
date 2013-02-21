@@ -296,6 +296,11 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
         processing_step_ = 0;
     
     znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
+    if (processing_step_ == 0)
+    {
+        znode.setValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA, "");
+        znode.setValue(ZNode::KEY_REQ_TYPE, (uint32_t)0);
+    }
 
     std::string service_state;
     if (nodeState_ == NODE_STATE_RECOVER_RUNNING || 
@@ -812,7 +817,7 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         processing_step_ = 50;
         znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
         zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
-        zookeeper_->setZNodeData(self_primary_path_, znode.serialize());
+        updateNodeState(znode);
 
         std::string oldsdata = znode.serialize();
         std::string sdata;
@@ -1054,9 +1059,18 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                     cb_on_abort_request_();
                 updateNodeStateToNewState(NODE_STATE_STARTED);
             }
-            else
+            else if (primary_state == NODE_STATE_RECOVER_WAIT_REPLICA_FINISH)
             {
-                LOG(INFO) << "wait primary node state not need, ignore";
+                ZNode znode;
+                uint32_t step = 0;
+                std::string sdata;
+                if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
+                {
+                    znode.loadKvString(sdata);
+                    step = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
+                }
+                if (step == 100)
+                    updateNodeState();
             }
         }
         else if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
@@ -1218,6 +1232,11 @@ void NodeManagerBase::updateNodeState()
 {
     ZNode nodedata;
     setSf1rNodeData(nodedata);
+    updateNodeState(nodedata);
+}
+
+void NodeManagerBase::updateNodeState(const ZNode& nodedata)
+{
     zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
     // update to nodepath to make master got notified.
     zookeeper_->setZNodeData(nodePath_, nodedata.serialize());

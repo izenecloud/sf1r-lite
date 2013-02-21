@@ -24,6 +24,15 @@ struct GetSCDListData : public RpcServerRequestData
     MSGPACK_DEFINE(success, collection, scd_list);
 };
 
+struct GetCollectionFileListData : public RpcServerRequestData
+{
+    bool success;
+    std::string  collection;
+    std::vector<std::string> file_list;
+    MSGPACK_DEFINE(success, collection, file_list);
+};
+
+
 struct GetFileData : public RpcServerRequestData
 {
     bool success;
@@ -81,6 +90,7 @@ public:
         METHOD_TEST = 0,
         METHOD_GET_REQLOG,
         METHOD_GET_SCD_LIST,
+        METHOD_GET_COLLECTION_FILE_LIST,
         METHOD_GET_FILE,
         METHOD_READY_RECEIVE,
         METHOD_FINISH_RECEIVE,
@@ -107,6 +117,15 @@ class GetSCDListRequest : public RpcRequestRequestT<GetSCDListData, FileSyncServ
 public:
     GetSCDListRequest()
         :RpcRequestRequestT<GetSCDListData, FileSyncServerRequest>(METHOD_GET_SCD_LIST)
+    {
+    }
+};
+
+class GetCollectionFileListRequest : public RpcRequestRequestT<GetCollectionFileListData, FileSyncServerRequest>
+{
+public:
+    GetCollectionFileListRequest()
+        :RpcRequestRequestT<GetCollectionFileListData, FileSyncServerRequest>(METHOD_GET_COLLECTION_FILE_LIST)
     {
     }
 };

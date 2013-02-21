@@ -187,6 +187,7 @@ protected:
     void updateCurrentPrimary();
     void updateNodeStateToNewState(NodeStateType new_state);
     void updateNodeState();
+    void updateNodeState(const ZNode& nodedata);
     NodeStateType getPrimaryState();
     NodeStateType getNodeState(const std::string& nodepath);
     void checkSecondaryState();
