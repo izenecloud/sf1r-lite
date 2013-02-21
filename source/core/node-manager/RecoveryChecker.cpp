@@ -570,8 +570,8 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
                 if(!DistributeFileSyncMgr::get()->syncCollectionData(cit->first))
                     forceExit("recovery failed for sync collection file.");
             }
-            else
-                forceExit("recovery failed for not consistent."); 
+            //else
+            //    forceExit("recovery failed for not consistent."); 
         }
         ++cit;
     }

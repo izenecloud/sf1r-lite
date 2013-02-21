@@ -257,7 +257,7 @@ def reset_state_and_run():
         printtofile (out)
 
     (failed_host,down_host) = check_col(60)
-    if len(failed_host) > 0:
+    if len(failed_host) > 0 or len(down_host) > 0:
         printtofile ('reset state wrong, data is not consistent.')
         exit(0)
     printtofile ('reset state for cluster finished.')
@@ -318,15 +318,25 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
         first_start_host.remove(host)
     start_all(['',''] + first_start_host)
     time.sleep(10)
-    start_all(['',''] + down_host)
-    time.sleep(30)
-    # check collection again.
-    (failed_host,down_host) = check_col()
-    if len(failed_host) > 0:
-        printtofile ('data not consistent while checking after restart failed node.' + time.asctime())
-        sys.exit(0)
-    else:
-        printtofile ('after restarting failed node, test case passed')
+
+    retry = 0;
+    while retry < 2:
+        start_all(['',''] + down_host)
+        time.sleep(20)
+        # check collection again.
+        (failed_host, down_host) = check_col()
+        if len(failed_host) > 0:
+            printtofile ('data not consistent while checking after restart failed node.' + time.asctime())
+            sys.exit(0)
+        elif len(down_host) > 0 :
+            # try again without fail test.
+            retry += 1
+            cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo 1 > ./distribute_test.conf'
+            send_cmd_andstay(down_host, cmdstr)
+            continue
+        else:
+            printtofile ('after restarting failed node, test case passed')
+            break
 
 
 def run_auto_fail_test(args):

@@ -819,28 +819,28 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
         updateNodeState(znode);
 
-        std::string oldsdata = znode.serialize();
-        std::string sdata;
-        if(zookeeper_->getZNodeData(self_primary_path_, sdata, ZooKeeper::WATCH))
-        {
-            znode.loadKvString(sdata);
-            
-            std::string packed_reqdata_check = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
-            if (packed_reqdata_check != packed_reqdata)
-            {
-                LOG(ERROR) << "write request data to ZooKeeper error. data len: " << packed_reqdata_check.size();
-            }
-            if (oldsdata != sdata)
-            {
-                LOG(ERROR) << "write znode data to ZooKeeper error.";
-            }
-            znode.loadKvString(oldsdata);
-            packed_reqdata_check = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
-            if (packed_reqdata_check != packed_reqdata)
-            {
-                LOG(ERROR) << "znode serialize and unserialize error.";
-            }
-        }
+        //std::string oldsdata = znode.serialize();
+        //std::string sdata;
+        //if(zookeeper_->getZNodeData(self_primary_path_, sdata, ZooKeeper::WATCH))
+        //{
+        //    znode.loadKvString(sdata);
+        //    
+        //    std::string packed_reqdata_check = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
+        //    if (packed_reqdata_check != packed_reqdata)
+        //    {
+        //        LOG(ERROR) << "write request data to ZooKeeper error. data len: " << packed_reqdata_check.size();
+        //    }
+        //    if (oldsdata != sdata)
+        //    {
+        //        LOG(ERROR) << "write znode data to ZooKeeper error.";
+        //    }
+        //    znode.loadKvString(oldsdata);
+        //    packed_reqdata_check = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
+        //    if (packed_reqdata_check != packed_reqdata)
+        //    {
+        //        LOG(ERROR) << "znode serialize and unserialize error.";
+        //    }
+        //}
 
         DistributeTestSuit::testFail(PrimaryFail_At_FinishReqLocal);
     }
@@ -954,13 +954,12 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                 std::string sdata;
                 std::string packed_reqdata;
                 int type = 0;
-                uint32_t step = 0;
                 if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
                 {
                     znode.loadKvString(sdata);
                     packed_reqdata = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
                     type = znode.getUInt32Value(ZNode::KEY_REQ_TYPE);
-                    step = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
+                    processing_step_ = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
                 }
                 else
                 {
@@ -976,7 +975,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                     RecoveryChecker::forceExit("exit for unrecovery node state.");
                 }
                 // check if I can start processing
-                if (step < 100)
+                if (processing_step_ < 100)
                 {
                     // only the top half replicas can start at the first step.
                     std::vector<std::string> node_list;
@@ -1062,14 +1061,13 @@ void NodeManagerBase::onDataChanged(const std::string& path)
             else if (primary_state == NODE_STATE_RECOVER_WAIT_REPLICA_FINISH)
             {
                 ZNode znode;
-                uint32_t step = 0;
                 std::string sdata;
                 if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
                 {
                     znode.loadKvString(sdata);
-                    step = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
+                    processing_step_ = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
                 }
-                if (step == 100)
+                if (processing_step_ == 100)
                     updateNodeState();
             }
         }
