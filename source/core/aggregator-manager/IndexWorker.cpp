@@ -256,6 +256,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 
     bool ret = buildCollection(numdoc, scdList);
 
+    flush();
     distribute_req_hooker_->processLocalFinished(ret);
 
     return ret;
@@ -312,6 +313,7 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
 
     bool ret = buildCollection(numdoc, reqlog.scd_list);
 
+    flush();
     distribute_req_hooker_->processLocalFinished(ret);
     return ret;
 }
@@ -667,6 +669,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
 
+    flush();
     distribute_req_hooker_->processLocalFinished(true);
     return true;
 }
@@ -685,6 +688,13 @@ bool IndexWorker::optimizeIndex()
         return false;
     }
 
+    NoAdditionReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
@@ -693,15 +703,9 @@ bool IndexWorker::optimizeIndex()
         return false;
     }
 
-    NoAdditionReqLog reqlog;
-    if(!distribute_req_hooker_->prepare(Req_NoAdditionDataReq, reqlog))
-    {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        return false;
-    }
-
     indexManager_->optimizeIndex();
 
+    flush();
     distribute_req_hooker_->processLocalFinished(true);
     return true;
 }
@@ -730,14 +734,6 @@ bool IndexWorker::createDocument(const Value& documentValue)
         return false;
     }
 
-    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
-    if (!dirGuard)
-    {
-        LOG(ERROR) << "Index directory is corrupted";
-        distribute_req_hooker_->processLocalFinished(false);
-        return false;
-    }
-
     docid_t docid;
     uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
     if (idManager_->getDocIdByDocName(num_docid, docid, false))
@@ -755,6 +751,14 @@ bool IndexWorker::createDocument(const Value& documentValue)
     if(!distribute_req_hooker_->prepare(Req_CreateOrUpdate_Doc, dynamic_cast<CommonReqData&>(reqlog)))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
+    {
+        LOG(ERROR) << "Index directory is corrupted";
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -801,14 +805,6 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
-    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
-    if (!dirGuard)
-    {
-        LOG(ERROR) << "Index directory is corrupted";
-        distribute_req_hooker_->processLocalFinished(false);
-        return false;
-    }
-
     CreateOrUpdateDocReqLog reqlog;
     reqlog.timestamp = Utilities::createTimeStamp();
     if(!distribute_req_hooker_->prepare(Req_CreateOrUpdate_Doc, dynamic_cast<CommonReqData&>(reqlog)))
@@ -817,6 +813,13 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
+    {
+        LOG(ERROR) << "Index directory is corrupted";
+        distribute_req_hooker_->processLocalFinished(false);
+        return false;
+    }
 
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
@@ -1018,14 +1021,6 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         return false;
     }
 
-    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
-    if (!dirGuard)
-    {
-        LOG(ERROR) << "Index directory is corrupted";
-        distribute_req_hooker_->processLocalFinished(false);
-        return false;
-    }
-
     docid_t docid;
     uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
 
@@ -1039,6 +1034,14 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     if(!distribute_req_hooker_->prepare(Req_NoAdditionDataReq, dynamic_cast<CommonReqData&>(reqlog)))
     {
         LOG(ERROR) << "prepare failed in: " << __FUNCTION__;
+        return false;
+    }
+
+    DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
+    if (!dirGuard)
+    {
+        LOG(ERROR) << "Index directory is corrupted";
+        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 

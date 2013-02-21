@@ -18,6 +18,7 @@
 #include <aggregator-manager/IndexWorker.h>
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/Sf1rTopology.h>
+#include <node-manager/RecoveryChecker.h>
 #include <util/singleton.h>
 
 #include <question-answering/QuestionAnalysis.h>
@@ -346,6 +347,11 @@ bool IndexBundleActivator::openDataDirectories_()
             //clean the corrupt dir
             boost::filesystem::remove_all( dataDir );
             dirtyDirectories.push_back(dataDir);
+            if (MasterManagerBase::get()->isDistributed())
+            {
+                RecoveryChecker::get()->setRollbackFlag(0);
+                RecoveryChecker::forceExit("exit for corrupted collection data. please restart to start auto rollback.");
+            }
         }
     }
 
