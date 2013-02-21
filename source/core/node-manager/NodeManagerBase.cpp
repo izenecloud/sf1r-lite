@@ -277,6 +277,12 @@ void NodeManagerBase::initServices()
 
 void NodeManagerBase::setSf1rNodeData(ZNode& znode)
 {
+    std::string olddata;
+    if(zookeeper_->getZNodeData(self_primary_path_, olddata, ZooKeeper::WATCH))
+    {
+        znode.loadKvString(olddata);
+    }
+
     znode.setValue(ZNode::KEY_USERNAME, sf1rTopology_.curNode_.userName_);
     znode.setValue(ZNode::KEY_HOST, sf1rTopology_.curNode_.host_);
     znode.setValue(ZNode::KEY_BA_PORT, sf1rTopology_.curNode_.baPort_);
@@ -912,8 +918,14 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     // because there may only one node in distribute system.
     if (isPrimaryWithoutLock())
     {
-        if (path == self_primary_path_)
-            return;
+        std::vector<std::string> node_list;
+        zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+        if (node_list.size() > 1)
+        {
+            if (path == self_primary_path_ || path == nodePath_ )
+                return;
+        }
+
         checkSecondaryState();
     }
     else if (path == self_primary_path_ || path == nodePath_)
