@@ -1009,7 +1009,7 @@ bool MasterManagerBase::isServiceReadyForRead(bool include_self)
             ZNode znode;
             znode.loadKvString(sdata);
             std::string value = znode.getStrValue(ZNode::KEY_SERVICE_STATE);
-            if (value != "ReadyForRead")
+            if (value != "ReadyForRead" && value != "BusyForShard")
             {
                 LOG(INFO) << "one shard of master service is not ready for read:" << nodepath;
                 return false;

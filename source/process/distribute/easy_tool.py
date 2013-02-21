@@ -59,19 +59,25 @@ def run_prog_and_getoutput(args):
     (out, err) = proc.communicate()
     return (out, err)
 
-def send_cmd_afterssh(hosts, cmdstr):
+def send_cmd_afterssh(hosts, cmdstr, runstyle=0):
     for host in hosts:
-        printtofile ("sending command to host : " + host + ', cmd:' + cmdstr)
-        #os.system(loginssh + host + ' \'' + cmdstr + ' \'')
-        (out, err) = run_prog_and_getoutput(shlex.split(loginssh + host + ' \'' + cmdstr + ' \''))
-        printtofile (out,err)
+        if runstyle == 1:
+            print "sending command to host : " + host + ', cmd:' + cmdstr
+            os.system(loginssh + host + ' \'' + cmdstr + ' \'')
+        else:
+            printtofile ("sending command to host : " + host + ', cmd:' + cmdstr)
+            (out, err) = run_prog_and_getoutput(shlex.split(loginssh + host + ' \'' + cmdstr + ' \''))
+            printtofile (out,err)
 
-def send_cmd_andstay(hosts, cmdstr):
+def send_cmd_andstay(hosts, cmdstr, runstyle=0):
     for host in hosts:
-        printtofile ("sending command to host : " + host + ', cmd:' + cmdstr)
-        #os.system(loginssh_stay + host + ' \'' + cmdstr + ' \'')
-        (out, err) = run_prog_and_getoutput(shlex.split(loginssh_stay + host + ' \'' + cmdstr + ' \''))
-        printtofile (out,err)
+        if runstyle==1:
+            print "sending command to host : " + host + ', cmd:' + cmdstr
+            os.system(loginssh_stay + host + ' \'' + cmdstr + ' \'')
+        else:
+            printtofile ("sending command to host : " + host + ', cmd:' + cmdstr)
+            (out, err) = run_prog_and_getoutput(shlex.split(loginssh_stay + host + ' \'' + cmdstr + ' \''))
+            printtofile (out,err)
 
 def syncfiles(args):
     if len(args) < 3:
@@ -131,9 +137,9 @@ def update_src(args):
     cmdstr = ''
     for target_project in target_projects:
         cmdstr += ' cd ' + base_dir + '/' + target_project + ';' + update_src_prog + '; '
-    printtofile (cmdstr)
-    send_cmd_afterssh(primary_host + replicas_host,  cmdstr)
-    printtofile ('update source finished.')
+    print cmdstr
+    send_cmd_afterssh(primary_host + replicas_host,  cmdstr, 1)
+    print 'update source finished.'
 
 def compile_all(args):
     if len(args) >= 3:
@@ -141,11 +147,17 @@ def compile_all(args):
     else:
         target_projects = all_project
     cmdstr = ''
+    i = 1
     for target_project in target_projects:
-        cmdstr += ' cd ' + base_dir + '/' + target_project + '/build' + ';' + compile_prog + '; '
-    printtofile (cmdstr)
-    send_cmd_afterssh(primary_host + replicas_host,  cmdstr)
-    printtofile ('compile command send finished.')
+        if i == len(target_projects):
+            cmdstr += ' cd ' + base_dir + '/' + target_project + '/build' + ';' + compile_prog + ' &'
+        else:
+            cmdstr += ' cd ' + base_dir + '/' + target_project + '/build' + ';' + compile_prog + '; '
+        i += 1
+
+    print cmdstr
+    send_cmd_afterssh(primary_host + replicas_host,  cmdstr, 1)
+    print 'compile command send finished.'
 
 def send_cmd(args):
     cmdstr = args[2]
@@ -172,21 +184,21 @@ def read_cmd_from_file(args):
 def check_build_finish(args):
     cmdstr = 'tail -f ' + sf1r_dir + '/build/easy_tool.log'
     if len(args) <=2:
-        send_cmd_afterssh(primary_host + replicas_host, cmdstr)
+        send_cmd_afterssh(primary_host + replicas_host, cmdstr, 1)
     else:
         host = args[2:]
-        send_cmd_andstay(host, cmdstr)
+        send_cmd_andstay(host, cmdstr, 1)
     print 'finished.'
 
 def check_running(args):
-    logfile = '`ls -tr | tail -n 1`'
-    cmdstr = ' cd ' + sf1r_bin_dir + '/consolelog; echo ' + logfile + '; tail -f ./' + logfile
+    logfile_str = '`ls -tr | tail -n 1`'
+    cmdstr = ' cd ' + sf1r_bin_dir + '/consolelog; echo ' + logfile_str + '; tail -f ./' + logfile_str
 
     if len(args) <= 2:
-        send_cmd_afterssh(primary_host + replicas_host, cmdstr)
+        send_cmd_afterssh(primary_host + replicas_host, cmdstr, 1)
     else:
         host = args[2:]
-        send_cmd_andstay(host, cmdstr)
+        send_cmd_andstay(host, cmdstr, 1)
     print 'finished.'
 
 def set_fail_test_conf(args):
@@ -244,7 +256,7 @@ def reset_state_and_run():
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_index])
         printtofile (out)
 
-    failed_host = check_col()
+    (failed_host,down_host) = check_col()
     if len(failed_host) > 0:
         printtofile ('reset state wrong, data is not consistent.')
         exit(0)
@@ -270,15 +282,17 @@ def check_col():
             break
 
     failed_host = []
+    down_host = []
     for host in primary_host + replicas_host:
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_check])
         if error.find('Connection refused') != -1:
             printtofile ('host down : ' + host)
+            down_host += [host]
             continue
         if len(error) > 0:
             printtofile ('data is not consistent after running for host : ' + host)
-            failed_host += host
-    return failed_host
+            failed_host += [host]
+    return (failed_host, down_host)
 
 def run_testwrite(testfail_host, testfail_type, test_writereq):
     cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo ' + str(testfail_type) + ' > ./distribute_test.conf'
@@ -288,7 +302,7 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
         if len(error) > 0:
             printtofile ('run write request error: ' + error + ', host: ' + host)
     # check collection after this request.
-    failed_host = check_col()
+    (failed_host,down_host) = check_col()
     if len(failed_host) > 0:
         printtofile ('data not consistent while checking after write.' + time.asctime())
     else:
@@ -298,16 +312,19 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
     time.sleep(20)
     # failed host should be started last.
     first_start_host = primary_host + replicas_host
-    for host in testfail_host:
+    for host in down_host:
+        if host not in testfail_host:
+            printtofile ('a host down not by expected.' + host)
         first_start_host.remove(host)
     start_all(['',''] + first_start_host)
     time.sleep(10)
-    start_all(['',''] + testfail_host)
+    start_all(['',''] + down_host)
     time.sleep(30)
     # check collection again.
-    failed_host = check_col()
+    (failed_host,down_host) = check_col()
     if len(failed_host) > 0:
         printtofile ('data not consistent while checking after restart failed node.' + time.asctime())
+        sys.exit(0)
     else:
         printtofile ('after restarting failed node, test case passed')
 
@@ -385,6 +402,7 @@ if len(args) > 1:
         try:
             handler_dict[args[1]](args)
         finally:
+            print 'exited'
             logfile.close()
         exit(0)
 

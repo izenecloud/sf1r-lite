@@ -36,6 +36,7 @@ const char* ZNode::KEY_MASTER_SERVER_REAL_PATH = "master_server_realpath";
 const char* ZNode::KEY_PRIMARY_WORKER_REQ_DATA = "primary_worker_req_data";
 const char* ZNode::KEY_REQ_DATA = "req_data";
 const char* ZNode::KEY_REQ_TYPE = "req_type";
+const char* ZNode::KEY_REQ_STEP = "req_step";
 const char* ZNode::KEY_SERVICE_STATE = "service_state";
 const char* ZNode::KEY_SERVICE_NAMES = "service_names";
 

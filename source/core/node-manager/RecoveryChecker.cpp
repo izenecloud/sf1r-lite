@@ -113,6 +113,8 @@ static void copyDir(bfs::path src, bfs::path dest)
         {
             if (bfs::exists(current.string() + "_removed.rollback"))
                 bfs::remove_all(current.string() + "_removed.rollback");
+            if (current.filename().string().find("_removed.rollback") != std::string::npos)
+                continue;
             bfs::rename( current, current.string() + "_removed.rollback");
             LOG(INFO) << "rename : " << current << " to rollback file";
         }

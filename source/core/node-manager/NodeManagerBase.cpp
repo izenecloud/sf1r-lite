@@ -4,6 +4,7 @@
 #include "RequestLog.h"
 #include "MasterManagerBase.h"
 #include "DistributeTest.hpp"
+#include "RecoveryChecker.h"
 
 #include <aggregator-manager/MasterNotifier.h>
 #include <sstream>
@@ -17,6 +18,7 @@ NodeManagerBase::NodeManagerBase()
     : isDistributionEnabled_(false)
     , nodeState_(NODE_STATE_INIT)
     , masterStarted_(false)
+    , processing_step_(0)
     , CLASSNAME("[NodeManagerBase]")
 {
 }
@@ -176,6 +178,25 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             LOG (INFO) << " session expired while recovering, wait recover finish.";
             return;
         }
+
+        // this node is expired, it means disconnect from ZooKeeper for a long time.
+        // if any write request not finished, we must abort it.
+        if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
+            nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
+        {
+            LOG(INFO) << "abort request on current secondary because of expired session.";
+            if (cb_on_abort_request_)
+                cb_on_abort_request_();
+        }
+        else if ( nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
+            nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS ||
+            nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
+        {
+            LOG(INFO) << "abort request on current primary because of expired session.";
+            if(cb_on_wait_replica_abort_)
+                cb_on_wait_replica_abort_();
+        }
+
         zookeeper_->disconnect();
         nodeState_ = NODE_STATE_STARTING;
         enterCluster(false);
@@ -265,6 +286,11 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     znode.setValue(ZNode::KEY_NODE_STATE, (uint32_t)nodeState_);
     setServicesData(znode);
 
+    if (nodeState_ == NODE_STATE_STARTED)
+        processing_step_ = 0;
+    
+    znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
+
     std::string service_state;
     if (nodeState_ == NODE_STATE_RECOVER_RUNNING || 
         nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY ||
@@ -282,9 +308,24 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
     {
         service_state = "BusyForShard";
         // at least half finished processing, we can get ready to serve read.
-        if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY && canAbortRequest())
+        if ((nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
+            nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS) &&
+            processing_step_ < 100)
         {
+            // processing_step_ < 100 means new request is waiting to be totally 
+            // accept, less than half nodes confirmed, so the new data will not be available
+            // until more than half nodes confirmed the new data.
+            // current node is updated and wait more replicas to update to the new data state.
             service_state = "BusyForReplica";
+        }
+        else if (processing_step_ == 100 &&
+            nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY &&
+            nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
+        {
+            // processing_step_ = 100 means new request has been processed by 
+            // more than half nodes, so the old data will not be available.
+            // current node need update self to the new data state.
+            service_state = "BusyForSelf";
         }
         else if (MasterManagerBase::get()->isServiceReadyForRead(false))
         {
@@ -539,6 +580,8 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         ZNode znode;
         setSf1rNodeData(znode);
         registerPrimary(znode);
+
+        updateCurrentPrimary();
         if (curr_primary_path_ == self_primary_path_)
         {
             LOG(INFO) << "I enter as primary success." << self_primary_path_;
@@ -548,9 +591,13 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         else
         {
             LOG(INFO) << "enter as primary fail, maybe another node is entering at the same time.";
-            updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_PRIMARY);
-            LOG(INFO) << "begin wait new entered primary and try re-enter when sync to new primary.";
-            return;
+            if (getPrimaryState() != NODE_STATE_ELECTING)
+            {
+                updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_PRIMARY);
+                LOG(INFO) << "begin wait new entered primary and try re-enter when sync to new primary.";
+                return;
+            }
+            LOG(INFO) << "new primary is electing, get ready to notify new primary.";
         }
     }
 
@@ -686,6 +733,7 @@ bool NodeManagerBase::canAbortRequest()
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
     LOG(INFO) << "while check if can abort request found " << node_list.size() << " children in node " << primaryNodeParentPath_;
     size_t ready = 0;
+    size_t waiting = 0;
     for (size_t i = 0; i < node_list.size(); ++i)
     {
         if (node_list[i] == curr_primary_path_)
@@ -699,9 +747,17 @@ bool NodeManagerBase::canAbortRequest()
         {
             ready++;
         }
+        else if (state == NODE_STATE_STARTED || state == NODE_STATE_PROCESSING_REQ_RUNNING)
+        {
+            waiting++;
+        }
     }
-    LOG(INFO) << "while check if can abort request, there are " << ready << " children already finished. ";
-    if (ready >= (node_list.size() + 1)/2)
+    LOG(INFO) << "while check if can abort request, there are " << ready << " children already finished, and "
+        << " there are :" << waiting << " children still waiting.";
+    DistributeTestSuit::updateMemoryState("Processing_Ready", ready);
+    DistributeTestSuit::updateMemoryState("Processing_Waiting", waiting);
+    DistributeTestSuit::updateMemoryState("Processing_Total", node_list.size());
+    if (ready >= waiting)
     {
         return false;
     }
@@ -724,7 +780,7 @@ void NodeManagerBase::abortRequest()
         // we deny the abort.
         if (!canAbortRequest())
         {
-            throw std::runtime_error("exit for deny abort request.");
+            RecoveryChecker::forceExit("exit for deny abort request.");
         }
 
         setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
@@ -737,6 +793,7 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
 {
     if (isPrimary())
     {
+        boost::unique_lock<boost::mutex> lock(mutex_);
         LOG(INFO) << "send request to other replicas from primary.";
         // write request data to node to notify replica.
         nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS;
@@ -744,9 +801,36 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         setSf1rNodeData(znode);
         znode.setValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA, packed_reqdata);
         znode.setValue(ZNode::KEY_REQ_TYPE, (uint32_t)type);
+        // let the 50% replicas to start processing first.
+        // after the 50% finished, we change the step to 100%
+        processing_step_ = 50;
+        znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
         zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
         zookeeper_->setZNodeData(self_primary_path_, znode.serialize());
-        DistributeTestSuit::updateMemoryState("NodeState", nodeState_);
+
+        std::string oldsdata = znode.serialize();
+        std::string sdata;
+        if(zookeeper_->getZNodeData(self_primary_path_, sdata, ZooKeeper::WATCH))
+        {
+            znode.loadKvString(sdata);
+            
+            std::string packed_reqdata_check = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
+            if (packed_reqdata_check != packed_reqdata)
+            {
+                LOG(ERROR) << "write request data to ZooKeeper error. data len: " << packed_reqdata_check.size();
+            }
+            if (oldsdata != sdata)
+            {
+                LOG(ERROR) << "write znode data to ZooKeeper error.";
+            }
+            znode.loadKvString(oldsdata);
+            packed_reqdata_check = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
+            if (packed_reqdata_check != packed_reqdata)
+            {
+                LOG(ERROR) << "znode serialize and unserialize error.";
+            }
+        }
+
         DistributeTestSuit::testFail(PrimaryFail_At_FinishReqLocal);
     }
     else
@@ -850,12 +934,14 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                 ZNode znode;
                 std::string sdata;
                 std::string packed_reqdata;
-                int type;
+                int type = 0;
+                uint32_t step = 0;
                 if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
                 {
                     znode.loadKvString(sdata);
                     packed_reqdata = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
                     type = znode.getUInt32Value(ZNode::KEY_REQ_TYPE);
+                    step = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
                 }
                 else
                 {
@@ -868,8 +954,42 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                         return;
                     }
                     // primary is ok, this error can not handle. 
-                    throw std::runtime_error("exit for unrecovery node state.");
+                    RecoveryChecker::forceExit("exit for unrecovery node state.");
                 }
+                // check if I can start processing
+                if (step < 100)
+                {
+                    // only the top half replicas can start at the first step.
+                    std::vector<std::string> node_list;
+                    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+                    LOG(INFO) << "while check if can start request found " << node_list.size() << " children ";
+                    size_t total = 0;
+                    size_t myself_pos = 0;
+                    for (size_t i = 0; i < node_list.size(); ++i)
+                    {
+                        if (node_list[i] == curr_primary_path_)
+                        {
+                            // primary is sure finished before secondary can process.
+                            total++;
+                            continue;
+                        }
+                        if (node_list[i] == self_primary_path_)
+                            myself_pos = total;
+                        NodeStateType state = getNodeState(node_list[i]);
+                        if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
+                            state == NODE_STATE_STARTED ||
+                            state == NODE_STATE_PROCESSING_REQ_RUNNING)
+                        {
+                            total++;
+                        }
+                    }
+                    if (myself_pos > total - myself_pos)
+                    {
+                        LOG(INFO) << "I am not top half in first step processing, waiting next step. ";
+                        return;
+                    }
+                }
+
                 updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_RUNNING);
                 DistributeTestSuit::testFail(ReplicaFail_At_ReqProcessing);
                 if(cb_on_new_req_from_primary_)
@@ -877,13 +997,20 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                     if(!cb_on_new_req_from_primary_(type, packed_reqdata))
                     {
                         LOG(ERROR) << "handle request on replica failed, aborting request from replica";
-                        updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
+                        if (canAbortRequest())
+                        {
+                            updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
+                        }
+                        else
+                        {
+                            RecoveryChecker::forceExit("exit for deny abort request before processing.");
+                        }
                     }
                 }
                 else
                 {
                     LOG(ERROR) << "replica did not have callback on new request from primary.";
-                    throw std::runtime_error("exit for unrecovery node state.");
+                    RecoveryChecker::forceExit("exit for unrecovery node state.");
                 }
             }
         }
@@ -1116,6 +1243,14 @@ void NodeManagerBase::checkSecondaryReqProcess()
             break;
         }
     }
+
+    if (processing_step_ < 100)
+    {
+        if (!canAbortRequest())
+            processing_step_ = 100;
+        updateNodeState();
+    }
+
     if (all_secondary_ready)
     {
         // all replica finished request, wait replica to write log.

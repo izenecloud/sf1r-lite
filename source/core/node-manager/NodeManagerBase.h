@@ -208,6 +208,8 @@ protected:
     NodeStateType nodeState_;
     bool masterStarted_;
 
+    uint32_t  processing_step_;
+
     ZooKeeperClientPtr zookeeper_;
 
     std::string clusterPath_;

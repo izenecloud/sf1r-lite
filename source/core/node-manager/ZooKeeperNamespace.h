@@ -185,6 +185,7 @@ public:
     const static char* KEY_PRIMARY_WORKER_REQ_DATA;
     const static char* KEY_REQ_DATA;
     const static char* KEY_REQ_TYPE;
+    const static char* KEY_REQ_STEP;
     const static char* KEY_SERVICE_STATE;
     const static char* KEY_SERVICE_NAMES;
 
