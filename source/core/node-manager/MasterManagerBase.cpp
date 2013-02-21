@@ -1045,19 +1045,17 @@ bool MasterManagerBase::findServiceMasterAddress(const std::string& service, std
     for (size_t i = 0; i < children.size(); ++i)
     {
         std::string serviceMasterPath = children[i];
-        if (!zookeeper_->isZNodeExists(serviceMasterPath + "/" + service))
-        {
-            // no this service on this master server.
-            continue;
-        }
 
-        LOG(INFO) << "find service master address success : " << service << ", on server :" << serviceMasterPath;
         std::string data;
         if (zookeeper_->getZNodeData(serviceMasterPath, data))
         {
             ZNode znode;
             znode.loadKvString(data);
+            std::string service_names = znode.getStrValue(ZNode::KEY_SERVICE_NAMES);
+            if (service_names.find(service) == std::string::npos)
+                continue;
 
+            LOG(INFO) << "find service master address success : " << service << ", on server :" << serviceMasterPath;
             host = znode.getStrValue(ZNode::KEY_HOST);
             port = znode.getUInt32Value(ZNode::KEY_MASTER_PORT);
             return true;

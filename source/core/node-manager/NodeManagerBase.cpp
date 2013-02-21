@@ -912,6 +912,8 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     // because there may only one node in distribute system.
     if (isPrimaryWithoutLock())
     {
+        if (path == self_primary_path_)
+            return;
         checkSecondaryState();
     }
     else if (path == self_primary_path_ || path == nodePath_)
