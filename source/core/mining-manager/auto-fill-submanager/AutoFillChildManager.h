@@ -5,8 +5,8 @@
  \dat       2012-07-26
 */
 
-#if !defined(_AUTO_FILL_SUBMANAGER_)
-#define _AUTO_FILL_SUBMANAGER_
+#if !defined(_AUTO_FILL_CHILD_SUBMANAGER_)
+#define _AUTO_FILL_CHILD_SUBMANAGER_
 
 #include "word_leveldb_table.hpp"
 
@@ -16,6 +16,7 @@
 
 #include <log-manager/LogAnalysis.h>
 #include <configuration-manager/CollectionPath.h>
+#include <log-manager/UserQuery.h>
 
 #include <am/leveldb/Table.h>
 #include <am/succinct/wat_array/wat_array.hpp>
@@ -51,49 +52,24 @@ class AutoFillChildManager: public boost::noncopyable
     typedef boost::tuple<uint32_t, uint32_t, izenelib::util::UString> ItemValueType;
     typedef std::pair<uint32_t, izenelib::util::UString> PropertyLabelType;
     typedef izenelib::ir::idmanager::AutoFillIDManager IDManger;
-
-    bool fromSCD_;
-    bool isUpdating_;
-    bool isUpdating_Wat_;
-    bool isIniting_;
-
-    uint32_t updatelogdays_;
-    uint32_t alllogdays_;
-    uint32_t topN_;
-
-    uint32_t updateMin_;
-    uint32_t updateHour_;
-    string collectionName_;
-    string AutofillPath_;
-    string leveldbPath_;
-    string SCDDIC_;
-    string ItemPath_;
-    string ItemdbPath_;
-    string WatArrayPath_;
-    fstream out;// for log
-    std::vector<string> SCDHaveDone_;
-    string SCDLogPath_;
-
-    std::string cronJobName_;
-    boost::thread updateThread_;
-    boost::mutex buildCollectionMutex_;
-    izenelib::util::CronExpression cronExpression_;
+    
     struct PrefixQueryType
     {
         string query_;
         string prefix_;
         FREQ_TYPE freq_;
         uint32_t hitnum_;
-        void init(string query,string prefix,FREQ_TYPE freq,uint32_t hitnum)
+
+        void init(std::string query,string prefix,FREQ_TYPE freq,uint32_t hitnum)
         {
-            query_=query;
-            prefix_=prefix;
-            freq_=freq;
-            hitnum_=hitnum;
+            query_ = query;
+            prefix_ = prefix;
+            freq_ = freq;
+            hitnum_ = hitnum;
         }
         inline bool operator > (const PrefixQueryType other) const
         {
-            return prefix_> other.prefix_ ;
+            return prefix_ > other.prefix_ ;
         }
 
         inline bool operator < (const PrefixQueryType other) const
@@ -113,10 +89,12 @@ class AutoFillChildManager: public boost::noncopyable
             return ret;
         };
     };
+
     struct ItemType
     {
         uint64_t offset_;
         std::string strItem_;
+
         inline bool operator > (const ItemType other) const
         {
             return strItem_ > other.strItem_ ;
@@ -185,7 +163,7 @@ class AutoFillChildManager: public boost::noncopyable
             delete [] str_;
         }
 
-        void getValueType(const char* str)
+        void setValueType(const char* str)
         {
             size_ = *(uint32_t*)str;
             strValue_.insert(0, str + UINT32_LEN, size_ - UINT32_LEN*2 - FREQ_TYPE_LEN);
@@ -206,59 +184,126 @@ class AutoFillChildManager: public boost::noncopyable
             return ret;
         };
     };
-    QueryNormalize* QN_;
-    WordLevelDBTable dbTable_;
-    WordLevelDBTable dbItem_;
-    wat_array::WatArray wa_;
-    std::vector<ItemType> ItemVector_;
-    boost::scoped_ptr<IDManger> idManager_;
-
+    
 public:
-    AutoFillChildManager(bool fromSCD = false);
+    AutoFillChildManager(bool isfromSCD = false);
 
     ~AutoFillChildManager();
 
-    bool Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression, const string& instanceName);
+    bool Init(const CollectionPath& collectionPath
+            , const std::string& collectionName
+            , const string& cronExpression
+            , const string& instanceName);
+
     bool InitWhileHaveLeveldb();
+    
     bool RealInit();
+    
     bool InitFromSCD();
     bool InitFromLog();
+    bool InitFromLog_ForTest(std::vector<UserQuery>& query_records);
+    bool Init_ForTest(const CollectionPath& collectionPath 
+                    , const std::string& collectionName
+                    , const string& cronExpression
+                    , const string& instanceName
+                    , bool & isBuildFromLeveldb
+                    , std::vector<UserQuery>& query_records);
+
+    bool PrepareForInit(const CollectionPath& collectionPath 
+                        , const std::string& collectionName
+                        , const string& cronExpression
+                        , const string& instanceName
+                        , bool & isBuildFromLeveldb);
+
     void SaveItem();
     void LoadItem();
+    
     void SaveWat();
     bool LoadWat();
-    void buildDbItem();
-    bool openDB(string path, string path2);
+    
+    bool openDB(std::string path_dbTable, std::string path_dbItem);
     void closeDB();
     void flush();
 
+    void buildDbItem();
     bool buildDbIndex(const std::list<QueryType>& queryList);
+    
+    void buildDbIndexForEach( std::pair<std::string,std::vector<QueryType> > eachprefix
+                        , std::vector<std::pair<string,string> >& similarList);
+
+    void buildDbIndexForEveryThousand(vector<PrefixQueryType> thousandpair
+                        , std::vector<std::pair<string,string> >& similarList);
+
+    void buildWat_array(bool _fromleveldb);
+    
+    bool buildIndex(const std::list<ItemValueType>& queryList);
 
     void buildItemList(std::string key);
     void buildItemVector();
     void buildTopNDbTable(std::string &value, const uint32_t offset);
+
     bool getOffset(const std::string& query , uint64_t& OffsetStart, uint64_t& OffsetEnd);
 
+    bool getAutoFillListFromOffset(uint64_t OffsetStart
+                                , uint64_t OffsetEnd
+                                , std::vector<std::pair<izenelib::util::UString, uint32_t> >& list);
 
-    bool getAutoFillListFromOffset(uint64_t OffsetStart, uint64_t OffsetEnd, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
-    bool getAutoFillListFromWat(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
-    bool getAutoFillListFromDbTable(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
+    bool getAutoFillListFromWat(const izenelib::util::UString& query
+                            , std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
-    void buildWat_array(bool _fromleveldb);
     void updateAutoFill(int calltype);
+    bool getAutoFillListFromDbTable(const izenelib::util::UString& query
+                            , std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
-    bool getAutoFillList(const izenelib::util::UString& query, std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
-    bool buildIndex(const std::list<ItemValueType>& queryList);
+    bool getAutoFillList(const izenelib::util::UString& query
+                            , std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
+    
+    void updateAutoFill();
     void updateFromLog();
+    void updateFromLog_ForTest(std::vector<UserQuery>& query_records);
     void updateFromSCD();
     void SaveSCDLog();
     void LoadSCDLog();
+
     void dealWithSimilar(std::vector<std::pair<string,string> >& SimlarList);
-    void buildDbIndexForEach( std::pair<std::string,std::vector<QueryType> > eachprefix,    std::vector<std::pair<string,string> >& similarList);
-    void buildDbIndexForEveryThousand(vector<PrefixQueryType> thousandpair ,   std::vector<std::pair<string,string> >& similarList);
     std::vector<QueryType> valueToQueryTypeVector(string value);
-public:
+    
     static std::string system_resource_path_;
+
+private:
+    bool isFromSCD_;
+    bool isUpdating_;
+    bool isUpdating_Wat_;
+    bool isIniting_;
+
+    uint32_t updatelogdays_;
+    uint32_t alllogdays_;
+    uint32_t topN_;
+
+    std::string collectionName_;
+    std::string AutofillPath_;
+    std::string leveldbPath_;
+    std::string SCDDIC_;
+    std::string ItemPath_;
+    std::string ItemdbPath_;
+    std::string WatArrayPath_;
+    std::vector<string> SCDHaveDone_;
+    std::string SCDLogPath_;
+    std::string cronJobName_;
+
+    boost::mutex buildCollectionMutex_;
+    izenelib::util::CronExpression cronExpression_;
+
+    QueryNormalize* QN_;
+
+    WordLevelDBTable dbTable_;
+    WordLevelDBTable dbItem_;//
+
+    wat_array::WatArray wa_;
+
+    std::vector<ItemType> ItemVector_;
+    boost::scoped_ptr<IDManger> idManager_;
 };
+
 } // end - namespace sf1r
-#endif // _AUTO_FILL_SUBMANAGER_
+#endif // _AUTO_FILL_CHILD_SUBMANAGER_

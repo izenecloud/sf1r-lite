@@ -95,6 +95,16 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     )
   ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_AttrManager")
 
+  ADD_EXECUTABLE(t_AutofillManager
+    Runner.cpp
+    t_AutofillManager.cpp
+  )
+  TARGET_LINK_LIBRARIES(t_AutofillManager ${libs})
+  SET_TARGET_PROPERTIES(t_AutofillManager PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+    )
+  ADD_TEST(group "${SF1RENGINE_ROOT}/testbin/t_AutofillManager")
+
   ADD_EXECUTABLE(t_GroupLabelLogger
     Runner.cpp
     t_GroupLabelLogger.cpp
