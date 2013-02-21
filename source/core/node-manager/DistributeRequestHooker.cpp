@@ -65,7 +65,7 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& reqdata)
     }
     current_req_ = reqdata;
     req_log_mgr_ = RecoveryChecker::get()->getReqLogMgr();
-    LOG(INFO) << "current request hooked: " << current_req_;
+    LOG(INFO) << "current request hooked, data len: " << current_req_.size() << ", data:" << current_req_;
 }
 
 bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& packed_reqdata)
@@ -137,6 +137,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     }
     else
     {
+        DistributeTestSuit::testFail(ReplicaFail_At_UnpackPrimaryReq);
         // get addition data from primary
         if(!ReqLogMgr::unpackReqLogData(current_req_, prepared_req))
         {
