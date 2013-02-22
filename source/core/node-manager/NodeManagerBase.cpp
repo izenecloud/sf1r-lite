@@ -217,6 +217,7 @@ void NodeManagerBase::tryInitZkNameSpace()
     std::stringstream ss;
     ss << sf1rTopology_.curNode_.replicaId_;
     zookeeper_->createZNode(replicaPath_, ss.str());
+    zookeeper_->setZNodeData(replicaPath_, ss.str());
     zookeeper_->createZNode(primaryBasePath_);
 }
 

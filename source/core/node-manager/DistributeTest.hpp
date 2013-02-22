@@ -47,6 +47,7 @@ enum TestFailType
 
     OtherFail_Begin = 60,
     Fail_At_AfterEnterCluster,
+    Fail_At_CopyRemove_File,
 };
 
 class DistributeTestSuit

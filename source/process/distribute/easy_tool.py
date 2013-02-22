@@ -372,7 +372,7 @@ def run_auto_fail_test(args):
                 run_testwrite([replicas_host[0]], i, test_writereq)
 
             printtofile ('begin test for other fail')
-            for i in range(61, 62):
+            for i in range(61, 63):
                 reset_state_and_run()
                 printtofile ('testing for other fail type on replica: ' + str(i))
                 run_testwrite([replicas_host[0]], i, test_writereq)

@@ -14,6 +14,62 @@ namespace bfs = boost::filesystem;
 namespace sf1r
 {
 
+class CopyGuard
+{
+public:
+    CopyGuard(const std::string& guard_dir)
+        :guard_file_(guard_dir + "/" + getGuardFileName())
+    {
+        // touch a flag
+        std::ofstream ofs(guard_file_.c_str());
+        ofs << std::flush;
+        ofs.close();
+    }
+    ~CopyGuard()
+    {
+        // clear a flag
+        if (bfs::exists(guard_file_))
+        {
+            bfs::remove(guard_file_);
+        }
+    }
+    static bool isDirCopyOK(const std::string& dir)
+    {
+        return !bfs::exists(dir + "/" + getGuardFileName());
+    }
+    static void safe_remove_all(const std::string& dir)
+    {
+        CopyGuard guard(dir);
+        // remove other files first and then remove flag.
+        static bfs::directory_iterator end_it = bfs::directory_iterator();
+        bfs::directory_iterator dir_it = bfs::directory_iterator(dir);
+        while(dir_it != end_it)
+        {
+            bfs::path current(dir_it->path());
+            if (bfs::is_regular_file(current) &&
+                current.filename().string() == getGuardFileName())
+            {
+                ++dir_it;
+                continue;
+            }
+            DistributeTestSuit::testFail(Fail_At_CopyRemove_File);
+            bfs::remove_all(current);
+            ++dir_it;
+        }
+        bfs::remove(dir + "/" + getGuardFileName());
+        bfs::remove_all(dir);
+    }
+
+    static std::string getGuardFileName()
+    {
+        static std::string guard_flag("copy_guard_file.flag");
+        return guard_flag;
+    }
+
+private:
+    std::string guard_file_;
+};
+
 static void getBackupList(const bfs::path& backup_basepath, std::vector<uint32_t>& backup_req_incids)
 {
     if (!bfs::exists(backup_basepath))
@@ -47,14 +103,27 @@ static void cleanUnnessesaryBackup(const bfs::path& backup_basepath)
     // only keep the lastest 3 backups.
     std::vector<uint32_t> backup_req_incids;
     getBackupList(backup_basepath, backup_req_incids);
-    for (size_t i = MAX_BACKUP_NUM; i < backup_req_incids.size(); ++i)
+    int keeped = 0;
+    for (size_t i = 0; i < backup_req_incids.size(); ++i)
     {
         if (backup_req_incids[i] == 0)
         {
             // keep the first backup.
             continue;
         }
-        bfs::remove_all(bfs::path(backup_basepath)/bfs::path(boost::lexical_cast<std::string>(backup_req_incids[i])));
+        bfs::path backup_dir = bfs::path(backup_basepath)/bfs::path(boost::lexical_cast<std::string>(backup_req_incids[i]));
+        if (keeped > MAX_BACKUP_NUM)
+            CopyGuard::safe_remove_all(backup_dir.string());
+        else
+        {
+            if (CopyGuard::isDirCopyOK(backup_dir.string()))
+                ++keeped;
+            else 
+            {
+                LOG(WARNING) << "a corrupted directory removed " << backup_dir;
+                CopyGuard::safe_remove_all(backup_dir.string());
+            }
+        }
     }
 }
 
@@ -64,9 +133,18 @@ static bool getLastBackup(const bfs::path& backup_basepath, std::string& backup_
     getBackupList(backup_basepath, backup_req_incids);
     if (backup_req_incids.empty())
         return false;
-    backup_inc_id = backup_req_incids.front();
-    backup_path = (backup_basepath/bfs::path(boost::lexical_cast<std::string>(backup_inc_id))).string() + "/";
-    return true;
+    for (size_t i = 0; i < backup_req_incids.size(); ++i)
+    {
+        backup_inc_id = backup_req_incids[i];
+        backup_path = (backup_basepath/bfs::path(boost::lexical_cast<std::string>(backup_inc_id))).string() + "/";
+        if (CopyGuard::isDirCopyOK(backup_path))
+            return true;
+        else 
+        {
+            CopyGuard::safe_remove_all(backup_path);
+        }
+    }
+    return false;
 }
 
 static void copyDir(bfs::path src, bfs::path dest)
@@ -100,6 +178,8 @@ static void copyDir(bfs::path src, bfs::path dest)
         {
             if (current.filename().string().find("_removed.rollback") != std::string::npos)
                 continue;
+
+            DistributeTestSuit::testFail(Fail_At_CopyRemove_File);
             // Found file: Copy
             bfs::copy_file(current, dest / current.filename(), bfs::copy_option::overwrite_if_exists);
             //LOG(INFO) << "copying : " << current << " to " << dest;
@@ -143,7 +223,6 @@ static void copy_dir(const bfs::path& src, const bfs::path& dest, bool keep_full
         dest_path /= src;
     }
     bfs::create_directories(dest_path);
-    //bfs::remove_all(dest_path);
     copyDir(src, dest_path);
 }
 
@@ -211,32 +290,42 @@ bool RecoveryChecker::backup()
     bfs::path dest_coldata_backup = dest_path/bfs::path("backup_data");
 
     if (bfs::exists(dest_path))
-        bfs::remove_all(dest_path);
+        CopyGuard::safe_remove_all(dest_path.string());
     bfs::create_directories(dest_path);
-    bfs::create_directories(dest_coldata_backup);
 
-    while(cit != all_col_info_.end())
     {
-        LOG(INFO) << "backing up the collection: " << cit->first;
-        // flush collection to make sure all changes have been saved to disk.
-        if (flush_col_)
-            flush_col_(cit->first);
-        if(!backupColl(cit->second.first, dest_path))
+        CopyGuard dir_guard(dest_path.string());
+
+        bfs::create_directories(dest_coldata_backup);
+
+        // set invalide flag before do copy and
+        // clear invalide flag after copy. So we can
+        // know whether copy is finished correctly by checking flag .
+        //
+        while(cit != all_col_info_.end())
         {
+            LOG(INFO) << "backing up the collection: " << cit->first;
+            // flush collection to make sure all changes have been saved to disk.
+            if (flush_col_)
+                flush_col_(cit->first);
+            if(!backupColl(cit->second.first, dest_path))
+            {
+                return false;
+            }
+            ++cit;
+        }
+        try
+        {
+            copy_dir(request_log_basepath_, dest_path, false);
+        }
+        catch(const std::exception& e)
+        {
+            // clear state.
+            LOG(ERROR) << "backup request log failed. " << e.what() << std::endl;
             return false;
         }
-        ++cit;
     }
-    try
-    {
-        copy_dir(request_log_basepath_, dest_path, false);
-    }
-    catch(const std::exception& e)
-    {
-        // clear state.
-        LOG(ERROR) << "backup request log failed. " << e.what() << std::endl;
-        return false;
-    }
+
     cleanUnnessesaryBackup(backup_basepath_);
     return true;
 }
@@ -418,9 +507,6 @@ bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
         while(cit != tmp_all_col_info.end())
         {
             stop_col_(cit->first, true);
-            // remove old data.
-            //bfs::remove_all(cit->second.first.getCollectionDataPath());
-            //bfs::remove_all(cit->second.first.getQueryDataPath());
             ++cit;
         }
 
@@ -563,6 +649,7 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
         DistributeFileSyncMgr::get()->checkReplicasStatus(cit->first, errinfo);
         if (!errinfo.empty())
         {
+            setRollbackFlag(0);
             LOG(ERROR) << "data is not consistent after recovery, collection : " << cit->first <<
                 ", error : " << errinfo;
             if (sync_file)
@@ -570,8 +657,9 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
                 if(!DistributeFileSyncMgr::get()->syncCollectionData(cit->first))
                     forceExit("recovery failed for sync collection file.");
             }
-            //else
-            //    forceExit("recovery failed for not consistent."); 
+            else
+                forceExit("recovery failed for not consistent."); 
+            clearRollbackFlag();
         }
         ++cit;
     }
