@@ -32,6 +32,7 @@ public:
     }
 
     typedef boost::function<void()> NoFailCBFuncT;
+    typedef boost::function<void(bool)> NoFailCBFuncT2;
     typedef boost::function<bool()> CanFailCBFuncT;
     typedef boost::function<bool(int, const std::string&)> NewReqCBFuncT;
     enum NodeStateType
@@ -134,7 +135,7 @@ public:
         cb_on_new_req_from_primary_ = on_new_req_from_primary;
     }
 
-    void setRecoveryCallback(NoFailCBFuncT on_recovering, NoFailCBFuncT on_recover_wait_primary,
+    void setRecoveryCallback(NoFailCBFuncT2 on_recovering, NoFailCBFuncT on_recover_wait_primary,
         NoFailCBFuncT on_recover_wait_replica_finish)
     {
         cb_on_recovering_ = on_recovering;
@@ -232,7 +233,7 @@ protected:
     NoFailCBFuncT cb_on_wait_primary_;
     NoFailCBFuncT cb_on_abort_request_;
     NoFailCBFuncT cb_on_wait_replica_abort_;
-    NoFailCBFuncT cb_on_recovering_;
+    NoFailCBFuncT2 cb_on_recovering_;
     NoFailCBFuncT cb_on_recover_wait_primary_;
     NoFailCBFuncT cb_on_recover_wait_replica_finish_;
     NewReqCBFuncT cb_on_new_req_from_primary_;

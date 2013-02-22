@@ -196,6 +196,11 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             if(cb_on_wait_replica_abort_)
                 cb_on_wait_replica_abort_();
         }
+        else if (nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
+        {
+            LOG (INFO) << " session expired while processing request, wait processing finish.";
+            return;
+        }
 
         zookeeper_->disconnect();
         nodeState_ = NODE_STATE_STARTING;
@@ -551,7 +556,7 @@ void NodeManagerBase::enterCluster(bool start_master)
     {
         // unlock
         mutex_.unlock();
-        cb_on_recovering_();
+        cb_on_recovering_(start_master);
         DistributeTestSuit::testFail(ReplicaFail_At_Recovering);
         // relock
         mutex_.lock();

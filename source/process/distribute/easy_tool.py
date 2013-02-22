@@ -316,12 +316,14 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
         if host not in testfail_host:
             printtofile ('a host down not by expected.' + host)
         first_start_host.remove(host)
-    start_all(['',''] + first_start_host)
+    if len(first_start_host) > 0:
+        start_all(['',''] + first_start_host)
     time.sleep(10)
 
     retry = 0;
     while retry < 2:
-        start_all(['',''] + down_host)
+        if len(down_host) > 0:
+            start_all(['',''] + down_host)
         time.sleep(20)
         # check collection again.
         (failed_host, down_host) = check_col()
@@ -337,6 +339,10 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
         else:
             printtofile ('after restarting failed node, test case passed')
             break
+
+    if len(down_host) > 0:
+        printtofile ('check failed for down_host after retry.')
+        sys.exit(0)
 
 
 def run_auto_fail_test(args):

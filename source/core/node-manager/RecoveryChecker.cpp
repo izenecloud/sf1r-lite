@@ -596,26 +596,28 @@ void RecoveryChecker::init(const std::string& workdir)
     DistributeTestSuit::updateMemoryState("Last_Success_Request", reqlog_mgr_->getLastSuccessReqId());
 
     NodeManagerBase::get()->setRecoveryCallback(
-        boost::bind(&RecoveryChecker::onRecoverCallback, this),
+        boost::bind(&RecoveryChecker::onRecoverCallback, this, _1),
         boost::bind(&RecoveryChecker::onRecoverWaitPrimaryCallback, this),
         boost::bind(&RecoveryChecker::onRecoverWaitReplicasCallback, this));
 
 }
 
-void RecoveryChecker::onRecoverCallback()
+void RecoveryChecker::onRecoverCallback(bool startup)
 {
     LOG(INFO) << "recovery callback, begin recovery before enter cluster.";
 
     // If myself need rollback, we must make sure primary node is available.
     //
-    if (bfs::exists(rollback_file_) || !isLastNormalExit())
+    // startup is true means recovery from first start up. otherwise means recovery from
+    // re-enter cluster.
+    if (startup && (bfs::exists(rollback_file_) || !isLastNormalExit()) )
     {
         LOG(INFO) << "recovery from rollback or from last forceExit !!";
         if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
             forceExit("recovery failed. No primary Node!!");
     }
 
-    if(!rollbackLastFail(false))
+    if(!rollbackLastFail(!startup))
     {
         LOG(ERROR) << "corrupt data and rollback failed. Unrecoverable!!";
         forceExit("corrupt data and rollback failed. Unrecoverable!!");

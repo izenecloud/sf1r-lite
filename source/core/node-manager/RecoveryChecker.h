@@ -59,7 +59,7 @@ public:
     {
         return reqlog_mgr_;
     }
-    void onRecoverCallback();
+    void onRecoverCallback(bool startup = true);
     void onRecoverWaitPrimaryCallback();
     void onRecoverWaitReplicasCallback();
 private:
