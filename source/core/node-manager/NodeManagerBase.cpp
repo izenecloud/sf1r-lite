@@ -331,7 +331,8 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode)
         }
         else if (processing_step_ == 100 &&
             nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY &&
-            nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
+            nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS &&
+            nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
         {
             // processing_step_ = 100 means new request has been processed by 
             // more than half nodes, so the old data will not be available.
@@ -1058,7 +1059,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                     cb_on_abort_request_();
                 updateNodeStateToNewState(NODE_STATE_STARTED);
             }
-            else if (primary_state == NODE_STATE_RECOVER_WAIT_REPLICA_FINISH)
+            else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
             {
                 ZNode znode;
                 std::string sdata;
