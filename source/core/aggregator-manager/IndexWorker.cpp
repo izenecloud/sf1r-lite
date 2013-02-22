@@ -261,7 +261,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         {
             // loops the list of SCD files that belongs to this collection
             long proccessedFileSize = 0;
-            idManager_->warmUp();
             for (scd_it = scdList.begin(); scd_it != scdList.end(); scd_it++)
             {
                 size_t pos = scd_it ->rfind("/") + 1;
@@ -329,7 +328,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             LOG(WARNING) << "exception in indexing : " << e.what();
             indexProgress_.getIndexingStatus(indexStatus_);
             indexProgress_.reset();
-            idManager_->coolDown();
             return false;
         }
 
@@ -358,7 +356,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             if (!hooker_->FinishHook())
             {
                 std::cout<<"[IndexWorker] Hooker Finish failed."<<std::endl;
-                idManager_->coolDown();
                 return false;
             }
             std::cout<<"[IndexWorker] Hooker Finished."<<std::endl;
@@ -370,15 +367,12 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             miningTaskService_->DoMiningCollection();
             indexManager_->resumeMerge();
         }
-
-        idManager_->coolDown();
     }
     catch (std::exception& e)
     {
         LOG(WARNING) << "exception in mining: " << e.what();
         indexProgress_.getIndexingStatus(indexStatus_);
         indexProgress_.reset();
-        idManager_->coolDown();
         return false;
     }
 
@@ -434,7 +428,6 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     docid_t maxDocId = documentManager->getMaxDocId();
     docid_t curDocId = 0;
     docid_t insertedCount = 0;
-    idManager_->warmUp();
     for (curDocId = minDocId; curDocId <= maxDocId; curDocId++)
     {
         if (documentManager->isDeleted(curDocId))
@@ -500,8 +493,6 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         miningTaskService_->DoMiningCollection();
         indexManager_->resumeMerge();
     }
-
-    idManager_->coolDown();
 
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
@@ -607,9 +598,9 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         {
             searchWorker_->clearSearchCache();
             ///clear filter cache because of * queries:
-            ///filter will be added into documentiterator 
+            ///filter will be added into documentiterator
             ///together with AllDocumentIterator
-            searchWorker_->clearFilterCache();		
+            searchWorker_->clearFilterCache();
         }
         doMining_();
     }
@@ -782,9 +773,9 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         {
             searchWorker_->clearSearchCache();
             ///clear filter cache because of * queries:
-            ///filter will be added into documentiterator 
+            ///filter will be added into documentiterator
             ///together with AllDocumentIterator
-            searchWorker_->clearFilterCache();		
+            searchWorker_->clearFilterCache();
         }
         doMining_();
     }
