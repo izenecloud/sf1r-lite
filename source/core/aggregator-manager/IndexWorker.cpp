@@ -862,7 +862,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     }
     scd_writer_->Write(scddoc, UPDATE_SCD);
 
-    flush();
+    //flush();
     reqlog.timestamp = timestamp;
     distribute_req_hooker_->processLocalFinished(ret, reqlog);
     return ret;

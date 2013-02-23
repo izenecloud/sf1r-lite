@@ -694,6 +694,8 @@ bool NodeManagerBase::isOtherPrimaryAvailable()
 
 bool NodeManagerBase::isPrimary()
 {
+	if (!isDistributionEnabled_)
+		return true;
     boost::unique_lock<boost::mutex> lock(mutex_);
     return isPrimaryWithoutLock();
 }
