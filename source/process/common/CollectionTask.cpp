@@ -64,18 +64,6 @@ void RebuildTask::doTask()
     CollectionManager::ScopedReadLock recollLock(*recollMutex);
     CollectionHandler* rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
     LOG(INFO) << "# # # #  start rebuilding";
-    if (DistributeRequestHooker::get()->isHooked())
-    {
-        // this is chain request because index is another kind of write request
-        if(!DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle))
-        {
-            LOG(ERROR) << "Collection for rebuilding set chain status failed: " << rebuildCollectionName_;
-            
-            isRunning_ = false;
-            throw std::runtime_error("faile to rebuild");
-            return;
-        }
-    }
     rebuildCollHandler->indexTaskService_->index(documentManager);
     CollectionPath& rebuildCollPath = rebuildCollHandler->indexTaskService_->getCollectionPath();
     rebuildCollDir = rebuildCollPath.getCollectionDataPath() + rebuildCollPath.getCurrCollectionDir();
@@ -87,19 +75,6 @@ void RebuildTask::doTask()
     CollectionManager::get()->stopCollection(collectionName_);
     LOG(INFO) << "## stopCollection: " << rebuildCollectionName_;
     CollectionManager::get()->stopCollection(rebuildCollectionName_);
-
-    if (DistributeRequestHooker::get()->isHooked())
-    {
-        // this is chain request because index is another kind of write request
-        if(!DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd))
-        {
-            LOG(ERROR) << "Collection for rebuilding set chain status failed: " << rebuildCollectionName_;
-            
-            isRunning_ = false;
-            throw std::runtime_error("faile to rebuild");
-            return;
-        }
-    }
 
     LOG(INFO) << "## update collection data for " << collectionName_;
     try

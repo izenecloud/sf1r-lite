@@ -572,21 +572,11 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         return false;
     }
 
-
     if (!documentManager)
     {
         LOG(ERROR) << "documentManager is not initialized!";
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
-
-    NoAdditionReqLog reqlog;
-    if(!distribute_req_hooker_->prepare(Req_NoAdditionDataReq, reqlog))
-    {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        return false;
-    }
-
 
     izenelib::util::ClockTimer timer;
 
@@ -670,7 +660,6 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
 
     flush();
-    distribute_req_hooker_->processLocalFinished(true);
     return true;
 }
 
