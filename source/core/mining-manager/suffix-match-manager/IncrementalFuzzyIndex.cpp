@@ -1,121 +1,19 @@
-#include <iostream>
-#include <boost/shared_ptr.hpp>
-#include <vector>
-#include <set>
-#include <algorithm>
-#include <stdio.h>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/shared_mutex.hpp>
-#include <ir/id_manager/IDManager.h>
-#include <configuration-manager/PropertyConfig.h>
-#include <util/ClockTimer.h>
-#include <boost/filesystem.hpp>
-namespace cma
-{
-class Analyzer;
-class Knowledge;
-}
-/**
-@brief The search result from IncrementIndex just need two parts: vector<uint32_t> ResultList and vectort<similarity> ResultList;
-*/
+# include "IncrementalFuzzyIndex.h"
+#include <common/JobScheduler.h>
+#include <common/Utilities.h>
 
+#include <la-manager/LAManager.h>//
+#include <document-manager/Document.h>
+
+#include <document-manager/DocumentManager.h>
+#include <ir/index_manager/index/LAInput.h>
+#include <icma/icma.h>
+#include <fstream>
+
+using namespace cma;
 namespace sf1r
 {
-#define MAX_INCREMENT_DOC 500000
-#define MAX_TMP_DOC 5000000
-#define MAX_POS_LEN 24
-#define MAX_HIT_NUMBER 3
-#define MAX_SUB_LEN 15
-
-class DocumentManager;
-class LAManager;
-using izenelib::ir::idmanager::IDManager;
-namespace bfs = boost::filesystem;
-
-/**
-@brife use this 24 bit data to mark if is this position is hit or not;
-postion 0-23;
-*/
-struct BitMap
-{
-    unsigned int data_;//init is zero
-
-    unsigned int offset_;
-
-    bool getBitMap(unsigned short i) const
-    {
-        if (i > MAX_POS_LEN)
-        {
-            return false;
-        }
-        unsigned int data = 0;
-        data = data_>>i;
-        unsigned int j = 1;
-        return (data&j) == 1;
-    }
-    bool setBitMap(unsigned short i)
-    {
-        if (i > MAX_POS_LEN)
-        {
-            return false;
-        }
-        unsigned int data = 1;
-        data<<=i;
-        data_ |= data;
-        return true;
-    }
-
-    void reset()
-    {
-        data_ = 0;
-    }
-};
-/**
-@brief IndexItem for forwardIndex;
-*/
-struct IndexItem
-{
-    uint32_t Docid_;
-
-    uint32_t Termid_;
-
-    unsigned short Pos_;
-
-    void setIndexItem_(uint32_t docid, uint32_t termid, unsigned short pos)
-    {
-        Docid_ = docid;
-        Termid_ = termid;
-        Pos_ = pos;
-    }
-
-    IndexItem()
-    {
-        Docid_ = 0;
-        Termid_ = 0;
-        Pos_ = 0;
-    }
-
-    IndexItem(const IndexItem& indexItem)
-    {
-        *this = indexItem;
-    }
-};
-
-struct pairLess
-{
-    bool operator() (const pair<unsigned int, unsigned short>&s1, const pair<unsigned int, unsigned short>&s2) const
-    {
-        return s1.first < s2.first;
-    }
-};
-
-/**
-@brief ForwardIndex is for restore query
-*/
-class ForwardIndex
-{
-public:
-    ForwardIndex(std::string index_path, unsigned int Max_Doc_Num)
+    ForwardIndex::ForwardIndex(std::string index_path, unsigned int Max_Doc_Num)
     {
         index_path_ = index_path + ".fd.idx";
         Max_Doc_Num_ = Max_Doc_Num;
@@ -126,7 +24,7 @@ public:
         max_docid_ = 0;
     }
 
-    ~ForwardIndex()
+    ForwardIndex::~ForwardIndex()
     {
         if (BitMapMatrix_ != NULL)
         {
@@ -135,7 +33,7 @@ public:
         BitMapMatrix_ = NULL;
     }
 
-    bool checkLocalIndex_()
+    bool ForwardIndex::checkLocalIndex_()
     {
         if (bfs::exists(index_path_))
         {
@@ -153,12 +51,14 @@ public:
             return false;
     }
 
-    uint32_t getIndexCount_()
+    uint32_t ForwardIndex::getIndexCount_()
     {
         return IndexCount_;
     }
 
-    void addDocForwardIndex_(uint32_t docId, std::vector<uint32_t>& termidList, std::vector<unsigned short>& posList)
+    void ForwardIndex::addDocForwardIndex_(uint32_t docId
+                                        , std::vector<uint32_t>& termidList
+                                        , std::vector<unsigned short>& posList)
     {
         if (start_docid_ == 0)
         {
@@ -175,14 +75,14 @@ public:
         max_docid_ = docId;
     }
 
-    void addOneIndexIterms_(uint32_t docId, uint32_t termid, unsigned short pos)
+    void ForwardIndex::addOneIndexIterms_(uint32_t docId, uint32_t termid, unsigned short pos)
     {
         IndexItem indexItem;
         indexItem.setIndexItem_(docId, termid, pos);
         IndexItems_.push_back(indexItem);
     }
 
-    uint32_t getSorce(std::vector<uint32_t> &v, uint32_t & docid)
+    uint32_t ForwardIndex::getScore(std::vector<uint32_t> &v, uint32_t & docid)
     {
         uint32_t start = BitMapMatrix_[docid - start_docid_].offset_;
         uint32_t end = BitMapMatrix_[docid - start_docid_ + 1].offset_;
@@ -194,7 +94,7 @@ public:
         return includeNum(v, doclist);
     }
 
-    uint32_t includeNum(const vector<uint32_t>& vec1,const vector<uint32_t>& vec2)
+    uint32_t ForwardIndex::includeNum(const vector<uint32_t>& vec1,const vector<uint32_t>& vec2)
     {
         uint32_t k = 0;
         uint32_t j = 0;
@@ -220,8 +120,7 @@ public:
         return k;
     }
 
-
-    void setPosition_(std::vector<pair<uint32_t, unsigned short> >*& v)
+    void ForwardIndex::setPosition_(std::vector<pair<uint32_t, unsigned short> >*& v)
     {
         for (std::vector<pair<uint32_t, unsigned short> >::const_iterator it = v->begin();
                 it != v->end(); ++it)
@@ -230,7 +129,9 @@ public:
         }
     }
 
-    bool getTermIDByPos_(const uint32_t& docid, const std::vector<unsigned short>& pos, std::vector<uint32_t>& termidList)
+    bool ForwardIndex::getTermIDByPos_(const uint32_t& docid
+                                    , const std::vector<unsigned short>& pos
+                                    , std::vector<uint32_t>& termidList)
     {
         std::set<uint32_t> termidSet;
         std::vector<IndexItem>::const_iterator it = IndexItems_.begin();
@@ -262,7 +163,7 @@ public:
         return true;
     }
 
-    void resetBitMapMatrix()
+    void ForwardIndex::resetBitMapMatrix()
     {
         for (unsigned int i = 0; i < (max_docid_ - start_docid_) ; ++i)//for (int i = 0; i < (max_docid_ - start_docid_); i++ )....
         {
@@ -270,7 +171,7 @@ public:
         }
     }
 
-    void getLongestSubString_(std::vector<uint32_t>& termidList, const std::vector<std::vector<pair<uint32_t, unsigned short> >* >& resultList, uint32_t& hitdoc)
+    void ForwardIndex::getLongestSubString_(std::vector<uint32_t>& termidList, const std::vector<std::vector<pair<uint32_t, unsigned short> >* >& resultList, uint32_t& hitdoc)
     {
         std::vector<pair<uint32_t, unsigned short> >::const_iterator it;
         BitMap b;
@@ -344,12 +245,12 @@ public:
         getTermIDByPos_(resultDocid, hitPos, termidList);
     }
 
-    void print()
+    void ForwardIndex::print()
     {
         cout<<"IndexCount_:"<<IndexCount_<<endl;
     }
 
-    bool save_(string path = "")
+    bool ForwardIndex::save_(std::string path)
     {
         string index_path = index_path_ + path;
         FILE *file;
@@ -377,7 +278,7 @@ public:
         return true;
     }
 
-    bool load_(string path = "")
+    bool ForwardIndex::load_(std::string path)
     {
         string index_path = index_path_ + path;
         FILE *file;
@@ -414,7 +315,7 @@ public:
         return true;
     }
 
-    void addIndexItem_(const IndexItem& indexItem)
+    void ForwardIndex::addIndexItem_(const IndexItem& indexItem)
     {
         IndexItems_.push_back(indexItem);
         if (start_docid_ == 0)
@@ -428,36 +329,19 @@ public:
         IndexCount_++;
     }
 
-    std::vector<IndexItem>& getIndexItem_()
+    std::vector<IndexItem>& ForwardIndex::getIndexItem_()
     {
         return IndexItems_;
     }
 
-    string getPath()
+    std::string ForwardIndex::getPath()
     {
         return index_path_;
     }
 
-private:
-    std::string index_path_;
-
-    std::vector<IndexItem> IndexItems_;
-
-    unsigned int IndexCount_;
-
-    BitMap* BitMapMatrix_;
-
-    unsigned int Max_Doc_Num_;
-
-    unsigned int start_docid_;
-
-    unsigned int max_docid_;
-};
-
-class IncrementIndex
-{
-public:
-    IncrementIndex(std::string file_path,
+/**
+*/
+    InvertedIndex::InvertedIndex(std::string file_path,
                    unsigned int Max_Doc_Num,
                    cma::Analyzer* &analyzer)
         : analyzer_(analyzer)
@@ -468,12 +352,11 @@ public:
         allIndexDocNum_ = 0;
     }
 
-    ~IncrementIndex()
+    InvertedIndex::~InvertedIndex()
     {
-
     }
 
-    bool checkLocalIndex_()
+    bool InvertedIndex::checkLocalIndex_()
     {
         if (bfs::exists(Increment_index_path_))
         {
@@ -491,7 +374,7 @@ public:
             return false;
     }
 
-    void addIndex_(uint32_t docid, std::vector<uint32_t> termidList, std::vector<unsigned short>& posList)
+    void InvertedIndex::addIndex_(uint32_t docid, std::vector<uint32_t> termidList, std::vector<unsigned short>& posList)
     {
         unsigned int count = termidList.size();
         allIndexDocNum_ += count;
@@ -518,7 +401,7 @@ public:
         }
     }
 
-    void getResultAND_(const std::vector<uint32_t>& termidList, std::vector<uint32_t>& resultList, std::vector<double>& ResultListSimilarity)
+    void InvertedIndex::getResultAND_(const std::vector<uint32_t>& termidList, std::vector<uint32_t>& resultList, std::vector<double>& ResultListSimilarity)
     {
         std::vector<std::vector<pair<uint32_t, unsigned short> >* > docidLists;
         std::vector<uint32_t> sizeLists;
@@ -535,7 +418,7 @@ public:
         mergeAnd_(docidLists, resultList, ResultListSimilarity);
     }
 
-    bool getTermIdResult_(const uint32_t& termid, std::vector<pair<uint32_t, unsigned short> >*& v, uint32_t& size)
+    bool InvertedIndex::getTermIdResult_(const uint32_t& termid, std::vector<pair<uint32_t, unsigned short> >*& v, uint32_t& size)
     {
         pair<uint32_t, uint32_t> temp(termid, 0);
 
@@ -552,7 +435,7 @@ public:
         }
     }
 
-    void getTermIdPos_(const uint32_t& termid, std::vector<pair<uint32_t, unsigned short> >*& v)
+    void InvertedIndex::getTermIdPos_(const uint32_t& termid, std::vector<pair<uint32_t, unsigned short> >*& v)
     {
         pair<uint32_t, uint32_t> temp(termid, 0);
         std::set<std::pair<uint32_t, uint32_t> >::iterator i = termidList_.find(temp);
@@ -562,7 +445,7 @@ public:
         }
     }
 
-    void getResultORFuzzy_(const std::vector<uint32_t>& termidList, std::vector<std::vector<pair<uint32_t, unsigned short> >* >& resultList)
+    void InvertedIndex::getResultORFuzzy_(const std::vector<uint32_t>& termidList, std::vector<std::vector<pair<uint32_t, unsigned short> >* >& resultList)
     {
         std::vector<pair<uint32_t, unsigned short> >* v = NULL;
         uint32_t size;
@@ -573,7 +456,7 @@ public:
         }
     }
 
-    void mergeAnd_(const std::vector<std::vector<pair<uint32_t, unsigned short> >* >& docidLists, std::vector<uint32_t>& resultList, std::vector<double>& ResultListSimilarity)// get add result; all the vector<docid> is sorted;
+    void InvertedIndex::mergeAnd_(const std::vector<std::vector<pair<uint32_t, unsigned short> >* >& docidLists, std::vector<uint32_t>& resultList, std::vector<double>& ResultListSimilarity)// get add result; all the vector<docid> is sorted;
     {
         izenelib::util::ClockTimer timer;
         unsigned int size = docidLists.size();
@@ -644,7 +527,7 @@ public:
         LOG(INFO)<<"mergeAnd and cost:"<<timer.elapsed()<<" seconds"<<endl;
     }
 
-    void print()
+    void InvertedIndex::print()
     {
         cout<<"docidNumbers_:";
         unsigned int k = 0;
@@ -655,7 +538,7 @@ public:
         cout<<k<<endl<<"termidList_.....:"<<termidList_.size()<<endl;
     }
 
-    bool save_(string path = "")
+    bool InvertedIndex::save_(std::string path)
     {
         string index_path = Increment_index_path_ + path;
         FILE *file;
@@ -684,7 +567,7 @@ public:
         return true;
     }
 
-    bool load_(string path = "")
+    bool InvertedIndex::load_(std::string path)
     {
         string index_path = Increment_index_path_ + path;
         FILE *file;
@@ -738,7 +621,7 @@ public:
         return true;
     }
 
-    void prepare_index_()
+    void InvertedIndex::prepare_index_()
     {
         std::vector<std::vector<pair<uint32_t, unsigned short> > >::iterator iter = docidLists_.begin();
         for (; iter != docidLists_.end(); ++iter)
@@ -746,7 +629,7 @@ public:
             sort((*iter).begin(), (*iter).end());
         }
     }
-    void addTerm_(const pair<uint32_t, uint32_t> &termid, const std::vector<pair<uint32_t, unsigned short> >& docids)
+    void InvertedIndex::addTerm_(const pair<uint32_t, uint32_t> &termid, const std::vector<pair<uint32_t, unsigned short> >& docids)
     {
         std::set<std::pair<uint32_t, uint32_t>, pairLess>::const_iterator it = termidList_.find(termid);
         allIndexDocNum_ += docids.size();
@@ -770,22 +653,22 @@ public:
         }
     }
 
-    std::set<std::pair<uint32_t, uint32_t>, pairLess>& gettermidList_()
+    std::set<std::pair<uint32_t, uint32_t>, pairLess>& InvertedIndex::gettermidList_()
     {
         return termidList_;
     }
 
-    std::vector<std::vector<pair<uint32_t, unsigned short> > >& getdocidLists_()
+    std::vector<std::vector<pair<uint32_t, unsigned short> > >& InvertedIndex::getdocidLists_()
     {
         return docidLists_;
     }
 
-    const string& getPath() const
+    const std::string& InvertedIndex::getPath() const
     {
         return Increment_index_path_;
     }
-private:
-    int BinSearch_(std::vector<pair<unsigned int, unsigned short> >&A, int min, int max, unsigned int key)
+
+    int InvertedIndex::BinSearch_(std::vector<pair<unsigned int, unsigned short> >&A, int min, int max, unsigned int key)
     {
         while (min <= max)
         {
@@ -800,35 +683,122 @@ private:
         return -1;
     }
 
-    std::string Increment_index_path_;
+    /**
+    */
+    IncrementalFuzzyIndex::IncrementalFuzzyIndex(const std::string& path,
+                         boost::shared_ptr<IDManager>& idManager,
+                         boost::shared_ptr<LAManager>& laManager,
+                         IndexBundleSchema& indexSchema,
+                         unsigned int Max_Doc_Num,
+                         cma::Analyzer* &analyzer)
+                        : idManager_(idManager)
+                        , laManager_(laManager)
+                        , indexSchema_(indexSchema)
+                        , Max_Doc_Num_(Max_Doc_Num)
+                        , analyzer_(analyzer)
+    {
+        pForwardIndex_  = NULL;
+        pIncrementIndex_ = NULL;
+        DocNumber_ = 0;
+        doc_file_path_ = path;
+        isAddedIndex_ = false;
+    }
 
-    std::vector<std::vector<pair<uint32_t, unsigned short> > > docidLists_;
+    bool IncrementalFuzzyIndex::buildIndex_(docid_t docId, std::string& text)
+    {
+        izenelib::util::UString utext(text, izenelib::util::UString::UTF_8);
 
-    std::vector<unsigned int> docidNumbers_;
+        AnalysisInfo analysisInfo;
+        analysisInfo.analyzerId_ = "la_unigram";
+        LAInput laInput;
+        laInput.setDocId(docId);
 
-    std::set<std::pair<uint32_t, uint32_t>, pairLess> termidList_;
+        if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
+            return false;
+        std::vector<uint32_t> termidList;
+        std::vector<unsigned short> posList;
+        for (LAInput::const_iterator it = laInput.begin(); it != laInput.end(); ++it)
+        {
+            termidList.push_back(it->termid_);
+            posList.push_back(it->wordOffset_);
+        }
+        if (pForwardIndex_)
+            pForwardIndex_->addDocForwardIndex_(docId, termidList, posList);
+        else
+            LOG(INFO) << "E:ForwardIndex is empty";
 
-    unsigned int termidNum_;
+        if (pIncrementIndex_)
+            pIncrementIndex_->addIndex_(docId, termidList , posList);
+        else
+            LOG(INFO) << "E:IncrementIndex is empty";
+        return true;
+    }
 
-    unsigned int allIndexDocNum_;
+    bool IncrementalFuzzyIndex::score(const std::string& query, std::vector<uint32_t>& resultList, std::vector<double> &ResultListSimilarity)
+    {
+        Sentence querySentence(query.c_str());
+        izenelib::util::ClockTimer timer;
+        analyzer_->runWithSentence(querySentence);
+        std::vector<std::vector<uint32_t> > termIN;
+        std::vector<std::vector<uint32_t> > termNotIN;
 
-    unsigned int Max_Doc_Num_;//save and load.... here we will not add max_docid and start_id
+        AnalysisInfo analysisInfo;
+        analysisInfo.analyzerId_ = "la_unigram";
 
-    cma::Analyzer* analyzer_;
-};
+        for (int i = 0; i < querySentence.getCount(0); ++i)
+        {
+            //printf("%s, ", querySentence.getLexicon(0, i));
+            string str(querySentence.getLexicon(0, i));
+            LAInput laInput;
+            laInput.setDocId(0);
+            izenelib::util::UString utext(str, izenelib::util::UString::UTF_8);
+            if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
+                return false;
+            std::vector<uint32_t> termidList;
+            for (LAInput::const_iterator it = laInput.begin(); it != laInput.end(); ++it)
+            {
+                termidList.push_back(it->termid_);
+            }
+            termIN.push_back(termidList);
+        }
 
-class IndexBarrel
-{
-public:
-    IndexBarrel(
-        const std::string& path,
-        boost::shared_ptr<IDManager>& idManager,
-        boost::shared_ptr<LAManager>& laManager,
-        IndexBundleSchema& indexSchema,
-        unsigned int Max_Doc_Num,
-        cma::Analyzer* &analyzer);
+        for (int i = 0; i < querySentence.getCount(1); i++)
+        {
+            //printf("%s, ", querySentence.getLexicon(1, i));
+            string str(querySentence.getLexicon(1, i));
+            izenelib::util::UString utext(str, izenelib::util::UString::UTF_8);
+            LAInput laInput;
+            laInput.setDocId(0);
+            if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
+                return false;
+            std::vector<uint32_t> termidList;
+            for (LAInput::const_iterator it = laInput.begin(); it != laInput.end(); ++it)
+            {
+                termidList.push_back(it->termid_);
+            }
+            termNotIN.push_back(termidList);
+        }
 
-    ~IndexBarrel()
+        double rank = 0;
+        for (uint32_t i = 0; i < resultList.size(); ++i)
+        {
+            rank = 0;
+            for (std::vector<std::vector<uint32_t> >::iterator it = termIN.begin();
+                    it != termIN.end(); ++it)
+            {
+                rank += getScore(*it, resultList[i])*double(2.0);
+            }
+            for (std::vector<std::vector<uint32_t> >::iterator it = termNotIN.begin();
+                    it != termNotIN.end(); ++it)
+            {
+                rank += getScore(*it, resultList[i])*double(1.0);
+            }
+            ResultListSimilarity.push_back(rank);
+        }
+        return true;
+    }
+
+    IncrementalFuzzyIndex::~IncrementalFuzzyIndex()
     {
         if (pForwardIndex_)
         {
@@ -843,7 +813,7 @@ public:
         }
     }
 
-    void reset()
+    void IncrementalFuzzyIndex::reset()
     {
         if (pForwardIndex_)
         {
@@ -863,10 +833,10 @@ public:
         bfs::remove(pathMainFd);
     }
 
-    bool init(std::string& path)
+    bool IncrementalFuzzyIndex::init(std::string& path)
     {
         pForwardIndex_ = new ForwardIndex(doc_file_path_, Max_Doc_Num_);
-        pIncrementIndex_ = new IncrementIndex(doc_file_path_, Max_Doc_Num_, analyzer_);//
+        pIncrementIndex_ = new InvertedIndex(doc_file_path_, Max_Doc_Num_, analyzer_);//
         if (pForwardIndex_ == NULL || pIncrementIndex_ == NULL)
         {
             return false;
@@ -874,7 +844,7 @@ public:
         return true;
     }
 
-    bool load_(string path = "")
+    bool IncrementalFuzzyIndex::load_(std::string path)
     {
         if (pForwardIndex_ != NULL && pIncrementIndex_ != NULL)
         {
@@ -887,7 +857,7 @@ public:
         }
     }
 
-    bool save_(string path = "")
+    bool IncrementalFuzzyIndex::save_(std::string path)
     {
         if (pForwardIndex_ != NULL && pIncrementIndex_ != NULL)
         {
@@ -904,29 +874,26 @@ public:
         }
     }
 
-    uint32_t getScore(std::vector<uint32_t> &v, uint32_t & docid)
+    uint32_t IncrementalFuzzyIndex::getScore(std::vector<uint32_t> &v, uint32_t & docid)
     {
         if (pForwardIndex_)
         {
-            return pForwardIndex_->getSorce(v, docid);
+            return pForwardIndex_->getScore(v, docid);
         }
         return 0;
     }
 
-    void setStatus()
+    void IncrementalFuzzyIndex::setStatus()
     {
         isAddedIndex_ = true;
     }
 
-    void resetStatus()
+    void IncrementalFuzzyIndex::resetStatus()
     {
         isAddedIndex_ = false;
     }
 
-    bool buildIndex_(uint32_t docId, std::string& text);
-    bool score(const std::string& query, std::vector<uint32_t>& resultList, std::vector<double> &ResultListSimilarity);
-
-    void getFuzzyResult_(std::vector<uint32_t>& termidList, std::vector<uint32_t>& resultList,  std::vector<double>& ResultListSimilarity, uint32_t& hitdoc)//
+    void IncrementalFuzzyIndex::getFuzzyResult_(std::vector<uint32_t>& termidList, std::vector<uint32_t>& resultList,  std::vector<double>& ResultListSimilarity, uint32_t& hitdoc)//
     {
 
         std::vector<pair<uint32_t, unsigned short> >* v = NULL;
@@ -952,398 +919,31 @@ public:
         pIncrementIndex_->getResultAND_(newTermidList, resultList, ResultListSimilarity);
     }
 
-    void getExactResult_(std::vector<uint32_t>& termidList, std::vector<uint32_t>& resultList,  std::vector<double>& ResultListSimilarity)
+    void IncrementalFuzzyIndex::getExactResult_(std::vector<uint32_t>& termidList, std::vector<uint32_t>& resultList,  std::vector<double>& ResultListSimilarity)
     {
         izenelib::util::ClockTimer timer;
         pIncrementIndex_->getResultAND_(termidList, resultList, ResultListSimilarity);
         LOG(INFO)<<"ResultList Number:"<<resultList.size()<< " time cost:"<< timer.elapsed()<<endl;
     }
 
-    void print()
+    void IncrementalFuzzyIndex::print()
     {
         pForwardIndex_->print();
         pIncrementIndex_->print();
     }
 
-    void prepare_index_()
+    void IncrementalFuzzyIndex::prepare_index_()
     {
         pIncrementIndex_->prepare_index_();
     }
 
-    ForwardIndex* getForwardIndex()
+    ForwardIndex* IncrementalFuzzyIndex::getForwardIndex()
     {
         return pForwardIndex_;
     }
 
-    IncrementIndex* getIncrementIndex()
+    InvertedIndex* IncrementalFuzzyIndex::getIncrementIndex()
     {
         return pIncrementIndex_;
     }
-private:
-    ForwardIndex* pForwardIndex_;
-
-    IncrementIndex* pIncrementIndex_;
-
-    boost::shared_ptr<IDManager> idManager_;
-
-    boost::shared_ptr<LAManager> laManager_;
-
-    IndexBundleSchema& indexSchema_;
-
-    unsigned int DocNumber_;
-
-    bool isAddedIndex_;
-
-    std::string doc_file_path_;
-
-    unsigned int Max_Doc_Num_;
-
-    cma::Analyzer* analyzer_;
-};
-
-class IncrementalManager
-{
-public:
-    IncrementalManager(const std::string& path,
-                       const std::string& tokenize_path,
-                       const std::string& property,
-                       boost::shared_ptr<DocumentManager>& document_manager,
-                       boost::shared_ptr<IDManager>& idManager,
-                       boost::shared_ptr<LAManager>& laManager,
-                       IndexBundleSchema& indexSchema
-                      );
-
-    ~IncrementalManager()
-    {
-        if (pMainBarrel_ != NULL)
-        {
-            delete pMainBarrel_;
-            pMainBarrel_ = NULL;
-        }
-        if (pTmpBarrel_!= NULL)
-        {
-            delete pTmpBarrel_;
-            pTmpBarrel_ = NULL;
-        }
-        if (analyzer_)
-        {
-            //delete analyzer_;
-            analyzer_ = NULL;
-        }
-        if (knowledge_)
-        {
-            //delete knowledge_;
-            analyzer_ = NULL;
-        }
-    }
-
-    void startIncrementalManager()
-    {
-        bool flag = true;
-        std::string pathMainInc = index_path_ + "/Main.inc.idx";
-        std::string pathMainFd = index_path_ + "/Main.fd.idx";
-        std::string pathTmpInc = index_path_ + "/Tmp.inc.idx";
-        std::string pathTmpFd = index_path_ + "/Tmp.fd.idx";
-        std::string pathLastDocid = index_path_ + "/last.docid";
-
-        if (bfs::exists(pathMainInc) && bfs::exists(pathMainFd))//main
-        {
-            init_();
-            if (!pMainBarrel_->load_())
-            {
-                LOG(INFO) << "Index Wrong!!"<<endl;
-                delete_AllIndexFile();
-                flag = false;
-            }
-            else
-            {
-                if (bfs::exists(pathTmpInc) && bfs::exists(pathTmpFd))//tmp
-                {
-                    init_tmpBerral();
-                    if (!pTmpBarrel_->load_())
-                    {
-                        LOG(INFO) << "Index Wrong!!"<<endl;
-                        delete_AllIndexFile();
-                        flag = false;
-                    }
-                }
-            }
-        }
-        else
-        {
-            flag = false;
-            loadLastDocid_();
-        }
-        if (flag)
-        {
-            if (loadLastDocid_())
-            {
-                isStartFromLocal_ = true;
-            }
-        }
-        else
-        {
-            if (!isStartFromLocal_)
-            {
-                if (pMainBarrel_ != NULL)
-                {
-                    delete pMainBarrel_;
-                    pMainBarrel_ = NULL;
-                }
-                if (pTmpBarrel_!= NULL)
-                {
-                    delete pTmpBarrel_;
-                    pTmpBarrel_ = NULL;
-                }
-                delete_AllIndexFile();
-            }
-        }
-    }
-
-    bool init_()
-    {
-        if (pMainBarrel_ == NULL)
-        {
-            string path = index_path_ + "/Main";
-            pMainBarrel_ = new IndexBarrel(
-                path,
-                idManager_,
-                laManager_,
-                indexSchema_,
-                MAX_INCREMENT_DOC,
-                analyzer_
-            );
-            BarrelNum_++;
-            if (pMainBarrel_ == NULL)
-            {
-                BarrelNum_--;
-                return false;
-            }
-            pMainBarrel_->init(index_path_);
-        }
-        return true;
-    }
-
-    bool init_tmpBerral()
-    {
-        if (pTmpBarrel_ == NULL)
-        {
-            BarrelNum_++;
-            string path = index_path_ + "/Tmp";
-            pTmpBarrel_ = new IndexBarrel(
-                path,
-                idManager_,
-                laManager_,
-                indexSchema_,
-                MAX_TMP_DOC,
-                analyzer_
-            );
-            if (pTmpBarrel_ == NULL)
-            {
-                BarrelNum_--;
-                return false;
-            }
-            pTmpBarrel_->init(index_path_);
-        }
-        return true;
-    }
-
-    void InitManager_();
-
-    unsigned int edit_distance(const string& s1, const string& s2)
-    {
-        const size_t len1 = s1.size(), len2 = s2.size();
-        vector<vector<unsigned int> > d(len1 + 1, vector<unsigned int>(len2 + 1));
-
-        d[0][0] = 0;
-        for (unsigned int i = 1; i <= len1; ++i) d[i][0] = i;
-        for (unsigned int i = 1; i <= len2; ++i) d[0][i] = i;
-
-        for (unsigned int i = 1; i <= len1; ++i)
-            for (unsigned int j = 1; j <= len2; ++j)
-
-                d[i][j] = std::min( std::min(d[i - 1][j] + 1,d[i][j - 1] + 1),
-                                    d[i - 1][j - 1] + (s1[i - 1] == s2[j - 1] ? 0 : 1) );
-        return d[len1][len2];
-    }
-
-    void createIndex_();
-
-    bool index_(uint32_t& docId, std::string propertyString)
-    {
-
-        if (IndexedDocNum_ >= MAX_INCREMENT_DOC)
-            return false;
-        if ( isInitIndex_ == false)
-        {
-            init_tmpBerral();
-            {
-                if (pTmpBarrel_ != NULL)
-                {
-                    pTmpBarrel_->setStatus();
-                    if (!pTmpBarrel_->buildIndex_(docId, propertyString))
-                        return false;
-                }
-                IndexedDocNum_++;
-            }
-        }
-        else
-        {
-            {
-                if (pMainBarrel_ != NULL)
-                {
-                    pMainBarrel_->setStatus();
-                    if (!pMainBarrel_->buildIndex_(docId, propertyString))
-                        return false;
-                }
-                IndexedDocNum_++;
-            }
-        }
-        return true;
-    }
-
-    void delete_AllIndexFile()
-    {
-        bfs::path pathMainInc = index_path_ + "/Main.inc.idx";
-        bfs::path pathMainFd = index_path_ + "/Main.fd.idx";
-        bfs::path pathTmpInc = index_path_ + "/Tmp.inc.idx";
-        bfs::path pathTmpFd = index_path_ + "/Tmp.fd.idx";
-
-        bfs::remove(pathMainInc);
-        bfs::remove(pathMainFd);
-        bfs::remove(pathTmpInc);
-        bfs::remove(pathTmpFd);
-    }
-
-    bool fuzzySearch_(const std::string& query, std::vector<uint32_t>& resultList, std::vector<double> &ResultListSimilarity);
-
-    bool exactSearch_(const std::string& query, std::vector<uint32_t>& resultList, std::vector<double> &ResultListSimilarity);
-
-    void doCreateIndex_();
-
-    void mergeIndex();
-
-    void buildTokenizeDic();
-
-    void setLastDocid(uint32_t last_docid);
-
-    void getLastDocid(uint32_t& last_docid)
-    {
-        last_docid = last_docid_;
-    }
-
-    void getDocNum(uint32_t& docNum)
-    {
-        docNum = IndexedDocNum_;
-    }
-
-    void getMaxNum(uint32_t& maxNum)
-    {
-        maxNum = MAX_INCREMENT_DOC;
-    }
-
-    void prepare_index_()
-    {
-        if (pMainBarrel_)
-        {
-            pMainBarrel_->prepare_index_();
-        }
-        if (pTmpBarrel_)
-        {
-            pTmpBarrel_->prepare_index_();
-        }
-    }
-
-    void reset()
-    {
-        if (pMainBarrel_)
-        {
-            pMainBarrel_->reset();
-            delete pMainBarrel_;
-            pMainBarrel_ = NULL;
-            BarrelNum_ = 0;
-            IndexedDocNum_ = 0;
-        }
-    }
-
-    void save_()
-    {
-        if (pMainBarrel_)
-        {
-            pMainBarrel_->save_();
-        }
-    }
-
-    bool saveLastDocid_(string path = "")
-    {
-        string docid_path = index_path_ + "/last.docid" + path;
-        FILE* file;
-        if ((file = fopen(docid_path.c_str(), "wb")) == NULL)
-        {
-            LOG(INFO) << "Cannot open output file"<<endl;
-            return false;
-        }
-        fwrite(&last_docid_, sizeof(last_docid_), 1, file);
-        fwrite(&IndexedDocNum_, sizeof(IndexedDocNum_), 1, file);
-        fclose(file);
-        return true;
-    }
-
-    bool loadLastDocid_(string path = "")
-    {
-        string docid_path = index_path_ + "/last.docid" + path;
-        FILE* file;
-        if ((file = fopen(docid_path.c_str(), "rb")) == NULL)
-        {
-            LOG(INFO) << "Cannot open input file"<<endl;
-            return false;
-        }
-        if (1 != fread(&last_docid_, sizeof(last_docid_), 1, file) ) return false;
-        if (1 != fread(&IndexedDocNum_, sizeof(IndexedDocNum_), 1, file) ) return false;
-        fclose(file);
-        return true;
-    }
-
-private:
-    uint32_t last_docid_;
-
-    std::string index_path_;
-
-    std::string tokenize_path_;
-
-    std::string property_;
-
-    unsigned int BarrelNum_;
-
-    IndexBarrel* pMainBarrel_;
-
-    IndexBarrel* pTmpBarrel_;
-
-    unsigned int IndexedDocNum_;
-
-    bool isMergingIndex_;
-
-    bool isInitIndex_;
-
-    bool isAddingIndex_;
-
-    bool isStartFromLocal_;
-
-    boost::shared_ptr<DocumentManager> document_manager_;
-
-    boost::shared_ptr<IDManager> idManager_;
-
-    boost::shared_ptr<LAManager> laManager_;
-
-    IndexBundleSchema indexSchema_;
-
-    cma::Analyzer* analyzer_;
-
-    cma::Knowledge* knowledge_;
-
-    typedef boost::shared_mutex MutexType;
-    typedef boost::shared_lock<MutexType> ScopedReadLock;
-    typedef boost::unique_lock<MutexType> ScopedWriteLock;
-    mutable MutexType mutex_;
-};
 }

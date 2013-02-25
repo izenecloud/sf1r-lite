@@ -101,7 +101,7 @@ class OfflineProductScorerFactory;
 class ProductRankerFactory;
 class NaiveTopicDetector;
 class SuffixMatchManager;
-class IncrementalManager;
+class IncrementalFuzzyManager;
 class ProductMatcher;
 class QueryCategorizer;
 class MiningTaskBuilder;
@@ -678,7 +678,7 @@ private:
     /** Suffix Match */
     std::string suffix_match_path_;
     SuffixMatchManager* suffixMatchManager_;
-    IncrementalManager* incrementalManager_;
+    IncrementalFuzzyManager* incrementalManager_;
 
     /** Product Matcher */
     std::vector<boost::regex> match_category_restrict_;

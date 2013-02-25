@@ -50,7 +50,7 @@
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/FilterManager.h"
-#include "suffix-match-manager/IncrementalManager.hpp"
+#include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
 
 #include "product-classifier/SPUProductClassifier.hpp"
@@ -565,29 +565,43 @@ bool MiningManager::open()
             product_categorizer_->SetDocumentManager(document_manager_);
             // reading suffix config and load filter data here.
             boost::shared_ptr<FilterManager>& filter_manager = suffixMatchManager_->getFilterManager();
+cout << "mining_schema_.suffixmatch_schema.group_filter_properties:" << mining_schema_.suffixmatch_schema.group_filter_properties.size() <<endl;
             filter_manager->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
+cout << "mining_schema_.suffixmatch_schema.attr_filter_properties" << mining_schema_.suffixmatch_schema.attr_filter_properties.size() << endl;
             filter_manager->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
+cout << "mining_schema_.suffixmatch_schema.str_filter_properties" << mining_schema_.suffixmatch_schema.str_filter_properties.size() << endl;
             filter_manager->setStrFilterProperties(mining_schema_.suffixmatch_schema.str_filter_properties);
+cout << "mining_schema_.suffixmatch_schema.date_filter_properties" << mining_schema_.suffixmatch_schema.date_filter_properties.size() << endl;
             filter_manager->setDateFilterProperties(mining_schema_.suffixmatch_schema.date_filter_properties);
+cout << "mining_schema_.suffixmatch_schema.num_filter_properties " << mining_schema_.suffixmatch_schema.num_filter_properties.size() << endl;
             const std::vector<NumericFilterConfig>& number_config_list = mining_schema_.suffixmatch_schema.num_filter_properties;
+
+if (mining_schema_.suffixmatch_schema.group_filter_properties.size() > 0)
+{
+    //cout << "mining_schema_.suffixmatch_schema.num_filter_properties[0]" << mining_schema_.suffixmatch_schema.num_filter_properties[0]
+    //<< "!" << mining_schema_.suffixmatch_schema.num_filter_properties[1] << endl;
+}
             std::vector<std::string> number_props;
             number_props.reserve(number_config_list.size());
             std::vector<int32_t> number_amp_list;
             number_amp_list.reserve(number_config_list.size());
             for (size_t i = 0; i < number_config_list.size(); ++i)
             {
+                cout << "number_config_list[i].property" << number_config_list[i].property << endl;
                 number_props.push_back(number_config_list[i].property);
                 number_amp_list.push_back(number_config_list[i].amplifier);
             }
+
             filter_manager->setNumFilterProperties(number_props, number_amp_list);
-            filter_manager->loadFilterId();
+            filter_manager->loadFilterId();////////// here has already set first...
 
             if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
             {
-                incrementalManager_ = new IncrementalManager(suffix_match_path_,
+                incrementalManager_ = new IncrementalFuzzyManager(suffix_match_path_,
                         mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                        mining_schema_.suffixmatch_schema.suffix_match_properties[0],
-                        document_manager_, idManager_, laManager_, indexSchema_);
+                        mining_schema_.suffixmatch_schema.suffix_match_properties[0], ///xxx update ... 
+                        document_manager_, idManager_, laManager_, indexSchema_); // add filter_manager ,, use the same Filter-Manager but different instance;
+
                 if (incrementalManager_)
                 {
                     incrementalManager_->InitManager_();
