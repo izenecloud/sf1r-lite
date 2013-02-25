@@ -604,7 +604,7 @@ if (mining_schema_.suffixmatch_schema.group_filter_properties.size() > 0)
 
                 if (incrementalManager_)
                 {
-                    incrementalManager_->InitManager_();
+                    incrementalManager_->Init();
                     incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
                 }
             }
@@ -640,7 +640,7 @@ if (mining_schema_.suffixmatch_schema.group_filter_properties.size() > 0)
                         }
                         else
                         {
-                            incrementalManager_->createIndex_();
+                            incrementalManager_->createIndex();
                         }
                     }
                 }
@@ -2013,7 +2013,7 @@ bool MiningManager::GetSuffixMatch(
         {
             std::vector<uint32_t> _docIdList;
             std::vector<double> _rankScoreList;
-            incrementalManager_->fuzzySearch_(actionOperation.actionItem_.env_.queryString_,
+            incrementalManager_->fuzzySearch(actionOperation.actionItem_.env_.queryString_,
                     _docIdList, _rankScoreList);
 
             uint32_t max_count = std::min(max_docs, (uint32_t)_docIdList.size());

@@ -2,6 +2,7 @@
 #define SF1R_MINING_INCREMENTAL_FUZZY_MANAGER_
 
 #include "IncrementalFuzzyIndex.h" 
+#include "FilterManager.h"
 
 namespace sf1r
 {
@@ -19,41 +20,58 @@ public:
 
     ~IncrementalFuzzyManager();
 
-    void startIncrementalManager();
+    //init;
+    void Init();
 
-    bool initMainFuzzyIndexBarrel_();
-    bool init_tmpBerral();
+    //addIndex
+    void createIndex();
+    void doCreateIndex();
+    void prepare_index();
 
-    void InitManager_();
-
-    void createIndex_();
-
-    bool index_(uint32_t& docId, std::string propertyString);
-
-    bool fuzzySearch_(const std::string& query
+    //search
+    bool fuzzySearch(const std::string& query
                     , std::vector<uint32_t>& resultList
                     , std::vector<double> &ResultListSimilarity);
 
-    bool exactSearch_(const std::string& query
+    bool exactSearch(const std::string& query
                     , std::vector<uint32_t>& resultList
                     , std::vector<double> &ResultListSimilarity);
 
-    void doCreateIndex_();
-    void mergeIndex();
+    //merge index;
+    bool mergeIndexToFmIndex()
+    {
+        return false;
 
-    void buildTokenizeDic();
+    }
+    bool doAfterMergeIndexToFmIndex()
+    {
+        return false;
+    }
+    void reset();
+    bool resetFilterManager()
+    {
+        return false;
+    }
+    bool resetIncFuzzyIndex()
+    {
+        return false;
+    }
+
+    //save and load index;
+    bool saveLastDocid(std::string path = "");
+    bool loadLastDocid(std::string path = "");
+    void save();
+
+    //other helper functions;
+    void getDocNum(uint32_t& docNum);
+    void getMaxNum(uint32_t& maxNum);
     void setLastDocid(uint32_t last_docid);
     void getLastDocid(uint32_t& last_docid);
 
-    void getDocNum(uint32_t& docNum);
-    void getMaxNum(uint32_t& maxNum);
-    void prepare_index_();
+private:
+    bool indexForDoc(uint32_t& docId, std::string propertyString);
 
-    void reset();
-    void save_();
-
-    bool saveLastDocid_(std::string path = "");
-    bool loadLastDocid_(std::string path = "");
+    void buildTokenizeDic();
 
     void delete_AllIndexFile();
 
@@ -67,13 +85,12 @@ private:
     unsigned int BarrelNum_;
 
     IncrementalFuzzyIndex* pMainFuzzyIndexBarrel_;
-    IncrementalFuzzyIndex* pTmpFuzzyIndexBarrel_;
 
     unsigned int IndexedDocNum_;
+
     bool isMergingIndex_;
     bool isInitIndex_;
-    bool isAddingIndex_;
-    bool isStartFromLocal_;
+    bool isAddingIndex_;//ok
 
     boost::shared_ptr<DocumentManager> document_manager_;
 
@@ -90,6 +107,8 @@ private:
     typedef boost::shared_lock<MutexType> ScopedReadLock;
     typedef boost::unique_lock<MutexType> ScopedWriteLock;
     mutable MutexType mutex_;
+
+    boost::shared_ptr<FilterManager> filter_manager_;
 };
 
 }
