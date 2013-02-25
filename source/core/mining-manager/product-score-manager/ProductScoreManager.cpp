@@ -230,7 +230,7 @@ void ProductScoreManager::runCronJob_(int calltype)
 {
     if (!cronExpression_.matches_now() && calltype == 0)
         return;
-    if (calltype == 0)
+    if (calltype == 0 && NodeManagerBase::get()->isDistributed())
     {
         if (NodeManagerBase::get()->isPrimary())
         {

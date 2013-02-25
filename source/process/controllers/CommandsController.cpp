@@ -102,6 +102,7 @@ void CommandsController::indexRecommend_()
                 return;
             }
             taskService->buildCollection();
+		return;
         }
         else if (request().callType() != Request::FromAPI)
         {
@@ -166,6 +167,11 @@ void CommandsController::optimize_index()
         return;
     }
 
+    if (request().callType() == Request::FromLog)
+    {
+        taskService->optimizeIndex();
+	return;
+    }
     task_type task = boost::bind(&IndexTaskService::optimizeIndex, taskService);
     JobScheduler::get()->addTask(task, collectionName_);
 }

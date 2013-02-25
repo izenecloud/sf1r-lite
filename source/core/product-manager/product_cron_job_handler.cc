@@ -80,7 +80,7 @@ void ProductCronJobHandler::cronJob_(int calltype)
 {
     if (cron_expression_.matches_now() || calltype > 0)
     {
-        if (calltype == 0)
+        if (calltype == 0 && NodeManagerBase::get()->isDistributed())
         {
 	    if (NodeManagerBase::get()->isPrimary())
 	    {
