@@ -284,6 +284,7 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
     if (!isHooked())
         return;
     //current_req_ = packed_req_data;
+    TEST_FALSE_RET(FalseReturn_At_LocalFinished, finishsuccess)
     if (!finishsuccess)
     {
         if (processFailedBeforePrepare())
@@ -408,6 +409,11 @@ void DistributeRequestHooker::finish(bool success)
 
     CommonReqData reqlog;
     req_log_mgr_->getPreparedReqLog(reqlog);
+
+    if (!RecoveryChecker::get()->checkDataConsistent())
+    {
+        LOG(ERROR) << "!!!!! finished request with not consistent data: " << current_req_;
+    }
 
     req_log_mgr_->delPreparedReqLog();
     clearHook(true);

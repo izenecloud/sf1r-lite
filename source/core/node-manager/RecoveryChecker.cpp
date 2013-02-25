@@ -625,6 +625,31 @@ void RecoveryChecker::onRecoverCallback(bool startup)
     LOG(INFO) << "recovery finished, wait primary agree before enter cluster.";
 }
 
+bool RecoveryChecker::checkDataConsistent()
+{
+    // check data consistent with primary.
+    std::string errinfo;
+    CollInfoMapT tmp_all_col_info;
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        tmp_all_col_info = all_col_info_;
+    }
+
+    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
+    while(cit != tmp_all_col_info.end())
+    {
+        DistributeFileSyncMgr::get()->checkReplicasStatus(cit->first, errinfo);
+        if (!errinfo.empty())
+        {
+            LOG(ERROR) << "data is not consistent after recovery, collection : " << cit->first <<
+                ", error : " << errinfo;
+            return false;
+        }
+        ++cit;
+    }
+    return true;
+}
+
 void RecoveryChecker::onRecoverWaitPrimaryCallback()
 {
     LOG(INFO) << "primary agreed , sync new request druing waiting recovery.";

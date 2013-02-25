@@ -51,6 +51,7 @@ enum TestFailType
 
     FalseReturn_Test_Begin = 70,
     FalseReturn_At_UnPack,
+    FalseReturn_At_LocalFinished,
 };
 
 class DistributeTestSuit
@@ -193,5 +194,6 @@ private:
 }
 
 #define TEST_FALSE_RETURN(x) if(sf1r::DistributeTestSuit::testFalseReturn(x)) return false;
+#define TEST_FALSE_RET(x, ret) if(sf1r::DistributeTestSuit::testFalseReturn(x)) ret = false;
 
 #endif
