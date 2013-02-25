@@ -48,6 +48,9 @@ enum TestFailType
     OtherFail_Begin = 60,
     Fail_At_AfterEnterCluster,
     Fail_At_CopyRemove_File,
+
+    FalseReturn_Test_Begin = 70,
+    FalseReturn_At_UnPack,
 };
 
 class DistributeTestSuit
@@ -71,6 +74,20 @@ public:
         }
         std::cout << "current sf1r node fail test type is : " << current_test_fail_type_ << std::endl;
     }
+
+    static bool testFalseReturn(TestFailType type)
+    {
+        if (current_test_fail_type_ == NoAnyTest ||
+            current_test_fail_type_ == NoFail)
+            return false;
+        if (current_test_fail_type_ == failtype)
+        {
+            std::cout << "current node test false return at test point: " << type << std::endl;
+            return true;
+        }
+        return false;
+    }
+
     static void testFail(TestFailType failtype)
     {
         if (current_test_fail_type_ == NoAnyTest ||
@@ -174,5 +191,7 @@ private:
 };
 
 }
+
+#define TEST_FALSE_RETURN(x) if(sf1r::DistributeTestSuit::testFalseReturn(x)) return false;
 
 #endif

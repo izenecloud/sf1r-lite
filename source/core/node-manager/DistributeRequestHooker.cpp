@@ -70,6 +70,7 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& reqdata)
 
 bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& packed_reqdata)
 {
+    TEST_FALSE_RETURN(FalseReturn_At_UnPack);
     LOG(INFO) << "callback for new request from primary, packeddata len: " << packed_reqdata.size();
     CommonReqData reqloghead;
     if(!ReqLogMgr::unpackReqLogData(packed_reqdata, reqloghead))
