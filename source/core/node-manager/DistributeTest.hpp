@@ -80,7 +80,7 @@ public:
         if (current_test_fail_type_ == NoAnyTest ||
             current_test_fail_type_ == NoFail)
             return false;
-        if (current_test_fail_type_ == failtype)
+        if (current_test_fail_type_ == type)
         {
             std::cout << "current node test false return at test point: " << type << std::endl;
             return true;

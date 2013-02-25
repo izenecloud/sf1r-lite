@@ -813,6 +813,7 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
 {
     if (isPrimary())
     {
+        DistributeTestSuit::testFail(PrimaryFail_At_ReqProcessing);
         boost::unique_lock<boost::mutex> lock(mutex_);
         LOG(INFO) << "send request to other replicas from primary.";
         // write request data to node to notify replica.
@@ -855,6 +856,7 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
     }
     else
     {
+        DistributeTestSuit::testFail(ReplicaFail_At_ReqProcessing);
         LOG(INFO) << "replica finished local and begin waiting from primary.";
         setNodeState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY);
         DistributeTestSuit::testFail(ReplicaFail_At_FinishReqLocal);
