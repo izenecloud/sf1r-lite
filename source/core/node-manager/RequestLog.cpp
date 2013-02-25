@@ -31,6 +31,7 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("documents_destroy");
     write_req_set_.insert("documents_update");
     write_req_set_.insert("documents_update_inplace");
+    write_req_set_.insert("documents_set_top_group_label");
     write_req_set_.insert("collection_start_collection");
     write_req_set_.insert("collection_stop_collection");
     write_req_set_.insert("collection_rebuild_collection");
@@ -39,6 +40,10 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("commands_mining");
     write_req_set_.insert("commands_optimize_index");
     write_req_set_.insert("commands_index_query_log");
+    write_req_set_.insert("faceted_set_custom_rank");
+    write_req_set_.insert("faceted_set_merchant_score");
+    write_req_set_.insert("faceted_set_ontology");
+
     write_req_set_.insert("recommend_add_user");
     write_req_set_.insert("recommend_update_user");
     write_req_set_.insert("recommend_remove_user");

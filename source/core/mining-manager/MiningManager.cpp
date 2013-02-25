@@ -1700,10 +1700,16 @@ bool MiningManager::setTopGroupLabel(
         const std::vector<std::vector<std::string> >& groupLabels
 )
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
     if (! logger)
     {
         LOG(ERROR) << "GroupLabelLogger is not initialized for group property: " << propName;
+        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
@@ -1713,12 +1719,23 @@ bool MiningManager::setTopGroupLabel(
     {
         faceted::PropValueTable::pvid_t pvId = propValueId_(propName, *it);
         if (pvId == 0)
+        {
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
+        }
 
         pvIdVec.push_back(pvId);
     }
+    NoAdditionNoRollbackReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
 
-    return logger->setTopLabel(query, pvIdVec);
+    bool ret = logger->setTopLabel(query, pvIdVec);
+    DistributeRequestHooker::get()->processLocalFinished(ret);
+    return ret;
 }
 
 bool MiningManager::getMerchantScore(
@@ -1744,9 +1761,27 @@ bool MiningManager::getMerchantScore(
 bool MiningManager::setMerchantScore(const MerchantStrScoreMap& merchantScoreMap)
 {
     if (! merchantScoreManager_)
+    {
+        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
+    }
+
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
+    NoAdditionReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
 
     merchantScoreManager_->setScore(merchantScoreMap);
+
+    DistributeRequestHooker::get()->processLocalFinished(true);
     return true;
 }
 
@@ -1755,6 +1790,19 @@ bool MiningManager::setCustomRank(
     const CustomRankDocStr& customDocStr
 )
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
+    NoAdditionReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
     CustomRankDocId customDocId;
 
     bool convertResult = customDocIdConverter_ &&
@@ -1762,6 +1810,8 @@ bool MiningManager::setCustomRank(
 
     bool setResult = customRankManager_ &&
         customRankManager_->setCustomValue(query, customDocStr);
+
+    DistributeRequestHooker::get()->processLocalFinished(convertResult && setResult);
 
     return convertResult && setResult;
 }

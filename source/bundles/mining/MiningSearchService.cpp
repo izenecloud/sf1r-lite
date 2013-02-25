@@ -1,6 +1,7 @@
 #include "MiningSearchService.h"
 #include <mining-manager/MiningManager.h>
 #include <mining-manager/faceted-submanager/ontology_manager.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 #include <aggregator-manager/SearchWorker.h>
 
@@ -111,12 +112,25 @@ bool MiningSearchService::getUniqueDocIdList(
 
 bool MiningSearchService::SetOntology(const std::string& xml)
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
     boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
     if (!faceted)
     {
+        DistributeRequestHooker::get()->processLocalFinished(false);
+        return false;
+    }
+    NoAdditionReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
     faceted->SetXML(xml);
+    DistributeRequestHooker::get()->processLocalFinished(true);
     return true;
 }
 
