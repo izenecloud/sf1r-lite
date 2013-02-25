@@ -10,6 +10,7 @@
 #include <idmlib/util/directory_switcher.h>
 #include <am/vsynonym/QueryNormalize.h>
 #include <util/scheduler.h>
+#include <common/Utilities.h>
 
 namespace sf1r
 {
@@ -1113,6 +1114,7 @@ void AutoFillChildManager::updateAutoFill(int calltype)
         }
 
         CronJobReqLog reqlog;
+        reqlog.cron_time = sf1r::Utilities::createTimeStamp(boost::posix_time::microsec_clock::local_time());
         if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
         {
             LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << __FUNCTION__ << std::endl;
@@ -1122,7 +1124,7 @@ void AutoFillChildManager::updateAutoFill(int calltype)
         isUpdating_ = true;
         if(!isFromSCD_)
         {
-            updateFromLog();
+            updateFromLog(reqlog.cron_time);
         }
         else
         {
@@ -1170,9 +1172,10 @@ void AutoFillChildManager::updateFromLog_ForTest(std::vector<UserQuery>& query_r
     buildWat_array(false);
 }
 
-void AutoFillChildManager::updateFromLog()
+void AutoFillChildManager::updateFromLog(int64_t cron_time)
 {
-    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::ptime time_now;
+    time_now = boost::posix_time::from_time_t(cron_time);
     boost::posix_time::ptime p = time_now - boost::gregorian::days(updatelogdays_);
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;

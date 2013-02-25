@@ -38,6 +38,7 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("commands_index");
     write_req_set_.insert("commands_mining");
     write_req_set_.insert("commands_optimize_index");
+    write_req_set_.insert("commands_index_query_log");
     write_req_set_.insert("recommend_add_user");
     write_req_set_.insert("recommend_update_user");
     write_req_set_.insert("recommend_remove_user");

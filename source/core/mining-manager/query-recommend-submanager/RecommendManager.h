@@ -103,7 +103,7 @@ public:
             const izenelib::util::UString& query,
             std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
-    void RebuildForAll();
+    void RebuildForAll(int64_t cron_time);
 
     void RebuildForRecommend(
             const std::list<QueryLogType>& queryList,

@@ -142,9 +142,10 @@ void RecommendManager::close()
     }
 }
 
-void RecommendManager::RebuildForAll()
+void RecommendManager::RebuildForAll(int64_t cron_time)
 {
-    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::ptime time_now;
+    time_now = boost::posix_time::from_time_t(cron_time);
     boost::posix_time::ptime p = time_now - boost::gregorian::days(logdays_);
     std::string time_string = boost::posix_time::to_iso_string(p);
     typedef std::map<std::string, std::string> DbRecordType;

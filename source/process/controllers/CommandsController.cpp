@@ -133,7 +133,23 @@ void CommandsController::indexRecommend_()
  **/
 void CommandsController::index_query_log()
 {
-    MiningQueryLogHandler::getInstance()->runEvents();
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return;
+    }
+
+    TimestampReqLog reqlog;
+    reqlog.timestamp = Utilities::createTimeStamp();
+    if(!DistributeRequestHooker::get()->prepare(Req_WithTimestamp, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return;
+    }
+
+    MiningQueryLogHandler::getInstance()->runEvents(reqlog.timestamp);
+
+    DistributeRequestHooker::get()->processLocalFinished(true);
 }
 
 /**
@@ -170,7 +186,7 @@ void CommandsController::optimize_index()
     if (request().callType() == Request::FromLog)
     {
         taskService->optimizeIndex();
-	return;
+        return;
     }
     task_type task = boost::bind(&IndexTaskService::optimizeIndex, taskService);
     JobScheduler::get()->addTask(task, collectionName_);

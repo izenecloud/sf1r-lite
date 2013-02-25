@@ -82,6 +82,7 @@
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
 #include <util/filesystem.h>
+#include <util/driver/Request.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -856,7 +857,13 @@ bool MiningManager::DoMiningCollection()
         }
         labelManager_->ClearAllTask();
         MEMLOG("[Mining] TG finished.");
-        MiningQueryLogHandler::getInstance()->runEvents();
+        IndexReqLog reqlog;
+        DistributeRequestHooker::get()->readPrevChainData(reqlog);
+        if (!DistributeRequestHooker::get()->isHooked() || 
+            DistributeRequestHooker::get()->getHookType() == izenelib::driver::Request::FromDistribute)
+            reqlog.timestamp = Utilities::createTimeStamp();
+        LOG(INFO) << "Mining runEvents time: " << reqlog.timestamp;
+        MiningQueryLogHandler::getInstance()->runEvents(reqlog.timestamp);
     }
     //do DUPD
     if (mining_schema_.dupd_enable)

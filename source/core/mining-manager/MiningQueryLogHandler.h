@@ -52,7 +52,7 @@ public:
 
     bool cronStart(const std::string& cron_job);
 
-    void runEvents();
+    void runEvents(int64_t cron_time);
 
 private:
     DISALLOW_COPY_AND_ASSIGN(MiningQueryLogHandler);	

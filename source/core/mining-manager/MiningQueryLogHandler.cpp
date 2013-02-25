@@ -11,6 +11,7 @@
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/NodeManagerBase.h>
 #include <node-manager/MasterManagerBase.h>
+#include <common/Utilities.h>
 
 
 #include <util/scheduler.h>
@@ -56,7 +57,7 @@ void MiningQueryLogHandler::deleteCollection(const std::string& name)
 }
 
 
-void MiningQueryLogHandler::runEvents()
+void MiningQueryLogHandler::runEvents(int64_t cron_time)
 {
     boost::unique_lock<boost::mutex> lock(mtx_, boost::try_to_lock);
     if (!lock.owns_lock())
@@ -70,7 +71,7 @@ void MiningQueryLogHandler::runEvents()
     for (map_it_type mlit = recommendManagerList_.begin();
             mlit != recommendManagerList_.end(); ++mlit)
     {
-        mlit->second->RebuildForAll();
+        mlit->second->RebuildForAll(cron_time);
     }
 
     std::cout << "[Updated query information]" << std::endl;
@@ -99,30 +100,32 @@ void MiningQueryLogHandler::cronJob_(int calltype)
     {
         if (calltype == 0 && NodeManagerBase::get()->isDistributed())
         {
-	    if (NodeManagerBase::get()->isPrimary())
-	    {
-		MasterManagerBase::get()->pushWriteReq(cronJobName, "cron");
-		LOG(INFO) << "push cron job to queue on primary : " << cronJobName;
-	    }
-	    else
-	    {
-		LOG(INFO) << "cron job on replica ignored. ";
-	    }
-	    return;
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName;
+            }
+            else
+            {
+                LOG(INFO) << "cron job on replica ignored. ";
+            }
+            return;
         }
         if (!DistributeRequestHooker::get()->isValid())
         {
             LOG(INFO) << "cron job ignored : " << cronJobName;
             return;
         }
+
         CronJobReqLog reqlog;
+        reqlog.cron_time = sf1r::Utilities::createTimeStamp(boost::posix_time::microsec_clock::local_time());
+
         if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
         {
             LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName << std::endl;
             return;
         }
-
-        runEvents();
-	DistributeRequestHooker::get()->processLocalFinished(true);
+        runEvents(reqlog.cron_time);
+        DistributeRequestHooker::get()->processLocalFinished(true);
     }
 }

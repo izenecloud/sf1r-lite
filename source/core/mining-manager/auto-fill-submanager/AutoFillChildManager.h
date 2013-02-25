@@ -259,7 +259,7 @@ public:
                             , std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
     
     void updateAutoFill();
-    void updateFromLog();
+    void updateFromLog(int64_t cron_time);
     void updateFromLog_ForTest(std::vector<UserQuery>& query_records);
     void updateFromSCD();
     void SaveSCDLog();

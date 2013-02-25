@@ -29,6 +29,8 @@ enum ReqLogType
     Req_NoAdditionDataNoRollback,
     // used for handle cron job task.
     Req_CronJob,
+    // this request has only a timestamp with it.
+    Req_WithTimestamp,
     // index request need the scd file list which is not included in the request json data,
     // so we define a new request type, and add addition member.
     Req_Index,
@@ -115,6 +117,62 @@ struct CronJobReqLog: public CommonReqData
     {
         reqtype = Req_CronJob;
     }
+    int64_t cron_time;
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(cron_time);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&cron_time);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack Req_CronJob data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+};
+
+struct TimestampReqLog: public CommonReqData
+{
+    TimestampReqLog()
+    {
+        reqtype = Req_WithTimestamp;
+    }
+    int64_t timestamp;
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(timestamp);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&timestamp);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack Req_WithTimestamp data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
 };
 
 struct CreateOrUpdateDocReqLog: public CommonReqData
@@ -161,6 +219,7 @@ struct IndexReqLog: public CommonReqData
     // build recommend need the user and order scd file list.
     std::vector<std::string> user_scd_list;
     std::vector<std::string> order_scd_list;
+    int64_t timestamp;
 
     virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
     {
@@ -168,6 +227,7 @@ struct IndexReqLog: public CommonReqData
         pk.pack(scd_list);
         pk.pack(user_scd_list);
         pk.pack(order_scd_list);
+        pk.pack(timestamp);
     }
     virtual bool unpack(msgpack::unpacker& unpak)
     {
@@ -185,6 +245,9 @@ struct IndexReqLog: public CommonReqData
             if (!unpak.next(&msg))
                 return false;
             msg.get().convert(&order_scd_list);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&timestamp);
         }
         catch(const std::exception& e)
         {

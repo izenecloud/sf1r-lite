@@ -115,8 +115,16 @@ bool DistributeRequestHooker::readPrevChainData(CommonReqData& reqlogdata)
 {
     if (!isHooked())
         return true;
-    if (chain_status_ == NoChain || chain_status_ == ChainBegin)
+    if (current_req_.empty())
         return true;
+    if (!req_log_mgr_)
+        return true;
+    CommonReqData prepared;
+    if(!req_log_mgr_->getPreparedReqLog(prepared))
+    {
+        LOG(WARNING) << "try to read chain data before prepared!!!";
+        return true;
+    }
     if (!ReqLogMgr::unpackReqLogData(current_req_, reqlogdata))
     {
         LOG(ERROR) << "unpack log data error while read from chain data.";
