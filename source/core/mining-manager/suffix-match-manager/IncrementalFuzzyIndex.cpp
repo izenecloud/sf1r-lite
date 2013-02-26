@@ -712,7 +712,6 @@ namespace sf1r
         analysisInfo.analyzerId_ = "la_unigram";
         LAInput laInput;
         laInput.setDocId(docId);
-
         if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
             return false;
         std::vector<uint32_t> termidList;

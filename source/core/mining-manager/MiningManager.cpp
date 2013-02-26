@@ -565,22 +565,17 @@ bool MiningManager::open()
             product_categorizer_->SetDocumentManager(document_manager_);
             // reading suffix config and load filter data here.
             boost::shared_ptr<FilterManager>& filter_manager = suffixMatchManager_->getFilterManager();
-cout << "mining_schema_.suffixmatch_schema.group_filter_properties:" << mining_schema_.suffixmatch_schema.group_filter_properties.size() <<endl;
+
             filter_manager->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
-cout << "mining_schema_.suffixmatch_schema.attr_filter_properties" << mining_schema_.suffixmatch_schema.attr_filter_properties.size() << endl;
+
             filter_manager->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
-cout << "mining_schema_.suffixmatch_schema.str_filter_properties" << mining_schema_.suffixmatch_schema.str_filter_properties.size() << endl;
+
             filter_manager->setStrFilterProperties(mining_schema_.suffixmatch_schema.str_filter_properties);
-cout << "mining_schema_.suffixmatch_schema.date_filter_properties" << mining_schema_.suffixmatch_schema.date_filter_properties.size() << endl;
+
             filter_manager->setDateFilterProperties(mining_schema_.suffixmatch_schema.date_filter_properties);
-cout << "mining_schema_.suffixmatch_schema.num_filter_properties " << mining_schema_.suffixmatch_schema.num_filter_properties.size() << endl;
+
             const std::vector<NumericFilterConfig>& number_config_list = mining_schema_.suffixmatch_schema.num_filter_properties;
 
-if (mining_schema_.suffixmatch_schema.group_filter_properties.size() > 0)
-{
-    //cout << "mining_schema_.suffixmatch_schema.num_filter_properties[0]" << mining_schema_.suffixmatch_schema.num_filter_properties[0]
-    //<< "!" << mining_schema_.suffixmatch_schema.num_filter_properties[1] << endl;
-}
             std::vector<std::string> number_props;
             number_props.reserve(number_config_list.size());
             std::vector<int32_t> number_amp_list;
@@ -600,20 +595,25 @@ if (mining_schema_.suffixmatch_schema.group_filter_properties.size() > 0)
                 incrementalManager_ = new IncrementalFuzzyManager(suffix_match_path_,
                         mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
                         mining_schema_.suffixmatch_schema.suffix_match_properties[0], ///xxx update ... 
-                        document_manager_, idManager_, laManager_, indexSchema_); // add filter_manager ,, use the same Filter-Manager but different instance;
+                        document_manager_, idManager_, laManager_, indexSchema_,
+                        groupManager_, attrManager_, numericTableBuilder_); // add filter_manager ,, use the same Filter-Manager but different instance;
 
-                if (incrementalManager_)
-                {
-                    incrementalManager_->Init();
-                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-                }
+                incrementalManager_->Init();
+                boost::shared_ptr<FilterManager>& filter_manager_inc = suffixMatchManager_->getFilterManager();
+                filter_manager_inc->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
+                filter_manager_inc->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
+                filter_manager_inc->setStrFilterProperties(mining_schema_.suffixmatch_schema.str_filter_properties);
+                filter_manager_inc->setDateFilterProperties(mining_schema_.suffixmatch_schema.date_filter_properties);
+
+                filter_manager_inc->setNumFilterProperties(number_props, number_amp_list);
+                filter_manager_inc->loadFilterId();
             }
 
             if (mining_schema_.suffixmatch_schema.suffix_match_enable)
             {
                 if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
                 {
-                    if (!(suffixMatchManager_->isStartFromLocalFM()))
+                    /*if (!(suffixMatchManager_->isStartFromLocalFM()))
                     {
                         LOG(INFO) << "[] Start suffix init fm-index...";
                         suffixMatchManager_->buildMiningTask();
@@ -642,7 +642,9 @@ if (mining_schema_.suffixmatch_schema.group_filter_properties.size() > 0)
                         {
                             incrementalManager_->createIndex();
                         }
-                    }
+                    }*/
+                    //    cout<<"xx createIndex.."<<endl;
+                    //incrementalManager_->createIndex();
                 }
                 else
                 {
@@ -949,12 +951,14 @@ bool MiningManager::DoMiningCollection()
         MEMLOG("[Mining] SIM finished.");
     }
 
-    // do Summarization
-    /*if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isSyncSCDOnly)
+    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
     {
-        summarizationManager_->EvaluateSummarization();
-    }*/
-
+        if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+        {
+            cout<<"xx createIndex.."<<endl;
+            incrementalManager_->createIndex();
+        }
+    }
     deleted_doc_before_mining_ = 0;
     return true;
 }
@@ -2013,8 +2017,9 @@ bool MiningManager::GetSuffixMatch(
         {
             std::vector<uint32_t> _docIdList;
             std::vector<double> _rankScoreList;
+
             incrementalManager_->fuzzySearch(actionOperation.actionItem_.env_.queryString_,
-                    _docIdList, _rankScoreList);
+                    _docIdList, _rankScoreList, actionOperation.actionItem_.groupParam_);
 
             uint32_t max_count = std::min(max_docs, (uint32_t)_docIdList.size());
 

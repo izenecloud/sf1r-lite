@@ -1,21 +1,27 @@
 #ifndef SF1R_MINING_INCREMENTAL_FUZZY_MANAGER_
 #define SF1R_MINING_INCREMENTAL_FUZZY_MANAGER_
 
+#include <mining-manager/group-manager/GroupParam.h>
 #include "IncrementalFuzzyIndex.h" 
 #include "FilterManager.h"
 
+
+using namespace sf1r::faceted;
 namespace sf1r
 {
 class IncrementalFuzzyManager
 {
 public:
     IncrementalFuzzyManager(const std::string& path,
-                       const std::string& tokenize_path,
-                       const std::string& property,
-                       boost::shared_ptr<DocumentManager>& document_manager,
-                       boost::shared_ptr<IDManager>& idManager,
-                       boost::shared_ptr<LAManager>& laManager,
-                       IndexBundleSchema& indexSchema
+                        const std::string& tokenize_path,
+                        const std::string& property,
+                        boost::shared_ptr<DocumentManager>& document_manager,
+                        boost::shared_ptr<IDManager>& idManager,
+                        boost::shared_ptr<LAManager>& laManager,
+                        IndexBundleSchema& indexSchema,
+                        faceted::GroupManager* groupmanager,
+                        faceted::AttrManager* attrmanager,
+                        NumericPropertyTableBuilder* numeric_tablebuilder
                       );
 
     ~IncrementalFuzzyManager();
@@ -31,7 +37,10 @@ public:
     //search
     bool fuzzySearch(const std::string& query
                     , std::vector<uint32_t>& resultList
-                    , std::vector<double> &ResultListSimilarity);
+                    , std::vector<double> &ResultListSimilarity
+                    //, const SearchingMode::SuffixMatchFilterMode& filter_mode
+                    //, const std::vector<QueryFiltering::FilteringType>& filter_param
+                    , const faceted::GroupParam& group_param);
 
     bool exactSearch(const std::string& query
                     , std::vector<uint32_t>& resultList
@@ -68,7 +77,24 @@ public:
     void setLastDocid(uint32_t last_docid);
     void getLastDocid(uint32_t& last_docid);
 
+    boost::shared_ptr<FilterManager>& getFilterManager()
+    {
+        return filter_manager_;
+    }
+
 private:
+    //filter :
+
+    bool getAllFilterRangeFromGroupLable(
+            const faceted::GroupParam& group_param,
+            std::vector<size_t>& prop_id_list,
+            std::vector<FilterManager::FilterIdRange>& filter_range_list) const;
+
+    void getAllFilterDocid(
+            std::vector<size_t>& prop_id_list,
+            std::vector<FilterManager::FilterIdRange>& filter_range_list,
+            std::vector<uint32_t>& filterDocidList);
+
     bool indexForDoc(uint32_t& docId, std::string propertyString);
 
     void buildTokenizeDic();
@@ -81,6 +107,9 @@ private:
     std::string index_path_;
     std::string tokenize_path_;
     std::string property_;
+    //vector<std::string> SearchProperties;
+
+    //vector<std::string> 
 
     unsigned int BarrelNum_;
 

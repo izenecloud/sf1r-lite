@@ -15,18 +15,21 @@ using namespace cma;
 namespace sf1r
 {
     IncrementalFuzzyManager::IncrementalFuzzyManager(const std::string& path,
-                                       const std::string& tokenize_path,
-                                       const std::string& property,
-                                       boost::shared_ptr<DocumentManager>& document_manager,
-                                       boost::shared_ptr<IDManager>& idManager,
-                                       boost::shared_ptr<LAManager>& laManager,
-                                       IndexBundleSchema& indexSchema)
+                                        const std::string& tokenize_path,
+                                        const std::string& property,
+                                        boost::shared_ptr<DocumentManager>& document_manager,
+                                        boost::shared_ptr<IDManager>& idManager,
+                                        boost::shared_ptr<LAManager>& laManager,
+                                        IndexBundleSchema& indexSchema,
+                                        faceted::GroupManager* groupmanager,
+                                        faceted::AttrManager* attrmanager,
+                                        NumericPropertyTableBuilder* numeric_tablebuilder)
                                     : document_manager_(document_manager)
                                     , idManager_(idManager)
                                     , laManager_(laManager)
                                     , indexSchema_(indexSchema)
                                     , analyzer_(NULL)
-                                    , knowledge_(NULL) // add filter_manager ...
+                                    , knowledge_(NULL)
     {
         BarrelNum_ = 0;
         last_docid_ = 0;
@@ -39,10 +42,9 @@ namespace sf1r
         index_path_ = path;
         tokenize_path_ = tokenize_path;
         buildTokenizeDic();
-        //
-        // add filter manager ...
-        // build filter manager ...
-        // 
+
+        filter_manager_.reset(new FilterManager(groupmanager, index_path_,
+            attrmanager, numeric_tablebuilder));
     }
 
     void IncrementalFuzzyManager::buildTokenizeDic()
@@ -121,6 +123,10 @@ namespace sf1r
         JobScheduler::get()->addTask(task, name);
     }
 
+    //filter-group
+
+    //filter-numric
+
     void IncrementalFuzzyManager::doCreateIndex()
     {
         // ismergeing...
@@ -137,6 +143,8 @@ namespace sf1r
                 Document doc;
                 document_manager_->getDocument(i, doc);
                 Document::property_const_iterator it = doc.findProperty(property_);
+
+
                 if (it == doc.propertyEnd())
                 {
                     last_docid_++;
@@ -153,6 +161,7 @@ namespace sf1r
                 last_docid_++;
 
                 // filter....
+                // add filter...
             }
             saveLastDocid();
             save();
@@ -169,11 +178,11 @@ namespace sf1r
     {
         if (IndexedDocNum_ >= MAX_INCREMENT_DOC)
             return false;
-        {//add lock
+        {
             {
                 if (pMainFuzzyIndexBarrel_ != NULL)
                 {
-                    pMainFuzzyIndexBarrel_->setStatus();///xxx 
+                    pMainFuzzyIndexBarrel_->setStatus();
                     if (!pMainFuzzyIndexBarrel_->buildIndex_(docId, propertyString))
                         return false;
                 }
@@ -191,8 +200,15 @@ namespace sf1r
         }
     }
 
-    bool IncrementalFuzzyManager::fuzzySearch(const std::string& query, std::vector<uint32_t>& resultList, std::vector<double> &ResultListSimilarity)
+    bool IncrementalFuzzyManager::fuzzySearch(
+                        const std::string& query
+                        , std::vector<uint32_t>& resultList
+                        , std::vector<double> &ResultListSimilarity
+                        //, const SearchingMode::SuffixMatchFilterMode& filter_mode
+                        //, const std::vector<QueryFiltering::FilteringType>& filter_param
+                        , const faceted::GroupParam& group_param)
     {
+        cout<<"begin fuzzySearch..."<<endl;
         izenelib::util::ClockTimer timer;
         if (BarrelNum_ == 0 || isMergingIndex_ || isInitIndex_)
         {
@@ -219,11 +235,11 @@ namespace sf1r
                 termidList.push_back(*i);
             }
 
-            /**
-            filtermanager->
-
-            //rangelist ...-> docidlist....
-            */
+            std::vector<FilterManager::FilterIdRange> filter_range_list;
+            std::vector<size_t> prop_id_list;
+            getAllFilterRangeFromGroupLable(group_param, prop_id_list, filter_range_list);
+            std::vector<uint32_t> docidlist;
+            getAllFilterDocid(prop_id_list, filter_range_list, docidlist);
 
             if (pMainFuzzyIndexBarrel_ != NULL && isInitIndex_ == false)
             {
@@ -325,8 +341,6 @@ namespace sf1r
         maxNum = MAX_INCREMENT_DOC;
     }
 
-
-
     void IncrementalFuzzyManager::reset()
     {
         if (pMainFuzzyIndexBarrel_)
@@ -377,8 +391,6 @@ namespace sf1r
         return true;
     }
 
-
-
     void IncrementalFuzzyManager::delete_AllIndexFile()
     {
         bfs::path pathMainInc = index_path_ + "/Main.inv.idx";
@@ -387,5 +399,80 @@ namespace sf1r
         ///xxx need try...
         bfs::remove(pathMainInc);
         bfs::remove(pathMainFd);
+    }
+
+    bool IncrementalFuzzyManager::getAllFilterRangeFromGroupLable(
+                                    const faceted::GroupParam& group_param,
+                                    std::vector<size_t>& prop_id_list,
+                                    std::vector<FilterManager::FilterIdRange>& filter_range_list) const
+    {
+         if (!filter_manager_)
+        {
+            LOG(INFO) << "no filter support.";
+            return false;
+        }
+        FilterManager::FilterIdRange filterid_range;
+        
+        for (GroupParam::GroupLabelMap::const_iterator cit = group_param.groupLabels_.begin();
+            cit != group_param.groupLabels_.end(); ++cit)
+        {
+            bool is_numeric = filter_manager_->isNumericProp(cit->first);
+            bool is_date = filter_manager_->isDateProp(cit->first);
+
+            const GroupParam::GroupPathVec& group_values = cit->second;
+            size_t prop_id = filter_manager_->getPropertyId(cit->first);
+
+            if (prop_id == (size_t)-1) continue;
+
+            for (size_t i = 0; i < group_values.size(); ++i)
+            {
+                if (is_numeric)
+                {
+
+                }
+                else if (is_date)
+                {
+                   
+                }
+                else
+                {
+                    const UString& group_filterstr = filter_manager_->formatGroupPath(group_values[i]);
+                    string group_filterstrs;
+                    group_filterstr.convertString(group_filterstrs, UString::UTF_8);
+                    cout << group_filterstrs << endl;
+                    filterid_range = filter_manager_->getStrFilterIdRangeExact(prop_id, group_filterstr);
+                }
+            }
+
+            if (filterid_range.start >= filterid_range.end)
+            {
+                LOG(WARNING) << "one of group label filter id range not found.";
+                continue;
+            }
+
+            prop_id_list.push_back(prop_id);
+            filter_range_list.push_back(filterid_range);
+        }
+        return true;
+    }
+
+    void IncrementalFuzzyManager::getAllFilterDocid(
+                            std::vector<size_t>& prop_id_list,
+                            std::vector<FilterManager::FilterIdRange>& filter_range_list,
+                            std::vector<uint32_t>& filterDocidList)
+    {
+
+        std::vector<std::vector<FilterManager::FilterDocListT> >& filter_list = filter_manager_->getFilterList();
+        int k = 0;
+        for (std::vector<FilterManager::FilterIdRange>::iterator i = filter_range_list.begin(); i != filter_range_list.end(); ++i, ++k)
+        {
+            for (unsigned int j = filter_range_list[k].start; j < filter_range_list[k].end; ++j)
+            {
+                for(unsigned int x = 0; x < filter_list[k][j].size(); ++x)
+                    cout << filter_list[k][j][x] << ",";
+                cout<<endl;
+            }
+            cout << "===" << endl;
+        }
     }
 }
