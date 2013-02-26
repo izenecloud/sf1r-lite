@@ -95,7 +95,7 @@ namespace sf1r
                                                 );
         BarrelNum_++;
         pMainFuzzyIndexBarrel_->init(index_path_);
-        
+
         std::string pathMainInv = index_path_ + "/Main.inv.idx";
         std::string pathMainFd = index_path_ + "/Main.fd.idx";
         std::string pathLastDocid = index_path_ + "/last.docid";
@@ -173,7 +173,7 @@ namespace sf1r
         }
         pMainFuzzyIndexBarrel_->print();
     }
-    
+
     bool IncrementalFuzzyManager::indexForDoc(uint32_t& docId, std::string propertyString)
     {
         if (IndexedDocNum_ >= MAX_INCREMENT_DOC)
@@ -205,7 +205,7 @@ namespace sf1r
                         , std::vector<uint32_t>& resultList
                         , std::vector<double> &ResultListSimilarity
                         //, const SearchingMode::SuffixMatchFilterMode& filter_mode
-                        //, const std::vector<QueryFiltering::FilteringType>& filter_param
+                        , const std::vector<QueryFiltering::FilteringType>& filter_param
                         , const faceted::GroupParam& group_param)
     {
         cout<<"begin fuzzySearch..."<<endl;
@@ -238,6 +238,7 @@ namespace sf1r
             std::vector<FilterManager::FilterIdRange> filter_range_list;
             std::vector<size_t> prop_id_list;
             getAllFilterRangeFromGroupLable(group_param, prop_id_list, filter_range_list);
+            getAllFilterRangeFromFilterParam(filter_param, prop_id_list, filter_range_list);
             std::vector<uint32_t> docidlist;
             getAllFilterDocid(prop_id_list, filter_range_list, docidlist);
 
@@ -412,7 +413,7 @@ namespace sf1r
             return false;
         }
         FilterManager::FilterIdRange filterid_range;
-        
+
         for (GroupParam::GroupLabelMap::const_iterator cit = group_param.groupLabels_.begin();
             cit != group_param.groupLabels_.end(); ++cit)
         {
@@ -432,7 +433,7 @@ namespace sf1r
                 }
                 else if (is_date)
                 {
-                   
+
                 }
                 else
                 {
@@ -453,6 +454,142 @@ namespace sf1r
             prop_id_list.push_back(prop_id);
             filter_range_list.push_back(filterid_range);
         }
+        return true;
+    }
+
+    bool IncrementalFuzzyManager::getAllFilterRangeFromFilterParam(
+            const std::vector<QueryFiltering::FilteringType>& filter_param,
+            std::vector<size_t>& prop_id_list,
+            std::vector<FilterManager::FilterIdRange>& filter_range_list
+) const
+    {
+        if(!filter_manager_)
+        {
+            LOG(INFO) << "no filter support.";
+            return false;
+        }
+
+        FilterManager::FilterIdRange filterid_range;
+        for(size_t i = 0; i < filter_param.size(); i++)
+        {
+            const QueryFiltering::FilteringType& filtertype = filter_param[i];
+
+            bool is_numeric = filter_manager_->isNumericProp(filtertype.property_)
+                || filter_manager_->isDateProp(filtertype.property_);
+            size_t prop_id = filter_manager_->getPropertyId(filtertype.property_);
+            if(prop_id == (size_t)-1) continue;
+
+            for(size_t j=0;j<filtertype.values_.size();j++)
+            {
+                try
+                {
+                    if(is_numeric)
+                    {
+                        double filter_num = filtertype.values_[j].getNumber();
+                        LOG(INFO) << "filter num by : "<< filter_num;
+
+                        switch (filtertype.operation_)
+                        {
+                        case QueryFiltering::LESS_THAN_EQUAL:
+                            filterid_range = filter_manager_->getNumFilterIdRangeLess(prop_id, filter_num, true);
+                            break;
+                        case QueryFiltering::LESS_THAN:
+                            filterid_range = filter_manager_->getNumFilterIdRangeLess(prop_id, filter_num, false);
+                            break;
+                        case QueryFiltering::GREATER_THAN_EQUAL:
+                            filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, filter_num, true);
+                            break;
+                        case QueryFiltering::GREATER_THAN:
+                            filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, filter_num, false);
+                            break;
+                        case QueryFiltering::RANGE:
+                            {
+                                assert(filtertype.valses_size() == 2);
+                                if(j>=1)continue;
+                                double filter_num_2 = filtertype.values_[1].getNumber();
+                                FilterManager::FilterIdRange tmp_range;
+                                tmp_range = filter_manager_ -> getNumFilterIdRangeLess(prop_id, std::max(filter_num, filter_num_2), true);
+                                filterid_range = filter_manager_ -> getNumFilterIdRangeGreater(prop_id, std::min(filter_num, filter_num_2), true);
+                                filterid_range.start = std::max(filterid_range.start, tmp_range.start);
+                                filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                            }
+                            break;
+                        case QueryFiltering::EQUAL:
+                            filterid_range = filter_manager_ -> getNumFilterIdRangeExact(prop_id, filter_num);
+                            break;
+                        default:
+                            LOG(WARNING) << "not support filter operation for numeric property in incremental fuzzy searching.";
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        const std::string& filter_str = filtertype.values_[j].get<std::string>();
+                        LOG(INFO) << "filter range by : " << filter_str;
+                        switch (filtertype.operation_)
+                        {
+                        case QueryFiltering::EQUAL:
+                            filterid_range = filter_manager_->getStrFilterIdRangeExact(prop_id, UString(filter_str, UString::UTF_8));
+                            break;
+                        case QueryFiltering::GREATER_THAN:
+                            filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), false);
+                            break;
+                        case QueryFiltering::GREATER_THAN_EQUAL:
+                            filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
+                            break;
+                        case QueryFiltering::LESS_THAN:
+                            filterid_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), false);
+                            break;
+                        case QueryFiltering::LESS_THAN_EQUAL:
+                            filterid_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true);
+                            break;
+                        case QueryFiltering::RANGE:
+                            {
+                                assert(filtertype.values_.size() == 2);
+                                if (j >= 1) continue;
+                                const std::string& filter_str1 = filtertype.values_[1].get<std::string>();
+                                FilterManager::FilterIdRange tmp_range;
+                                if (filter_str < filter_str1)
+                                {
+                                    tmp_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str1, UString::UTF_8), true);
+                                    filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
+                                }
+                                else
+                                {
+                                    tmp_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true);
+                                    filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str1, UString::UTF_8), true);
+                                }
+                                filterid_range.start = std::max(filterid_range.start, tmp_range.start);
+                                filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                            }
+                            break;
+
+                        case QueryFiltering::PREFIX:
+                            filterid_range = filter_manager_->getStrFilterIdRangePrefix(prop_id, UString(filter_str, UString::UTF_8));
+                            break;
+
+                        default:
+                            LOG(WARNING) << "not support filter operation for string property in fuzzy searching.";
+                            continue;
+                        }
+                    }
+                }
+                catch (const boost::bad_get &)
+                {
+                    LOG(INFO) << "get filter string failed. boost::bad_get.";
+                    continue;
+                }
+
+                if(filterid_range.start >= filterid_range.end)
+                {
+                    LOG(WARNING) << "filter id range not found. ";
+                    continue;
+                }
+                prop_id_list.push_back(prop_id);
+                filter_range_list.push_back(filterid_range);
+            }
+        }
+
         return true;
     }
 

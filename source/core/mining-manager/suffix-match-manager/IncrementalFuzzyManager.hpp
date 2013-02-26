@@ -1,8 +1,9 @@
 #ifndef SF1R_MINING_INCREMENTAL_FUZZY_MANAGER_
 #define SF1R_MINING_INCREMENTAL_FUZZY_MANAGER_
 
+#include <query-manager/QueryTypeDef.h>
 #include <mining-manager/group-manager/GroupParam.h>
-#include "IncrementalFuzzyIndex.h" 
+#include "IncrementalFuzzyIndex.h"
 #include "FilterManager.h"
 
 
@@ -39,7 +40,7 @@ public:
                     , std::vector<uint32_t>& resultList
                     , std::vector<double> &ResultListSimilarity
                     //, const SearchingMode::SuffixMatchFilterMode& filter_mode
-                    //, const std::vector<QueryFiltering::FilteringType>& filter_param
+                    , const std::vector<QueryFiltering::FilteringType>& filter_param
                     , const faceted::GroupParam& group_param);
 
     bool exactSearch(const std::string& query
@@ -90,6 +91,11 @@ private:
             std::vector<size_t>& prop_id_list,
             std::vector<FilterManager::FilterIdRange>& filter_range_list) const;
 
+    bool getAllFilterRangeFromFilterParam(
+            const std::vector<QueryFiltering::FilteringType>& filter_param,
+            std::vector<size_t>& prop_id_list,
+            std::vector<FilterManager::FilterIdRange>& filter_range_list) const;
+
     void getAllFilterDocid(
             std::vector<size_t>& prop_id_list,
             std::vector<FilterManager::FilterIdRange>& filter_range_list,
@@ -109,7 +115,7 @@ private:
     std::string property_;
     //vector<std::string> SearchProperties;
 
-    //vector<std::string> 
+    //vector<std::string>
 
     unsigned int BarrelNum_;
 

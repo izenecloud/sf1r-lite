@@ -594,7 +594,7 @@ bool MiningManager::open()
             {
                 incrementalManager_ = new IncrementalFuzzyManager(suffix_match_path_,
                         mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                        mining_schema_.suffixmatch_schema.suffix_match_properties[0], ///xxx update ... 
+                        mining_schema_.suffixmatch_schema.suffix_match_properties[0], ///xxx update ...
                         document_manager_, idManager_, laManager_, indexSchema_,
                         groupManager_, attrManager_, numericTableBuilder_); // add filter_manager ,, use the same Filter-Manager but different instance;
 
@@ -2019,7 +2019,7 @@ bool MiningManager::GetSuffixMatch(
             std::vector<double> _rankScoreList;
 
             incrementalManager_->fuzzySearch(actionOperation.actionItem_.env_.queryString_,
-                    _docIdList, _rankScoreList, actionOperation.actionItem_.groupParam_);
+                    _docIdList, _rankScoreList, filter_param, actionOperation.actionItem_.groupParam_);
 
             uint32_t max_count = std::min(max_docs, (uint32_t)_docIdList.size());
 
@@ -2134,8 +2134,8 @@ bool MiningManager::GetProductCategory(const UString& query, UString& backend)
 }
 
 bool MiningManager::GetProductFrontendCategory(
-    const izenelib::util::UString& query, 
-    int limit, 
+    const izenelib::util::UString& query,
+    int limit,
     std::vector<UString>& frontends)
 {
     if (mining_schema_.product_matcher_enable)
