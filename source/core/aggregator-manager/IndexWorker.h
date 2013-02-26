@@ -20,6 +20,7 @@
 
 #include <ir/id_manager/IDManager.h>
 #include <ir/index_manager/index/IndexerDocument.h>
+#include <util/cronexpression.h>
 
 #include <util/driver/Value.h>
 #include <3rdparty/am/stx/btree_map.h>
@@ -258,6 +259,9 @@ private:
      */
     void clearMasterCache_();
 
+    void scheduleOptimizeTask();
+    void lazyOptimizeIndex(int calltype);
+
 private:
     IndexBundleConfiguration* bundleConfig_;
     MiningTaskService* miningTaskService_;
@@ -293,6 +297,9 @@ private:
 
     UpdateBufferType updateBuffer_;
     DistributeRequestHooker *distribute_req_hooker_;
+
+    izenelib::util::CronExpression scheduleExpression_;
+    std::string optimizeJobDesc_;
 
     friend class IndexSearchService;
     friend class IndexBundleActivator;

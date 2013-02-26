@@ -21,6 +21,8 @@
 #include <node-manager/RequestLog.h>
 #include <node-manager/DistributeFileSyncMgr.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 #include <util/driver/Request.h>
 
 // xxx
@@ -29,6 +31,7 @@
 #include <bundles/recommend/RecommendTaskService.h>
 #include <node-manager/synchro/SynchroFactory.h>
 #include <util/profiler/ProfilerGroup.h>
+#include <util/scheduler.h>
 
 #include <la/util/UStringUtil.h>
 
@@ -105,11 +108,14 @@ IndexWorker::IndexWorker(
 
     createPropertyList_();
     scd_writer_->SetFlushLimit(500);
+    scheduleOptimizeTask();
 }
 
 IndexWorker::~IndexWorker()
 {
     delete scd_writer_;
+    if (!optimizeJobDesc_.empty())
+        izenelib::util::Scheduler::removeJob(optimizeJobDesc_);
 }
 
 void IndexWorker::HookDistributeRequest(int hooktype, const std::string& reqdata, bool& result)
@@ -697,6 +703,64 @@ bool IndexWorker::optimizeIndex()
     flush();
     distribute_req_hooker_->processLocalFinished(true);
     return true;
+}
+
+void IndexWorker::scheduleOptimizeTask()
+{
+    if(!bundleConfig_->indexConfig_.indexStrategy_.optimizeSchedule_.empty())
+    {
+        scheduleExpression_.setExpression(bundleConfig_->indexConfig_.indexStrategy_.optimizeSchedule_);
+        using namespace izenelib::util;
+        int32_t uuid =  (int32_t)HashFunction<std::string>::generateHash32(bundleConfig_->indexConfig_.indexStrategy_.indexLocation_);
+        char uuidstr[10];
+        memset(uuidstr,0,10);
+        sprintf(uuidstr,"%d",uuid);
+        const string optimizeJob = "optimizeindex" + std::string(uuidstr);
+        ///we need an uuid here because scheduler is an singleton in the system
+        izenelib::util::Scheduler::removeJob(optimizeJob);
+        optimizeJobDesc_ = optimizeJob;
+        boost::function<void (int)> task = boost::bind(&IndexWorker::lazyOptimizeIndex, this, _1);
+        izenelib::util::Scheduler::addJob(optimizeJob, 60*1000, 0, task);
+        LOG(INFO) << "optimizeIndex schedule : " << optimizeJob;
+    }
+}
+
+void IndexWorker::lazyOptimizeIndex(int calltype)
+{
+    if (scheduleExpression_.matches_now() || calltype > 0)
+    {
+        if (calltype == 0 && NodeManagerBase::get()->isDistributed())
+        {
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(optimizeJobDesc_, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << optimizeJobDesc_;
+            }
+            else
+            {
+                LOG(INFO) << "cron job on replica ignored. ";
+            }
+            return;
+        }
+        if (!DistributeRequestHooker::get()->isValid())
+        {
+            LOG(INFO) << "cron job ignored for invalid : " << optimizeJobDesc_;
+            return;
+        }
+
+        CronJobReqLog reqlog;
+        reqlog.cron_time = Utilities::createTimeStamp();
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << optimizeJobDesc_ << std::endl;
+            return;
+        }
+
+        LOG(INFO) << "optimizeIndex cron job begin running: " << optimizeJobDesc_;
+        indexManager_->optimizeIndex();
+
+        DistributeRequestHooker::get()->processLocalFinished(true);
+    }
 }
 
 void IndexWorker::doMining_()
