@@ -366,25 +366,16 @@ def run_auto_fail_test(args):
 
             # test for all kinds of primary fail
             printtofile ('begin test for primary fail')
-            for i in range(4, 13):
+            for i in range(4, 13) + range(61, 63) + range(71, 73):
                 reset_state_and_run()
                 printtofile ('testing for primary fail type : ' + str(i))
                 run_testwrite(primary_host, i, test_writereq)
                             
             printtofile ('begin test for replica fail')
-            for i in range(31, 42):
+            for i in range(31, 42) + range(61, 63) + range(71, 73):
                 reset_state_and_run()
                 printtofile ('testing for replica fail type : ' + str(i))
                 run_testwrite([replicas_host[0]], i, test_writereq)
-
-            printtofile ('begin test for other fail')
-            for i in range(61, 63):
-                reset_state_and_run()
-                printtofile ('testing for other fail type on replica: ' + str(i))
-                run_testwrite([replicas_host[0]], i, test_writereq)
-                reset_state_and_run()
-                printtofile ('testing for other fail type on primary_host: ' + str(i))
-                run_testwrite(primary_host, i, test_writereq)
 
             # test for primary electing fail.
             reset_state_and_run()

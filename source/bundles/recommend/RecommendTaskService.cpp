@@ -1005,16 +1005,16 @@ void RecommendTaskService::cronJob_(int calltype)
     if (cronExpression_.matches_now() || calltype > 0)
     {
         if(calltype == 0 && NodeManagerBase::get()->isDistributed())
-	{
-	    if (NodeManagerBase::get()->isPrimary())
-	    {
-		MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
-		LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
-	    }
-	    else
-		LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
-	    return;
-	}
+        {
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
+            }
+            else
+                LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
+            return;
+        }
         boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
@@ -1022,22 +1022,22 @@ void RecommendTaskService::cronJob_(int calltype)
             LOG(INFO) << "exit recommend cron job as still in building collection " << bundleConfig_.collectionName_;
             return;
         }
-	if (!DistributeRequestHooker::get()->isValid())
-	{
-		LOG(INFO) << "cron job ignored : " << cronJobName_;
-		return;
-	}
-	CronJobReqLog reqlog;
-	if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
-	{
-		LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName_ << std::endl;
+        if (!DistributeRequestHooker::get()->isValid())
+        {
+            LOG(INFO) << "cron job ignored : " << cronJobName_;
+            return;
+        }
+        CronJobReqLog reqlog;
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName_ << std::endl;
             return;
         }
 
         flush();
 
         buildFreqItemSet_();
-	DistributeRequestHooker::get()->processLocalFinished(true);
+        DistributeRequestHooker::get()->processLocalFinished(true);
     }
 }
 

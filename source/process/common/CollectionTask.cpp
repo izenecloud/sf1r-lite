@@ -3,10 +3,13 @@
 #include <controllers/CollectionHandler.h>
 #include <common/CollectionManager.h>
 #include <common/XmlConfigParser.h>
+#include <common/Utilities.h>
 
 #include <bundles/index/IndexTaskService.h>
 #include <core/license-manager/LicenseCustManager.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -15,22 +18,51 @@ namespace bfs = boost::filesystem;
 namespace sf1r
 {
 
-void RebuildTask::startTask()
+void CollectionTask::cronTask(int calltype)
 {
-    if (isRunning_)
+    if (isCronTask_)
     {
-        LOG(ERROR) << "RebuildTask is running!" ;
-        return;
-    }
+        if(cronExpression_.matches_now() || calltype > 0)
+        {
+            if (calltype == 0 && NodeManagerBase::get()->isDistributed())
+            {
+                if (NodeManagerBase::get()->isPrimary())
+                {
+                    MasterManagerBase::get()->pushWriteReq(getTaskName(), "cron");
+                    LOG(INFO) << "push cron job to queue on primary : " << getTaskName();
+                }
+                else
+                {
+                    LOG(INFO) << "cron job on replica ignored. ";
+                }
+                return;
+            }
 
-    task_type task = boost::bind(&RebuildTask::doTask, this);
-    asyncJodScheduler_.addTask(task);
+            if (!DistributeRequestHooker::get()->isValid())
+            {
+                LOG(INFO) << "cron job ignored for invalid : " << getTaskName();
+                return;
+            }
+
+            CronJobReqLog reqlog;
+            reqlog.cron_time = Utilities::createTimeStamp();
+            if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+            {
+                LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << getTaskName() << std::endl;
+                return;
+            }
+
+            doTask();
+
+            DistributeRequestHooker::get()->processLocalFinished(true);
+        }
+    }
 }
 
 void RebuildTask::doTask()
 {
     LOG(INFO) << "## start RebuildTask for " << collectionName_;
-    isRunning_ = true;
+    //isRunning_ = true;
 
     std::string collDir;
     std::string rebuildCollDir;
@@ -45,7 +77,7 @@ void RebuildTask::doTask()
     if (!collectionHandler || !collectionHandler->indexTaskService_)
     {
         LOG(ERROR) << "Not found collection: " << collectionName_;
-        isRunning_ = false;
+        //isRunning_ = false;
         return;
     }
     boost::shared_ptr<DocumentManager> documentManager = collectionHandler->indexTaskService_->getDocumentManager();
@@ -57,7 +89,7 @@ void RebuildTask::doTask()
     if (!CollectionManager::get()->startCollection(rebuildCollectionName_, configFile, true))
     {
         LOG(ERROR) << "Collection for rebuilding already started: " << rebuildCollectionName_;
-        isRunning_ = false;
+        //isRunning_ = false;
         return;
     }
     CollectionManager::MutexType* recollMutex = CollectionManager::get()->getCollectionMutex(rebuildCollectionName_);
@@ -102,25 +134,13 @@ void RebuildTask::doTask()
     CollectionManager::get()->startCollection(collectionName_, configFile);
 
     LOG(INFO) << "## end RebuildTask for " << collectionName_;
-    isRunning_ = false;
-}
-
-void ExpirationCheckTask::startTask()
-{
-    if (isRunning_)
-    {
-        LOG(ERROR) << "ExpirationCheckTask is running!" ;
-        return;
-    }
-
-    task_type task = boost::bind(&ExpirationCheckTask::doTask, this);
-    asyncJodScheduler_.addTask(task);
+    //isRunning_ = false;
 }
 
 void ExpirationCheckTask::doTask()
 {
     LOG(INFO) << "## start ExpirationCheckTask for " << collectionName_;
-    isRunning_ = true;
+    //isRunning_ = true;
 
     std::string configFile = SF1Config::get()->getCollectionConfigFile(collectionName_);
     uint32_t currentDate = license_module::license_tool::getCurrentDate();
@@ -141,7 +161,7 @@ void ExpirationCheckTask::doTask()
     	setIsCronTask(false);
     }
     LOG(INFO) << "## end ExpirationCheckTask for " << collectionName_;
-    isRunning_ = false;
+    //isRunning_ = false;
 }
 
 bool ExpirationCheckTask::checkCollectionHandler(const std::string& collectionName) const

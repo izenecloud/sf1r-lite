@@ -14,19 +14,15 @@ const static std::string collectionCronJobName = "CollectionTaskScheduler";
 
 CollectionTaskScheduler::CollectionTaskScheduler()
 {
-    if (!izenelib::util::Scheduler::addJob(
-            collectionCronJobName,
-            60*1000, // notify in every minute
-            0, // start with no delay
-            boost::bind(&CollectionTaskScheduler::cronTask_, this)))
-    {
-        LOG(ERROR) << "Failed to add cron job: " << collectionCronJobName;
-    }
 }
 
 CollectionTaskScheduler::~CollectionTaskScheduler()
 {
-    izenelib::util::Scheduler::removeJob(collectionCronJobName);
+    for (TaskListType::const_iterator cit = taskList_.begin();
+        cit != taskList_.end(); ++cit)
+    {
+        izenelib::util::Scheduler::removeJob(collectionCronJobName + (*cit)->getTaskName());
+    }
 }
 
 bool CollectionTaskScheduler::schedule(const CollectionHandler* collectionHandler)
@@ -56,6 +52,14 @@ bool CollectionTaskScheduler::schedule(const CollectionHandler* collectionHandle
         {
             task->setIsCronTask(true);
             taskList_.push_back(task);
+            if (!izenelib::util::Scheduler::addJob(
+                    collectionCronJobName + task->getTaskName(),
+                    60*1000, // notify in every minute
+                    0, // start with no delay
+                    boost::bind(&RebuildTask::cronTask, task.get(), _1)))
+            {
+                LOG(ERROR) << "Failed to add cron job: " << collectionCronJobName + task->getTaskName();
+            }
         }
         else
         {
@@ -79,6 +83,15 @@ bool CollectionTaskScheduler::scheduleLicenseTask(std::string collectionName)
 		{
 			task->setIsCronTask(true);
 			taskList_.push_back(task);
+            if (!izenelib::util::Scheduler::addJob(
+                    collectionCronJobName + task->getTaskName(),
+                    60*1000, // notify in every minute
+                    0, // start with no delay
+                    boost::bind(&ExpirationCheckTask::cronTask, task.get(), _1)))
+            {
+                LOG(ERROR) << "Failed to add cron job: " << collectionCronJobName + task->getTaskName();
+                return false;
+            }
 		}
 		else
 		{
@@ -93,28 +106,6 @@ bool CollectionTaskScheduler::scheduleLicenseTask(std::string collectionName)
 	}
 
 	return true;
-}
-
-void CollectionTaskScheduler::cronTask_()
-{
-    TaskListType::iterator it;
-    for (it = taskList_.begin(); it != taskList_.end(); it++)
-    {
-        boost::shared_ptr<CollectionTask>& task = *it;
-        if (task->isCronTask())
-        {
-            // cron expression will always match during the specified minute,
-            // so the check interval should be 1 minute
-            if (task->getCronExpression().matches_now())
-            {
-                task->startTask();
-            }
-        }
-    }
-}
-
-void CollectionTaskScheduler::onTimer_()
-{
 }
 
 }

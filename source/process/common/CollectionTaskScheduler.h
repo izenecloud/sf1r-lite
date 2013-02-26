@@ -35,11 +35,6 @@ public:
     bool scheduleLicenseTask(const std::string collectionName);
 
 private:
-    void cronTask_();
-
-    void onTimer_();
-
-private:
     typedef std::vector<boost::shared_ptr<CollectionTask> > TaskListType;
     TaskListType taskList_;
 };
