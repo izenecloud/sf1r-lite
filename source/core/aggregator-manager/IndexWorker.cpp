@@ -336,7 +336,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     scd_writer_->Flush();
     indexProgress_.reset();
 
-    size_t currTotalSCDSize = getTotalScdSize_(scdList);
+    size_t currTotalSCDSize = getTotalScdSize_(scdList)/(1024*1024);
     string scdPath = bundleConfig_->indexSCDPath();
     indexProgress_.totalFileNum = scdList.size();
     indexProgress_.totalFileSize_ = currTotalSCDSize;
@@ -2622,7 +2622,7 @@ size_t IndexWorker::getTotalScdSize_(const std::vector<std::string>& scdlist)
             sizeInBytes += parser.getFileSize();
         }
     }
-    return sizeInBytes/(1024*1024);
+    return sizeInBytes;
 }
 
 bool IndexWorker::requireBackup_(size_t currTotalScdSizeInMB)
