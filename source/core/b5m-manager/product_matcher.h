@@ -40,6 +40,8 @@ namespace sf1r {
         typedef uint32_t position_t;
         typedef std::pair<position_t, position_t>  Position;
         typedef boost::unordered_map<std::string, std::string> Back2Front;
+        typedef std::vector<std::pair<uint32_t, uint32_t> > FrequentValue;
+        typedef boost::unordered_map<TermList, FrequentValue> NgramFrequent;
         
         struct WeightType
         {
@@ -73,6 +75,11 @@ namespace sf1r {
             bool operator<(const WeightType& another) const
             {
                 return sum()<another.sum();
+            }
+            friend std::ostream& operator<<(std::ostream& out, const WeightType& wt)
+            {
+                out<<"cweight:"<<wt.cweight<<",aweight:"<<wt.aweight<<",tweight:"<<wt.tweight<<",kweight:"<<wt.kweight<<",paweight:"<<wt.paweight<<",paratio:"<<wt.paratio<<",typematch:"<<wt.type_match<<",brandmatch:"<<wt.brand_match<<",pricediff:"<<wt.price_diff;
+                return out;
             }
         };
 
@@ -249,6 +256,7 @@ namespace sf1r {
         struct KeywordTag
         {
             KeywordTag();
+            uint32_t id;
             TermList term_list;
             std::vector<CategoryNameApp> category_name_apps;
             std::vector<AttributeApp> attribute_apps;
@@ -260,6 +268,11 @@ namespace sf1r {
             double kweight;
             uint8_t ngram;
             std::vector<Position> positions;
+
+            static bool WeightCompare(const KeywordTag& k1, const KeywordTag& k2)
+            {
+                return k1.kweight>k2.kweight;
+            }
 
             template<class T>
             void SortAndUnique(std::vector<T>& vec)
@@ -274,19 +287,22 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & term_list & category_name_apps & attribute_apps & offer_category_apps & type_app;
+                ar & id & term_list & category_name_apps & attribute_apps & offer_category_apps & type_app & kweight;
             }
         };
 
         //typedef std::map<TermList, KeywordTag> KeywordMap;
         //typedef std::pair<TermList, KeywordTag> KeywordItem;
         typedef std::vector<KeywordTag> KeywordVector;
-        //struct KeywordApp
-        //{
-            //KeywordItem item;
-            //KeywordTypeApp type_app;
-        //};
-        //typedef boost::unordered_map<Position, KeywordApp> KeywordAppMap;
+        struct KeywordChain
+        {
+            KeywordChain(): next(NULL), prev(NULL)
+            {
+            }
+            KeywordTag value;
+            KeywordChain* next;
+            KeywordChain* prev;
+        };
 
         struct ProductCandidate
         {
@@ -393,7 +409,7 @@ namespace sf1r {
         struct Product
         {
             Product()
-            : cid(0), price(0.0), aweight(0.0), tweight(0.0)
+            : cid(0), price(0.0), aweight(0.0), tweight(0.0), score(0.0)
             {
             }
             std::string spid;
@@ -409,11 +425,22 @@ namespace sf1r {
             double aweight;
             double tweight;
             SimObject title_obj;
+            double score;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
                 ar & spid & stitle & scategory & cid & price & attributes & dattributes & sbrand & aweight & tweight & title_obj;
+            }
+
+            static bool FCategoryCompare(const Product& p1, const Product& p2)
+            {
+                return p1.fcategory<p2.fcategory;
+            }
+
+            static bool ScoreCompare(const Product& p1, const Product& p2)
+            {
+                return p1.score>p2.score;
             }
 
             //const std::vector<Attribute>& GetDisplayAttributes() const
@@ -497,13 +524,15 @@ namespace sf1r {
 
 
         void IndexOffer_(const std::string& offer_scd);
+        void IndexFuzzy_();
 
         void GenSuffixes_(const std::vector<term_t>& term_list, Suffixes& suffixes);
         void GenSuffixes_(const std::string& text, Suffixes& suffixes);
         void ConstructSuffixTrie_(TrieType& trie);
         term_t GetTerm_(const UString& text);
         term_t GetTerm_(const std::string& text);
-        std::string GetText_(const TermList& tl);
+        std::string GetText_(const TermList& tl) const;
+        std::string GetText_(const term_t& term) const;
         void GetTerms_(const std::string& text, std::vector<term_t>& term_list);
         void GetTerms_(const UString& text, std::vector<term_t>& term_list);
         void GetCRTerms_(const UString& text, std::vector<term_t>& term_list);
@@ -511,6 +540,7 @@ namespace sf1r {
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
         void GetKeywordVector_(const TermList& term_list, KeywordVector& keyword_vector);
+        void GetKeywordVector2_(const TermList& term_list, KeywordVector& keyword_vector);
         bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
         void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
@@ -550,6 +580,23 @@ namespace sf1r {
             return true;
         }
 
+        bool IsSymbol_(term_t term) const
+        {
+            return symbol_terms_.find(term)!=symbol_terms_.end();
+        }
+
+        bool IsConnectSymbol_(term_t term) const
+        {
+            return connect_symbols_.find(term)!=connect_symbols_.end();
+        }
+
+        bool IsTextSymbol_(term_t term) const
+        {
+            return text_symbols_.find(term)!=text_symbols_.end();
+        }
+
+        bool IsBlankSplit_(const UString& t1, const UString& t2) const;
+
 
     private:
         std::string path_;
@@ -558,6 +605,7 @@ namespace sf1r {
         bool use_price_sim_;
         bool matcher_only_;
         uint16_t category_max_depth_;
+        bool use_ngram_;
         idmlib::sim::StringSimilarity string_similarity_;
         AttributeIdManager* aid_manager_;
         IdManager id_manager_;
@@ -565,10 +613,17 @@ namespace sf1r {
         idmlib::util::IDMAnalyzer* char_analyzer_;
         idmlib::util::IDMAnalyzer* chars_analyzer_;
         std::string test_docid_;
+        boost::unordered_set<term_t> symbol_terms_;
+        boost::unordered_set<term_t> text_symbols_;
         std::string left_bracket_;
         std::string right_bracket_;
+        std::string place_holder_;
+        std::string blank_;
         term_t left_bracket_term_;
         term_t right_bracket_term_;
+        term_t place_holder_term_;
+        term_t blank_term_;
+        boost::unordered_set<term_t> connect_symbols_;
         std::vector<Product> products_;
         std::vector<std::string> keywords_thirdparty_;
         KeywordSet not_keywords_;
@@ -579,6 +634,8 @@ namespace sf1r {
         KeywordSet keyword_set_;
         TrieType trie_;
         Back2Front back2front_;
+        KeywordVector all_keywords_; //not serialized
+        //NgramFrequent nf_;
 
         const static double optional_weight_ = 0.2;
         const static std::string AVERSION;
