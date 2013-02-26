@@ -90,11 +90,18 @@ void RebuildTask::doTask()
         LOG(ERROR) << "Collection for rebuilding already started: " << rebuildCollectionName_;
         return;
     }
-    
-    if (bfs::exists(bfs::path(collPath.getBasePath()).parent_path()/bfs::path(rebuildCollectionName_)))
+
+    bfs::path basePath(collPath.getBasePath());
+    if (basePath.filename().string() == ".")
+        basePath = basePath.parent_path().parent_path();
+    else
+        basePath = basePath.parent_path();
+
+    LOG(INFO) << "rebuild path : " << basePath/bfs::path(rebuildCollectionName_);
+    if (bfs::exists(basePath/bfs::path(rebuildCollectionName_)))
     {
         LOG(INFO) << "the rebuild collection was not deleted properly last time, removing it!";
-        bfs::remove_all(bfs::path(collPath.getBasePath()).parent_path()/bfs::path(rebuildCollectionName_));
+        bfs::remove_all(basePath/bfs::path(rebuildCollectionName_));
     }
 
     // start collection for rebuilding

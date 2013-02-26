@@ -336,10 +336,10 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     scd_writer_->Flush();
     indexProgress_.reset();
 
-    size_t currTotalSCDSize = getTotalScdSize_(scdList)/(1024*1024);
+    indexProgress_.totalFileSize_ = getTotalScdSize_(scdList);
+    size_t currTotalSCDSize = indexProgress_.totalFileSize_/(1024*1024);
     string scdPath = bundleConfig_->indexSCDPath();
     indexProgress_.totalFileNum = scdList.size();
-    indexProgress_.totalFileSize_ = currTotalSCDSize;
 
     if (indexProgress_.totalFileNum == 0)
     {
@@ -2605,15 +2605,8 @@ bool IndexWorker::makeForwardIndex_(
 
 size_t IndexWorker::getTotalScdSize_(const std::vector<std::string>& scdlist)
 {
-    string scdPath = bundleConfig_->indexSCDPath();
-
     ScdParser parser(bundleConfig_->encoding_);
-
     size_t sizeInBytes = 0;
-    // search the directory for files
-    static const bfs::directory_iterator kItrEnd;
-
-    for (bfs::directory_iterator itr(scdPath); itr != kItrEnd; ++itr)
     for (size_t i = 0; i < scdlist.size(); ++i)
     {
         if (bfs::is_regular_file(scdlist[i]))
