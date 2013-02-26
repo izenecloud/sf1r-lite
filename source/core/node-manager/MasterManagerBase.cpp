@@ -2,6 +2,7 @@
 #include "SuperNodeManager.h"
 #include "NodeManagerBase.h"
 #include "ZooKeeperNamespace.h"
+#include "DistributeTest.hpp"
 
 #include <boost/lexical_cast.hpp>
 
@@ -271,6 +272,7 @@ bool MasterManagerBase::getWriteReqNodeData(ZNode& znode)
 
 void MasterManagerBase::checkForWriteReq()
 {
+    DistributeTestSuit::loadTestConf();
     if (!isDistributeEnable_)
         return;
     if (!zookeeper_ || !zookeeper_->isConnected())

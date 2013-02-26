@@ -954,6 +954,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     }
     else if (path == curr_primary_path_)
     {
+        DistributeTestSuit::loadTestConf();
         NodeStateType primary_state = getPrimaryState();
         LOG(INFO) << "current primary node changed : " << primary_state;
         if (nodeState_ == NODE_STATE_STARTED)

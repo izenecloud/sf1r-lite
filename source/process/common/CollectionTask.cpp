@@ -84,6 +84,19 @@ void RebuildTask::doTask()
     CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
     collDir = collPath.getCollectionDataPath() + collPath.getCurrCollectionDir();
 
+    CollectionHandler* rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
+    if (rebuildCollHandler)
+    {
+        LOG(ERROR) << "Collection for rebuilding already started: " << rebuildCollectionName_;
+        return;
+    }
+    
+    if (bfs::exists(bfs::path(collPath.getBasePath()).parent_path()/bfs::path(rebuildCollectionName_)))
+    {
+        LOG(INFO) << "the rebuild collection was not deleted properly last time, removing it!";
+        bfs::remove_all(bfs::path(collPath.getBasePath()).parent_path()/bfs::path(rebuildCollectionName_));
+    }
+
     // start collection for rebuilding
     LOG(INFO) << "## startCollection for rebuilding: " << rebuildCollectionName_;
     if (!CollectionManager::get()->startCollection(rebuildCollectionName_, configFile, true))
@@ -94,7 +107,7 @@ void RebuildTask::doTask()
     }
     CollectionManager::MutexType* recollMutex = CollectionManager::get()->getCollectionMutex(rebuildCollectionName_);
     CollectionManager::ScopedReadLock recollLock(*recollMutex);
-    CollectionHandler* rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
+    rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
     LOG(INFO) << "# # # #  start rebuilding";
     rebuildCollHandler->indexTaskService_->index(documentManager);
     CollectionPath& rebuildCollPath = rebuildCollHandler->indexTaskService_->getCollectionPath();

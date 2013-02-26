@@ -336,9 +336,10 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     scd_writer_->Flush();
     indexProgress_.reset();
 
-    size_t currTotalSCDSize = getTotalScdSize_();
+    size_t currTotalSCDSize = getTotalScdSize_(scdList);
     string scdPath = bundleConfig_->indexSCDPath();
     indexProgress_.totalFileNum = scdList.size();
+    indexProgress_.totalFileSize_ = currTotalSCDSize;
 
     if (indexProgress_.totalFileNum == 0)
     {
@@ -594,6 +595,9 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     docid_t curDocId = 0;
     docid_t insertedCount = 0;
     idManager_->warmUp();
+
+    LOG(INFO) << "before rebuild : orig doc maxDocId is " << documentManager_->getMaxDocId();
+    LOG(INFO) << "before rebuild : rebuild doc maxDocId is " << documentManager->getMaxDocId();
     for (curDocId = minDocId; curDocId <= maxDocId; curDocId++)
     {
         if (documentManager->isDeleted(curDocId))
@@ -625,7 +629,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         }
         else
         {
-            //LOG(WARNING) << "Failed to create new docid for: " << curDocId;
+            LOG(INFO) << "Failed to create new docid for: " << curDocId;
             continue;
         }
 
@@ -666,6 +670,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
 
     flush();
+
     return true;
 }
 
@@ -1344,7 +1349,8 @@ bool IndexWorker::createInsertDocId_(
 
     if (docId <= documentManager_->getMaxDocId())
     {
-        //LOG(WARNING) << "skip insert doc id " << docId << ", it is less than max DocId";
+        LOG(WARNING) << "skip insert doc id " << docId << ", it is less than max DocId" <<
+            documentManager_->getMaxDocId();
         return false;
     }
 
@@ -2597,7 +2603,7 @@ bool IndexWorker::makeForwardIndex_(
     return true;
 }
 
-size_t IndexWorker::getTotalScdSize_()
+size_t IndexWorker::getTotalScdSize_(const std::vector<std::string>& scdlist)
 {
     string scdPath = bundleConfig_->indexSCDPath();
 
@@ -2606,16 +2612,14 @@ size_t IndexWorker::getTotalScdSize_()
     size_t sizeInBytes = 0;
     // search the directory for files
     static const bfs::directory_iterator kItrEnd;
+
     for (bfs::directory_iterator itr(scdPath); itr != kItrEnd; ++itr)
+    for (size_t i = 0; i < scdlist.size(); ++i)
     {
-        if (bfs::is_regular_file(itr->status()))
+        if (bfs::is_regular_file(scdlist[i]))
         {
-            std::string fileName = itr->path().filename().string();
-            if (parser.checkSCDFormat(fileName))
-            {
-                parser.load(scdPath + fileName);
-                sizeInBytes += parser.getFileSize();
-            }
+            parser.load(scdlist[i]);
+            sizeInBytes += parser.getFileSize();
         }
     }
     return sizeInBytes/(1024*1024);

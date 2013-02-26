@@ -242,7 +242,7 @@ private:
             unsigned int propertyId,
             const AnalysisInfo& analysisInfo);
 
-    size_t getTotalScdSize_();
+    size_t getTotalScdSize_(const std::vector<std::string>& scdlist);
 
     bool requireBackup_(size_t currTotalScdSize);
 

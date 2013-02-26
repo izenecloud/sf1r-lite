@@ -213,7 +213,7 @@ def set_fail_test_conf(args):
         fail_dict[ip] = failtype
     fp.close()
     for host in primary_host + replicas_host:
-        failtype = '0'
+        failtype = '1'
         if host in fail_dict.keys():
             failtype = fail_dict[host]
         cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo ' + failtype + ' > ./distribute_test.conf'
@@ -347,12 +347,22 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
 
 def run_auto_fail_test(args):
     test_writereq_files = []
+    special_fail_conf_files = []
     jsonfile = re.compile(r'\.json$', re.IGNORECASE)
+    failconf_re = re.compile(r'\.failconf$', re.IGNORECASE)
+
     for root,dirs,files in os.walk(auto_testfile_dir):
         oldlen = len(test_writereq_files)
         test_writereq_files += filter(lambda x:jsonfile.search(x)<>None, files)
         for i in range(oldlen, len(test_writereq_files)):
             test_writereq_files[i] = root + '/' + test_writereq_files[i]
+            print 'test write request file added ' + test_writereq_files[i]
+
+        oldlen = len(special_fail_conf_files)
+        special_fail_conf_files += filter(lambda x:failconf_re.search(x)<>None, files)
+        for i in range(oldlen, len(special_fail_conf_files)):
+            special_fail_conf_files[i] = root + '/' + special_fail_conf_files[i]
+            print 'special fail conf added ' + special_fail_conf_files[i]
 
     pid = os.fork()
     if pid > 0:
@@ -364,18 +374,30 @@ def run_auto_fail_test(args):
         for test_writereq in test_writereq_files:
             printtofile ('running fail test for write request : ' + test_writereq)
 
-            # test for all kinds of primary fail
+            printtofile ('begin test for special fail conf')
+            for special_fail in special_fail_conf_files:
+                reset_state_and_run()
+                printtofile ('testing for special fail : ' + special_fail)
+                set_fail_test_conf(['', '', special_fail])
+                run_testwrite([], 0, test_writereq)
+
             printtofile ('begin test for primary fail')
-            for i in range(4, 13) + range(61, 63) + range(71, 73):
+            for i in range(3, 13) + range(61, 63) + range(71, 73):
                 reset_state_and_run()
                 printtofile ('testing for primary fail type : ' + str(i))
                 run_testwrite(primary_host, i, test_writereq)
                             
-            printtofile ('begin test for replica fail')
+            printtofile ('begin test for first replica fail')
             for i in range(31, 42) + range(61, 63) + range(71, 73):
                 reset_state_and_run()
                 printtofile ('testing for replica fail type : ' + str(i))
                 run_testwrite([replicas_host[0]], i, test_writereq)
+
+            printtofile ('begin test for last replica fail')
+            for i in range(31, 42) + range(61, 63) + range(71, 73):
+                reset_state_and_run()
+                printtofile ('testing for replica fail type : ' + str(i))
+                run_testwrite([replicas_host[len(replicas_host) - 1]], i, test_writereq)
 
             # test for primary electing fail.
             reset_state_and_run()
