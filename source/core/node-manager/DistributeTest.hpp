@@ -31,6 +31,8 @@ enum TestFailType
     PrimaryFail_At_Wait_Replica_FinishReq,
     PrimaryFail_At_Wait_Replica_FinishReqLog,
     PrimaryFail_At_Wait_Replica_Recovery,
+    PrimaryFail_At_Master_PrepareWrite,
+    PrimaryFail_At_Master_checkForNewWrite,
 
     ReplicaFail_Begin = 30,
     ReplicaFail_At_Electing,

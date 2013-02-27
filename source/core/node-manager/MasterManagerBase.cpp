@@ -247,6 +247,7 @@ bool MasterManagerBase::prepareWriteReq()
     }
     LOG(INFO) << "prepareWriteReq success on server : " << serverRealPath_;
     //masterState_ = MASTER_STATE_WAIT_WORKER_FINISH_REQ;
+    DistributeTestSuit::testFail(PrimaryFail_At_Master_PrepareWrite);
     return true;
 }
 
@@ -347,6 +348,7 @@ void MasterManagerBase::checkForNewWriteReq()
     if (!reqchild.empty())
     {
         LOG(INFO) << "there are some write request waiting: " << reqchild.size();
+        DistributeTestSuit::testFail(PrimaryFail_At_Master_checkForNewWrite);
         if (on_new_req_available_)
         {
             bool ret = on_new_req_available_();
