@@ -32,6 +32,7 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("documents_update");
     write_req_set_.insert("documents_update_inplace");
     write_req_set_.insert("documents_set_top_group_label");
+    write_req_set_.insert("documents_log_group_label");
     write_req_set_.insert("collection_start_collection");
     write_req_set_.insert("collection_stop_collection");
     write_req_set_.insert("collection_rebuild_collection");

@@ -1589,18 +1589,37 @@ bool MiningManager::clickGroupLabel(
     const std::vector<std::string>& groupPath
 )
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
     if (! logger)
     {
         LOG(ERROR) << "GroupLabelLogger is not initialized for group property: " << propName;
+        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
     faceted::PropValueTable::pvid_t pvId = propValueId_(propName, groupPath);
     if (pvId == 0)
+    {
+        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
+    }
 
-    return logger->logLabel(query, pvId);
+    NoAdditionNoRollbackReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = logger->logLabel(query, pvId);
+    DistributeRequestHooker::get()->processLocalFinished(ret);
+    return ret;
 }
 
 bool MiningManager::getFreqGroupLabel(
