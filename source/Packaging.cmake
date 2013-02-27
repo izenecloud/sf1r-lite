@@ -48,9 +48,9 @@ ENDMACRO(THREE_PART_VERSION_TO_VARS)
 # Macro for copying third party libraries (boost, tokyo cabinet, glog)
 ####
 MACRO(INSTALL_RELATED_LIBRARIES)
-MESSAGE(STATUS "packing >>>>>> ${ARGV}")
+MESSAGE(STATUS "Packing >>>>>> ${ARGV}")
 FOREACH(thirdlib ${ARGV})
-    MESSAGE(STATUS "thirdlib >>>>>> ${thirdlib}")
+    #MESSAGE(STATUS ">>>>>> ${thirdlib}")
     IF( ${thirdlib} MATCHES ".+\\.so" OR ${thirdlib} MATCHES ".+\\.so\\..+" )
 
         get_filename_component(libfilename ${thirdlib} NAME)
