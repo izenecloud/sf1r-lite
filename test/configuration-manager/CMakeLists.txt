@@ -33,7 +33,7 @@ SET(libs
   # #external
   ${Boost_LIBRARIES}
   ${Glog_LIBRARIES}
-  ${sqlite3_LIBRARIES}
+  ${SQLITE3_LIBRARIES}
   ${xml2_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}

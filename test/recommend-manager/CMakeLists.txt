@@ -59,7 +59,7 @@ SET(libs
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
   ${xml2_LIBRARIES}
-  ${sqlite3_LIBRARIES}
+  ${SQLITE3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${Thrift_LIBS}
   ${LibCURL_LIBRARIES}

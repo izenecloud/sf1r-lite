@@ -49,7 +49,7 @@ SET(libs
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
-  ${sqlite3_LIBRARIES}
+  ${SQLITE3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}

@@ -48,9 +48,9 @@ ENDMACRO(THREE_PART_VERSION_TO_VARS)
 # Macro for copying third party libraries (boost, tokyo cabinet, glog)
 ####
 MACRO(INSTALL_RELATED_LIBRARIES)
-MESSAGE(STATUS ">>>>>> ${ARGV}")
+MESSAGE(STATUS "packing >>>>>> ${ARGV}")
 FOREACH(thirdlib ${ARGV})
-    #MESSAGE(STATUS ">>>>>> ${thirdlib}")
+    MESSAGE(STATUS "thirdlib >>>>>> ${thirdlib}")
     IF( ${thirdlib} MATCHES ".+\\.so" OR ${thirdlib} MATCHES ".+\\.so\\..+" )
 
         get_filename_component(libfilename ${thirdlib} NAME)
@@ -65,25 +65,25 @@ FOREACH(thirdlib ${ARGV})
         IF(oriname)
             STRING(STRIP ${oriname} oriname)
 
-            #MESSAGE(STATUS "NAME: ${libfilename}")
-            #MESSAGE(STATUS "ORINAME: ${oriname}")
-            #MESSAGE(STATUS "PATH: ${libpath}")
+            MESSAGE(STATUS "NAME: ${libfilename}")
+            MESSAGE(STATUS "ORINAME: ${oriname}")
+            MESSAGE(STATUS "PATH: ${libpath}")
 
             THREE_PART_VERSION_TO_VARS(${oriname} major_vers minor_vers patch_vers)
-            #MESSAGE("version = ${major_vers}%${minor_vers}%${patch_vers}")
+            MESSAGE("version = ${major_vers}%${minor_vers}%${patch_vers}")
 
-            #MESSAGE(STATUS "EXISTS: ${thirdlib}.${major_vers}")
+            MESSAGE(STATUS "EXISTS: ${thirdlib}.${major_vers}")
             IF(EXISTS "${thirdlib}.${major_vers}")
                 LIST(APPEND filestocopy "${thirdlib}.${major_vers}")
             ENDIF(EXISTS "${thirdlib}.${major_vers}")
 
-            #MESSAGE(STATUS "EXISTS: ${libpath}/${oriname}" )
+            MESSAGE(STATUS "EXISTS: ${libpath}/${oriname}" )
             IF(EXISTS "${libpath}/${oriname}" )
                 LIST(APPEND filestocopy "${libpath}/${oriname}")
             ENDIF(EXISTS "${libpath}/${oriname}" )
         ENDIF(oriname)
 
-        #MESSAGE(STATUS "@@@@ ${filestocopy}")
+        MESSAGE(STATUS "@@@@ ${filestocopy}")
 
         INSTALL(PROGRAMS ${filestocopy}
             DESTINATION lib-thirdparty
@@ -108,7 +108,7 @@ IF(NOT ENV_ONLY_PACKAGE_SF1)
   INSTALL_RELATED_LIBRARIES(${ImageMagick_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${JPEG_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${PNG_LIBRARIES})
-  INSTALL_RELATED_LIBRARIES(${sqlite3_LIBRARIES})
+  INSTALL_RELATED_LIBRARIES(${SQLITE3_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${xml2_LIBRARIES})
   INSTALL_RELATED_LIBRARIES(${Thrift_LIBS})
 

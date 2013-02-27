@@ -56,7 +56,7 @@ TARGET_LINK_LIBRARIES(LicenseFileGenerator
   #external
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
-  ${sqlite3_LIBRARIES}
+  ${SQLITE3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
@@ -97,7 +97,7 @@ TARGET_LINK_LIBRARIES(CustLicenseFileGenerator
   #external
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
-  ${sqlite3_LIBRARIES}
+  ${SQLITE3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
@@ -111,7 +111,7 @@ SET(EXTERNAL_LIBS
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
-  ${sqlite3_LIBRARIES}
+  ${SQLITE3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}

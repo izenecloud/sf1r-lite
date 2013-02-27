@@ -109,7 +109,7 @@ TARGET_LINK_LIBRARIES(ImgDupDetector
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
-  ${sqlite3_LIBRARIES}
+  ${SQLITE3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${Thrift_LIBS}
   ${LibCURL_LIBRARIES}
@@ -158,7 +158,7 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
-  ${sqlite3_LIBRARIES}
+  ${SQLITE3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${Thrift_LIBS}
   ${LibCURL_LIBRARIES}
