@@ -1000,7 +1000,8 @@ void NodeManagerBase::onDataChanged(const std::string& path)
                         NodeStateType state = getNodeState(node_list[i]);
                         if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
                             state == NODE_STATE_STARTED ||
-                            state == NODE_STATE_PROCESSING_REQ_RUNNING)
+                            state == NODE_STATE_PROCESSING_REQ_RUNNING ||
+                            state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
                         {
                             total++;
                         }
@@ -1192,7 +1193,8 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
 void NodeManagerBase::setNodeState(NodeStateType state)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
-    if (getPrimaryState() == NODE_STATE_ELECTING)
+    NodeStateType primary_state = getPrimaryState();
+    if (primary_state == NODE_STATE_ELECTING)
     {
         if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
             state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
@@ -1285,7 +1287,8 @@ void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
 
     if (processing_step_ < 100)
     {
-        if (!canAbortRequest())
+        if (!canAbortRequest() &&
+            nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
             processing_step_ = 100;
         if(!self_changed)
         {
@@ -1372,7 +1375,8 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
         if (node_list[i] == curr_primary_path_)
             continue;
         if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
-            state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
+            state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT ||
+            state == NODE_STATE_PROCESSING_REQ_RUNNING)
         {
             all_secondary_ready = false;
             LOG(INFO) << "one secondary node did not abort while waiting abort request: " <<
