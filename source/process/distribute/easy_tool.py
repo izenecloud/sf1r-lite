@@ -256,7 +256,7 @@ def reset_state_and_run():
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_index])
         printtofile (out)
 
-    (failed_host,down_host) = check_col(60)
+    (failed_host,down_host) = check_col(30)
     if len(failed_host) > 0 or len(down_host) > 0:
         printtofile ('reset state wrong, data is not consistent.')
         exit(0)
@@ -384,7 +384,7 @@ def run_auto_fail_test(args):
                 run_testwrite([], 0, test_writereq)
 
             printtofile ('begin test for primary fail')
-            for i in range(3, 13) + range(61, 63) + range(71, 73):
+            for i in range(3, 15) + range(61, 63) + range(71, 73):
                 reset_state_and_run()
                 printtofile ('testing for primary fail type : ' + str(i))
                 run_testwrite(primary_host, i, test_writereq)

@@ -2482,6 +2482,12 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
 
 void MiningManager::flush()
 {
+    for (GroupLabelLoggerMap::iterator it = groupLabelLoggerMap_.begin();
+            it != groupLabelLoggerMap_.end(); ++it)
+    {
+        it->second->flush();
+    }
+
     if (customRankManager_) customRankManager_->flush();
     if (merchantScoreManager_) merchantScoreManager_->flush();
     if (kvManager_) kvManager_->flush();
