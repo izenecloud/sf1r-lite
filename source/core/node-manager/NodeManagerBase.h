@@ -191,12 +191,12 @@ protected:
     void updateNodeState(const ZNode& nodedata);
     NodeStateType getPrimaryState();
     NodeStateType getNodeState(const std::string& nodepath);
-    void checkSecondaryState();
-    void checkSecondaryElecting();
-    void checkSecondaryReqProcess();
-    void checkSecondaryReqFinishLog();
-    void checkSecondaryReqAbort();
-    void checkSecondaryRecovery();
+    void checkSecondaryState(bool self_changed);
+    void checkSecondaryElecting(bool self_changed);
+    void checkSecondaryReqProcess(bool self_changed);
+    void checkSecondaryReqFinishLog(bool self_changed);
+    void checkSecondaryReqAbort(bool self_changed);
+    void checkSecondaryRecovery(bool self_changed);
     /**
      * Deregister SF1 node on exit
      */

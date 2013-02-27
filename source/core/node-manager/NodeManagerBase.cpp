@@ -604,7 +604,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         {
             LOG(INFO) << "I enter as primary success." << self_primary_path_;
             nodeState_ = NODE_STATE_ELECTING;
-            checkSecondaryElecting();
+            checkSecondaryElecting(false);
         }
         else
         {
@@ -908,7 +908,7 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
             updateNodeStateToNewState(NODE_STATE_ELECTING);
             LOG(INFO) << "begin electing, wait all secondary agree on primary : " << curr_primary_path_;
             DistributeTestSuit::testFail(PrimaryFail_At_Electing);
-            checkSecondaryElecting();
+            checkSecondaryElecting(true);
         }
         else
         {
@@ -922,7 +922,7 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
     {
         LOG(WARNING) << "secondary node was deleted : " << path;
         LOG(INFO) << "recheck node for electing or request process";
-        checkSecondaryState();        
+        checkSecondaryState(false);        
     }
 }
 
@@ -934,15 +934,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     // because there may only one node in distribute system.
     if (isPrimaryWithoutLock())
     {
-        std::vector<std::string> node_list;
-        zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
-        if (node_list.size() > 1)
-        {
-            if (path == self_primary_path_ || path == nodePath_ )
-                return;
-        }
-
-        checkSecondaryState();
+        checkSecondaryState(path == self_primary_path_ || path == nodePath_);
     }
     else if (path == self_primary_path_ || path == nodePath_)
     {
@@ -1122,44 +1114,44 @@ void NodeManagerBase::onChildrenChanged(const std::string& path)
     if (path == primaryNodeParentPath_ && isPrimaryWithoutLock())
     {
         boost::unique_lock<boost::mutex> lock(mutex_);
-        checkSecondaryState();        
+        checkSecondaryState(false);        
     }
 }
 
 // note : all check is for primary node. and they 
 // should be called only in the thread of event handler in ZooKeeper(like onDataChanged)
 //  or when start up and stopping. Any other call may cause deadlock.
-void NodeManagerBase::checkSecondaryState()
+void NodeManagerBase::checkSecondaryState(bool self_changed)
 {
     switch(nodeState_)
     {
     case NODE_STATE_ELECTING:
         DistributeTestSuit::testFail(PrimaryFail_At_Electing);
-        checkSecondaryElecting();
+        checkSecondaryElecting(self_changed);
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
         DistributeTestSuit::testFail(PrimaryFail_At_Wait_Replica_Abort);
-        checkSecondaryReqAbort();
+        checkSecondaryReqAbort(self_changed);
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
         DistributeTestSuit::testFail(PrimaryFail_At_Wait_Replica_FinishReq);
-        checkSecondaryReqProcess();
+        checkSecondaryReqProcess(self_changed);
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG:
         DistributeTestSuit::testFail(PrimaryFail_At_Wait_Replica_FinishReqLog);
-        checkSecondaryReqFinishLog();
+        checkSecondaryReqFinishLog(self_changed);
         break;
     case NODE_STATE_RECOVER_WAIT_REPLICA_FINISH:
     case NODE_STATE_STARTED:
         DistributeTestSuit::testFail(PrimaryFail_At_Wait_Replica_Recovery);
-        checkSecondaryRecovery();
+        checkSecondaryRecovery(self_changed);
         break;
     default:
         break;
     }
 }
 
-void NodeManagerBase::checkSecondaryElecting()
+void NodeManagerBase::checkSecondaryElecting(bool self_changed)
 {
     if (nodeState_ != NODE_STATE_ELECTING)
     {
@@ -1189,6 +1181,10 @@ void NodeManagerBase::checkSecondaryElecting()
         if (cb_on_elect_finished_)
             cb_on_elect_finished_();
         updateNodeStateToNewState(NODE_STATE_STARTED);
+    }
+    else if(!self_changed)
+    {
+        updateNodeState();
     }
 }
 
@@ -1252,7 +1248,7 @@ void NodeManagerBase::updateNodeState(const ZNode& nodedata)
     zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
 }
 
-void NodeManagerBase::checkSecondaryReqProcess()
+void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
 {
     if (nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
     {
@@ -1291,7 +1287,10 @@ void NodeManagerBase::checkSecondaryReqProcess()
     {
         if (!canAbortRequest())
             processing_step_ = 100;
-        updateNodeState();
+        if(!self_changed)
+        {
+            updateNodeState();
+        }
     }
 
     if (all_secondary_ready)
@@ -1304,7 +1303,7 @@ void NodeManagerBase::checkSecondaryReqProcess()
     }
 }
 
-void NodeManagerBase::checkSecondaryReqFinishLog()
+void NodeManagerBase::checkSecondaryReqFinishLog(bool self_changed)
 {
     if (nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
     {
@@ -1346,12 +1345,16 @@ void NodeManagerBase::checkSecondaryReqFinishLog()
         if (cb_on_wait_finish_log_)
             cb_on_wait_finish_log_();
         //updateNodeStateToNewState(NODE_STATE_STARTED);
-        checkSecondaryRecovery();
+        checkSecondaryRecovery(self_changed);
         LOG(INFO) << "all replica finished write log, ready for next new request.";
+    }
+    else if (!self_changed)
+    {
+        updateNodeState();
     }
 }
 
-void NodeManagerBase::checkSecondaryReqAbort()
+void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
 {
     if (nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
     {
@@ -1384,13 +1387,13 @@ void NodeManagerBase::checkSecondaryReqAbort()
             cb_on_wait_replica_abort_();
         updateNodeStateToNewState(NODE_STATE_STARTED);
     }
-    else
+    else if (!self_changed)
     {
         updateNodeState();
     }
 }
 
-void NodeManagerBase::checkSecondaryRecovery()
+void NodeManagerBase::checkSecondaryRecovery(bool self_changed)
 {
     LOG(INFO) << "checking replica recovery state , waiting for sync to primary.";
     std::vector<std::string> node_list;
@@ -1414,8 +1417,13 @@ void NodeManagerBase::checkSecondaryRecovery()
     if (is_any_recovery_waiting)
     {
         // 
-        nodeState_ = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
-        updateNodeState();
+        if (!self_changed)
+        {
+            nodeState_ = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
+            updateNodeState();
+        }
+        else
+            updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_REPLICA_FINISH);
     }
     else
     {
