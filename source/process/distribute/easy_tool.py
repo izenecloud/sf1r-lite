@@ -313,7 +313,7 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
     # failed host should be started last.
     first_start_host = primary_host + replicas_host
     for host in down_host:
-        if host not in testfail_host:
+        if (host not in testfail_host) and (len(testfail_host) > 0):
             printtofile ('a host down not by expected.' + host)
         first_start_host.remove(host)
     if len(first_start_host) > 0:
@@ -344,6 +344,8 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
         printtofile ('check failed for down_host after retry.')
         sys.exit(0)
 
+    cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo 1 > ./distribute_test.conf'
+    send_cmd_andstay(primary_host + replicas_host, cmdstr)
 
 def run_auto_fail_test(args):
     test_writereq_files = []
@@ -399,14 +401,12 @@ def run_auto_fail_test(args):
                 printtofile ('testing for replica fail type : ' + str(i))
                 run_testwrite([replicas_host[len(replicas_host) - 1]], i, test_writereq)
 
-            # test for primary electing fail.
-            reset_state_and_run()
-            printtofile ('testing for primary electing fail')
-            # fail primary.
-            cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo 3 > ./distribute_test.conf'
-            send_cmd_andstay(primary_host, cmdstr)
-            # fail the first backup primary to make the first electing fail.
-            run_testwrite([replicas_host[0]], 2, test_writereq)
+        # test for full write without clean state.
+        reset_state_and_run()
+        printtofile ('begin test for full write test without clean state')
+        for test_writereq in test_writereq_files:
+            run_testwrite([], 0, test_writereq)
+
 
 handler_dict = { 'syncfile':syncfiles,
         'start_all':start_all,

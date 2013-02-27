@@ -20,42 +20,39 @@ namespace sf1r
 
 void CollectionTask::cronTask(int calltype)
 {
-    if (isCronTask_)
+    if( (isCronTask_ && cronExpression_.matches_now()) || calltype > 0)
     {
-        if(cronExpression_.matches_now() || calltype > 0)
+        if (calltype == 0 && NodeManagerBase::get()->isDistributed())
         {
-            if (calltype == 0 && NodeManagerBase::get()->isDistributed())
+            if (NodeManagerBase::get()->isPrimary())
             {
-                if (NodeManagerBase::get()->isPrimary())
-                {
-                    MasterManagerBase::get()->pushWriteReq(getTaskName(), "cron");
-                    LOG(INFO) << "push cron job to queue on primary : " << getTaskName();
-                }
-                else
-                {
-                    LOG(INFO) << "cron job on replica ignored. ";
-                }
-                return;
+                MasterManagerBase::get()->pushWriteReq(getTaskName(), "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << getTaskName();
             }
-
-            if (!DistributeRequestHooker::get()->isValid())
+            else
             {
-                LOG(INFO) << "cron job ignored for invalid : " << getTaskName();
-                return;
+                LOG(INFO) << "cron job on replica ignored. ";
             }
-
-            CronJobReqLog reqlog;
-            reqlog.cron_time = Utilities::createTimeStamp();
-            if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
-            {
-                LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << getTaskName() << std::endl;
-                return;
-            }
-
-            doTask();
-
-            DistributeRequestHooker::get()->processLocalFinished(true);
+            return;
         }
+
+        if (!DistributeRequestHooker::get()->isValid())
+        {
+            LOG(INFO) << "cron job ignored for invalid : " << getTaskName();
+            return;
+        }
+
+        CronJobReqLog reqlog;
+        reqlog.cron_time = Utilities::createTimeStamp();
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << getTaskName() << std::endl;
+            return;
+        }
+
+        doTask();
+
+        DistributeRequestHooker::get()->processLocalFinished(true);
     }
 }
 

@@ -102,7 +102,7 @@ void CommandsController::indexRecommend_()
                 return;
             }
             taskService->buildCollection();
-		return;
+            return;
         }
         else if (request().callType() != Request::FromAPI)
         {
