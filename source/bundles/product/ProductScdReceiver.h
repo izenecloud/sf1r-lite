@@ -36,6 +36,7 @@ private:
     bool CopyFileListToDir_(const std::vector<boost::filesystem::path>& file_list, const boost::filesystem::path& to_dir);
 
     bool NextScdFileName_(std::string& filename) const;
+    bool pushIndexRequest();
 
 private:
     IndexTaskService* index_service_;

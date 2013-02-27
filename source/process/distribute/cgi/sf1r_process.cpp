@@ -189,7 +189,7 @@ int main(int argc, char* argv[])
 	{
         if (argc < 5)
         {
-            error_log("arg not enough. sf1rhost:sf1rport fluent_ip fluent_port fluent_tag ");
+            error_log("arg not enough. sf1rhost:sf1rport fluent_ip fluent_port fluent_tag [distributed  match_master_name  set_seq total_set_num]");
             return -1;
         }
         std::string host( "180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" );
@@ -227,6 +227,18 @@ int main(int argc, char* argv[])
             dconf.timeout = 30;
             dconf.zkTimeout = 2000;  //ms
             dconf.match_master_name = match_master;
+
+            if (argc > 8)
+            {
+                dconf.set_seq = boost::lexical_cast<int>(argv[7]);
+                dconf.total_set_num = boost::lexical_cast<int>(argv[8]);
+                if (dconf.set_seq > dconf.total_set_num)
+                {
+                    error_log("arg wrong. set_seq should not larger than total_set_num ");
+                    return -1;
+                }
+                error_log("arg : set_seq " + std::string(argv[7]) + ", total_set_num:" + std::string(argv[8]));
+            }
             Sf1rProcess::driver = new Sf1DistributedDriver(host, dconf);
             error_log("config as distributed sf1r node");
         }
