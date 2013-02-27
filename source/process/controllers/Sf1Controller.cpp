@@ -73,7 +73,7 @@ void Sf1Controller::postprocess()
 {
     if (!response().success() && DistributeRequestHooker::get()->isHooked())
     {
-        DistributeRequestHooker::get()->processFailedBeforePrepare();
+        DistributeRequestHooker::get()->processFinishedBeforePrepare(false);
         std::string errinfo;
         try
         {

@@ -35,6 +35,7 @@ enum ReqLogType
     // so we define a new request type, and add addition member.
     Req_Index,
     Req_CreateOrUpdate_Doc,
+    Req_Product,
 };
 
 #pragma pack(1)
@@ -252,6 +253,39 @@ struct IndexReqLog: public CommonReqData
         catch(const std::exception& e)
         {
             std::cerr << "unpack index data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+};
+
+struct ProductReqLog: public CommonReqData
+{
+    ProductReqLog()
+    {
+        reqtype = Req_Product;
+    }
+    std::vector<std::string> str_uuid_list;
+
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(str_uuid_list);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&str_uuid_list);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack ProductReqLog data error: " << e.what() << std::endl;
             return false;
         }
         return true;

@@ -250,7 +250,7 @@ def reset_state_and_run():
     cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo 1 > ./distribute_test.conf'
     send_cmd_andstay(allhost, cmdstr)
     start_all([])
-    time.sleep(30)
+    time.sleep(20)
     # send index 
     for host in primary_host:
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_index])

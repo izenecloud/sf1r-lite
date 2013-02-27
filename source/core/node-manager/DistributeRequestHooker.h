@@ -65,7 +65,7 @@ public:
     void processLocalBegin();
     void processLocalFinished(bool finishsuccess);
     void processLocalFinished(bool finishsuccess, CommonReqData& updated_preparedata);
-    bool processFailedBeforePrepare();
+    bool processFinishedBeforePrepare(bool finishsuccess);
     bool onRequestFromPrimary(int type, const std::string& packed_reqdata);
 
     void waitReplicasProcessCallback();

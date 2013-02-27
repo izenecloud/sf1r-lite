@@ -251,11 +251,11 @@ void DistributeRequestHooker::processLocalBegin()
     NodeManagerBase::get()->beginReqProcess();
 }
 
-bool DistributeRequestHooker::processFailedBeforePrepare()
+bool DistributeRequestHooker::processFinishedBeforePrepare(bool finishsuccess)
 {
     if (!isHooked())
         return false;
-    if (hook_type_ == Request::FromLog)
+    if (!finishsuccess && hook_type_ == Request::FromLog)
     {
         LOG(ERROR) << "redo log failed finished, must exit.";
         forceExit();
@@ -285,10 +285,10 @@ void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
         return;
     //current_req_ = packed_req_data;
     TEST_FALSE_RET(FalseReturn_At_LocalFinished, finishsuccess)
+    if (processFinishedBeforePrepare(finishsuccess))
+        return;
     if (!finishsuccess)
     {
-        if (processFailedBeforePrepare())
-            return;
         LOG(INFO) << "process finished fail.";
         abortRequest();
         return;

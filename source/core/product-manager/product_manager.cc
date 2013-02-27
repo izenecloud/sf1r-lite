@@ -10,6 +10,7 @@
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
 #include <document-manager/DocumentManager.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 #include <common/ScdWriter.h>
 #include <common/Utilities.h>
@@ -502,46 +503,66 @@ bool ProductManager::GenOperations_()
 
 bool ProductManager::UpdateADoc(const Document& doc)
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     if (config_.enable_clustering_algo)
     {
         if (inhook_)
         {
             error_ = "In Hook locks, collection was indexing, plz wait.";
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
         boost::mutex::scoped_lock lock(human_mutex_);
         if (!editor_->UpdateADoc(doc))
         {
             error_ = editor_->GetLastError();
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
         if (!GenOperations_())
         {
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
     }
+    DistributeRequestHooker::get()->processLocalFinished(true);
     return true;
 }
 bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumentType& info, const ProductEditOption& option)
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     if (config_.enable_clustering_algo)
     {
         if (inhook_)
         {
             error_ = "In Hook locks, collection was indexing, plz wait.";
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
         boost::mutex::scoped_lock lock(human_mutex_);
         if (!editor_->AddGroup(docid_list, info, option))
         {
             error_ = editor_->GetLastError();
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
         if (!GenOperations_())
         {
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
     }
+    DistributeRequestHooker::get()->processLocalFinished(true);
     return true;
 }
 
@@ -550,47 +571,67 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumen
 
 bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option)
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     if (config_.enable_clustering_algo)
     {
         if (inhook_)
         {
             error_ = "In Hook locks, collection was indexing, plz wait.";
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
         boost::mutex::scoped_lock lock(human_mutex_);
         if (!editor_->AppendToGroup(uuid, docid_list, option))
         {
             error_ = editor_->GetLastError();
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
         if (!GenOperations_())
         {
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
     }
+    DistributeRequestHooker::get()->processLocalFinished(true);
     return true;
 }
 
 bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option)
 {
+    if (!DistributeRequestHooker::get()->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
+
     if (config_.enable_clustering_algo)
     {
         if (inhook_)
         {
             error_ = "In Hook locks, collection was indexing, plz wait.";
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
         boost::mutex::scoped_lock lock(human_mutex_);
         if (!editor_->RemoveFromGroup(uuid, docid_list, option))
         {
             error_ = editor_->GetLastError();
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
         if (!GenOperations_())
         {
+            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
     }
+    DistributeRequestHooker::get()->processLocalFinished(true);
     return true;
 }
 

@@ -53,6 +53,11 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("recommend_visit_item");
     write_req_set_.insert("recommend_update_shopping_cart");
     write_req_set_.insert("recommend_track_event");
+
+    write_req_set_.insert("product_add_new_group");
+    write_req_set_.insert("product_append_to_group");
+    write_req_set_.insert("product_remove_from_group");
+    write_req_set_.insert("product_update_a_doc");
 }
 
 void ReqLogMgr::init(const std::string& basepath)

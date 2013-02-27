@@ -6,6 +6,8 @@
 
 #include <glog/logging.h>
 #include <common/Utilities.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/RequestLog.h>
 
 #define USE_LOG_SERVER
 
@@ -57,6 +59,14 @@ bool ProductEditor::UpdateADoc(const PMDocumentType& doc)
         return false;
     }
     std::vector<PMDocumentType> doc_list;
+
+    ProductReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_Product, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
     return AppendToGroup_(doc_list, doc);
 }
 
@@ -151,6 +161,16 @@ bool ProductEditor::AddGroup(const std::vector<uint32_t>& docid_list, PMDocument
         }
     }
 
+    ProductReqLog reqlog;
+    std::string str_uuid;
+    uuid.convertString(str_uuid, UString::UTF_8);
+    reqlog.str_uuid_list.push_back(str_uuid);
+    if (!DistributeRequestHooker::get()->prepare(Req_Product, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
     return AppendToGroup_(doc_list, info);
 }
 
@@ -216,6 +236,13 @@ bool ProductEditor::AppendToGroup(const izenelib::util::UString& uuid, const std
                 LOG(WARNING)<<"Document id "<<docid_list[i]<<" belongs to other group";
             }
         }
+    }
+
+    ProductReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_Product, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
     }
 
     return AppendToGroup_(doc_list, info);
@@ -594,6 +621,23 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
         }
     }
 
+    ProductReqLog reqlog;
+    // prepare the uuid list.
+    reqlog.str_uuid_list.reserve(doc_list.size());
+    for (uint32_t i = 0; i < doc_list.size(); i++)
+    {
+        izenelib::util::UString doc_uuid;
+        UuidGenerator::Gen(doc_uuid);
+        std::string str_uuid;
+        doc_uuid.convertString(str_uuid, UString::UTF_8);
+        reqlog.str_uuid_list.push_back(str_uuid);
+    }
+    if (!DistributeRequestHooker::get()->prepare(Req_Product, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
     for (uint32_t i = 0; i < doc_list.size(); i++)
     {
         uint32_t docid = doc_list[i].getId();
@@ -602,8 +646,7 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
         data_source_->AddCurUuidToHistory(docid);
 
         PMDocumentType new_doc(doc_list[i]);
-        izenelib::util::UString doc_uuid;
-        UuidGenerator::Gen(doc_uuid);
+        izenelib::util::UString doc_uuid = UString(reqlog.str_uuid_list[i], UString::UTF_8);
         new_doc.property(config_.docid_property_name) = doc_uuid;
         new_doc.eraseProperty(config_.uuid_property_name);
         util_->SetItemCount(new_doc, 1);
