@@ -321,7 +321,7 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
     time.sleep(10)
 
     retry = 0;
-    while retry < 2:
+    while retry < 4:
         if len(down_host) > 0:
             start_all(['',''] + down_host)
         time.sleep(20)
@@ -392,13 +392,13 @@ def run_auto_fail_test(args):
             printtofile ('begin test for first replica fail')
             for i in range(31, 42) + range(61, 63) + range(71, 73):
                 reset_state_and_run()
-                printtofile ('testing for replica fail type : ' + str(i))
+                printtofile ('testing for first replica fail type : ' + str(i))
                 run_testwrite([replicas_host[0]], i, test_writereq)
 
             printtofile ('begin test for last replica fail')
             for i in range(31, 42) + range(61, 63) + range(71, 73):
                 reset_state_and_run()
-                printtofile ('testing for replica fail type : ' + str(i))
+                printtofile ('testing for last replica fail type : ' + str(i))
                 run_testwrite([replicas_host[len(replicas_host) - 1]], i, test_writereq)
 
         # test for full write without clean state.
