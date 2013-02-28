@@ -16,8 +16,8 @@ INCLUDE_DIRECTORIES(
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
-  ${xml2_INCLUDE_DIRS}
-  ${sqlite3_INCLUDE_DIRS}
+  ${XML2_INCLUDE_DIR}
+  ${SQLITE3_INCLUDE_DIR}
   ${Thrift_INCLUDE_DIR}
   )
 
@@ -51,7 +51,7 @@ TARGET_LINK_LIBRARIES(LicenseFileGenerator
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
-  ${xml2_LIBRARIES}
+  ${XML2_LIBRARIES}
 
   #external
   ${TokyoCabinet_LIBRARIES}
@@ -92,7 +92,7 @@ TARGET_LINK_LIBRARIES(CustLicenseFileGenerator
   ${wisekma_LIBRARIES}
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
-  ${xml2_LIBRARIES}
+  ${XML2_LIBRARIES}
 
   #external
   ${TokyoCabinet_LIBRARIES}
@@ -115,7 +115,7 @@ SET(EXTERNAL_LIBS
   ${MYSQL_LIBRARIES}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
-  ${xml2_LIBRARIES}
+  ${XML2_LIBRARIES}
   )
 
 SET(IZENE_LIBS

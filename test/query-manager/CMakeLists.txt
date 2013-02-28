@@ -51,7 +51,7 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       ${izenelib_LIBRARIES}
       ${idmlib_LIBRARIES}
       ${imllib_LIBRARIES}
-      ${xml2_LIBRARIES}
+      ${XML2_LIBRARIES}
       ${iise_LIBRARIES}
       #external
       ${Boost_LIBRARIES}

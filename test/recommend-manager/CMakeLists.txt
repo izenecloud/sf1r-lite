@@ -14,7 +14,7 @@ INCLUDE_DIRECTORIES(
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
   ${Thrift_INCLUDE_DIR}
-  ${xml2_INCLUDE_DIRS}
+  ${XML2_INCLUDE_DIR}
   )
 
 # sequences is important for some linker
@@ -58,7 +58,7 @@ SET(libs
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
-  ${xml2_LIBRARIES}
+  ${XML2_LIBRARIES}
   ${SQLITE3_LIBRARIES}
   ${MYSQL_LIBRARIES}
   ${Thrift_LIBS}

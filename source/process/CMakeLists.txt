@@ -15,8 +15,8 @@ INCLUDE_DIRECTORIES(
   ${Boost_INCLUDE_DIRS}
   ${TokyoCabinet_INCLUDE_DIRS}
   ${Glog_INCLUDE_DIRS}
-  ${xml2_INCLUDE_DIRS}
-  ${sqlite3_INCLUDE_DIRS}
+  ${XML2_INCLUDE_DIR}
+  ${SQLITE3_INCLUDE_DIR}
   ${ImageMagick_INCLUDE_DIRS}
   )
 
@@ -105,7 +105,7 @@ TARGET_LINK_LIBRARIES(ImgDupDetector
   ${izenelib_LIBRARIES}
 
   #external
-  ${xml2_LIBRARIES}
+  ${XML2_LIBRARIES}
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}
@@ -154,7 +154,7 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${izenelib_LIBRARIES}
 
   #external
-  ${xml2_LIBRARIES}
+  ${XML2_LIBRARIES}
   ${Boost_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${Glog_LIBRARIES}

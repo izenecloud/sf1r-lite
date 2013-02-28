@@ -43,7 +43,7 @@ SET(libs
   ${izenecma_LIBRARIES}
   ${izenejma_LIBRARIES}
   ${izenelib_LIBRARIES}
-  ${xml2_LIBRARIES}
+  ${XML2_LIBRARIES}
 
   #external
   ${Boost_LIBRARIES}
