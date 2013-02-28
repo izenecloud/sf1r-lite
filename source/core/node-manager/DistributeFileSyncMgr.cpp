@@ -343,7 +343,13 @@ void DistributeFileSyncMgr::init()
 
 DistributeFileSyncMgr::~DistributeFileSyncMgr()
 {
+    stop();
+}
+
+void DistributeFileSyncMgr::stop()
+{
     delete conn_mgr_;
+    conn_mgr_ = NULL;
     if (transfer_rpcserver_)
         transfer_rpcserver_->stop();
 }
@@ -358,6 +364,8 @@ void DistributeFileSyncMgr::notifyReportStatusRsp(const ReportStatusRspData& rsp
 
 void DistributeFileSyncMgr::sendReportStatusRsp(const std::string& ip, uint16_t port, const ReportStatusRsp& rsp)
 {
+    if (conn_mgr_ == NULL)
+        return;
     bool rsp_ret = false;
     try
     {
@@ -371,7 +379,7 @@ void DistributeFileSyncMgr::sendReportStatusRsp(const std::string& ip, uint16_t 
 
 void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std::string& check_errinfo)
 {
-    if (!NodeManagerBase::get()->isDistributed())
+    if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return;
 
     CollectionPath colpath;
@@ -511,7 +519,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
 
 bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std::string>& saved_log)
 {
-    if (!NodeManagerBase::get()->isDistributed())
+    if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return true;
     // note : for optimize, we can get log from any node that has entered the cluster and 
     // current state is ready.
@@ -557,7 +565,7 @@ bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std
 
 bool DistributeFileSyncMgr::syncCollectionData(const std::string& colname)
 {
-    if (!NodeManagerBase::get()->isDistributed())
+    if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return true;
 
     int retry = 3;
@@ -618,7 +626,7 @@ bool DistributeFileSyncMgr::syncCollectionData(const std::string& colname)
 
 bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
 {
-    if (!NodeManagerBase::get()->isDistributed())
+    if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return true;
     // get the backup scd file list used for index.
     
@@ -688,7 +696,7 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
 bool DistributeFileSyncMgr::pushFileToAllReplicas(const std::string& srcpath,
     const std::string& destpath, bool recrusive)
 {
-    if (!NodeManagerBase::get()->isDistributed())
+    if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return true;
     std::vector<std::string> replica_info;
     NodeManagerBase::get()->getAllReplicaInfo(replica_info);
@@ -709,6 +717,8 @@ bool DistributeFileSyncMgr::pushFileToAllReplicas(const std::string& srcpath,
 
 bool DistributeFileSyncMgr::getFileInfo(const std::string& ip, uint16_t port, GetFileData& file_rsp)
 {
+    if (conn_mgr_ == NULL)
+        return false;
     LOG(INFO) << "try get file from: " << ip << ":" << port;
     GetFileRequest file_req;
     file_req.param_.filepath = file_rsp.filepath;
@@ -763,7 +773,7 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& filepath, bool f
 bool DistributeFileSyncMgr::getFileFromOther(const std::string& ip, uint16_t port,
     const std::string& filepath, uint64_t filesize, bool force_overwrite)
 {
-    if (!transfer_rpcserver_)
+    if (!transfer_rpcserver_ || conn_mgr_ == NULL)
         return false;
 
     if (bfs::exists(filepath))
@@ -811,6 +821,8 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& ip, uint16_t por
 
 void DistributeFileSyncMgr::sendFinishNotifyToReceiver(const std::string& ip, uint16_t port, const FinishReceiveRequest& req)
 {
+    if (conn_mgr_ == NULL)
+        return;
     FinishReceiveData rsp;
     try
     {

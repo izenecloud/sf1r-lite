@@ -355,6 +355,7 @@ void CobraProcess::stopDistributedServer()
         NodeManagerBase::get()->stop();
 
     CollectionDataReceiver::get()->stop();
+    DistributeFileSyncMgr::get()->stop();
     RecoveryChecker::clearForceExitFlag();
 }
 

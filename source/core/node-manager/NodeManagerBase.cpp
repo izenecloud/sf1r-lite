@@ -147,6 +147,7 @@ void NodeManagerBase::stop()
     }
 
     leaveCluster();
+    zookeeper_->disconnect();
     nodeState_ = NODE_STATE_INIT;
 }
 
@@ -677,6 +678,8 @@ void NodeManagerBase::leaveCluster()
     if (childrenList.size() <= 0)
     {
         zookeeper_->deleteZNode(topologyPath_);
+        zookeeper_->deleteZNode(primaryNodePath_);
+        zookeeper_->deleteZNode(primaryNodeParentPath_);
     }
 
     childrenList.clear();

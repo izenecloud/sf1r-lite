@@ -79,33 +79,6 @@ bool ProductEditor::AddGroup(const std::vector<uint32_t>& docid_list, PMDocument
         error_ = "Docid list size must larger than 1";
         return false;
     }
-    UString uuid;
-    if ( info.getProperty(config_.docid_property_name, uuid) )
-    {
-        std::vector<uint32_t> same_docid_list;
-        data_source_->GetDocIdList(uuid, same_docid_list, 0);
-        if (!same_docid_list.empty())
-        {
-            std::string suuid;
-            uuid.convertString(suuid, izenelib::util::UString::UTF_8);
-            error_ = "UUID "+suuid+" was exists";
-            return false;
-        }
-    }
-    else
-    {
-        while(true)
-        {
-            UuidGenerator::Gen(uuid);
-            std::vector<uint32_t> same_docid_list;
-            data_source_->GetDocIdList(uuid, same_docid_list, 0);
-            if (same_docid_list.empty())
-            {
-                break;
-            }
-        }
-        info.property(config_.docid_property_name) = uuid;
-    }
     std::vector<PMDocumentType> doc_list;
     doc_list.reserve(docid_list.size());
     for (uint32_t i = 0; i < docid_list.size(); i++)
@@ -161,6 +134,33 @@ bool ProductEditor::AddGroup(const std::vector<uint32_t>& docid_list, PMDocument
         }
     }
 
+    UString uuid;
+    if ( info.getProperty(config_.docid_property_name, uuid) )
+    {
+        std::vector<uint32_t> same_docid_list;
+        data_source_->GetDocIdList(uuid, same_docid_list, 0);
+        if (!same_docid_list.empty())
+        {
+            std::string suuid;
+            uuid.convertString(suuid, izenelib::util::UString::UTF_8);
+            error_ = "UUID "+suuid+" was exists";
+            return false;
+        }
+    }
+    else
+    {
+        while(true)
+        {
+            UuidGenerator::Gen(uuid);
+            std::vector<uint32_t> same_docid_list;
+            data_source_->GetDocIdList(uuid, same_docid_list, 0);
+            if (same_docid_list.empty())
+            {
+                break;
+            }
+        }
+    }
+
     ProductReqLog reqlog;
     std::string str_uuid;
     uuid.convertString(str_uuid, UString::UTF_8);
@@ -169,6 +169,11 @@ bool ProductEditor::AddGroup(const std::vector<uint32_t>& docid_list, PMDocument
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
+    }
+
+    if ( !info.getProperty(config_.docid_property_name, uuid) )
+    {
+        info.property(config_.docid_property_name) = UString(reqlog.str_uuid_list[0], UString::UTF_8);
     }
 
     return AppendToGroup_(doc_list, info);
