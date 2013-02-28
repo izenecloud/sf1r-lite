@@ -71,7 +71,7 @@ bool Sf1Controller::preprocess()
 
 void Sf1Controller::postprocess()
 {
-    if (!response().success() && DistributeRequestHooker::get()->isHooked())
+    if (!response().success() && request().callType() != Request::FromAPI)
     {
         DistributeRequestHooker::get()->processFinishedBeforePrepare(false);
         std::string errinfo;

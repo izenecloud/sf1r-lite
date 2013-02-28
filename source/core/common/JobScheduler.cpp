@@ -19,6 +19,8 @@ JobScheduler::~JobScheduler()
 void JobScheduler::close()
 {
     asynchronousWorker_.interrupt();
+    if (boost::this_thread::get_id() == asynchronousWorker_.get_id())
+        return;
     asynchronousWorker_.join();
 }
 

@@ -174,7 +174,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
                 assert(false);
                 forceExit();
             }
-            finish(false);
+            processFinishedBeforePrepare(false);
             return false;
         }
     }
@@ -213,7 +213,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
             {
                 forceExit();
             }
-            finish(false);
+            processLocalFinished(false);
             return false;
         }
     }
@@ -225,7 +225,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         {
             forceExit();
         }
-        finish(false);
+        processLocalFinished(false);
         return false; 
     }
     if (isprimary)
@@ -261,12 +261,20 @@ bool DistributeRequestHooker::processFinishedBeforePrepare(bool finishsuccess)
         forceExit();
     }
     static CommonReqData reqlog;
-    if (hook_type_ == Request::FromDistribute && !req_log_mgr_->getPreparedReqLog(reqlog))
+    if (!req_log_mgr_->getPreparedReqLog(reqlog))
     {
-        LOG(INFO) << "primary end request before prepared, request ignored.";
-        NodeManagerBase::get()->notifyMasterReadyForNew();
-        clearHook(true);
-        return true;
+        if (hook_type_ == Request::FromDistribute)
+	{
+            LOG(INFO) << "primary end request before prepared, request ignored.";
+	    NodeManagerBase::get()->notifyMasterReadyForNew();
+	    clearHook(true);
+	    return true;
+	}
+	else
+	{
+            LOG(INFO) << "replica end request before prepared, must exit.";
+            forceExit();
+	}
     }
     return false;
 }
@@ -431,10 +439,11 @@ void DistributeRequestHooker::finish(bool success)
         }
     }
 
-    if (!RecoveryChecker::get()->checkDataConsistent())
+    if ( (reqlog.inc_id % 10 == 0) && !RecoveryChecker::get()->checkDataConsistent() )
     {
         LOG(ERROR) << "!!!!! finished request with not consistent data: ";
     }
+
     LOG(INFO) << DistributeTestSuit::getStatusReport();
 }
 
