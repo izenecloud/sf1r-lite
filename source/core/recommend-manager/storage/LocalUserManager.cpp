@@ -36,7 +36,6 @@ bool LocalUserManager::addUser(const User& user)
 
     if (user.idStr_.empty())
     {
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
@@ -57,7 +56,6 @@ bool LocalUserManager::addUser(const User& user)
         LOG(ERROR) << "exception in SDB::insertValue(): " << e.what();
     }
 
-    DistributeRequestHooker::get()->processLocalFinished(result);
     return result;
 }
 
@@ -71,7 +69,6 @@ bool LocalUserManager::updateUser(const User& user)
 
     if (user.idStr_.empty())
     {
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
@@ -92,7 +89,6 @@ bool LocalUserManager::updateUser(const User& user)
         LOG(ERROR) << "exception in SDB::update(): " << e.what();
     }
 
-    DistributeRequestHooker::get()->processLocalFinished(result);
     return result;
 }
 
@@ -120,7 +116,6 @@ bool LocalUserManager::removeUser(const std::string& userId)
         LOG(ERROR) << "exception in SDB::del(): " << e.what();
     }
 
-    DistributeRequestHooker::get()->processLocalFinished(result);
     return result;
 }
 

@@ -311,17 +311,23 @@ RecommendTaskService::~RecommendTaskService()
 
 bool RecommendTaskService::addUser(const User& user)
 {
-    return userManager_.addUser(user);
+    bool result = userManager_.addUser(user);
+    DistributeRequestHooker::get()->processLocalFinished(result);
+    return result;
 }
 
 bool RecommendTaskService::updateUser(const User& user)
 {
-    return userManager_.updateUser(user);
+    bool result = userManager_.updateUser(user);
+    DistributeRequestHooker::get()->processLocalFinished(result);
+    return result;
 }
 
 bool RecommendTaskService::removeUser(const std::string& userIdStr)
 {
-    return userManager_.removeUser(userIdStr);
+    bool result = userManager_.removeUser(userIdStr);
+    DistributeRequestHooker::get()->processLocalFinished(result);
+    return result;
 }
 
 bool RecommendTaskService::visitItem(
@@ -344,6 +350,13 @@ bool RecommendTaskService::visitItem(
         return false;
     }
 
+    itemid_t itemId = 0;
+    if (!itemIdGenerator_.strIdToItemId(itemIdStr, itemId))
+    {
+        DistributeRequestHooker::get()->processLocalFinished(false);
+        return false;
+    }
+
     NoAdditionReqLog reqlog;
     if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
     {
@@ -351,9 +364,7 @@ bool RecommendTaskService::visitItem(
         return false;
     }
 
-    itemid_t itemId = 0;
-    if (!itemIdGenerator_.strIdToItemId(itemIdStr, itemId) ||
-        !visitManager_.addVisitItem(sessionIdStr, userIdStr, itemId, &visitMatrix_))
+    if (!visitManager_.addVisitItem(sessionIdStr, userIdStr, itemId, &visitMatrix_))
     {
         DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
@@ -362,7 +373,7 @@ bool RecommendTaskService::visitItem(
     if (isRecItem && !visitManager_.visitRecommendItem(userIdStr, itemId))
     {
         LOG(ERROR) << "error in VisitManager::visitRecommendItem(), userId: " << userIdStr
-                   << ", itemId: " << itemId;
+            << ", itemId: " << itemId;
         DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
@@ -396,7 +407,6 @@ bool RecommendTaskService::purchaseItem(
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
-
     bool ret = saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_, itemIdVec);
     DistributeRequestHooker::get()->processLocalFinished(ret);
     return ret;
@@ -420,14 +430,24 @@ bool RecommendTaskService::updateShoppingCart(
         return false;
     }
 
-    NoAdditionNoRollbackReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    if (!bundleConfig_.cassandraConfig_.enable)
     {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        return false;
+        NoAdditionNoRollbackReqLog reqlog;
+        if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+        {
+            LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+            return false;
+        }
+    }
+    bool ret = true;
+    bool need_write = !bundleConfig_.cassandraConfig_.enable;
+    if (!DistributeRequestHooker::get()->isHooked() || DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
+    {
+        need_write = true;
     }
 
-    bool ret = cartManager_.updateCart(userIdStr, itemIdVec);
+    if (need_write)
+        ret = cartManager_.updateCart(userIdStr, itemIdVec);
     DistributeRequestHooker::get()->processLocalFinished(ret);
     return ret;
 }
@@ -452,16 +472,27 @@ bool RecommendTaskService::trackEvent(
         return false;
     }
 
-    NoAdditionReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    if (!bundleConfig_.cassandraConfig_.enable)
     {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        return false;
+        NoAdditionReqLog reqlog;
+        if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+        {
+            LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+            return false;
+        }
+    }
+    bool ret = true;
+    bool need_write = !bundleConfig_.cassandraConfig_.enable;
+    if (!DistributeRequestHooker::get()->isHooked() || DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
+    {
+        need_write = true;
     }
 
-    bool ret = isAdd ? eventManager_.addEvent(eventStr, userIdStr, itemId) :
-                   eventManager_.removeEvent(eventStr, userIdStr, itemId);
-
+    if (need_write)
+    {
+        ret = isAdd ? eventManager_.addEvent(eventStr, userIdStr, itemId) :
+            eventManager_.removeEvent(eventStr, userIdStr, itemId);
+    }
     DistributeRequestHooker::get()->processLocalFinished(ret);
     return ret;
 }
@@ -480,15 +511,28 @@ bool RecommendTaskService::rateItem(const RateParam& param)
         DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
-    NoAdditionReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    if (!bundleConfig_.cassandraConfig_.enable)
     {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        return false;
+        NoAdditionReqLog reqlog;
+        if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+        {
+            LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+            return false;
+        }
+    }
+    bool ret = true;
+    bool need_write = !bundleConfig_.cassandraConfig_.enable;
+    if (!DistributeRequestHooker::get()->isHooked() || DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
+    {
+        need_write = true;
     }
 
-    bool ret = param.isAdd ? rateManager_.addRate(param.userIdStr, itemId, param.rate) :
-                         rateManager_.removeRate(param.userIdStr, itemId);
+    if (need_write)
+    {
+        ret = param.isAdd ? rateManager_.addRate(param.userIdStr, itemId, param.rate) :
+            rateManager_.removeRate(param.userIdStr, itemId);
+    }
+
     DistributeRequestHooker::get()->processLocalFinished(ret);
     return ret;
 }
@@ -530,18 +574,7 @@ bool RecommendTaskService::buildCollection()
     }
     else
     {
-        // on replica
-        if (bundleConfig_.cassandraConfig_.enable)
-        {
-            //  remote storage enabled, so only need do recommend on primary.
-            //  replica can get data from remote storage.
-            ret = true;
-            LOG(INFO) << "the recommend configured as remote storage, so no need to do write on replicas.";
-        }
-        else
-        {
-            ret = buildCollectionOnReplica();
-        }
+        ret = buildCollectionOnReplica();
     }
     if (ret)
     {
@@ -639,8 +672,17 @@ bool RecommendTaskService::buildCollectionOnReplica()
         }
     }
 
+
     DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle);
-    if (loadUserSCD_(reqlog.user_scd_list) && loadOrderSCD_(reqlog.order_scd_list))
+    bool ret = true;
+    // on replica
+    // if remote storage enabled, replica can get part of data from remote storage.
+    if (!bundleConfig_.cassandraConfig_.enable)
+    {
+        ret = loadUserSCD_(reqlog.user_scd_list);
+        LOG(INFO) << "the recommend did not configure as remote storage, so need to do some write on replicas.";
+    }
+    if (ret && loadOrderSCD_(reqlog.order_scd_list))
     {
         DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
         return true;

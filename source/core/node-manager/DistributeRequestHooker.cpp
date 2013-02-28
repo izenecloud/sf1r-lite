@@ -410,11 +410,6 @@ void DistributeRequestHooker::finish(bool success)
     CommonReqData reqlog;
     req_log_mgr_->getPreparedReqLog(reqlog);
 
-    if (!RecoveryChecker::get()->checkDataConsistent())
-    {
-        LOG(ERROR) << "!!!!! finished request with not consistent data: " << current_req_;
-    }
-
     req_log_mgr_->delPreparedReqLog();
     clearHook(true);
     if (success)
@@ -434,6 +429,11 @@ void DistributeRequestHooker::finish(bool success)
             LOG(ERROR) << "failed to rollback ! must exit.";
             forceExit();
         }
+    }
+
+    if (!RecoveryChecker::get()->checkDataConsistent())
+    {
+        LOG(ERROR) << "!!!!! finished request with not consistent data: ";
     }
     LOG(INFO) << DistributeTestSuit::getStatusReport();
 }
