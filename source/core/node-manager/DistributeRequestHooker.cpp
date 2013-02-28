@@ -431,10 +431,11 @@ void DistributeRequestHooker::finish(bool success)
         }
     }
 
-    if (!RecoveryChecker::get()->checkDataConsistent())
+    if ( (reqlog.inc_id % 10 == 0) && !RecoveryChecker::get()->checkDataConsistent() )
     {
         LOG(ERROR) << "!!!!! finished request with not consistent data: ";
     }
+
     LOG(INFO) << DistributeTestSuit::getStatusReport();
 }
 
