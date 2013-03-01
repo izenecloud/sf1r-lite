@@ -678,8 +678,9 @@ void NodeManagerBase::leaveCluster()
     if (childrenList.size() <= 0)
     {
         zookeeper_->deleteZNode(topologyPath_);
-        zookeeper_->deleteZNode(primaryNodePath_);
         zookeeper_->deleteZNode(primaryNodeParentPath_);
+        // if no any node, we delete all the remaining unhandled write request.
+        zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqQueueParent(), true);
     }
 
     childrenList.clear();

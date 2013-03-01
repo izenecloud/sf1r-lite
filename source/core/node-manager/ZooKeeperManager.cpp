@@ -49,6 +49,12 @@ void ZooKeeperManager::stop()
 {
     monitorThread_.interrupt();
     monitorThread_.join();
+    // znode for synchro
+    ZooKeeperClientPtr zookeeper = createClient(NULL, true);
+    if (zookeeper->isConnected())
+    {
+        zookeeper->deleteZNode(ZooKeeperNamespace::getSynchroPath(), false); // clean
+    }
 }
 
 ZooKeeperClientPtr
@@ -119,7 +125,7 @@ bool ZooKeeperManager::initZooKeeperNameSpace()
         zookeeper->createZNode(ZooKeeperNamespace::getSF1RClusterPath());
 
         // znode for synchro
-        zookeeper->deleteZNode(ZooKeeperNamespace::getSynchroPath(), true); // clean
+        zookeeper->deleteZNode(ZooKeeperNamespace::getSynchroPath(), false); // clean
         zookeeper->createZNode(ZooKeeperNamespace::getSynchroPath());
 
         if (zookeeper->isZNodeExists(ZooKeeperNamespace::getSF1RClusterPath())

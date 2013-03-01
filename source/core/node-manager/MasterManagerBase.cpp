@@ -69,9 +69,20 @@ void MasterManagerBase::start()
 
 void MasterManagerBase::stop()
 {
-    // disconnect will wait other ZooKeeper event finished,
-    // so we can not do it in state_mutex_ lock.
-    zookeeper_->disconnect();
+    if (zookeeper_ && zookeeper_->isConnected())
+    {
+        std::vector<std::string> childrenList;
+        zookeeper_->deleteZNode(serverRealPath_);
+        zookeeper_->getZNodeChildren(serverParentPath_, childrenList, ZooKeeper::NOT_WATCH, false);
+        if (childrenList.size() == 0)
+        {
+            zookeeper_->deleteZNode(serverParentPath_);
+        }
+        childrenList.clear();
+        // disconnect will wait other ZooKeeper event finished,
+        // so we can not do it in state_mutex_ lock.
+        zookeeper_->disconnect();
+    }
     boost::lock_guard<boost::mutex> lock(state_mutex_);
     masterState_ = MASTER_STATE_INIT;
 }
