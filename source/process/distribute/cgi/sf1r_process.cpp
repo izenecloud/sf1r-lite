@@ -225,7 +225,7 @@ int main(int argc, char* argv[])
             dconf.resize = 2;
             dconf.maxSize = 4;
             dconf.timeout = 30;
-            dconf.zkTimeout = 2000;  //ms
+            dconf.zkTimeout = 20000;  //ms
             dconf.match_master_name = match_master;
 
             if (argc > 8)

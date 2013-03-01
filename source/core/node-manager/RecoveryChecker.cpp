@@ -669,6 +669,8 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
     while(cit != tmp_all_col_info.end())
     {
+        if (flush_col_)
+            flush_col_(cit->first);
         DistributeFileSyncMgr::get()->checkReplicasStatus(cit->first, errinfo);
         if (!errinfo.empty())
         {
