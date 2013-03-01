@@ -70,7 +70,6 @@ void SearchMasterItemManagerTestFixture::createIdManager_()
     bfs::create_directory(idDir);
 
     idManager_.reset(new IDManagerType((idDir / "item").string()));
-    idManager_->warmUp();
 }
 
 void SearchMasterItemManagerTestFixture::insertItemId_(const std::string& strId, itemid_t goldId)

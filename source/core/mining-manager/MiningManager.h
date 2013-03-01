@@ -675,7 +675,7 @@ private:
 
     /** SUMMARIZATION */
     std::string summarization_path_;
-    MultiDocSummarizationSubManager* summarizationManager_;
+    MultiDocSummarizationSubManager* summarizationManagerTask_;
 
     /** Suffix Match */
     std::string suffix_match_path_;

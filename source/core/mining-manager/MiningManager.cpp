@@ -161,7 +161,7 @@ MiningManager::MiningManager(
     , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
     , topicDetector_(NULL)
-    , summarizationManager_(NULL)
+    , summarizationManagerTask_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
     , product_categorizer_(NULL)
@@ -173,6 +173,7 @@ MiningManager::MiningManager(
 
 MiningManager::~MiningManager()
 {
+    if (miningTaskBuilder_) delete miningTaskBuilder_;
     if (analyzer_) delete analyzer_;
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
@@ -190,12 +191,11 @@ MiningManager::~MiningManager()
     if (numericTableBuilder_) delete numericTableBuilder_;
     if (tdt_storage_) delete tdt_storage_;
     if (topicDetector_) delete topicDetector_;
-    if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
     if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
-    if (miningTaskBuilder_) delete miningTaskBuilder_;
+
     close();
 }
 
@@ -539,14 +539,14 @@ bool MiningManager::open()
         {
             summarization_path_ = prefix_path + "/summarization";
             boost::filesystem::create_directories(summarization_path_);
-            summarizationManager_ =
+            summarizationManagerTask_ =
                 new MultiDocSummarizationSubManager(summarization_path_, collectionName_,
                                                     collectionPath_.getScdPath(),
                                                     mining_schema_.summarization_schema,
                                                     document_manager_,
                                                     index_manager_,
                                                     c_analyzer_);
-            miningTaskBuilder_->addTask(summarizationManager_);
+            miningTaskBuilder_->addTask(summarizationManagerTask_);
             if (!mining_schema_.summarization_schema.uuidPropName.empty())
             {
                 //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
@@ -778,7 +778,7 @@ void MiningManager::DoSyncFullSummScd()
 {
     if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isSyncSCDOnly)
     {
-        summarizationManager_->syncFullSummScd();
+        summarizationManagerTask_->syncFullSummScd();
     }
 }
 
@@ -1967,8 +1967,8 @@ bool MiningManager::GetSummarizationByRawKey(
         const izenelib::util::UString& rawKey,
         Summarization& result)
 {
-    if (!summarizationManager_) return false;
-    return summarizationManager_->GetSummarizationByRawKey(rawKey,result);
+    if (!summarizationManagerTask_) return false;
+    return summarizationManagerTask_->GetSummarizationByRawKey(rawKey,result);
 }
 
 uint32_t MiningManager::GetSignatureForQuery(

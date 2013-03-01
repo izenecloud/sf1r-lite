@@ -9,10 +9,8 @@
 #include <icma/openccxx.h>
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <am/succinct/wat_array/wavelet_matrix.hpp>
-#include <am/succinct/fm-index/wavelet_matrix.hpp>
 #include "TdtFactory.hpp"
 using namespace std;
-using namespace izenelib::am::succinct::fm_index;
 
 namespace sf1r
 {
