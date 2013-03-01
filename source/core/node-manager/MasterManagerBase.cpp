@@ -153,6 +153,10 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
             masterState_ = MASTER_STATE_STARTING;
             doStart();
         }
+        else 
+        {
+            checkForWriteReq();
+        }
     }
     else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
     {

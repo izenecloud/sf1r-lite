@@ -164,6 +164,18 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             nodeState_ = NODE_STATE_STARTING;
             enterCluster();
         }
+        else
+        {
+            updateCurrentPrimary();
+            if (isPrimaryWithoutLock())
+            {
+                checkSecondaryState(zkEvent.path_ == self_primary_path_ || zkEvent.path_ == nodePath_);
+            }
+            else 
+            {
+                LOG(WARNING) << "the zookeeper auto reconnected on the replica !!!" << self_primary_path_;
+            }
+        }
     }
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && 
