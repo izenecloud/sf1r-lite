@@ -166,6 +166,15 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         }
         else
         {
+            LOG(WARNING) << "the zookeeper auto reconnected !!! " << self_primary_path_;
+            if (nodeState_ == NODE_STATE_RECOVER_RUNNING ||
+                nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
+            {
+                LOG(INFO) << "current node is busy running !!! " << nodeState_;
+                return;
+            }
+
+            std::string old_primary = curr_primary_path_;
             updateCurrentPrimary();
             if (isPrimaryWithoutLock())
             {
@@ -173,7 +182,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             }
             else 
             {
-                LOG(WARNING) << "the zookeeper auto reconnected on the replica !!!" << self_primary_path_;
+                checkPrimaryState(old_primary != curr_primary_path_);
             }
         }
     }
@@ -893,46 +902,7 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
     else if (path == curr_primary_path_)
     {
         LOG(WARNING) << "primary node was deleted : " << path;
-        updateCurrentPrimary();
-        if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
-            nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
-        {
-            LOG(INFO) << "stop waiting primary for current processing request.";
-            if (cb_on_abort_request_)
-                cb_on_abort_request_();
-            nodeState_ = NODE_STATE_STARTED;
-        }
-        else if (nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
-        {
-            LOG(INFO) << "primary changed while recovery waiting primary";
-            if (curr_primary_path_ != self_primary_path_)
-            {
-                // primary is waiting sync to recovery.
-                if (cb_on_recover_wait_primary_)
-                    cb_on_recover_wait_primary_();
-                nodeState_ = NODE_STATE_STARTED;
-            }
-            else
-            {
-                nodeState_ = NODE_STATE_ELECTING;
-            }
-            LOG(INFO) << "recovery node sync to new primary finished, begin re-enter to the cluster";
-            enterClusterAfterRecovery();
-        }
-        if (isPrimaryWithoutLock())
-        {
-            updateNodeStateToNewState(NODE_STATE_ELECTING);
-            LOG(INFO) << "begin electing, wait all secondary agree on primary : " << curr_primary_path_;
-            DistributeTestSuit::testFail(PrimaryFail_At_Electing);
-            checkSecondaryElecting(true);
-        }
-        else
-        {
-            DistributeTestSuit::testFail(ReplicaFail_At_Electing);
-            LOG(INFO) << "begin electing, secondary update self to notify new primary : " << curr_primary_path_;
-            // notify new primary mine state.
-            updateNodeState();
-        }
+        checkPrimaryState(true);
     }
     else if (isPrimaryWithoutLock())
     {
@@ -963,165 +933,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     else if (path == curr_primary_path_)
     {
         DistributeTestSuit::loadTestConf();
-        NodeStateType primary_state = getPrimaryState();
-        LOG(INFO) << "current primary node changed : " << primary_state;
-        if (nodeState_ == NODE_STATE_STARTED)
-        {
-            if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
-            {
-                LOG(INFO) << "got primary request notify, begin processing on current replica. " << self_primary_path_;
-                ZNode znode;
-                std::string sdata;
-                std::string packed_reqdata;
-                int type = 0;
-                if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
-                {
-                    znode.loadKvString(sdata);
-                    packed_reqdata = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
-                    type = znode.getUInt32Value(ZNode::KEY_REQ_TYPE);
-                    processing_step_ = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
-                }
-                else
-                {
-                    LOG(ERROR) << "fatal error, got request data from primary failed while processing request.";
-                    LOG(ERROR) << zookeeper_->getErrorString();
-                    // maybe primary down
-                    if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNONODE)
-                    {
-                        LOG(ERROR) << "primary node is gone while getting new request data on replica.";
-                        return;
-                    }
-                    // primary is ok, this error can not handle. 
-                    RecoveryChecker::forceExit("exit for unrecovery node state.");
-                }
-                // check if I can start processing
-                if (processing_step_ < 100)
-                {
-                    // only the top half replicas can start at the first step.
-                    std::vector<std::string> node_list;
-                    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
-                    LOG(INFO) << "while check if can start request found " << node_list.size() << " children ";
-                    size_t total = 0;
-                    size_t myself_pos = 0;
-                    for (size_t i = 0; i < node_list.size(); ++i)
-                    {
-                        if (node_list[i] == curr_primary_path_)
-                        {
-                            // primary is sure finished before secondary can process.
-                            total++;
-                            continue;
-                        }
-                        if (node_list[i] == self_primary_path_)
-                            myself_pos = total;
-                        NodeStateType state = getNodeState(node_list[i]);
-                        if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
-                            state == NODE_STATE_STARTED ||
-                            state == NODE_STATE_PROCESSING_REQ_RUNNING ||
-                            state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
-                        {
-                            total++;
-                        }
-                    }
-                    if (myself_pos > total - myself_pos)
-                    {
-                        LOG(INFO) << "I am not top half in first step processing, waiting next step. ";
-                        return;
-                    }
-                }
-
-                updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_RUNNING);
-                DistributeTestSuit::testFail(ReplicaFail_At_ReqProcessing);
-                if(cb_on_new_req_from_primary_)
-                {
-                    if(!cb_on_new_req_from_primary_(type, packed_reqdata))
-                    {
-                        LOG(ERROR) << "handle request on replica failed, aborting request from replica";
-                        if (canAbortRequest())
-                        {
-                            updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
-                        }
-                        else
-                        {
-                            RecoveryChecker::forceExit("exit for deny abort request before processing.");
-                        }
-                    }
-                }
-                else
-                {
-                    LOG(ERROR) << "replica did not have callback on new request from primary.";
-                    RecoveryChecker::forceExit("exit for unrecovery node state.");
-                }
-            }
-        }
-        else if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
-        {
-            DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary);
-            if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
-            {
-                // write request log to local. and ready for new request.
-                if (cb_on_wait_primary_)
-                    cb_on_wait_primary_();
-                LOG(INFO) << "wait and write request log success on replica: " << self_primary_path_;
-                updateNodeStateToNewState(NODE_STATE_STARTED);
-            }
-            else if (primary_state == NODE_STATE_ELECTING)
-            {
-                LOG(INFO) << "primary state changed to electing while waiting primary during process request." << self_primary_path_;
-                LOG(INFO) << "current request aborted !";
-                if (cb_on_abort_request_)
-                    cb_on_abort_request_();
-                updateNodeStateToNewState(NODE_STATE_STARTED);
-            }
-            else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
-            {
-                LOG(INFO) << "primary aborted the request while waiting finish process." << self_primary_path_;
-                if (cb_on_abort_request_)
-                    cb_on_abort_request_();
-                updateNodeStateToNewState(NODE_STATE_STARTED);
-            }
-            else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
-            {
-                ZNode znode;
-                std::string sdata;
-                if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
-                {
-                    znode.loadKvString(sdata);
-                    processing_step_ = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
-                }
-                if (processing_step_ == 100)
-                    updateNodeState();
-            }
-        }
-        else if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
-        {
-            DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary_Abort);
-            if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
-            {
-                LOG(INFO) << "primary aborted the request while waiting primary." << self_primary_path_;
-                if (cb_on_abort_request_)
-                    cb_on_abort_request_();
-                updateNodeStateToNewState(NODE_STATE_STARTED);
-            }
-            else
-            {
-                LOG(INFO) << "wait primary node state not need, ignore";
-            }
-        }
-        else if (nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
-        {
-            DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Recovery);
-            if(primary_state == NODE_STATE_RECOVER_WAIT_REPLICA_FINISH ||
-                primary_state == NODE_STATE_ELECTING)
-            {
-                LOG(INFO) << "wait sync primary success or primary is changed while recovering." << self_primary_path_;
-                // primary is waiting sync to recovery.
-                if (cb_on_recover_wait_primary_)
-                    cb_on_recover_wait_primary_();
-                LOG(INFO) << "begin re-enter to the cluster after sync to new primary";
-                nodeState_ = NODE_STATE_STARTED;
-                enterClusterAfterRecovery();
-            }
-        }
+        checkPrimaryState(false);
     }
 }
 
@@ -1132,6 +944,256 @@ void NodeManagerBase::onChildrenChanged(const std::string& path)
     {
         boost::unique_lock<boost::mutex> lock(mutex_);
         checkSecondaryState(false);        
+    }
+}
+
+void NodeManagerBase::checkForPrimaryElecting()
+{
+    updateCurrentPrimary();
+    switch(nodeState_)
+    {
+    case NODE_STATE_ELECTING:
+        // I am the new primary.
+        break;
+    case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY:
+    case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT:
+        {
+            LOG(INFO) << "stop waiting primary for current processing request.";
+            if (cb_on_abort_request_)
+                cb_on_abort_request_();
+            nodeState_ = NODE_STATE_STARTED;
+        }
+        break;
+    case NODE_STATE_RECOVER_WAIT_PRIMARY:
+        {
+            LOG(INFO) << "primary changed while recovery waiting primary";
+            if (curr_primary_path_ != self_primary_path_)
+            {
+                if (cb_on_recover_wait_primary_)
+                    cb_on_recover_wait_primary_();
+                nodeState_ = NODE_STATE_STARTED;
+            }
+            else
+            {
+                nodeState_ = NODE_STATE_ELECTING;
+            }
+            LOG(INFO) << "recovery node sync to new primary finished, begin re-enter to the cluster";
+            enterClusterAfterRecovery();
+        }
+        break;
+    case NODE_STATE_STARTED:
+        break;
+    default:
+        break;
+    }
+    if (isPrimaryWithoutLock())
+    {
+        updateNodeStateToNewState(NODE_STATE_ELECTING);
+        LOG(INFO) << "begin electing, wait all secondary agree on primary : " << curr_primary_path_;
+        DistributeTestSuit::testFail(PrimaryFail_At_Electing);
+        checkSecondaryElecting(true);
+    }
+    else
+    {
+        DistributeTestSuit::testFail(ReplicaFail_At_Electing);
+        LOG(INFO) << "begin electing, secondary update self to notify new primary : " << curr_primary_path_;
+        // notify new primary mine state.
+        updateNodeState();
+    }
+}
+
+void NodeManagerBase::checkPrimaryState(bool primary_deleted)
+{
+    // 
+    if (primary_deleted)
+    {
+        checkForPrimaryElecting();
+        return;
+    }
+    NodeStateType primary_state = getPrimaryState();
+    LOG(INFO) << "current primary node changed : " << primary_state;
+    switch(nodeState_)
+    {
+    case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY:
+        checkPrimaryForFinishWrite(primary_state);
+        break;
+    case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT:
+        checkPrimaryForAbortWrite(primary_state);
+        break;
+    case NODE_STATE_RECOVER_WAIT_PRIMARY:
+        checkPrimaryForRecovery(primary_state);
+        break;
+    case NODE_STATE_PROCESSING_REQ_RUNNING:
+        break;
+    case NODE_STATE_RECOVER_RUNNING:
+        break;
+    case NODE_STATE_STARTED:
+        checkPrimaryForStartNewWrite(primary_state);
+        break;
+    default:
+        break;
+    }
+}
+
+void NodeManagerBase::checkPrimaryForStartNewWrite(NodeStateType primary_state)
+{
+    if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
+    {
+        LOG(INFO) << "got primary request notify, begin processing on current replica. " << self_primary_path_;
+        ZNode znode;
+        std::string sdata;
+        std::string packed_reqdata;
+        int type = 0;
+        if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
+        {
+            znode.loadKvString(sdata);
+            packed_reqdata = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
+            type = znode.getUInt32Value(ZNode::KEY_REQ_TYPE);
+            processing_step_ = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
+        }
+        else
+        {
+            LOG(ERROR) << "fatal error, got request data from primary failed while processing request.";
+            LOG(ERROR) << zookeeper_->getErrorString();
+            // maybe primary down
+            if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNONODE)
+            {
+                LOG(ERROR) << "primary node is gone while getting new request data on replica.";
+                return;
+            }
+            // primary is ok, this error can not handle. 
+            RecoveryChecker::forceExit("exit for unrecovery node state.");
+        }
+        // check if I can start processing
+        if (processing_step_ < 100)
+        {
+            // only the top half replicas can start at the first step.
+            std::vector<std::string> node_list;
+            zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+            LOG(INFO) << "while check if can start request found " << node_list.size() << " children ";
+            size_t total = 0;
+            size_t myself_pos = 0;
+            for (size_t i = 0; i < node_list.size(); ++i)
+            {
+                if (node_list[i] == curr_primary_path_)
+                {
+                    // primary is sure finished before secondary can process.
+                    total++;
+                    continue;
+                }
+                if (node_list[i] == self_primary_path_)
+                    myself_pos = total;
+                NodeStateType state = getNodeState(node_list[i]);
+                if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
+                    state == NODE_STATE_STARTED ||
+                    state == NODE_STATE_PROCESSING_REQ_RUNNING ||
+                    state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
+                {
+                    total++;
+                }
+            }
+            if (myself_pos > total - myself_pos)
+            {
+                LOG(INFO) << "I am not top half in first step processing, waiting next step. ";
+                return;
+            }
+        }
+
+        updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_RUNNING);
+        DistributeTestSuit::testFail(ReplicaFail_At_ReqProcessing);
+        if(cb_on_new_req_from_primary_)
+        {
+            if(!cb_on_new_req_from_primary_(type, packed_reqdata))
+            {
+                LOG(ERROR) << "handle request on replica failed, aborting request from replica";
+                if (canAbortRequest())
+                {
+                    updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT);
+                }
+                else
+                {
+                    RecoveryChecker::forceExit("exit for deny abort request before processing.");
+                }
+            }
+        }
+        else
+        {
+            LOG(ERROR) << "replica did not have callback on new request from primary.";
+            RecoveryChecker::forceExit("exit for unrecovery node state.");
+        }
+    }
+}
+
+void NodeManagerBase::checkPrimaryForFinishWrite(NodeStateType primary_state)
+{
+    DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary);
+    if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
+    {
+        // write request log to local. and ready for new request.
+        if (cb_on_wait_primary_)
+            cb_on_wait_primary_();
+        LOG(INFO) << "wait and write request log success on replica: " << self_primary_path_;
+        updateNodeStateToNewState(NODE_STATE_STARTED);
+    }
+    else if (primary_state == NODE_STATE_ELECTING)
+    {
+        LOG(INFO) << "primary state changed to electing while waiting primary during process request." << self_primary_path_;
+        LOG(INFO) << "current request aborted !";
+        if (cb_on_abort_request_)
+            cb_on_abort_request_();
+        updateNodeStateToNewState(NODE_STATE_STARTED);
+    }
+    else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
+    {
+        LOG(INFO) << "primary aborted the request while waiting finish process." << self_primary_path_;
+        if (cb_on_abort_request_)
+            cb_on_abort_request_();
+        updateNodeStateToNewState(NODE_STATE_STARTED);
+    }
+    else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
+    {
+        ZNode znode;
+        std::string sdata;
+        if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
+        {
+            znode.loadKvString(sdata);
+            processing_step_ = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
+        }
+        if (processing_step_ == 100)
+            updateNodeState();
+    }
+}
+
+void NodeManagerBase::checkPrimaryForAbortWrite(NodeStateType primary_state)
+{
+    DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary_Abort);
+    if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
+    {
+        LOG(INFO) << "primary aborted the request while waiting primary." << self_primary_path_;
+        if (cb_on_abort_request_)
+            cb_on_abort_request_();
+        updateNodeStateToNewState(NODE_STATE_STARTED);
+    }
+    else
+    {
+        LOG(INFO) << "wait primary node state not need, ignore";
+    }
+
+}
+
+void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
+{
+    DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Recovery);
+    if(primary_state == NODE_STATE_RECOVER_WAIT_REPLICA_FINISH ||
+        primary_state == NODE_STATE_ELECTING)
+    {
+        LOG(INFO) << "wait sync primary success or primary is changed while recovering." << self_primary_path_;
+        // primary is waiting sync to recovery.
+        if (cb_on_recover_wait_primary_)
+            cb_on_recover_wait_primary_();
+        LOG(INFO) << "begin re-enter to the cluster after sync to new primary";
+        nodeState_ = NODE_STATE_STARTED;
+        enterClusterAfterRecovery();
     }
 }
 
@@ -1209,37 +1271,14 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
 void NodeManagerBase::setNodeState(NodeStateType state)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
+    updateCurrentPrimary();
     NodeStateType primary_state = getPrimaryState();
     if (primary_state == NODE_STATE_ELECTING)
     {
-        if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
-            state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
-        {
-            if (cb_on_abort_request_)
-                cb_on_abort_request_();
-            if (curr_primary_path_ != self_primary_path_)
-                state = NODE_STATE_STARTED;
-            LOG(INFO) << "change state to waiting primary while primary is electing : " << self_primary_path_;
-            LOG(INFO) << "It means the old primary is down and new primary is upping, so we must abort the last request process";
-        }
-        else if(state == NODE_STATE_RECOVER_WAIT_PRIMARY)
-        {
-            LOG(INFO) << "change state to recovery wait primary while new primary electing : " << self_primary_path_;
-            if (curr_primary_path_ != self_primary_path_)
-            {
-                if (cb_on_recover_wait_primary_)
-                    cb_on_recover_wait_primary_();
-                nodeState_ = NODE_STATE_STARTED;
-            }
-            else
-            {
-                LOG(INFO) << "I become primary while waiting recovery finish.";
-                nodeState_ = NODE_STATE_ELECTING;
-            }
-            enterClusterAfterRecovery();
-            // 
-            return;
-        }
+        nodeState_ = state;
+        LOG(INFO) << "try to change state to new while electing : " << nodeState_;
+        checkForPrimaryElecting();
+        return;
     }
     updateNodeStateToNewState(state);
 }

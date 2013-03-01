@@ -197,6 +197,13 @@ protected:
     void checkSecondaryReqFinishLog(bool self_changed);
     void checkSecondaryReqAbort(bool self_changed);
     void checkSecondaryRecovery(bool self_changed);
+
+    void checkPrimaryState(bool primary_deleted);
+    void checkPrimaryForStartNewWrite(NodeStateType primary_state);
+    void checkPrimaryForFinishWrite(NodeStateType primary_state);
+    void checkPrimaryForAbortWrite(NodeStateType primary_state);
+    void checkPrimaryForRecovery(NodeStateType primary_state);
+    void checkForPrimaryElecting();
     /**
      * Deregister SF1 node on exit
      */
