@@ -621,6 +621,20 @@ void RecoveryChecker::onRecoverCallback(bool startup)
     setForceExitFlag();
     syncSCDFiles();
     syncToNewestReqLog();
+
+    CollInfoMapT tmp_all_col_info;
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        tmp_all_col_info = all_col_info_;
+    }
+    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
+    while(cit != tmp_all_col_info.end())
+    {
+        if (flush_col_)
+            flush_col_(cit->first);
+        ++cit;
+    }
+
     // if failed, must exit.
     LOG(INFO) << "recovery finished, wait primary agree before enter cluster.";
 }
