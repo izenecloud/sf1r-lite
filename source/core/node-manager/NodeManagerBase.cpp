@@ -176,8 +176,17 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 
             std::string old_primary = curr_primary_path_;
             updateCurrentPrimary();
-            if (isPrimaryWithoutLock())
+
+            if (old_primary != curr_primary_path_)
+                LOG(INFO) << "primary changed after auto-reconnect";
+
+            if (old_primary == self_primary_path_)
             {
+                if (old_primary != curr_primary_path_)
+                {
+                    LOG(INFO) << "I lost primary after auto-reconnect" << self_primary_path_;
+                    RecoveryChecker::forceExit("I lost primary after auto-reconnect");
+                }
                 checkSecondaryState(zkEvent.path_ == self_primary_path_ || zkEvent.path_ == nodePath_);
             }
             else 
