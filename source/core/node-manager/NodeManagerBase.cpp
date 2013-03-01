@@ -1349,13 +1349,17 @@ void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
         }
     }
 
-    if (processing_step_ < 100)
+    if (!all_secondary_ready)
     {
         if (!canAbortRequest() &&
             nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
+	{
+            LOG(INFO) << "set processing step to 100." << nodeState_;
             processing_step_ = 100;
+	}
         if(!self_changed)
         {
+            LOG(INFO) << "update processing step ." << nodeState_ << ", step " << processing_step_;
             updateNodeState();
         }
     }
