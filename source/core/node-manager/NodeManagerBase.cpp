@@ -187,7 +187,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                     LOG(INFO) << "I lost primary after auto-reconnect" << self_primary_path_;
                     RecoveryChecker::forceExit("I lost primary after auto-reconnect");
                 }
-                checkSecondaryState(zkEvent.path_ == self_primary_path_ || zkEvent.path_ == nodePath_);
+                checkSecondaryState(false);
             }
             else 
             {
