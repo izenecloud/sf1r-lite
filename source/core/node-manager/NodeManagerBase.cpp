@@ -701,6 +701,7 @@ void NodeManagerBase::leaveCluster()
     if (childrenList.size() <= 0)
     {
         zookeeper_->deleteZNode(replicaPath);
+        zookeeper_->deleteZNode(primaryNodeParentPath_);
     }
 
     childrenList.clear();
@@ -708,7 +709,7 @@ void NodeManagerBase::leaveCluster()
     if (childrenList.size() <= 0)
     {
         zookeeper_->deleteZNode(topologyPath_);
-        zookeeper_->deleteZNode(primaryNodeParentPath_);
+        zookeeper_->deleteZNode(primaryBasePath_);
         // if no any node, we delete all the remaining unhandled write request.
         zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqQueueParent(), true);
     }
@@ -1161,6 +1162,8 @@ void NodeManagerBase::checkPrimaryForFinishWrite(NodeStateType primary_state)
     }
     else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
     {
+        if (processing_step_ == 100)
+            return;
         ZNode znode;
         std::string sdata;
         if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
