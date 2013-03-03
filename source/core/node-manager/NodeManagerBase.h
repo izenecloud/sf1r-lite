@@ -218,6 +218,7 @@ protected:
     bool masterStarted_;
 
     uint32_t  processing_step_;
+    bool stopping_;
 
     ZooKeeperClientPtr zookeeper_;
 

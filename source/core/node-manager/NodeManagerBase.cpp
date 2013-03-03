@@ -19,6 +19,7 @@ NodeManagerBase::NodeManagerBase()
     , nodeState_(NODE_STATE_INIT)
     , masterStarted_(false)
     , processing_step_(0)
+    , stopping_(false)
     , CLASSNAME("[NodeManagerBase]")
 {
 }
@@ -146,6 +147,7 @@ void NodeManagerBase::stop()
         SuperMasterManager::get()->stop();
     }
 
+    stopping_ = true;
     leaveCluster();
     zookeeper_->disconnect();
     nodeState_ = NODE_STATE_INIT;
@@ -192,6 +194,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             else 
             {
                 checkPrimaryState(old_primary != curr_primary_path_);
+                updateNodeState();
             }
         }
     }
@@ -233,6 +236,8 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             return;
         }
 
+        stopping_ = true;
+        self_primary_path_.clear();
         zookeeper_->disconnect();
         nodeState_ = NODE_STATE_STARTING;
         enterCluster(false);
@@ -651,6 +656,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         }
     }
 
+    stopping_ = false;
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     updateNodeState();
     updateCurrentPrimary();
@@ -906,6 +912,11 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
     if (path == nodePath_ || path == self_primary_path_)
     {
         LOG(INFO) << "myself node was deleted : " << self_primary_path_;
+        if (!stopping_)
+	{
+            LOG(INFO) << "node was deleted while not stopping: " << self_primary_path_;
+	    RecoveryChecker::forceExit("node was deleted while not stopping");
+	}
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)
     {
