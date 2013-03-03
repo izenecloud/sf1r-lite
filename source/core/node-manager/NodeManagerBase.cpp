@@ -492,6 +492,7 @@ void NodeManagerBase::unregisterPrimary()
     }
     zookeeper_->deleteZNode(self_primary_path_);
     self_primary_path_.clear();
+    LOG(INFO) << "current self node primary path is unregistered: ";
     ZNode znode;
     setSf1rNodeData(znode);
     zookeeper_->setZNodeData(nodePath_, znode.serialize());
@@ -900,24 +901,25 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
 
 void NodeManagerBase::onNodeDeleted(const std::string& path)
 {
+    LOG(INFO) << "node deleted: " << path;
     boost::unique_lock<boost::mutex> lock(mutex_);
     if (path == nodePath_ || path == self_primary_path_)
     {
-        LOG(INFO) << "myself node was deleted : " << path;
+        LOG(INFO) << "myself node was deleted : " << self_primary_path_;
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)
     {
-        LOG(INFO) << "node was deleted, but I did not care : " << path;
+        LOG(INFO) << "node was deleted, but I did not care : " << self_primary_path_;
     }
     else if (path == curr_primary_path_)
     {
-        LOG(WARNING) << "primary node was deleted : " << path;
+        LOG(WARNING) << "primary node was deleted, myself is : " << self_primary_path_;
         checkPrimaryState(true);
     }
     else if (isPrimaryWithoutLock())
     {
         LOG(WARNING) << "secondary node was deleted : " << path;
-        LOG(INFO) << "recheck node for electing or request process";
+        LOG(INFO) << "recheck node for electing or request process on " << self_primary_path_;
         checkSecondaryState(false);        
     }
 }
@@ -930,6 +932,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     // because there may only one node in distribute system.
     if (isPrimaryWithoutLock())
     {
+        LOG(INFO) << "current primary checking while node changed: " << self_primary_path_;
         checkSecondaryState(path == self_primary_path_ || path == nodePath_);
     }
     else if (path == self_primary_path_ || path == nodePath_)
