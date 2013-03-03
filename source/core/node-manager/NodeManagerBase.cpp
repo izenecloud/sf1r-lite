@@ -141,13 +141,16 @@ void NodeManagerBase::start()
 
 void NodeManagerBase::stop()
 {
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        stopping_ = true;
+    }
     if (masterStarted_)
     {
         stopMasterManager();
         SuperMasterManager::get()->stop();
     }
 
-    stopping_ = true;
     leaveCluster();
     zookeeper_->disconnect();
     nodeState_ = NODE_STATE_INIT;
@@ -156,6 +159,9 @@ void NodeManagerBase::stop()
 void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     LOG (INFO) << CLASSNAME << " worker node event: " << zkEvent.toString();
+
+    if (stopping_)
+        return;
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
@@ -544,6 +550,7 @@ void NodeManagerBase::enterCluster(bool start_master)
         return;
     }
 
+    stopping_ = false;
     if (!checkZooKeeperService())
     {
         // process will be resumed after zookeeper recovered
@@ -630,6 +637,7 @@ void NodeManagerBase::enterCluster(bool start_master)
 
 void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 {
+    stopping_ = false;
     if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
     {
         ZNode znode;
@@ -656,7 +664,6 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         }
     }
 
-    stopping_ = false;
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     updateNodeState();
     updateCurrentPrimary();
@@ -973,6 +980,8 @@ void NodeManagerBase::onChildrenChanged(const std::string& path)
 
 void NodeManagerBase::checkForPrimaryElecting()
 {
+    if (stopping_)
+        return;
     updateCurrentPrimary();
     switch(nodeState_)
     {
@@ -1028,6 +1037,8 @@ void NodeManagerBase::checkForPrimaryElecting()
 
 void NodeManagerBase::checkPrimaryState(bool primary_deleted)
 {
+    if (stopping_)
+        return;
     // 
     if (primary_deleted)
     {
@@ -1228,6 +1239,8 @@ void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
 //  or when start up and stopping. Any other call may cause deadlock.
 void NodeManagerBase::checkSecondaryState(bool self_changed)
 {
+    if (stopping_)
+        return;
     switch(nodeState_)
     {
     case NODE_STATE_ELECTING:
