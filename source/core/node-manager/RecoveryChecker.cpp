@@ -141,6 +141,7 @@ static bool getLastBackup(const bfs::path& backup_basepath, std::string& backup_
             return true;
         else 
         {
+            LOG(WARNING) << "a corrupted directory removed " << backup_path;
             CopyGuard::safe_remove_all(backup_path);
         }
     }
