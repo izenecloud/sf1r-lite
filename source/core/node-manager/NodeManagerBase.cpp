@@ -698,7 +698,7 @@ void NodeManagerBase::leaveCluster()
     {
         zookeeper_->deleteZNode(self_primary_path_);
     }
-    self_primary_path_.clear();
+    //self_primary_path_.clear();
  
     zookeeper_->deleteZNode(nodePath_, true);
 
