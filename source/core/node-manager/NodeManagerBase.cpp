@@ -920,10 +920,10 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
     {
         LOG(INFO) << "myself node was deleted : " << self_primary_path_;
         if (!stopping_)
-	{
+        {
             LOG(INFO) << "node was deleted while not stopping: " << self_primary_path_;
-	    RecoveryChecker::forceExit("node was deleted while not stopping");
-	}
+            RecoveryChecker::forceExit("node was deleted while not stopping");
+        }
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)
     {
@@ -932,6 +932,7 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
     else if (path == curr_primary_path_)
     {
         LOG(WARNING) << "primary node was deleted, myself is : " << self_primary_path_;
+        //updateCurrentPrimary();
         checkPrimaryState(true);
     }
     else if (isPrimaryWithoutLock())
@@ -1310,7 +1311,7 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
 void NodeManagerBase::setNodeState(NodeStateType state)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
-    updateCurrentPrimary();
+    //updateCurrentPrimary();
     NodeStateType primary_state = getPrimaryState();
     if (primary_state == NODE_STATE_ELECTING)
     {

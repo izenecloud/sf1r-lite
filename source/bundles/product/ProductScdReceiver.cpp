@@ -21,9 +21,16 @@ bool ProductScdReceiver::pushIndexRequest()
 {
     if (MasterManagerBase::get()->isDistributed())
     {
-        std::string json_req = "{\"collection\":\"" + collectionName_ + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
-        MasterManagerBase::get()->pushWriteReq(json_req);
-        LOG(INFO) << "a json_req pushed from " << __FUNCTION__ << ", data:" << json_req;
+        if (NodeManagerBase::get()->isPrimary())
+        {
+            std::string json_req = "{\"collection\":\"" + collectionName_ + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
+            MasterManagerBase::get()->pushWriteReq(json_req);
+            LOG(INFO) << "a json_req pushed from " << __FUNCTION__ << ", data:" << json_req;
+        }
+        else
+        {
+            LOG(INFO) << "ignore on replica node, " << __FUNCTION__;
+        }
         return true;
     }
     else

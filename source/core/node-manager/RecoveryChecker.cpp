@@ -365,6 +365,7 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
     }
     catch(const std::exception& e)
     {
+        LOG(INFO) << "redo log exception: " << e.what();
         ret = false;
     }
     bfs::remove_all(redo_log_basepath_);
@@ -413,6 +414,7 @@ bool RecoveryChecker::hasAnyBackup()
 
 bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
 {
+    LOG(INFO) << "check and restoring backup at startup.";
     if (!bfs::exists(rollback_file_))
     {
         return true;
@@ -428,8 +430,11 @@ bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
     bool has_backup = true;
     if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
     {
+        LOG(ERROR) << "no backup available while check startup.";
+        LOG(ERROR) << "need restart to redo all log or get full data from primary.";
         last_backup_id = 0;
         has_backup = false;
+        return false;
     }
     if (has_backup)
     {
@@ -437,7 +442,7 @@ bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
         try
         {
             bfs::path dest_coldata_backup(last_backup_path + "/backup_data");
-            LOG(INFO) << "restoring the backup for the collection.";
+            LOG(INFO) << "restoring the backup for the collection." << last_backup_id;
 
             bfs::path coldata_path(colpath.getCollectionDataPath());
             bfs::path querydata_path(colpath.getQueryDataPath());
