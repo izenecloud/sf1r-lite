@@ -443,6 +443,11 @@ namespace sf1r {
                 return p1.score>p2.score;
             }
 
+            static bool CidCompare(const Product& p1, const Product& p2)
+            {
+                return p1.cid<p2.cid;
+            }
+
             //const std::vector<Attribute>& GetDisplayAttributes() const
             //{
                 //if(!dattributes.empty()) return dattributes;
@@ -461,6 +466,46 @@ namespace sf1r {
                 }
                 return result;
             }
+        };
+
+        struct FuzzyKey
+        {
+            FuzzyKey(){}
+            FuzzyKey(uint32_t pcid, const std::vector<uint32_t>& pname_ids, uint32_t pdid, const std::vector<uint32_t>& pvalue_ids)
+            : cid(pcid), name_ids(pname_ids), did(pdid), value_ids(pvalue_ids)
+            {
+            }
+
+            std::vector<uint32_t> GenKey() const
+            {
+                std::vector<uint32_t> key(1, cid);
+                key.insert(key.end(), name_ids.begin(), name_ids.end());
+                key.push_back(0);
+                key.push_back(did);
+                key.insert(key.end(), value_ids.begin(), value_ids.end());
+                return key;
+            }
+
+            void Parse(const std::vector<uint32_t>& key)
+            {
+                cid = key[0];
+                uint32_t i=1;
+                for(;i<key.size();i++)
+                {
+                    if(key[i]==0) break;
+                    name_ids.push_back(key[i]);
+                }
+                ++i;
+                did = key[i++];
+                for(;i<key.size();i++)
+                {
+                    value_ids.push_back(key[i]);
+                }
+            }
+            uint32_t cid;
+            std::vector<uint32_t> name_ids;
+            uint32_t did;//direction id;
+            std::vector<uint32_t> value_ids;
         };
         typedef uint32_t PidType;
         typedef std::map<std::string, uint32_t> CategoryIndex;
@@ -525,13 +570,14 @@ namespace sf1r {
 
         void IndexOffer_(const std::string& offer_scd);
         void IndexFuzzy_();
+        void ProcessFuzzy_(const std::pair<uint32_t, uint32_t>& range);
 
         void GenSuffixes_(const std::vector<term_t>& term_list, Suffixes& suffixes);
         void GenSuffixes_(const std::string& text, Suffixes& suffixes);
         void ConstructSuffixTrie_(TrieType& trie);
         term_t GetTerm_(const UString& text);
         term_t GetTerm_(const std::string& text);
-        std::string GetText_(const TermList& tl) const;
+        std::string GetText_(const TermList& tl, const std::string& s = "") const;
         std::string GetText_(const term_t& term) const;
         void GetTerms_(const std::string& text, std::vector<term_t>& term_list);
         void GetTerms_(const UString& text, std::vector<term_t>& term_list);
@@ -548,6 +594,12 @@ namespace sf1r {
 
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
+
+        static uint32_t TextLength_(const std::string& text)
+        {
+            UString u(text, UString::UTF_8);
+            return u.length();
+        }
 
         template<class K, class V>
         void GetSortedVector_(const std::map<K, V>& map, std::vector<std::pair<V, K> >& vec, uint32_t max=0)

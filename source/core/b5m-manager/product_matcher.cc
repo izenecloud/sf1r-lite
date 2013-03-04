@@ -22,7 +22,7 @@ using namespace idmlib::util;
 namespace bfs = boost::filesystem;
 
 
-//#define B5M_DEBUG
+#define B5M_DEBUG
 
 const std::string ProductMatcher::AVERSION("20130222");
 
@@ -806,6 +806,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             products_.push_back(p);
         }
     }
+    IndexFuzzy_();
     cid_to_pids_.resize(category_list_.size());
     for(uint32_t spu_id=1;spu_id<products_.size();spu_id++)
     {
@@ -815,7 +816,6 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     }
     if(!products_.empty())
     {
-        IndexFuzzy_();
         TrieType suffix_trie;
         ConstructSuffixTrie_(suffix_trie);
         ConstructKeywords_();
@@ -866,6 +866,176 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
 
 void ProductMatcher::IndexFuzzy_()
 {
+    std::stable_sort(products_.begin(), products_.end(), Product::CidCompare);
+    uint32_t last_cid = 0;
+    std::pair<uint32_t, uint32_t> range(1, 1);
+    for(uint32_t i=1;i<products_.size();i++)
+    {
+        const Product& p = products_[i];
+        if(p.cid>last_cid)
+        {
+            range.second = i;
+            if(range.second>range.first)
+            {
+                //LOG(INFO)<<"index fuzzy at cid "<<last_cid<<std::endl;
+                ProcessFuzzy_(range);
+            }
+            last_cid = p.cid;
+            range.first = i;
+        }
+    }
+    range.second = products_.size();
+    if(range.second>range.first)
+    {
+        ProcessFuzzy_(range);
+    }
+
+}
+
+void ProductMatcher::ProcessFuzzy_(const std::pair<uint32_t, uint32_t>& range)
+{
+    LOG(INFO)<<"process fuzzy on "<<range.first<<","<<range.second<<std::endl;
+    typedef std::map<std::vector<uint32_t>, std::vector<uint32_t> > FuzzyTrie; //key => pid_list
+    FuzzyTrie trie;
+    for(uint32_t i=range.first; i<range.second; i++)
+    {
+        const Product& p = products_[i];
+        //LOG(INFO)<<"cid "<<p.cid<<std::endl;
+        for(uint32_t a=0;a<p.attributes.size();a++)
+        {
+            const Attribute& attr = p.attributes[a];
+            if(attr.is_optional || attr.values.size()>1) continue;
+            const std::string& value = attr.values[0];
+            UString uname(attr.name, UString::UTF_8);
+            std::vector<UString> t;
+            AnalyzeChar_(uname, t);
+            std::vector<term_t> nit(t.size());
+            for(uint32_t j=0;j<t.size();j++)
+            {
+                nit[j] = GetTerm_(t[j]);
+            }
+            UString direction("forward", UString::UTF_8);
+            uint32_t did = GetTerm_(direction);
+            UString uvalue(value, UString::UTF_8);
+            t.resize(0);
+            AnalyzeChar_(uvalue, t);
+            std::vector<term_t> vit(t.size());
+            for(uint32_t j=0;j<t.size();j++)
+            {
+                vit[j] = GetTerm_(t[j]);
+            }
+            FuzzyKey fkey(p.cid, nit, did, vit);
+            std::vector<uint32_t> key = fkey.GenKey();
+            trie[key].push_back(i);
+            //FuzzyTrie::iterator it = trie.find(key);
+            //if(it==trie.end())
+            //{
+                //trie[key] = 1;
+            //}
+            //else
+            //{
+                //it->second+=1;
+            //}
+        }
+    }
+    for(FuzzyTrie::const_iterator its = trie.begin();its!=trie.end();its++)
+    {
+        FuzzyKey fkey;
+        fkey.Parse(its->first);
+        std::string text = GetText_(fkey.value_ids);
+        UString utext(text, UString::UTF_8);
+        double length = utext.length();
+        if(length<7.0) continue;
+        std::vector<uint32_t> found_prefix;
+        for(uint32_t p=0;p<fkey.value_ids.size();p++)
+        {
+            //if(fkey.value_ids.size()<3) continue;
+            std::vector<uint32_t> prefix(fkey.value_ids.begin(), fkey.value_ids.begin()+p+1);
+            std::vector<uint32_t> remain(fkey.value_ids.begin()+p+1, fkey.value_ids.end());
+            if(remain.size()<2) break;
+            std::string ptext = GetText_(prefix);
+            UString uptext(ptext, UString::UTF_8);
+            std::string rtext = GetText_(remain);
+            UString urtext(rtext, UString::UTF_8);
+            bool all_digits = true;
+            for(uint32_t i=0;i<urtext.length();i++)
+            {
+                if(!urtext.isDigitChar(i))
+                {
+                    all_digits = false;
+                    break;
+                }
+            }
+            if(all_digits) break;
+            double plength = uptext.length();
+            if(plength<=1.0) continue;
+            double r = plength/length;
+            if(r>0.5) break;
+            FuzzyTrie::const_iterator it = its;
+            uint32_t count = 0;
+            while(true)
+            {
+                FuzzyKey fkey2;
+                fkey2.Parse(it->first);
+                if(fkey2.cid!=fkey.cid) break;
+                if(fkey2.name_ids!=fkey.name_ids) break;
+                if(fkey2.did!=fkey.did) break;
+                if(!boost::algorithm::starts_with(fkey2.value_ids, prefix)) break;
+                count+=it->second.size();
+                if(it==trie.begin()) break;
+                it--;
+            }
+            it = its;
+            ++it;
+            while(it!=trie.end())
+            {
+                FuzzyKey fkey2;
+                fkey2.Parse(it->first);
+                if(fkey2.cid!=fkey.cid) break;
+                if(fkey2.name_ids!=fkey.name_ids) break;
+                if(fkey2.did!=fkey.did) break;
+                if(!boost::algorithm::starts_with(fkey2.value_ids, prefix)) break;
+                count+=it->second.size();
+                ++it;
+            }
+            if(count>=3)
+            {
+                found_prefix = prefix;
+                //LOG(INFO)<<"find fuzzy "<<text<<","<<ptext<<std::endl;
+            }
+        }
+        if(!found_prefix.empty())
+        {
+            LOG(INFO)<<"find fuzzy "<<text<<","<<GetText_(found_prefix)<<std::endl;
+            std::vector<uint32_t> remain(fkey.value_ids.begin()+found_prefix.size(), fkey.value_ids.end());
+            std::string new_attr_value = GetText_(remain, " ");
+            const std::vector<uint32_t>& pid_list = its->second;
+            for(uint32_t i=0;i<pid_list.size();i++)
+            {
+                Product& p = products_[pid_list[i]];
+                for(uint32_t a=0;a<p.attributes.size();a++)
+                {
+                    Attribute& attr = p.attributes[a];
+                    UString uname(attr.name, UString::UTF_8);
+                    std::vector<UString> t;
+                    AnalyzeChar_(uname, t);
+                    std::vector<term_t> nit(t.size());
+                    for(uint32_t j=0;j<t.size();j++)
+                    {
+                        nit[j] = GetTerm_(t[j]);
+                    }
+                    if(nit==fkey.name_ids)
+                    {
+                        const std::string& ovalue = attr.values[0];
+                        LOG(INFO)<<"fuzzy apply "<<p.stitle<<","<<attr.name<<" from "<<ovalue<<" to "<<new_attr_value<<std::endl;
+                        attr.values.resize(1);
+                        attr.values[0] = new_attr_value;
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void ProductMatcher::IndexOffer_(const std::string& offer_scd)
@@ -1560,6 +1730,7 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
     //text.convertString(stitle, UString::UTF_8);
     uint32_t begin = 0;
     uint8_t bracket_depth = 0;
+    uint32_t last_complete_keyword_fol = 0;
     keyword_vector.reserve(10);
     //typedef boost::unordered_map<TermList, uint32_t> KeywordIndex;
     //typedef KeywordVector::value_type ItemType;
@@ -1739,8 +1910,17 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
         }
         if(found_keyword.term_list.size()>0)
         {
+            if(begin>=last_complete_keyword_fol)
+            {
+                last_complete_keyword_fol = keyword_fol_position;
+            }
+            else
+            {
+                found_keyword.kweight = 0.0;//not complete keyword
+            }
             keyword_vector.push_back(found_keyword);
-            begin = keyword_fol_position;
+            //begin = keyword_fol_position;
+            ++begin;
         }
         else
         {
@@ -2147,7 +2327,7 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
         }
         else if(!ematched&&matched)
         {
-            if(weight.sum()>eweight.sum()*0.7)
+            if(weight.sum()>eweight.sum()*0.6)
             {
                 e_weight_spuid.first = weight;
                 e_weight_spuid.second = spu_id;
@@ -2556,7 +2736,7 @@ ProductMatcher::term_t ProductMatcher::GetTerm_(const std::string& text)
     return GetTerm_(utext);
 }
 
-std::string ProductMatcher::GetText_(const TermList& tl) const
+std::string ProductMatcher::GetText_(const TermList& tl, const std::string& s) const
 {
     std::string result;
     for(uint32_t i=0;i<tl.size();i++)
@@ -2573,6 +2753,7 @@ std::string ProductMatcher::GetText_(const TermList& tl) const
         {
             str = "__UNKNOW__";
         }
+        if(i>0) result+=s;
         result+=str;
     }
     return result;
