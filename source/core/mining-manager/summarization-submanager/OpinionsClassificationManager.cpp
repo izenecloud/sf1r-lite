@@ -1,4 +1,5 @@
 #include "OpinionsClassificationManager.h"
+#include <common/CMAKnowledgeFactory.h>
 
 using namespace std;
 typedef izenelib::am::leveldb::Table<std::string, int> LevelDBType;
@@ -30,8 +31,9 @@ OpinionsClassificationManager::OpinionsClassificationManager(const string& cma_p
 {
     dictPath_=system_resource_path_+"/opinion";
     factory_ = CMA_Factory::instance();
-    knowledge_ = factory_->createKnowledge();
-    knowledge_->loadModel( "utf8", modelPath_.data());
+    //knowledge_ = factory_->createKnowledge();
+    //knowledge_->loadModel( "utf8", modelPath_.data());
+    knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(modelPath_.data());
     analyzer_ = factory_->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
     analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE,100);
@@ -50,7 +52,7 @@ OpinionsClassificationManager::~OpinionsClassificationManager()
     SaveAll(indexPath_);
     log_.close();
     dbTable_->close();
-    delete knowledge_;
+    //delete knowledge_;
     delete analyzer_;
     delete dbTable_;
 }

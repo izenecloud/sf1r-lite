@@ -1,6 +1,6 @@
 #include "OpinionsManager.h"
 #include "OpinionTraining.h"
-#include <icma/icma.h>
+#include <common/CMAKnowledgeFactory.h>
 #include <glog/logging.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
@@ -155,8 +155,10 @@ inline uint32_t FindInsertionPos(const std::vector<uint32_t>& wi_pos,
 OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictpath,
         const string& training_data_path)
 {
-    knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel( "utf8", dictpath.c_str());
+    //knowledge_ = CMA_Factory::instance()->createKnowledge();
+    //knowledge_->loadModel( "utf8", dictpath.c_str());
+    knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(dictpath);
+
     //assert(knowledge_->isSupportPOS());
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     //analyzer->setOption(Analyzer::OPTION_TYPE_POS_TAGGING,0);
@@ -179,7 +181,7 @@ OpinionsManager::OpinionsManager(const string& colPath, const std::string& dictp
 OpinionsManager::~OpinionsManager()
 {
     out.close();
-    delete knowledge_;
+    //delete knowledge_;
     delete analyzer_;
     delete training_data_;
 }
