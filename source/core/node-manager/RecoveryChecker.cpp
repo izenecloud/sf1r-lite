@@ -141,6 +141,7 @@ static bool getLastBackup(const bfs::path& backup_basepath, std::string& backup_
             return true;
         else 
         {
+            LOG(WARNING) << "a corrupted directory removed " << backup_path;
             CopyGuard::safe_remove_all(backup_path);
         }
     }
@@ -395,6 +396,19 @@ bool RecoveryChecker::backupColl(const CollectionPath& colpath, const bfs::path&
         return false;
     }
     return true;
+}
+
+bool RecoveryChecker::hasAnyBackup()
+{
+    std::string last_backup_path;
+    uint32_t last_backup_id = 0;
+    bool has_backup = true;
+    if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
+    {
+        last_backup_id = 0;
+        has_backup = false;
+    }
+    return has_backup;
 }
 
 bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)

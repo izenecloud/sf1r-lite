@@ -203,7 +203,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         return true;
     }
 
-    if (isNeedBackup(type))
+    if (isNeedBackup(type) || (prepared_req.inc_id % 1000 == 0) || !RecoveryChecker::get()->hasAnyBackup())
     {
         LOG(INFO) << "begin backup";
         if(!RecoveryChecker::get()->backup())
@@ -439,10 +439,10 @@ void DistributeRequestHooker::finish(bool success)
         }
     }
 
-    if ( (reqlog.inc_id % 10 == 0) && !RecoveryChecker::get()->checkDataConsistent() )
-    {
-        LOG(ERROR) << "!!!!! finished request with not consistent data: ";
-    }
+    //if ( (reqlog.inc_id % 10 == 0) && !RecoveryChecker::get()->checkDataConsistent() )
+    //{
+    //    LOG(ERROR) << "!!!!! finished request with not consistent data: ";
+    //}
 
     LOG(INFO) << DistributeTestSuit::getStatusReport();
 }

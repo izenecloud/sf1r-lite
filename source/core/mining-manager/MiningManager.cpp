@@ -1815,17 +1815,20 @@ bool MiningManager::setCustomRank(
         return false;
     }
 
+    CustomRankDocId customDocId;
+
+    bool convertResult = customDocIdConverter_ &&
+        customDocIdConverter_->convert(customDocStr, customDocId);
+
+    if (!convertResult)
+	    DistributeRequestHooker::get()->processLocalFinished(false);
+
     NoAdditionReqLog reqlog;
     if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
-
-    CustomRankDocId customDocId;
-
-    bool convertResult = customDocIdConverter_ &&
-        customDocIdConverter_->convert(customDocStr, customDocId);
 
     bool setResult = customRankManager_ &&
         customRankManager_->setCustomValue(query, customDocStr);

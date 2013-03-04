@@ -19,6 +19,7 @@ NodeManagerBase::NodeManagerBase()
     , nodeState_(NODE_STATE_INIT)
     , masterStarted_(false)
     , processing_step_(0)
+    , stopping_(false)
     , CLASSNAME("[NodeManagerBase]")
 {
 }
@@ -140,6 +141,10 @@ void NodeManagerBase::start()
 
 void NodeManagerBase::stop()
 {
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        stopping_ = true;
+    }
     if (masterStarted_)
     {
         stopMasterManager();
@@ -154,6 +159,9 @@ void NodeManagerBase::stop()
 void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     LOG (INFO) << CLASSNAME << " worker node event: " << zkEvent.toString();
+
+    if (stopping_)
+        return;
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
@@ -187,11 +195,12 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                     LOG(INFO) << "I lost primary after auto-reconnect" << self_primary_path_;
                     RecoveryChecker::forceExit("I lost primary after auto-reconnect");
                 }
-                checkSecondaryState(zkEvent.path_ == self_primary_path_ || zkEvent.path_ == nodePath_);
+                checkSecondaryState(false);
             }
             else 
             {
                 checkPrimaryState(old_primary != curr_primary_path_);
+                updateNodeState();
             }
         }
     }
@@ -233,6 +242,8 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             return;
         }
 
+        stopping_ = true;
+        self_primary_path_.clear();
         zookeeper_->disconnect();
         nodeState_ = NODE_STATE_STARTING;
         enterCluster(false);
@@ -492,6 +503,7 @@ void NodeManagerBase::unregisterPrimary()
     }
     zookeeper_->deleteZNode(self_primary_path_);
     self_primary_path_.clear();
+    LOG(INFO) << "current self node primary path is unregistered: ";
     ZNode znode;
     setSf1rNodeData(znode);
     zookeeper_->setZNodeData(nodePath_, znode.serialize());
@@ -538,6 +550,7 @@ void NodeManagerBase::enterCluster(bool start_master)
         return;
     }
 
+    stopping_ = false;
     if (!checkZooKeeperService())
     {
         // process will be resumed after zookeeper recovered
@@ -624,6 +637,7 @@ void NodeManagerBase::enterCluster(bool start_master)
 
 void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 {
+    stopping_ = false;
     if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
     {
         ZNode znode;
@@ -691,7 +705,7 @@ void NodeManagerBase::leaveCluster()
     {
         zookeeper_->deleteZNode(self_primary_path_);
     }
-    self_primary_path_.clear();
+    //self_primary_path_.clear();
  
     zookeeper_->deleteZNode(nodePath_, true);
 
@@ -701,6 +715,7 @@ void NodeManagerBase::leaveCluster()
     if (childrenList.size() <= 0)
     {
         zookeeper_->deleteZNode(replicaPath);
+        zookeeper_->deleteZNode(primaryNodeParentPath_);
     }
 
     childrenList.clear();
@@ -708,7 +723,7 @@ void NodeManagerBase::leaveCluster()
     if (childrenList.size() <= 0)
     {
         zookeeper_->deleteZNode(topologyPath_);
-        zookeeper_->deleteZNode(primaryNodeParentPath_);
+        zookeeper_->deleteZNode(primaryBasePath_);
         // if no any node, we delete all the remaining unhandled write request.
         zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqQueueParent(), true);
     }
@@ -899,24 +914,30 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
 
 void NodeManagerBase::onNodeDeleted(const std::string& path)
 {
+    LOG(INFO) << "node deleted: " << path;
     boost::unique_lock<boost::mutex> lock(mutex_);
     if (path == nodePath_ || path == self_primary_path_)
     {
-        LOG(INFO) << "myself node was deleted : " << path;
+        LOG(INFO) << "myself node was deleted : " << self_primary_path_;
+        if (!stopping_)
+	{
+            LOG(INFO) << "node was deleted while not stopping: " << self_primary_path_;
+	    RecoveryChecker::forceExit("node was deleted while not stopping");
+	}
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)
     {
-        LOG(INFO) << "node was deleted, but I did not care : " << path;
+        LOG(INFO) << "node was deleted, but I did not care : " << self_primary_path_;
     }
     else if (path == curr_primary_path_)
     {
-        LOG(WARNING) << "primary node was deleted : " << path;
+        LOG(WARNING) << "primary node was deleted, myself is : " << self_primary_path_;
         checkPrimaryState(true);
     }
     else if (isPrimaryWithoutLock())
     {
         LOG(WARNING) << "secondary node was deleted : " << path;
-        LOG(INFO) << "recheck node for electing or request process";
+        LOG(INFO) << "recheck node for electing or request process on " << self_primary_path_;
         checkSecondaryState(false);        
     }
 }
@@ -929,6 +950,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     // because there may only one node in distribute system.
     if (isPrimaryWithoutLock())
     {
+        LOG(INFO) << "current primary checking while node changed: " << self_primary_path_;
         checkSecondaryState(path == self_primary_path_ || path == nodePath_);
     }
     else if (path == self_primary_path_ || path == nodePath_)
@@ -958,6 +980,8 @@ void NodeManagerBase::onChildrenChanged(const std::string& path)
 
 void NodeManagerBase::checkForPrimaryElecting()
 {
+    if (stopping_)
+        return;
     updateCurrentPrimary();
     switch(nodeState_)
     {
@@ -1013,6 +1037,8 @@ void NodeManagerBase::checkForPrimaryElecting()
 
 void NodeManagerBase::checkPrimaryState(bool primary_deleted)
 {
+    if (stopping_)
+        return;
     // 
     if (primary_deleted)
     {
@@ -1161,6 +1187,8 @@ void NodeManagerBase::checkPrimaryForFinishWrite(NodeStateType primary_state)
     }
     else if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
     {
+        if (processing_step_ == 100)
+            return;
         ZNode znode;
         std::string sdata;
         if(zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
@@ -1211,6 +1239,8 @@ void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
 //  or when start up and stopping. Any other call may cause deadlock.
 void NodeManagerBase::checkSecondaryState(bool self_changed)
 {
+    if (stopping_)
+        return;
     switch(nodeState_)
     {
     case NODE_STATE_ELECTING:
@@ -1349,13 +1379,17 @@ void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
         }
     }
 
-    if (processing_step_ < 100)
+    if (!all_secondary_ready)
     {
         if (!canAbortRequest() &&
             nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
+	{
+            LOG(INFO) << "set processing step to 100." << nodeState_;
             processing_step_ = 100;
+	}
         if(!self_changed)
         {
+            LOG(INFO) << "update processing step ." << nodeState_ << ", step " << processing_step_;
             updateNodeState();
         }
     }

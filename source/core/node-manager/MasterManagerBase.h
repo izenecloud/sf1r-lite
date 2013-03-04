@@ -220,6 +220,8 @@ protected:
     EventCBType on_new_req_available_;
     std::string write_req_queue_parent_;
     std::string write_req_queue_;
+    bool stopping_;
+
 
     std::string CLASSNAME;
     typedef std::map<std::string, boost::shared_ptr<IDistributeService> > ServiceMapT;

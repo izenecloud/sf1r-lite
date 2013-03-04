@@ -15,6 +15,7 @@ using namespace sf1r;
 MasterManagerBase::MasterManagerBase()
 : isDistributeEnable_(false)
 , masterState_(MASTER_STATE_INIT)
+, stopping_(false)
 , CLASSNAME("MasterManagerBase")
 {
 }
@@ -33,12 +34,14 @@ bool MasterManagerBase::init()
     sf1rTopology_ = NodeManagerBase::get()->getSf1rTopology();
     write_req_queue_ = ZooKeeperNamespace::getWriteReqQueueNode();
     write_req_queue_parent_ = ZooKeeperNamespace::getWriteReqQueueParent();
+    stopping_ = false;
     return true;
 }
 
 void MasterManagerBase::start()
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
+    stopping_ = false;
     if (masterState_ == MASTER_STATE_INIT)
     {
         masterState_ = MASTER_STATE_STARTING;
@@ -69,6 +72,10 @@ void MasterManagerBase::start()
 
 void MasterManagerBase::stop()
 {
+	{
+		boost::lock_guard<boost::mutex> lock(state_mutex_);
+		stopping_ = true;
+	}
     if (zookeeper_ && zookeeper_->isConnected())
     {
         std::vector<std::string> childrenList;
@@ -145,6 +152,8 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     LOG(INFO) << CLASSNAME << ", "<< state2string(masterState_) <<", "<<zkEvent.toString();
 
+    if (stopping_)
+        return;
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
         boost::lock_guard<boost::mutex> lock(state_mutex_);
@@ -180,6 +189,8 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 void MasterManagerBase::onNodeCreated(const std::string& path)
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
+    if (stopping_)
+        return;
 
     if (masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
     {
@@ -205,6 +216,8 @@ void MasterManagerBase::onNodeDeleted(const std::string& path)
 {
     LOG(INFO) << "node deleted: " << path;
     boost::lock_guard<boost::mutex> lock(state_mutex_);
+    if (stopping_)
+        return;
 
     if (masterState_ == MASTER_STATE_STARTED)
     {
@@ -218,6 +231,8 @@ void MasterManagerBase::onChildrenChanged(const std::string& path)
 {
     LOG(INFO) << "node children changed : " << path;
     boost::lock_guard<boost::mutex> lock(state_mutex_);
+    if (stopping_)
+        return;
 
     if (masterState_ > MASTER_STATE_STARTING_WAIT_ZOOKEEPER)
     {
@@ -230,6 +245,8 @@ void MasterManagerBase::onDataChanged(const std::string& path)
 {
     LOG(INFO) << "node data changed : " << path;
     boost::lock_guard<boost::mutex> lock(state_mutex_);
+    if (stopping_)
+        return;
     checkForWriteReq();
 }
 
@@ -237,6 +254,8 @@ bool MasterManagerBase::prepareWriteReq()
 {
     if (!isDistributeEnable_)
         return true;
+    if (stopping_)
+        return false;
     if (!zookeeper_ || !zookeeper_->isConnected())
         return false;
     if (!isMinePrimary())
@@ -607,6 +626,7 @@ bool MasterManagerBase::checkZooKeeperService()
 
 void MasterManagerBase::doStart()
 {
+    stopping_ = false;
     detectReplicaSet();
 
     detectWorkers();
