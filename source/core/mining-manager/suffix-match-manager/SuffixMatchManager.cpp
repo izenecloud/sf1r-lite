@@ -2,8 +2,8 @@
 #include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
-#include <icma/icma.h>
 #include <la-manager/LAPool.h>
+#include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"
@@ -142,7 +142,7 @@ SuffixMatchManager::SuffixMatchManager(
 SuffixMatchManager::~SuffixMatchManager()
 {
     if (analyzer_) delete analyzer_;
-    if (knowledge_) delete knowledge_;
+    //if (knowledge_) delete knowledge_;
 }
 
 void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished)
@@ -746,8 +746,9 @@ void SuffixMatchManager::buildTokenizeDic()
     boost::filesystem::path cma_fmindex_dic(cma_path);
     cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
-    knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
+    //knowledge_ = CMA_Factory::instance()->createKnowledge();
+    //knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
+    knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(cma_fmindex_dic.c_str(), false);
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
     // using the maxprefix analyzer

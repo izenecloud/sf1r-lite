@@ -10,7 +10,6 @@
 #include <algorithm>
 
 using namespace std;
-using namespace izenelib::am::succinct::fm_index;
 
 namespace sf1r
 {
