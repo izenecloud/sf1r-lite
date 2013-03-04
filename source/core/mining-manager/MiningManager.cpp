@@ -1589,24 +1589,19 @@ bool MiningManager::clickGroupLabel(
     const std::vector<std::string>& groupPath
 )
 {
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
     if (! logger)
     {
         LOG(ERROR) << "GroupLabelLogger is not initialized for group property: " << propName;
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
     faceted::PropValueTable::pvid_t pvId = propValueId_(propName, groupPath);
     if (pvId == 0)
     {
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
@@ -1618,7 +1613,7 @@ bool MiningManager::clickGroupLabel(
     }
 
     bool ret = logger->logLabel(query, pvId);
-    DistributeRequestHooker::get()->processLocalFinished(ret);
+    DISTRIBUTE_WRITE_FINISH(ret);
     return ret;
 }
 
@@ -1719,16 +1714,13 @@ bool MiningManager::setTopGroupLabel(
         const std::vector<std::vector<std::string> >& groupLabels
 )
 {
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
     if (! logger)
     {
         LOG(ERROR) << "GroupLabelLogger is not initialized for group property: " << propName;
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
@@ -1739,7 +1731,6 @@ bool MiningManager::setTopGroupLabel(
         faceted::PropValueTable::pvid_t pvId = propValueId_(propName, *it);
         if (pvId == 0)
         {
-            DistributeRequestHooker::get()->processLocalFinished(false);
             return false;
         }
 
@@ -1753,7 +1744,7 @@ bool MiningManager::setTopGroupLabel(
     }
 
     bool ret = logger->setTopLabel(query, pvIdVec);
-    DistributeRequestHooker::get()->processLocalFinished(ret);
+    DISTRIBUTE_WRITE_FINISH(ret);
     return ret;
 }
 
@@ -1779,18 +1770,13 @@ bool MiningManager::getMerchantScore(
 
 bool MiningManager::setMerchantScore(const MerchantStrScoreMap& merchantScoreMap)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     if (! merchantScoreManager_)
     {
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
-
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
-
     NoAdditionReqLog reqlog;
     if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
     {
@@ -1800,7 +1786,7 @@ bool MiningManager::setMerchantScore(const MerchantStrScoreMap& merchantScoreMap
 
     merchantScoreManager_->setScore(merchantScoreMap);
 
-    DistributeRequestHooker::get()->processLocalFinished(true);
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 
@@ -1809,11 +1795,8 @@ bool MiningManager::setCustomRank(
     const CustomRankDocStr& customDocStr
 )
 {
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     CustomRankDocId customDocId;
 
@@ -1821,7 +1804,9 @@ bool MiningManager::setCustomRank(
         customDocIdConverter_->convert(customDocStr, customDocId);
 
     if (!convertResult)
-	    DistributeRequestHooker::get()->processLocalFinished(false);
+    {
+        return false;
+    }
 
     NoAdditionReqLog reqlog;
     if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
@@ -1833,7 +1818,7 @@ bool MiningManager::setCustomRank(
     bool setResult = customRankManager_ &&
         customRankManager_->setCustomValue(query, customDocStr);
 
-    DistributeRequestHooker::get()->processLocalFinished(convertResult && setResult);
+    DISTRIBUTE_WRITE_FINISH(convertResult && setResult);
 
     return convertResult && setResult;
 }
@@ -2251,31 +2236,26 @@ bool MiningManager::GetProductFrontendCategory(const izenelib::util::UString& qu
 
 bool MiningManager::SetKV(const std::string& key, const std::string& value)
 {
-    if (!DistributeRequestHooker::get()->isValid())
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    if (!kvManager_)
     {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
         return false;
     }
 
-    if (kvManager_)
+    NoAdditionReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
     {
-        NoAdditionReqLog reqlog;
-        if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
-        {
-            LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-            return false;
-        }
-
-        kvManager_->update(key, value);
-        DistributeRequestHooker::get()->processLocalFinished(true);
-
-        return true;
-    }
-    else
-    {
-        DistributeRequestHooker::get()->processLocalFinished(false);
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
+
+    kvManager_->update(key, value);
+
+    DISTRIBUTE_WRITE_FINISH(true);
+
+    return true;
 }
 
 bool MiningManager::GetKV(const std::string& key, std::string& value)

@@ -337,23 +337,18 @@ bool RecommendTaskService::visitItem(
     bool isRecItem
 )
 {
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     if (sessionIdStr.empty())
     {
         LOG(ERROR) << "error in visitItem(), session id is empty";
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
     itemid_t itemId = 0;
     if (!itemIdGenerator_.strIdToItemId(itemIdStr, itemId))
     {
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
@@ -366,7 +361,6 @@ bool RecommendTaskService::visitItem(
 
     if (!visitManager_.addVisitItem(sessionIdStr, userIdStr, itemId, &visitMatrix_))
     {
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
@@ -374,11 +368,10 @@ bool RecommendTaskService::visitItem(
     {
         LOG(ERROR) << "error in VisitManager::visitRecommendItem(), userId: " << userIdStr
             << ", itemId: " << itemId;
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
-    DistributeRequestHooker::get()->processLocalFinished(true);
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 
@@ -388,17 +381,13 @@ bool RecommendTaskService::purchaseItem(
     const OrderItemVec& orderItemVec
 )
 {
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     std::vector<itemid_t> itemIdVec;
     if (!prepareSaveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_, itemIdVec))
     {
         LOG(WARNING) << "saveOrder_ failed.";
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
     NoAdditionReqLog reqlog;
@@ -408,7 +397,7 @@ bool RecommendTaskService::purchaseItem(
         return false;
     }
     bool ret = saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_, itemIdVec);
-    DistributeRequestHooker::get()->processLocalFinished(ret);
+    DISTRIBUTE_WRITE_FINISH(ret);
     return ret;
 }
 
@@ -417,16 +406,12 @@ bool RecommendTaskService::updateShoppingCart(
     const OrderItemVec& cartItemVec
 )
 {
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     std::vector<itemid_t> itemIdVec;
     if (! convertOrderItemVec_(cartItemVec, itemIdVec))
     {
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
@@ -448,7 +433,7 @@ bool RecommendTaskService::updateShoppingCart(
 
     if (need_write)
         ret = cartManager_.updateCart(userIdStr, itemIdVec);
-    DistributeRequestHooker::get()->processLocalFinished(ret);
+    DISTRIBUTE_WRITE_FINISH(ret);
     return ret;
 }
 
@@ -459,16 +444,12 @@ bool RecommendTaskService::trackEvent(
     const std::string& itemIdStr
 )
 {
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     itemid_t itemId = 0;
     if (! itemIdGenerator_.strIdToItemId(itemIdStr, itemId))
     {
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
 
@@ -493,22 +474,18 @@ bool RecommendTaskService::trackEvent(
         ret = isAdd ? eventManager_.addEvent(eventStr, userIdStr, itemId) :
             eventManager_.removeEvent(eventStr, userIdStr, itemId);
     }
-    DistributeRequestHooker::get()->processLocalFinished(ret);
+    DISTRIBUTE_WRITE_FINISH(ret);
     return ret;
 }
 
 bool RecommendTaskService::rateItem(const RateParam& param)
 {
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     itemid_t itemId = 0;
     if (! itemIdGenerator_.strIdToItemId(param.itemIdStr, itemId))
     {
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
     if (!bundleConfig_.cassandraConfig_.enable)
@@ -533,18 +510,14 @@ bool RecommendTaskService::rateItem(const RateParam& param)
             rateManager_.removeRate(param.userIdStr, itemId);
     }
 
-    DistributeRequestHooker::get()->processLocalFinished(ret);
+    DISTRIBUTE_WRITE_FINISH(ret);
     return ret;
 }
 
 bool RecommendTaskService::buildCollection()
 {
-    DistributeRequestHooker* distribute_req_hooker = DistributeRequestHooker::get();
-    if (!distribute_req_hooker->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     LOG(INFO) << "Start building recommend collection...";
     izenelib::util::ClockTimer timer;
@@ -552,7 +525,6 @@ bool RecommendTaskService::buildCollection()
     if (! backupDataFiles(directoryRotator_))
     {
         LOG(ERROR) << "Failed in backup data files, exit recommend collection build";
-        distribute_req_hooker->processLocalFinished(false);
         return false;
     }
 
@@ -560,14 +532,13 @@ bool RecommendTaskService::buildCollection()
     if (! dirGuard)
     {
         LOG(ERROR) << "Dirty recommend collection data, exit recommend collection build";
-        distribute_req_hooker->processLocalFinished(false);
         return false;
     }
 
     boost::mutex::scoped_lock lock(buildCollectionMutex_);
     bool ret = false;
 
-    if (!distribute_req_hooker->isHooked() || distribute_req_hooker->getHookType() == Request::FromDistribute)
+    if (!DistributeRequestHooker::get()->isHooked() || DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
     {
         // on primary
         ret = buildCollectionOnPrimary();
@@ -584,7 +555,7 @@ bool RecommendTaskService::buildCollection()
     {
         LOG(INFO) << "recommend collection build failed: " ;
     }
-    DistributeRequestHooker::get()->processLocalFinished(ret);
+    DISTRIBUTE_WRITE_FINISH(ret);
     return ret;
 }
 
@@ -1057,16 +1028,14 @@ void RecommendTaskService::cronJob_(int calltype)
                 LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
             return;
         }
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
         boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
         {
             LOG(INFO) << "exit recommend cron job as still in building collection " << bundleConfig_.collectionName_;
-            return;
-        }
-        if (!DistributeRequestHooker::get()->isValid())
-        {
-            LOG(INFO) << "cron job ignored : " << cronJobName_;
             return;
         }
         CronJobReqLog reqlog;
@@ -1079,7 +1048,7 @@ void RecommendTaskService::cronJob_(int calltype)
         flush();
 
         buildFreqItemSet_();
-        DistributeRequestHooker::get()->processLocalFinished(true);
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
 

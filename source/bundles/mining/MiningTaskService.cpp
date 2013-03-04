@@ -52,17 +52,17 @@ void MiningTaskService::cronJob_(int calltype)
 {
     if (cronExpression_.matches_now() || calltype > 0)
     {
-	if (calltype == 0 && NodeManagerBase::get()->isDistributed())
-	{
-		if (NodeManagerBase::get()->isPrimary() && !DistributeRequestHooker::get()->isHooked())
-		{
-			MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
-			LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
-		}
-		else
-			LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
-		return;
-	}
+        if (calltype == 0 && NodeManagerBase::get()->isDistributed())
+        {
+            if (NodeManagerBase::get()->isPrimary() && !DistributeRequestHooker::get()->isHooked())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
+            }
+            else
+                LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
+            return;
+        }
         if (!DistributeRequestHooker::get()->isValid())
         {
             LOG(INFO) << "cron job ignored : " << cronJobName_;
@@ -76,7 +76,7 @@ void MiningTaskService::cronJob_(int calltype)
         }
 
         DoMiningCollection();
-	DistributeRequestHooker::get()->processLocalFinished(true);
+        DistributeRequestHooker::get()->processLocalFinished(true);
     }
 }
 

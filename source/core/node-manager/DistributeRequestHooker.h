@@ -103,16 +103,20 @@ class DistributeWriteGuard
 public:
     DistributeWriteGuard();
     ~DistributeWriteGuard();
-    void setSuccess();
+    void setResult();
+    void setResult(bool result);
+    void setResult(bool result, CommonReqData& reqlog);
     bool isValid();
 private:
-    bool result_;
+    bool result_setted_;
 };
 
 #define DISTRIBUTE_WRITE_BEGIN DistributeWriteGuard distribute_write_guard;
 #define DISTRIBUTE_WRITE_CHECK_VALID_RETURN  if (!distribute_write_guard.isValid()) { LOG(ERROR) << __FUNCTION__ << " call invalid."; return false; }
 #define DISTRIBUTE_WRITE_CHECK_VALID_RETURN2  if (!distribute_write_guard.isValid()) { LOG(ERROR) << __FUNCTION__ << " call invalid."; return; }
-#define DISTRIBUTE_WRITE_SUCCESS  distribute_write_guard.setSuccess();
+#define DISTRIBUTE_WRITE_FINISH(ret)  distribute_write_guard.setResult(ret);
+#define DISTRIBUTE_WRITE_FINISH2(ret, reqlog)  distribute_write_guard.setResult(ret, reqlog);
+#define DISTRIBUTE_WRITE_FINISH3  distribute_write_guard.setResult();
 
 }
 

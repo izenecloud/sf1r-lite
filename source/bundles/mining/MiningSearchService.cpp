@@ -112,15 +112,12 @@ bool MiningSearchService::getUniqueDocIdList(
 
 bool MiningSearchService::SetOntology(const std::string& xml)
 {
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     boost::shared_ptr<faceted::OntologyManager> faceted = miningManager_->GetFaceted();
     if (!faceted)
     {
-        DistributeRequestHooker::get()->processLocalFinished(false);
         return false;
     }
     NoAdditionReqLog reqlog;
@@ -130,7 +127,7 @@ bool MiningSearchService::SetOntology(const std::string& xml)
         return false;
     }
     faceted->SetXML(xml);
-    DistributeRequestHooker::get()->processLocalFinished(true);
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 

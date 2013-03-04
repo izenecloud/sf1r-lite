@@ -82,16 +82,16 @@ void ProductCronJobHandler::cronJob_(int calltype)
     {
         if (calltype == 0 && NodeManagerBase::get()->isDistributed())
         {
-	    if (NodeManagerBase::get()->isPrimary())
-	    {
-		MasterManagerBase::get()->pushWriteReq(cronJobName, "cron");
-		LOG(INFO) << "push cron job to queue on primary : " << cronJobName;
-	    }
-	    else
-	    {
-		LOG(INFO) << "cron job on replica ignored. ";
-	    }
-	    return;
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName;
+            }
+            else
+            {
+                LOG(INFO) << "cron job on replica ignored. ";
+            }
+            return;
         }
         if (!DistributeRequestHooker::get()->isValid())
         {
@@ -106,6 +106,6 @@ void ProductCronJobHandler::cronJob_(int calltype)
         }
 
         runEvents();
-	DistributeRequestHooker::get()->processLocalFinished(true);
+        DistributeRequestHooker::get()->processLocalFinished(true);
     }
 }

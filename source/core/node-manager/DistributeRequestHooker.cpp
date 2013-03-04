@@ -468,13 +468,14 @@ void DistributeRequestHooker::forceExit()
 }
 
 DistributeWriteGuard::DistributeWriteGuard()
-    : result_(false)
+    : result_setted_(false)
 {
 }
 
 DistributeWriteGuard::~DistributeWriteGuard()
 {
-    DistributeRequestHooker::get()->processLocalFinished(result_);
+    if (!result_setted_)
+        DistributeRequestHooker::get()->processLocalFinished(false);
 }
 
 bool DistributeWriteGuard::isValid()
@@ -482,9 +483,21 @@ bool DistributeWriteGuard::isValid()
     return DistributeRequestHooker::get()->isValid();
 }
 
-void DistributeWriteGuard::setSuccess()
+void DistributeWriteGuard::setResult()
 {
-    result_ = true;
+    result_setted_ = true;
+}
+
+void DistributeWriteGuard::setResult(bool result)
+{
+    result_setted_ = true;
+    DistributeRequestHooker::get()->processLocalFinished(result);
+}
+
+void DistributeWriteGuard::setResult(bool result, CommonReqData& updated_preparedata)
+{
+    result_setted_ = true;
+    DistributeRequestHooker::get()->processLocalFinished(result, updated_preparedata);
 }
 
 }

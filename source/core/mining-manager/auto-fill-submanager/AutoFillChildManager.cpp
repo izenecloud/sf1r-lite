@@ -1099,17 +1099,15 @@ void AutoFillChildManager::updateAutoFill(int calltype)
             }
             return;
         }
-        if (!DistributeRequestHooker::get()->isValid())
-        {
-            LOG(INFO) << "cron job ignored : " << __FUNCTION__;
-            return;
-        }
+        
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
         boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
         {
             LOG(INFO) << "Autofill Is already initing ....";
-            DistributeRequestHooker::get()->processLocalFinished(false);
             return;
         }
 
@@ -1133,7 +1131,7 @@ void AutoFillChildManager::updateAutoFill(int calltype)
         isUpdating_Wat_ = false;
         isUpdating_ = false;
 
-        DistributeRequestHooker::get()->processLocalFinished(true);
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
 

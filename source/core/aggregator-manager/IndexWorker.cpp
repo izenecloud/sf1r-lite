@@ -180,11 +180,9 @@ bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
 
 bool IndexWorker::buildCollection(unsigned int numdoc)
 {
-    if (!distribute_req_hooker_->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     ///If current directory is the one rotated from the backup directory,
     ///there should exist some missed SCDs since the last backup time,
@@ -204,14 +202,12 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         if (!bfs::is_directory(scdPath))
         {
             LOG(ERROR) << "SCD Path does not exist. Path " << scdPath;
-            distribute_req_hooker_->processLocalFinished(false);
             return false;
         }
     }
     catch (bfs::filesystem_error& e)
     {
         LOG(ERROR) << "Error while opening directory " << e.what();
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -262,18 +258,16 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     bool ret = buildCollection(numdoc, scdList);
 
     flush();
-    distribute_req_hooker_->processLocalFinished(ret);
+
+    DISTRIBUTE_WRITE_FINISH(ret);
 
     return ret;
 }
 
 bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
 {
-    if (!distribute_req_hooker_->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     recoverSCD_();
     Status::Guard statusGuard(indexStatus_);
@@ -319,7 +313,8 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
     bool ret = buildCollection(numdoc, reqlog.scd_list);
 
     flush();
-    distribute_req_hooker_->processLocalFinished(ret);
+    DISTRIBUTE_WRITE_FINISH(ret);
+
     return ret;
 }
 
@@ -692,7 +687,7 @@ bool IndexWorker::optimizeIndex()
 
     flush();
 
-    DISTRIBUTE_WRITE_SUCCESS;
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 
@@ -733,11 +728,9 @@ void IndexWorker::lazyOptimizeIndex(int calltype)
             }
             return;
         }
-        if (!DistributeRequestHooker::get()->isValid())
-        {
-            LOG(INFO) << "cron job ignored for invalid : " << optimizeJobDesc_;
-            return;
-        }
+        
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
 
         CronJobReqLog reqlog;
         reqlog.cron_time = Utilities::createTimeStamp();
@@ -750,7 +743,7 @@ void IndexWorker::lazyOptimizeIndex(int calltype)
         LOG(INFO) << "optimizeIndex cron job begin running: " << optimizeJobDesc_;
         indexManager_->optimizeIndex();
 
-        DistributeRequestHooker::get()->processLocalFinished(true);
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
 
@@ -772,11 +765,8 @@ void IndexWorker::doMining_()
 
 bool IndexWorker::createDocument(const Value& documentValue)
 {
-    if (!distribute_req_hooker_->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     docid_t docid;
     uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
@@ -785,7 +775,6 @@ bool IndexWorker::createDocument(const Value& documentValue)
         if (!documentManager_->isDeleted(docid))
         {
             LOG(INFO) << "the document already exist for : " << docid;
-            distribute_req_hooker_->processLocalFinished(false);
             return false;
         }
     }
@@ -802,7 +791,6 @@ bool IndexWorker::createDocument(const Value& documentValue)
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -821,7 +809,6 @@ bool IndexWorker::createDocument(const Value& documentValue)
     IndexWorker::UpdateType updateType;
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType))
     {
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -837,17 +824,15 @@ bool IndexWorker::createDocument(const Value& documentValue)
 
     flush();
     reqlog.timestamp = timestamp;
-    distribute_req_hooker_->processLocalFinished(ret, reqlog);
+
+    DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
     return ret;
 }
 
 bool IndexWorker::updateDocument(const Value& documentValue)
 {
-    if (!distribute_req_hooker_->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     CreateOrUpdateDocReqLog reqlog;
     reqlog.timestamp = Utilities::createTimeStamp();
@@ -861,7 +846,6 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -879,7 +863,6 @@ bool IndexWorker::updateDocument(const Value& documentValue)
 
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType, false))
     {
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -908,24 +891,20 @@ bool IndexWorker::updateDocument(const Value& documentValue)
 
     //flush();
     reqlog.timestamp = timestamp;
-    distribute_req_hooker_->processLocalFinished(ret, reqlog);
+    DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
     return ret;
 }
 
 bool IndexWorker::updateDocumentInplace(const Value& request)
 {
-    if (!distribute_req_hooker_->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     docid_t docid;
     uint128_t num_docid = Utilities::md5ToUint128(asString(request[DOCID]));
     if (!idManager_->getDocIdByDocName(num_docid, docid, false))
     {
         LOG(WARNING) << "updating in place error, document not exist, DOCID: " << asString(request[DOCID]) << std::endl;
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
     // get the update property detail
@@ -934,7 +913,6 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
     if (update_propertys == NULL || update_propertys->size() == 0)
     {
         LOG(WARNING) << "updating in place error, detail property empty." << std::endl;
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -989,7 +967,6 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                 default:
                     {
                         LOG(INFO) << "property type: " << iter->propertyType_ << " does not support the inplace update." << std::endl;
-                        distribute_req_hooker_->processLocalFinished(false);
                         return false;
                     }
                 }
@@ -997,7 +974,6 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
             else
             {
                 LOG(INFO) << "property : " << propname << " does not support the inplace update." << std::endl;
-                distribute_req_hooker_->processLocalFinished(false);
                 return false;
             }
 
@@ -1033,7 +1009,6 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                 else
                 {
                     LOG(INFO) << "not supported update method inplace. method: "  << op << std::endl;
-                    distribute_req_hooker_->processLocalFinished(false);
                     return false;
                 }
                 new_document[propname] = new_propvalue;
@@ -1041,36 +1016,31 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
             catch(boost::bad_lexical_cast& e)
             {
                 LOG(WARNING) << "do inplace update failed. " << e.what() << endl;
-                distribute_req_hooker_->processLocalFinished(false);
                 return false;
             }
         }
         else
         {
             LOG(INFO) << "update property not found in document, property: " << propname << std::endl;
-            distribute_req_hooker_->processLocalFinished(false);
             return false;
         }
     }
 
+    DISTRIBUTE_WRITE_FINISH3;
     // do the common update.
     return updateDocument(new_document);
 }
 
 bool IndexWorker::destroyDocument(const Value& documentValue)
 {
-    if (!distribute_req_hooker_->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     docid_t docid;
     uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
 
     if (!idManager_->getDocIdByDocName(num_docid, docid, false))
     {
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -1085,7 +1055,6 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -1125,7 +1094,8 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     }
 
     flush();
-    distribute_req_hooker_->processLocalFinished(ret);
+
+    DISTRIBUTE_WRITE_FINISH(ret);
 
     return ret;
 }

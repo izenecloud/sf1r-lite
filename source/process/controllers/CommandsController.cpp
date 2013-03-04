@@ -133,11 +133,8 @@ void CommandsController::indexRecommend_()
  **/
 void CommandsController::index_query_log()
 {
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
 
     TimestampReqLog reqlog;
     reqlog.timestamp = Utilities::createTimeStamp();
@@ -149,7 +146,7 @@ void CommandsController::index_query_log()
 
     MiningQueryLogHandler::getInstance()->runEvents(reqlog.timestamp);
 
-    DistributeRequestHooker::get()->processLocalFinished(true);
+    DISTRIBUTE_WRITE_FINISH(true);
 }
 
 /**

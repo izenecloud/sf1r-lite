@@ -112,11 +112,9 @@ void CollectionController::start_collection()
         return;
     }
 
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
     NoAdditionReqLog reqlog;
     if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
     {
@@ -134,7 +132,7 @@ void CollectionController::start_collection()
     configFile += slash + collection + ".xml";
     bool ret = CollectionManager::get()->startCollection(collection, configFile);
 
-    DistributeRequestHooker::get()->processLocalFinished(ret);
+    DISTRIBUTE_WRITE_FINISH(ret);
 }
 
 /**
@@ -178,11 +176,9 @@ void CollectionController::stop_collection()
         return;
     }
 
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
     NoAdditionReqLog reqlog;
     if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
     {
@@ -192,7 +188,7 @@ void CollectionController::stop_collection()
 
     bool ret = CollectionManager::get()->stopCollection(collection, clear);
 
-    DistributeRequestHooker::get()->processLocalFinished(ret);
+    DISTRIBUTE_WRITE_FINISH(ret);
 }
 /**
  * @brief Action @b check_collection. Used for consistency check for distribute.
@@ -272,11 +268,9 @@ void CollectionController::rebuild_collection()
         return;
     }
 
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
     NoAdditionNeedBackupReqLog reqlog;
     if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionData_NeedBackup_Req, reqlog))
     {
@@ -288,7 +282,7 @@ void CollectionController::rebuild_collection()
     boost::shared_ptr<RebuildTask> task(new RebuildTask(collection));
     task->doTask();
 
-    DistributeRequestHooker::get()->processLocalFinished(true);
+    DISTRIBUTE_WRITE_FINISH(true);
 }
 /**
  * @brief Action @b create_collection.
