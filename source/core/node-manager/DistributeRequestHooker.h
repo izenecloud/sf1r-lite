@@ -98,6 +98,22 @@ private:
 
 };
 
+class DistributeWriteGuard
+{
+public:
+    DistributeWriteGuard();
+    ~DistributeWriteGuard();
+    void setSuccess();
+    bool isValid();
+private:
+    bool result_;
+};
+
+#define DISTRIBUTE_WRITE_BEGIN DistributeWriteGuard distribute_write_guard;
+#define DISTRIBUTE_WRITE_CHECK_VALID_RETURN  if (!distribute_write_guard.isValid()) { LOG(ERROR) << __FUNCTION__ << " call invalid."; return false; }
+#define DISTRIBUTE_WRITE_CHECK_VALID_RETURN2  if (!distribute_write_guard.isValid()) { LOG(ERROR) << __FUNCTION__ << " call invalid."; return; }
+#define DISTRIBUTE_WRITE_SUCCESS  distribute_write_guard.setSuccess();
+
 }
 
 #endif

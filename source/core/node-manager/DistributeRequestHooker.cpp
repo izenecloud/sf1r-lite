@@ -467,5 +467,25 @@ void DistributeRequestHooker::forceExit()
     RecoveryChecker::forceExit("force exit in DistributeRequestHooker");
 }
 
+DistributeWriteGuard::DistributeWriteGuard()
+    : result_(false)
+{
+}
+
+DistributeWriteGuard::~DistributeWriteGuard()
+{
+    DistributeRequestHooker::get()->processLocalFinished(result_);
+}
+
+bool DistributeWriteGuard::isValid()
+{
+    return DistributeRequestHooker::get()->isValid();
+}
+
+void DistributeWriteGuard::setSuccess()
+{
+    result_ = true;
+}
+
 }
 

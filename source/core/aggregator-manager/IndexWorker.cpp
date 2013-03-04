@@ -666,15 +666,11 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
 
 bool IndexWorker::optimizeIndex()
 {
-    if (!distribute_req_hooker_->isValid())
-    {
-        LOG(ERROR) << __FUNCTION__ << " call invalid.";
-        return false;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     if (!backup_())
     {
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
@@ -689,14 +685,14 @@ bool IndexWorker::optimizeIndex()
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
-        distribute_req_hooker_->processLocalFinished(false);
         return false;
     }
 
     indexManager_->optimizeIndex();
 
     flush();
-    distribute_req_hooker_->processLocalFinished(true);
+
+    DISTRIBUTE_WRITE_SUCCESS;
     return true;
 }
 
