@@ -18,6 +18,7 @@ enum SCD_TYPE
     NOT_SCD = 0,
     INSERT_SCD,
     UPDATE_SCD,
+    RTYPE_SCD,
     DELETE_SCD
 };
 
@@ -38,6 +39,9 @@ public:
     ScdParser(const izenelib::util::UString::EncodingType & encodingType);
     ScdParser(const izenelib::util::UString::EncodingType & encodingType, const char* docDelimiter);
     virtual ~ScdParser();
+
+    static const std::string SCD_TYPE_FLAGS[];
+    static const std::string SCD_TYPE_NAMES[];
 
     static bool checkSCDFormat(const string & file);
     static unsigned checkSCDDate(const string & file);

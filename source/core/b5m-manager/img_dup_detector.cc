@@ -604,7 +604,7 @@ bool ImgDupDetector::DetectUrl(const std::string& scd_file, const std::string& p
     parser.load(scd_file);
     uint32_t n=0;
     uint32_t rest=0;
-    ScdWriter writer(output_path, 2);
+    ScdWriter writer(output_path, UPDATE_SCD);
     writer.SetFileName(res_file);
 
     for( ScdParser::iterator doc_iter = parser.begin();
@@ -738,7 +738,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
     parser.load(scd_file);
     uint32_t n=0;
     uint32_t rest=0;
-    ScdWriter writer(output_path, 2);
+    ScdWriter writer(output_path, UPDATE_SCD);
     writer.SetFileName(res_file);
 
     for( ScdParser::iterator doc_iter = parser.begin();
@@ -893,8 +893,8 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
     boost::filesystem::create_directories(output_path_+"/0");
     boost::filesystem::create_directories(output_path_+"/1");
 
-    ScdWriter writer0(output_path_+"/0", 2);
-    ScdWriter writer1(output_path_+"/1", 2);
+    ScdWriter writer0(output_path_+"/0", UPDATE_SCD);
+    ScdWriter writer1(output_path_+"/1", UPDATE_SCD);
 
     writer0.SetFileName(filename);
     writer1.SetFileName(filename);

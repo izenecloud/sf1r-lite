@@ -9,7 +9,7 @@
 namespace sf1r {
     class ScdDocProcessor {
     public:
-        typedef boost::function<void (Document&, int&) > ProcessorType;
+        typedef boost::function<void (Document&, SCD_TYPE&) > ProcessorType;
         ScdDocProcessor(const ProcessorType& p):p_(p)
         {
         }
@@ -34,7 +34,7 @@ namespace sf1r {
                 for(uint32_t i=0;i<scd_list.size();i++)
                 {
                     std::string scd_file = scd_list[i];
-                    int scd_type = ScdParser::checkSCDType(scd_file);
+                    SCD_TYPE scd_type = ScdParser::checkSCDType(scd_file);
                     LOG(INFO)<<"Processing "<<scd_file<<std::endl;
                     ScdParser parser(izenelib::util::UString::UTF_8);
                     parser.load(scd_file);
@@ -42,7 +42,7 @@ namespace sf1r {
                     for( ScdParser::iterator doc_iter = parser.begin();
                       doc_iter!= parser.end(); ++doc_iter, ++n)
                     {
-                        int type = scd_type;
+                        SCD_TYPE type = scd_type;
                         if(n%100000==0)
                         {
                             LOG(INFO)<<"Find Documents "<<n<<std::endl;

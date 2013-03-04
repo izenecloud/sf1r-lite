@@ -133,18 +133,21 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
             {
                 pid_changed_oid.erase(oid);
             }
-            
-            if(scd_type==INSERT_SCD)
+
+            switch (scd_type)
             {
+            case INSERT_SCD:
                 b5mo_i.Append(doc);
-            }
-            else if(scd_type==UPDATE_SCD)
-            {
+                break;
+
+            case UPDATE_SCD:
+            case RTYPE_SCD:
                 b5mo_u.Append(doc);
-            }
-            else if(scd_type==DELETE_SCD)
-            {
+                break;
+
+            case DELETE_SCD:
                 b5mo_d.Append(doc);
+                break;
             }
         }
     }

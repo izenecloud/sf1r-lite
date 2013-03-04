@@ -108,8 +108,8 @@ namespace sf1r {
             boost::filesystem::create_directories(current_output_path_+"/0");
             boost::filesystem::create_directories(current_output_path_+"/1");
 
-            ScdWriter writer0(current_output_path_+"/0", 2);
-            ScdWriter writer1(current_output_path_+"/1", 2);
+            ScdWriter writer0(current_output_path_+"/0", UPDATE_SCD);
+            ScdWriter writer1(current_output_path_+"/1", UPDATE_SCD);
 
 
             std::string writefile;
