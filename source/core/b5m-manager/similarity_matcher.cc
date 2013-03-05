@@ -84,7 +84,6 @@ bool SimilarityMatcher::Index(const std::string& scd_path, const std::string& kn
         LOG(INFO)<<"Processing "<<scd_file<<std::endl;
         ScdParser parser(izenelib::util::UString::UTF_8);
         parser.load(scd_file);
-        //int scd_type = ScdParser::checkSCDType(scd_file);
         uint32_t n=0;
         for( ScdParser::iterator doc_iter = parser.begin();
           doc_iter!= parser.end(); ++doc_iter, ++n)

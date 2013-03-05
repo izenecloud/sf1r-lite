@@ -17,8 +17,8 @@ public:
 
     ~ScdWriterController();
 
-    bool Write(const SCDDoc& doc, int op);
-    bool Write(const Document& doc, int op);
+    bool Write(const SCDDoc& doc, SCD_TYPE scd_type);
+    bool Write(const Document& doc, SCD_TYPE scd_type);
     
     void Flush();
 
@@ -27,7 +27,7 @@ public:
     
 private:
     
-    ScdWriter* GetWriter_(int op);
+    ScdWriter* GetWriter_(SCD_TYPE scd_type);
     
     
     
@@ -35,7 +35,7 @@ private:
 
     std::string dir_;
     ScdWriter* writer_;
-    int last_op_;
+    SCD_TYPE last_scd_type_;
     int document_limit_;
     int m_;
 };

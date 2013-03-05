@@ -234,7 +234,7 @@ void B5mpProcessor::GetOutputP_(ValueType& value)
         return;
     }
     Document& doc = value.doc;
-    int& type = value.type;
+    SCD_TYPE& type = value.type;
     doc.eraseProperty("OID");
     int64_t itemcount = 0;
     doc.getProperty("itemcount", itemcount);
@@ -248,7 +248,6 @@ void B5mpProcessor::GetOutputP_(ValueType& value)
 
     if(itemcount<=0)
     {
-
         type = DELETE_SCD;
     }
     if(type==DELETE_SCD)

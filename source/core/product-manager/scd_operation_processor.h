@@ -2,7 +2,7 @@
 #define SF1R_PRODUCTMANAGER_SCDOPERATIONPROCESSOR_H
 
 #include <common/type_defs.h>
-
+#include <common/ScdParser.h>
 #include <boost/operators.hpp>
 
 #include "pm_def.h"
@@ -27,7 +27,7 @@ public:
     ~ScdOperationProcessor();
 
 
-    void Append(int op, const PMDocumentType& doc);
+    void Append(SCD_TYPE scd_type, const PMDocumentType& doc);
 
     bool Finish();
 
@@ -44,7 +44,7 @@ private:
     std::string syncId_;
     std::string dir_;
     ScdWriter* writer_;
-    int last_op_;
+    SCD_TYPE last_scd_type_;
 };
 
 }
