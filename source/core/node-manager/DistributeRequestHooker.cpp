@@ -239,7 +239,8 @@ void DistributeRequestHooker::processLocalBegin()
 {
     if (!isHooked())
         return;
-    if (hook_type_ == Request::FromLog)
+    // on replica , the begin notify will be sent to primary before callback.
+    if (hook_type_ == Request::FromLog || hook_type_ == Request::FromPrimaryWorker)
         return;
     if (chain_status_ != NoChain && chain_status_ != ChainBegin)
     {
