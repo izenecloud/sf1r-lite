@@ -325,10 +325,17 @@ void NodeManagerBase::initServices()
 
 void NodeManagerBase::setSf1rNodeData(ZNode& znode)
 {
+    ZNode oldZnode;
+    setSf1rNodeData(znode, oldZnode);
+}
+
+void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
+{
     std::string olddata;
     if(zookeeper_->getZNodeData(self_primary_path_, olddata, ZooKeeper::WATCH))
     {
         znode.loadKvString(olddata);
+        oldZnode = znode;
     }
 
     znode.setValue(ZNode::KEY_USERNAME, sf1rTopology_.curNode_.userName_);
@@ -725,6 +732,7 @@ void NodeManagerBase::leaveCluster()
         zookeeper_->deleteZNode(topologyPath_);
         zookeeper_->deleteZNode(primaryBasePath_);
         // if no any node, we delete all the remaining unhandled write request.
+        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqQueueParent(), ZooKeeper::NOT_WATCH);
         zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqQueueParent(), true);
     }
 
@@ -1328,7 +1336,19 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     if (new_state == nodeState_)
         return;
     nodeState_ = new_state;
-    updateNodeState();
+    ZNode nodedata;
+    ZNode oldZnode;
+    setSf1rNodeData(nodedata, oldZnode);
+
+    bool need_update = nodedata.getStrValue(ZNode::KEY_SERVICE_STATE) != oldZnode.getStrValue(ZNode::KEY_SERVICE_STATE) ||
+                  nodedata.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH) != oldZnode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
+
+    zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+    if (new_state == NODE_STATE_STARTED || need_update)
+    {
+        // update to nodepath to make master got notified.
+        zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
+    }
 }
 
 void NodeManagerBase::updateNodeState()

@@ -77,7 +77,7 @@ void Sf1Controller::postprocess()
         std::string errinfo;
         try
         {
-            errinfo = response()[Keys::errors].get<std::string>();
+            errinfo = asString(response()[Keys::errors]);
         }
         catch(...)
         {

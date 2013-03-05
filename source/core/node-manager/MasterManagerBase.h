@@ -13,6 +13,7 @@
 #include "IDistributeService.h"
 #include <map>
 #include <vector>
+#include <queue>
 #include <sstream>
 
 #include <util/singleton.h>
@@ -221,6 +222,7 @@ protected:
     std::string write_req_queue_parent_;
     std::string write_req_queue_;
     bool stopping_;
+    std::queue<std::pair<std::string, std::string> > cached_write_reqlist_;
 
 
     std::string CLASSNAME;

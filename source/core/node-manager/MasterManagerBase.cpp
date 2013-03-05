@@ -86,6 +86,7 @@ void MasterManagerBase::stop()
             zookeeper_->deleteZNode(serverParentPath_);
         }
         childrenList.clear();
+        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqQueueParent(), ZooKeeper::NOT_WATCH);
         // disconnect will wait other ZooKeeper event finished,
         // so we can not do it in state_mutex_ lock.
         zookeeper_->disconnect();
@@ -315,6 +316,11 @@ void MasterManagerBase::checkForWriteReq()
 
     if (!isMinePrimary())
     {
+        if (!cached_write_reqlist_.empty())
+        {
+            LOG(ERROR) << "non primary master but has cached write request, these request will be ignored !!!!!! " << serverRealPath_;
+            cached_write_reqlist_ = std::queue<std::pair<std::string, std::string> >();
+        }
         LOG(INFO) << "not a primary master while check write request, ignore." << serverRealPath_;
         return;
     }
@@ -377,10 +383,16 @@ void MasterManagerBase::checkForNewWriteReq()
     }
     if (!endWriteReq())
         return;
+
     std::vector<std::string> reqchild;
-    zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
-    if (!reqchild.empty())
+    if (cached_write_reqlist_.empty())
     {
+        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+    }
+
+    if (!reqchild.empty() || !cached_write_reqlist_.empty())
+    {
+        LOG(INFO) << "there are some cached write request : " << cached_write_reqlist_.size();
         LOG(INFO) << "there are some write request waiting: " << reqchild.size();
         DistributeTestSuit::testFail(PrimaryFail_At_Master_checkForNewWrite);
         if (on_new_req_available_)
@@ -410,22 +422,34 @@ bool MasterManagerBase::popWriteReq(std::string& reqdata, std::string& type)
         return false;
     if (!zookeeper_ || !zookeeper_->isConnected())
         return false;
-    std::vector<std::string> reqchild;
-    zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild);
-    if (reqchild.empty())
+
+    if (cached_write_reqlist_.empty())
     {
-        LOG(INFO) << "no write request anymore while pop request on server: " << serverRealPath_;
-        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
-        return false;
+        std::vector<std::string> reqchild;
+        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::NOT_WATCH);
+        if (reqchild.empty())
+        {
+            LOG(INFO) << "no write request anymore while pop request on server: " << serverRealPath_;
+            zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+            return false;
+        }
+        size_t pop_num = reqchild.size() > 100 ? 100:reqchild.size();
+
+        for(size_t i = 0; i < pop_num; ++i)
+        {
+            ZNode znode;
+            std::string sdata;
+            zookeeper_->getZNodeData(reqchild[i], sdata);
+            znode.loadKvString(sdata);
+            LOG(INFO) << "a request poped : " << reqchild[i] << " on the server: " << serverRealPath_;
+            cached_write_reqlist_.push(std::make_pair(znode.getStrValue(ZNode::KEY_REQ_DATA),
+                    znode.getStrValue(ZNode::KEY_REQ_TYPE)));
+            zookeeper_->deleteZNode(reqchild[i]);
+        }
     }
-    ZNode znode;
-    std::string sdata;
-    zookeeper_->getZNodeData(reqchild[0], sdata);
-    znode.loadKvString(sdata);
-    reqdata = znode.getStrValue(ZNode::KEY_REQ_DATA);
-    type = znode.getStrValue(ZNode::KEY_REQ_TYPE);
-    LOG(INFO) << "a request poped : " << reqchild[0] << " on the server: " << serverRealPath_;
-    zookeeper_->deleteZNode(reqchild[0]);
+    reqdata = cached_write_reqlist_.front().first;
+    type = cached_write_reqlist_.front().second;
+    cached_write_reqlist_.pop();
     return true;
 }
 

@@ -177,6 +177,7 @@ protected:
     bool checkZooKeeperService();
 
     void setSf1rNodeData(ZNode& znode);
+    void setSf1rNodeData(ZNode& znode, ZNode& oldZnode);
     void initServices();
     void setServicesData(ZNode& znode);
 
