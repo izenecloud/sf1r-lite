@@ -2,6 +2,8 @@
 #define SF1R_COMMON_NUMERIC_PROPERTY_TABLE_H
 
 #include "NumericPropertyTableBase.h"
+#include <util/modp_numtoa.h>
+
 #include <boost/lexical_cast.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <vector>
@@ -401,11 +403,9 @@ inline bool NumericPropertyTable<float>::getStringValue(std::size_t pos, std::st
     ScopedReadBoolLock lock(mutex_, isLock);
     if (pos >= data_.size() || data_[pos] == invalidValue_)
         return false;
-
-    static std::stringstream ss;
-    ss << fixed << setprecision(2) << data_[pos];
-    value = ss.str();
-    ss.str(std::string());
+    char buf[32];
+    modp_dtoa((double)data_[pos], buf, 2);
+    value.assign(buf);
     return true;
 }
 
