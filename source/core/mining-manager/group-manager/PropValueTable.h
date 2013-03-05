@@ -48,7 +48,7 @@ public:
     /** mapping from value id to parent value id */
     typedef std::vector<pvid_t> ParentIdTable;
 
-    typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t, boost::scoped_alloc> > ParentSetType;
+    typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t> > ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
 
     PropValueTable(const std::string& dirPath, const std::string& propName);
