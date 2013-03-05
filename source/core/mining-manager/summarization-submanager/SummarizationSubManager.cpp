@@ -146,7 +146,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
                                 , const std::set<KeyType>& del_docid_set
                                 , fstream& os)
 {
-    std::string ScdName_new = opinion_scd_writer_->GenSCDFileName(UPDATE_SCD);
+    std::string ScdName_new = opinion_scd_writer_->GenSCDFileName(RTYPE_SCD);
     ofstream outNewScd;
     outNewScd.open((total_scd_path_ + "/" + ScdName_new).c_str(), ios::out|ios::app);
     if (!outNewScd.good())
