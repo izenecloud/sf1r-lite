@@ -57,10 +57,6 @@ void DistributeDriver::init(const RouterPtr& router)
 
 static bool callCronJob(Request::kCallType calltype, const std::string& jobname, const std::string& packed_data)
 {
-	DistributeRequestHooker::get()->hookCurrentReq(packed_data);
-	DistributeRequestHooker::get()->processLocalBegin();
-	LOG(INFO) << "got a cron job request." << jobname;
-        
 	bool ret = izenelib::util::Scheduler::runJobImmediatly(jobname, calltype, calltype == Request::FromLog);
 	if (!ret)
 	{
@@ -125,15 +121,19 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
         }
         try
         {
+            if (!asyncWriteTasks_.empty())
+            {
+                LOG(ERROR) << "another write task is running in async_task_worker_!!";
+                return false;
+            }
+
             DistributeRequestHooker::get()->setHook(calltype, packed_data);
             request.setCallType(calltype);
-            if (calltype == Request::FromLog || calltype == Request::FromDistribute)
+            DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+            DistributeRequestHooker::get()->processLocalBegin();
+
+            if (calltype == Request::FromLog)
             {
-                if (!asyncWriteTasks_.empty())
-                {
-                    LOG(ERROR) << "another write task is running in async_task_worker_!!";
-                    return false;
-                }
                 // redo log must process the request one by one, so sync needed.
                 return callHandler(handler, calltype, packed_data, request);
             }
@@ -164,8 +164,17 @@ bool DistributeDriver::handleReqFromLog(int reqtype, const std::string& reqjsond
 {
     if ((ReqLogType)reqtype == Req_CronJob)
     {
+        if (!asyncWriteTasks_.empty())
+        {
+            LOG(ERROR) << "another write task is running in async_task_worker_!!";
+            return false;
+        }
+
 	    LOG(INFO) << "got a cron job request in log." << reqjsondata;
 	    DistributeRequestHooker::get()->setHook(Request::FromLog, packed_data);
+        DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+        DistributeRequestHooker::get()->processLocalBegin();
+
 	    return callCronJob(Request::FromLog, reqjsondata, packed_data);
     }
     return handleRequest(reqjsondata, packed_data, Request::FromLog);
@@ -175,7 +184,11 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
 {
     if ((ReqLogType)reqtype == Req_CronJob)
     {
+        LOG(INFO) << "got a cron job request from primary." << reqjsondata;
         DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
+        DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+        DistributeRequestHooker::get()->processLocalBegin();
+
         if (!async_task_worker_.interruption_requested())
         {
             asyncWriteTasks_.push(boost::bind(&callCronJob,
@@ -197,7 +210,7 @@ bool DistributeDriver::on_new_req_available()
     while(true)
     {
         std::string reqdata;
-	std::string reqtype;
+        std::string reqtype;
         if(!MasterManagerBase::get()->popWriteReq(reqdata, reqtype))
         {
             LOG(INFO) << "no more request.";
@@ -211,20 +224,20 @@ bool DistributeDriver::on_new_req_available()
             // started to handle this request, so the request is ignored, and
             // continue to deliver next write request in the queue.
         }
-	else if (reqtype == "cron")
-	{
-	    LOG(INFO) << "got a cron job request from queue." << reqdata;
+        else if (reqtype == "cron")
+        {
+            LOG(INFO) << "got a cron job request from queue." << reqdata;
             DistributeRequestHooker::get()->setHook(Request::FromDistribute, reqdata);
-	    bool ret = callCronJob(Request::FromDistribute, reqdata, reqdata);
-            if (!ret)
+            DistributeRequestHooker::get()->hookCurrentReq(reqdata);
+            DistributeRequestHooker::get()->processLocalBegin();
+
+            if (!async_task_worker_.interruption_requested())
             {
-		LOG(ERROR) << "cron job start failed";
-	    }
-	    else
-	    {
-		    break;
-	    }
-	}
+                asyncWriteTasks_.push(boost::bind(&callCronJob,
+                        Request::FromDistribute, reqdata, reqdata));
+            }
+            break;
+        }
         else
         {
             // a write request deliver success from master to worker.

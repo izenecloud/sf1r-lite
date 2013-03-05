@@ -10,7 +10,7 @@
 namespace sf1r
 {
 
-const static std::string collectionCronJobName = "CollectionTaskScheduler";
+const static std::string collectionCronJobName = "CollectionTaskScheduler-";
 
 CollectionTaskScheduler::CollectionTaskScheduler()
 {

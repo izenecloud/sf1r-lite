@@ -57,9 +57,9 @@ bool Sf1Controller::preprocess()
             // will return from here.
             return true;
         }
-        const std::string& reqdata = DistributeRequestHooker::get()->getAdditionData();
-        DistributeRequestHooker::get()->hookCurrentReq(reqdata);
-        DistributeRequestHooker::get()->processLocalBegin();
+        //const std::string& reqdata = DistributeRequestHooker::get()->getAdditionData();
+        //DistributeRequestHooker::get()->hookCurrentReq(reqdata);
+        //DistributeRequestHooker::get()->processLocalBegin();
         // note: if the request need to shard to different node.
         // you should do hook again to all shard before you actually do the processing.
         return true;

@@ -1,6 +1,7 @@
 #include "ProductScdReceiver.h"
 #include <bundles/index/IndexTaskService.h>
 #include <node-manager/MasterManagerBase.h>
+#include <node-manager/NodeManagerBase.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 

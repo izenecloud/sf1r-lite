@@ -437,7 +437,13 @@ void MasterManagerBase::pushWriteReq(const std::string& reqdata, const std::stri
             "," << reqdata;
         return;
     }
-    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    if (stopping_)
+    {
+        LOG(ERROR) << "Master is stopping, write request pushed failed." <<
+            "," << reqdata;
+        return;
+    }
+    // boost::lock_guard<boost::mutex> lock(state_mutex_);
     if (!zookeeper_ || !zookeeper_->isConnected())
     {
         LOG(ERROR) << "Master is not connecting to ZooKeeper, write request pushed failed." <<

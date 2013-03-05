@@ -15,6 +15,7 @@
 #include <boost/filesystem.hpp>
 namespace bfs = boost::filesystem;
 
+const static std::string collectionCronJobName = "CollectionTaskScheduler-";
 namespace sf1r
 {
 
@@ -26,8 +27,8 @@ void CollectionTask::cronTask(int calltype)
         {
             if (NodeManagerBase::get()->isPrimary())
             {
-                MasterManagerBase::get()->pushWriteReq(getTaskName(), "cron");
-                LOG(INFO) << "push cron job to queue on primary : " << getTaskName();
+                MasterManagerBase::get()->pushWriteReq(collectionCronJobName + getTaskName(), "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << collectionCronJobName + getTaskName();
             }
             else
             {
@@ -38,7 +39,7 @@ void CollectionTask::cronTask(int calltype)
 
         if (!DistributeRequestHooker::get()->isValid())
         {
-            LOG(INFO) << "cron job ignored for invalid : " << getTaskName();
+            LOG(INFO) << "cron job ignored for invalid : " << collectionCronJobName + getTaskName();
             return;
         }
 
@@ -46,7 +47,7 @@ void CollectionTask::cronTask(int calltype)
         reqlog.cron_time = Utilities::createTimeStamp();
         if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
         {
-            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << getTaskName() << std::endl;
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << collectionCronJobName + getTaskName() << std::endl;
             return;
         }
 
