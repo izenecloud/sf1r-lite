@@ -4,10 +4,10 @@
 #include <boost/thread/thread.hpp>
 using namespace sf1r;
 
-ScdWriter::ScdWriter(const std::string& dir, int op)
-:dir_(dir), op_(op)
+ScdWriter::ScdWriter(const std::string& dir, SCD_TYPE scd_type)
+:dir_(dir), scd_type_(scd_type)
 {
-    filename_ = GenSCDFileName(op);
+    filename_ = GenSCDFileName(scd_type);
 }
 
 ScdWriter::~ScdWriter()
@@ -20,7 +20,7 @@ void ScdWriter::Open_()
     output_visitor_.SetOutStream(&ofs_);
 }
 
-std::string ScdWriter::GenSCDFileName( int op)
+std::string ScdWriter::GenSCDFileName(SCD_TYPE scd_type)
 {
     const static int wait_ms = 100;
     boost::this_thread::sleep( boost::posix_time::milliseconds(wait_ms) );
@@ -36,18 +36,7 @@ std::string ScdWriter::GenSCDFileName( int op)
     ss<<ios_str.substr(13,2);
     ss<<ios_str.substr(16,3);
     ss<<"-";
-    if(op==UPDATE_SCD)
-    {
-        ss<<"U";
-    }
-    else if(op==DELETE_SCD)
-    {
-        ss<<"D";
-    }
-    else
-    {
-        ss<<"I";
-    }
+    ss<<ScdParser::SCD_TYPE_FLAGS[scd_type];
     ss<<"-C.SCD";
     return ss.str();
 }
@@ -93,7 +82,7 @@ bool ScdWriter::Append(const Document& doc)
 
 bool ScdWriter::Append(const SCDDoc& doc)
 {
-    if(op_!=DELETE_SCD)
+    if(scd_type_!=DELETE_SCD)
     {
         if(doc.size()<2)//at least two properties including DOCID in I and U scd
         {
@@ -131,7 +120,7 @@ bool ScdWriter::Append(const SCDDoc& doc)
         Open_();
     }
     ofs_<<"<DOCID>"<<docid_value<<std::endl;
-    if(op_!=DELETE_SCD)
+    if(scd_type_!=DELETE_SCD)
     {
         for(SCDDoc::const_iterator it = doc.begin();it!=doc.end();++it)
         {

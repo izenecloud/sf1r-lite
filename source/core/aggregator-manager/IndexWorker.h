@@ -119,11 +119,11 @@ private:
 
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
-    bool doBuildCollection_(const std::string& scdFile, int op, uint32_t numdoc);
+    bool doBuildCollection_(const std::string& scdFile, SCD_TYPE scdType, uint32_t numdoc);
 
     bool insertOrUpdateSCD_(
             ScdParser& parser,
-            bool isInsert,
+            SCD_TYPE scdType,
             uint32_t numdoc,
             time_t timestamp);
 
@@ -161,7 +161,7 @@ private:
 
     void savePriceHistory_(int op);
 
-    void saveSourceCount_(int op);
+    void saveSourceCount_(SCD_TYPE scdType);
 
     bool prepareDocument_(
             SCDDoc& doc,
@@ -172,7 +172,7 @@ private:
             std::string& source,
             time_t& timestamp,
             UpdateType& updateType,
-            bool insert = true);
+            SCD_TYPE scdType);
 
     bool mergeDocument_(
             docid_t oldId,
@@ -217,7 +217,8 @@ private:
             const uint128_t& scdDocId,
             SCDDoc& doc,
             docid_t& oldId,
-            docid_t& docId);
+            docid_t& docId,
+            SCD_TYPE scdType);
 
     bool makeSentenceBlocks_(
             const izenelib::util::UString& text,

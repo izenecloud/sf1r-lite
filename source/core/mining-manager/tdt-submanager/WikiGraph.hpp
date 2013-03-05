@@ -15,11 +15,8 @@
 #include <icma/openccxx.h>
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <am/succinct/wat_array/wavelet_matrix.hpp>
-//#include <am/succinct/fm-index/wavelet_matrix.hpp>
 #include <util/singleton.h>
 #include <boost/bimap.hpp>
-
-using namespace izenelib::am::succinct::fm_index;
 
 namespace sf1r
 {

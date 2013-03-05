@@ -63,7 +63,6 @@ void FuzzySearchRanker::rank(
     ScoreDocEvaluator scoreDocEvaluator(productScorer, customRanker);
     const std::size_t count = docid_list.size();
     result_score_list.resize(count);
-    custom_score_list.resize(count);
 
     boost::scoped_ptr<HitQueue> scoreItemQueue;
     if (pSorter)
@@ -101,7 +100,12 @@ void FuzzySearchRanker::rank(
     const std::size_t need_count = start > 0 ? (scoreItemQueue->size() - start) : scoreItemQueue->size();
     docid_list.resize(need_count);
     result_score_list.resize(need_count);
-    custom_score_list.resize(need_count);
+
+    if (customRanker)
+    {
+        custom_score_list.resize(need_count);
+    }
+
     for (size_t i = 0; i < need_count; ++i)
     {
         const ScoreDoc& pScoreItem = scoreItemQueue->pop();

@@ -30,14 +30,7 @@ GroupManager::GroupManager(
 }
 GroupManager::~GroupManager()
 {
-    std::vector<MiningTask*>::iterator it = groupMiningTaskList_.begin();
-    for (; it != groupMiningTaskList_.end(); ++it)
-    {
-        if (*it)
-        {
-            ///delete *it;
-        }
-    }
+    
 }
 
 bool GroupManager::open()

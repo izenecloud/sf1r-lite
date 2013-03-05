@@ -44,8 +44,8 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
         ${imllib_LIBRARIES}
         ${izenelib_LIBRARIES}
         ${Glog_LIBRARIES}
-        ${xml2_LIBRARIES}
-        sqlite3
+        ${XML2_LIBRARIES}
+        ${SQLITE3_LIBRARIES}
         ${MYSQL_LIBRARIES}
         ${TokyoCabinet_LIBRARIES}
         ${LibCURL_LIBRARIES}
