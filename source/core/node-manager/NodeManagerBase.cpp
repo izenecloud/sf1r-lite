@@ -1335,6 +1335,7 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
 {
     if (new_state == nodeState_)
         return;
+    NodeStateType oldstate = nodeState_;
     nodeState_ = new_state;
     ZNode nodedata;
     ZNode oldZnode;
@@ -1344,7 +1345,7 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
                   nodedata.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH) != oldZnode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
 
     zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
-    if (new_state == NODE_STATE_STARTED || need_update)
+    if (oldstate == NODE_STATE_STARTED || new_state == NODE_STATE_STARTED || need_update)
     {
         // update to nodepath to make master got notified.
         zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
