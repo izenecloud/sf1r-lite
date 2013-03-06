@@ -385,7 +385,7 @@ bool MasterManagerBase::cacheNewWriteFromZNode()
     }
 
     LOG(INFO) << "there are some write request waiting: " << reqchild.size();
-    size_t pop_num = reqchild.size() > 100 ? 100:reqchild.size();
+    size_t pop_num = reqchild.size() > 1000 ? 1000:reqchild.size();
 
     for(size_t i = 0; i < pop_num; ++i)
     {

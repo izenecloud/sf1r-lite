@@ -174,7 +174,7 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             msgpack::type::tuple<GetReqLogData> params;
             req.params().convert(&params);
             GetReqLogData& reqdata = params.get<0>();
-            // get 100 new logs at most each time
+            // get 1000 new logs at most each time
             //
             reqdata.success = false;
             boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
@@ -188,12 +188,12 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             }
             else
             {
-                reqdata.logdata_list.reserve(100);
+                reqdata.logdata_list.reserve(10000);
                 LOG(INFO) << "get log from inc_id : " << reqdata.start_inc;
                 while(true)
                 {
                     ret = reqlogmgr->getReqDataByHeadOffset(headoffset, head, req_packed_data);
-                    if(!ret || reqdata.logdata_list.size() > 100)
+                    if(!ret || reqdata.logdata_list.size() > 10000)
                         break;
                     reqdata.logdata_list.push_back(req_packed_data);
                     reqdata.end_inc = head.inc_id;

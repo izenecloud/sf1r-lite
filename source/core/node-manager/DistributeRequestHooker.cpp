@@ -203,7 +203,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         return true;
     }
 
-    if (isNeedBackup(type) || (prepared_req.inc_id % 1000 == 0) || !RecoveryChecker::get()->hasAnyBackup())
+    if (isNeedBackup(type) || (prepared_req.inc_id % 10000 == 0) || !RecoveryChecker::get()->hasAnyBackup())
     {
         LOG(INFO) << "begin backup";
         if(!RecoveryChecker::get()->backup())
