@@ -102,7 +102,7 @@ bool MasterManagerBase::getShardReceiver(
         std::string& host,
         unsigned int& recvPort)
 {
-    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
 
     WorkerMapT::iterator it = workerMap_.find(shardid);
     if (it != workerMap_.end())
@@ -119,13 +119,13 @@ bool MasterManagerBase::getShardReceiver(
 
 bool MasterManagerBase::getCollectionShardids(const std::string& service, const std::string& collection, std::vector<shardid_t>& shardidList)
 {
-    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
     return sf1rTopology_.curNode_.master_.getShardidList(service, collection, shardidList);
 }
 
 bool MasterManagerBase::checkCollectionShardid(const std::string& service, const std::string& collection, unsigned int shardid)
 {
-    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
     return sf1rTopology_.curNode_.master_.checkCollectionWorker(service, collection, shardid);
 }
 
@@ -560,7 +560,6 @@ bool MasterManagerBase::isAllWorkerIdle()
 
 bool MasterManagerBase::isAllWorkerInState(int state)
 {
-    boost::lock_guard<boost::mutex> lock(workers_mutex_);
     WorkerMapT::iterator it;
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
@@ -583,6 +582,7 @@ bool MasterManagerBase::isBusy()
 {
     if (!isDistributeEnable_)
         return false;
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
     if (!zookeeper_ || !zookeeper_->isConnected())
         return true;
     if (zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode()))
@@ -595,6 +595,7 @@ bool MasterManagerBase::isBusy()
 
 void MasterManagerBase::showWorkers()
 {
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
     WorkerMapT::iterator it;
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
@@ -768,8 +769,6 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
 
 int MasterManagerBase::detectWorkers()
 {
-    boost::lock_guard<boost::mutex> lock(workers_mutex_);
-
     size_t detected = 0;
     size_t good = 0;
     // detect workers from "current" replica first
@@ -834,8 +833,6 @@ void MasterManagerBase::updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode
 
 void MasterManagerBase::detectReplicaSet(const std::string& zpath)
 {
-    boost::lock_guard<boost::mutex> lock(replica_mutex_);
-
     // find replications
     std::vector<std::string> childrenList;
     zookeeper_->getZNodeChildren(topologyPath_, childrenList, ZooKeeper::WATCH);
@@ -849,11 +846,11 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
         {
             replicaIdList_.push_back(boost::lexical_cast<replicaid_t>(sreplicaId));
             LOG (INFO) << " detected replica id \"" << sreplicaId
-                        << "\" for " << childrenList[i];
+                << "\" for " << childrenList[i];
         }
         catch (std::exception& e) {
             LOG (ERROR) << CLASSNAME << " failed to parse replica id \"" << sreplicaId
-                        << "\" for " << childrenList[i];
+                << "\" for " << childrenList[i];
         }
 
         // watch for nodes change
@@ -1076,7 +1073,7 @@ void MasterManagerBase::initServices()
 bool MasterManagerBase::isServiceReadyForRead(bool include_self)
 {
     // service is ready for read means all shard workers current master connected are ready for read.
-    boost::lock_guard<boost::mutex> lock(workers_mutex_);
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
 
     WorkerMapT::const_iterator it = workerMap_.begin();
     for ( ; it != workerMap_.end(); ++it)

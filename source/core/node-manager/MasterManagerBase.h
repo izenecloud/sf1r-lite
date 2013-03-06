@@ -68,8 +68,8 @@ public:
      */
     void registerAggregator(boost::shared_ptr<AggregatorBase> aggregator)
     {
+        boost::lock_guard<boost::mutex> lock(state_mutex_);
         aggregatorList_.push_back(aggregator);
-        boost::lock_guard<boost::mutex> lock(workers_mutex_);
         resetAggregatorConfig();
     }
 
@@ -213,10 +213,10 @@ protected:
     boost::mutex state_mutex_;
 
     std::vector<replicaid_t> replicaIdList_;
-    boost::mutex replica_mutex_;
+    //boost::mutex replica_mutex_;
 
     WorkerMapT workerMap_;
-    boost::mutex workers_mutex_;
+    //boost::mutex workers_mutex_;
 
     std::vector<boost::shared_ptr<AggregatorBase> > aggregatorList_;
     EventCBType on_new_req_available_;
