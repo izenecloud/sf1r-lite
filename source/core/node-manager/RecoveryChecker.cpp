@@ -18,7 +18,7 @@ class CopyGuard
 {
 public:
     CopyGuard(const std::string& guard_dir)
-        :guard_file_(guard_dir + "/" + getGuardFileName())
+        : ok_(false), guard_file_(guard_dir + "/" + getGuardFileName())
     {
         // touch a flag
         std::ofstream ofs(guard_file_.c_str());
@@ -28,10 +28,14 @@ public:
     ~CopyGuard()
     {
         // clear a flag
-        if (bfs::exists(guard_file_))
+        if (ok_ && bfs::exists(guard_file_))
         {
             bfs::remove(guard_file_);
         }
+    }
+    void setOK()
+    {
+        ok_ = true;
     }
     static bool isDirCopyOK(const std::string& dir)
     {
@@ -39,7 +43,7 @@ public:
     }
     static void safe_remove_all(const std::string& dir)
     {
-        CopyGuard guard(dir);
+        CopyGuard dir_guard(dir);
         // remove other files first and then remove flag.
         static bfs::directory_iterator end_it = bfs::directory_iterator();
         bfs::directory_iterator dir_it = bfs::directory_iterator(dir);
@@ -58,6 +62,7 @@ public:
         }
         bfs::remove(dir + "/" + getGuardFileName());
         bfs::remove_all(dir);
+        dir_guard.setOK();
     }
 
     static std::string getGuardFileName()
@@ -67,6 +72,7 @@ public:
     }
 
 private:
+    bool ok_;
     std::string guard_file_;
 };
 
@@ -321,6 +327,7 @@ bool RecoveryChecker::backup()
             LOG(ERROR) << "backup request log failed. " << e.what() << std::endl;
             return false;
         }
+        dir_guard.setOK();
     }
 
     cleanUnnessesaryBackup(backup_basepath_);
