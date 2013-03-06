@@ -265,12 +265,12 @@ bool DistributeRequestHooker::processFinishedBeforePrepare(bool finishsuccess)
     if (!req_log_mgr_->getPreparedReqLog(reqlog))
     {
         if (hook_type_ == Request::FromDistribute)
-	{
+        {
             LOG(INFO) << "primary end request before prepared, request ignored.";
-	    NodeManagerBase::get()->notifyMasterReadyForNew();
-	    clearHook(true);
-	    return true;
-	}
+            clearHook(true);
+            NodeManagerBase::get()->notifyMasterReadyForNew();
+            return true;
+        }
 	else
 	{
             LOG(INFO) << "replica end request before prepared, must exit.";
