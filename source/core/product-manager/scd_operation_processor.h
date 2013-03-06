@@ -2,7 +2,6 @@
 #define SF1R_PRODUCTMANAGER_SCDOPERATIONPROCESSOR_H
 
 #include <common/type_defs.h>
-#include <common/ScdParser.h>
 #include <boost/operators.hpp>
 
 #include "pm_def.h"
