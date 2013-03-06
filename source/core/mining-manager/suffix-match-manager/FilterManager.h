@@ -134,7 +134,7 @@ public:
     void copyPropertyInfo(const boost::shared_ptr<FilterManager>& other);
     void generatePropertyId();
 
-    void buildFilters(uint32_t last_docid, uint32_t max_docid);
+    void buildFilters(uint32_t last_docid, uint32_t max_docid, bool isIncre = false);
 
     void buildStringFiltersForDoc(docid_t doc_id, const Document& doc);
     void finishBuildStringFilters();
@@ -182,6 +182,8 @@ public:
     void clearFilterId();
     void saveFilterId();
     void loadFilterId();
+    void saveFilterList();
+    bool loadFilterList();
 
     faceted::GroupManager* getGroupManager() const;
     faceted::AttrManager* getAttrManager() const;
@@ -315,28 +317,32 @@ private:
     NumericPropertyTableBuilder* numericTableBuilder_;
     std::string data_root_path_;
 
+//属于各种过滤类型的属性 
     std::vector<std::string> group_prop_list_;
     std::vector<std::string> attr_prop_list_;
     std::vector<std::string> str_prop_list_;
     std::vector<std::string> date_prop_list_;
     std::vector<std::string> num_prop_list_;
 
+//辅助: 属性值和id的对应关系
     std::map<std::string, size_t> prop_id_map_;
     std::vector<std::pair<int32_t, std::string> > prop_list_;
     std::vector<int32_t> num_amp_list_;
+    std::map<std::string, int32_t> num_amp_map_; //build when start..
 
-    StrPropIdVecT str_filter_ids_;
-    NumPropIdVecT num_filter_ids_;
+    PropFilterStrVecT prop_filter_str_list_;//save load to keep USTRING ...
 
-    PropFilterStrVecT prop_filter_str_list_;
+//filter properties: like A>B>C
+    StrPropIdVecT str_filter_ids_;//save load ok // 这种有range : filter...
+    NumPropIdVecT num_filter_ids_;//save load ok
+//key properties : like A,B,C
+    std::vector<std::vector<StrFilterKeyT> > str_key_sets_;//save load // 京东,当当,亚马逊  这种没有range : key ... 
+    std::vector<std::vector<NumFilterKeyT> > num_key_sets_;//save load // keep string or 
+//all filter AND key properties's value
+    std::vector<std::vector<FilterDocListT> > filter_list_; // not save and load... ok 
 
-    std::vector<std::vector<StrFilterKeyT> > str_key_sets_;
-    std::vector<std::vector<NumFilterKeyT> > num_key_sets_;
-
-    std::map<std::string, int32_t> num_amp_map_;
-    std::vector<std::vector<FilterDocListT> > filter_list_;
     std::set<std::string> unchanged_prop_list_;
-    std::vector<StrFilterItemMapT> str_filter_map_;
+    std::vector<StrFilterItemMapT> str_filter_map_;//
     bool rebuild_all_;
 };
 

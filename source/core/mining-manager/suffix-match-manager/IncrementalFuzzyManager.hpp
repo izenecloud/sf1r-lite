@@ -3,19 +3,106 @@
 
 #include <query-manager/QueryTypeDef.h>
 #include <mining-manager/group-manager/GroupParam.h>
+#include <mining-manager/group-manager/DateStrFormat.h>
 #include "IncrementalFuzzyIndex.h"
 #include "FilterManager.h"
 
-
 using namespace sf1r::faceted;
+namespace{
+
+    typedef std::pair<int64_t, int64_t> NumericRange;
+    bool checkLabelParam_inc(const GroupParam::GroupLabelParam& labelParam, bool& isRange)
+    {
+        const GroupParam::GroupPathVec& labelPaths = labelParam.second;
+
+        if (labelPaths.empty())
+            return false;
+
+        const GroupParam::GroupPath& path = labelPaths[0];
+        if (path.empty())
+            return false;
+
+        const std::string& propValue = path[0];
+        std::size_t delimitPos = propValue.find("-");
+        isRange = (delimitPos != std::string::npos);
+
+        return true;
+    }
+
+    bool convertNumericLabel_inc(const std::string& src, float& target)
+    {
+        std::size_t delimitPos = src.find("-");
+        if (delimitPos != std::string::npos)
+        {
+            LOG(ERROR) << "group label parameter: " << src
+                       << ", it should be specified as single numeric value";
+            return false;
+        }
+
+        try
+        {
+            target = boost::lexical_cast<float>(src);
+        }
+        catch(const boost::bad_lexical_cast& e)
+        {
+            LOG(ERROR) << "failed in casting label from " << src
+                       << " to numeric value, exception: " << e.what();
+            return false;
+        }
+
+        return true;
+    }
+
+    bool convertRangeLabel_inc(const std::string& src, NumericRange& target)
+    {
+        std::size_t delimitPos = src.find("-");
+        if (delimitPos == std::string::npos)
+        {
+            LOG(ERROR) << "group label parameter: " << src
+                       << ", it should be specified as numeric range value";
+            return false;
+        }
+
+        int64_t lowerBound = std::numeric_limits<int64_t>::min();
+        int64_t upperBound = std::numeric_limits<int64_t>::max();
+
+        try
+        {
+            if (delimitPos)
+            {
+                std::string sub = src.substr(0, delimitPos);
+                lowerBound = boost::lexical_cast<int64_t>(sub);
+            }
+
+            if (delimitPos+1 != src.size())
+            {
+                std::string sub = src.substr(delimitPos+1);
+                upperBound = boost::lexical_cast<int64_t>(sub);
+            }
+        }
+        catch(const boost::bad_lexical_cast& e)
+        {
+            LOG(ERROR) << "failed in casting label from " << src
+                        << " to numeric value, exception: " << e.what();
+            return false;
+        }
+
+        target.first = lowerBound;
+        target.second = upperBound;
+
+        return true;
+    }
+}
+
 namespace sf1r
 {
+
 class IncrementalFuzzyManager
 {
 public:
     IncrementalFuzzyManager(const std::string& path,
                         const std::string& tokenize_path,
-                        const std::string& property,
+                        const vector<std::string> properties,
                         boost::shared_ptr<DocumentManager>& document_manager,
                         boost::shared_ptr<IDManager>& idManager,
                         boost::shared_ptr<LAManager>& laManager,
@@ -47,29 +134,26 @@ public:
                     , std::vector<uint32_t>& resultList
                     , std::vector<double> &ResultListSimilarity);
 
-    //merge index;
+    //only for cron-job : merge index;
+
     bool mergeIndexToFmIndex()
     {
-        return false;
 
+        return false;
     }
+
     bool doAfterMergeIndexToFmIndex()
     {
         return false;
     }
+
     void reset();
-    bool resetFilterManager()
-    {
-        return false;
-    }
-    bool resetIncFuzzyIndex()
-    {
-        return false;
-    }
+    
+    bool resetFilterManager();
 
     //save and load index;
-    bool saveLastDocid(std::string path = "");
-    bool loadLastDocid(std::string path = "");
+    bool saveDocid(std::string path = "");
+    bool loadDocid(std::string path = "");
     void save();
 
     //other helper functions;
@@ -78,13 +162,22 @@ public:
     void setLastDocid(uint32_t last_docid);
     void getLastDocid(uint32_t& last_docid);
 
+    void setStartDocid(uint32_t last_docid);
+    void getStartDocid(uint32_t& last_docid);
+
     boost::shared_ptr<FilterManager>& getFilterManager()
     {
         return filter_manager_;
     }
 
+    bool isEmpty()
+    {
+        return (last_docid_ - start_docid_) == 0;
+    }
+
 private:
-    //filter :
+
+    bool buildGroupLabelDoc(docid_t docID, const Document& doc);
 
     bool getAllFilterRangeFromGroupLable(
             const faceted::GroupParam& group_param,
@@ -96,10 +189,26 @@ private:
             std::vector<size_t>& prop_id_list,
             std::vector<FilterManager::FilterIdRange>& filter_range_list) const;
 
-    void getAllFilterDocid(
+    bool getAllFilterRangeFromAttrLable(
+            const faceted::GroupParam& group_param,
             std::vector<size_t>& prop_id_list,
-            std::vector<FilterManager::FilterIdRange>& filter_range_list,
-            std::vector<uint32_t>& filterDocidList);
+            std::vector<FilterManager::FilterIdRange>& filter_range_list) const;
+
+    void getAllFilterDocid(
+            vector<std::vector<size_t> >& prop_id_lists
+            ,std::vector<std::vector<FilterManager::FilterIdRange> >& filter_range_lists
+            ,std::vector<uint32_t>& filterDocidList);
+
+    void getResultByFilterDocid(
+                std::vector<uint32_t>& filterDocidList
+                , std::vector<uint32_t>& resultList_
+                , std::vector<double> &ResultListSimilarity_
+                , std::vector<uint32_t>& resultList
+                , std::vector<double>& ResultListSimilarity);
+
+
+    void getFinallyFilterDocid(std::vector<std::vector<uint32_t> >& filter_doc_lists
+                            , std::vector<uint32_t>& filterDocidList);
 
     bool indexForDoc(uint32_t& docId, std::string propertyString);
 
@@ -109,13 +218,11 @@ private:
 
 private:
     uint32_t last_docid_;
+    uint32_t start_docid_;
 
     std::string index_path_;
     std::string tokenize_path_;
-    std::string property_;
-    //vector<std::string> SearchProperties;
-
-    //vector<std::string>
+    vector<std::string> properties_;
 
     unsigned int BarrelNum_;
 
@@ -125,7 +232,7 @@ private:
 
     bool isMergingIndex_;
     bool isInitIndex_;
-    bool isAddingIndex_;//ok
+    bool isAddingIndex_;
 
     boost::shared_ptr<DocumentManager> document_manager_;
 
@@ -145,6 +252,5 @@ private:
 
     boost::shared_ptr<FilterManager> filter_manager_;
 };
-
 }
 #endif

@@ -2,8 +2,8 @@
 #include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
+#include <icma/icma.h>
 #include <la-manager/LAPool.h>
-#include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"
@@ -19,12 +19,6 @@ typedef std::pair<int64_t, int64_t> NumericRange;
 
 using namespace sf1r::faceted;
 
-/**
- * check parameter of group label
- * @param[in] labelParam parameter to check
- * @param[out] isRange true for group on range, false for group on single numeric value
- * @return true for success, false for failure
-*/
 bool checkLabelParam(const GroupParam::GroupLabelParam& labelParam, bool& isRange)
 {
     const GroupParam::GroupPathVec& labelPaths = labelParam.second;
@@ -106,7 +100,6 @@ bool convertRangeLabel(const std::string& src, NumericRange& target)
 
     return true;
 }
-
 }
 
 
@@ -142,7 +135,7 @@ SuffixMatchManager::SuffixMatchManager(
 SuffixMatchManager::~SuffixMatchManager()
 {
     if (analyzer_) delete analyzer_;
-    //if (knowledge_) delete knowledge_;
+    if (knowledge_) delete knowledge_;
 }
 
 void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished)
@@ -304,7 +297,9 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     continue;
                 std::pair<size_t, size_t> sub_match_range;
                 size_t matched = fmi_manager_->backwardSearch(search_property, all_sub_strpatterns[i], sub_match_range);
+
                 //LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
+                
                 if (matched == all_sub_strpatterns[i].length())
                 {
                     match_ranges_list.push_back(sub_match_range);
@@ -725,7 +720,7 @@ bool SuffixMatchManager::buildMiningTask()
     return false;
 }
 
-MiningTask* SuffixMatchManager::getMiningTask()
+SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
 {
     if (suffixMatchTask_)
     {
@@ -746,15 +741,30 @@ void SuffixMatchManager::buildTokenizeDic()
     boost::filesystem::path cma_fmindex_dic(cma_path);
     cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
-    //knowledge_ = CMA_Factory::instance()->createKnowledge();
-    //knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
-    knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(cma_fmindex_dic.c_str(), false);
+    knowledge_ = CMA_Factory::instance()->createKnowledge();
+    knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
     // using the maxprefix analyzer
     analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE, 100);
     analyzer_->setKnowledge(knowledge_);
     LOG(INFO) << "load dictionary knowledge finished." << endl;
+}
+
+void SuffixMatchManager::updateFmindex(docid_t start_doc)
+{
+    suffixMatchTask_->preProcess();
+    for (uint32_t docid = start_doc; docid < document_manager_->getMaxDocId(); ++docid)
+    {
+        Document doc;
+        if (document_manager_->getDocument(docid, doc))
+        {
+            document_manager_->getRTypePropertiesForDocument(docid, doc);
+        }
+        suffixMatchTask_->buildDocument(docid, doc);
+    }
+    suffixMatchTask_->postProcess();
+    last_doc_id_ = document_manager_->getMaxDocId();
 }
 
 }

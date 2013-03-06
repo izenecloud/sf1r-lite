@@ -158,7 +158,7 @@ MiningManager::MiningManager(
     , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
     , topicDetector_(NULL)
-    , summarizationManagerTask_(NULL)
+    , summarizationManager_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
     , product_categorizer_(NULL)
@@ -170,7 +170,6 @@ MiningManager::MiningManager(
 
 MiningManager::~MiningManager()
 {
-    if (miningTaskBuilder_) delete miningTaskBuilder_;
     if (analyzer_) delete analyzer_;
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
@@ -188,11 +187,12 @@ MiningManager::~MiningManager()
     if (numericTableBuilder_) delete numericTableBuilder_;
     if (tdt_storage_) delete tdt_storage_;
     if (topicDetector_) delete topicDetector_;
+    if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
     if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
-
+    if (miningTaskBuilder_) delete miningTaskBuilder_;
     close();
 }
 
@@ -536,14 +536,14 @@ bool MiningManager::open()
         {
             summarization_path_ = prefix_path + "/summarization";
             boost::filesystem::create_directories(summarization_path_);
-            summarizationManagerTask_ =
+            summarizationManager_ =
                 new MultiDocSummarizationSubManager(summarization_path_, collectionName_,
                                                     collectionPath_.getScdPath(),
                                                     mining_schema_.summarization_schema,
                                                     document_manager_,
                                                     index_manager_,
                                                     c_analyzer_);
-            miningTaskBuilder_->addTask(summarizationManagerTask_);
+            miningTaskBuilder_->addTask(summarizationManager_);
             if (!mining_schema_.summarization_schema.uuidPropName.empty())
             {
                 //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
@@ -558,6 +558,7 @@ bool MiningManager::open()
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
                     document_manager_, groupManager_, attrManager_, numericTableBuilder_);
+            //load fmindex here.
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
@@ -588,69 +589,52 @@ bool MiningManager::open()
             }
 
             filter_manager->setNumFilterProperties(number_props, number_amp_list);
-            filter_manager->loadFilterId();////////// here has already set first...
+            filter_manager->loadFilterId();
 
             if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
             {
                 incrementalManager_ = new IncrementalFuzzyManager(suffix_match_path_,
                         mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                        mining_schema_.suffixmatch_schema.suffix_match_properties[0], ///xxx update ...
+                        mining_schema_.suffixmatch_schema.suffix_match_properties,
                         document_manager_, idManager_, laManager_, indexSchema_,
-                        groupManager_, attrManager_, numericTableBuilder_); // add filter_manager ,, use the same Filter-Manager but different instance;
-
+                        groupManager_, attrManager_, numericTableBuilder_); 
                 incrementalManager_->Init();
-                boost::shared_ptr<FilterManager>& filter_manager_inc = suffixMatchManager_->getFilterManager();
+                boost::shared_ptr<FilterManager>& filter_manager_inc = incrementalManager_->getFilterManager();
                 filter_manager_inc->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
+
                 filter_manager_inc->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
                 filter_manager_inc->setStrFilterProperties(mining_schema_.suffixmatch_schema.str_filter_properties);
                 filter_manager_inc->setDateFilterProperties(mining_schema_.suffixmatch_schema.date_filter_properties);
 
                 filter_manager_inc->setNumFilterProperties(number_props, number_amp_list);
                 filter_manager_inc->loadFilterId();
+                if (!filter_manager_inc->loadFilterList())
+                    filter_manager_inc->generatePropertyId();
             }
 
             if (mining_schema_.suffixmatch_schema.suffix_match_enable)
             {
+                suffixMatchManager_->buildMiningTask();
+                MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                miningTaskBuilder_->addTask(miningTask);
+                
                 if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
                 {
-                    /*if (!(suffixMatchManager_->isStartFromLocalFM()))
+                    if (cronExpression_.setExpression(miningConfig_.fuzzyIndexMerge_param.cron))
                     {
-                        LOG(INFO) << "[] Start suffix init fm-index...";
-                        suffixMatchManager_->buildMiningTask();
-                        MiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                        miningTaskBuilder_->addTask(miningTask);
-                        incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-                    }
-                    else
-                    {
-                        uint32_t last_docid = 0;
-                        uint32_t docNum = 0;
-                        uint32_t maxDoc = 0;
-                        incrementalManager_->getLastDocid(last_docid);
-                        incrementalManager_->getDocNum(docNum);
-                        incrementalManager_->getMaxNum(maxDoc);
-                        if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
+                        string cronJobName_ = "fuzzy_index_merge";
+                        
+                        bool result = izenelib::util::Scheduler::addJob(cronJobName_,
+                        60*1000, // each minute
+                        0, // start from now
+                        boost::bind(&MiningManager::updateMergeFuzzyIndex, this));
+                        if (result)
                         {
-                            LOG(INFO) << "Rebuilding fm-index.....";
-                            suffixMatchManager_->buildMiningTask();
-                            MiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                            miningTaskBuilder_->addTask(miningTask);
-                            incrementalManager_->reset();
-                            incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                            LOG (INFO) << "ADD cron job for fuzzy_index_merge ......";
                         }
                         else
-                        {
-                            incrementalManager_->createIndex();
-                        }
-                    }*/
-                    //    cout<<"xx createIndex.."<<endl;
-                    //incrementalManager_->createIndex();
-                }
-                else
-                {
-                    suffixMatchManager_->buildMiningTask();
-                    MiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                    miningTaskBuilder_->addTask(miningTask);
+                            return false;
+                    }
                 }
             }
         }
@@ -791,7 +775,7 @@ void MiningManager::DoSyncFullSummScd()
 {
     if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isSyncSCDOnly)
     {
-        summarizationManagerTask_->syncFullSummScd();
+        summarizationManager_->syncFullSummScd();
     }
 }
 
@@ -806,8 +790,6 @@ bool MiningManager::DOMiningTask()
 
 bool MiningManager::DoMiningCollection()
 {
-    DOMiningTask();
-
     MEMLOG("[Mining] DoMiningCollection");
     //do TG
     if (mining_schema_.tg_enable)
@@ -955,10 +937,60 @@ bool MiningManager::DoMiningCollection()
     {
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
-            cout<<"xx createIndex.."<<endl;
-            incrementalManager_->createIndex();
+            uint32_t last_docid = 0;
+            uint32_t docNum = 0;
+            uint32_t maxDoc = 0;
+            incrementalManager_->getLastDocid(last_docid);
+            incrementalManager_->getDocNum(docNum);
+            incrementalManager_->getMaxNum(maxDoc);
+
+            if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc)
+            {
+                SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                miningTask->setLastDocId(document_manager_->getMaxDocId());
+                miningTask->setTaskStatus(true);
+            }
+            else
+            {
+                docid_t start_doc;
+                incrementalManager_->getStartDocid(start_doc);
+                SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                miningTask->setLastDocId(start_doc);
+                miningTask->setTaskStatus(false);
+                incrementalManager_->reset();
+            }
         }
     }
+
+    DOMiningTask();
+
+    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
+    {
+        if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+        {
+            uint32_t last_docid = 0;
+            uint32_t docNum = 0;
+            uint32_t maxDoc = 0;
+            incrementalManager_->getLastDocid(last_docid);
+            incrementalManager_->getDocNum(docNum);
+            incrementalManager_->getMaxNum(maxDoc);
+
+            if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc)
+            {
+                LOG(INFO) << "Build incrmental index ..." <<endl;
+                incrementalManager_->doCreateIndex();
+            }
+            else
+            {
+                SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                miningTask->setLastDocId(document_manager_->getMaxDocId());
+
+                incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                incrementalManager_->setStartDocid(document_manager_->getMaxDocId());
+            }
+        }
+    }
+
     deleted_doc_before_mining_ = 0;
     return true;
 }
@@ -1907,8 +1939,8 @@ bool MiningManager::GetSummarizationByRawKey(
         const izenelib::util::UString& rawKey,
         Summarization& result)
 {
-    if (!summarizationManagerTask_) return false;
-    return summarizationManagerTask_->GetSummarizationByRawKey(rawKey,result);
+    if (!summarizationManager_) return false;
+    return summarizationManager_->GetSummarizationByRawKey(rawKey,result);
 }
 
 uint32_t MiningManager::GetSignatureForQuery(
@@ -2134,8 +2166,8 @@ bool MiningManager::GetProductCategory(const UString& query, UString& backend)
 }
 
 bool MiningManager::GetProductFrontendCategory(
-    const izenelib::util::UString& query,
-    int limit,
+    const izenelib::util::UString& query, 
+    int limit, 
     std::vector<UString>& frontends)
 {
     if (mining_schema_.product_matcher_enable)
@@ -2422,4 +2454,23 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
                                                      categoryValueTable,
                                                      merchantScoreManager_);
     return true;
+}
+
+void MiningManager::updateMergeFuzzyIndex()
+{
+    if (cronExpression_.matches_now())
+    {
+        if (!incrementalManager_->isEmpty())
+        {
+            docid_t start_docid;
+            incrementalManager_->getStartDocid(start_docid);
+            suffixMatchManager_->updateFmindex(start_docid);
+            incrementalManager_->reset();
+            SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+            docid_t docid;
+            docid = miningTask->getLastDocId();
+            incrementalManager_->setStartDocid(docid);
+            incrementalManager_->setLastDocid(docid);
+        }
+    }
 }

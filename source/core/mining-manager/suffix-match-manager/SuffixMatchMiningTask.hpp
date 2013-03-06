@@ -51,6 +51,9 @@ public:
     bool postProcess();
     docid_t getLastDocId();
 
+    void setLastDocId(docid_t docID);
+    void setTaskStatus(bool is_incrememtalTask);
+
 private:
     DISALLOW_COPY_AND_ASSIGN(SuffixMatchMiningTask);
     boost::shared_ptr<DocumentManager> document_manager_;
@@ -59,6 +62,10 @@ private:
     boost::shared_ptr<FilterManager>& filter_manager_;
 
     std::string data_root_path_;
+
+    docid_t last_docid_;
+    
+    bool is_incrememtalTask_;
 
     boost::shared_ptr<FMIndexManager> new_fmi_manager;
     boost::shared_ptr<FilterManager> new_filter_manager;

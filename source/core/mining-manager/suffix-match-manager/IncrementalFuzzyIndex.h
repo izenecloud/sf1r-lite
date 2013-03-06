@@ -24,8 +24,8 @@ class Knowledge;
 */
 namespace sf1r
 {
-#define MAX_INCREMENT_DOC 500000
-#define MAX_TMP_DOC 5000000
+
+#define MAX_INCREMENT_DOC 1000000
 #define MAX_POS_LEN 24
 #define MAX_HIT_NUMBER 3
 #define MAX_SUB_LEN 15

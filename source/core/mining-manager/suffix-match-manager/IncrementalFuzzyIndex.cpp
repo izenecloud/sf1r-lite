@@ -339,14 +339,12 @@ namespace sf1r
         return index_path_;
     }
 
-/**
-*/
     InvertedIndex::InvertedIndex(std::string file_path,
                    unsigned int Max_Doc_Num,
                    cma::Analyzer* &analyzer)
         : analyzer_(analyzer)
     {
-        Increment_index_path_ = file_path + ".inc.idx";
+        Increment_index_path_ = file_path + ".inv.idx";
         Max_Doc_Num_ = Max_Doc_Num;
         termidNum_ = 0;
         allIndexDocNum_ = 0;
@@ -825,10 +823,10 @@ namespace sf1r
             delete pIncrementIndex_;
             pIncrementIndex_ = NULL;
         }
-        bfs::path pathMainInc = doc_file_path_ + ".inc.idx";
+        bfs::path pathMainInc = doc_file_path_ + ".inv.idx";
         bfs::path pathMainFd = doc_file_path_ + ".fd.idx";
 
-        bfs::remove(pathMainInc);
+        bfs::remove(pathMainInc); 
         bfs::remove(pathMainFd);
     }
 

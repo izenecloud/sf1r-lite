@@ -11,7 +11,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
-
 namespace cma
 {
 class Analyzer;
@@ -64,10 +63,13 @@ public:
             const faceted::GroupParam& group_param,
             std::vector<std::pair<double, uint32_t> >& res_list) const;
 
-    MiningTask* getMiningTask();
+    SuffixMatchMiningTask* getMiningTask();
     bool buildMiningTask();
 
     boost::shared_ptr<FilterManager>& getFilterManager();
+
+    void updateFmindex(docid_t start_doc);
+    
 
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
@@ -98,7 +100,7 @@ private:
     boost::shared_ptr<FMIndexManager> fmi_manager_;
     boost::shared_ptr<FilterManager> filter_manager_;
 
-    MiningTask* suffixMatchTask_;
+    SuffixMatchMiningTask* suffixMatchTask_;
 
     typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ReadLock;

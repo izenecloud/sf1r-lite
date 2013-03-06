@@ -27,6 +27,9 @@
 #include <configuration-manager/MiningSchema.h>
 #include <configuration-manager/CollectionPath.h>
 #include <ir/id_manager/IDManager.h>
+#include <util/cronexpression.h>
+#include <util/scheduler.h>
+#include <util/ThreadModel.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/thread/mutex.hpp>
@@ -471,6 +474,8 @@ public:
         return numericTableBuilder_;
     }
 
+    void updateMergeFuzzyIndex();
+
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
     {
@@ -673,7 +678,7 @@ private:
 
     /** SUMMARIZATION */
     std::string summarization_path_;
-    MultiDocSummarizationSubManager* summarizationManagerTask_;
+    MultiDocSummarizationSubManager* summarizationManager_;
 
     /** Suffix Match */
     std::string suffix_match_path_;
@@ -692,6 +697,8 @@ private:
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
     uint32_t deleted_doc_before_mining_;
+
+    izenelib::util::CronExpression cronExpression_;
 };
 
 }
