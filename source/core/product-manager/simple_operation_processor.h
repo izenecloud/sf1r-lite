@@ -21,7 +21,7 @@ public:
     ~SimpleOperationProcessor();
 
 
-    void Append(int op, const PMDocumentType& doc);
+    void Append(SCD_TYPE op, const PMDocumentType& doc);
 
     bool Finish();
 
@@ -30,13 +30,13 @@ public:
         operations_.clear();
     }
 
-    std::vector<std::pair<int, PMDocumentType> >& Data()
+    std::vector<std::pair<SCD_TYPE, PMDocumentType> >& Data()
     {
         return operations_;
     }
 
 private:
-    std::vector<std::pair<int, PMDocumentType> > operations_;
+    std::vector<std::pair<SCD_TYPE, PMDocumentType> > operations_;
 
 };
 
