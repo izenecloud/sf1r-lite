@@ -32,8 +32,9 @@ bool MasterManagerBase::init()
         return false;
 
     sf1rTopology_ = NodeManagerBase::get()->getSf1rTopology();
-    write_req_queue_ = ZooKeeperNamespace::getWriteReqQueueNode();
-    write_req_queue_parent_ = ZooKeeperNamespace::getWriteReqQueueParent();
+    write_req_queue_ = ZooKeeperNamespace::getWriteReqQueueNode(sf1rTopology_.curNode_.nodeId_);
+    write_req_queue_parent_ = ZooKeeperNamespace::getCurrWriteReqQueueParent(sf1rTopology_.curNode_.nodeId_);
+    write_req_queue_root_parent_ = ZooKeeperNamespace::getRootWriteReqQueueParent();
     stopping_ = false;
     return true;
 }
@@ -86,7 +87,8 @@ void MasterManagerBase::stop()
             zookeeper_->deleteZNode(serverParentPath_);
         }
         childrenList.clear();
-        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqQueueParent(), ZooKeeper::NOT_WATCH);
+        zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::NOT_WATCH);
+        zookeeper_->isZNodeExists(write_req_queue_root_parent_, ZooKeeper::NOT_WATCH);
         // disconnect will wait other ZooKeeper event finished,
         // so we can not do it in state_mutex_ lock.
         zookeeper_->disconnect();
@@ -262,12 +264,13 @@ bool MasterManagerBase::prepareWriteReq()
     if (!isMinePrimary())
     {
         LOG(WARNING) << "non-primary master can not prepare a write request!";
+        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::WATCH);
         return false;
     }
     ZNode znode;
     znode.setValue(ZNode::KEY_MASTER_SERVER_REAL_PATH, serverRealPath_);
     //znode.setValue(ZNode::KEY_MASTER_STATE, MASTER_STATE_WAIT_WORKER_FINISH_REQ);
-    if (!zookeeper_->createZNode(ZooKeeperNamespace::getWriteReqNode(), znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
+    if (!zookeeper_->createZNode(ZooKeeperNamespace::getWriteReqPrepareNode(), znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
     {
         if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
         {
@@ -278,6 +281,7 @@ bool MasterManagerBase::prepareWriteReq()
             LOG (ERROR) <<" Failed to prepare write request for (" << zookeeper_->getErrorString()
                 << "), please retry. on server : " << serverRealPath_;
         }
+        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::WATCH);
         return false;
     }
     LOG(INFO) << "prepareWriteReq success on server : " << serverRealPath_;
@@ -288,13 +292,13 @@ bool MasterManagerBase::prepareWriteReq()
 
 bool MasterManagerBase::getWriteReqNodeData(ZNode& znode)
 {
-    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode(), ZooKeeper::WATCH))
+    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode()))
     {
         LOG(INFO) << "There is no any write request";
         return true;
     }
     std::string sdata;
-    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata, ZooKeeper::WATCH))
+    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqPrepareNode(), sdata))
     {
         ZNode znode;
         znode.loadKvString(sdata);
@@ -364,10 +368,38 @@ void MasterManagerBase::checkForWriteReq()
 //            return;
 //        }
 //        znode.setValue(ZNode::KEY_MASTER_STATE, masterState_);
-//        zookeeper_->setZNodeData(ZooKeeperNamespace::getWriteReqNode(), znode.serialize());
+//        zookeeper_->setZNodeData(ZooKeeperNamespace::getWriteReqPrepareNode(), znode.serialize());
 //        LOG(INFO) << "write request state changed success on server : " << serverRealPath_;
 //    }
 //}
+
+bool MasterManagerBase::cacheNewWriteFromZNode()
+{
+    std::vector<std::string> reqchild;
+    zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::NOT_WATCH);
+    if (reqchild.empty())
+    {
+        LOG(INFO) << "no write request anymore while check request on server: " << serverRealPath_;
+        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+        return false;
+    }
+
+    LOG(INFO) << "there are some write request waiting: " << reqchild.size();
+    size_t pop_num = reqchild.size() > 100 ? 100:reqchild.size();
+
+    for(size_t i = 0; i < pop_num; ++i)
+    {
+        ZNode znode;
+        std::string sdata;
+        zookeeper_->getZNodeData(reqchild[i], sdata);
+        znode.loadKvString(sdata);
+        LOG(INFO) << "a request poped : " << reqchild[i] << " on the server: " << serverRealPath_;
+        cached_write_reqlist_.push(std::make_pair(znode.getStrValue(ZNode::KEY_REQ_DATA),
+                znode.getStrValue(ZNode::KEY_REQ_TYPE)));
+        zookeeper_->deleteZNode(reqchild[i]);
+    }
+    return true;
+}
 
 // check if any new request can be processed.
 void MasterManagerBase::checkForNewWriteReq()
@@ -382,18 +414,20 @@ void MasterManagerBase::checkForNewWriteReq()
         return;
     }
     if (!endWriteReq())
-        return;
-
-    std::vector<std::string> reqchild;
-    if (cached_write_reqlist_.empty())
     {
-        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::WATCH);
+        return;
     }
 
-    if (!reqchild.empty() || !cached_write_reqlist_.empty())
+    if (cached_write_reqlist_.empty())
+    {
+        if (!cacheNewWriteFromZNode())
+            return;
+    }
+
+    if (!cached_write_reqlist_.empty())
     {
         LOG(INFO) << "there are some cached write request : " << cached_write_reqlist_.size();
-        LOG(INFO) << "there are some write request waiting: " << reqchild.size();
         DistributeTestSuit::testFail(PrimaryFail_At_Master_checkForNewWrite);
         if (on_new_req_available_)
         {
@@ -425,27 +459,8 @@ bool MasterManagerBase::popWriteReq(std::string& reqdata, std::string& type)
 
     if (cached_write_reqlist_.empty())
     {
-        std::vector<std::string> reqchild;
-        zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::NOT_WATCH);
-        if (reqchild.empty())
-        {
-            LOG(INFO) << "no write request anymore while pop request on server: " << serverRealPath_;
-            zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
+        if (!cacheNewWriteFromZNode())
             return false;
-        }
-        size_t pop_num = reqchild.size() > 100 ? 100:reqchild.size();
-
-        for(size_t i = 0; i < pop_num; ++i)
-        {
-            ZNode znode;
-            std::string sdata;
-            zookeeper_->getZNodeData(reqchild[i], sdata);
-            znode.loadKvString(sdata);
-            LOG(INFO) << "a request poped : " << reqchild[i] << " on the server: " << serverRealPath_;
-            cached_write_reqlist_.push(std::make_pair(znode.getStrValue(ZNode::KEY_REQ_DATA),
-                    znode.getStrValue(ZNode::KEY_REQ_TYPE)));
-            zookeeper_->deleteZNode(reqchild[i]);
-        }
     }
     reqdata = cached_write_reqlist_.front().first;
     type = cached_write_reqlist_.front().second;
@@ -496,13 +511,13 @@ bool MasterManagerBase::endWriteReq()
         LOG(INFO) << "non-primary master can not end a write request.";
         return false;
     }
-    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode(), ZooKeeper::WATCH))
+    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode()))
     {
         LOG(INFO) << "There is no any write request while end request";
         return true;
     }
     std::string sdata;
-    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqNode(), sdata, ZooKeeper::WATCH))
+    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqPrepareNode(), sdata))
     {
         ZNode znode;
         znode.loadKvString(sdata);
@@ -512,7 +527,7 @@ bool MasterManagerBase::endWriteReq()
             LOG(WARNING) << "end request mismatch server. " << write_server << " vs " << serverRealPath_;
             return false;
         }
-        zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqNode());
+        zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqPrepareNode());
         LOG(INFO) << "end write request success on server : " << serverRealPath_;
     }
     else
@@ -570,7 +585,7 @@ bool MasterManagerBase::isBusy()
         return false;
     if (!zookeeper_ || !zookeeper_->isConnected())
         return true;
-    if (zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqNode(), ZooKeeper::WATCH))
+    if (zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode()))
     {
         LOG(INFO) << "Master is busy because there is another write request running";
         return true;
@@ -1153,6 +1168,10 @@ void MasterManagerBase::registerServiceServer()
     if (zookeeper_->createZNode(serverPath_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
+    }
+    if (!zookeeper_->isZNodeExists(write_req_queue_root_parent_, ZooKeeper::WATCH))
+    {
+        zookeeper_->createZNode(write_req_queue_root_parent_);
     }
     if (!zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::WATCH))
     {

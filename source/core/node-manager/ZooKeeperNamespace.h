@@ -83,7 +83,7 @@ class ZooKeeperNamespace
     static const std::string server_;
 
     static const std::string Synchro_;
-    static const std::string write_req_node_;
+    static const std::string write_req_prepare_node_;
     static const std::string write_req_seq_;
 
 public:
@@ -114,13 +114,21 @@ public:
         return getPrimaryNodeParentPath(nodeId) + primary_;
     }
 
-    static std::string getWriteReqQueueParent()
+    static std::string getRootWriteReqQueueParent()
     {
         return sf1rCluster_ + write_req_queue_;
     }
-    static std::string getWriteReqQueueNode()
+    static std::string getCurrWriteReqQueueParent(nodeid_t nodeId)
     {
-        return sf1rCluster_ + write_req_queue_ + write_req_seq_;
+        std::stringstream ss;
+        ss << sf1rCluster_ << write_req_queue_ << node_ << nodeId;
+        return ss.str();
+    }
+    static std::string getWriteReqQueueNode(nodeid_t nodeId)
+    {
+        std::stringstream ss;
+        ss << getCurrWriteReqQueueParent(nodeId) << write_req_seq_;
+        return ss.str();
     }
     static std::string getTopologyPath()
     {
@@ -158,9 +166,9 @@ public:
     {
         return sf1rCluster_ + Synchro_;
     }
-    static std::string getWriteReqNode()
+    static std::string getWriteReqPrepareNode()
     {
-        return sf1rCluster_ + write_req_node_;
+        return sf1rCluster_ + write_req_prepare_node_;
     }
 };
 

@@ -16,7 +16,7 @@ const std::string ZooKeeperNamespace::node_ = "/Node";
 const std::string ZooKeeperNamespace::server_ = "/Server";
 
 const std::string ZooKeeperNamespace::Synchro_ = "/Synchro";
-const std::string ZooKeeperNamespace::write_req_node_ = "/WriteRequest";
+const std::string ZooKeeperNamespace::write_req_prepare_node_ = "/WriteRequestPrepare";
 const std::string ZooKeeperNamespace::write_req_seq_ = "/WriteRequestSeq";
 
 /// ZooKeeper Node data key

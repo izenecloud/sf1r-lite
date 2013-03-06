@@ -191,6 +191,7 @@ protected:
     void checkForWriteReq();
     //void checkForWriteReqFinished();
     void checkForNewWriteReq();
+    bool cacheNewWriteFromZNode();
     bool endWriteReq();
     bool isAllWorkerIdle();
     //bool isAllWorkerFinished();
@@ -219,6 +220,7 @@ protected:
 
     std::vector<boost::shared_ptr<AggregatorBase> > aggregatorList_;
     EventCBType on_new_req_available_;
+    std::string write_req_queue_root_parent_;
     std::string write_req_queue_parent_;
     std::string write_req_queue_;
     bool stopping_;

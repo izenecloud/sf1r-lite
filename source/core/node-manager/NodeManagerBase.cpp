@@ -732,8 +732,8 @@ void NodeManagerBase::leaveCluster()
         zookeeper_->deleteZNode(topologyPath_);
         zookeeper_->deleteZNode(primaryBasePath_);
         // if no any node, we delete all the remaining unhandled write request.
-        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqQueueParent(), ZooKeeper::NOT_WATCH);
-        zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqQueueParent(), true);
+        zookeeper_->isZNodeExists(ZooKeeperNamespace::getRootWriteReqQueueParent(), ZooKeeper::NOT_WATCH);
+        zookeeper_->deleteZNode(ZooKeeperNamespace::getRootWriteReqQueueParent(), true);
     }
 
     childrenList.clear();
@@ -1348,6 +1348,7 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     if (oldstate == NODE_STATE_STARTED || new_state == NODE_STATE_STARTED || need_update)
     {
         // update to nodepath to make master got notified.
+        LOG(INFO) << "updating topology node path ... ";
         zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
     }
 }
