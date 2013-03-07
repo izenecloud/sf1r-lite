@@ -476,7 +476,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     ReqLogHead head;
     size_t headoffset;
     std::string req_packed_data;
-    uint32_t check_start_inc;
+    uint32_t check_start_inc = 0;
     boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
     ret = reqlogmgr->getHeadOffset(check_start_inc, head, headoffset);
     if (ret)

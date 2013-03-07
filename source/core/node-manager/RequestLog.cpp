@@ -216,6 +216,8 @@ bool ReqLogMgr::getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& hea
             ret_id = cur.inc_id;
             rethead = cur;
             headoffset = mid*sizeof(ReqLogHead);
+            if (mid == 0)
+                break;
             end = mid - 1;
         }
         else if (cur.inc_id < inc_id)

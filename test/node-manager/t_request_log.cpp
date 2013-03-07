@@ -69,6 +69,7 @@ int main()
         assert( test_common_data.req_json_data == test_out.req_json_data);
         assert( test_common_data.reqtype == test_out.reqtype);
         assert( reqlogmgr.appendTypedReqLog(test_common_data) );
+        reqlogmgr.delPreparedReqLog();
         assert( !reqlogmgr.getPreparedReqLog(test_out) );
         assert( reqlogmgr.getLastSuccessReqId() == i );
         uint32_t inc_id = i;
@@ -94,9 +95,23 @@ int main()
         assert( offset2 == (i - 1)*sizeof(ReqLogHead) );
         assert( ret_packed_data == ret_packed_data2 );
     }
+    {
+        uint32_t inc_id = 0;
+        ReqLogHead head;
+        size_t offset = 0;
+        assert( reqlogmgr.getHeadOffset(inc_id, head, offset) );
+        assert( head.inc_id == 1 && inc_id == 1);
+    }
     // test reload
     reqlogmgr.init("./test_reqlog");
     assert( reqlogmgr.getLastSuccessReqId() == primary_write_num - 1 );
+    {
+        uint32_t inc_id = 0;
+        ReqLogHead head;
+        size_t offset = 0;
+        assert( reqlogmgr.getHeadOffset(inc_id, head, offset) );
+        assert( head.inc_id == 1 && inc_id == 1);
+    }
     for (size_t i = 1; i < primary_write_num; ++i)
     {
         uint32_t inc_id = i;
@@ -138,6 +153,7 @@ int main()
         assert( test_common_data.req_json_data == test_out.req_json_data);
         assert( test_common_data.reqtype == test_out.reqtype);
         assert( reqlogmgr.appendTypedReqLog(test_common_data) );
+        reqlogmgr.delPreparedReqLog();
         assert( !reqlogmgr.getPreparedReqLog(test_out) );
         assert( reqlogmgr.getLastSuccessReqId() == i );
         uint32_t inc_id = i;
@@ -161,6 +177,13 @@ int main()
         std::string ret_packed_data2;
         assert( reqlogmgr.getReqData(inc_id, head2, offset2, ret_packed_data2));
         assert( ret_packed_data == ret_packed_data2 );
+    }
+    {
+        uint32_t inc_id = 0;
+        ReqLogHead head;
+        size_t offset = 0;
+        assert( reqlogmgr.getHeadOffset(inc_id, head, offset) );
+        assert( head.inc_id == 1 && inc_id == 1);
     }
     for (size_t i = primary_write_num + 1; i < primary_write_num + 1 + non_primary_write_num - 10; i+=5)
     {
