@@ -21,11 +21,23 @@ using namespace boost;
 
 
 //BOOST_AUTO_TEST_CASE(cdbInsert)
-int main()
+int main(int ac, char** av)
 {
-        string knowledge_dir="/home/lscm/codebase/b5m-operation/db/working_b5m/knowledge/";
-        string cma_path="/home/lscm/codebase/icma/db/icwb/utf8";
-        string scd_path="/home/lscm/6indexSCD/";
+        string knowledge_dir;//="/home/lscm/codebase/b5m-operation/db/working_b5m/knowledge/";
+        string cma_path;//="/home/lscm/codebase/icma/db/icwb/utf8";
+        string scd_path;//="/home/lscm/6indexSCD/";
+        if(ac==4)
+        {
+           //LOG(INFO)<<"the command should be like this:   ./b5m_product_matcher  knowledge_dir  cma_path  scd_path";
+           knowledge_dir=av[1];
+           cma_path=av[2];
+           scd_path=av[3];
+        }
+        else
+        {
+           cout<<"the command should be like this:   ./b5m_product_matcher  knowledge_dir  cma_path  scd_path"<<endl;
+           return 0;
+        }
         bool noprice=false;
         int max_depth=3;
         if( knowledge_dir.empty())
@@ -79,7 +91,7 @@ int main()
                }
                cout<<endl;
             }
-            matcher.Test(scd_path);
+            //matcher.Test(scd_path);
         }
         else
         {

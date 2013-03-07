@@ -77,7 +77,7 @@ string get(Document doc,string prop)
 
 void show(Document doc)
 {
-     cout<<get(doc,"Source")<<" "<<doc.property("DOCID")<<" "<<doc.property("uuid")<<" "<<get(doc,"Price")<<"  "<<get(doc,"Title")<<"  "<<get(doc,"Category")<<" "<<get(doc,"Attribute")<<get(doc,"品牌")<<  doc.property(B5MHelper::GetBrandPropertyName()) <<"  mobile "<<doc.property("mobile") <<endl;
+     cout<<get(doc,"Source")<<" "<<doc.property("DOCID")<<" "<<doc.property("uuid")<<" "<<get(doc,"Price")<<"  "<<get(doc,"Title")<<"  "<<get(doc,"Category")<<" "<<get(doc,"Attribute")<<"  mobile "<<doc.property("mobile") <<endl;
 }
 
 void show(ProductMatcher::Product product)
@@ -86,15 +86,28 @@ void show(ProductMatcher::Product product)
 }
 
 
-int main()
+int main(int ac,char** av)
 {
-    string bdb_path="/home/lscm/codebase/b5m-operation/db/working_b5m/knowledge/bdb";
-    string odb_path="/home/lscm/codebase/b5m-operation/db/working_b5m/db/mdb/odbnew";
+    string bdb_path="./bdb";
+    string odb_path="./odb";
     string cma_path="/home/lscm/codebase/icma/db/icwb/utf8";
     string knowledge_dir="/home/lscm/codebase/b5m-operation/db/working_b5m/knowledge/";
     string scd_path="/home/lscm/6indexSCD";
     string output_dir="./output";
-
+    string file="/home/lscm/codebase/b5m-operation/config/collection/mobile_source.txt";
+    if(ac==5)
+    {
+           //LOG(INFO)<<"the command should be like this:   ./b5m_product_matcher  knowledge_dir  cma_path  scd_path";
+           knowledge_dir=av[1];
+           cma_path=av[2];
+           scd_path=av[3];
+           file=av[4];
+    }
+    else
+    {
+           cout<<"the command should be like this:   ./b5m_scd_doc_processer  knowledge_dir  cma_path  scd_path  mobile_source_path";
+           return 0;
+    }
     //b5mo process
     boost::shared_ptr<BrandDb> bdb;
     boost::shared_ptr<OfferDb> odb;
@@ -131,7 +144,7 @@ int main()
     bool doesget=odb->get(docid, pid);
     cout<<"get"<<doesget<<endl;
     B5moProcessor processor(odb.get(), matcher.get(), bdb.get(), mode, NULL);
-    string file="/home/lscm/codebase/b5m-operation/config/collection/mobile_source.txt";
+
     processor.LoadMobileSource(file);
     cout<<"pid"<<pid<<"docid"<<docid<<endl;  
     cout<<"process"<<endl;
@@ -208,7 +221,7 @@ int main()
     matcher->Process(doc, 3, result_products);
 
     cout<<"result_products"<<result_products.size()<<endl;
-    for(int i=0;i<result_products.size();i++)
+    for(unsigned i=0;i<result_products.size();i++)
     {
        show(result_products[i]);
     }
@@ -222,7 +235,7 @@ int main()
     doc.property("Attribute") = izenelib::util::UString(attribute,izenelib::util::UString::UTF_8);
     matcher->Process(doc, 3, result_products);
     cout<<"result_products"<<result_products.size()<<endl;
-    for(int i=0;i<result_products.size();i++)
+    for(unsigned i=0;i<result_products.size();i++)
     {
        show(result_products[i]);
     }
