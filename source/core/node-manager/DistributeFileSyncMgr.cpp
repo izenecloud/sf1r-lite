@@ -499,7 +499,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     RecoveryChecker::get()->getCollList(check_collection_list);
 
 
-    int max_wait = 10;
+    int max_wait = 30;
     // wait for response.
     while(wait_num > 0)
     {
@@ -515,7 +515,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
                     check_errinfo = "wait report status timeout!!";
                     return;
                 }
-                status_report_cond_.timed_wait(lk, boost::posix_time::seconds(10));
+                status_report_cond_.timed_wait(lk, boost::posix_time::seconds(30));
             }
             // reset wait time if got any rsp.
             max_wait = 10;

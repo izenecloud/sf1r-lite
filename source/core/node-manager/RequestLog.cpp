@@ -168,6 +168,8 @@ bool ReqLogMgr::getReqDataByHeadOffset(size_t& headoffset, ReqLogHead& rethead, 
     }
     ifs.seekg(0, ios::end);
     size_t length = ifs.tellg();
+    if (length < sizeof(ReqLogHead))
+        return false;
     if (headoffset > length - sizeof(ReqLogHead))
         return false;
     rethead = getHeadData(ifs, headoffset);
