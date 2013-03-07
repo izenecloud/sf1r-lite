@@ -54,7 +54,6 @@ private:
 
     /** map from value id to doc count */
     std::vector<CounterType> countTable_;
-    boost::auto_alloc alloc_;
     mutable PropValueTable::ParentSetType parentSet_;
 };
 
@@ -62,7 +61,6 @@ template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTable)
     : propValueTable_(pvTable)
     , countTable_(pvTable.propValueNum())
-    , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
 {
 }
 
@@ -70,7 +68,6 @@ template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const PropValueTable& pvTable, const CounterType& defaultCounter)
     : propValueTable_(pvTable)
     , countTable_(pvTable.propValueNum(), defaultCounter)
-    , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
 {
 }
 
@@ -78,7 +75,6 @@ template<typename CounterType>
 StringGroupCounter<CounterType>::StringGroupCounter(const StringGroupCounter& groupCounter)
     : propValueTable_(groupCounter.propValueTable_)
     , countTable_(groupCounter.countTable_)
-    , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
 {
 }
 

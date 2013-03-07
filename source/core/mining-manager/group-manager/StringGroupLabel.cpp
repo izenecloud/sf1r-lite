@@ -11,7 +11,6 @@ StringGroupLabel::StringGroupLabel(
     const PropValueTable& pvTable
 )
     : propValueTable_(pvTable)
-    , parentSet_(std::less<PropValueTable::pvid_t>(), alloc_)
 {
     getTargetValueIds_(labelPaths);
 }
