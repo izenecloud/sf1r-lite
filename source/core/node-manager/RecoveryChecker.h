@@ -55,6 +55,7 @@ public:
     void addCollection(const std::string& colname, const CollectionPath& colpath, const std::string& configfile);
     void removeCollection(const std::string& colname);
     bool getCollPath(const std::string& colname, CollectionPath& colpath);
+    void getCollList(std::vector<std::string>& coll_list);
 
     //void updateCollection(const SF1Config& sf1_config);
     boost::shared_ptr<ReqLogMgr> getReqLogMgr()

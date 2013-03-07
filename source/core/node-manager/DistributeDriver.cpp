@@ -2,6 +2,7 @@
 #include "MasterManagerBase.h"
 #include "DistributeRequestHooker.h"
 #include "RequestLog.h"
+#include "DistributeTest.hpp"
 
 #include <util/scheduler.h>
 #include <util/driver/Reader.h>
@@ -57,13 +58,14 @@ void DistributeDriver::init(const RouterPtr& router)
 
 static bool callCronJob(Request::kCallType calltype, const std::string& jobname, const std::string& packed_data)
 {
-	bool ret = izenelib::util::Scheduler::runJobImmediatly(jobname, calltype, calltype == Request::FromLog);
-	if (!ret)
-	{
-		LOG(ERROR) << "start cron job failed." << jobname;
-		DistributeRequestHooker::get()->processFinishedBeforePrepare(false);
-	}
-	return ret;
+    DistributeTestSuit::incWriteRequestTimes("cron_" + jobname);
+    bool ret = izenelib::util::Scheduler::runJobImmediatly(jobname, calltype, calltype == Request::FromLog);
+    if (!ret)
+    {
+        LOG(ERROR) << "start cron job failed." << jobname;
+        DistributeRequestHooker::get()->processFinishedBeforePrepare(false);
+    }
+    return ret;
 }
 
 static bool callHandler(izenelib::driver::Router::handler_ptr handler,
@@ -72,6 +74,7 @@ static bool callHandler(izenelib::driver::Router::handler_ptr handler,
 {
     try
     {
+        DistributeTestSuit::incWriteRequestTimes(request.controller() + "_" + request.action());
         Response response;
         response.setSuccess(true);
         static Poller tmp_poller;

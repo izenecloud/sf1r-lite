@@ -229,6 +229,17 @@ static void copy_dir(const bfs::path& src, const bfs::path& dest, bool keep_full
     copyDir(src, dest_path);
 }
 
+void RecoveryChecker::getCollList(std::vector<std::string>& coll_list)
+{
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    CollInfoMapT::const_iterator cit = all_col_info_.begin();
+    while (cit != all_col_info_.end())
+    {
+        coll_list.push_back(cit->first);
+        ++cit;
+    }
+}
+
 bool RecoveryChecker::getCollPath(const std::string& colname, CollectionPath& colpath)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);

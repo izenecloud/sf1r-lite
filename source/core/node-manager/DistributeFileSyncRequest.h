@@ -77,7 +77,9 @@ struct ReportStatusRspData : public RpcServerRequestData
     std::string  rsp_host;
     std::vector<std::string> check_file_result;
     std::vector<std::string> check_key_result;
-    MSGPACK_DEFINE(success, rsp_host, check_file_result, check_key_result);
+    std::vector<uint32_t> check_logid_list;
+    std::vector<std::string> check_collection_list;
+    MSGPACK_DEFINE(success, rsp_host, check_file_result, check_key_result, check_logid_list, check_collection_list);
 };
 
 class FileSyncServerRequest : public RpcServerRequest

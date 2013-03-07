@@ -55,7 +55,6 @@ public:
     }
     bool readPrevChainData(CommonReqData& reqlogdata);
 
-    void clearHook(bool force = false);
     const std::string& getAdditionData()
     {
         return current_req_;
@@ -84,6 +83,7 @@ private:
     static bool isNeedBackup(ReqLogType type);
     void finish(bool success);
     void forceExit();
+    void clearHook(bool force = false);
 
     //std::string colname_;
     //CollectionPath colpath_;

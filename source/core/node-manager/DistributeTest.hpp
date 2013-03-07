@@ -110,6 +110,21 @@ public:
         updateMemoryState(key, boost::lexical_cast<std::string>(value));
     }
 
+    static void incWriteRequestTimes(const std::string& write_req_str)
+    {
+        if (current_test_fail_type_ == NoAnyTest)
+            return;
+        std::string key = "WriteReq-" + write_req_str;
+        int times;
+        if (memory_state_info_.find(key) == memory_state_info_.end())
+        {
+            times = 1;
+        }
+        else
+            times = 1 + boost::lexical_cast<int>(memory_state_info_[key]);
+        updateMemoryState(key, boost::lexical_cast<std::string>(times));
+    }
+
     static void updateMemoryState(const std::string& key, const std::string& value)
     {
         if (current_test_fail_type_ == NoAnyTest)

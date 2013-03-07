@@ -26,7 +26,7 @@ static void doTransferFile(const ReadyReceiveData& reqdata)
 {
     izenelib::net::distribute::DataTransfer2 transfer(reqdata.receiver_ip, reqdata.receiver_port);
     FinishReceiveRequest req;
-    if (not transfer.syncSend(reqdata.filepath, reqdata.filepath, false))
+    if (bfs::file_size(reqdata.filepath) != 0 && not transfer.syncSend(reqdata.filepath, reqdata.filepath, false))
     {
         LOG(INFO) << "transfer file failed: " << reqdata.filepath;
         req.param_.success = false;
@@ -114,6 +114,31 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
         //LOG(INFO) << "file : " << file << ", checksum:" << rsp_req.param_.check_file_result[i];
     }
     DistributeTestSuit::getMemoryState(reqdata.check_key_list, rsp_req.param_.check_key_result);
+    boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
+    // get local redo log id 
+    ReqLogHead head;
+    size_t headoffset;
+    std::string req_packed_data;
+    uint32_t check_start_inc = 0;
+    bool ret = reqlogmgr->getHeadOffset(check_start_inc, head, headoffset);
+    if (ret)
+    {
+        rsp_req.param_.check_logid_list.reserve(reqlogmgr->getLastSuccessReqId());
+        while(true)
+        {
+            ret = reqlogmgr->getReqDataByHeadOffset(headoffset, head, req_packed_data);
+            if(!ret)
+                break;
+            rsp_req.param_.check_logid_list.push_back(head.inc_id);
+        }
+    }
+    if (rsp_req.param_.check_logid_list.empty())
+        LOG(INFO) << "no any log on the node";
+    else
+        LOG(INFO) << "start log: " << rsp_req.param_.check_logid_list[0] << ", end log:" << rsp_req.param_.check_logid_list.back();
+
+    // get local running collections.
+    RecoveryChecker::get()->getCollList(rsp_req.param_.check_collection_list);
 
     DistributeFileSyncMgr::get()->sendReportStatusRsp(reqdata.req_host, SuperNodeManager::get()->getFileSyncRpcPort(), rsp_req);
 }
@@ -445,6 +470,34 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
         file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file));
         //LOG(INFO) << "file : " << file << ", checksum:" << file_checksum_list[i];
     }
+    // get local redo log id 
+    std::vector<uint32_t> check_logid_list;
+    std::vector<std::string> check_collection_list;
+    ReqLogHead head;
+    size_t headoffset;
+    std::string req_packed_data;
+    uint32_t check_start_inc;
+    boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
+    ret = reqlogmgr->getHeadOffset(check_start_inc, head, headoffset);
+    if (ret)
+    {
+        check_logid_list.reserve(reqlogmgr->getLastSuccessReqId());
+        while(true)
+        {
+            ret = reqlogmgr->getReqDataByHeadOffset(headoffset, head, req_packed_data);
+            if(!ret)
+                break;
+            check_logid_list.push_back(head.inc_id);
+        }
+    }
+    if (check_logid_list.empty())
+        LOG(INFO) << "no any log on the node";
+    else
+        LOG(INFO) << "start log: " << check_logid_list[0] << ", end log:" << check_logid_list.back();
+
+    // get local running collections.
+    RecoveryChecker::get()->getCollList(check_collection_list);
+
 
     int max_wait = 10;
     // wait for response.
@@ -494,7 +547,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
                         continue;
                     }
                     LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
-                    check_errinfo = "at least one of file not the same status between replicas.";
+                    check_errinfo += " at least one of file not the same status between replicas. ";
                 }
             }
             if (rspdata[i].check_key_result.size() != memory_state_list.size())
@@ -509,6 +562,33 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
                     LOG(WARNING) << "one of memory state not the same as local : " << req.param_.check_key_list[j];
                 }
             }
+            if (rspdata[i].check_logid_list.size() != check_logid_list.size())
+            {
+                LOG(ERROR) << "rsp logid list size not matched local, " << rspdata[i].check_logid_list.size() << "," << check_logid_list.size();
+                check_errinfo += " rsp logid list size not matched local. ";
+            }
+            for (size_t j = 0; j < check_logid_list.size(); ++j)
+            {
+                if (rspdata[i].check_logid_list[j] != check_logid_list[j])
+                {
+                    LOG(ERROR) << "rsp logid list id not match, " << rspdata[i].check_logid_list[j] << "," << check_logid_list[j];
+                    check_errinfo += " at least one of logid not the same between replicas.";
+                }
+            }
+            if (rspdata[i].check_collection_list.size() != check_collection_list.size())
+            {
+                LOG(ERROR) << "rsp running collection list size not matched local, " << rspdata[i].check_collection_list.size() << "," << check_collection_list.size();
+                check_errinfo += " Running collection num is not the same between replicas. ";
+            }
+            for (size_t j = 0; j < check_collection_list.size(); ++j)
+            {
+                if (rspdata[i].check_collection_list[j] != check_collection_list[j])
+                {
+                    LOG(ERROR) << "rsp logid list id not match, " << rspdata[i].check_collection_list[j] << "," << check_collection_list[j];
+                    check_errinfo += " at least one of logid not the same between replicas.";
+                }
+            }
+
         }
         wait_num -= rspdata.size();
     }
@@ -794,6 +874,15 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& ip, uint16_t por
             }
             bfs::remove(filepath);
         }
+    }
+    else if (filesize == 0)
+    {
+        LOG(INFO) << "remote file is a empty file : " << filepath;
+        std::ofstream ofs;
+        ofs.open(filepath.c_str());
+        ofs << std::flush;
+        ofs.close();
+        return true;
     }
 
     ReadyReceiveRequest req;
