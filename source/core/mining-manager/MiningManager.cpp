@@ -944,19 +944,20 @@ bool MiningManager::DoMiningCollection()
             incrementalManager_->getDocNum(docNum);
             incrementalManager_->getMaxNum(maxDoc);
 
-            if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc)
+            if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc // for add incremental index
+                && document_manager_->getMaxDocId() != last_docid) // for continue use;
             {
                 SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
                 miningTask->setLastDocId(document_manager_->getMaxDocId());
-                miningTask->setTaskStatus(true);
+                bool isIncre = true;
+                miningTask->setTaskStatus(isIncre);
             }
             else
             {
-                docid_t start_doc;
-                incrementalManager_->getStartDocid(start_doc);
                 SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                miningTask->setLastDocId(start_doc);
-                miningTask->setTaskStatus(false);
+
+                bool isIncre = false;
+                miningTask->setTaskStatus(isIncre);
                 incrementalManager_->reset();
             }
         }
@@ -977,16 +978,14 @@ bool MiningManager::DoMiningCollection()
 
             LOG (INFO) << "docNum:" << docNum << "last_docid:" << last_docid << "getMaxDocId()" << document_manager_->getMaxDocId() << "maxDoc:" << maxDoc << endl;
 
-            if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc)
+            if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc
+                && document_manager_->getMaxDocId() != last_docid)
             {
                 LOG(INFO) << "Build incrmental index ..." <<endl;
                 incrementalManager_->doCreateIndex();
             }
             else
             {
-                SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                miningTask->setLastDocId(document_manager_->getMaxDocId());
-
                 incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
                 incrementalManager_->setStartDocid(document_manager_->getMaxDocId());
             }
@@ -2467,14 +2466,12 @@ void MiningManager::updateMergeFuzzyIndex()
     {
         if (!incrementalManager_->isEmpty())
         {
-            docid_t start_docid;
-            incrementalManager_->getStartDocid(start_docid);
-cout<<"xxxxxxxxxx:"<<"start_docid:"<<start_docid<<endl;
-            suffixMatchManager_->updateFmindex(start_docid);  //update ...
-
-            incrementalManager_->reset();
-
             SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+            bool isIncre = false;
+            miningTask->setTaskStatus(isIncre);
+
+            suffixMatchManager_->updateFmindex();
+            incrementalManager_->reset();
 
             docid_t docid;
             docid = miningTask->getLastDocId();

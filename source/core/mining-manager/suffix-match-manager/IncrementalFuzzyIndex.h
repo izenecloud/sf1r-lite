@@ -25,7 +25,7 @@ class Knowledge;
 namespace sf1r
 {
 
-#define MAX_INCREMENT_DOC 45
+#define MAX_INCREMENT_DOC 500000
 #define MAX_POS_LEN 24
 #define MAX_HIT_NUMBER 3
 #define MAX_SUB_LEN 15
@@ -269,8 +269,7 @@ private:
     
     bool isAddedIndex_;
     unsigned int DocNumber_;
-    unsigned int Max_Doc_Num_;
-
+    
     ForwardIndex* pForwardIndex_;
     InvertedIndex* pIncrementIndex_;
 
@@ -278,7 +277,7 @@ private:
     boost::shared_ptr<LAManager> laManager_;
 
     IndexBundleSchema& indexSchema_;
-
+    unsigned int Max_Doc_Num_;
     cma::Analyzer* analyzer_;
 };
 

@@ -68,7 +68,7 @@ public:
 
     boost::shared_ptr<FilterManager>& getFilterManager();
 
-    void updateFmindex(docid_t start_doc);
+    void updateFmindex();
     
 
 private:

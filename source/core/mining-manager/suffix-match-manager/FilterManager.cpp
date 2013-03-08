@@ -339,7 +339,6 @@ void FilterManager::buildGroupFilters(
     for (size_t j = 0; j < property_list.size(); ++j)
     {
         uint32_t last_docid_forproperty = last_docid_list[j];
-        cout << "last_docid_forproperty : " << last_docid_forproperty << endl;
         const std::string& property = property_list[j];
         size_t prop_id = prop_id_map_[property];
 

@@ -751,9 +751,10 @@ void SuffixMatchManager::buildTokenizeDic()
     LOG(INFO) << "load dictionary knowledge finished." << endl;
 }
 
-void SuffixMatchManager::updateFmindex(docid_t start_doc)
+void SuffixMatchManager::updateFmindex()
 {
     suffixMatchTask_->preProcess();
+    docid_t start_doc = suffixMatchTask_->getLastDocId();
     for (uint32_t docid = start_doc + 1; docid < document_manager_->getMaxDocId(); ++docid)
     {
         Document doc;

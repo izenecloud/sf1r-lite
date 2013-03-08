@@ -810,7 +810,7 @@ namespace sf1r
                 cout<<"For each filter key in this property ... "<<endl;
                 for(unsigned int x = 0; x < (*i).size(); ++x)
                 {
-                    cout << (*i)[x] << ",";
+                    //cout << (*i)[x] << ",";
                 }
                 cout<<endl;
             }
@@ -832,22 +832,22 @@ namespace sf1r
         for (std::vector<std::vector<FilterManager::FilterIdRange> >::iterator filter_range_list = filter_range_lists.begin()
             ; filter_range_list != filter_range_lists.end(); ++filter_range_list)
         {
-            cout<<"======"<<endl;
+            //cout<<"======"<<endl;
             int k = 0;
             std::vector<size_t>& prop_id_list = prop_id_lists[n];
             for (std::vector<FilterManager::FilterIdRange>::iterator i = filter_range_list->begin(); i != filter_range_list->end(); ++i, ++k)
             {   
-                cout<<"(*filter_range_list)[k].end" << (*filter_range_list)[k].end <<":" << (*filter_range_list)[k].start << endl;
+                //cout<<"(*filter_range_list)[k].end" << (*filter_range_list)[k].end <<":" << (*filter_range_list)[k].start << endl;
                 for (unsigned int j = (*filter_range_list)[k].start; j < (*filter_range_list)[k].end; ++j)
                 {
                     for(unsigned int x = 0; x < filter_list[prop_id_list[k]][j].size(); ++x)
                     {
                         filter_doc_lists[n].push_back(filter_list[prop_id_list[k]][j][x]);
-                        cout<<filter_list[prop_id_lists[n][k]][j][x]<<",";
+                        //cout<<filter_list[prop_id_lists[n][k]][j][x]<<",";
                     }
                 }
             }
-            cout<<endl<<"-----"<<endl;
+            //cout<<endl<<"-----"<<endl;
             sort(filter_doc_lists[n].begin(), filter_doc_lists[n].end());
             n++;
         }
@@ -898,7 +898,7 @@ namespace sf1r
                 {
                     break;
                 }
-                int count = num[j];
+                unsigned int count = num[j];
                 while (filter_doc_lists[j][count] < value)
                 {
                     count++;
