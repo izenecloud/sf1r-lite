@@ -958,12 +958,25 @@ void DocumentsController::visit()
     Value& posValue = request()[Keys::resource][Keys::context][Keys::pos];
     context = asString(posValue);
 
-    if (indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(docidStr), internalId)
+    bool need_get_id = true;
+    if (request().callType() == Request::FromPrimaryWorker ||
+        request().callType() == Request::FromLog)
+    {
+        need_get_id = false;
+    }
+    if (need_get_id && indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(docidStr), internalId)
             && internalId != 0)
     {
         if (!miningSearchService_->visitDoc(collectionName_, internalId))
         {
             response().addError("Failed to visit document");
+        }
+    }
+    else if (!need_get_id)
+    {
+        if (!miningSearchService_->visitDoc(Utilities::md5ToUint128(docidStr)))
+        {
+            response().addError("Failed to visit document in distribute node.");
         }
     }
     else

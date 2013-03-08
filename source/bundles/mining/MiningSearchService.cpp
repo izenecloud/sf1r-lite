@@ -3,8 +3,10 @@
 #include <mining-manager/faceted-submanager/ontology_manager.h>
 #include <node-manager/DistributeRequestHooker.h>
 
+#include <util/driver/Request.h>
 #include <aggregator-manager/SearchWorker.h>
 
+using namespace izenelib::driver;
 namespace sf1r
 {
 
@@ -14,6 +16,31 @@ MiningSearchService::MiningSearchService()
 
 MiningSearchService::~MiningSearchService()
 {
+}
+
+bool MiningSearchService::HookDistributeRequest(const std::string& coll, uint32_t workerId)
+{
+    Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
+    if (hooktype == Request::FromAPI)
+    {
+        // from api do not need hook, just process as usually.
+        return true;
+    }
+    const std::string& reqdata = DistributeRequestHooker::get()->getAdditionData();
+    bool ret = false;
+    if (hooktype == Request::FromDistribute)
+    {
+        searchAggregator_->singleRequest(coll, "HookDistributeRequest", (int)hooktype, reqdata, ret, workerId);
+    }
+    else
+    {
+        ret = true;
+    }
+    if (!ret)
+    {
+        LOG(WARNING) << "Request failed, HookDistributeRequest failed.";
+    }
+    return ret;
 }
 
 bool MiningSearchService::getSearchResult(
@@ -208,9 +235,11 @@ bool MiningSearchService::DefineDocCategory(
 }
 
 // xxx
-bool MiningSearchService::visitDoc(uint32_t docId)
+bool MiningSearchService::visitDoc(const uint128_t& scdDocId)
 {
-    return miningManager_->visitDoc(docId);
+    uint64_t internalId = 0;
+    searchWorker_->getInternalDocumentId(scdDocId, internalId);
+    return miningManager_->visitDoc(internalId);
 }
 
 bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t wdocId)
@@ -226,6 +255,8 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
     }
     else
     {
+        if(!HookDistributeRequest(collectionName, workerId))
+            return false;
         searchAggregator_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);
     }
 

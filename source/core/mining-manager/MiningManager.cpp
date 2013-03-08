@@ -1580,7 +1580,20 @@ bool MiningManager::visitDoc(uint32_t docId)
         return true;
     }
 
-    return ctrManager_->update(docId);
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    NoAdditionNoRollbackReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = ctrManager_->update(docId);
+
+    DISTRIBUTE_WRITE_FINISH(ret);
+    return ret;
 }
 
 bool MiningManager::clickGroupLabel(

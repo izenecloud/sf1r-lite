@@ -32,6 +32,7 @@ public:
         ADD_WORKER_HANDLER(clickGroupLabel)
         ADD_WORKER_HANDLER(visitDoc)
         ADD_WORKER_HANDLER(getSimilarDocIdList)
+        ADD_WORKER_HANDLER(HookDistributeRequest)
 
         ADD_WORKER_HANDLER_END()
     }
@@ -53,6 +54,8 @@ public:
     WORKER_CONTROLLER_METHOD_2(visitDoc, searchWorker_->visitDoc, uint32_t, bool)
 
     WORKER_CONTROLLER_METHOD_3(getSimilarDocIdList, searchWorker_->getSimilarDocIdList, uint64_t, uint32_t, SimilarDocIdListType)
+
+    WORKER_CONTROLLER_METHOD_3(HookDistributeRequest, searchWorker_->HookDistributeRequest, int, std::string, bool)
 
 protected:
     virtual bool checkWorker(std::string& error);

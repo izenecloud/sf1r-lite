@@ -85,8 +85,7 @@ public:
 
     bool DefineDocCategory(const std::vector<faceted::ManmadeDocCategoryItem>& items);
 
-    /// visit document
-    bool visitDoc(uint32_t docId);
+    bool visitDoc(const uint128_t& scdDocId);
 
     /**
      * Log the group label click.
@@ -204,6 +203,7 @@ public:
     void flush();
 
 private:
+    bool HookDistributeRequest(const std::string& coll, uint32_t workerId);
     MiningBundleConfiguration* bundleConfig_;
     boost::shared_ptr<MiningManager> miningManager_;
 

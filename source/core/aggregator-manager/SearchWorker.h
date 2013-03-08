@@ -54,6 +54,7 @@ public:
         BIND_CALL_PROXY_3(getSimilarDocIdList, uint64_t, uint32_t, SimilarDocIdListType)
         BIND_CALL_PROXY_2(clickGroupLabel, ClickGroupLabelActionItem, bool)
         BIND_CALL_PROXY_2(visitDoc, uint32_t, bool)
+        BIND_CALL_PROXY_3(HookDistributeRequest, int, std::string, bool)
         BIND_CALL_PROXY_END()
     }
 
@@ -84,6 +85,8 @@ public:
     void clickGroupLabel(const ClickGroupLabelActionItem& actionItem, bool& result);
 
     void visitDoc(const uint32_t& docId, bool& result);
+
+    void HookDistributeRequest(int hooktype, const std::string& reqdata, bool& result);
 
     /** @} */
 

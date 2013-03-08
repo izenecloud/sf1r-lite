@@ -13,6 +13,7 @@
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
 #include <la-manager/LAManager.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 namespace sf1r
 {
@@ -34,8 +35,16 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
 }
 
-/// Index Search
+void SearchWorker::HookDistributeRequest(int hooktype, const std::string& reqdata, bool& result)
+{
+    DistributeRequestHooker::get()->setHook(hooktype, reqdata);
+    DistributeRequestHooker::get()->hookCurrentReq(reqdata);
+    DistributeRequestHooker::get()->processLocalBegin();
+    LOG(INFO) << "got hook request on the search worker.";
+    result = true;
+}
 
+/// Index Search
 void SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     KeywordSearchResult fakeResultItem;
