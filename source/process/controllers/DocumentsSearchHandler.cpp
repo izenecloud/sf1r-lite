@@ -29,7 +29,6 @@
 #include <common/parsers/PageInfoParser.h>
 
 #include <log-manager/UserQuery.h>
-#include <query-manager/QueryManager.h>
 
 #include <util/swap.h>
 

@@ -7,7 +7,6 @@
 
 #include <common/BundleSchemaHelpers.h>
 #include <mining-manager/faceted-submanager/ctr_manager.h>
-#include <query-manager/QueryManager.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 
