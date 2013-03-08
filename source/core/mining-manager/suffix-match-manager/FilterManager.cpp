@@ -74,7 +74,7 @@ void FilterManager::loadStrFilterInvertedData(
                 ifs.read((char*)&docid_len, sizeof(docid_len));
                 std::vector<uint32_t> docid_list(docid_len);
                 ifs.read((char*)&docid_list[0], sizeof(docid_list[0]) * docid_len);
-                //LOG(INFO) << "filter num: " << i << ", key=" << key << ", docnum: " << docid_len;
+                LOG(INFO) << "filter num: " << i << ", key=" << key << ", docnum: " << docid_len;
                 last_docid_list[prop_num] = std::max(last_docid_list[prop_num], docid_list.back());
                 str_filter_data[prop_num].insert(std::make_pair(UString(key, UString::UTF_8), docid_list));
             }
@@ -216,9 +216,9 @@ void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid, bool i
     std::vector<uint32_t> group_last_docid_list;
     std::vector<uint32_t> attr_last_docid_list;
 
-    if (last_docid > 0)// for increase data ...
+    if (last_docid > 0 && !isIncre)// for increase data
     {
-        loadStrFilterInvertedData(group_prop_list_, group_filter_map, group_last_docid_list);// no use ..
+        loadStrFilterInvertedData(group_prop_list_, group_filter_map, group_last_docid_list);
         loadStrFilterInvertedData(attr_prop_list_, attr_filter_map, attr_last_docid_list);
     }
     else
@@ -226,6 +226,27 @@ void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid, bool i
         group_last_docid_list.resize(group_prop_list_.size());
         attr_last_docid_list.resize(attr_prop_list_.size());
     }
+
+    if (isIncre)
+    {
+        str_filter_ids_.clear();
+        str_filter_ids_.resize(prop_list_.size());
+
+        num_filter_ids_.clear();
+        num_filter_ids_.resize(prop_list_.size());
+
+        filter_list_.clear();
+        filter_list_.resize(prop_list_.size());
+        
+        for (std::vector<uint32_t>::iterator i = group_last_docid_list.begin(); i != group_last_docid_list.end(); ++i)
+        {
+            if (*i == 0)
+            {
+                *i = last_docid;
+            }
+        }
+    }
+
     buildGroupFilters(group_last_docid_list, max_docid, group_prop_list_, group_filter_map);
     saveStrFilterInvertedData(group_prop_list_, group_filter_map);
 
@@ -310,16 +331,15 @@ void FilterManager::buildGroupFilters(
 {
     if (!groupManager_) return;
 
-    LOG(INFO) << "begin building group filter data.";
-
-    group_filter_data.resize(property_list.size());//.....??
-
+    group_filter_data.resize(property_list.size());
+    
     // the relationship between group node need rebuild from docid = 1.
     GroupNode* group_root = new GroupNode(UString("root", UString::UTF_8));
     std::vector<GroupNode*> property_root_nodes;
     for (size_t j = 0; j < property_list.size(); ++j)
     {
         uint32_t last_docid_forproperty = last_docid_list[j];
+        cout << "last_docid_forproperty : " << last_docid_forproperty << endl;
         const std::string& property = property_list[j];
         size_t prop_id = prop_id_map_[property];
 
@@ -374,8 +394,7 @@ void FilterManager::buildGroupFilters(
                     assert(curgroup);
                 }
                 
-                //if (docid <= last_docid_forproperty) continue;
-                group_filter_data[j][groupstr].push_back(docid);//push back... maybe it has already has ...
+                group_filter_data[j][groupstr].push_back(docid);
             }
         }
 
@@ -410,6 +429,9 @@ void FilterManager::mapGroupFilterToFilterId(
     if (node)
     {
         filterids[node->node_name_].start = filter_list.size();
+        string groupstr1;
+        node->node_name_.convertString(groupstr1, UString::UTF_8);
+        
         StrFilterItemMapT::const_iterator cit = group_filter_data.find(node->node_name_);
         if (cit != group_filter_data.end())
             filter_list.push_back(cit->second);
@@ -616,9 +638,11 @@ void FilterManager::mapNumericFilterToFilterId(const NumFilterItemMapT& num_filt
     for (NumFilterItemMapT::const_iterator cit = num_filter_data.begin();
             cit != num_filter_data.end(); ++cit)
     {
+        cout<<"filter_list.size()---start"<<filter_list.size() << endl;
         filterids[cit->first].start = filter_list.size();
         if (!cit->second.empty())
             filter_list.push_back(cit->second);
+        cout<<"filter_list.size()---end"<<filter_list.size()<<endl;
         filterids[cit->first].end = filter_list.size();
 #ifndef NDEBUG
         LOG(INFO) << "num: " << cit->first << ", id range: " << filterids[cit->first].start << ", "
@@ -1070,6 +1094,10 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeGreater(size_t pr
     FilterIdRange empty_range;
     NumFilterKeyT num_key = formatNumericFilter(prop_id, num_filter, true);
     const std::vector<NumFilterKeyT>& num_key_set = num_key_sets_[prop_id];
+    if (num_key_set.size() == 0)
+    {
+        return empty_range;
+    }
 
     std::vector<NumFilterKeyT>::const_iterator it = include
         ? std::lower_bound(num_key_set.begin(), num_key_set.end(), num_key)
@@ -1098,6 +1126,11 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLess(size_t prop_
     NumFilterKeyT num_key = formatNumericFilter(prop_id, num_filter, false);
     const std::vector<NumFilterKeyT>& num_key_set = num_key_sets_[prop_id];
 
+    if (num_key_set.size() == 0)
+    {
+        return empty_range;
+    }
+
     std::vector<NumFilterKeyT>::const_iterator it = std::lower_bound(num_key_set.begin(), num_key_set.end(), num_key);
     if (it == num_key_set.begin() && (!include || *it > num_filter))
     {
@@ -1112,9 +1145,17 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLess(size_t prop_
     {
         return empty_range;
     }
-
+    
     empty_range.start = num_filter_ids_[prop_id].find(num_key_set[0])->second.start;
-    empty_range.end = nit->second.end;
+
+    if (include && *it == num_key)
+    {
+        empty_range.end = nit->second.end;
+    }
+    else
+    {
+        empty_range.end = nit->second.end - 1;
+    }
 
     LOG(INFO) << "numeric filter smaller map to key: " << *it << ", filter id range is: " << empty_range.start << "," << empty_range.end;
 

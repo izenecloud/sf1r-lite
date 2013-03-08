@@ -754,7 +754,7 @@ void SuffixMatchManager::buildTokenizeDic()
 void SuffixMatchManager::updateFmindex(docid_t start_doc)
 {
     suffixMatchTask_->preProcess();
-    for (uint32_t docid = start_doc; docid < document_manager_->getMaxDocId(); ++docid)
+    for (uint32_t docid = start_doc + 1; docid < document_manager_->getMaxDocId(); ++docid)
     {
         Document doc;
         if (document_manager_->getDocument(docid, doc))

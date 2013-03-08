@@ -975,6 +975,8 @@ bool MiningManager::DoMiningCollection()
             incrementalManager_->getDocNum(docNum);
             incrementalManager_->getMaxNum(maxDoc);
 
+            LOG (INFO) << "docNum:" << docNum << "last_docid:" << last_docid << "getMaxDocId()" << document_manager_->getMaxDocId() << "maxDoc:" << maxDoc << endl;
+
             if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc)
             {
                 LOG(INFO) << "Build incrmental index ..." <<endl;
@@ -2038,12 +2040,15 @@ bool MiningManager::GetSuffixMatch(
         }
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
+        
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                 queryU, search_in_properties, max_docs,
                 actionOperation.actionItem_.searchingMode_.filtermode_,
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
                 res_list);
+
+        LOG (INFO) << "FM_fuzzy_search get " << totalCount << "results" << endl; 
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
@@ -2076,7 +2081,7 @@ bool MiningManager::GetSuffixMatch(
             std::merge(res_list.begin(), res_list.end(), inc_res_list.begin() + res_list.size(), inc_res_list.end(), inc_res_list.begin(), std::greater<std::pair<double, uint32_t> >());
             inc_res_list.swap(res_list);
 
-            LOG(INFO) << "[]TOPN and cost:" << timer.elapsed() << " seconds" << std::endl;
+            LOG(INFO) << "Incremental fuzzy search cost:" << timer.elapsed() << " seconds" << std::endl;
         }
 
         if (groupManager_ || attrManager_)
@@ -2464,9 +2469,13 @@ void MiningManager::updateMergeFuzzyIndex()
         {
             docid_t start_docid;
             incrementalManager_->getStartDocid(start_docid);
-            suffixMatchManager_->updateFmindex(start_docid);
+cout<<"xxxxxxxxxx:"<<"start_docid:"<<start_docid<<endl;
+            suffixMatchManager_->updateFmindex(start_docid);  //update ...
+
             incrementalManager_->reset();
+
             SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+
             docid_t docid;
             docid = miningTask->getLastDocId();
             incrementalManager_->setStartDocid(docid);

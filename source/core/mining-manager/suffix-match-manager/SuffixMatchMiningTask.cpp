@@ -23,7 +23,6 @@ SuffixMatchMiningTask::SuffixMatchMiningTask(
     , mutex_(mutex)
     , is_incrememtalTask_(false)
 {
-    last_docid_ = fmi_manager_ ? fmi_manager_->docCount() + 1 : 1;
 }
 
 SuffixMatchMiningTask::~SuffixMatchMiningTask()
@@ -50,16 +49,16 @@ bool SuffixMatchMiningTask::preProcess()
             std::vector<std::string>().swap(properties);
         }
 
-        //size_t last_docid = fmi_manager_ ? fmi_manager_->docCount() : 0;
+        size_t last_docid = fmi_manager_ ? fmi_manager_->docCount() : 0;
 
         need_rebuild = false;
         std::vector<uint32_t> del_docid_list;
         document_manager_->getDeletedDocIdList(del_docid_list);
-        if (last_docid_ == document_manager_->getMaxDocId()) // if this rebuild is right: rebuild in two 
+        if (last_docid == document_manager_->getMaxDocId()) 
         {
             // check if there is any new deleted doc.
             std::vector<size_t> doclen_list(del_docid_list.size(), 0);
-            fmi_manager_->getDocLenList(del_docid_list, doclen_list); // test is will down.. 
+            fmi_manager_->getDocLenList(del_docid_list, doclen_list);
             for (size_t i = 0; i < doclen_list.size(); ++i)
             {
                 if (doclen_list[i] > 0)
@@ -71,7 +70,7 @@ bool SuffixMatchMiningTask::preProcess()
         }
         else
         {
-            LOG(INFO) << "old fmi docCount is : " << last_docid_ << ", document_manager count:" << document_manager_->getMaxDocId();
+            LOG(INFO) << "old fmi docCount is : " << last_docid << ", document_manager count:" << document_manager_->getMaxDocId();
             need_rebuild = true;
         }
         if (need_rebuild)
@@ -104,13 +103,14 @@ bool SuffixMatchMiningTask::postProcess()
             return false;
 
         new_filter_manager->setRebuildFlag(filter_manager_.get());
-
-        LOG(INFO) << "building filter data in fm-index, start from:" << last_docid_;
+        
+        size_t last_docid = fmi_manager_ ? fmi_manager_->docCount() : 0;
+        
+        LOG(INFO) << "building filter data in fm-index, start from:" << last_docid;
 
         new_filter_manager->finishBuildStringFilters();
 
-        if (last_docid_ != document_manager_->getMaxDocId())
-            new_filter_manager->buildFilters(last_docid_, document_manager_->getMaxDocId()); //build for fm-index ....
+        new_filter_manager->buildFilters(last_docid, document_manager_->getMaxDocId()); //build for fm-index ....
 
         new_fmi_manager->setFilterList(new_filter_manager->getFilterList());
 
@@ -120,7 +120,7 @@ bool SuffixMatchMiningTask::postProcess()
         new_fmi_manager->buildExternalFilter();
         {
             WriteLock lock(mutex_);
-            if (!need_rebuild) //??? always wrong ...???
+            if (!need_rebuild) 
             {
                 // no rebuilding, so just take the owner of old data.
                 LOG(INFO) << "no rebuild need, just swap data for common properties.";
@@ -137,7 +137,6 @@ bool SuffixMatchMiningTask::postProcess()
         }
         LOG(INFO) << "saving fm-index data";
         fmi_manager_->saveAll();
-        //last_docid_ = fmi_manager_->docCount() + 1;
         filter_manager_->saveFilterId();
         filter_manager_->clearFilterList();
         LOG(INFO) << "building fm-index finished";
@@ -163,7 +162,7 @@ bool SuffixMatchMiningTask::buildDocument(docid_t docID, const Document& doc)
 
 docid_t SuffixMatchMiningTask::getLastDocId()
 {
-    return last_docid_;
+    return fmi_manager_ ? fmi_manager_->docCount() + 1 : 1;
 }
 
 void SuffixMatchMiningTask::setLastDocId(docid_t docID)

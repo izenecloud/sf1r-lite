@@ -116,6 +116,12 @@ namespace sf1r
         }
         else
             delete_AllIndexFile();
+
+        if (IndexedDocNum_ == 0)
+        {
+            start_docid_ = last_docid_ = document_manager_->getMaxDocId();
+        }
+
         LOG (INFO) << "Load incremental fuzzy index ... ";
         pMainFuzzyIndexBarrel_->print();
     }
@@ -135,8 +141,9 @@ namespace sf1r
             isInitIndex_ = true;
             bool isIncre = true;
             //build filter just for all new documents...
-            filter_manager_->buildFilters(last_docid_, document_manager_->getMaxDocId(), isIncre);
-            
+
+            filter_manager_->buildFilters(start_docid_, document_manager_->getMaxDocId(), isIncre); // 
+            LOG(INFO) << "last_docid_" << last_docid_ << endl;
             for (uint32_t i = last_docid_ + 1; i <= document_manager_->getMaxDocId(); i++)
             {
                 if (i % 100000 == 0)
@@ -176,6 +183,7 @@ namespace sf1r
             LOG(INFO) << "Prepare_index_ total elapsed:" << timer.elapsed() << " seconds";
         }
         pMainFuzzyIndexBarrel_->print();
+        printFilter();
     }
 
     bool IncrementalFuzzyManager::indexForDoc(uint32_t& docId, std::string propertyString)
@@ -251,7 +259,8 @@ namespace sf1r
             if (!group_param.isGroupEmpty())
             {
                 if (!getAllFilterRangeFromGroupLable(group_param, prop_id_list_1, filter_range_list_1))
-                    return 0;
+                    return false;
+                LOG(INFO)<<"finish getAllFilterRangeFromGroupLable" << filter_range_list_1.size()<<endl;
             }
             if (filter_range_list_1.size() > 0)
             {
@@ -265,7 +274,8 @@ namespace sf1r
             if (!group_param.isAttrEmpty())
             {
                 if (!getAllFilterRangeFromAttrLable(group_param, prop_id_list_2, filter_range_list_2))
-                    return 0;
+                    return false;
+                LOG(INFO)<<"finish getAllFilterRangeFromAttrLable" << prop_id_list_2.size() <<endl;
             }
             if (filter_range_list_2.size() > 0)
             {
@@ -278,7 +288,8 @@ namespace sf1r
             if (!filter_param.empty())
             {
                 if (!getAllFilterRangeFromFilterParam(filter_param, prop_id_list_3, filter_range_list_3))
-                    return 0;
+                    return false;
+                LOG(INFO)<<"finish getAllFilterRangeFromFilterParam" << prop_id_list_3.size() <<endl;
             }
             if (filter_range_list_3.size() > 0)
             {
@@ -286,11 +297,17 @@ namespace sf1r
                 filter_range_lists.push_back(filter_range_list_3);
             }
 
+            bool needFilter = false;
+            std::vector<uint32_t> docidlist;
+
             //get filter docidList ...
             LOG (INFO) << "get filter docidList ...";
-            std::vector<uint32_t> docidlist;
-            getAllFilterDocid(prop_id_lists, filter_range_lists, docidlist);
-            
+            if (filter_range_lists.size() > 0)
+            {
+                needFilter = true; 
+                getAllFilterDocid(prop_id_lists, filter_range_lists, docidlist);
+            }
+
             //get raw result 
             LOG (INFO) << "get raw result ...";
             if (pMainFuzzyIndexBarrel_ != NULL && isInitIndex_ == false)
@@ -306,16 +323,23 @@ namespace sf1r
 
             //get final result by Filter;
             LOG (INFO) << "get final result by Filter" << endl;
-
-            getResultByFilterDocid(
+            if (needFilter)
+            {
+                getResultByFilterDocid(
                 docidlist
                 , resultList_
                 , ResultListSimilarity_
                 , resultList
                 , ResultListSimilarity);
-
-            LOG(INFO) << "INC Search ResulList Number:" << resultList.size();
-            LOG(INFO) << "INC Search Time Cost: " << timer.elapsed() << " seconds";
+            }
+            else
+            {
+                resultList = resultList_;
+                ResultListSimilarity = ResultListSimilarity_;
+            }
+            
+            //LOG(INFO) << "INC Search ResulList Number:" << resultList.size();
+            //LOG(INFO) << "INC Search Time Cost: " << timer.elapsed() << " seconds";
             return true;
         }
     }
@@ -405,10 +429,11 @@ namespace sf1r
         maxNum = MAX_INCREMENT_DOC;
     }
 
-    void IncrementalFuzzyManager::reset()   // use lock.....
+    void IncrementalFuzzyManager::reset()   // use lock..... // this is not reset, but this not reset, but like delete;
     {
         if (pMainFuzzyIndexBarrel_)
         {
+            //delete;
             pMainFuzzyIndexBarrel_->reset();
             delete pMainFuzzyIndexBarrel_;
             pMainFuzzyIndexBarrel_ = NULL;
@@ -419,6 +444,8 @@ namespace sf1r
 
             resetFilterManager();
             delete_AllIndexFile();
+            //restart 
+            Init();
         }
     }
 
@@ -426,7 +453,8 @@ namespace sf1r
     {
         filter_manager_->clearFilterList();
         filter_manager_->clearFilterId();
-        filter_manager_.reset();
+        
+        filter_manager_->generatePropertyId();
         return true;
     }
 
@@ -767,6 +795,29 @@ namespace sf1r
         return true;
     }
 
+    void IncrementalFuzzyManager::printFilter()
+    {
+        std::vector<std::vector<FilterManager::FilterDocListT> >& filter_list = filter_manager_->getFilterList();
+
+        int n = 0;
+        for (std::vector<std::vector<FilterManager::FilterDocListT> >::iterator FilterDocListTs = filter_list.begin()
+            ; FilterDocListTs != filter_list.end(); ++FilterDocListTs)
+        {
+            cout<<"============= For each property =============="<<endl;
+            int k = 0;
+            for (std::vector<FilterManager::FilterDocListT>::iterator i = FilterDocListTs->begin(); i != FilterDocListTs->end(); ++i, ++k)
+            {
+                cout<<"For each filter key in this property ... "<<endl;
+                for(unsigned int x = 0; x < (*i).size(); ++x)
+                {
+                    cout << (*i)[x] << ",";
+                }
+                cout<<endl;
+            }
+            n++;
+        }
+    }
+
     void IncrementalFuzzyManager::getAllFilterDocid(
                             vector<std::vector<size_t> >& prop_id_lists,
                             std::vector<std::vector<FilterManager::FilterIdRange> >& filter_range_lists,
@@ -781,18 +832,22 @@ namespace sf1r
         for (std::vector<std::vector<FilterManager::FilterIdRange> >::iterator filter_range_list = filter_range_lists.begin()
             ; filter_range_list != filter_range_lists.end(); ++filter_range_list)
         {
+            cout<<"======"<<endl;
             int k = 0;
             std::vector<size_t>& prop_id_list = prop_id_lists[n];
             for (std::vector<FilterManager::FilterIdRange>::iterator i = filter_range_list->begin(); i != filter_range_list->end(); ++i, ++k)
-            {
+            {   
+                cout<<"(*filter_range_list)[k].end" << (*filter_range_list)[k].end <<":" << (*filter_range_list)[k].start << endl;
                 for (unsigned int j = (*filter_range_list)[k].start; j < (*filter_range_list)[k].end; ++j)
                 {
                     for(unsigned int x = 0; x < filter_list[prop_id_list[k]][j].size(); ++x)
                     {
-                        filter_doc_lists[n].push_back(filter_list[prop_id_lists[n][k]][j][x]);
+                        filter_doc_lists[n].push_back(filter_list[prop_id_list[k]][j][x]);
+                        cout<<filter_list[prop_id_lists[n][k]][j][x]<<",";
                     }
                 }
             }
+            cout<<endl<<"-----"<<endl;
             sort(filter_doc_lists[n].begin(), filter_doc_lists[n].end());
             n++;
         }
@@ -883,6 +938,7 @@ namespace sf1r
         }
         uint32_t j = 0;
         uint32_t docid = filterDocidList[j];
+        //cout<<"docid"<<docid<<endl;
         std::vector<double>::iterator k = ResultListSimilarityRaw.begin();
         for (std::vector<uint32_t>::iterator i = resultListRaw.begin(); i != resultListRaw.end(); ++i, ++k)
         {

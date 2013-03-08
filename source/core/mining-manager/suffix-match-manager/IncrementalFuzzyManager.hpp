@@ -175,6 +175,8 @@ public:
         return (last_docid_ - start_docid_) == 0;
     }
 
+    void printFilter();
+
 private:
 
     bool buildGroupLabelDoc(docid_t docID, const Document& doc);
