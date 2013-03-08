@@ -64,14 +64,6 @@ TARGET_LINK_LIBRARIES(b5m_matcher ${libs})
 SET_TARGET_PROPERTIES(b5m_matcher PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
-ADD_EXECUTABLE(b5m_commentdb
-b5m_commentdb.cc
-)
-TARGET_LINK_LIBRARIES(b5m_commentdb ${libs})
-SET_TARGET_PROPERTIES(b5m_commentdb PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
-)
-
 
 ADD_EXECUTABLE(b5m_categorizing
 b5m_categorizing.cc
@@ -80,55 +72,6 @@ TARGET_LINK_LIBRARIES(b5m_categorizing ${libs})
 SET_TARGET_PROPERTIES(b5m_categorizing PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
-
-
-ADD_EXECUTABLE(b5m_offerdb
-b5m_offerdb.cc
-)
-TARGET_LINK_LIBRARIES(b5m_offerdb ${libs})
-SET_TARGET_PROPERTIES(b5m_offerdb PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
-)
-
-ADD_EXECUTABLE(b5m_offer_db_recorder
-b5m_offer_db_recorder.cc
-)
-TARGET_LINK_LIBRARIES(b5m_offer_db_recorder ${libs})
-SET_TARGET_PROPERTIES(b5m_offer_db_recorder PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
-)
-
-ADD_EXECUTABLE(b5m_scd_doc_processor
-b5m_scd_doc_processor.cc
-)
-TARGET_LINK_LIBRARIES(b5m_scd_doc_processor ${libs})
-SET_TARGET_PROPERTIES(b5m_scd_doc_processor PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
-)
-
-ADD_EXECUTABLE(b5m_product_matcher
-b5m_product_matcher.cc
-)
-TARGET_LINK_LIBRARIES(b5m_product_matcher ${libs})
-SET_TARGET_PROPERTIES(b5m_product_matcher PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
-)
-ADD_EXECUTABLE(b5m_product_db
-b5m_product_db.cc
-)
-TARGET_LINK_LIBRARIES(b5m_product_db ${libs})
-SET_TARGET_PROPERTIES(b5m_product_db PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
-)
-
-ADD_EXECUTABLE(image_upload
-image_upload.cpp
-)
-TARGET_LINK_LIBRARIES(image_upload ${libs})
-SET_TARGET_PROPERTIES(image_upload PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
-)
-
 
 ADD_EXECUTABLE(b5m_psm
 b5m_psm.cc
@@ -145,3 +88,65 @@ TARGET_LINK_LIBRARIES(simhash_train_id ${libs})
 SET_TARGET_PROPERTIES(simhash_train_id PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
+
+ADD_EXECUTABLE(image_upload
+image_upload.cpp
+)
+TARGET_LINK_LIBRARIES(image_upload ${libs})
+SET_TARGET_PROPERTIES(image_upload PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
+)
+
+
+##########################################################
+#### Test Cases
+
+ADD_EXECUTABLE(b5m_product_matcher
+b5m_product_matcher.cc
+)
+TARGET_LINK_LIBRARIES(b5m_product_matcher ${libs})
+SET_TARGET_PROPERTIES(b5m_product_matcher PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m/testbin
+)
+
+ADD_EXECUTABLE(b5m_product_db
+b5m_product_db.cc
+)
+TARGET_LINK_LIBRARIES(b5m_product_db ${libs})
+SET_TARGET_PROPERTIES(b5m_product_db PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m/testbin
+)
+
+ADD_EXECUTABLE(b5m_commentdb
+b5m_commentdb.cc
+)
+TARGET_LINK_LIBRARIES(b5m_commentdb ${libs})
+SET_TARGET_PROPERTIES(b5m_commentdb PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m/testbin
+)
+
+
+ADD_EXECUTABLE(b5m_offerdb
+b5m_offerdb.cc
+)
+TARGET_LINK_LIBRARIES(b5m_offerdb ${libs})
+SET_TARGET_PROPERTIES(b5m_offerdb PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m/testbin
+)
+
+ADD_EXECUTABLE(b5m_offer_db_recorder
+b5m_offer_db_recorder.cc
+)
+TARGET_LINK_LIBRARIES(b5m_offer_db_recorder ${libs})
+SET_TARGET_PROPERTIES(b5m_offer_db_recorder PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m/testbin
+)
+
+ADD_EXECUTABLE(b5m_scd_doc_processor
+b5m_scd_doc_processor.cc
+)
+TARGET_LINK_LIBRARIES(b5m_scd_doc_processor ${libs})
+SET_TARGET_PROPERTIES(b5m_scd_doc_processor PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m/testbin
+)
+
