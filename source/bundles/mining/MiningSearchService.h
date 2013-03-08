@@ -203,7 +203,7 @@ public:
     void flush();
 
 private:
-    bool HookDistributeRequest(const std::string& coll, uint32_t workerId);
+    bool HookDistributeRequestForSearch(const std::string& coll, uint32_t workerId);
     MiningBundleConfiguration* bundleConfig_;
     boost::shared_ptr<MiningManager> miningManager_;
 

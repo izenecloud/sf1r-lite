@@ -18,7 +18,7 @@ void IndexMerger::index(const net::aggregator::WorkerResults<bool>& workerResult
     }
 }
 
-void IndexMerger::HookDistributeRequest(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult)
+void IndexMerger::HookDistributeRequestForIndex(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult)
 {
     mergeResult = true;
     size_t workerNum = workerResults.size();

@@ -18,7 +18,7 @@ MiningSearchService::~MiningSearchService()
 {
 }
 
-bool MiningSearchService::HookDistributeRequest(const std::string& coll, uint32_t workerId)
+bool MiningSearchService::HookDistributeRequestForSearch(const std::string& coll, uint32_t workerId)
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
     if (hooktype == Request::FromAPI)
@@ -30,7 +30,7 @@ bool MiningSearchService::HookDistributeRequest(const std::string& coll, uint32_
     bool ret = false;
     if (hooktype == Request::FromDistribute)
     {
-        searchAggregator_->singleRequest(coll, "HookDistributeRequest", (int)hooktype, reqdata, ret, workerId);
+        searchAggregator_->singleRequest(coll, "HookDistributeRequestForSearch", (int)hooktype, reqdata, ret, workerId);
     }
     else
     {
@@ -38,7 +38,7 @@ bool MiningSearchService::HookDistributeRequest(const std::string& coll, uint32_
     }
     if (!ret)
     {
-        LOG(WARNING) << "Request failed, HookDistributeRequest failed.";
+        LOG(WARNING) << "Request failed, HookDistributeRequestForSearch failed.";
     }
     return ret;
 }
@@ -255,7 +255,7 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
     }
     else
     {
-        if(!HookDistributeRequest(collectionName, workerId))
+        if(!HookDistributeRequestForSearch(collectionName, workerId))
             return false;
         searchAggregator_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);
     }

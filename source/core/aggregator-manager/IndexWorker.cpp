@@ -118,7 +118,7 @@ IndexWorker::~IndexWorker()
         izenelib::util::Scheduler::removeJob(optimizeJobDesc_);
 }
 
-void IndexWorker::HookDistributeRequest(int hooktype, const std::string& reqdata, bool& result)
+void IndexWorker::HookDistributeRequestForIndex(int hooktype, const std::string& reqdata, bool& result)
 {
     distribute_req_hooker_->setHook(hooktype, reqdata);
     distribute_req_hooker_->hookCurrentReq(reqdata);

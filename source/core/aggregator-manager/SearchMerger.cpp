@@ -429,7 +429,7 @@ bool SearchMerger::splitGetDocsActionItemByWorkerid(
     return true;
 }
 
-void SearchMerger::HookDistributeRequest(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult)
+void SearchMerger::HookDistributeRequestForSearch(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult)
 {
     mergeResult = true;
     size_t workerNum = workerResults.size();

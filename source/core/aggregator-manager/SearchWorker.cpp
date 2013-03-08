@@ -35,7 +35,7 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
 }
 
-void SearchWorker::HookDistributeRequest(int hooktype, const std::string& reqdata, bool& result)
+void SearchWorker::HookDistributeRequestForSearch(int hooktype, const std::string& reqdata, bool& result)
 {
     DistributeRequestHooker::get()->setHook(hooktype, reqdata);
     DistributeRequestHooker::get()->hookCurrentReq(reqdata);

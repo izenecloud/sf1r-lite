@@ -30,7 +30,7 @@ IndexTaskService::~IndexTaskService()
 {
 }
 
-bool IndexTaskService::HookDistributeRequest(bool shard)
+bool IndexTaskService::HookDistributeRequestForIndex(bool shard)
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
     if (hooktype == Request::FromAPI)
@@ -42,7 +42,7 @@ bool IndexTaskService::HookDistributeRequest(bool shard)
     bool ret = false;
     if (hooktype == Request::FromDistribute && shard)
     {
-        indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "HookDistributeRequest", (int)hooktype, reqdata, ret);
+        indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "HookDistributeRequestForIndex", (int)hooktype, reqdata, ret);
     }
     else
     {
@@ -51,7 +51,7 @@ bool IndexTaskService::HookDistributeRequest(bool shard)
     }
     if (!ret)
     {
-        LOG(WARNING) << "Request failed, HookDistributeRequest failed.";
+        LOG(WARNING) << "Request failed, HookDistributeRequestForIndex failed.";
     }
     return ret;
 }
@@ -60,7 +60,7 @@ bool IndexTaskService::index(unsigned int numdoc)
 {
     bool result = true;
 
-    if(!HookDistributeRequest(true))
+    if(!HookDistributeRequestForIndex(true))
         return false;
 
     Request::kCallType calltype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();

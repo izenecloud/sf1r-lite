@@ -20,12 +20,12 @@ public:
     {
         BIND_CALL_PROXY_BEGIN(IndexMerger, proxy)
         BIND_CALL_PROXY_2(index, net::aggregator::WorkerResults<bool>, bool)
-        BIND_CALL_PROXY_2(HookDistributeRequest, net::aggregator::WorkerResults<bool>, bool)
+        BIND_CALL_PROXY_2(HookDistributeRequestForIndex, net::aggregator::WorkerResults<bool>, bool)
         BIND_CALL_PROXY_END()
     }
 
     void index(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult);
-    void HookDistributeRequest(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult);
+    void HookDistributeRequestForIndex(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult);
 };
 
 
