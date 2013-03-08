@@ -97,6 +97,8 @@ using driver::Keys;
  *   - @b use_original_keyword (@c Bool = @c false): TODO
  * - @b is_random_rank (@c Bool = @c false): If true, the search results would
  *   be randomly ordered.@n
+ * - @b is_require_related (@c Bool = @c false): If true, the search results would
+ *   be contain related queries.@n
  *   In order to enable this feature, you need also configure a non-zero weight
  *   for <ProductRanking><Score type="random"> in collection config file.
  * - @b query_source (@c String): Where does the query come from, used to decide
@@ -128,6 +130,7 @@ using driver::Keys;
  *     "threshold": "0.35"
  *    },
  *   "log_keywords": true,
+ *   "is_require_related": true,
  *   "analyzer": {
  *     "use_synonym_extension": true,
  *     "apply_la": true,
@@ -183,6 +186,7 @@ bool SearchParser::parse(const Value& search)
 
     logKeywords_ = asBoolOr(search[Keys::log_keywords], true);
     isRandomRank_ = asBoolOr(search[Keys::is_random_rank], false);
+    requireRelatedQueries_ = asBoolOr(search[Keys::is_require_related], false);
 
     // properties
     const Value& propertiesNode = search[Keys::in];

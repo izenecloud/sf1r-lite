@@ -16,10 +16,11 @@ MiningSearchService::~MiningSearchService()
 }
 
 bool MiningSearchService::getSearchResult(
+    const KeywordSearchActionItem& actionItem,
     KeywordSearchResult& resultItem
 )
 {
-    return miningManager_->getMiningResult(resultItem);
+    return miningManager_->getMiningResult(actionItem,resultItem);
 }
 
 //xxx

@@ -287,6 +287,7 @@ public:
     KeywordSearchActionItem()
         : removeDuplicatedDocs_(false)
         , isRandomRank_(false)
+        , requireRelatedQueries_(false)
     {
     }
 
@@ -310,6 +311,7 @@ public:
         , paramPropertyValueMap_(obj.paramPropertyValueMap_)
         , customRanker_(obj.customRanker_)
         , isRandomRank_(obj.isRandomRank_)
+        , requireRelatedQueries_(obj.requireRelatedQueries_)
     {
     }
 
@@ -335,6 +337,7 @@ public:
         paramPropertyValueMap_ = obj.paramPropertyValueMap_;
         customRanker_ = obj.customRanker_;
         isRandomRank_ = obj.isRandomRank_;
+        requireRelatedQueries_ = obj.requireRelatedQueries_;
 
         return (*this);
     }
@@ -359,7 +362,8 @@ public:
             && paramConstValueMap_ == obj.paramConstValueMap_
             && paramPropertyValueMap_ == obj.paramPropertyValueMap_
             && customRanker_ == obj.customRanker_
-            && isRandomRank_ == obj.isRandomRank_;
+            && isRandomRank_ == obj.isRandomRank_
+            && requireRelatedQueries_ == obj.requireRelatedQueries_;
     }
 
     void print(std::ostream& out = std::cout) const
@@ -421,6 +425,9 @@ public:
         ss << "------------------------------------------------" << endl;
 
         ss << "isRandomRank_: " << isRandomRank_ << endl;
+        ss << "------------------------------------------------" << endl;
+
+        ss << "requireRelatedQueries_: " << requireRelatedQueries_ << endl;
         ss << "------------------------------------------------" << endl;
 
         out << ss.str();
@@ -519,15 +526,19 @@ public:
 
     bool isRandomRank_;
 
+    ///
+    /// @brief whether contain related queries in the response
+    bool requireRelatedQueries_;
+
     DATA_IO_LOAD_SAVE(KeywordSearchActionItem, & env_ & refinedQueryString_ & collectionName_
              & rankingType_ & searchingMode_ & pageInfo_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
              & displayPropertyList_ & sortPriorityList_ & filteringList_ & counterList_ & rangePropertyName_ & groupParam_
-             & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_);
+             & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_ & requireRelatedQueries_);
 
     /// msgpack serializtion
     MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, languageAnalyzerInfo_,
             searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_, counterList_,
-                   rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_);
+                   rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_, requireRelatedQueries_);
 
 private:
     // Log : 2009.09.08
@@ -555,6 +566,7 @@ private:
         ar & paramConstValueMap_;
         ar & paramPropertyValueMap_;
         ar & isRandomRank_;
+        ar & requireRelatedQueries_;
     }
 
 }; // end - class KeywordSearchActionItem
