@@ -117,6 +117,7 @@ public:
     bool getCurrNodeSyncServerInfo(std::string& ip, int randnum);
     bool getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary = false);
 
+    void setSlowWriting();
     void beginReqProcess();
     void notifyMasterReadyForNew();
     void abortRequest();
@@ -220,6 +221,7 @@ protected:
 
     uint32_t  processing_step_;
     bool stopping_;
+    bool slow_write_running_;
 
     ZooKeeperClientPtr zookeeper_;
 

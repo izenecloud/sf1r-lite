@@ -669,8 +669,8 @@ bool IndexWorker::optimizeIndex()
         return false;
     }
 
-    NoAdditionReqLog reqlog;
-    if(!distribute_req_hooker_->prepare(Req_NoAdditionDataReq, reqlog))
+    NoAdditionNeedBackupReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_NoAdditionData_NeedBackup_Req, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;

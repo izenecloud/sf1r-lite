@@ -216,6 +216,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
             processLocalFinished(false);
             return false;
         }
+        NodeManagerBase::get()->setSlowWriting();
     }
     // set rollback flag.
     if(type != Req_NoAdditionDataNoRollback && !RecoveryChecker::get()->setRollbackFlag(prepared_req.inc_id))
@@ -271,11 +272,11 @@ bool DistributeRequestHooker::processFinishedBeforePrepare(bool finishsuccess)
             NodeManagerBase::get()->notifyMasterReadyForNew();
             return true;
         }
-	else
-	{
+        else
+        {
             LOG(INFO) << "replica end request before prepared, must exit.";
             forceExit();
-	}
+        }
     }
     return false;
 }

@@ -20,6 +20,7 @@ NodeManagerBase::NodeManagerBase()
     , masterStarted_(false)
     , processing_step_(0)
     , stopping_(false)
+    , slow_write_running_(false)
     , CLASSNAME("[NodeManagerBase]")
 {
 }
@@ -369,6 +370,8 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
         nodeState_ == NODE_STATE_STARTING)
     {
         service_state = "BusyForSelf";
+        if (!slow_write_running_ && nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
+            service_state = "ReadyForRead";
     }
     else
     {
@@ -376,7 +379,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
         // at least half finished processing, we can get ready to serve read.
         if ((nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
             nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS) &&
-            processing_step_ < 100)
+            processing_step_ < 100 && slow_write_running_)
         {
             // processing_step_ < 100 means new request is waiting to be totally 
             // accept, less than half nodes confirmed, so the new data will not be available
@@ -384,7 +387,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
             // current node is updated and wait more replicas to update to the new data state.
             service_state = "BusyForReplica";
         }
-        else if (processing_step_ == 100 &&
+        else if (slow_write_running_ && processing_step_ == 100 &&
             nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY &&
             nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS &&
             nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
@@ -1341,6 +1344,11 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     ZNode oldZnode;
     setSf1rNodeData(nodedata, oldZnode);
 
+    if (new_state != NODE_STATE_PROCESSING_REQ_RUNNING)
+    {
+        slow_write_running_ = false;
+    }
+
     bool need_update = nodedata.getStrValue(ZNode::KEY_SERVICE_STATE) != oldZnode.getStrValue(ZNode::KEY_SERVICE_STATE) ||
                   nodedata.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH) != oldZnode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
 
@@ -1351,6 +1359,13 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
         LOG(INFO) << "updating topology node path ... ";
         zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
     }
+}
+
+void NodeManagerBase::setSlowWriting()
+{
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    slow_write_running_ = true;
+    updateNodeState();
 }
 
 void NodeManagerBase::updateNodeState()
