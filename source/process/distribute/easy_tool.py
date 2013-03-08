@@ -16,7 +16,7 @@ import subprocess
 import shlex
 
 
-local_base = '/home/vincentlee/workspace/sf1/'
+local_base = '/home/lscm/codebase/'
 
 loginuser = 'lscm'
 base_dir = '/home/' + loginuser + '/codebase'
@@ -239,6 +239,8 @@ def mv_scd_to_index(args):
     send_cmd_andstay(args[2:], cmdstr)
 
 def reset_state_and_run():
+    logfile.close()
+    logfile = open('./result.log', 'a')
     stop_all([])
     time.sleep(10)
     # clean data. move scd file to index on primary host.
@@ -250,16 +252,21 @@ def reset_state_and_run():
     cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo 1 > ./distribute_test.conf'
     send_cmd_andstay(allhost, cmdstr)
     start_all([])
-    time.sleep(20)
+    time.sleep(10)
+    (failed_host,down_host) = check_col(10)
+
+    if len(down_host) > 0:
+        time.sleep(10)
+
     # send index 
     for host in primary_host:
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_index])
         printtofile (out)
 
-    (failed_host,down_host) = check_col(30)
+    (failed_host,down_host) = check_col(20)
     if len(failed_host) > 0 or len(down_host) > 0:
         printtofile ('reset state wrong, data is not consistent.')
-        exit(0)
+        #exit(0)
     printtofile ('reset state for cluster finished.')
 
 def check_col(check_interval = 10):
@@ -309,7 +316,7 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
         printtofile ('after write , test case passed')
     # restart any failed node.
     stop_all([])
-    time.sleep(20)
+    time.sleep(10)
     # failed host should be started last.
     first_start_host = primary_host + replicas_host
     for host in down_host:
@@ -321,15 +328,15 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
     time.sleep(10)
 
     retry = 0;
-    while retry < 4:
+    while retry < 2:
         if len(down_host) > 0:
             start_all(['',''] + down_host)
-        time.sleep(20)
+        time.sleep(10)
         # check collection again.
         (failed_host, down_host) = check_col()
         if len(failed_host) > 0:
             printtofile ('data not consistent while checking after restart failed node.' + time.asctime())
-            sys.exit(0)
+            #sys.exit(0)
         elif len(down_host) > 0 :
             # try again without fail test.
             retry += 1
@@ -342,7 +349,7 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
 
     if len(down_host) > 0:
         printtofile ('check failed for down_host after retry.')
-        sys.exit(0)
+        #sys.exit(0)
 
     cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo 1 > ./distribute_test.conf'
     send_cmd_andstay(primary_host + replicas_host, cmdstr)
@@ -373,6 +380,7 @@ def run_auto_fail_test(args):
     while True:
         printtofile ('waiting next fail test')
         time.sleep(10)
+
         for test_writereq in test_writereq_files:
             printtofile ('running fail test for write request : ' + test_writereq)
 
