@@ -234,20 +234,18 @@ void ProductScoreManager::runCronJob_(int calltype)
     {
         if (NodeManagerBase::get()->isPrimary())
         {
-		MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
-		LOG(INFO) << "push cron job to queue on primary : " << cronJobName_ ;
+            MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+            LOG(INFO) << "push cron job to queue on primary : " << cronJobName_ ;
         }
         else
         {
-    	LOG(INFO) << "cron job on replica ignored. ";
+            LOG(INFO) << "cron job on replica ignored. ";
         }
         return;
     }
-    if (!DistributeRequestHooker::get()->isValid())
-    {
-        LOG(INFO) << "cron job ignored : " << __FUNCTION__;
-        return;
-    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
     CronJobReqLog reqlog;
     if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
     {
@@ -256,5 +254,6 @@ void ProductScoreManager::runCronJob_(int calltype)
     }
 
     buildCollection();
-    DistributeRequestHooker::get()->processLocalFinished(true);
+
+    DISTRIBUTE_WRITE_FINISH(true);
 }

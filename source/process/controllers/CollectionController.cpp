@@ -112,6 +112,12 @@ void CollectionController::start_collection()
         return;
     }
 
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        response().addError(" Request not allowed in distributed node.");
+        return;
+    }
+
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
 
@@ -173,6 +179,12 @@ void CollectionController::stop_collection()
     if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
     {
         response().addError("Collection access denied");
+        return;
+    }
+
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        response().addError(" Request not allowed in distributed node.");
         return;
     }
 
@@ -327,6 +339,12 @@ void CollectionController::create_collection()
         return;
     }
 
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        response().addError(" Request not allowed in distributed node.");
+        return;
+    }
+
     bf::path configPath(configFile);
     ofstream config_file(configPath.string().c_str(), ios::out);
     if(!config_file){
@@ -437,6 +455,11 @@ void CollectionController::delete_collection(){
         return;
     }
 
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        response().addError(" Request not allowed in distributed node.");
+        return;
+    }
     std::string configFile = SF1Config::get()->getHomeDirectory();
 
     std::string slash("");

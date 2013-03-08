@@ -74,7 +74,6 @@ static bool callHandler(izenelib::driver::Router::handler_ptr handler,
 {
     try
     {
-        DistributeTestSuit::incWriteRequestTimes(request.controller() + "_" + request.action());
         Response response;
         response.setSuccess(true);
         static Poller tmp_poller;
@@ -129,6 +128,8 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
                 LOG(ERROR) << "another write task is running in async_task_worker_!!";
                 return false;
             }
+
+            DistributeTestSuit::incWriteRequestTimes(request.controller() + "_" + request.action());
 
             DistributeRequestHooker::get()->setHook(calltype, packed_data);
             request.setCallType(calltype);
