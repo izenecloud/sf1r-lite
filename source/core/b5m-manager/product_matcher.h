@@ -39,9 +39,41 @@ namespace sf1r {
         typedef boost::unordered_set<TermList> KeywordSet;
         typedef uint32_t position_t;
         typedef std::pair<position_t, position_t>  Position;
+        typedef std::vector<Position> Positions;
         typedef boost::unordered_map<std::string, std::string> Back2Front;
         typedef std::vector<std::pair<uint32_t, uint32_t> > FrequentValue;
         typedef boost::unordered_map<TermList, FrequentValue> NgramFrequent;
+
+        struct Position
+        {
+            Position(): begin(0), end(0)
+            {
+            }
+
+            Position(uint32_t b, uint32_t e) : begin(b), end(e)
+            {
+            }
+
+            uint32_t begin;
+            uint32_t end;
+
+            bool Combine(const Position& ap)
+            {
+                if( (begin<=ap.end&&begin>=ap.begin) || (ap.begin<=end&&ap.begin>=begin)) //overlap
+                {
+                    begin = std::min(begin, ap.begin);
+                    end = std::max(end, ap.end);
+                    return true;
+                }
+                return false;
+            }
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & begin & end;
+            }
+        };
         
         struct WeightType
         {
@@ -189,12 +221,14 @@ namespace sf1r {
             uint32_t spu_id;
             std::string attribute_name;
             bool is_optional;
+            double lprop; //length proportion
+            
             //bool is_complete;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spu_id & attribute_name & is_optional;
+                ar & spu_id & attribute_name & is_optional & lprop;
             }
             bool operator<(const AttributeApp& another) const
             {
@@ -225,6 +259,48 @@ namespace sf1r {
                 ar & cid & count;
             }
         };
+
+        struct FuzzyApp
+        {
+            uint32_t spu_id;
+            std::string attribute_name;
+            TermList term_list;
+            Position pos;
+            Position tpos; //runtime property
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & spu_id & attribute_name & term_list & pos;
+            }
+
+            static bool PositionCompare(const FuzzyApp& a1, const FuzzyApp& a2)
+            {
+                if(a1.pos.begin<a2.pos.begin) return true;
+                else if(a1.pos.begin>a2.pos.begin) return false;
+                else return a1.pos.end<a2.pos.end;
+            
+            }
+        };
+
+        struct FuzzyPositions
+        {
+            std::vector<Position> positions;
+            std::vector<Position> tpositions;
+        };
+
+        struct FuzzyValue
+        {
+            std::vector<FuzzyApp> fuzzy_apps;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & fuzzy_apps;
+            }
+        };
+
+        typedef std::map<TermList, FuzzyValue> FuzzyTrie;
         //struct SpuTitleApp
           //: boost::less_than_comparable<SpuTitleApp> ,boost::equality_comparable<SpuTitleApp>
         //{
@@ -582,11 +658,12 @@ namespace sf1r {
         void GetTerms_(const std::string& text, std::vector<term_t>& term_list);
         void GetTerms_(const UString& text, std::vector<term_t>& term_list);
         void GetCRTerms_(const UString& text, std::vector<term_t>& term_list);
+        bool NeedFuzzy_(const std::string& value);
         void ConstructKeywords_();
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
-        void GetKeywordVector_(const TermList& term_list, KeywordVector& keyword_vector);
-        void GetKeywordVector2_(const TermList& term_list, KeywordVector& keyword_vector);
+        void GetKeywords_(const TermList& term_list, KeywordVector& keyword_vector, bool bngram = false, bool bfuzzy = false);
+        void GetFuzzyKeywords_(const TermList& term_list, KeywordVector& keyword_vector);
         bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
         void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
@@ -685,6 +762,7 @@ namespace sf1r {
         ProductIndex product_index_;
         KeywordSet keyword_set_;
         TrieType trie_;
+        FuzzyTrie ftrie_;
         Back2Front back2front_;
         KeywordVector all_keywords_; //not serialized
         //NgramFrequent nf_;

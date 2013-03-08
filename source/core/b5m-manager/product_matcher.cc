@@ -242,6 +242,9 @@ bool ProductMatcher::Open(const std::string& kpath)
             path = path_+"/keyword_trie";
             izenelib::am::ssf::Util<>::Load(path, trie_);
             LOG(INFO)<<"trie size "<<trie_.size()<<std::endl;
+            path = path_+"/fuzzy_trie";
+            izenelib::am::ssf::Util<>::Load(path, ftrie_);
+            LOG(INFO)<<"fuzzy size "<<ftrie_.size()<<std::endl;
             path = path_+"/back2front";
             std::map<std::string, std::string> b2f_map;
             izenelib::am::ssf::Util<>::Load(path, b2f_map);
@@ -446,6 +449,7 @@ void ProductMatcher::Init_()
     product_index_.clear();
     keyword_set_.clear();
     trie_.clear();
+    ftrie_.clear();
     back2front_.clear();
     //nf_.clear();
 
@@ -806,7 +810,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             products_.push_back(p);
         }
     }
-    IndexFuzzy_();
+    //IndexFuzzy_();
     cid_to_pids_.resize(category_list_.size());
     for(uint32_t spu_id=1;spu_id<products_.size();spu_id++)
     {
@@ -842,6 +846,8 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     izenelib::am::ssf::Util<>::Save(path, product_index_);
     path = path_+"/keyword_trie";
     izenelib::am::ssf::Util<>::Save(path, trie_);
+    path = path_+"/fuzzy_trie";
+    izenelib::am::ssf::Util<>::Save(path, ftrie_);
     path = path_+"/back2front";
     izenelib::am::ssf::Util<>::Save(path, b2f_map);
     //path = path_+"/nf";
@@ -1038,6 +1044,16 @@ void ProductMatcher::ProcessFuzzy_(const std::pair<uint32_t, uint32_t>& range)
     }
 }
 
+bool ProductMatcher::NeedFuzzy_(const std::string& value)
+{
+    UString text(value, UString::UTF_8);
+    if(text.length()<7) return false;
+    std::vector<UString> vec;
+    AnalyzeChar_(text, vec);
+    if(vec.size()<3) return false;
+    return true;
+}
+
 void ProductMatcher::IndexOffer_(const std::string& offer_scd)
 {
     LOG(INFO)<<"index offer begin"<<std::endl;
@@ -1075,6 +1091,11 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
         category.convertString(scategory, UString::UTF_8);
         CategoryIndex::const_iterator cit = category_index_.find(scategory);;
         if(cit==category_index_.end()) continue;
+#ifdef B5M_DEBUG
+        //std::string stitle;
+        //title.convertString(stitle, UString::UTF_8);
+        //std::cerr<<"index offer title "<<stitle<<std::endl;
+#endif
         uint32_t cid = cit->second;
         OfferCategoryApp app;
         app.cid = cid;
@@ -1082,7 +1103,7 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
         TermList term_list;
         GetCRTerms_(title, term_list);
         KeywordVector keyword_vector;
-        GetKeywordVector_(term_list, keyword_vector);
+        GetKeywords_(term_list, keyword_vector, use_ngram_, false);
         for(uint32_t i=0;i<keyword_vector.size();i++)
         {
             const TermList& tl = keyword_vector[i].term_list;
@@ -1604,7 +1625,7 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     TermList term_list;
     GetCRTerms_(title, term_list);
     KeywordVector keyword_vector;
-    GetKeywordVector_(term_list, keyword_vector);
+    GetKeywords_(term_list, keyword_vector, use_ngram_, true);
     Compute_(doc, term_list, keyword_vector, limit, result_products);
     for(uint32_t i=0;i<result_products.size();i++)
     {
@@ -1631,7 +1652,8 @@ void ProductMatcher::GetFrontendCategory(const UString& text, uint32_t limit, st
     TermList term_list;
     GetCRTerms_(title, term_list);
     KeywordVector keyword_vector;
-    GetKeywordVector_(term_list, keyword_vector);
+    GetKeywords_(term_list, keyword_vector, use_ngram_, true);
+    std::cerr<<"keywords count "<<keyword_vector.size()<<std::endl;
     uint32_t flimit = limit*2;
     std::vector<Product> result_products;
     Compute_(doc, term_list, keyword_vector, flimit, result_products);
@@ -1724,7 +1746,7 @@ void ProductMatcher::GetFrontendCategory(const UString& text, uint32_t limit, st
     //}
 }
 
-void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector& keyword_vector)
+void ProductMatcher::GetKeywords_(const TermList& term_list, KeywordVector& keyword_vector, bool bngram, bool bfuzzy)
 {
     //std::string stitle;
     //text.convertString(stitle, UString::UTF_8);
@@ -1930,7 +1952,9 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
         //begin = next_pos;
     }
 
-    if(use_ngram_)
+
+
+    if(bngram)
     {
         uint32_t keyword_count = keyword_vector.size();
         std::vector<KeywordTag> ngram_keywords;
@@ -1972,91 +1996,127 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
             keyword_vector.push_back(k);
         }
     }
+    if(bfuzzy)
+    {
+        GetFuzzyKeywords_(term_list, keyword_vector);
+    }
     
 }
-void ProductMatcher::GetKeywordVector2_(const TermList& term_list, KeywordVector& keyword_vector)
+void ProductMatcher::GetFuzzyKeywords_(const TermList& term_list, KeywordVector& keyword_vector)
 {
-    //KeywordChain* head = new KeywordChain();
-    uint32_t begin = 0;
-    uint8_t bracket_depth = 0;
-    keyword_vector.reserve(10);
-    while(begin<term_list.size())
+    std::vector<FuzzyApp> fuzzy_apps;
+    for(uint32_t begin = 0;begin<term_list.size();++begin)
     {
-        term_t begin_term = term_list[begin];
-        if(begin_term==left_bracket_term_)
+        term_t ti = term_list[begin];
+        if(IsSymbol_(ti)) continue;
+        std::vector<term_t> k(1, ti);
+        k.reserve(10);
+        for(uint32_t j=begin+1;j<term_list.size();++j)
         {
-            bracket_depth++;
-            begin++;
-            continue;
-        }
-        else if(begin_term==right_bracket_term_)
-        {
-            if(bracket_depth>0)
+            term_t tj = term_list[j];
+            if(IsSymbol_(tj)) continue;
+            k.push_back(tj);
+            uint32_t len = k.size();
+            //uint32_t len = end-begin;
+            //std::vector<term_t> k(term_list.begin()+begin, term_list.begin()+end);
+            for(FuzzyTrie::const_iterator it = ftrie_.lower_bound(k); it!=ftrie_.end(); ++it)
             {
-                bracket_depth--;
+                if(!boost::algorithm::starts_with(it->first, k)) break;
+                const std::vector<FuzzyApp>& f_app_list = it->second.fuzzy_apps;
+                for(uint32_t f=0;f<f_app_list.size();f++)
+                {
+                    const FuzzyApp& app = f_app_list[f];
+                    fuzzy_apps.push_back(app);
+                    FuzzyApp& push_app = fuzzy_apps.back();
+                    //fuzzy_apps.back().begin = begin;
+                    push_app.pos.end = push_app.pos.begin+len;
+                    push_app.tpos.begin = begin;
+                    push_app.tpos.end = begin+len;
+#ifdef B5M_DEBUG
+                    std::cerr<<"find fuzzy position "<<GetText_(app.term_list)<<","<<push_app.begin<<","<<push_app.end<<std::endl;
+#endif
+                }
             }
-            begin++;
-            continue;
         }
-        std::vector<term_t> candidate_keyword(1, begin_term);
-        candidate_keyword.reserve(10);
-        uint32_t next_pos = begin+1;
-        while(true)
+    }
+    std::sort(fuzzy_apps.begin(), fuzzy_apps.end(), FuzzyApp::PositionCompare);
+    typedef std::map<TermList, FuzzyPositions> FuzzyPositionMap;
+    FuzzyPositionMap fp_map;
+    for(uint32_t i=0;i<fuzzy_apps.size();i++)
+    {
+        const FuzzyApp& app = fuzzy_apps[i];
+#ifdef B5M_DEBUG
+        std::cerr<<"inserting fuzzy position "<<GetText_(app.term_list)<<","<<app.begin<<","<<app.end<<std::endl;
+#endif
+        FuzzyPositions::iterator it = fuzzy_positions.find(app.term_list);
+        if(it==fuzzy_positions.end())
         {
-            TrieType::const_iterator it = trie_.lower_bound(candidate_keyword);
-            if(it!=trie_.end())
+#ifdef B5M_DEBUG
+            std::cerr<<"insert fuzzy position "<<app.begin<<","<<app.end<<std::endl;
+#endif
+            FuzzyPositions fp;
+            fp.positions.push_back(app.pos);
+            fp.tpositions.push_back(app.tpos);
+            fuzzy_positions.insert(std::make_pair(app.term_list, fp));
+        }
+        else
+        {
+            FuzzyPositions& ep = it->second;
+            bool overlap = false;
+            for(uint32_t p=0;p<ep.positions.size();p++)
             {
-                if(candidate_keyword==it->first)
+                Position& pos = ep.positions[p];
+                if(pos.Combine(app.pos))
                 {
-                    KeywordTag tag = it->second;
-                    tag.kweight = 1.0;
-                    tag.positions.push_back(std::make_pair(begin, next_pos));
-                    if(bracket_depth>0) tag.kweight=0.1;
-                    bool need_append = true;
-                    for(uint32_t i=0;i<keyword_vector.size();i++)
-                    {
-                        int select = SelectKeyword_(tag, keyword_vector[i]);
-                        if(select==1)
-                        {
-                            keyword_vector[i] = tag;
-                            need_append = false;
-                            break;
-                        }
-                        else if(select==2)
-                        {
-                            need_append = false;
-                            break;
-                        }
-                        else if(select==3)
-                        {
-                            //keyword_vector.push_back(tag);
-                        }
-                    }
-                    if(need_append)
-                    {
-                        keyword_vector.push_back(tag);
-                    }
-                }
-                else if(StartsWith_(it->first, candidate_keyword))
-                {
-                    //continue trying
-                }
-                else
-                {
+                    overlap = true;
                     break;
                 }
             }
-            else
+            if(!overlap)
             {
-                break;
+                ep.positions.push_back(app.pos);
             }
-            if(next_pos>=term_list.size()) break;
-            candidate_keyword.push_back(term_list[next_pos]);
-            ++next_pos;
+
+            overlap = false;
+            for(uint32_t p=0;p<ep.tpositions.size();p++)
+            {
+                Position& pos = ep.tpositions[p];
+                if(pos.Combine(app.tpos))
+                {
+                    overlap = true;
+                    break;
+                }
+            }
+            if(!overlap)
+            {
+                ep.tpositions.push_back(app.tpos);
+            }
         }
-        ++begin;
     }
+    for(FuzzyPositions::const_iterator it = fuzzy_positions.begin(); it!=fuzzy_positions.end();++it)
+    {
+        const TermList& term_list = it->first;
+        const Positions& positions = it->second;
+        uint32_t begin = positions.front().first;
+        uint32_t end = positions.back().second;
+        double len = end-begin;
+        double max_len = term_list.size()*1.5;
+        if(len<=max_len && len>=term_list.size())
+        {
+            TrieType::const_iterator tit = trie_.find(term_list);
+            if(tit!=trie_.end())
+            {
+                keyword_vector.push_back(tit->second);
+#ifdef B5M_DEBUG
+                std::cerr<<"find fuzzy "<<GetText_(term_list)<<","<<begin<<","<<end<<std::endl;
+#endif
+            }
+        }
+
+    }
+
 }
+
 
 uint32_t ProductMatcher::GetCidBySpuId_(uint32_t spu_id)
 {
@@ -2822,38 +2882,63 @@ void ProductMatcher::ConstructSuffixTrie_(TrieType& trie)
         Category category = category_list_[i];
         if(category.name.empty()) continue;
         uint32_t cid = category.cid;
-        uint32_t depth = 1;
-        uint32_t ccid = cid;
-        Category ccategory = category;
-        std::set<std::string> app;
-        while(ccid>0)
+        const std::vector<std::string>& keywords = category.keywords;
+        for(uint32_t k=0;k<keywords.size();k++)
         {
-            const std::vector<std::string>& keywords = ccategory.keywords;
-            for(uint32_t k=0;k<keywords.size();k++)
-            {
-                const std::string& w = keywords[k];
-                if(app.find(w)!=app.end()) continue;
-                std::vector<term_t> term_list;
-                GetTerms_(w, term_list);
-                Suffixes suffixes;
-                GenSuffixes_(term_list, suffixes);
-                for(uint32_t s=0;s<suffixes.size();s++)
-                {
-                    CategoryNameApp cn_app;
-                    cn_app.cid = cid;
-                    cn_app.depth = depth;
-                    cn_app.is_complete = false;
-                    if(s==0) cn_app.is_complete = true;
-                    trie[suffixes[s]].category_name_apps.push_back(cn_app);
-                }
-                app.insert(w);
-            }
-            ccid = ccategory.parent_cid;
-            ccategory = category_list_[ccid];
-            depth++;
+            const std::string& w = keywords[k];
+            //if(app.find(w)!=app.end()) continue;
+            std::vector<term_t> term_list;
+            GetTerms_(w, term_list);
+            CategoryNameApp cn_app;
+            cn_app.cid = cid;
+            cn_app.depth = 1;
+            cn_app.is_complete = true;
+            trie[term_list].category_name_apps.push_back(cn_app);
+            //Suffixes suffixes;
+            //GenSuffixes_(term_list, suffixes);
+            //for(uint32_t s=0;s<suffixes.size();s++)
+            //{
+                //CategoryNameApp cn_app;
+                //cn_app.cid = cid;
+                //cn_app.depth = depth;
+                //cn_app.is_complete = false;
+                //if(s==0) cn_app.is_complete = true;
+                //trie[suffixes[s]].category_name_apps.push_back(cn_app);
+            //}
+            //app.insert(w);
         }
+        //uint32_t depth = 1;
+        //uint32_t ccid = cid;
+        //Category ccategory = category;
+        //std::set<std::string> app;
+        //while(ccid>0)
+        //{
+            //const std::vector<std::string>& keywords = ccategory.keywords;
+            //for(uint32_t k=0;k<keywords.size();k++)
+            //{
+                //const std::string& w = keywords[k];
+                //if(app.find(w)!=app.end()) continue;
+                //std::vector<term_t> term_list;
+                //GetTerms_(w, term_list);
+                //Suffixes suffixes;
+                //GenSuffixes_(term_list, suffixes);
+                //for(uint32_t s=0;s<suffixes.size();s++)
+                //{
+                    //CategoryNameApp cn_app;
+                    //cn_app.cid = cid;
+                    //cn_app.depth = depth;
+                    //cn_app.is_complete = false;
+                    //if(s==0) cn_app.is_complete = true;
+                    //trie[suffixes[s]].category_name_apps.push_back(cn_app);
+                //}
+                //app.insert(w);
+            //}
+            //ccid = ccategory.parent_cid;
+            //ccategory = category_list_[ccid];
+            //depth++;
+        //}
     }
-    for(uint32_t i=0;i<products_.size();i++)
+    for(uint32_t i=1;i<products_.size();i++)
     {
         if(i%100000==0)
         {
@@ -2880,23 +2965,30 @@ void ProductMatcher::ConstructSuffixTrie_(TrieType& trie)
             const Attribute& attribute = attributes[a];
             for(uint32_t v=0;v<attribute.values.size();v++)
             {
-                std::vector<term_t> terms;
-                GetTerms_(attribute.values[v], terms);
                 AttributeApp a_app;
                 a_app.spu_id = pid;
                 a_app.attribute_name = attribute.name;
                 a_app.is_optional = attribute.is_optional;
+                std::vector<term_t> terms;
+                GetTerms_(attribute.values[v], terms);
                 trie[terms].attribute_apps.push_back(a_app);
-                //Suffixes suffixes;
-                //GenSuffixes_(attribute.values[v], suffixes);
-                //for(uint32_t s=0;s<suffixes.size();s++)
-                //{
-                    //AttributeApp a_app;
-                    //a_app.spu_id = pid;
-                    //a_app.attribute_name = attribute.name;
-                    //a_app.is_optional = attribute.is_optional;
-                    //trie[suffixes[s]].attribute_apps.push_back(a_app);
-                //}
+                if(!attribute.is_optional&&NeedFuzzy_(attribute.values[v]))
+                {
+#ifdef B5M_DEBUG
+                    std::cerr<<"need fuzzy "<<attribute.values[v]<<std::endl;
+#endif
+                    Suffixes suffixes;
+                    GenSuffixes_(attribute.values[v], suffixes);
+                    for(uint32_t s=0;s<suffixes.size();s++)
+                    {
+                        FuzzyApp app;
+                        app.spu_id = pid;
+                        app.attribute_name = attribute.name;
+                        app.term_list = terms;
+                        app.pos.begin = s;
+                        ftrie_[suffixes[s]].fuzzy_apps.push_back(app);
+                    }
+                }
 
             }
         }
@@ -3074,33 +3166,33 @@ void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
             }
         }
         tag.Flush();
-        for(uint32_t i=0;i<tag.category_name_apps.size();i++)
-        {
-            const CategoryNameApp& app = tag.category_name_apps[i];
-            if(app.is_complete) 
-            {
-                tag.type_app["c|"+boost::lexical_cast<std::string>(app.cid)] = 1;
-                //break;
-            }
-        }
-        if(tag.type_app.empty())
-        {
-            for(uint32_t i=0;i<tag.attribute_apps.size();i++)
-            {
-                const AttributeApp& app = tag.attribute_apps[i];
-                if(app.spu_id==0) continue;
-                //if(app.is_optional) continue;
-                const Product& p = products_[app.spu_id];
-                uint32_t cid = p.cid;
-                std::string key = boost::lexical_cast<std::string>(cid)+"|"+app.attribute_name;
-                tag.type_app[key]+=1;
-                //double share_point = 0.0;
-                //if(app.is_optional) share_point = 0.5;
-                //else if(app.attribute_name=="型号") share_point = 1.5;
-                //else share_point = 1.0;
-                //sts["a|"+app.attribute_name]+=share_point;
-            }
-        }
+        //for(uint32_t i=0;i<tag.category_name_apps.size();i++)
+        //{
+            //const CategoryNameApp& app = tag.category_name_apps[i];
+            //if(app.is_complete) 
+            //{
+                //tag.type_app["c|"+boost::lexical_cast<std::string>(app.cid)] = 1;
+                ////break;
+            //}
+        //}
+        //if(tag.type_app.empty())
+        //{
+            //for(uint32_t i=0;i<tag.attribute_apps.size();i++)
+            //{
+                //const AttributeApp& app = tag.attribute_apps[i];
+                //if(app.spu_id==0) continue;
+                ////if(app.is_optional) continue;
+                //const Product& p = products_[app.spu_id];
+                //uint32_t cid = p.cid;
+                //std::string key = boost::lexical_cast<std::string>(cid)+"|"+app.attribute_name;
+                //tag.type_app[key]+=1;
+                ////double share_point = 0.0;
+                ////if(app.is_optional) share_point = 0.5;
+                ////else if(app.attribute_name=="型号") share_point = 1.5;
+                ////else share_point = 1.0;
+                ////sts["a|"+app.attribute_name]+=share_point;
+            //}
+        //}
         trie_[keyword] = tag;
         all_keywords_[keyword_id] = tag;
     }
@@ -3204,6 +3296,7 @@ int ProductMatcher::SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag
 }
 bool ProductMatcher::IsBlankSplit_(const UString& t1, const UString& t2) const
 {
+    if(t1.length()==0||t2.length()==0) return true;
     if(t1.isDigitChar(t1.length()-1) && t2.isDigitChar(0)) return true;
     return false;
 }
