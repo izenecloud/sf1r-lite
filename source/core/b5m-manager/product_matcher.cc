@@ -3023,6 +3023,7 @@ int ProductMatcher::SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag
 }
 bool ProductMatcher::IsBlankSplit_(const UString& t1, const UString& t2) const
 {
+    if(t1.length()==0||t2.length()==0) return true;
     if(t1.isDigitChar(t1.length()-1) && t2.isDigitChar(0)) return true;
     return false;
 }
