@@ -216,7 +216,8 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
             processLocalFinished(false);
             return false;
         }
-        NodeManagerBase::get()->setSlowWriting();
+        if (hook_type_ != Request::FromLog)
+            NodeManagerBase::get()->setSlowWriting();
     }
     // set rollback flag.
     if(type != Req_NoAdditionDataNoRollback && !RecoveryChecker::get()->setRollbackFlag(prepared_req.inc_id))
