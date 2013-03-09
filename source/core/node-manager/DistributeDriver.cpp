@@ -58,6 +58,7 @@ void DistributeDriver::init(const RouterPtr& router)
 
 static bool callCronJob(Request::kCallType calltype, const std::string& jobname, const std::string& packed_data)
 {
+    DistributeRequestHooker::get()->processLocalBegin();
     DistributeTestSuit::incWriteRequestTimes("cron_" + jobname);
     bool ret = izenelib::util::Scheduler::runJobImmediatly(jobname, calltype, calltype == Request::FromLog);
     if (!ret)
@@ -74,6 +75,7 @@ static bool callHandler(izenelib::driver::Router::handler_ptr handler,
 {
     try
     {
+        DistributeRequestHooker::get()->processLocalBegin();
         Response response;
         response.setSuccess(true);
         static Poller tmp_poller;
@@ -134,7 +136,6 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
             DistributeRequestHooker::get()->setHook(calltype, packed_data);
             request.setCallType(calltype);
             DistributeRequestHooker::get()->hookCurrentReq(packed_data);
-            DistributeRequestHooker::get()->processLocalBegin();
 
             if (calltype == Request::FromLog)
             {
@@ -177,7 +178,6 @@ bool DistributeDriver::handleReqFromLog(int reqtype, const std::string& reqjsond
 	    LOG(INFO) << "got a cron job request in log." << reqjsondata;
 	    DistributeRequestHooker::get()->setHook(Request::FromLog, packed_data);
         DistributeRequestHooker::get()->hookCurrentReq(packed_data);
-        DistributeRequestHooker::get()->processLocalBegin();
 
 	    return callCronJob(Request::FromLog, reqjsondata, packed_data);
     }
@@ -191,7 +191,6 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
         LOG(INFO) << "got a cron job request from primary." << reqjsondata;
         DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
         DistributeRequestHooker::get()->hookCurrentReq(packed_data);
-        DistributeRequestHooker::get()->processLocalBegin();
 
         if (!async_task_worker_.interruption_requested())
         {
@@ -218,7 +217,7 @@ bool DistributeDriver::on_new_req_available()
         if(!MasterManagerBase::get()->popWriteReq(reqdata, reqtype))
         {
             LOG(INFO) << "no more request.";
-            break;
+            return false;
         }
 
         if(reqtype.empty() && !handleRequest(reqdata, reqdata, Request::FromDistribute) )
@@ -233,7 +232,6 @@ bool DistributeDriver::on_new_req_available()
             LOG(INFO) << "got a cron job request from queue." << reqdata;
             DistributeRequestHooker::get()->setHook(Request::FromDistribute, reqdata);
             DistributeRequestHooker::get()->hookCurrentReq(reqdata);
-            DistributeRequestHooker::get()->processLocalBegin();
 
             if (!async_task_worker_.interruption_requested())
             {

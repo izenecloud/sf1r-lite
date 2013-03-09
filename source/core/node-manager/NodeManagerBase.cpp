@@ -794,6 +794,7 @@ NodeManagerBase::NodeStateType NodeManagerBase::getPrimaryState()
 void NodeManagerBase::beginReqProcess()
 {
     setNodeState(NODE_STATE_PROCESSING_REQ_RUNNING);
+    MasterManagerBase::get()->endPreparedWrite();
     if (isPrimaryWithoutLock())
         DistributeTestSuit::testFail(PrimaryFail_At_BeginReqProcess);
     else
@@ -1352,6 +1353,9 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     bool need_update = nodedata.getStrValue(ZNode::KEY_SERVICE_STATE) != oldZnode.getStrValue(ZNode::KEY_SERVICE_STATE) ||
                   nodedata.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH) != oldZnode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
 
+    if (nodeState_ == NODE_STATE_STARTED)
+	    MasterManagerBase::get()->enableNewWrite();
+
     zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
     if (oldstate == NODE_STATE_STARTED || new_state == NODE_STATE_STARTED || need_update)
     {
@@ -1569,14 +1573,9 @@ void NodeManagerBase::checkSecondaryRecovery(bool self_changed)
     bool can_recovery = false;
     if (is_any_recovery_waiting)
     {
-	    if (!MasterManagerBase::get()->prepareWriteReq())
+	    can_recovery = MasterManagerBase::get()->disableNewWrite();
+            if (can_recovery)
 	    {
-		    LOG(WARNING) << "prepare for recovery failed. maybe primary master prepared write first. ";
-	    }
-	    else
-	    {
-		    // 
-		    can_recovery = true;
 		    if (!self_changed)
 		    {
 			    nodeState_ = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;

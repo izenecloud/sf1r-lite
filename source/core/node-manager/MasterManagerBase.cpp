@@ -9,13 +9,14 @@
 using namespace sf1r;
 
 // note lock:
-// the lock sequence is state_mutex_ and then workers_mutex_
-// so you should never lock state_mutex_ after the workers_mutex_ is locked.
+// you should never sync call the interface which may hold a lock in the NodeManagerBase .
 //
 MasterManagerBase::MasterManagerBase()
 : isDistributeEnable_(false)
 , masterState_(MASTER_STATE_INIT)
 , stopping_(false)
+, write_prepared_(false)
+, new_write_disabled_(false)
 , CLASSNAME("MasterManagerBase")
 {
 }
@@ -267,6 +268,11 @@ bool MasterManagerBase::prepareWriteReq()
         zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::WATCH);
         return false;
     }
+    if (new_write_disabled_)
+    {
+        LOG(INFO) << "prepare a write request failed for new write temporal disabled!";
+        return false;
+    }
     ZNode znode;
     znode.setValue(ZNode::KEY_MASTER_SERVER_REAL_PATH, serverRealPath_);
     //znode.setValue(ZNode::KEY_MASTER_STATE, MASTER_STATE_WAIT_WORKER_FINISH_REQ);
@@ -285,7 +291,7 @@ bool MasterManagerBase::prepareWriteReq()
         return false;
     }
     LOG(INFO) << "prepareWriteReq success on server : " << serverRealPath_;
-    //masterState_ = MASTER_STATE_WAIT_WORKER_FINISH_REQ;
+    write_prepared_ = true;
     DistributeTestSuit::testFail(PrimaryFail_At_Master_PrepareWrite);
     return true;
 }
@@ -409,6 +415,11 @@ void MasterManagerBase::checkForNewWriteReq()
         LOG(INFO) << "current master state is not ready while check write, state:" << masterState_;
         return;
     }
+    if (write_prepared_)
+    {
+        LOG(INFO) << "a prepared write is still waiting worker ";
+        return;
+    }
     if (!isAllWorkerIdle())
     {
         return;
@@ -418,6 +429,7 @@ void MasterManagerBase::checkForNewWriteReq()
         zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::WATCH);
         return;
     }
+
 
     if (cached_write_reqlist_.empty())
     {
@@ -434,7 +446,9 @@ void MasterManagerBase::checkForNewWriteReq()
             bool ret = on_new_req_available_();
             if (!ret)
             {
-                LOG(INFO) << "the write request handler return failed.";
+                LOG(ERROR) << "the write request handler return failed.";
+                write_prepared_ = false;
+                endWriteReq();
             }
             else
             {
@@ -502,6 +516,30 @@ void MasterManagerBase::pushWriteReq(const std::string& reqdata, const std::stri
         LOG(ERROR) << "write request pushed failed." <<
             "," << reqdata;
     }
+}
+
+bool MasterManagerBase::disableNewWrite()
+{
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    if (write_prepared_)
+    {
+        LOG(INFO) << "disable write failed for already prepared : ";
+        return false;
+    }
+    new_write_disabled_ = true;
+    return true;
+}
+
+void MasterManagerBase::enableNewWrite()
+{
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    new_write_disabled_ = false;
+}
+
+void MasterManagerBase::endPreparedWrite()
+{
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    write_prepared_ = false;
 }
 
 bool MasterManagerBase::endWriteReq()

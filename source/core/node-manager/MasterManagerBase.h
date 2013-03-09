@@ -103,6 +103,10 @@ public:
     bool isMinePrimary();
     bool isBusy();
     bool prepareWriteReq();
+    bool endWriteReq();
+    void endPreparedWrite();
+    bool disableNewWrite();
+    void enableNewWrite();
     void pushWriteReq(const std::string& reqdata, const std::string& type = "");
     // make sure prepare success before call this.
     bool popWriteReq(std::string& reqdata, std::string& type);
@@ -192,7 +196,6 @@ protected:
     //void checkForWriteReqFinished();
     void checkForNewWriteReq();
     bool cacheNewWriteFromZNode();
-    bool endWriteReq();
     bool isAllWorkerIdle();
     //bool isAllWorkerFinished();
     bool isAllWorkerInState(int state);
@@ -224,6 +227,8 @@ protected:
     std::string write_req_queue_parent_;
     std::string write_req_queue_;
     bool stopping_;
+    bool write_prepared_;
+    bool new_write_disabled_;
     std::queue<std::pair<std::string, std::string> > cached_write_reqlist_;
 
 
