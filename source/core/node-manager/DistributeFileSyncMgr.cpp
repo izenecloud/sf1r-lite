@@ -103,6 +103,8 @@ static uint32_t getFileCRC(const std::string& file)
 static void doReportStatus(const ReportStatusReqData& reqdata)
 {
     //
+    // flush data first
+    RecoveryChecker::get()->flushAllData();
     ReportStatusRsp rsp_req;
     rsp_req.param_.rsp_host = SuperNodeManager::get()->getLocalHostIP();
     rsp_req.param_.success = true;

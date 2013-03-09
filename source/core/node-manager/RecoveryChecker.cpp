@@ -635,6 +635,22 @@ void RecoveryChecker::init(const std::string& workdir)
 
 }
 
+void RecoveryChecker::flushAllData()
+{   
+    CollInfoMapT tmp_all_col_info;
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        tmp_all_col_info = all_col_info_;
+    }
+    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
+    while(cit != tmp_all_col_info.end())
+    {
+        if (flush_col_)
+            flush_col_(cit->first);
+        ++cit;
+    }
+}
+
 void RecoveryChecker::onRecoverCallback(bool startup)
 {
     LOG(INFO) << "recovery callback, begin recovery before enter cluster.";

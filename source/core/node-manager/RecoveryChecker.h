@@ -38,6 +38,7 @@ public:
     bool checkAndRestoreBackupFile(const CollectionPath& colpath);
     bool checkDataConsistent();
     bool hasAnyBackup();
+    void flushAllData();
 
     void setRestartCallback(StartColCBFuncT start_col, StopColCBFuncT stop_col)
     {
