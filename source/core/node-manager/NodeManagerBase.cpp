@@ -349,8 +349,10 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
     setServicesData(znode);
 
     if (nodeState_ == NODE_STATE_STARTED)
+    {
         processing_step_ = 0;
-    
+        slow_write_running_ = false;
+    }   
     znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
     if (processing_step_ == 0)
     {
@@ -885,9 +887,11 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         // let the 50% replicas to start processing first.
         // after the 50% finished, we change the step to 100%
         processing_step_ = 50;
+        if (!slow_write_running_)
+            processing_step_ = 100;
         znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
         zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
-        updateNodeState(znode);
+        updateSelfPrimaryNodeState(znode);
 
         //std::string oldsdata = znode.serialize();
         //std::string sdata;
@@ -1209,7 +1213,7 @@ void NodeManagerBase::checkPrimaryForFinishWrite(NodeStateType primary_state)
             processing_step_ = znode.getUInt32Value(ZNode::KEY_REQ_STEP);
         }
         if (processing_step_ == 100)
-            updateNodeState();
+            updateSelfPrimaryNodeState();
     }
 }
 
@@ -1344,10 +1348,6 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     ZNode oldZnode;
     setSf1rNodeData(nodedata, oldZnode);
 
-    if (new_state != NODE_STATE_PROCESSING_REQ_RUNNING)
-    {
-        slow_write_running_ = false;
-    }
 
     bool need_update = nodedata.getStrValue(ZNode::KEY_SERVICE_STATE) != oldZnode.getStrValue(ZNode::KEY_SERVICE_STATE) ||
                   nodedata.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH) != oldZnode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
@@ -1368,11 +1368,23 @@ void NodeManagerBase::setSlowWriting()
     updateNodeState();
 }
 
+void NodeManagerBase::updateSelfPrimaryNodeState()
+{
+    ZNode nodedata;
+    setSf1rNodeData(nodedata);
+    zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+}
+
 void NodeManagerBase::updateNodeState()
 {
     ZNode nodedata;
     setSf1rNodeData(nodedata);
     updateNodeState(nodedata);
+}
+
+void NodeManagerBase::updateSelfPrimaryNodeState(const ZNode& nodedata)
+{
+    zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
 }
 
 void NodeManagerBase::updateNodeState(const ZNode& nodedata)
@@ -1428,7 +1440,7 @@ void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
         if(!self_changed)
         {
             LOG(INFO) << "update processing step ." << nodeState_ << ", step " << processing_step_;
-            updateNodeState();
+            updateSelfPrimaryNodeState();
         }
     }
 
@@ -1489,7 +1501,7 @@ void NodeManagerBase::checkSecondaryReqFinishLog(bool self_changed)
     }
     else if (!self_changed)
     {
-        updateNodeState();
+        updateSelfPrimaryNodeState();
     }
 }
 
@@ -1529,7 +1541,7 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
     }
     else if (!self_changed)
     {
-        updateNodeState();
+        updateSelfPrimaryNodeState();
     }
 }
 
@@ -1560,7 +1572,7 @@ void NodeManagerBase::checkSecondaryRecovery(bool self_changed)
         if (!self_changed)
         {
             nodeState_ = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
-            updateNodeState();
+            updateSelfPrimaryNodeState();
         }
         else
             updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_REPLICA_FINISH);
