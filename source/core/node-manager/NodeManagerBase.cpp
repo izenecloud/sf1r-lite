@@ -1566,18 +1566,27 @@ void NodeManagerBase::checkSecondaryRecovery(bool self_changed)
             break;
         }
     }
+    bool can_recovery = false;
     if (is_any_recovery_waiting)
     {
-        // 
-        if (!self_changed)
-        {
-            nodeState_ = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
-            updateSelfPrimaryNodeState();
-        }
-        else
-            updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_REPLICA_FINISH);
+	    if (!MasterManagerBase::get()->prepareWriteReq())
+	    {
+		    LOG(WARNING) << "prepare for recovery failed. maybe primary master prepared write first. ";
+	    }
+	    else
+	    {
+		    // 
+		    can_recovery = true;
+		    if (!self_changed)
+		    {
+			    nodeState_ = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
+			    updateSelfPrimaryNodeState();
+		    }
+		    else
+			    updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_REPLICA_FINISH);
+	    }
     }
-    else
+    if (!can_recovery)
     {
         NodeStateType new_state = NODE_STATE_STARTED;
         if (cb_on_recover_wait_replica_finish_)
