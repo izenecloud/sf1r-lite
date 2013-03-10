@@ -1368,6 +1368,10 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
 void NodeManagerBase::setSlowWriting()
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
+    if (stopping_)
+        return;
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return;
     slow_write_running_ = true;
     updateNodeState();
 }
