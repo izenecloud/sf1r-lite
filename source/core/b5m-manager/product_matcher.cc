@@ -909,8 +909,8 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
         OfferCategoryApp app;
         app.cid = cid;
         app.count = 1;
-        TermList term_list;
-        GetCRTerms_(title, term_list);
+        std::vector<Term> term_list;
+        Analyze_(title, term_list);
         KeywordVector keyword_vector;
         GetKeywordVector_(term_list, keyword_vector);
         for(uint32_t i=0;i<keyword_vector.size();i++)
@@ -1013,6 +1013,7 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
             
             if(freq>=20 && entropy<1.0)
             {
+#ifdef B5M_DEBUG
                 std::cerr<<"NGRAM";
                 for(uint32_t i=0;i<ids.size();i++)
                 {
@@ -1021,6 +1022,7 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
                     std::cerr<<","<<GetText_(k.term_list);
                 }
                 std::cerr<<" - "<<freq<<","<<entropy<<std::endl;
+#endif
 
                 double rev_entropy = 10.0;
                 if(entropy>0.0)
@@ -1431,8 +1433,8 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     }
     //keyword_vector_.resize(0);
     //std::cout<<"[TITLE]"<<stitle<<std::endl;
-    TermList term_list;
-    GetCRTerms_(title, term_list);
+    std::vector<Term> term_list;
+    Analyze_(title, term_list);
     KeywordVector keyword_vector;
     GetKeywordVector_(term_list, keyword_vector);
     Compute_(doc, term_list, keyword_vector, limit, result_products);
@@ -1458,8 +1460,8 @@ void ProductMatcher::GetFrontendCategory(const UString& text, uint32_t limit, st
     doc.property("Title") = text;
     const UString& title = text;
     
-    TermList term_list;
-    GetCRTerms_(title, term_list);
+    std::vector<Term> term_list;
+    Analyze_(title, term_list);
     KeywordVector keyword_vector;
     GetKeywordVector_(term_list, keyword_vector);
     uint32_t flimit = limit*2;
@@ -1554,7 +1556,7 @@ void ProductMatcher::GetFrontendCategory(const UString& text, uint32_t limit, st
     //}
 }
 
-void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector& keyword_vector)
+void ProductMatcher::GetKeywordVector_(const std::vector<Term>& term_list, KeywordVector& keyword_vector)
 {
     //std::string stitle;
     //text.convertString(stitle, UString::UTF_8);
@@ -1581,19 +1583,21 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
         KeywordTag found_keyword;
         uint32_t keyword_fol_position = 0;
         std::vector<term_t> candidate_keyword;
+        std::vector<Term> candidate_terms;
         candidate_keyword.reserve(10);
+        candidate_terms.reserve(10);
         uint32_t next_pos = begin;
-        term_t last_term = 0;
+        Term last_term;
         //std::cerr<<"[BEGIN]"<<begin<<std::endl;
         while(true)
         {
             if(next_pos>=term_list.size()) break;
-            term_t term = term_list[next_pos++];
-            std::string sterm = GetText_(term);
+            const Term& term = term_list[next_pos++];
+            //std::string sterm = GetText_(term);
             //std::cerr<<"[A]"<<sterm<<std::endl;
-            if(IsSymbol_(term))
+            if(IsSymbol_(term.id))
             {
-                if(IsConnectSymbol_(term))
+                if(IsConnectSymbol_(term.id))
                 {
                     if(candidate_keyword.empty())
                     {
@@ -1609,15 +1613,15 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
                 }
                 else
                 {
-                    if(term==left_bracket_term_||term==right_bracket_term_)
+                    if(term.id==left_bracket_term_||term.id==right_bracket_term_)
                     {
                         if(next_pos-begin==1)
                         {
-                            if(term==left_bracket_term_)
+                            if(term.id==left_bracket_term_)
                             {
                                 bracket_depth++;
                             }
-                            else if(term==right_bracket_term_)
+                            else if(term.id==right_bracket_term_)
                             {
                                 if(bracket_depth>0)
                                 {
@@ -1632,12 +1636,12 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
             }
             else
             {
-                if(last_term==blank_term_&&!candidate_keyword.empty())
+                if(last_term.id==blank_term_&&!candidate_keyword.empty())
                 {
-                    term_t last_candidate_term = candidate_keyword.back();
-                    UString last_candidate = UString(GetText_(last_candidate_term), UString::UTF_8);
-                    UString this_text = UString(GetText_(term), UString::UTF_8);
-                    if(IsBlankSplit_(last_candidate, this_text))
+                    const Term& last_candidate_term = candidate_terms.back();
+                    //UString last_candidate = UString(GetText_(last_candidate_term), UString::UTF_8);
+                    //UString this_text = UString(GetText_(term), UString::UTF_8);
+                    if(IsBlankSplit_(last_candidate_term.text, term.text))
                     {
                         break;
                     }
@@ -1645,8 +1649,9 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
                 }
             }
             //std::cerr<<"[E]"<<sterm<<","<<term<<std::endl;
-            candidate_keyword.push_back(term);
-            std::string skeyword = GetText_(candidate_keyword);
+            candidate_keyword.push_back(term.id);
+            candidate_terms.push_back(term);
+            //std::string skeyword = GetText_(candidate_keyword);
             //std::cerr<<"[SK]"<<skeyword<<std::endl;
             TrieType::const_iterator it = trie_.lower_bound(candidate_keyword);
             if(it!=trie_.end())
@@ -1677,8 +1682,8 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
                     }
                     if(need_append)
                     {
-                        term_t pre_term = 0;
-                        term_t fol_term = 0;
+                        Term pre_term;
+                        Term fol_term;
                         if(begin>0)
                         {
                             pre_term = term_list[begin-1];
@@ -1687,9 +1692,7 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
                         {
                             fol_term = term_list[next_pos];
                         }
-                        std::string pre_str = GetText_(pre_term);
-                        std::string fol_str = GetText_(fol_term);
-                        if(pre_str=="." || fol_str==".")
+                        if(pre_term.TextString()=="." || fol_term.TextString()==".")
                         {
                             //std::cerr<<"[F]"<<pre_str<<","<<fol_str<<std::endl;
                             need_append = false;
@@ -1794,89 +1797,6 @@ void ProductMatcher::GetKeywordVector_(const TermList& term_list, KeywordVector&
     }
     
 }
-void ProductMatcher::GetKeywordVector2_(const TermList& term_list, KeywordVector& keyword_vector)
-{
-    //KeywordChain* head = new KeywordChain();
-    uint32_t begin = 0;
-    uint8_t bracket_depth = 0;
-    keyword_vector.reserve(10);
-    while(begin<term_list.size())
-    {
-        term_t begin_term = term_list[begin];
-        if(begin_term==left_bracket_term_)
-        {
-            bracket_depth++;
-            begin++;
-            continue;
-        }
-        else if(begin_term==right_bracket_term_)
-        {
-            if(bracket_depth>0)
-            {
-                bracket_depth--;
-            }
-            begin++;
-            continue;
-        }
-        std::vector<term_t> candidate_keyword(1, begin_term);
-        candidate_keyword.reserve(10);
-        uint32_t next_pos = begin+1;
-        while(true)
-        {
-            TrieType::const_iterator it = trie_.lower_bound(candidate_keyword);
-            if(it!=trie_.end())
-            {
-                if(candidate_keyword==it->first)
-                {
-                    KeywordTag tag = it->second;
-                    tag.kweight = 1.0;
-                    tag.positions.push_back(std::make_pair(begin, next_pos));
-                    if(bracket_depth>0) tag.kweight=0.1;
-                    bool need_append = true;
-                    for(uint32_t i=0;i<keyword_vector.size();i++)
-                    {
-                        int select = SelectKeyword_(tag, keyword_vector[i]);
-                        if(select==1)
-                        {
-                            keyword_vector[i] = tag;
-                            need_append = false;
-                            break;
-                        }
-                        else if(select==2)
-                        {
-                            need_append = false;
-                            break;
-                        }
-                        else if(select==3)
-                        {
-                            //keyword_vector.push_back(tag);
-                        }
-                    }
-                    if(need_append)
-                    {
-                        keyword_vector.push_back(tag);
-                    }
-                }
-                else if(StartsWith_(it->first, candidate_keyword))
-                {
-                    //continue trying
-                }
-                else
-                {
-                    break;
-                }
-            }
-            else
-            {
-                break;
-            }
-            if(next_pos>=term_list.size()) break;
-            candidate_keyword.push_back(term_list[next_pos]);
-            ++next_pos;
-        }
-        ++begin;
-    }
-}
 
 uint32_t ProductMatcher::GetCidBySpuId_(uint32_t spu_id)
 {
@@ -1913,7 +1833,7 @@ bool ProductMatcher::EqualOrIsParent_(uint32_t parent, uint32_t child) const
     return false;
 }
 
-void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& result_products)
+void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& result_products)
 {
     UString title;
     doc.getProperty("Title", title);
@@ -1978,7 +1898,7 @@ void ProductMatcher::Compute_(const Document& doc, const TermList& term_list, Ke
     std::size_t text_term_len = 0;
     for(uint32_t i=0;i<term_list.size();i++)
     {
-        if(!IsSymbol_(term_list[i]))
+        if(!IsSymbol_(term_list[i].id))
         {
             ++text_term_len;
         }
@@ -2340,17 +2260,7 @@ bool ProductMatcher::PriceMatch_(double p1, double p2)
 }
 
 
-void ProductMatcher::Analyze_(const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
-{
-    AnalyzeImpl_(analyzer_, btext, result);
-}
-
-void ProductMatcher::AnalyzeChar_(const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
-{
-    AnalyzeImpl_(char_analyzer_, btext, result);
-}
-
-void ProductMatcher::AnalyzeCR_(const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
+void ProductMatcher::Analyze_(const izenelib::util::UString& btext, std::vector<Term>& result)
 {
     izenelib::util::UString text(btext);
     text.toLowerString();
@@ -2365,6 +2275,7 @@ void ProductMatcher::AnalyzeCR_(const izenelib::util::UString& btext, std::vecto
     {
         std::string str;
         term_list[i].text.convertString(str, izenelib::util::UString::UTF_8);
+        term_t id = GetTerm_(str);
         //std::cerr<<"[A]"<<str<<","<<term_list[i].tag<<","<<term_list[i].position<<","<<spos<<","<<last_match<<std::endl;
         std::size_t pos = stext.find(str, spos);
         bool has_blank = false;
@@ -2387,7 +2298,12 @@ void ProductMatcher::AnalyzeCR_(const izenelib::util::UString& btext, std::vecto
         }
         if(has_blank)
         {
-            result.push_back(UString(blank_, UString::UTF_8) );
+            std::string append = blank_;
+            term_t app_id = GetTerm_(append);
+            Term term;
+            term.id = app_id;
+            term.text = UString(append, UString::UTF_8);
+            result.push_back(term);
         }
 
         char tag = term_list[i].tag;
@@ -2403,63 +2319,43 @@ void ProductMatcher::AnalyzeCR_(const izenelib::util::UString& btext, std::vecto
             }
             else
             {
-                term_t term = GetTerm_(str);
-                if(!IsTextSymbol_(term))
+                if(!IsTextSymbol_(id))
                 {
-                    symbol_terms_.insert(term);
+                    symbol_terms_.insert(id);
                 }
-                //str = place_holder_;
-                //continue;
             }
         }
-        result.push_back(UString(str, UString::UTF_8) );
-
+        id = GetTerm_(str);
+        term_list[i].id = id;
+        result.push_back(term_list[i]);
     }
 }
 
-void ProductMatcher::AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& btext, std::vector<izenelib::util::UString>& result)
+void ProductMatcher::AnalyzeA_(const izenelib::util::UString& btext, std::vector<Term>& result)
 {
     izenelib::util::UString text(btext);
     text.toLowerString();
     std::vector<idmlib::util::IDMTerm> term_list;
-    analyzer->GetTermList(text, term_list);
+    char_analyzer_->GetTermList(text, term_list);
     result.reserve(term_list.size());
     for(std::size_t i=0;i<term_list.size();i++)
     {
         std::string str;
         term_list[i].text.convertString(str, izenelib::util::UString::UTF_8);
+        term_list[i].id = GetTerm_(str);
         //logger_<<"[A]"<<str<<","<<term_list[i].tag<<std::endl;
         char tag = term_list[i].tag;
         //std::cerr<<"ARB,"<<str<<std::endl;
         if(tag == idmlib::util::IDMTermTag::SYMBOL)
         {
-            term_t term = GetTerm_(str);
-            if(!IsTextSymbol_(term))
+            if(!IsTextSymbol_(term_list[i].id))
             {
                 continue;
             }
-            //if(str=="-")
-            //{
-            //}
-            //else if(str!="+" && str!=".") continue;
         }
-        //std::cerr<<"AR,"<<str<<std::endl;
-        result.push_back( izenelib::util::UString(str, izenelib::util::UString::UTF_8) );
+        result.push_back(term_list[i]);
 
     }
-    //{
-        //std::string sav;
-        //text.convertString(sav, izenelib::util::UString::UTF_8);
-        //logger_<<"[O]"<<sav<<std::endl;
-        //logger_<<"[T]";
-        //for(std::size_t i=0;i<term_list.size();i++)
-        //{
-            //std::string s;
-            //term_list[i].text.convertString(s, izenelib::util::UString::UTF_8);
-            //logger_<<s<<":"<<term_list[i].tag<<",";
-        //}
-        //logger_<<std::endl;
-    //}
 }
 
 
@@ -2539,16 +2435,10 @@ ProductMatcher::term_t ProductMatcher::GetTerm_(const UString& text)
 {
     term_t term = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(text);
     //term_t term = izenelib::util::HashFunction<izenelib::util::UString>::generateHash64(text);
+#ifdef B5M_DEBUG
     id_manager_[term] = text;
+#endif
     return term;
-    //term_t tid = 0;
-    //if(!aid_manager_->getDocIdByDocName(text, tid))
-    //{
-        //tid = tid_;
-        //++tid_;
-        //aid_manager_->Set(text, tid);
-    //}
-    //return tid;
 }
 ProductMatcher::term_t ProductMatcher::GetTerm_(const std::string& text)
 {
@@ -2559,6 +2449,7 @@ ProductMatcher::term_t ProductMatcher::GetTerm_(const std::string& text)
 std::string ProductMatcher::GetText_(const TermList& tl) const
 {
     std::string result;
+#ifdef B5M_DEBUG
     for(uint32_t i=0;i<tl.size();i++)
     {
         std::string str;
@@ -2575,10 +2466,12 @@ std::string ProductMatcher::GetText_(const TermList& tl) const
         }
         result+=str;
     }
+#endif
     return result;
 }
 std::string ProductMatcher::GetText_(const term_t& term) const
 {
+#ifdef B5M_DEBUG
     IdManager::const_iterator it = id_manager_.find(term);
     if(it!=id_manager_.end())
     {
@@ -2587,29 +2480,30 @@ std::string ProductMatcher::GetText_(const term_t& term) const
         ustr.convertString(str, UString::UTF_8);
         return str;
     }
+#endif
     return "";
 }
 
 void ProductMatcher::GetTerms_(const UString& text, std::vector<term_t>& term_list)
 {
-    std::vector<UString> text_list;
-    AnalyzeChar_(text, text_list);
-    term_list.resize(text_list.size());
-    for(uint32_t i=0;i<term_list.size();i++)
+    std::vector<Term> t_list;
+    AnalyzeA_(text, t_list);
+    term_list.resize(t_list.size());
+    for(uint32_t i=0;i<t_list.size();i++)
     {
-        term_list[i] = GetTerm_(text_list[i]);
+        term_list[i] = t_list[i].id;
     }
 }
-void ProductMatcher::GetCRTerms_(const UString& text, std::vector<term_t>& term_list)
-{
-    std::vector<UString> text_list;
-    AnalyzeCR_(text, text_list);
-    term_list.resize(text_list.size());
-    for(uint32_t i=0;i<term_list.size();i++)
-    {
-        term_list[i] = GetTerm_(text_list[i]);
-    }
-}
+//void ProductMatcher::GetCRTerms_(const UString& text, std::vector<term_t>& term_list)
+//{
+    //std::vector<UString> text_list;
+    //AnalyzeCR_(text, text_list);
+    //term_list.resize(text_list.size());
+    //for(uint32_t i=0;i<term_list.size();i++)
+    //{
+        //term_list[i] = GetTerm_(text_list[i]);
+    //}
+//}
 void ProductMatcher::GetTerms_(const std::string& text, std::vector<term_t>& term_list)
 {
     UString utext(text, UString::UTF_8);
@@ -2762,16 +2656,21 @@ void ProductMatcher::AddKeyword_(const UString& otext)
     }
     if(value_type==2 && text.length()<2) return;
     if(value_type==1 && text.length()<3) return;
-    std::vector<term_t> term_list;
-    GetTerms_(text, term_list);
+    std::vector<Term> term_list;
+    //std::vector<term_t> term_list;
+    AnalyzeA_(text, term_list);
     if(term_list.empty()) return;
-    if(not_keywords_.find(term_list)!=not_keywords_.end()) return;
+    std::vector<term_t> id_list(term_list.size());
+    for(uint32_t i=0;i<term_list.size();i++)
+    {
+        id_list[i] = term_list[i].id;
+    }
+    if(not_keywords_.find(id_list)!=not_keywords_.end()) return;
     if(term_list.size()==1)
     {
-        UString new_text(GetText_(term_list), UString::UTF_8);
-        if(new_text.length()<2) return;
+        if(term_list[0].text.length()<2) return;
     }
-    keyword_set_.insert(term_list);
+    keyword_set_.insert(id_list);
     //std::cout<<"[AKT]"<<GetText_(term_list);
     //for(uint32_t i=0;i<term_list.size();i++)
     //{
