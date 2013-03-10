@@ -500,7 +500,9 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     // get local running collections.
     RecoveryChecker::get()->getCollList(check_collection_list);
 
-
+    bool is_file_mismatch = false;
+    bool is_collection_mismatch = false;
+    bool is_redolog_mismatch = false;
     int max_wait = 30;
     // wait for response.
     while(wait_num > 0)
@@ -549,7 +551,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
                         continue;
                     }
                     LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
-                    check_errinfo += " at least one of file not the same status between replicas. ";
+                    is_file_mismatch =  true;
                 }
             }
             if (rspdata[i].check_key_result.size() != memory_state_list.size())
@@ -567,32 +569,44 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
             if (rspdata[i].check_logid_list.size() != check_logid_list.size())
             {
                 LOG(ERROR) << "rsp logid list size not matched local, " << rspdata[i].check_logid_list.size() << "," << check_logid_list.size();
-                check_errinfo += " rsp logid list size not matched local. ";
+                is_redolog_mismatch = true;
             }
             for (size_t j = 0; j < check_logid_list.size(); ++j)
             {
                 if (rspdata[i].check_logid_list[j] != check_logid_list[j])
                 {
                     LOG(ERROR) << "rsp logid list id not match, " << rspdata[i].check_logid_list[j] << "," << check_logid_list[j];
-                    check_errinfo += " at least one of logid not the same between replicas.";
                 }
+                is_redolog_mismatch = true;
             }
             if (rspdata[i].check_collection_list.size() != check_collection_list.size())
             {
                 LOG(ERROR) << "rsp running collection list size not matched local, " << rspdata[i].check_collection_list.size() << "," << check_collection_list.size();
-                check_errinfo += " Running collection num is not the same between replicas. ";
+                is_collection_mismatch = true;
             }
             for (size_t j = 0; j < check_collection_list.size(); ++j)
             {
                 if (rspdata[i].check_collection_list[j] != check_collection_list[j])
                 {
-                    LOG(ERROR) << "rsp logid list id not match, " << rspdata[i].check_collection_list[j] << "," << check_collection_list[j];
-                    check_errinfo += " at least one of logid not the same between replicas.";
+                    LOG(ERROR) << "rsp running collection list id not match, " << rspdata[i].check_collection_list[j] << "," << check_collection_list[j];
+                    is_collection_mismatch = true;
                 }
             }
 
         }
         wait_num -= rspdata.size();
+    }
+    if (is_file_mismatch)
+    {
+        check_errinfo += " at least one of file not the same status between replicas. ";
+    }
+    if (is_collection_mismatch)
+    {
+        check_errinfo += " at least one of running collection not the same between replicas.";
+    }
+    if (is_redolog_mismatch)
+    {
+        check_errinfo += " at least one of logid not the same between replicas.";
     }
     LOG(INFO) << "report request finished";
     boost::unique_lock<boost::mutex> lk(status_report_mutex_);

@@ -66,6 +66,7 @@ static bool callCronJob(Request::kCallType calltype, const std::string& jobname,
         LOG(ERROR) << "start cron job failed." << jobname;
         DistributeRequestHooker::get()->processFinishedBeforePrepare(false);
     }
+    LOG(INFO) << "cron job finished local: " << jobname;
     return ret;
 }
 
