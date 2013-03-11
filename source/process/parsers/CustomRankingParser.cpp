@@ -12,7 +12,6 @@
 
 #include <common/Keys.h>
 #include <common/BundleSchemaHelpers.h>
-#include <query-manager/QueryManager.h>
 
 namespace sf1r {
 

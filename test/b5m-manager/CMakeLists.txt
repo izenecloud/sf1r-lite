@@ -53,7 +53,7 @@ SET(libs
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
   )
-
+SET(Boost_USE_STATIC_LIBS OFF)
 FIND_PACKAGE(Boost ${Boost_FIND_VERSION}
   COMPONENTS unit_test_framework)
 

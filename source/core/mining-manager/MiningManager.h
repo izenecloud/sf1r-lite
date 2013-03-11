@@ -175,7 +175,7 @@ public:
     /**
      * @brief The online querying interface.
      */
-    bool getMiningResult(KeywordSearchResult& miaInput);
+    bool getMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& miaInput);
 
     /**
      * @brief Gets list of documents with images similar to the target image.

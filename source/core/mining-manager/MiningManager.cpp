@@ -953,7 +953,7 @@ void MiningManager::onIndexUpdated(size_t docNum)
     }
 }
 
-bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
+bool MiningManager::getMiningResult(const KeywordSearchActionItem& actionItem , KeywordSearchResult& miaInput)
 {
     CREATE_PROFILER(prepareData, "MIAProcess",
                     "ProcessGetMiningResults : prepare data from sia output");
@@ -967,16 +967,16 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
     CREATE_PROFILER(faceted, "MIAProcess",
                     "ProcessGetMiningResults : doing faceted");
 
-    std::cout << "[MiningManager::getMiningResult]" << std::endl;
+    //std::cout << "[MiningManager::getMiningResult]" << std::endl;
     bool bResult = true;
     try
     {
         START_PROFILER(qr);
-        if (true)
+        if (actionItem.requireRelatedQueries_)
         {
-            izenelib::util::ClockTimer clocker;
+            //izenelib::util::ClockTimer clocker;
             addQrResult_(miaInput);
-            std::cout<<"QR ALL COST: "<<clocker.elapsed()<<" seconds."<<std::endl;
+            //std::cout<<"QR ALL COST: "<<clocker.elapsed()<<" seconds."<<std::endl;
         }
         STOP_PROFILER(qr);
 
@@ -1057,7 +1057,6 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
     }
     //get query recommend result
     REPORT_PROFILE_TO_FILE("PerformanceQueryResult.MiningManager")
-    std::cout << "[getMiningResult finished]" << std::endl;
     return bResult;
 }
 
@@ -1163,15 +1162,14 @@ bool MiningManager::getRecommendQuery_(const izenelib::util::UString& queryStr,
                                        const std::vector<docid_t>& topDocIdList,
                                        QueryRecommendRep & recommendRep)
 {
-    struct timeval tv_start;
-    struct timeval tv_end;
-    gettimeofday(&tv_start, NULL);
+    //struct timeval tv_start;
+    //struct timeval tv_end;
+    //gettimeofday(&tv_start, NULL);
     qrManager_->getRecommendQuery(queryStr, topDocIdList,
                                   miningConfig_.recommend_param.recommend_num, recommendRep);
-    gettimeofday(&tv_end, NULL);
-    double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec
-                       + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
-    std::cout << "QR all cost " << timespend << " seconds." << std::endl;
+    //gettimeofday(&tv_end, NULL);
+    //double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
+    //std::cout << "QR all cost " << timespend << " seconds." << std::endl;
     return true;
 }
 
@@ -1473,15 +1471,14 @@ bool MiningManager::getLabelListByDocId(uint32_t docid, std::vector<std::pair<ui
 
 bool MiningManager::addQrResult_(KeywordSearchResult& miaInput)
 {
-    std::cout << "[MiningManager::getQRResult] "<<miaInput.rawQueryString_ << std::endl;
+    //std::cout << "[MiningManager::getQRResult] "<<miaInput.rawQueryString_ << std::endl;
     miaInput.relatedQueryList_.clear();
     miaInput.rqScore_.clear();
     bool ret = false;
     QueryRecommendRep recommendRep;
     ret = getRecommendQuery_(izenelib::util::UString(miaInput.rawQueryString_,
                              miaInput.encodingType_), miaInput.topKDocs_, recommendRep);
-    std::cout << "Get " << recommendRep.recommendQueries_.size()
-              << " related keywords" << std::endl;
+    //std::cout << "Get " << recommendRep.recommendQueries_.size() << " related keywords" << std::endl;
     miaInput.relatedQueryList_ = recommendRep.recommendQueries_;
     miaInput.rqScore_ = recommendRep.scores_;
 
