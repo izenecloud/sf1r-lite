@@ -170,6 +170,11 @@ public:
         return querySource_;
     }
 
+    bool isRequireRelatedQueries() const
+    {
+        return requireRelatedQueries_;
+    }
+
 private:
     bool parseGroupLabel_(const Value& search);
     bool parseAttrLabel_(const Value& search);
@@ -199,6 +204,7 @@ private:
 
     bool isRandomRank_;
     std::string querySource_;
+    bool requireRelatedQueries_;
 };
 
 /// @}

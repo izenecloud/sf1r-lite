@@ -134,6 +134,24 @@ struct scd_grammar
     };
 };
 
+const std::string ScdParser::SCD_TYPE_FLAGS[] =
+{
+    "N", // NOT_SCD = 0,
+    "I", // INSERT_SCD,
+    "U", // UPDATE_SCD,
+    "R", // RTYPE_SCD,
+    "D", // DELETE_SCD
+};
+
+const std::string ScdParser::SCD_TYPE_NAMES[] =
+{
+    "unknown", // NOT_SCD = 0,
+    "insert",  // INSERT_SCD,
+    "update",  // UPDATE_SCD,
+    "rtype",   // RTYPE_SCD,
+    "delete",  // DELETE_SCD
+};
+
 ScdParser::ScdParser()
     : size_(0), encodingType_(izenelib::util::UString::UTF_8), docDelimiter_(DEFAULT_DOC_DELIMITER)
 {}
@@ -303,6 +321,9 @@ SCD_TYPE ScdParser::checkSCDType(const string& file)
             break;
         case 'u':
             type = UPDATE_SCD;
+            break;
+        case 'r':
+            type = RTYPE_SCD;
             break;
         default:
             type = NOT_SCD;

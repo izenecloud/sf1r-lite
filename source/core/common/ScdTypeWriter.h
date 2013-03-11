@@ -27,9 +27,9 @@ public:
         if(dwriter_!=NULL) delete dwriter_;
     }
 
-    bool Append(const Document& doc, int op)
+    bool Append(const Document& doc, SCD_TYPE scd_type)
     {
-        ScdWriter* writer = GetWriter_(op);
+        ScdWriter* writer = GetWriter_(scd_type);
         if(writer==NULL) return false;
         return writer->Append(doc);
     }
@@ -43,38 +43,39 @@ public:
 
 private:
 
-    ScdWriter* GetWriter_(int op)
+    ScdWriter* GetWriter_(SCD_TYPE scd_type)
     {
         ScdWriter* writer = NULL;
-        if(op==INSERT_SCD)
+        switch (scd_type)
         {
+        case INSERT_SCD:
+            if (iwriter_ == NULL)
+            {
+                iwriter_ = new ScdWriter(dir_, scd_type);
+            }
             writer = iwriter_;
-        }
-        else if(op==UPDATE_SCD)
-        {
+            break;
+
+        case UPDATE_SCD:
+            if (uwriter_ == NULL)
+            {
+                uwriter_ = new ScdWriter(dir_, scd_type);
+            }
             writer = uwriter_;
-        }
-        else if(op==DELETE_SCD)
-        {
+            break;
+
+        case DELETE_SCD:
+            if (dwriter_ == NULL)
+            {
+                dwriter_ = new ScdWriter(dir_, scd_type);
+            }
             writer = dwriter_;
+            break;
+
+        default:
+            break;
         }
-        else return NULL;
-        if(writer==NULL)
-        {
-            writer = new ScdWriter(dir_, op);
-            if(op==INSERT_SCD)
-            {
-                iwriter_ = writer;
-            }
-            else if(op==UPDATE_SCD)
-            {
-                uwriter_ = writer;
-            }
-            else if(op==DELETE_SCD)
-            {
-                dwriter_ = writer;
-            }
-        }
+
         return writer;
     }
 

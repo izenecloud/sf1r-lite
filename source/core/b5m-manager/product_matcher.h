@@ -33,6 +33,7 @@ namespace sf1r {
 
     public:
         typedef idmlib::sim::StringSimilarity::Object SimObject;
+        typedef idmlib::util::IDMTerm Term;
         typedef uint32_t term_t;
         typedef std::vector<term_t> TermList;
         typedef std::vector<TermList> Suffixes;
@@ -516,11 +517,11 @@ namespace sf1r {
         void Init_();
         bool PriceMatch_(double p1, double p2);
         double PriceSim_(double offerp, double spup);
-        void Analyze_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
-        void AnalyzeChar_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
-        void AnalyzeCR_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
+        void AnalyzeA_(const izenelib::util::UString& text, std::vector<Term>& result);
+        void Analyze_(const izenelib::util::UString& text, std::vector<Term>& result);
+        //void AnalyzeCR_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
-        void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
+        //void AnalyzeImpl_(idmlib::util::IDMAnalyzer* analyzer, const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
 
         void IndexOffer_(const std::string& offer_scd);
@@ -535,14 +536,13 @@ namespace sf1r {
         std::string GetText_(const term_t& term) const;
         void GetTerms_(const std::string& text, std::vector<term_t>& term_list);
         void GetTerms_(const UString& text, std::vector<term_t>& term_list);
-        void GetCRTerms_(const UString& text, std::vector<term_t>& term_list);
+        //void GetCRTerms_(const UString& text, std::vector<term_t>& term_list);
         void ConstructKeywords_();
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
-        void GetKeywordVector_(const TermList& term_list, KeywordVector& keyword_vector);
-        void GetKeywordVector2_(const TermList& term_list, KeywordVector& keyword_vector);
+        void GetKeywordVector_(const std::vector<Term>& term_list, KeywordVector& keyword_vector);
         bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
-        void Compute_(const Document& doc, const TermList& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
+        void Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
         uint32_t GetCidByMaxDepth_(uint32_t cid);
 

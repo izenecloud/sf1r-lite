@@ -1,13 +1,16 @@
 #include "SuffixMatchManager.hpp"
 #include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
-#include <glog/logging.h>
-#include <icma/icma.h>
 #include <la-manager/LAPool.h>
+#include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"
 #include "FMIndexManager.h"
+
+#include <3rdparty/am/btree/btree_map.h>
+
+#include <glog/logging.h>
 
 using namespace cma;
 
@@ -142,7 +145,7 @@ SuffixMatchManager::SuffixMatchManager(
 SuffixMatchManager::~SuffixMatchManager()
 {
     if (analyzer_) delete analyzer_;
-    if (knowledge_) delete knowledge_;
+    //if (knowledge_) delete knowledge_;
 }
 
 void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished)
@@ -171,7 +174,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
     if (!fmi_manager_) return 0;
     if (pattern.empty()) return 0;
 
-    std::map<uint32_t, double> res_list_map;
+    btree::btree_map<uint32_t, double> res_list_map;
     std::vector<uint32_t> docid_list;
     std::vector<size_t> doclen_list;
     size_t max_match;
@@ -215,7 +218,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
     }
 
     res_list.reserve(res_list_map.size());
-    for (std::map<uint32_t, double>::const_iterator cit = res_list_map.begin();
+    for (btree::btree_map<uint32_t, double>::const_iterator cit = res_list_map.begin();
             cit != res_list_map.end(); ++cit)
     {
         res_list.push_back(std::make_pair(cit->second, cit->first));
@@ -237,7 +240,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
 {
     if (!analyzer_) return 0;
     if (pattern_orig.empty()) return 0;
-    std::map<uint32_t, double> res_list_map;
+    btree::btree_map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > match_ranges_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> max_match_list;
@@ -354,7 +357,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     }
 
     res_list.reserve(res_list_map.size());
-    for (std::map<uint32_t, double>::const_iterator cit = res_list_map.begin();
+    for (btree::btree_map<uint32_t, double>::const_iterator cit = res_list_map.begin();
         cit != res_list_map.end(); ++cit)
     {
         res_list.push_back(std::make_pair(cit->second, cit->first));
@@ -746,8 +749,9 @@ void SuffixMatchManager::buildTokenizeDic()
     boost::filesystem::path cma_fmindex_dic(cma_path);
     cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
-    knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
+    //knowledge_ = CMA_Factory::instance()->createKnowledge();
+    //knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
+    knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(cma_fmindex_dic.c_str(), false);
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
     // using the maxprefix analyzer

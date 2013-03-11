@@ -146,7 +146,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
                                 , const std::set<KeyType>& del_docid_set
                                 , fstream& os)
 {
-    std::string ScdName_new = opinion_scd_writer_->GenSCDFileName(UPDATE_SCD);
+    std::string ScdName_new = opinion_scd_writer_->GenSCDFileName(RTYPE_SCD);
     ofstream outNewScd;
     outNewScd.open((total_scd_path_ + "/" + ScdName_new).c_str(), ios::out|ios::app);
     if (!outNewScd.good())
@@ -319,8 +319,8 @@ bool MultiDocSummarizationSubManager::preProcess()
     {
         boost::filesystem::create_directory(totalscdPath);
     }
-    std::string opinionScdName = "B-00-201001071530-00000-U-C.SCD";
-    std::string scoreScdName = "B-00-201001071530-00001-U-C.SCD";
+    std::string opinionScdName = "B-00-201001071530-00000-R-C.SCD";
+    std::string scoreScdName = "B-00-201001071530-00001-R-C.SCD";
     
     std::vector<docid_t> del_docid_list;
     std::set<KeyType> del_key_set;
@@ -402,8 +402,8 @@ bool MultiDocSummarizationSubManager::postProcess()
     boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
     boost::filesystem::create_directory(generated_scds_path);
 
-    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), UPDATE_SCD));
-    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), UPDATE_SCD));
+    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
+    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
 
     {
         boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);
@@ -602,8 +602,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     {
         boost::filesystem::create_directory(totalscdPath);
     }
-    std::string opinionScdName = "B-00-201001071530-00000-U-C.SCD";
-    std::string scoreScdName = "B-00-201001071530-00001-U-C.SCD";
+    std::string opinionScdName = "B-00-201001071530-00000-R-C.SCD";
+    std::string scoreScdName = "B-00-201001071530-00001-R-C.SCD";
     
     std::vector<docid_t> del_docid_list;
     std::set<KeyType> del_key_set;
@@ -702,8 +702,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     boost::filesystem::path generated_scds_path(OpPath + "/generated_scds");
     boost::filesystem::create_directory(generated_scds_path);
 
-    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), UPDATE_SCD));
-    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), UPDATE_SCD));
+    score_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
+    opinion_scd_writer_.reset(new ScdWriter(generated_scds_path.c_str(), RTYPE_SCD));
 
     {
         boost::unique_lock<boost::mutex> g(waiting_opinion_lock_);

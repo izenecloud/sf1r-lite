@@ -38,7 +38,7 @@ void B5moProcessor::LoadMobileSource(const std::string& file)
     ifs.close();
 }
 
-void B5moProcessor::Process(Document& doc, int& type)
+void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
 {
     static const std::string tcp(B5MHelper::GetTargetCategoryPropertyName());
     //return;

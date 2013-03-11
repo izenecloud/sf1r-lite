@@ -62,7 +62,7 @@ public:
     SuffixMatchConfig()
         : suffix_match_enable(false)
         , suffix_incremental_enable(false)
-        , suffix_groupcounter_topk(100000)
+        , suffix_groupcounter_topk(10000)
     {
     }
 

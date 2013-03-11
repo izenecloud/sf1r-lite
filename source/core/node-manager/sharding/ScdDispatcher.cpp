@@ -103,12 +103,8 @@ bool ScdDispatcher::getScdFileList(const std::string& dir, std::vector<std::stri
 
             if (ScdParser::checkSCDFormat(file_name) )
             {
-                SCD_TYPE scd_type = ScdParser::checkSCDType(file_name);
-                if( scd_type == INSERT_SCD || scd_type == UPDATE_SCD || scd_type == DELETE_SCD)
-                {
-                    //cout << "scd file: "<<iter->path().string() << endl;
-                    fileList.push_back( iter->path().string() );
-                }
+                //cout << "scd file: "<<iter->path().string() << endl;
+                fileList.push_back( iter->path().string() );
             }
         }
 

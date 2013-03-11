@@ -513,7 +513,7 @@ bool SearchWorker::getSummaryMiningResult_(
 
     if (miningManager_)
     {
-        miningManager_->getMiningResult(resultItem);
+        miningManager_->getMiningResult(actionItem, resultItem);
     }
 
     return true;

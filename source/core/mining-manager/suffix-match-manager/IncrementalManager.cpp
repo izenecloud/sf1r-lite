@@ -2,6 +2,7 @@
 
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
+#include <common/CMAKnowledgeFactory.h>
 
 #include <la-manager/LAManager.h>//
 #include <document-manager/Document.h>
@@ -164,8 +165,10 @@ void IncrementalManager::buildTokenizeDic()
     boost::filesystem::path cma_fmindex_dic(cma_path);
     cma_fmindex_dic /= boost::filesystem::path(tokenize_path_);
 
-    knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel("utf8", cma_fmindex_dic.c_str(), false);
+    //knowledge_ = CMA_Factory::instance()->createKnowledge();
+    //knowledge_->loadModel("utf8", cma_fmindex_dic.c_str(), false);
+    knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(cma_fmindex_dic.c_str(), false);
+
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
     // using the maxprefix analyzer

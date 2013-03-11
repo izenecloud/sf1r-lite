@@ -57,20 +57,81 @@ SET(Boost_USE_STATIC_LIBS OFF)
 FIND_PACKAGE(Boost ${Boost_FIND_VERSION}
   COMPONENTS unit_test_framework)
 
+IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
+  INCLUDE_DIRECTORIES(
+    ${Boost_INCLUDE_DIRS}
+  )
+
 ADD_EXECUTABLE(b5m_matcher
 b5m_matcher.cc
 )
-TARGET_LINK_LIBRARIES(b5m_matcher ${libs})
+TARGET_LINK_LIBRARIES(b5m_matcher  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
 SET_TARGET_PROPERTIES(b5m_matcher PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
+ADD_EXECUTABLE(t_commentdb
+Runner.cpp
+t_commentdb.cc
+)
+TARGET_LINK_LIBRARIES(t_commentdb  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(t_commentdb PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+)
+
+
 ADD_EXECUTABLE(b5m_categorizing
 b5m_categorizing.cc
 )
-TARGET_LINK_LIBRARIES(b5m_categorizing ${libs})
+TARGET_LINK_LIBRARIES(b5m_categorizing  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
 SET_TARGET_PROPERTIES(b5m_categorizing PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
+
+
+ADD_EXECUTABLE(t_offerdb
+Runner.cpp
+t_offerdb.cc
+)
+TARGET_LINK_LIBRARIES(t_offerdb  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(t_offerdb PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+)
+
+ADD_EXECUTABLE(t_offer_db_recorder
+Runner.cpp
+t_offer_db_recorder.cc
+)
+TARGET_LINK_LIBRARIES(t_offer_db_recorder  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(t_offer_db_recorder PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+)
+
+ADD_EXECUTABLE(t_scd_doc_processor
+Runner.cpp
+t_scd_doc_processor.cc
+)
+TARGET_LINK_LIBRARIES(t_scd_doc_processor  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(t_scd_doc_processor PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+)
+
+ADD_EXECUTABLE(t_product_matcher
+Runner.cpp
+t_product_matcher.cc
+)
+TARGET_LINK_LIBRARIES(t_product_matcher ${libs})
+SET_TARGET_PROPERTIES(t_product_matcher PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+)
+ADD_EXECUTABLE(t_product_db
+Runner.cpp
+t_product_db.cc
+)
+TARGET_LINK_LIBRARIES(t_product_db  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(t_product_db PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+)
+
 
 ADD_EXECUTABLE(image_upload
 image_upload.cpp
@@ -96,3 +157,12 @@ TARGET_LINK_LIBRARIES(simhash_train_id ${libs})
 SET_TARGET_PROPERTIES(simhash_train_id PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
+
+ADD_TEST(t_commentdb "${SF1RENGINE_ROOT}/testbin/t_commentdb")
+ADD_TEST(t_offerdb "${SF1RENGINE_ROOT}/testbin/t_offerdb")
+ADD_TEST(t_offer_db_recorder "${SF1RENGINE_ROOT}/testbin/t_offer_db_recorder")
+ADD_TEST(t_product_db "${SF1RENGINE_ROOT}/testbin/t_product_db")
+#ADD_TEST(commentdb "${SF1RENGINE_ROOT}/testbin/t_commentdb")
+#ADD_TEST(commentdb "${SF1RENGINE_ROOT}/testbin/t_commentdb")
+
+ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)

@@ -52,7 +52,7 @@ public:
             std::vector<std::pair<izenelib::util::UString, std::vector<izenelib::util::UString> > >& label_list);
 
 public:
-    bool getSearchResult(KeywordSearchResult& resultItem);
+    bool getSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem);
 
     bool getSimilarDocIdList(uint32_t documentId, uint32_t maxNum, std::vector<std::pair<uint32_t, float> >& result);
 

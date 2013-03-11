@@ -70,19 +70,24 @@ bool UueGenerator::Generate(const std::string& mdb_instance)
             if( sdocid.empty() || spid.empty() ) continue;
             UueItem uue;
             uue.docid = sdocid;
-            if(scd_type==INSERT_SCD)
+
+            switch (scd_type)
             {
+            case INSERT_SCD:
                 uue.from_to.to = spid;
-            }
-            else if(scd_type==UPDATE_SCD)
-            {
+                break;
+
+            case UPDATE_SCD:
+            case RTYPE_SCD:
                 uue.from_to.from = spid;
                 uue.from_to.to = spid;
-            }
-            else
-            {
+                break;
+
+            default:
                 uue.from_to.from = spid;
+                break;
             }
+
             ofs<<uue.docid<<","<<uue.from_to.from<<","<<uue.from_to.to<<std::endl;
         }
     }

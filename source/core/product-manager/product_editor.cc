@@ -271,12 +271,12 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
     new_doc.eraseProperty(config_.price_property_name);
     new_doc.eraseProperty(config_.uuid_property_name);
     std::vector<uint32_t> uuid_docid_list;
-    int type = 1; //insert
+    SCD_TYPE type = INSERT_SCD; //insert
     {
         data_source_->GetDocIdList(uuid, uuid_docid_list, 0);
         if (!uuid_docid_list.empty())
         {
-            type = 2; //update
+            type = UPDATE_SCD; //update
         }
     }
     for (uint32_t i = 0; i < doc_list.size(); i++)
@@ -347,7 +347,7 @@ bool ProductEditor::AppendToGroup_(const std::vector<PMDocumentType>& doc_list, 
 #ifdef PM_EDIT_INFO
             LOG(INFO)<<"Output : "<<2<<" , "<<doc_uuid<<" , itemcount: "<<itemcount<<std::endl;
 #endif
-            op_processor_->Append(2, update_doc);
+            op_processor_->Append(UPDATE_SCD, update_doc);
             util_->AddPrice(new_doc, doc);
         }
 
@@ -523,7 +523,7 @@ bool ProductEditor::RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& d
 #ifdef PM_EDIT_INFO
                 LOG(INFO)<<"Output : "<<3<<" , "<< olduuid <<std::endl;
 #endif
-                op_processor_->Append(3, origin_doc);
+                op_processor_->Append(DELETE_SCD, origin_doc);
             }
             else
             {
@@ -538,7 +538,7 @@ bool ProductEditor::RemovePermanentlyFromAnyGroup(const std::vector<uint32_t>& d
 #ifdef PM_EDIT_INFO
                 LOG(INFO)<<"Output : "<<2<<" , "<< olduuid <<" , itemcount: "<<itemcount<<std::endl;
 #endif
-                op_processor_->Append(2, origin_doc);
+                op_processor_->Append(UPDATE_SCD, origin_doc);
             }
 #ifdef USE_LOG_SERVER
             UpdateUUIDRequest uuidReq;
@@ -659,7 +659,7 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
 #ifdef PM_EDIT_INFO
         LOG(INFO)<<"Output : "<<1<<" , "<<doc_uuid<<" , itemcount: "<<1<<std::endl;
 #endif
-        op_processor_->Append(1, new_doc);
+        op_processor_->Append(INSERT_SCD, new_doc);
         std::vector<uint32_t> update_docid_list(1, docid);
 #ifdef PM_EDIT_INFO
         LOG(INFO)<<"Updating uuid : "<<docid<<" , "<<doc_uuid<<std::endl;
@@ -735,7 +735,7 @@ bool ProductEditor::RemoveFromGroup(const izenelib::util::UString& uuid, const s
 #ifdef PM_EDIT_INFO
         LOG(INFO)<<"Output : "<<2<<" , "<<uuid<<" , itemcount: "<<itemcount<<std::endl;
 #endif
-        op_processor_->Append(2, origin_doc);
+        op_processor_->Append(UPDATE_SCD, origin_doc);
     }
 #ifdef USE_LOG_SERVER
     UpdateUUIDRequest uuidReq;

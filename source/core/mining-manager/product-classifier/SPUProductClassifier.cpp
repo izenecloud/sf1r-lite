@@ -1,6 +1,7 @@
 #include "SPUProductClassifier.hpp"
 #include "TuanEnricher.hpp"
 #include <common/type_defs.h>
+#include <common/CMAKnowledgeFactory.h>
 #include <b5m-manager/product_matcher.h>
 #include <util/profiler/ProfilerGroup.h>
 #include <document-manager/DocContainer.h>
@@ -27,7 +28,7 @@ SPUProductClassifier::SPUProductClassifier()
 SPUProductClassifier::~SPUProductClassifier()
 {
     if(analyzer_) delete analyzer_;
-    if(knowledge_) delete knowledge_;
+    //if(knowledge_) delete knowledge_;
     if(doc_container_) delete doc_container_;
     if(tuan_enricher_) delete tuan_enricher_;
 }
@@ -50,8 +51,9 @@ void SPUProductClassifier::InitOnce_(const std::string& resource)
     boost::filesystem::path cma_fmindex_dic(cma_path);
     cma_fmindex_dic /= boost::filesystem::path("fmindex_dic");
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
-    knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
+    //knowledge_ = CMA_Factory::instance()->createKnowledge();
+    //knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
+    knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(cma_fmindex_dic.c_str(), false);
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
     // using the maxprefix analyzer

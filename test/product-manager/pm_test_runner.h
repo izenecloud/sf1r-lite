@@ -40,7 +40,7 @@ public:
 
     void Test(const std::vector<std::string>& input_list, const std::vector<std::string>& result_list)
     {
-        std::vector<std::pair<int, PMDocumentType> >& source = op_processor_->Data();
+        std::vector<std::pair<SCD_TYPE, PMDocumentType> >& source = op_processor_->Data();
         uint32_t source_start = source.size();
         for(uint32_t i=0;i<input_list.size();i++)
         {
@@ -224,8 +224,8 @@ private:
 
     void Validation_(uint32_t start, const std::vector<std::string>& result_list)
     {
-        std::vector<std::pair<int, PMDocumentType> >& all_source = op_processor_->Data();
-        std::vector<std::pair<int, PMDocumentType> > source(all_source.begin()+start, all_source.end());
+        std::vector<std::pair<SCD_TYPE, PMDocumentType> >& all_source = op_processor_->Data();
+        std::vector<std::pair<SCD_TYPE, PMDocumentType> > source(all_source.begin()+start, all_source.end());
         BOOST_CHECK(source.size()==result_list.size());
 
         for(uint32_t i=0;i<result_list.size();i++)
@@ -236,7 +236,7 @@ private:
         }
     }
 
-    void ResultCheck_(const PMTestResultItem& item, const std::pair<int, PMDocumentType>& result)
+    void ResultCheck_(const PMTestResultItem& item, const std::pair<SCD_TYPE, PMDocumentType>& result)
     {
         BOOST_CHECK( item.op == result.first );
         const PMDocumentType& result_doc = result.second;

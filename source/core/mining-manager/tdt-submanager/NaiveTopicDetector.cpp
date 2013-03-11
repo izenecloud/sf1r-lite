@@ -1,5 +1,6 @@
 #include "NaiveTopicDetector.hpp"
 #include "WikiGraph.hpp"
+#include <common/CMAKnowledgeFactory.h>
 
 #include <glog/logging.h>
 #include <icma/icma.h>
@@ -90,7 +91,7 @@ NaiveTopicDetector::NaiveTopicDetector(
 NaiveTopicDetector::~NaiveTopicDetector()
 {
     if (analyzer_) delete analyzer_;
-    if (knowledge_) delete knowledge_;
+    //if (knowledge_) delete knowledge_;
     if (opencc_) delete opencc_;
     if (kpe_trie_) delete kpe_trie_;
     if (related_map_) delete related_map_;
@@ -191,19 +192,21 @@ void NaiveTopicDetector::InitKnowledge_()
     LAPool::getInstance()->get_cma_path(cma_path);
 
     LOG(INFO) << "topic detector dictionary path : " << tokenize_dicpath_ << endl;
-    knowledge_ = CMA_Factory::instance()->createKnowledge();
+    //knowledge_ = CMA_Factory::instance()->createKnowledge();
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
 	
     if(enable_semantic_)
     {
-        knowledge_->loadModel( "utf8", cma_path.c_str());
+        //knowledge_->loadModel( "utf8", cma_path.c_str());
+        knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(cma_path);
         // using the maxprefix analyzer
         analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE, 77);
     }
     else
     {
-        knowledge_->loadModel( "utf8", tokenize_dicpath_.c_str(), false);
+        //knowledge_->loadModel( "utf8", tokenize_dicpath_.c_str(), false);
+        knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(tokenize_dicpath_, false);
         analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE, 2);
     }
     analyzer_->setKnowledge(knowledge_);

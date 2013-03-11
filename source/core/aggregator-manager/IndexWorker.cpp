@@ -418,40 +418,16 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
 
                 LOG(INFO) << "Processing SCD file. " << bfs::path(*scd_it).stem();
 
-                switch (parser.checkSCDType(*scd_it))
-                {
-                case INSERT_SCD:
-                {
-                    if (!doBuildCollection_(*scd_it, 1, numdoc))
-                    {
-                        //continue;
-                    }
-                    LOG(INFO) << "Indexing Finished";
+                SCD_TYPE scdType = parser.checkSCDType(*scd_it);
 
-                }
-                break;
-                case DELETE_SCD:
+                if (scdType != INSERT_SCD)
                 {
-                    if (documentManager_->getMaxDocId() > 0)
-                    {
-                        doBuildCollection_(*scd_it, 3, 0);
-                        LOG(INFO) << "Delete Finished";
-                    }
-                    else
-                    {
-                        LOG(WARNING) << "Indexed documents do not exist. File " << bfs::path(*scd_it).stem();
-                    }
+                    numdoc = 0;
                 }
-                break;
-                case UPDATE_SCD:
-                {
-                    doBuildCollection_(*scd_it, 2, 0);
-                    LOG(INFO) << "Update Finished";
-                }
-                break;
-                default:
-                    break;
-                }
+
+                doBuildCollection_(*scd_it, scdType, numdoc);
+                LOG(INFO) << "Indexing Finished";
+
                 parser.load(*scd_it);
                 proccessedFileSize += parser.getFileSize();
                 indexProgress_.totalFilePos_ = proccessedFileSize;
@@ -807,11 +783,8 @@ bool IndexWorker::createDocument(const Value& documentValue)
     docid_t oldId = 0;
     std::string source = "";
     IndexWorker::UpdateType updateType;
-    if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType))
-    {
+    if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType, INSERT_SCD))
         return false;
-    }
-
 
     if(!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
@@ -861,7 +834,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     IndexWorker::UpdateType updateType;
     std::string source = "";
 
-    if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType, false))
+    if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType, UPDATE_SCD))
     {
         return false;
     }
@@ -1153,7 +1126,7 @@ bool IndexWorker::getPropertyValue_(const PropertyValue& value, std::string& val
 
 bool IndexWorker::doBuildCollection_(
         const std::string& fileName,
-        int op,
+        SCD_TYPE scdType,
         uint32_t numdoc)
 {
     ScdParser parser(bundleConfig_->encoding_);
@@ -1188,29 +1161,28 @@ bool IndexWorker::doBuildCollection_(
     if (timestamp == -1)
         timestamp = Utilities::createTimeStamp();
 
-    if (op <= 2) // insert or update
-    {
-        bool isInsert = (op == 1);
-        if (!insertOrUpdateSCD_(parser, isInsert, numdoc, timestamp))
-            return false;
-    }
-    else //delete
+    if (scdType == DELETE_SCD)
     {
         if (!deleteSCD_(parser, timestamp))
+            return false;
+    }
+    else
+    {
+        if (!insertOrUpdateSCD_(parser, scdType, numdoc, timestamp))
             return false;
     }
     searchWorker_->reset_all_property_cache();
 
     clearMasterCache_();
 
-    saveSourceCount_(op);
+    saveSourceCount_(scdType);
 
     return true;
 }
 
 bool IndexWorker::insertOrUpdateSCD_(
         ScdParser& parser,
-        bool isInsert,
+        SCD_TYPE scdType,
         uint32_t numdoc,
         time_t timestamp)
 {
@@ -1254,7 +1226,7 @@ bool IndexWorker::insertOrUpdateSCD_(
         document.clear();
         indexDocument.clear();
         oldIndexDocument.clear();
-        if (!prepareDocument_(*doc, document, indexDocument, oldIndexDocument, oldId, source, new_timestamp, updateType, isInsert))
+        if (!prepareDocument_(*doc, document, indexDocument, oldIndexDocument, oldId, source, new_timestamp, updateType, scdType))
             continue;
 
         if (!source.empty())
@@ -1262,7 +1234,7 @@ bool IndexWorker::insertOrUpdateSCD_(
             ++productSourceCount_[source];
         }
 
-        if (isInsert || oldId == 0)
+        if (scdType == INSERT_SCD || oldId == 0)
         {
             if (!insertDoc_(document, indexDocument, new_timestamp))
                 continue;
@@ -1337,12 +1309,6 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
         if (idManager_->getDocIdByDocName(Utilities::md5ToUint128(docid_str), docId, false))
         {
             docIdList.push_back(docId);
-        }
-        else
-        {
-            string property;
-            iter->convertString(property, bundleConfig_->encoding_);
-            //LOG(ERROR) << "Deleted document " << property << " does not exist, skip it";
         }
     }
     std::sort(docIdList.begin(), docIdList.end());
@@ -1622,7 +1588,7 @@ void IndexWorker::savePriceHistory_(int op)
 {
 }
 
-void IndexWorker::saveSourceCount_(int op)
+void IndexWorker::saveSourceCount_(SCD_TYPE scdType)
 {
     if (bundleConfig_->productSourceField_.empty())
         return;
@@ -1635,18 +1601,7 @@ void IndexWorker::saveSourceCount_(int op)
         productCount.setSource(iter->first);
         productCount.setCollection(bundleConfig_->collectionName_);
         productCount.setNum(iter->second);
-        if (op == 1)
-        {
-            productCount.setFlag("insert");
-        }
-        else if (op == 2)
-        {
-            productCount.setFlag("update");
-        }
-        else
-        {
-            productCount.setFlag("delete");
-        }
+        productCount.setFlag(ScdParser::SCD_TYPE_NAMES[scdType]);
         productCount.setTimeStamp(now);
         productCount.save();
     }
@@ -1661,7 +1616,7 @@ bool IndexWorker::prepareDocument_(
         std::string& source,
         time_t& timestamp,
         IndexWorker::UpdateType& updateType,
-        bool insert)
+        SCD_TYPE scdType)
 {
     CREATE_SCOPED_PROFILER (preparedocument, "IndexWorker", "IndexWorker::prepareDocument_");
     CREATE_PROFILER (pid_date, "IndexWorker", "IndexWorker::prepareDocument__::DATE");
@@ -1701,11 +1656,20 @@ bool IndexWorker::prepareDocument_(
             propertyValueU.convertString(fieldValue, encoding);
             uint128_t scdDocId = Utilities::md5ToUint128(fieldValue);
             // update
-            if (!insert)
+            if (scdType != INSERT_SCD)
             {
-                updateType = checkUpdateType_(scdDocId, doc, oldId, docId);
+                updateType = checkUpdateType_(scdDocId, doc, oldId, docId, scdType);
+
+                if (updateType == INSERT && scdType == RTYPE_SCD)
+                    return false;
+
                 if (updateType == RTYPE)
+                {
+                    if (documentManager_->isDeleted(oldId))
+                        return false;
+
                     prepareIndexRTypeProperties_(oldId, oldIndexDocument);
+                }
             }
             else if (!createInsertDocId_(scdDocId, docId))
             {
@@ -2461,12 +2425,19 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
         const uint128_t& scdDocId,
         SCDDoc& doc,
         docid_t& oldId,
-        docid_t& docId)
+        docid_t& docId,
+        SCD_TYPE scdType)
 {
     if (!idManager_->getDocIdByDocName(scdDocId, oldId, false))
     {
         idManager_->updateDocIdByDocName(scdDocId, docId);
         return INSERT;
+    }
+
+    if (scdType == RTYPE_SCD)
+    {
+        docId = oldId;
+        return RTYPE;
     }
 
     SCDDoc::iterator p = doc.begin();

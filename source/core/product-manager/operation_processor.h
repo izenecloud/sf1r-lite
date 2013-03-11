@@ -2,6 +2,7 @@
 #define SF1R_PRODUCTMANAGER_OPERATIONPROCESSOR_H
 
 #include <common/type_defs.h>
+#include <common/ScdParser.h>
 
 #include <boost/operators.hpp>
 
@@ -15,24 +16,15 @@ namespace sf1r
 class OperationProcessor
 {
 public:
-    enum {INSERT = 1, UPDATE, DELETE};
-    
     virtual ~OperationProcessor()
     {
     }
     
-    virtual void Append(int op, const PMDocumentType& doc)
-    {
-    }
+    virtual void Append(SCD_TYPE op, const PMDocumentType& doc) = 0;
     
-    virtual bool Finish()
-    {
-        return false;
-    }
+    virtual bool Finish() = 0;
     
-    virtual void Clear()
-    {
-    }
+    virtual void Clear() = 0;
     
     const std::string& GetLastError() const
     {
