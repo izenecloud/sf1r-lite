@@ -97,10 +97,10 @@ using driver::Keys;
  *   - @b use_original_keyword (@c Bool = @c false): TODO
  * - @b is_random_rank (@c Bool = @c false): If true, the search results would
  *   be randomly ordered.@n
- * - @b is_require_related (@c Bool = @c false): If true, the search results would
- *   be contain related queries.@n
  *   In order to enable this feature, you need also configure a non-zero weight
  *   for <ProductRanking><Score type="random"> in collection config file.
+ * - @b is_require_related (@c Bool = @c false): If true, the search results would
+ *   be contain related queries.
  * - @b query_source (@c String): Where does the query come from, used to decide
  *   the categories to boost in product ranking.
  * - @b boost_group_label (@c Array): The group labels to boost product rankings.@n
