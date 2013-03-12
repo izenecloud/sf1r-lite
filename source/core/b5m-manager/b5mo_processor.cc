@@ -108,6 +108,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
         if(odb_->get(sdocid, spid)) 
         {
             doc.property("uuid") = UString(spid, UString::UTF_8);
+            type = UPDATE_SCD;
         }
         else
         {
