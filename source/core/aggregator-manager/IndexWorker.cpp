@@ -1125,6 +1125,7 @@ bool IndexWorker::updateDoc_(
     if (INSERT == updateType)
         return insertDoc_(document, indexDocument, timestamp, immediately);
 
+    //LOG (INFO) << "Here Down Is Rtype Document ...";
     prepareIndexRTypeProperties_(document.getId(), indexDocument);
     if (hooker_)
     {
@@ -1137,6 +1138,7 @@ bool IndexWorker::updateDoc_(
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
     UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
+    documentManager_->addRtypeDocid(document.getId());
     updateData.get<0>() = updateType;
     updateData.get<1>().swap(document);
     updateData.get<2>().swap(indexDocument);
