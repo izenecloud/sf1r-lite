@@ -92,7 +92,7 @@ void write(Document  doc,ProductMatcher::Product product)
 {
     ofstream out;
     out.open("write",ios::app|ios::out);
-    out<<"checkProcesss(matcher,\""<<doc.property("uuid")<<"\",\""<< doc.property("DOCID")<<"\",\""<< get(doc,"Source")<<"\",\""<< get(doc,"DATE")<<"\",\""<< get(doc,"Price")<<"\",\""<< get(doc,"Attribute")<<"\",\""<< get(doc,"Title")<<"\",\""<< product.fcategory<<"\",\""<<  product.scategory<<"\",\""<<  product.sbrand<<"\")"<<endl;
+    out<<"checkProcesss(matcher,\""<<doc.property("uuid")<<"\",\""<< doc.property("DOCID")<<"\",\""<< get(doc,"Source")<<"\",\""<< get(doc,"DATE")<<"\",\""<< get(doc,"Price")<<"\",\""<< get(doc,"Attribute")<<"\",\""<< get(doc,"Title")<<"\",\""<< product.fcategory<<"\",\""<<  product.scategory<<"\",\""<<  product.sbrand<<"\");"<<endl;
 }
 
 void ProcessVector(ProductMatcher &matcher,vector<Document> docvec)
@@ -177,8 +177,8 @@ int main(int ac, char** av)
     cout<<"here!"<<endl;
     std::string cma_path= IZENECMA_KNOWLEDGE ;
     std::string knowledge_dir= MATCHER_KNOWLEDGE;
-    string scd_file= TEST_SCD_PATH;
-    /*
+    string scd_file;//= TEST_SCD_PATH;
+    
     if(ac==4)
     {
        //LOG(INFO)<<"the command should be like this:   ./b5m_product_matcher  knowledge_dir  cma_path  scd_path";
@@ -191,7 +191,7 @@ int main(int ac, char** av)
        cout<<"the command should be like this:   ./b5m_product_matcher  knowledge_dir  cma_path  scd_path"<<endl;
        return 0;
     }
-    */
+    
     bool noprice=false;
     int max_depth=3;
 
@@ -252,6 +252,7 @@ int main(int ac, char** av)
 
     checkProcesss(matcher,"7bc999f5d10830d0c59487bd48a73cae","46c999f5d10830d0c59487bd48adce8a","苏宁","20130301","1043","产地:中国,质量:优","华硕  TF700T","电脑办公>电脑整机>笔记本","笔记本电脑","Asus/华硕");
     checkProcesss(matcher,"72c999f5d10830d0c59487bd48a73cae","35c999f5d10830d0c59487bd48adce8a","凡客","20130301","1043","产地:韩国,质量:差","2012秋冬新款女外精品棉大衣","服饰鞋帽>女装","女装/女士精品","");
+
     std::cout<<"here!"<<endl;
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(scd_file);
@@ -264,7 +265,7 @@ int main(int ac, char** av)
         {
             LOG(INFO)<<"Find Documents "<<n<<std::endl;
         }
-        if(n>40)
+        if(n>80000)
         {
             break;
         }
@@ -279,7 +280,8 @@ int main(int ac, char** av)
             const std::string& property_name = p->first;
             doc.property(property_name) = p->second;
         }
-
+        if(n%1000==0)
+        {
         //threaddocvec[n%threadnum].push_back(doc);
         ProductMatcher::Product result_product;
 
@@ -287,6 +289,7 @@ int main(int ac, char** av)
 
         matcher.Process(doc, result_product); 
         write(doc,result_product);
+        }
 
     }
     return 1;

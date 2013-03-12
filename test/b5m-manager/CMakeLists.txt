@@ -111,7 +111,7 @@ b5m_scd_doc_processor.cc
 )
 TARGET_LINK_LIBRARIES(b5m_scd_doc_processor  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
 SET_TARGET_PROPERTIES(b5m_scd_doc_processor PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m/testbin
 )
 
 ADD_EXECUTABLE(b5m_product_matcher
@@ -119,7 +119,7 @@ b5m_product_matcher.cc
 )
 TARGET_LINK_LIBRARIES(b5m_product_matcher ${libs})
 SET_TARGET_PROPERTIES(b5m_product_matcher PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m/testbin
 )
 ADD_EXECUTABLE(t_product_db
 Runner.cpp
