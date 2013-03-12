@@ -774,9 +774,12 @@ void RecoveryChecker::handleConfigUpdate()
             if(current.filename().string().rfind(".xml") == (current.filename().string().length() - std::string(".xml").length()))
             {
                 std::string filename = current.filename().string();
-                std::string file_content;
-                std::ifstream cur_file_ifs;
                 LOG(INFO) << "find a config file for : " << current;
+                if (filename == "sf1config.xml")
+                {
+                    continue;
+                }
+                std::ifstream cur_file_ifs;
                 cur_file_ifs.open(current.string().c_str(), ios::binary);
                 cur_file_ifs.seekg(0, ios::end);
                 size_t cur_len = cur_file_ifs.tellg();
@@ -813,6 +816,8 @@ void RecoveryChecker::handleConfigUpdate()
         std::map<std::string, std::string>::const_iterator cit = cur_conf_log.config_file_list.begin();
         for(; cit != cur_conf_log.config_file_list.end(); ++cit)
         {
+            if (bfs::exists(configDir_ + "/" + cit->first + ".unchanged"))
+                bfs::remove(configDir_ + "/" + cit->first + ".unchanged");
             bfs::rename(configDir_ + "/" + cit->first, configDir_ + "/" + cit->first + ".unchanged");
         }
         cit = last_conf_log.config_file_list.begin();

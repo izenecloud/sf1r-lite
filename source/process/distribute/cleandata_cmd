@@ -5,5 +5,7 @@ rm -rf ~/codebase/sf1r-engine/bin/collection/chinese-wiki/query-data
 rm -rf ~/codebase/sf1r-engine/bin/req-backup
 rm -rf ~/codebase/sf1r-engine/bin/req-log
 rm  ~/codebase/sf1r-engine/bin/rollback_flag
+rm  ~/codebase/sf1r-engine/bin/distribute_update_conf.flag
+rm  ~/codebase/sf1r-engine/bin/distribute_last_conf
 rm  ~/codebase/sf1r-engine/bin/distribute_force_exit.flag
 rm  ~/codebase/sf1r-engine/bin/config/example.xml 

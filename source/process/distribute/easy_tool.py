@@ -47,7 +47,7 @@ scp_remote = 'scp -r ' + loginuser + '@'
 primary_host = ['10.10.99.121']
 replicas_host = ['10.10.99.122', '10.10.99.123']
 
-logfile = open('./result.log', 'w')
+logfile = open('./result.log', 'a')
 
 def printtofile(*objects):
     logfile.writelines(objects)
@@ -300,6 +300,7 @@ def check_col(check_interval = 10):
         if len(error) > 0:
             printtofile ('data is not consistent after running for host : ' + host)
             failed_host += [host]
+            printtofile (error)
     return (failed_host, down_host)
 
 def run_testwrite(testfail_host, testfail_type, test_writereq):
@@ -381,6 +382,21 @@ def run_auto_fail_test(args):
     while True:
         printtofile ('waiting next fail test')
         time.sleep(10)
+
+        reset_state_and_run()
+        stop_all([])
+
+        printtofile ('testing for updated config')
+        cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_update_conf.flag'
+        send_cmd_andstay(primary_host, cmdstr)
+        start_all(['', ''] + primary_host)
+        time.sleep(30);
+        start_all(['', ''] + replicas_host)
+        time.sleep(30)
+        start_all(['', ''] + replicas_host)
+        (failed_host, down_host) = check_col()
+        if len(failed_host) > 0 or len(down_host) > 0:
+            printtofile ('check failed for updated config test')
 
         for test_writereq in test_writereq_files:
             printtofile ('running fail test for write request : ' + test_writereq)
