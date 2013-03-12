@@ -77,6 +77,7 @@ bool checkProcesss(ProductMatcher &matcher,string spid,string soid,string source
 
     std::vector<ProductMatcher::Product> result_products;
     matcher.Process(doc, 3, result_products);
+    bool check=true;
     for(unsigned i=0; i<result_products.size(); i++)
     {
         bool ret=checkProduct(result_products[i],fcategory, scategory, sbrand);
@@ -84,9 +85,10 @@ bool checkProcesss(ProductMatcher &matcher,string spid,string soid,string source
         {
             show(doc);
             show(result_products[i]);
+            check=false;
         }
     }
-
+    return check;
 }
 void write(Document  doc,ProductMatcher::Product product)
 {
@@ -184,7 +186,7 @@ int main(int ac, char** av)
        //LOG(INFO)<<"the command should be like this:   ./b5m_product_matcher  knowledge_dir  cma_path  scd_path";
        knowledge_dir=av[1];
        cma_path=av[2];
-       scd_path=av[3];
+       scd_file=av[3];
     }
     else
     {
