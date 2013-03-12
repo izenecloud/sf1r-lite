@@ -38,6 +38,11 @@
 #include <b5m-manager/scd_doc_processor.h>
 #include <b5m-manager/product_db.h>
 #include <boost/test/unit_test.hpp>
+#include <boost/thread.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/bind.hpp>
+#include <util/test/BoostTestThreadSafety.h>
+
 using namespace sf1r;
 using namespace std;
 using namespace boost;
@@ -53,53 +58,62 @@ string toString(UString us)
     return str;
 }
 
-void Process()
+void ProcessVector(ProductMatcher &matcher,vector<Document> docvec)
 {
+    ProductMatcher::Product result_product;
+    for(unsigned i=0; i<docvec.size(); i++)
+    {
+        cout<<i<<endl;
+        matcher.Process(docvec[i], result_product);
+    }
 }
+
 
 string getTitle(Document doc)
 {
-     UString utitle;
-     doc.getProperty("Title", utitle);
-     return toString(utitle);
+    UString utitle;
+    doc.getProperty("Title", utitle);
+    return toString(utitle);
 }
 
 string getSource(Document doc)
 {
 
-     UString usource;
-     doc.getProperty("Source", usource);
-     return toString(usource);
+    UString usource;
+    doc.getProperty("Source", usource);
+    return toString(usource);
 }
 
 string get(Document doc,string prop)
 {
 
-     UString ustr;
-     doc.getProperty(prop, ustr);
-     return toString(ustr);
+    UString ustr;
+    doc.getProperty(prop, ustr);
+    return toString(ustr);
 }
 void check(Document doc,string source,string price,string title,string category,string attrubute,string mobile)//,uint128_t docid,uint128_t uuid
 {
-      BOOST_CHECK_EQUAL(get(doc,"Source"),source);
+    BOOST_CHECK_EQUAL(get(doc,"Source"),source);
     //  BOOST_CHECK_EQUAL(doc.property("DOCID")==docid,true);
     //  BOOST_CHECK_EQUAL(doc.property("uuid")==uuid,true);
-      BOOST_CHECK_EQUAL(get(doc,"Price"),price);
-      BOOST_CHECK_EQUAL(get(doc,"Title"),title);
-      BOOST_CHECK_EQUAL(get(doc,"Category"),category);
-      BOOST_CHECK_EQUAL(get(doc,"Attribute"),attrubute);
-      BOOST_CHECK_EQUAL(doc.hasProperty("mobile"),mobile.length()>0);
+    BOOST_CHECK_EQUAL(get(doc,"Price"),price);
+    BOOST_CHECK_EQUAL(get(doc,"Title"),title);
+    BOOST_CHECK_EQUAL(get(doc,"Category"),category);
+    BOOST_CHECK_EQUAL(get(doc,"Attribute"),attrubute);
+    BOOST_CHECK_EQUAL(doc.hasProperty("mobile"),mobile.length()>0);
 
 }
+
+
 void show(Document doc)
 {
-     cout<<get(doc,"Source")<<" "<<doc.property("DOCID")<<" "<<doc.property("uuid")<<" "<<get(doc,"Price")<<"  "<<get(doc,"Title")<<"  "<<get(doc,"Category")<<" "<<get(doc,"Attribute")<<"  mobile "<<doc.property("mobile") <<endl;
+    cout<<get(doc,"Source")<<" "<<doc.property("DOCID")<<" "<<doc.property("uuid")<<" "<<get(doc,"Price")<<"  "<<get(doc,"Title")<<"  "<<get(doc,"Category")<<" "<<get(doc,"Attribute")<<"  mobile "<<doc.property("mobile") <<endl;
 }
 void check(ProductMatcher::Product product,string fcategory,string scategory,string sbrand)
 {
-      BOOST_CHECK_EQUAL(product.scategory.find(scategory)==string::npos,false);
-      BOOST_CHECK_EQUAL(product.fcategory.find(fcategory)==string::npos,false);
-      BOOST_CHECK_EQUAL(product.sbrand,sbrand);
+    BOOST_CHECK_EQUAL(product.scategory.find(scategory)==string::npos,false);
+    BOOST_CHECK_EQUAL(product.fcategory.find(fcategory)==string::npos,false);
+    BOOST_CHECK_EQUAL(product.sbrand,sbrand);
 }
 
 
@@ -110,9 +124,9 @@ void show(ProductMatcher::Product product)
 
 
 
-BOOST_AUTO_TEST_SUITE(ScdDocProcessor_test)
 
-BOOST_AUTO_TEST_CASE(ScdDocProcessor_case)
+
+int main()
 {
     string bdb_path="./bdb";
     string odb_path="./odb";
@@ -168,7 +182,7 @@ BOOST_AUTO_TEST_CASE(ScdDocProcessor_case)
     bdb->get(bdocid, brand);
     BOOST_CHECK_EQUAL(toString(brand),"联想");
     type=UPDATE_SCD;
-    doc.property("Source") =UString("天猫", UString::UTF_8);   
+    doc.property("Source") =UString("天猫", UString::UTF_8);
     doc.property("Price") =UString("106.0", UString::UTF_8);
     processor.Process(doc,type);
     check(doc,"天猫","106.00","苹果 iphone4s", "平板电脑/MID","品牌:苹果,型号:P85,容量:16G/16GB","1");//1,0x5f29098f1f606d9daeb41e49e9a24f87, "
@@ -185,7 +199,7 @@ BOOST_AUTO_TEST_CASE(ScdDocProcessor_case)
     odb->insert(2, pid);
     odb->flush();
     processor.Process(doc2,type);
-    check(doc2,"天猫","154.00","","手机","品牌:三星",""); 
+    check(doc2,"天猫","154.00","","手机","品牌:三星","");
     ProductMatcher::Product product;
     matcher->GetProduct(get(doc2,"uuid"), product);
     //check(product);
@@ -202,9 +216,9 @@ BOOST_AUTO_TEST_CASE(ScdDocProcessor_case)
     doc3.property("Category") =UString("男装>夹克", UString::UTF_8);
     doc3.property("Attribute") =UString("品牌:brand1", UString::UTF_8);
     processor.Process(doc3,type);
-//当当 03 03 15434.00    男装>夹克 品牌:brand1  mobile 
+//当当 03 03 15434.00    男装>夹克 品牌:brand1  mobile
 
-    check(doc3,"当当","15434.00","","男装>夹克","品牌:brand1",""); 
+    check(doc3,"当当","15434.00","","男装>夹克","品牌:brand1","");
     processor.Process(doc,type);
     Document doc4;
     doc4.property("Title") ="SAMSUNG/三星 GALAXYTAB2 P3100 8GB 3G版";
@@ -216,7 +230,7 @@ BOOST_AUTO_TEST_CASE(ScdDocProcessor_case)
 
 
 //    mathcher process using namespace ProductMatcher;
-   std::vector<ProductMatcher::Product> result_products;
+    std::vector<ProductMatcher::Product> result_products;
 
 
     string spid="7bc999f5d10830d0c59487bd48a73cae",soid="46c999f5d10830d0c59487bd48adce8a",source="苏宁",date="20130301",price="1043",attribute="产地:中国,质量:优",title="华硕  TF700T";
@@ -228,11 +242,11 @@ BOOST_AUTO_TEST_CASE(ScdDocProcessor_case)
     doc.property("Attribute") = izenelib::util::UString(attribute,izenelib::util::UString::UTF_8);
     matcher->Process(doc, 3, result_products);
 
-    for(unsigned i=0;i<result_products.size();i++)
+    for(unsigned i=0; i<result_products.size(); i++)
     {
-       check(result_products[i],"电脑办公>电脑整机>笔记本","笔记本电脑","Asus/华硕");
+        check(result_products[i],"电脑办公>电脑整机>笔记本","笔记本电脑","Asus/华硕");
     }
-   std::vector<ProductMatcher::Product> result_products2;
+    std::vector<ProductMatcher::Product> result_products2;
     spid="72c999f5d10830d0c59487bd48a73cae",soid="35c999f5d10830d0c59487bd48adce8a",source="凡客",date="20130301",price="1043",attribute="产地:韩国,质量:差",title="2012秋冬新款女外精品棉大衣";
     doc.property("DATE") = izenelib::util::UString(date, izenelib::util::UString::UTF_8);
     doc.property("DOCID") =     izenelib::util::UString(spid,izenelib::util::UString::UTF_8);
@@ -244,23 +258,12 @@ BOOST_AUTO_TEST_CASE(ScdDocProcessor_case)
 
 
 
-    for(unsigned i=0;i<result_products2.size();i++)
+    for(unsigned i=0; i<result_products2.size(); i++)
     {
-       check(result_products2[i],"服饰鞋帽>女装","女装/女士精品","");
+        check(result_products2[i],"服饰鞋帽>女装","女装/女士精品","");
     }
 
-//   ScdDocProcessor
-/*
-
-    ScdDocProcessor::ProcessorType p = boost::bind(&Process);
-    ScdDocProcessor sd_processor(p);
-    sd_processor.AddInput(scd_path);
-    B5MHelper::PrepareEmptyDir(output_dir);
-    sd_processor.SetOutput(output_dir);
-    sd_processor.Process();
-*/
 }
 
 
-BOOST_AUTO_TEST_SUITE_END()
 
