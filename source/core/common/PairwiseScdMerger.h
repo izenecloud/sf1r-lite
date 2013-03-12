@@ -192,12 +192,6 @@ public:
                         doc.property(property_name) = p->second;
                     }
                     if(!ValidM_(doc,m)) continue;
-                    //std::string sdocid;
-                    //doc.getString("DOCID", sdocid);
-                    //if(sdocid=="629397ed41db1a1056dc88fd1bbd604e")
-                    //{
-                        //std::cerr<<"TEST length E "<<doc.getPropertySize()<<std::endl;
-                    //}
                     ValueType value(doc, type);
                     ProcessE(value);
                 }
@@ -304,18 +298,6 @@ public:
     
     static void DefaultMerge(ValueType& value, const ValueType& another_value)
     {
-        //std::string sdocid;
-        //std::string asdocid;
-        //value.doc.getString("DOCID", sdocid);
-        //another_value.doc.getString("DOCID", asdocid);
-        //if(sdocid=="629397ed41db1a1056dc88fd1bbd604e")
-        //{
-            //std::cerr<<"TEST length B "<<value.doc.getPropertySize()<<std::endl;
-        //}
-        //if(asdocid=="629397ed41db1a1056dc88fd1bbd604e")
-        //{
-            //std::cerr<<"TEST length AB "<<another_value.type<<","<<another_value.doc.getPropertySize()<<std::endl;
-        //}
         switch (another_value.type)
         {
         case DELETE_SCD:
@@ -327,10 +309,6 @@ public:
 
         case UPDATE_SCD:
         case RTYPE_SCD:
-            //if(asdocid=="629397ed41db1a1056dc88fd1bbd604e")
-            //{
-                //std::cerr<<"TEST COPY"<<std::endl;
-            //}
             value.doc.copyPropertiesFromDocument(another_value.doc, true);
             if(value.type!=INSERT_SCD)
             {
@@ -346,11 +324,6 @@ public:
         default:
             break;
         }
-        //value.doc.getString("DOCID", sdocid);
-        //if(sdocid=="629397ed41db1a1056dc88fd1bbd604e")
-        //{
-            //std::cerr<<"TEST length A "<<value.doc.getPropertySize()<<std::endl;
-        //}
     }
 
     
