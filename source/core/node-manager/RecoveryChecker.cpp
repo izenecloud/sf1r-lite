@@ -780,7 +780,7 @@ void RecoveryChecker::handleConfigUpdate()
                 cur_file_ifs.open(current.string().c_str(), ios::binary);
                 cur_file_ifs.seekg(0, ios::end);
                 size_t cur_len = cur_file_ifs.tellg();
-                cur_file_ifs.seekg(0, ios::begin);
+                cur_file_ifs.seekg(0, ios::beg);
                 current_conf_files[filename].resize(cur_len);
                 cur_file_ifs.read((char*)&current_conf_files[filename][0], cur_len);
                 cur_file_ifs.close();
@@ -798,7 +798,7 @@ void RecoveryChecker::handleConfigUpdate()
         }
         last_conf.seekg(0, ios::end);
         size_t len = last_conf.tellg();
-        last_conf.seekg(0, ios::begin);
+        last_conf.seekg(0, ios::beg);
         std::string old_conf_data;
         old_conf_data.resize(len);
         last_conf.read((char*)&old_conf_data[0], len);
