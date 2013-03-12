@@ -382,6 +382,7 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
                 LOG(INFO) << "from log: the config has changed, we need restart to update the new config.";
                 if(!updateConfigFromLog(req_packed_data))
                     forceExit("exit for updating the config file error.");
+                continue;
             }
 
             if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, req_packed_data))
@@ -1044,6 +1045,7 @@ void RecoveryChecker::syncToNewestReqLog()
                 LOG(INFO) << "from log: the config has changed, we need restart to update the new config.";
                 if(!updateConfigFromLog(newlogdata_list[i]))
                     forceExit("exit for updating the config file failed.");
+                continue;
             }
 
             if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, newlogdata_list[i]))
