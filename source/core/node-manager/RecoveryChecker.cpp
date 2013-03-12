@@ -620,6 +620,7 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     request_log_basepath_ = workdir + "/req-log";
     redo_log_basepath_ = workdir + "/redo-log";
     rollback_file_ = workdir + "/rollback_flag";
+    configDir_ = conf_dir;
 
     reqlog_mgr_.reset(new ReqLogMgr());
     try
