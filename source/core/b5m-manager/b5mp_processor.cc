@@ -92,7 +92,11 @@ bool B5mpProcessor::B5moValid_(const Document& doc)
 void B5mpProcessor::B5moPost_(ValueType& value, int status)                     
 {
     if(value.type==DELETE_SCD) value.type = NOT_SCD;
-    if(status==PairwiseScdMerger::OLD) value.type=NOT_SCD;
+    else
+    {
+        value.type = UPDATE_SCD;//I,U,R
+    }
+    //if(status==PairwiseScdMerger::OLD) value.type=NOT_SCD;
 }
 
 void B5mpProcessor::B5moOutput_(ValueType& value, int status)

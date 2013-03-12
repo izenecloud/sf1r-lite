@@ -102,7 +102,20 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     std::string sdocid;
     doc.getString("DOCID", sdocid);
     uint128_t oid = B5MHelper::StringToUint128(sdocid);
-    if(type!=DELETE_SCD)
+    if(type==RTYPE_SCD)
+    {
+        std::string spid;
+        if(odb_->get(sdocid, spid)) 
+        {
+            doc.property("uuid") = UString(spid, UString::UTF_8);
+        }
+        else
+        {
+            LOG(ERROR)<<"rtype docid "<<sdocid<<" does not exist"<<std::endl;
+            type = NOT_SCD;
+        }
+    }
+    else if(type!=DELETE_SCD) //I or U
     {
         std::string spid;
         UString ptitle;
