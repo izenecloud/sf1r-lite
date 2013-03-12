@@ -768,15 +768,19 @@ void RecoveryChecker::handleConfigUpdate()
     bfs::directory_iterator iter(configDir_), end_iter;
     for(; iter!= end_iter; ++iter)
     {
-        if(bfs::is_regular_file(*iter))
+        bfs::path current(iter->path());
+        if(bfs::is_regular_file(current))
         {
-            if(bfs::path(*iter).filename().string().rfind(".xml") == (bfs::path(*iter).filename().string().length() - std::string(".xml").length()))
+            if(current.filename().string().rfind(".xml") == (current.filename().string().length() - std::string(".xml").length()))
             {
-                std::string filename = bfs::path(*iter).filename().string();
+                std::string filename = current.filename().string();
                 std::string file_content;
                 std::ifstream cur_file_ifs;
-                cur_file_ifs.open(bfs::path(*iter).string().c_str(), ios::binary);
+                LOG(INFO) << "find a config file for : " << current;
+                cur_file_ifs.open(current.string().c_str(), ios::binary);
+                cur_file_ifs.seekg(0, ios::end);
                 size_t cur_len = cur_file_ifs.tellg();
+                cur_file_ifs.seekg(0, ios::begin);
                 current_conf_files[filename].resize(cur_len);
                 cur_file_ifs.read((char*)&current_conf_files[filename][0], cur_len);
                 cur_file_ifs.close();
@@ -792,7 +796,9 @@ void RecoveryChecker::handleConfigUpdate()
         {
             forceExit("reading last config file error");
         }
+        last_conf.seekg(0, ios::end);
         size_t len = last_conf.tellg();
+        last_conf.seekg(0, ios::begin);
         std::string old_conf_data;
         old_conf_data.resize(len);
         last_conf.read((char*)&old_conf_data[0], len);
