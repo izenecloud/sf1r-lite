@@ -52,7 +52,7 @@ public:
         flush_col_ = flush_cb;
     }
 
-    void init(const std::string& workdir);
+    void init(const std::string& conf_dir, const std::string& workdir);
     void addCollection(const std::string& colname, const CollectionPath& colpath, const std::string& configfile);
     void removeCollection(const std::string& colname);
     bool getCollPath(const std::string& colname, CollectionPath& colpath);
@@ -72,6 +72,8 @@ private:
     void syncToNewestReqLog();
     void syncSCDFiles();
     bool redoLog(ReqLogMgr* redolog, uint32_t start_id);
+    void handleConfigUpdate();
+    void updateConfigFromLog(const std::string& packed_data);
     StartColCBFuncT start_col_;
     StopColCBFuncT stop_col_;
     ReopenColCBFuncT reopen_col_;
@@ -80,6 +82,7 @@ private:
     std::string request_log_basepath_;
     std::string redo_log_basepath_;
     std::string rollback_file_;
+    std::string configDir_;
     boost::shared_ptr<ReqLogMgr> reqlog_mgr_;
     typedef std::map<std::string, std::pair<CollectionPath, std::string> > CollInfoMapT;
     CollInfoMapT all_col_info_;

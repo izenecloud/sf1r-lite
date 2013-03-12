@@ -621,7 +621,7 @@ bool MasterManagerBase::isBusy()
     if (!isDistributeEnable_)
         return false;
     boost::lock_guard<boost::mutex> lock(state_mutex_);
-    if (!zookeeper_ || !zookeeper_->isConnected())
+    if (stopping_ || !zookeeper_ || !zookeeper_->isConnected())
         return true;
     if (zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode()))
     {

@@ -576,8 +576,8 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
                 if (rspdata[i].check_logid_list[j] != check_logid_list[j])
                 {
                     LOG(ERROR) << "rsp logid list id not match, " << rspdata[i].check_logid_list[j] << "," << check_logid_list[j];
+                    is_redolog_mismatch = true;
                 }
-                is_redolog_mismatch = true;
             }
             if (rspdata[i].check_collection_list.size() != check_collection_list.size())
             {

@@ -759,6 +759,8 @@ bool NodeManagerBase::isPrimary()
 	if (!isDistributionEnabled_)
 		return true;
     boost::unique_lock<boost::mutex> lock(mutex_);
+    if (stopping_)
+        return false;
     return isPrimaryWithoutLock();
 }
 
@@ -878,6 +880,8 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
     {
         DistributeTestSuit::testFail(PrimaryFail_At_ReqProcessing);
         boost::unique_lock<boost::mutex> lock(mutex_);
+        if (stopping_)
+            return;
         LOG(INFO) << "send request to other replicas from primary.";
         // write request data to node to notify replica.
         nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS;
@@ -1327,6 +1331,8 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
 void NodeManagerBase::setNodeState(NodeStateType state)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
+    if (stopping_)
+        return;
     //updateCurrentPrimary();
     NodeStateType primary_state = getPrimaryState();
     if (primary_state == NODE_STATE_ELECTING)

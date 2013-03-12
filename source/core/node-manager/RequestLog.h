@@ -11,6 +11,7 @@
 #include <memory.h>
 #include <vector>
 #include <set>
+#include <map>
 
 namespace sf1r
 {
@@ -36,6 +37,7 @@ enum ReqLogType
     Req_Index,
     Req_CreateOrUpdate_Doc,
     Req_Product,
+    Req_UpdateConfig,
 };
 
 #pragma pack(1)
@@ -55,6 +57,7 @@ struct CommonReqData
     uint32_t inc_id;
     uint32_t reqtype;
     std::string req_json_data;
+    CommonReqData() : inc_id(0), reqtype(Req_None) {}
     virtual ~CommonReqData(){}
     virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
     {
@@ -286,6 +289,42 @@ struct ProductReqLog: public CommonReqData
         catch(const std::exception& e)
         {
             std::cerr << "unpack ProductReqLog data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+};
+
+struct UpdateConfigReqLog: public CommonReqData
+{
+    UpdateConfigReqLog()
+    {
+        reqtype = Req_UpdateConfig;
+    }
+
+    // (config_file_name, file_binary_content)
+    std::map<std::string, std::string> config_file_list;
+
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(config_file_list);
+    }
+
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&config_file_list);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack UpdateConfigReqLog data error: " << e.what() << std::endl;
             return false;
         }
         return true;

@@ -16,7 +16,7 @@ import subprocess
 import shlex
 
 
-local_base = '/home/lscm/codebase/'
+local_base = '/home/vincentlee/workspace/sf1/'
 
 loginuser = 'lscm'
 base_dir = '/home/' + loginuser + '/codebase'
@@ -44,8 +44,8 @@ loginssh_stay = 'ssh ' + loginuser + '@'
 scp_local = 'rsync -av '
 scp_remote = 'scp -r ' + loginuser + '@'
 
-primary_host = ['172.16.5.195']
-replicas_host = ['172.16.5.192', '172.16.5.194']
+primary_host = ['10.10.99.121']
+replicas_host = ['10.10.99.122', '10.10.99.123']
 
 logfile = open('./result.log', 'w')
 
@@ -240,6 +240,7 @@ def mv_scd_to_index(args):
 
 def reset_state_and_run():
     logfile.close()
+    global logfile
     logfile = open('./result.log', 'a')
     stop_all([])
     time.sleep(10)
