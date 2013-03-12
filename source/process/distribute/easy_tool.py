@@ -182,22 +182,24 @@ def read_cmd_from_file(args):
     printtofile('finished')
 
 def check_build_finish(args):
-    cmdstr = 'tail -f ' + sf1r_dir + '/build/easy_tool.log'
     if len(args) <=2:
+        cmdstr = 'tail ' + sf1r_dir + '/build/easy_tool.log'
         send_cmd_afterssh(primary_host + replicas_host, cmdstr, 1)
     else:
+        cmdstr = 'tail -f ' + sf1r_dir + '/build/easy_tool.log'
         host = args[2:]
         send_cmd_andstay(host, cmdstr, 1)
     print 'finished.'
 
 def check_running(args):
     logfile_str = '`ls -tr | tail -n 1`'
-    cmdstr = ' cd ' + sf1r_bin_dir + '/consolelog; echo ' + logfile_str + '; tail -f ./' + logfile_str
 
     if len(args) <= 2:
+        cmdstr = ' cd ' + sf1r_bin_dir + '/consolelog; echo ' + logfile_str + '; tail ./' + logfile_str
         send_cmd_afterssh(primary_host + replicas_host, cmdstr, 1)
     else:
         host = args[2:]
+        cmdstr = ' cd ' + sf1r_bin_dir + '/consolelog; echo ' + logfile_str + '; tail -f ./' + logfile_str
         send_cmd_andstay(host, cmdstr, 1)
     print 'finished.'
 
