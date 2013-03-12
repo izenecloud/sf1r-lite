@@ -81,9 +81,9 @@ void SuperMasterManager::process(ZooKeeperEvent& zkEvent)
 {
     bool restarted = false;
     {
-        boost::lock_guard<boost::mutex> lock(mutex_);
         if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
         {
+            boost::lock_guard<boost::mutex> lock(mutex_);
             LOG(WARNING) << "super master node disconnected by zookeeper, state : " << zookeeper_->getStateString();
             zookeeper_->disconnect();
             zookeeper_->connect(true);
