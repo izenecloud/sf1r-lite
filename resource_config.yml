@@ -13,6 +13,7 @@ sub_modules:
     - sim
     - speller-support
     - spu-classifier
+    - wikigraph
 push_sub_modules:
     - ise
     - kpe
