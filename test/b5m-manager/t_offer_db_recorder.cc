@@ -35,12 +35,14 @@
 #include <boost/network/protocol/http/server.hpp>
 #include <boost/network/uri/uri.hpp>
 #include <boost/network/uri/decode.hpp>
-
+#include <boost/test/unit_test.hpp>
 
 using namespace sf1r;
 using namespace std;
 
-int main()
+BOOST_AUTO_TEST_SUITE(odb_test)
+
+BOOST_AUTO_TEST_CASE(Insert_test)
 {
     boost::filesystem::remove_all("./odb");
     boost::filesystem::remove_all("./lastodb");
@@ -65,7 +67,7 @@ int main()
 
     string value;
     uint128_t oid,pid;
-    bool changed;    
+
     std::vector<boost::tuple<uint128_t,uint128_t,uint128_t> > o2pmap;
     odb->open();
     last_odb->open();
@@ -77,7 +79,7 @@ int main()
         odb->insert(oid,pid);
 
         //o2pmap.push_back(std::make_pair(oid,pid));
-        uint128_t pidmirror;
+
 
         //odb->get(oid,pidmirror);
         uint128_t increasepid= floor(rand()%2);
@@ -85,7 +87,7 @@ int main()
 
         o2pmap.push_back(boost::make_tuple(oid,pid,increasepid+pid));
 
-        //BOOST_CHECK_EQUAL(ret, false);
+
         
 
     }
@@ -96,47 +98,31 @@ int main()
     odbr->open();
     cout<<"OfferDbRecorder open"<<endl;
 
-    if(!odbr->is_open())
-    {
-       cout<<"error"<<endl;
-       return 0;
-    }
+    BOOST_CHECK_EQUAL(odbr->is_open(),true);
+
     for(std::vector<boost::tuple<uint128_t,uint128_t,uint128_t> >::iterator it=o2pmap.begin();it!=o2pmap.end();it++)
     {
         oid=(*it).get<0>();
         pid=(*it).get<1>();
         uint128_t lastpid=(*it).get<2>();
-        uint128_t pidmirror,pidlast;
-        bool ret;
+        uint128_t pidmirror,pidlast=0;
+        bool ret=false;
         odbr->get(oid,pidmirror,ret);
         odbr->get_last(oid, pidlast);
         std::cout<<"oid"<<oid<<"pid"<<pid<<"pidlast"<<pidlast<<"ret"<<ret<<std::endl;
-        if((pid!=pidmirror))
-        {
-           std::cout<<"find an error2"<<std::endl;
-           return 0;
-        }
-        if((pidlast!=lastpid))
-        {
-           std::cout<<"find an error3"<<std::endl;
-           return 0;
-        }
-        if(ret^(pidmirror!=pidlast))
-        {
-           std::cout<<"find an error4"<<std::endl;
-           return 0;
-        }
+        BOOST_CHECK_EQUAL(pid==pidmirror,true);
+        BOOST_CHECK_EQUAL(pidlast==lastpid,true);
+        BOOST_CHECK_EQUAL(ret^(pidmirror!=pidlast),false);
+        
+
+
         //BOOST
         
 
     }
-    cout<<"No error found"<<endl;
-
-
-
-
-  
    
    
 }
 
+
+BOOST_AUTO_TEST_SUITE_END()

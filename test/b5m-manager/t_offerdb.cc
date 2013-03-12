@@ -16,19 +16,19 @@ using namespace sf1r;
 using namespace std;
 using namespace boost;
 
-//BOOST_AUTO_TEST_SUITE(odbffd)
+BOOST_AUTO_TEST_SUITE(odb_test)
 
 
-//BOOST_AUTO_TEST_CASE(odbInsert)
-int main()
+BOOST_AUTO_TEST_CASE(odbInsert_test)
 {
+
     boost::filesystem::remove_all("./odb");
     OfferDb odb_("./odb");
     odb_.open();
     std::cout<<"running a case"<<std::endl;
     std::cout<<"ODB open"<< odb_.is_open()<<std::endl;
-    //BOOST_CHECK_EQUAL(odb_.is_open(), true);
-    //BOOST_TEST_MESSAGE("ODB open");
+    BOOST_CHECK_EQUAL(odb_.is_open(), true);
+    BOOST_TEST_MESSAGE("ODB open");
     uint128_t oid;
     uint128_t pid;
     std::vector<std::pair<uint128_t,uint128_t> > o2pmap;
@@ -42,12 +42,7 @@ int main()
         //odb_.get(oid,pidmirror);
         bool ret=odb_.get(oid,pidmirror);
         //BOOST_CHECK_EQUAL(ret, false);
-        if(ret)
-        { 
-          std::cout<<"find an error1"<<std::endl;
-          return 0;
-        }
-
+        
     }
     odb_.flush();
     for(std::vector<std::pair<uint128_t,uint128_t> >::iterator it=o2pmap.begin();it!=o2pmap.end();it++)
@@ -56,16 +51,13 @@ int main()
         pid=(*it).second;
         uint128_t pidmirror;
         bool ret=odb_.get(oid,pidmirror);
-        if(!ret||(pid!=pidmirror))
-        {
-           std::cout<<"find an error2"<<std::endl;
-           return 0;
-        }
-        //BOOST_CHECK_EQUAL(pid==pidmirror,true);
+        BOOST_CHECK_EQUAL(ret,true);
+        BOOST_CHECK_EQUAL(pid==pidmirror,true);
+        
     }
-    std::cout<<"No error found"<<std::endl;
+
 }
 
 
-//BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END()
 
