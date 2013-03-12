@@ -63,8 +63,6 @@ private:
 
     std::string data_root_path_;
 
-    docid_t last_docid_;
-    
     bool is_incrememtalTask_;
 
     boost::shared_ptr<FMIndexManager> new_fmi_manager;

@@ -583,7 +583,7 @@ bool MiningManager::open()
             number_amp_list.reserve(number_config_list.size());
             for (size_t i = 0; i < number_config_list.size(); ++i)
             {
-                cout << "number_config_list[i].property" << number_config_list[i].property << endl;
+                //cout << "number_config_list[i].property" << number_config_list[i].property << endl;
                 number_props.push_back(number_config_list[i].property);
                 number_amp_list.push_back(number_config_list[i].amplifier);
             }
@@ -948,7 +948,6 @@ bool MiningManager::DoMiningCollection()
                 && document_manager_->getMaxDocId() != last_docid) // for continue use;
             {
                 SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                miningTask->setLastDocId(document_manager_->getMaxDocId());
                 bool isIncre = true;
                 miningTask->setTaskStatus(isIncre);
             }
@@ -958,7 +957,10 @@ bool MiningManager::DoMiningCollection()
 
                 bool isIncre = false;
                 miningTask->setTaskStatus(isIncre);
-                incrementalManager_->reset();
+                if (document_manager_->getMaxDocId() != last_docid)
+                {
+                    incrementalManager_->reset();
+                }
             }
         }
     }
@@ -976,7 +978,7 @@ bool MiningManager::DoMiningCollection()
             incrementalManager_->getDocNum(docNum);
             incrementalManager_->getMaxNum(maxDoc);
 
-            LOG (INFO) << "docNum:" << docNum << "last_docid:" << last_docid << "getMaxDocId()" << document_manager_->getMaxDocId() << "maxDoc:" << maxDoc << endl;
+            //LOG (INFO) << "docNum:" << docNum << "last_docid:" << last_docid << "getMaxDocId()" << document_manager_->getMaxDocId() << "maxDoc:" << maxDoc << endl;
 
             if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc
                 && document_manager_->getMaxDocId() != last_docid)
@@ -987,7 +989,6 @@ bool MiningManager::DoMiningCollection()
             else
             {
                 incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-                incrementalManager_->setStartDocid(document_manager_->getMaxDocId());
             }
         }
     }
@@ -2054,7 +2055,7 @@ bool MiningManager::GetSuffixMatch(
             std::vector<uint32_t> _docIdList;
             std::vector<double> _rankScoreList;
 
-            incrementalManager_->fuzzySearch(actionOperation.actionItem_.env_.queryString_,
+            incrementalManager_->fuzzySearch(actionOperation.actionItem_.env_.queryString_, search_in_properties,
                     _docIdList, _rankScoreList, filter_param, actionOperation.actionItem_.groupParam_);
 
             uint32_t max_count = std::min(max_docs, (uint32_t)_docIdList.size());
@@ -2466,6 +2467,7 @@ void MiningManager::updateMergeFuzzyIndex()
     {
         if (!incrementalManager_->isEmpty())
         {
+            LOG (INFO) << "update cron-job with fm-index";
             SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
             bool isIncre = false;
             miningTask->setTaskStatus(isIncre);
@@ -2475,7 +2477,6 @@ void MiningManager::updateMergeFuzzyIndex()
 
             docid_t docid;
             docid = miningTask->getLastDocId();
-            incrementalManager_->setStartDocid(docid);
             incrementalManager_->setLastDocid(docid);
         }
     }

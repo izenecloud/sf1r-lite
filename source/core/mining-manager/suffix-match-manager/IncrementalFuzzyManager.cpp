@@ -35,13 +35,18 @@ namespace sf1r
         last_docid_ = 0;
         start_docid_ = 0;
         IndexedDocNum_ = 0;
-        pMainFuzzyIndexBarrel_ =  NULL;
+        pMainFuzzyIndexBarrels_.resize(properties.size());
         properties_ = properties;
         isInitIndex_ = false;
         isMergingIndex_ = false;
         isAddingIndex_ = false;
         index_path_ = path + "/inc";
         tokenize_path_ = tokenize_path;
+        for (unsigned int i = 0; i < properties_.size(); ++i)
+        {
+            pMainFuzzyIndexBarrels_[i] = NULL;
+            properity_id_map_.insert(pair<std::string, unsigned int>(properties_[i], i));
+        }
         buildTokenizeDic();
         if (!boost::filesystem::is_directory(index_path_))
         {
@@ -69,10 +74,13 @@ namespace sf1r
 
     IncrementalFuzzyManager::~IncrementalFuzzyManager()
     {
-        if (pMainFuzzyIndexBarrel_ != NULL)
+        for (unsigned int i = 0; i < pMainFuzzyIndexBarrels_.size(); ++i)
         {
-            delete pMainFuzzyIndexBarrel_;
-            pMainFuzzyIndexBarrel_ = NULL;
+            if (pMainFuzzyIndexBarrels_[i] != NULL)
+            {
+                delete pMainFuzzyIndexBarrels_[i];
+                pMainFuzzyIndexBarrels_[i] = NULL;
+            }
         }
         if (analyzer_)
         {
@@ -88,45 +96,53 @@ namespace sf1r
 
     void IncrementalFuzzyManager::Init()
     {
-        string path = index_path_ + "/Main";
-        pMainFuzzyIndexBarrel_ = new IncrementalFuzzyIndex(
-                                                path,
-                                                idManager_,
-                                                laManager_,
-                                                indexSchema_,
-                                                MAX_INCREMENT_DOC,
-                                                analyzer_
-                                                );
-        BarrelNum_++;
-        pMainFuzzyIndexBarrel_->init(index_path_);
-
-        std::string pathMainInv = index_path_ + "/Main.inv.idx";
-        std::string pathMainFd = index_path_ + "/Main.fd.idx";
-        std::string pathLastDocid = index_path_ + "/inc.docid";
-
-        if (bfs::exists(pathMainInv) && bfs::exists(pathMainFd))
+        for (unsigned int i = 0; i < properties_.size(); ++i)
         {
-            if (!pMainFuzzyIndexBarrel_->load_())
+            string path = index_path_ + "/" + properties_[i];
+            pMainFuzzyIndexBarrels_[i] = new IncrementalFuzzyIndex(
+                                                    path,
+                                                    idManager_,
+                                                    laManager_,
+                                                    indexSchema_,
+                                                    MAX_INCREMENT_DOC,
+                                                    analyzer_
+                                                    );
+            
+            pMainFuzzyIndexBarrels_[i]->init();
+
+            std::string pathMainInv = path + ".inv.idx";
+            std::string pathMainFd = path + ".fd.idx";
+            std::string pathLastDocid = path + ".inc.docid"; ///xxx
+
+            if (bfs::exists(pathMainInv) && bfs::exists(pathMainFd))
             {
-                LOG(INFO) << "local index is not right, and clear ..."<<endl;
-                delete_AllIndexFile();
+                if (!pMainFuzzyIndexBarrels_[i]->load_())
+                {
+                    LOG(INFO) << "local index is not right, and clear ..."<<endl;
+                    delete_AllIndexFile();
+                }
+                else
+                    loadDocid(pathLastDocid);
             }
             else
-                loadDocid(pathLastDocid);
-        }
-        else
-            delete_AllIndexFile();
+                delete_AllIndexFile();
 
+
+            LOG (INFO) << "finish load \""<< properties_[i] << "\" incremental fuzzy index from disk ... ";
+            LOG (INFO) << "IndexedDocNum: " << IndexedDocNum_;
+            pMainFuzzyIndexBarrels_[i]->print();
+        }
+
+        BarrelNum_++;
         if (IndexedDocNum_ == 0)
         {
-            start_docid_ = last_docid_ = document_manager_->getMaxDocId();
+            start_docid_ = last_docid_ = document_manager_->getMaxDocId();// start build
+            saveDocid();
         }
 
-        LOG (INFO) << "Load incremental fuzzy index ... ";
-        pMainFuzzyIndexBarrel_->print();
     }
 
-    void IncrementalFuzzyManager::createIndex()//cancle...
+    void IncrementalFuzzyManager::createIndex()//cancle... not use...
     {
         LOG(INFO) << "document_manager_->getMaxDocId()" << document_manager_->getMaxDocId();
         string name = "createIndex";
@@ -142,8 +158,8 @@ namespace sf1r
             bool isIncre = true;
             //build filter just for all new documents...
 
-            filter_manager_->buildFilters(start_docid_, document_manager_->getMaxDocId(), isIncre); // 
-            LOG(INFO) << "last_docid_" << last_docid_ << endl;
+            filter_manager_->buildFilters(last_docid_, document_manager_->getMaxDocId(), isIncre); 
+
             for (uint32_t i = last_docid_ + 1; i <= document_manager_->getMaxDocId(); i++)
             {
                 if (i % 100000 == 0)
@@ -152,24 +168,27 @@ namespace sf1r
                 }
                 Document doc;
                 document_manager_->getDocument(i, doc);
-                Document::property_const_iterator it = doc.findProperty(properties_[0]);
 
-                if (it == doc.propertyEnd())
+                for (unsigned int j = 0; j < properties_.size(); ++j)
                 {
-                    last_docid_++;
-                    continue;
-                }
+                    Document::property_const_iterator it = doc.findProperty(properties_[j]);
+                    if (it == doc.propertyEnd())
+                    {
+                        last_docid_++;
+                        continue;
+                    }
 
+                    const izenelib::util::UString& text = it->second.get<UString>();
+                    std::string textStr;
+                    text.convertString(textStr, izenelib::util::UString::UTF_8);
+                    if (!indexForDoc(i, textStr, j))
+                    {
+                        LOG(INFO) << "Add index error";
+                        return;
+                    }
+                }
+                IndexedDocNum_++;
                 filter_manager_->buildStringFiltersForDoc(i, doc);
-
-                const izenelib::util::UString& text = it->second.get<UString>();
-                std::string textStr;
-                text.convertString(textStr, izenelib::util::UString::UTF_8);
-                if (!indexForDoc(i, textStr))
-                {
-                    LOG(INFO) << "Add index error";
-                    return;
-                }
                 last_docid_++;
             }
             filter_manager_->saveFilterId();
@@ -182,23 +201,26 @@ namespace sf1r
             isInitIndex_ = false;
             LOG(INFO) << "Prepare_index_ total elapsed:" << timer.elapsed() << " seconds";
         }
-        pMainFuzzyIndexBarrel_->print();
-        printFilter();
+        for (unsigned int i = 0; i < properties_.size(); ++i)
+        {
+            LOG (INFO) << "Index for " << properties_ [i];
+            pMainFuzzyIndexBarrels_[i]->print();
+        }
+        //printFilter();
     }
 
-    bool IncrementalFuzzyManager::indexForDoc(uint32_t& docId, std::string propertyString)
+    bool IncrementalFuzzyManager::indexForDoc(uint32_t& docId, std::string propertyString, uint32_t j)
     {
         if (IndexedDocNum_ >= MAX_INCREMENT_DOC)
             return false;
         {
             {
-                if (pMainFuzzyIndexBarrel_ != NULL)
+                if (pMainFuzzyIndexBarrels_[j]!= NULL)
                 {
-                    pMainFuzzyIndexBarrel_->setStatus();
-                    if (!pMainFuzzyIndexBarrel_->buildIndex_(docId, propertyString))
+                    pMainFuzzyIndexBarrels_[j]->setStatus();
+                    if (!pMainFuzzyIndexBarrels_[j]->buildIndex_(docId, propertyString))
                         return false;
                 }
-                IndexedDocNum_++;
             }
         }
         return true;
@@ -206,14 +228,18 @@ namespace sf1r
 
     void IncrementalFuzzyManager::prepare_index()
     {
-        if (pMainFuzzyIndexBarrel_)
+        for (unsigned int i = 0; i < pMainFuzzyIndexBarrels_.size(); ++i)
         {
-            pMainFuzzyIndexBarrel_->prepare_index_();
+            if (pMainFuzzyIndexBarrels_[i])
+            {
+                pMainFuzzyIndexBarrels_[i]->prepare_index_();
+            }
         }
     }
 
     bool IncrementalFuzzyManager::fuzzySearch(
                         const std::string& query
+                        , const std::vector<string>& search_in_properties
                         , std::vector<uint32_t>& resultList
                         , std::vector<double>& ResultListSimilarity
                         //, const SearchingMode::SuffixMatchFilterMode& filter_mode
@@ -223,119 +249,130 @@ namespace sf1r
         std::vector<uint32_t> resultList_;
         std::vector<double> ResultListSimilarity_;
         izenelib::util::ClockTimer timer;
-        if (BarrelNum_ == 0 || isMergingIndex_ || isInitIndex_)
         {
-            return true;
-        }
-        else
-        {
-            izenelib::util::UString utext(query, izenelib::util::UString::UTF_8);
-            AnalysisInfo analysisInfo;
-            analysisInfo.analyzerId_ = "la_unigram";
-            LAInput laInput;
-            laInput.setDocId(0);
-            
-            {// lock...
-                if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
-                return false;
-            }
-
-            std::set<termid_t> setDocId;
-            std::vector<termid_t> termidList;
-
-            for (LAInput::const_iterator it = laInput.begin(); it != laInput.end(); ++it)
+            ScopedReadLock lock(mutex_);
+            cout<<"xxxx xxxxxxxxxxxxxxxxx IndexedDocNum_"<<IndexedDocNum_<<endl;
+            if (IndexedDocNum_ == 0 || isMergingIndex_ || isInitIndex_)
             {
-                setDocId.insert(it->termid_);
-            }
-            for (std::set<termid_t>::iterator i = setDocId.begin(); i != setDocId.end(); ++i)
-            {
-                termidList.push_back(*i);
-            }
-
-            std::vector<std::vector<size_t> > prop_id_lists;
-            std::vector<std::vector<FilterManager::FilterIdRange> > filter_range_lists;
-            std::vector<size_t> prop_id_list_1;
-            std::vector<FilterManager::FilterIdRange> filter_range_list_1;
-            if (!group_param.isGroupEmpty())
-            {
-                if (!getAllFilterRangeFromGroupLable(group_param, prop_id_list_1, filter_range_list_1))
-                    return false;
-                LOG(INFO)<<"finish getAllFilterRangeFromGroupLable" << filter_range_list_1.size()<<endl;
-            }
-            if (filter_range_list_1.size() > 0)
-            {
-                prop_id_lists.push_back(prop_id_list_1);
-                filter_range_lists.push_back(filter_range_list_1);
-            }
-            
-
-            std::vector<size_t> prop_id_list_2;
-            std::vector<FilterManager::FilterIdRange> filter_range_list_2;
-            if (!group_param.isAttrEmpty())
-            {
-                if (!getAllFilterRangeFromAttrLable(group_param, prop_id_list_2, filter_range_list_2))
-                    return false;
-                LOG(INFO)<<"finish getAllFilterRangeFromAttrLable" << prop_id_list_2.size() <<endl;
-            }
-            if (filter_range_list_2.size() > 0)
-            {
-                prop_id_lists.push_back(prop_id_list_2);
-                filter_range_lists.push_back(filter_range_list_2);
-            }
-
-            std::vector<size_t> prop_id_list_3;
-            std::vector<FilterManager::FilterIdRange> filter_range_list_3;
-            if (!filter_param.empty())
-            {
-                if (!getAllFilterRangeFromFilterParam(filter_param, prop_id_list_3, filter_range_list_3))
-                    return false;
-                LOG(INFO)<<"finish getAllFilterRangeFromFilterParam" << prop_id_list_3.size() <<endl;
-            }
-            if (filter_range_list_3.size() > 0)
-            {
-                prop_id_lists.push_back(prop_id_list_3);
-                filter_range_lists.push_back(filter_range_list_3);
-            }
-
-            bool needFilter = false;
-            std::vector<uint32_t> docidlist;
-
-            //get filter docidList ...
-            LOG (INFO) << "get filter docidList ...";
-            if (filter_range_lists.size() > 0)
-            {
-                needFilter = true; 
-                getAllFilterDocid(prop_id_lists, filter_range_lists, docidlist);
-            }
-
-            //get raw result 
-            LOG (INFO) << "get raw result ...";
-            if (pMainFuzzyIndexBarrel_ != NULL && isInitIndex_ == false)
-            {
-                {
-                    ScopedReadLock lock(mutex_);
-                    uint32_t hitdoc;
-                    pMainFuzzyIndexBarrel_->getFuzzyResult_(termidList, resultList_, ResultListSimilarity_, hitdoc);
-                    pMainFuzzyIndexBarrel_->score(query, resultList_, ResultListSimilarity_);
-                }
-            }
-            cout << "begin filter ..., raw result size is " << resultList_.size() << endl;
-
-            //get final result by Filter;
-            LOG (INFO) << "get final result by Filter" << endl;
-            if (needFilter)
-            {
-                getResultByFilterDocid(
-                docidlist
-                , resultList_
-                , ResultListSimilarity_
-                , resultList
-                , ResultListSimilarity);
+                return true;
             }
             else
             {
-                resultList = resultList_;
-                ResultListSimilarity = ResultListSimilarity_;
+                izenelib::util::UString utext(query, izenelib::util::UString::UTF_8);
+                AnalysisInfo analysisInfo;
+                analysisInfo.analyzerId_ = "la_unigram";
+                LAInput laInput;
+                laInput.setDocId(0);
+                
+                {// lock...
+                    if (!laManager_->getTermIdList(idManager_.get(), utext, analysisInfo, laInput))
+                    return false;
+                }
+
+                std::set<termid_t> setDocId;
+                std::vector<termid_t> termidList;
+
+                for (LAInput::const_iterator it = laInput.begin(); it != laInput.end(); ++it)
+                {
+                    setDocId.insert(it->termid_);
+                }
+                for (std::set<termid_t>::iterator i = setDocId.begin(); i != setDocId.end(); ++i)
+                {
+                    termidList.push_back(*i);
+                }
+
+                std::vector<std::vector<size_t> > prop_id_lists;
+                std::vector<std::vector<FilterManager::FilterIdRange> > filter_range_lists;
+                std::vector<size_t> prop_id_list_1;
+                std::vector<FilterManager::FilterIdRange> filter_range_list_1;
+                if (!group_param.isGroupEmpty())
+                {
+                    if (!getAllFilterRangeFromGroupLable(group_param, prop_id_list_1, filter_range_list_1))
+                        return false;
+                    LOG(INFO)<<"finish getAllFilterRangeFromGroupLable" << filter_range_list_1.size()<<endl;
+                }
+                if (filter_range_list_1.size() > 0)
+                {
+                    prop_id_lists.push_back(prop_id_list_1);
+                    filter_range_lists.push_back(filter_range_list_1);
+                }
+                
+
+                std::vector<size_t> prop_id_list_2;
+                std::vector<FilterManager::FilterIdRange> filter_range_list_2;
+                if (!group_param.isAttrEmpty())
+                {
+                    if (!getAllFilterRangeFromAttrLable(group_param, prop_id_list_2, filter_range_list_2))
+                        return false;
+                    LOG(INFO)<<"finish getAllFilterRangeFromAttrLable" << prop_id_list_2.size() <<endl;
+                }
+                if (filter_range_list_2.size() > 0)
+                {
+                    prop_id_lists.push_back(prop_id_list_2);
+                    filter_range_lists.push_back(filter_range_list_2);
+                }
+
+                std::vector<size_t> prop_id_list_3;
+                std::vector<FilterManager::FilterIdRange> filter_range_list_3;
+                if (!filter_param.empty())
+                {
+                    if (!getAllFilterRangeFromFilterParam(filter_param, prop_id_list_3, filter_range_list_3))
+                        return false;
+                    LOG(INFO)<<"finish getAllFilterRangeFromFilterParam" << prop_id_list_3.size() <<endl;
+                }
+                if (filter_range_list_3.size() > 0)
+                {
+                    prop_id_lists.push_back(prop_id_list_3);
+                    filter_range_lists.push_back(filter_range_list_3);
+                }
+
+                bool needFilter = false;
+                std::vector<uint32_t> docidlist;
+
+                //get filter docidList ...
+                LOG (INFO) << "get filter docidList ...";
+                if (filter_range_lists.size() > 0)
+                {
+                    needFilter = true; 
+                    getAllFilterDocid(prop_id_lists, filter_range_lists, docidlist);
+                }
+
+                //get raw result 
+                LOG (INFO) << "get raw result ...";
+                for (unsigned int i = 0; i < search_in_properties.size(); ++i)
+                {
+                    std::map<std::string, uint32_t>::iterator iter = properity_id_map_.find(search_in_properties[i]);
+                    if (iter == properity_id_map_.end())
+                        continue;
+                    unsigned int label = properity_id_map_[search_in_properties[i]];
+                    if (pMainFuzzyIndexBarrels_[label] != NULL && isInitIndex_ == false)
+                    {
+                        {
+                            
+                            uint32_t hitdoc;
+                            pMainFuzzyIndexBarrels_[label]->getFuzzyResult_(termidList, resultList_, ResultListSimilarity_, hitdoc);
+                            pMainFuzzyIndexBarrels_[label]->score(query, resultList_, ResultListSimilarity_);
+                        }
+                    }
+                }
+                cout << "begin filter ..., raw result size is " << resultList_.size() << endl;
+
+                //get final result by Filter;
+                LOG (INFO) << "get final result by Filter" << endl;
+                if (needFilter)
+                {
+                    getResultByFilterDocid(
+                    docidlist
+                    , resultList_
+                    , ResultListSimilarity_
+                    , resultList
+                    , ResultListSimilarity);
+                }
+                else
+                {
+                    resultList = resultList_;
+                    ResultListSimilarity = ResultListSimilarity_;
+                }
             }
             
             //LOG(INFO) << "INC Search ResulList Number:" << resultList.size();
@@ -381,14 +418,14 @@ namespace sf1r
             {
                 termidList.push_back(*i);
             }
-
+            /*
             if (pMainFuzzyIndexBarrel_ != NULL && isInitIndex_ == false)
             {
                 {
                     ScopedReadLock lock(mutex_);
                     pMainFuzzyIndexBarrel_->getExactResult_(termidList, resultList, ResultListSimilarity);
                 }
-            }
+            }*/
             LOG(INFO) << "search ResulList number: " << resultList.size();
         }
         return true;
@@ -431,20 +468,30 @@ namespace sf1r
 
     void IncrementalFuzzyManager::reset()   // use lock..... // this is not reset, but this not reset, but like delete;
     {
-        if (pMainFuzzyIndexBarrel_)
         {
-            //delete;
-            pMainFuzzyIndexBarrel_->reset();
-            delete pMainFuzzyIndexBarrel_;
-            pMainFuzzyIndexBarrel_ = NULL;
+            ScopedWriteLock lock(mutex_);
+            for (unsigned int i = 0; i < pMainFuzzyIndexBarrels_.size(); ++i)
+            {
+                if (pMainFuzzyIndexBarrels_[i])
+                {
+                //delete
+                    pMainFuzzyIndexBarrels_[i]->reset();
+                    delete pMainFuzzyIndexBarrels_[i];
+                    pMainFuzzyIndexBarrels_[i] = NULL;
+                }
+            }
+
             BarrelNum_ = 0;
             IndexedDocNum_ = 0;
-            last_docid_ = 0;
+            last_docid_ = 0; //when Init, this will reload again ...
             start_docid_ = 0;
+            saveDocid();
 
             resetFilterManager();
             delete_AllIndexFile();
-            //restart 
+
+        
+        //restart 
             Init();
         }
     }
@@ -460,9 +507,12 @@ namespace sf1r
 
     void IncrementalFuzzyManager::save()
     {
-        if (pMainFuzzyIndexBarrel_)
+        for (unsigned int i = 0; i < pMainFuzzyIndexBarrels_.size(); ++i)
         {
-            pMainFuzzyIndexBarrel_->save_();
+            if (pMainFuzzyIndexBarrels_[i])
+            {
+                pMainFuzzyIndexBarrels_[i]->save_();
+            }
         }
     }
 
@@ -500,14 +550,24 @@ namespace sf1r
 
     void IncrementalFuzzyManager::delete_AllIndexFile()
     {
-        bfs::path pathMainInc = index_path_ + "/Main.inv.idx";
-        bfs::path pathMainFd = index_path_ + "/Main.fd.idx";
-        bfs::path docid_path = index_path_ + "/inc.docid";
+        for (unsigned int i = 0; i < properties_.size(); ++i)
+        {
+            std::string path = index_path_ + "/" + properties_[i];
+            bfs::path pathMainInc = path + ".inv.idx";
+            bfs::path pathMainFd = path + ".fd.idx";
+            bfs::path docid_path = path + ".inc.docid";
 
-        ///xxx need try...
-        bfs::remove(pathMainInc);
-        bfs::remove(pathMainFd);
-        bfs::remove(docid_path);
+            ///xxx need try...
+            bfs::remove(pathMainInc);
+            bfs::remove(pathMainFd);
+            bfs::remove(docid_path);
+        }
+        bfs::path incPath = index_path_;
+        bfs::remove_all(incPath);
+        if (!boost::filesystem::is_directory(index_path_))
+        {
+            boost::filesystem::create_directories(index_path_);
+        }
     }
 
     bool IncrementalFuzzyManager::getAllFilterRangeFromGroupLable(
@@ -785,13 +845,13 @@ namespace sf1r
                 }
             }
         }
-/*
+        /*
         if (!temp_range_list.empty())
         {
             prop_id_list.push_back(prop_id);
             filter_range_list.push_back(temp_range_list);
         }
-*/
+        */
         return true;
     }
 
@@ -810,7 +870,7 @@ namespace sf1r
                 cout<<"For each filter key in this property ... "<<endl;
                 for(unsigned int x = 0; x < (*i).size(); ++x)
                 {
-                    //cout << (*i)[x] << ",";
+                    cout << (*i)[x] << ",";
                 }
                 cout<<endl;
             }

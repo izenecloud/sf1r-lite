@@ -165,11 +165,6 @@ docid_t SuffixMatchMiningTask::getLastDocId()
     return fmi_manager_ ? fmi_manager_->docCount() + 1 : 1;
 }
 
-void SuffixMatchMiningTask::setLastDocId(docid_t docID)
-{
-    last_docid_ = docID;
-}
-
 void SuffixMatchMiningTask::setTaskStatus(bool is_incrememtalTask)
 {
     is_incrememtalTask_ = is_incrememtalTask;

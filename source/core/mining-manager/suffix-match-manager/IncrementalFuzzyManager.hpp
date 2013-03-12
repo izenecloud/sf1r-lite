@@ -124,6 +124,7 @@ public:
 
     //search
     bool fuzzySearch(const std::string& query
+                    , const std::vector<string>& search_in_properties
                     , std::vector<uint32_t>& resultList
                     , std::vector<double> &ResultListSimilarity
                     //, const SearchingMode::SuffixMatchFilterMode& filter_mode
@@ -169,10 +170,9 @@ public:
     {
         return filter_manager_;
     }
-
     bool isEmpty()
     {
-        return (last_docid_ - start_docid_) == 0;
+        return IndexedDocNum_ == 0;
     }
 
     void printFilter();
@@ -212,7 +212,7 @@ private:
     void getFinallyFilterDocid(std::vector<std::vector<uint32_t> >& filter_doc_lists
                             , std::vector<uint32_t>& filterDocidList);
 
-    bool indexForDoc(uint32_t& docId, std::string propertyString);
+    bool indexForDoc(uint32_t& docId, std::string propertyString, uint32_t i);
 
     void buildTokenizeDic();
 
@@ -226,9 +226,12 @@ private:
     std::string tokenize_path_;
     vector<std::string> properties_;
 
+    std::map<std::string, unsigned int> properity_id_map_;
+
     unsigned int BarrelNum_;
 
-    IncrementalFuzzyIndex* pMainFuzzyIndexBarrel_;
+    std::vector<IncrementalFuzzyIndex*> pMainFuzzyIndexBarrels_;
+//    IncrementalFuzzyIndex* pMainFuzzyIndexBarrel_;
 
     unsigned int IndexedDocNum_;
 

@@ -830,7 +830,7 @@ namespace sf1r
         bfs::remove(pathMainFd);
     }
 
-    bool IncrementalFuzzyIndex::init(std::string& path)
+    bool IncrementalFuzzyIndex::init()
     {
         pForwardIndex_ = new ForwardIndex(doc_file_path_, Max_Doc_Num_);
         pIncrementIndex_ = new InvertedIndex(doc_file_path_, Max_Doc_Num_, analyzer_);//

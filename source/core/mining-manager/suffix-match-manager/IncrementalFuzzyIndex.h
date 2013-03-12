@@ -25,7 +25,7 @@ class Knowledge;
 namespace sf1r
 {
 
-#define MAX_INCREMENT_DOC 500000
+#define MAX_INCREMENT_DOC 600000
 #define MAX_POS_LEN 24
 #define MAX_HIT_NUMBER 3
 #define MAX_SUB_LEN 15
@@ -234,7 +234,7 @@ public:
 
     void reset();
 
-    bool init(std::string& path);
+    bool init();
     uint32_t getScore(std::vector<uint32_t> &v, uint32_t & docid);
 
     void setStatus();

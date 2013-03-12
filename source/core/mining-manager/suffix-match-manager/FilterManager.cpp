@@ -637,11 +637,9 @@ void FilterManager::mapNumericFilterToFilterId(const NumFilterItemMapT& num_filt
     for (NumFilterItemMapT::const_iterator cit = num_filter_data.begin();
             cit != num_filter_data.end(); ++cit)
     {
-        cout<<"filter_list.size()---start"<<filter_list.size() << endl;
         filterids[cit->first].start = filter_list.size();
         if (!cit->second.empty())
             filter_list.push_back(cit->second);
-        cout<<"filter_list.size()---end"<<filter_list.size()<<endl;
         filterids[cit->first].end = filter_list.size();
 #ifndef NDEBUG
         LOG(INFO) << "num: " << cit->first << ", id range: " << filterids[cit->first].start << ", "
