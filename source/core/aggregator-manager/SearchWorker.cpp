@@ -661,7 +661,7 @@ bool  SearchWorker::getResultItem(
     }
 
     std::vector<Document> docs;
-    bool forceget = miningManager_->HasDeletedDocDuringMining() || bundleConfig_->enable_forceget_doc_;
+    bool forceget = (miningManager_&&miningManager_->HasDeletedDocDuringMining())||bundleConfig_->enable_forceget_doc_;
     if(!documentManager_->getDocuments(ids, docs, forceget))
     {
         ///Whenever any document could not be retrieved, return false
