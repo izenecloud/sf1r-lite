@@ -6,9 +6,3 @@ QUERYNORMALIZE
 image_upload
 b5m_categorizing
 testbin
-b5m_commentdb
-b5m_offer_db_recorder
-b5m_offerdb
-b5m_product_db
-b5m_product_matcher
-b5m_scd_doc_processor
