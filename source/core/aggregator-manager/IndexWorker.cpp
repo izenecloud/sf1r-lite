@@ -67,6 +67,7 @@ IndexWorker::IndexWorker(
     , numDeletedDocs_(0)
     , numUpdatedDocs_(0)
     , totalSCDSizeSinceLastBackup_(0)
+    , old_MaxDocid_(0)
 {
     bool hasDateInConfig = false;
     const IndexBundleSchema& indexSchema = bundleConfig_->indexSchema_;
@@ -124,6 +125,8 @@ bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
 
 bool IndexWorker::buildCollection(unsigned int numdoc)
 {
+    old_MaxDocid_ = documentManager_->getMaxDocId();
+    LOG (INFO) << "The Max docid before buildCollection is " << old_MaxDocid_ << endl;
     size_t currTotalSCDSize = getTotalScdSize_();
     ///If current directory is the one rotated from the backup directory,
     ///there should exist some missed SCDs since the last backup time,
@@ -1138,7 +1141,11 @@ bool IndexWorker::updateDoc_(
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
     UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
-    documentManager_->addRtypeDocid(document.getId());
+    //get old-docid....
+    if (document.getId() < old_MaxDocid_)
+    {
+        documentManager_->addRtypeDocid(document.getId());
+    }
     updateData.get<0>() = updateType;
     updateData.get<1>().swap(document);
     updateData.get<2>().swap(indexDocument);
