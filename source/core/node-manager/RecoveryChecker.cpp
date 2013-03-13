@@ -471,7 +471,8 @@ bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
         try
         {
             bfs::path dest_coldata_backup(last_backup_path + "/backup_data");
-            LOG(INFO) << "restoring the backup for the collection." << last_backup_id;
+            LOG(INFO) << "restoring the backup for the collection: " <<
+                colpath.getCollectionDataPath() << ", backup id: " << last_backup_id;
 
             bfs::path coldata_path(colpath.getCollectionDataPath());
             bfs::path querydata_path(colpath.getQueryDataPath());
@@ -554,6 +555,7 @@ bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
             ++cit;
         }
 
+        LOG(INFO) << "rollback begin update config file and restart the collection." << last_backup_path;
         // check if config file changed. if so, we need restart to finish rollback.
         std::string restore_conf_file = last_backup_path + bfs::path(last_conf_file_).filename().string();
         bfs::copy_file(restore_conf_file, last_conf_file_,
