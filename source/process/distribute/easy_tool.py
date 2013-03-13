@@ -16,9 +16,34 @@ import subprocess
 import shlex
 
 
-local_base = '/home/vincentlee/workspace/sf1/'
+replica_set_list = []
+replica_set_list += [{ 'loginuser':'ops', 'primary': ['10.10.99.121'], 'replica': ['10.10.99.122', '10.10.99.123']}]
+replica_set_list += [{ 'loginuser':'lscm', 'primary': ['172.16.5.195'], 'replica': ['172.16.5.192', '172.16.5.194']}]
 
-loginuser = 'lscm'
+all_primary_host = []
+all_replicas_host = []
+loginuser = 'ops'
+
+for replica_set in replica_set_list:
+    all_primary_host += replica_set['primary']
+    all_replicas_host += replica_set['replica']
+    print 'replica set hosts : ' 
+    print replica_set
+
+cur_replica_set = 0
+cur_replica_set = int(raw_input( 'please set the replica set you want to use, -1 for all replica set: '))
+
+if cur_replica_set == -1:
+    primary_host = all_primary_host
+    replicas_host = all_replicas_host
+else:
+    primary_host = replica_set_list[cur_replica_set]['primary']
+    replicas_host = replica_set_list[cur_replica_set]['replica']
+    loginuser = replica_set_list[cur_replica_set]['loginuser']
+
+local_base = os.environ['HOME'] + '/codebase/'
+local_base = raw_input('please set the base dir for local codebase.(default: ' + local_base + ') : ')
+
 base_dir = '/home/' + loginuser + '/codebase'
 sf1r_dir = base_dir + '/sf1r-engine'
 izenelib_dir = base_dir + '/izenelib'
@@ -43,9 +68,6 @@ loginssh_stay = 'ssh ' + loginuser + '@'
 
 scp_local = 'rsync -av '
 scp_remote = 'scp -r ' + loginuser + '@'
-
-primary_host = ['10.10.99.121']
-replicas_host = ['10.10.99.122', '10.10.99.123']
 
 logfile = open('./result.log', 'a')
 
@@ -269,7 +291,7 @@ def reset_state_and_run():
     (failed_host,down_host) = check_col(20)
     if len(failed_host) > 0 or len(down_host) > 0:
         printtofile ('reset state wrong, data is not consistent.')
-        #exit(0)
+        exit(0)
     printtofile ('reset state for cluster finished.')
 
 def check_col(check_interval = 10):
@@ -340,7 +362,7 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
         (failed_host, down_host) = check_col()
         if len(failed_host) > 0:
             printtofile ('data not consistent while checking after restart failed node.' + time.asctime())
-            #sys.exit(0)
+            sys.exit(0)
         elif len(down_host) > 0 :
             # try again without fail test.
             retry += 1
@@ -353,7 +375,7 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
 
     if len(down_host) > 0:
         printtofile ('check failed for down_host after retry.')
-        #sys.exit(0)
+        sys.exit(0)
 
     cmdstr = ' cd ' + sf1r_bin_dir + '; touch ./distribute_test.conf; echo 1 > ./distribute_test.conf'
     send_cmd_andstay(primary_host + replicas_host, cmdstr)
@@ -399,6 +421,7 @@ def run_auto_fail_test(args):
         (failed_host, down_host) = check_col()
         if len(failed_host) > 0 or len(down_host) > 0:
             printtofile ('check failed for updated config test')
+            sys.exit(0)
 
         for test_writereq in test_writereq_files:
             printtofile ('running fail test for write request : ' + test_writereq)
