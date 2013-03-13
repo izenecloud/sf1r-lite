@@ -21,6 +21,7 @@ MiningTaskBuilder::~MiningTaskBuilder()
 bool MiningTaskBuilder::buildCollection()
 {
     docid_t MaxDocid = document_manager_->getMaxDocId();
+
     docid_t min_last_docid = MaxDocid;
 
     std::vector<bool> taskFlag(taskList_.size(), true);
@@ -28,17 +29,28 @@ bool MiningTaskBuilder::buildCollection()
     size_t false_count = 0;
     for (size_t i = 0; i < taskList_.size(); ++i)
     {
+        //LOG (INFO) << "taskList_[i]->getLastDocId()"<< taskList_[i]->getLastDocId() << endl;
+        if (taskList_[i]->getLastDocId() - 1 == MaxDocid) // not right for r-type scd, but must use for delete data;
         {
-            if (!taskList_[i]->preProcess())
+            if (!document_manager_->isThereRtypeDoc())
             {
                 taskFlag[i] = false;
                 ++false_count;
+                continue;
             }
+        }
+        if (!taskList_[i]->preProcess())
+        {
+            taskFlag[i] = false;
+            ++false_count;
         }
     }
 
-    if (false_count == taskList_.size()) return true;
-
+    if (false_count == taskList_.size()) 
+    {
+        LOG (INFO) << "No build Collection...";
+        return true;
+    }
     for (size_t i = 0; i < taskList_.size(); ++i)
     {
         min_last_docid = std::min(min_last_docid, taskList_[i]->getLastDocId());

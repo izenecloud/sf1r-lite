@@ -106,22 +106,20 @@ SET_TARGET_PROPERTIES(t_offer_db_recorder PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
 )
 
-ADD_EXECUTABLE(t_scd_doc_processor
-Runner.cpp
-t_scd_doc_processor.cc
+ADD_EXECUTABLE(b5m_scd_doc_processor
+b5m_scd_doc_processor.cc
 )
-TARGET_LINK_LIBRARIES(t_scd_doc_processor  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
-SET_TARGET_PROPERTIES(t_scd_doc_processor PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+TARGET_LINK_LIBRARIES(b5m_scd_doc_processor  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(b5m_scd_doc_processor PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m/testbin
 )
 
-ADD_EXECUTABLE(t_product_matcher
-Runner.cpp
-t_product_matcher.cc
+ADD_EXECUTABLE(b5m_product_matcher
+b5m_product_matcher.cc
 )
-TARGET_LINK_LIBRARIES(t_product_matcher ${libs})
-SET_TARGET_PROPERTIES(t_product_matcher PROPERTIES
-RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
+TARGET_LINK_LIBRARIES(b5m_product_matcher ${libs})
+SET_TARGET_PROPERTIES(b5m_product_matcher PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m/testbin
 )
 ADD_EXECUTABLE(t_product_db
 Runner.cpp

@@ -92,7 +92,11 @@ bool B5mpProcessor::B5moValid_(const Document& doc)
 void B5mpProcessor::B5moPost_(ValueType& value, int status)                     
 {
     if(value.type==DELETE_SCD) value.type = NOT_SCD;
-    if(status==PairwiseScdMerger::OLD) value.type=NOT_SCD;
+    else
+    {
+        value.type = UPDATE_SCD;//I,U,R
+    }
+    //if(status==PairwiseScdMerger::OLD) value.type=NOT_SCD;
 }
 
 void B5mpProcessor::B5moOutput_(ValueType& value, int status)
@@ -146,24 +150,11 @@ void B5mpProcessor::ProductMerge_(ValueType& value, const ValueType& another_val
     }
     ProductProperty another;
     another.Parse(another_value.doc);
-    //UString anotherdocid, another_uuid, curdocid,curuuid;
-
-    //std::string spid;
-    //another.pid.convertString(spid, izenelib::util::UString::UTF_8);
     if(another_value.type!=DELETE_SCD)
     {
-        //if(spid=="403ec13d9939290d24c308b3da250658")
-        //{
-            //LOG(INFO)<<pp.ToString()<<std::endl;
-        //}
         pp += another;
-        //if(spid=="403ec13d9939290d24c308b3da250658")
-        //{
-            //LOG(INFO)<<pp.ToString()<<std::endl;
-        //}
         if(value.empty() || another.oid==another.pid )
         {
-            //value.doc = another_value.doc;
             value.doc.copyPropertiesFromDocument(another_value.doc, true);
         }
         else
@@ -189,32 +180,18 @@ void B5mpProcessor::ProductMerge_(ValueType& value, const ValueType& another_val
                     }
                 }
             }
-            //value.doc.copyPropertiesFromDocument(another_value.doc, false);
         }
         value.type = UPDATE_SCD;
     }
     else
     {
-        //pp.itemcount-=1;
         if(pp.pid.empty())
         {
             pp.pid = another.pid;
         }
-        //if(spid=="403ec13d9939290d24c308b3da250658")
-        //{
-            //LOG(INFO)<<pp.ToString()<<std::endl;
-        //}
     }
     pp.Set(value.doc);
 
-    //add to po_map
-    //uint128_t ipid = B5MHelper::UStringToUint128(another.pid);
-    //std::string oid;
-    //if(another_value.type!=DELETE_SCD)
-    //{
-        //another.oid.convertString(oid, izenelib::util::UString::UTF_8);
-    //}
-    //po_map_writer_->Append(ipid, oid);
 
 }
 void B5mpProcessor::OutputAll_()

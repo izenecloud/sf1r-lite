@@ -280,6 +280,27 @@ public:
         return encodingType_;
     }
 
+    void addRtypeDocid(docid_t docid)
+    {
+        RtypeDocidList_.push_back(docid);
+    }
+
+    std::vector<docid_t>& getRtyeDocidList()
+    {
+        return RtypeDocidList_;
+    }
+
+    void clearRtypeDocidList()
+    {
+        RtypeDocidList_.clear();
+        std::vector<docid_t>().swap(RtypeDocidList_);
+    }
+
+    bool isThereRtypeDoc()
+    {
+        return RtypeDocidList_.size() > 0;
+    }
+
 private:
     bool loadDelFilter_();
 
@@ -405,6 +426,8 @@ private:
     Highlighter* highlighter_;
 
     boost::mutex mutex_;
+
+    std::vector<docid_t> RtypeDocidList_;
 private:
     static const std::string INDEX_FILE;
     static const std::string ACL_FILE;
