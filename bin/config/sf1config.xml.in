@@ -39,7 +39,7 @@
              - To fully disable use of Cassandra, be free to set it to "__disabled__"
                or any value that can not satisfy the parser :)
     -->
-    <CassandraConnection str="cassandra://180.153.140.105"/>
+    <CassandraConnection str="cassandra://10.10.99.107"/>
 
     <BundlesDefault>
       <!-- Index Bundle Default -->
@@ -239,8 +239,7 @@
       notes:
         1) ids are started at 1
     -->
-    <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="@LOCAL_HOST_IP@"
-                       workerport="18151" masterport="18131" datarecvport="18121" filesyncport="18141"/>
+    <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="@LOCAL_HOST_IP@" workerport="18151" masterport="18131" datarecvport="18121" filesyncport="18141"/>
 
     <DistributedTopology enable="n" nodenum="2">
         <CurrentSf1rNode nodeid="1" replicaid="1">
