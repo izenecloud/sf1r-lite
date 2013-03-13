@@ -107,9 +107,12 @@
 #include <algorithm>
 #include <memory> // auto_ptr
 
+
+namespace sf1r
+{
+
 using namespace boost::filesystem;
 using namespace izenelib::ir::idmanager;
-using namespace sf1r;
 namespace bfs = boost::filesystem;
 
 std::string MiningManager::system_resource_path_;
@@ -2015,9 +2018,8 @@ bool MiningManager::GetSuffixMatch(
     std::vector<std::pair<double, uint32_t> > res_list;
 
     const std::vector<string>& search_in_properties = actionOperation.actionItem_.searchPropertyList_;
-    //search_in_properties = mining_schema_.suffixmatch_schema.suffix_match_properties;
-    //search_in_properties.insert(search_in_properties.end(), mining_schema_.suffixmatch_schema.searchable_properties.begin(),
-    //    mining_schema_.suffixmatch_schema.searchable_properties.end());
+
+    size_t orig_max_docs = max_docs;
 
     if (!use_fuzzy)
     {
@@ -2095,7 +2097,7 @@ bool MiningManager::GetSuffixMatch(
     }
 
     res_list.erase(std::remove_if(res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
-    res_list.resize(std::min((size_t)max_docs, res_list.size()));
+    res_list.resize(std::min(orig_max_docs, res_list.size()));
 
     docIdList.resize(res_list.size());
     rankScoreList.resize(res_list.size());
@@ -2284,9 +2286,9 @@ const faceted::PropValueTable* MiningManager::GetPropValueTable(const std::strin
 }
 
 bool MiningManager::getProductScore(
-    const std::string& docIdStr,
-    const std::string& scoreTypeName,
-    score_t& scoreValue)
+        const std::string& docIdStr,
+        const std::string& scoreTypeName,
+        score_t& scoreValue)
 {
     docid_t docId = 0;
 
