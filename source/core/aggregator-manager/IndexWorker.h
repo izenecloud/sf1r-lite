@@ -285,8 +285,6 @@ private:
 
     UpdateBufferType updateBuffer_;
 
-    docid_t old_MaxDocid_;
-
     friend class IndexSearchService;
     friend class IndexBundleActivator;
     friend class ProductBundleActivator;
