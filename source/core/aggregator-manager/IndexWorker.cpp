@@ -1168,10 +1168,6 @@ bool IndexWorker::doUpdateDoc_(
         {
             LOG(WARNING) << "document " << oldId << " is already deleted";
         }
-        else
-        {
-            miningTaskService_->incDeletedDocBeforeMining();
-        }
         indexManager_->updateDocument(indexDocument);
 
         if (!documentManager_->insertDocument(document))
@@ -1233,11 +1229,7 @@ void IndexWorker::flushUpdateBuffer_()
                 break;
             }
 
-            if(documentManager_->removeDocument(oldId))
-            {
-                miningTaskService_->incDeletedDocBeforeMining();
-            }
-
+            documentManager_->removeDocument(oldId);
             indexManager_->updateDocument(updateData.get<2>());
 
             if(!documentManager_->insertDocument(updateData.get<1>()))
@@ -1281,7 +1273,6 @@ bool IndexWorker::deleteDoc_(docid_t docid, time_t timestamp)
     }
     if (documentManager_->removeDocument(docid))
     {
-        miningTaskService_->incDeletedDocBeforeMining();
         indexManager_->removeDocument(collectionId_, docid);
         ++numDeletedDocs_;
         indexStatus_.numDocs_ = indexManager_->numDocs();
