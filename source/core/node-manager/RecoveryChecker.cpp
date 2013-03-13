@@ -795,6 +795,9 @@ bool RecoveryChecker::updateConfigFromLog(const std::string& packed_data)
         LOG(ERROR) << "write local log failed while updating config from log.";
     }
     reqlog_mgr_->delPreparedReqLog();
+
+    backup();
+
     return true;
 }
 
@@ -925,6 +928,7 @@ std::map<std::string, std::string> RecoveryChecker::handleConfigUpdate()
             forceExit("write update config log error");
         }
         reqlog_mgr_->delPreparedReqLog();
+        backup();
     }
     return running_col_info;
 }
