@@ -22,7 +22,7 @@
     <!-- Network addresses of LogServerProcess:
          host=10.10.1.105 is the LAN address of (180.153.140.105)
     -->
-    <LogServerConnection host="10.10.1.105" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
+    <LogServerConnection host="10.10.99.121" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
 
     <!-- Format of value of str:
 
@@ -239,7 +239,7 @@
       notes:
         1) ids are started at 1
     -->
-    <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
+    <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="@LOCAL_HOST_IP@"
                        workerport="18151" masterport="18131" datarecvport="18121" filesyncport="18141"/>
 
     <DistributedTopology enable="n" nodenum="2">
@@ -271,7 +271,7 @@
     </DistributedTopology>
 
     <DistributedUtil>
-      <ZooKeeper disable="n" servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="20000"/>
+      <ZooKeeper disable="n" servers="10.10.99.121:2181,10.10.99.122:2181,10.10.99.123:2181" sessiontimeout="20000"/>
       <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000"/>
     </DistributedUtil>
   </Deployment>
