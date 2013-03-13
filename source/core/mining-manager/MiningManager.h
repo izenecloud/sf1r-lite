@@ -27,6 +27,7 @@
 #include <configuration-manager/MiningSchema.h>
 #include <configuration-manager/CollectionPath.h>
 #include <ir/id_manager/IDManager.h>
+#include <boost/atomic.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/thread/mutex.hpp>
@@ -359,6 +360,10 @@ public:
             uint32_t knnDist,
             uint32_t start);
 
+    void EnsureHasDeletedDocDuringMining() { hasDeletedDocDuringMining_ = true; }
+
+    bool HasDeletedDocDuringMining() { return hasDeletedDocDuringMining_; }
+
     bool GetSuffixMatch(
             const SearchKeywordOperation& actionOperation,
             uint32_t max_docs,
@@ -689,6 +694,8 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
+
+    boost::atomic_bool hasDeletedDocDuringMining_;
 };
 
 }

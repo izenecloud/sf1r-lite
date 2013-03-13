@@ -1015,6 +1015,8 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     }
     std::sort(docIdList.begin(), docIdList.end());
 
+    miningTaskService_->EnsureHasDeletedDocDuringMining();
+
     //process delete document in index manager
     for (std::vector<docid_t>::iterator iter = docIdList.begin(); iter
             != docIdList.end(); ++iter)
@@ -1168,6 +1170,10 @@ bool IndexWorker::doUpdateDoc_(
         {
             LOG(WARNING) << "document " << oldId << " is already deleted";
         }
+        else
+        {
+            miningTaskService_->EnsureHasDeletedDocDuringMining();
+        }
         indexManager_->updateDocument(indexDocument);
 
         if (!documentManager_->insertDocument(document))
@@ -1229,7 +1235,11 @@ void IndexWorker::flushUpdateBuffer_()
                 break;
             }
 
-            documentManager_->removeDocument(oldId);
+            if(documentManager_->removeDocument(oldId))
+            {
+                miningTaskService_->EnsureHasDeletedDocDuringMining();
+            }
+
             indexManager_->updateDocument(updateData.get<2>());
 
             if(!documentManager_->insertDocument(updateData.get<1>()))

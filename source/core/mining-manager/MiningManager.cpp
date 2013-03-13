@@ -167,6 +167,7 @@ MiningManager::MiningManager(
     , product_categorizer_(NULL)
     , kvManager_(NULL)
     , miningTaskBuilder_(NULL)
+    , hasDeletedDocDuringMining_(false)
 {
 }
 
@@ -923,6 +924,7 @@ bool MiningManager::DoMiningCollection()
         MEMLOG("[Mining] SIM finished.");
     }
 
+    hasDeletedDocDuringMining_ = false;
     LOG (INFO) << "Clear Rtype Docid List";
     document_manager_->clearRtypeDocidList();
     return true;
@@ -2017,7 +2019,12 @@ bool MiningManager::GetSuffixMatch(
         }
     }
 
-    res_list.erase(std::remove_if(res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
+    //We do not use this post delete filtering because deleted documents should never be searched from 
+    //suffix index in normal cases, while if there are deleted documents before mining finished, these documents
+    //should be abled to searched as well.
+    //We ignore the exception case that SF1 quit before mining finished
+    //if(!hasDeletedDocDuringMining_)
+    //    res_list.erase(std::remove_if(res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
     res_list.resize(std::min(orig_max_docs, res_list.size()));
 
     docIdList.resize(res_list.size());
