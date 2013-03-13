@@ -22,10 +22,6 @@ public:
 
     MiningBundleConfiguration* getMiningBundleConfig(){ return bundleConfig_; }
 
-    void incDeletedDocBeforeMining()
-    {
-        miningManager_->incDeletedDocBeforeMining();
-    }
     void flush();
 
 private:

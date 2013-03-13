@@ -1436,7 +1436,7 @@ bool IndexWorker::updateDoc_(
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
     UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
-    documentManager_->addRtypeDocid(document.getId());
+
     updateData.get<0>() = updateType;
     updateData.get<1>().swap(document);
     updateData.get<2>().swap(indexDocument);
@@ -1466,10 +1466,6 @@ bool IndexWorker::doUpdateDoc_(
         {
             LOG(WARNING) << "document " << oldId << " is already deleted";
         }
-        else
-        {
-            miningTaskService_->incDeletedDocBeforeMining();
-        }
         indexManager_->updateDocument(indexDocument);
 
         if (!documentManager_->insertDocument(document))
@@ -1483,6 +1479,7 @@ bool IndexWorker::doUpdateDoc_(
     case RTYPE:
     {
         // Store the old property value.
+        documentManager_->addRtypeDocid(document.getId());
         indexManager_->updateRtypeDocument(oldIndexDocument, indexDocument);
         return true;
     }
@@ -1530,11 +1527,7 @@ void IndexWorker::flushUpdateBuffer_()
                 break;
             }
 
-            if(documentManager_->removeDocument(oldId))
-            {
-                miningTaskService_->incDeletedDocBeforeMining();
-            }
-
+            documentManager_->removeDocument(oldId);
             indexManager_->updateDocument(updateData.get<2>());
 
             if(!documentManager_->insertDocument(updateData.get<1>()))
@@ -1555,6 +1548,7 @@ void IndexWorker::flushUpdateBuffer_()
         case RTYPE:
         {
             // Store the old property value.
+            documentManager_->addRtypeDocid(updateData.get<1>().getId());
             indexManager_->updateRtypeDocument(updateData.get<3>(), updateData.get<2>());
             break;
         }
@@ -1577,7 +1571,6 @@ bool IndexWorker::deleteDoc_(docid_t docid, time_t timestamp)
     }
     if (documentManager_->removeDocument(docid))
     {
-        miningTaskService_->incDeletedDocBeforeMining();
         indexManager_->removeDocument(collectionId_, docid);
         ++numDeletedDocs_;
         indexStatus_.numDocs_ = indexManager_->numDocs();

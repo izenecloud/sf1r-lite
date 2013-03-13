@@ -167,7 +167,6 @@ MiningManager::MiningManager(
     , product_categorizer_(NULL)
     , kvManager_(NULL)
     , miningTaskBuilder_(NULL)
-    , deleted_doc_before_mining_(0)
 {
 }
 
@@ -209,15 +208,6 @@ void MiningManager::close()
     groupLabelLoggerMap_.clear();
     MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
     handler->deleteCollection(collectionName_);
-
-    if (deleted_doc_before_mining_ > 0)
-    {
-        std::ofstream ofs((collectionDataPath_ + "/deleted_doc_before_mining_.data").c_str());
-        if (ofs)
-        {
-            ofs.write((const char*)&deleted_doc_before_mining_, sizeof(deleted_doc_before_mining_));
-        }
-    }
 }
 
 bool MiningManager::open()
@@ -250,11 +240,6 @@ bool MiningManager::open()
 
         std::string prefix_path  = collectionDataPath_;
         FSUtil::createDir(prefix_path);
-        ifstream ifs_last_mining_file((prefix_path + "/deleted_doc_before_mining_.data").c_str());
-        if (ifs_last_mining_file)
-        {
-            ifs_last_mining_file.read((char*)&deleted_doc_before_mining_, sizeof(deleted_doc_before_mining_));
-        }
 
         kpe_res_path_ = system_resource_path_+"/kpe";
         rig_path_ = system_resource_path_+"/sim/rig";
@@ -944,13 +929,6 @@ bool MiningManager::DoMiningCollection()
         MEMLOG("[Mining] SIM finished.");
     }
 
-    // do Summarization
-    /*if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isSyncSCDOnly)
-    {
-        summarizationManager_->EvaluateSummarization();
-    }*/
-
-    deleted_doc_before_mining_ = 0;
     LOG (INFO) << "Clear Rtype Docid List";
     document_manager_->clearRtypeDocidList();
     return true;
@@ -2016,11 +1994,6 @@ private:
 };
 }
 
-void MiningManager::incDeletedDocBeforeMining()
-{
-    deleted_doc_before_mining_++;
-}
-
 bool MiningManager::GetSuffixMatch(
         const SearchKeywordOperation& actionOperation,
         uint32_t max_docs,
@@ -2046,11 +2019,6 @@ bool MiningManager::GetSuffixMatch(
     //search_in_properties.insert(search_in_properties.end(), mining_schema_.suffixmatch_schema.searchable_properties.begin(),
     //    mining_schema_.suffixmatch_schema.searchable_properties.end());
 
-    size_t orig_max_docs = max_docs;
-    max_docs += deleted_doc_before_mining_;
-
-    if (deleted_doc_before_mining_ > 0)
-        LOG(INFO) << "since last mining, new deleted doc num is :" << deleted_doc_before_mining_;
     if (!use_fuzzy)
     {
         totalCount = suffixMatchManager_->longestSuffixMatch(queryU, search_in_properties, max_docs, res_list);
@@ -2126,8 +2094,8 @@ bool MiningManager::GetSuffixMatch(
         }
     }
 
-    res_list.erase(std::remove_if (res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
-    res_list.resize(std::min(orig_max_docs, res_list.size()));
+    res_list.erase(std::remove_if(res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
+    res_list.resize(std::min((size_t)max_docs, res_list.size()));
 
     docIdList.resize(res_list.size());
     rankScoreList.resize(res_list.size());

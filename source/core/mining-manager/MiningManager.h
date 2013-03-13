@@ -361,8 +361,6 @@ public:
             uint32_t knnDist,
             uint32_t start);
 
-    void incDeletedDocBeforeMining();
-
     bool GetSuffixMatch(
             const SearchKeywordOperation& actionOperation,
             uint32_t max_docs,
@@ -693,7 +691,6 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
-    uint32_t deleted_doc_before_mining_;
 };
 
 }

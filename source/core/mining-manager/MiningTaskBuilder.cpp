@@ -29,16 +29,6 @@ bool MiningTaskBuilder::buildCollection()
     size_t false_count = 0;
     for (size_t i = 0; i < taskList_.size(); ++i)
     {
-        //LOG (INFO) << "taskList_[i]->getLastDocId()"<< taskList_[i]->getLastDocId() << endl;
-        if (taskList_[i]->getLastDocId() - 1 == MaxDocid) // not right for r-type scd, but must use for delete data;
-        {
-            if (!document_manager_->isThereRtypeDoc())
-            {
-                taskFlag[i] = false;
-                ++false_count;
-                continue;
-            }
-        }
         if (!taskList_[i]->preProcess())
         {
             taskFlag[i] = false;
