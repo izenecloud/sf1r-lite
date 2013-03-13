@@ -29,24 +29,6 @@ bool MiningTaskBuilder::buildCollection()
     size_t false_count = 0;
     for (size_t i = 0; i < taskList_.size(); ++i)
     {
-        //LOG (INFO) << "taskList_[i]->getLastDocId()"<< taskList_[i]->getLastDocId() << endl;
-
-        /**
-        @ brief :
-        Now, in order to fast the rebuild time, when the -R SCD and -D SCD come, both the fm-index and it's filter 
-        both will not be rebuild.
-        In fact, the filter should be rebuilt, but now it will rebuilt together with fm-index.
-        So, here is a problem that will fix in the future;
-        **/
-        if (taskList_[i]->getLastDocId() - 1 == MaxDocid) // includes -R and -D type. 
-        {
-            //if (!document_manager_->isThereRtypeDoc()) // when -U SCD comes, it may also has Rtype Doc. So, we should seperate -R or -U docid type.
-            {
-                taskFlag[i] = false;
-                ++false_count;
-                continue;
-            }
-        }
         if (!taskList_[i]->preProcess())
         {
             taskFlag[i] = false;
