@@ -18,7 +18,8 @@
 #define SF1R_DIVERSITY_ROUND_EVALUATOR_H
 
 #include "ProductScoreEvaluator.h"
-#include <map>
+//#include <map>
+#include <3rdparty/am/btree/btree_map.h>
 
 namespace sf1r
 {
@@ -33,7 +34,7 @@ public:
 private:
     score_t lastCategoryScore_;
 
-    std::map<merchant_id_t, int> roundMap_;
+    btree::btree_map<merchant_id_t, int> roundMap_;
 };
 
 } // namespace sf1r

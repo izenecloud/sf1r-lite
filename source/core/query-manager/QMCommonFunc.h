@@ -11,7 +11,6 @@
 #ifndef _QMCOMMONFUNC_H_
 #define _QMCOMMONFUNC_H_
 
-#include "QueryManager.h"
 #include "ActionItem.h"
 #include <la-manager/LAManager.h>
 

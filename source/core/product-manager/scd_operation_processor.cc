@@ -15,7 +15,7 @@ ScdOperationProcessor::ScdOperationProcessor(
 , syncId_(syncId)
 , dir_(dir)
 , writer_(NULL)
-, last_op_(0)
+, last_scd_type_(NOT_SCD)
 {
 }
 
@@ -24,9 +24,9 @@ ScdOperationProcessor::~ScdOperationProcessor()
 }
 
 
-void ScdOperationProcessor::Append(int op, const PMDocumentType& doc)
+void ScdOperationProcessor::Append(SCD_TYPE scd_type, const PMDocumentType& doc)
 {
-    if(last_op_>0 && op!=last_op_)
+    if(last_scd_type_ != NOT_SCD && scd_type != last_scd_type_)
     {
         writer_->Close();
         delete writer_;
@@ -34,10 +34,10 @@ void ScdOperationProcessor::Append(int op, const PMDocumentType& doc)
     }
     if(writer_==NULL)
     {
-        writer_ = new ScdWriter(dir_, op);
+        writer_ = new ScdWriter(dir_, scd_type);
     }
     writer_->Append(doc);
-    last_op_ = op;
+    last_scd_type_ = scd_type;
 }
 
 void ScdOperationProcessor::Clear()
@@ -48,7 +48,7 @@ void ScdOperationProcessor::Clear()
         delete writer_;
         writer_ = NULL;
     }
-    last_op_ = 0;
+    last_scd_type_ = NOT_SCD;
     ClearScds_();
 }
 
@@ -59,7 +59,7 @@ bool ScdOperationProcessor::Finish()
         writer_->Close();
         delete writer_;
         writer_ = NULL;
-        last_op_ = 0;
+        last_scd_type_ = NOT_SCD;
         //notify zookeeper on dir_
     }
     LOG(INFO)<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
@@ -81,7 +81,7 @@ bool ScdOperationProcessor::Finish()
 void ScdOperationProcessor::ClearScds_()
 {
     LOG(INFO)<<"Clearing Scds"<<std::endl;
-    namespace bfs = boost::filesystem;
+   namespace bfs = boost::filesystem;
     static const bfs::directory_iterator kItrEnd;
 
     for (bfs::directory_iterator itr(dir_); itr != kItrEnd; ++itr)

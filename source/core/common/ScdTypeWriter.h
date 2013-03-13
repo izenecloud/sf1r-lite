@@ -5,85 +5,85 @@
 #include <document-manager/Document.h>
 #include <boost/function.hpp>
 #include <boost/variant.hpp>
+#include <boost/unordered_map.hpp>
 namespace sf1r
 {
 
 ///@brief only write UString properties in Document to SCD file.
 class ScdTypeWriter
 {
+    typedef boost::unordered_map<SCD_TYPE, ScdWriter*> WriterMap;
     typedef boost::function<bool
         (const std::string&) > PropertyNameFilterType;
 
 public:
     ScdTypeWriter(const std::string& dir)
-    : dir_(dir), iwriter_(NULL), uwriter_(NULL), dwriter_(NULL)
+    : dir_(dir)
     {
     }
 
     ~ScdTypeWriter()
     {
-        if(iwriter_!=NULL) delete iwriter_;
-        if(uwriter_!=NULL) delete uwriter_;
-        if(dwriter_!=NULL) delete dwriter_;
+        for(WriterMap::iterator it = writer_map_.begin(); it!=writer_map_.end(); ++it)
+        {
+            ScdWriter* writer = it->second;
+            if(writer!=NULL) delete writer;
+        }
+
+        //if(iwriter_!=NULL) delete iwriter_;
+        //if(uwriter_!=NULL) delete uwriter_;
+        //if(rwriter_!=NULL) delete rwriter_;
+        //if(dwriter_!=NULL) delete dwriter_;
     }
 
-    bool Append(const Document& doc, int op)
+    bool Append(const Document& doc, SCD_TYPE scd_type)
     {
-        ScdWriter* writer = GetWriter_(op);
+        if(scd_type==NOT_SCD) return false;
+        ScdWriter* writer = GetWriter_(scd_type);
         if(writer==NULL) return false;
         return writer->Append(doc);
     }
 
     void Close()
     {
-        if(iwriter_!=NULL) iwriter_->Close();
-        if(uwriter_!=NULL) uwriter_->Close();
-        if(dwriter_!=NULL) dwriter_->Close();
+        for(WriterMap::iterator it = writer_map_.begin(); it!=writer_map_.end(); ++it)
+        {
+            ScdWriter* writer = it->second;
+            if(writer!=NULL) writer->Close();
+        }
+        //if(iwriter_!=NULL) iwriter_->Close();
+        //if(uwriter_!=NULL) uwriter_->Close();
+        //if(dwriter_!=NULL) dwriter_->Close();
     }
 
 private:
 
-    ScdWriter* GetWriter_(int op)
+    ScdWriter* GetWriter_(SCD_TYPE scd_type)
     {
         ScdWriter* writer = NULL;
-        if(op==INSERT_SCD)
+        WriterMap::iterator it = writer_map_.find(scd_type);
+        if(it==writer_map_.end())
         {
-            writer = iwriter_;
+            writer = new ScdWriter(dir_, scd_type);
+            writer_map_.insert(std::make_pair(scd_type, writer));
         }
-        else if(op==UPDATE_SCD)
+        else
         {
-            writer = uwriter_;
-        }
-        else if(op==DELETE_SCD)
-        {
-            writer = dwriter_;
-        }
-        else return NULL;
-        if(writer==NULL)
-        {
-            writer = new ScdWriter(dir_, op);
-            if(op==INSERT_SCD)
+            writer = it->second;
+            if(writer==NULL)
             {
-                iwriter_ = writer;
-            }
-            else if(op==UPDATE_SCD)
-            {
-                uwriter_ = writer;
-            }
-            else if(op==DELETE_SCD)
-            {
-                dwriter_ = writer;
+                writer = new ScdWriter(dir_, scd_type);
+                it->second = writer;
             }
         }
+
         return writer;
     }
 
 
 private:
     std::string dir_;
-    ScdWriter* iwriter_;
-    ScdWriter* uwriter_;
-    ScdWriter* dwriter_;
+    WriterMap writer_map_;
 };
 
 

@@ -56,7 +56,7 @@ class ScdWriter
         (const std::string&) > PropertyNameFilterType;
 
 public:
-    ScdWriter(const std::string& dir, int op);
+    ScdWriter(const std::string& dir, SCD_TYPE scd_type);
 
     ~ScdWriter();
 
@@ -65,7 +65,7 @@ public:
         filename_ = fn;
     }
 
-    static std::string GenSCDFileName( int op);
+    static std::string GenSCDFileName(SCD_TYPE scd_type);
 
     bool Append(const Document& doc);
 
@@ -86,7 +86,7 @@ private:
 private:
     std::string dir_;
     std::string filename_;
-    int op_;
+    SCD_TYPE scd_type_;
     std::ofstream ofs_;
 
     DocumentOutputVisitor output_visitor_;

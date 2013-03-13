@@ -29,13 +29,13 @@ public:
         {
         }
 
-        ValueType(const Document& p1, int p2)
+        ValueType(const Document& p1, SCD_TYPE p2)
         :doc(p1), type(p2)
         {
         }
 
         Document doc;
-        int type;
+        SCD_TYPE type;
 
         bool empty() const
         {
@@ -144,7 +144,7 @@ public:
                     std::string scd_file = scd_list[s];
                     ScdParser parser(izenelib::util::UString::UTF_8);
                     LOG(INFO)<<"pre-processing "<<scd_file<<std::endl;
-                    int type = ScdParser::checkSCDType(scd_file);
+                    SCD_TYPE type = ScdParser::checkSCDType(scd_file);
                     parser.load(scd_file);
                     uint64_t p=0;
                     for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
@@ -173,7 +173,7 @@ public:
                 std::string scd_file = e_scd_list[s];
                 ScdParser parser(izenelib::util::UString::UTF_8);
                 LOG(INFO)<<"Processing E "<<scd_file<<std::endl;
-                int type = ScdParser::checkSCDType(scd_file);
+                SCD_TYPE type = ScdParser::checkSCDType(scd_file);
                 parser.load(scd_file);
                 uint64_t p=0;
                 for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
@@ -201,7 +201,7 @@ public:
                 std::string scd_file = scd_list[s];
                 ScdParser parser(izenelib::util::UString::UTF_8);
                 LOG(INFO)<<"Processing "<<scd_file<<std::endl;
-                int type = ScdParser::checkSCDType(scd_file);
+                SCD_TYPE type = ScdParser::checkSCDType(scd_file);
                 parser.load(scd_file);
                 uint64_t p=0;
                 for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
@@ -298,25 +298,31 @@ public:
     
     static void DefaultMerge(ValueType& value, const ValueType& another_value)
     {
-        if(another_value.type==DELETE_SCD)
+        switch (another_value.type)
         {
+        case DELETE_SCD:
             //doc.clear();
             //doc.property("DOCID") = value.doc.property("DOCID");
             value.doc.copyPropertiesFromDocument(another_value.doc, true);
             value.type = another_value.type;
-        }
-        else if(another_value.type==UPDATE_SCD)
-        {
+            break;
+
+        case UPDATE_SCD:
+        case RTYPE_SCD:
             value.doc.copyPropertiesFromDocument(another_value.doc, true);
             if(value.type!=INSERT_SCD)
             {
                 value.type = another_value.type;
             }
-        }
-        else if(another_value.type==INSERT_SCD)
-        {
+            break;
+
+        case INSERT_SCD:
             value.doc = another_value.doc;
             value.type = another_value.type;
+            break;
+
+        default:
+            break;
         }
     }
 

@@ -5,7 +5,6 @@
 
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
-#include <query-manager/QueryManager.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchFactory.h>
 #include <search-manager/SearchManager.h>
@@ -575,28 +574,6 @@ bool IndexBundleActivator::initializeQueryManager_() const
     LAPool::getInstance()->get_kma_path(kma_path);
     std::string restrictDictPath = kma_path + "/restrict.txt";
     QueryUtility::buildRestrictTermDictionary( restrictDictPath, idManager_);
-
-    const IndexBundleSchema& indexSchema = config_->indexSchema_;
-    for (IndexBundleSchema::const_iterator it = indexSchema.begin();
-        it != indexSchema.end(); ++it)
-    {
-        QueryManager::CollPropertyKey_T key( make_pair(config_->collectionName_, it->getName() ) );
-
-        // Set Search Property
-        if (it->isIndex())
-            QueryManager::addCollectionSearchProperty(key);
-
-        // Set Display Property
-        QueryManager::addCollectionPropertyInfo(key, it->getType() );
-
-        DisplayProperty displayProperty(it->getName());
-        displayProperty.isSnippetOn_ = it->bSnippet_;
-        displayProperty.isSummaryOn_ = it->bSummary_;
-        displayProperty.summarySentenceNum_ = it->summaryNum_;
-        displayProperty.isHighlightOn_ = it->bHighlight_;
-
-        QueryManager::addCollectionDisplayProperty(key, displayProperty);
-    }
 
     return true;
 }

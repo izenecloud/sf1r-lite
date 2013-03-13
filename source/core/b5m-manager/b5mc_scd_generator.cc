@@ -40,7 +40,7 @@ bool B5mcScdGenerator::Generate(const std::string& scd_path, const std::string& 
             LOG(ERROR)<<"odb open fail"<<std::endl;
             return false;
         }
-    }
+    } 
     if(bdb_!=NULL)
     {
         if(!bdb_->is_open())

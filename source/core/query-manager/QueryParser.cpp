@@ -4,7 +4,6 @@
 /// @date   2010.06.16 (First Created)
 ///
 
-#include "QueryManager.h"
 #include "QueryParser.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/shared_ptr.hpp>
