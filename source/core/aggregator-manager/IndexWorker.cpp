@@ -326,6 +326,25 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         }
 
     }///set cookie as true here
+
+    //@brief : to check if there is fuzzy numberic or date filter;
+    std::set<std::string> suffix_numeric_filter_properties;
+    std::vector<NumericFilterConfig>::iterator pit 
+        = miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.begin();
+
+    while (pit != miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.end())
+    {
+        suffix_numeric_filter_properties.insert(pit->property);
+        ++pit;
+    }
+    std::set<std::string> intersection;
+    std::set_intersection(documentManager_->RtypeDocidPros_.begin(),
+                                      documentManager_->RtypeDocidPros_.end(),
+                                      suffix_numeric_filter_properties.begin(),
+                                      suffix_numeric_filter_properties.end(),
+                                      std::inserter(intersection, intersection.begin()));
+    documentManager_->RtypeDocidPros_.swap(intersection);
+    
     try{
         if (hooker_)
         {
@@ -1345,20 +1364,6 @@ bool IndexWorker::prepareDocument_(
         const std::string& fieldStr = p->first;
         tempPropertyConfig.propertyName_ = fieldStr;
 
-
-        //@brief : to check if there is fuzzy numberic or date filter;
-        std::vector<NumericFilterConfig>::iterator iter1 
-            = miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.begin();
-
-        while (iter1 != miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.end())
-        {
-            if ((*iter1).property == fieldStr)
-            {
-                documentManager_->RtypeDocidPros_.insert(fieldStr);
-            }
-            ++iter1;
-        }
-
         IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
         bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
 
@@ -1495,6 +1500,8 @@ bool IndexWorker::prepareDocument_(
                     document.property(fieldStr).swap(propData);
                     prepareIndexDocumentNumericProperty_(docId, p->second, iter, indexDocument);
                 }
+                if(updateType == RTYPE )
+                    documentManager_->RtypeDocidPros_.insert(fieldStr);
                 break;
 
             case DATETIME_PROPERTY_TYPE:
@@ -1511,6 +1518,8 @@ bool IndexWorker::prepareDocument_(
                     document.property(fieldStr).swap(propData);
                     prepareIndexDocumentNumericProperty_(docId, p->second, iter, indexDocument);
                 }
+                if(updateType == RTYPE )
+                    documentManager_->RtypeDocidPros_.insert(fieldStr);
                 break;
 
             default:
