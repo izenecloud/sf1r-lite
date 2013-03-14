@@ -63,12 +63,18 @@ bool SuffixMatchMiningTask::preProcess()
                 break;
             }
         }
+        if (document_manager_->isThereRtypeDoc())
+        {
+            LOG (INFO) << "Update for R-type SCD" << endl;
+            need_rebuild = true;
+        }
     }
     else
     {
         LOG(INFO) << "old fmi docCount is : " << last_docid << ", document_manager count:" << document_manager_->getMaxDocId();
         need_rebuild = true;
     }
+
     if (need_rebuild)
     {
         LOG(INFO) << "rebuilding in fm-index is needed.";
@@ -77,8 +83,10 @@ bool SuffixMatchMiningTask::preProcess()
     {
         new_fmi_manager->useOldDocCount(fmi_manager_.get());
     }
+
     bool isInitAndLoad = true;
     if (!need_rebuild) return true;
+
     if (!new_fmi_manager->initAndLoadOldDocs(fmi_manager_.get()))
     {
         LOG(ERROR) << "fmindex init building failed, must stop. ";
