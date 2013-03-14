@@ -1345,6 +1345,20 @@ bool IndexWorker::prepareDocument_(
         const std::string& fieldStr = p->first;
         tempPropertyConfig.propertyName_ = fieldStr;
 
+
+        //@brief : to check if there is fuzzy numberic or date filter;
+        std::vector<NumericFilterConfig>::iterator iter1 
+            = miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.begin();
+
+        while (iter1 != miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.end())
+        {
+            if ((*iter1).property == fieldStr)
+            {
+                documentManager_->RtypeDocidPros_.insert(fieldStr);
+            }
+            ++iter1;
+        }
+
         IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
         bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
 

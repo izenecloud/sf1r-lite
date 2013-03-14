@@ -927,6 +927,7 @@ bool MiningManager::DoMiningCollection()
     hasDeletedDocDuringMining_ = false;
     LOG (INFO) << "Clear Rtype Docid List";
     document_manager_->clearRtypeDocidList();
+    document_manager_->RtypeDocidPros_.clear();
     return true;
 }
 
