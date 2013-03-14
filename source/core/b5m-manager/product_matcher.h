@@ -38,9 +38,10 @@ namespace sf1r {
         typedef std::vector<term_t> TermList;
         typedef std::vector<TermList> Suffixes;
         typedef boost::unordered_set<TermList> KeywordSet;
-        typedef uint32_t position_t;
-        typedef std::pair<position_t, position_t>  Position;
-        typedef std::vector<Position> Positions;
+        typedef std::vector<Term> ATermList;//analyze term list
+        //typedef uint32_t position_t;
+        //typedef std::pair<position_t, position_t>  Position;
+        //typedef std::vector<Position> Positions;
         typedef boost::unordered_map<std::string, std::string> Back2Front;
         typedef std::vector<std::pair<uint32_t, uint32_t> > FrequentValue;
         typedef boost::unordered_map<TermList, FrequentValue> NgramFrequent;
@@ -261,47 +262,132 @@ namespace sf1r {
             }
         };
 
+        //struct FuzzyApp
+        //{
+            //uint32_t spu_id;
+            //std::string attribute_name;
+            //TermList term_list;
+            //Position pos;
+            //Position tpos; //runtime property
+            //friend class boost::serialization::access;
+            //template<class Archive>
+            //void serialize(Archive & ar, const unsigned int version)
+            //{
+                //ar & spu_id & attribute_name & term_list & pos;
+            //}
+
+            //static bool PositionCompare(const FuzzyApp& a1, const FuzzyApp& a2)
+            //{
+                //if(a1.pos.begin<a2.pos.begin) return true;
+                //else if(a1.pos.begin>a2.pos.begin) return false;
+                //else return a1.pos.end<a2.pos.end;
+            
+            //}
+        //};
+
+        //struct FuzzyPositions
+        //{
+            //std::vector<Position> positions;
+            //std::vector<Position> tpositions;
+        //};
+
+        //struct FuzzyValue
+        //{
+            //std::vector<FuzzyApp> fuzzy_apps;
+            //friend class boost::serialization::access;
+            //template<class Archive>
+            //void serialize(Archive & ar, const unsigned int version)
+            //{
+                //ar & fuzzy_apps;
+            //}
+        //};
+
+        struct TermIndexItem
+          : boost::less_than_comparable<TermIndexItem> ,boost::equality_comparable<TermIndexItem>
+        {
+            uint32_t keyword_index;
+            uint32_t pos;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & keyword_index & pos;
+            }
+            bool operator<(const TermIndexItem& another) const
+            {
+                if(keyword_index!=another.keyword_index) return keyword_index<another.keyword_index;
+                else return pos<another.pos;
+            }
+
+            bool operator==(const TermIndexItem& another) const
+            {
+                return keyword_index==another.keyword_index && pos==another.pos;
+            }
+        };
+
+        struct TermIndexValue
+        {
+            std::vector<TermIndexItem> items;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & items;
+            }
+
+            void flush()
+            {
+                std::sort(items.begin(), items.end());
+                items.erase( std::unique(items.begin(), items.end()), items.end());
+            }
+        };
+
+        struct TermIndex
+        {
+            typedef std::vector<ATermList> Forward;
+            typedef boost::unordered_map<term_t, TermIndexValue> Invert;
+
+            Forward forward;
+            Invert invert;
+            void clear()
+            {
+                forward.clear();
+                invert.clear();
+            }
+            void flush()
+            {
+                for(Invert::iterator it=invert.begin();it!=invert.end();it++)
+                {
+                    it->second.flush();
+                }
+            }
+            friend class boost::serialization::access;
+            template<class Archive>
+            void save(Archive & ar, const unsigned int version) const
+            {
+                ar & forward;
+                std::map<typename Invert::key_type, typename Invert::mapped_type> m(invert.begin(), invert.end());
+                ar & m;
+            }
+            template<class Archive>
+            void load(Archive & ar, const unsigned int version)
+            {
+                ar & forward;
+                std::map<typename Invert::key_type, typename Invert::mapped_type> m;
+                ar & m;
+                invert.insert(m.begin(), m.end());
+            }
+            BOOST_SERIALIZATION_SPLIT_MEMBER()
+        };
+
         struct FuzzyApp
         {
-            uint32_t spu_id;
-            std::string attribute_name;
-            TermList term_list;
-            Position pos;
-            Position tpos; //runtime property
-            friend class boost::serialization::access;
-            template<class Archive>
-            void serialize(Archive & ar, const unsigned int version)
-            {
-                ar & spu_id & attribute_name & term_list & pos;
-            }
-
-            static bool PositionCompare(const FuzzyApp& a1, const FuzzyApp& a2)
-            {
-                if(a1.pos.begin<a2.pos.begin) return true;
-                else if(a1.pos.begin>a2.pos.begin) return false;
-                else return a1.pos.end<a2.pos.end;
-            
-            }
+            std::vector<uint32_t> kpos;
+            std::vector<uint32_t> tpos;
         };
 
-        struct FuzzyPositions
-        {
-            std::vector<Position> positions;
-            std::vector<Position> tpositions;
-        };
 
-        struct FuzzyValue
-        {
-            std::vector<FuzzyApp> fuzzy_apps;
-            friend class boost::serialization::access;
-            template<class Archive>
-            void serialize(Archive & ar, const unsigned int version)
-            {
-                ar & fuzzy_apps;
-            }
-        };
-
-        typedef std::map<TermList, FuzzyValue> FuzzyTrie;
+        //typedef std::map<TermList, FuzzyValue> FuzzyTrie;
         //struct SpuTitleApp
           //: boost::less_than_comparable<SpuTitleApp> ,boost::equality_comparable<SpuTitleApp>
         //{
@@ -638,7 +724,7 @@ namespace sf1r {
         void Init_();
         bool PriceMatch_(double p1, double p2);
         double PriceSim_(double offerp, double spup);
-        void AnalyzeA_(const izenelib::util::UString& text, std::vector<Term>& result);
+        void AnalyzeNoSymbol_(const izenelib::util::UString& text, std::vector<Term>& result);
         void Analyze_(const izenelib::util::UString& text, std::vector<Term>& result);
         //void AnalyzeCR_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
@@ -663,8 +749,8 @@ namespace sf1r {
         void ConstructKeywords_();
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
-        void GetKeywords_(const TermList& term_list, KeywordVector& keyword_vector, bool bngram = false, bool bfuzzy = false);
-        void GetFuzzyKeywords_(const TermList& term_list, KeywordVector& keyword_vector);
+        void GetKeywords_(const ATermList& term_list, KeywordVector& keyword_vector, bool bngram = false, bool bfuzzy = false);
+        void GetFuzzyKeywords_(const ATermList& term_list, KeywordVector& keyword_vector);
         bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
         void Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
@@ -672,6 +758,7 @@ namespace sf1r {
 
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
+        bool IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& app) const;
 
         static uint32_t TextLength_(const std::string& text)
         {
@@ -763,7 +850,8 @@ namespace sf1r {
         ProductIndex product_index_;
         KeywordSet keyword_set_;
         TrieType trie_;
-        FuzzyTrie ftrie_;
+        //FuzzyTrie ftrie_;
+        TermIndex term_index_;
         Back2Front back2front_;
         KeywordVector all_keywords_; //not serialized
         //NgramFrequent nf_;
