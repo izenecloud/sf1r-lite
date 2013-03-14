@@ -63,11 +63,8 @@ void MiningTaskService::cronJob_(int calltype)
                 LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
             return;
         }
-        if (!DistributeRequestHooker::get()->isValid())
-        {
-            LOG(INFO) << "cron job ignored : " << cronJobName_;
-            return;
-        }
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
         CronJobReqLog reqlog;
         if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
         {
@@ -76,7 +73,7 @@ void MiningTaskService::cronJob_(int calltype)
         }
 
         DoMiningCollection();
-        DistributeRequestHooker::get()->processLocalFinished(true);
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
 

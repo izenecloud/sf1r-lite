@@ -158,22 +158,12 @@ void IndexWorker::index(unsigned int numdoc, bool& result)
     }
     else
     {
-        if (distribute_req_hooker_->getHookType() == Request::FromLog)
-        {
-            result = buildCollectionOnReplica(numdoc);
-        }
-        else
-        {
-            task_type task = boost::bind(&IndexWorker::buildCollectionOnReplica, this, numdoc);
-            JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
-        }
+        result = buildCollectionOnReplica(numdoc);
     }
 }
 
 bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
 {
-    //task_type task = boost::bind(&IndexWorker::rebuildCollection, this, documentManager);
-    //JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
     rebuildCollection(documentManager);
     return true;
 }
@@ -181,7 +171,7 @@ bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
 bool IndexWorker::buildCollection(unsigned int numdoc)
 {
     
-    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_BEGIN_ASYNC;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     ///If current directory is the one rotated from the backup directory,

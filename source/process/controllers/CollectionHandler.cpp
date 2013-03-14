@@ -85,7 +85,7 @@ bool CollectionHandler::create(const ::izenelib::driver::Value& document)
 {
     //if(!indexTaskService_->HookDistributeRequest(false))
     //    return false;
-    if (DistributeRequestHooker::get()->getHookType() == Request::FromLog)
+    if (DistributeRequestHooker::get()->getHookType() != Request::FromAPI)
     {
         return indexTaskService_->createDocument(document);
     }
@@ -96,7 +96,7 @@ bool CollectionHandler::create(const ::izenelib::driver::Value& document)
 
 bool CollectionHandler::update(const ::izenelib::driver::Value& document)
 {
-    if (DistributeRequestHooker::get()->getHookType() == Request::FromLog)
+    if (DistributeRequestHooker::get()->getHookType() != Request::FromAPI)
     {
         return indexTaskService_->updateDocument(document);
     }
@@ -107,7 +107,7 @@ bool CollectionHandler::update(const ::izenelib::driver::Value& document)
 
 bool CollectionHandler::update_inplace(const ::izenelib::driver::Value& request)
 {
-    if (DistributeRequestHooker::get()->getHookType() == Request::FromLog)
+    if (DistributeRequestHooker::get()->getHookType() != Request::FromAPI)
     {
         return indexTaskService_->updateDocumentInplace(request);
     }
@@ -118,7 +118,7 @@ bool CollectionHandler::update_inplace(const ::izenelib::driver::Value& request)
 
 bool CollectionHandler::destroy(const ::izenelib::driver::Value& document)
 {
-    if (DistributeRequestHooker::get()->getHookType() == Request::FromLog)
+    if (DistributeRequestHooker::get()->getHookType() != Request::FromAPI)
     {
         return indexTaskService_->destroyDocument(document);
     }

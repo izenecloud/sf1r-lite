@@ -111,11 +111,8 @@ void MiningQueryLogHandler::cronJob_(int calltype)
             }
             return;
         }
-        if (!DistributeRequestHooker::get()->isValid())
-        {
-            LOG(INFO) << "cron job ignored : " << cronJobName;
-            return;
-        }
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
 
         CronJobReqLog reqlog;
         reqlog.cron_time = sf1r::Utilities::createTimeStamp(boost::posix_time::microsec_clock::local_time());
@@ -126,6 +123,6 @@ void MiningQueryLogHandler::cronJob_(int calltype)
             return;
         }
         runEvents(reqlog.cron_time);
-        DistributeRequestHooker::get()->processLocalFinished(true);
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }

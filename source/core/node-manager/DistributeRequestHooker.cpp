@@ -47,6 +47,13 @@ bool DistributeRequestHooker::isNeedBackup(ReqLogType type)
     return need_backup_types_.find(type) != need_backup_types_.end();
 }
 
+bool DistributeRequestHooker::isAsyncWriteRequest(const std::string& controller, const std::string& action)
+{
+    // handle some special write, these write basically need shard or async write request.
+    return ((controller == "commands") && (action == "index")) || 
+           (controller == "documents" && action == "visit");
+}
+
 bool DistributeRequestHooker::isValid()
 {
     if (NodeManagerBase::get()->isDistributed() && hook_type_ == 0)
@@ -213,11 +220,11 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
             {
                 forceExit();
             }
-            processLocalFinished(false);
+            //processLocalFinished(false);
             return false;
         }
-        if (hook_type_ != Request::FromLog)
-            NodeManagerBase::get()->setSlowWriting();
+        //if (hook_type_ != Request::FromLog)
+        //    NodeManagerBase::get()->setSlowWriting();
     }
     // set rollback flag.
     if(type != Req_NoAdditionDataNoRollback && !RecoveryChecker::get()->setRollbackFlag(prepared_req.inc_id))
@@ -227,7 +234,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         {
             forceExit();
         }
-        processLocalFinished(false);
+        //processLocalFinished(false);
         return false; 
     }
     if (isprimary)
@@ -282,12 +289,11 @@ bool DistributeRequestHooker::processFinishedBeforePrepare(bool finishsuccess)
     return false;
 }
 
-void DistributeRequestHooker::processLocalFinished(bool finishsuccess, CommonReqData& updated_preparedata)
+void DistributeRequestHooker::updateReqLogData(CommonReqData& updated_preparedata)
 {
     // if the prepared data has changed during processing, 
     // we need update the current_req_ before send it to replicas. 
     ReqLogMgr::packReqLogData(updated_preparedata, current_req_);
-    processLocalFinished(finishsuccess);
 }
 
 void DistributeRequestHooker::processLocalFinished(bool finishsuccess)
@@ -470,14 +476,14 @@ void DistributeRequestHooker::forceExit()
     RecoveryChecker::forceExit("force exit in DistributeRequestHooker");
 }
 
-DistributeWriteGuard::DistributeWriteGuard()
-    : result_setted_(false)
+DistributeWriteGuard::DistributeWriteGuard(bool async)
+    : result_setted_(false), async_(async)
 {
 }
 
 DistributeWriteGuard::~DistributeWriteGuard()
 {
-    if (!result_setted_)
+    if (!result_setted_ && async_)
         DistributeRequestHooker::get()->processLocalFinished(false);
 }
 
@@ -494,13 +500,18 @@ void DistributeWriteGuard::setResult()
 void DistributeWriteGuard::setResult(bool result)
 {
     result_setted_ = true;
-    DistributeRequestHooker::get()->processLocalFinished(result);
+    if (async_)
+        DistributeRequestHooker::get()->processLocalFinished(result);
 }
 
 void DistributeWriteGuard::setResult(bool result, CommonReqData& updated_preparedata)
 {
     result_setted_ = true;
-    DistributeRequestHooker::get()->processLocalFinished(result, updated_preparedata);
+    DistributeRequestHooker::get()->updateReqLogData(updated_preparedata);
+    if (async_)
+    {
+        DistributeRequestHooker::get()->processLocalFinished(result);
+    }
 }
 
 }

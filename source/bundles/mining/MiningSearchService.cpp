@@ -240,7 +240,9 @@ bool MiningSearchService::visitDoc(const uint128_t& scdDocId)
 {
     uint64_t internalId = 0;
     searchWorker_->getInternalDocumentId(scdDocId, internalId);
-    return miningManager_->visitDoc(internalId);
+    bool ret = true;
+    searchWorker_->visitDoc(internalId, ret);
+    return ret;
 }
 
 bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t wdocId)

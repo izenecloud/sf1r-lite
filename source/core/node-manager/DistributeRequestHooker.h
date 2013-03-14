@@ -63,7 +63,7 @@ public:
     bool prepare(ReqLogType type, CommonReqData& prepared_req);
     void processLocalBegin();
     void processLocalFinished(bool finishsuccess);
-    void processLocalFinished(bool finishsuccess, CommonReqData& updated_preparedata);
+    void updateReqLogData(CommonReqData& updated_preparedata);
     bool processFinishedBeforePrepare(bool finishsuccess);
     bool onRequestFromPrimary(int type, const std::string& packed_reqdata);
 
@@ -78,6 +78,7 @@ public:
     void waitReplicasLogCallback();
 
     void onElectingFinished();
+    static bool isAsyncWriteRequest(const std::string& controller, const std::string& action);
 
 private:
     static bool isNeedBackup(ReqLogType type);
@@ -101,7 +102,7 @@ private:
 class DistributeWriteGuard
 {
 public:
-    DistributeWriteGuard();
+    DistributeWriteGuard(bool async = false);
     ~DistributeWriteGuard();
     void setResult();
     void setResult(bool result);
@@ -109,9 +110,11 @@ public:
     bool isValid();
 private:
     bool result_setted_;
+    bool async_;
 };
 
 #define DISTRIBUTE_WRITE_BEGIN DistributeWriteGuard distribute_write_guard;
+#define DISTRIBUTE_WRITE_BEGIN_ASYNC DistributeWriteGuard distribute_write_guard(true);
 #define DISTRIBUTE_WRITE_CHECK_VALID_RETURN  if (!distribute_write_guard.isValid()) { LOG(ERROR) << __FUNCTION__ << " call invalid."; return false; }
 #define DISTRIBUTE_WRITE_CHECK_VALID_RETURN2  if (!distribute_write_guard.isValid()) { LOG(ERROR) << __FUNCTION__ << " call invalid."; return; }
 #define DISTRIBUTE_WRITE_FINISH(ret)  distribute_write_guard.setResult(ret);

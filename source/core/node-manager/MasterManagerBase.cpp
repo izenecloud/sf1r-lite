@@ -196,14 +196,19 @@ void MasterManagerBase::onNodeCreated(const std::string& path)
     if (stopping_)
         return;
 
+    if (path.find(topologyPath_) == std::string::npos)
+    {
+        LOG(INFO) << "created path not care :" << path;
+        return;
+    }
+
     if (masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
     {
         // try detect workers
         masterState_ = MASTER_STATE_STARTING;
         detectWorkers();
     }
-    else if (masterState_ == MASTER_STATE_STARTED
-             && masterState_ != MASTER_STATE_RECOVERING)
+    else if (masterState_ == MASTER_STATE_STARTED)
     {
         // try recover
         recover(path);
@@ -223,10 +228,14 @@ void MasterManagerBase::onNodeDeleted(const std::string& path)
     if (stopping_)
         return;
 
-    if (masterState_ == MASTER_STATE_STARTED)
+    if (masterState_ == MASTER_STATE_STARTED ||
+        masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
     {
-        // try failover
-        failover(path);
+        if (path.find(topologyPath_) != std::string::npos)
+        {
+            // try failover
+            failover(path);
+        }
     }
     checkForWriteReq();
 }
@@ -240,7 +249,8 @@ void MasterManagerBase::onChildrenChanged(const std::string& path)
 
     if (masterState_ > MASTER_STATE_STARTING_WAIT_ZOOKEEPER)
     {
-        detectReplicaSet(path);
+        if (path.find(topologyPath_) != std::string::npos)
+            detectReplicaSet(path);
     }
     checkForWriteReq();
 }
@@ -251,6 +261,16 @@ void MasterManagerBase::onDataChanged(const std::string& path)
     boost::lock_guard<boost::mutex> lock(state_mutex_);
     if (stopping_)
         return;
+
+    if (masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
+    {
+        if (path.find(topologyPath_) != std::string::npos)
+        {
+            // try detect workers
+            masterState_ = MASTER_STATE_STARTING;
+            detectWorkers();
+        }
+    }
     checkForWriteReq();
 }
 
@@ -663,12 +683,12 @@ std::string MasterManagerBase::state2string(MasterStateType e)
     case MASTER_STATE_STARTED:
         return "MASTER_STATE_STARTED";
         break;
-    case MASTER_STATE_FAILOVERING:
-        return "MASTER_STATE_FAILOVERING";
-        break;
-    case MASTER_STATE_RECOVERING:
-        return "MASTER_STATE_RECOVERING";
-        break;
+    //case MASTER_STATE_FAILOVERING:
+    //    return "MASTER_STATE_FAILOVERING";
+    //    break;
+    //case MASTER_STATE_RECOVERING:
+    //    return "MASTER_STATE_RECOVERING";
+    //    break;
     }
 
     return "UNKNOWN";
@@ -910,15 +930,17 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
         if (!sf1rNode->worker_.isGood_)
         {
             // try failover
-            failover(sf1rNode);
+            if (!failover(sf1rNode))
+            {
+                LOG(WARNING) << "one of worker failed and can not cover this failure.";
+                masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
+            }
         }
     }
 }
 
 void MasterManagerBase::failover(const std::string& zpath)
 {
-    masterState_ = MASTER_STATE_FAILOVERING;
-
     // check path
     WorkerMapT::iterator it;
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
@@ -932,15 +954,16 @@ void MasterManagerBase::failover(const std::string& zpath)
             if (failover(sf1rNode))
             {
                 LOG (INFO) << "failover: finished.";
+                return;
             }
             else
             {
                 LOG (INFO) << "failover: failed to cover this failure.";
+                masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
+                return;
             }
         }
     }
-
-    masterState_ = MASTER_STATE_STARTED;
 }
 
 bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
@@ -1017,8 +1040,6 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
 
 void MasterManagerBase::recover(const std::string& zpath)
 {
-    masterState_ = MASTER_STATE_RECOVERING;
-
     WorkerMapT::iterator it;
     bool mine_primary = isMinePrimary();
     if (mine_primary)
@@ -1048,8 +1069,6 @@ void MasterManagerBase::recover(const std::string& zpath)
             {
                 // try to recover
                 znode.loadKvString(sdata);
-                sf1rNode->replicaId_ = sf1rTopology_.curNode_.replicaId_; // new replica
-                sf1rNode->host_ = znode.getStrValue(ZNode::KEY_HOST);
                 try
                 {
                     sf1rNode->worker_.port_ =
@@ -1063,6 +1082,8 @@ void MasterManagerBase::recover(const std::string& zpath)
                     continue;
                 }
 
+                sf1rNode->replicaId_ = sf1rTopology_.curNode_.replicaId_; // new replica
+                sf1rNode->host_ = znode.getStrValue(ZNode::KEY_HOST);
                 // recovered, and notify aggregators
                 sf1rNode->worker_.isGood_ = true;
                 break;
@@ -1071,7 +1092,6 @@ void MasterManagerBase::recover(const std::string& zpath)
     }
 
     resetAggregatorConfig();
-    masterState_ = MASTER_STATE_STARTED;
 }
 
 void MasterManagerBase::setServicesData(ZNode& znode)

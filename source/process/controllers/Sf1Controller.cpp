@@ -66,23 +66,51 @@ bool Sf1Controller::preprocess()
     }
 
     response().addError(error);
-    return false;
-}
 
-void Sf1Controller::postprocess()
-{
-    if (!response().success() && request().callType() != Request::FromAPI)
+    if (request().callType() != Request::FromAPI)
     {
         DistributeRequestHooker::get()->processFinishedBeforePrepare(false);
         std::string errinfo;
         try
         {
-            errinfo = asString(response()[Keys::errors]);
+            errinfo = toJsonString(response()[Keys::errors]);
         }
         catch(...)
         {
         }
         std::cout << "request failed before send!!" << errinfo << std::endl;
+    }
+
+    return false;
+}
+
+void Sf1Controller::postprocess()
+{
+    if (request().callType() != Request::FromAPI)
+    {
+        if (!response().success())
+        {
+            DistributeRequestHooker::get()->processLocalFinished(false);
+            std::string errinfo;
+            try
+            {
+                errinfo = toJsonString(response()[Keys::errors]);
+            }
+            catch(...)
+            {
+            }
+            std::cout << "request failed before send!!" << errinfo << std::endl;
+        }
+        else
+        {
+            if (request().callType() == Request::FromDistribute &&
+                DistributeRequestHooker::isAsyncWriteRequest(request().controller(), request().action()))
+            {
+                std::cout << " a async request finish send, may not finished actually. Leave for async handler." << std::endl;
+                return;
+            }
+            DistributeRequestHooker::get()->processLocalFinished(true);
+        }
     }
 }
 

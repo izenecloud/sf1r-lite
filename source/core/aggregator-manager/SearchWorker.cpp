@@ -14,6 +14,7 @@
 #include <mining-manager/MiningManager.h>
 #include <la-manager/LAManager.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <util/driver/Request.h>
 
 namespace sf1r
 {
@@ -217,6 +218,16 @@ void SearchWorker::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, 
 void SearchWorker::visitDoc(const uint32_t& docId, bool& result)
 {
     result = miningManager_->visitDoc(docId);
+    if (DistributeRequestHooker::get()->getHookType() == izenelib::driver::Request::FromDistribute)
+    {
+        // for rpc call from master, we can not decide whether the caller is from
+        // local or remote master, so we assume all caller is remote.
+        // In order to make sure the hook is cleared, we need return true to 
+        // tell caller that we will take the charge to clear any hooked on this request.
+        DistributeRequestHooker::get()->processLocalFinished(result);
+        result = true;
+        LOG(INFO) << " set remote result to true on this write request : " << __FUNCTION__;
+    }
 }
 
 void SearchWorker::makeQueryIdentity(

@@ -84,36 +84,44 @@ void CommandsController::indexSearch_()
         // 0 indicates no limit
         Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
-        taskService->index(documentCount);
+        if(!taskService->index(documentCount))
+            response().addError("index in search failed.");
     }
 }
 
 void CommandsController::indexRecommend_()
 {
+    if (!response().success())
+    {
+        std::cout << "ignore index recommend since the index has error." << std::endl;
+        return;
+    }
     RecommendTaskService* taskService = collectionHandler_->recommendTaskService_;
     if (taskService)
     {
-        if (request().callType() == Request::FromLog)
+        if (request().callType() != Request::FromAPI)
         {
+            if (request().callType() == Request::FromDistribute)
+            {
+                JobScheduler::get()->waitCurrentFinish(collectionName_);
+            }
             if (!DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd))
             {
+                // this will happen if index is async and failed in async handler.
                 std::cout << "set chain status failed, stopping chain. current status: " <<
                    DistributeRequestHooker::get()->getChainStatus() << std::endl; 
                 return;
             }
-            taskService->buildCollection();
-            return;
-        }
-        else if (request().callType() != Request::FromAPI)
-        {
-            JobScheduler::get()->waitCurrentFinish(collectionName_);
-            if(DistributeRequestHooker::get()->getChainStatus() != DistributeRequestHooker::ChainBegin || 
-			    !DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd))
+            bool ret = taskService->buildCollection();
+            if (request().callType() == Request::FromDistribute)
             {
-                std::cout << "set chain status failed, stopping chain. current status: " <<
-                   DistributeRequestHooker::get()->getChainStatus() << std::endl; 
-                return;
+                DistributeRequestHooker::get()->processLocalFinished(ret);
             }
+            else if (!ret)
+            {
+                response().addError("index in recommend failed.");
+            }
+            return;
         }
         task_type task = boost::bind(&RecommendTaskService::buildCollection, taskService);
         JobScheduler::get()->addTask(task, collectionName_);
@@ -180,9 +188,10 @@ void CommandsController::optimize_index()
         return;
     }
 
-    if (request().callType() == Request::FromLog)
+    if (request().callType() != Request::FromAPI)
     {
-        taskService->optimizeIndex();
+        if( !taskService->optimizeIndex() )
+            response().addError("failed to optimize index.");
         return;
     }
     task_type task = boost::bind(&IndexTaskService::optimizeIndex, taskService);

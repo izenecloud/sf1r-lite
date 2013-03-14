@@ -70,7 +70,7 @@ bool IndexTaskService::index(unsigned int numdoc)
     {
         if (DistributeRequestHooker::get()->isHooked())
         {
-            distributedIndex_(numdoc);
+            result = distributedIndex_(numdoc);
         }
         else
         {

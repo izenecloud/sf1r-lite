@@ -37,11 +37,8 @@ void CollectionTask::cronTask(int calltype)
             return;
         }
 
-        if (!DistributeRequestHooker::get()->isValid())
-        {
-            LOG(INFO) << "cron job ignored for invalid : " << collectionCronJobName + getTaskName();
-            return;
-        }
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
 
         CronJobReqLog reqlog;
         reqlog.cron_time = Utilities::createTimeStamp();
@@ -53,7 +50,7 @@ void CollectionTask::cronTask(int calltype)
 
         doTask();
 
-        DistributeRequestHooker::get()->processLocalFinished(true);
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
 

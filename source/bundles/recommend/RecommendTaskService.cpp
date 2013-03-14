@@ -312,21 +312,18 @@ RecommendTaskService::~RecommendTaskService()
 bool RecommendTaskService::addUser(const User& user)
 {
     bool result = userManager_.addUser(user);
-    DistributeRequestHooker::get()->processLocalFinished(result);
     return result;
 }
 
 bool RecommendTaskService::updateUser(const User& user)
 {
     bool result = userManager_.updateUser(user);
-    DistributeRequestHooker::get()->processLocalFinished(result);
     return result;
 }
 
 bool RecommendTaskService::removeUser(const std::string& userIdStr)
 {
     bool result = userManager_.removeUser(userIdStr);
-    DistributeRequestHooker::get()->processLocalFinished(result);
     return result;
 }
 

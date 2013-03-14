@@ -93,11 +93,8 @@ void ProductCronJobHandler::cronJob_(int calltype)
             }
             return;
         }
-        if (!DistributeRequestHooker::get()->isValid())
-        {
-            LOG(INFO) << "cron job ignored : " << __FUNCTION__;
-            return;
-        }
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
         CronJobReqLog reqlog;
         if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
         {
@@ -106,6 +103,6 @@ void ProductCronJobHandler::cronJob_(int calltype)
         }
 
         runEvents();
-        DistributeRequestHooker::get()->processLocalFinished(true);
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
