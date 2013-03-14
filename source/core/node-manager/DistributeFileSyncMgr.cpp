@@ -570,6 +570,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
             {
                 LOG(ERROR) << "rsp logid list size not matched local, " << rspdata[i].check_logid_list.size() << "," << check_logid_list.size();
                 is_redolog_mismatch = true;
+                continue;
             }
             for (size_t j = 0; j < check_logid_list.size(); ++j)
             {
@@ -583,6 +584,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
             {
                 LOG(ERROR) << "rsp running collection list size not matched local, " << rspdata[i].check_collection_list.size() << "," << check_collection_list.size();
                 is_collection_mismatch = true;
+                continue;
             }
             for (size_t j = 0; j < check_collection_list.size(); ++j)
             {
