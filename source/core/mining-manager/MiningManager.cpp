@@ -2480,3 +2480,5 @@ void MiningManager::flush()
     if (rmDb_) rmDb_->flush();
     if (idManager_) idManager_->flush();
 }
+
+}

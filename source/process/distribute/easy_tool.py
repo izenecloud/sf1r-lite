@@ -42,7 +42,10 @@ else:
     loginuser = replica_set_list[cur_replica_set]['loginuser']
 
 local_base = os.environ['HOME'] + '/codebase/'
-local_base = raw_input('please set the base dir for local codebase.(default: ' + local_base + ') : ')
+tmp_base = raw_input('please set the base dir for local codebase.(default: ' + local_base + ') : ')
+if len(tmp_base) > 0:
+    local_base = tmp_base
+print 'local code base is : ' + local_base
 
 base_dir = '/home/' + loginuser + '/codebase'
 sf1r_dir = base_dir + '/sf1r-engine'
@@ -295,36 +298,46 @@ def reset_state_and_run():
     printtofile ('reset state for cluster finished.')
 
 def check_col(check_interval = 10):
-    while True:
-        time.sleep(check_interval)
-        allready = True
-        for host in primary_host + replicas_host:
-            (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_getstate])
-            if error.find('Connection refused') != -1:
-                # this host is down.
-                printtofile ('host down : ' + host)
-                continue
-            if out.find('\"NodeState\": \"3\"') == -1:
-                printtofile ('not ready, waiting')
-                printtofile (out)
-                allready = False
-                break
-
-        if allready:
-            break
-
+    retry = 0
     failed_host = []
     down_host = []
-    for host in primary_host + replicas_host:
-        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_check])
-        if error.find('Connection refused') != -1:
-            printtofile ('host down : ' + host)
-            down_host += [host]
+    while retry < 2:
+        while True:
+            time.sleep(check_interval)
+            allready = True
+            for host in primary_host + replicas_host:
+                (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_getstate])
+                if error.find('Connection refused') != -1:
+                    # this host is down.
+                    printtofile ('host down : ' + host)
+                    continue
+                if out.find('\"NodeState\": \"3\"') == -1:
+                    printtofile ('not ready, waiting')
+                    printtofile (out)
+                    allready = False
+                    break
+
+            if allready:
+                break
+
+        failed_host = []
+        down_host = []
+        for host in primary_host + replicas_host:
+            (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_check])
+            if error.find('Connection refused') != -1:
+                printtofile ('host down : ' + host)
+                down_host += [host]
+                continue
+            if len(error) > 0:
+                printtofile ('data is not consistent after running for host : ' + host)
+                failed_host += [host]
+                printtofile (error)
+        if len(failed_host) > 0 or len(down_host) > 0:
+            retry += 1
+            printtofile ('check again for not consistent')
             continue
-        if len(error) > 0:
-            printtofile ('data is not consistent after running for host : ' + host)
-            failed_host += [host]
-            printtofile (error)
+        else:
+            break
     return (failed_host, down_host)
 
 def run_testwrite(testfail_host, testfail_type, test_writereq):
@@ -415,8 +428,6 @@ def run_auto_fail_test(args):
         send_cmd_andstay(primary_host, cmdstr)
         start_all(['', ''] + primary_host)
         time.sleep(30);
-        start_all(['', ''] + replicas_host)
-        time.sleep(30)
         start_all(['', ''] + replicas_host)
         (failed_host, down_host) = check_col()
         if len(failed_host) > 0 or len(down_host) > 0:
