@@ -56,6 +56,19 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND AND Boost_SERIALIZATION_FOUND
     )
   TARGET_LINK_LIBRARIES(t_Utilities ${libs})
 
+  ADD_EXECUTABLE(t_scd_type_writer
+    Runner.cpp
+    t_scd_type_writer.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_scd_type_writer ${libs})
+
+
+  ADD_EXECUTABLE(t_pairwise_scd_meger
+    Runner.cpp
+    t_pairwise_scd_meger.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_pairwise_scd_meger ${libs})
+
 ENDIF()
 
 ADD_EXECUTABLE(ScdMerger
