@@ -34,7 +34,7 @@
 #include "attr-manager/AttrManager.h"
 #include "faceted-submanager/ctr_manager.h"
 
-#include "util/split_ustr.h"
+#include "util/convert_ustr.h"
 #include "group-label-logger/GroupLabelLogger.h"
 #include "group-label-logger/GroupLabelKnowledge.h"
 #include "merchant-score-manager/MerchantScoreManager.h"
@@ -1644,7 +1644,7 @@ faceted::PropValueTable::pvid_t MiningManager::propValueId_(
         (propValueTable = groupManager_->getPropValueTable(propName)))
     {
         std::vector<izenelib::util::UString> ustrPath;
-        convert_to_ustr_path(groupPath, ustrPath);
+        convert_to_ustr_vector(groupPath, ustrPath);
         pvId = propValueTable->propValueId(ustrPath);
 
         if (pvId == 0)
@@ -2262,7 +2262,7 @@ bool MiningManager::initMerchantScoreManager_(const ProductRankingConfig& rankCo
     merchantScoreManager_ = new MerchantScoreManager(
         merchantValueTable, categoryValueTable);
 
-    bfs::path scorePath = scoreDir / "score.txt";
+    bfs::path scorePath = scoreDir / "score.bin";
     if (!merchantScoreManager_->open(scorePath.string()))
     {
         LOG(ERROR) << "open " << scorePath << " failed";

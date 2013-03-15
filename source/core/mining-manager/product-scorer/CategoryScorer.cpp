@@ -22,15 +22,17 @@ CategoryScorer::CategoryScorer(
 
 score_t CategoryScorer::score(docid_t docId)
 {
+    category_id_t catId = categoryValueTable_.getFirstValueId(docId);
+    categoryValueTable_.getParentIds(catId, parentIds_);
     CategoryScores::const_iterator endIt = categoryScores_.end();
 
-    for (category_id_t catId = categoryValueTable_.getFirstValueId(docId);
-         catId; catId = parentIdTable_[catId])
+    for (std::vector<category_id_t>::const_iterator parentIt = parentIds_.begin();
+         parentIt != parentIds_.end(); ++parentIt)
     {
-        CategoryScores::const_iterator it = categoryScores_.find(catId);
+        CategoryScores::const_iterator findIt = categoryScores_.find(*parentIt);
 
-        if (it != endIt)
-            return it->second;
+        if (findIt != endIt)
+            return findIt->second;
     }
 
     return 0;

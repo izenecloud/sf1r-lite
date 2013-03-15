@@ -37,6 +37,8 @@ private:
 
     typedef std::map<category_id_t, score_t> CategoryScores;
     CategoryScores categoryScores_;
+
+    std::vector<category_id_t> parentIds_;
 };
 
 } // namespace sf1r

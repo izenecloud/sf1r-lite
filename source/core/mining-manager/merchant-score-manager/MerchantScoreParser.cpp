@@ -1,9 +1,6 @@
 #include "MerchantScoreParser.h"
 #include <common/Keys.h>
-
-#include <fstream>
-#include <sstream>
-#include <boost/algorithm/string/trim.hpp>
+#include <string>
 
 namespace sf1r
 {
@@ -58,12 +55,11 @@ bool MerchantScoreParser::parse(const izenelib::driver::Value& merchantArray)
 
 bool MerchantScoreParser::parseCategoryScoreFromValue_(
     const izenelib::driver::Value& categoryArray,
-    CategoryStrScore& categoryStrScore
-)
+    CategoryStrScore& categoryStrScore)
 {
     if (nullValue(categoryArray))
         return true;
-        
+
     if (categoryArray.type() != Value::kArrayType)
     {
         error() = "Require an array of category scores for request[resource][category_score].";
@@ -75,11 +71,25 @@ bool MerchantScoreParser::parseCategoryScoreFromValue_(
     for (std::size_t i = 0; i < categoryArray.size(); ++i)
     {
         const Value& itemValue = categoryArray(i);
+        const Value& categoryValue = itemValue[Keys::category];
 
-        std::string categoryName = asString(itemValue[Keys::category]);
-        if (categoryName.empty())
+        if (nullValue(categoryValue) ||
+            categoryValue.type() != Value::kArrayType)
         {
-            error() = "Require non-empty value for request[resource][category_score][category].";
+            error() = "Require an array for request[resource][category_score][category].";
+            return false;
+        }
+
+        CategoryStrPath categoryPath;
+        for (std::size_t j = 0; j < categoryValue.size(); ++j)
+        {
+            std::string categoryName = asString(categoryValue(j));
+            categoryPath.push_back(categoryName);
+        }
+
+        if (categoryPath.empty())
+        {
+            error() = "Require non-empty array for request[resource][category_score][category].";
             return false;
         }
 
@@ -97,89 +107,7 @@ bool MerchantScoreParser::parseCategoryScoreFromValue_(
             return false;
         }
 
-        categoryMap[categoryName] = score;
-    }
-
-    return true;
-}
-
-bool MerchantScoreParser::parseFromFile(const std::string& filePath)
-{
-    std::ifstream ifs(filePath.c_str());
-    if (! ifs)
-        return true;
-
-    std::string line;
-    MerchantStrScoreMap::map_t& merchantMap = merchantStrScoreMap_.map;
-
-    while (getline(ifs, line))
-    {
-        boost::algorithm::trim(line);
-
-        if (line.empty())
-            continue;
-
-        std::istringstream iss(line);
-        std::string merchant;
-        score_t score = 0;
-        iss >> merchant >> score;
-
-        if (merchant.empty())
-        {
-            warning() += "- Require non-empty merchant name\n";
-            continue;
-        }
-
-        if (score < 0)
-        {
-            warning() += "- the negative score of merchant " + merchant + " is adjusted to zero\n";
-            score = 0;
-        }
-
-        CategoryStrScore& categoryStrScore = merchantMap[merchant];
-        categoryStrScore.generalScore = score;
-
-        if (!parseCategoryScoreFromStream_(ifs, categoryStrScore))
-            return false;
-    }
-
-    return true;
-}
-
-bool MerchantScoreParser::parseCategoryScoreFromStream_(
-    std::istream& ist,
-    CategoryStrScore& categoryStrScore
-)
-{
-    std::string line;
-    CategoryStrScore::CategoryScoreMap& categoryMap = categoryStrScore.categoryScoreMap;
-
-    while (getline(ist, line))
-    {
-        boost::algorithm::trim(line);
-
-        // empty line means the end of current merchant
-        if (line.empty())
-            return true;
-
-        std::istringstream iss(line);
-        std::string category;
-        score_t score = 0;
-        iss >> category >> score;
-
-        if (category.empty())
-        {
-            warning() += "- Require non-empty category name\n";
-            continue;
-        }
-
-        if (score < 0)
-        {
-            warning() += "- the negative score of category " + category + " is adjusted to zero\n";
-            score = 0;
-        }
-
-        categoryMap[category] = score;
+        categoryMap[categoryPath] = score;
     }
 
     return true;

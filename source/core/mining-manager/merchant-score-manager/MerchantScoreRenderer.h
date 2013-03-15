@@ -1,6 +1,6 @@
 ///
 /// @file MerchantScoreRenderer.h
-/// @brief it renders merchant score to output (such as Value, file)
+/// @brief it renders merchant score to output (such as Value)
 /// @author Jun Jiang <jun.jiang@izenesoft.com>
 /// @date Created 2012-05-16
 ///
@@ -24,8 +24,6 @@ public:
     {}
 
     void renderToValue(izenelib::driver::Value& merchantArray) const;
-
-    bool renderToFile(const std::string& filePath) const;
 
 private:
     const MerchantStrScoreMap& merchantStrScoreMap_;

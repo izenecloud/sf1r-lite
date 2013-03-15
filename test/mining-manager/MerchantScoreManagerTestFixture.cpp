@@ -1,4 +1,5 @@
 #include "MerchantScoreManagerTestFixture.h"
+#include "../recommend-manager/test_util.h"
 #include <util/ustring/UString.h>
 
 #include <boost/test/unit_test.hpp>
@@ -10,7 +11,7 @@ namespace
 {
 const char* TEST_DIR = "merchant_score_test";
 const char* GROUP_DIR = "group";
-const char* SCORE_FILE = "merchant_score.txt";
+const char* SCORE_FILE = "merchant_score.bin";
 
 const char* MERCHANT_PROP = "Source";
 const char* CATEGORY_PROP = "Category";
@@ -22,6 +23,21 @@ const float FLOAT_TOLERANCE = 0.00001;
 
 namespace sf1r
 {
+
+/**
+ * @param categoryStr a string containing a category path,
+ * from root node to leaf node, each splitted by space.
+ * For example, "node1 node2 node3".
+ */
+score_t& getCategoryScore(
+    CategoryStrScore& categoryStrScore,
+    const std::string& categoryStr)
+{
+    CategoryStrPath categoryPath;
+    split_str_to_items(categoryStr, categoryPath);
+
+    return categoryStrScore.categoryScoreMap[categoryPath];
+}
 
 MerchantScoreManagerTestFixture::MerchantScoreManagerTestFixture()
 {
@@ -70,8 +86,8 @@ void MerchantScoreManagerTestFixture::setScore1()
     {
         CategoryStrScore& category = merchantMap["京东"];
         category.generalScore = 6;
-        category.categoryScoreMap["数码"] = 9;
-        category.categoryScoreMap["家用电器"] = 8;
+        getCategoryScore(category, "手机数码 手机通讯 手机") = 9;
+        getCategoryScore(category, "家用电器") = 8;
     }
 
     {
@@ -96,21 +112,22 @@ void MerchantScoreManagerTestFixture::setScore2()
 
     {
         CategoryStrScore& category = merchantMap["京东"];
-        category.generalScore = 7;
-        category.categoryScoreMap["数码"] = 9.8;
-        category.categoryScoreMap["家用电器"] = 0;
-        category.categoryScoreMap["服装服饰"] = 8;
+        category.generalScore = 5;
+        getCategoryScore(category, "手机数码 手机通讯 手机") = 9.8;
+        getCategoryScore(category, "手机数码 手机通讯") = 8.8;
+        getCategoryScore(category, "手机数码") = 7.8;
+        getCategoryScore(category, "服装服饰 男装") = 6;
     }
 
     {
         CategoryStrScore& category = merchantMap["一号店"];
         category.generalScore = 0;
-        category.categoryScoreMap["食品"] = 8;
+        getCategoryScore(category, "食品") = 8;
     }
 
     {
         CategoryStrScore& category = merchantMap["卓越亚马逊"];
-        category.categoryScoreMap["图书"] = 9.5;
+        getCategoryScore(category, "图书") = 9.5;
     }
 
     merchantScoreManager_->setScore(strScoreMap);
@@ -134,20 +151,79 @@ merchant_id_t MerchantScoreManagerTestFixture::getMerchantId_(const std::string&
 
 category_id_t MerchantScoreManagerTestFixture::getCategoryId_(const std::string& category) const
 {
-    std::vector<izenelib::util::UString> path;
-    izenelib::util::UString ustr(category, ENCODING_TYPE);
-    path.push_back(ustr);
+    CategoryStrPath categoryPath;
+    split_str_to_items(category, categoryPath);
 
-    return categoryValueTable_->propValueId(path);
+    std::vector<izenelib::util::UString> ustrPath;
+    for (CategoryStrPath::const_iterator it = categoryPath.begin();
+         it != categoryPath.end(); ++it)
+    {
+        ustrPath.push_back(izenelib::util::UString(*it, ENCODING_TYPE));
+    }
+
+    return categoryValueTable_->propValueId(ustrPath);
+}
+
+category_id_t MerchantScoreManagerTestFixture::insertCategoryId_(const std::string& category) const
+{
+    CategoryStrPath categoryPath;
+    split_str_to_items(category, categoryPath);
+
+    std::vector<izenelib::util::UString> ustrPath;
+    for (CategoryStrPath::const_iterator it = categoryPath.begin();
+         it != categoryPath.end(); ++it)
+    {
+        ustrPath.push_back(izenelib::util::UString(*it, ENCODING_TYPE));
+    }
+
+    return categoryValueTable_->insertPropValueId(ustrPath);
 }
 
 void MerchantScoreManagerTestFixture::checkNonExistingId_()
 {
     merchant_id_t merchantId = getMerchantId_("不存在");
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, 0), 0);
+    std::vector<category_id_t> categoryParentIds;
+    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, categoryParentIds),
+                      0);
 
-    category_id_t categoryId = getCategoryId_("不存在");
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, categoryId), 0);
+    category_id_t categoryId = getCategoryId_("手机数码");
+    categoryParentIds.push_back(categoryId);
+    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, categoryParentIds),
+                      0);
+}
+
+void MerchantScoreManagerTestFixture::checkIdScoreEqual_(
+    const std::string& merchant,
+    const std::string& category,
+    score_t gold)
+{
+    BOOST_TEST_MESSAGE("checkIdScoreEqual_, merchant: " << merchant <<
+                       ", category: " << category);
+
+    merchant_id_t merchantId = getMerchantId_(merchant);
+    category_id_t categoryId = getCategoryId_(category);
+    std::vector<category_id_t> categoryParentIds;
+    categoryValueTable_->getParentIds(categoryId, categoryParentIds);
+    score_t actual = merchantScoreManager_->getIdScore(merchantId, categoryParentIds);
+
+    BOOST_CHECK_EQUAL(actual, gold);
+}
+
+void MerchantScoreManagerTestFixture::checkIdScoreClose_(
+    const std::string& merchant,
+    const std::string& category,
+    score_t gold)
+{
+    BOOST_TEST_MESSAGE("checkIdScoreClose_, merchant: " << merchant <<
+                       ", category: " << category);
+
+    merchant_id_t merchantId = getMerchantId_(merchant);
+    category_id_t categoryId = getCategoryId_(category);
+    std::vector<category_id_t> categoryParentIds;
+    categoryValueTable_->getParentIds(categoryId, categoryParentIds);
+    score_t actual = merchantScoreManager_->getIdScore(merchantId, categoryParentIds);
+
+    BOOST_CHECK_CLOSE(actual, gold, FLOAT_TOLERANCE);
 }
 
 void MerchantScoreManagerTestFixture::checkAllScore1_()
@@ -162,8 +238,8 @@ void MerchantScoreManagerTestFixture::checkAllScore1_()
         CategoryStrScore& category = merchantMap["京东"];
         BOOST_CHECK_EQUAL(category.generalScore, 6);
         BOOST_CHECK_EQUAL(category.categoryScoreMap.size(), 2U);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap["数码"], 9);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap["家用电器"], 8);
+        BOOST_CHECK_EQUAL(getCategoryScore(category, "手机数码 手机通讯 手机"), 9);
+        BOOST_CHECK_EQUAL(getCategoryScore(category, "家用电器"), 8);
     }
 
     {
@@ -189,8 +265,8 @@ void MerchantScoreManagerTestFixture::checkPartScore1_()
         CategoryStrScore& category = merchantMap["京东"];
         BOOST_CHECK_EQUAL(category.generalScore, 6);
         BOOST_CHECK_EQUAL(category.categoryScoreMap.size(), 2U);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap["数码"], 9);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap["家用电器"], 8);
+        BOOST_CHECK_EQUAL(getCategoryScore(category, "手机数码 手机通讯 手机"), 9);
+        BOOST_CHECK_EQUAL(getCategoryScore(category, "家用电器"), 8);
     }
 
     {
@@ -204,23 +280,21 @@ void MerchantScoreManagerTestFixture::checkIdScore1_()
 {
     checkNonExistingId_();
 
-    merchant_id_t merchantId = getMerchantId_("京东");
+    std::string merchant = "京东";
+    checkIdScoreEqual_(merchant, "", 6);
+    checkIdScoreEqual_(merchant, "手机数码 手机通讯 手机", 9);
+    checkIdScoreEqual_(merchant, "手机数码 手机通讯", 6);
+    checkIdScoreEqual_(merchant, "手机数码", 6);
+    checkIdScoreEqual_(merchant, "家用电器", 8);
+    checkIdScoreEqual_(merchant, "食品", 6);
 
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, 0),
-                                                        6);
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("数码")),
-                                                        9);
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("家用电器")),
-                                                        8);
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("食品")),
-                                                        6);
+    std::string subNode("手机数码 手机通讯 手机 iPad");
+    insertCategoryId_(subNode);
+    checkIdScoreEqual_(merchant, subNode, 9);
 
-    merchantId = getMerchantId_("一号店");
-
-    BOOST_CHECK_CLOSE(merchantScoreManager_->getIdScore(merchantId, 0),
-                                                        7.7, FLOAT_TOLERANCE);
-    BOOST_CHECK_CLOSE(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("食品")),
-                                                        7.7, FLOAT_TOLERANCE);
+    merchant = "一号店";
+    checkIdScoreClose_(merchant, "", 7.7);
+    checkIdScoreClose_(merchant, "食品", 7.7);
 }
 
 void MerchantScoreManagerTestFixture::checkAllScore2_()
@@ -233,25 +307,29 @@ void MerchantScoreManagerTestFixture::checkAllScore2_()
 
     {
         CategoryStrScore& category = merchantMap["京东"];
-        BOOST_CHECK_EQUAL(category.generalScore, 7);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap.size(), 3U);
-        BOOST_CHECK_CLOSE(category.categoryScoreMap["数码"], 9.8, FLOAT_TOLERANCE);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap["家用电器"], 0);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap["服装服饰"], 8);
+        BOOST_CHECK_EQUAL(category.generalScore, 5);
+        BOOST_CHECK_EQUAL(category.categoryScoreMap.size(), 4U);
+        BOOST_CHECK_CLOSE(getCategoryScore(category, "手机数码 手机通讯 手机"),
+                          9.8, FLOAT_TOLERANCE);
+        BOOST_CHECK_CLOSE(getCategoryScore(category, "手机数码 手机通讯"),
+                          8.8, FLOAT_TOLERANCE);
+        BOOST_CHECK_CLOSE(getCategoryScore(category, "手机数码"),
+                          7.8, FLOAT_TOLERANCE);
+        BOOST_CHECK_EQUAL(getCategoryScore(category, "服装服饰 男装"), 6);
     }
 
     {
         CategoryStrScore& category = merchantMap["一号店"];
         BOOST_CHECK_EQUAL(category.generalScore, 0);
         BOOST_CHECK_EQUAL(category.categoryScoreMap.size(), 1U);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap["食品"], 8);
+        BOOST_CHECK_EQUAL(getCategoryScore(category, "食品"), 8);
     }
 
     {
         CategoryStrScore& category = merchantMap["卓越亚马逊"];
         BOOST_CHECK_EQUAL(category.generalScore, 0);
         BOOST_CHECK_EQUAL(category.categoryScoreMap.size(), 1U);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap["图书"], 9.5);
+        BOOST_CHECK_EQUAL(getCategoryScore(category, "图书"), 9.5);
     }
 }
 
@@ -269,11 +347,15 @@ void MerchantScoreManagerTestFixture::checkPartScore2_()
 
     {
         CategoryStrScore& category = merchantMap["京东"];
-        BOOST_CHECK_EQUAL(category.generalScore, 7);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap.size(), 3U);
-        BOOST_CHECK_CLOSE(category.categoryScoreMap["数码"], 9.8, FLOAT_TOLERANCE);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap["家用电器"], 0);
-        BOOST_CHECK_EQUAL(category.categoryScoreMap["服装服饰"], 8);
+        BOOST_CHECK_EQUAL(category.generalScore, 5);
+        BOOST_CHECK_EQUAL(category.categoryScoreMap.size(), 4U);
+        BOOST_CHECK_CLOSE(getCategoryScore(category, "手机数码 手机通讯 手机"),
+                          9.8, FLOAT_TOLERANCE);
+        BOOST_CHECK_CLOSE(getCategoryScore(category, "手机数码 手机通讯"),
+                          8.8, FLOAT_TOLERANCE);
+        BOOST_CHECK_CLOSE(getCategoryScore(category, "手机数码"),
+                          7.8, FLOAT_TOLERANCE);
+        BOOST_CHECK_EQUAL(getCategoryScore(category, "服装服饰 男装"), 6);
     }
 
     {
@@ -287,36 +369,28 @@ void MerchantScoreManagerTestFixture::checkIdScore2_()
 {
     checkNonExistingId_();
 
-    merchant_id_t merchantId = getMerchantId_("京东");
+    std::string merchant = "京东";
+    checkIdScoreEqual_(merchant, "", 5);
+    checkIdScoreClose_(merchant, "手机数码 手机通讯 手机", 9.8);
+    checkIdScoreClose_(merchant, "手机数码 手机通讯", 8.8);
+    checkIdScoreClose_(merchant, "手机数码", 7.8);
+    checkIdScoreEqual_(merchant, "家用电器", 5);
+    checkIdScoreEqual_(merchant, "服装服饰 男装", 6);
+    checkIdScoreEqual_(merchant, "食品", 5);
 
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, 0),
-                                                        7);
-    BOOST_CHECK_CLOSE(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("数码")),
-                                                        9.8, FLOAT_TOLERANCE);
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("家用电器")),
-                                                        0);
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("服装服饰")),
-                                                        8);
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("食品")),
-                                                        7);
+    std::string subNode("手机数码 手机通讯 手机 iPhone");
+    insertCategoryId_(subNode);
+    checkIdScoreClose_(merchant, subNode, 9.8);
 
-    merchantId = getMerchantId_("一号店");
+    merchant = "一号店";
+    checkIdScoreEqual_(merchant, "", 0);
+    checkIdScoreEqual_(merchant, "食品", 8);
+    checkIdScoreEqual_(merchant, "数码", 0);
 
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, 0),
-                                                        0);
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("食品")),
-                                                        8);
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("数码")),
-                                                        0);
-
-    merchantId = getMerchantId_("卓越亚马逊");
-
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, 0),
-                                                        0);
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("图书")),
-                                                        9.5);
-    BOOST_CHECK_EQUAL(merchantScoreManager_->getIdScore(merchantId, getCategoryId_("数码")),
-                                                        0);
+    merchant = "卓越亚马逊";
+    checkIdScoreEqual_(merchant, "", 0);
+    checkIdScoreEqual_(merchant, "图书", 9.5);
+    checkIdScoreEqual_(merchant, "数码", 0);
 }
 
 } // namespace sf1r
