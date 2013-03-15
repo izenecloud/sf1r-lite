@@ -1947,7 +1947,11 @@ bool MiningManager::GetSuffixMatch(
 
     if (!use_fuzzy)
     {
-        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, search_in_properties, max_docs, res_list);
+        totalCount = suffixMatchManager_->longestSuffixMatch(
+                actionOperation.actionItem_.env_.queryString_,
+                search_in_properties, 
+                max_docs, 
+                res_list);
     }
     else
     {
@@ -1961,7 +1965,9 @@ bool MiningManager::GetSuffixMatch(
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                queryU, search_in_properties, max_docs,
+                actionOperation.actionItem_.env_.queryString_, 
+                search_in_properties, 
+                max_docs,
                 actionOperation.actionItem_.searchingMode_.filtermode_,
                 filter_param,
                 actionOperation.actionItem_.groupParam_,

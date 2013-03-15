@@ -89,7 +89,6 @@ bool QueryCategorizer::GetCategoryBySuffixMatcher_(
     if(!suffix_manager_) return false;
     if(query.empty()) return false;
 
-    UString queryU(query, UString::UTF_8);
     uint32_t max_docs = 10;
     std::vector<std::string> search_in_properties;
     search_in_properties.push_back("Title");
@@ -98,7 +97,7 @@ bool QueryCategorizer::GetCategoryBySuffixMatcher_(
     faceted::GroupParam groupParam;
     std::vector<std::pair<double, uint32_t> > res_list;
     suffix_manager_->AllPossibleSuffixMatch(
-                              queryU, search_in_properties, max_docs,SearchingMode::DefaultFilterMode,
+                              query, search_in_properties, max_docs,SearchingMode::DefaultFilterMode,
                               filter_param, groupParam, res_list);
     std::set<UString> cat_set;
 
