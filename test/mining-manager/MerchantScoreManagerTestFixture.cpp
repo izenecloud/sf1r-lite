@@ -382,6 +382,14 @@ void MerchantScoreManagerTestFixture::checkIdScore2_()
     insertCategoryId_(subNode);
     checkIdScoreClose_(merchant, subNode, 9.8);
 
+    subNode = "手机数码 手机通讯 手机配件";
+    insertCategoryId_(subNode);
+    checkIdScoreClose_(merchant, subNode, 8.8);
+
+    subNode = "手机数码 配件";
+    insertCategoryId_(subNode);
+    checkIdScoreClose_(merchant, subNode, 7.8);
+
     merchant = "一号店";
     checkIdScoreEqual_(merchant, "", 0);
     checkIdScoreEqual_(merchant, "食品", 8);
