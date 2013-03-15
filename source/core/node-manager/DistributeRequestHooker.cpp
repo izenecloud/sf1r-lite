@@ -51,7 +51,7 @@ bool DistributeRequestHooker::isAsyncWriteRequest(const std::string& controller,
 {
     // handle some special write, these write basically need shard or async write request.
     return ((controller == "commands") && (action == "index")) || 
-           (controller == "documents" && action == "visit");
+           ((controller == "documents") && (action == "visit"));
 }
 
 bool DistributeRequestHooker::isValid()

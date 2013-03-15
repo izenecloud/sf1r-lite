@@ -109,6 +109,8 @@ void Sf1Controller::postprocess()
                 std::cout << " a async request finish send, may not finished actually. Leave for async handler." << std::endl;
                 return;
             }
+            std::cout << " sync request finished success. calltype: " << request().callType()
+                << ", api: " << request().controller() << "_" << request().action() << std::endl;
             DistributeRequestHooker::get()->processLocalFinished(true);
         }
     }

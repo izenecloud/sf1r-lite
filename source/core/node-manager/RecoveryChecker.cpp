@@ -118,7 +118,7 @@ static void cleanUnnessesaryBackup(const bfs::path& backup_basepath)
             continue;
         }
         bfs::path backup_dir = bfs::path(backup_basepath)/bfs::path(boost::lexical_cast<std::string>(backup_req_incids[i]));
-        if (keeped > MAX_BACKUP_NUM)
+        if (keeped >= MAX_BACKUP_NUM)
             CopyGuard::safe_remove_all(backup_dir.string());
         else
         {

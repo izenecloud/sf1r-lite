@@ -252,7 +252,8 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
     sf1r::docid_t docId = wd.second;
     bool ret = true;
 
-    if (!bundleConfig_->isMasterAggregator_ || !searchAggregator_->isNeedDistribute())
+    bool is_worker_self = searchAggregator_->isLocalWorker(workerId);
+    if (is_worker_self || !bundleConfig_->isMasterAggregator_ || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->visitDoc(docId, ret);
     }
@@ -261,6 +262,11 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
         if(!HookDistributeRequestForSearch(collectionName, workerId))
             return false;
         searchAggregator_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);
+        if (ret)
+        {
+            LOG(INFO) << "send to remote worker to visitDoc success, clear local hook. remote: " << workerId;
+            DistributeRequestHooker::get()->processLocalFinished(true);
+        }
     }
 
     return ret;
