@@ -2621,6 +2621,7 @@ void ProductMatcher::AddKeyword_(const UString& otext)
     std::string str;
     otext.convertString(str, UString::UTF_8);
     boost::algorithm::trim(str);
+    boost::algorithm::to_lower(str);
     //std::cerr<<"[AK]"<<str<<std::endl;
     UString text(str, UString::UTF_8);
     if(text.length()<2) return;
@@ -2671,6 +2672,7 @@ void ProductMatcher::AddKeyword_(const UString& otext)
         if(term_list[0].text.length()<2) return;
     }
     keyword_set_.insert(id_list);
+    keyword_text_[id_list] = str;
     //std::cout<<"[AKT]"<<GetText_(term_list);
     //for(uint32_t i=0;i<term_list.size();i++)
     //{
@@ -2823,20 +2825,49 @@ void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
         all_keywords_[keyword_id] = tag;
     }
     //post-process
-    //for(TrieType::iterator it = trie_.begin();it!=trie_.end();it++)
-    //{
-        //KeywordTag& tag = it->second;
-        //for(uint32_t i=0;i<tag.spu_title_apps.size();i++)
-        //{
-            //const SpuTitleApp& app = tag.spu_title_apps[i];
-            //if(app.spu_id==0) continue;
-//#ifdef B5M_DEBUG
-            ////std::cout<<"[TS]"<<products_[app.spu_id].stitle<<std::endl;
-//#endif
-            //products_[app.spu_id].tweight+=1.0;
-        //}
-
-    //}
+#ifdef B5M_DEBUG
+    for(TrieType::iterator it = trie_.begin();it!=trie_.end();it++)
+    {
+        KeywordTag& tag = it->second;
+        std::string text = keyword_text_[tag.term_list];
+        if(!tag.category_name_apps.empty())
+        {
+            std::cerr<<"XXKTC,"<<text<<std::endl;
+        }
+        bool has_brand = false;
+        bool has_type = false;
+        bool has_other = false;
+        for(uint32_t i=0;i<tag.attribute_apps.size();i++)
+        {
+            const AttributeApp& app = tag.attribute_apps[i];
+            if(app.spu_id==0) continue;
+            if(app.attribute_name=="品牌")
+            {
+                has_brand = true;
+            }
+            else if(app.attribute_name=="型号")
+            {
+                has_type = true;
+            }
+            else
+            {
+                has_other = true;
+            }
+        }
+        if(has_brand)
+        {
+            std::cerr<<"XXKTB,"<<text<<std::endl;
+        }
+        if(has_type)
+        {
+            std::cerr<<"XXKTT,"<<text<<std::endl;
+        }
+        if(has_other)
+        {
+            std::cerr<<"XXKTO,"<<text<<std::endl;
+        }
+    }
+#endif
 }
 bool ProductMatcher::SpuMatched_(const WeightType& weight, const Product& p) const
 {

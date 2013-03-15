@@ -43,6 +43,7 @@ namespace sf1r {
         typedef boost::unordered_map<std::string, std::string> Back2Front;
         typedef std::vector<std::pair<uint32_t, uint32_t> > FrequentValue;
         typedef boost::unordered_map<TermList, FrequentValue> NgramFrequent;
+        typedef boost::unordered_map<TermList, std::string> KeywordText;
         
         struct WeightType
         {
@@ -635,6 +636,8 @@ namespace sf1r {
         TrieType trie_;
         Back2Front back2front_;
         KeywordVector all_keywords_; //not serialized
+        KeywordText keyword_text_;
+        
         //NgramFrequent nf_;
 
         const static double optional_weight_ = 0.2;
