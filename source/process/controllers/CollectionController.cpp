@@ -66,18 +66,33 @@ bool CollectionController::preprocess()
 
 void CollectionController::postprocess()
 {
-    if (!response().success() && DistributeRequestHooker::get()->isHooked())
+    if (request().callType() != Request::FromAPI)
     {
-        DistributeRequestHooker::get()->processFinishedBeforePrepare(false);
-        std::string errinfo;
-        try
+        if (!response().success())
         {
-            errinfo = asString(response()[Keys::errors]);
+            DistributeRequestHooker::get()->processLocalFinished(false);
+            std::string errinfo;
+            try
+            {
+                errinfo = toJsonString(response()[Keys::errors]);
+            }
+            catch(...)
+            {
+            }
+            std::cout << "request failed before send!!" << errinfo << std::endl;
         }
-        catch(...)
+        else
         {
+            if (request().callType() == Request::FromDistribute &&
+                DistributeRequestHooker::isAsyncWriteRequest(request().controller(), request().action()))
+            {
+                std::cout << " a async request finish send, may not finished actually. Leave for async handler." << std::endl;
+                return;
+            }
+            std::cout << " sync request finished success. calltype: " << request().callType()
+                << ", api: " << request().controller() << "_" << request().action() << std::endl;
+            DistributeRequestHooker::get()->processLocalFinished(true);
         }
-        std::cout << "request failed before send!!" << errinfo << std::endl;
     }
 }
 
