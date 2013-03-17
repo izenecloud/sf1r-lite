@@ -15,7 +15,7 @@ namespace sf1r
 
 void SearchMerger::getDistSearchInfo(const net::aggregator::WorkerResults<DistKeywordSearchInfo>& workerResults, DistKeywordSearchInfo& mergeResult)
 {
-    cout << "#[SearchMerger::getDistSearchInfo] " << workerResults.size() << endl;
+    LOG(INFO) << "#[SearchMerger::getDistSearchInfo] " << workerResults.size() << endl;
 
     size_t resultNum = workerResults.size();
 
@@ -53,7 +53,7 @@ void SearchMerger::getDistSearchInfo(const net::aggregator::WorkerResults<DistKe
 
 void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
 {
-    cout << "#[SearchMerger::getDistSearchResult] " << workerResults.size() << endl;
+    LOG(INFO) << "#[SearchMerger::getDistSearchResult] " << workerResults.size() << endl;
 
     size_t workerNum = workerResults.size();
     const KeywordSearchResult& result0 = workerResults.result(0);
@@ -112,7 +112,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     size_t endTopK = Utilities::roundUp(endOffset, TOP_K_NUM);
     size_t topKCount = std::min(endTopK, totalTopKCount);
 
-    cout << "SearchMerger topKCount: " << topKCount << ", totalTopKCount: " << totalTopKCount << endl;
+    LOG(INFO) << "SearchMerger topKCount: " << topKCount << ", totalTopKCount: " << totalTopKCount << endl;
 
     mergeResult.topKDocs_.resize(topKCount);
     mergeResult.topKWorkerIds_.resize(topKCount);
@@ -179,6 +179,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
         delete docComparators[i];
     }
     delete docComparators;
+    LOG(INFO) << "#[SearchMerger::getDistSearchResult] finished";
 }
 
 void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
@@ -197,6 +198,7 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
         }
     }
 
+    LOG(INFO) << "#[SearchMerger::getSummaryResult] begin";
     size_t pageCount = mergeResult.count_;
     size_t displayPropertyNum = workerResults.result(0).snippetTextOfDocumentInPage_.size();
     size_t isSummaryOn = workerResults.result(0).rawTextOfSummaryInPage_.size();
@@ -250,21 +252,23 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
 
         ++workerOffset;
     }
+    LOG(INFO) << "#[SearchMerger::getSummaryResult] end";
 }
 
 void SearchMerger::getSummaryMiningResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
 {
-    cout << "#[SearchMerger::getSummaryMiningResult] " << workerResults.size() << endl;
+    LOG(INFO) << "#[SearchMerger::getSummaryMiningResult] " << workerResults.size() << endl;
 
     getSummaryResult(workerResults, mergeResult);
 
     getMiningResult(workerResults, mergeResult);
+    LOG(INFO) << "#[SearchMerger::getSummaryMiningResult] end";
 }
 
 void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordSearchResult>& workerResults, KeywordSearchResult& mergeResult)
 {
     if(!miningManager_) return;
-    std::cout<<"call mergeMiningResult"<<std::endl;
+    LOG(INFO) <<"call mergeMiningResult"<<std::endl;
     boost::shared_ptr<TaxonomyGenerationSubManager> tg_manager = miningManager_->GetTgManager();
     if(tg_manager)
     {
@@ -282,9 +286,9 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
             std::vector<sf1r::wdocid_t> top_wdoclist;
             mergeResult.getTopKWDocs(top_wdoclist);
             idmlib::cc::CCInput64 input;
-            std::cout<<"before merging, size : "<<input_list.size()<<std::endl;
+            LOG(INFO)<<"before merging, size : "<<input_list.size()<<std::endl;
             tg_manager->AggregateInput(top_wdoclist, input_list, input);
-            std::cout<<"after merging, concept size : "<<input.concept_list.size()<<" , doc size : "<<input.doc_list.size()<<std::endl;
+            LOG(INFO)<<"after merging, concept size : "<<input.concept_list.size()<<" , doc size : "<<input.doc_list.size()<<std::endl;
             TaxonomyRep taxonomyRep;
             if( tg_manager->GetResult(input, taxonomyRep, mergeResult.neList_) )
             {
@@ -296,7 +300,7 @@ void SearchMerger::getMiningResult(const net::aggregator::WorkerResults<KeywordS
 
 void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTextResultFromSIA>& workerResults, RawTextResultFromSIA& mergeResult)
 {
-    cout << "#[SearchMerger::getDocumentsByIds] " << workerResults.size() << endl;
+    LOG(INFO) << "#[SearchMerger::getDocumentsByIds] " << workerResults.size() << endl;
 
     size_t workerNum = workerResults.size();
 
@@ -341,6 +345,7 @@ void SearchMerger::getDocumentsByIds(const net::aggregator::WorkerResults<RawTex
             }
         }
     }
+    LOG(INFO) << "#[SearchMerger::getDocumentsByIds] end"<< endl;
 }
 
 void SearchMerger::getInternalDocumentId(const net::aggregator::WorkerResults<uint64_t>& workerResults, uint64_t& mergeResult)
