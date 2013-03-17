@@ -58,21 +58,21 @@ void SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, 
 
 void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    cout << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
+    LOG(INFO) << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
     getSearchResult_(actionItem, resultItem);
 }
 
 void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    cout << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_ << endl;
+    LOG(INFO) << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_ << endl;
 
     getSummaryResult_(actionItem, resultItem);
 }
 
 void SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    cout << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
+    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
 
     getSummaryMiningResult_(actionItem, resultItem);
 }

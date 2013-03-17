@@ -45,12 +45,14 @@ bool IndexSearchService::getSearchResult(
 {
     CREATE_SCOPED_PROFILER (query, "IndexSearchService", "processGetSearchResults all: total query time");
 
+    LOG(INFO) << "Search Begin." << endl;
     if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         bool ret = searchWorker_->doLocalSearch(actionItem, resultItem);
         net::aggregator::WorkerResults<KeywordSearchResult> workerResults;
         workerResults.add(0, resultItem);
         searchMerger_->getMiningResult(workerResults, resultItem);
+	LOG(INFO) << "Local Search Begin." << endl;
         return ret;
     }
 
@@ -128,6 +130,7 @@ bool IndexSearchService::getSearchResult(
     cout << "Total count: " << resultItem.totalCount_ << endl;
     cout << "Top K count: " << resultItem.topKDocs_.size() << endl;
     cout << "Page Count: " << resultItem.count_ << endl;
+    LOG(INFO) << "Search Finished " << endl;
 
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
 
