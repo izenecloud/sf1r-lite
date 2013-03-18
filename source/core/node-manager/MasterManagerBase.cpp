@@ -801,6 +801,7 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
                     boost::shared_ptr<Sf1rNode>& workerNode = workerMap_[nodeid];
                     workerNode->nodeId_ = nodeid;
                     updateWorkerNode(workerNode, znode);
+                    workerNode->replicaId_ = replicaId;
 
                     detected ++;
                     if (workerNode->worker_.isGood_)
@@ -981,6 +982,7 @@ void MasterManagerBase::failover(const std::string& zpath)
             }
         }
     }
+    LOG (INFO) << "failed node is not in my watching workers . " << zpath;
 }
 
 bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
