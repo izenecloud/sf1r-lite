@@ -845,6 +845,7 @@ int MasterManagerBase::detectWorkers()
 {
     size_t detected = 0;
     size_t good = 0;
+    workerMap_.clear();
     // detect workers from "current" replica first
     replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
     detectWorkersInReplica(replicaId, detected, good);
