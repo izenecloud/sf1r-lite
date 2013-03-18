@@ -1358,7 +1358,7 @@ bool ProductMatcher::DoMatch(const std::string& scd_path, const std::string& out
                 doc.property(property_name) = p->second;
             }
             Product result_product;
-            Process(doc, result_product);
+            Process(doc, result_product, true);
             doc_count++;
             std::string spid = result_product.spid;
             std::string sptitle = result_product.stitle;
@@ -1656,7 +1656,7 @@ void ProductMatcher::Test(const std::string& scd_path)
             }
             else
             {
-                Process(doc, result_product);
+                Process(doc, result_product, true);
                 //LOG(INFO)<<"categorized "<<stitle<<","<<result_product.scategory<<std::endl;
                 if(has_category)
                 {
