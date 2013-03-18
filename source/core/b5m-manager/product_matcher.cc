@@ -3452,18 +3452,12 @@ void ProductMatcher::ConstructKeywords_()
         }
     }
     LOG(INFO)<<"keywords count "<<keyword_set_.size()<<std::endl;
-    for(uint32_t i=0;i<keywords_thirdparty_.size();i++)
-    {
-        UString uvalue(keywords_thirdparty_[i], UString::UTF_8);
-        AddKeyword_(uvalue);
-    }
-    LOG(INFO)<<"keywords count "<<keyword_set_.size()<<std::endl;
-    //for(KeywordSet::const_iterator it = keyword_set_.begin(); it!=keyword_set_.end();it++)
+    //for(uint32_t i=0;i<keywords_thirdparty_.size();i++)
     //{
-        //const TermList& tl = *it;
-        //std::string text = GetText_(tl);
-        //std::cout<<"[FK]"<<text<<std::endl;
+        //UString uvalue(keywords_thirdparty_[i], UString::UTF_8);
+        //AddKeyword_(uvalue);
     //}
+    //LOG(INFO)<<"keywords count "<<keyword_set_.size()<<std::endl;
 }
 
 void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
@@ -3548,7 +3542,9 @@ void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
     for(TrieType::iterator it = trie_.begin();it!=trie_.end();it++)
     {
         KeywordTag& tag = it->second;
-        std::string text = keyword_text_[tag.term_list];
+        UString utext = keyword_text_[tag.term_list];
+        std::string text;
+        utext.convertString(text, UString::UTF_8);
         if(!tag.category_name_apps.empty())
         {
             std::cerr<<"XXKTC,"<<text<<std::endl;

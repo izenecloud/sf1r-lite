@@ -867,7 +867,6 @@ namespace sf1r {
         TermIndexMap term_index_map_;
         Back2Front back2front_;
         KeywordVector all_keywords_; //not serialized
-        KeywordText keyword_text_;
         
         //NgramFrequent nf_;
 
