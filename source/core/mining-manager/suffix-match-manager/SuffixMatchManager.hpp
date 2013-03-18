@@ -12,18 +12,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
-namespace cma
-{
-class Analyzer;
-class Knowledge;
-}
-
 namespace sf1r
 {
-
+using izenelib::util::UString;
 class DocumentManager;
 class FilterManager;
 class FMIndexManager;
+class ProductTokenizer;
+
 namespace faceted
 {
     class GroupManager;
@@ -62,7 +58,8 @@ public:
             const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             const faceted::GroupParam& group_param,
-            std::vector<std::pair<double, uint32_t> >& res_list) const;
+            std::vector<std::pair<double, uint32_t> >& res_list,
+            UString& analyzedQuery) const;
 
     MiningTask* getMiningTask();
     bool buildMiningTask();
@@ -92,8 +89,7 @@ private:
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;
 
-    cma::Analyzer* analyzer_;
-    cma::Knowledge* knowledge_;
+    ProductTokenizer* tokenizer_;
 
     boost::shared_ptr<FMIndexManager> fmi_manager_;
     boost::shared_ptr<FilterManager> filter_manager_;

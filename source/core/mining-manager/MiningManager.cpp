@@ -1932,7 +1932,8 @@ bool MiningManager::GetSuffixMatch(
         std::vector<float>& customRankScoreList,
         std::size_t& totalCount,
         faceted::GroupRep& groupRep,
-        sf1r::faceted::OntologyRep& attrRep
+        sf1r::faceted::OntologyRep& attrRep,
+        UString& analyzedQuery
         )
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
@@ -1971,7 +1972,8 @@ bool MiningManager::GetSuffixMatch(
                 actionOperation.actionItem_.searchingMode_.filtermode_,
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
-                res_list);
+                res_list,
+                analyzedQuery);
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {

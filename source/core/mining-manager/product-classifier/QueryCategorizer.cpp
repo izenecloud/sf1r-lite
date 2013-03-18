@@ -96,9 +96,10 @@ bool QueryCategorizer::GetCategoryBySuffixMatcher_(
     std::vector<QueryFiltering::FilteringType> filter_param;
     faceted::GroupParam groupParam;
     std::vector<std::pair<double, uint32_t> > res_list;
+    UString analyzed_query;
     suffix_manager_->AllPossibleSuffixMatch(
                               query, search_in_properties, max_docs,SearchingMode::DefaultFilterMode,
-                              filter_param, groupParam, res_list);
+                              filter_param, groupParam, res_list, analyzed_query);
     std::set<UString> cat_set;
 
     std::map<docid_t, int> doc_idx_map;

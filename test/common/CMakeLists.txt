@@ -6,6 +6,7 @@ SET(libs
   sf1r_common
 
   ${izenelib_LIBRARIES}
+  ${izenecma_LIBRARIES}
 
   #external
   ${Boost_LIBRARIES}
@@ -68,6 +69,12 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND AND Boost_SERIALIZATION_FOUND
     t_pairwise_scd_meger.cpp
     )
   TARGET_LINK_LIBRARIES(t_pairwise_scd_meger ${libs})
+
+  ADD_EXECUTABLE(t_ProductTokenizer
+    Runner.cpp
+    t_ProductTokenizer.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_ProductTokenizer ${libs})
 
 ENDIF()
 
