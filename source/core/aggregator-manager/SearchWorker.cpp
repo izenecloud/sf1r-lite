@@ -378,7 +378,14 @@ bool SearchWorker::getSearchResult_(
         TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
         KNN_TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
         fuzzy_lucky += actionOperation.actionItem_.pageInfo_.start_;
+        if (fuzzy_lucky > 100000)
+        {
+            LOG(WARNING) << " !!!! fuzzy search topk too larger in distributed search. " << fuzzy_lucky;
+            fuzzy_lucky = 100000;
+        }
     }
+
+    LOG(INFO) << "searching in mode: " << actionOperation.actionItem_.searchingMode_.mode_;
 
     switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
