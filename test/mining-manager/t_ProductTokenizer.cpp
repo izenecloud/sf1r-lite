@@ -1,4 +1,4 @@
-#include <common/ProductTokenizer.h>
+#include <mining-manager/suffix-match-manager/ProductTokenizer.h>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
 

@@ -42,7 +42,6 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
       sf1r_node_manager
       sf1r_common    
       ${izenelib_LIBRARIES}
-      ${izenecma_LIBRARIES}
       
       #external
       ${Boost_LIBRARIES}

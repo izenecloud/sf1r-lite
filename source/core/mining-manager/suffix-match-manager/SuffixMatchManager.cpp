@@ -1,8 +1,8 @@
 #include "SuffixMatchManager.hpp"
+#include "ProductTokenizer.h"
 #include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
 #include <la-manager/LAPool.h>
-#include <common/ProductTokenizer.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"

@@ -1,5 +1,6 @@
 #include "ProductTokenizer.h"
 #include <common/CMAKnowledgeFactory.h>
+#include <b5m-manager/product_matcher.h>
 
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>

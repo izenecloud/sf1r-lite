@@ -74,6 +74,7 @@ public:
 
 };
 
+class ProductMatcher;
 class ProductTokenizer
 {
     enum CharType
@@ -135,6 +136,8 @@ private:
 
     cma::Analyzer* analyzer_;
     cma::Knowledge* knowledge_;
+
+    ProductMatcher* matcher_;
 
     std::vector<std::pair<std::string, double> > dict_names_;
     std::vector<izenelib::am::succinct::ux::Trie*> tries_;
