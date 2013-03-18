@@ -302,6 +302,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
         actionOperation.actionItem_, propSharedLockSet, relevanceScorer);
 
     ScoreDocEvaluator scoreDocEvaluator(productScorer, param.customRanker);
+    LOG(INFO) << "prepared search finished. ";
     try
     {
         bool ret = doSearch_(param,
@@ -310,6 +311,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
                              scoreDocEvaluator,
                              propSharedLockSet);
 
+        LOG(INFO) << "dosearch finished. ";
         if (groupFilter)
         {
             groupFilter->getGroupRep(param.groupRep, param.attrRep);
