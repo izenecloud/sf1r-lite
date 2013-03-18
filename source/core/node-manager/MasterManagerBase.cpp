@@ -177,6 +177,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
         boost::lock_guard<boost::mutex> lock(state_mutex_);
         LOG(WARNING) << "master node disconnected by zookeeper, state : " << zookeeper_->getStateString();
         LOG(WARNING) << "try reconnect: " << sf1rTopology_.curNode_.toString();
+	stopping_ = true;
          
         zookeeper_->disconnect();
         masterState_ = MASTER_STATE_STARTING;
@@ -784,6 +785,8 @@ int MasterManagerBase::detectWorkersInReplica(replicaid_t replicaId, size_t& det
                 {
                     if (workerMap_.find(nodeid) != workerMap_.end())
                     {
+                        if (workerMap_[nodeid]->worker_.isGood_)
+                            continue;
                         workerMap_[nodeid]->worker_.isGood_ = true;
                     }
                     else
