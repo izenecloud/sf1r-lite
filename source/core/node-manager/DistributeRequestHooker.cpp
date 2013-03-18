@@ -20,12 +20,17 @@ namespace sf1r
 {
 
 std::set<ReqLogType> DistributeRequestHooker::need_backup_types_;
+std::set<std::string> DistributeRequestHooker::async_or_shard_write_types_;
 
 void DistributeRequestHooker::init()
 {
     need_backup_types_.insert(Req_NoAdditionData_NeedBackup_Req);
     //need_backup_types_.insert(Req_CronJob);
     need_backup_types_.insert(Req_Index);
+    async_or_shard_write_types_.insert("commands_index");
+    async_or_shard_write_types_.insert("documents_visit");
+    async_or_shard_write_types_.insert("recommends_visit_item");
+    async_or_shard_write_types_.insert("recommends_purchase_item");
     // init callback for distribute request.
     NodeManagerBase::get()->setCallback(
         boost::bind(&DistributeRequestHooker::onElectingFinished, this),
@@ -50,8 +55,7 @@ bool DistributeRequestHooker::isNeedBackup(ReqLogType type)
 bool DistributeRequestHooker::isAsyncWriteRequest(const std::string& controller, const std::string& action)
 {
     // handle some special write, these write basically need shard or async write request.
-    return ((controller == "commands") && (action == "index")) || 
-           ((controller == "documents") && (action == "visit"));
+    return async_or_shard_write_types_.find(controller + "_" + action) != async_or_shard_write_types_.end();
 }
 
 bool DistributeRequestHooker::isValid()
@@ -150,6 +154,11 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     {
         if (chain_status_ == ChainBegin || chain_status_ == NoChain)
             prepared_req.req_json_data = current_req_;
+        else if (type != type_)
+        {
+            LOG(ERROR) << "!!!!! The request type data is not matched during the chain request." <<
+                "before: " << type_ << ", after :" << type;
+        }
     }
     else
     {
@@ -479,6 +488,10 @@ void DistributeRequestHooker::forceExit()
 DistributeWriteGuard::DistributeWriteGuard(bool async)
     : result_setted_(false), async_(async)
 {
+    // FromLog and FromPrimaryWorker can not be async.
+    if (DistributeRequestHooker::get()->getHookType() == Request::FromLog ||
+        DistributeRequestHooker::get()->getHookType() == Request::FromPrimaryWorker)
+        async_ = false;
 }
 
 DistributeWriteGuard::~DistributeWriteGuard()

@@ -45,6 +45,7 @@ public:
             net::aggregator::WorkerResults<bool>,
             bool
         )
+        BIND_CALL_PROXY_2(HookDistributeRequestForUpdateRec, net::aggregator::WorkerResults<bool>, bool)
         BIND_CALL_PROXY_END()
     }
 
@@ -73,6 +74,7 @@ public:
         bool& mergeResult
     );
 
+    void HookDistributeRequestForUpdateRec(const net::aggregator::WorkerResults<bool>& workerResults, bool& mergeResult);
 private:
     void mergeUpdateResult_(
         const net::aggregator::WorkerResults<bool>& workerResults,

@@ -162,6 +162,19 @@ public:
     UpdateRecommendWorker* updateRecommendWorker() { return updateRecommendWorker_; }
 
 private:
+    bool visitItemFunc(
+        const std::string& sessionIdStr,
+        const std::string& userIdStr,
+        itemid_t itemId,
+        bool isRecItem
+    );
+    bool purchaseItemFunc(
+        const std::string& userIdStr,
+        const std::string& orderIdStr,
+        const OrderItemVec& orderItemVec,
+        const std::vector<itemid_t>& itemIdVec
+    );
+
     /**
      * Convert from @p orderItemVec to @p itemIdVec.
      * @return true for success, false for failure.
@@ -241,7 +254,7 @@ private:
         const std::string& orderIdStr,
         const OrderItemVec& orderItemVec,
         RecommendMatrix* matrix,
-        std::vector<itemid_t>& itemIdVec
+        const std::vector<itemid_t>& itemIdVec
     );
 
     bool insertPurchaseCounter_(
