@@ -35,6 +35,7 @@ namespace sf1r {
         typedef idmlib::sim::StringSimilarity::Object SimObject;
         typedef idmlib::util::IDMTerm Term;
         typedef uint32_t term_t;
+        typedef uint32_t cid_t;
         typedef std::vector<term_t> TermList;
         typedef std::vector<TermList> Suffixes;
         typedef boost::unordered_set<TermList> KeywordSet;
@@ -45,6 +46,7 @@ namespace sf1r {
         typedef boost::unordered_map<std::string, std::string> Back2Front;
         typedef std::vector<std::pair<uint32_t, uint32_t> > FrequentValue;
         typedef boost::unordered_map<TermList, FrequentValue> NgramFrequent;
+        typedef boost::unordered_map<TermList, UString> KeywordText;
 
         struct Position
         {
@@ -346,13 +348,16 @@ namespace sf1r {
         {
             typedef std::vector<ATermList> Forward;
             typedef boost::unordered_map<term_t, TermIndexValue> Invert;
+            typedef boost::unordered_set<TermList> Set;
 
             Forward forward;
             Invert invert;
+            Set set;//not serialized
             void clear()
             {
                 forward.clear();
                 invert.clear();
+                set.clear();
             }
             void flush()
             {
@@ -379,6 +384,8 @@ namespace sf1r {
             }
             BOOST_SERIALIZATION_SPLIT_MEMBER()
         };
+
+        typedef boost::unordered_map<cid_t, TermIndex> TermIndexMap;
 
         struct FuzzyApp
         {
@@ -421,6 +428,7 @@ namespace sf1r {
             KeywordTag();
             uint32_t id;
             TermList term_list;
+            UString text;
             std::vector<CategoryNameApp> category_name_apps;
             std::vector<AttributeApp> attribute_apps;
             std::vector<OfferCategoryApp> offer_category_apps;
@@ -450,7 +458,7 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & id & term_list & category_name_apps & attribute_apps & offer_category_apps & type_app & kweight;
+                ar & id & term_list & text & category_name_apps & attribute_apps & offer_category_apps & type_app & kweight;
             }
         };
 
@@ -579,7 +587,7 @@ namespace sf1r {
             std::string stitle;
             std::string scategory;
             std::string fcategory; //front-end category
-            uint32_t cid;
+            cid_t cid;
             double price; 
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
@@ -688,8 +696,9 @@ namespace sf1r {
         bool Index(const std::string& path, const std::string& scd_path, int mode);
         void Test(const std::string& scd_path);
         bool DoMatch(const std::string& scd_path, const std::string& output_file="");
-        bool Process(const Document& doc, Product& result_product);
-        bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products);
+        bool FuzzyDiff(const std::string& scd_path, const std::string& output_file="");
+        bool Process(const Document& doc, Product& result_product, bool use_fuzzy = false);
+        bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products, bool use_fuzzy = false);
         void GetFrontendCategory(const UString& text, uint32_t limit, std::vector<UString>& results);
         static bool GetIsbnAttribute(const Document& doc, std::string& isbn);
         static bool ProcessBook(const Document& doc, Product& result_product);
@@ -699,6 +708,8 @@ namespace sf1r {
         static UString AttributesText(const std::vector<Attribute>& attributes);
         //return true if this is a complete match, else false: to return parent nodes
         bool GetFrontendCategory(UString& backend, UString& frontend) const;
+        void GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy = false, cid_t cid=0);
+        void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<UString>& left);
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
@@ -749,12 +760,12 @@ namespace sf1r {
         void ConstructKeywords_();
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
-        void GetKeywords_(const ATermList& term_list, KeywordVector& keyword_vector, bool bngram = false, bool bfuzzy = false);
-        void GetFuzzyKeywords_(const ATermList& term_list, KeywordVector& keyword_vector);
+        void GetFuzzyKeywords_(const ATermList& term_list, KeywordVector& keyword_vector, cid_t cid);
         bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
         void Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
         uint32_t GetCidByMaxDepth_(uint32_t cid);
+        cid_t GetCid_(const UString& category) const;
 
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
@@ -850,8 +861,10 @@ namespace sf1r {
         ProductIndex product_index_;
         KeywordSet keyword_set_;
         TrieType trie_;
+        KeywordText keyword_text_;//only use in training, not stemmed
         //FuzzyTrie ftrie_;
-        TermIndex term_index_;
+        //TermIndex term_index_;
+        TermIndexMap term_index_map_;
         Back2Front back2front_;
         KeywordVector all_keywords_; //not serialized
         //NgramFrequent nf_;
