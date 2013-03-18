@@ -308,6 +308,7 @@ bool SearchWorker::getSearchResult_(
 {
     CREATE_SCOPED_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
 
+    time_t start_search = time(NULL);
     // Set basic info for response
     resultItem.collectionName_ = actionItem.collectionName_;
     resultItem.encodingType_ =
@@ -428,6 +429,12 @@ bool SearchWorker::getSearchResult_(
                                                  TOP_K_NUM,
                                                  topKStart))
         {
+            if (time(NULL) - start_search > 5)
+            {
+                LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
+                actionOperation.actionItem_.print();
+            }
+
             std::string newQuery;
 
             if (!bundleConfig_->bTriggerQA_)
@@ -446,12 +453,23 @@ bool SearchWorker::getSearchResult_(
                                                      TOP_K_NUM,
                                                      topKStart))
             {
+                if (time(NULL) - start_search > 5)
+                {
+                    LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
+                    actionOperation.actionItem_.print();
+                }
+
                 return true;
             }
         }
         break;
     }
 
+    if (time(NULL) - start_search > 5)
+    {
+        LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
+        actionOperation.actionItem_.print();
+    }
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
     if (actionItem.searchingMode_.mode_ != SearchingMode::KNN
