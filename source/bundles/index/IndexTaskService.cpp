@@ -60,8 +60,7 @@ bool IndexTaskService::index(unsigned int numdoc)
 {
     bool result = true;
 
-    if(!HookDistributeRequestForIndex(true))
-        return false;
+    HookDistributeRequestForIndex(true);
 
     Request::kCallType calltype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
 
