@@ -35,15 +35,49 @@ namespace sf1r {
         typedef idmlib::sim::StringSimilarity::Object SimObject;
         typedef idmlib::util::IDMTerm Term;
         typedef uint32_t term_t;
+        typedef uint32_t cid_t;
         typedef std::vector<term_t> TermList;
         typedef std::vector<TermList> Suffixes;
         typedef boost::unordered_set<TermList> KeywordSet;
-        typedef uint32_t position_t;
-        typedef std::pair<position_t, position_t>  Position;
+        typedef std::vector<Term> ATermList;//analyze term list
+        //typedef uint32_t position_t;
+        //typedef std::pair<position_t, position_t>  Position;
+        //typedef std::vector<Position> Positions;
         typedef boost::unordered_map<std::string, std::string> Back2Front;
         typedef std::vector<std::pair<uint32_t, uint32_t> > FrequentValue;
         typedef boost::unordered_map<TermList, FrequentValue> NgramFrequent;
-        typedef boost::unordered_map<TermList, std::string> KeywordText;
+        typedef boost::unordered_map<TermList, UString> KeywordText;
+
+        struct Position
+        {
+            Position(): begin(0), end(0)
+            {
+            }
+
+            Position(uint32_t b, uint32_t e) : begin(b), end(e)
+            {
+            }
+
+            uint32_t begin;
+            uint32_t end;
+
+            bool Combine(const Position& ap)
+            {
+                if( (begin<=ap.end&&begin>=ap.begin) || (ap.begin<=end&&ap.begin>=begin)) //overlap
+                {
+                    begin = std::min(begin, ap.begin);
+                    end = std::max(end, ap.end);
+                    return true;
+                }
+                return false;
+            }
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & begin & end;
+            }
+        };
         
         struct WeightType
         {
@@ -191,12 +225,14 @@ namespace sf1r {
             uint32_t spu_id;
             std::string attribute_name;
             bool is_optional;
+            double lprop; //length proportion
+            
             //bool is_complete;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & spu_id & attribute_name & is_optional;
+                ar & spu_id & attribute_name & is_optional & lprop;
             }
             bool operator<(const AttributeApp& another) const
             {
@@ -227,6 +263,138 @@ namespace sf1r {
                 ar & cid & count;
             }
         };
+
+        //struct FuzzyApp
+        //{
+            //uint32_t spu_id;
+            //std::string attribute_name;
+            //TermList term_list;
+            //Position pos;
+            //Position tpos; //runtime property
+            //friend class boost::serialization::access;
+            //template<class Archive>
+            //void serialize(Archive & ar, const unsigned int version)
+            //{
+                //ar & spu_id & attribute_name & term_list & pos;
+            //}
+
+            //static bool PositionCompare(const FuzzyApp& a1, const FuzzyApp& a2)
+            //{
+                //if(a1.pos.begin<a2.pos.begin) return true;
+                //else if(a1.pos.begin>a2.pos.begin) return false;
+                //else return a1.pos.end<a2.pos.end;
+            
+            //}
+        //};
+
+        //struct FuzzyPositions
+        //{
+            //std::vector<Position> positions;
+            //std::vector<Position> tpositions;
+        //};
+
+        //struct FuzzyValue
+        //{
+            //std::vector<FuzzyApp> fuzzy_apps;
+            //friend class boost::serialization::access;
+            //template<class Archive>
+            //void serialize(Archive & ar, const unsigned int version)
+            //{
+                //ar & fuzzy_apps;
+            //}
+        //};
+
+        struct TermIndexItem
+          : boost::less_than_comparable<TermIndexItem> ,boost::equality_comparable<TermIndexItem>
+        {
+            uint32_t keyword_index;
+            uint32_t pos;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & keyword_index & pos;
+            }
+            bool operator<(const TermIndexItem& another) const
+            {
+                if(keyword_index!=another.keyword_index) return keyword_index<another.keyword_index;
+                else return pos<another.pos;
+            }
+
+            bool operator==(const TermIndexItem& another) const
+            {
+                return keyword_index==another.keyword_index && pos==another.pos;
+            }
+        };
+
+        struct TermIndexValue
+        {
+            std::vector<TermIndexItem> items;
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version)
+            {
+                ar & items;
+            }
+
+            void flush()
+            {
+                std::sort(items.begin(), items.end());
+                items.erase( std::unique(items.begin(), items.end()), items.end());
+            }
+        };
+
+        struct TermIndex
+        {
+            typedef std::vector<ATermList> Forward;
+            typedef boost::unordered_map<term_t, TermIndexValue> Invert;
+            typedef boost::unordered_set<TermList> Set;
+
+            Forward forward;
+            Invert invert;
+            Set set;//not serialized
+            void clear()
+            {
+                forward.clear();
+                invert.clear();
+                set.clear();
+            }
+            void flush()
+            {
+                for(Invert::iterator it=invert.begin();it!=invert.end();it++)
+                {
+                    it->second.flush();
+                }
+            }
+            friend class boost::serialization::access;
+            template<class Archive>
+            void save(Archive & ar, const unsigned int version) const
+            {
+                ar & forward;
+                std::map<typename Invert::key_type, typename Invert::mapped_type> m(invert.begin(), invert.end());
+                ar & m;
+            }
+            template<class Archive>
+            void load(Archive & ar, const unsigned int version)
+            {
+                ar & forward;
+                std::map<typename Invert::key_type, typename Invert::mapped_type> m;
+                ar & m;
+                invert.insert(m.begin(), m.end());
+            }
+            BOOST_SERIALIZATION_SPLIT_MEMBER()
+        };
+
+        typedef boost::unordered_map<cid_t, TermIndex> TermIndexMap;
+
+        struct FuzzyApp
+        {
+            std::vector<uint32_t> kpos;
+            std::vector<uint32_t> tpos;
+        };
+
+
+        //typedef std::map<TermList, FuzzyValue> FuzzyTrie;
         //struct SpuTitleApp
           //: boost::less_than_comparable<SpuTitleApp> ,boost::equality_comparable<SpuTitleApp>
         //{
@@ -260,6 +428,7 @@ namespace sf1r {
             KeywordTag();
             uint32_t id;
             TermList term_list;
+            UString text;
             std::vector<CategoryNameApp> category_name_apps;
             std::vector<AttributeApp> attribute_apps;
             std::vector<OfferCategoryApp> offer_category_apps;
@@ -289,7 +458,7 @@ namespace sf1r {
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
             {
-                ar & id & term_list & category_name_apps & attribute_apps & offer_category_apps & type_app & kweight;
+                ar & id & term_list & text & category_name_apps & attribute_apps & offer_category_apps & type_app & kweight;
             }
         };
 
@@ -418,7 +587,7 @@ namespace sf1r {
             std::string stitle;
             std::string scategory;
             std::string fcategory; //front-end category
-            uint32_t cid;
+            cid_t cid;
             double price; 
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
@@ -445,6 +614,11 @@ namespace sf1r {
                 return p1.score>p2.score;
             }
 
+            static bool CidCompare(const Product& p1, const Product& p2)
+            {
+                return p1.cid<p2.cid;
+            }
+
             //const std::vector<Attribute>& GetDisplayAttributes() const
             //{
                 //if(!dattributes.empty()) return dattributes;
@@ -464,6 +638,46 @@ namespace sf1r {
                 return result;
             }
         };
+
+        struct FuzzyKey
+        {
+            FuzzyKey(){}
+            FuzzyKey(uint32_t pcid, const std::vector<uint32_t>& pname_ids, uint32_t pdid, const std::vector<uint32_t>& pvalue_ids)
+            : cid(pcid), name_ids(pname_ids), did(pdid), value_ids(pvalue_ids)
+            {
+            }
+
+            std::vector<uint32_t> GenKey() const
+            {
+                std::vector<uint32_t> key(1, cid);
+                key.insert(key.end(), name_ids.begin(), name_ids.end());
+                key.push_back(0);
+                key.push_back(did);
+                key.insert(key.end(), value_ids.begin(), value_ids.end());
+                return key;
+            }
+
+            void Parse(const std::vector<uint32_t>& key)
+            {
+                cid = key[0];
+                uint32_t i=1;
+                for(;i<key.size();i++)
+                {
+                    if(key[i]==0) break;
+                    name_ids.push_back(key[i]);
+                }
+                ++i;
+                did = key[i++];
+                for(;i<key.size();i++)
+                {
+                    value_ids.push_back(key[i]);
+                }
+            }
+            uint32_t cid;
+            std::vector<uint32_t> name_ids;
+            uint32_t did;//direction id;
+            std::vector<uint32_t> value_ids;
+        };
         typedef uint32_t PidType;
         typedef std::map<std::string, uint32_t> CategoryIndex;
         typedef std::map<std::string, uint32_t> ProductIndex;
@@ -482,8 +696,9 @@ namespace sf1r {
         bool Index(const std::string& path, const std::string& scd_path, int mode);
         void Test(const std::string& scd_path);
         bool DoMatch(const std::string& scd_path, const std::string& output_file="");
-        bool Process(const Document& doc, Product& result_product);
-        bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products);
+        bool FuzzyDiff(const std::string& scd_path, const std::string& output_file="");
+        bool Process(const Document& doc, Product& result_product, bool use_fuzzy = false);
+        bool Process(const Document& doc, uint32_t limit, std::vector<Product>& result_products, bool use_fuzzy = false);
         void GetFrontendCategory(const UString& text, uint32_t limit, std::vector<UString>& results);
         static bool GetIsbnAttribute(const Document& doc, std::string& isbn);
         static bool ProcessBook(const Document& doc, Product& result_product);
@@ -493,6 +708,8 @@ namespace sf1r {
         static UString AttributesText(const std::vector<Attribute>& attributes);
         //return true if this is a complete match, else false: to return parent nodes
         bool GetFrontendCategory(UString& backend, UString& frontend) const;
+        void GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy = false, cid_t cid=0);
+        void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<UString>& left);
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
@@ -518,7 +735,7 @@ namespace sf1r {
         void Init_();
         bool PriceMatch_(double p1, double p2);
         double PriceSim_(double offerp, double spup);
-        void AnalyzeA_(const izenelib::util::UString& text, std::vector<Term>& result);
+        void AnalyzeNoSymbol_(const izenelib::util::UString& text, std::vector<Term>& result);
         void Analyze_(const izenelib::util::UString& text, std::vector<Term>& result);
         //void AnalyzeCR_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
 
@@ -527,28 +744,38 @@ namespace sf1r {
 
         void IndexOffer_(const std::string& offer_scd);
         void IndexFuzzy_();
+        void ProcessFuzzy_(const std::pair<uint32_t, uint32_t>& range);
 
         void GenSuffixes_(const std::vector<term_t>& term_list, Suffixes& suffixes);
         void GenSuffixes_(const std::string& text, Suffixes& suffixes);
         void ConstructSuffixTrie_(TrieType& trie);
         term_t GetTerm_(const UString& text);
         term_t GetTerm_(const std::string& text);
-        std::string GetText_(const TermList& tl) const;
+        std::string GetText_(const TermList& tl, const std::string& s = "") const;
         std::string GetText_(const term_t& term) const;
         void GetTerms_(const std::string& text, std::vector<term_t>& term_list);
         void GetTerms_(const UString& text, std::vector<term_t>& term_list);
-        //void GetCRTerms_(const UString& text, std::vector<term_t>& term_list);
+        
+        bool NeedFuzzy_(const std::string& value);
         void ConstructKeywords_();
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
-        void GetKeywordVector_(const std::vector<Term>& term_list, KeywordVector& keyword_vector);
+        void GetFuzzyKeywords_(const ATermList& term_list, KeywordVector& keyword_vector, cid_t cid);
         bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
         void Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
         uint32_t GetCidByMaxDepth_(uint32_t cid);
+        cid_t GetCid_(const UString& category) const;
 
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
+        bool IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& app) const;
+
+        static uint32_t TextLength_(const std::string& text)
+        {
+            UString u(text, UString::UTF_8);
+            return u.length();
+        }
 
         template<class K, class V>
         void GetSortedVector_(const std::map<K, V>& map, std::vector<std::pair<V, K> >& vec, uint32_t max=0)
@@ -634,6 +861,10 @@ namespace sf1r {
         ProductIndex product_index_;
         KeywordSet keyword_set_;
         TrieType trie_;
+        KeywordText keyword_text_;//only use in training, not stemmed
+        //FuzzyTrie ftrie_;
+        //TermIndex term_index_;
+        TermIndexMap term_index_map_;
         Back2Front back2front_;
         KeywordVector all_keywords_; //not serialized
         KeywordText keyword_text_;
