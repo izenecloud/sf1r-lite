@@ -168,6 +168,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
         }
         else 
         {
+            watchAll();
             checkForWriteReq();
         }
     }
@@ -235,6 +236,9 @@ void MasterManagerBase::onNodeDeleted(const std::string& path)
         {
             // try failover
             failover(path);
+	    // reset watch.
+	    std::string sdata;
+	    zookeeper_->getZNodeData(path, sdata, ZooKeeper::WATCH);
         }
     }
     checkForWriteReq();
@@ -250,7 +254,12 @@ void MasterManagerBase::onChildrenChanged(const std::string& path)
     if (masterState_ > MASTER_STATE_STARTING_WAIT_ZOOKEEPER)
     {
         if (path.find(topologyPath_) != std::string::npos)
+	{
+	    // reset watch.
+	    std::string sdata;
+	    zookeeper_->getZNodeData(path, sdata, ZooKeeper::WATCH);
             detectReplicaSet(path);
+	}
     }
     checkForWriteReq();
 }
