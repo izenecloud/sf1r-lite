@@ -138,25 +138,11 @@ void UpdateRecommendWorker::updateVisitMatrix(
 
 void UpdateRecommendWorker::flushRecommendMatrix(bool& result)
 {
-    bool force_success = DistributeRequestHooker::get()->getHookType() == Request::FromDistribute;
-    result = force_success;
-
-    DISTRIBUTE_WRITE_BEGIN_ASYNC;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
-
-    NoAdditionReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
-    {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        return;
-    }
     jobScheduler_.addTask(boost::bind(&UpdateRecommendWorker::flushImpl_, this));
     result = true;
     LOG(INFO) << "UpdateRecommendWorker waiting flush ";
     jobScheduler_.waitCurrentFinish();
     LOG(INFO) << "UpdateRecommendWorker wait flush success";
-
-    DISTRIBUTE_WRITE_FINISH(true);
 }
 
 void UpdateRecommendWorker::flushImpl_()
