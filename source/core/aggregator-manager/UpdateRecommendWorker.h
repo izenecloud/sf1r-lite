@@ -55,6 +55,7 @@ public:
             flushRecommendMatrix,
             bool
         )
+        BIND_CALL_PROXY_3(HookDistributeRequestForUpdateRec, int, std::string, bool)
         BIND_CALL_PROXY_END()
     }
 
@@ -80,10 +81,13 @@ public:
 
     virtual void flushRecommendMatrix(bool& result);
 
+    void HookDistributeRequestForUpdateRec(int hooktype, const std::string& reqdata, bool& result);
+
     const ItemCFManager& itemCFManager() const { return itemCFManager_; }
 
 private:
     void flushImpl_();
+    bool buildPurchaseSimMatrixFunc();
 
 private:
     ItemCFManager& itemCFManager_;

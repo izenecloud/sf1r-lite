@@ -302,10 +302,9 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
         actionOperation.actionItem_, propSharedLockSet, relevanceScorer);
 
     ScoreDocEvaluator scoreDocEvaluator(productScorer, param.customRanker);
-    time_t start_search = time(NULL);
-    LOG(INFO) << "prepared search finished. " << start_search;
     try
     {
+        time_t start_search = time(NULL);
         bool ret = doSearch_(param,
                              pDocIterator.get(),
                              groupFilter.get(),
@@ -313,7 +312,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
                              propSharedLockSet);
 
         if (time(NULL) - start_search > 5)
-            LOG(INFO) << "dosearch cost too long, end: " << time(NULL);
+            LOG(INFO) << "dosearch cost too long, " << start_search << ", " << time(NULL);
 
         if (groupFilter)
         {

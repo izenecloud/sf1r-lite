@@ -96,6 +96,7 @@ private:
     int hook_type_;
     ChainStatus chain_status_;
     static std::set<ReqLogType> need_backup_types_;
+    static std::set<std::string> async_or_shard_write_types_;
 
 };
 

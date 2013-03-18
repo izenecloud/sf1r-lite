@@ -334,8 +334,6 @@ bool RecommendTaskService::visitItem(
     bool isRecItem
 )
 {
-    DISTRIBUTE_WRITE_BEGIN;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     if (sessionIdStr.empty())
     {
@@ -349,6 +347,24 @@ bool RecommendTaskService::visitItem(
         return false;
     }
 
+    bool ret = true;
+    bool force_success = DistributeRequestHooker::get()->getHookType() == Request::FromDistribute;
+    ret = visitItemFunc(sessionIdStr, userIdStr, itemId, isRecItem);
+
+    return force_success || ret;
+}
+
+bool RecommendTaskService::visitItemFunc(
+    const std::string& sessionIdStr,
+    const std::string& userIdStr,
+    itemid_t itemId,
+    bool isRecItem
+)
+{
+    // this need to be async because there will be rpc call in visitManager_.addVisitItem
+    DISTRIBUTE_WRITE_BEGIN_ASYNC;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     NoAdditionReqLog reqlog;
     if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
     {
@@ -356,8 +372,11 @@ bool RecommendTaskService::visitItem(
         return false;
     }
 
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle);
+
     if (!visitManager_.addVisitItem(sessionIdStr, userIdStr, itemId, &visitMatrix_))
     {
+        DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
         return false;
     }
 
@@ -365,12 +384,15 @@ bool RecommendTaskService::visitItem(
     {
         LOG(ERROR) << "error in VisitManager::visitRecommendItem(), userId: " << userIdStr
             << ", itemId: " << itemId;
+        DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
         return false;
     }
 
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
     DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
+
 
 bool RecommendTaskService::purchaseItem(
     const std::string& userIdStr,
@@ -378,22 +400,41 @@ bool RecommendTaskService::purchaseItem(
     const OrderItemVec& orderItemVec
 )
 {
-    DISTRIBUTE_WRITE_BEGIN;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
-
     std::vector<itemid_t> itemIdVec;
     if (!prepareSaveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_, itemIdVec))
     {
         LOG(WARNING) << "saveOrder_ failed.";
         return false;
     }
+
+    bool ret = true;
+    bool force_success = DistributeRequestHooker::get()->getHookType() == Request::FromDistribute;
+
+    ret = purchaseItemFunc(userIdStr, orderIdStr, orderItemVec, itemIdVec);
+    return force_success || ret;
+}
+
+bool RecommendTaskService::purchaseItemFunc(
+    const std::string& userIdStr,
+    const std::string& orderIdStr,
+    const OrderItemVec& orderItemVec,
+    const std::vector<itemid_t>& itemIdVec
+)
+{
+    DISTRIBUTE_WRITE_BEGIN_ASYNC;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     NoAdditionReqLog reqlog;
     if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle);
+
     bool ret = saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_, itemIdVec);
+
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
     DISTRIBUTE_WRITE_FINISH(ret);
     return ret;
 }
@@ -928,7 +969,7 @@ bool RecommendTaskService::saveOrder_(
     const std::string& orderIdStr,
     const OrderItemVec& orderItemVec,
     RecommendMatrix* matrix,
-    std::vector<itemid_t>& itemIdVec
+    const std::vector<itemid_t>& itemIdVec
 )
 {
     orderManager_.addOrder(itemIdVec);

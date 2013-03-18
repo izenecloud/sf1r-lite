@@ -60,9 +60,12 @@ public:
     virtual void flushRecommendMatrix(bool& result);
 
 private:
+    void HookDistributeRequestForUpdateRec();
+
     const std::string collection_;
     boost::scoped_ptr<UpdateRecommendMerger> merger_;
     boost::shared_ptr<UpdateRecommendAggregator> aggregator_;
+    UpdateRecommendWorker* localWorker_;
     RecommendShardStrategy* shardStrategy_;
 };
 
