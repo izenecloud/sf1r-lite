@@ -271,6 +271,10 @@ void MasterManagerBase::onDataChanged(const std::string& path)
             detectWorkers();
         }
     }
+    // reset watch.
+    if (path.find(topologyPath_) != std::string::npos)
+        zookeeper_->isZNodeExists(path, ZooKeeper::WATCH);
+
     checkForWriteReq();
 }
 
@@ -430,7 +434,7 @@ bool MasterManagerBase::cacheNewWriteFromZNode()
 // check if any new request can be processed.
 void MasterManagerBase::checkForNewWriteReq()
 {
-    if (masterState_ != MASTER_STATE_STARTED || masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
+    if (masterState_ != MASTER_STATE_STARTED && masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
     {
         LOG(INFO) << "current master state is not ready while check write, state:" << masterState_;
         return;
