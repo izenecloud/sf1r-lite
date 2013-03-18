@@ -50,13 +50,13 @@ public:
     bool isStartFromLocalFM() const;
 
     size_t longestSuffixMatch(
-            const izenelib::util::UString& pattern,
+            const std::string& pattern,
             std::vector<std::string> search_in_properties,
             size_t max_docs,
             std::vector<std::pair<double, uint32_t> >& res_list) const;
 
     size_t AllPossibleSuffixMatch(
-            const izenelib::util::UString& pattern,
+            const std::string& pattern,
             std::vector<std::string> search_in_properties,
             size_t max_docs,
             const SearchingMode::SuffixMatchFilterMode& filter_mode,

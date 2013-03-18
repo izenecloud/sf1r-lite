@@ -166,13 +166,15 @@ bool SuffixMatchManager::isStartFromLocalFM() const
 }
 
 size_t SuffixMatchManager::longestSuffixMatch(
-        const izenelib::util::UString& pattern,
+        const std::string& pattern_orig,
         std::vector<std::string> search_in_properties,
         size_t max_docs,
         std::vector<std::pair<double, uint32_t> >& res_list) const
 {
     if (!fmi_manager_) return 0;
-    if (pattern.empty()) return 0;
+    if (pattern_orig.empty()) return 0;
+
+    UString pattern(pattern_orig, UString::UTF_8);
 
     btree::btree_map<uint32_t, double> res_list_map;
     std::vector<uint32_t> docid_list;
@@ -230,7 +232,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
 }
 
 size_t SuffixMatchManager::AllPossibleSuffixMatch(
-        const izenelib::util::UString& pattern_orig,
+        const std::string& pattern_orig,
         std::vector<std::string> search_in_properties,
         size_t max_docs,
         const SearchingMode::SuffixMatchFilterMode& filter_mode,
@@ -240,19 +242,18 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
 {
     if (!analyzer_) return 0;
     if (pattern_orig.empty()) return 0;
+	
     btree::btree_map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > match_ranges_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> max_match_list;
 
     // tokenize the pattern.
-    izenelib::util::UString pattern = pattern_orig;
-    Algorithm<UString>::to_lower(pattern);
-    string pattern_str;
-    pattern.convertString(pattern_str, UString::UTF_8);
-    LOG(INFO) << "original query string: " << pattern_str;
+    std::string pattern = pattern_orig;
+    boost::to_lower(pattern);
+    LOG(INFO) << "original query string: " << pattern_orig;
 
-    Sentence pattern_sentence(pattern_str.c_str());
+    Sentence pattern_sentence(pattern.c_str());
     analyzer_->runWithSentence(pattern_sentence);
     std::vector<UString> all_sub_strpatterns;
     LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
