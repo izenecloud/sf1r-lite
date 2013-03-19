@@ -85,6 +85,7 @@ private:
     std::string rollback_file_;
     std::string last_conf_file_;
     std::string configDir_;
+    bool need_backup_;
     boost::shared_ptr<ReqLogMgr> reqlog_mgr_;
     CollInfoMapT all_col_info_;
     boost::mutex mutex_;

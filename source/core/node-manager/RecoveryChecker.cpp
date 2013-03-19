@@ -295,6 +295,7 @@ bool RecoveryChecker::backup()
         LOG(ERROR) << "RecoveryChecker did not init!";
         return false;
     }
+    need_backup_ = false;
     // backup changeable data first, so that we can rollback if old data corrupt while process the request.
     // Ignore SCD files and any other files that will not change during processing.
 
@@ -636,6 +637,7 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     rollback_file_ = workdir + "/rollback_flag";
     last_conf_file_ = workdir + "/distribute_last_conf";
     configDir_ = conf_dir;
+    need_backup_ = false;
 
     reqlog_mgr_.reset(new ReqLogMgr());
     try
@@ -829,6 +831,8 @@ std::map<std::string, std::string> RecoveryChecker::handleConfigUpdate()
         }
     }
 
+    need_backup_ = need_update_config;
+
     std::map<std::string, std::string> running_col_info;
 
     UpdateConfigReqLog cur_conf_log;
@@ -998,6 +1002,11 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     if (sync_file)
         bfs::remove("./distribute_sync_file.flag");
 
+    if (need_backup_)
+    {
+        LOG(INFO) << "begin backup for config updated.";
+        backup();
+    }
 }
 
 void RecoveryChecker::onRecoverWaitReplicasCallback()
