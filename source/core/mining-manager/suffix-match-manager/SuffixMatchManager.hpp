@@ -12,18 +12,15 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
-namespace cma
-{
-class Analyzer;
-class Knowledge;
-}
-
 namespace sf1r
 {
-
+using izenelib::util::UString;
 class DocumentManager;
 class FilterManager;
 class FMIndexManager;
+class ProductTokenizer;
+class ProductMatcher;
+
 namespace faceted
 {
     class GroupManager;
@@ -37,6 +34,7 @@ public:
     SuffixMatchManager(
             const std::string& homePath,
             const std::string& dicpath,
+            const std::string& system_resource_path,
             boost::shared_ptr<DocumentManager>& document_manager,
             faceted::GroupManager* groupmanager,
             faceted::AttrManager* attrmanager,
@@ -44,6 +42,7 @@ public:
 
     ~SuffixMatchManager();
 
+    void setProductMatcher(ProductMatcher* matcher);
     void addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished = false);
 
     void buildTokenizeDic();
@@ -62,7 +61,8 @@ public:
             const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             const faceted::GroupParam& group_param,
-            std::vector<std::pair<double, uint32_t> >& res_list) const;
+            std::vector<std::pair<double, uint32_t> >& res_list,
+            UString& analyzedQuery) const;
 
     MiningTask* getMiningTask();
     bool buildMiningTask();
@@ -88,12 +88,12 @@ private:
 
     std::string data_root_path_;
     std::string tokenize_dicpath_;
+    std::string system_resource_path_;
 
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;
 
-    cma::Analyzer* analyzer_;
-    cma::Knowledge* knowledge_;
+    ProductTokenizer* tokenizer_;
 
     boost::shared_ptr<FMIndexManager> fmi_manager_;
     boost::shared_ptr<FilterManager> filter_manager_;

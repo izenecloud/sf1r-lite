@@ -375,7 +375,8 @@ public:
             std::vector<float>& customRankScoreList,
             std::size_t& totalCount,
             faceted::GroupRep& groupRep,
-            sf1r::faceted::OntologyRep& attrRep
+            sf1r::faceted::OntologyRep& attrRep,
+            UString& analyzedQuery
             );
 
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
