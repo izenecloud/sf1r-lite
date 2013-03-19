@@ -27,6 +27,8 @@ public:
 
     void index();
 
+    void index_recommend();
+
     void index_query_log();
 
     void optimize_index();

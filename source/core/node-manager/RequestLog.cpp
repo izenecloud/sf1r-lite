@@ -39,6 +39,7 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("collection_rebuild_collection");
     write_req_set_.insert("collection_set_kv");
     write_req_set_.insert("commands_index");
+    write_req_set_.insert("commands_index_recommend");
     write_req_set_.insert("commands_mining");
     write_req_set_.insert("commands_optimize_index");
     write_req_set_.insert("commands_index_query_log");
