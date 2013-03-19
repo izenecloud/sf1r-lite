@@ -94,6 +94,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <node-manager/RequestLog.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
 
 #include <fstream>
 #include <iterator>
@@ -741,6 +742,11 @@ bool MiningManager::open()
 void MiningManager::DoContinue()
 {
     //do mining continue;
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        LOG(INFO) << "continue not allowed in distributed sf1r.";
+        return;
+    }
     try
     {
         std::string continue_file = collectionDataPath_+"/continue";
