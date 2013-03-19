@@ -16,6 +16,8 @@
 #include <aggregator-manager/SearchAggregator.h>
 #include <mining-manager/MiningQueryLogHandler.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/MasterManagerBase.h>
+#include <node-manager/NodeManagerBase.h>
 #include <common/Keys.h>
 
 namespace sf1r
@@ -60,6 +62,11 @@ void CommandsController::index()
     IZENELIB_DRIVER_BEFORE_HOOK(checkCollectionName());
 
     indexSearch_();
+}
+
+void CommandsController::index_recommend()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(checkCollectionName());
     indexRecommend_();
 }
 
@@ -68,56 +75,46 @@ void CommandsController::indexSearch_()
     IndexTaskService* taskService = collectionHandler_->indexTaskService_;
     if (taskService)
     {
-        if (request().callType() != Request::FromAPI)
-        {
-            RecommendTaskService* rec_taskService = collectionHandler_->recommendTaskService_;
-            if (rec_taskService)
-            {
-                if(!DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainBegin))
-                {
-                    std::cout << "set chain status failed, stopping chain. current status: " <<
-                        DistributeRequestHooker::get()->getChainStatus() << std::endl; 
-                    return;
-                }
-            }
-        }
         // 0 indicates no limit
         Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
         if(!taskService->index(documentCount))
             response().addError("index in search failed.");
+        else
+        {
+            if (MasterManagerBase::get()->isDistributed())
+            {
+                // push recommend request to queue
+                if (request().callType() == Request::FromDistribute &&
+                    NodeManagerBase::get()->isPrimary())
+                {
+                    std::string json_req = "{\"collection\":\"" + collectionName_ + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"index_recommend\",\"controller\":\"commands\"},\"uri\":\"commands/index_recommend\"}";
+                    MasterManagerBase::get()->pushWriteReq(json_req);
+                    LOG(INFO) << "a json_req pushed from " << __FUNCTION__ << ", data:" << json_req;
+                }
+                else
+                {
+                    LOG(INFO) << "not primary no need to send recommend";
+                }
+            }
+            else
+            {
+                // call recommend directly if not distributed.
+                indexRecommend_();
+            }
+        }
     }
 }
 
 void CommandsController::indexRecommend_()
 {
-    if (!response().success())
-    {
-        std::cout << "ignore index recommend since the index has error." << std::endl;
-        return;
-    }
     RecommendTaskService* taskService = collectionHandler_->recommendTaskService_;
     if (taskService)
     {
         if (request().callType() != Request::FromAPI)
         {
-            if (request().callType() == Request::FromDistribute)
-            {
-                JobScheduler::get()->waitCurrentFinish(collectionName_);
-            }
-            if (!DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd))
-            {
-                // this will happen if index is async and failed in async handler.
-                std::cout << "set chain status failed, stopping chain. current status: " <<
-                   DistributeRequestHooker::get()->getChainStatus() << std::endl; 
-                return;
-            }
             bool ret = taskService->buildCollection();
-            if (request().callType() == Request::FromDistribute)
-            {
-                DistributeRequestHooker::get()->processLocalFinished(ret);
-            }
-            else if (!ret)
+            if (!ret)
             {
                 response().addError("index in recommend failed.");
             }

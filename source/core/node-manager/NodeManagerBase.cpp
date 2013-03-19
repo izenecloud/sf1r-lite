@@ -758,10 +758,11 @@ bool NodeManagerBase::isPrimary()
 {
 	if (!isDistributionEnabled_)
 		return true;
-    boost::unique_lock<boost::mutex> lock(mutex_);
     if (stopping_)
         return false;
-    return isPrimaryWithoutLock();
+    if (curr_primary_path_.empty() || self_primary_path_.empty())
+        return false;
+    return curr_primary_path_ == self_primary_path_;
 }
 
 bool NodeManagerBase::isPrimaryWithoutLock() const

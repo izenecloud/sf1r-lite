@@ -928,7 +928,6 @@ std::map<std::string, std::string> RecoveryChecker::handleConfigUpdate()
             forceExit("write update config log error");
         }
         reqlog_mgr_->delPreparedReqLog();
-        backup();
     }
     return running_col_info;
 }

@@ -169,18 +169,7 @@ void UpdateRecommendMaster::updateVisitMatrix(
 
 void UpdateRecommendMaster::flushRecommendMatrix(bool& result)
 {
-    HookDistributeRequestForUpdateRec();
-
-    Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
-    if (hooktype == Request::FromAPI || hooktype == Request::FromDistribute)
-        aggregator_->distributeRequest(collection_, "flushRecommendMatrix", result);
-    else
-    {
-        if (localWorker_)
-            localWorker_->flushRecommendMatrix(result);
-        else
-            LOG(ERROR) << "no localWorker while do on local in " << __FUNCTION__;
-    }
+    aggregator_->distributeRequest(collection_, "flushRecommendMatrix", result);
     printError(result, "flushRecommendMatrix");
 }
 
