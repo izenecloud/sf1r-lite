@@ -935,7 +935,7 @@ bool MiningManager::DoMiningCollection()
                     SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
                     bool isIncre = true;
                     miningTask->setTaskStatus(isIncre);
-                    incrementalManager_->reset();
+                    
                 }
                 else if (document_manager_->isThereRtypeDoc())
                 {
@@ -1011,15 +1011,28 @@ bool MiningManager::DoMiningCollection()
 
             //LOG (INFO) << "docNum:" << docNum << "last_docid:" << last_docid << "getMaxDocId()" << document_manager_->getMaxDocId() << "maxDoc:" << maxDoc << endl;
 
-            if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc
-                && document_manager_->getMaxDocId() != last_docid)
+            if (last_docid == document_manager_->getMaxDocId())
             {
-                LOG(INFO) << "Build incrmental index ..." <<endl;
-                incrementalManager_->doCreateIndex();
+                if (document_manager_->last_delete_docid_.size() > 0) /// merge and rebuild fm-index;
+                {
+                    incrementalManager_->reset();
+                }
+                else if (document_manager_->isThereRtypeDoc())
+                {
+                    // do nothing
+                }
             }
             else
             {
-                incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc) // not merge
+                {
+                    LOG(INFO) << "Build incrmental index ..." <<endl;
+                    incrementalManager_->doCreateIndex();
+                }
+                else // merge
+                {
+                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                }
             }
         }
     }
