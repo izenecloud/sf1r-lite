@@ -13,11 +13,12 @@ namespace sf1r
 const UString ProductTokenizer::SPACE_UCHAR(" ", UString::UTF_8);
 
 ProductTokenizer::ProductTokenizer(
-    TokenizerType type, 
+    TokenizerType type,
     const std::string& dict_path)
     : type_(type)
     , analyzer_(NULL)
     , knowledge_(NULL)
+    , matcher_(NULL)
 {
     Init_(dict_path);
 }
@@ -36,8 +37,6 @@ void ProductTokenizer::Init_(const std::string& dict_path)
         break;
     case TOKENIZER_DICT:
         InitWithDict_(dict_path);
-        break;
-    case TOKENIZER_MATCHER:
         break;
     }
 }
@@ -59,9 +58,9 @@ void ProductTokenizer::InitWithDict_(const std::string& dict_path)
     dict_names_.push_back(std::make_pair("category.txt", 5.0));
     dict_names_.push_back(std::make_pair("brand.txt", 4.0));
     dict_names_.push_back(std::make_pair("type.txt", 3.0));
-    dict_names_.push_back(std::make_pair("attribute.txt", 2.0));	
+    dict_names_.push_back(std::make_pair("attribute.txt", 2.0));
     for(std::vector<std::pair<string,double> >::iterator it = dict_names_.begin();
-        it != dict_names_.end(); ++it)
+            it != dict_names_.end(); ++it)
         InitDict_(it->first);
 }
 
@@ -108,10 +107,10 @@ void ProductTokenizer::GetDictTokens_(
             {
                 ++beginpos;
             }
-       }
-       if(beginpos > lastpos)
-           left.push_back(std::string(start + lastpos, beginpos - lastpos));
-   }
+        }
+        if(beginpos > lastpos)
+            left.push_back(std::string(start + lastpos, beginpos - lastpos));
+    }
 }
 
 inline bool IsChinese(uint16_t val)
@@ -121,8 +120,12 @@ inline bool IsChinese(uint16_t val)
 
 inline bool IsNonChinese(uint16_t val)
 {
-    static const uint16_t dash('-'), underline('_');
-    return UString::isThisAlphaChar(val) ||UString::isThisNumericChar(val) ||val == dash || val == underline ;
+    static const uint16_t dash('-'), underline('_'), dot('.');
+    return UString::isThisAlphaChar(val) ||
+                UString::isThisNumericChar(val) ||
+                val == dash || 
+                val == underline ||
+                val == dot;
 }
 
 inline bool IsValid(uint16_t val)
@@ -153,7 +156,7 @@ void ProductTokenizer::DoBigram_(
     size_t i, len = pattern.length();
     if(len >= 3)
     {
-        std::vector<std::pair<CharType, size_t> > pos; 
+        std::vector<std::pair<CharType, size_t> > pos;
         CharType last_type = CHAR_INVALID;
         i = 0;
         while(i < len)
@@ -180,7 +183,7 @@ void ProductTokenizer::DoBigram_(
             {
                 if(last_type == CHAR_INVALID)
                 {
-                    last_type = CHAR_ALNUM;                    
+                    last_type = CHAR_ALNUM;
                     pos.push_back(std::make_pair(CHAR_ALNUM, i));
                 }
                 else
@@ -265,24 +268,27 @@ void ProductTokenizer::GetLeftTokens_(
 }
 
 bool ProductTokenizer::GetTokenResults(
-    const std::string& pattern, 
+    const std::string& pattern,
     std::list<std::pair<UString,double> >& token_results,
     UString& refined_results)
 {
+    if(matcher_ && 
+        GetTokenResultsByMatcher_(pattern, token_results, refined_results) )
+    {
+        return true;
+    }
     switch (type_)
     {
     case TOKENIZER_DICT:
         return GetTokenResultsByDict_(pattern, token_results, refined_results);
     case TOKENIZER_CMA:
         return GetTokenResultsByCMA_(pattern, token_results, refined_results);
-    case TOKENIZER_MATCHER:
-        return GetTokenResultsByMatcher_(pattern, token_results, refined_results);
     }
     return false;
 }
 
 bool ProductTokenizer::GetTokenResultsByCMA_(
-    const std::string& pattern, 
+    const std::string& pattern,
     std::list<std::pair<UString,double> >& token_results,
     UString& refined_results)
 {
@@ -317,7 +323,7 @@ bool ProductTokenizer::GetTokenResultsByCMA_(
 }
 
 bool ProductTokenizer::GetTokenResultsByDict_(
-    const std::string& pattern, 
+    const std::string& pattern,
     std::list<std::pair<UString,double> >& token_results,
     UString& refined_results)
 {
@@ -361,7 +367,7 @@ bool ProductTokenizer::GetTokenResultsByDict_(
 }
 
 bool ProductTokenizer::GetTokenResultsByMatcher_(
-    const std::string& pattern, 
+    const std::string& pattern,
     std::list<std::pair<UString,double> >& tokens,
     UString& refined_results)
 {

@@ -546,6 +546,7 @@ bool MiningManager::open()
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
+                    system_resource_path_,
                     document_manager_, groupManager_, attrManager_, numericTableBuilder_);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);

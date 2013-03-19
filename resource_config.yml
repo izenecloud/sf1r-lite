@@ -10,13 +10,16 @@ sub_modules:
     - opinion
     - product-matcher
     - qa
+    - qn
     - sim
     - speller-support
     - spu-classifier
     - wikigraph
+    - dict
 push_sub_modules:
     - ise
     - kpe
     - nec
     - opinion
     - qa
+    - dict

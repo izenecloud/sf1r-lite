@@ -2,7 +2,6 @@
 #include "ProductTokenizer.h"
 #include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
-#include <la-manager/LAPool.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"
@@ -118,12 +117,14 @@ using namespace faceted;
 SuffixMatchManager::SuffixMatchManager(
         const std::string& homePath,
         const std::string& dicpath,
+        const std::string& system_resource_path,
         boost::shared_ptr<DocumentManager>& document_manager,
         faceted::GroupManager* groupmanager,
         faceted::AttrManager* attrmanager,
         NumericPropertyTableBuilder* numeric_tablebuilder)
     : data_root_path_(homePath)
     , tokenize_dicpath_(dicpath)
+    , system_resource_path_(system_resource_path)
     , document_manager_(document_manager)
     , tokenizer_(NULL)
     , suffixMatchTask_(NULL)
@@ -727,12 +728,13 @@ boost::shared_ptr<FilterManager>& SuffixMatchManager::getFilterManager()
 
 void SuffixMatchManager::buildTokenizeDic()
 {
-    std::string cma_path;
-    LAPool::getInstance()->get_cma_path(cma_path);
-    boost::filesystem::path cma_fmindex_dic(cma_path);
+    boost::filesystem::path cma_fmindex_dic(system_resource_path_);
+    cma_fmindex_dic /= boost::filesystem::path("dict");
     cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
-    tokenizer_ = new ProductTokenizer(ProductTokenizer::TOKENIZER_CMA, cma_fmindex_dic.c_str());
+    ProductTokenizer::TokenizerType type = tokenize_dicpath_ == "product" ? 
+        ProductTokenizer::TOKENIZER_DICT : ProductTokenizer::TOKENIZER_CMA;
+    tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str());
 }
 
 }

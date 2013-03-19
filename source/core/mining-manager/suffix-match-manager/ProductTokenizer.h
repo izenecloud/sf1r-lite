@@ -25,7 +25,7 @@ class TrieFactory
     std::map<std::string, izenelib::am::succinct::ux::Trie*> tries_;
 
     int ReadKeyList_(
-        const std::string& fn, 
+        const std::string& fn,
         std::vector<std::string>& keyList)
     {
         std::ifstream ifs(fn.c_str());
@@ -43,9 +43,9 @@ class TrieFactory
         }
         return 0;
     }
-	
+
 public:
-    TrieFactory() {} 
+    TrieFactory() {}
     ~TrieFactory()
     {
         std::map<std::string, izenelib::am::succinct::ux::Trie*>::iterator tit = tries_.begin();
@@ -57,7 +57,7 @@ public:
         return izenelib::util::Singleton<TrieFactory>::get();
     }
 
-    izenelib::am::succinct::ux::Trie* GetTrie(const std::string& dictPath) 
+    izenelib::am::succinct::ux::Trie* GetTrie(const std::string& dictPath)
     {
         std::map<std::string, izenelib::am::succinct::ux::Trie*>::iterator kit = tries_.find(dictPath);
         if( kit != tries_.end())  return kit->second;
@@ -87,22 +87,22 @@ public:
     enum TokenizerType
     {
         TOKENIZER_CMA, ///type 100 of icma
-        TOKENIZER_DICT,
-        TOKENIZER_MATCHER
+        TOKENIZER_DICT
     };
 
     ProductTokenizer(
-        TokenizerType type, 
+        TokenizerType type,
         const std::string& dict_path);
 
     ~ProductTokenizer();
 
     bool GetTokenResults(
-        const std::string& pattern, 
+        const std::string& pattern,
         std::list<std::pair<UString,double> >& tokens,
         UString& refined_results);
 
-    void SetProductMatcher(ProductMatcher* matcher) {
+    void SetProductMatcher(ProductMatcher* matcher)
+    {
         matcher_ = matcher;
     }
 
@@ -116,17 +116,17 @@ private:
     void InitDict_(const std::string& dict_name);
 
     bool GetTokenResultsByCMA_(
-        const std::string& pattern, 
+        const std::string& pattern,
         std::list<std::pair<UString,double> >& tokens,
         UString& refined_results);
 
     bool GetTokenResultsByDict_(
-        const std::string& pattern, 
+        const std::string& pattern,
         std::list<std::pair<UString,double> >& tokens,
         UString& refined_results);
 
     bool GetTokenResultsByMatcher_(
-        const std::string& pattern, 
+        const std::string& pattern,
         std::list<std::pair<UString,double> >& tokens,
         UString& refined_results);
 
