@@ -19,6 +19,7 @@ class DocumentManager;
 class FilterManager;
 class FMIndexManager;
 class ProductTokenizer;
+class ProductMatcher;
 
 namespace faceted
 {
@@ -40,6 +41,7 @@ public:
 
     ~SuffixMatchManager();
 
+    void setProductMatcher(ProductMatcher* matcher);
     void addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished = false);
 
     void buildTokenizeDic();

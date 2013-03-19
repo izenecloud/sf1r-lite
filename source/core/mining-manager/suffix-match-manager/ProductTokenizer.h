@@ -87,7 +87,8 @@ public:
     enum TokenizerType
     {
         TOKENIZER_CMA, ///type 100 of icma
-        TOKENIZER_DICT
+        TOKENIZER_DICT,
+        TOKENIZER_MATCHER
     };
 
     ProductTokenizer(
@@ -100,6 +101,10 @@ public:
         const std::string& pattern, 
         std::list<std::pair<UString,double> >& tokens,
         UString& refined_results);
+
+    void SetProductMatcher(ProductMatcher* matcher) {
+        matcher_ = matcher;
+    }
 
 private:
     void Init_(const std::string& dict_path);
@@ -120,6 +125,11 @@ private:
         std::list<std::pair<UString,double> >& tokens,
         UString& refined_results);
 
+    bool GetTokenResultsByMatcher_(
+        const std::string& pattern, 
+        std::list<std::pair<UString,double> >& tokens,
+        UString& refined_results);
+
     void GetDictTokens_(
         const std::list<std::string>& input,
         std::list<std::pair<UString,double> >& tokens,
@@ -127,9 +137,20 @@ private:
         izenelib::am::succinct::ux::Trie* dict_trie,
         double trie_score);
 
+    void DoBigram_(
+        const UString& pattern,
+        std::list<std::pair<UString,double> >& tokens,
+        double score);
+
     void GetLeftTokens_(
         const std::list<std::string>& input,
-        std::list<std::pair<UString,double> >& token_results);
+        std::list<std::pair<UString,double> >& token_results,
+        double score = 1.0);
+
+    void GetLeftTokens_(
+        const std::list<UString>& input,
+        std::list<std::pair<UString,double> >& token_results,
+        double score = 1.0);
 
     TokenizerType type_;
     std::string dict_path_;

@@ -660,6 +660,9 @@ bool MiningManager::open()
                 //matcher->SetCategoryMaxDepth(2);
             }
             product_categorizer_->SetProductMatcher(matcher);
+            if(suffixMatchManager_)
+                suffixMatchManager_->setProductMatcher(matcher);
+
             SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
             product_classifier->Open(system_resource_path_+"/spu-classifier");
             product_categorizer_->SetSPUProductClassifier(product_classifier);

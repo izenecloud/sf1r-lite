@@ -37,6 +37,8 @@ void ProductTokenizer::Init_(const std::string& dict_path)
     case TOKENIZER_DICT:
         InitWithDict_(dict_path);
         break;
+    case TOKENIZER_MATCHER:
+        break;
     }
 }
 
@@ -128,102 +130,137 @@ inline bool IsValid(uint16_t val)
     return IsNonChinese(val) ||IsChinese(val) ;
 }
 
+inline bool isProductType(const UString& str)
+{
+    size_t index = 0, length = str.length();
+    if(length < 3) return false;
+    while(index < length)
+    {
+        if(!IsNonChinese(str[index]))
+        {
+            return false;
+        }
+        index++;
+    }
+    return true;
+}
+
+void ProductTokenizer::DoBigram_(
+    const UString& pattern,
+    std::list<std::pair<UString,double> >& tokens,
+    double score)
+{
+    size_t i, len = pattern.length();
+    if(len >= 3)
+    {
+        std::vector<std::pair<CharType, size_t> > pos; 
+        CharType last_type = CHAR_INVALID;
+        i = 0;
+        while(i < len)
+        {
+            if(IsChinese(pattern[i]))
+            {
+                if(last_type == CHAR_INVALID)
+                {
+                    last_type = CHAR_CHINESE;
+                    pos.push_back(std::make_pair(CHAR_CHINESE, i));
+                }
+                else
+                {
+                    if(pos.back().first != CHAR_CHINESE )
+                    {
+                        pos.push_back(std::make_pair(CHAR_ALNUM, i));
+                        pos.push_back(std::make_pair(CHAR_CHINESE, i));
+                        last_type = CHAR_CHINESE;
+                    }
+                }
+                ++i;
+            }
+            else if(IsNonChinese(pattern[i]))
+            {
+                if(last_type == CHAR_INVALID)
+                {
+                    last_type = CHAR_ALNUM;                    
+                    pos.push_back(std::make_pair(CHAR_ALNUM, i));
+                }
+                else
+                {
+                    if(pos.back().first !=CHAR_ALNUM )
+                    {
+                        pos.push_back(std::make_pair(CHAR_CHINESE, i));
+                        pos.push_back(std::make_pair(CHAR_ALNUM, i));
+                        last_type = CHAR_ALNUM;
+                    }
+                }
+                ++i;
+            }
+            else
+            {
+                if(pos.size() % 2 != 0)
+                {
+                    pos.push_back(std::make_pair(pos.back().first, i));
+                    last_type = CHAR_INVALID;
+                }
+                do
+                {
+                    ++i;
+                }
+                while(!IsValid(pattern[i]) && i < len);
+            }
+        }
+        if(pos.size() % 2 != 0)
+        {
+            pos.push_back(std::make_pair(pos.back().first, len));
+        }
+
+        size_t start, end;
+        for(size_t i = 0; i < pos.size(); i += 2)
+        {
+            start = pos[i].second;
+            end = pos[i + 1].second;
+            if(pos[i].first == CHAR_CHINESE)
+            {
+                if(end - start > 1)
+                {
+                    for(size_t i = start; i < end - 1; ++i)
+                    {
+                        tokens.push_back(std::make_pair(pattern.substr(i, 2), score));
+                    }
+                }
+                else
+                    tokens.push_back(std::make_pair(pattern.substr(start, 1), score));
+            }
+            else
+            {
+                tokens.push_back(std::make_pair(pattern.substr(start, end - start), score));
+            }
+        }
+    }
+    else tokens.push_back(std::make_pair(pattern, score));
+}
+
 void ProductTokenizer::GetLeftTokens_(
     const std::list<std::string>& input,
-    std::list<std::pair<UString,double> >& tokens)
+    std::list<std::pair<UString,double> >& tokens,
+    double score)
 {
     ///Chinese bigram
-    size_t len, i;
     for(std::list<std::string>::const_iterator it = input.begin(); it != input.end(); ++it)
     {
         UString pattern(*it, UString::UTF_8);
-        len = pattern.length();
-        if(len >= 3)
-        {
-            std::vector<std::pair<CharType, size_t> > pos; 
-            CharType last_type = CHAR_INVALID;
-            i = 0;
-            while(i < len)
-            {
-                if(IsChinese(pattern[i]))
-                {
-                    if(last_type == CHAR_INVALID)
-                    {
-                        last_type = CHAR_CHINESE;
-                        pos.push_back(std::make_pair(CHAR_CHINESE, i));
-                    }
-                    else
-                    {
-                        if(pos.back().first != CHAR_CHINESE )
-                        {
-                            pos.push_back(std::make_pair(CHAR_ALNUM, i));
-                            pos.push_back(std::make_pair(CHAR_CHINESE, i));
-                            last_type = CHAR_CHINESE;
-                        }
-                    }
-                    ++i;
-                }
-                else if(IsNonChinese(pattern[i]))
-                {
-                    if(last_type == CHAR_INVALID)
-                    {
-                        last_type = CHAR_ALNUM;                    
-                        pos.push_back(std::make_pair(CHAR_ALNUM, i));
-                    }
-                    else
-                    {
-                        if(pos.back().first !=CHAR_ALNUM )
-                        {
-                            pos.push_back(std::make_pair(CHAR_CHINESE, i));
-                            pos.push_back(std::make_pair(CHAR_ALNUM, i));
-                            last_type = CHAR_ALNUM;
-                	}
-                    }
-                    ++i;
-                }
-                else
-                {
-                    if(pos.size() % 2 != 0)
-                    {
-                        pos.push_back(std::make_pair(pos.back().first, i));
-                        last_type = CHAR_INVALID;
-                    }
-                    do
-                    {
-                        ++i;
-                    }
-                    while(!IsValid(pattern[i]) && i < len);
-                }
-            }
-            if(pos.size() % 2 != 0)
-            {
-                pos.push_back(std::make_pair(pos.back().first, len));
-            }
+        DoBigram_(pattern, tokens, score);
+    }
+}
 
-            size_t start, end;
-            for(size_t i = 0; i < pos.size(); i += 2)
-            {
-                start = pos[i].second;
-                end = pos[i + 1].second;
-                if(pos[i].first == CHAR_CHINESE)
-                {
-                    if(end - start > 1)
-                    {
-                        for(size_t i = start; i < end - 1; ++i)
-                        {
-                            tokens.push_back(std::make_pair(pattern.substr(i, 2), (double)1.0));
-                        }
-                    }
-                    else
-                        tokens.push_back(std::make_pair(pattern.substr(start, 1), (double)1.0));
-                }
-                else
-                {
-                    tokens.push_back(std::make_pair(pattern.substr(start, end - start), (double)1.0));
-                }
-            }
-        }
-        else tokens.push_back(std::make_pair(pattern, (double)1.0));
+void ProductTokenizer::GetLeftTokens_(
+    const std::list<UString>& input,
+    std::list<std::pair<UString,double> >& tokens,
+    double score)
+{
+    ///Chinese bigram
+    for(std::list<UString>::const_iterator it = input.begin(); it != input.end(); ++it)
+    {
+        DoBigram_(*it, tokens, score);
     }
 }
 
@@ -232,9 +269,16 @@ bool ProductTokenizer::GetTokenResults(
     std::list<std::pair<UString,double> >& token_results,
     UString& refined_results)
 {
-    return type_ == TOKENIZER_DICT? 
-        GetTokenResultsByDict_(pattern, token_results, refined_results) : 
-        GetTokenResultsByCMA_(pattern, token_results, refined_results);
+    switch (type_)
+    {
+    case TOKENIZER_DICT:
+        return GetTokenResultsByDict_(pattern, token_results, refined_results);
+    case TOKENIZER_CMA:
+        return GetTokenResultsByCMA_(pattern, token_results, refined_results);
+    case TOKENIZER_MATCHER:
+        return GetTokenResultsByMatcher_(pattern, token_results, refined_results);
+    }
+    return false;
 }
 
 bool ProductTokenizer::GetTokenResultsByCMA_(
@@ -296,8 +340,63 @@ bool ProductTokenizer::GetTokenResultsByDict_(
             refined_results += SPACE_UCHAR;
         }
     }
-    GetLeftTokens_(input, token_results);
+
+    std::list<std::pair<UString, double> > left_tokens;
+    GetLeftTokens_(input, left_tokens);
+    if(!left_tokens.empty())
+    {
+        std::list<std::pair<UString,double> >::iterator it = left_tokens.begin();
+        for(; it != left_tokens.end(); ++it)
+        {
+            if(isProductType(it->first))
+            {
+                it->second += 1.0;
+                refined_results += it->first;
+                refined_results += SPACE_UCHAR;
+            }
+        }
+        token_results.splice(token_results.end(), left_tokens);
+    }
     return !token_results.empty();
+}
+
+bool ProductTokenizer::GetTokenResultsByMatcher_(
+    const std::string& pattern, 
+    std::list<std::pair<UString,double> >& tokens,
+    UString& refined_results)
+{
+    if(!matcher_) return false;
+
+    std::list<UString> left;
+
+    matcher_->GetSearchKeywords(UString(pattern, UString::UTF_8), tokens, left);
+
+    if(!tokens.empty())
+    {
+        std::list<std::pair<UString,double> >::iterator it = tokens.begin();
+        for(; it != tokens.end(); ++it)
+        {
+            refined_results += it->first;
+            refined_results += SPACE_UCHAR;
+        }
+    }
+    std::list<std::pair<UString, double> > left_tokens;
+    GetLeftTokens_(left, left_tokens, 0.1);
+    if(!left_tokens.empty())
+    {
+        std::list<std::pair<UString,double> >::iterator it = left_tokens.begin();
+        for(; it != left_tokens.end(); ++it)
+        {
+            if(isProductType(it->first))
+            {
+                it->second += 0.1;
+                refined_results += it->first;
+                refined_results += SPACE_UCHAR;
+            }
+        }
+        tokens.splice(tokens.end(), left_tokens);
+    }
+    return !tokens.empty();
 }
 
 }

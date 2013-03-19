@@ -145,6 +145,12 @@ SuffixMatchManager::~SuffixMatchManager()
     //if (knowledge_) delete knowledge_;
 }
 
+void SuffixMatchManager::setProductMatcher(ProductMatcher* matcher)
+{
+    if (tokenizer_)
+        tokenizer_->SetProductMatcher(matcher);
+}
+
 void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished)
 {
     fmi_manager_->addProperties(property_list, (FMIndexManager::PropertyFMType)type);
