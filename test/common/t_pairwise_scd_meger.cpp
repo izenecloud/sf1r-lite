@@ -101,12 +101,17 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
         }
         else
         {
+            while(find(idvec[itype].begin(),idvec[itype].end(),docid)!=idvec[itype].end())
+            {
+               docid=rand()%100000;
+            }
+            /*
             docid=existdocidSet[rand()%existdocidSet.size()];
             while(find(idvec[itype].begin(),idvec[itype].end(),docid)!=idvec[itype].end())
             {
                 docid=existdocidSet[rand()%existdocidSet.size()];
             }
-
+            */
         }
         docidSet.push_back(docid);
         existdocidSet.push_back(docid);
@@ -298,6 +303,10 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
 
             if(it->second.type==INSERT_SCD)
             {
+                 
+                idValuemap.insert(std::make_pair(id,value));
+                value.type=INSERT_SCD;
+                idValuemap[id]=value;
 
             }
             else if(it->second.type==DELETE_SCD)
@@ -307,11 +316,18 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
                 idValuemap[id]=value;
 
             }
-            else
+            else if(it->second.type==UPDATE_SCD)
             {
 
                 idValuemap.insert(std::make_pair(id,value));
                 value.type=INSERT_SCD;
+                idValuemap[id]=value;
+
+            }
+            else 
+            {
+
+                idValuemap.insert(std::make_pair(id,value));
                 idValuemap[id]=value;
 
             }
@@ -331,48 +347,20 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
                 }
                 else
                 {
-                    idValuemap.insert(std::make_pair(id,value));
-                    idValuemap[id]=value;
+                    //idValuemap.insert(std::make_pair(id,value));
+                    //idValuemap[id]=value;
 
                 }
 
             }
             else
             {
+                value.type= RTYPE_SCD;
                 idValuemap.insert(std::make_pair(id,value));
                 idValuemap[id]=value;
             }
         }
-        {
-            std::map<uint128_t,PairwiseScdMerger::ValueType >::iterator it=IteridValuemap.find(id);
-            if(it!=IteridValuemap.end())
-            {
-                if(it!=IteridValuemap.end())
-                {
-                    if(it->second.type==INSERT_SCD)
-                    {
-                        IteridValuemap.insert(std::make_pair(id,value));
-                        IteridValuemap[id]=value;
-                    }
-                    else if(it->second.type==DELETE_SCD)
-                    {
-                    }
-                    else
-                    {
-                        IteridValuemap.insert(std::make_pair(id,value));
-                        IteridValuemap[id]=value;
-
-                    }
-
-                }
-                else
-                {
-
-                    IteridValuemap.insert(std::make_pair(id,value));
-                    IteridValuemap[id]=value;
-                }
-            }
-        }
+     
     }
 
 
@@ -438,7 +426,6 @@ void checkDoc(Document doc1,Document doc2)
 BOOST_AUTO_TEST_SUITE(pairwise_test)
 BOOST_AUTO_TEST_CASE(pairwise_Append)
 {
-    cout<<"old"<<OLD<<"exist"<<EXIST<<endl;
 
     for(unsigned i=0; i<10; i++)
     {
@@ -488,20 +475,21 @@ BOOST_AUTO_TEST_CASE(pairwise_Append)
         int a=0,b=0,c=0,d=0,e=0,f=0;
         for ( std::map<uint128_t,PairwiseScdMerger::ValueType >::iterator idv = idValuemap.begin(); idv != idValuemap.end(); idv++ )
         {
-            std::map<uint128_t,PairwiseScdMerger::ValueType >::iterator i=resultMap.find(idv->first);
-            BOOST_CHECK_EQUAL(    i==resultMap.end(),   false );
-            BOOST_CHECK_EQUAL(    (i->second).type,(idv->second).type );
-            //if((i->second).type!=(idv->second).type ){cout<<B5MHelper::Uint128ToString(idv->first)<<endl;}
+            std::map<uint128_t,PairwiseScdMerger::ValueType >::iterator it=resultMap.find(idv->first);
+            BOOST_CHECK_EQUAL(    it==resultMap.end(),   false );
+            if( (idv->second).type== RTYPE_SCD){(idv->second).type=UPDATE_SCD;}
+            BOOST_CHECK_EQUAL(    (it->second).type,(idv->second).type );
+            if((it->second).type!=(idv->second).type ){cout<<B5MHelper::Uint128ToString(idv->first)<<endl;i=10;}
             //BOOST_CHECK_EQUAL(    GetDocId(    (i->second).doc),GetDocId( (idv->second).doc) );
-            if((i->second).type==1)
+            if((it->second).type==1)
             {
                 a++;
             }
-            if((i->second).type==2)
+            if((it->second).type==2)
             {
                 f++;
             }
-            if((i->second).type==4)
+            if((it->second).type==4)
             {
                 b++;
             }
@@ -520,15 +508,11 @@ BOOST_AUTO_TEST_CASE(pairwise_Append)
         }
         cout<<statusMap.size()<<"  "<<statusMapForCheck.size()<<endl;
         std::ofstream out;
-        out.open("./output",ios::out|ios::app);
+
         for ( std::map<uint128_t,vector<int> >::iterator idv = statusMap.begin(); idv != statusMap.end(); idv++ )
         {
             std::map<uint128_t,vector<int> >::iterator i=statusMapForCheck.find(idv->first);
             BOOST_CHECK_EQUAL(    i!=statusMapForCheck.end(),true );
-            if( i==statusMapForCheck.end())
-            {
-                sleep(10000);
-            }
             BOOST_CHECK_EQUAL(    (i->second).size(),(idv->second).size() );
 
             if( (i->second).size()!=(idv->second).size())
@@ -541,7 +525,7 @@ BOOST_AUTO_TEST_CASE(pairwise_Append)
             }
             //cout<<endl;
         }
-        out.close();
+
 
         string dst="./scd_exist/";
         string src="./pairewise_test/";
