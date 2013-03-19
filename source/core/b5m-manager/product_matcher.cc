@@ -3605,12 +3605,12 @@ void ProductMatcher::ConstructKeywords_()
         }
     }
     LOG(INFO)<<"keywords count "<<keyword_set_.size()<<std::endl;
-    //for(uint32_t i=0;i<keywords_thirdparty_.size();i++)
-    //{
-        //UString uvalue(keywords_thirdparty_[i], UString::UTF_8);
-        //AddKeyword_(uvalue);
-    //}
-    //LOG(INFO)<<"keywords count "<<keyword_set_.size()<<std::endl;
+    for(uint32_t i=0;i<keywords_thirdparty_.size();i++)
+    {
+        UString uvalue(keywords_thirdparty_[i], UString::UTF_8);
+        AddKeyword_(uvalue);
+    }
+    LOG(INFO)<<"keywords count "<<keyword_set_.size()<<std::endl;
 }
 
 void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
@@ -3639,24 +3639,30 @@ void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
         tag.id = keyword_id;
         tag.term_list = keyword;
         //find keyword in suffix_trie
-        for(TrieType::const_iterator it = suffix_trie.lower_bound(keyword);it!=suffix_trie.end();it++)
+        //for(TrieType::const_iterator it = suffix_trie.lower_bound(keyword);it!=suffix_trie.end();it++)
+        //{
+            //const TermList& key = it->first;
+            ////std::string key_str = GetText_(key);
+            //const KeywordTag& value = it->second;
+            //if(StartsWith_(key, keyword))
+            //{
+                //bool is_complete = false;
+                //if(key==keyword) is_complete = true;
+                ////LOG(INFO)<<"key found "<<key_str<<std::endl;
+                //tag.Append(value, is_complete);
+                ////tag+=value;
+            //}
+            //else
+            //{
+                ////LOG(INFO)<<"key break "<<key_str<<std::endl;
+                //break;
+            //}
+        //}
+        TrieType::const_iterator it = suffix_trie.find(keyword);
+        if(it!=suffix_trie.end())
         {
-            const TermList& key = it->first;
-            //std::string key_str = GetText_(key);
             const KeywordTag& value = it->second;
-            if(StartsWith_(key, keyword))
-            {
-                bool is_complete = false;
-                if(key==keyword) is_complete = true;
-                //LOG(INFO)<<"key found "<<key_str<<std::endl;
-                tag.Append(value, is_complete);
-                //tag+=value;
-            }
-            else
-            {
-                //LOG(INFO)<<"key break "<<key_str<<std::endl;
-                break;
-            }
+            tag.Append(value, true);//is complete
         }
         tag.Flush();
         //for(uint32_t i=0;i<tag.category_name_apps.size();i++)
