@@ -176,13 +176,34 @@ bool ProductMatcher::KeywordTag::Combine(const KeywordTag& another)
     return true;
 }
 
+bool ProductMatcher::KeywordTag::IsAttribSynonym(const KeywordTag& another) const
+{
+    bool result = false;
+    for(uint32_t i=0;i<attribute_apps.size();i++)
+    {
+        const AttributeApp& ai = attribute_apps[i];
+        for(uint32_t j=0;j<another.attribute_apps.size();j++)
+        {
+            const AttributeApp& aj = another.attribute_apps[j];
+            if(ai==aj)
+            {
+                result = true;
+                break;
+            }
+        }
+        if(result) break;
+    }
+    return result;
+}
+
 ProductMatcher::ProductMatcher()
 :is_open_(false), 
  use_price_sim_(true), matcher_only_(false), category_max_depth_(0), use_ngram_(false),
  aid_manager_(NULL), analyzer_(NULL), char_analyzer_(NULL), chars_analyzer_(NULL),
  test_docid_("7bc999f5d10830d0c59487bd48a73cae"),
  left_bracket_("("), right_bracket_(")"), place_holder_("__PLACE_HOLDER__"), blank_(" "),
- left_bracket_term_(0), right_bracket_term_(0), place_holder_term_(0)
+ left_bracket_term_(0), right_bracket_term_(0), place_holder_term_(0),
+ type_regex_("[a-zA-Z\\d\\-]{4,}")
 {
 }
 
@@ -2194,7 +2215,12 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     Compute_(doc, term_list, keyword_vector, 1, result_products);
     typedef boost::unordered_set<TermList> Strict;
     Strict strict;
-    if(result_products.size()==1)//is spu matched
+    bool spu_matched = false;
+    if(result_products.size()==1&&!result_products[0].spid.empty()&&!result_products[0].stitle.empty())
+    {
+        spu_matched = true;
+    }
+    if(spu_matched)//is spu matched
     {
         const Product& p = result_products.front();
         for(uint32_t a = 0;a<p.attributes.size();a++)
@@ -2209,10 +2235,133 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
             }
         }
     }
+    //do attribute synomym filter
+    for(uint32_t i=0;i<keyword_vector.size();i++)
+    {
+        KeywordTag& ki = keyword_vector[i];
+        if(ki.kweight==0.0) continue;
+        for(uint32_t j=i+1;j<keyword_vector.size();j++)
+        {
+            KeywordTag& kj = keyword_vector[j];
+            if(kj.kweight==0.0) continue;
+            if(ki.IsAttribSynonym(kj))
+            {
+                if(ki.kweight!=kj.kweight)
+                {
+                    if(ki.kweight<kj.kweight)
+                    {
+                        ki.kweight = 0.0;
+                    }
+                    else
+                    {
+                        kj.kweight = 0.0;
+                    }
+                }
+                else
+                {
+                    if(ki.text.length()==0) ki.kweight=0.0;
+                    else if(kj.text.length()==0) kj.kweight=0.0;
+                    else
+                    {
+                        bool cni = ki.text.isChineseChar(0);
+                        bool cnj = kj.text.isChineseChar(0);
+                        if(!cni&&cnj)
+                        {
+                            ki.kweight = 0.0;
+                        }
+                        else
+                        {
+                            kj.kweight = 0.0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if(!spu_matched)//not spu matched
+    {
+        std::string pattern_type;
+        std::string stext;
+        text.convertString(stext, UString::UTF_8);
+        boost::algorithm::to_lower(stext);
+        //std::cerr<<"stext "<<stext<<std::endl;
+        boost::sregex_token_iterator iter(stext.begin(), stext.end(), type_regex_, 0);
+        boost::sregex_token_iterator end;
+        for( ; iter!=end; ++iter)
+        {
+            const std::string& candidate = *iter;
+            if(candidate[0]=='-' || candidate[candidate.length()-1]=='-') continue;
+            bool has_digit = false;
+            for(uint32_t i=0;i<candidate.length();i++)
+            {
+                char c = candidate[i];
+                if(c>='0'&&c<='9')
+                {
+                    has_digit = true;
+                    break;
+                }
+            }
+            if(!has_digit) continue;
+            if(candidate.length()>pattern_type.length())
+            {
+                pattern_type = candidate;
+            }
+        }
+        if(!pattern_type.empty())
+        {
+            for(uint32_t i=0;i<keyword_vector.size();i++)
+            {
+                KeywordTag& k = keyword_vector[i];
+                std::string str;
+                k.text.convertString(str, UString::UTF_8);
+                
+                if(pattern_type==str)
+                {
+                    pattern_type.clear();
+                    break;
+                }
+                else if(pattern_type.find(str)!=std::string::npos&&pattern_type.length()>str.length())
+                {
+                    k.kweight = 0.0;
+                }
+                else if(str.find(pattern_type)!=std::string::npos&&str.length()>pattern_type.length())
+                {
+                    pattern_type.clear();
+                    break;
+                }
+            }
+        }
+        if(!pattern_type.empty())
+        {
+            KeywordTag new_k;
+            new_k.text = UString(pattern_type, UString::UTF_8);
+            new_k.kweight = 1.0;
+            AttributeApp app;
+            app.spu_id = 0;//virtual
+            app.attribute_name = "型号";
+            app.is_optional = false;
+            new_k.attribute_apps.push_back(app);
+            keyword_vector.push_back(new_k);
+        }
+        //std::string::const_iterator start = stext.begin();
+        //std::string::const_iterator end = stext.end();
+        //boost::smatch what;
+        //while( boost::regex_search(start, end, what, type_regex_))
+        //{
+            //std::cerr<<"regex size "<<what.size()<<std::endl;
+            ////std::cerr<<what.str()<<std::endl;
+            ////std::string tmatch(what[0].first, what[0].second);
+            ////std::cerr<<"type matching "<<tmatch<<std::endl;
+        //}
+    }
     for(uint32_t i=0;i<keyword_vector.size();i++)
     {
         const KeywordTag& k = keyword_vector[i];
         if(!strict.empty()&&strict.find(k.term_list)==strict.end())
+        {
+            left.push_back(k.text);
+        }
+        else if(k.kweight==0.0)
         {
             left.push_back(k.text);
         }
@@ -2237,11 +2386,15 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
                     is_type = true;
                 }
             }
+            if(!is_category&&is_type)
+            {
+
+            }
             double class_weight = 1.0;
             if(is_category) class_weight = category_weight;
             else if(is_brand) class_weight = brand_weight;
             else if(is_type) class_weight = type_weight;
-            double kweight = k.kweight+0.1;
+            double kweight = k.kweight;
             kweight*=class_weight;
             hits.push_back(std::make_pair(k.text, kweight));
         }

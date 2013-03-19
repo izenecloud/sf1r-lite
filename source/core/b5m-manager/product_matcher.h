@@ -454,6 +454,7 @@ namespace sf1r {
             void Flush();
             void Append(const KeywordTag& another, bool is_complete);
             bool Combine(const KeywordTag& another);
+            bool IsAttribSynonym(const KeywordTag& another) const;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
@@ -867,6 +868,7 @@ namespace sf1r {
         TermIndexMap term_index_map_;
         Back2Front back2front_;
         KeywordVector all_keywords_; //not serialized
+        boost::regex type_regex_;
         
         //NgramFrequent nf_;
 
