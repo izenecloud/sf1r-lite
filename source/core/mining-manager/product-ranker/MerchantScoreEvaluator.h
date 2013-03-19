@@ -14,6 +14,7 @@
 
 #include "ProductScoreEvaluator.h"
 #include <common/PropSharedLock.h>
+#include <vector>
 
 namespace sf1r
 {
@@ -38,6 +39,8 @@ private:
     const faceted::PropValueTable* categoryValueTable_;
 
     PropSharedLock::ScopedReadLock lock_;
+
+    std::vector<category_id_t> parentIds_;
 };
 
 } // namespace sf1r

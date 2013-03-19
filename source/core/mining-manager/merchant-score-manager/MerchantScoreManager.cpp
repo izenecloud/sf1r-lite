@@ -2,23 +2,21 @@
 #include "MerchantScoreParser.h"
 #include "MerchantScoreRenderer.h"
 #include "../group-manager/PropValueTable.h"
+#include "../util/convert_ustr.h"
 #include "../MiningException.hpp"
 #include <util/ustring/UString.h>
+#include <3rdparty/febird/io/DataIO.h>
+#include <3rdparty/febird/io/StreamBuffer.h>
+#include <3rdparty/febird/io/FileStream.h>
 
 #include <glog/logging.h>
-
-namespace
-{
-const izenelib::util::UString::EncodingType ENCODING_TYPE = izenelib::util::UString::UTF_8;
-}
 
 namespace sf1r
 {
 
 MerchantScoreManager::MerchantScoreManager(
     faceted::PropValueTable* merchantValueTable,
-    faceted::PropValueTable* categoryValueTable
-)
+    faceted::PropValueTable* categoryValueTable)
     : merchantValueTable_(merchantValueTable)
     , categoryValueTable_(categoryValueTable)
 {
@@ -31,33 +29,32 @@ MerchantScoreManager::~MerchantScoreManager()
 
 bool MerchantScoreManager::open(const std::string& scoreFilePath)
 {
-    scoreFilePath_ = scoreFilePath;
-    MerchantScoreParser parser;
+    ScopedWriteLock lock(mutex_);
 
-    if (! parser.parseFromFile(scoreFilePath_))
+    scoreFilePath_ = scoreFilePath;
+
+    febird::FileStream ifs;
+    if (! ifs.xopen(scoreFilePath_.c_str(), "r"))
+        return true;
+
+    try
     {
-        LOG(ERROR) << parser.errorMessage();
+        febird::NativeDataInput<febird::InputBuffer> ar;
+        ar.attach(&ifs);
+        ar & idScoreMap_;
+    }
+    catch (const std::exception& e)
+    {
+        LOG(ERROR) << "exception in febird::NativeDataInput: " << e.what()
+                   << ", scoreFilePath_: " << scoreFilePath_;
         return false;
     }
-
-    if (! parser.warningMessage().empty())
-    {
-        LOG(WARNING) << "warnings in parsing merchant score:\n" << parser.warningMessage();
-    }
-
-    idScoreMap_.clear();
-
-    const MerchantStrScoreMap& strScoreMap = parser.merchantStrScoreMap();
-    setScore(strScoreMap);
 
     return true;
 }
 
 bool MerchantScoreManager::flush()
 {
-    if (scoreFilePath_.empty())
-        return true;
-
     return flushScoreFile_() &&
            (!merchantValueTable_ || merchantValueTable_->flush()) &&
            (!categoryValueTable_ || categoryValueTable_->flush());
@@ -65,13 +62,28 @@ bool MerchantScoreManager::flush()
 
 bool MerchantScoreManager::flushScoreFile_()
 {
-    MerchantStrScoreMap strScoreMap;
-    getAllStrScore(strScoreMap);
+    ScopedReadLock lock(mutex_);
 
-    MerchantScoreRenderer renderer(strScoreMap);
-    if (! renderer.renderToFile(scoreFilePath_))
+    if (scoreFilePath_.empty())
+        return true;
+
+    febird::FileStream ofs(scoreFilePath_.c_str(), "w");
+    if (! ofs)
     {
-        LOG(ERROR) << "failed to write " << scoreFilePath_;
+        LOG(ERROR) << "failed opening file " << scoreFilePath_;
+        return false;
+    }
+
+    try
+    {
+        febird::NativeDataOutput<febird::OutputBuffer> ar;
+        ar.attach(&ofs);
+        ar & idScoreMap_;
+    }
+    catch (const std::exception& e)
+    {
+        LOG(ERROR) << "exception in febird::NativeDataOutput: " << e.what()
+                   << ", scoreFilePath_: " << scoreFilePath_;
         return false;
     }
 
@@ -98,8 +110,7 @@ void MerchantScoreManager::getAllStrScore(MerchantStrScoreMap& strScoreMap) cons
 
 void MerchantScoreManager::getStrScore(
     const std::vector<std::string>& merchantNames,
-    MerchantStrScoreMap& strScoreMap
-) const
+    MerchantStrScoreMap& strScoreMap) const
 {
     ScopedReadLock lock(mutex_);
 
@@ -124,8 +135,7 @@ void MerchantScoreManager::getStrScore(
 
 score_t MerchantScoreManager::getIdScore(
     merchant_id_t merchantId,
-    category_id_t categoryId
-) const
+    std::vector<category_id_t>& categoryParentIds) const
 {
     ScopedReadLock lock(mutex_);
 
@@ -137,12 +147,20 @@ score_t MerchantScoreManager::getIdScore(
 
     const CategoryIdScore& categoryScore = merchantIt->second;
     const CategoryIdScore::CategoryScoreMap& categoryIdMap = categoryScore.categoryScoreMap;
-    const CategoryIdScore::CategoryScoreMap::const_iterator categoryIt = categoryIdMap.find(categoryId);
 
-    if (categoryIt == categoryIdMap.end())
-        return categoryScore.generalScore;
+    typedef CategoryIdScore::CategoryScoreMap::const_iterator MapIter;
+    const MapIter endIt = categoryIdMap.end();
 
-    return categoryIt->second;
+    for (std::vector<category_id_t>::const_iterator parentIt = categoryParentIds.begin();
+         parentIt != categoryParentIds.end(); ++parentIt)
+    {
+        MapIter findIt = categoryIdMap.find(*parentIt);
+
+        if (findIt != endIt)
+            return findIt->second;
+    }
+
+    return categoryScore.generalScore;
 }
 
 void MerchantScoreManager::setScore(const MerchantStrScoreMap& strScoreMap)
@@ -166,8 +184,7 @@ void MerchantScoreManager::setScore(const MerchantStrScoreMap& strScoreMap)
 
 void MerchantScoreManager::getCategoryStrScore_(
     const CategoryIdScore& categoryIdScore,
-    CategoryStrScore& categoryStrScore
-) const
+    CategoryStrScore& categoryStrScore) const
 {
     const CategoryIdScore::CategoryScoreMap& categoryIdMap = categoryIdScore.categoryScoreMap;
     CategoryStrScore::CategoryScoreMap& categoryStrMap = categoryStrScore.categoryScoreMap;
@@ -177,25 +194,25 @@ void MerchantScoreManager::getCategoryStrScore_(
     for (CategoryIdScore::CategoryScoreMap::const_iterator categoryIt = categoryIdMap.begin();
         categoryIt != categoryIdMap.end(); ++categoryIt)
     {
-        std::string categoryName;
-        getCategoryName_(categoryIt->first, categoryName);
+        CategoryStrPath categoryPath;
+        getCategoryPath_(categoryIt->first, categoryPath);
 
-        categoryStrMap[categoryName] = categoryIt->second;
+        categoryStrMap[categoryPath] = categoryIt->second;
     }
 }
 
 void MerchantScoreManager::setCategoryIdScore_(
     const CategoryStrScore& categoryStrScore,
-    CategoryIdScore& categoryIdScore
-)
+    CategoryIdScore& categoryIdScore)
 {
     CategoryIdScore::CategoryScoreMap& categoryIdMap = categoryIdScore.categoryScoreMap;
     const CategoryStrScore::CategoryScoreMap& categoryStrMap = categoryStrScore.categoryScoreMap;
 
     categoryIdScore.generalScore = categoryStrScore.generalScore;
+    categoryIdMap.clear();
 
-    for (CategoryStrScore::CategoryScoreMap::const_iterator categoryIt = categoryStrMap.begin();
-        categoryIt != categoryStrMap.end(); ++categoryIt)
+    for (CategoryStrScore::CategoryScoreMap::const_iterator categoryIt =
+             categoryStrMap.begin(); categoryIt != categoryStrMap.end(); ++categoryIt)
     {
         category_id_t categoryId = insertCategoryId_(categoryIt->first);
         if (categoryId == 0)
@@ -210,10 +227,10 @@ merchant_id_t MerchantScoreManager::getMerchantId_(const std::string& merchant) 
     if (! merchantValueTable_)
         return 0;
 
-    std::vector<izenelib::util::UString> path;
-    path.push_back(izenelib::util::UString(merchant, ENCODING_TYPE));
+    std::vector<izenelib::util::UString> ustrPath(1);
+    convert_to_ustr(merchant, ustrPath[0]);
 
-    return merchantValueTable_->propValueId(path);
+    return merchantValueTable_->propValueId(ustrPath);
 }
 
 merchant_id_t MerchantScoreManager::insertMerchantId_(const std::string& merchant)
@@ -222,14 +239,14 @@ merchant_id_t MerchantScoreManager::insertMerchantId_(const std::string& merchan
         return 0;
 
     merchant_id_t merchantId = 0;
-    std::vector<izenelib::util::UString> path;
-    path.push_back(izenelib::util::UString(merchant, ENCODING_TYPE));
+    std::vector<izenelib::util::UString> ustrPath(1);
+    convert_to_ustr(merchant, ustrPath[0]);
 
     try
     {
-        merchantId = merchantValueTable_->insertPropValueId(path);
+        merchantId = merchantValueTable_->insertPropValueId(ustrPath);
     }
-    catch(MiningException& e)
+    catch (MiningException& e)
     {
         LOG(ERROR) << "exception: " << e.what() << ", merchant: " << merchant;
     }
@@ -237,28 +254,30 @@ merchant_id_t MerchantScoreManager::insertMerchantId_(const std::string& merchan
     return merchantId;
 }
 
-category_id_t MerchantScoreManager::insertCategoryId_(const std::string& category)
+category_id_t MerchantScoreManager::insertCategoryId_(const CategoryStrPath& categoryPath)
 {
     if (! categoryValueTable_)
         return 0;
 
     category_id_t categoryId = 0;
-    std::vector<izenelib::util::UString> path;
-    path.push_back(izenelib::util::UString(category, ENCODING_TYPE));
+    std::vector<izenelib::util::UString> ustrPath;
+    convert_to_ustr_vector(categoryPath, ustrPath);
 
     try
     {
-        categoryId = categoryValueTable_->insertPropValueId(path);
+        categoryId = categoryValueTable_->insertPropValueId(ustrPath);
     }
-    catch(MiningException& e)
+    catch (MiningException& e)
     {
-        LOG(ERROR) << "exception: " << e.what() << ", category: " << category;
+        LOG(ERROR) << "exception: " << e.what();
     }
 
     return categoryId;
 }
 
-void MerchantScoreManager::getMerchantName_(merchant_id_t merchantId, std::string& merchant) const
+void MerchantScoreManager::getMerchantName_(
+    merchant_id_t merchantId,
+    std::string& merchant) const
 {
     if (! merchantValueTable_)
         return;
@@ -266,18 +285,19 @@ void MerchantScoreManager::getMerchantName_(merchant_id_t merchantId, std::strin
     izenelib::util::UString ustr;
     merchantValueTable_->propValueStr(merchantId, ustr);
 
-    ustr.convertString(merchant, ENCODING_TYPE);
+    convert_to_str(ustr, merchant);
 }
 
-void MerchantScoreManager::getCategoryName_(category_id_t categoryId, std::string& category) const
+void MerchantScoreManager::getCategoryPath_(
+    category_id_t categoryId,
+    CategoryStrPath& categoryPath) const
 {
     if (! categoryValueTable_)
         return;
 
-    izenelib::util::UString ustr;
-    categoryValueTable_->propValueStr(categoryId, ustr);
-
-    ustr.convertString(category, ENCODING_TYPE);
+    std::vector<izenelib::util::UString> ustrPath;
+    categoryValueTable_->propValuePath(categoryId, ustrPath);
+    convert_to_str_vector(ustrPath, categoryPath);
 }
 
 } // namespace sf1r

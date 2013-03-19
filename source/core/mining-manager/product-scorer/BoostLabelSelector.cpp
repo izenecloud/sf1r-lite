@@ -5,6 +5,7 @@
 #include "../group-label-logger/GroupLabelLogger.h"
 #include "../group-label-logger/GroupLabelKnowledge.h"
 #include "../util/split_ustr.h"
+#include "../util/convert_ustr.h"
 #include <b5m-manager/product_matcher.h>
 #include <util/ustring/UString.h>
 
@@ -55,7 +56,7 @@ bool BoostLabelSelector::convertLabelIds_(
              groupPathVec.begin(); pathIt != groupPathVec.end(); ++pathIt)
     {
         std::vector<izenelib::util::UString> ustrPath;
-        convert_to_ustr_path(*pathIt, ustrPath);
+        convert_to_ustr_vector(*pathIt, ustrPath);
 
         faceted::PropValueTable::pvid_t labelId =
             propValueTable_.propValueId(ustrPath, false);

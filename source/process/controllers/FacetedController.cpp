@@ -483,9 +483,7 @@ bool FacetedController::requireSearchResult_()
  *   - @b merchant* (@c String): The merchant's name.
  *   - @b score* (@c Float): The merchant's general score, this value should be non-negative.
  *   - @b category_score (@c Array): Each item gives the score for a category of the merchant.
- *     - @b category* (@c String): The category name, note:@n
- *       1. this @b category would be seemed as a top level category.@n
- *       2. other categories' score not listed in @b request would still be kept.
+ *     - @b category* (@c Array): The category value, it's an array of the path from root node to the category node. Each is a @c String of node value.
  *     - @b score* (@c Float): The category score, this value should be non-negative.
  *
  * @section response
@@ -502,8 +500,8 @@ bool FacetedController::requireSearchResult_()
  *     { "merchant": "京东",
  *       "score": 8,
  *       "category_score": [
- *         { "category": "家用电器", "score": 9.2 },
- *         { "category": "数码", "score": 8.5 }
+ *         { "category": ["手机数码", "手机通讯", "手机"], "score": 9.2 },
+ *         { "category": ["服饰鞋帽", "男装"], "score": 8.5 }
  *       ]
  *     }
  *   ]
@@ -552,7 +550,7 @@ void FacetedController::set_merchant_score()
  *   - @b merchant (@c String): The merchant's name.
  *   - @b score (@c Float): The merchant's general score.
  *   - @b category_score (@c Array): Each item gives the score for the merchant's category.
- *     - @b category (@c String): The category name.
+ *     - @b category (@c Array): The category value, it's an array of the path from root node to the category node. Each is a @c String of node value.
  *     - @b score (@c Float): The category score.
  *
  * @section Example
@@ -573,8 +571,8 @@ void FacetedController::set_merchant_score()
  *     { "merchant": "京东",
  *       "score": 8,
  *       "category_score": [
- *         { "category": "家用电器", "score": 9.2 },
- *         { "category": "数码", "score": 8.5 }
+ *         { "category": ["手机数码", "手机通讯", "手机"], "score": 9.2 },
+ *         { "category": ["服饰鞋帽", "男装"], "score": 8.5 }
  *       ]
  *     }
  *   ]
