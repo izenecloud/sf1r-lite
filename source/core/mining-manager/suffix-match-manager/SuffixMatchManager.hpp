@@ -34,6 +34,7 @@ public:
     SuffixMatchManager(
             const std::string& homePath,
             const std::string& dicpath,
+            const std::string& system_resource_path,
             boost::shared_ptr<DocumentManager>& document_manager,
             faceted::GroupManager* groupmanager,
             faceted::AttrManager* attrmanager,
@@ -87,6 +88,7 @@ private:
 
     std::string data_root_path_;
     std::string tokenize_dicpath_;
+    std::string system_resource_path_;
 
     boost::shared_ptr<DocumentManager> document_manager_;
     size_t last_doc_id_;
