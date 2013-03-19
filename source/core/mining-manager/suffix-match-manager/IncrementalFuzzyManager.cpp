@@ -150,6 +150,33 @@ namespace sf1r
         JobScheduler::get()->addTask(task, name);
     }
 
+    void IncrementalFuzzyManager::updateFilterForRtype(std::vector<string> unchangedProperties)
+    {
+        string data_root_path_ = "ss";
+        new_filter_manager.reset(new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
+                    filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder()));
+        new_filter_manager->copyPropertyInfo(filter_manager_);
+        new_filter_manager->generatePropertyId();
+
+        for (std::vector<string>::iterator i = unchangedProperties.begin(); i != unchangedProperties.end(); ++i)
+        {
+            new_filter_manager->addUnchangedProperty(*i);
+        }
+
+        new_filter_manager->setRebuildFlag(filter_manager_.get());
+        new_filter_manager->finishBuildStringFilters();
+        new_filter_manager->buildFilters(start_docid_, document_manager_->getMaxDocId()); // last_docid_ == document_manager_->getMaxDocId();
+
+        new_filter_manager->swapUnchangedFilter(filter_manager_.get());
+        new_filter_manager->clearUnchangedProperties();
+
+        filter_manager_.swap(new_filter_manager);
+        new_filter_manager.reset();
+
+        filter_manager_->saveFilterId();
+        filter_manager_->saveFilterList();
+    }
+
     void IncrementalFuzzyManager::doCreateIndex()
     {
         {
@@ -158,7 +185,7 @@ namespace sf1r
             bool isIncre = true;
             //build filter just for all new documents...
 
-            filter_manager_->buildFilters(last_docid_, document_manager_->getMaxDocId(), isIncre); 
+            filter_manager_->buildFilters(last_docid_, document_manager_->getMaxDocId(), isIncre);
 
             for (uint32_t i = last_docid_ + 1; i <= document_manager_->getMaxDocId(); i++)
             {

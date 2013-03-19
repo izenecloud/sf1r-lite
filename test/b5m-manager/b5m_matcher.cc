@@ -33,6 +33,7 @@
 #include <ext/pb_ds/tag_and_trait.hpp>
 #include <stack>
 #include <boost/network/protocol/http/server.hpp>
+#include <boost/network/utils/thread_pool.hpp>
 #include <boost/network/uri/uri.hpp>
 #include <boost/network/uri/decode.hpp>
 
@@ -128,7 +129,22 @@ int main(int ac, char** av)
 
     ServerHandler handler(program_path);
     Server server("0.0.0.0", "18190", handler);
-    server.run();
+    static const uint32_t thread_count = 2;
+    std::vector<boost::thread*> threads;
+    for(uint32_t i=0;i<thread_count;i++)
+    {
+        boost::thread* t = new boost::thread(boost::bind(&Server::run, &server));
+        threads.push_back(t);
+    }
+    for(uint32_t i=0;i<thread_count;i++)
+    {
+        threads[i]->join();
+    }
+    for(uint32_t i=0;i<thread_count;i++)
+    {
+        delete threads[i];
+    }
+    //server.run();
 
 
 

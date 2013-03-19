@@ -156,7 +156,6 @@ public:
             const std::vector<std::string>& property_list,
             std::vector<NumFilterItemMapT>& num_filter_data);
 
-
     izenelib::util::UString formatGroupPath(const std::vector<izenelib::util::UString>& groupPath) const;
     izenelib::util::UString formatGroupPath(const std::vector<std::string>& groupPath) const;
 
@@ -177,6 +176,10 @@ public:
     FilterIdRange getNumFilterIdRangeLess(size_t prop_id, double filter_num, bool include) const;
 
     std::vector<std::vector<FilterDocListT> >& getFilterList();
+    const std::vector<std::pair<int32_t, std::string> >& getProp_list()
+    {
+        return prop_list_;
+    }
     void clearFilterList();
 
     void clearFilterId();

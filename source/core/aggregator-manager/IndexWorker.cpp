@@ -124,6 +124,7 @@ bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
 
 bool IndexWorker::buildCollection(unsigned int numdoc)
 {
+    documentManager_->last_delete_docid_.clear();
     size_t currTotalSCDSize = getTotalScdSize_();
     ///If current directory is the one rotated from the backup directory,
     ///there should exist some missed SCDs since the last backup time,
@@ -326,6 +327,25 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         }
 
     }///set cookie as true here
+
+    //@brief : to check if there is fuzzy numberic or date filter;
+    std::set<std::string> suffix_numeric_filter_properties;
+    std::vector<NumericFilterConfig>::iterator pit 
+        = miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.begin();
+
+    while (pit != miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.end())
+    {
+        suffix_numeric_filter_properties.insert(pit->property);
+        ++pit;
+    }
+    std::set<std::string> intersection;
+    std::set_intersection(documentManager_->RtypeDocidPros_.begin(),
+                                      documentManager_->RtypeDocidPros_.end(),
+                                      suffix_numeric_filter_properties.begin(),
+                                      suffix_numeric_filter_properties.end(),
+                                      std::inserter(intersection, intersection.begin()));
+    documentManager_->RtypeDocidPros_.swap(intersection);
+    
     try{
         if (hooker_)
         {
@@ -1011,9 +1031,12 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
         if (idManager_->getDocIdByDocName(Utilities::md5ToUint128(docid_str), docId, false))
         {
             docIdList.push_back(docId);
+            documentManager_->last_delete_docid_.push_back(docId);
         }
     }
     std::sort(docIdList.begin(), docIdList.end());
+
+    miningTaskService_->EnsureHasDeletedDocDuringMining();
 
     //process delete document in index manager
     for (std::vector<docid_t>::iterator iter = docIdList.begin(); iter
@@ -1125,6 +1148,7 @@ bool IndexWorker::updateDoc_(
     if (INSERT == updateType)
         return insertDoc_(document, indexDocument, timestamp, immediately);
 
+    //LOG (INFO) << "Here Down Is Rtype Document ...";
     prepareIndexRTypeProperties_(document.getId(), indexDocument);
     if (hooker_)
     {
@@ -1137,6 +1161,7 @@ bool IndexWorker::updateDoc_(
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
     UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
+
     updateData.get<0>() = updateType;
     updateData.get<1>().swap(document);
     updateData.get<2>().swap(indexDocument);
@@ -1168,7 +1193,7 @@ bool IndexWorker::doUpdateDoc_(
         }
         else
         {
-            miningTaskService_->incDeletedDocBeforeMining();
+            miningTaskService_->EnsureHasDeletedDocDuringMining();
         }
         indexManager_->updateDocument(indexDocument);
 
@@ -1183,6 +1208,7 @@ bool IndexWorker::doUpdateDoc_(
     case RTYPE:
     {
         // Store the old property value.
+        documentManager_->addRtypeDocid(document.getId());
         indexManager_->updateRtypeDocument(oldIndexDocument, indexDocument);
         return true;
     }
@@ -1232,7 +1258,7 @@ void IndexWorker::flushUpdateBuffer_()
 
             if(documentManager_->removeDocument(oldId))
             {
-                miningTaskService_->incDeletedDocBeforeMining();
+                miningTaskService_->EnsureHasDeletedDocDuringMining();
             }
 
             indexManager_->updateDocument(updateData.get<2>());
@@ -1255,6 +1281,7 @@ void IndexWorker::flushUpdateBuffer_()
         case RTYPE:
         {
             // Store the old property value.
+            documentManager_->addRtypeDocid(updateData.get<1>().getId());
             indexManager_->updateRtypeDocument(updateData.get<3>(), updateData.get<2>());
             break;
         }
@@ -1277,7 +1304,6 @@ bool IndexWorker::deleteDoc_(docid_t docid, time_t timestamp)
     }
     if (documentManager_->removeDocument(docid))
     {
-        miningTaskService_->incDeletedDocBeforeMining();
         indexManager_->removeDocument(collectionId_, docid);
         ++numDeletedDocs_;
         indexStatus_.numDocs_ = indexManager_->numDocs();
@@ -1476,6 +1502,8 @@ bool IndexWorker::prepareDocument_(
                     document.property(fieldStr).swap(propData);
                     prepareIndexDocumentNumericProperty_(docId, p->second, iter, indexDocument);
                 }
+                if(updateType == RTYPE )
+                    documentManager_->RtypeDocidPros_.insert(fieldStr);
                 break;
 
             case DATETIME_PROPERTY_TYPE:
@@ -1492,6 +1520,8 @@ bool IndexWorker::prepareDocument_(
                     document.property(fieldStr).swap(propData);
                     prepareIndexDocumentNumericProperty_(docId, p->second, iter, indexDocument);
                 }
+                if(updateType == RTYPE )
+                    documentManager_->RtypeDocidPros_.insert(fieldStr);
                 break;
 
             default:

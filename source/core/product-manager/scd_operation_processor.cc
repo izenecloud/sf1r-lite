@@ -81,7 +81,7 @@ bool ScdOperationProcessor::Finish()
 void ScdOperationProcessor::ClearScds_()
 {
     LOG(INFO)<<"Clearing Scds"<<std::endl;
-    namespace bfs = boost::filesystem;
+   namespace bfs = boost::filesystem;
     static const bfs::directory_iterator kItrEnd;
 
     for (bfs::directory_iterator itr(dir_); itr != kItrEnd; ++itr)

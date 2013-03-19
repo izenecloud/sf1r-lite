@@ -20,12 +20,9 @@ public:
 
     void DoContinue();
 
-    MiningBundleConfiguration* getMiningBundleConfig(){ return bundleConfig_; }
+    void EnsureHasDeletedDocDuringMining() { miningManager_->EnsureHasDeletedDocDuringMining(); }
 
-    void incDeletedDocBeforeMining()
-    {
-        miningManager_->incDeletedDocBeforeMining();
-    }
+    MiningBundleConfiguration* getMiningBundleConfig(){ return bundleConfig_; }
 
 private:
     void cronJob_();

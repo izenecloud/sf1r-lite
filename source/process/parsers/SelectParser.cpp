@@ -10,7 +10,6 @@
 #include <common/Keys.h>
 
 #include <query-manager/ActionItem.h>
-#include <query-manager/QueryManager.h>
 
 #include <util/swap.h>
 

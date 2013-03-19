@@ -17,8 +17,7 @@
 
 #include <util/ustring/UString.h>
 
-#include <boost/memory.hpp>
-
+#include <3rdparty/am/btree/btree_set.h>
 #include <vector>
 #include <string>
 #include <map>
@@ -26,7 +25,6 @@
 
 NS_FACETED_BEGIN
 
-using boost::stl_allocator;
 class PropValueTable : public PropSharedLock
 {
 public:
@@ -48,7 +46,7 @@ public:
     /** mapping from value id to parent value id */
     typedef std::vector<pvid_t> ParentIdTable;
 
-    typedef std::set<pvid_t, std::less<pvid_t>, stl_allocator<pvid_t, boost::scoped_alloc> > ParentSetType;
+    typedef btree::btree_set<pvid_t> ParentSetType;
     //typedef std::set<pvid_t> ParentSetType;
 
     PropValueTable(const std::string& dirPath, const std::string& propName);

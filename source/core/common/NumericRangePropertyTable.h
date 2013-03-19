@@ -2,6 +2,8 @@
 #define SF1R_COMMON_NUMERIC_RANGE_PROPERTY_TABLE_H
 
 #include "NumericPropertyTableBase.h"
+#include <util/modp_numtoa.h>
+
 #include <boost/lexical_cast.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <vector>
@@ -422,19 +424,21 @@ inline bool NumericRangePropertyTable<float>::getStringValue(std::size_t pos, st
     if (pos >= data_.size() || data_[pos] == invalidValue_)
         return false;
 
-    static std::stringstream ss;
-    ss << fixed << setprecision(2);
     const value_type& data = data_[pos];
     if (data.first == data.second)
     {
-        ss << data.first;
+        char buf[32];
+        modp_dtoa((double)data.first, buf, 2);
+        value.assign(buf);
     }
     else
     {
-        ss << data.first << "-" << data.second;
+        char buf1[32],buf2[32],buf3[64];
+        modp_dtoa((double)data.first, buf1, 2);
+        modp_dtoa((double)data.second, buf2, 2);
+        sprintf(buf3,"%s-%s",buf1,buf2);
+        value.assign(buf3);
     }
-    value = ss.str();
-    ss.str(std::string());
     return true;
 }
 

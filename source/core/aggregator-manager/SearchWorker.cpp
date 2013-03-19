@@ -495,7 +495,7 @@ bool SearchWorker::getSummaryMiningResult_(
 
     if (miningManager_)
     {
-        miningManager_->getMiningResult(resultItem);
+        miningManager_->getMiningResult(actionItem, resultItem);
     }
 
     return true;
@@ -661,7 +661,8 @@ bool  SearchWorker::getResultItem(
     }
 
     std::vector<Document> docs;
-    if(!documentManager_->getDocuments(ids, docs, bundleConfig_->enable_forceget_doc_))
+    bool forceget = (miningManager_&&miningManager_->HasDeletedDocDuringMining())||bundleConfig_->enable_forceget_doc_;
+    if(!documentManager_->getDocuments(ids, docs, forceget))
     {
         ///Whenever any document could not be retrieved, return false
         resultItem.error_ = "Error : Cannot get document data";

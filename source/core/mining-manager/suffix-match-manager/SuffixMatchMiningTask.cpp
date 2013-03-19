@@ -50,11 +50,11 @@ bool SuffixMatchMiningTask::preProcess()
         }
 
         size_t last_docid = fmi_manager_ ? fmi_manager_->docCount() : 0;
-
         need_rebuild = false;
+
         std::vector<uint32_t> del_docid_list;
         document_manager_->getDeletedDocIdList(del_docid_list);
-        if (last_docid == document_manager_->getMaxDocId()) 
+        if (last_docid == document_manager_->getMaxDocId())
         {
             // check if there is any new deleted doc.
             std::vector<size_t> doclen_list(del_docid_list.size(), 0);
@@ -67,22 +67,47 @@ bool SuffixMatchMiningTask::preProcess()
                     break;
                 }
             }
+
+            if (!need_rebuild)
+            {
+            /*
+            @brief : in here document_manager_->isThereRtypeDoc() just means for the -R SCD, 
+            because the Rtype doc in -U SCD is not in this flow.
+            */
+                if (document_manager_->isThereRtypeDoc()) 
+                {
+                    LOG (INFO) << "Update for R-type SCD" << endl;
+                    const std::vector<std::pair<int32_t, std::string> >& prop_list = filter_manager_->getProp_list();
+                    for (std::vector<std::pair<int32_t, std::string> >::const_iterator i = prop_list.begin(); i != prop_list.end(); ++i)
+                    {
+                        std::set<string>::iterator iter = document_manager_->RtypeDocidPros_.find((*i).second);
+                        if (iter == document_manager_->RtypeDocidPros_.end())
+                        {
+                            new_filter_manager->addUnchangedProperty((*i).second);
+                        }
+                    }
+                }
+            }
         }
+
         else
         {
             LOG(INFO) << "old fmi docCount is : " << last_docid << ", document_manager count:" << document_manager_->getMaxDocId();
             need_rebuild = true;
         }
+
         if (need_rebuild)
         {
             LOG(INFO) << "rebuilding in fm-index is needed.";
-        }
+        }    
         else
         {
             new_fmi_manager->useOldDocCount(fmi_manager_.get());
         }
+
         bool isInitAndLoad = true;
         if (!need_rebuild) return true;
+
         if (!new_fmi_manager->initAndLoadOldDocs(fmi_manager_.get()))
         {
             LOG(ERROR) << "fmindex init building failed, must stop. ";
@@ -90,7 +115,6 @@ bool SuffixMatchMiningTask::preProcess()
             isInitAndLoad = false;
         }
         if (!isInitAndLoad) return false;
-        return true;
     }
     return true;
 }
@@ -103,24 +127,21 @@ bool SuffixMatchMiningTask::postProcess()
             return false;
 
         new_filter_manager->setRebuildFlag(filter_manager_.get());
-        
         size_t last_docid = fmi_manager_ ? fmi_manager_->docCount() : 0;
-        
-        LOG(INFO) << "building filter data in fm-index, start from:" << last_docid;
 
         new_filter_manager->finishBuildStringFilters();
-
-        new_filter_manager->buildFilters(last_docid, document_manager_->getMaxDocId()); //build for fm-index ....
-
+        new_filter_manager->buildFilters(last_docid, document_manager_->getMaxDocId());
+        
         new_fmi_manager->setFilterList(new_filter_manager->getFilterList());
 
         LOG(INFO) << "building filter data finished";
 
         new_fmi_manager->buildLessDVProperties();
-        new_fmi_manager->buildExternalFilter();
+        new_fmi_manager->buildExternalFilter(); //although here is empty ... but it will swap Unchanged Filter ...
+        
         {
             WriteLock lock(mutex_);
-            if (!need_rebuild) 
+            if (!need_rebuild)
             {
                 // no rebuilding, so just take the owner of old data.
                 LOG(INFO) << "no rebuild need, just swap data for common properties.";
@@ -129,8 +150,10 @@ bool SuffixMatchMiningTask::postProcess()
                 new_filter_manager->swapUnchangedFilter(filter_manager_.get());
                 new_filter_manager->clearUnchangedProperties();
             }
+
             fmi_manager_.swap(new_fmi_manager);
             filter_manager_.swap(new_filter_manager);
+            
             filter_manager_->clearRebuildFlag();
             new_fmi_manager.reset();
             new_filter_manager.reset();
@@ -140,9 +163,8 @@ bool SuffixMatchMiningTask::postProcess()
         filter_manager_->saveFilterId();
         filter_manager_->clearFilterList();
         LOG(INFO) << "building fm-index finished";
-
-        return true;
     }
+
     return true;
 }
 

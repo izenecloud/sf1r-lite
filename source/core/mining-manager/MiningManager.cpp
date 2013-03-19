@@ -104,9 +104,12 @@
 #include <algorithm>
 #include <memory> // auto_ptr
 
+
+namespace sf1r
+{
+
 using namespace boost::filesystem;
 using namespace izenelib::ir::idmanager;
-using namespace sf1r;
 namespace bfs = boost::filesystem;
 
 std::string MiningManager::system_resource_path_;
@@ -158,18 +161,19 @@ MiningManager::MiningManager(
     , productRankerFactory_(NULL)
     , tdt_storage_(NULL)
     , topicDetector_(NULL)
-    , summarizationManager_(NULL)
+    , summarizationManagerTask_(NULL)
     , suffixMatchManager_(NULL)
     , incrementalManager_(NULL)
     , product_categorizer_(NULL)
     , kvManager_(NULL)
     , miningTaskBuilder_(NULL)
-    , deleted_doc_before_mining_(0)
+    , hasDeletedDocDuringMining_(false)
 {
 }
 
 MiningManager::~MiningManager()
 {
+    if (miningTaskBuilder_) delete miningTaskBuilder_;
     if (analyzer_) delete analyzer_;
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
@@ -187,12 +191,11 @@ MiningManager::~MiningManager()
     if (numericTableBuilder_) delete numericTableBuilder_;
     if (tdt_storage_) delete tdt_storage_;
     if (topicDetector_) delete topicDetector_;
-    if (summarizationManager_) delete summarizationManager_;
     if (suffixMatchManager_) delete suffixMatchManager_;
     if (incrementalManager_) delete incrementalManager_;
     if (product_categorizer_) delete product_categorizer_;
     if (kvManager_) delete kvManager_;
-    if (miningTaskBuilder_) delete miningTaskBuilder_;
+
     close();
 }
 
@@ -206,15 +209,6 @@ void MiningManager::close()
     groupLabelLoggerMap_.clear();
     MiningQueryLogHandler* handler = MiningQueryLogHandler::getInstance();
     handler->deleteCollection(collectionName_);
-
-    if (deleted_doc_before_mining_ > 0)
-    {
-        std::ofstream ofs((collectionDataPath_ + "/deleted_doc_before_mining_.data").c_str());
-        if (ofs)
-        {
-            ofs.write((const char*)&deleted_doc_before_mining_, sizeof(deleted_doc_before_mining_));
-        }
-    }
 }
 
 bool MiningManager::open()
@@ -247,11 +241,6 @@ bool MiningManager::open()
 
         std::string prefix_path  = collectionDataPath_;
         FSUtil::createDir(prefix_path);
-        ifstream ifs_last_mining_file((prefix_path + "/deleted_doc_before_mining_.data").c_str());
-        if (ifs_last_mining_file)
-        {
-            ifs_last_mining_file.read((char*)&deleted_doc_before_mining_, sizeof(deleted_doc_before_mining_));
-        }
 
         kpe_res_path_ = system_resource_path_+"/kpe";
         rig_path_ = system_resource_path_+"/sim/rig";
@@ -536,14 +525,14 @@ bool MiningManager::open()
         {
             summarization_path_ = prefix_path + "/summarization";
             boost::filesystem::create_directories(summarization_path_);
-            summarizationManager_ =
+            summarizationManagerTask_ =
                 new MultiDocSummarizationSubManager(summarization_path_, collectionName_,
                                                     collectionPath_.getScdPath(),
                                                     mining_schema_.summarization_schema,
                                                     document_manager_,
                                                     index_manager_,
                                                     c_analyzer_);
-            miningTaskBuilder_->addTask(summarizationManager_);
+            miningTaskBuilder_->addTask(summarizationManagerTask_);
             if (!mining_schema_.summarization_schema.uuidPropName.empty())
             {
                 //searchManager_->set_filter_hook(boost::bind(&MultiDocSummarizationSubManager::AppendSearchFilter, summarizationManager_, _1));
@@ -558,7 +547,6 @@ bool MiningManager::open()
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
                     document_manager_, groupManager_, attrManager_, numericTableBuilder_);
-            //load fmindex here.
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
@@ -566,28 +554,20 @@ bool MiningManager::open()
             product_categorizer_->SetDocumentManager(document_manager_);
             // reading suffix config and load filter data here.
             boost::shared_ptr<FilterManager>& filter_manager = suffixMatchManager_->getFilterManager();
-
             filter_manager->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
-
             filter_manager->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
-
             filter_manager->setStrFilterProperties(mining_schema_.suffixmatch_schema.str_filter_properties);
-
             filter_manager->setDateFilterProperties(mining_schema_.suffixmatch_schema.date_filter_properties);
-
             const std::vector<NumericFilterConfig>& number_config_list = mining_schema_.suffixmatch_schema.num_filter_properties;
-
             std::vector<std::string> number_props;
             number_props.reserve(number_config_list.size());
             std::vector<int32_t> number_amp_list;
             number_amp_list.reserve(number_config_list.size());
             for (size_t i = 0; i < number_config_list.size(); ++i)
             {
-                //cout << "number_config_list[i].property" << number_config_list[i].property << endl;
                 number_props.push_back(number_config_list[i].property);
                 number_amp_list.push_back(number_config_list[i].amplifier);
             }
-
             filter_manager->setNumFilterProperties(number_props, number_amp_list);
             filter_manager->loadFilterId();
 
@@ -775,7 +755,7 @@ void MiningManager::DoSyncFullSummScd()
 {
     if (mining_schema_.summarization_enable && !mining_schema_.summarization_schema.isSyncSCDOnly)
     {
-        summarizationManager_->syncFullSummScd();
+        summarizationManagerTask_->syncFullSummScd();
     }
 }
 
@@ -944,22 +924,73 @@ bool MiningManager::DoMiningCollection()
             incrementalManager_->getDocNum(docNum);
             incrementalManager_->getMaxNum(maxDoc);
 
-            if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc // for add incremental index
-                && document_manager_->getMaxDocId() != last_docid) // for continue use;
+            /**
+            @brief: if there is -D SCD, the fuzzy index will merge and rebuid;
+            @for incremental is for -U and -R scd;
+            **/
+            if (last_docid == document_manager_->getMaxDocId()) /// for -D SCD and -R SCD;
             {
-                SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                bool isIncre = true;
-                miningTask->setTaskStatus(isIncre);
-            }
-            else
-            {
-                SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                if (document_manager_->last_delete_docid_.size() > 0) /// merge and rebuild fm-index;
+                {
+                    SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                    bool isIncre = true;
+                    miningTask->setTaskStatus(isIncre);
+                    incrementalManager_->reset();
+                }
+                else if (document_manager_->isThereRtypeDoc())
+                {
+                    std::vector<string> unchangedProperties;
+                    const std::vector<std::pair<int32_t, std::string> >& prop_list 
+                    = suffixMatchManager_->getFilterManager()->getProp_list();
+                    
+                    for (std::vector<std::pair<int32_t, std::string> >::const_iterator i = prop_list.begin()
+                        ; i != prop_list.end(); ++i)
+                    {
+                        std::set<string>::iterator iter = document_manager_->RtypeDocidPros_.find((*i).second);
+                        if (iter == document_manager_->RtypeDocidPros_.end())
+                        {
+                            unchangedProperties.push_back((*i).second);
+                        }
+                    }
+                    /// all just rebuid filter ... 
+                    if (suffixMatchManager_->getMiningTask()->getLastDocId() - 1 == document_manager_->getMaxDocId()) /// only fm-index;
+                    {
+                        SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                        bool isIncre = true;
+                        miningTask->setTaskStatus(isIncre);
+                    }
+                    else /// each just update it's filter;
+                    {
+                        SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                        bool isIncre = false;
+                        miningTask->setTaskStatus(isIncre);
 
+                        suffixMatchManager_->updateFilterForRtype(unchangedProperties);
+                        incrementalManager_->updateFilterForRtype(unchangedProperties);
+                    }
+                }
+            }
+            else // -U SCD or continue
+            {
+                SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
                 bool isIncre = false;
                 miningTask->setTaskStatus(isIncre);
-                if (document_manager_->getMaxDocId() != last_docid)
+                if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc) // not merge
+                {
+                    SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                    bool isIncre = true;
+                    miningTask->setTaskStatus(isIncre);
+                }
+                else // merge
                 {
                     incrementalManager_->reset();
+                    SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                    bool isIncre = false;
+                    miningTask->setTaskStatus(isIncre);
+                    if (document_manager_->getMaxDocId() != last_docid)
+                    {
+                        incrementalManager_->reset();
+                    }
                 }
             }
         }
@@ -993,7 +1024,11 @@ bool MiningManager::DoMiningCollection()
         }
     }
 
-    deleted_doc_before_mining_ = 0;
+    hasDeletedDocDuringMining_ = false;
+    LOG (INFO) << "Clear Rtype Docid List";
+    document_manager_->clearRtypeDocidList();
+    document_manager_->RtypeDocidPros_.clear();
+    document_manager_->last_delete_docid_.clear();
     return true;
 }
 
@@ -1005,7 +1040,7 @@ void MiningManager::onIndexUpdated(size_t docNum)
     }
 }
 
-bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
+bool MiningManager::getMiningResult(const KeywordSearchActionItem& actionItem , KeywordSearchResult& miaInput)
 {
     CREATE_PROFILER(prepareData, "MIAProcess",
                     "ProcessGetMiningResults : prepare data from sia output");
@@ -1019,16 +1054,16 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
     CREATE_PROFILER(faceted, "MIAProcess",
                     "ProcessGetMiningResults : doing faceted");
 
-    std::cout << "[MiningManager::getMiningResult]" << std::endl;
+    //std::cout << "[MiningManager::getMiningResult]" << std::endl;
     bool bResult = true;
     try
     {
         START_PROFILER(qr);
-        if (true)
+        if (actionItem.requireRelatedQueries_)
         {
-            izenelib::util::ClockTimer clocker;
+            //izenelib::util::ClockTimer clocker;
             addQrResult_(miaInput);
-            std::cout<<"QR ALL COST: "<<clocker.elapsed()<<" seconds."<<std::endl;
+            //std::cout<<"QR ALL COST: "<<clocker.elapsed()<<" seconds."<<std::endl;
         }
         STOP_PROFILER(qr);
 
@@ -1109,7 +1144,6 @@ bool MiningManager::getMiningResult(KeywordSearchResult& miaInput)
     }
     //get query recommend result
     REPORT_PROFILE_TO_FILE("PerformanceQueryResult.MiningManager")
-    std::cout << "[getMiningResult finished]" << std::endl;
     return bResult;
 }
 
@@ -1215,15 +1249,14 @@ bool MiningManager::getRecommendQuery_(const izenelib::util::UString& queryStr,
                                        const std::vector<docid_t>& topDocIdList,
                                        QueryRecommendRep & recommendRep)
 {
-    struct timeval tv_start;
-    struct timeval tv_end;
-    gettimeofday(&tv_start, NULL);
+    //struct timeval tv_start;
+    //struct timeval tv_end;
+    //gettimeofday(&tv_start, NULL);
     qrManager_->getRecommendQuery(queryStr, topDocIdList,
                                   miningConfig_.recommend_param.recommend_num, recommendRep);
-    gettimeofday(&tv_end, NULL);
-    double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec
-                       + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
-    std::cout << "QR all cost " << timespend << " seconds." << std::endl;
+    //gettimeofday(&tv_end, NULL);
+    //double timespend = (double) tv_end.tv_sec - (double) tv_start.tv_sec + ((double) tv_end.tv_usec - (double) tv_start.tv_usec) / 1000000;
+    //std::cout << "QR all cost " << timespend << " seconds." << std::endl;
     return true;
 }
 
@@ -1525,15 +1558,14 @@ bool MiningManager::getLabelListByDocId(uint32_t docid, std::vector<std::pair<ui
 
 bool MiningManager::addQrResult_(KeywordSearchResult& miaInput)
 {
-    std::cout << "[MiningManager::getQRResult] "<<miaInput.rawQueryString_ << std::endl;
+    //std::cout << "[MiningManager::getQRResult] "<<miaInput.rawQueryString_ << std::endl;
     miaInput.relatedQueryList_.clear();
     miaInput.rqScore_.clear();
     bool ret = false;
     QueryRecommendRep recommendRep;
     ret = getRecommendQuery_(izenelib::util::UString(miaInput.rawQueryString_,
                              miaInput.encodingType_), miaInput.topKDocs_, recommendRep);
-    std::cout << "Get " << recommendRep.recommendQueries_.size()
-              << " related keywords" << std::endl;
+    //std::cout << "Get " << recommendRep.recommendQueries_.size() << " related keywords" << std::endl;
     miaInput.relatedQueryList_ = recommendRep.recommendQueries_;
     miaInput.rqScore_ = recommendRep.scores_;
 
@@ -1941,8 +1973,8 @@ bool MiningManager::GetSummarizationByRawKey(
         const izenelib::util::UString& rawKey,
         Summarization& result)
 {
-    if (!summarizationManager_) return false;
-    return summarizationManager_->GetSummarizationByRawKey(rawKey,result);
+    if (!summarizationManagerTask_) return false;
+    return summarizationManagerTask_->GetSummarizationByRawKey(rawKey,result);
 }
 
 uint32_t MiningManager::GetSignatureForQuery(
@@ -1990,11 +2022,6 @@ private:
 };
 }
 
-void MiningManager::incDeletedDocBeforeMining()
-{
-    deleted_doc_before_mining_++;
-}
-
 bool MiningManager::GetSuffixMatch(
         const SearchKeywordOperation& actionOperation,
         uint32_t max_docs,
@@ -2016,18 +2043,16 @@ bool MiningManager::GetSuffixMatch(
     std::vector<std::pair<double, uint32_t> > res_list;
 
     const std::vector<string>& search_in_properties = actionOperation.actionItem_.searchPropertyList_;
-    //search_in_properties = mining_schema_.suffixmatch_schema.suffix_match_properties;
-    //search_in_properties.insert(search_in_properties.end(), mining_schema_.suffixmatch_schema.searchable_properties.begin(),
-    //    mining_schema_.suffixmatch_schema.searchable_properties.end());
 
     size_t orig_max_docs = max_docs;
-    max_docs += deleted_doc_before_mining_;
 
-    if (deleted_doc_before_mining_ > 0)
-        LOG(INFO) << "since last mining, new deleted doc num is :" << deleted_doc_before_mining_;
     if (!use_fuzzy)
     {
-        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, search_in_properties, max_docs, res_list);
+        totalCount = suffixMatchManager_->longestSuffixMatch(
+                actionOperation.actionItem_.env_.queryString_,
+                search_in_properties, 
+                max_docs, 
+                res_list);
     }
     else
     {
@@ -2040,15 +2065,14 @@ bool MiningManager::GetSuffixMatch(
         }
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
-        
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                queryU, search_in_properties, max_docs,
+                actionOperation.actionItem_.env_.queryString_, 
+                search_in_properties, 
+                max_docs,
                 actionOperation.actionItem_.searchingMode_.filtermode_,
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
                 res_list);
-
-        LOG (INFO) << "FM_fuzzy_search get " << totalCount << "results" << endl; 
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
@@ -2081,7 +2105,7 @@ bool MiningManager::GetSuffixMatch(
             std::merge(res_list.begin(), res_list.end(), inc_res_list.begin() + res_list.size(), inc_res_list.end(), inc_res_list.begin(), std::greater<std::pair<double, uint32_t> >());
             inc_res_list.swap(res_list);
 
-            LOG(INFO) << "Incremental fuzzy search cost:" << timer.elapsed() << " seconds" << std::endl;
+            LOG(INFO) << "[]TOPN and cost:" << timer.elapsed() << " seconds" << std::endl;
         }
 
         if (groupManager_ || attrManager_)
@@ -2104,7 +2128,12 @@ bool MiningManager::GetSuffixMatch(
         }
     }
 
-    res_list.erase(std::remove_if(res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
+    //We do not use this post delete filtering because deleted documents should never be searched from 
+    //suffix index in normal cases, while if there are deleted documents before mining finished, these documents
+    //should be abled to searched as well.
+    //We ignore the exception case that SF1 quit before mining finished
+    //if(!hasDeletedDocDuringMining_)
+    //    res_list.erase(std::remove_if(res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
     res_list.resize(std::min(orig_max_docs, res_list.size()));
 
     docIdList.resize(res_list.size());
@@ -2171,9 +2200,9 @@ bool MiningManager::GetProductCategory(const UString& query, UString& backend)
 }
 
 bool MiningManager::GetProductFrontendCategory(
-    const izenelib::util::UString& query, 
-    int limit, 
-    std::vector<UString>& frontends)
+        const izenelib::util::UString& query,
+        int limit,
+        std::vector<UString>& frontends)
 {
     if (mining_schema_.product_matcher_enable)
     {
@@ -2283,9 +2312,9 @@ const faceted::PropValueTable* MiningManager::GetPropValueTable(const std::strin
 }
 
 bool MiningManager::getProductScore(
-    const std::string& docIdStr,
-    const std::string& scoreTypeName,
-    score_t& scoreValue)
+        const std::string& docIdStr,
+        const std::string& scoreTypeName,
+        score_t& scoreValue)
 {
     docid_t docId = 0;
 
@@ -2480,4 +2509,5 @@ void MiningManager::updateMergeFuzzyIndex()
             incrementalManager_->setLastDocid(docid);
         }
     }
+}
 }

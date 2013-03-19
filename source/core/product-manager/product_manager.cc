@@ -203,7 +203,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
             to.property(config_.uuid_property_name) = from_uuid;
             new_doc.property(config_.docid_property_name) = from_uuid;
             util_->SetItemCount(new_doc, 1);
-            op_processor_->Append(2, new_doc);// if r_type, only numeric properties in 'to'
+            op_processor_->Append(UPDATE_SCD, new_doc);// if r_type, only numeric properties in 'to'
         }
         else
         {
@@ -225,7 +225,7 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
                 //auto r_type? itemcount no need?
     //                 diff_properties.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(docid_list.size()+1), UString::UTF_8);
 
-                op_processor_->Append(2, diff_properties);
+                op_processor_->Append(UPDATE_SCD, diff_properties);
             }
         }
     }
@@ -419,7 +419,7 @@ bool ProductManager::FinishHook()
                 new_doc.eraseProperty(config_.olduuid_property_name);
                 util_->SetItemCount(new_doc, 1);
                 new_doc.property(config_.oldofferids_property_name) = "";
-                op_processor_->Append(1, new_doc);
+                op_processor_->Append(INSERT_SCD, new_doc);
                 if (uuid_map_writer)
                 {
                     UpdateUUIDRequest uuidReq;
@@ -454,7 +454,7 @@ bool ProductManager::FinishHook()
             new_doc.property(config_.price_property_name) = g2doc_it->second.second.ToUString();
             new_doc.eraseProperty(config_.uuid_property_name);
             new_doc.eraseProperty(config_.olduuid_property_name);
-            op_processor_->Append(1, new_doc);
+            op_processor_->Append(INSERT_SCD, new_doc);
             ++append_count;
             ++g2doc_it;
         }

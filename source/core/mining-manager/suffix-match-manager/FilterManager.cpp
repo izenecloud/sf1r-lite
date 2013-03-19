@@ -600,7 +600,10 @@ void FilterManager::buildNumFilters(
         for (uint32_t docid = last_docid + 1; docid <= max_docid; ++docid)
         {
             if (!numericPropertyTable->getDoublePairValue(docid, original_key))
+            {
+                cout<<"the last_docid is has already there ... "<<endl;
                 continue;
+            }
             num_key_low = formatNumericFilter(prop_id, original_key.first);
             num_key_high = formatNumericFilter(prop_id, original_key.second);
             inc = 1;

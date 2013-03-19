@@ -170,11 +170,13 @@ public:
     {
         return filter_manager_;
     }
+
     bool isEmpty()
     {
         return IndexedDocNum_ == 0;
     }
 
+    void updateFilterForRtype(std::vector<string> unchangedProperties);
     void printFilter();
 
 private:
@@ -256,6 +258,7 @@ private:
     mutable MutexType mutex_;
 
     boost::shared_ptr<FilterManager> filter_manager_;
+    boost::shared_ptr<FilterManager> new_filter_manager;
 };
 }
 #endif

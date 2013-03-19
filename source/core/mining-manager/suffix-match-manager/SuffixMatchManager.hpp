@@ -49,13 +49,13 @@ public:
     bool isStartFromLocalFM() const;
 
     size_t longestSuffixMatch(
-            const izenelib::util::UString& pattern,
+            const std::string& pattern,
             std::vector<std::string> search_in_properties,
             size_t max_docs,
             std::vector<std::pair<double, uint32_t> >& res_list) const;
 
     size_t AllPossibleSuffixMatch(
-            const izenelib::util::UString& pattern,
+            const std::string& pattern,
             std::vector<std::string> search_in_properties,
             size_t max_docs,
             const SearchingMode::SuffixMatchFilterMode& filter_mode,
@@ -69,7 +69,8 @@ public:
     boost::shared_ptr<FilterManager>& getFilterManager();
 
     void updateFmindex();
-    
+
+    void updateFilterForRtype(std::vector<string> unchangedProperties);
 
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
@@ -99,6 +100,7 @@ private:
 
     boost::shared_ptr<FMIndexManager> fmi_manager_;
     boost::shared_ptr<FilterManager> filter_manager_;
+    boost::shared_ptr<FilterManager> new_filter_manager;
 
     SuffixMatchMiningTask* suffixMatchTask_;
 

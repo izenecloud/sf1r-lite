@@ -27,6 +27,7 @@
 #include <configuration-manager/MiningSchema.h>
 #include <configuration-manager/CollectionPath.h>
 #include <ir/id_manager/IDManager.h>
+#include <boost/atomic.hpp>
 #include <util/cronexpression.h>
 #include <util/scheduler.h>
 #include <util/ThreadModel.h>
@@ -178,7 +179,7 @@ public:
     /**
      * @brief The online querying interface.
      */
-    bool getMiningResult(KeywordSearchResult& miaInput);
+    bool getMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& miaInput);
 
     /**
      * @brief Gets list of documents with images similar to the target image.
@@ -362,7 +363,9 @@ public:
             uint32_t knnDist,
             uint32_t start);
 
-    void incDeletedDocBeforeMining();
+    void EnsureHasDeletedDocDuringMining() { hasDeletedDocDuringMining_ = true; }
+
+    bool HasDeletedDocDuringMining() { return hasDeletedDocDuringMining_; }
 
     bool GetSuffixMatch(
             const SearchKeywordOperation& actionOperation,
@@ -678,7 +681,7 @@ private:
 
     /** SUMMARIZATION */
     std::string summarization_path_;
-    MultiDocSummarizationSubManager* summarizationManager_;
+    MultiDocSummarizationSubManager* summarizationManagerTask_;
 
     /** Suffix Match */
     std::string suffix_match_path_;
@@ -696,8 +699,8 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
-    uint32_t deleted_doc_before_mining_;
 
+    boost::atomic_bool hasDeletedDocDuringMining_;
     izenelib::util::CronExpression cronExpression_;
 };
 

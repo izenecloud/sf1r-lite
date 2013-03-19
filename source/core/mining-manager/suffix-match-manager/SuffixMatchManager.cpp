@@ -4,10 +4,15 @@
 #include <glog/logging.h>
 #include <icma/icma.h>
 #include <la-manager/LAPool.h>
+#include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"
 #include "FMIndexManager.h"
+
+#include <3rdparty/am/btree/btree_map.h>
+
+#include <glog/logging.h>
 
 using namespace cma;
 
@@ -19,6 +24,12 @@ typedef std::pair<int64_t, int64_t> NumericRange;
 
 using namespace sf1r::faceted;
 
+/**
+ * check parameter of group label
+ * @param[in] labelParam parameter to check
+ * @param[out] isRange true for group on range, false for group on single numeric value
+ * @return true for success, false for failure
+*/
 bool checkLabelParam(const GroupParam::GroupLabelParam& labelParam, bool& isRange)
 {
     const GroupParam::GroupPathVec& labelPaths = labelParam.second;
@@ -100,6 +111,7 @@ bool convertRangeLabel(const std::string& src, NumericRange& target)
 
     return true;
 }
+
 }
 
 
@@ -135,7 +147,7 @@ SuffixMatchManager::SuffixMatchManager(
 SuffixMatchManager::~SuffixMatchManager()
 {
     if (analyzer_) delete analyzer_;
-    if (knowledge_) delete knowledge_;
+    //if (knowledge_) delete knowledge_;
 }
 
 void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished)
@@ -156,15 +168,17 @@ bool SuffixMatchManager::isStartFromLocalFM() const
 }
 
 size_t SuffixMatchManager::longestSuffixMatch(
-        const izenelib::util::UString& pattern,
+        const std::string& pattern_orig,
         std::vector<std::string> search_in_properties,
         size_t max_docs,
         std::vector<std::pair<double, uint32_t> >& res_list) const
 {
     if (!fmi_manager_) return 0;
-    if (pattern.empty()) return 0;
+    if (pattern_orig.empty()) return 0;
 
-    std::map<uint32_t, double> res_list_map;
+    UString pattern(pattern_orig, UString::UTF_8);
+
+    btree::btree_map<uint32_t, double> res_list_map;
     std::vector<uint32_t> docid_list;
     std::vector<size_t> doclen_list;
     size_t max_match;
@@ -208,7 +222,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
     }
 
     res_list.reserve(res_list_map.size());
-    for (std::map<uint32_t, double>::const_iterator cit = res_list_map.begin();
+    for (btree::btree_map<uint32_t, double>::const_iterator cit = res_list_map.begin();
             cit != res_list_map.end(); ++cit)
     {
         res_list.push_back(std::make_pair(cit->second, cit->first));
@@ -220,7 +234,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
 }
 
 size_t SuffixMatchManager::AllPossibleSuffixMatch(
-        const izenelib::util::UString& pattern_orig,
+        const std::string& pattern_orig,
         std::vector<std::string> search_in_properties,
         size_t max_docs,
         const SearchingMode::SuffixMatchFilterMode& filter_mode,
@@ -230,19 +244,18 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
 {
     if (!analyzer_) return 0;
     if (pattern_orig.empty()) return 0;
-    std::map<uint32_t, double> res_list_map;
+	
+    btree::btree_map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > match_ranges_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> max_match_list;
 
     // tokenize the pattern.
-    izenelib::util::UString pattern = pattern_orig;
-    Algorithm<UString>::to_lower(pattern);
-    string pattern_str;
-    pattern.convertString(pattern_str, UString::UTF_8);
-    LOG(INFO) << "original query string: " << pattern_str;
+    std::string pattern = pattern_orig;
+    boost::to_lower(pattern);
+    LOG(INFO) << "original query string: " << pattern_orig;
 
-    Sentence pattern_sentence(pattern_str.c_str());
+    Sentence pattern_sentence(pattern.c_str());
     analyzer_->runWithSentence(pattern_sentence);
     std::vector<UString> all_sub_strpatterns;
     LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
@@ -297,9 +310,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     continue;
                 std::pair<size_t, size_t> sub_match_range;
                 size_t matched = fmi_manager_->backwardSearch(search_property, all_sub_strpatterns[i], sub_match_range);
-
                 //LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
-                
                 if (matched == all_sub_strpatterns[i].length())
                 {
                     match_ranges_list.push_back(sub_match_range);
@@ -349,7 +360,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     }
 
     res_list.reserve(res_list_map.size());
-    for (std::map<uint32_t, double>::const_iterator cit = res_list_map.begin();
+    for (btree::btree_map<uint32_t, double>::const_iterator cit = res_list_map.begin();
         cit != res_list_map.end(); ++cit)
     {
         res_list.push_back(std::make_pair(cit->second, cit->first));
@@ -359,6 +370,36 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         res_list.erase(res_list.begin() + max_docs, res_list.end());
     LOG(INFO) << "all property fuzzy search finished";
     return total_match;
+}
+
+
+void SuffixMatchManager::updateFilterForRtype(std::vector<string> unchangedProperties)
+{
+    string data_root_path = "ss";
+    new_filter_manager.reset(new FilterManager(filter_manager_->getGroupManager(), data_root_path,
+            filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder()));
+    new_filter_manager->copyPropertyInfo(filter_manager_);
+    new_filter_manager->generatePropertyId();
+
+    for (std::vector<string>::iterator i = unchangedProperties.begin(); i != unchangedProperties.end(); ++i)
+    {
+        new_filter_manager->addUnchangedProperty(*i);
+    }
+
+    new_filter_manager->setRebuildFlag(filter_manager_.get());
+    size_t last_docid = fmi_manager_ ? fmi_manager_->docCount() : 0;
+
+    new_filter_manager->finishBuildStringFilters();
+    new_filter_manager->buildFilters(0, last_docid); // infact is just for numberic;
+
+    new_filter_manager->swapUnchangedFilter(filter_manager_.get());
+    new_filter_manager->clearUnchangedProperties();
+
+    filter_manager_.swap(new_filter_manager);
+    new_filter_manager.reset();
+
+    filter_manager_->saveFilterId();
+    filter_manager_->saveFilterList();
 }
 
 bool SuffixMatchManager::getAllFilterRangeFromAttrLable_(
@@ -741,8 +782,9 @@ void SuffixMatchManager::buildTokenizeDic()
     boost::filesystem::path cma_fmindex_dic(cma_path);
     cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
-    knowledge_ = CMA_Factory::instance()->createKnowledge();
-    knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
+    //knowledge_ = CMA_Factory::instance()->createKnowledge();
+    //knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
+    knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(cma_fmindex_dic.c_str(), false);
     analyzer_ = CMA_Factory::instance()->createAnalyzer();
     analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
     // using the maxprefix analyzer
