@@ -150,6 +150,11 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         return true;
     assert(req_log_mgr_);
     bool isprimary = (hook_type_ == Request::FromDistribute);
+    if (chain_status_ == ChainStop)
+    {
+        LOG(WARNING) << "The request has been aborted while prepare";
+        return false;
+    }
     if (isprimary)
     {
         if (chain_status_ == ChainBegin || chain_status_ == NoChain)
@@ -371,6 +376,11 @@ void DistributeRequestHooker::abortRequest()
     {
         LOG(ERROR) << "redo log failed, must exit.";
         forceExit();
+        return;
+    }
+    if (chain_status_ == ChainStop)
+    {
+        LOG(INFO) << "request already in abortting.";
         return;
     }
     chain_status_ = ChainStop;
