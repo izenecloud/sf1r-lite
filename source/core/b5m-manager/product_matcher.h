@@ -756,6 +756,7 @@ namespace sf1r {
         std::string GetText_(const term_t& term) const;
         void GetTerms_(const std::string& text, std::vector<term_t>& term_list);
         void GetTerms_(const UString& text, std::vector<term_t>& term_list);
+        void GetTermsString_(const UString& text, std::string& str);//analyzing first, then combine
         
         bool NeedFuzzy_(const std::string& value);
         void ConstructKeywords_();

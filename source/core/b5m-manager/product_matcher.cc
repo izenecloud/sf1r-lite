@@ -423,18 +423,18 @@ bool ProductMatcher::IsIndexDone_(const std::string& path)
 void ProductMatcher::Init_()
 {
     boost::filesystem::create_directories(path_);
-    if(analyzer_==NULL)
-    {
-        idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path_, "");
-        aconfig.symbol = true;
-        analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
-    }
-    if(char_analyzer_==NULL)
-    {
-        idmlib::util::IDMAnalyzerConfig cconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
-        cconfig.symbol = true;
-        char_analyzer_ = new idmlib::util::IDMAnalyzer(cconfig);
-    }
+    //if(analyzer_==NULL)
+    //{
+        //idmlib::util::IDMAnalyzerConfig aconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("",cma_path_, "");
+        //aconfig.symbol = true;
+        //analyzer_ = new idmlib::util::IDMAnalyzer(aconfig);
+    //}
+    //if(char_analyzer_==NULL)
+    //{
+        //idmlib::util::IDMAnalyzerConfig cconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
+        //cconfig.symbol = true;
+        //char_analyzer_ = new idmlib::util::IDMAnalyzer(cconfig);
+    //}
     if(chars_analyzer_==NULL)
     {
         idmlib::util::IDMAnalyzerConfig csconfig = idmlib::util::IDMAnalyzerConfig::GetCommonConfig("","", "");
@@ -2213,7 +2213,8 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     doc.property("Title") = text;
     std::vector<Product> result_products;
     Compute_(doc, term_list, keyword_vector, 1, result_products);
-    typedef boost::unordered_set<TermList> Strict;
+    //typedef boost::unordered_set<TermList> Strict;
+    typedef boost::unordered_set<std::string> Strict;
     Strict strict;
     bool spu_matched = false;
     if(result_products.size()==1&&!result_products[0].spid.empty()&&!result_products[0].stitle.empty())
@@ -2229,9 +2230,13 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
             if(attr.is_optional) continue;
             for(uint32_t v=0;v<attr.values.size();v++)
             {
-                TermList term_list;
-                GetTerms_(attr.values[v], term_list);
-                strict.insert(term_list);
+                std::string terms_str;
+                UString text(attr.values[v], UString::UTF_8);
+                GetTermsString_(text, terms_str);
+                strict.insert(terms_str);
+                //TermList term_list;
+                //GetTerms_(attr.values[v], term_list);
+                //strict.insert(term_list);
             }
         }
     }
@@ -2357,7 +2362,9 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     for(uint32_t i=0;i<keyword_vector.size();i++)
     {
         const KeywordTag& k = keyword_vector[i];
-        if(!strict.empty()&&strict.find(k.term_list)==strict.end())
+        std::string terms_str;
+        GetTermsString_(k.text, terms_str);
+        if(!strict.empty()&&strict.find(terms_str)==strict.end())
         {
             left.push_back(k.text);
         }
@@ -3171,15 +3178,18 @@ void ProductMatcher::AnalyzeNoSymbol_(const izenelib::util::UString& btext, std:
 {
     izenelib::util::UString text(btext);
     text.toLowerString();
+    //std::string stext;
+    //text.convertString(stext, UString::UTF_8);
+    //std::cerr<<"[ANSS]"<<stext<<std::endl;
     std::vector<idmlib::util::IDMTerm> term_list;
-    char_analyzer_->GetTermList(text, term_list);
+    chars_analyzer_->GetTermList(text, term_list);
     result.reserve(term_list.size());
     for(std::size_t i=0;i<term_list.size();i++)
     {
         std::string str;
         term_list[i].text.convertString(str, izenelib::util::UString::UTF_8);
         term_list[i].id = GetTerm_(str);
-        //logger_<<"[A]"<<str<<","<<term_list[i].tag<<std::endl;
+        //std::cerr<<"[ANS]"<<str<<","<<term_list[i].tag<<std::endl;
         char tag = term_list[i].tag;
         //std::cerr<<"ARB,"<<str<<std::endl;
         if(tag == idmlib::util::IDMTermTag::SYMBOL)
@@ -3323,6 +3333,7 @@ std::string ProductMatcher::GetText_(const term_t& term) const
 
 void ProductMatcher::GetTerms_(const UString& text, std::vector<term_t>& term_list)
 {
+    //TODO: this will return one token 'd90' for "D90" input in sf1r enviorment, why?
     std::vector<Term> t_list;
     AnalyzeNoSymbol_(text, t_list);
     term_list.resize(t_list.size());
@@ -3346,6 +3357,18 @@ void ProductMatcher::GetTerms_(const std::string& text, std::vector<term_t>& ter
     UString utext(text, UString::UTF_8);
     GetTerms_(utext, term_list);
 }
+void ProductMatcher::GetTermsString_(const UString& text, std::string& str)
+{
+    std::vector<Term> t_list;
+    AnalyzeNoSymbol_(text, t_list);
+    for(uint32_t i=0;i<t_list.size();i++)
+    {
+        std::string s;
+        t_list[i].text.convertString(s, UString::UTF_8);
+        str+=s;
+    }
+}
+
 void ProductMatcher::GenSuffixes_(const std::vector<term_t>& term_list, Suffixes& suffixes)
 {
     suffixes.resize(term_list.size());
@@ -3693,6 +3716,9 @@ void ProductMatcher::ConstructKeywordTrie_(const TrieType& suffix_trie)
             //}
         //}
         tag.text = keyword_text_[keyword];
+        //std::string stext;
+        //tag.text.convertString(stext, UString::UTF_8);
+        //std::cerr<<"tag:"<<stext<<std::endl;
         trie_[keyword] = tag;
         all_keywords_[keyword_id] = tag;
     }
