@@ -390,6 +390,7 @@ bool ProductTokenizer::GetTokenResultsByMatcher_(
     GetLeftTokens_(left, left_tokens, 0.1);
     if(!left_tokens.empty())
     {
+        /*
         std::list<std::pair<UString,double> >::iterator it = left_tokens.begin();
         for(; it != left_tokens.end(); ++it)
         {
@@ -399,7 +400,7 @@ bool ProductTokenizer::GetTokenResultsByMatcher_(
                 refined_results += it->first;
                 refined_results += SPACE_UCHAR;
             }
-        }
+        }*/
         tokens.splice(tokens.end(), left_tokens);
     }
     return !tokens.empty();
