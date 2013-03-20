@@ -22,7 +22,7 @@ using namespace idmlib::util;
 namespace bfs = boost::filesystem;
 
 
-//#define B5M_DEBUG
+#define B5M_DEBUG
 
 const std::string ProductMatcher::AVERSION("20130315");
 
@@ -2205,6 +2205,7 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     static const double category_weight = 3.0;
     static const double brand_weight = 3.0;
     static const double type_weight = 2.0;
+    static const double thirdparty_weight = 3.0;
     ATermList term_list;
     Analyze_(text, term_list);
     KeywordVector keyword_vector;
@@ -2377,6 +2378,11 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
             bool is_category = false;
             bool is_brand = false;
             bool is_type = false;
+            bool is_thirdparty = false;
+            if(k.category_name_apps.empty()&&k.attribute_apps.empty())
+            {
+                is_thirdparty = true;
+            }
             if(!k.category_name_apps.empty())
             {
                 is_category = true;
@@ -2393,16 +2399,20 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
                     is_type = true;
                 }
             }
-            if(!is_category&&is_type)
-            {
+            //if(!is_category&&is_type)
+            //{
 
-            }
+            //}
             double class_weight = 1.0;
             if(is_category) class_weight = category_weight;
             else if(is_brand) class_weight = brand_weight;
             else if(is_type) class_weight = type_weight;
+            else if(is_thirdparty) class_weight = thirdparty_weight;
             double kweight = k.kweight;
             kweight*=class_weight;
+            std::string stext;
+            k.text.convertString(stext, UString::UTF_8);
+            std::cerr<<"[HITS]"<<stext<<std::endl;
             hits.push_back(std::make_pair(k.text, kweight));
         }
     }
