@@ -142,6 +142,26 @@ struct DelOldDocIdData: public LogServerRequestData
     MSGPACK_DEFINE(success_, olddocid_, uuid_list_)
 };
 
+struct GetFreqQueriesRequestData: public LogServerRequestData
+{
+    std::string collection_;
+    std::string begin_time_;
+    std::string end_time_;
+
+    MSGPACK_DEFINE(collection_, begin_time_, end_time_);
+};
+
+struct InsertUserQueryRequestData : public LogServerRequestData
+{
+    std::string query_;
+    std::string collection_;
+    uint32_t hit_num_;
+    uint32_t page_start_;
+    uint32_t page_count_;
+
+    MSGPACK_DEFINE(query_, collection_, hit_num_, page_start_, page_count_);
+};
+
 }
 
 #endif /* LOG_SERVER_REQUEST_DATA_H_ */

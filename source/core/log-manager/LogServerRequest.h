@@ -28,8 +28,10 @@ public:
         METHOD_ADD_OLD_UUID,     // when uuid change to a new one, log the old uuid for the changing doc
         METHOD_ADD_OLD_DOCID,    // when doc moved to a new uuid, add the docid to the old uuid group.
         METHOD_DEL_OLD_DOCID,    // when doc deleted, remove the docid from all the uuid groups who hold it.
-        METHOD_GET_OLD_UUID,    
-        METHOD_GET_OLD_DOCID,  
+        METHOD_GET_OLD_UUID,
+        METHOD_GET_OLD_DOCID,
+        METHOD_GET_FREQ_QUERIES,
+        METHOD_INSERT_USER_QUERY,
         COUNT_OF_METHODS
     };
 
@@ -164,6 +166,23 @@ public:
     }
 };
 
+class GetFreqQueriesRequest : public LogRequestRequestT<GetFreqQueriesRequestData>
+{
+public:
+    GetFreqQueriesRequest()
+        :LogRequestRequestT<GetFreqQueriesRequestData>(METHOD_GET_FREQ_QUERIES)
+    {
+    }
+};
+
+class InsertUserQueryRequest : public LogRequestRequestT<InsertUserQueryRequestData>
+{
+public:
+    InsertUserQueryRequest ()
+        :LogRequestRequestT<InsertUserQueryRequestData>(METHOD_INSERT_USER_QUERY)
+    {
+    }
+};
 
 }
 
