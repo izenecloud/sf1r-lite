@@ -1566,27 +1566,10 @@ bool IndexWorker::mergeDocument_(
     {
         return false;
     }
-
+    oldDoc.copyPropertiesFromDocument(doc);
     for (Document::property_iterator it = oldDoc.propertyBegin(); it != oldDoc.propertyEnd(); ++it)
     {
-        if (doc.hasProperty(it->first))
-        {
-            ///When new doc has same properties with old doc
-            ///override content of old doc
-            if (it->second == doc.property(it->first)) continue;
-            if(boost::find_first(it->first,DocumentManager::PROPERTY_BLOCK_SUFFIX))
-            {
-                ///such properties are not UString type, so boost::get<> will throw exception
-                it->second.swap(doc.property(it->first));
-            }
-            else
-            {
-                const izenelib::util::UString& newPropValue = doc.property(it->first).get<izenelib::util::UString>();
-                if (newPropValue.empty()) continue;
-                it->second = newPropValue;
-            }
-        }
-        else if (generateIndexDoc)
+        if (!doc.hasProperty(it->first) && generateIndexDoc)
         {
             ///Properties that only exist within old doc, while not in new doc
             ///Require to prepare for IndexDocument
