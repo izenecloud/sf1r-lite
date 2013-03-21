@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "TestResources.h"
+
 using namespace sf1r;
 using namespace std;
 using namespace boost;
@@ -48,14 +49,69 @@ string get(Document doc,string prop)
     doc.getProperty(prop, ustr);
     return toString(ustr);
 }
-/*
-string getId(Document doc,string prop)
+
+string rand_chinese_char()
 {
-    uint128_t id;
-    doc.getProperty(prop, id);
-    return boost::lexical_cast<int>(id);
+    int iRange1 =0xe38080;
+    int iRange2 =0xe9be98;
+    int bianma = rand()%(iRange2-iRange1) +iRange1;
+    char ch[3] = { bianma>>8,(bianma>>8)%256,bianma%256};
+
+
+    return string(ch);
 }
-*/
+string rand_korea_char()
+{
+    int iRange1 =0xAC00;
+    int iRange2 =0x9ef5;
+    int bianma = rand()%(iRange2-iRange1) +iRange1;
+    char ch[3] = {'u',bianma/256,bianma%256};
+
+
+    return string(ch);
+}
+string rand_jp_char()
+{
+    int iRange1 =0x0800;  //u0800-u4e00 (日文)
+    int iRange2 =0x4e00;
+
+    int bianma = rand()%(iRange2-iRange1) +iRange1;
+
+    char ch[3] = {'u',bianma/256,bianma%256};
+
+
+    return string(ch);
+}
+string en_char = "_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+string rand_en_str()
+{
+
+    string ret;
+    int size= rand()%5+1;
+    for (int i = 0; i <size; ++i)
+    {
+        int x =rand() %(en_char.size()-1);
+        //cout<<en_char.substr(x,1)<<endl;
+        ret = ret+en_char.substr(x,1);
+    }
+    return ret;
+}
+string rand_str()
+{
+    int len=rand()%100;
+    int i1;
+    string a;
+    for(i1=1; i1<len; ++i1)
+    {
+        if(rand()%2==1)
+            a+=rand_chinese_char();
+        if(rand()%2==0)
+            a+=rand_en_str();
+    }
+
+    return a;
+}
+
 void show(Document doc)
 {
     cout<<get(doc,"Source")<<" "<<doc.property("DOCID")<<" "<<doc.property("uuid")<<" "<<get(doc,"Price")<<"  "<<get(doc,"Title")<<"  "<<get(doc,"Category")<<" "<<get(doc,"Attribute")<<"  mobile "<<doc.property("mobile") <<endl;
@@ -64,7 +120,7 @@ void show(Document doc)
 
 void show(ProductMatcher::Product product)
 {
-   cout<<"productid"<<product.spid<<"title"<< product.stitle<<"attributes"<<product.GetAttributeValue()<<"frontcategory"<<product.fcategory<<"scategory"<<product.scategory<<"price"<<product.price<<"brand"<<product.sbrand<<endl;
+    cout<<"productid"<<product.spid<<"title"<< product.stitle<<"attributes"<<product.GetAttributeValue()<<"frontcategory"<<product.fcategory<<"scategory"<<product.scategory<<"price"<<product.price<<"brand"<<product.sbrand<<endl;
 }
 
 bool checkProduct(ProductMatcher::Product &product,string &fcategory,string &scategory,string &sbrand,string spid)
@@ -104,7 +160,17 @@ bool checkProcesss(ProductMatcher &matcher,string spid,string soid,string source
     }
     return check;
 }
-
+Document rand_doc()
+{
+    Document doc;
+    doc.property("DATE") = izenelib::util::UString(rand_str(), izenelib::util::UString::UTF_8);
+    doc.property("DOCID") =     izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
+    doc.property("Title") = izenelib::util::UString(rand_str(), izenelib::util::UString::UTF_8);
+    doc.property("Price") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
+    doc.property("Source") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
+    doc.property("Attribute") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
+    return doc;
+}
 
 void ProcessVector(ProductMatcher* matcher,vector<Document>& docvec, vector<ProductMatcher::Product>& result_product)
 {
@@ -114,7 +180,39 @@ void ProcessVector(ProductMatcher* matcher,vector<Document>& docvec, vector<Prod
         matcher->Process(docvec[i], result_product[i],true);
     }
 }
+void GetFrontEnd(ProductMatcher* matcher,  boost::posix_time::ptime time_end)
+{
+    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time(); ;
+    while( time_now <time_end)
+    {
+        std::vector<UString> results;
+        UString text(rand_str(), UString::UTF_8);
+        matcher->GetFrontendCategory(text, 3, results);
+        time_now = boost::posix_time::microsec_clock::local_time();
+    }
+}
+void SearchKeywords(ProductMatcher* matcher,  boost::posix_time::ptime time_end)
+{
+    boost::posix_time::ptime time_now  = boost::posix_time::microsec_clock::local_time();;
+    while( time_now <time_end)
+    {
+        UString text(rand_str(), UString::UTF_8);
+        std::list<std::pair<UString, double> > hits;
+        std::list<UString> left;
+        matcher->GetSearchKeywords(text, hits, left);
+    }
+}
 
+void ProcessRandom(ProductMatcher* matcher,  boost::posix_time::ptime time_end)
+{
+    boost::posix_time::ptime time_now  = boost::posix_time::microsec_clock::local_time();;
+    while( time_now <time_end)
+    {
+        ProductMatcher::Product result_product;
+        matcher->Process(rand_doc(), result_product,true);
+        time_now = boost::posix_time::microsec_clock::local_time();
+    }
+}
 
 void CheckProcessVector(ProductMatcher* matcher,vector<Document>& doc,  vector<ProductMatcher::Product>& product)
 {
@@ -126,30 +224,112 @@ void CheckProcessVector(ProductMatcher* matcher,vector<Document>& doc,  vector<P
     }
 }
 
-
-
-void MultiThreadProcessTest(string scd_file, std::string knowledge_dir,    unsigned threadnum=4,unsigned docnum=40000)
+void MultiThreadGetCategoryTest(string scd_file, std::string knowledge_dir, int minute,   unsigned threadnum=4,unsigned docnum=40000)
 {
     std::string cma_path= IZENECMA_KNOWLEDGE ;
-    //std::string knowledge_dir= MATCHER_KNOWLEDGE;
     string file=MOBILE_SOURCE;//"/home/lscm/codebase/b5m-operation/config/collection/mobile_source.txt";
-    //std::vector<ProductMatcher*> matcher;
     ProductMatcher*  matcher=(new ProductMatcher);;
     matcher->SetCmaPath(cma_path);
     matcher->Open(knowledge_dir);
 
     std::vector<boost::thread*>  compute_threads_;
     compute_threads_.resize(threadnum);
-    /*
+    vector<vector<Document> > threaddocvec;
+
+    vector<Document> right;
+    threaddocvec.resize(threadnum);
+
+    boost::posix_time::ptime time_end=boost::posix_time::microsec_clock::local_time()+boost::posix_time::minutes(minute);
     for(unsigned i=0; i<threadnum; i++)
     {
-        matcher.push_back(new ProductMatcher);
-        matcher[i]->SetCmaPath(cma_path);
-        matcher[i]->Open(knowledge_dir);
+        compute_threads_[i]=(new boost::thread(boost::bind(&GetFrontEnd,matcher,time_end)));
+    }
+    cout<<"preadd"<<endl;
+    for(unsigned i=0; i<threadnum; i++)
+    {
+        compute_threads_[i]->join();
+    }
+
+    delete matcher;
+
+
+};
+
+
+void MultiThreadSearchKeywordsTest(string scd_file, std::string knowledge_dir, int minute,   unsigned threadnum=4,unsigned docnum=40000)
+{
+    std::string cma_path= IZENECMA_KNOWLEDGE ;
+    //std::string knowledge_dir= MATCHER_KNOWLEDGE;
+    string file=MOBILE_SOURCE;//"/home/lscm/codebase/b5m-operation/config/collection/mobile_source.txt";
+    ProductMatcher*  matcher=(new ProductMatcher);;
+    matcher->SetCmaPath(cma_path);
+    matcher->Open(knowledge_dir);
+
+    std::vector<boost::thread*>  compute_threads_;
+    compute_threads_.resize(threadnum);
+    vector<vector<Document> > threaddocvec;
+
+    vector<Document> right;
+    threaddocvec.resize(threadnum);
+
+    boost::posix_time::ptime time_end=boost::posix_time::microsec_clock::local_time()+boost::posix_time::minutes(minute);
+    for(unsigned i=0; i<threadnum; i++)
+    {
+        compute_threads_[i]=(new boost::thread(boost::bind(&GetFrontEnd,matcher,time_end)));
 
     }
-    */
-    //boost::thread_group threads;
+    cout<<"preadd"<<endl;
+    for(unsigned i=0; i<threadnum; i++)
+    {
+        compute_threads_[i]->join();
+    }
+
+    delete matcher;
+};
+
+
+
+void MultiThreadRandomProcessTest(string scd_file, std::string knowledge_dir, int minute,   unsigned threadnum=4,unsigned docnum=40000)
+{
+    std::string cma_path= IZENECMA_KNOWLEDGE ;
+    ProductMatcher*  matcher=(new ProductMatcher);;
+    matcher->SetCmaPath(cma_path);
+    matcher->Open(knowledge_dir);
+
+    std::vector<boost::thread*>  compute_threads_;
+    compute_threads_.resize(threadnum);
+
+    vector<vector<Document> > threaddocvec;
+
+    vector<Document> right;
+    threaddocvec.resize(threadnum);
+    boost::posix_time::ptime time_end=boost::posix_time::microsec_clock::local_time()+boost::posix_time::minutes(minute);
+
+    for(unsigned i=0; i<threadnum; i++)
+    {
+        compute_threads_[i]=(new boost::thread(boost::bind(&ProcessRandom,matcher,time_end)));
+    }
+    cout<<"preadd"<<endl;
+    for(unsigned i=0; i<threadnum; i++)
+    {
+        compute_threads_[i]->join();
+    }
+    delete matcher;
+
+
+};
+
+void MultiThreadProcessTest(string scd_file, std::string knowledge_dir,    unsigned threadnum=4,unsigned docnum=40000)
+{
+    std::string cma_path= IZENECMA_KNOWLEDGE ;
+    string file=MOBILE_SOURCE;//"/home/lscm/codebase/b5m-operation/config/collection/mobile_source.txt";
+    ProductMatcher*  matcher=(new ProductMatcher);;
+    matcher->SetCmaPath(cma_path);
+    matcher->Open(knowledge_dir);
+
+    std::vector<boost::thread*>  compute_threads_;
+    compute_threads_.resize(threadnum);
+
     vector<vector<Document> > threaddocvec;
 
     vector<Document> right;
@@ -188,7 +368,7 @@ void MultiThreadProcessTest(string scd_file, std::string knowledge_dir,    unsig
     //single thread to get right answer
     for(unsigned i=0; i<threadnum; i++)
     {
-         ProcessVector(matcher,threaddocvec[i],Product[i]);
+        ProcessVector(matcher,threaddocvec[i],Product[i]);
 
     }
     // multithread thread for check
@@ -204,14 +384,15 @@ void MultiThreadProcessTest(string scd_file, std::string knowledge_dir,    unsig
     }
     //threads.join_all();
 
-    
 
-    
-    
+
+
+
     delete matcher;
 
 
 };
+
 
 void SegLine(std::string temp, vector<string>& ret)
 {
@@ -222,40 +403,81 @@ void SegLine(std::string temp, vector<string>& ret)
     while(templen!= string::npos)
     {
 
-        
+
         ret.push_back(temp.substr(0,templen));
-        
-       
+
+
         temp=temp.substr(templen+3);
         templen = temp.find("\",\"");
 
     }
-  
+
     ret.push_back(temp);
-    
+
+}
+void SegLineToHits(std::string temp, vector<string>& ret)
+{
+    ret.clear();
+    size_t templen = temp.find(" ");
+    while(templen!= string::npos)
+    {
+        if(templen!=0)
+            ret.push_back(temp.substr(0,templen));
+        temp=temp.substr(templen+1);
+        templen = temp.find(" ");
+
+    }
+    if(temp.length()!=0)
+        ret.push_back(temp);
+
 }
 int main()
 {
-
+    time_t t(0);
+    srand((unsigned)time(&t));
     std::string cma_path= IZENECMA_KNOWLEDGE ;
     std::string knowledge_dir;//= MATCHER_KNOWLEDGE;
     string scd_file;//= TEST_SCD_PATH;
     string category_test_file;//
     string process_test_file;//
+    string getSearchKeywords_test_file;//
     ifstream in;
     in.open("config",ios::in);
     string line;
     unsigned threadnum=4;
+    unsigned testminute=0;
     while( getline(in, line))
     {
-        if(line.find("knowledge_dir:")!=string::npos){knowledge_dir=line.substr(line.find("knowledge_dir:")+string("knowledge_dir:").length());}
-        else if(line.find("scd_path:")!=string::npos){scd_file=line.substr(line.find("scd_path:")+string("scd_path:").length());}
-        else if(line.find("category_test_file")!=string::npos){category_test_file=line.substr(line.find("category_test_file:")+string("category_test_file:").length());}
-        else if(line.find("process_test_file")!=string::npos){process_test_file=line.substr(line.find("process_test_file:")+string("process_test_file:").length());}
-        else if(line.find("threadnum")!=string::npos){threadnum=boost::lexical_cast<int>(line.substr(line.find("threadnum:")+string("threadnum:").length()));}
-
+        if(line.find("knowledge_dir:")==0)
+        {
+            knowledge_dir=line.substr(line.find("knowledge_dir:")+string("knowledge_dir:").length());
+        }
+        else if(line.find("scd_path:")==0)
+        {
+            scd_file=line.substr(line.find("scd_path:")+string("scd_path:").length());
+        }
+        else if(line.find("category_test_file")==0)
+        {
+            category_test_file=line.substr(line.find("category_test_file:")+string("category_test_file:").length());
+        }
+        else if(line.find("process_test_file")==0)
+        {
+            process_test_file=line.substr(line.find("process_test_file:")+string("process_test_file:").length());
+        }
+        else if(line.find("getSearchKeywords_test_file")==0)
+        {
+            getSearchKeywords_test_file=line.substr(line.find("getSearchKeywords_test_file:")+string("getSearchKeywords_test_file:").length());
+        }
+        else if(line.find("threadnum")==0)
+        {
+            threadnum=boost::lexical_cast<int>(line.substr(line.find("threadnum:")+string("threadnum:").length()));
+        }
+        else if(line.find("testminute")==0)
+        {
+            testminute=boost::lexical_cast<int>(line.substr(line.find("testminute:")+string("testminute:").length()));
+        }
     }
-    cout<< cma_path<<"  "<<knowledge_dir<<" "<<scd_file<<" "<<category_test_file<<" "<<process_test_file<<endl;
+    cout<< cma_path<<"  "<<knowledge_dir<<" "<<scd_file<<" "<<category_test_file<<" "<<process_test_file<<"  "<<getSearchKeywords_test_file<<endl;
     in.close();
     bool noprice=false;
     int max_depth=3;
@@ -279,23 +501,24 @@ int main()
     }
 
     vector<std::pair<string,string> >  txt;
-
-    in.open(category_test_file.c_str(),ios::in);
-    string title;
-    string category;
-    int num=0;
-    while( getline(in, line))
+    if(!category_test_file.empty())
     {
-         num++;
-         if(num%2==1)
-         title=line;
-         else
-         {
-            category=line;
-            txt.push_back(make_pair(title,category));
-         }
+        in.open(category_test_file.c_str(),ios::in);
+        string title;
+        string category;
+        int num=0;
+        while( getline(in, line))
+        {
+            num++;
+            if(num%2==1)
+                title=line;
+            else
+            {
+                category=line;
+                txt.push_back(make_pair(title,category));
+            }
+        }
     }
-
     for(unsigned i=0; i<txt.size(); i++)
     {
         //cout<<txt[i]<<"  ";
@@ -330,47 +553,97 @@ int main()
     }
     cout<<"错误率："<<double(getCategoryError)/txt.size()<<endl;
     sleep(10);
-int DocNum=0;
-in.close();
-if(!process_test_file.empty())
-{
-    in.open(process_test_file.c_str(),ios::in);
-    string title;
-    string category;
-
-    vector<string> param;
-    while( getline(in, line))
+    int DocNum=0;
+    in.close();
+    if(!process_test_file.empty())
     {
-         //cout<<line<<endl;
-         SegLine(line,param);
-         /*
-         cout<<param.size()<<" ";
-         for(unsigned j=0;j<param.size();j++)
-         {
-              cout<<param[j]<<" ";
-         }
-         cout<<endl;
-         */
-         if(param.size()==10)
-         {
-           checkProcesss(matcher,param[0],param[1],param[2],param[3],param[4],param[5],param[6],param[7],param[8],param[9]);
-           DocNum++;
-         }
+        in.open(process_test_file.c_str(),ios::in);
+        string title;
+        string category;
+
+        vector<string> param;
+        while( getline(in, line))
+        {
+            //cout<<line<<endl;
+            SegLine(line,param);
+            if(param.size()==10)
+            {
+                checkProcesss(matcher,param[0],param[1],param[2],param[3],param[4],param[5],param[6],param[7],param[8],param[9]);
+                DocNum++;
+            }
+        }
+
+
     }
-
-
-}
-/*    matcher.Test("/home/lscm/6indexSCD/");
-*/
     cout<<DocNum<<endl;
     if(DocNum!=0)
     {
-    cout<<"错误率："<<double(ProcessError)/DocNum<<endl;
+        cout<<"错误率："<<double(ProcessError)/DocNum<<endl;
     }
     sleep(10);
-    MultiThreadProcessTest(scd_file,knowledge_dir,threadnum);
+    in.close();
+    ofstream out;
+//out.open("getSearchKeywords_test_file",ios::out);
+    if(!getSearchKeywords_test_file.empty())
+    {
+        int num =0;
+        in.open(getSearchKeywords_test_file.c_str(),ios::in);
+        string title;
+        vector<string> hitanswer;
+        while( getline(in, line))
+        {
+            num++;
+            if(num%2==1)
+            {
+                title=line;
+            }
+            else
+            {
+
+                SegLineToHits(line,hitanswer);
+                UString text(title, UString::UTF_8);
+                std::list<std::pair<UString, double> > hits;
+                std::list<UString> left;
+                matcher.GetSearchKeywords(text, hits, left);
+                //out<<title<<endl;
+                vector<string> hitresult;
+                for(std::list<std::pair<UString, double> >::iterator i=hits.begin(); i!=hits.end(); i++)
+                {
+                    //out<<toString(i->first)<<"  ";
+                    hitresult.push_back(toString(i->first));
+                }
+                for(unsigned i=0; i<hitanswer.size(); i++)
+                {
+                    if(find(hitresult.begin(),hitresult.end(),hitanswer[i])==hitresult.end())
+                        cout<<"error"<<title<<" "<<hitanswer[i]<<"hits but not found"<<endl;
+                }
+                out<<endl;
+                for(std::list<UString>::iterator i=left.begin(); i!=left.end(); i++)
+                {
+                    // cout<<toString(*i)<<"  ";
+                }
+                //cout<<endl;
+
+            }
+        }
+    }
+
+
+    /*    matcher.Test("/home/lscm/6indexSCD/");
+    */
+
+
 
     cout<<"错误率："<<double(ProcessError)/(40000+DocNum)<<endl;
+/*
+
+for(int i=0;i<10;i++)
+ cout<<rand_chinese_char()<<endl;
+*/
+    MultiThreadProcessTest(scd_file,knowledge_dir,threadnum);
+    MultiThreadGetCategoryTest(scd_file,knowledge_dir,testminute,threadnum);
+    MultiThreadRandomProcessTest(scd_file,knowledge_dir,testminute,threadnum);
+    MultiThreadSearchKeywordsTest(scd_file,knowledge_dir,testminute,threadnum);
 
     return 1;
 };
