@@ -1,4 +1,5 @@
 #include "UserQuery.h"
+#include "LogServerRequest.h"
 #include <boost/lexical_cast.hpp>
 
 using namespace std;
@@ -83,6 +84,10 @@ void UserQuery::load( const std::map<std::string, std::string> & rawdata )
 
          /*  */
     }
+}
+
+void UserQuery::save_to_logserver()
+{
 }
 
 }
