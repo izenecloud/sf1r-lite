@@ -16,12 +16,13 @@ SuffixMatchMiningTask::SuffixMatchMiningTask(
         boost::shared_ptr<FilterManager>& filter_manager,
         std::string data_root_path,
         boost::shared_mutex& mutex)
-    : document_manager_(document_manager)
+    : isRtypeIncremental_(false)
+    , document_manager_(document_manager)
     , fmi_manager_(fmi_manager)
     , filter_manager_(filter_manager)
     , data_root_path_(data_root_path)
-    , mutex_(mutex)
     , is_incrememtalTask_(false)
+    , mutex_(mutex)
 {
 }
 
@@ -54,7 +55,7 @@ bool SuffixMatchMiningTask::preProcess()
 
         std::vector<uint32_t> del_docid_list;
         document_manager_->getDeletedDocIdList(del_docid_list);
-        if (last_docid == document_manager_->getMaxDocId())
+        if (last_docid == document_manager_->getMaxDocId() || isRtypeIncremental_)
         {
             // check if there is any new deleted doc.
             std::vector<size_t> doclen_list(del_docid_list.size(), 0);
@@ -89,7 +90,6 @@ bool SuffixMatchMiningTask::preProcess()
                 }
             }
         }
-
         else
         {
             LOG(INFO) << "old fmi docCount is : " << last_docid << ", document_manager count:" << document_manager_->getMaxDocId();
@@ -170,7 +170,7 @@ bool SuffixMatchMiningTask::postProcess()
 
 bool SuffixMatchMiningTask::buildDocument(docid_t docID, const Document& doc)
 {
-    if (!is_incrememtalTask_)
+    if (!is_incrememtalTask_ && !isRtypeIncremental_)
     {
         bool failed = (doc.getId() == 0);
         new_fmi_manager->appendDocsAfter(failed, doc);

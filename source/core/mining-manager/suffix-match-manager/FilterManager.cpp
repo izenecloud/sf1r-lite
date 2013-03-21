@@ -237,6 +237,9 @@ void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid, bool i
 
         filter_list_.clear();
         filter_list_.resize(prop_list_.size());
+
+        num_key_sets_.clear();
+        num_key_sets_.resize(prop_list_.size());
         
         for (std::vector<uint32_t>::iterator i = group_last_docid_list.begin(); i != group_last_docid_list.end(); ++i)
         {
@@ -252,7 +255,7 @@ void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid, bool i
 
     buildAttrFilters(attr_last_docid_list, max_docid, attr_prop_list_, attr_filter_map);
     saveStrFilterInvertedData(attr_prop_list_, attr_filter_map);
-    
+
     if (isIncre)
     {
         buildDateFilters(last_docid, max_docid, date_prop_list_, date_filter_map);

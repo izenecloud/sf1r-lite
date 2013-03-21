@@ -372,36 +372,6 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     return total_match;
 }
 
-
-void SuffixMatchManager::updateFilterForRtype(std::vector<string> unchangedProperties)
-{
-    string data_root_path = "ss";
-    new_filter_manager.reset(new FilterManager(filter_manager_->getGroupManager(), data_root_path,
-            filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder()));
-    new_filter_manager->copyPropertyInfo(filter_manager_);
-    new_filter_manager->generatePropertyId();
-
-    for (std::vector<string>::iterator i = unchangedProperties.begin(); i != unchangedProperties.end(); ++i)
-    {
-        new_filter_manager->addUnchangedProperty(*i);
-    }
-
-    new_filter_manager->setRebuildFlag(filter_manager_.get());
-    size_t last_docid = fmi_manager_ ? fmi_manager_->docCount() : 0;
-
-    new_filter_manager->finishBuildStringFilters();
-    new_filter_manager->buildFilters(0, last_docid); // infact is just for numberic;
-
-    new_filter_manager->swapUnchangedFilter(filter_manager_.get());
-    new_filter_manager->clearUnchangedProperties();
-
-    filter_manager_.swap(new_filter_manager);
-    new_filter_manager.reset();
-
-    filter_manager_->saveFilterId();
-    filter_manager_->saveFilterList();
-}
-
 bool SuffixMatchManager::getAllFilterRangeFromAttrLable_(
         const GroupParam& group_param,
         std::vector<size_t>& prop_id_list,

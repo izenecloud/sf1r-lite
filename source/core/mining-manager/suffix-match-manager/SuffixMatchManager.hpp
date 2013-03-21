@@ -70,8 +70,6 @@ public:
 
     void updateFmindex();
 
-    void updateFilterForRtype(std::vector<string> unchangedProperties);
-
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
     typedef FMIndexType::MatchRangeListT RangeListT;

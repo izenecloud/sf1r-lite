@@ -152,29 +152,17 @@ namespace sf1r
 
     void IncrementalFuzzyManager::updateFilterForRtype(std::vector<string> unchangedProperties)
     {
-        string data_root_path_ = "ss";
-        new_filter_manager.reset(new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
-                    filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder()));
-        new_filter_manager->copyPropertyInfo(filter_manager_);
-        new_filter_manager->generatePropertyId();
-
         for (std::vector<string>::iterator i = unchangedProperties.begin(); i != unchangedProperties.end(); ++i)
         {
-            new_filter_manager->addUnchangedProperty(*i);
+            //filter_manager_->addUnchangedProperty(*i);
         }
+        bool isIncre = true;
+        LOG (INFO) << "start_docid_: - " << start_docid_ << "max" << document_manager_->getMaxDocId() << endl;
 
-        new_filter_manager->setRebuildFlag(filter_manager_.get());
-        new_filter_manager->finishBuildStringFilters();
-        new_filter_manager->buildFilters(start_docid_, document_manager_->getMaxDocId()); // last_docid_ == document_manager_->getMaxDocId();
-
-        new_filter_manager->swapUnchangedFilter(filter_manager_.get());
-        new_filter_manager->clearUnchangedProperties();
-
-        filter_manager_.swap(new_filter_manager);
-        new_filter_manager.reset();
-
+        filter_manager_->buildFilters(start_docid_, document_manager_->getMaxDocId(), isIncre);
         filter_manager_->saveFilterId();
         filter_manager_->saveFilterList();
+        printFilter();
     }
 
     void IncrementalFuzzyManager::doCreateIndex()
@@ -278,7 +266,7 @@ namespace sf1r
         izenelib::util::ClockTimer timer;
         {
             ScopedReadLock lock(mutex_);
-            cout<<"xxxx xxxxxxxxxxxxxxxxx IndexedDocNum_"<<IndexedDocNum_<<endl;
+            cout<<"indexedDocNum_"<<IndexedDocNum_<<endl;
             if (IndexedDocNum_ == 0 || isMergingIndex_ || isInitIndex_)
             {
                 return true;
@@ -357,7 +345,8 @@ namespace sf1r
                 std::vector<uint32_t> docidlist;
 
                 //get filter docidList ...
-                LOG (INFO) << "get filter docidList ...";
+                LOG (INFO) << "get filter docidList ..." << filter_range_lists.size();
+
                 if (filter_range_lists.size() > 0)
                 {
                     needFilter = true; 
@@ -402,7 +391,7 @@ namespace sf1r
                 }
             }
             
-            //LOG(INFO) << "INC Search ResulList Number:" << resultList.size();
+            LOG(INFO) << "INC Search ResulList Number:" << resultList.size();
             //LOG(INFO) << "INC Search Time Cost: " << timer.elapsed() << " seconds";
             return true;
         }
@@ -934,11 +923,9 @@ namespace sf1r
                     }
                 }
             }
-            //cout<<endl<<"-----"<<endl;
             sort(filter_doc_lists[n].begin(), filter_doc_lists[n].end());
             n++;
         }
-
         getFinallyFilterDocid(filter_doc_lists, filterDocidList);
     }
 
@@ -983,9 +970,15 @@ namespace sf1r
             {
                 if (j == label)
                 {
-                    break;
+                    continue;
                 }
                 unsigned int count = num[j];
+                if (count >= filter_doc_lists[j].size())
+                {
+                    flag = false;
+                    break;
+                }
+
                 while (filter_doc_lists[j][count] < value)
                 {
                     count++;

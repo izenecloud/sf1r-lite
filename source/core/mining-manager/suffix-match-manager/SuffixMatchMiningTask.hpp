@@ -54,6 +54,8 @@ public:
     void setLastDocId(docid_t docID);
     void setTaskStatus(bool is_incrememtalTask);
 
+    bool isRtypeIncremental_;
+
 private:
     DISALLOW_COPY_AND_ASSIGN(SuffixMatchMiningTask);
     boost::shared_ptr<DocumentManager> document_manager_;

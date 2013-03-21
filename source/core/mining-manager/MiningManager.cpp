@@ -933,9 +933,8 @@ bool MiningManager::DoMiningCollection()
                 if (document_manager_->last_delete_docid_.size() > 0) /// merge and rebuild fm-index;
                 {
                     SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                    bool isIncre = true;
+                    bool isIncre = false;
                     miningTask->setTaskStatus(isIncre);
-                    
                 }
                 else if (document_manager_->isThereRtypeDoc())
                 {
@@ -956,17 +955,22 @@ bool MiningManager::DoMiningCollection()
                     if (suffixMatchManager_->getMiningTask()->getLastDocId() - 1 == document_manager_->getMaxDocId()) /// only fm-index;
                     {
                         SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                        bool isIncre = true;
+                        bool isIncre = false;
                         miningTask->setTaskStatus(isIncre);
                     }
                     else /// each just update it's filter;
                     {
+                        /*
+                        @brief: because the fm-index will not rebuild, so even the filter docid num is 
+                        more than fm-index docid num, there is no effect.
+                        */
                         SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
                         bool isIncre = false;
-                        miningTask->setTaskStatus(isIncre);
+                        miningTask->isRtypeIncremental_ = true;
+                        miningTask->setTaskStatus(isIncre);// 
 
-                        suffixMatchManager_->updateFilterForRtype(unchangedProperties);
-                        incrementalManager_->updateFilterForRtype(unchangedProperties);
+                        incrementalManager_->updateFilterForRtype(unchangedProperties); // use extra filter update for incre;
+                        
                     }
                 }
             }
@@ -1008,9 +1012,6 @@ bool MiningManager::DoMiningCollection()
             incrementalManager_->getLastDocid(last_docid);
             incrementalManager_->getDocNum(docNum);
             incrementalManager_->getMaxNum(maxDoc);
-
-            //LOG (INFO) << "docNum:" << docNum << "last_docid:" << last_docid << "getMaxDocId()" << document_manager_->getMaxDocId() << "maxDoc:" << maxDoc << endl;
-
             if (last_docid == document_manager_->getMaxDocId())
             {
                 if (document_manager_->last_delete_docid_.size() > 0) /// merge and rebuild fm-index;
@@ -1020,6 +1021,8 @@ bool MiningManager::DoMiningCollection()
                 else if (document_manager_->isThereRtypeDoc())
                 {
                     // do nothing
+                    SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                    miningTask->isRtypeIncremental_ = false;
                 }
             }
             else
