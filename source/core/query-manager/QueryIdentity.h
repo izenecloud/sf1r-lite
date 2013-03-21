@@ -16,6 +16,7 @@ struct QueryIdentity
 {
     QueryIdentity()
         : rankingType(RankingType::DefaultTextRanker)
+        , removeDuplicatedDocs(false)
         , start(0)
         , distActionType(0)
         , isRandomRank(false)
