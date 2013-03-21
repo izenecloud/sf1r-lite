@@ -102,6 +102,49 @@ std::string LogAnalysisController::parseConditions()
     return str_join(results, " and ");
 }
 
+bool LogAnalysisController::parseConditions(std::string & collection,
+        std::string & begin_time,
+        std::string & end_time)
+{
+    bool ret_c = false;
+    bool ret_b = false;
+    bool ret_e = false;
+    ConditionArrayParser conditonArrayParser;
+    if (!nullValue(request()[Keys::conditions]))
+    {
+        conditonArrayParser.parse(request()[Keys::conditions]);
+        for ( vector<ConditionParser>::const_iterator it = conditonArrayParser.parsedConditions().begin();
+                it != conditonArrayParser.parsedConditions().end(); it++ )
+        {
+            if( it->property() == "Collection")
+            {
+                collection = to_str((*it)(0));
+                ret_c = true;
+            }
+            else if(it->property() == "TIMESTAMP")
+            {
+                if(it->op() == "<" || it->op() == "<=" )
+                {
+                    end_time = to_str((*it)(0));
+                    ret_e = true;
+                }
+                else if( it->op() == ">" || it->op() == ">=")
+                {
+                    begin_time = to_str((*it)(0));
+                    ret_b = true;
+                }
+                else
+                {
+                }
+            }
+            else
+            {
+            }
+        }
+    }
+    return ret_c && ret_b && ret_e;
+}
+
 std::string LogAnalysisController::parseGroupBy()
 {
     vector<string> results;
@@ -188,6 +231,123 @@ void LogAnalysisController::system_events()
     }
 }
 
+/**
+ * @brief Action @b user_queries.
+ *
+ * @section request
+ *
+ * - @b select (@c Array): Select columns in result. OrderArrayParser.
+ * - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
+ * - @b sort (@c Array): Sort result. See OrderArrayParser.
+ *
+ * @section response
+ *
+ * - @b user_queries: All user queries which fit conditions.
+ *
+ */
+void LogAnalysisController::get_freq_user_queries_from_logserver()
+{
+    bool existAggregateFunc = false;
+    std::string collection_name;
+    std::string begin_time;
+    std::string end_time;
+
+    string select = parseSelect(existAggregateFunc);
+    string conditions = parseConditions();
+    if(!parseConditions(collection_name, begin_time, end_time))
+    {
+        response().addError("[LogManager] Fail to process such a request");
+        return;
+    }
+    string group = parseGroupBy();
+    string order = parseOrder();
+    string limit = asString(request()[Keys::limit]);
+    vector<UserQuery> results;
+    std::list< std::map<std::string, std::string> > sqlResults;
+    static const time_t refreshInterval = 24 * 60 * 60;
+
+    if (existAggregateFunc)
+    {
+        typedef std::pair<time_t, std::list<std::map<std::string, std::string> > > user_queries_cache_value_type;
+        typedef izenelib::cache::IzeneCache<
+            std::string,
+            user_queries_cache_value_type,
+            izenelib::util::ReadWriteLock,
+            izenelib::cache::RDE_HASH,
+            izenelib::cache::LRLFU
+        > user_queries_cache_type;
+        static user_queries_cache_type user_queries_cache;
+        user_queries_cache_value_type user_queries;
+
+        std::stringstream sql;
+
+        sql << "select " << (select.size() ? select : "*");
+        sql << " from " << UserQuery::TableName ;
+        if ( conditions.size() )
+        {
+             sql << " where " << conditions;
+        }
+        if ( group.size() )
+        {
+             sql << " group by " << group;
+        }
+        if ( order.size() )
+        {
+             sql << " order by " << order;
+        }
+        if ( limit.size() )
+        {
+            sql << " limit " << limit;
+        }
+        sql << ";";
+
+        if(!user_queries_cache.getValueNoInsert(sql.str(), user_queries)
+                || ((std::time(NULL) - user_queries.first) > refreshInterval) ){
+            if ( !UserQuery::find_freq_from_logserver(collection_name, begin_time, end_time, sqlResults) )
+            {
+                response().addError("[LogManager] Fail to process such a request");
+                return;
+            }
+            else
+            {
+                user_queries_cache.updateValue(sql.str(), std::make_pair(std::time(NULL), sqlResults));
+            }
+        }
+        else
+        {
+            sqlResults = user_queries.second;
+        }
+    }
+    else
+    {
+        response().addError("[LogManager] Fail to process such a request");
+        return;
+    }
+
+    Value& userQueries = response()[Keys::user_queries];
+    userQueries.reset<Value::ArrayType>();
+    if (existAggregateFunc)
+    {
+        for (std::list<std::map<std::string, std::string> >::const_iterator it = sqlResults.begin();
+                it!=sqlResults.end(); it++)
+        {
+            Value& userQuery = userQueries();
+            for (std::map<std::string, std::string>::const_iterator mit = it->begin();
+                    mit != it->end(); mit++ )
+            {
+                if (mit->first == UserQuery::ColumnName[UserQuery::Query])
+                    userQuery[Keys::query] = mit->second;
+                else if (mit->first == "count")
+                    userQuery[Keys::count] = mit->second;
+            }
+        }
+    }
+    else
+    {
+        response().addError("[LogManager] Fail to process such a request");
+        return;
+    }
+}
 /**
  * @brief Action @b user_queries.
  *
@@ -652,6 +812,113 @@ void LogAnalysisController::product_update_info()
         else
         {
             productCount[Keys::time_info] = 0;
+        }
+    }
+}
+/**
+ * @brief Action @b inject_user_queries.
+ *
+ * @section request
+ *
+ * The request format is identical with the response of @b user_queries.
+ *
+ * - @b user_queries (@c Array): Array of queries with following fields
+ *   - @b query* (@c String): keywords.
+ *   - @b collection* (@c String): collection name.
+ *   - @b hit_docs_num (@c Uint = 0): Number of hit documents.
+ *   - @b page_start (@c Uint = 0): Page start index offset.
+ *   - @b page_count (@c Uint = 0): Request number of documents in page.
+ *   - @b duration (@c String = 0): Duration in format HH:MM:SS.fffffffff, where
+ *        fffffffff is fractional seconds and can be omit.
+ *   - @b timestamp (@c String = now): Time in format YYYY-mm-dd
+ *     HH:MM:SS.fffffffff. If this is not specified, current time is used.
+ * - @b conditions (@c Array): Result filtering conditions. See ConditionArrayParser.
+ * - @b sort (@c Array): Sort result. See OrderArrayParser.
+ *
+ * @section response
+ *
+ * - @b user_queries: All user queries which fit conditions.
+ *
+ */
+void LogAnalysisController::inject_user_queries_to_logserver()
+{
+    static const std::string session = "SESSION NOT USED";
+
+    if (nullValue(request()[Keys::user_queries]))
+    {
+        return;
+    }
+
+    Value::ArrayType* queries = request()[Keys::user_queries].getArrayPtr();
+    if (!queries)
+    {
+        response().addError(Keys::user_queries + " must be an array");
+        return;
+    }
+
+    for (std::size_t i = 0; i < queries->size(); ++i)
+    {
+        Value& query = (*queries)[i];
+
+        std::string keywords = asString(query[Keys::query]);
+        std::string collection = asString(query[Keys::collection]);
+
+        if (keywords.empty() || collection.empty())
+        {
+            response().addWarning("Require fields query and collection");
+        }
+        else
+        {
+            UserQuery queryLog;
+            queryLog.setQuery(keywords);
+            queryLog.setCollection(collection);
+            queryLog.setHitDocsNum(asUint(query[Keys::hit_docs_num]));
+            queryLog.setPageStart(asUint(query[Keys::page_start]));
+            queryLog.setPageCount(asUint(query[Keys::page_count]));
+            queryLog.setSessionId(session);
+
+            // duration
+            queryLog.setDuration(boost::posix_time::time_duration());
+            try
+            {
+                if (query.hasKey(Keys::duration))
+                {
+                    queryLog.setDuration(
+                        boost::posix_time::duration_from_string(
+                            asString(query[Keys::duration])
+                        )
+                    );
+                }
+            }
+            catch (const std::exception& e)
+            {
+                response().addWarning(
+                    "Invalid duration: " + asString(query[Keys::duration])
+                );
+            }
+
+            // timestamp
+            // default is now
+            queryLog.setTimeStamp(boost::posix_time::second_clock::local_time());
+            try
+            {
+                if (query.hasKey(Keys::timestamp))
+                {
+                    queryLog.setTimeStamp(
+                        boost::posix_time::time_from_string(
+                            asString(query[Keys::timestamp])
+                        )
+                    );
+                }
+            }
+            catch (const std::exception& e)
+            {
+                response().addWarning(
+                    "Invalid timestamp: " + asString(query[Keys::timestamp])
+                );
+            }
+
+            queryLog.save_to_logserver();
         }
     }
 }

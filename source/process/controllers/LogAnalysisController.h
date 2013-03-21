@@ -47,6 +47,10 @@ public:
 
     void delete_database();
 
+    void inject_user_queries_to_logserver();
+
+    void get_freq_user_queries_from_logserver();
+
 private:
 
     std::string parseSelect(bool & existAggregateFunc);
@@ -54,6 +58,8 @@ private:
     std::string parseOrder();
 
     std::string parseConditions();
+
+    bool parseConditions(std::string & collection, std::string & begin_time, std::string & end_time);
 
     std::string parseGroupBy();
 
