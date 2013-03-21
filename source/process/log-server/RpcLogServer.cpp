@@ -196,16 +196,6 @@ void RpcLogServer::dispatch(msgpack::rpc::request req)
             GetOldDocId(reqdata);
             req.result(reqdata);
         }
-        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_GET_FREQ_QUERIES])
-        {
-            //to do
-            //get form sketch
-        }
-        else if (method == LogServerRequest::method_names[LogServerRequest::METHOD_INSERT_USER_QUERY])
-        {
-            //to do
-            //update the sketch
-        }
         else
         {
             req.error(msgpack::rpc::NO_METHOD_ERROR);

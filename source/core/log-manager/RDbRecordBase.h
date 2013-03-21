@@ -2,8 +2,7 @@
 #define _RDB_RECORD_BASE_H_
 
 #include "RDbConnection.h"
-#include "LogServerConnection.h"
-#include "LogServerRequest.h"
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -32,16 +31,6 @@ public:
     {
         return RDbConnection::instance().exec(sql);
     }
-
-    static bool find_freq_from_logserver(const std::string & collection_name,
-        const std::string & begin_time,
-        const std::string & end_time,
-        std::list< std::map<std::string, std::string> > & results)
-    {
-       // LogServerConnection& conn = LogServerConnection::instance();
-       return true;
-    }
-
 
 
     /// Save record into a map

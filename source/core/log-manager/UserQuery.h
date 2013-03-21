@@ -2,7 +2,6 @@
 #define _USER_QUERY_H_
 
 #include "RDbRecordBase.h"
-#include "LogServerConnection.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
@@ -151,7 +150,7 @@ public:
     {
         return timeStamp_;
     }
-
+     
     inline void setTimeStamp( const boost::posix_time::ptime & timeStamp )
     {
         timeStamp_ = timeStamp;
@@ -162,7 +161,7 @@ public:
     {
         return timeStampPresent_;
     }
-
+ 
     inline const uint32_t getCount( ) const
     {
         return count_;
@@ -174,8 +173,6 @@ public:
 
 
     void save( std::map<std::string, std::string> & rawdata );
-
-    void save_to_logserver();
 
     void load( const std::map<std::string, std::string> & rawdata );
 
