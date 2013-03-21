@@ -383,36 +383,6 @@ void MasterManagerBase::checkForWriteReq()
     }
 }
 
-// check if last request finished
-//void MasterManagerBase::checkForWriteReqFinished()
-//{
-//    if (masterState_ != MASTER_STATE_WAIT_WORKER_FINISH_REQ)
-//    {
-//        LOG(ERROR) << "master is not waiting worker finish request while check finish, state:" << masterState_;
-//        return;
-//    }
-//    if (!isAllWorkerFinished())
-//    {
-//        LOG(INFO) << "not all worker finished current request, keep waiting.";
-//        return;
-//    }
-//    masterState_ = MASTER_STATE_STARTED;
-//    // update write request state to notify all primary worker.
-//    ZNode znode;
-//    if (getWriteReqNodeData(znode))
-//    {
-//        std::string write_server = znode.getStrValue(ZNode::KEY_MASTER_SERVER_REAL_PATH);
-//        if (write_server != serverRealPath_)
-//        {
-//            LOG(WARNING) << "change write request state mismatch server. " << write_server << " vs " << serverRealPath_;
-//            return;
-//        }
-//        znode.setValue(ZNode::KEY_MASTER_STATE, masterState_);
-//        zookeeper_->setZNodeData(ZooKeeperNamespace::getWriteReqPrepareNode(), znode.serialize());
-//        LOG(INFO) << "write request state changed success on server : " << serverRealPath_;
-//    }
-//}
-
 bool MasterManagerBase::cacheNewWriteFromZNode()
 {
     std::vector<std::string> reqchild;
@@ -609,16 +579,6 @@ bool MasterManagerBase::endWriteReq()
     }
     return true;
 }
-
-//bool MasterManagerBase::isAllWorkerFinished()
-//{
-//    if (!isAllWorkerInState(NodeManagerBase::NODE_STATE_WAIT_MASTER_FINISH_REQ))
-//    {
-//        LOG(INFO) << "one of primary worker not finish write request : ";
-//        return false;
-//    }
-//    return true;
-//}
 
 bool MasterManagerBase::isAllWorkerIdle()
 {
@@ -1328,6 +1288,18 @@ bool MasterManagerBase::isMinePrimary()
         return false;
     return isPrimaryWorker(sf1rTopology_.curNode_.replicaId_,  sf1rTopology_.curNode_.nodeId_);
 }
+
+void MasterManagerBase::notifyChangedPrimary()
+{
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    LOG(INFO) << "I became the new primary master.";
+    if (masterState_ == MASTER_STATE_STARTED || masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
+    {
+        // reset current workers, need detect primary workers.
+        detectWorkers();
+    }
+}
+
 
 
 

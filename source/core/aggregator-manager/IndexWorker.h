@@ -230,6 +230,13 @@ private:
             docid_t& docId,
             SCD_TYPE scdType);
 
+    UpdateType getUpdateType_(
+            const uint128_t& scdDocId,
+            const SCDDoc& doc,
+            docid_t& oldId,
+            SCD_TYPE scdType) const;
+
+
     bool makeSentenceBlocks_(
             const izenelib::util::UString& text,
             const unsigned int numOfSummary,
