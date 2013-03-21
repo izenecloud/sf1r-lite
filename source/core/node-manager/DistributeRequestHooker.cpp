@@ -29,8 +29,8 @@ void DistributeRequestHooker::init()
     need_backup_types_.insert(Req_Index);
     async_or_shard_write_types_.insert("commands_index");
     async_or_shard_write_types_.insert("documents_visit");
-    async_or_shard_write_types_.insert("recommends_visit_item");
-    async_or_shard_write_types_.insert("recommends_purchase_item");
+    async_or_shard_write_types_.insert("recommend_visit_item");
+    async_or_shard_write_types_.insert("recommend_purchase_item");
     // init callback for distribute request.
     NodeManagerBase::get()->setCallback(
         boost::bind(&DistributeRequestHooker::onElectingFinished, this),

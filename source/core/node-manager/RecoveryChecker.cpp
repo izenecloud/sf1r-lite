@@ -535,6 +535,16 @@ bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
         has_backup = false;
     }
 
+    if (rollback_id != 0)
+    {
+        if (last_backup_id >= rollback_id)
+        {
+            LOG(ERROR) << "last backup write inc is larger than current failed inc_id: " <<
+                last_backup_id << " vs " << rollback_id;
+            return false;
+        }
+    }
+
     if (has_backup)
     {
         // copy backup log to current .
@@ -563,30 +573,6 @@ bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
             bfs::copy_option::overwrite_if_exists);
 
         std::map<std::string, std::string> new_running_col = handleConfigUpdate();
-        // copy backup data to replace current and reopen all file.
-        //try
-        //{
-        //    CollInfoMapT::const_iterator inner_cit = tmp_all_col_info.begin();
-        //    bfs::path dest_coldata_backup(last_backup_path + "/backup_data");
-        //    while(inner_cit != tmp_all_col_info.end())
-        //    {
-        //        LOG(INFO) << "restoring the backup for the collection: " << inner_cit->first;
-        //        const CollectionPath &colpath = inner_cit->second.first;
-
-        //        bfs::path coldata_path(colpath.getCollectionDataPath());
-        //        bfs::path querydata_path(colpath.getQueryDataPath());
-
-        //        copy_dir(dest_coldata_backup/coldata_path, coldata_path);
-        //        copy_dir(dest_coldata_backup/querydata_path, querydata_path);
-        //        ++inner_cit;
-        //    }
-        //}
-        //catch(const std::exception& e)
-        //{
-        //    LOG(ERROR) << "copy backup to current working path failed." << e.what();
-        //    bfs::rename(redo_log_basepath_, request_log_basepath_);
-        //    return false;
-        //}
 
         std::map<std::string, std::string>::const_iterator new_cit = new_running_col.begin();
         while(new_cit != new_running_col.end())
@@ -704,22 +690,24 @@ void RecoveryChecker::onRecoverCallback(bool startup)
 {
     LOG(INFO) << "recovery callback, begin recovery before enter cluster.";
 
+    bool need_rollback = bfs::exists(rollback_file_);
+    if(!rollbackLastFail(!startup))
+    {
+        LOG(ERROR) << "corrupt data and rollback failed. Unrecoverable!!";
+        forceExit("corrupt data and rollback failed. Unrecoverable!!");
+    }
+
     // If myself need rollback, we must make sure primary node is available.
     //
     // startup is true means recovery from first start up. otherwise means recovery from
     // re-enter cluster.
-    if (startup && (bfs::exists(rollback_file_) || !isLastNormalExit()) )
+    if (startup && (need_rollback || !isLastNormalExit()) )
     {
         LOG(INFO) << "recovery from rollback or from last forceExit !!";
         if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
             forceExit("recovery failed. No primary Node!!");
     }
 
-    if(!rollbackLastFail(!startup))
-    {
-        LOG(ERROR) << "corrupt data and rollback failed. Unrecoverable!!";
-        forceExit("corrupt data and rollback failed. Unrecoverable!!");
-    }
     setForceExitFlag();
     syncSCDFiles();
     syncToNewestReqLog();

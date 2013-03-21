@@ -728,6 +728,9 @@ void NodeManagerBase::leaveCluster()
     {
         zookeeper_->deleteZNode(replicaPath);
         zookeeper_->deleteZNode(primaryNodeParentPath_);
+        zookeeper_->isZNodeExists(ZooKeeperNamespace::getCurrWriteReqQueueParent(sf1rTopology_.curNode_.nodeId_),
+            ZooKeeper::NOT_WATCH);
+        zookeeper_->deleteZNode(ZooKeeperNamespace::getCurrWriteReqQueueParent(sf1rTopology_.curNode_.nodeId_), true);
     }
 
     childrenList.clear();
@@ -1320,6 +1323,7 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
         LOG(INFO) << "all secondary ready, ending electing, primary is ready for new request: " << curr_primary_path_;
         if (cb_on_elect_finished_)
             cb_on_elect_finished_();
+        MasterManagerBase::get()->notifyChangedPrimary();
         updateNodeStateToNewState(NODE_STATE_STARTED);
     }
     else if(!self_changed)
@@ -1584,17 +1588,17 @@ void NodeManagerBase::checkSecondaryRecovery(bool self_changed)
     bool can_recovery = false;
     if (is_any_recovery_waiting)
     {
-	    can_recovery = MasterManagerBase::get()->disableNewWrite();
-            if (can_recovery)
-	    {
-		    if (!self_changed)
-		    {
-			    nodeState_ = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
-			    updateSelfPrimaryNodeState();
-		    }
-		    else
-			    updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_REPLICA_FINISH);
-	    }
+        can_recovery = MasterManagerBase::get()->disableNewWrite();
+        if (can_recovery)
+        {
+            if (!self_changed)
+            {
+                nodeState_ = NODE_STATE_RECOVER_WAIT_REPLICA_FINISH;
+                updateSelfPrimaryNodeState();
+            }
+            else
+                updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_REPLICA_FINISH);
+        }
     }
     if (!can_recovery)
     {

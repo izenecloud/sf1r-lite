@@ -100,6 +100,9 @@ public:
     {
         return isDistributeEnable_;
     }
+
+    void notifyChangedPrimary();
+
     bool isMinePrimary();
     bool isBusy();
     bool prepareWriteReq();

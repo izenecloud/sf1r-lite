@@ -792,10 +792,80 @@ bool IndexWorker::createDocument(const Value& documentValue)
     return ret;
 }
 
+IndexWorker::UpdateType IndexWorker::getUpdateType_(
+        const uint128_t& scdDocId,
+        const SCDDoc& doc,
+        docid_t& oldId,
+        SCD_TYPE scdType) const
+{
+    if (!idManager_->getDocIdByDocName(scdDocId, oldId, false))
+    {
+        return INSERT;
+    }
+
+    if (scdType == RTYPE_SCD)
+    {
+        return RTYPE;
+    }
+
+    SCDDoc::const_iterator p = doc.begin();
+    for (; p != doc.end(); ++p)
+    {
+        const string& fieldName = p->first;
+        const izenelib::util::UString& propertyValueU = p->second;
+        if (boost::iequals(fieldName, DOCID))
+            continue;
+        if (propertyValueU.empty())
+            continue;
+
+        tempPropertyConfig.propertyName_ = fieldName;
+        IndexBundleSchema::const_iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+
+        if (iter == bundleConfig_->indexSchema_.end())
+            continue;
+
+        if( iter->isRTypeString() )
+            continue;
+
+        if (iter->isIndex())
+        {
+            if (iter->isAnalyzed())
+            {
+                return GENERAL;
+            }
+            else if (iter->getIsFilter() && iter->getType() != STRING_PROPERTY_TYPE)
+            {
+                continue;
+            }
+        }
+        return GENERAL;
+    }
+
+    return RTYPE;
+}
+
+
 bool IndexWorker::updateDocument(const Value& documentValue)
 {
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    SCDDoc scddoc;
+    value2SCDDoc(documentValue, scddoc);
+    // check for if we can success.
+    {
+        docid_t olddocid;
+        uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
+        UpdateType updateType = getUpdateType_(num_docid, scddoc, olddocid, UPDATE_SCD);
+        if (updateType == RTYPE)
+        {
+            if (documentManager_->isDeleted(olddocid))
+            {
+                LOG(INFO) << "update document for rtype failed for deleted doc." << olddocid;
+                return false;
+            }
+        }
+    }
 
     CreateOrUpdateDocReqLog reqlog;
     reqlog.timestamp = Utilities::createTimeStamp();
@@ -812,8 +882,6 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
-    SCDDoc scddoc;
-    value2SCDDoc(documentValue, scddoc);
 
     time_t timestamp = reqlog.timestamp;
     LOG(INFO) << "update doc timestamp is : " << timestamp;
