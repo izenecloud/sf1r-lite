@@ -162,7 +162,7 @@ namespace sf1r
         filter_manager_->buildFilters(start_docid_, document_manager_->getMaxDocId(), isIncre);
         filter_manager_->saveFilterId();
         filter_manager_->saveFilterList();
-        printFilter();
+        //printFilter();
     }
 
     void IncrementalFuzzyManager::doCreateIndex()
