@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "TestResources.h"
+
 using namespace sf1r;
 using namespace std;
 using namespace boost;
@@ -51,10 +52,10 @@ string get(Document doc,string prop)
 
 string rand_chinese_char()
 {
-    int iRange1 =0x4e00;
-    int iRange2 =0xD7A3;
+    int iRange1 =0xe38080;
+    int iRange2 =0xe9be98;
     int bianma = rand()%(iRange2-iRange1) +iRange1;
-    char ch[3] = {'x',bianma/256,bianma%256};
+    char ch[3] = { bianma>>8,(bianma>>8)%256,bianma%256};
 
 
     return string(ch);
@@ -98,7 +99,7 @@ string rand_en_str()
 string rand_str()
 {
     int len=rand()%100;
-    int i1；
+    int i1;
     string a;
     for(i1=1; i1<len; ++i1)
     {
@@ -634,11 +635,11 @@ int main()
 
 
     cout<<"错误率："<<double(ProcessError)/(40000+DocNum)<<endl;
+/*
 
-//for(int i=0;i<10;i++)
-// cout<<rand_chinese_char()<<endl;
-
-
+for(int i=0;i<10;i++)
+ cout<<rand_chinese_char()<<endl;
+*/
     MultiThreadProcessTest(scd_file,knowledge_dir,threadnum);
     MultiThreadGetCategoryTest(scd_file,knowledge_dir,testminute,threadnum);
     MultiThreadRandomProcessTest(scd_file,knowledge_dir,testminute,threadnum);
