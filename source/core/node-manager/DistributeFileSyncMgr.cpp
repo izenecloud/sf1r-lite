@@ -438,13 +438,11 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     LOG(INFO) << "checking got file num :" << req.param_.check_file_list.size();
     DistributeTestSuit::getMemoryStateKeyList(req.param_.check_key_list);
 
-    size_t self = 0;
     int wait_num = 0;
     for( size_t i = 0; i < replica_info.size(); ++i)
     {
         if (replica_info[i] == SuperNodeManager::get()->getLocalHostIP())
         {
-            self = i;
             continue;
         }
         bool rsp_ret = false;

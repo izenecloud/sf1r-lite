@@ -29,8 +29,6 @@ void DistributeRequestHooker::init()
     need_backup_types_.insert(Req_Index);
     async_or_shard_write_types_.insert("commands_index");
     async_or_shard_write_types_.insert("documents_visit");
-    async_or_shard_write_types_.insert("recommend_visit_item");
-    async_or_shard_write_types_.insert("recommend_purchase_item");
     // init callback for distribute request.
     NodeManagerBase::get()->setCallback(
         boost::bind(&DistributeRequestHooker::onElectingFinished, this),
@@ -122,6 +120,11 @@ bool DistributeRequestHooker::isHooked()
     return (hook_type_ > 0) && !current_req_.empty();
 }
 
+bool DistributeRequestHooker::isRunningPrimary()
+{
+    return !isHooked() || hook_type_ == Request::FromDistribute || hook_type_ == Request::FromOtherShard;
+}
+
 bool DistributeRequestHooker::readPrevChainData(CommonReqData& reqlogdata)
 {
     if (!isHooked())
@@ -149,13 +152,13 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     if (!isHooked())
         return true;
     assert(req_log_mgr_);
-    bool isprimary = (hook_type_ == Request::FromDistribute);
+    bool isprimary = (hook_type_ == Request::FromDistribute || hook_type_ == Request::FromOtherShard);
     if (chain_status_ == ChainStop)
     {
         LOG(WARNING) << "The request has been aborted while prepare";
         return false;
     }
-    if (isprimary)
+    if (isprimary && hook_type_ == Request::FromDistribute)
     {
         if (chain_status_ == ChainBegin || chain_status_ == NoChain)
             prepared_req.req_json_data = current_req_;
@@ -171,12 +174,12 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         // get addition data from primary
         if(!ReqLogMgr::unpackReqLogData(current_req_, prepared_req))
         {
-            LOG(ERROR) << "unpack log data failed while prepare the data from primary.";
+            LOG(ERROR) << "unpack log data failed while prepare the data.";
             forceExit();
         }
         if (type != (ReqLogType)prepared_req.reqtype)
         {
-            LOG(ERROR) << "log type mismatch with primary while prepare the data from primary.";
+            LOG(ERROR) << "log type mismatch with primary while prepare the data.";
             LOG(ERROR) << "It may happen when the code is not the same. Must exit.";
             forceExit();
         }
@@ -287,7 +290,7 @@ bool DistributeRequestHooker::processFinishedBeforePrepare(bool finishsuccess)
     static CommonReqData reqlog;
     if (!req_log_mgr_->getPreparedReqLog(reqlog))
     {
-        if (hook_type_ == Request::FromDistribute)
+        if (hook_type_ == Request::FromDistribute || hook_type_ == Request::FromOtherShard)
         {
             LOG(INFO) << "primary end request before prepared, request ignored.";
             clearHook(true);

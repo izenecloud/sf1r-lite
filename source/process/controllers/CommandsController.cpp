@@ -85,8 +85,7 @@ void CommandsController::indexSearch_()
             if (MasterManagerBase::get()->isDistributed())
             {
                 // push recommend request to queue
-                if (request().callType() == Request::FromDistribute &&
-                    NodeManagerBase::get()->isPrimary())
+                if (request().callType() == Request::FromDistribute)
                 {
                     std::string json_req = "{\"collection\":\"" + collectionName_ + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"index_recommend\",\"controller\":\"commands\"},\"uri\":\"commands/index_recommend\"}";
                     MasterManagerBase::get()->pushWriteReq(json_req);

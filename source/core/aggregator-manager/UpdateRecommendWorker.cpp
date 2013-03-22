@@ -1,6 +1,8 @@
 #include "UpdateRecommendWorker.h"
 
 #include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/DistributeDriver.h>
 #include <node-manager/RequestLog.h>
 #include <util/driver/Request.h>
 
@@ -13,21 +15,65 @@ namespace sf1r
 {
 
 UpdateRecommendWorker::UpdateRecommendWorker(
+    const std::string& collection,
     ItemCFManager& itemCFManager,
     CoVisitManager& coVisitManager
 )
     : itemCFManager_(itemCFManager)
     , coVisitManager_(coVisitManager)
 {
+    // set callback used for distribute.
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        DistributeDriver::get()->addCallbackWriteHandler(collection + "_updateVisitMatrix",
+            boost::bind(&UpdateRecommendWorker::updateVisitMatrixFunc, this, _1));
+        DistributeDriver::get()->addCallbackWriteHandler(collection + "_updatePurchaseMatrix",
+            boost::bind(&UpdateRecommendWorker::updatePurchaseMatrixFunc, this, _1));
+        DistributeDriver::get()->addCallbackWriteHandler(collection + "_updatePurchaseCoVisitMatrix",
+            boost::bind(&UpdateRecommendWorker::updatePurchaseCoVisitMatrixFunc, this, _1));
+        DistributeDriver::get()->addCallbackWriteHandler(collection + "_buildPurchaseSimMatrix",
+            boost::bind(&UpdateRecommendWorker::buildPurchaseSimMatrixFunc, this, _1));
+    }
 }
 
 void UpdateRecommendWorker::HookDistributeRequestForUpdateRec(int hooktype, const std::string& reqdata, bool& result)
 {
-    DistributeRequestHooker::get()->setHook(hooktype, reqdata);
-    DistributeRequestHooker::get()->hookCurrentReq(reqdata);
-    DistributeRequestHooker::get()->processLocalBegin();
+    LOG(INFO) << "callback for new request from shard, packeddata len: " << reqdata.size();
+    CommonReqData reqloghead;
+    if(!ReqLogMgr::unpackReqLogData(reqdata, reqloghead))
+    {
+        LOG(ERROR) << "unpack request data failed. data: " << reqdata;
+        result = false;
+        return;
+    }
+
+    DistributeDriver::get()->pushCallbackWrite(reqloghead.req_json_data, reqdata);
+
     LOG(INFO) << "got hook request on the UpdateRecommendWorker.";
     result = true;
+}
+
+bool UpdateRecommendWorker::updatePurchaseMatrixFunc(int calltype)
+{
+    if (calltype == Request::FromOtherShard)
+    {
+        LOG(INFO) << "sharding call in " << __FUNCTION__;
+    }
+
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    UpdateRecCallbackReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_Callback_UpdateRec, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    itemCFManager_.updateMatrix(reqlog.oldItems, reqlog.newItems);
+
+    DISTRIBUTE_WRITE_FINISH(true);
+    return true;
 }
 
 void UpdateRecommendWorker::updatePurchaseMatrix(
@@ -36,23 +82,30 @@ void UpdateRecommendWorker::updatePurchaseMatrix(
     bool& result
 )
 {
-    bool force_success = DistributeRequestHooker::get()->getHookType() == Request::FromDistribute;
-    result = force_success;
-
-    DISTRIBUTE_WRITE_BEGIN_ASYNC;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
-
-    NoAdditionReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
-    {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        return;
-    }
-
     itemCFManager_.updateMatrix(oldItems, newItems);
     result = true;
+}
 
+bool UpdateRecommendWorker::updatePurchaseCoVisitMatrixFunc(int calltype)
+{
+    if (calltype == Request::FromOtherShard)
+    {
+        LOG(INFO) << "sharding call in " << __FUNCTION__;
+    }
+
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    UpdateRecCallbackReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_Callback_UpdateRec, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    itemCFManager_.updateVisitMatrix(reqlog.oldItems, reqlog.newItems);
     DISTRIBUTE_WRITE_FINISH(true);
+    return true;
 }
 
 void UpdateRecommendWorker::updatePurchaseCoVisitMatrix(
@@ -61,54 +114,67 @@ void UpdateRecommendWorker::updatePurchaseCoVisitMatrix(
     bool& result
 )
 {
-    bool force_success = DistributeRequestHooker::get()->getHookType() == Request::FromDistribute;
-    result = force_success;
-
-    DISTRIBUTE_WRITE_BEGIN_ASYNC;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
-
-    NoAdditionReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
-    {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        return;
-    }
     itemCFManager_.updateVisitMatrix(oldItems, newItems);
     result = true;
-
-    DISTRIBUTE_WRITE_FINISH(true);
 }
 
 void UpdateRecommendWorker::buildPurchaseSimMatrix(bool& result)
 {
     result = true;
-    if (!DistributeRequestHooker::get()->isHooked() ||
-        DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
+    if (!DistributeRequestHooker::get()->isHooked())
     {
-        jobScheduler_.addTask(boost::bind(&UpdateRecommendWorker::buildPurchaseSimMatrixFunc, this));
+        jobScheduler_.addTask(boost::bind(&ItemCFManager::buildSimMatrix, &itemCFManager_));
     }
     else
     {
-        LOG(INFO) << "build Purchase sim matrix on secondary.";
-        result = buildPurchaseSimMatrixFunc();
+        itemCFManager_.buildSimMatrix();
     }
 }
 
-bool UpdateRecommendWorker::buildPurchaseSimMatrixFunc()
+bool UpdateRecommendWorker::buildPurchaseSimMatrixFunc(int calltype)
 {
-    DISTRIBUTE_WRITE_BEGIN_ASYNC;
+    if (calltype == Request::FromOtherShard)
+    {
+        LOG(INFO) << "sharding call in " << __FUNCTION__;
+    }
+
+    DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
-    NoAdditionReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    BuildPurchaseSimCallbackReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_Callback_BuildPurchaseSim, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
 
+    LOG(INFO) << "build Purchase sim matrix on secondary.";
     itemCFManager_.buildSimMatrix();
 
-    DISTRIBUTE_WRITE_FINISH(true);
+    DISTRIBUTE_WRITE_FINISH2(true, reqlog);
+    return true;
+}
+
+bool UpdateRecommendWorker::updateVisitMatrixFunc(int calltype)
+{
+    if (calltype == Request::FromOtherShard)
+    {
+        LOG(INFO) << "sharding call in " << __FUNCTION__;
+    }
+
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    UpdateRecCallbackReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_Callback_UpdateRec, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    coVisitManager_.visit(reqlog.oldItems, reqlog.newItems);
+
+    DISTRIBUTE_WRITE_FINISH2(true, reqlog);
     return true;
 }
 
@@ -118,22 +184,8 @@ void UpdateRecommendWorker::updateVisitMatrix(
     bool& result
 )
 {
-    bool force_success = DistributeRequestHooker::get()->getHookType() == Request::FromDistribute;
-    result = force_success;
-
-    DISTRIBUTE_WRITE_BEGIN_ASYNC;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
-
-    NoAdditionReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
-    {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        return;
-    }
     coVisitManager_.visit(oldItems, newItems);
     result = true;
-
-    DISTRIBUTE_WRITE_FINISH(true);
 }
 
 void UpdateRecommendWorker::flushRecommendMatrix(bool& result)

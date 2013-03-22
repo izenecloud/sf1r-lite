@@ -334,7 +334,6 @@ bool RecommendTaskService::visitItem(
     bool isRecItem
 )
 {
-
     if (sessionIdStr.empty())
     {
         LOG(ERROR) << "error in visitItem(), session id is empty";
@@ -347,11 +346,7 @@ bool RecommendTaskService::visitItem(
         return false;
     }
 
-    bool ret = true;
-    bool force_success = DistributeRequestHooker::get()->getHookType() == Request::FromDistribute;
-    ret = visitItemFunc(sessionIdStr, userIdStr, itemId, isRecItem);
-
-    return force_success || ret;
+    return visitItemFunc(sessionIdStr, userIdStr, itemId, isRecItem);
 }
 
 bool RecommendTaskService::visitItemFunc(
@@ -362,21 +357,19 @@ bool RecommendTaskService::visitItemFunc(
 )
 {
     // this need to be async because there will be rpc call in visitManager_.addVisitItem
-    DISTRIBUTE_WRITE_BEGIN_ASYNC;
+    DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
-    NoAdditionReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    RecommendVisitItemReqLog reqlog;
+    reqlog.itemid = itemId;
+    if(!DistributeRequestHooker::get()->prepare(Req_Recommend_VisitItem, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
 
-    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle);
-
     if (!visitManager_.addVisitItem(sessionIdStr, userIdStr, itemId, &visitMatrix_))
     {
-        DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
         return false;
     }
 
@@ -384,11 +377,9 @@ bool RecommendTaskService::visitItemFunc(
     {
         LOG(ERROR) << "error in VisitManager::visitRecommendItem(), userId: " << userIdStr
             << ", itemId: " << itemId;
-        DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
         return false;
     }
 
-    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
     DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
@@ -407,11 +398,7 @@ bool RecommendTaskService::purchaseItem(
         return false;
     }
 
-    bool ret = true;
-    bool force_success = DistributeRequestHooker::get()->getHookType() == Request::FromDistribute;
-
-    ret = purchaseItemFunc(userIdStr, orderIdStr, orderItemVec, itemIdVec);
-    return force_success || ret;
+    return purchaseItemFunc(userIdStr, orderIdStr, orderItemVec, itemIdVec);
 }
 
 bool RecommendTaskService::purchaseItemFunc(
@@ -421,7 +408,7 @@ bool RecommendTaskService::purchaseItemFunc(
     const std::vector<itemid_t>& itemIdVec
 )
 {
-    DISTRIBUTE_WRITE_BEGIN_ASYNC;
+    DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     NoAdditionReqLog reqlog;
@@ -430,11 +417,9 @@ bool RecommendTaskService::purchaseItemFunc(
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
-    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle);
 
     bool ret = saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_, itemIdVec);
 
-    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
     DISTRIBUTE_WRITE_FINISH(ret);
     return ret;
 }
@@ -599,8 +584,7 @@ bool RecommendTaskService::buildCollection()
 
 bool RecommendTaskService::buildCollectionOnPrimary()
 {
-    IndexReqLog reqlog;
-    DistributeRequestHooker::get()->readPrevChainData(reqlog);
+    RecommendIndexReqLog reqlog;
     if (!getBuildingSCDFiles(reqlog.user_scd_list, reqlog.order_scd_list))
     {
         return false;
@@ -622,11 +606,12 @@ bool RecommendTaskService::buildCollectionOnPrimary()
         }
     }
 
-    if (!DistributeRequestHooker::get()->prepare(Req_Index, reqlog))
+    if (!DistributeRequestHooker::get()->prepare(Req_Recommend_Index, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
+
     DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle);
     if (loadUserSCD_(reqlog.user_scd_list) && loadOrderSCD_(reqlog.order_scd_list))
     {
@@ -640,8 +625,8 @@ bool RecommendTaskService::buildCollectionOnPrimary()
 bool RecommendTaskService::buildCollectionOnReplica()
 {
     // build on replicas, using the data from primary.
-    IndexReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_Index, reqlog))
+    RecommendIndexReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_Recommend_Index, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
@@ -1083,6 +1068,11 @@ void RecommendTaskService::cronJob_(int calltype)
             return;
         }
 
+        bool result = true;
+        if (updateRecommendBase_.needRebuildPurchaseSimMatrix())
+        {
+            updateRecommendBase_.buildPurchaseSimMatrix(result);
+        }
         flush();
 
         buildFreqItemSet_();
@@ -1105,10 +1095,6 @@ void RecommendTaskService::flush()
     queryPurchaseCounter_.flush();
 
     bool result = true;
-    if (updateRecommendBase_.needRebuildPurchaseSimMatrix())
-    {
-        updateRecommendBase_.buildPurchaseSimMatrix(result);
-    }
     updateRecommendBase_.flushRecommendMatrix(result);
 
     LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_.collectionName_;

@@ -55,7 +55,7 @@ UpdateRecommendMaster::UpdateRecommendMaster(
     MasterManagerBase::get()->registerAggregator(aggregator_);
 }
 
-void UpdateRecommendMaster::HookDistributeRequestForUpdateRec()
+void UpdateRecommendMaster::HookDistributeCBRequestForUpdateRec(const std::string& callback_data, bool include_self)
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
     if (hooktype == Request::FromAPI)
@@ -63,15 +63,14 @@ void UpdateRecommendMaster::HookDistributeRequestForUpdateRec()
         // from api do not need hook, just process as usually.
         return;
     }
-    const std::string& reqdata = DistributeRequestHooker::get()->getAdditionData();
     bool ret = false;
     if (hooktype == Request::FromDistribute)
     {
-        aggregator_->distributeRequest(collection_, "HookDistributeRequestForUpdateRec", (int)hooktype, reqdata, ret);
+        //aggregator_->distributeRequestWithoutLocal(collection_, "HookDistributeRequestForUpdateRec", (int)hooktype,
+        //    callback_data, ret);
     }
     else
     {
-        // local hook has been moved to the request controller.
         ret = true;
     }
     if (!ret)
@@ -86,17 +85,25 @@ void UpdateRecommendMaster::updatePurchaseMatrix(
     bool& result
 )
 {
-    HookDistributeRequestForUpdateRec();
-
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
-    if (hooktype == Request::FromAPI || hooktype == Request::FromDistribute)
+    if (hooktype == Request::FromAPI)
         aggregator_->distributeRequest(collection_, "updatePurchaseMatrix", oldItems, newItems, result);
     else
     {
+        if (hooktype == Request::FromDistribute)
+        {
+            UpdateRecCallbackReqLog reqlog;
+            reqlog.req_json_data = collection_ + "_updatePurchaseMatrix";
+            reqlog.oldItems = oldItems;
+            reqlog.newItems = newItems;
+            std::string packed_data;
+            ReqLogMgr::packReqLogData(reqlog, packed_data);
+            HookDistributeCBRequestForUpdateRec(packed_data, false);
+        }
         if (localWorker_)
             localWorker_->updatePurchaseMatrix(oldItems, newItems, result);
         else
-            LOG(ERROR) << "no localWorker while do on local in " << __FUNCTION__;
+            LOG(INFO) << "no localWorker while do on local in " << __FUNCTION__;
     }
     printError(result, "updatePurchaseMatrix");
 }
@@ -107,13 +114,21 @@ void UpdateRecommendMaster::updatePurchaseCoVisitMatrix(
     bool& result
 )
 {
-    HookDistributeRequestForUpdateRec();
-
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
-    if (hooktype == Request::FromAPI || hooktype == Request::FromDistribute)
+    if (hooktype == Request::FromAPI)
         aggregator_->distributeRequest(collection_, "updatePurchaseCoVisitMatrix", oldItems, newItems, result);
     else
     {
+        if (hooktype == Request::FromDistribute)
+        {
+            UpdateRecCallbackReqLog reqlog;
+            reqlog.req_json_data = collection_ + "_updatePurchaseCoVisitMatrix";
+            reqlog.oldItems = oldItems;
+            reqlog.newItems = newItems;
+            std::string packed_data;
+            ReqLogMgr::packReqLogData(reqlog, packed_data);
+            HookDistributeCBRequestForUpdateRec(packed_data, false);
+        }
         if (localWorker_)
             localWorker_->updatePurchaseCoVisitMatrix(oldItems, newItems, result);
         else
@@ -131,13 +146,20 @@ bool UpdateRecommendMaster::needRebuildPurchaseSimMatrix() const
 
 void UpdateRecommendMaster::buildPurchaseSimMatrix(bool& result)
 {
-    HookDistributeRequestForUpdateRec();
-
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
-    if (hooktype == Request::FromAPI || hooktype == Request::FromDistribute)
+    if (hooktype == Request::FromAPI)
         aggregator_->distributeRequest(collection_, "buildPurchaseSimMatrix", result);
     else
     {
+        if (hooktype == Request::FromDistribute)
+        {
+            BuildPurchaseSimCallbackReqLog reqlog;
+            reqlog.req_json_data = collection_ + "_buildPurchaseSimMatrix";
+            std::string packed_data;
+            ReqLogMgr::packReqLogData(reqlog, packed_data);
+            HookDistributeCBRequestForUpdateRec(packed_data, false);
+        }
+
         if (localWorker_)
             localWorker_->buildPurchaseSimMatrix(result);
         else
@@ -152,13 +174,22 @@ void UpdateRecommendMaster::updateVisitMatrix(
     bool& result
 )
 {
-    HookDistributeRequestForUpdateRec();
-
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
-    if (hooktype == Request::FromAPI || hooktype == Request::FromDistribute)
+    if (hooktype == Request::FromAPI)
         aggregator_->distributeRequest(collection_, "updateVisitMatrix", oldItems, newItems, result);
     else
     {
+        if (hooktype == Request::FromDistribute)
+        {
+            UpdateRecCallbackReqLog reqlog;
+            reqlog.req_json_data = collection_ + "_updateVisitMatrix";
+            reqlog.oldItems = oldItems;
+            reqlog.newItems = newItems;
+            std::string packed_data;
+            ReqLogMgr::packReqLogData(reqlog, packed_data);
+            HookDistributeCBRequestForUpdateRec(packed_data, false);
+        }
+
         if (localWorker_)
             localWorker_->updateVisitMatrix(oldItems, newItems, result);
         else

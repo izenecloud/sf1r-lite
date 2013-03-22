@@ -853,8 +853,7 @@ bool MiningManager::DoMiningCollection()
         MEMLOG("[Mining] TG finished.");
         IndexReqLog reqlog;
         DistributeRequestHooker::get()->readPrevChainData(reqlog);
-        if (!DistributeRequestHooker::get()->isHooked() || 
-            DistributeRequestHooker::get()->getHookType() == izenelib::driver::Request::FromDistribute)
+        if (DistributeRequestHooker::get()->isRunningPrimary())
             reqlog.timestamp = Utilities::createTimeStamp();
         LOG(INFO) << "Mining runEvents time: " << reqlog.timestamp;
         MiningQueryLogHandler::getInstance()->runEvents(reqlog.timestamp);

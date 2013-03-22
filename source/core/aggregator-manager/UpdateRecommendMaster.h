@@ -60,7 +60,7 @@ public:
     virtual void flushRecommendMatrix(bool& result);
 
 private:
-    void HookDistributeRequestForUpdateRec();
+    void HookDistributeCBRequestForUpdateRec(const std::string& callback_data, bool include_self = false);
 
     const std::string collection_;
     boost::scoped_ptr<UpdateRecommendMerger> merger_;
