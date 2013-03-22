@@ -153,8 +153,8 @@ public:
     bool resetFilterManager();
 
     //save and load index;
-    bool saveDocid(std::string path = "");
-    bool loadDocid(std::string path = "");
+    bool saveDocid(string property, uint32_t i);
+    bool loadDocid(string property, uint32_t i);
     void save();
 
     //other helper functions;
@@ -173,10 +173,19 @@ public:
 
     bool isEmpty()
     {
-        return IndexedDocNum_ == 0;
+        bool isEmpty_ = true;
+        for (unsigned int i = 0; i < IndexedDocNum_.size(); ++i)
+        {
+            if (IndexedDocNum_[0] != 0)
+            {
+                isEmpty_ = false;
+                break;
+            }
+        }
+        return isEmpty_;
     }
 
-    void updateFilterForRtype(std::vector<string> unchangedProperties);
+    void updateFilterForRtype();
     void printFilter();
 
 private:
@@ -221,8 +230,8 @@ private:
     void delete_AllIndexFile();
 
 private:
-    uint32_t last_docid_;
-    uint32_t start_docid_;
+    vector<uint32_t> last_docid_;
+    vector<uint32_t> start_docid_;
 
     std::string index_path_;
     std::string tokenize_path_;
@@ -235,7 +244,7 @@ private:
     std::vector<IncrementalFuzzyIndex*> pMainFuzzyIndexBarrels_;
 //    IncrementalFuzzyIndex* pMainFuzzyIndexBarrel_;
 
-    unsigned int IndexedDocNum_;
+    vector<uint32_t> IndexedDocNum_;
 
     bool isMergingIndex_;
     bool isInitIndex_;

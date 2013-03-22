@@ -923,12 +923,11 @@ bool MiningManager::DoMiningCollection()
             incrementalManager_->getLastDocid(last_docid);
             incrementalManager_->getDocNum(docNum);
             incrementalManager_->getMaxNum(maxDoc);
-
             /**
             @brief: if there is -D SCD, the fuzzy index will merge and rebuid;
             @for incremental is for -U and -R scd;
             **/
-            if (last_docid == document_manager_->getMaxDocId()) /// for -D SCD and -R SCD;
+            if (last_docid == document_manager_->getMaxDocId()) /// for -D SCD and -R SCD 
             {
                 if (document_manager_->last_delete_docid_.size() > 0) /// merge and rebuild fm-index;
                 {
@@ -969,32 +968,24 @@ bool MiningManager::DoMiningCollection()
                         miningTask->isRtypeIncremental_ = true;
                         miningTask->setTaskStatus(isIncre);// 
 
-                        incrementalManager_->updateFilterForRtype(unchangedProperties); // use extra filter update for incre;
-                        
+                        incrementalManager_->updateFilterForRtype(); // use extra filter update for incre;
                     }
                 }
             }
             else // -U SCD or continue
             {
                 SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                bool isIncre = false;
-                miningTask->setTaskStatus(isIncre);
+
                 if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc) // not merge
                 {
-                    SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
                     bool isIncre = true;
                     miningTask->setTaskStatus(isIncre);
                 }
                 else // merge
                 {
                     incrementalManager_->reset();
-                    SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
                     bool isIncre = false;
                     miningTask->setTaskStatus(isIncre);
-                    if (document_manager_->getMaxDocId() != last_docid)
-                    {
-                        incrementalManager_->reset();
-                    }
                 }
             }
         }
@@ -1031,10 +1022,11 @@ bool MiningManager::DoMiningCollection()
                 {
                     LOG(INFO) << "Build incrmental index ..." <<endl;
                     incrementalManager_->doCreateIndex();
+                    incrementalManager_->updateFilterForRtype();//this is in case there is Rtype docid in -U scd;
                 }
                 else // merge
                 {
-                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());//right
                 }
             }
         }

@@ -32,9 +32,9 @@ namespace sf1r
                                     , knowledge_(NULL)
     {
         BarrelNum_ = 0;
-        last_docid_ = 0;
-        start_docid_ = 0;
-        IndexedDocNum_ = 0;
+        last_docid_.resize(properties.size());
+        start_docid_.resize(properties.size());
+        IndexedDocNum_.resize(properties.size());
         pMainFuzzyIndexBarrels_.resize(properties.size());
         properties_ = properties;
         isInitIndex_ = false;
@@ -112,7 +112,7 @@ namespace sf1r
 
             std::string pathMainInv = path + ".inv.idx";
             std::string pathMainFd = path + ".fd.idx";
-            std::string pathLastDocid = path + ".inc.docid"; ///xxx
+            std::string pathLastDocid = path + ".inc.docid";
 
             if (bfs::exists(pathMainInv) && bfs::exists(pathMainFd))
             {
@@ -122,24 +122,22 @@ namespace sf1r
                     delete_AllIndexFile();
                 }
                 else
-                    loadDocid(pathLastDocid);
+                    loadDocid(properties_[i], i);
             }
             else
                 delete_AllIndexFile();
 
 
             LOG (INFO) << "finish load \""<< properties_[i] << "\" incremental fuzzy index from disk ... ";
-            LOG (INFO) << "IndexedDocNum: " << IndexedDocNum_;
+            LOG (INFO) << "IndexedDocNum: " << IndexedDocNum_[i];
+            if (IndexedDocNum_[i] == 0)
+            {
+                start_docid_[i] = last_docid_[i] = document_manager_->getMaxDocId();// start build
+                saveDocid(properties_[i], i);
+            }
             pMainFuzzyIndexBarrels_[i]->print();
         }
-
         BarrelNum_++;
-        if (IndexedDocNum_ == 0)
-        {
-            start_docid_ = last_docid_ = document_manager_->getMaxDocId();// start build
-            saveDocid();
-        }
-
     }
 
     void IncrementalFuzzyManager::createIndex()//cancle... not use...
@@ -150,16 +148,20 @@ namespace sf1r
         JobScheduler::get()->addTask(task, name);
     }
 
-    void IncrementalFuzzyManager::updateFilterForRtype(std::vector<string> unchangedProperties)
+    void IncrementalFuzzyManager::updateFilterForRtype()
     {
-        for (std::vector<string>::iterator i = unchangedProperties.begin(); i != unchangedProperties.end(); ++i)
-        {
-            //filter_manager_->addUnchangedProperty(*i);
-        }
         bool isIncre = true;
-        LOG (INFO) << "start_docid_: - " << start_docid_ << "max" << document_manager_->getMaxDocId() << endl;
+        uint32_t start_docid = start_docid_[0];
+        for (uint32_t i = 1; i < start_docid_.size(); ++i)
+        {
+            if (start_docid < start_docid_[i])
+            {
+                start_docid = start_docid_[i];
+            }
+        }
+        LOG (INFO) << "start_docid_: - " << start_docid << "max" << document_manager_->getMaxDocId() << endl;//xxx
 
-        filter_manager_->buildFilters(start_docid_, document_manager_->getMaxDocId(), isIncre);
+        filter_manager_->buildFilters(start_docid, document_manager_->getMaxDocId(), isIncre);
         filter_manager_->saveFilterId();
         filter_manager_->saveFilterList();
         //printFilter();
@@ -172,24 +174,32 @@ namespace sf1r
             isInitIndex_ = true;
             bool isIncre = true;
             //build filter just for all new documents...
-
-            filter_manager_->buildFilters(last_docid_, document_manager_->getMaxDocId(), isIncre);
-
-            for (uint32_t i = last_docid_ + 1; i <= document_manager_->getMaxDocId(); i++)
+            unsigned int last_docid = last_docid_[0];
+            for (unsigned int i = 1; i < last_docid_.size(); ++i) // the bigger last_docid;
             {
-                if (i % 100000 == 0)
+                if (last_docid < last_docid_[i])
                 {
-                    LOG(INFO) << "inserted docs: " << i;
+                    last_docid = last_docid_[i];
                 }
-                Document doc;
-                document_manager_->getDocument(i, doc);
+            }
 
-                for (unsigned int j = 0; j < properties_.size(); ++j)
+            filter_manager_->buildFilters(last_docid, document_manager_->getMaxDocId(), isIncre);
+
+            for (unsigned int j = 0; j < properties_.size(); ++j)
+            {
+                for (uint32_t i = last_docid_[j] + 1; i <= document_manager_->getMaxDocId(); i++)
                 {
+                    if (i % 100000 == 0)
+                    {
+                        LOG(INFO) << "For:"<< properties_[j] << "inserted docs: " << i;
+                    }
+                    Document doc;
+                    document_manager_->getDocument(i, doc);
+
                     Document::property_const_iterator it = doc.findProperty(properties_[j]);
                     if (it == doc.propertyEnd())
                     {
-                        last_docid_++;
+                        last_docid_[j]++;
                         continue;
                     }
 
@@ -201,15 +211,19 @@ namespace sf1r
                         LOG(INFO) << "Add index error";
                         return;
                     }
+                    IndexedDocNum_[j]++;
+                    last_docid_[j]++;
+
+                    if (j == 0)
+                    {
+                        filter_manager_->buildStringFiltersForDoc(i, doc);
+                    }
                 }
-                IndexedDocNum_++;
-                filter_manager_->buildStringFiltersForDoc(i, doc);
-                last_docid_++;
+                saveDocid(properties_[j], j);
             }
             filter_manager_->saveFilterId();
             filter_manager_->saveFilterList();
             
-            saveDocid();
             save();
             izenelib::util::ClockTimer timer;
             prepare_index();
@@ -221,12 +235,11 @@ namespace sf1r
             LOG (INFO) << "Index for " << properties_ [i];
             pMainFuzzyIndexBarrels_[i]->print();
         }
-        //printFilter();
     }
 
     bool IncrementalFuzzyManager::indexForDoc(uint32_t& docId, std::string propertyString, uint32_t j)
     {
-        if (IndexedDocNum_ >= MAX_INCREMENT_DOC)
+        if (IndexedDocNum_[j] >= MAX_INCREMENT_DOC)
             return false;
         {
             {
@@ -266,8 +279,12 @@ namespace sf1r
         izenelib::util::ClockTimer timer;
         {
             ScopedReadLock lock(mutex_);
-            cout<<"indexedDocNum_"<<IndexedDocNum_<<endl;
-            if (IndexedDocNum_ == 0 || isMergingIndex_ || isInitIndex_)
+            if (isEmpty())
+            {
+                return true;
+            }
+
+            if (isMergingIndex_ || isInitIndex_)
             {
                 return true;
             }
@@ -364,7 +381,6 @@ namespace sf1r
                     if (pMainFuzzyIndexBarrels_[label] != NULL && isInitIndex_ == false)
                     {
                         {
-                            
                             uint32_t hitdoc;
                             pMainFuzzyIndexBarrels_[label]->getFuzzyResult_(termidList, resultList_, ResultListSimilarity_, hitdoc);
                             pMainFuzzyIndexBarrels_[label]->score(query, resultList_, ResultListSimilarity_);
@@ -449,32 +465,42 @@ namespace sf1r
 
     void IncrementalFuzzyManager::setLastDocid(uint32_t last_docid)
     {
-        last_docid_ = last_docid;
-        saveDocid();
+        for (unsigned int i = 0; i < last_docid_.size(); ++i)
+        {
+            last_docid_[i] = last_docid;
+            saveDocid(properties_[i], i);
+        }
     }
 
-    void IncrementalFuzzyManager::getLastDocid(uint32_t& last_docid)
+    void IncrementalFuzzyManager::getLastDocid(uint32_t& last_docid) // the less 
     {
-        last_docid = last_docid_;
+        last_docid = last_docid_[0];
+        for (unsigned int i = 1; i < last_docid_.size(); ++i)
+        {
+            if (last_docid > last_docid_[i])
+            {
+                last_docid = last_docid_[i];
+            }
+        }
     }
 
     void IncrementalFuzzyManager::setStartDocid(uint32_t start_docid)
     {
-        if (start_docid_ == 0)
+        for (unsigned int i = 0; i < last_docid_.size(); ++i)
         {
-            start_docid_ = start_docid;
-            saveDocid();
+            start_docid_[i] = start_docid;
+            saveDocid(properties_[i], i);
         }
     }
 
     void IncrementalFuzzyManager::getStartDocid(uint32_t& last_docid)
     {
-        last_docid = start_docid_;
+        //last_docid = start_docid_;
     }
 
     void IncrementalFuzzyManager::getDocNum(uint32_t& docNum)
     {
-        docNum = IndexedDocNum_;
+        docNum = IndexedDocNum_[0];
     }
 
     void IncrementalFuzzyManager::getMaxNum(uint32_t& maxNum)
@@ -495,18 +521,15 @@ namespace sf1r
                     delete pMainFuzzyIndexBarrels_[i];
                     pMainFuzzyIndexBarrels_[i] = NULL;
                 }
+                IndexedDocNum_[i] = 0;
+                last_docid_[i] = 0; //when Init, this will reload again ...
+                start_docid_[i] = 0;
+                saveDocid(properties_[i], i);
             }
-
             BarrelNum_ = 0;
-            IndexedDocNum_ = 0;
-            last_docid_ = 0; //when Init, this will reload again ...
-            start_docid_ = 0;
-            saveDocid();
-
+            
             resetFilterManager();
             delete_AllIndexFile();
-
-        
         //restart 
             Init();
         }
@@ -532,34 +555,34 @@ namespace sf1r
         }
     }
 
-    bool IncrementalFuzzyManager::saveDocid(std::string path)
+    bool IncrementalFuzzyManager::saveDocid(string property, uint32_t i)
     {
-        string docid_path = index_path_ + "/inc.docid";
+        string docid_path = index_path_ + "/" + property + "_inc.docid";
         FILE* file;
         if ((file = fopen(docid_path.c_str(), "wb")) == NULL)
         {
             LOG(INFO) << "Cannot open output file"<<endl;
             return false;
         }
-        fwrite(&last_docid_, sizeof(last_docid_), 1, file);
-        fwrite(&start_docid_, sizeof(start_docid_), 1, file);
-        fwrite(&IndexedDocNum_, sizeof(IndexedDocNum_), 1, file);
+        fwrite(&last_docid_[i], sizeof(last_docid_[i]), 1, file);
+        fwrite(&start_docid_[i], sizeof(start_docid_[i]), 1, file);
+        fwrite(&IndexedDocNum_[i], sizeof(IndexedDocNum_[i]), 1, file);
         fclose(file);
         return true;
     }
 
-    bool IncrementalFuzzyManager::loadDocid(std::string path)
+    bool IncrementalFuzzyManager::loadDocid(string property, uint32_t i)
     {
-        string docid_path = index_path_ + "/inc.docid";
+        string docid_path = index_path_ + "/" + property + "_inc.docid";
         FILE* file;
         if ((file = fopen(docid_path.c_str(), "rb")) == NULL)
         {
             LOG(INFO) << "Cannot open input file"<<endl;
             return false;
         }
-        if (1 != fread(&last_docid_, sizeof(last_docid_), 1, file) ) return false;
-        if (1 != fread(&start_docid_, sizeof(start_docid_), 1, file) ) return false;
-        if (1 != fread(&IndexedDocNum_, sizeof(IndexedDocNum_), 1, file) ) return false;
+        if (1 != fread(&last_docid_[i], sizeof(last_docid_[i]), 1, file) ) return false;
+        if (1 != fread(&start_docid_[i], sizeof(start_docid_[i]), 1, file) ) return false;
+        if (1 != fread(&IndexedDocNum_[i], sizeof(IndexedDocNum_[i]), 1, file) ) return false;
         fclose(file);
         return true;
     }
@@ -573,7 +596,6 @@ namespace sf1r
             bfs::path pathMainFd = path + ".fd.idx";
             bfs::path docid_path = path + ".inc.docid";
 
-            ///xxx need try...
             bfs::remove(pathMainInc);
             bfs::remove(pathMainFd);
             bfs::remove(docid_path);
