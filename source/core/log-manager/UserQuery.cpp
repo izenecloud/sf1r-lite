@@ -1,6 +1,7 @@
 #include "UserQuery.h"
 #include "LogServerRequest.h"
 #include <boost/lexical_cast.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace std;
 using namespace boost;
@@ -89,6 +90,17 @@ void UserQuery::load( const std::map<std::string, std::string> & rawdata )
 void UserQuery::save_to_logserver()
 {
     LogServerConnection& conn = LogServerConnection::instance();
+    InjectUserQueryRequest req;
+    req.param_.query_ = query_;
+    req.param_.collection_ = collection_;
+    req.param_.hitnum_ = hitDocsNum_;
+    req.param_.page_start_ = pageStart_;
+    req.param_.page_count_ = pageCount_;
+    req.param_.duration_ = to_iso_string(duration_);
+    req.param_.timestamp_ = to_iso_string(timeStamp_);
+
+    bool res;
+    conn.syncRequest(req, res);
 }
 
 }
