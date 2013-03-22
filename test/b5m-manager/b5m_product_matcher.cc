@@ -49,40 +49,80 @@ string get(Document doc,string prop)
     doc.getProperty(prop, ustr);
     return toString(ustr);
 }
-
+UCS2Char getUcs2Char(int iRange1 ,int iRange2)
+{
+    return rand()%(iRange2-iRange1) +iRange1;
+}
 string rand_chinese_char()
 {
-    int iRange1 =0xe38080;
-    int iRange2 =0xe9be98;
-    int bianma = rand()%(iRange2-iRange1) +iRange1;
-    char ch[3] = { bianma>>8,(bianma>>8)%256,bianma%256};
+    string str = "一";
+    UString text(str, UString::UTF_8);
+    switch (rand()%5)
+    {
+    case 0:
+        text[0]=getUcs2Char(0x2E80,0x2EF3);
+        break;
 
+    case 1:
+        text[0]=getUcs2Char(0x2F00 ,0x4DB5);
+        break;
+    case 2:
+        text[0]=getUcs2Char(0x3400 ,0x4DB5);
+        break;
 
-    return string(ch);
+    case 3:
+        text[0]=getUcs2Char(0x4E00 ,0x9FC3);
+        break;
+
+    default:
+        text[0]=getUcs2Char(0xF900,0xFAD9);
+        break;
+    }
+    return toString(text);
 }
 string rand_korea_char()
 {
-    int iRange1 =0xAC00;
-    int iRange2 =0x9ef5;
-    int bianma = rand()%(iRange2-iRange1) +iRange1;
-    char ch[3] = {'u',bianma/256,bianma%256};
+    string str = "왜";
+    UString text(str, UString::UTF_8);
+    switch (rand()%2)
+    {
+    case 0:
+        text[0]=getUcs2Char(0x1100,0x11ff);
+        break;
 
+    case 1:
+        text[0]=getUcs2Char(0xAC00,0xD7AF);
+        break;
 
-    return string(ch);
+    }
+    return toString(text);
+
 }
 string rand_jp_char()
 {
-    int iRange1 =0x0800;  //u0800-u4e00 (日文)
-    int iRange2 =0x4e00;
+    string str = "一";
+    UString text(str, UString::UTF_8);
+    switch (rand()%4)
+    {
+    case 0:
+        text[0]=getUcs2Char(0x3041,0x309F);
+        break;
 
-    int bianma = rand()%(iRange2-iRange1) +iRange1;
+    case 1:
+        text[0]=getUcs2Char(0x30A1 ,0x30FF);
+        break;
+    case 2:
+        text[0]=getUcs2Char(0x31F0 ,0x31FF);
+        break;
 
-    char ch[3] = {'u',bianma/256,bianma%256};
+    case 3:
+        text[0]=getUcs2Char(0xFF66,0xFF9F);
+        break;
 
-
-    return string(ch);
+    }
+    return toString(text);
 }
-string en_char = "_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+const string en_char = "_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 string rand_en_str()
 {
 
@@ -103,13 +143,42 @@ string rand_str()
     string a;
     for(i1=1; i1<len; ++i1)
     {
-        if(rand()%2==1)
-            a+=rand_chinese_char();
-        if(rand()%2==0)
-            a+=rand_en_str();
+        switch (rand()%4)
+        {
+        case 0:
+            a+= rand_en_str();
+            break;
+
+        case 1:
+            a+= rand_jp_char();
+            break;
+        case 2:
+            a+= rand_korea_char();
+            break;
+
+        case 3:
+            a+= rand_chinese_char();
+            break;
+
+        }
     }
 
     return a;
+}
+string rand_id()
+{
+    return  B5MHelper::Uint128ToString(rand());
+}
+Document rand_doc()
+{
+    Document doc;
+    doc.property("DATE") = izenelib::util::UString(rand_str(), izenelib::util::UString::UTF_8);
+    doc.property("DOCID") =     izenelib::util::UString(rand_id(),izenelib::util::UString::UTF_8);
+    doc.property("Title") = izenelib::util::UString(rand_str(), izenelib::util::UString::UTF_8);
+    doc.property("Price") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
+    doc.property("Source") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
+    doc.property("Attribute") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
+    return doc;
 }
 
 void show(Document doc)
@@ -159,17 +228,6 @@ bool checkProcesss(ProductMatcher &matcher,string spid,string soid,string source
         ProcessError++;
     }
     return check;
-}
-Document rand_doc()
-{
-    Document doc;
-    doc.property("DATE") = izenelib::util::UString(rand_str(), izenelib::util::UString::UTF_8);
-    doc.property("DOCID") =     izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
-    doc.property("Title") = izenelib::util::UString(rand_str(), izenelib::util::UString::UTF_8);
-    doc.property("Price") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
-    doc.property("Source") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
-    doc.property("Attribute") = izenelib::util::UString(rand_str(),izenelib::util::UString::UTF_8);
-    return doc;
 }
 
 void ProcessVector(ProductMatcher* matcher,vector<Document>& docvec, vector<ProductMatcher::Product>& result_product)
@@ -583,7 +641,7 @@ int main()
     sleep(10);
     in.close();
     ofstream out;
-//out.open("getSearchKeywords_test_file",ios::out);
+
     if(!getSearchKeywords_test_file.empty())
     {
         int num =0;
@@ -627,23 +685,18 @@ int main()
             }
         }
     }
+    cout<<"错误率："<<double(ProcessError)/(40000+DocNum)<<endl;
+    /*
 
+    for(int i=0; i<10; i++)
 
-    /*    matcher.Test("/home/lscm/6indexSCD/");
+        cout<<rand_str()<<endl;
     */
 
-
-
-    cout<<"错误率："<<double(ProcessError)/(40000+DocNum)<<endl;
-/*
-
-for(int i=0;i<10;i++)
- cout<<rand_chinese_char()<<endl;
-*/
-    MultiThreadProcessTest(scd_file,knowledge_dir,threadnum);
-    MultiThreadGetCategoryTest(scd_file,knowledge_dir,testminute,threadnum);
-    MultiThreadRandomProcessTest(scd_file,knowledge_dir,testminute,threadnum);
-    MultiThreadSearchKeywordsTest(scd_file,knowledge_dir,testminute,threadnum);
+        MultiThreadProcessTest(scd_file,knowledge_dir,threadnum);
+        MultiThreadGetCategoryTest(scd_file,knowledge_dir,testminute,threadnum);
+        MultiThreadRandomProcessTest(scd_file,knowledge_dir,testminute,threadnum);
+        MultiThreadSearchKeywordsTest(scd_file,knowledge_dir,testminute,threadnum);
 
     return 1;
 };

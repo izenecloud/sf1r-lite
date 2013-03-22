@@ -816,7 +816,7 @@ void LogAnalysisController::product_update_info()
     }
 }
 /**
- * @brief Action @b inject_user_queries.
+ * @brief Action @b inject_user_queries_to_logserver.
  *
  * @section request
  *

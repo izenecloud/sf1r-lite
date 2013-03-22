@@ -38,7 +38,13 @@ public:
         const std::string & end_time,
         std::list< std::map<std::string, std::string> > & results)
     {
-       // LogServerConnection& conn = LogServerConnection::instance();
+       LogServerConnection& conn = LogServerConnection::instance();
+       GetFreqUserQueriesRequest req;
+       req.param_.collection_ = collection_name;
+       req.param_.begin_time_ = begin_time;
+       req.param_.end_time_ = end_time;
+
+       conn.syncRequest(req, results);
        return true;
     }
 
