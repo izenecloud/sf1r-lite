@@ -128,11 +128,21 @@ void NodeManagerBase::start()
 
     DistributeTestSuit::loadTestConf();
 
-    boost::unique_lock<boost::mutex> lock(mutex_);
     if (!zookeeper_)
     {
-        zookeeper_ = ZooKeeperManager::get()->createClient(this);
+        zookeeper_ = ZooKeeperManager::get()->createClient(this, true);
     }
+    else
+    {
+        zookeeper_->connect(true);
+    }
+    if (!zookeeper_->isConnected())
+    {
+        LOG(INFO) << "still waiting zookeeper";
+        nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
+        return;
+    }
+    boost::unique_lock<boost::mutex> lock(mutex_);
     if (nodeState_ == NODE_STATE_INIT)
     {
         nodeState_ = NODE_STATE_STARTING;
@@ -209,43 +219,54 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
     if (zkEvent.type_ == ZOO_SESSION_EVENT && 
         zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
     {
-        boost::unique_lock<boost::mutex> lock(mutex_);
-        // closed by zookeeper because of session expired
-        LOG(WARNING) << "worker node disconnected by zookeeper, state: " << zookeeper_->getStateString();
-        LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
-        LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
-        if (nodeState_ == NODE_STATE_RECOVER_RUNNING)
         {
-            LOG (INFO) << " session expired while recovering, wait recover finish.";
-            return;
+            boost::unique_lock<boost::mutex> lock(mutex_);
+            // closed by zookeeper because of session expired
+            LOG(WARNING) << "worker node disconnected by zookeeper, state: " << zookeeper_->getStateString();
+            LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
+            LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
+            if (nodeState_ == NODE_STATE_RECOVER_RUNNING)
+            {
+                LOG (INFO) << " session expired while recovering, wait recover finish.";
+                return;
+            }
+
+            // this node is expired, it means disconnect from ZooKeeper for a long time.
+            // if any write request not finished, we must abort it.
+            if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
+                nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
+            {
+                LOG(INFO) << "abort request on current secondary because of expired session.";
+                if (cb_on_abort_request_)
+                    cb_on_abort_request_();
+            }
+            else if ( nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
+                nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS ||
+                nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
+            {
+                LOG(INFO) << "abort request on current primary because of expired session.";
+                if(cb_on_wait_replica_abort_)
+                    cb_on_wait_replica_abort_();
+            }
+            else if (nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
+            {
+                LOG (INFO) << " session expired while processing request, wait processing finish.";
+                return;
+            }
+
+            stopping_ = true;
+            self_primary_path_.clear();
         }
 
-        // this node is expired, it means disconnect from ZooKeeper for a long time.
-        // if any write request not finished, we must abort it.
-        if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
-            nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
-        {
-            LOG(INFO) << "abort request on current secondary because of expired session.";
-            if (cb_on_abort_request_)
-                cb_on_abort_request_();
-        }
-        else if ( nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
-            nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS ||
-            nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
-        {
-            LOG(INFO) << "abort request on current primary because of expired session.";
-            if(cb_on_wait_replica_abort_)
-                cb_on_wait_replica_abort_();
-        }
-        else if (nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
-        {
-            LOG (INFO) << " session expired while processing request, wait processing finish.";
-            return;
-        }
-
-        stopping_ = true;
-        self_primary_path_.clear();
         zookeeper_->disconnect();
+        if (!checkZooKeeperService())
+        {
+            // process will be resumed after zookeeper recovered
+            LOG (WARNING) << " waiting for ZooKeeper Service while expired ...";
+            return;
+        }
+
+        boost::unique_lock<boost::mutex> lock(mutex_);
         nodeState_ = NODE_STATE_STARTING;
         enterCluster(false);
         LOG (WARNING) << " restarted in NodeManagerBase for ZooKeeper Service finished";
@@ -563,13 +584,6 @@ void NodeManagerBase::enterCluster(bool start_master)
     }
 
     stopping_ = false;
-    if (!checkZooKeeperService())
-    {
-        // process will be resumed after zookeeper recovered
-        LOG (WARNING) << CLASSNAME << " waiting for ZooKeeper Service ...";
-        return;
-    }
-
     // ensure base paths
     tryInitZkNameSpace();
 

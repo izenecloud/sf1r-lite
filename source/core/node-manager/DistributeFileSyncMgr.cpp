@@ -910,6 +910,17 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& ip, uint16_t por
     req.param_.receiver_rpcport = transfer_rpcserver_->getPort();
     req.param_.filepath = filepath;
     req.param_.filesize = filesize;
+    
+    {
+        // prepare wait data.
+        boost::unique_lock<boost::mutex> lk(mutex_);
+        if (wait_finish_notify_.find(filepath) != wait_finish_notify_.end())
+        {
+            LOG(INFO) << "file receiver is already waiting : " << filepath;
+            return false;
+        }
+        wait_finish_notify_[filepath] = false;
+    }
 
     ReadyReceiveData rsp;
     try
@@ -923,7 +934,17 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& ip, uint16_t por
     }
 
     // wait receiver.
-    return waitFinishReceive(filepath, filesize);
+    boost::unique_lock<boost::mutex> lk(mutex_);
+    while(!wait_finish_notify_[filepath])
+    {
+        cond_.wait(lk);
+    }
+    LOG(INFO) << "a file finished receive : " << filepath;
+    wait_finish_notify_.erase(filepath);
+    if (bfs::exists(filepath) && bfs::is_regular_file(filepath) && bfs::file_size(filepath) == filesize)
+        return true;
+    LOG(WARNING) << "file failed pass check: " << filepath;
+    return false;
 }
 
 void DistributeFileSyncMgr::sendFinishNotifyToReceiver(const std::string& ip, uint16_t port, const FinishReceiveRequest& req)
@@ -952,27 +973,6 @@ void DistributeFileSyncMgr::notifyFinishReceive(const std::string& filepath)
     wait_finish_notify_[filepath] = true;
     cond_.notify_all();
     LOG(INFO) << "a file finish notify for : " << filepath;
-}
-
-bool DistributeFileSyncMgr::waitFinishReceive(const std::string& filepath, uint64_t filesize)
-{
-    boost::unique_lock<boost::mutex> lk(mutex_);
-    if (wait_finish_notify_.find(filepath) != wait_finish_notify_.end())
-    {
-        LOG(INFO) << "file receiver is already waiting : " << filepath;
-        return false;
-    }
-    wait_finish_notify_[filepath] = false;
-    while(!wait_finish_notify_[filepath])
-    {
-        cond_.wait(lk);
-    }
-    LOG(INFO) << "a file finished receive : " << filepath;
-    wait_finish_notify_.erase(filepath);
-    if (bfs::exists(filepath) && bfs::is_regular_file(filepath) && bfs::file_size(filepath) == filesize)
-        return true;
-    LOG(WARNING) << "file failed pass check: " << filepath;
-    return false;
 }
 
 }

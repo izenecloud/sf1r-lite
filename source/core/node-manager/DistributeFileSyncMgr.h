@@ -64,7 +64,6 @@ public:
     bool syncCollectionData(const std::string& colname);
     bool getFileFromOther(const std::string& filepath, bool force_overwrite = false);
     void notifyFinishReceive(const std::string& filepath);
-    bool waitFinishReceive(const std::string& filepath, uint64_t filesize);
     void sendFinishNotifyToReceiver(const std::string& ip, uint16_t port, const FinishReceiveRequest& req);
     bool pushFileToAllReplicas(const std::string& srcpath, const std::string& destpath, bool recrusive = false);
 
