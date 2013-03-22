@@ -23,8 +23,6 @@ ZooKeeperManager::ZooKeeperManager()
 : isInitDone_(false)
 , monitorInterval_(MONOTOR_INTERVAL_SECONDS)
 {
-    // start monitor thread
-    monitorThread_ = boost::thread(&ZooKeeperManager::monitorLoop, this);
 }
 
 ZooKeeperManager::~ZooKeeperManager()
@@ -38,6 +36,9 @@ void ZooKeeperManager::init(const ZooKeeperConfig& zkConfig, const std::string& 
 
     ZooKeeperNamespace::setClusterId(clusterId);
     initZooKeeperNameSpace();
+
+    // start monitor thread
+    monitorThread_ = boost::thread(&ZooKeeperManager::monitorLoop, this);
 }
 
 void ZooKeeperManager::start()
