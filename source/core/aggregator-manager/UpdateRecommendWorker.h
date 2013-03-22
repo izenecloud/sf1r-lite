@@ -22,6 +22,7 @@ class UpdateRecommendWorker : public UpdateRecommendBase
 {
 public:
     UpdateRecommendWorker(
+        const std::string& collection,
         ItemCFManager& itemCFManager,
         CoVisitManager& coVisitManager
     );
@@ -86,8 +87,12 @@ public:
     const ItemCFManager& itemCFManager() const { return itemCFManager_; }
 
 private:
+    bool updatePurchaseMatrixFunc(int calltype);
+    bool updatePurchaseCoVisitMatrixFunc(int calltype);
+    bool updateVisitMatrixFunc(int calltype);
+    bool buildPurchaseSimMatrixFunc(int calltype);
+
     void flushImpl_();
-    bool buildPurchaseSimMatrixFunc();
 
 private:
     ItemCFManager& itemCFManager_;

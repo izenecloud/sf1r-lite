@@ -99,6 +99,40 @@ static bool callHandler(izenelib::driver::Router::handler_ptr handler,
     return false;
 }
 
+static bool callCBWriteHandler(Request::kCallType calltype, const std::string& callback_name,
+    const DistributeDriver::CBWriteHandlerT& cb_handler)
+{
+    DistributeRequestHooker::get()->processLocalBegin();
+    DistributeTestSuit::incWriteRequestTimes("callback_" + callback_name);
+    bool ret = cb_handler(calltype);
+    if (!ret)
+    {
+        LOG(ERROR) << "callback handler failed." << callback_name;
+    }
+    else
+    {
+        LOG(INFO) << "a callback write request finished :" << callback_name;
+    }
+    DistributeRequestHooker::get()->processLocalFinished(ret);
+    return ret;
+}
+
+bool DistributeDriver::addCallbackWriteHandler(const std::string& name, const CBWriteHandlerT& handler)
+{
+    if (callback_handlers_.find(name) != callback_handlers_.end())
+    {
+        LOG(WARNING) << "callback handler already existed";
+        return false;
+    }
+    if (!handler)
+    {
+        LOG(WARNING) << "callback NULL handler!";
+        return false;
+    }
+    callback_handlers_[name] = handler;
+    return true;
+}
+
 bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::string& packed_data, Request::kCallType calltype)
 {
     static izenelib::driver::JsonReader reader;
@@ -185,6 +219,27 @@ bool DistributeDriver::handleReqFromLog(int reqtype, const std::string& reqjsond
 
 	    return callCronJob(Request::FromLog, reqjsondata, packed_data);
     }
+    else if ((ReqLogType)reqtype == Req_Callback_UpdateRec || (ReqLogType)reqtype == Req_Callback_BuildPurchaseSim)
+    {
+        if (!asyncWriteTasks_.empty())
+        {
+            LOG(ERROR) << "another write task is running in async_task_worker_!!";
+            return false;
+        }
+
+	    LOG(INFO) << "got a callback request in log." << reqjsondata;
+        std::map<std::string, CBWriteHandlerT>::const_iterator it = callback_handlers_.find(reqjsondata);
+        if (it == callback_handlers_.end())
+        {
+            LOG(WARNING) << "callback write request not found on the node: " << reqjsondata;
+            return false;
+        }
+
+	    DistributeRequestHooker::get()->setHook(Request::FromLog, packed_data);
+        DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+	    return callCBWriteHandler(Request::FromLog, reqjsondata, it->second);
+    }
+
     return handleRequest(reqjsondata, packed_data, Request::FromLog);
 }
 
@@ -203,8 +258,34 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
         }
         return true;
     }
+    else if((ReqLogType)reqtype == Req_Callback_UpdateRec || (ReqLogType)reqtype == Req_Callback_BuildPurchaseSim)
+    {
+	    LOG(INFO) << "got a callback request in log." << reqjsondata;
+
+        std::map<std::string, CBWriteHandlerT>::const_iterator it = callback_handlers_.find(reqjsondata);
+        if (it == callback_handlers_.end())
+        {
+            LOG(WARNING) << "callback write request not found on the node: " << reqjsondata;
+            return false;
+        }
+
+	    DistributeRequestHooker::get()->setHook(Request::FromLog, packed_data);
+        DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+        if (!async_task_worker_.interruption_requested())
+        {
+            asyncWriteTasks_.push(boost::bind(&callCBWriteHandler,
+                    Request::FromPrimaryWorker, reqjsondata, it->second));
+        }
+        return true;
+    }
 
     return handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker);
+}
+
+bool DistributeDriver::pushCallbackWrite(const std::string& name, const std::string& packed_data)
+{
+    MasterManagerBase::get()->pushWriteReq(name + "::" + packed_data, "callback");
+    return true;
 }
 
 bool DistributeDriver::on_new_req_available()
@@ -241,6 +322,34 @@ bool DistributeDriver::on_new_req_available()
             {
                 asyncWriteTasks_.push(boost::bind(&callCronJob,
                         Request::FromDistribute, reqdata, reqdata));
+            }
+            break;
+        }
+        else if (reqtype == "callback")
+        {
+            LOG(INFO) << "got a callback write request : " << reqdata;
+            // get the callback name and packed_data.
+            size_t split_pos = reqdata.find("::");
+            if (split_pos == std::string::npos)
+            {
+                LOG(WARNING) << "callback data invalid.";
+                continue;
+            }
+            std::string callback_name = reqdata.substr(0, split_pos);
+            std::string packed_data = reqdata.substr(split_pos + 2);
+            std::map<std::string, CBWriteHandlerT>::const_iterator it = callback_handlers_.find(callback_name);
+            if (it == callback_handlers_.end())
+            {
+                LOG(WARNING) << "callback write request not found on the node: " << callback_name;
+                continue;
+            }
+            DistributeRequestHooker::get()->setHook(Request::FromOtherShard, packed_data);
+            DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+
+            if (!async_task_worker_.interruption_requested())
+            {
+                asyncWriteTasks_.push(boost::bind(&callCBWriteHandler, Request::FromOtherShard,
+                        callback_name, it->second));
             }
             break;
         }

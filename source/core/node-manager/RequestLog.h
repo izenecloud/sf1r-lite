@@ -38,6 +38,11 @@ enum ReqLogType
     Req_CreateOrUpdate_Doc,
     Req_Product,
     Req_UpdateConfig,
+    Req_Recommend_Index,
+    Req_Recommend_VisitItem,
+    Req_Recommend_PurchaseItem,
+    Req_Callback_UpdateRec,
+    Req_Callback_BuildPurchaseSim,
 };
 
 #pragma pack(1)
@@ -325,6 +330,172 @@ struct UpdateConfigReqLog: public CommonReqData
         catch(const std::exception& e)
         {
             std::cerr << "unpack UpdateConfigReqLog data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+};
+
+struct UpdateRecCallbackReqLog: public CommonReqData
+{
+    UpdateRecCallbackReqLog()
+    {
+        reqtype = Req_Callback_UpdateRec;
+    }
+    std::list<uint32_t> oldItems;
+    std::list<uint32_t> newItems;
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(oldItems);
+        pk.pack(newItems);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&oldItems);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&newItems);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack UpdateRecCallbackReqLog data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+};
+
+struct BuildPurchaseSimCallbackReqLog: public CommonReqData
+{
+    BuildPurchaseSimCallbackReqLog()
+    {
+        reqtype = Req_Callback_BuildPurchaseSim;
+    }
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        return true;
+    }
+};
+
+
+struct RecommendIndexReqLog: public CommonReqData
+{
+    RecommendIndexReqLog()
+    {
+        reqtype = Req_Recommend_Index;
+    }
+    // build recommend need the user and order scd file list.
+    std::vector<std::string> user_scd_list;
+    std::vector<std::string> order_scd_list;
+    int64_t timestamp;
+
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(user_scd_list);
+        pk.pack(order_scd_list);
+        pk.pack(timestamp);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&user_scd_list);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&order_scd_list);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&timestamp);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack recommend index data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+};
+
+struct RecommendVisitItemReqLog : public CommonReqData
+{
+    RecommendVisitItemReqLog()
+    {
+        reqtype = Req_Recommend_VisitItem;
+    }
+    uint32_t  itemid;
+
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(itemid);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&itemid);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack recommend visititem data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+};
+
+struct RecommendPurchaseItemReqLog : public CommonReqData
+{
+    RecommendPurchaseItemReqLog()
+    {
+        reqtype = Req_Recommend_PurchaseItem;
+    }
+    std::vector<uint32_t>  itemid_vec;
+
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(itemid_vec);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&itemid_vec);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack recommend purchase item data error: " << e.what() << std::endl;
             return false;
         }
         return true;

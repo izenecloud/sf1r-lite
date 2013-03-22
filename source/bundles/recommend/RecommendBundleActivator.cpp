@@ -324,7 +324,8 @@ void RecommendBundleActivator::createWorker_()
     getRecommendWorker_.reset(new GetRecommendWorker(*itemCFManager_, *coVisitManager_));
     getRecommendBase_ = getRecommendWorker_.get();
 
-    updateRecommendWorker_.reset(new UpdateRecommendWorker(*itemCFManager_, *coVisitManager_));
+    updateRecommendWorker_.reset(new UpdateRecommendWorker(config_->collectionName_,
+            *itemCFManager_, *coVisitManager_));
     updateRecommendBase_ = updateRecommendWorker_.get();
 
     Properties props;

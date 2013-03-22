@@ -35,6 +35,7 @@ public:
     bool isHooked();
     void setHook(int calltype, const std::string& addition_data);
     int  getHookType();
+    bool isRunningPrimary();
 
     inline bool setChainStatus(ChainStatus status)
     {

@@ -30,7 +30,7 @@ IndexTaskService::~IndexTaskService()
 {
 }
 
-bool IndexTaskService::HookDistributeRequestForIndex(bool shard)
+bool IndexTaskService::HookDistributeRequestForIndex()
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
     if (hooktype == Request::FromAPI)
@@ -40,7 +40,7 @@ bool IndexTaskService::HookDistributeRequestForIndex(bool shard)
     }
     const std::string& reqdata = DistributeRequestHooker::get()->getAdditionData();
     bool ret = false;
-    if (hooktype == Request::FromDistribute && shard)
+    if (hooktype == Request::FromDistribute)
     {
         indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "HookDistributeRequestForIndex", (int)hooktype, reqdata, ret);
     }
@@ -60,7 +60,7 @@ bool IndexTaskService::index(unsigned int numdoc)
 {
     bool result = true;
 
-    HookDistributeRequestForIndex(true);
+    HookDistributeRequestForIndex();
 
     Request::kCallType calltype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
 
