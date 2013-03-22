@@ -88,6 +88,7 @@ void UserQuery::load( const std::map<std::string, std::string> & rawdata )
 
 void UserQuery::save_to_logserver()
 {
+    LogServerConnection& conn = LogServerConnection::instance();
 }
 
 }
