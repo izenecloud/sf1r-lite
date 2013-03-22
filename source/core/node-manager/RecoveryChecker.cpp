@@ -323,6 +323,8 @@ bool RecoveryChecker::backup()
             // flush collection to make sure all changes have been saved to disk.
             if (flush_col_)
                 flush_col_(cit->first);
+
+            LOG(INFO) << "flush the collection finished.";
             if(!backupColl(cit->second.first, dest_path))
             {
                 return false;
@@ -344,6 +346,7 @@ bool RecoveryChecker::backup()
         dir_guard.setOK();
     }
 
+    LOG(INFO) << "back up finished.";
     cleanUnnessesaryBackup(backup_basepath_);
     return true;
 }

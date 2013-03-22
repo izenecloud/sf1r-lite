@@ -42,12 +42,8 @@ bool MasterManagerBase::init()
 
 void MasterManagerBase::start()
 {
-    boost::lock_guard<boost::mutex> lock(state_mutex_);
-    stopping_ = false;
     if (masterState_ == MASTER_STATE_INIT)
     {
-        masterState_ = MASTER_STATE_STARTING;
-
         if (!init())
         {
             throw std::runtime_error(std::string("failed to initialize ") + CLASSNAME);
@@ -60,6 +56,8 @@ void MasterManagerBase::start()
             return;
         }
 
+        boost::lock_guard<boost::mutex> lock(state_mutex_);
+        masterState_ = MASTER_STATE_STARTING;
         doStart();
     }
     // call init for all service.
@@ -69,7 +67,6 @@ void MasterManagerBase::start()
         cit->second->initMaster();
         ++cit;
     }
-
 }
 
 void MasterManagerBase::stop()
@@ -174,19 +171,25 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
     }
     else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
     {
-        boost::lock_guard<boost::mutex> lock(state_mutex_);
-        LOG(WARNING) << "master node disconnected by zookeeper, state : " << zookeeper_->getStateString();
-        LOG(WARNING) << "try reconnect: " << sf1rTopology_.curNode_.toString();
-	stopping_ = true;
-         
+        {
+            boost::lock_guard<boost::mutex> lock(state_mutex_);
+            LOG(WARNING) << "master node disconnected by zookeeper, state : " << zookeeper_->getStateString();
+            LOG(WARNING) << "try reconnect: " << sf1rTopology_.curNode_.toString();
+            stopping_ = true;
+        }
+
+        // reconnect
         zookeeper_->disconnect();
-        masterState_ = MASTER_STATE_STARTING;
+
         if (!checkZooKeeperService())
         {
             masterState_ = MASTER_STATE_STARTING_WAIT_ZOOKEEPER;
             LOG (ERROR) << CLASSNAME << " waiting for ZooKeeper Service...";
             return;
         }
+
+        boost::lock_guard<boost::mutex> lock(state_mutex_);
+        masterState_ = MASTER_STATE_STARTING;
         doStart();
         LOG (WARNING) << " restarted in MasterManagerBase for ZooKeeper Service finished";
     }
@@ -603,6 +606,7 @@ bool MasterManagerBase::isAllWorkerInState(int state)
             nodedata.loadKvString(sdata);
             if (nodedata.getUInt32Value(ZNode::KEY_NODE_STATE) != (uint32_t)state)
             {
+                LOG(INFO) << "worker not ready for state : " << state << ", " << nodepath;
                 return false;
             }
         }
