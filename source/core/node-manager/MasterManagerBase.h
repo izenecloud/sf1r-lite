@@ -101,7 +101,7 @@ public:
         return isDistributeEnable_;
     }
 
-    void notifyChangedPrimary();
+    void notifyChangedPrimary(bool is_new_primary = true);
 
     bool isMinePrimary();
     bool isBusy();
@@ -232,6 +232,7 @@ protected:
     bool stopping_;
     bool write_prepared_;
     bool new_write_disabled_;
+    bool is_mine_primary_;
     std::queue<std::pair<std::string, std::string> > cached_write_reqlist_;
 
 

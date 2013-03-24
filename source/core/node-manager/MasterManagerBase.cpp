@@ -17,6 +17,7 @@ MasterManagerBase::MasterManagerBase()
 , stopping_(false)
 , write_prepared_(false)
 , new_write_disabled_(false)
+, is_mine_primary_(false)
 , CLASSNAME("MasterManagerBase")
 {
 }
@@ -240,9 +241,9 @@ void MasterManagerBase::onNodeDeleted(const std::string& path)
         {
             // try failover
             failover(path);
-	    // reset watch.
-	    std::string sdata;
-	    zookeeper_->getZNodeData(path, sdata, ZooKeeper::WATCH);
+            // reset watch.
+            std::string sdata;
+            zookeeper_->getZNodeData(path, sdata, ZooKeeper::WATCH);
         }
     }
     checkForWriteReq();
@@ -258,12 +259,12 @@ void MasterManagerBase::onChildrenChanged(const std::string& path)
     if (masterState_ > MASTER_STATE_STARTING_WAIT_ZOOKEEPER)
     {
         if (path.find(topologyPath_) != std::string::npos)
-	{
-	    // reset watch.
-	    std::string sdata;
-	    zookeeper_->getZNodeData(path, sdata, ZooKeeper::WATCH);
+        {
+            // reset watch.
+            std::string sdata;
+            zookeeper_->getZNodeData(path, sdata, ZooKeeper::WATCH);
             detectReplicaSet(path);
-	}
+        }
     }
     checkForWriteReq();
 }
@@ -302,7 +303,8 @@ bool MasterManagerBase::prepareWriteReq()
     if (!isMinePrimary())
     {
         LOG(WARNING) << "non-primary master can not prepare a write request!";
-        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::WATCH);
+        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::NOT_WATCH);
+        zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::NOT_WATCH);
         return false;
     }
     if (new_write_disabled_)
@@ -369,6 +371,8 @@ void MasterManagerBase::checkForWriteReq()
             cached_write_reqlist_ = std::queue<std::pair<std::string, std::string> >();
         }
         LOG(INFO) << "not a primary master while check write request, ignore." << serverRealPath_;
+        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::NOT_WATCH);
+        zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::NOT_WATCH);
         return;
     }
 
@@ -1290,20 +1294,25 @@ bool MasterManagerBase::isMinePrimary()
 
     if (!zookeeper_ || !zookeeper_->isConnected())
         return false;
-    return isPrimaryWorker(sf1rTopology_.curNode_.replicaId_,  sf1rTopology_.curNode_.nodeId_);
+    return is_mine_primary_;
 }
 
-void MasterManagerBase::notifyChangedPrimary()
+void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
-    LOG(INFO) << "I became the new primary master.";
-    if (masterState_ == MASTER_STATE_STARTED || masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
+    if (stopping_)
+        return;
+    is_mine_primary_ = is_new_primary;
+    LOG(INFO) << "mine primary master state changed: " << is_new_primary;
+    if (is_new_primary)
     {
-        // reset current workers, need detect primary workers.
-        detectWorkers();
+        if (masterState_ == MASTER_STATE_STARTED || masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
+        {
+            // reset current workers, need detect primary workers.
+            detectWorkers();
+            zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::WATCH);
+            cacheNewWriteFromZNode();
+        }
     }
 }
-
-
-
 
