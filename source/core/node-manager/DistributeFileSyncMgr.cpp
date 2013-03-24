@@ -459,6 +459,12 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
             ++wait_num;
     }
 
+    if (wait_num == 0)
+    {
+        reporting_ = false;
+        LOG(INFO) << "ignore check for no other replicas.";
+        return;
+    }
     std::vector<std::string> file_checksum_list(req.param_.check_file_list.size());
     std::vector<std::string> memory_state_list;
     DistributeTestSuit::getMemoryState(req.param_.check_key_list, memory_state_list);
