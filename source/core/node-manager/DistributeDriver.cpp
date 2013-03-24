@@ -292,6 +292,7 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
 
 bool DistributeDriver::pushCallbackWrite(const std::string& name, const std::string& packed_data)
 {
+    LOG(INFO) << "a callback write pushed to queue: " << name;
     MasterManagerBase::get()->pushWriteReq(name + "::" + packed_data, "callback");
     return true;
 }

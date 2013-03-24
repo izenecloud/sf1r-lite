@@ -66,6 +66,7 @@ void UpdateRecommendMaster::HookDistributeCBRequestForUpdateRec(const std::strin
     bool ret = false;
     if (hooktype == Request::FromDistribute)
     {
+        LOG(INFO) << "a callback write send to sharding : " << callback_data;
         aggregator_->distributeRequestWithoutLocal(collection_, "HookDistributeRequestForUpdateRec", (int)hooktype,
             callback_data, ret);
     }
