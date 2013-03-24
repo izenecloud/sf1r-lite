@@ -219,7 +219,7 @@ bool DistributeDriver::handleReqFromLog(int reqtype, const std::string& reqjsond
 
 	    return callCronJob(Request::FromLog, reqjsondata, packed_data);
     }
-    else if ((ReqLogType)reqtype == Req_Callback_UpdateRec || (ReqLogType)reqtype == Req_Callback_BuildPurchaseSim)
+    else if ((ReqLogType)reqtype == Req_Callback)
     {
         if (!asyncWriteTasks_.empty())
         {
@@ -258,7 +258,7 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
         }
         return true;
     }
-    else if((ReqLogType)reqtype == Req_Callback_UpdateRec || (ReqLogType)reqtype == Req_Callback_BuildPurchaseSim)
+    else if((ReqLogType)reqtype == Req_Callback)
     {
 	    LOG(INFO) << "got a callback request in log." << reqjsondata;
 

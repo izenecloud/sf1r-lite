@@ -42,7 +42,7 @@ bool IndexTaskService::HookDistributeRequestForIndex()
     bool ret = false;
     if (hooktype == Request::FromDistribute)
     {
-        indexAggregator_->distributeRequest(bundleConfig_->collectionName_, "HookDistributeRequestForIndex", (int)hooktype, reqdata, ret);
+        indexAggregator_->distributeRequestWithoutLocal(bundleConfig_->collectionName_, "HookDistributeRequestForIndex", (int)hooktype, reqdata, ret);
     }
     else
     {
@@ -60,15 +60,12 @@ bool IndexTaskService::index(unsigned int numdoc)
 {
     bool result = true;
 
-    HookDistributeRequestForIndex();
-
-    Request::kCallType calltype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();
-
     if (bundleConfig_->isMasterAggregator() && indexAggregator_->isNeedDistribute() &&
-        (calltype == Request::FromAPI || calltype == Request::FromDistribute) )
+        DistributeRequestHooker::get()->isRunningPrimary())
     {
         if (DistributeRequestHooker::get()->isHooked())
         {
+            HookDistributeRequestForIndex();
             result = distributedIndex_(numdoc);
         }
         else
@@ -80,7 +77,7 @@ bool IndexTaskService::index(unsigned int numdoc)
     else
     {
         if (bundleConfig_->isMasterAggregator() &&
-            (calltype == Request::FromAPI || calltype == Request::FromDistribute) )
+            DistributeRequestHooker::get()->isRunningPrimary())
         {
             LOG(INFO) << "only local worker available, copy master scd files and indexing local.";
             // search the directory for files

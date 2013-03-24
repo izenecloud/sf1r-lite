@@ -47,6 +47,7 @@ void UpdateRecommendWorker::HookDistributeRequestForUpdateRec(int hooktype, cons
         return;
     }
 
+    LOG(INFO) << "callback for new request from shard : " << reqloghead.req_json_data;
     DistributeDriver::get()->pushCallbackWrite(reqloghead.req_json_data, reqdata);
 
     LOG(INFO) << "got hook request on the UpdateRecommendWorker.";
@@ -55,16 +56,13 @@ void UpdateRecommendWorker::HookDistributeRequestForUpdateRec(int hooktype, cons
 
 bool UpdateRecommendWorker::updatePurchaseMatrixFunc(int calltype)
 {
-    if (calltype == Request::FromOtherShard)
-    {
-        LOG(INFO) << "sharding call in " << __FUNCTION__;
-    }
+    LOG(INFO) << "sharding call in " << __FUNCTION__ << ", calltype :" << calltype;
 
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     UpdateRecCallbackReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_Callback_UpdateRec, reqlog))
+    if(!DistributeRequestHooker::get()->prepare(Req_Callback, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
@@ -88,16 +86,13 @@ void UpdateRecommendWorker::updatePurchaseMatrix(
 
 bool UpdateRecommendWorker::updatePurchaseCoVisitMatrixFunc(int calltype)
 {
-    if (calltype == Request::FromOtherShard)
-    {
-        LOG(INFO) << "sharding call in " << __FUNCTION__;
-    }
+    LOG(INFO) << "sharding call in " << __FUNCTION__ << ", calltype :" << calltype;
 
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     UpdateRecCallbackReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_Callback_UpdateRec, reqlog))
+    if(!DistributeRequestHooker::get()->prepare(Req_Callback, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
@@ -133,16 +128,13 @@ void UpdateRecommendWorker::buildPurchaseSimMatrix(bool& result)
 
 bool UpdateRecommendWorker::buildPurchaseSimMatrixFunc(int calltype)
 {
-    if (calltype == Request::FromOtherShard)
-    {
-        LOG(INFO) << "sharding call in " << __FUNCTION__;
-    }
+    LOG(INFO) << "sharding call in " << __FUNCTION__ << ", calltype :" << calltype;
 
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     BuildPurchaseSimCallbackReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_Callback_BuildPurchaseSim, reqlog))
+    if(!DistributeRequestHooker::get()->prepare(Req_Callback, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
@@ -157,16 +149,13 @@ bool UpdateRecommendWorker::buildPurchaseSimMatrixFunc(int calltype)
 
 bool UpdateRecommendWorker::updateVisitMatrixFunc(int calltype)
 {
-    if (calltype == Request::FromOtherShard)
-    {
-        LOG(INFO) << "sharding call in " << __FUNCTION__;
-    }
+    LOG(INFO) << "sharding call in " << __FUNCTION__ << ", calltype :" << calltype;
 
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     UpdateRecCallbackReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_Callback_UpdateRec, reqlog))
+    if(!DistributeRequestHooker::get()->prepare(Req_Callback, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;

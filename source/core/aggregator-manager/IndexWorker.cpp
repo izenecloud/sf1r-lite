@@ -124,7 +124,7 @@ void IndexWorker::HookDistributeRequestForIndex(int hooktype, const std::string&
     distribute_req_hooker_->hookCurrentReq(reqdata);
 
     distribute_req_hooker_->processLocalBegin();
-    LOG(INFO) << "got hook request on the worker.";
+    LOG(INFO) << "got hook request on the worker in indexworker.";
     result = true;
 }
 
@@ -151,7 +151,7 @@ bool IndexWorker::reload()
 void IndexWorker::index(unsigned int numdoc, bool& result)
 {
     result = true;
-    if (!distribute_req_hooker_->isHooked() || distribute_req_hooker_->getHookType() == Request::FromDistribute)
+    if (distribute_req_hooker_->isRunningPrimary())
     {
         task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
         JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
