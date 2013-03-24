@@ -117,6 +117,14 @@ static bool callCBWriteHandler(Request::kCallType calltype, const std::string& c
     return ret;
 }
 
+void DistributeDriver::removeCallbackWriteHandler(const std::string& name)
+{
+    // no lock needed because of this will only happen while stopping collection,
+    // it will be sure there is no any callback write request.
+    callback_handlers_.erase(name);
+    LOG(INFO) << "callback handler removed :" << name;
+}
+
 bool DistributeDriver::addCallbackWriteHandler(const std::string& name, const CBWriteHandlerT& handler)
 {
     if (callback_handlers_.find(name) != callback_handlers_.end())

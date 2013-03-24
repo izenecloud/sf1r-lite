@@ -22,17 +22,29 @@ UpdateRecommendWorker::UpdateRecommendWorker(
     : itemCFManager_(itemCFManager)
     , coVisitManager_(coVisitManager)
 {
+    collection_ = collection;
     // set callback used for distribute.
     if (NodeManagerBase::get()->isDistributed())
     {
-        DistributeDriver::get()->addCallbackWriteHandler(collection + "_updateVisitMatrix",
+        DistributeDriver::get()->addCallbackWriteHandler(collection_ + "_updateVisitMatrix",
             boost::bind(&UpdateRecommendWorker::updateVisitMatrixFunc, this, _1));
-        DistributeDriver::get()->addCallbackWriteHandler(collection + "_updatePurchaseMatrix",
+        DistributeDriver::get()->addCallbackWriteHandler(collection_ + "_updatePurchaseMatrix",
             boost::bind(&UpdateRecommendWorker::updatePurchaseMatrixFunc, this, _1));
-        DistributeDriver::get()->addCallbackWriteHandler(collection + "_updatePurchaseCoVisitMatrix",
+        DistributeDriver::get()->addCallbackWriteHandler(collection_ + "_updatePurchaseCoVisitMatrix",
             boost::bind(&UpdateRecommendWorker::updatePurchaseCoVisitMatrixFunc, this, _1));
-        DistributeDriver::get()->addCallbackWriteHandler(collection + "_buildPurchaseSimMatrix",
+        DistributeDriver::get()->addCallbackWriteHandler(collection_ + "_buildPurchaseSimMatrix",
             boost::bind(&UpdateRecommendWorker::buildPurchaseSimMatrixFunc, this, _1));
+    }
+}
+
+UpdateRecommendWorker::~UpdateRecommendWorker()
+{
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        DistributeDriver::get()->removeCallbackWriteHandler(collection_ + "_updateVisitMatrix");
+        DistributeDriver::get()->removeCallbackWriteHandler(collection_ + "_updatePurchaseMatrix");
+        DistributeDriver::get()->removeCallbackWriteHandler(collection_ + "_updatePurchaseCoVisitMatrix");
+        DistributeDriver::get()->removeCallbackWriteHandler(collection_ + "_buildPurchaseSimMatrix");
     }
 }
 

@@ -27,6 +27,8 @@ public:
         CoVisitManager& coVisitManager
     );
 
+    ~UpdateRecommendWorker();
+
     virtual bool bindCallProxy(CallProxyType& proxy)
     {
         BIND_CALL_PROXY_BEGIN(UpdateRecommendWorker, proxy)
@@ -99,6 +101,7 @@ private:
     CoVisitManager& coVisitManager_;
 
     JobScheduler jobScheduler_;
+    std::string collection_;
 };
 
 } // namespace sf1r
