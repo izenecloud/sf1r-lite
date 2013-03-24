@@ -41,8 +41,7 @@ enum ReqLogType
     Req_Recommend_Index,
     Req_Recommend_VisitItem,
     Req_Recommend_PurchaseItem,
-    Req_Callback_UpdateRec,
-    Req_Callback_BuildPurchaseSim,
+    Req_Callback,
 };
 
 #pragma pack(1)
@@ -340,7 +339,7 @@ struct UpdateRecCallbackReqLog: public CommonReqData
 {
     UpdateRecCallbackReqLog()
     {
-        reqtype = Req_Callback_UpdateRec;
+        reqtype = Req_Callback;
     }
     std::list<uint32_t> oldItems;
     std::list<uint32_t> newItems;
@@ -377,7 +376,7 @@ struct BuildPurchaseSimCallbackReqLog: public CommonReqData
 {
     BuildPurchaseSimCallbackReqLog()
     {
-        reqtype = Req_Callback_BuildPurchaseSim;
+        reqtype = Req_Callback;
     }
     virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
     {

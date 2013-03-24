@@ -66,8 +66,8 @@ void UpdateRecommendMaster::HookDistributeCBRequestForUpdateRec(const std::strin
     bool ret = false;
     if (hooktype == Request::FromDistribute)
     {
-        //aggregator_->distributeRequestWithoutLocal(collection_, "HookDistributeRequestForUpdateRec", (int)hooktype,
-        //    callback_data, ret);
+        aggregator_->distributeRequestWithoutLocal(collection_, "HookDistributeRequestForUpdateRec", (int)hooktype,
+            callback_data, ret);
     }
     else
     {
