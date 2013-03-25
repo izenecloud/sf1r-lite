@@ -177,6 +177,10 @@ public:
     FilterIdRange getNumFilterIdRangeLess(size_t prop_id, double filter_num, bool include) const;
 
     std::vector<std::vector<FilterDocListT> >& getFilterList();
+    const std::vector<std::pair<int32_t, std::string> >& getProp_list()
+    {
+        return prop_list_;
+    }
     void clearFilterList();
 
     void clearFilterId();

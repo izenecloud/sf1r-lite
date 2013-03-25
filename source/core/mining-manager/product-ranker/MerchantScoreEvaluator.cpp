@@ -35,12 +35,12 @@ score_t MerchantScoreEvaluator::evaluate(ProductScore& productScore)
     if (singleMerchantId == 0)
         return 0;
 
-    category_id_t categoryId = 0;
     if (categoryValueTable_)
     {
         docid_t docId = productScore.docId_;
-        categoryId = categoryValueTable_->getRootValueId(docId);
+        category_id_t categoryId = categoryValueTable_->getFirstValueId(docId);
+        categoryValueTable_->getParentIds(categoryId, parentIds_);
     }
 
-    return merchantScoreManager_.getIdScore(singleMerchantId, categoryId);
+    return merchantScoreManager_.getIdScore(singleMerchantId, parentIds_);
 }

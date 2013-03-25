@@ -9,8 +9,13 @@
 #define SF1R_MERCHANT_SCORE_H
 
 #include <common/inttypes.h>
+#include <3rdparty/febird/io/DataIO.h>
+
 #include <string>
 #include <map>
+#include <vector>
+
+using namespace febird;
 
 namespace sf1r
 {
@@ -28,6 +33,8 @@ struct CategoryScore
     score_t generalScore;
 
     CategoryScore() : generalScore(0) {}
+
+    DATA_IO_LOAD_SAVE(CategoryScore, &categoryScoreMap &generalScore);
 };
 
 template <typename MerchantT, typename CategoryT>
@@ -36,20 +43,23 @@ struct MerchantScoreMap
     typedef typename std::map<MerchantT, CategoryScore<CategoryT> > map_t;
     map_t map;
 
-    void clear() { map.clear(); }
+    DATA_IO_LOAD_SAVE(MerchantScoreMap, &map);
 };
 
 /// CategoryScore id version
 typedef CategoryScore<category_id_t> CategoryIdScore;
 
+/// Category string path from root to leaf node
+typedef std::vector<std::string> CategoryStrPath;
+
 /// CategoryScore string version
-typedef CategoryScore<std::string> CategoryStrScore;
+typedef CategoryScore<CategoryStrPath> CategoryStrScore;
 
 /// MerchantScoreMap id version
 typedef MerchantScoreMap<merchant_id_t, category_id_t> MerchantIdScoreMap;
 
 /// MerchantScoreMap string version
-typedef MerchantScoreMap<std::string, std::string> MerchantStrScoreMap;
+typedef MerchantScoreMap<std::string, CategoryStrPath> MerchantStrScoreMap;
 
 } // namespace sf1r
 

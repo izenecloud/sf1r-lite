@@ -33,6 +33,7 @@
 #include <ext/pb_ds/tag_and_trait.hpp>
 #include <stack>
 #include <boost/network/protocol/http/server.hpp>
+#include <boost/network/utils/thread_pool.hpp>
 #include <boost/network/uri/uri.hpp>
 #include <boost/network/uri/decode.hpp>
 
@@ -128,7 +129,22 @@ int main(int ac, char** av)
 
     ServerHandler handler(program_path);
     Server server("0.0.0.0", "18190", handler);
-    server.run();
+    static const uint32_t thread_count = 2;
+    std::vector<boost::thread*> threads;
+    for(uint32_t i=0;i<thread_count;i++)
+    {
+        boost::thread* t = new boost::thread(boost::bind(&Server::run, &server));
+        threads.push_back(t);
+    }
+    for(uint32_t i=0;i<thread_count;i++)
+    {
+        threads[i]->join();
+    }
+    for(uint32_t i=0;i<thread_count;i++)
+    {
+        delete threads[i];
+    }
+    //server.run();
 
 
 
@@ -255,6 +271,7 @@ int do_main(int ac, char** av)
         ("attribute-index,A", "build attribute index")
         ("product-train", "do product training")
         ("product-match", "do product matching test")
+        ("fuzzy-diff", "test the fuzzy matching diff from no fuzzy")
         ("b5m-match,B", "make b5m matching")
         ("psm-index", "psm index")
         ("psm-match", "psm match")
@@ -271,6 +288,7 @@ int do_main(int ac, char** av)
         ("logserver-update", "update logserver")
         ("match-test,T", "b5m matching test")
         ("frontend-test", "the frontend categorizing")
+        ("search-keyword", "get search keywords")
         ("mdb-instance", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
@@ -635,6 +653,23 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
     } 
+    if (vm.count("fuzzy-diff")) {
+        if( knowledge_dir.empty()||scd_path.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ProductMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open(knowledge_dir))
+        {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        if(!matcher.FuzzyDiff(scd_path, output_match))
+        {
+            return EXIT_FAILURE;
+        }
+    } 
     if (vm.count("frontend-test")) {
         if( knowledge_dir.empty())
         {
@@ -667,6 +702,47 @@ int do_main(int ac, char** av)
                 std::string str;
                 results[i].convertString(str, UString::UTF_8);
                 std::cout<<"[FCATEGORY]"<<str<<std::endl;
+            }
+        }
+    }
+    if (vm.count("search-keyword")) {
+        if( knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ProductMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open(knowledge_dir))
+        {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        matcher.SetUsePriceSim(false);
+        while(true)
+        {
+            std::string line;
+            std::cerr<<"input text:"<<std::endl;
+            getline(std::cin, line);
+            boost::algorithm::trim(line);
+            UString query(line, UString::UTF_8);
+
+            typedef std::list<std::pair<UString, double> > Hits;
+            Hits hits;
+            typedef std::list<UString> Left;
+            Left left;
+            matcher.GetSearchKeywords(query, hits, left);
+            for(Hits::const_iterator it = hits.begin();it!=hits.end();++it)
+            {
+                const std::pair<UString, double>& v = *it;
+                std::string str;
+                v.first.convertString(str, UString::UTF_8);
+                std::cout<<"[HITS]"<<str<<","<<v.second<<std::endl;
+            }
+            for(Left::const_iterator it = left.begin();it!=left.end();++it)
+            {
+                std::string str;
+                (*it).convertString(str, UString::UTF_8);
+                std::cout<<"[LEFT]"<<str<<std::endl;
             }
         }
     }

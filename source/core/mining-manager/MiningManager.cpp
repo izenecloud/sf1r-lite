@@ -34,7 +34,7 @@
 #include "attr-manager/AttrManager.h"
 #include "faceted-submanager/ctr_manager.h"
 
-#include "util/split_ustr.h"
+#include "util/convert_ustr.h"
 #include "group-label-logger/GroupLabelLogger.h"
 #include "group-label-logger/GroupLabelKnowledge.h"
 #include "merchant-score-manager/MerchantScoreManager.h"
@@ -171,6 +171,7 @@ MiningManager::MiningManager(
     , product_categorizer_(NULL)
     , kvManager_(NULL)
     , miningTaskBuilder_(NULL)
+    , hasDeletedDocDuringMining_(false)
 {
 }
 
@@ -549,6 +550,7 @@ bool MiningManager::open()
             suffix_match_path_ = prefix_path + "/suffix_match";
             suffixMatchManager_ = new SuffixMatchManager(suffix_match_path_,
                     mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
+                    system_resource_path_,
                     document_manager_, groupManager_, attrManager_, numericTableBuilder_);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
@@ -663,6 +665,9 @@ bool MiningManager::open()
                 //matcher->SetCategoryMaxDepth(2);
             }
             product_categorizer_->SetProductMatcher(matcher);
+            if(suffixMatchManager_)
+                suffixMatchManager_->setProductMatcher(matcher);
+
             SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
             product_classifier->Open(system_resource_path_+"/spu-classifier");
             product_categorizer_->SetSPUProductClassifier(product_classifier);
@@ -937,8 +942,10 @@ bool MiningManager::DoMiningCollection()
         MEMLOG("[Mining] SIM finished.");
     }
 
+    hasDeletedDocDuringMining_ = false;
     LOG (INFO) << "Clear Rtype Docid List";
     document_manager_->clearRtypeDocidList();
+    document_manager_->RtypeDocidPros_.clear();
     return true;
 }
 
@@ -1683,7 +1690,7 @@ faceted::PropValueTable::pvid_t MiningManager::propValueId_(
         (propValueTable = groupManager_->getPropValueTable(propName)))
     {
         std::vector<izenelib::util::UString> ustrPath;
-        convert_to_ustr_path(groupPath, ustrPath);
+        convert_to_ustr_vector(groupPath, ustrPath);
         pvId = propValueTable->propValueId(ustrPath);
 
         if (pvId == 0)
@@ -2013,7 +2020,8 @@ bool MiningManager::GetSuffixMatch(
         std::vector<float>& customRankScoreList,
         std::size_t& totalCount,
         faceted::GroupRep& groupRep,
-        sf1r::faceted::OntologyRep& attrRep
+        sf1r::faceted::OntologyRep& attrRep,
+        UString& analyzedQuery
         )
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
@@ -2028,7 +2036,11 @@ bool MiningManager::GetSuffixMatch(
 
     if (!use_fuzzy)
     {
-        totalCount = suffixMatchManager_->longestSuffixMatch(queryU, search_in_properties, max_docs, res_list);
+        totalCount = suffixMatchManager_->longestSuffixMatch(
+                actionOperation.actionItem_.env_.queryString_,
+                search_in_properties, 
+                max_docs, 
+                res_list);
     }
     else
     {
@@ -2042,11 +2054,14 @@ bool MiningManager::GetSuffixMatch(
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                queryU, search_in_properties, max_docs,
+                actionOperation.actionItem_.env_.queryString_, 
+                search_in_properties, 
+                max_docs,
                 actionOperation.actionItem_.searchingMode_.filtermode_,
                 filter_param,
                 actionOperation.actionItem_.groupParam_,
-                res_list);
+                res_list,
+                analyzedQuery);
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
@@ -2101,7 +2116,12 @@ bool MiningManager::GetSuffixMatch(
         }
     }
 
-    res_list.erase(std::remove_if(res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
+    //We do not use this post delete filtering because deleted documents should never be searched from 
+    //suffix index in normal cases, while if there are deleted documents before mining finished, these documents
+    //should be abled to searched as well.
+    //We ignore the exception case that SF1 quit before mining finished
+    //if(!hasDeletedDocDuringMining_)
+    //    res_list.erase(std::remove_if(res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
     res_list.resize(std::min(orig_max_docs, res_list.size()));
 
     docIdList.resize(res_list.size());
@@ -2350,7 +2370,7 @@ bool MiningManager::initMerchantScoreManager_(const ProductRankingConfig& rankCo
     merchantScoreManager_ = new MerchantScoreManager(
         merchantValueTable, categoryValueTable);
 
-    bfs::path scorePath = scoreDir / "score.txt";
+    bfs::path scorePath = scoreDir / "score.bin";
     if (!merchantScoreManager_->open(scorePath.string()))
     {
         LOG(ERROR) << "open " << scorePath << " failed";

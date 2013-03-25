@@ -464,6 +464,25 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
         }
 
     }///set cookie as true here
+
+    //@brief : to check if there is fuzzy numberic or date filter;
+    std::set<std::string> suffix_numeric_filter_properties;
+    std::vector<NumericFilterConfig>::iterator pit 
+        = miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.begin();
+
+    while (pit != miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.end())
+    {
+        suffix_numeric_filter_properties.insert(pit->property);
+        ++pit;
+    }
+    std::set<std::string> intersection;
+    std::set_intersection(documentManager_->RtypeDocidPros_.begin(),
+                                      documentManager_->RtypeDocidPros_.end(),
+                                      suffix_numeric_filter_properties.begin(),
+                                      suffix_numeric_filter_properties.end(),
+                                      std::inserter(intersection, intersection.begin()));
+    documentManager_->RtypeDocidPros_.swap(intersection);
+    
     try{
         if (hooker_)
         {
@@ -1371,6 +1390,8 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
     }
     std::sort(docIdList.begin(), docIdList.end());
 
+    miningTaskService_->EnsureHasDeletedDocDuringMining();
+
     //process delete document in index manager
     for (std::vector<docid_t>::iterator iter = docIdList.begin(); iter
             != docIdList.end(); ++iter)
@@ -1524,6 +1545,10 @@ bool IndexWorker::doUpdateDoc_(
         {
             LOG(WARNING) << "document " << oldId << " is already deleted";
         }
+        else
+        {
+            miningTaskService_->EnsureHasDeletedDocDuringMining();
+        }
         indexManager_->updateDocument(indexDocument);
 
         if (!documentManager_->insertDocument(document))
@@ -1585,7 +1610,11 @@ void IndexWorker::flushUpdateBuffer_()
                 break;
             }
 
-            documentManager_->removeDocument(oldId);
+            if(documentManager_->removeDocument(oldId))
+            {
+                miningTaskService_->EnsureHasDeletedDocDuringMining();
+            }
+
             indexManager_->updateDocument(updateData.get<2>());
 
             if(!documentManager_->insertDocument(updateData.get<1>()))
@@ -1827,6 +1856,8 @@ bool IndexWorker::prepareDocument_(
                     document.property(fieldStr).swap(propData);
                     prepareIndexDocumentNumericProperty_(docId, p->second, iter, indexDocument);
                 }
+                if(updateType == RTYPE )
+                    documentManager_->RtypeDocidPros_.insert(fieldStr);
                 break;
 
             case DATETIME_PROPERTY_TYPE:
@@ -1843,6 +1874,8 @@ bool IndexWorker::prepareDocument_(
                     document.property(fieldStr).swap(propData);
                     prepareIndexDocumentNumericProperty_(docId, p->second, iter, indexDocument);
                 }
+                if(updateType == RTYPE )
+                    documentManager_->RtypeDocidPros_.insert(fieldStr);
                 break;
 
             default:
@@ -1889,27 +1922,10 @@ bool IndexWorker::mergeDocument_(
     {
         return false;
     }
-
+    oldDoc.copyPropertiesFromDocument(doc);
     for (Document::property_iterator it = oldDoc.propertyBegin(); it != oldDoc.propertyEnd(); ++it)
     {
-        if (doc.hasProperty(it->first))
-        {
-            ///When new doc has same properties with old doc
-            ///override content of old doc
-            if (it->second == doc.property(it->first)) continue;
-            if(boost::find_first(it->first,DocumentManager::PROPERTY_BLOCK_SUFFIX))
-            {
-                ///such properties are not UString type, so boost::get<> will throw exception
-                it->second.swap(doc.property(it->first));
-            }
-            else
-            {
-                const izenelib::util::UString& newPropValue = doc.property(it->first).get<izenelib::util::UString>();
-                if (newPropValue.empty()) continue;
-                it->second = newPropValue;
-            }
-        }
-        else if (generateIndexDoc)
+        if (!doc.hasProperty(it->first) && generateIndexDoc)
         {
             ///Properties that only exist within old doc, while not in new doc
             ///Require to prepare for IndexDocument

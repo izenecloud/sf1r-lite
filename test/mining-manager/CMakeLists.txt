@@ -232,6 +232,12 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
     RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin)
   ADD_TEST(product_score "${SF1RENGINE_ROOT}/testbin/t_ProductRanker")
 
+  ADD_EXECUTABLE(t_ProductTokenizer
+    Runner.cpp
+    t_ProductTokenizer.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_ProductTokenizer ${libs})
+
 ENDIF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 INCLUDE_DIRECTORIES(

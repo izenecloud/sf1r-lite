@@ -22,7 +22,7 @@ B5mpProcessor::B5mpProcessor(const std::string& mdb_instance,
     random_properties_.push_back("OriginalCategory");
     //random_properties_.push_back("Picture");//remove if we use SPU picture in future.
     random_properties_.push_back("TargetCategory");
-    random_properties_.push_back("Url");
+    //random_properties_.push_back("Url");
 }
 
 bool B5mpProcessor::Generate()

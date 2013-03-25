@@ -280,24 +280,14 @@ PropValueTable::pvid_t PropValueTable::getFirstValueId(docid_t docId) const
     return propIdList[0];
 }
 
-PropValueTable::pvid_t PropValueTable::getRootValueId(docid_t docId) const
+void PropValueTable::getParentIds(pvid_t pvId, std::vector<pvid_t>& parentIds) const
 {
-    PropIdList propIdList;
-    getPropIdList(docId, propIdList);
+    parentIds.clear();
 
-    if (propIdList.empty())
-        return 0;
-
-    pvid_t curId = propIdList[0];
-    pvid_t prevId = 0;
-
-    while (curId)
+    for (; pvId; pvId = parentIdVec_[pvId])
     {
-        prevId = curId;
-        curId = parentIdVec_[curId];
+        parentIds.push_back(pvId);
     }
-
-    return prevId;
 }
 
 NS_FACETED_END
