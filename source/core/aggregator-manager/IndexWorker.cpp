@@ -475,6 +475,8 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         // interrupt when closing the process
         boost::this_thread::interruption_point();
     }
+    flushUpdateBuffer_();
+
     LOG(INFO) << "inserted doc number: " << insertedCount << ", total: " << maxDocId;
     LOG(INFO) << "Indexing Finished";
 
