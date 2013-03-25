@@ -140,21 +140,19 @@ bool ReqLogMgr::appendReqData(const std::string& req_packed_data)
     whead.req_data_len = req_packed_data.size();
     whead.req_data_crc = crc(0, req_packed_data.data(), req_packed_data.size());
 
-    using namespace boost::posix_time;
-    static ptime epoch(boost::gregorian::date(1970, 1, 1));
-    ptime current_time = microsec_clock::universal_time();
-    time_duration td = current_time - epoch;
-    std::string time_str = boost::lexical_cast<std::string>(double(td.total_milliseconds())/1000);
-    time_str.resize(15, '\0');
-    time_str.append(1, '\0');
-    memcpy(&whead.reqtime[0], time_str.data(), sizeof(whead.reqtime));
+    //using namespace boost::posix_time;
+    //static ptime epoch(boost::gregorian::date(1970, 1, 1));
+    //ptime current_time = microsec_clock::universal_time();
+    //time_duration td = current_time - epoch;
+    //std::string time_str = boost::lexical_cast<std::string>(double(td.total_milliseconds())/1000);
+    //time_str.resize(15, '\0');
+    //time_str.append(1, '\0');
+    //memcpy(&whead.reqtime[0], time_str.data(), sizeof(whead.reqtime));
     ofs.write(req_packed_data.data(), req_packed_data.size());
     ofs_head.write((const char*)&whead, sizeof(whead));
     last_writed_id_ = whead.inc_id;
     ofs.close();
     ofs_head.close();
-    //std::vector<CommonReqData>().swap(prepared_req_);
-    //std::cout << "append request log success: " << whead.inc_id << "," << whead.reqtime << std::endl;
     return true;
 }
 
