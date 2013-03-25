@@ -554,6 +554,12 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
                         // the file of level db can be ignored.
                         continue;
                     }
+                    // exclude tc hash db file.
+                    if (name.rfind(".tch", 4) != std::string::npos)
+                    {
+                        LOG(WARNING) << "tc hash db ignored: " << name;
+                        continue;
+                    }
                     LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
                     is_file_mismatch =  true;
                 }
