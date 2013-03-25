@@ -274,11 +274,23 @@ void RpcLogServer::GetOldDocId(OldDocIdData& reqdata)
 
 void RpcLogServer::GetFreqUserQueries(GetFreqUserQueriesData& reqdata, std::list< std::map<std::string, std::string> > & results)
 {
-
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->sketchManagerMutex());
+    LogServerStorage::get()->sketchManager()->getFreqUserQueries(reqdata.collection_,
+            reqdata.begin_time_,
+            reqdata.end_time_,
+            results);
 }
 
 void RpcLogServer::InjectUserQuery(InjectUserQueryData& reqdata, bool & result)
 {
+    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->sketchManagerMutex());
+    result = LogServerStorage::get()->sketchManager()->injectUserQuery(reqdata.query_,
+            reqdata.collection_,
+            reqdata.hitnum_,
+            reqdata.page_start_,
+            reqdata.page_count_,
+            reqdata.duration_,
+            reqdata.timestamp_);
 }
 
 void RpcLogServer::synchronize(const SynchronizeData& syncReqData)
