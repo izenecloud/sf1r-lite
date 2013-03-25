@@ -435,6 +435,9 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     req.param_.req_host = SuperNodeManager::get()->getLocalHostIP();
 
     getFileList(colpath.getCollectionDataPath(), req.param_.check_file_list, ignore_list_, true);
+    boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
+    getFileList(reqlogmgr->getRequestLogPath(), req.param_.check_file_list, ignore_list_, true);
+
     LOG(INFO) << "checking got file num :" << req.param_.check_file_list.size();
     DistributeTestSuit::getMemoryStateKeyList(req.param_.check_key_list);
 
@@ -483,7 +486,6 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     size_t headoffset;
     std::string req_packed_data;
     uint32_t check_start_inc = 0;
-    boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
     ret = reqlogmgr->getHeadOffset(check_start_inc, head, headoffset);
     if (ret)
     {

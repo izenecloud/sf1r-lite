@@ -52,7 +52,7 @@ struct ReqLogHead
     uint32_t req_data_offset;
     uint32_t req_data_len;
     uint32_t req_data_crc;
-    char reqtime[16];
+    //char reqtime[16];
 };
 #pragma pack()
 
