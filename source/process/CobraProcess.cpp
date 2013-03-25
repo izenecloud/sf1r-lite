@@ -220,6 +220,7 @@ bool CobraProcess::initDriverServer()
 
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),port);
 
+    DriverThreadPool::init(threadPoolSize/4, threadPoolSize);
     // init Router
     driverRouter_.reset(new ::izenelib::driver::Router);
     initQuery();
@@ -231,7 +232,7 @@ bool CobraProcess::initDriverServer()
     factory->setFirewall(DriverConnectionFirewall());
 
     driverServer_.reset(
-        new DriverServer(endpoint, factory, threadPoolSize)
+        new DriverServer(endpoint, factory, threadPoolSize/4)
     );
 
     if (SF1Config::get()->isDistributedNode())
