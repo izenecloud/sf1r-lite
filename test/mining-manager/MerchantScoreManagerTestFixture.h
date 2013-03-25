@@ -35,8 +35,19 @@ public:
 private:
     merchant_id_t getMerchantId_(const std::string& merchant) const;
     category_id_t getCategoryId_(const std::string& category) const;
+    category_id_t insertCategoryId_(const std::string& category) const;
 
     void checkNonExistingId_();
+
+    void checkIdScoreEqual_(
+        const std::string& merchant,
+        const std::string& category,
+        score_t gold);
+
+    void checkIdScoreClose_(
+        const std::string& merchant,
+        const std::string& category,
+        score_t gold);
 
     void checkAllScore1_();
     void checkPartScore1_();

@@ -1,0 +1,48 @@
+b5m_product_matcher测试步骤：
+1. 添加测试文本 category_test_file 和 process_test_file
+ a.category_test_file,用来测试色界的文本分类，文件格式如下
+
+限时包邮2012春装新款大摆半身裙波西米亚长裙夏季蓬蓬裙网纱裙
+服饰鞋帽>女装>裙子"
+秋冬新款欧美风厚实喇叭大裙摆黑灰裙裤打底裤显瘦裤裙
+服饰鞋帽>女装>裙子
+
+奇数行是sejie的txt,偶数行是txt分类的正确结果,用来验证结果的正确性
+
+b.process_test_file，用来测试matcher的匹配，文件格式如下
+每个产品一行，依次为spid, soid,source,date,price,attribute,title,fcategory,scategory,sbrand,都要加双引号  spid,fcategory,scategory,sbrand是product的属性，用于验证
+
+    "7bc999f5d10830d0c59487bd48a73cae","46c999f5d10830d0c59487bd48adce8a","苏宁","20130301","1043","产地:中国,质量:优","华硕  TF700T","电脑办公>电脑整机>笔记本","笔记本电脑","Asus/华硕"
+    "72c999f5d10830d0c59487bd48a73cae","35c999f5d10830d0c59487bd48adce8a","凡客","20130301","1043","产地:韩国,质量:差","2012秋冬新款女外精品棉大衣","服饰鞋帽>女装","女装/女士精品",""
+    "","4d33c599547b17615efa9384bbcf3851","银泰精品百货官网","20130105174125","299.0","","LILY女士亮桔横机连衣裙111440B794913,L,12Q3","服饰鞋帽>女装>裙子","女装/女士精品>连衣裙",""
+    "","68b05f930be812ac800b4893852dfef5","银泰精品百货官网","20130105174125","209.0","","迪艾宝粉红色布纹牛皮长款钱包DY11D31204PK0","礼品箱包","箱包皮具/热销女包/男包",""
+    "","02e35d81fe6fb9093915457372e068a0","银泰精品百货官网","20130104174024","165.0","","VICHY薇姿泉之净滢润泡沫洁面膏125ml(新旧包装交替)","个护化妆>面部护理>洁面乳","美容护肤/美体/精油>洁面",""
+
+c.getSearchKeywords_test_file，用来测试getSearchKeywords的获取，文件格式如下
+
+   曼邦男士真皮编织牛皮手拿包手抓包MB6088-5-122黑
+男士  牛皮手拿包  手抓包  mb6088-5-122  
+    Agalloch沉香木磨砂暗纹牛皮钱夹MRP12766灰色
+香木  磨砂  钱夹  灰色  mrp12766  
+    PIANEGONDA银色银质圆形吊坠装饰女士项链，12Y128CR，CA010946
+银色  银质  吊坠  装饰  女士项链  ca  12y128cr  
+    LOREAL欧莱雅爱莎润养顺滑润发乳,400ml
+欧莱雅  润养顺滑润发乳  400ml  
+
+奇数行是输入的txt,偶数行是获取的keywords的正确结果,用来对比
+
+2.在 sf1r-engine/b5m-operation/testbin/下建立配置文件config
+config文件格式如下：
+
+knowledge_dir:/home/lscm/codebase/b5m-operation/db/working_b5m/knowledge/
+scd_path:/B*.SCD
+category_test_file:./category_test_file
+process_test_file:./process_test_file
+getSearchKeywords_test_file:./getSearchKeywords_test_file
+threadnum:4
+testminute:10
+
+scd_path是用来测试多线程稳定性的，测试的时候matcher会先单线程运行获得结果，再进行多线程运行，将两次结果进行对比验证
+
+3. 在 sf1r-engine/b5m-operation/testbin/运行
+./b5m_product_matcher

@@ -632,18 +632,13 @@ bool DocumentsSearchHandler::doSearch(
     }
 
     // Return analyzer result even when result validation fails.
-    if (returnAnalyzerResult_ &&
-            searchResult.analyzedQuery_.size() == actionItem_.searchPropertyList_.size())
+    if (returnAnalyzerResult_)
     {
         std::string convertBuffer;
-        Value& analyzerResult = response_[Keys::analyzer_result];
-        for (std::size_t i = 0; i < searchResult.analyzedQuery_.size(); ++i)
-        {
-            searchResult.analyzedQuery_[i].convertString(
+        searchResult.analyzedQuery_.convertString(
                 convertBuffer, izenelib::util::UString::UTF_8
-            );
-            analyzerResult[actionItem_.searchPropertyList_[i]] = convertBuffer;
-        }
+        );		
+        response_[Keys::analyzer_result] = convertBuffer;
     }
 
     if (!validateSearchResult(searchResult))

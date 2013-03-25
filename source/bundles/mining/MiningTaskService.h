@@ -20,6 +20,8 @@ public:
 
     void DoContinue();
 
+    void EnsureHasDeletedDocDuringMining() { miningManager_->EnsureHasDeletedDocDuringMining(); }
+
     MiningBundleConfiguration* getMiningBundleConfig(){ return bundleConfig_; }
 
     void flush();

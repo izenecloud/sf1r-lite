@@ -301,6 +301,8 @@ public:
         return RtypeDocidList_.size() > 0;
     }
 
+    std::set<string> RtypeDocidPros_;
+
 private:
     bool loadDelFilter_();
 

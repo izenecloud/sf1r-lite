@@ -15,11 +15,6 @@
 namespace sf1r
 {
 
-/** Convert from @p strPath to @p ustrPath. */
-void convert_to_ustr_path(
-    const std::vector<std::string>& strPath,
-    std::vector<izenelib::util::UString>& ustrPath);
-
 /**
  * Split @p src into multiple group paths.
  * @param src the source string, such as "创意生活,电脑办公>网络设备,手机数码>手机通讯>手机"

@@ -107,18 +107,6 @@ UStrIter parse_ustr(
 namespace sf1r
 {
 
-void convert_to_ustr_path(
-    const std::vector<std::string>& strPath,
-    std::vector<izenelib::util::UString>& ustrPath)
-{
-    for (std::vector<std::string>::const_iterator it = strPath.begin();
-         it != strPath.end(); ++it)
-    {
-        izenelib::util::UString ustr(*it, ENCODING_TYPE);
-        ustrPath.push_back(ustr);
-    }
-}
-
 void split_group_path(
     const izenelib::util::UString& src,
     std::vector<std::vector<izenelib::util::UString> >& groupPaths)

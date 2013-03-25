@@ -27,6 +27,7 @@
 #include <configuration-manager/MiningSchema.h>
 #include <configuration-manager/CollectionPath.h>
 #include <ir/id_manager/IDManager.h>
+#include <boost/atomic.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/thread/mutex.hpp>
@@ -361,6 +362,10 @@ public:
             uint32_t knnDist,
             uint32_t start);
 
+    void EnsureHasDeletedDocDuringMining() { hasDeletedDocDuringMining_ = true; }
+
+    bool HasDeletedDocDuringMining() { return hasDeletedDocDuringMining_; }
+
     bool GetSuffixMatch(
             const SearchKeywordOperation& actionOperation,
             uint32_t max_docs,
@@ -372,7 +377,8 @@ public:
             std::vector<float>& customRankScoreList,
             std::size_t& totalCount,
             faceted::GroupRep& groupRep,
-            sf1r::faceted::OntologyRep& attrRep
+            sf1r::faceted::OntologyRep& attrRep,
+            UString& analyzedQuery
             );
 
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
@@ -691,6 +697,8 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
+
+    boost::atomic_bool hasDeletedDocDuringMining_;
 };
 
 }
