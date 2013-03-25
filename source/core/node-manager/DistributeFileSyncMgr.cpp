@@ -557,7 +557,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
                         continue;
                     }
                     // exclude tc hash db file.
-                    if (name.rfind(".tch", 4) != std::string::npos)
+                    if ( name.length() > 4 && name.substr(name.length() - 4) == ".tch")
                     {
                         LOG(WARNING) << "tc hash db ignored: " << name;
                         continue;
