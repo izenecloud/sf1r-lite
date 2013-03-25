@@ -268,7 +268,7 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
     }
     else if((ReqLogType)reqtype == Req_Callback)
     {
-	    LOG(INFO) << "got a callback request in log." << reqjsondata;
+	    LOG(INFO) << "got a callback request from primary." << reqjsondata;
 
         std::map<std::string, CBWriteHandlerT>::const_iterator it = callback_handlers_.find(reqjsondata);
         if (it == callback_handlers_.end())
@@ -277,7 +277,7 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
             return false;
         }
 
-	    DistributeRequestHooker::get()->setHook(Request::FromLog, packed_data);
+	    DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
         DistributeRequestHooker::get()->hookCurrentReq(packed_data);
         if (!async_task_worker_.interruption_requested())
         {
