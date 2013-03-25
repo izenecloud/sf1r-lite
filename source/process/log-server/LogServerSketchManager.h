@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-//#include <madoka.h>
+#include <util/madoka/sketch.h>
 
 using namespace std;
 
@@ -64,6 +64,8 @@ private:
             initSketchFile(collection);
         }
 */
+        madoka::Sketch sketch;
+        sketch.create();
         return 0;
     }
 
