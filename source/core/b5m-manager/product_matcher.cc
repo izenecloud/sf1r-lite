@@ -445,9 +445,9 @@ void ProductMatcher::Init_()
     right_bracket_term_ = GetTerm_(right_bracket_);
     place_holder_term_ = GetTerm_(place_holder_);
     blank_term_ = GetTerm_(blank_);
-    symbol_terms_.insert(blank_term_);
-    symbol_terms_.insert(left_bracket_term_);
-    symbol_terms_.insert(right_bracket_term_);
+    //symbol_terms_.insert(blank_term_);
+    //symbol_terms_.insert(left_bracket_term_);
+    //symbol_terms_.insert(right_bracket_term_);
 
     std::vector<std::string> connect_symbol_strs;
     connect_symbol_strs.push_back("-");
@@ -1981,7 +1981,7 @@ void ProductMatcher::GetKeywords(const ATermList& term_list, KeywordVector& keyw
             const Term& term = term_list[next_pos++];
             //std::string sterm = GetText_(term);
             //std::cerr<<"[A]"<<sterm<<std::endl;
-            if(IsSymbol_(term.id))
+            if(IsSymbol_(term))
             {
                 if(IsConnectSymbol_(term.id))
                 {
@@ -2441,7 +2441,7 @@ void ProductMatcher::GetFuzzyKeywords_(const ATermList& term_list, KeywordVector
     for(uint32_t i=0;i<term_list.size();i++)
     {
         const Term& term = term_list[i];
-        if(IsSymbol_(term.id)) continue;
+        if(IsSymbol_(term)) continue;
         uint32_t tpos = text_pos++;
         Invert::const_iterator it = invert.find(term.id);
         if(it==invert.end()) continue;
@@ -2724,6 +2724,15 @@ void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term
         matcher_only = false;
     }
     if(matcher_only && given_cid==0) return;
+    bool given_cid_leaf = true;
+    if(given_cid>0)
+    {
+        const Category& c = category_list_[given_cid];
+        if(c.is_parent)
+        {
+            given_cid_leaf = false;
+        }
+    }
     //std::string soid;
     //doc.getString("DOCID", soid);
     //std::cerr<<soid<<",matcher only:"<<matcher_only<<std::endl;
@@ -2751,7 +2760,7 @@ void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term
     std::size_t text_term_len = 0;
     for(uint32_t i=0;i<term_list.size();i++)
     {
-        if(!IsSymbol_(term_list[i].id))
+        if(!IsSymbol_(term_list[i]))
         {
             ++text_term_len;
         }
@@ -2892,7 +2901,7 @@ void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term
         
         bool matched = SpuMatched_(weight, p);
 #ifdef B5M_DEBUG
-        //std::cerr<<category_list_[cid].name<<","<<p.stitle<<","<<ematched<<","<<matched<<","<<eweight.sum()<<","<<weight.sum()<<std::endl;
+        std::cerr<<category_list_[cid].name<<","<<p.stitle<<","<<ematched<<","<<matched<<","<<eweight.sum()<<","<<weight.sum()<<std::endl;
 #endif
         if(ematched&&matched)
         {
@@ -2995,18 +3004,21 @@ void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term
         if(item.score>max_score) max_score = item.score;
         result_vector.push_back(item);
 #ifdef B5M_DEBUG
-        //std::cerr<<"[CSC]"<<category_list_[cid].name<<","<<weight<<std::endl;
+        std::cerr<<"[CSC]"<<category_list_[cid].name<<","<<weight<<std::endl;
 #endif
     }
     for(uint32_t i=0;i<result_vector.size();i++)
     {
-        if(result_vector[i].cid==given_cid)
+        if(result_vector[i].cid==given_cid&&given_cid_leaf)
         {
             result_vector[i].score = max_score;
             result_vector[i].is_given_category = true;
         }
     }
+    if(result_vector.empty()) return;
     std::sort(result_vector.begin(), result_vector.end());
+    const Product& max_p = products_[result_vector.front().spu_id];
+    const Category& max_c = category_list_[max_p.cid];
     static const uint32_t MAX_SPU_CANDIDATE = 3;
     
     double score_limit = 0.9;
@@ -3015,17 +3027,23 @@ void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term
         score_limit = 0.7;
     }
     score_limit = max_score*score_limit;
+    std::vector<Product> result_candidates;
     for(uint32_t i=0;i<result_vector.size();i++)
     {
         uint32_t spu_id = result_vector[i].spu_id;
         double score = result_vector[i].score;
-        if(score<0.4) break;
-        if(score<score_limit) break;
-        const WeightType& weight = result_vector[i].weight;
         const Product& p = products_[spu_id];
+        const Category& c = category_list_[p.cid];
+        //std::cerr<<"[CNAME]"<<c.name<<","<<max_c.name<<std::endl;
+        if(!boost::algorithm::starts_with(c.name, max_c.name))
+        {
+            if(score<0.4) break;
+            if(score<score_limit) break;
+        }
+        const WeightType& weight = result_vector[i].weight;
 #ifdef B5M_DEBUG
-        //uint32_t cid = result_vector[i].cid;
-        //std::cerr<<"[CC]"<<category_list_[cid].name<<","<<products_[spu_id].stitle<<","<<score<<std::endl;
+        uint32_t cid = result_vector[i].cid;
+        std::cerr<<"[CC]"<<category_list_[cid].name<<","<<products_[spu_id].stitle<<","<<score<<std::endl;
 #endif
         if(i<MAX_SPU_CANDIDATE)
         {
@@ -3057,9 +3075,12 @@ void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term
                 cp.sbrand = p.sbrand;
             }
         }
-        result_products.push_back(cp); 
-        if(result_products.size()>=limit) break;
+        result_candidates.push_back(cp);
+        //result_products.push_back(cp); 
+        //if(result_products.size()>=limit) break;
     }
+    uint32_t count = std::min((uint32_t)result_candidates.size(), limit);
+    result_products.assign(result_candidates.begin(), result_candidates.begin()+count);
     //result_vector.resize(i);
     //if(result_vector.empty()) return;
     //if(!match_found)
@@ -3156,6 +3177,7 @@ void ProductMatcher::Analyze_(const izenelib::util::UString& btext, std::vector<
             Term term;
             term.id = app_id;
             term.text = UString(append, UString::UTF_8);
+            term.tag = idmlib::util::IDMTermTag::SYMBOL;
             result.push_back(term);
         }
 
@@ -3170,13 +3192,13 @@ void ProductMatcher::Analyze_(const izenelib::util::UString& btext, std::vector<
             {
                 str = right_bracket_;
             }
-            else
-            {
-                if(!IsTextSymbol_(id))
-                {
-                    symbol_terms_.insert(id);
-                }
-            }
+            //else
+            //{
+                //if(!IsTextSymbol_(id))
+                //{
+                    //symbol_terms_.insert(id);
+                //}
+            //}
         }
         id = GetTerm_(str);
         term_list[i].id = id;

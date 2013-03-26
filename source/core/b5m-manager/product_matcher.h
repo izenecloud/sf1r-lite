@@ -810,10 +810,20 @@ namespace sf1r {
             return true;
         }
 
-        bool IsSymbol_(term_t term) const
+        bool IsSymbol_(const Term& term) const
         {
-            return symbol_terms_.find(term)!=symbol_terms_.end();
+            if(term.tag == idmlib::util::IDMTermTag::SYMBOL)
+            {
+                if(!IsTextSymbol_(term.id)) return true;
+            }
+            return false;
+            //return symbol_terms_.find(term)!=symbol_terms_.end();
         }
+
+        //bool IsSymbol_(term_t term) const
+        //{
+            //return symbol_terms_.find(term)!=symbol_terms_.end();
+        //}
 
         bool IsConnectSymbol_(term_t term) const
         {
@@ -843,7 +853,7 @@ namespace sf1r {
         idmlib::util::IDMAnalyzer* char_analyzer_;
         idmlib::util::IDMAnalyzer* chars_analyzer_;
         std::string test_docid_;
-        boost::unordered_set<term_t> symbol_terms_;
+        //boost::unordered_set<term_t> symbol_terms_;
         boost::unordered_set<term_t> text_symbols_;
         std::string left_bracket_;
         std::string right_bracket_;
