@@ -242,12 +242,15 @@ void SearchMerger::getSummaryResult(const net::aggregator::WorkerResults<Keyword
 
         for (size_t dis = 0; dis < displayPropertyNum; ++dis)
         {
-            mergeResult.snippetTextOfDocumentInPage_[dis][i] = workerResult.snippetTextOfDocumentInPage_[dis][workerOffset];
-            mergeResult.fullTextOfDocumentInPage_[dis][i] = workerResult.fullTextOfDocumentInPage_[dis][workerOffset];
+            if (workerResult.snippetTextOfDocumentInPage_.size() > dis && workerResult.snippetTextOfDocumentInPage_[dis].size() > workerOffset)
+                mergeResult.snippetTextOfDocumentInPage_[dis][i] = workerResult.snippetTextOfDocumentInPage_[dis][workerOffset];
+            if (workerResult.fullTextOfDocumentInPage_.size() > dis && workerResult.fullTextOfDocumentInPage_[dis].size() > workerOffset)
+                mergeResult.fullTextOfDocumentInPage_[dis][i] = workerResult.fullTextOfDocumentInPage_[dis][workerOffset];
         }
         for (size_t dis = 0; dis < isSummaryOn; ++dis)
         {
-            mergeResult.rawTextOfSummaryInPage_[dis][i] = workerResult.rawTextOfSummaryInPage_[dis][workerOffset];
+            if (workerResult.rawTextOfSummaryInPage_.size() > dis && workerResult.rawTextOfSummaryInPage_[dis].size() > workerOffset)
+                mergeResult.rawTextOfSummaryInPage_[dis][i] = workerResult.rawTextOfSummaryInPage_[dis][workerOffset];
         }
 
         ++workerOffset;
