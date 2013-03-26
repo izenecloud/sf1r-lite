@@ -258,6 +258,7 @@ void SearchKeywords(ProductMatcher* matcher,  boost::posix_time::ptime time_end)
         std::list<std::pair<UString, double> > hits;
         std::list<UString> left;
         matcher->GetSearchKeywords(text, hits, left);
+        time_now = boost::posix_time::microsec_clock::local_time();
     }
 }
 
@@ -333,7 +334,7 @@ void MultiThreadSearchKeywordsTest(string scd_file, std::string knowledge_dir, i
     boost::posix_time::ptime time_end=boost::posix_time::microsec_clock::local_time()+boost::posix_time::minutes(minute);
     for(unsigned i=0; i<threadnum; i++)
     {
-        compute_threads_[i]=(new boost::thread(boost::bind(&GetFrontEnd,matcher,time_end)));
+        compute_threads_[i]=(new boost::thread(boost::bind(&SearchKeywords,matcher,time_end)));
 
     }
     cout<<"preadd"<<endl;
