@@ -75,14 +75,25 @@ bool SuffixMatchMiningTask::preProcess()
             {
                 LOG (INFO) << "Update for R-type SCD" << endl;
                 const std::vector<std::pair<int32_t, std::string> >& prop_list = filter_manager_->getProp_list();
+                uint32_t count = 0;
                 for (std::vector<std::pair<int32_t, std::string> >::const_iterator i = prop_list.begin(); i != prop_list.end(); ++i)
                 {
                     std::set<string>::iterator iter = document_manager_->RtypeDocidPros_.find((*i).second);
                     if (iter == document_manager_->RtypeDocidPros_.end())
                     {
-                        new_filter_manager->addUnchangedProperty((*i).second);
+                        count++;
+                        if (!filter_manager_->isNumericProp((*i).second))
+                        {
+                            new_filter_manager->addUnchangedProperty((*i).second);
+                        }
                     }
                 }
+                if (count == prop_list.size())// means no filter property need rebuild, so return;
+                {
+                    LOG (INFO) << "All the filter properties do not need rebuild ..." << endl;
+                    return false;
+                }
+
             }
         }
     }
