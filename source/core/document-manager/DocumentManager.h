@@ -295,9 +295,9 @@ public:
         std::vector<docid_t>().swap(RtypeDocidList_);
     }
 
-    bool isThereRtypeDoc()
+    bool isThereRtypePro()
     {
-        return RtypeDocidList_.size() > 0;
+        return RtypeDocidPros_.size() > 0;
     }
 
     std::set<string> RtypeDocidPros_;
