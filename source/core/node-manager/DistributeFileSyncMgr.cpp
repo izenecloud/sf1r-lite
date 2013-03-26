@@ -419,11 +419,11 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     }
     {
         boost::unique_lock<boost::mutex> lk(status_report_mutex_);
-        if (reporting_)
+        while (reporting_)
         {
+            status_report_cond_.timed_wait(lk, boost::posix_time::seconds(5));
             check_errinfo = "there is already a report request processing.";
             LOG(INFO) << check_errinfo;
-            return;
         }
         reporting_ = true;
     }
