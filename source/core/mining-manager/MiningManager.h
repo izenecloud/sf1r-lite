@@ -27,7 +27,9 @@
 #include <configuration-manager/MiningSchema.h>
 #include <configuration-manager/CollectionPath.h>
 #include <ir/id_manager/IDManager.h>
+#if BOOST_VERSION >= 105300
 #include <boost/atomic.hpp>
+#endif
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/thread/mutex.hpp>
@@ -696,7 +698,11 @@ private:
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
 
+#if BOOST_VERSION >= 105300	
     boost::atomic_bool hasDeletedDocDuringMining_;
+#else
+	bool hasDeletedDocDuringMining_;
+#endif
 };
 
 }
