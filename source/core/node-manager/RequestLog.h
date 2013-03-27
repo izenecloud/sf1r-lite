@@ -570,8 +570,8 @@ static const uint32_t _crc32tab[] = {
 
 
 // each log file will store 1000 write request.
-// 1 - 999  saved in 0.req.log
-// 1000 - 1999 saved in 1.req.log and so on.
+// 1 - 9999  saved in 0.req.log
+// 10000 - 19999 saved in 1.req.log and so on.
 // head.req.log store the offset, length and some other info for each write request.
 class ReqLogMgr
 {
