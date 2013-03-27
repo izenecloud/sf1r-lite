@@ -124,6 +124,7 @@ bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
 
 bool IndexWorker::buildCollection(unsigned int numdoc)
 {
+    documentManager_->last_delete_docid_.clear();
     size_t currTotalSCDSize = getTotalScdSize_();
     ///If current directory is the one rotated from the backup directory,
     ///there should exist some missed SCDs since the last backup time,
@@ -1032,6 +1033,7 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
         if (idManager_->getDocIdByDocName(Utilities::md5ToUint128(docid_str), docId, false))
         {
             docIdList.push_back(docId);
+            documentManager_->last_delete_docid_.push_back(docId);
         }
     }
     std::sort(docIdList.begin(), docIdList.end());

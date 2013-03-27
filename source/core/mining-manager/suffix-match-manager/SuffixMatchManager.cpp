@@ -2,6 +2,10 @@
 #include "ProductTokenizer.h"
 #include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
+#include <glog/logging.h>
+#include <icma/icma.h>
+#include <la-manager/LAPool.h>
+#include <common/CMAKnowledgeFactory.h>
 #include <mining-manager/util/split_ustr.h>
 #include <mining-manager/group-manager/DateStrFormat.h>
 #include "FilterManager.h"
@@ -10,6 +14,8 @@
 #include <3rdparty/am/btree/btree_map.h>
 
 #include <glog/logging.h>
+
+using namespace cma;
 
 namespace
 {
@@ -712,7 +718,7 @@ bool SuffixMatchManager::buildMiningTask()
     return false;
 }
 
-MiningTask* SuffixMatchManager::getMiningTask()
+SuffixMatchMiningTask* SuffixMatchManager::getMiningTask()
 {
     if (suffixMatchTask_)
     {
@@ -735,6 +741,24 @@ void SuffixMatchManager::buildTokenizeDic()
     ProductTokenizer::TokenizerType type = tokenize_dicpath_ == "product" ? 
         ProductTokenizer::TOKENIZER_DICT : ProductTokenizer::TOKENIZER_CMA;
     tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str());
+}
+
+void SuffixMatchManager::updateFmindex()
+{
+    LOG (INFO) << "Merge cron-job with fm-index...";
+    suffixMatchTask_->preProcess();
+    docid_t start_doc = suffixMatchTask_->getLastDocId();
+    for (uint32_t docid = start_doc + 1; docid < document_manager_->getMaxDocId(); ++docid)
+    {
+        Document doc;
+        if (document_manager_->getDocument(docid, doc))
+        {
+            document_manager_->getRTypePropertiesForDocument(docid, doc);
+        }
+        suffixMatchTask_->buildDocument(docid, doc);
+    }
+    suffixMatchTask_->postProcess();
+    last_doc_id_ = document_manager_->getMaxDocId();
 }
 
 }

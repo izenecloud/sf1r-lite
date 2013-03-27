@@ -27,6 +27,9 @@
 #include <configuration-manager/MiningSchema.h>
 #include <configuration-manager/CollectionPath.h>
 #include <ir/id_manager/IDManager.h>
+#include <util/cronexpression.h>
+#include <util/scheduler.h>
+#include <util/ThreadModel.h>
 #if BOOST_VERSION >= 105300
 #include <boost/atomic.hpp>
 #endif
@@ -104,7 +107,7 @@ class OfflineProductScorerFactory;
 class ProductRankerFactory;
 class NaiveTopicDetector;
 class SuffixMatchManager;
-class IncrementalManager;
+class IncrementalFuzzyManager;
 class ProductMatcher;
 class QueryCategorizer;
 class MiningTaskBuilder;
@@ -477,6 +480,8 @@ public:
         return numericTableBuilder_;
     }
 
+    void updateMergeFuzzyIndex();
+
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
     {
@@ -684,7 +689,7 @@ private:
     /** Suffix Match */
     std::string suffix_match_path_;
     SuffixMatchManager* suffixMatchManager_;
-    IncrementalManager* incrementalManager_;
+    IncrementalFuzzyManager* incrementalManager_;
 
     /** Product Matcher */
     std::vector<boost::regex> match_category_restrict_;
@@ -697,7 +702,7 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
-
+    izenelib::util::CronExpression cronExpression_;
 #if BOOST_VERSION >= 105300	
     boost::atomic_bool hasDeletedDocDuringMining_;
 #else

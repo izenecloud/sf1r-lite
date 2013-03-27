@@ -50,7 +50,7 @@
 
 #include "suffix-match-manager/SuffixMatchManager.hpp"
 #include "suffix-match-manager/FilterManager.h"
-#include "suffix-match-manager/IncrementalManager.hpp"
+#include "suffix-match-manager/IncrementalFuzzyManager.hpp"
 #include "suffix-match-manager/FMIndexManager.h"
 
 #include "product-classifier/SPUProductClassifier.hpp"
@@ -574,57 +574,48 @@ bool MiningManager::open()
 
             if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
             {
-                incrementalManager_ = new IncrementalManager(suffix_match_path_,
+                incrementalManager_ = new IncrementalFuzzyManager(suffix_match_path_,
                         mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
-                        mining_schema_.suffixmatch_schema.suffix_match_properties[0],
-                        document_manager_, idManager_, laManager_, indexSchema_);
-                if (incrementalManager_)
-                {
-                    incrementalManager_->InitManager_();
-                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-                }
+                        mining_schema_.suffixmatch_schema.suffix_match_properties,
+                        document_manager_, idManager_, laManager_, indexSchema_,
+                        groupManager_, attrManager_, numericTableBuilder_); 
+                incrementalManager_->Init();
+                boost::shared_ptr<FilterManager>& filter_manager_inc = incrementalManager_->getFilterManager();
+                filter_manager_inc->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
+
+                filter_manager_inc->setAttrFilterProperties(mining_schema_.suffixmatch_schema.attr_filter_properties);
+                filter_manager_inc->setStrFilterProperties(mining_schema_.suffixmatch_schema.str_filter_properties);
+                filter_manager_inc->setDateFilterProperties(mining_schema_.suffixmatch_schema.date_filter_properties);
+
+                filter_manager_inc->setNumFilterProperties(number_props, number_amp_list);
+                filter_manager_inc->loadFilterId();
+                if (!filter_manager_inc->loadFilterList())
+                    filter_manager_inc->generatePropertyId();
             }
 
             if (mining_schema_.suffixmatch_schema.suffix_match_enable)
             {
+                suffixMatchManager_->buildMiningTask();
+                MiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                miningTaskBuilder_->addTask(miningTask);
+                
                 if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
                 {
-                    if (!(suffixMatchManager_->isStartFromLocalFM()))
+                    if (cronExpression_.setExpression(miningConfig_.fuzzyIndexMerge_param.cron))
                     {
-                        LOG(INFO) << "[] Start suffix init fm-index...";
-                        suffixMatchManager_->buildMiningTask();
-                        MiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                        miningTaskBuilder_->addTask(miningTask);
-                        incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
-                    }
-                    else
-                    {
-                        uint32_t last_docid = 0;
-                        uint32_t docNum = 0;
-                        uint32_t maxDoc = 0;
-                        incrementalManager_->getLastDocid(last_docid);
-                        incrementalManager_->getDocNum(docNum);
-                        incrementalManager_->getMaxNum(maxDoc);
-                        if (docNum + (document_manager_->getMaxDocId() - last_docid) >= maxDoc)
+                        string cronJobName_ = "fuzzy_index_merge";
+                        
+                        bool result = izenelib::util::Scheduler::addJob(cronJobName_,
+                        60*1000, // each minute
+                        0, // start from now
+                        boost::bind(&MiningManager::updateMergeFuzzyIndex, this));
+                        if (result)
                         {
-                            LOG(INFO) << "Rebuilding fm-index.....";
-                            suffixMatchManager_->buildMiningTask();
-                            MiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                            miningTaskBuilder_->addTask(miningTask);
-                            incrementalManager_->reset();
-                            incrementalManager_->setLastDocid(document_manager_->getMaxDocId());
+                            LOG (INFO) << "ADD cron job for fuzzy_index_merge ......";
                         }
                         else
-                        {
-                            incrementalManager_->createIndex_();
-                        }
+                            return false;
                     }
-                }
-                else
-                {
-                    suffixMatchManager_->buildMiningTask();
-                    MiningTask* miningTask = suffixMatchManager_->getMiningTask();
-                    miningTaskBuilder_->addTask(miningTask);
                 }
             }
         }
@@ -783,8 +774,6 @@ bool MiningManager::DOMiningTask()
 
 bool MiningManager::DoMiningCollection()
 {
-    DOMiningTask();
-
     MEMLOG("[Mining] DoMiningCollection");
     //do TG
     if (mining_schema_.tg_enable)
@@ -928,10 +917,130 @@ bool MiningManager::DoMiningCollection()
         MEMLOG("[Mining] SIM finished.");
     }
 
+    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
+    {
+        if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+        {
+            uint32_t last_docid = 0;
+            uint32_t docNum = 0;
+            uint32_t maxDoc = 0;
+            incrementalManager_->getLastDocid(last_docid);
+            incrementalManager_->getDocNum(docNum);
+            incrementalManager_->getMaxNum(maxDoc);
+            /**
+            @brief: if there is -D SCD, the fuzzy index will merge and rebuid;
+            @for incremental is for -U and -R scd;
+            **/
+            if (last_docid == document_manager_->getMaxDocId()) /// for -D SCD and -R SCD 
+            {
+                if (document_manager_->last_delete_docid_.size() > 0) /// merge and rebuild fm-index;
+                {
+                    SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                    bool isIncre = false;
+                    miningTask->setTaskStatus(isIncre);
+                }
+                else if (document_manager_->isThereRtypePro())
+                {
+                    std::vector<string> unchangedProperties;
+                    const std::vector<std::pair<int32_t, std::string> >& prop_list 
+                    = suffixMatchManager_->getFilterManager()->getProp_list();
+                    
+                    for (std::vector<std::pair<int32_t, std::string> >::const_iterator i = prop_list.begin()
+                        ; i != prop_list.end(); ++i)
+                    {
+                        std::set<string>::iterator iter = document_manager_->RtypeDocidPros_.find((*i).second);
+                        if (iter == document_manager_->RtypeDocidPros_.end())
+                        {
+                            unchangedProperties.push_back((*i).second);
+                        }
+                    }
+                    /// all just rebuid filter ... 
+                    if (suffixMatchManager_->getMiningTask()->getLastDocId() - 1 == document_manager_->getMaxDocId()) /// only fm-index;
+                    {
+                        SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                        bool isIncre = false;
+                        miningTask->setTaskStatus(isIncre);
+                    }
+                    else /// each just update it's filter;
+                    {
+                        /*
+                        @brief: because the fm-index will not rebuild, so even the filter docid num is 
+                        more than fm-index docid num, there is no effect.
+                        */
+                        SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                        bool isIncre = false;
+                        miningTask->isRtypeIncremental_ = true;
+                        miningTask->setTaskStatus(isIncre);// 
+
+                        incrementalManager_->updateFilterForRtype(); // use extra filter update for incre;
+                    }
+                }
+            }
+            else // -U SCD or continue
+            {
+                SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+
+                if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc) // not merge
+                {
+                    bool isIncre = true;
+                    miningTask->setTaskStatus(isIncre);
+                }
+                else // merge
+                {
+                    incrementalManager_->reset();
+                    bool isIncre = false;
+                    miningTask->setTaskStatus(isIncre);
+                }
+            }
+        }
+    }
+
+    DOMiningTask();
+
+    if (mining_schema_.suffixmatch_schema.suffix_match_enable)
+    {
+        if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
+        {
+            uint32_t last_docid = 0;
+            uint32_t docNum = 0;
+            uint32_t maxDoc = 0;
+            incrementalManager_->getLastDocid(last_docid);
+            incrementalManager_->getDocNum(docNum);
+            incrementalManager_->getMaxNum(maxDoc);
+            if (last_docid == document_manager_->getMaxDocId())
+            {
+                if (document_manager_->last_delete_docid_.size() > 0) /// merge and rebuild fm-index;
+                {
+                    incrementalManager_->reset();
+                }
+                else if (document_manager_->isThereRtypePro())
+                {
+                    // do nothing
+                    SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+                    miningTask->isRtypeIncremental_ = false;
+                }
+            }
+            else
+            {
+                if (docNum + (document_manager_->getMaxDocId() - last_docid) < maxDoc) // not merge
+                {
+                    LOG(INFO) << "Build incrmental index ..." <<endl;
+                    incrementalManager_->doCreateIndex();
+                    incrementalManager_->updateFilterForRtype();//this is in case there is Rtype docid in -U scd;
+                }
+                else // merge
+                {
+                    incrementalManager_->setLastDocid(document_manager_->getMaxDocId());//right
+                }
+            }
+        }
+    }
+
     hasDeletedDocDuringMining_ = false;
     LOG (INFO) << "Clear Rtype Docid List";
     document_manager_->clearRtypeDocidList();
     document_manager_->RtypeDocidPros_.clear();
+    document_manager_->last_delete_docid_.clear();
     return true;
 }
 
@@ -1983,8 +2092,9 @@ bool MiningManager::GetSuffixMatch(
         {
             std::vector<uint32_t> _docIdList;
             std::vector<double> _rankScoreList;
-            incrementalManager_->fuzzySearch_(actionOperation.actionItem_.env_.queryString_,
-                    _docIdList, _rankScoreList);
+
+            incrementalManager_->fuzzySearch(actionOperation.actionItem_.env_.queryString_, search_in_properties,
+                    _docIdList, _rankScoreList, filter_param, actionOperation.actionItem_.groupParam_);
 
             uint32_t max_count = std::min(max_docs, (uint32_t)_docIdList.size());
 
@@ -2394,4 +2504,24 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
     return true;
 }
 
+void MiningManager::updateMergeFuzzyIndex()
+{
+    if (cronExpression_.matches_now())
+    {
+        if (!incrementalManager_->isEmpty())
+        {
+            LOG (INFO) << "update cron-job with fm-index";
+            SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
+            bool isIncre = false;
+            miningTask->setTaskStatus(isIncre);
+
+            suffixMatchManager_->updateFmindex();
+            incrementalManager_->reset();
+
+            docid_t docid;
+            docid = miningTask->getLastDocId();
+            incrementalManager_->setLastDocid(docid);
+        }
+    }
+}
 }
