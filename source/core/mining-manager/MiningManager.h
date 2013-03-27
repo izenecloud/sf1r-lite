@@ -27,10 +27,12 @@
 #include <configuration-manager/MiningSchema.h>
 #include <configuration-manager/CollectionPath.h>
 #include <ir/id_manager/IDManager.h>
-#include <boost/atomic.hpp>
 #include <util/cronexpression.h>
 #include <util/scheduler.h>
 #include <util/ThreadModel.h>
+#if BOOST_VERSION >= 105300
+#include <boost/atomic.hpp>
+#endif
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/thread/mutex.hpp>
@@ -378,7 +380,8 @@ public:
             std::vector<float>& customRankScoreList,
             std::size_t& totalCount,
             faceted::GroupRep& groupRep,
-            sf1r::faceted::OntologyRep& attrRep
+            sf1r::faceted::OntologyRep& attrRep,
+            UString& analyzedQuery
             );
 
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
@@ -699,9 +702,12 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
-
-    boost::atomic_bool hasDeletedDocDuringMining_;
     izenelib::util::CronExpression cronExpression_;
+#if BOOST_VERSION >= 105300	
+    boost::atomic_bool hasDeletedDocDuringMining_;
+#else
+	bool hasDeletedDocDuringMining_;
+#endif
 };
 
 }

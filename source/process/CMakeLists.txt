@@ -185,6 +185,7 @@ FIND_PACKAGE(izenelib REQUIRED COMPONENTS
 TARGET_LINK_LIBRARIES(LogServerProcess
   sf1r_common
   ${izenelib_LIBRARIES}
+  ${izenecma_LIBRARIES}
 
   #external
   ${Boost_LIBRARIES}

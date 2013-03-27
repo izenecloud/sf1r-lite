@@ -9,8 +9,8 @@
 #include <b5m-manager/uue_generator.h>
 #include <b5m-manager/complete_matcher.h>
 #include <b5m-manager/similarity_matcher.h>
-#include <b5m-manager/ticket_matcher.h>
 #include <b5m-manager/ticket_processor.h>
+#include <b5m-manager/tuan_processor.h>
 #include <b5m-manager/uue_worker.h>
 #include <b5m-manager/b5mp_processor.h>
 #include <b5m-manager/spu_processor.h>
@@ -271,13 +271,14 @@ int do_main(int ac, char** av)
         ("attribute-index,A", "build attribute index")
         ("product-train", "do product training")
         ("product-match", "do product matching test")
+        ("fuzzy-diff", "test the fuzzy matching diff from no fuzzy")
         ("b5m-match,B", "make b5m matching")
         ("psm-index", "psm index")
         ("psm-match", "psm match")
         ("complete-match,M", "attribute complete matching")
         ("similarity-match,I", "title based similarity matching")
-        ("ticket-match", "ticket matching")
         ("ticket-generate", "do directly ticket matching")
+        ("tuan-generate", "do directly tuan matching")
         ("cmatch-generate", "match to cmatch")
         ("b5mo-generate", "generate b5mo scd")
         ("uue-generate", "generate uue")
@@ -287,6 +288,7 @@ int do_main(int ac, char** av)
         ("logserver-update", "update logserver")
         ("match-test,T", "b5m matching test")
         ("frontend-test", "the frontend categorizing")
+        ("search-keyword", "get search keywords")
         ("mdb-instance", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
@@ -651,6 +653,23 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
     } 
+    if (vm.count("fuzzy-diff")) {
+        if( knowledge_dir.empty()||scd_path.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ProductMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open(knowledge_dir))
+        {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        if(!matcher.FuzzyDiff(scd_path, output_match))
+        {
+            return EXIT_FAILURE;
+        }
+    } 
     if (vm.count("frontend-test")) {
         if( knowledge_dir.empty())
         {
@@ -683,6 +702,47 @@ int do_main(int ac, char** av)
                 std::string str;
                 results[i].convertString(str, UString::UTF_8);
                 std::cout<<"[FCATEGORY]"<<str<<std::endl;
+            }
+        }
+    }
+    if (vm.count("search-keyword")) {
+        if( knowledge_dir.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ProductMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open(knowledge_dir))
+        {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        matcher.SetUsePriceSim(false);
+        while(true)
+        {
+            std::string line;
+            std::cerr<<"input text:"<<std::endl;
+            getline(std::cin, line);
+            boost::algorithm::trim(line);
+            UString query(line, UString::UTF_8);
+
+            typedef std::list<std::pair<UString, double> > Hits;
+            Hits hits;
+            typedef std::list<UString> Left;
+            Left left;
+            matcher.GetSearchKeywords(query, hits, left);
+            for(Hits::const_iterator it = hits.begin();it!=hits.end();++it)
+            {
+                const std::pair<UString, double>& v = *it;
+                std::string str;
+                v.first.convertString(str, UString::UTF_8);
+                std::cout<<"[HITS]"<<str<<","<<v.second<<std::endl;
+            }
+            for(Left::const_iterator it = left.begin();it!=left.end();++it)
+            {
+                std::string str;
+                (*it).convertString(str, UString::UTF_8);
+                std::cout<<"[LEFT]"<<str<<std::endl;
             }
         }
     }
@@ -822,17 +882,17 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
     }
-    if(vm.count("ticket-match"))
+    if(vm.count("tuan-generate"))
     {
-        if( scd_path.empty() || knowledge_dir.empty())
+        if( scd_path.empty() || mdb_instance.empty())
         {
             return EXIT_FAILURE;
         }
-        TicketMatcher matcher;
-        matcher.SetCmaPath(cma_path);
-        if(!matcher.Index(scd_path, knowledge_dir))
+        TuanProcessor processor;
+        processor.SetCmaPath(cma_path);
+        if(!processor.Generate(scd_path, mdb_instance))
         {
-            std::cout<<"ticket matcher fail"<<std::endl;
+            std::cout<<"tuan generator fail"<<std::endl;
             return EXIT_FAILURE;
         }
     }

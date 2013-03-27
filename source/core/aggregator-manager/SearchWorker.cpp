@@ -379,7 +379,8 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.topKCustomRankScoreList_,
                                             resultItem.totalCount_,
                                             resultItem.groupRep_,
-                                            resultItem.attrRep_))
+                                            resultItem.attrRep_,
+                                            resultItem.analyzedQuery_))
         {
             return true;
         }
@@ -574,33 +575,27 @@ bool SearchWorker::buildQuery(
         actionOperation.actionItem_.searchPropertyList_;
 
     propertyQueryTermList.resize(kPropertyList.size());
-    resultItem.analyzedQuery_.resize(kPropertyList.size());
 
-    std::string convertBuffer;
-    for (size_t i = 0; i < kPropertyList.size(); i++)
-    {
-        const std::string& propertyName = kPropertyList[i];
-        const PropertyTermInfo& propertyTermInfo = izenelib::util::getOr(
-            kPropertyTermInfoMap,
-            propertyName,
-            kDefaultPropertyTermInfo
-        );
+    //for (size_t i = 0; i < kPropertyList.size(); i++)
+    //{
+    const std::string& propertyName = kPropertyList[0];
+    const PropertyTermInfo& propertyTermInfo = izenelib::util::getOr(
+        kPropertyTermInfoMap,
+        propertyName,
+        kDefaultPropertyTermInfo
+    );
 
-        DLOG(INFO) << propertyTermInfo.toString();
-        propertyTermInfo.getPositionedTermStringList(
-            propertyQueryTermList[i]
-        );
+    DLOG(INFO) << propertyTermInfo.toString();
+    propertyTermInfo.getPositionedTermStringList(
+        propertyQueryTermList[0]
+    );
 
-        // Get analyzed Query
-        propertyTermInfo.getPositionedFullTermString(
-            resultItem.analyzedQuery_[i]
-        );
-        resultItem.analyzedQuery_[i].convertString(
-            convertBuffer, resultItem.encodingType_
-        );
+    // Get analyzed Query
+    propertyTermInfo.getPositionedFullTermString(
+        resultItem.analyzedQuery_
+    );
 
-        DLOG(INFO) << "-------[ Analyzed Query for " << propertyName << " : \"" << convertBuffer << "\"" << endl;
-    }
+    //}
 
     STOP_PROFILER ( analyzeQuery );
 

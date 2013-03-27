@@ -122,11 +122,12 @@ public:
     pvid_t getFirstValueId(docid_t docId) const;
 
     /**
-     * Get the root id for @p docId.
-     * @param docId the doc id
-     * @return the root value id, if @p docId has no value ids, 0 is returned.
+     * Get the parent ids of @p pvId.
+     * For example, assume @p pvId is 100, 100's parent id is 10,
+     * 10's parent id is 1, and 1 is a root id,
+     * then @p parentIds would become [100, 10, 1].
      */
-    pvid_t getRootValueId(docid_t docId) const;
+    void getParentIds(pvid_t pvId, std::vector<pvid_t>& parentIds) const;
 
     /**
      * Whether @p docId belongs to group label of @p labelId.

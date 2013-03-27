@@ -55,7 +55,7 @@ bool SuffixMatchMiningTask::preProcess()
 
         std::vector<uint32_t> del_docid_list;
         document_manager_->getDeletedDocIdList(del_docid_list);
-        if (last_docid == document_manager_->getMaxDocId() || isRtypeIncremental_)
+        if (last_docid == document_manager_->getMaxDocId())
         {
             // check if there is any new deleted doc.
             std::vector<size_t> doclen_list(del_docid_list.size(), 0);
@@ -71,11 +71,11 @@ bool SuffixMatchMiningTask::preProcess()
 
             if (!need_rebuild)
             {
-            /*
-            @brief : in here document_manager_->isThereRtypeDoc() just means for the -R SCD, 
-            because the Rtype doc in -U SCD is not in this flow.
-            */
-                if (document_manager_->isThereRtypeDoc()) 
+                /*
+                @brief : in here document_manager_->isThereRtypePro() just means for the -R SCD, 
+                because the Rtype doc in -U SCD is not in this flow.
+                */
+                if (document_manager_->isThereRtypePro())
                 {
                     LOG (INFO) << "Update for R-type SCD" << endl;
                     const std::vector<std::pair<int32_t, std::string> >& prop_list = filter_manager_->getProp_list();
@@ -84,9 +84,18 @@ bool SuffixMatchMiningTask::preProcess()
                         std::set<string>::iterator iter = document_manager_->RtypeDocidPros_.find((*i).second);
                         if (iter == document_manager_->RtypeDocidPros_.end())
                         {
-                            new_filter_manager->addUnchangedProperty((*i).second);
+                            if (!filter_manager_->isNumericProp((*i).second) && !filter_manager_->isDateProp((*i).second))
+                            {
+                                new_filter_manager->addUnchangedProperty((*i).second);
+                                LOG (INFO) << "Add Unchanged property : " << (*i).second << endl;
+                            }
                         }
                     }
+                }
+                else
+                {
+                    LOG (INFO) << "All filter properties do not need rebuild ... " << endl;
+                    return false;
                 }
             }
         }
@@ -99,7 +108,7 @@ bool SuffixMatchMiningTask::preProcess()
         if (need_rebuild)
         {
             LOG(INFO) << "rebuilding in fm-index is needed.";
-        }    
+        }
         else
         {
             new_fmi_manager->useOldDocCount(fmi_manager_.get());
@@ -122,10 +131,9 @@ bool SuffixMatchMiningTask::preProcess()
 bool SuffixMatchMiningTask::postProcess()
 {
     if (!is_incrememtalTask_)
-    {
+    {    
         if (need_rebuild && !new_fmi_manager->buildCollectionAfter())
             return false;
-
         new_filter_manager->setRebuildFlag(filter_manager_.get());
         size_t last_docid = fmi_manager_ ? fmi_manager_->docCount() : 0;
 

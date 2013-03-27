@@ -4,6 +4,7 @@
 #include "LogServerCfg.h"
 #include "DrumDispatcher.h"
 #include <b5m-manager/history_db.h>
+#include "LogServerSketchManager.h"
 
 #include <util/singleton.h>
 #include <am/leveldb/Table.h>
@@ -127,6 +128,12 @@ public:
             std::cerr << "Failed to open history db." << endl;
             return false;
         }
+        sketchManager_ = new LogServerSketchManager(LogServerCfg::get()->getStorageBaseDir() + "/logsketch");
+        if(!sketchManager_->open())
+        {
+            std::cerr << "Failed to open log sketch." << endl;
+            return false;
+        }
         // Initialize SCD DB
         std::string scdDbName = LogServerCfg::get()->getStorageBaseDir() + "/scd_db";
         boost::filesystem::create_directories(scdDbName);
@@ -185,6 +192,20 @@ public:
                 else
                 {
                     std::cout << "HistoryDB is still working... " << std::endl;
+                    return;
+                }
+            }
+            if(sketchManager_)
+            {
+                boost::unique_lock<boost::mutex> lock(sketchManagerMutex_, boost::defer_lock);
+                if(lock.try_lock())
+                {
+                    sketchManager_->close();
+                    delete sketchManager_;
+                }
+                else
+                {
+                    std::cout << "sketchManager_ is still working..." << std::endl;
                     return;
                 }
             }
@@ -254,11 +275,19 @@ public:
         return historydb_;
     }
 
+    LogServerSketchManager* sketchManager()
+    {
+        return sketchManager_;
+    }
     boost::mutex& historyDBMutex()
     {
         return historyDBMutex_;
     }
 
+    boost::mutex& sketchManagerMutex()
+    {
+        return sketchManagerMutex_;
+    }
     DocidDrumDispatcherType& docidDrumDispatcher()
     {
         return docidDrumDispathcer_;
@@ -357,6 +386,9 @@ private:
 
     HistoryDB*  historydb_;
     boost::mutex historyDBMutex_;
+
+    LogServerSketchManager* sketchManager_;
+    boost::mutex sketchManagerMutex_;
 };
 
 }

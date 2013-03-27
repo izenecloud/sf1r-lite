@@ -27,8 +27,7 @@ class MerchantScoreManager
 public:
     MerchantScoreManager(
         faceted::PropValueTable* merchantValueTable,
-        faceted::PropValueTable* categoryValueTable
-    );
+        faceted::PropValueTable* categoryValueTable);
 
     ~MerchantScoreManager();
 
@@ -46,18 +45,16 @@ public:
      */
     void getStrScore(
         const std::vector<std::string>& merchantNames,
-        MerchantStrScoreMap& strScoreMap
-    ) const;
+        MerchantStrScoreMap& strScoreMap) const;
 
     /**
-     * if both @p merchantId and @p categoryId exist, it returns the merchant's category score;
+     * if both @p merchantId and @p categoryParentIds exist, it returns the merchant's category score;
      * if only @p merchantId exists, it returns the merchant's general score;
      * otherwise, it returns zero score.
      */
     score_t getIdScore(
         merchant_id_t merchantId,
-        category_id_t categoryId
-    ) const;
+        std::vector<category_id_t>& categoryParentIds) const;
 
     /**
      * for each entry in @p strScoreMap, assign its score to @c idScoreMap_.
@@ -69,21 +66,24 @@ private:
 
     void getCategoryStrScore_(
         const CategoryIdScore& categoryIdScore,
-        CategoryStrScore& categoryStrScore
-    ) const;
+        CategoryStrScore& categoryStrScore) const;
 
     void setCategoryIdScore_(
         const CategoryStrScore& categoryStrScore,
-        CategoryIdScore& categoryIdScore
-    );
+        CategoryIdScore& categoryIdScore);
 
     merchant_id_t getMerchantId_(const std::string& merchant) const;
 
     merchant_id_t insertMerchantId_(const std::string& merchant);
-    category_id_t insertCategoryId_(const std::string& category);
+    category_id_t insertCategoryId_(const CategoryStrPath& categoryPath);
 
-    void getMerchantName_(merchant_id_t merchantId, std::string& merchant) const;
-    void getCategoryName_(category_id_t categoryId, std::string& category) const;
+    void getMerchantName_(
+        merchant_id_t merchantId,
+        std::string& merchant) const;
+
+    void getCategoryPath_(
+        category_id_t categoryId,
+        CategoryStrPath& categoryPath) const;
 
 private:
     faceted::PropValueTable* merchantValueTable_;
