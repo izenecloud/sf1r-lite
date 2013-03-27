@@ -10,6 +10,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <glog/logging.h>
 
 namespace sf1r {
 
@@ -43,7 +44,7 @@ public:
        req.param_.collection_ = collection_name;
        req.param_.begin_time_ = begin_time;
        req.param_.end_time_ = end_time;
-
+        LOG(INFO) << "send msg to log server!" << endl;
        conn.syncRequest(req, results);
        return true;
     }
