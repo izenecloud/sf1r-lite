@@ -301,6 +301,7 @@ public:
     }
 
     std::set<string> RtypeDocidPros_;
+    std::vector<uint32_t> last_delete_docid_;
 
 private:
     bool loadDelFilter_();

@@ -76,6 +76,9 @@
     <xs:complexType name="AutofillParaType">
         <xs:attribute name="cron" type="xs:string" use="required" />
     </xs:complexType>
+    <xs:complexType name="FuzzyIndexMergeParaType">
+        <xs:attribute name="cron" type="xs:string" use="required" />
+    </xs:complexType>
     <xs:complexType name="RecommendParaType">
         <xs:attribute name="cron" type="xs:string" use="required" />
         <xs:attribute name="recommendnum" use="required">
@@ -168,6 +171,7 @@
                             <xs:element name="DocumentMiningPara" type="DocumentMiningParaType" minOccurs="0"/>
                             <xs:element name="TaxonomyPara" type="TaxonomyParaType" minOccurs="0"/>
                             <xs:element name="AutofillPara" type="AutofillParaType" minOccurs="0"/>
+                            <xs:element name="FuzzyIndexMergePara" type="FuzzyIndexMergeParaType" minOccurs="0"/>
                             <xs:element name="RecommendPara" type="RecommendParaType" minOccurs="0"/>
                             <xs:element name="SimilarityPara" type="SimilarityParaType" minOccurs="0"/>
                             <xs:element name="ClassificationPara" type="ClassificationParaType" minOccurs="0"/>
