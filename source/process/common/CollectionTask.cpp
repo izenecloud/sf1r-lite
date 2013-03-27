@@ -113,9 +113,10 @@ void RebuildTask::doTask()
     rebuildCollBaseDir = rebuildCollPath.getBasePath();
     } // lock scope
 
+    bool writing_on_primary = DistributeRequestHooker::get()->isRunningPrimary();
     DistributeRequestHooker::get()->setReplayingLog(true, reqlog);
     // replay log for rebuilded collection.
-    RecoveryChecker::get()->replayLog(DistributeRequestHooker::get()->isRunningPrimary(),
+    RecoveryChecker::get()->replayLog(writing_on_primary,
         collectionName_, rebuildCollectionName_, reqlog.replayed_id_list);
 
     DistributeRequestHooker::get()->setReplayingLog(false, reqlog);
