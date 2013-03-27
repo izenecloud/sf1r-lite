@@ -43,7 +43,7 @@ void ProductScoreTable::resize(std::size_t num)
 
 void ProductScoreTable::setScore(docid_t docId, score_t score)
 {
-    ScopedWriteLock lock(mutex_);
+    //ScopedWriteLock lock(mutex_);
 
     scores_[docId] = score;
 }

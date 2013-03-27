@@ -357,7 +357,7 @@ bool MasterManagerBase::getWriteReqNodeData(ZNode& znode)
 
 void MasterManagerBase::checkForWriteReq()
 {
-    DistributeTestSuit::loadTestConf();
+    //DistributeTestSuit::loadTestConf();
     if (!isDistributeEnable_)
         return;
     if (!zookeeper_ || !zookeeper_->isConnected())

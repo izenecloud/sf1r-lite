@@ -7,9 +7,16 @@
 
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
+#include <common/Keys.h>
+#include <util/driver/Reader.h>
+#include <util/driver/Writer.h>
+#include <util/driver/writers/JsonWriter.h>
+#include <util/driver/readers/JsonReader.h>
 
 #define MAX_BACKUP_NUM 3
 namespace bfs = boost::filesystem;
+
+using namespace izenelib::driver;
 
 namespace sf1r
 {
@@ -349,6 +356,142 @@ bool RecoveryChecker::backup()
     LOG(INFO) << "back up finished.";
     cleanUnnessesaryBackup(backup_basepath_);
     return true;
+}
+
+void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
+    const std::string& to_col, std::vector<uint32_t>& replayed_id_list)
+{
+    // replay log, ignore any fail and do not write any log during replay.
+    // read redo log and do request to current log.
+    uint32_t start_id = 0;
+    uint32_t end_id = reqlog_mgr_->getLastSuccessReqId();
+    if (start_id > end_id)
+    {
+        LOG(ERROR) << "no log replay.";
+        return;
+    }
+    ReqLogHead rethead;
+    size_t redo_offset = 0;
+    if(!reqlog_mgr_->getHeadOffset(start_id, rethead, redo_offset))
+    {
+        LOG(ERROR) << "get start head failed." << start_id;
+        return;
+    }
+
+    LOG(INFO) << "replaying log is_primary: " << is_primary;
+    if (is_primary)
+        replayed_id_list.reserve(end_id - start_id);
+    else
+    {
+        if (replayed_id_list.empty())
+        {
+            LOG(INFO) << "nothing log need replay.";
+            return;
+        }
+    }
+
+
+    uint32_t replayed_num = 0;
+
+    while(true)
+    {
+        std::string req_packed_data; 
+        CommonReqData req_commondata;
+        try
+        {
+            bool hasmore = reqlog_mgr_->getReqDataByHeadOffset(redo_offset, rethead, req_packed_data);
+            if (!hasmore || rethead.inc_id > end_id)
+            {
+                if (rethead.inc_id < end_id)
+                    end_id = rethead.inc_id;
+                LOG(INFO) << "end at inc_id : " << end_id;
+                break;
+            }
+            if (!is_primary)
+            {
+                // only replay the id that primary has replayed.
+                if (rethead.inc_id != replayed_id_list[replayed_num])
+                {
+                    LOG(INFO) << "ignore replay : " << rethead.inc_id;
+                    continue;
+                }
+            }
+            ReqLogMgr::unpackReqLogData(req_packed_data, req_commondata);
+
+            if (req_commondata.reqtype == Req_UpdateConfig ||
+                req_commondata.reqtype == Req_CronJob ||
+                req_commondata.reqtype == Req_Index ||
+                req_commondata.reqtype == Req_Callback)
+            {
+                LOG(INFO) << "ignore replaying log type : " << req_commondata.reqtype;
+                if (!is_primary)
+                    break;
+                continue;
+            }
+
+            // change collection .
+            static izenelib::driver::JsonReader reader;
+            Value requestValue;
+            if(!reader.read(req_commondata.req_json_data, requestValue))
+            {
+                LOG(ERROR) << "read request json data error.";
+                if (!is_primary)
+                    break;
+                continue;
+            }
+            if (requestValue.type() != Value::kObjectType)
+            {
+                LOG(ERROR) << "request value type error.";
+                if (!is_primary)
+                    break;
+                continue;
+            }
+            Request request;
+            request.assignTmp(requestValue);
+            if (!ReqLogMgr::isReplayWriteReq(request.controller(), request.action()))
+            {
+                if (!is_primary)
+                    break;
+                continue;
+            }
+            std::string collection = asString(request[Keys::collection]);
+            if (collection != from_col)
+            {
+                LOG(INFO) << "not match collection : " << collection;
+                if (!is_primary)
+                    break;
+                continue;
+            }
+            request[Keys::collection] = to_col;
+
+            std::string replay_json;
+            izenelib::driver::JsonWriter writer;
+            writer.write(request.get(), replay_json);
+            LOG(INFO) << "replaying for request id : " << rethead.inc_id;
+            if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, replay_json, req_packed_data))
+            {
+                LOG(INFO) << "ignore replaying from log failed: " << rethead.inc_id << ", json : " << req_commondata.req_json_data;
+                if (!is_primary)
+                    break;
+                continue;
+            }
+            replayed_num++;
+            if (is_primary)
+                replayed_id_list.push_back(rethead.inc_id);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(INFO) << "replay log exception: " << e.what() << ", req data: " << req_commondata.req_json_data;
+            if (!is_primary)
+                break;
+        }
+    }
+    if (!is_primary && replayed_num != replayed_id_list.size())
+    {
+        LOG(ERROR) << "replay log error on secondary.";
+        forceExit("Replay Log Failed!");
+    }
+    LOG(INFO) << "replay log finished, total replayed: " << replayed_num;
 }
 
 bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)

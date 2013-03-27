@@ -6,6 +6,7 @@
 namespace sf1r
 {
 std::set<std::string> ReqLogMgr::write_req_set_;
+std::set<std::string> ReqLogMgr::replay_write_req_set_;
 
 // to handle write request correctly , you need do things below:
 // 1. add controller_action string to ReqLogMgr, and define the log type for it if neccesary.
@@ -36,7 +37,7 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("documents_visit");
     //write_req_set_.insert("collection_start_collection");
     //write_req_set_.insert("collection_stop_collection");
-    write_req_set_.insert("collection_rebuild_collection");
+    //write_req_set_.insert("collection_rebuild_collection");
     write_req_set_.insert("collection_set_kv");
     write_req_set_.insert("commands_index");
     write_req_set_.insert("commands_index_recommend");
@@ -60,6 +61,22 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("product_append_to_group");
     write_req_set_.insert("product_remove_from_group");
     write_req_set_.insert("product_update_a_doc");
+
+    replay_write_req_set_.insert("documents_update_inplace");
+    replay_write_req_set_.insert("documents_set_top_group_label");
+    replay_write_req_set_.insert("documents_log_group_label");
+    replay_write_req_set_.insert("documents_visit");
+    replay_write_req_set_.insert("faceted_set_custom_rank");
+    replay_write_req_set_.insert("faceted_set_merchant_score");
+    replay_write_req_set_.insert("faceted_set_ontology");
+    replay_write_req_set_.insert("recommend_add_user");
+    replay_write_req_set_.insert("recommend_update_user");
+    replay_write_req_set_.insert("recommend_remove_user");
+    replay_write_req_set_.insert("recommend_purchase_item");
+    replay_write_req_set_.insert("recommend_rate_item");
+    replay_write_req_set_.insert("recommend_visit_item");
+    replay_write_req_set_.insert("recommend_update_shopping_cart");
+    replay_write_req_set_.insert("recommend_track_event");
 }
 
 void ReqLogMgr::init(const std::string& basepath)

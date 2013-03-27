@@ -294,22 +294,17 @@ void CollectionController::rebuild_collection()
         response().addError("Collection access denied");
         return;
     }
-
-    DISTRIBUTE_WRITE_BEGIN;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
-
-    NoAdditionNeedBackupReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionData_NeedBackup_Req, reqlog))
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!collectionHandler || !collectionHandler->indexTaskService_)
     {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        response().addError("Collection not found or no index service!");
         return;
     }
 
-
     boost::shared_ptr<RebuildTask> task(new RebuildTask(collection));
-    task->doTask();
+    MasterManagerBase::get()->pushWriteReq("CollectionTaskScheduler-" + task->getTaskName(), "cron");
 
-    DISTRIBUTE_WRITE_FINISH(true);
+    LOG(INFO) << "push rebuild cron job to queue from api: " << "CollectionTaskScheduler-" + task->getTaskName();
 }
 /**
  * @brief Action @b create_collection.

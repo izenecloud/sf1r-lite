@@ -57,12 +57,9 @@ namespace sf1r {
 
 
       |--- Servers           # Each Master service node in topology is a service server. xxx, maybe we can remove this node.
-           |--- Search       # A master node supply Search service as master
-                |--- Server00000000
-                |--- Server00000001
-           |--- Recommend
-                |--- Server00000000
-                |--- Server00000001
+           |--- Server00000000
+                     |--- Search, Recommend  # A master node supply Search and Recommend service as master
+           |--- Server00000001
 
       |--- Synchro                 # For synchronization task
 

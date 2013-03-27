@@ -41,7 +41,7 @@ void DistributeRequestHooker::init()
 }
 
 DistributeRequestHooker::DistributeRequestHooker()
-    :type_(Req_None), hook_type_(0), chain_status_(NoChain)
+    :type_(Req_None), hook_type_(0), chain_status_(NoChain), is_replaying_log_(false)
 {
 }
 
@@ -61,6 +61,36 @@ bool DistributeRequestHooker::isValid()
     if (NodeManagerBase::get()->isDistributed() && hook_type_ == 0)
         return false;
     return true;
+}
+
+void DistributeRequestHooker::setReplayingLog(bool running, CommonReqData& saved_reqlog)
+{
+    is_replaying_log_ = running;
+    // save current data
+    if (is_replaying_log_)
+    {
+        saved_current_req_ = current_req_;
+        saved_type_ = type_;
+        saved_hook_type_ = hook_type_;
+        saved_chain_status_ = chain_status_;
+        req_log_mgr_->delPreparedReqLog();
+        clearHook(true);
+    }
+    else
+    {
+        // restore saved data.
+        current_req_ = saved_current_req_;
+        type_ = saved_type_;
+        hook_type_ = saved_hook_type_;
+        chain_status_ = saved_chain_status_;
+        
+        req_log_mgr_ = RecoveryChecker::get()->getReqLogMgr();
+        if (!req_log_mgr_->prepareReqLog(saved_reqlog, false))
+        {
+            LOG(ERROR) << "prepare request log failed while restore saved reqlog.";
+            forceExit();
+        }
+    }
 }
 
 void DistributeRequestHooker::hookCurrentReq(const std::string& reqdata)
@@ -227,6 +257,12 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         return true;
     }
 
+    if (is_replaying_log_)
+    {
+        // during replay log , no need backup and set rollback.
+        return true;
+    }
+
     if (isNeedBackup(type) || (prepared_req.inc_id % 10000 == 0) || !RecoveryChecker::get()->hasAnyBackup())
     {
         LOG(INFO) << "begin backup";
@@ -237,7 +273,6 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
             {
                 forceExit();
             }
-            //processLocalFinished(false);
             return false;
         }
         //if (hook_type_ != Request::FromLog)
@@ -251,7 +286,6 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         {
             forceExit();
         }
-        //processLocalFinished(false);
         return false; 
     }
     if (isprimary)
@@ -415,12 +449,16 @@ void DistributeRequestHooker::writeLocalLog()
     assert(chain_status_ == ChainEnd || chain_status_ == NoChain);
     LOG(INFO) << "begin write request log to local.";
 
-    bool ret = req_log_mgr_->appendReqData(current_req_);
-    if (!ret)
+    if (!is_replaying_log_)
     {
-        LOG(ERROR) << "write local log failed. something wrong on this node, must exit.";
-        forceExit();
+        bool ret = req_log_mgr_->appendReqData(current_req_);
+        if (!ret)
+        {
+            LOG(ERROR) << "write local log failed. something wrong on this node, must exit.";
+            forceExit();
+        }
     }
+
     finish(true);
 }
 
@@ -450,12 +488,24 @@ void DistributeRequestHooker::finish(bool success)
     req_log_mgr_->getPreparedReqLog(reqlog);
 
     req_log_mgr_->delPreparedReqLog();
+    ReqLogType type = type_;
     clearHook(true);
+    if (is_replaying_log_)
+        return;
     if (success)
     {
         LOG(INFO) << "The request has finally finished both on primary and replicas.";
-        RecoveryChecker::get()->clearRollbackFlag();
         DistributeTestSuit::updateMemoryState("Last_Success_Request", reqlog.inc_id);
+        RecoveryChecker::get()->clearRollbackFlag();
+        if (isNeedBackup(type))
+        {
+            LOG(INFO) << "begin backup after finished.";
+            if(!RecoveryChecker::get()->backup())
+            {
+                LOG(ERROR) << "backup failed. Maybe not enough space.";
+                forceExit();
+            }
+        }
     }
     else
     {

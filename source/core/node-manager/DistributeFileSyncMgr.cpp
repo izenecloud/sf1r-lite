@@ -427,6 +427,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
         }
         reporting_ = true;
     }
+    check_errinfo = "";
     std::vector<std::string> replica_info;
     NodeManagerBase::get()->getAllReplicaInfo(replica_info, true);
     uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
