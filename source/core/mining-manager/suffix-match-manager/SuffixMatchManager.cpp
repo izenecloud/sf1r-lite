@@ -1,4 +1,5 @@
 #include "SuffixMatchManager.hpp"
+#include "ProductTokenizer.h"
 #include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -122,15 +123,16 @@ using namespace faceted;
 SuffixMatchManager::SuffixMatchManager(
         const std::string& homePath,
         const std::string& dicpath,
+        const std::string& system_resource_path,
         boost::shared_ptr<DocumentManager>& document_manager,
         faceted::GroupManager* groupmanager,
         faceted::AttrManager* attrmanager,
         NumericPropertyTableBuilder* numeric_tablebuilder)
     : data_root_path_(homePath)
     , tokenize_dicpath_(dicpath)
+    , system_resource_path_(system_resource_path)
     , document_manager_(document_manager)
-    , analyzer_(NULL)
-    , knowledge_(NULL)
+    , tokenizer_(NULL)
     , suffixMatchTask_(NULL)
 {
     if (!boost::filesystem::exists(homePath))
@@ -146,8 +148,14 @@ SuffixMatchManager::SuffixMatchManager(
 
 SuffixMatchManager::~SuffixMatchManager()
 {
-    if (analyzer_) delete analyzer_;
+    if (tokenizer_) delete tokenizer_;
     //if (knowledge_) delete knowledge_;
+}
+
+void SuffixMatchManager::setProductMatcher(ProductMatcher* matcher)
+{
+    if (tokenizer_)
+        tokenizer_->SetProductMatcher(matcher);
 }
 
 void SuffixMatchManager::addFMIndexProperties(const std::vector<std::string>& property_list, int type, bool finished)
@@ -240,9 +248,9 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         const SearchingMode::SuffixMatchFilterMode& filter_mode,
         const std::vector<QueryFiltering::FilteringType>& filter_param,
         const GroupParam& group_param,
-        std::vector<std::pair<double, uint32_t> >& res_list) const
+        std::vector<std::pair<double, uint32_t> >& res_list,
+        UString& analyzedQuery) const
 {
-    if (!analyzer_) return 0;
     if (pattern_orig.empty()) return 0;
 	
     btree::btree_map<uint32_t, double> res_list_map;
@@ -255,27 +263,8 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     boost::to_lower(pattern);
     LOG(INFO) << "original query string: " << pattern_orig;
 
-    Sentence pattern_sentence(pattern.c_str());
-    analyzer_->runWithSentence(pattern_sentence);
-    std::vector<UString> all_sub_strpatterns;
-    LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
-    for (int i = 0; i < pattern_sentence.getCount(0); i++)
-    {
-        printf("%s, ", pattern_sentence.getLexicon(0, i));
-        all_sub_strpatterns.push_back(UString(pattern_sentence.getLexicon(0, i), UString::UTF_8));
-    }
-    cout << endl;
-
-    size_t match_dic_pattern_num = all_sub_strpatterns.size();
-
-    LOG(INFO) << "query tokenize by maxprefix match in bigram: ";
-    for (int i = 0; i < pattern_sentence.getCount(1); i++)
-    {
-        printf("%s, ", pattern_sentence.getLexicon(1, i));
-        all_sub_strpatterns.push_back(UString(pattern_sentence.getLexicon(1, i), UString::UTF_8));
-    }
-    cout << endl;
-
+    std::list<std::pair<UString, double> > all_sub_strpatterns;
+    tokenizer_->GetTokenResults(pattern, all_sub_strpatterns, analyzedQuery);
     size_t total_match = 0;
 
     {
@@ -304,20 +293,18 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             match_ranges_list.reserve(all_sub_strpatterns.size());
             max_match_list.reserve(all_sub_strpatterns.size());
             LOG(INFO) << "query tokenize match ranges in property : " << search_property;
-            for (size_t i = 0; i < all_sub_strpatterns.size(); ++i)
+            for(std::list<std::pair<UString, double> >::iterator pit = all_sub_strpatterns.begin(); 
+                   pit != all_sub_strpatterns.end(); ++pit)
             {
-                if (all_sub_strpatterns[i].empty())
+                if (pit->first.empty())
                     continue;
                 std::pair<size_t, size_t> sub_match_range;
-                size_t matched = fmi_manager_->backwardSearch(search_property, all_sub_strpatterns[i], sub_match_range);
+                size_t matched = fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range);
                 //LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
-                if (matched == all_sub_strpatterns[i].length())
+                if (matched == pit->first.length())
                 {
                     match_ranges_list.push_back(sub_match_range);
-                    if (i < match_dic_pattern_num)
-                        max_match_list.push_back((double)2.0);
-                    else
-                        max_match_list.push_back((double)1.0);
+                    max_match_list.push_back(pit->second);					
                 }
             }
             fmi_manager_->convertMatchRanges(search_property, max_docs, match_ranges_list, max_match_list);
@@ -747,20 +734,13 @@ boost::shared_ptr<FilterManager>& SuffixMatchManager::getFilterManager()
 
 void SuffixMatchManager::buildTokenizeDic()
 {
-    std::string cma_path;
-    LAPool::getInstance()->get_cma_path(cma_path);
-    boost::filesystem::path cma_fmindex_dic(cma_path);
+    boost::filesystem::path cma_fmindex_dic(system_resource_path_);
+    cma_fmindex_dic /= boost::filesystem::path("dict");
     cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
-    //knowledge_ = CMA_Factory::instance()->createKnowledge();
-    //knowledge_->loadModel( "utf8", cma_fmindex_dic.c_str(), false);
-    knowledge_ = CMAKnowledgeFactory::Get()->GetKnowledge(cma_fmindex_dic.c_str(), false);
-    analyzer_ = CMA_Factory::instance()->createAnalyzer();
-    analyzer_->setOption(Analyzer::OPTION_TYPE_POS_TAGGING, 0);
-    // using the maxprefix analyzer
-    analyzer_->setOption(Analyzer::OPTION_ANALYSIS_TYPE, 100);
-    analyzer_->setKnowledge(knowledge_);
-    LOG(INFO) << "load dictionary knowledge finished." << endl;
+    ProductTokenizer::TokenizerType type = tokenize_dicpath_ == "product" ? 
+        ProductTokenizer::TOKENIZER_DICT : ProductTokenizer::TOKENIZER_CMA;
+    tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str());
 }
 
 void SuffixMatchManager::updateFmindex()

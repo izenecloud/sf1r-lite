@@ -161,7 +161,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
         ProductMatcher::Product product;
         if(need_do_match)
         {
-            matcher_->Process(doc, product);
+            matcher_->Process(doc, product, true);
         }
         else
         {

@@ -335,7 +335,6 @@ void FilterManager::buildGroupFilters(
     if (!groupManager_) return;
 
     group_filter_data.resize(property_list.size());
-    
     // the relationship between group node need rebuild from docid = 1.
     GroupNode* group_root = new GroupNode(UString("root", UString::UTF_8));
     std::vector<GroupNode*> property_root_nodes;
@@ -378,8 +377,6 @@ void FilterManager::buildGroupFilters(
             pvt->getPropIdList(docid, propids);
             for (size_t k = 0; k < propids.size(); ++k)
             {
-                if (docid <= last_docid_forproperty) continue;
-
                 std::vector<izenelib::util::UString> groupPath;
                 pvt->propValuePath(propids[k], groupPath);
                 if (groupPath.empty()) continue;
@@ -603,10 +600,7 @@ void FilterManager::buildNumFilters(
         for (uint32_t docid = last_docid + 1; docid <= max_docid; ++docid)
         {
             if (!numericPropertyTable->getDoublePairValue(docid, original_key))
-            {
-                cout<<"the last_docid is has already there ... "<<endl;
                 continue;
-            }
             num_key_low = formatNumericFilter(prop_id, original_key.first);
             num_key_high = formatNumericFilter(prop_id, original_key.second);
             inc = 1;
@@ -1150,15 +1144,7 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLess(size_t prop_
     }
     
     empty_range.start = num_filter_ids_[prop_id].find(num_key_set[0])->second.start;
-
-    if (include && *it == num_key)
-    {
-        empty_range.end = nit->second.end;
-    }
-    else
-    {
-        empty_range.end = nit->second.end - 1;
-    }
+    empty_range.end = nit->second.end;
 
     LOG(INFO) << "numeric filter smaller map to key: " << *it << ", filter id range is: " << empty_range.start << "," << empty_range.end;
 

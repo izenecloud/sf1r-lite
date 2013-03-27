@@ -9,7 +9,6 @@
 #include <b5m-manager/uue_generator.h>
 #include <b5m-manager/complete_matcher.h>
 #include <b5m-manager/similarity_matcher.h>
-#include <b5m-manager/ticket_matcher.h>
 #include <b5m-manager/ticket_processor.h>
 #include <b5m-manager/uue_worker.h>
 #include <b5m-manager/b5mp_processor.h>

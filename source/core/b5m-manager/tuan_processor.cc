@@ -1,4 +1,4 @@
-#include "ticket_processor.h"
+#include "tuan_processor.h"
 #include "b5m_types.h"
 #include "b5m_helper.h"
 #include "product_db.h"
@@ -11,15 +11,14 @@
 #include <mining-manager/util/split_ustr.h>
 #include <product-manager/product_term_analyzer.h>
 
-//#define TICKET_DEBUG
 
 using namespace sf1r;
 
-TicketProcessor::TicketProcessor()
+TuanProcessor::TuanProcessor()
 {
 }
 
-bool TicketProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance)
+bool TuanProcessor::Generate(const std::string& scd_path, const std::string& mdb_instance)
 {
     namespace bfs = boost::filesystem;
     std::vector<std::string> scd_list;
@@ -40,7 +39,7 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
         group_table.Load();
 
         DDType dd(dd_container, &group_table);
-        dd.SetFixK(12);
+        //dd.SetFixK(12);
         if(!dd.Open())
         {
             std::cout<<"DD open failed"<<std::endl;
@@ -72,11 +71,9 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
                 }
                 //if(doc["uuid"].length()>0) continue;
                 UString category = doc["Category"];
-                UString city = doc["PlayCity"];
-                UString address = doc["PlayAddress"];
-                UString time = doc["PlayTime"];
-                UString name = doc["PlayName"];
-                if(category.empty()||city.empty()||address.empty()||time.empty()||name.empty())
+                UString city = doc["City"];
+                UString title = doc["Title"];
+                if(category.empty()||city.empty()||title.empty())
                 {
                     continue;
                 }
@@ -86,46 +83,20 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
                 doc["DOCID"].convertString(soid, izenelib::util::UString::UTF_8);
                 const DocIdType& id = soid;
 
-                TicketProcessorAttach attach;
+                TuanProcessorAttach attach;
                 UString sid_str = category;
                 sid_str.append(UString("|", UString::UTF_8));
                 sid_str.append(city);
                 attach.sid = izenelib::util::HashFunction<izenelib::util::UString>::generateHash32(sid_str);
-                std::string stime;
-                time.convertString(stime, UString::UTF_8);
-                boost::algorithm::split(attach.time_array, stime, boost::is_any_of(",;"));
-                std::sort(attach.time_array.begin(), attach.time_array.end());
 
-                UString text = name;
-                //text.append(UString(" ", UString::UTF_8));
-                //text.append(address);
-                //text.append(UString(" ", UString::UTF_8));
-                //text.append(category);
-                //text.append(UString(" ", UString::UTF_8));
-                //text.append(category);
-                //text.append(UString(" ", UString::UTF_8));
-                //text.append(category);
-                //text.append(UString(" ", UString::UTF_8));
-                //text.append(city);
-                //text.append(UString(" ", UString::UTF_8));
-                //text.append(city);
-                //text.append(UString(" ", UString::UTF_8));
-                //text.append(city);
                 std::vector<std::pair<std::string, double> > doc_vector;
-                analyzer.Analyze(text, doc_vector);
+                analyzer.Analyze(title, doc_vector);
 
                 if( doc_vector.empty() )
                 {
                     continue;
                 }
                 dd.InsertDoc(id, doc_vector, attach);
-#ifdef TICKET_DEBUG
-                LOG(INFO)<<"insert id "<<id<<std::endl;
-                for(uint32_t i=0;i<doc_vector.size();i++)
-                {
-                    LOG(INFO)<<doc_vector[i].first<<","<<doc_vector[i].second<<std::endl;
-                }
-#endif
             }
         }
         dd.RunDdAnalysis();
@@ -190,12 +161,12 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
     writer.Close();
     PairwiseScdMerger merger(b5mo_path);
     std::size_t odoc_count = ScdParser::getScdDocCount(b5mo_path);
-    LOG(INFO)<<"ticket o doc count "<<odoc_count<<std::endl;
+    LOG(INFO)<<"tuan o doc count "<<odoc_count<<std::endl;
     uint32_t m = odoc_count/2400000+1;
     merger.SetM(m);
     merger.SetMProperty("uuid");
-    merger.SetOutputer(boost::bind( &TicketProcessor::B5moOutput_, this, _1, _2));
-    merger.SetMEnd(boost::bind( &TicketProcessor::POutputAll_, this));
+    merger.SetOutputer(boost::bind( &TuanProcessor::B5moOutput_, this, _1, _2));
+    merger.SetMEnd(boost::bind( &TuanProcessor::POutputAll_, this));
     std::string p_output_dir = B5MHelper::GetB5mpPath(mdb_instance);
     B5MHelper::PrepareEmptyDir(p_output_dir);
     pwriter_.reset(new ScdWriter(p_output_dir, UPDATE_SCD));
@@ -205,7 +176,7 @@ bool TicketProcessor::Generate(const std::string& scd_path, const std::string& m
 
 }
 
-void TicketProcessor::POutputAll_()
+void TuanProcessor::POutputAll_()
 {
     for(CacheType::iterator it = cache_.begin();it!=cache_.end();it++)
     {
@@ -216,7 +187,7 @@ void TicketProcessor::POutputAll_()
     cache_.clear();
 }
 
-void TicketProcessor::B5moOutput_(SValueType& value, int status)
+void TuanProcessor::B5moOutput_(SValueType& value, int status)
 {
     uint128_t pid = GetPid_(value.doc);
     if(pid==0)
@@ -227,14 +198,14 @@ void TicketProcessor::B5moOutput_(SValueType& value, int status)
     ProductMerge_(svalue, value);
 }
 
-uint128_t TicketProcessor::GetPid_(const Document& doc)
+uint128_t TuanProcessor::GetPid_(const Document& doc)
 {
     std::string spid;
     doc.getString("uuid", spid);
     if(spid.empty()) return 0;
     return B5MHelper::StringToUint128(spid);
 }
-uint128_t TicketProcessor::GetOid_(const Document& doc)
+uint128_t TuanProcessor::GetOid_(const Document& doc)
 {
     std::string soid;
     doc.getString("DOCID", soid);
@@ -242,7 +213,7 @@ uint128_t TicketProcessor::GetOid_(const Document& doc)
     return B5MHelper::StringToUint128(soid);
 }
 
-void TicketProcessor::ProductMerge_(SValueType& value, const SValueType& another_value)
+void TuanProcessor::ProductMerge_(SValueType& value, const SValueType& another_value)
 {
     //value is pdoc or empty, another_value is odoc
     ProductProperty pp;

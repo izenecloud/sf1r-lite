@@ -107,12 +107,9 @@ public:
         ss << "encodingType_      : " << encodingType_ << endl;
         ss << "collectionName_    : " << collectionName_ << endl;
         ss << "analyzedQuery_     : " ;
-        for (size_t i = 0; i < analyzedQuery_.size(); i ++)
-        {
-            string s;
-            analyzedQuery_[i].convertString(s, izenelib::util::UString::UTF_8);
-            ss << s << ", ";
-        }
+        string s;
+        analyzedQuery_.convertString(s, izenelib::util::UString::UTF_8);
+        ss << s << ", ";
         ss << endl;
         ss << "queryTermIdList_   : " ;
         for (size_t i = 0; i < queryTermIdList_.size(); i ++)
@@ -281,8 +278,8 @@ public:
     izenelib::util::UString::EncodingType encodingType_;
 
     std::string collectionName_;
-    /// A list of analyzed query string.
-    std::vector<izenelib::util::UString> analyzedQuery_;
+    /// Analyzed query string.
+    izenelib::util::UString analyzedQuery_;
 
     std::vector<termid_t> queryTermIdList_;
 
