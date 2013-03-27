@@ -88,11 +88,12 @@ public:
             std::list<std::pair<std::string, uint32_t> >& estimation)
     {
         LOG(INFO) << "QueryCacheElement: get" <<endl;
-        if(timeCacheMap_.find(time) == timeCacheMap_.end())
-            return false;
-        LOG(INFO) << "true" <<endl;
-        estimation = *(timeCacheMap_[time]);
-        return true;
+        if(timeCacheMap_.find(time) != timeCacheMap_.end())
+        {
+            estimation = *(timeCacheMap_[time]);
+            return true;
+        }
+        return false;
     }
 private:
     typedef std::list<std::pair<std::string, uint32_t> > EstimationType;
@@ -119,11 +120,9 @@ public:
             std::list<std::pair<std::string, uint32_t> >& estimation)
     {
         LOG(INFO) << "QueryEstimationCache: getEstimationOfDay"<<endl;
-        std::list<std::string>::iterator it;
-        for(it=collectionCacheL_.begin();it!=collectionCacheL_.end();it++)
+        if(collectionCacheMap_.find(collection) != collectionCacheMap_.end())
         {
-            if(*it == collection)
-                return true;
+                return collectionCacheMap_[collection]->get(time, estimation);
         }
         return false;
     }
@@ -145,9 +144,6 @@ private:
 
     uint32_t CacheSize_;
 
-    typedef QueryEstimationCacheElement* EleType;
-    typedef std::pair<std::string, EleType> VType;
-    std::list<std::string> collectionCacheL_;
     boost::unordered_map<std::string, boost::shared_ptr<QueryEstimationCacheElement> > collectionCacheMap_;
 };
 
