@@ -274,7 +274,7 @@ void RpcLogServer::GetOldDocId(OldDocIdData& reqdata)
 
 void RpcLogServer::GetFreqUserQueries(GetFreqUserQueriesData& reqdata, std::list< std::map<std::string, std::string> > & results)
 {
-    boost::lock_guard<boost::mutex> lock(LogServerStorage::get()->sketchManagerMutex());
+    LOG(INFO) << "RpcLogServer: GetFreqUserQueries" << endl;
     LogServerStorage::get()->sketchManager()->getFreqUserQueries(reqdata.collection_,
             reqdata.begin_time_,
             reqdata.end_time_,

@@ -16,6 +16,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/unordered_map.hpp>
 
+using namespace sf1r::logsketch;
 namespace sf1r
 {
 
