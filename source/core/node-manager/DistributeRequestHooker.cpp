@@ -73,7 +73,7 @@ void DistributeRequestHooker::setReplayingLog(bool running, CommonReqData& saved
         saved_type_ = type_;
         saved_hook_type_ = hook_type_;
         saved_chain_status_ = chain_status_;
-        req_log_mgr_->delPreparedReqLog();
+        //req_log_mgr_->delPreparedReqLog();
         clearHook(true);
     }
     else
@@ -85,11 +85,11 @@ void DistributeRequestHooker::setReplayingLog(bool running, CommonReqData& saved
         chain_status_ = saved_chain_status_;
         
         req_log_mgr_ = RecoveryChecker::get()->getReqLogMgr();
-        if (!req_log_mgr_->prepareReqLog(saved_reqlog, false))
-        {
-            LOG(ERROR) << "prepare request log failed while restore saved reqlog.";
-            forceExit();
-        }
+        //if (!req_log_mgr_->prepareReqLog(saved_reqlog, false))
+        //{
+        //    LOG(ERROR) << "prepare request log failed while restore saved reqlog.";
+        //    forceExit();
+        //}
     }
 }
 
@@ -163,11 +163,14 @@ bool DistributeRequestHooker::readPrevChainData(CommonReqData& reqlogdata)
         return true;
     if (!req_log_mgr_)
         return true;
-    CommonReqData prepared;
-    if(!req_log_mgr_->getPreparedReqLog(prepared))
+    if (!is_replaying_log_)
     {
-        LOG(WARNING) << "try to read chain data before prepared!!!";
-        return true;
+        CommonReqData prepared;
+        if(!req_log_mgr_->getPreparedReqLog(prepared))
+        {
+            LOG(WARNING) << "try to read chain data before prepared!!!";
+            return true;
+        }
     }
     if (!ReqLogMgr::unpackReqLogData(current_req_, reqlogdata))
     {
@@ -220,7 +223,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     LOG(INFO) << "begin prepare log ";
     if (chain_status_ == NoChain || chain_status_ == ChainBegin)
     {
-        if (!req_log_mgr_->prepareReqLog(prepared_req, isprimary))
+        if (!is_replaying_log_ && !req_log_mgr_->prepareReqLog(prepared_req, isprimary))
         {
             LOG(ERROR) << "prepare request log failed.";
             if (!isprimary)
@@ -322,7 +325,7 @@ bool DistributeRequestHooker::processFinishedBeforePrepare(bool finishsuccess)
         forceExit();
     }
     static CommonReqData reqlog;
-    if (!req_log_mgr_->getPreparedReqLog(reqlog))
+    if (!is_replaying_log_ && !req_log_mgr_->getPreparedReqLog(reqlog))
     {
         if (hook_type_ == Request::FromDistribute || hook_type_ == Request::FromOtherShard)
         {
