@@ -595,7 +595,7 @@ public:
             return true;
         return false;
     }
-    static void packReqLogData(CommonReqData& reqdata, std::string& packed_data)
+    static void packReqLogData(const CommonReqData& reqdata, std::string& packed_data)
     {
         msgpack::sbuffer buf;
         msgpack::packer<msgpack::sbuffer> pk(&buf);
@@ -610,6 +610,16 @@ public:
         unpak.buffer_consumed(packed_data.size());
         return reqdata.unpack(unpak);
     }
+
+    static void replaceCommonReqData(const CommonReqData& old_common, const CommonReqData& new_common, std::string& packed_data)
+    {
+        std::string old_common_packed_data;
+        packReqLogData(old_common, old_common_packed_data);
+        std::string new_common_packed_data;
+        packReqLogData(new_common, new_common_packed_data);
+        packed_data.replace(0, old_common_packed_data.size(), new_common_packed_data);
+    }
+
     static uint32_t crc(uint32_t crc, const char* data, const int32_t len)
     {
         int32_t i;
