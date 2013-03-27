@@ -73,7 +73,6 @@ void DistributeRequestHooker::setReplayingLog(bool running, CommonReqData& saved
         saved_type_ = type_;
         saved_hook_type_ = hook_type_;
         saved_chain_status_ = chain_status_;
-        //req_log_mgr_->delPreparedReqLog();
         clearHook(true);
     }
     else
@@ -85,11 +84,6 @@ void DistributeRequestHooker::setReplayingLog(bool running, CommonReqData& saved
         chain_status_ = saved_chain_status_;
         
         req_log_mgr_ = RecoveryChecker::get()->getReqLogMgr();
-        //if (!req_log_mgr_->prepareReqLog(saved_reqlog, false))
-        //{
-        //    LOG(ERROR) << "prepare request log failed while restore saved reqlog.";
-        //    forceExit();
-        //}
     }
 }
 
@@ -488,9 +482,11 @@ void DistributeRequestHooker::finish(bool success)
     }
 
     CommonReqData reqlog;
-    req_log_mgr_->getPreparedReqLog(reqlog);
-
-    req_log_mgr_->delPreparedReqLog();
+    if (!is_replaying_log_)
+    {
+        req_log_mgr_->getPreparedReqLog(reqlog);
+        req_log_mgr_->delPreparedReqLog();
+    }
     ReqLogType type = type_;
     clearHook(true);
     if (is_replaying_log_)
