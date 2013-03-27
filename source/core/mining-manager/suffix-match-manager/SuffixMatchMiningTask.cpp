@@ -80,9 +80,10 @@ bool SuffixMatchMiningTask::preProcess()
                     std::set<string>::iterator iter = document_manager_->RtypeDocidPros_.find((*i).second);
                     if (iter == document_manager_->RtypeDocidPros_.end())
                     {
-                        if (!filter_manager_->isNumericProp((*i).second))
+                        if (!filter_manager_->isNumericProp((*i).second) && !filter_manager_->isDateProp((*i).second))
                         {
                             new_filter_manager->addUnchangedProperty((*i).second);
+                            LOG (INFO) << "Add Unchanged property : " << (*i).second << endl;
                         }
                     }
                 }
