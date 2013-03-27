@@ -94,6 +94,7 @@ static bool callHandler(izenelib::driver::Router::handler_ptr handler,
     catch(const std::exception& e)
     {
         LOG(ERROR) << "call request handler exception: " << e.what();
+        DistributeRequestHooker::get()->processLocalFinished(false);
         throw;
     }
     return false;

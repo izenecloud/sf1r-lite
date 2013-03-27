@@ -378,7 +378,8 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
         return;
     }
 
-    LOG(INFO) << "replaying log is_primary: " << is_primary;
+    LOG(INFO) << "replaying log is_primary: " << is_primary << ", from collection: " << from_col <<
+        ", to collection : " << to_col;
     if (is_primary)
         replayed_id_list.reserve(end_id - start_id);
     else
@@ -416,7 +417,14 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
                     continue;
                 }
             }
-            ReqLogMgr::unpackReqLogData(req_packed_data, req_commondata);
+
+            if(!ReqLogMgr::unpackReqLogData(req_packed_data, req_commondata))
+            {
+                LOG(INFO) << "unpack replaying log data failed : " << req_packed_data;
+                if (!is_primary)
+                    break;
+                continue;
+            }
 
             if (req_commondata.reqtype == Req_UpdateConfig ||
                 req_commondata.reqtype == Req_CronJob ||
@@ -468,6 +476,10 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
             izenelib::driver::JsonWriter writer;
             writer.write(request.get(), replay_json);
             LOG(INFO) << "replaying for request id : " << rethead.inc_id;
+            CommonReqData new_common = req_commondata;
+            new_common.req_json_data = replay_json;
+            ReqLogMgr::replaceCommonReqData(req_commondata, new_common, req_packed_data);
+
             if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, replay_json, req_packed_data))
             {
                 LOG(INFO) << "ignore replaying from log failed: " << rethead.inc_id << ", json : " << req_commondata.req_json_data;
