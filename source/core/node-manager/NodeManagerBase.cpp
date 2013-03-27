@@ -1004,7 +1004,7 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     }
     else if (path == curr_primary_path_)
     {
-        DistributeTestSuit::loadTestConf();
+        //DistributeTestSuit::loadTestConf();
         checkPrimaryState(false);
     }
 }

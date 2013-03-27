@@ -10,6 +10,7 @@
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/NodeManagerBase.h>
 #include <node-manager/MasterManagerBase.h>
+#include <node-manager/RecoveryChecker.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -37,32 +38,29 @@ void CollectionTask::cronTask(int calltype)
             return;
         }
 
-        DISTRIBUTE_WRITE_BEGIN;
-        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
-
-        CronJobReqLog reqlog;
-        reqlog.cron_time = Utilities::createTimeStamp();
-        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
-        {
-            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << collectionCronJobName + getTaskName() << std::endl;
-            return;
-        }
-
         doTask();
-
-        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
 
 void RebuildTask::doTask()
 {
     LOG(INFO) << "## start RebuildTask for " << collectionName_;
-    //isRunning_ = true;
 
     std::string collDir;
     std::string rebuildCollDir;
     std::string rebuildCollBaseDir;
     std::string configFile = SF1Config::get()->getCollectionConfigFile(collectionName_);
+
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+    RebuildCronTaskReqLog reqlog;
+    reqlog.cron_time = Utilities::createTimeStamp();
+    if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+    {
+        LOG(ERROR) << "!!!! prepare log failed while rebuild collection." << getTaskName() << std::endl;
+        return;
+    }
 
     {
     // check collection resource
@@ -72,8 +70,7 @@ void RebuildTask::doTask()
     if (!collectionHandler || !collectionHandler->indexTaskService_)
     {
         LOG(ERROR) << "Not found collection: " << collectionName_;
-        //isRunning_ = false;
-        return;
+        throw -1;
     }
     boost::shared_ptr<DocumentManager> documentManager = collectionHandler->indexTaskService_->getDocumentManager();
     CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
@@ -83,7 +80,7 @@ void RebuildTask::doTask()
     if (rebuildCollHandler)
     {
         LOG(ERROR) << "Collection for rebuilding already started: " << rebuildCollectionName_;
-        return;
+        throw -1;
     }
 
     bfs::path basePath(collPath.getBasePath());
@@ -104,8 +101,7 @@ void RebuildTask::doTask()
     if (!CollectionManager::get()->startCollection(rebuildCollectionName_, configFile, true))
     {
         LOG(ERROR) << "Collection for rebuilding already started: " << rebuildCollectionName_;
-        //isRunning_ = false;
-        return;
+        throw -1;
     }
     CollectionManager::MutexType* recollMutex = CollectionManager::get()->getCollectionMutex(rebuildCollectionName_);
     CollectionManager::ScopedReadLock recollLock(*recollMutex);
@@ -117,6 +113,12 @@ void RebuildTask::doTask()
     rebuildCollBaseDir = rebuildCollPath.getBasePath();
     } // lock scope
 
+    DistributeRequestHooker::get()->setReplayingLog(true, reqlog);
+    // replay log for rebuilded collection.
+    RecoveryChecker::get()->replayLog(DistributeRequestHooker::get()->isRunningPrimary(),
+        collectionName_, rebuildCollectionName_, reqlog.replayed_id_list);
+
+    DistributeRequestHooker::get()->setReplayingLog(false, reqlog);
     // replace collection data with rebuilded data
     LOG(INFO) << "## stopCollection: " << collectionName_;
     CollectionManager::get()->stopCollection(collectionName_);
@@ -143,6 +145,7 @@ void RebuildTask::doTask()
     catch (const std::exception& e)
     {
         LOG(ERROR) << e.what();
+        throw;
     }
 
     LOG(INFO) << "## re-startCollection: " << collectionName_;
@@ -150,6 +153,8 @@ void RebuildTask::doTask()
 
     LOG(INFO) << "## end RebuildTask for " << collectionName_;
     //isRunning_ = false;
+    //
+    DISTRIBUTE_WRITE_FINISH2(true, reqlog);
 }
 
 void ExpirationCheckTask::doTask()

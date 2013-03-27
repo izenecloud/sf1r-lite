@@ -52,7 +52,7 @@ bool IndexSearchService::getSearchResult(
         net::aggregator::WorkerResults<KeywordSearchResult> workerResults;
         workerResults.add(0, resultItem);
         searchMerger_->getMiningResult(workerResults, resultItem);
-	LOG(INFO) << "Local Search Begin." << endl;
+        LOG(INFO) << "Local Search End." << endl;
         return ret;
     }
 

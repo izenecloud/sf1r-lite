@@ -501,6 +501,45 @@ struct RecommendPurchaseItemReqLog : public CommonReqData
     }
 };
 
+struct RebuildCronTaskReqLog: public CommonReqData
+{
+    RebuildCronTaskReqLog()
+    {
+        reqtype = Req_CronJob;
+    }
+    int64_t cron_time;
+    std::vector<uint32_t> replayed_id_list;
+
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(cron_time);
+        pk.pack(replayed_id_list);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&cron_time);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&replayed_id_list);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack RebuildCronTaskReqLog data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+};
+
+
 static const uint32_t _crc32tab[] = {
     0x0,0x77073096,0xee0e612c,0x990951ba,0x76dc419,0x706af48f,0xe963a535,0x9e6495a3,0xedb8832,0x79dcb8a4,
     0xe0d5e91e,0x97d2d988,0x9b64c2b,0x7eb17cbd,0xe7b82d07,0x90bf1d91,0x1db71064,0x6ab020f2,0xf3b97148,0x84be41de,
@@ -547,6 +586,12 @@ public:
     static inline bool isWriteRequest(const std::string& controller, const std::string& action)
     {
         if (write_req_set_.find(controller + "_" + action) != write_req_set_.end())
+            return true;
+        return false;
+    }
+    static inline bool isReplayWriteReq(const std::string& controller, const std::string& action)
+    {
+        if (replay_write_req_set_.find(controller + "_" + action) != replay_write_req_set_.end())
             return true;
         return false;
     }
@@ -617,6 +662,7 @@ private:
     boost::mutex  lock_;
 
     static std::set<std::string> write_req_set_;
+    static std::set<std::string> replay_write_req_set_;
 };
 
 }

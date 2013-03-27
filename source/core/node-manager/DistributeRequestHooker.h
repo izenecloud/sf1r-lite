@@ -81,6 +81,8 @@ public:
     void onElectingFinished();
     static bool isAsyncWriteRequest(const std::string& controller, const std::string& action);
 
+    void setReplayingLog(bool running, CommonReqData& saved_reqlog);
+
 private:
     static bool isNeedBackup(ReqLogType type);
     void finish(bool success);
@@ -96,6 +98,13 @@ private:
     boost::shared_ptr<ReqLogMgr> req_log_mgr_;
     int hook_type_;
     ChainStatus chain_status_;
+    bool is_replaying_log_;
+    // saved used for replaying log 
+    std::string saved_current_req_;
+    ReqLogType saved_type_;
+    int saved_hook_type_;
+    ChainStatus saved_chain_status_;
+
     static std::set<ReqLogType> need_backup_types_;
     static std::set<std::string> async_or_shard_write_types_;
 

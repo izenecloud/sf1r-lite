@@ -60,6 +60,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     CREATE_PROFILER(preparerank, "SearchThreadWorker", "search: prepare ranker");
 
     const SearchKeywordOperation& actionOperation = *param.actionOperation;
+    LOG(INFO) << "search in thread worker begin ------------ " << time(NULL);
 
     unsigned int collectionId = 1;
     std::vector<std::string> indexPropertyList(actionOperation.actionItem_.searchPropertyList_);
