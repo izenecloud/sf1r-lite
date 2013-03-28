@@ -276,7 +276,7 @@ bool ReqLogMgr::getReqPackedDataByHead(const ReqLogHead& head, std::string& req_
 std::string ReqLogMgr::getDataPath(uint32_t inc_id)
 {
     std::stringstream ss;
-    ss << base_path_ << "/" << inc_id/10000 << ".req.log";
+    ss << base_path_ << "/" << inc_id/100000 << ".req.log";
     return ss.str();
 }
 
