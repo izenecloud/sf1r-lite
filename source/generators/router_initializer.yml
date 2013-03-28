@@ -148,6 +148,7 @@ controllers:
       - stop_collection
       - check_collection
       - rebuild_collection
+      - rebuild_from_scd
       - create_collection
       - delete_collection
       - set_kv

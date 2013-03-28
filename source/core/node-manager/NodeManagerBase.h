@@ -186,7 +186,7 @@ protected:
     void enterClusterAfterRecovery(bool start_master = true);
 
     void unregisterPrimary();
-    void registerPrimary(ZNode& znode);
+    bool registerPrimary(ZNode& znode);
     void updateCurrentPrimary();
     void updateNodeStateToNewState(NodeStateType new_state);
     void updateNodeState();

@@ -1184,7 +1184,11 @@ void RecoveryChecker::syncToNewestReqLog()
     while(true)
     {
         uint32_t reqid = reqlog_mgr_->getLastSuccessReqId();
-        DistributeFileSyncMgr::get()->getNewestReqLog(reqid + 1, newlogdata_list);
+        while(!DistributeFileSyncMgr::get()->getNewestReqLog(reqid + 1, newlogdata_list))
+        {
+            LOG(INFO) << "get newest log failed, waiting and retry.";
+            sleep(10);
+        }
         if (newlogdata_list.empty())
             break;
         for (size_t i = 0; i < newlogdata_list.size(); ++i)

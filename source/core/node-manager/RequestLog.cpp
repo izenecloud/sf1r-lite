@@ -37,7 +37,7 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("documents_visit");
     //write_req_set_.insert("collection_start_collection");
     //write_req_set_.insert("collection_stop_collection");
-    //write_req_set_.insert("collection_rebuild_collection");
+    write_req_set_.insert("collection_rebuild_from_scd");
     write_req_set_.insert("collection_set_kv");
     write_req_set_.insert("commands_index");
     write_req_set_.insert("commands_index_recommend");
@@ -62,6 +62,7 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("product_remove_from_group");
     write_req_set_.insert("product_update_a_doc");
 
+    replay_write_req_set_.insert("documents_update");
     replay_write_req_set_.insert("documents_update_inplace");
     replay_write_req_set_.insert("documents_set_top_group_label");
     replay_write_req_set_.insert("documents_log_group_label");

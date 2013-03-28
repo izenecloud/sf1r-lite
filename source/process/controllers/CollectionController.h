@@ -38,6 +38,8 @@ public:
     
     void rebuild_collection();
 
+    void rebuild_from_scd();
+
     void create_collection();
 
     void delete_collection();

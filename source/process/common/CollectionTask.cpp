@@ -158,6 +158,139 @@ void RebuildTask::doTask()
     DISTRIBUTE_WRITE_FINISH2(true, reqlog);
 }
 
+bool RebuildTask::rebuildFromSCD()
+{
+    LOG(INFO) << "## start rebuild from scd for " << collectionName_;
+
+    std::string collDir;
+    std::string rebuildCollDir;
+    std::string rebuildCollBaseDir;
+    std::string configFile = SF1Config::get()->getCollectionConfigFile(collectionName_);
+
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    RebuildFromSCDReqLog reqlog;
+    reqlog.timestamp = Utilities::createTimeStamp();
+
+    {
+        // check collection resource
+        CollectionManager::MutexType* collMutex = CollectionManager::get()->getCollectionMutex(collectionName_);
+        CollectionManager::ScopedReadLock collLock(*collMutex);
+        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collectionName_);
+        if (!collectionHandler || !collectionHandler->indexTaskService_)
+        {
+            LOG(ERROR) << "Not found collection: " << collectionName_;
+            return false;
+        }
+        CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
+        collDir = collPath.getCollectionDataPath() + collPath.getCurrCollectionDir();
+        std::string rebuild_scd_src = collPath.getScdPath() + "/rebuild_scd";
+        if (!bfs::exists(rebuild_scd_src))
+        {
+            LOG(INFO) << "no rebuild scd files : " << rebuild_scd_src;
+            return false;
+        }
+
+        CollectionHandler* rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
+        if (rebuildCollHandler)
+        {
+            LOG(ERROR) << "Collection for rebuilding already started: " << rebuildCollectionName_;
+            return false;
+        }
+
+        bfs::path basePath(collPath.getBasePath());
+        if (basePath.filename().string() == ".")
+            basePath = basePath.parent_path().parent_path();
+        else
+            basePath = basePath.parent_path();
+
+        LOG(INFO) << "rebuild path : " << basePath/bfs::path(rebuildCollectionName_);
+        if (bfs::exists(basePath/bfs::path(rebuildCollectionName_)))
+        {
+            LOG(INFO) << "the rebuild collection was not deleted properly last time, removing it!";
+            bfs::remove_all(basePath/bfs::path(rebuildCollectionName_));
+        }
+
+        // start collection for rebuilding
+        LOG(INFO) << "## startCollection for rebuilding: " << rebuildCollectionName_;
+        if (!CollectionManager::get()->startCollection(rebuildCollectionName_, configFile, true))
+        {
+            LOG(ERROR) << "start collection for rebuilding failed: " << rebuildCollectionName_;
+            return false;
+        }
+        CollectionManager::MutexType* recollMutex = CollectionManager::get()->getCollectionMutex(rebuildCollectionName_);
+        CollectionManager::ScopedReadLock recollLock(*recollMutex);
+        rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
+        CollectionPath& rebuildCollPath = rebuildCollHandler->indexTaskService_->getCollectionPath();
+
+        // move rebuild scd files to rebuild collection master_index.
+        std::string rebuild_scd_dest = rebuildCollPath.getScdPath() + "/master_index";
+        if (bfs::exists(rebuild_scd_dest))
+            bfs::remove_all(rebuild_scd_dest);
+        bfs::rename(rebuild_scd_src, rebuild_scd_dest);
+        if (!DistributeRequestHooker::get()->prepare(Req_Rebuild_FromSCD, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while rebuild collection." << getTaskName() << std::endl;
+            CollectionManager::get()->stopCollection(rebuildCollectionName_);
+            return false;
+        }
+
+        LOG(INFO) << "# # # #  start rebuilding from scd.";
+        if(!rebuildCollHandler->indexTaskService_->reindex_from_scd(reqlog.scd_list))
+        {
+            CollectionManager::get()->stopCollection(rebuildCollectionName_);
+            return false;
+        }
+
+        rebuildCollDir = rebuildCollPath.getCollectionDataPath() + rebuildCollPath.getCurrCollectionDir();
+        rebuildCollBaseDir = rebuildCollPath.getBasePath();
+    } // lock scope
+
+    bool writing_on_primary = DistributeRequestHooker::get()->isRunningPrimary();
+    DistributeRequestHooker::get()->setReplayingLog(true, reqlog);
+    // replay log for rebuilded collection.
+    RecoveryChecker::get()->replayLog(writing_on_primary,
+        collectionName_, rebuildCollectionName_, reqlog.replayed_id_list);
+
+    DistributeRequestHooker::get()->setReplayingLog(false, reqlog);
+    // replace collection data with rebuilded data
+    LOG(INFO) << "## stopCollection: " << collectionName_;
+    CollectionManager::get()->stopCollection(collectionName_);
+    LOG(INFO) << "## stopCollection: " << rebuildCollectionName_;
+    CollectionManager::get()->stopCollection(rebuildCollectionName_);
+
+    LOG(INFO) << "## update collection data for " << collectionName_;
+    try
+    {
+        bfs::remove_all(collDir+"-backup");
+        bfs::rename(collDir, collDir+"-backup");
+        try {
+            bfs::rename(rebuildCollDir, collDir);
+        }
+        catch (const std::exception& e) {
+            LOG(ERROR) << "failed to move data, rollback";
+            bfs::rename(collDir+"-backup", collDir);
+        }
+
+        bfs::remove(collDir+"/scdlogs");
+        bfs::copy_file(collDir+"-backup/scdlogs", collDir+"/scdlogs");
+        bfs::remove_all(rebuildCollBaseDir);
+    }
+    catch (const std::exception& e)
+    {
+        LOG(ERROR) << e.what();
+        return false;
+    }
+
+    LOG(INFO) << "## re-start: " << collectionName_;
+    CollectionManager::get()->startCollection(collectionName_, configFile);
+    LOG(INFO) << "## end rebuild from scd for " << collectionName_;
+
+    DISTRIBUTE_WRITE_FINISH2(true, reqlog);
+    return true;
+}
+
 void ExpirationCheckTask::doTask()
 {
     LOG(INFO) << "## start ExpirationCheckTask for " << collectionName_;

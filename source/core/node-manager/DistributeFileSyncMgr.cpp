@@ -648,7 +648,7 @@ bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std
         if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
         {
             LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
-            return false;
+            return true;
         }
         LOG(INFO) << "try get newest log from: " << ip << ":" << port;
         GetReqLogRequest req;
@@ -689,7 +689,7 @@ bool DistributeFileSyncMgr::syncCollectionData(const std::string& colname)
         if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
         {
             LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
-            return false;
+            return true;
         }
         LOG(INFO) << "try get collection file list from: " << ip << ":" << port;
 
@@ -759,7 +759,7 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
         if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
         {
             LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
-            return false;
+            return true;
         }
         LOG(INFO) << "try get scd file list from: " << ip << ":" << port;
         GetSCDListRequest req;

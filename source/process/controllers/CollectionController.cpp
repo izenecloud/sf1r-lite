@@ -260,6 +260,63 @@ void CollectionController::check_collection()
 }
 
 /**
+ * @brief Action @b rebuild_from_scd. Clean old data and rebuild new data from full scd files.
+ *  please put the full scd files to the specific directory on primary node.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ * - No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "collection": "chwiki"
+ * }
+ * @endcode
+ *
+ */
+void CollectionController::rebuild_from_scd()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    if (collection.empty())
+    {
+        response().addError("Require field collection in request.");
+        return;
+    }
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!collectionHandler || !collectionHandler->indexTaskService_)
+    {
+        response().addError("Collection not found or no index service!");
+        return;
+    }
+
+    if (!MasterManagerBase::get()->isDistributed())
+    {
+        response().addError("This api only available in distributed mode.");
+        return;
+    }
+    // total clean rebuild .
+    boost::shared_ptr<RebuildTask> task(new RebuildTask(collection));
+    if (!task->rebuildFromSCD())
+    {
+        response().addError("Rebuild from scd failed.");
+        return;
+    }
+}
+
+/**
  * @brief Action @b rebuild_collection. To clear these deleted Document;
  *
  * @section request
@@ -283,7 +340,7 @@ void CollectionController::check_collection()
  */
 void CollectionController::rebuild_collection()
 {
-     std::string collection = asString(request()[Keys::collection]);
+    std::string collection = asString(request()[Keys::collection]);
     if (collection.empty())
     {
         response().addError("Require field collection in request.");

@@ -30,6 +30,7 @@ enum ReqLogType
     Req_NoAdditionDataNoRollback,
     // used for handle cron job task.
     Req_CronJob,
+    Req_Callback,
     // this request has only a timestamp with it.
     Req_WithTimestamp,
     // index request need the scd file list which is not included in the request json data,
@@ -39,9 +40,7 @@ enum ReqLogType
     Req_Product,
     Req_UpdateConfig,
     Req_Recommend_Index,
-    Req_Recommend_VisitItem,
-    Req_Recommend_PurchaseItem,
-    Req_Callback,
+    Req_Rebuild_FromSCD,
 };
 
 #pragma pack(1)
@@ -124,6 +123,7 @@ struct CronJobReqLog: public CommonReqData
     CronJobReqLog()
     {
         reqtype = Req_CronJob;
+        cron_time = 0;
     }
     int64_t cron_time;
     virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
@@ -156,6 +156,7 @@ struct TimestampReqLog: public CommonReqData
     TimestampReqLog()
     {
         reqtype = Req_WithTimestamp;
+        timestamp = 0;
     }
     int64_t timestamp;
     virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
@@ -188,6 +189,7 @@ struct CreateOrUpdateDocReqLog: public CommonReqData
     CreateOrUpdateDocReqLog()
     {
         reqtype = Req_CreateOrUpdate_Doc;
+        timestamp = 0;
     }
     int64_t timestamp;
     virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
@@ -220,21 +222,17 @@ struct IndexReqLog: public CommonReqData
     IndexReqLog()
     {
         reqtype = Req_Index;
+        timestamp = 0;
     }
     //CommonReqData common_data;
     // index request addition member for scd file list.
     std::vector<std::string> scd_list;
-    // build recommend need the user and order scd file list.
-    std::vector<std::string> user_scd_list;
-    std::vector<std::string> order_scd_list;
     int64_t timestamp;
 
     virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
     {
         CommonReqData::pack(pk);
         pk.pack(scd_list);
-        pk.pack(user_scd_list);
-        pk.pack(order_scd_list);
         pk.pack(timestamp);
     }
     virtual bool unpack(msgpack::unpacker& unpak)
@@ -247,12 +245,6 @@ struct IndexReqLog: public CommonReqData
             if (!unpak.next(&msg))
                 return false;
             msg.get().convert(&scd_list);
-            if (!unpak.next(&msg))
-                return false;
-            msg.get().convert(&user_scd_list);
-            if (!unpak.next(&msg))
-                return false;
-            msg.get().convert(&order_scd_list);
             if (!unpak.next(&msg))
                 return false;
             msg.get().convert(&timestamp);
@@ -396,6 +388,7 @@ struct RecommendIndexReqLog: public CommonReqData
     RecommendIndexReqLog()
     {
         reqtype = Req_Recommend_Index;
+        timestamp = 0;
     }
     // build recommend need the user and order scd file list.
     std::vector<std::string> user_scd_list;
@@ -429,72 +422,6 @@ struct RecommendIndexReqLog: public CommonReqData
         catch(const std::exception& e)
         {
             std::cerr << "unpack recommend index data error: " << e.what() << std::endl;
-            return false;
-        }
-        return true;
-    }
-};
-
-struct RecommendVisitItemReqLog : public CommonReqData
-{
-    RecommendVisitItemReqLog()
-    {
-        reqtype = Req_Recommend_VisitItem;
-    }
-    uint32_t  itemid;
-
-    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
-    {
-        CommonReqData::pack(pk);
-        pk.pack(itemid);
-    }
-    virtual bool unpack(msgpack::unpacker& unpak)
-    {
-        if (!CommonReqData::unpack(unpak))
-            return false;
-        try
-        {
-            msgpack::unpacked msg;
-            if (!unpak.next(&msg))
-                return false;
-            msg.get().convert(&itemid);
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << "unpack recommend visititem data error: " << e.what() << std::endl;
-            return false;
-        }
-        return true;
-    }
-};
-
-struct RecommendPurchaseItemReqLog : public CommonReqData
-{
-    RecommendPurchaseItemReqLog()
-    {
-        reqtype = Req_Recommend_PurchaseItem;
-    }
-    std::vector<uint32_t>  itemid_vec;
-
-    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
-    {
-        CommonReqData::pack(pk);
-        pk.pack(itemid_vec);
-    }
-    virtual bool unpack(msgpack::unpacker& unpak)
-    {
-        if (!CommonReqData::unpack(unpak))
-            return false;
-        try
-        {
-            msgpack::unpacked msg;
-            if (!unpak.next(&msg))
-                return false;
-            msg.get().convert(&itemid_vec);
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << "unpack recommend purchase item data error: " << e.what() << std::endl;
             return false;
         }
         return true;
@@ -538,6 +465,51 @@ struct RebuildCronTaskReqLog: public CommonReqData
         return true;
     }
 };
+
+struct RebuildFromSCDReqLog: public CommonReqData
+{
+    RebuildFromSCDReqLog()
+    {
+        reqtype = Req_Rebuild_FromSCD;
+        timestamp = 0;
+    }
+    std::vector<std::string> scd_list;
+    int64_t timestamp;
+    std::vector<uint32_t> replayed_id_list;
+
+    virtual void pack(msgpack::packer<msgpack::sbuffer>& pk) const
+    {
+        CommonReqData::pack(pk);
+        pk.pack(scd_list);
+        pk.pack(timestamp);
+        pk.pack(replayed_id_list);
+    }
+    virtual bool unpack(msgpack::unpacker& unpak)
+    {
+        if (!CommonReqData::unpack(unpak))
+            return false;
+        try
+        {
+            msgpack::unpacked msg;
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&scd_list);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&timestamp);
+            if (!unpak.next(&msg))
+                return false;
+            msg.get().convert(&replayed_id_list);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "unpack RebuildFromSCDReqLog data error: " << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+};
+
 
 
 static const uint32_t _crc32tab[] = {
