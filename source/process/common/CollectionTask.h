@@ -6,6 +6,7 @@
 
 #include <util/cronexpression.h>
 #include <common/JobScheduler.h>
+#include <util/ustring/UString.h>
 
 namespace sf1r
 {
@@ -77,6 +78,9 @@ public:
     }
     virtual void doTask();
     bool rebuildFromSCD();
+    void getRebuildScdOnReplica(const std::vector<std::string>& scd_list);
+    bool getRebuildScdOnPrimary(izenelib::util::UString::EncodingType encoding,
+        const std::string& rebuild_scd_src, std::vector<std::string>& scd_list);
 
 private:
     std::string rebuildCollectionName_;

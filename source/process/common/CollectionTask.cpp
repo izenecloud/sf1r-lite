@@ -11,6 +11,7 @@
 #include <node-manager/NodeManagerBase.h>
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/RecoveryChecker.h>
+#include <node-manager/DistributeFileSyncMgr.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -158,6 +159,80 @@ void RebuildTask::doTask()
     DISTRIBUTE_WRITE_FINISH2(true, reqlog);
 }
 
+bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType encoding,
+    const std::string& rebuild_scd_src, std::vector<std::string>& scd_list)
+{
+    if (!bfs::exists(rebuild_scd_src))
+    {
+        LOG(INFO) << "no rebuild scd files : " << rebuild_scd_src;
+        return false;
+    }
+
+    // search the directory for files
+    static const bfs::directory_iterator kItrEnd;
+    ScdParser parser(encoding);
+    for (bfs::directory_iterator itr(rebuild_scd_src); itr != kItrEnd; ++itr)
+    {
+        if (bfs::is_regular_file(itr->status()))
+        {
+            std::string fileName = itr->path().filename().string();
+            if (parser.checkSCDFormat(fileName))
+            {
+                LOG(INFO) << "found a SCD File for rebuild:" << fileName;
+                scd_list.push_back(itr->path().string());
+                if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scd_list.back(),
+                        scd_list.back()))
+                {
+                    LOG(INFO) << "Transfer index scd to the replicas finished for: " << scd_list.back();
+                }
+                else
+                {
+                    LOG(WARNING) << "push index scd file to the replicas failed for:" << scd_list.back();
+                }
+            }
+            else
+            {
+                LOG(WARNING) << "SCD File not valid " << fileName;
+            }
+        }
+    }
+    return !scd_list.empty();
+}
+
+void RebuildTask::getRebuildScdOnReplica(const std::vector<std::string>& scd_list)
+{
+    LOG(INFO) << "get rebuild scd files on replica.";
+    for (size_t i = 0; i < scd_list.size(); ++i)
+    {
+        LOG(INFO) << scd_list[i];
+        bfs::path backup_scd = bfs::path(scd_list[i]);
+        backup_scd = backup_scd.parent_path()/bfs::path("backup")/backup_scd.filename();
+        if (bfs::exists(scd_list[i]))
+        {
+            LOG(INFO) << "rebuild scd found in rebuild dir.";
+        }
+        else if (bfs::exists(backup_scd))
+        {
+            // try to find in backup
+            LOG(INFO) << "scd file in backup dir";
+            bfs::rename(backup_scd, scd_list[i]);
+        }
+        else if (!DistributeFileSyncMgr::get()->getFileFromOther(scd_list[i]))
+        {
+            if (!DistributeFileSyncMgr::get()->getFileFromOther(backup_scd.string()))
+            {
+                LOG(INFO) << "rebuild scd file missing." << scd_list[i];
+                throw std::runtime_error("rebuild scd file missing!");
+            }
+            else
+            {
+                LOG(INFO) << "get scd file from other's backup, move to rebuild index";
+                bfs::rename(backup_scd, scd_list[i]);
+            }
+        }
+    }
+}
+
 bool RebuildTask::rebuildFromSCD()
 {
     LOG(INFO) << "## start rebuild from scd for " << collectionName_;
@@ -186,10 +261,25 @@ bool RebuildTask::rebuildFromSCD()
         CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
         collDir = collPath.getCollectionDataPath() + collPath.getCurrCollectionDir();
         std::string rebuild_scd_src = collPath.getScdPath() + "/rebuild_scd";
-        if (!bfs::exists(rebuild_scd_src))
+
+        bool is_primary = DistributeRequestHooker::get()->isRunningPrimary();
+        if (is_primary)
         {
-            LOG(INFO) << "no rebuild scd files : " << rebuild_scd_src;
+            if (!getRebuildScdOnPrimary(collectionHandler->indexTaskService_->getEncode(),
+                    rebuild_scd_src, reqlog.scd_list))
+                return false;
+        }
+
+        // move rebuild scd files to rebuild collection master_index.
+        if (!DistributeRequestHooker::get()->prepare(Req_Rebuild_FromSCD, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while rebuild collection." << getTaskName() << std::endl;
             return false;
+        }
+
+        if(!is_primary)
+        {
+            getRebuildScdOnReplica(reqlog.scd_list);
         }
 
         CollectionHandler* rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
@@ -224,17 +314,6 @@ bool RebuildTask::rebuildFromSCD()
         rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
         CollectionPath& rebuildCollPath = rebuildCollHandler->indexTaskService_->getCollectionPath();
 
-        // move rebuild scd files to rebuild collection master_index.
-        std::string rebuild_scd_dest = rebuildCollPath.getScdPath() + "/master_index";
-        if (bfs::exists(rebuild_scd_dest))
-            bfs::remove_all(rebuild_scd_dest);
-        bfs::rename(rebuild_scd_src, rebuild_scd_dest);
-        if (!DistributeRequestHooker::get()->prepare(Req_Rebuild_FromSCD, reqlog))
-        {
-            LOG(ERROR) << "!!!! prepare log failed while rebuild collection." << getTaskName() << std::endl;
-            CollectionManager::get()->stopCollection(rebuildCollectionName_);
-            return false;
-        }
 
         LOG(INFO) << "# # # #  start rebuilding from scd.";
         if(!rebuildCollHandler->indexTaskService_->reindex_from_scd(reqlog.scd_list))

@@ -116,85 +116,8 @@ bool IndexTaskService::index(unsigned int numdoc)
     return result;
 }
 
-bool IndexTaskService::reindex_from_scd(std::vector<std::string>& scd_list)
+bool IndexTaskService::reindex_from_scd(const std::vector<std::string>& scd_list)
 {
-    if (bundleConfig_->isMasterAggregator() &&
-        DistributeRequestHooker::get()->isRunningPrimary())
-    {
-        LOG(INFO) << "copy master scd files and indexing local.";
-        // search the directory for files
-        static const bfs::directory_iterator kItrEnd;
-        std::string masterScdPath = bundleConfig_->masterIndexSCDPath();
-        ScdParser parser(bundleConfig_->encoding_);
-        bfs::path bkDir = bfs::path(masterScdPath) / SCD_BACKUP_DIR;
-        bfs::create_directory(bkDir);
-        for (bfs::directory_iterator itr(masterScdPath); itr != kItrEnd; ++itr)
-        {
-            if (bfs::is_regular_file(itr->status()))
-            {
-                std::string fileName = itr->path().filename().string();
-                if (parser.checkSCDFormat(fileName))
-                {
-                    bfs::copy_file(itr->path().string(), bundleConfig_->indexSCDPath() + "/" + fileName);
-                    LOG(INFO) << "SCD File copy to local index path:" << fileName;
-                    LOG(INFO) << "moving SCD files to directory " << bkDir;
-                    try {
-                        bfs::rename(itr->path().string(), bkDir / itr->path().filename());
-                    }
-                    catch(const std::exception& e) {
-                        LOG(WARNING) << "failed to move file: " << std::endl << fileName << std::endl << e.what();
-                    }
-                    scd_list.push_back(bundleConfig_->indexSCDPath() + "/" + fileName);
-                    if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scd_list.back(),
-                            scd_list.back()))
-                    {
-                        LOG(INFO) << "Transfer index scd to the replicas finished for: " << scd_list.back();
-                    }
-                    else
-                    {
-                        LOG(WARNING) << "push index scd file to the replicas failed for:" << scd_list.back();
-                    }
-                }
-                else
-                {
-                    LOG(WARNING) << "SCD File not valid " << fileName;
-                }
-            }
-        }
-    }
-    else
-    {
-        LOG(INFO) << "got index from primary/log, scd list is : ";
-        for (size_t i = 0; i < scd_list.size(); ++i)
-        {
-            LOG(INFO) << scd_list[i];
-            bfs::path backup_scd = bfs::path(scd_list[i]);
-            backup_scd = backup_scd.parent_path()/bfs::path("backup")/backup_scd.filename();
-            if (bfs::exists(scd_list[i]))
-            {
-                LOG(INFO) << "found index scd file in index directory.";
-            }
-            else if (bfs::exists(backup_scd))
-            {
-                // try to find in backup
-                LOG(INFO) << "found index scd file in backup, move to index";
-                bfs::rename(backup_scd, scd_list[i]);
-            }
-            else if (!DistributeFileSyncMgr::get()->getFileFromOther(scd_list[i]))
-            {
-                if (!DistributeFileSyncMgr::get()->getFileFromOther(backup_scd.string()))
-                {
-                    LOG(INFO) << "index scd file missing." << scd_list[i];
-                    throw std::runtime_error("index scd file missing!");
-                }
-                else
-                {
-                    LOG(INFO) << "get index scd file from other's backup, move to index";
-                    bfs::rename(backup_scd, scd_list[i]);
-                }
-            }
-        }
-    }
     return indexWorker_->buildCollection(0, scd_list);
 }
 
@@ -366,6 +289,11 @@ bool IndexTaskService::createScdSharder(
         return true;
     else
         return false;
+}
+
+izenelib::util::UString::EncodingType IndexTaskService::getEncode() const
+{
+    return bundleConfig_->encoding_;
 }
 
 }
