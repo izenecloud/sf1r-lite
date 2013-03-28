@@ -9,6 +9,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/bind.hpp>
+#include <util/scheduler.h>
 
 using namespace boost::posix_time;
 using namespace boost::gregorian;
@@ -18,6 +20,8 @@ namespace logsketch{
 class QueriesFrequencyEstimation
 {
 public:
+    typedef std::list<std::pair<std::string, uint32_t> > EstimationType;
+    typedef EstimationType::const_iterator ConstIterType;
 
     QueriesFrequencyEstimation(uint32_t ms = 100)
     {
@@ -35,12 +39,13 @@ public:
         return true;
     }
 
-    std::list<std::pair<std::string, uint32_t> > GetEstimation()
+    bool GetEstimation(ConstIterType & begin, ConstIterType & end)
     {
-        return Estimation_;
+        begin = Estimation_.begin();
+        end = Estimation_.end();
+        return true;;
     }
 private:
-    uint32_t MaxSize_;
 
     uint32_t GetMinFreq()
     {
@@ -54,7 +59,7 @@ private:
 
     bool Insert_(const std::string& query, uint32_t count)
     {
-        std::list<std::pair<std::string, uint32_t> >::iterator iter, it;
+        EstimationType::iterator iter, it;
         if(Estimation_.size() == 0 || count <= GetMinFreq())
         {
             Estimation_.push_back(make_pair(query, count));
@@ -62,7 +67,6 @@ private:
         }
         for(iter= Estimation_.begin();iter!=Estimation_.end();iter++)
         {
-//            LOG(INFO) << iter->first<<" "<<iter->second<<" " <<query<< "  " << count << endl;
             if(iter->first == query && iter->second < count)
             {
                 iter->second = count;
@@ -99,62 +103,71 @@ private:
         return true;
     }
 
-    std::list<std::pair<std::string, uint32_t> > Estimation_;
+    uint32_t MaxSize_;
+    EstimationType Estimation_;
 };
 
 class QueryEstimationCacheElement
 {
 public:
+    typedef std::list<std::pair<std::string, uint32_t> > EstimationType;
+    typedef EstimationType::const_iterator ConstIterType;
+
     QueryEstimationCacheElement()
     {
     }
     bool insert(const std::string& time,
-            std::list<std::pair<std::string, uint32_t> >&estimation)
+            const EstimationType& estimation)
     {
         if(timeCacheMap_.find(time) != timeCacheMap_.end())
             return false;
-        *timeCacheMap_[time] = estimation;
+        timeCacheMap_[time] = estimation;
         return true;
     }
 
     bool get(const std::string& time,
-            std::list<std::pair<std::string, uint32_t> >& estimation)
+            ConstIterType& begin,
+            ConstIterType& end)
     {
-        LOG(INFO) << "QueryCacheElement: get" <<endl;
         if(timeCacheMap_.find(time) != timeCacheMap_.end())
         {
-            estimation = *(timeCacheMap_[time]);
+            begin = timeCacheMap_[time].begin();
+            end = timeCacheMap_[time].end();
             return true;
         }
         return false;
     }
 private:
-    typedef std::list<std::pair<std::string, uint32_t> > EstimationType;
-
-    boost::unordered_map<std::string, boost::shared_ptr<EstimationType> > timeCacheMap_;
+    boost::unordered_map<std::string, EstimationType> timeCacheMap_;
 };
 
 class QueryEstimationCache
 {
 public:
+    typedef std::list< std::pair<std::string, uint32_t> > EstimationType;
+    typedef EstimationType::const_iterator ConstIterType;
+
     QueryEstimationCache()
     {
     }
 
-    bool insertEstimationOfDay(const std::string& collection, const std::string& time,
-            std::list<std::pair<std::string, uint32_t> >& estimation)
+    bool insertEstimationOfDay(const std::string& collection,
+            const std::string& time,
+            const EstimationType& estimation)
     {
         if(!checkCollection(collection))
             return false;
         return collectionCacheMap_[collection]->insert(time, estimation);
     }
 
-    bool getEstimationOfDay(const std::string& collection, const std::string& time,
-            std::list<std::pair<std::string, uint32_t> >& estimation)
+    bool getEstimationOfDay(const std::string& collection,
+            const std::string& time,
+            ConstIterType& begin,
+            ConstIterType& end)
     {
         if(collectionCacheMap_.find(collection) != collectionCacheMap_.end())
         {
-                return collectionCacheMap_[collection]->get(time, estimation);
+                return collectionCacheMap_[collection]->get(time, begin, end);
         }
         return false;
     }
@@ -175,28 +188,58 @@ private:
     }
 
     uint32_t CacheSize_;
-
     boost::unordered_map<std::string, boost::shared_ptr<QueryEstimationCacheElement> > collectionCacheMap_;
 };
 
-class LogServerSketchManager
+class LogServerSketchManager: public boost::noncopyable
 {
 public:
+    typedef std::list< std::pair<std::string, uint32_t> > EstimationType;
+    typedef EstimationType::const_iterator ConstIterType;
+
     LogServerSketchManager(std::string wd)
     {
+        slidCronJobName_ = "EstimationSlidMaker";
+        sortCronJobName_ = "LogExternalSorter";
         workdir_ = wd;
+        open();
     }
 
     bool open()
     {
+        bool res = izenelib::util::Scheduler::addJob(slidCronJobName_,
+                24*60*60*1000, //each day
+                0,  //start from now
+                boost::bind(&LogServerSketchManager::makeEstimationSlid, this));
+        if(!res)
+            LOG(ERROR) <<"Failed in izenelib::util::Scheduler::addJob(), cron job name: " << slidCronJobName_ << endl;
+        else
+            LOG(INFO) <<"Create cron job: " << slidCronJobName_ <<endl;
+        res = izenelib::util::Scheduler::addJob(sortCronJobName_,
+                1000,  //each second
+                0,   //start from now
+                boost::bind(&LogServerSketchManager::externalSort, this));
+        if(!res)
+            LOG(ERROR) <<"Failed in izenelib::util::Scheduler::addJob(), cron job name: " << sortCronJobName_ << endl;
+        else
+            LOG(INFO) <<"Create cron job: " << sortCronJobName_ <<endl;
         return true;
     }
 
     void close()
     {
-
     }
-bool injectUserQuery(const std::string & query,
+
+    void makeEstimationSlid()
+    {
+    }
+
+    void externalSort()
+    {
+        //LOG(INFO) << "It's time to external sort..." << endl;
+    }
+
+    bool injectUserQuery(const std::string & query,
             const std::string & collection,
             const std::string & hitnum,
             const std::string & page_start,
@@ -204,13 +247,13 @@ bool injectUserQuery(const std::string & query,
             const std::string & duration,
             const std::string & timestamp)
     {
-        //update sketch
         if(!checkSketch(collection))
             return false;
-        uint64_t count = collectionSketchMap_[collection]->inc(query.c_str(), query.length());
+
+        uint32_t count = collectionSketchMap_[collection]->inc(query.c_str(), query.length());
 
         LOG(INFO) << "query: " << query << " count: " << count << endl;
-        //update estimation
+
         if(!checkFreqEstimation(collection))
             return false;
         collectionFEMap_[collection]->Insert(query, count);
@@ -227,49 +270,47 @@ bool injectUserQuery(const std::string & query,
     {
         LOG(INFO) << collection << "   " << begin_time << "   " << end_time << "  " <<limit<<endl;
         vector<string> time_list;
-
-        getTimeList(begin_time, end_time, time_list);
         vector<string>::iterator it;
+
+        ConstIterType iter, end_iter;
+        getTimeList(begin_time, end_time, time_list);
 
         ptime td(day_clock::local_day(), hours(0));
         string today = to_iso_string(td);
+
         QueriesFrequencyEstimation* qfe = new QueriesFrequencyEstimation(boost::lexical_cast<uint32_t>(limit));
         std::map<std::string, uint32_t> Tmap;
 
         for(it=time_list.begin();it!=time_list.end();it++)
         {
-            std::list< std::pair<std::string, uint32_t> > temp;
-            if(queryEstimationCache_.getEstimationOfDay(collection, *it, temp))
+            if(queryEstimationCache_.getEstimationOfDay(collection, *it, iter, end_iter))
             {
-                std::list< std::pair<std::string, uint32_t> >::iterator itr;
                 uint32_t i=0;
-                for(itr=temp.begin();itr!=temp.end();itr++,i++)
+                for(;iter!=end_iter;iter++,i++)
                 {
                     if(i>3*boost::lexical_cast<uint32_t>(limit)) break;
-                    Tmap[itr->first] = Tmap[itr->first] + itr->second;
-                    qfe->Insert(itr->first, Tmap[itr->first]);
+                    Tmap[iter->first] = Tmap[iter->first] + iter->second;
+                    qfe->Insert(iter->first, Tmap[iter->first]);
                 }
             }
             else if(*it == today)
             {
                 if(collectionFEMap_.find(collection) != collectionFEMap_.end())
                 {
-                    std::list< std::pair<std::string, uint32_t> > es = collectionFEMap_[collection]->GetEstimation();
-                    std::list< std::pair<std::string, uint32_t> >::iterator itr;
+                    collectionFEMap_[collection]->GetEstimation(iter, end_iter);
                     uint32_t i=0;
-                    for(itr=es.begin();itr!=es.end();itr++, i++)
+                    for(;iter!=end_iter;iter++, i++)
                     {
                         if(i>3*boost::lexical_cast<uint32_t>(limit)) break;
-                        Tmap[itr->first] = Tmap[itr->first] + itr->second;
-                        qfe->Insert(itr->first, Tmap[itr->first]);
+                        Tmap[iter->first] = Tmap[iter->first] + iter->second;
+                        qfe->Insert(iter->first, Tmap[iter->first]);
                     }
                 }
             }
         }
 
-        std::list< std::pair<std::string, uint32_t> > es = qfe->GetEstimation();
-        std::list< std::pair<std::string, uint32_t> >::iterator iter;
-        for(iter=es.begin();iter!=es.end();iter++)
+        qfe->GetEstimation(iter, end_iter);
+        for(;iter!=end_iter;iter++)
         {
             std::map<std::string, std::string> res;
             res["query"] = iter->first;
@@ -328,10 +369,12 @@ private:
         collectionFEMap_[collection] = new QueriesFrequencyEstimation();
         return true;
     }
+
     std::string workdir_;
+    std::string sortCronJobName_;
+    std::string slidCronJobName_;
 
     QueryEstimationCache queryEstimationCache_;
-
     std::map<std::string, madoka::Sketch*> collectionSketchMap_;
     std::map<std::string, QueriesFrequencyEstimation*> collectionFEMap_;
 };
