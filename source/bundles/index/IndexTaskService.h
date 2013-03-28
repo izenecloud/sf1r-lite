@@ -32,7 +32,7 @@ public:
     bool index(unsigned int numdoc);
 
     bool index(boost::shared_ptr<DocumentManager>& documentManager);
-    bool reindex_from_scd(std::vector<std::string>& scdlist);
+    bool reindex_from_scd(const std::vector<std::string>& scdlist);
 
     bool optimizeIndex();
 
@@ -52,6 +52,7 @@ public:
     uint32_t getKeyCount(const std::string& property_name);
 
     std::string getScdDir() const;
+    izenelib::util::UString::EncodingType getEncode() const;
 
     CollectionPath&  getCollectionPath() const;
 
