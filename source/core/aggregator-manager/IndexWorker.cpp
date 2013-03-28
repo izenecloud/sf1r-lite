@@ -324,12 +324,11 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
 
     indexProgress_.totalFileSize_ = getTotalScdSize_(scdList);
     size_t currTotalSCDSize = indexProgress_.totalFileSize_/(1024*1024);
-    string scdPath = bundleConfig_->indexSCDPath();
     indexProgress_.totalFileNum = scdList.size();
 
     if (indexProgress_.totalFileNum == 0)
     {
-        LOG(WARNING) << "SCD Files do not exist. Path " << scdPath;
+        LOG(WARNING) << "SCD Files do not exist. Path ";
         if (miningTaskService_)
         {
             miningTaskService_->DoContinue();
@@ -391,7 +390,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
             return false;
         }
 
-        LOG(INFO) << "SCD Files in Path processed in given order. Path " << scdPath;
+        LOG(INFO) << "SCD Files in Path processed in given order.";
         vector<string>::const_iterator scd_it;
         for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
             LOG(INFO) << "SCD File " << bfs::path(*scd_it).stem();
@@ -447,13 +446,13 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
             return false;
         }
 
-        bfs::path bkDir = bfs::path(scdPath) / SCD_BACKUP_DIR;
-        bfs::create_directory(bkDir);
-        LOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
         const boost::shared_ptr<Directory>& currentDir = directoryRotator_.currentDirectory();
 
         for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
         {
+            bfs::path bkDir = bfs::path(*scd_it).parent_path() / SCD_BACKUP_DIR;
+            bfs::create_directory(bkDir);
+            LOG(INFO) << " SCD file : " << *scd_it << " backuped to " << bkDir;
             try
             {
                 bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
@@ -636,12 +635,11 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         indexManager_->pauseMerge();
         miningTaskService_->DoMiningCollection();
         indexManager_->resumeMerge();
+        miningTaskService_->flush();
     }
 
     LOG(INFO) << "End BuildCollection: ";
     LOG(INFO) << "time elapsed:" << timer.elapsed() <<"seconds";
-
-    flush();
 
     return true;
 }
@@ -806,7 +804,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
         doMining_();
     }
 
-    flush();
+    //flush();
     reqlog.timestamp = timestamp;
 
     DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
@@ -1145,7 +1143,7 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         LogServerConnection::instance().flushRequests();
     }
 
-    flush();
+    //flush();
 
     DISTRIBUTE_WRITE_FINISH(ret);
 
