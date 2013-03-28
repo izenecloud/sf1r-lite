@@ -542,7 +542,7 @@ void NodeManagerBase::unregisterPrimary()
     zookeeper_->setZNodeData(nodePath_, znode.serialize());
 }
 
-void NodeManagerBase::registerPrimary(ZNode& znode)
+bool NodeManagerBase::registerPrimary(ZNode& znode)
 {
     if (!zookeeper_->isZNodeExists(primaryNodeParentPath_, ZooKeeper::WATCH))
     {
@@ -566,7 +566,9 @@ void NodeManagerBase::registerPrimary(ZNode& znode)
     else
     {
         LOG(ERROR) << "register primary failed. " << sf1rTopology_.curNode_.toString();
+        return false;
     }
+    return true;
 }
 
 void NodeManagerBase::enterCluster(bool start_master)
@@ -668,7 +670,10 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     {
         ZNode znode;
         setSf1rNodeData(znode);
-        registerPrimary(znode);
+        if(!registerPrimary(znode))
+        {
+            RecoveryChecker::forceExit("register primary failed.");
+        }
 
         updateCurrentPrimary();
         if (curr_primary_path_ == self_primary_path_)

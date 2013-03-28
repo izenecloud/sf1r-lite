@@ -76,6 +76,7 @@ public:
         return rebuildCollectionName_;
     }
     virtual void doTask();
+    bool rebuildFromSCD();
 
 private:
     std::string rebuildCollectionName_;

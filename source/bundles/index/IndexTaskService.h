@@ -32,6 +32,7 @@ public:
     bool index(unsigned int numdoc);
 
     bool index(boost::shared_ptr<DocumentManager>& documentManager);
+    bool reindex_from_scd(std::vector<std::string>& scdlist);
 
     bool optimizeIndex();
 

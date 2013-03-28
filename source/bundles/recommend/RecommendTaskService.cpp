@@ -360,9 +360,8 @@ bool RecommendTaskService::visitItemFunc(
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
-    RecommendVisitItemReqLog reqlog;
-    reqlog.itemid = itemId;
-    if(!DistributeRequestHooker::get()->prepare(Req_Recommend_VisitItem, reqlog))
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
