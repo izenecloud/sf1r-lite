@@ -93,9 +93,9 @@ void UserQuery::save_to_logserver()
     InjectUserQueryRequest req;
     req.param_.query_ = query_;
     req.param_.collection_ = collection_;
-    req.param_.hitnum_ = hitDocsNum_;
-    req.param_.page_start_ = pageStart_;
-    req.param_.page_count_ = pageCount_;
+    req.param_.hitnum_ = boost::lexical_cast<string>(hitDocsNum_);
+    req.param_.page_start_ = boost::lexical_cast<string>(pageStart_);
+    req.param_.page_count_ = boost::lexical_cast<string>(pageCount_);
     req.param_.duration_ = to_iso_string(duration_);
     req.param_.timestamp_ = to_iso_string(timeStamp_);
 

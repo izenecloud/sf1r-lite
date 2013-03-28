@@ -278,7 +278,9 @@ void RpcLogServer::GetFreqUserQueries(GetFreqUserQueriesData& reqdata, std::list
     LogServerStorage::get()->sketchManager()->getFreqUserQueries(reqdata.collection_,
             reqdata.begin_time_,
             reqdata.end_time_,
+            reqdata.limit_,
             results);
+    LOG(INFO) << "success" << endl;
 }
 
 void RpcLogServer::InjectUserQuery(InjectUserQueryData& reqdata, bool & result)
