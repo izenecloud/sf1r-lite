@@ -133,6 +133,8 @@ void IndexWorker::flush()
     documentManager_->flush();
     idManager_->flush();
     indexManager_->flush();
+    if (indexManager_->isRealTime())
+        indexManager_->deletebinlog();
     miningTaskService_->flush();
 }
 
