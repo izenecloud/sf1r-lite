@@ -536,14 +536,6 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
             CommonReqData req_commondata;
             ReqLogMgr::unpackReqLogData(req_packed_data, req_commondata);
 
-            if (req_commondata.reqtype == Req_UpdateConfig)
-            {
-                LOG(INFO) << "from log: the config has changed, we need restart to update the new config.";
-                if(!updateConfigFromLog(req_packed_data))
-                    forceExit("exit for updating the config file error.");
-                continue;
-            }
-
             if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, req_packed_data))
             {
                 LOG(INFO) << "redoing from log failed: " << rethead.inc_id;
@@ -887,65 +879,80 @@ void RecoveryChecker::onRecoverCallback(bool startup)
     LOG(INFO) << "recovery finished, wait primary agree before enter cluster.";
 }
 
-bool RecoveryChecker::updateConfigFromLog(const std::string& packed_data)
+bool RecoveryChecker::updateConfigFromAPI(const std::string& coll, bool is_primary,
+    std::map<std::string, std::string>& config_file_list)
 {
-    UpdateConfigReqLog config_log;
-    if (!ReqLogMgr::unpackReqLogData(packed_data, config_log))
+    std::string config_file;
     {
-        LOG(ERROR) << "failed to unpack the config update log data.";
-        return false;
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        CollInfoMapT::const_iterator cit = all_col_info_.find(coll);
+        if (cit == all_col_info_.end())
+            return false;
+        config_file = cit->second.second;
     }
-    if (!reqlog_mgr_->prepareReqLog(config_log, false))
-    {
-        LOG(ERROR) << "prepare update config log error ";
-        return false;
-    }
-    config_log.inc_id = 0;
-    std::string new_conf_data;
-    ReqLogMgr::packReqLogData(config_log, new_conf_data);
 
-    LOG(INFO) << "write updated config data to last conf file on the node.";
+    bool ret;
+    ret = stop_col_(coll, false);
+    if(!ret)
+    {
+        return false;
+    }
+
+    if (!is_primary)
+    {
+        LOG(INFO) << "write updated config data to last conf file on the secondary.";
+    }
+    else
+    {
+        LOG(INFO) << "begin update config file on primary and restart the collection." << coll;
+        if(!handleConfigUpdateForColl(coll, config_file_list))
+            return false;
+    }
+
+    UpdateConfigReqLog new_config_log;
+    new_config_log.inc_id = 0;
+    new_config_log.config_file_list = config_file_list;
+    std::string new_conf_data;
+    ReqLogMgr::packReqLogData(new_config_log, new_conf_data);
+
     std::ofstream ofs;
     ofs.open(last_conf_file_.c_str(), ios::binary);
     ofs << new_conf_data << std::flush;
     ofs.close();
 
-    CollInfoMapT tmp_all_col_info;
+    handleConfigUpdate();
+
+    if(!start_col_(coll, config_file, false))
     {
-        boost::unique_lock<boost::mutex> lock(mutex_);
-        // stop collection will change the metamap so we need a copy. 
-        tmp_all_col_info = all_col_info_;
+        return false;
     }
-    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
-    while(cit != tmp_all_col_info.end())
+    return true;
+}
+
+bool RecoveryChecker::handleConfigUpdateForColl(const std::string& coll,
+    std::map<std::string, std::string>& config_file_list)
+{
+    bfs::path current(configDir_);
+    current /= coll + ".xml";
+    if(!bfs::is_regular_file(current))
     {
-        stop_col_(cit->first, false);
-        ++cit;
+        LOG(INFO) << "updating config file not found : " << current;
+        return false;
     }
 
-    std::map<std::string, std::string> new_running_col = handleConfigUpdate();
-    if (new_running_col.size() != tmp_all_col_info.size())
-    {
-        LOG(INFO) << " the collection num changed, be careful for the new starting or stopping collections.";
-    }
-    std::map<std::string, std::string>::const_iterator new_cit = new_running_col.begin();
-    while(new_cit != new_running_col.end())
-    {
-        if(!start_col_(new_cit->first, new_cit->second, false))
-        {
-            return false;
-        }
-        ++new_cit;
-    }
+    std::string filename = current.filename().string();
+    std::string& current_conf_file = config_file_list[filename];
 
-    if (!reqlog_mgr_->appendReqData(packed_data))
-    {
-        LOG(ERROR) << "write local log failed while updating config from log.";
-    }
-    reqlog_mgr_->delPreparedReqLog();
+    LOG(INFO) << "updating config for coll: " << coll;
 
-    backup();
-
+    std::ifstream cur_file_ifs;
+    cur_file_ifs.open(current.string().c_str(), ios::binary);
+    cur_file_ifs.seekg(0, ios::end);
+    size_t cur_len = cur_file_ifs.tellg();
+    cur_file_ifs.seekg(0, ios::beg);
+    current_conf_file.resize(cur_len);
+    cur_file_ifs.read((char*)&current_conf_file[0], cur_len);
+    cur_file_ifs.close();
     return true;
 }
 
@@ -958,26 +965,17 @@ std::map<std::string, std::string> RecoveryChecker::handleConfigUpdate()
     // need restart twice to update the new config from primary.
     // the first start on secondary will update the new config from primary.
     // the second start will use the new config while starting.
-    bool need_update_config = bfs::exists("./distribute_update_conf.flag");
-    if (need_update_config)
+    bool need_update_config = false;
+    if (!bfs::exists(last_conf_file_))
     {
-        LOG(INFO) << "found a update config flag, begin update config .";
-        bfs::remove("./distribute_update_conf.flag");
+        LOG(INFO) << " No last config, starting as first time.";
+        need_backup_ = true;
+        need_update_config = true;
     }
     else
     {
-        if (!bfs::exists(last_conf_file_))
-        {
-            LOG(INFO) << " No last config, starting as first time.";
-            need_update_config = true; 
-        }
-        else
-        {
-            LOG(INFO) << " Starting using the last unchanged config.";
-        }
+        LOG(INFO) << " Starting using the last unchanged config.";
     }
-
-    need_backup_ = need_update_config;
 
     std::map<std::string, std::string> running_col_info;
 
@@ -1061,23 +1059,6 @@ std::map<std::string, std::string> RecoveryChecker::handleConfigUpdate()
         ofs.open(last_conf_file_.c_str(), ios::binary);
         ofs << new_conf_data << std::flush;
         ofs.close();
-
-        LOG(INFO) << "write config change to log.";
-
-        if (!reqlog_mgr_->prepareReqLog(cur_conf_log, true))
-        {
-            LOG(ERROR) << "prepare update config log error ";
-            forceExit("update config error");
-        }
-
-        ReqLogMgr::packReqLogData(cur_conf_log, new_conf_data);
-
-        if (!reqlog_mgr_->appendReqData(new_conf_data))
-        {
-            LOG(ERROR) << "write local log failed. something wrong on this node, must exit.";
-            forceExit("write update config log error");
-        }
-        reqlog_mgr_->delPreparedReqLog();
     }
     return running_col_info;
 }
@@ -1203,14 +1184,6 @@ void RecoveryChecker::syncToNewestReqLog()
                 forceExit("syncToNewestReqLog failed.");
             }
             reqid = req_commondata.inc_id;
-
-            if (req_commondata.reqtype == Req_UpdateConfig)
-            {
-                LOG(INFO) << "from log: the config has changed, we need restart to update the new config.";
-                if(!updateConfigFromLog(newlogdata_list[i]))
-                    forceExit("exit for updating the config file failed.");
-                continue;
-            }
 
             if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, newlogdata_list[i]))
             {

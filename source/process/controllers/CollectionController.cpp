@@ -12,6 +12,7 @@
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/RequestLog.h>
 #include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/RecoveryChecker.h>
 #include <util/driver/writers/JsonWriter.h>
 
 #include <process/common/CollectionManager.h>
@@ -257,6 +258,56 @@ void CollectionController::check_collection()
     {
         response().addError(errinfo);
     }
+}
+
+void CollectionController::update_collection_conf()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    if (collection.empty())
+    {
+        response().addError("Require field collection in request.");
+        return;
+    }
+
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!collectionHandler )
+    {
+        response().addError("Collection not found!");
+        return;
+    }
+
+    if (!MasterManagerBase::get()->isDistributed())
+    {
+        response().addError("This api only available in distributed mode.");
+        return;
+    }
+    bool ret = true;
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+    UpdateConfigReqLog reqlog;
+    do {
+        if (!DistributeRequestHooker::get()->prepare(Req_UpdateConfig, reqlog))
+        {
+            ret = false;
+            break;
+        }
+        ret = RecoveryChecker::get()->updateConfigFromAPI(collection,
+            DistributeRequestHooker::get()->isRunningPrimary(), reqlog.config_file_list);
+    }while(false);
+
+    if (!ret)
+    {
+        response().addError("Update Config failed.");
+        return;
+    }
+    DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
 }
 
 /**

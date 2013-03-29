@@ -67,6 +67,9 @@ public:
     void onRecoverWaitPrimaryCallback();
     void onRecoverWaitReplicasCallback();
 
+    bool updateConfigFromAPI(const std::string& coll, bool is_primary,
+        std::map<std::string, std::string>& config_file_list);
+
     void replayLog(bool is_primary, const std::string& from_col,
         const std::string& to_col, std::vector<uint32_t>& replayed_id_list);
 private:
@@ -77,7 +80,10 @@ private:
     void syncSCDFiles();
     bool redoLog(ReqLogMgr* redolog, uint32_t start_id);
     std::map<std::string, std::string> handleConfigUpdate();
-    bool updateConfigFromLog(const std::string& packed_data);
+
+    bool handleConfigUpdateForColl(const std::string& coll,
+        std::map<std::string, std::string>& config_file_list);
+
     StartColCBFuncT start_col_;
     StopColCBFuncT stop_col_;
     ReopenColCBFuncT reopen_col_;
