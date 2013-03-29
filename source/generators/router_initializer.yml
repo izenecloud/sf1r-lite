@@ -79,6 +79,8 @@ controllers:
       - delete_record_from_system_events
       - delete_record_from_user_queries
       - delete_database
+      - inject_user_queries_to_logserver
+      - get_freq_user_queries_from_logserver
 
   FacetedController:
     actions:
