@@ -40,9 +40,10 @@ struct ServerHandler
         UString text(cmd, UString::UTF_8);
         typedef std::list<std::pair<UString, double> > Hits;
         Hits hits;
+        Hits left_hits;
         typedef std::list<UString> Left;
         Left left;
-        matcher_->GetSearchKeywords(text, hits, left);
+        matcher_->GetSearchKeywords(text, hits, left_hits, left);
         int status = 0;
         std::string sresult;
 

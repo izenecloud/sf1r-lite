@@ -728,15 +728,23 @@ int do_main(int ac, char** av)
 
             typedef std::list<std::pair<UString, double> > Hits;
             Hits hits;
+            Hits left_hits;
             typedef std::list<UString> Left;
             Left left;
-            matcher.GetSearchKeywords(query, hits, left);
+            matcher.GetSearchKeywords(query, hits, left_hits, left);
             for(Hits::const_iterator it = hits.begin();it!=hits.end();++it)
             {
                 const std::pair<UString, double>& v = *it;
                 std::string str;
                 v.first.convertString(str, UString::UTF_8);
                 std::cout<<"[HITS]"<<str<<","<<v.second<<std::endl;
+            }
+            for(Hits::const_iterator it = left_hits.begin();it!=left_hits.end();++it)
+            {
+                const std::pair<UString, double>& v = *it;
+                std::string str;
+                v.first.convertString(str, UString::UTF_8);
+                std::cout<<"[LEFT-HITS]"<<str<<","<<v.second<<std::endl;
             }
             for(Left::const_iterator it = left.begin();it!=left.end();++it)
             {
