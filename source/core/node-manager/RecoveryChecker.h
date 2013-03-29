@@ -34,7 +34,7 @@ public:
     bool backup();
     bool setRollbackFlag(uint32_t inc_id);
     void clearRollbackFlag();
-    bool rollbackLastFail(bool need_restore_backupfile = true);
+    bool rollbackLastFail(bool starting_up = false);
     bool checkAndRestoreBackupFile(const CollectionPath& colpath);
     bool checkDataConsistent();
     bool hasAnyBackup();
@@ -78,6 +78,7 @@ public:
 private:
     typedef std::map<std::string, std::pair<CollectionPath, std::string> > CollInfoMapT;
     static void setForceExitFlag();
+    bool isNeedRollback(bool starting_up);
     bool backupColl(const CollectionPath& colpath, const bfs::path& dest_path);
     void syncToNewestReqLog();
     void syncSCDFiles();
