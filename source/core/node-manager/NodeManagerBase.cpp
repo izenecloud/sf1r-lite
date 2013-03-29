@@ -87,7 +87,7 @@ void NodeManagerBase::detectMasters()
     replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
     std::vector<std::string> children;
     std::string serverParentPath = ZooKeeperNamespace::getServerParentPath();
-    zookeeper_->getZNodeChildren(serverParentPath, children);
+    zookeeper_->getZNodeChildren(serverParentPath, children, ZooKeeper::WATCH);
     for (size_t i = 0; i < children.size(); ++i)
     {
         std::string data;
