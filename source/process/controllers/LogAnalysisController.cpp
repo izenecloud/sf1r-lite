@@ -119,6 +119,10 @@ bool LogAnalysisController::parseConditions(std::string & collection,
             if( it->property() == "Collection")
             {
                 collection = to_str((*it)(0));
+                if(collection.substr(0,1) =="'" || collection.substr(0,1) == "\"")
+                {
+                    collection = collection.substr(1,collection.size()-2);
+                }
                 ret_c = true;
             }
             else if(it->property() == "TIMESTAMP")
@@ -126,11 +130,19 @@ bool LogAnalysisController::parseConditions(std::string & collection,
                 if(it->op() == "<" || it->op() == "<=" )
                 {
                     end_time = to_str((*it)(0));
-                    ret_e = true;
+                    if(end_time.substr(0,1) =="'" || end_time.substr(0,1) == "\"")
+                    {
+                        end_time = end_time.substr(1,end_time.size()-2);
+                    }
+                   ret_e = true;
                 }
                 else if( it->op() == ">" || it->op() == ">=")
                 {
                     begin_time = to_str((*it)(0));
+                    if(begin_time.substr(0,1) =="'" || begin_time.substr(0,1) == "\"")
+                    {
+                        begin_time = begin_time.substr(1,begin_time.size()-2);
+                    }
                     ret_b = true;
                 }
                 else
@@ -303,8 +315,9 @@ void LogAnalysisController::get_freq_user_queries_from_logserver()
 
         if(!user_queries_cache.getValueNoInsert(sql.str(), user_queries)
                 || ((std::time(NULL) - user_queries.first) > refreshInterval) ){
-            if ( !UserQuery::find_freq_from_logserver(collection_name, begin_time, end_time, sqlResults) )
+            if ( !UserQuery::find_freq_from_logserver(collection_name, begin_time, end_time, limit, sqlResults) )
             {
+                LOG(INFO) << "Fail" << endl;
                 response().addError("[LogManager] Fail to process such a request");
                 return;
             }
