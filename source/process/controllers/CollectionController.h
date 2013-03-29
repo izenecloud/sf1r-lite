@@ -36,6 +36,8 @@ public:
 
     void check_collection();
     
+    void update_collection_conf();
+
     void rebuild_collection();
 
     void rebuild_from_scd();

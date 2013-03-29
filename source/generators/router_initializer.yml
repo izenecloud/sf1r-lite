@@ -147,6 +147,7 @@ controllers:
       - start_collection
       - stop_collection
       - check_collection
+      - update_collection_conf
       - rebuild_collection
       - rebuild_from_scd
       - create_collection
