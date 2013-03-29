@@ -115,6 +115,22 @@ bool CollectionManager::startCollection(const string& collectionName,
 
     if (fixBasePath)
     {
+        // some config in SF1Config need update using old collectionName.
+        std::string config_col = bfs::path(configFileName).filename().string().substr(0, configFileName.length() - 4);
+        SF1Config::CollectionMetaMap::const_iterator config_meta_it = collectionMetaMap.find(config_col);
+        if (config_meta_it != collectionMetaMap.end())
+        {
+            LOG(INFO) << "replacing some meta config with original coll : " << config_col;
+            indexBundleConfig->isMasterAggregator_ = config_meta_it->second.indexBundleConfig_->isMasterAggregator_;
+            indexBundleConfig->isWorkerNode_ = config_meta_it->second.indexBundleConfig_->isWorkerNode_;
+            recommendBundleConfig->recommendNodeConfig_.isMasterNode_ = config_meta_it->second.recommendBundleConfig_->recommendNodeConfig_.isMasterNode_;
+            recommendBundleConfig->recommendNodeConfig_.isWorkerNode_ = config_meta_it->second.recommendBundleConfig_->recommendNodeConfig_.isWorkerNode_;
+            recommendBundleConfig->recommendNodeConfig_.isSingleNode_ = config_meta_it->second.recommendBundleConfig_->recommendNodeConfig_.isSingleNode_;
+            recommendBundleConfig->searchNodeConfig_.isMasterNode_ = config_meta_it->second.recommendBundleConfig_->searchNodeConfig_.isMasterNode_;
+            recommendBundleConfig->searchNodeConfig_.isWorkerNode_ = config_meta_it->second.recommendBundleConfig_->searchNodeConfig_.isWorkerNode_;
+            recommendBundleConfig->searchNodeConfig_.isSingleNode_ = config_meta_it->second.recommendBundleConfig_->searchNodeConfig_.isSingleNode_;
+            miningBundleConfig->isMasterAggregator_ = indexBundleConfig->isMasterAggregator_;
+        }
         bfs::path basePath(indexBundleConfig->collPath_.getBasePath());
         if (basePath.filename().string() == ".")
             basePath = basePath.parent_path().parent_path();
