@@ -85,19 +85,19 @@ void NodeManagerBase::detectMasters()
     MasterNotifier::get()->clear();
 
     replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
-    std::vector<std::string> childrenList;
-    zookeeper_->getZNodeChildren(ZooKeeperNamespace::getReplicaPath(replicaId), childrenList, ZooKeeper::WATCH); // set watcher
-    for (nodeid_t nodeId = 1; nodeId <= sf1rTopology_.nodeNum_; nodeId++)
+    std::vector<std::string> children;
+    std::string serverParentPath = ZooKeeperNamespace::getServerParentPath();
+    zookeeper_->getZNodeChildren(serverParentPath, children);
+    for (size_t i = 0; i < children.size(); ++i)
     {
         std::string data;
-        std::string nodePath = ZooKeeperNamespace::getNodePath(replicaId, nodeId);
-        if (zookeeper_->getZNodeData(nodePath, data, ZooKeeper::WATCH))
+        if (zookeeper_->getZNodeData(children[i], data, ZooKeeper::WATCH))
         {
             ZNode znode;
             znode.loadKvString(data);
-
             // if this sf1r node provides master server
-            if (znode.hasKey(ZNode::KEY_MASTER_PORT))
+            if (znode.hasKey(ZNode::KEY_MASTER_PORT) &&
+                znode.getUInt32Value(ZNode::KEY_REPLICA_ID) == replicaId)
             {
                 std::string masterHost = znode.getStrValue(ZNode::KEY_HOST);
                 uint32_t masterPort;
@@ -107,11 +107,10 @@ void NodeManagerBase::detectMasters()
                 }
                 catch (std::exception& e)
                 {
-                    LOG (ERROR) << "failed to convert masterPort \"" << znode.getStrValue(ZNode::KEY_BA_PORT)
-                        << "\" got from master on node" << nodeId << "@" << masterHost;
+                    LOG (ERROR) << "failed to convert masterPort \"" << znode.getStrValue(ZNode::KEY_MASTER_PORT)
+                        << "\" got from master on node" << children[i] << "@" << masterHost;
                     continue;
                 }
-
                 LOG (INFO) << "detected Master " << masterHost << ":" << masterPort;
                 MasterNotifier::get()->addMasterAddress(masterHost, masterPort);
             }
@@ -440,11 +439,11 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
         znode.setValue(ZNode::KEY_WORKER_PORT, sf1rTopology_.curNode_.worker_.port_);
     }
 
-    //if (sf1rTopology_.curNode_.master_.hasAnyService() && masterStarted_)
-    //{
-    //    znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
-    //    znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
-    //}
+    if (sf1rTopology_.curNode_.master_.hasAnyService())
+    {
+        znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
+        znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
+    }
 }
 
 bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary)
