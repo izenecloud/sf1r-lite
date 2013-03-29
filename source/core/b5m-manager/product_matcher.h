@@ -440,6 +440,8 @@ namespace sf1r {
             uint8_t ngram;
             std::vector<Position> positions;
 
+            void PositionMerge(const Position& pos);
+
             static bool WeightCompare(const KeywordTag& k1, const KeywordTag& k2)
             {
                 return k1.kweight>k2.kweight;
@@ -711,6 +713,7 @@ namespace sf1r {
         bool GetFrontendCategory(UString& backend, UString& frontend) const;
         void GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy = false, cid_t cid=0);
         void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<UString>& left);
+        void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<std::pair<UString, double> >& left_hits, std::list<UString>& left);
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
