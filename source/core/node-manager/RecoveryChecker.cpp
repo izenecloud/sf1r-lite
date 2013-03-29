@@ -932,6 +932,30 @@ bool RecoveryChecker::updateConfigFromAPI(const std::string& coll, bool is_prima
 bool RecoveryChecker::handleConfigUpdateForColl(const std::string& coll,
     std::map<std::string, std::string>& config_file_list)
 {
+    // read all old config file.
+    std::ifstream last_conf;
+    last_conf.open(last_conf_file_.c_str(), ios::binary);
+    if (!last_conf.good())
+    {
+        LOG(ERROR) << "last config not found.";
+        return false;
+    }
+    last_conf.seekg(0, ios::end);
+    size_t len = last_conf.tellg();
+    last_conf.seekg(0, ios::beg);
+    std::string old_conf_data;
+    old_conf_data.resize(len);
+    last_conf.read((char*)&old_conf_data[0], len);
+    UpdateConfigReqLog last_conf_log;
+    if(!ReqLogMgr::unpackReqLogData(old_conf_data, last_conf_log))
+    {
+        LOG(ERROR) << "unpack last config data error";
+        return false;
+    }
+    last_conf.close();
+    config_file_list = last_conf_log.config_file_list;
+
+    // update config for the specific collection.
     bfs::path current(configDir_);
     current /= coll + ".xml";
     if(!bfs::is_regular_file(current))

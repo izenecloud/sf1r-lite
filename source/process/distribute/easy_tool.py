@@ -18,6 +18,8 @@ import shlex
 
 replica_set_list = []
 replica_set_list += [{ 'loginuser':'ops', 'primary': ['10.10.99.121'], 'replica': ['10.10.99.122', '10.10.99.123']}]
+replica_set_list += [{ 'loginuser':'ops', 'primary': ['10.10.99.127'], 'replica': ['10.10.99.128', '10.10.99.129']}]
+replica_set_list += [{ 'loginuser':'ops', 'primary': ['10.10.99.131'], 'replica': ['10.10.99.132', '10.10.99.133']}]
 replica_set_list += [{ 'loginuser':'lscm', 'primary': ['172.16.5.195'], 'replica': ['172.16.5.192', '172.16.5.194']}]
 
 all_primary_host = []
@@ -334,7 +336,7 @@ def check_col(check_interval = 10):
                 printtofile (error)
         if len(failed_host) > 0 or len(down_host) > 0:
             retry += 1
-            printtofile ('check again for not consistent')
+            printtofile ('check again')
             continue
         else:
             break
@@ -347,6 +349,7 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', test_writereq])
         if len(error) > 0:
             printtofile ('run write request error: ' + error + ', host: ' + host)
+            return
     # check collection after this request.
     (failed_host,down_host) = check_col()
     if len(failed_host) > 0:

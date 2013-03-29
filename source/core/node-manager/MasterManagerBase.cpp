@@ -1110,6 +1110,7 @@ void MasterManagerBase::setServicesData(ZNode& znode)
     }
     znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
     znode.setValue(ZNode::KEY_SERVICE_NAMES, services);
+    znode.setValue(ZNode::KEY_SERVICE_STATE, "ReadyForRead");
     if (sf1rTopology_.curNode_.master_.hasAnyService())
     {
         znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
@@ -1152,7 +1153,7 @@ void MasterManagerBase::updateServiceReadState(const std::string& my_state, bool
                 ZNode znode;
                 znode.loadKvString(sdata);
                 std::string value = znode.getStrValue(ZNode::KEY_SERVICE_STATE);
-                if (value != "ReadyForRead" && value != "BusyForShard")
+                if (!value.empty() && value != "ReadyForRead" && value != "BusyForShard")
                 {
                     LOG(INFO) << "one shard of master service is not ready for read:" << nodepath;
                     all_ready = false;
