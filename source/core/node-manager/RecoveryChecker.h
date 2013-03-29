@@ -72,6 +72,9 @@ public:
 
     void replayLog(bool is_primary, const std::string& from_col,
         const std::string& to_col, std::vector<uint32_t>& replayed_id_list);
+
+    void checkDataConsistent(const std::string& coll, std::string& errinfo);
+
 private:
     typedef std::map<std::string, std::pair<CollectionPath, std::string> > CollInfoMapT;
     static void setForceExitFlag();

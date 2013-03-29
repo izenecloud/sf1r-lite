@@ -152,7 +152,7 @@ bool IndexTaskService::destroyDocument(const Value& documentValue)
 
 void IndexTaskService::flush()
 {
-    indexWorker_->flush();
+    indexWorker_->flush(true);
 }
 
 bool IndexTaskService::reload()
