@@ -61,7 +61,7 @@ class DistributeTestSuit
 public:
     static void loadTestConf()
     {
-        current_test_fail_type_ = NoAnyTest;
+        current_test_fail_type_ = NoFail;
         std::ifstream conf("./distribute_test.conf");
         if (conf.good())
         {
