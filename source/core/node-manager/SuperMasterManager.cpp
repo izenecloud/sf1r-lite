@@ -14,8 +14,8 @@ void SuperMasterManager::start()
         return;
     }
 
-        detectSearchMasters();
-        detectRecommendMasters();
+    detectSearchMasters();
+    detectRecommendMasters();
 }
 
 void SuperMasterManager::stop()
@@ -30,6 +30,7 @@ void SuperMasterManager::detectSearchMasters()
 
     // Here checked each node by nodePath "/SF1R-XXXX/SearchTopology/ReplicaX/NodeX",
     // actually, all children of "/SF1R-XXXX/SearchTopology/SearchServers" are all Masters.
+    zookeeper_->isZNodeExists(ZooKeeperNamespace::getServerParentPath(), ZooKeeper::WATCH);
     replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
     for (nodeid_t nodeId = 1; nodeId <= sf1rTopology_.nodeNum_; nodeId++)
     {
