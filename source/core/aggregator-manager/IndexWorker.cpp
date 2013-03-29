@@ -128,13 +128,18 @@ void IndexWorker::HookDistributeRequestForIndex(int hooktype, const std::string&
     result = true;
 }
 
-void IndexWorker::flush()
+void IndexWorker::flush(bool mergeBarrel)
 {
     documentManager_->flush();
     idManager_->flush();
     indexManager_->flush();
     if (indexManager_->isRealTime())
         indexManager_->deletebinlog();
+    if (mergeBarrel)
+    {
+        indexManager_->optimizeIndex();
+        indexManager_->waitForMergeFinish();
+    }
     miningTaskService_->flush();
 }
 
@@ -249,8 +254,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 
     bool ret = buildCollection(numdoc, scdList);
 
-    flush();
-
     DISTRIBUTE_WRITE_FINISH(ret);
 
     return ret;
@@ -304,7 +307,6 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
 
     bool ret = buildCollection(numdoc, reqlog.scd_list);
 
-    flush();
     DISTRIBUTE_WRITE_FINISH(ret);
 
     return ret;
@@ -670,7 +672,7 @@ bool IndexWorker::optimizeIndex()
 
     indexManager_->optimizeIndex();
 
-    flush();
+    //flush();
 
     DISTRIBUTE_WRITE_FINISH(true);
     return true;

@@ -119,7 +119,7 @@ public:
 
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
-    void flush();
+    void flush(bool mergeBarrel = false);
     bool reload();
 
 private:

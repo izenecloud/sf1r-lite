@@ -12,7 +12,6 @@
 #include <license-manager/LicenseCustManager.h>
 #include <license-manager/LicenseTool.h>
 #include <node-manager/RecoveryChecker.h>
-#include <node-manager/DistributeFileSyncMgr.h>
 
 #include <boost/filesystem.hpp>
 #include <memory> // for std::auto_ptr
@@ -353,7 +352,7 @@ void CollectionManager::flushCollection(const std::string& collectionName)
 std::string CollectionManager::checkCollectionConsistency(const std::string& collectionName)
 {
     std::string errinfo;
-    DistributeFileSyncMgr::get()->checkReplicasStatus(collectionName, errinfo);
+    RecoveryChecker::get()->checkDataConsistent(collectionName, errinfo);
     return errinfo;
 }
 

@@ -1087,6 +1087,13 @@ std::map<std::string, std::string> RecoveryChecker::handleConfigUpdate()
     return running_col_info;
 }
 
+void RecoveryChecker::checkDataConsistent(const std::string& coll, std::string& errinfo)
+{
+    if (flush_col_)
+        flush_col_(coll);
+    DistributeFileSyncMgr::get()->checkReplicasStatus(coll, errinfo);
+}
+
 bool RecoveryChecker::checkDataConsistent()
 {
     // check data consistent with primary.
@@ -1100,6 +1107,8 @@ bool RecoveryChecker::checkDataConsistent()
     CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
     while(cit != tmp_all_col_info.end())
     {
+        if (flush_col_)
+            flush_col_(cit->first);
         DistributeFileSyncMgr::get()->checkReplicasStatus(cit->first, errinfo);
         if (!errinfo.empty())
         {
