@@ -247,20 +247,16 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
                 backup_path /= bfs::path("index/backup/");
                 if (bfs::exists(backup_path))
                 {
-                    static bfs::directory_iterator end_dir = bfs::directory_iterator();
-                    bfs::directory_iterator backup_dirs_it = bfs::directory_iterator(backup_path);
-                    while (backup_dirs_it != end_dir)
-                    {
-                        if (bfs::is_regular_file(*backup_dirs_it))
-                        {
-                            reqdata.scd_list.push_back((*backup_dirs_it).path().string());
-                            LOG(INFO) << "find backup scd file : " << (*backup_dirs_it).path().string();
-                        }
-                        ++backup_dirs_it;
-                    }
+                    LOG(INFO) << "scanning backup index scd ....";
+                    getFileList(backup_path.string(), reqdata.scd_list, std::set<std::string>(), false);
                 }
-                // get scd file for recommend.
-                getFileList((colpath.getScdPath()/bfs::path("recommend/")).string(), reqdata.scd_list, std::set<std::string>(), true);
+                LOG(INFO) << "scanning recommend_scd....";
+                bfs::path recommend_scd = colpath.getScdPath()/bfs::path("recommend/");
+                if (bfs::exists(recommend_scd))
+                {
+                    // get scd file for recommend.
+                    getFileList(recommend_scd.string(), reqdata.scd_list, std::set<std::string>(), true);
+                }
             }
             req.result(reqdata);
         }
