@@ -592,17 +592,24 @@ bool RecoveryChecker::hasAnyBackup()
     return has_backup;
 }
 
-bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
+bool RecoveryChecker::isNeedRollback(bool starting_up)
 {
-    LOG(INFO) << "check and restoring backup at startup.";
-    if (!bfs::exists(rollback_file_))
+    if (bfs::exists(rollback_file_))
+        return true;
+    if (starting_up && !isLastNormalExit())
     {
         return true;
     }
-    ifstream ifs(rollback_file_.c_str());
-    if (!ifs.good())
+    return false;
+}
+
+bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
+{
+    LOG(INFO) << "check and restoring backup at startup.";
+
+    if(!isNeedRollback(true))
     {
-        return false;
+        return true;
     }
 
     std::string last_backup_path;
@@ -643,29 +650,29 @@ bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
 // note : if there are more than one collection we need backup
 // all collection data. only in this way we can rollback and redo log to 
 // rollback the data before last failed request.
-bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
+bool RecoveryChecker::rollbackLastFail(bool starting_up)
 {
     // rollback will only happen in recovery or abort request, both of them 
     // are protected by the lock of node state in NodeManagerBase. 
     // not all inc_id has a backup, so we just find the newest backup.
-    if (!bfs::exists(rollback_file_))
+    if (!isNeedRollback(starting_up))
     {
-        LOG(INFO) << "rollback flag not exist, no need to rollback.";
+        LOG(INFO) << "no need to rollback.";
         return true;
     }
+
+    uint32_t rollback_id = 0;
     ifstream ifs(rollback_file_.c_str());
-    if (!ifs.good())
+    if (ifs.good())
     {
-        LOG(ERROR) << "read rollback flag file error.";
-        return false;
+        ifs.read((char*)&rollback_id, sizeof(rollback_id));
     }
+
     if (bfs::exists(redo_log_basepath_))
     {
         LOG(INFO) << "clean redo log path !!";
         bfs::remove_all(redo_log_basepath_);
     }
-    uint32_t rollback_id;
-    ifs.read((char*)&rollback_id, sizeof(rollback_id));
     LOG(INFO) << "last failed request inc_id is :" << rollback_id;
 
     std::string last_backup_path;
@@ -701,7 +708,7 @@ bool RecoveryChecker::rollbackLastFail(bool need_restore_backupfile)
         copy_dir(last_backup_path + bfs::path(request_log_basepath_).filename().c_str(),
             request_log_basepath_, false);
     }
-    if (has_backup && need_restore_backupfile)
+    if (has_backup && !starting_up)
     {
         CollInfoMapT tmp_all_col_info;
         {
@@ -841,7 +848,7 @@ void RecoveryChecker::onRecoverCallback(bool startup)
     LOG(INFO) << "recovery callback, begin recovery before enter cluster.";
 
     bool need_rollback = bfs::exists(rollback_file_);
-    if(!rollbackLastFail(!startup))
+    if(!rollbackLastFail(startup))
     {
         LOG(ERROR) << "corrupt data and rollback failed. Unrecoverable!!";
         forceExit("corrupt data and rollback failed. Unrecoverable!!");
