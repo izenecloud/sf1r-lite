@@ -373,9 +373,10 @@ bool ProductTokenizer::GetTokenResultsByMatcher_(
 {
     if(!matcher_) return false;
 
+    std::list<std::pair<UString,double> > left_hits;
     std::list<UString> left;
 
-    matcher_->GetSearchKeywords(UString(pattern, UString::UTF_8), tokens, left);
+    matcher_->GetSearchKeywords(UString(pattern, UString::UTF_8), tokens, left_hits, left);
 
     if(!tokens.empty())
     {
@@ -386,6 +387,7 @@ bool ProductTokenizer::GetTokenResultsByMatcher_(
             refined_results += SPACE_UCHAR;
         }
     }
+    tokens.splice(tokens.end(), left_hits);
     std::list<std::pair<UString, double> > left_tokens;
     GetLeftTokens_(left, left_tokens, 0.1);
     if(!left_tokens.empty())
