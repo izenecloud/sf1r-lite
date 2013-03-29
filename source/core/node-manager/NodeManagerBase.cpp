@@ -271,9 +271,10 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         enterCluster(false);
         LOG (WARNING) << " restarted in NodeManagerBase for ZooKeeper Service finished";
     }
-    if (zkEvent.type_ == ZOO_CHILD_EVENT)
+    if (zkEvent.type_ == ZOO_CHILD_EVENT && masterStarted_)
     {
-        detectMasters();
+        if (sf1rTopology_.curNode_.worker_.hasAnyService())
+            detectMasters();
     }
 }
 
@@ -367,7 +368,8 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
     znode.setValue(ZNode::KEY_FILESYNC_RPCPORT, (uint32_t)SuperNodeManager::get()->getFileSyncRpcPort());
     znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
     znode.setValue(ZNode::KEY_NODE_STATE, (uint32_t)nodeState_);
-    setServicesData(znode);
+
+    //setServicesData(znode);
 
     if (nodeState_ == NODE_STATE_STARTED)
     {
@@ -398,7 +400,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
     }
     else
     {
-        service_state = "BusyForShard";
+        service_state = "ReadyForRead";
         // at least half finished processing, we can get ready to serve read.
         if ((nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
             nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS) &&
@@ -420,12 +422,12 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
             // current node need update self to the new data state.
             service_state = "BusyForSelf";
         }
-        else if (MasterManagerBase::get()->isServiceReadyForRead(false))
-        {
-            service_state = "ReadyForRead";
-        }
     }
-    znode.setValue(ZNode::KEY_SERVICE_STATE, service_state);
+
+    if (masterStarted_)
+        MasterManagerBase::get()->updateServiceReadState(service_state, false);
+
+    //znode.setValue(ZNode::KEY_SERVICE_STATE, service_state);
     DistributeTestSuit::updateMemoryState("NodeState", nodeState_);
 
     // put the registered sequence primary node path to 
@@ -438,11 +440,11 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
         znode.setValue(ZNode::KEY_WORKER_PORT, sf1rTopology_.curNode_.worker_.port_);
     }
 
-    if (sf1rTopology_.curNode_.master_.hasAnyService())
-    {
-        znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
-        znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
-    }
+    //if (sf1rTopology_.curNode_.master_.hasAnyService() && masterStarted_)
+    //{
+    //    znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
+    //    znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
+    //}
 }
 
 bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary)

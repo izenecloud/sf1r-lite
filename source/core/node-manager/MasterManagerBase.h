@@ -121,7 +121,7 @@ public:
     }
     void registerDistributeServiceMaster(boost::shared_ptr<IDistributeService> sp_service, bool enable_master);
     bool findServiceMasterAddress(const std::string& service, std::string& host, uint32_t& port);
-    bool isServiceReadyForRead(bool include_self);
+    void updateServiceReadState(const std::string& my_state, bool include_self);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);

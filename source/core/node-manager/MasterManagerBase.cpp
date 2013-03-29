@@ -1108,41 +1108,68 @@ void MasterManagerBase::setServicesData(ZNode& znode)
 
         ++cit;
     }
+    znode.setValue(ZNode::KEY_REPLICA_ID, sf1rTopology_.curNode_.replicaId_);
     znode.setValue(ZNode::KEY_SERVICE_NAMES, services);
+    if (sf1rTopology_.curNode_.master_.hasAnyService())
+    {
+        znode.setValue(ZNode::KEY_MASTER_PORT, sf1rTopology_.curNode_.master_.port_);
+        znode.setValue(ZNode::KEY_MASTER_NAME, sf1rTopology_.curNode_.master_.name_);
+    }
 }
 
 void MasterManagerBase::initServices()
 {
 }
 
-bool MasterManagerBase::isServiceReadyForRead(bool include_self)
+void MasterManagerBase::updateServiceReadState(const std::string& my_state, bool include_self)
 {
+    ZNode znode;
+    std::string olddata;
+    if(zookeeper_->getZNodeData(serverRealPath_, olddata, ZooKeeper::WATCH))
+    {
+        znode.loadKvString(olddata);
+    }
+
+    std::string new_state = my_state;
+    std::string old_state = znode.getStrValue(ZNode::KEY_SERVICE_STATE);
     // service is ready for read means all shard workers current master connected are ready for read.
     boost::lock_guard<boost::mutex> lock(state_mutex_);
-
-    WorkerMapT::const_iterator it = workerMap_.begin();
-    for ( ; it != workerMap_.end(); ++it)
+    if (my_state == "BusyForShard" || my_state == "ReadyForRead")
     {
-        if (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_)
+        WorkerMapT::const_iterator it = workerMap_.begin();
+        bool all_ready = true;
+        for ( ; it != workerMap_.end(); ++it)
         {
-            if (!include_self)
-                continue;
-        }
-        std::string nodepath = getNodePath(it->second->replicaId_, it->second->nodeId_);
-        std::string sdata;
-        if (zookeeper_->getZNodeData(nodepath, sdata, ZooKeeper::WATCH))
-        {
-            ZNode znode;
-            znode.loadKvString(sdata);
-            std::string value = znode.getStrValue(ZNode::KEY_SERVICE_STATE);
-            if (value != "ReadyForRead" && value != "BusyForShard")
+            if (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_)
             {
-                LOG(INFO) << "one shard of master service is not ready for read:" << nodepath;
-                return false;
+                if (!include_self)
+                    continue;
+            }
+            std::string nodepath = getNodePath(it->second->replicaId_, it->second->nodeId_);
+            std::string sdata;
+            if (zookeeper_->getZNodeData(nodepath, sdata, ZooKeeper::WATCH))
+            {
+                ZNode znode;
+                znode.loadKvString(sdata);
+                std::string value = znode.getStrValue(ZNode::KEY_SERVICE_STATE);
+                if (value != "ReadyForRead" && value != "BusyForShard")
+                {
+                    LOG(INFO) << "one shard of master service is not ready for read:" << nodepath;
+                    all_ready = false;
+                    break;
+                }
             }
         }
+        if (all_ready)
+            new_state = "ReadyForRead";
+        else
+            new_state = "BusyForShard";
     }
-    return true;
+    if (old_state == new_state)
+        return;
+    LOG(INFO) << "current master service state changed : " << old_state << " to " << new_state;
+    znode.setValue(ZNode::KEY_SERVICE_STATE, new_state);
+    zookeeper_->setZNodeData(serverRealPath_, znode.serialize());
 }
 
 void MasterManagerBase::registerDistributeServiceMaster(boost::shared_ptr<IDistributeService> sp_service, bool enable_master)
