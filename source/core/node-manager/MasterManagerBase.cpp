@@ -1130,6 +1130,11 @@ void MasterManagerBase::updateServiceReadState(const std::string& my_state, bool
     {
         znode.loadKvString(olddata);
     }
+    else
+    {
+        LOG(INFO) << "get server service data error";
+        return;
+    }
 
     std::string new_state = my_state;
     std::string old_state = znode.getStrValue(ZNode::KEY_SERVICE_STATE);
@@ -1150,9 +1155,9 @@ void MasterManagerBase::updateServiceReadState(const std::string& my_state, bool
             std::string sdata;
             if (zookeeper_->getZNodeData(nodepath, sdata, ZooKeeper::WATCH))
             {
-                ZNode znode;
-                znode.loadKvString(sdata);
-                std::string value = znode.getStrValue(ZNode::KEY_SERVICE_STATE);
+                ZNode worker_znode;
+                worker_znode.loadKvString(sdata);
+                std::string value = worker_znode.getStrValue(ZNode::KEY_SERVICE_STATE);
                 if (!value.empty() && value != "ReadyForRead" && value != "BusyForShard")
                 {
                     LOG(INFO) << "one shard of master service is not ready for read:" << nodepath;
