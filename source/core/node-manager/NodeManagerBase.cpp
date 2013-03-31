@@ -423,10 +423,7 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
         }
     }
 
-    if (masterStarted_)
-        MasterManagerBase::get()->updateServiceReadState(service_state, false);
-
-    //znode.setValue(ZNode::KEY_SERVICE_STATE, service_state);
+    znode.setValue(ZNode::KEY_SERVICE_STATE, service_state);
     DistributeTestSuit::updateMemoryState("NodeState", nodeState_);
 
     // put the registered sequence primary node path to 
@@ -1395,6 +1392,8 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
         // update to nodepath to make master got notified.
         LOG(INFO) << "updating topology node path ... ";
         zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
+        if (masterStarted_)
+            MasterManagerBase::get()->updateServiceReadState(nodedata.getStrValue(ZNode::KEY_SERVICE_STATE), false);
     }
 }
 
