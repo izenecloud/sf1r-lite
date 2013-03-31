@@ -198,6 +198,36 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             if (old_primary != curr_primary_path_)
                 LOG(INFO) << "primary changed after auto-reconnect";
 
+            if (!zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
+            {
+                LOG(INFO) << "my self primary path disconnected, must re-enter.";
+                // abort any current request and re-enter .
+                if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
+                    nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
+                {
+                    LOG(INFO) << "abort request on current node because of lost registered primary.";
+                    if (cb_on_abort_request_)
+                        cb_on_abort_request_();
+                }
+                else if ( nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
+                    nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS ||
+                    nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
+                {
+                    LOG(INFO) << "abort request on current primary because of lost registered primary.";
+                    if(cb_on_wait_replica_abort_)
+                        cb_on_wait_replica_abort_();
+                }
+                if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
+                {
+                    LOG(INFO) << "self node path is still existed, we need delete it first." <<nodePath_;
+                    zookeeper_->deleteZNode(nodePath_);
+                }
+                self_primary_path_.clear();
+                nodeState_ = NODE_STATE_STARTING;
+                enterCluster(false);
+                return;
+            }
+
             if (old_primary == self_primary_path_)
             {
                 if (old_primary != curr_primary_path_)
