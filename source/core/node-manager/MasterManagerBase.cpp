@@ -1124,10 +1124,18 @@ void MasterManagerBase::initServices()
 
 void MasterManagerBase::updateServiceReadState(const std::string& my_state, bool include_self)
 {
+    // service is ready for read means all shard workers current master connected are ready for read.
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    if (masterState_ != MASTER_STATE_STARTED && masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
+    {
+        return;
+    }
     ZNode znode;
     std::string olddata;
     if(zookeeper_->getZNodeData(serverRealPath_, olddata, ZooKeeper::WATCH))
     {
+        if (olddata.empty())
+            return;
         znode.loadKvString(olddata);
     }
     else
@@ -1138,8 +1146,6 @@ void MasterManagerBase::updateServiceReadState(const std::string& my_state, bool
 
     std::string new_state = my_state;
     std::string old_state = znode.getStrValue(ZNode::KEY_SERVICE_STATE);
-    // service is ready for read means all shard workers current master connected are ready for read.
-    boost::lock_guard<boost::mutex> lock(state_mutex_);
     if (my_state == "BusyForShard" || my_state == "ReadyForRead")
     {
         WorkerMapT::const_iterator it = workerMap_.begin();
@@ -1173,8 +1179,15 @@ void MasterManagerBase::updateServiceReadState(const std::string& my_state, bool
     }
     if (old_state == new_state)
         return;
+
+    znode.setValue(ZNode::KEY_HOST, sf1rTopology_.curNode_.host_);
+    znode.setValue(ZNode::KEY_BA_PORT, sf1rTopology_.curNode_.baPort_);
+    znode.setValue(ZNode::KEY_MASTER_PORT, SuperNodeManager::get()->getMasterPort());
+
+    setServicesData(znode);
     LOG(INFO) << "current master service state changed : " << old_state << " to " << new_state;
     znode.setValue(ZNode::KEY_SERVICE_STATE, new_state);
+    LOG(INFO) << "server service old data " << olddata;
     zookeeper_->setZNodeData(serverRealPath_, znode.serialize());
 }
 
@@ -1243,6 +1256,7 @@ void MasterManagerBase::registerServiceServer()
     if (zookeeper_->createZNode(serverPath_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL_SEQUENCE))
     {
         serverRealPath_ = zookeeper_->getLastCreatedNodePath();
+        LOG(INFO) << "self server : " << serverRealPath_ << ", data:" << znode.serialize();
     }
     if (!zookeeper_->isZNodeExists(write_req_queue_root_parent_, ZooKeeper::WATCH))
     {
