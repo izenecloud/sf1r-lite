@@ -120,11 +120,13 @@ IndexWorker::~IndexWorker()
 
 void IndexWorker::HookDistributeRequestForIndex(int hooktype, const std::string& reqdata, bool& result)
 {
-    distribute_req_hooker_->setHook(hooktype, reqdata);
-    distribute_req_hooker_->hookCurrentReq(reqdata);
+    LOG(INFO) << "new api request from shard, packeddata len: " << reqdata.size();
+    MasterManagerBase::get()->pushWriteReq(reqdata, "api_from_shard");
 
-    distribute_req_hooker_->processLocalBegin();
-    LOG(INFO) << "got hook request on the worker in indexworker.";
+    //distribute_req_hooker_->setHook(hooktype, reqdata);
+    //distribute_req_hooker_->hookCurrentReq(reqdata);
+    //distribute_req_hooker_->processLocalBegin();
+    LOG(INFO) << "got hook request on the worker in indexworker." << reqdata;
     result = true;
 }
 
@@ -160,8 +162,16 @@ void IndexWorker::index(unsigned int numdoc, bool& result)
     result = true;
     if (distribute_req_hooker_->isRunningPrimary())
     {
-        task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
-        JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+        // in distributed, all write api need be called in sync.
+        if (!distribute_req_hooker_->isHooked())
+        {
+            task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
+            JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+        }
+        else
+        {
+            result = buildCollection(numdoc);
+        }
     }
     else
     {

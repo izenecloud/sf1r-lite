@@ -27,8 +27,8 @@ void DistributeRequestHooker::init()
     need_backup_types_.insert(Req_NoAdditionData_NeedBackup_Req);
     //need_backup_types_.insert(Req_CronJob);
     need_backup_types_.insert(Req_Index);
-    async_or_shard_write_types_.insert("commands_index");
-    async_or_shard_write_types_.insert("documents_visit");
+    //async_or_shard_write_types_.insert("commands_index");
+    //async_or_shard_write_types_.insert("documents_visit");
     // init callback for distribute request.
     NodeManagerBase::get()->setCallback(
         boost::bind(&DistributeRequestHooker::onElectingFinished, this),
@@ -260,7 +260,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         return true;
     }
 
-    if (isNeedBackup(type) || (prepared_req.inc_id % 10000 == 0) || !RecoveryChecker::get()->hasAnyBackup())
+    if (isNeedBackup(type) || (prepared_req.inc_id % 50000 == 0) || !RecoveryChecker::get()->hasAnyBackup())
     {
         LOG(INFO) << "begin backup";
         if(!RecoveryChecker::get()->backup())

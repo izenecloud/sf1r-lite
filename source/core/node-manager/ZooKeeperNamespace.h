@@ -127,6 +127,13 @@ public:
         ss << getCurrWriteReqQueueParent(nodeId) << write_req_seq_;
         return ss.str();
     }
+    inline static std::string getWriteReqPrepareNode(nodeid_t nodeId)
+    {
+        std::stringstream ss;
+        ss << sf1rCluster_ + write_req_prepare_node_ << node_ << nodeId;
+        return ss.str();
+    }
+
     static std::string getTopologyPath()
     {
         return sf1rCluster_ + topology_;
@@ -162,10 +169,6 @@ public:
     static std::string getSynchroPath()
     {
         return sf1rCluster_ + Synchro_;
-    }
-    static std::string getWriteReqPrepareNode()
-    {
-        return sf1rCluster_ + write_req_prepare_node_;
     }
 };
 

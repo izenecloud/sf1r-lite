@@ -102,6 +102,7 @@ public:
     }
 
     void notifyChangedPrimary(bool is_new_primary = true);
+    void updateMasterReadyForNew(bool is_ready);
 
     bool isMinePrimary();
     bool isBusy();
@@ -229,10 +230,12 @@ protected:
     std::string write_req_queue_root_parent_;
     std::string write_req_queue_parent_;
     std::string write_req_queue_;
+    std::string write_prepare_node_;
     bool stopping_;
     bool write_prepared_;
     bool new_write_disabled_;
     bool is_mine_primary_;
+    bool is_ready_for_new_write_;
     std::queue<std::pair<std::string, std::string> > cached_write_reqlist_;
 
 

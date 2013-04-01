@@ -448,7 +448,7 @@ bool RecommendTaskService::updateShoppingCart(
     }
     bool ret = true;
     bool need_write = !bundleConfig_.cassandraConfig_.enable;
-    if (!DistributeRequestHooker::get()->isHooked() || DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
+    if (!DistributeRequestHooker::get()->isRunningPrimary())
     {
         need_write = true;
     }
@@ -486,7 +486,7 @@ bool RecommendTaskService::trackEvent(
     }
     bool ret = true;
     bool need_write = !bundleConfig_.cassandraConfig_.enable;
-    if (!DistributeRequestHooker::get()->isHooked() || DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
+    if (!DistributeRequestHooker::get()->isRunningPrimary())
     {
         need_write = true;
     }
@@ -521,7 +521,7 @@ bool RecommendTaskService::rateItem(const RateParam& param)
     }
     bool ret = true;
     bool need_write = !bundleConfig_.cassandraConfig_.enable;
-    if (!DistributeRequestHooker::get()->isHooked() || DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
+    if (!DistributeRequestHooker::get()->isRunningPrimary())
     {
         need_write = true;
     }
@@ -560,7 +560,7 @@ bool RecommendTaskService::buildCollection()
     boost::mutex::scoped_lock lock(buildCollectionMutex_);
     bool ret = false;
 
-    if (!DistributeRequestHooker::get()->isHooked() || DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
+    if (!DistributeRequestHooker::get()->isRunningPrimary())
     {
         // on primary
         ret = buildCollectionOnPrimary();
