@@ -188,7 +188,7 @@ bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
 bool IndexWorker::buildCollection(unsigned int numdoc)
 {
     
-    DISTRIBUTE_WRITE_BEGIN_ASYNC;
+    DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
     ///If current directory is the one rotated from the backup directory,

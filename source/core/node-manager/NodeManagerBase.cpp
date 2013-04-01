@@ -764,6 +764,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     {
         detectMasters();
     }
+    MasterManagerBase::get()->updateMasterReadyForNew(true);
 }
 
 void NodeManagerBase::leaveCluster()
