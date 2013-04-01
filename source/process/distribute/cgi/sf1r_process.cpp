@@ -185,30 +185,33 @@ std::string Sf1rProcess::log_tag;
 
 int main(int argc, char* argv[])
 {
+    if (argc < 5)
+    {
+        error_log("arg not enough. sf1rhost:sf1rport fluent_ip fluent_port fluent_tag [distributed  match_master_name  set_seq total_set_num]");
+        return -1;
+    }
+    std::string host( "180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" );
+    host = argv[1];
+    std::string fluent_ip = argv[2];
+    std::string fluent_port = argv[3];
+    Sf1rProcess::log_tag = argv[4];
+    std::string distributed;
+    if(argc > 5) 
+    {
+        distributed = argv[5];
+    }
+    std::string match_master;
+    if (argc > 6)
+    {
+        match_master = argv[6];
+    }
+    error_log("args:" + host + "," + fluent_ip + "," + fluent_port + "," + Sf1rProcess::log_tag +
+        "," + distributed + "," + match_master);
+
+    while(true)
+    {
 	try
 	{
-        if (argc < 5)
-        {
-            error_log("arg not enough. sf1rhost:sf1rport fluent_ip fluent_port fluent_tag [distributed  match_master_name  set_seq total_set_num]");
-            return -1;
-        }
-        std::string host( "180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" );
-        host = argv[1];
-        std::string fluent_ip = argv[2];
-        std::string fluent_port = argv[3];
-        Sf1rProcess::log_tag = argv[4];
-        std::string distributed;
-        if(argc > 5) 
-        {
-            distributed = argv[5];
-        }
-        std::string match_master;
-        if (argc > 6)
-        {
-            match_master = argv[6];
-        }
-        error_log("args:" + host + "," + fluent_ip + "," + fluent_port + "," + Sf1rProcess::log_tag +
-            "," + distributed + "," + match_master);
         if(distributed.empty())
         {
             Sf1Config conf;
@@ -260,5 +263,6 @@ int main(int argc, char* argv[])
 	}
     if (Sf1rProcess::driver)
         delete Sf1rProcess::driver;
+    }
     return -1;
 }
