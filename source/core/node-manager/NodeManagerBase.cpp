@@ -222,6 +222,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                     if(cb_on_wait_replica_abort_)
                         cb_on_wait_replica_abort_();
                 }
+                stopping_ = true;
                 if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
                 {
                     LOG(INFO) << "self node path is still existed, we need delete it first." <<nodePath_;
@@ -999,8 +1000,10 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
         LOG(INFO) << "myself node was deleted : " << self_primary_path_;
         if (!stopping_)
         {
-            LOG(INFO) << "node was deleted while not stopping: " << self_primary_path_;
-            RecoveryChecker::forceExit("node was deleted while not stopping");
+            LOG(ERROR) << "node was deleted while not stopping: " << self_primary_path_;
+            // try re-enter while session expired.
+            zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH);
+            zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
         }
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)
