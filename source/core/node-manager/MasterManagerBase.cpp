@@ -39,6 +39,7 @@ bool MasterManagerBase::init()
     write_req_queue_parent_ = ZooKeeperNamespace::getCurrWriteReqQueueParent(sf1rTopology_.curNode_.nodeId_);
     write_req_queue_root_parent_ = ZooKeeperNamespace::getRootWriteReqQueueParent();
     write_prepare_node_ =  ZooKeeperNamespace::getWriteReqPrepareNode(sf1rTopology_.curNode_.nodeId_);
+    write_prepare_node_parent_ =  ZooKeeperNamespace::getWriteReqPrepareParent();
     stopping_ = false;
     return true;
 }
@@ -461,6 +462,7 @@ void MasterManagerBase::checkForNewWriteReq()
                 LOG(ERROR) << "the write request handler return failed.";
                 write_prepared_ = false;
                 endWriteReq();
+                zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::WATCH);
             }
             else
             {
@@ -1265,6 +1267,10 @@ void MasterManagerBase::registerServiceServer()
     if (!zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::WATCH))
     {
         zookeeper_->createZNode(write_req_queue_parent_);
+    }
+    if (!zookeeper_->isZNodeExists(write_prepare_node_parent_, ZooKeeper::WATCH))
+    {
+        zookeeper_->createZNode(write_prepare_node_parent_);
     }
     std::vector<string> reqchild;
     zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
