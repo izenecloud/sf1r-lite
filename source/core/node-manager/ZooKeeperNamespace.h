@@ -127,6 +127,10 @@ public:
         ss << getCurrWriteReqQueueParent(nodeId) << write_req_seq_;
         return ss.str();
     }
+    static std::string getWriteReqPrepareParent()
+    {
+        return sf1rCluster_ + write_req_prepare_node_;
+    }
     inline static std::string getWriteReqPrepareNode(nodeid_t nodeId)
     {
         std::stringstream ss;

@@ -231,6 +231,7 @@ protected:
     std::string write_req_queue_parent_;
     std::string write_req_queue_;
     std::string write_prepare_node_;
+    std::string write_prepare_node_parent_;
     bool stopping_;
     bool write_prepared_;
     bool new_write_disabled_;
