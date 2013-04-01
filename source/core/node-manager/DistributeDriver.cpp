@@ -322,6 +322,17 @@ bool DistributeDriver::on_new_req_available()
             // started to handle this request, so the request is ignored, and
             // continue to deliver next write request in the queue.
         }
+        else if (reqtype == "api_from_shard")
+        {
+            if(!handleRequest(reqdata, reqdata, Request::FromOtherShard))
+            {
+                LOG(WARNING) << "one api write request from shard failed to deliver :" << reqdata;
+            }
+            else
+            {
+                break;
+            }
+        }
         else if (reqtype == "cron")
         {
             LOG(INFO) << "got a cron job request from queue." << reqdata;

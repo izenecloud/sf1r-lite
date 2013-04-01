@@ -103,12 +103,12 @@ void Sf1Controller::postprocess()
         }
         else
         {
-            if (request().callType() == Request::FromDistribute &&
-                DistributeRequestHooker::isAsyncWriteRequest(request().controller(), request().action()))
-            {
-                std::cout << " a async request finish send, may not finished actually. Leave for async handler." << std::endl;
-                return;
-            }
+            //if (request().callType() == Request::FromDistribute &&
+            //    DistributeRequestHooker::isAsyncWriteRequest(request().controller(), request().action()))
+            //{
+            //    std::cout << " a async request finish send, may not finished actually. Leave for async handler." << std::endl;
+            //    return;
+            //}
             std::cout << " sync request finished success. calltype: " << request().callType()
                 << ", api: " << request().controller() << "_" << request().action() << std::endl;
             DistributeRequestHooker::get()->processLocalFinished(true);

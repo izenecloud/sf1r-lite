@@ -237,6 +237,7 @@ protected:
     std::string primaryNodePath_;
 
     boost::mutex mutex_;
+    boost::condition_variable stop_cond_;
 
     std::string CLASSNAME;
     std::string self_primary_path_;

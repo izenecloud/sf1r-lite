@@ -153,6 +153,11 @@ void NodeManagerBase::stop()
 {
     {
         boost::unique_lock<boost::mutex> lock(mutex_);
+        while(nodeState_ != NODE_STATE_STARTED)
+        {
+            LOG(INFO) << "waiting the node become idle while stopping ...";
+            stop_cond_.timed_wait(lock, boost::posix_time::seconds(3));
+        }
         stopping_ = true;
     }
     if (masterStarted_)
@@ -1409,21 +1414,35 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     ZNode oldZnode;
     setSf1rNodeData(nodedata, oldZnode);
 
-
     bool need_update = nodedata.getStrValue(ZNode::KEY_SERVICE_STATE) != oldZnode.getStrValue(ZNode::KEY_SERVICE_STATE) ||
                   nodedata.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH) != oldZnode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
 
     if (nodeState_ == NODE_STATE_STARTED)
+    {
 	    MasterManagerBase::get()->enableNewWrite();
+        stop_cond_.notify_all();
+    }
 
     zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
-    if (oldstate == NODE_STATE_STARTED || new_state == NODE_STATE_STARTED || need_update)
+    // notify master got ready for next request.
+    if (masterStarted_)
     {
-        // update to nodepath to make master got notified.
-        LOG(INFO) << "updating topology node path ... ";
-        zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
-        if (masterStarted_)
+        if(oldstate == NODE_STATE_STARTED)
+        {
+            LOG(INFO) << "notify master busy for current request ... ";
+            MasterManagerBase::get()->updateMasterReadyForNew(false);
+        }
+        else if (new_state == NODE_STATE_STARTED)
+        {
+            LOG(INFO) << "notify master ready for new request ... ";
+            MasterManagerBase::get()->updateMasterReadyForNew(true);
+        }
+        if (need_update)
+        {
+            LOG(INFO) << "update node path in topology for service state changed ... ";
+            zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
             MasterManagerBase::get()->updateServiceReadState(nodedata.getStrValue(ZNode::KEY_SERVICE_STATE), false);
+        }
     }
 }
 
@@ -1450,6 +1469,10 @@ void NodeManagerBase::updateNodeState()
     ZNode nodedata;
     setSf1rNodeData(nodedata);
     updateNodeState(nodedata);
+    if (nodeState_ == NODE_STATE_STARTED)
+    {
+        stop_cond_.notify_all();
+    }
 }
 
 void NodeManagerBase::updateSelfPrimaryNodeState(const ZNode& nodedata)
@@ -1462,6 +1485,8 @@ void NodeManagerBase::updateNodeState(const ZNode& nodedata)
     zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
     // update to nodepath to make master got notified.
     zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
+    if (masterStarted_)
+        MasterManagerBase::get()->updateServiceReadState(nodedata.getStrValue(ZNode::KEY_SERVICE_STATE), false);
 }
 
 void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)

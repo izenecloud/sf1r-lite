@@ -594,6 +594,8 @@ bool RecoveryChecker::hasAnyBackup()
 
 bool RecoveryChecker::isNeedRollback(bool starting_up)
 {
+    if (!NodeManagerBase::get()->isDistributed())
+        return false;
     if (bfs::exists(rollback_file_))
         return true;
     if (starting_up && !isLastNormalExit())
@@ -868,19 +870,6 @@ void RecoveryChecker::onRecoverCallback(bool startup)
     setForceExitFlag();
     syncSCDFiles();
     syncToNewestReqLog();
-
-    CollInfoMapT tmp_all_col_info;
-    {
-        boost::unique_lock<boost::mutex> lock(mutex_);
-        tmp_all_col_info = all_col_info_;
-    }
-    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
-    while(cit != tmp_all_col_info.end())
-    {
-        if (flush_col_)
-            flush_col_(cit->first);
-        ++cit;
-    }
 
     // if failed, must exit.
     LOG(INFO) << "recovery finished, wait primary agree before enter cluster.";
@@ -1237,6 +1226,8 @@ void RecoveryChecker::syncToNewestReqLog()
 
 bool RecoveryChecker::isLastNormalExit()
 {
+    if (!NodeManagerBase::get()->isDistributed())
+        return true;
     return !bfs::exists("./distribute_force_exit.flag");
 }
 

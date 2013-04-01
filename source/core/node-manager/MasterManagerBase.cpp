@@ -18,6 +18,7 @@ MasterManagerBase::MasterManagerBase()
 , write_prepared_(false)
 , new_write_disabled_(false)
 , is_mine_primary_(false)
+, is_ready_for_new_write_(false)
 , CLASSNAME("MasterManagerBase")
 {
 }
@@ -37,6 +38,7 @@ bool MasterManagerBase::init()
     write_req_queue_ = ZooKeeperNamespace::getWriteReqQueueNode(sf1rTopology_.curNode_.nodeId_);
     write_req_queue_parent_ = ZooKeeperNamespace::getCurrWriteReqQueueParent(sf1rTopology_.curNode_.nodeId_);
     write_req_queue_root_parent_ = ZooKeeperNamespace::getRootWriteReqQueueParent();
+    write_prepare_node_ =  ZooKeeperNamespace::getWriteReqPrepareNode(sf1rTopology_.curNode_.nodeId_);
     stopping_ = false;
     return true;
 }
@@ -303,7 +305,7 @@ bool MasterManagerBase::prepareWriteReq()
     if (!isMinePrimary())
     {
         LOG(WARNING) << "non-primary master can not prepare a write request!";
-        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::NOT_WATCH);
+        zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::NOT_WATCH);
         zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::NOT_WATCH);
         return false;
     }
@@ -314,8 +316,7 @@ bool MasterManagerBase::prepareWriteReq()
     }
     ZNode znode;
     znode.setValue(ZNode::KEY_MASTER_SERVER_REAL_PATH, serverRealPath_);
-    //znode.setValue(ZNode::KEY_MASTER_STATE, MASTER_STATE_WAIT_WORKER_FINISH_REQ);
-    if (!zookeeper_->createZNode(ZooKeeperNamespace::getWriteReqPrepareNode(), znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
+    if (!zookeeper_->createZNode(write_prepare_node_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
     {
         if (zookeeper_->getErrorCode() == ZooKeeper::ZERR_ZNODEEXISTS)
         {
@@ -326,7 +327,7 @@ bool MasterManagerBase::prepareWriteReq()
             LOG (ERROR) <<" Failed to prepare write request for (" << zookeeper_->getErrorString()
                 << "), please retry. on server : " << serverRealPath_;
         }
-        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::WATCH);
+        zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::WATCH);
         return false;
     }
     LOG(INFO) << "prepareWriteReq success on server : " << serverRealPath_;
@@ -337,13 +338,13 @@ bool MasterManagerBase::prepareWriteReq()
 
 bool MasterManagerBase::getWriteReqNodeData(ZNode& znode)
 {
-    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode()))
+    if (!zookeeper_->isZNodeExists(write_prepare_node_))
     {
         LOG(INFO) << "There is no any write request";
         return true;
     }
     std::string sdata;
-    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqPrepareNode(), sdata))
+    if (zookeeper_->getZNodeData(write_prepare_node_, sdata))
     {
         ZNode znode;
         znode.loadKvString(sdata);
@@ -371,7 +372,7 @@ void MasterManagerBase::checkForWriteReq()
             cached_write_reqlist_ = std::queue<std::pair<std::string, std::string> >();
         }
         LOG(INFO) << "not a primary master while check write request, ignore." << serverRealPath_;
-        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::NOT_WATCH);
+        zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::NOT_WATCH);
         zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::NOT_WATCH);
         return;
     }
@@ -431,16 +432,16 @@ void MasterManagerBase::checkForNewWriteReq()
         LOG(INFO) << "a prepared write is still waiting worker ";
         return;
     }
-    if (!isAllWorkerIdle())
+    //if (!isAllWorkerIdle())
+    if (!is_ready_for_new_write_)
     {
         return;
     }
     if (!endWriteReq())
     {
-        zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::WATCH);
+        zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::WATCH);
         return;
     }
-
 
     if (cached_write_reqlist_.empty())
     {
@@ -560,13 +561,12 @@ bool MasterManagerBase::endWriteReq()
         LOG(INFO) << "non-primary master can not end a write request.";
         return false;
     }
-    if (!zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode()))
+    if (!zookeeper_->isZNodeExists(write_prepare_node_))
     {
-        LOG(INFO) << "There is no any write request while end request";
         return true;
     }
     std::string sdata;
-    if (zookeeper_->getZNodeData(ZooKeeperNamespace::getWriteReqPrepareNode(), sdata))
+    if (zookeeper_->getZNodeData(write_prepare_node_, sdata))
     {
         ZNode znode;
         znode.loadKvString(sdata);
@@ -576,7 +576,7 @@ bool MasterManagerBase::endWriteReq()
             LOG(WARNING) << "end request mismatch server. " << write_server << " vs " << serverRealPath_;
             return false;
         }
-        zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqPrepareNode());
+        zookeeper_->deleteZNode(write_prepare_node_);
         LOG(INFO) << "end write request success on server : " << serverRealPath_;
     }
     else
@@ -625,7 +625,7 @@ bool MasterManagerBase::isBusy()
     boost::lock_guard<boost::mutex> lock(state_mutex_);
     if (stopping_ || !zookeeper_ || !zookeeper_->isConnected())
         return true;
-    if (zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode()))
+    if (zookeeper_->isZNodeExists(write_prepare_node_))
     {
         LOG(INFO) << "Master is busy because there is another write request running";
         return true;
@@ -1344,6 +1344,14 @@ bool MasterManagerBase::isMinePrimary()
     return is_mine_primary_;
 }
 
+void MasterManagerBase::updateMasterReadyForNew(bool is_ready)
+{
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    is_ready_for_new_write_ = is_ready;
+    if (is_ready_for_new_write_)
+        checkForWriteReq();
+}
+
 void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
@@ -1357,7 +1365,7 @@ void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
         {
             // reset current workers, need detect primary workers.
             detectWorkers();
-            zookeeper_->isZNodeExists(ZooKeeperNamespace::getWriteReqPrepareNode(), ZooKeeper::WATCH);
+            zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::WATCH);
             cacheNewWriteFromZNode();
         }
     }
