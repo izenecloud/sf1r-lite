@@ -33,7 +33,8 @@ namespace sf1r {
                 bool li,
                 bool im,
                 int con,
-                int icl
+                int icl,
+                std::string icn
                 );
         ~ImgDupDetector();
 
@@ -50,7 +51,8 @@ namespace sf1r {
                 bool li,
                 bool im,
                 int con,
-                int icl
+                int icl,
+                std::string icn
                 );
 
         bool SetController();
@@ -84,6 +86,8 @@ namespace sf1r {
 
         std::string cma_path_;
         uint32_t psmk_;
+
+        std::string img_content_name_;
 
         std::string psm_path_;
         std::string psm_path_incr_;
