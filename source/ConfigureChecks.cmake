@@ -129,3 +129,8 @@ IF(USE_DOT)
 ENDIF(USE_DOT)
 
 FIND_PACKAGE( OpenCV )
+
+set(SYS_LIBS
+  m rt dl z
+)
+
