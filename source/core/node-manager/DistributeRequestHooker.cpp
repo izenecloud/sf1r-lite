@@ -39,10 +39,13 @@ void DistributeRequestHooker::init()
         boost::bind(&DistributeRequestHooker::abortRequestCallback, this),
         boost::bind(&DistributeRequestHooker::waitReplicasAbortCallback, this),
         boost::bind(&DistributeRequestHooker::onRequestFromPrimary, this, _1, _2));
+
+    RecoveryChecker::get()->hasAnyBackup(last_backup_id_);
 }
 
 DistributeRequestHooker::DistributeRequestHooker()
-    :type_(Req_None), hook_type_(0), chain_status_(NoChain), is_replaying_log_(false)
+    :type_(Req_None), hook_type_(0), chain_status_(NoChain),
+    is_replaying_log_(false), last_backup_id_(0)
 {
 }
 
@@ -261,7 +264,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         return true;
     }
 
-    if (isNeedBackup(type) || (prepared_req.inc_id % 50000 == 0) || !RecoveryChecker::get()->hasAnyBackup())
+    if (isNeedBackup(type) || ( prepared_req.inc_id > last_backup_id_ && (prepared_req.inc_id - last_backup_id_) % 50000 == 0))
     {
         LOG(INFO) << "begin backup";
         if(!RecoveryChecker::get()->backup())
@@ -273,6 +276,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
             }
             return false;
         }
+        RecoveryChecker::get()->hasAnyBackup(last_backup_id_);
         //if (hook_type_ != Request::FromLog)
         //    NodeManagerBase::get()->setSlowWriting();
     }
@@ -505,12 +509,13 @@ void DistributeRequestHooker::finish(bool success)
                 LOG(ERROR) << "backup failed. Maybe not enough space.";
                 forceExit();
             }
+            RecoveryChecker::get()->hasAnyBackup(last_backup_id_);
         }
     }
     else
     {
         DistributeTestSuit::updateMemoryState("Last_Failed_Request", reqlog.inc_id);
-        LOG(INFO) << "The request failed to finish. rollback from backup.";
+        LOG(INFO) << "The request failed to finish. rollback from backup." << reqlog.req_json_data;
         // rollback from backup.
         // all the file need to be reopened to make effective.
         if (!RecoveryChecker::get()->rollbackLastFail())
@@ -518,12 +523,8 @@ void DistributeRequestHooker::finish(bool success)
             LOG(ERROR) << "failed to rollback ! must exit.";
             forceExit();
         }
+        LOG(INFO) << "rollback finished.";
     }
-
-    //if ( (reqlog.inc_id % 10 == 0) && !RecoveryChecker::get()->checkDataConsistent() )
-    //{
-    //    LOG(ERROR) << "!!!!! finished request with not consistent data: ";
-    //}
 
     LOG(INFO) << DistributeTestSuit::getStatusReport();
 }

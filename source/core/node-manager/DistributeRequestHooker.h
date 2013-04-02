@@ -104,6 +104,7 @@ private:
     ReqLogType saved_type_;
     int saved_hook_type_;
     ChainStatus saved_chain_status_;
+    uint32_t last_backup_id_;
 
     static std::set<ReqLogType> need_backup_types_;
     static std::set<std::string> async_or_shard_write_types_;

@@ -37,7 +37,7 @@ public:
     bool rollbackLastFail(bool starting_up = false);
     bool checkAndRestoreBackupFile(const CollectionPath& colpath);
     bool checkDataConsistent();
-    bool hasAnyBackup();
+    bool hasAnyBackup(uint32_t& last_backup_id);
     void flushAllData();
 
     void setRestartCallback(StartColCBFuncT start_col, StopColCBFuncT stop_col)

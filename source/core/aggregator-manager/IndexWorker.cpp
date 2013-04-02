@@ -1106,6 +1106,12 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         return false;
     }
 
+    if (documentManager_->isDeleted(docid))
+    {
+        LOG(INFO) << "doc has been deleted already: " << docid;
+        return false;
+    }
+
     NoAdditionReqLog reqlog;
     if(!distribute_req_hooker_->prepare(Req_NoAdditionDataReq, dynamic_cast<CommonReqData&>(reqlog)))
     {
