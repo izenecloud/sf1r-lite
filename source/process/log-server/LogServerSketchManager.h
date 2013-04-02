@@ -12,6 +12,9 @@
 #include <boost/bind.hpp>
 #include <util/scheduler.h>
 #include <time.h>
+#include <idmlib/duplicate-detection/psm.h>
+#include <idmlib/duplicate-detection/dup_detector.h>
+#include "LevelDbTable.h"
 
 using namespace boost::posix_time;
 using namespace boost::gregorian;
@@ -223,10 +226,15 @@ public:
 
     bool open()
     {
+        ptime now(second_clock::local_time());
+        uint64_t timepast = (now.time_of_day().ticks()) / time_duration::ticks_per_second();
+        uint64_t starttime = (23*60*60+59*60-timepast) * 1000;
+        if(starttime < 0) starttime = 0;
         bool res = izenelib::util::Scheduler::addJob(slidCronJobName_,
                 //slidLength_,
-                60*1000,
-                0,  //start from now
+                24*60*60*1000,
+                //0,  //start from now
+                starttime,
                 boost::bind(&LogServerSketchManager::makeEstimationSlid, this));
         if(!res)
             LOG(ERROR) <<"Failed in izenelib::util::Scheduler::addJob(), cron job name: " << slidCronJobName_ << endl;
@@ -251,9 +259,9 @@ public:
     {
         LOG(INFO) <<"makeEstimationSlid ... " << endl;
         ptime td(day_clock::local_day(), hours(0));
-        days shift(pastdays);
-        td = td - shift;
-        pastdays++;
+//        days shift(pastdays);
+//        td = td - shift;
+//        pastdays++;
         string today = to_iso_string(td);
         std::map<std::string, QueriesFrequencyEstimation*>::iterator it;
         for(it=collectionFEMap_.begin();it!=collectionFEMap_.end();it++)
@@ -291,6 +299,8 @@ public:
     {
         if(!checkSketch(collection))
             return false;
+        if(boost::lexical_cast<uint32_t>(hitnum) <= 0)
+            return true;
 
         uint32_t count = collectionSketchMap_[collection]->inc(query.c_str(), query.length());
 
