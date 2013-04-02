@@ -579,10 +579,10 @@ bool RecoveryChecker::backupColl(const CollectionPath& colpath, const bfs::path&
     return true;
 }
 
-bool RecoveryChecker::hasAnyBackup()
+bool RecoveryChecker::hasAnyBackup(uint32_t& last_backup_id)
 {
     std::string last_backup_path;
-    uint32_t last_backup_id = 0;
+    last_backup_id = 0;
     bool has_backup = true;
     if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
     {

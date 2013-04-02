@@ -798,6 +798,7 @@ void NodeManagerBase::leaveCluster()
         // if no any node, we delete all the remaining unhandled write request.
         zookeeper_->isZNodeExists(ZooKeeperNamespace::getRootWriteReqQueueParent(), ZooKeeper::NOT_WATCH);
         zookeeper_->deleteZNode(ZooKeeperNamespace::getRootWriteReqQueueParent(), true);
+        zookeeper_->deleteZNode(ZooKeeperNamespace::getWriteReqPrepareParent(), true);
     }
 
     childrenList.clear();
