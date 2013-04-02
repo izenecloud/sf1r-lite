@@ -46,8 +46,18 @@ void DistributeDriver::run()
     }
     catch (boost::thread_interrupted&)
     {
+        // if any request, run it.
+        if (!asyncWriteTasks_.empty())
+        {
+            LOG(INFO) << "running last request before stopping.";
+            boost::function<bool()> task;
+            asyncWriteTasks_.pop(task);
+            task();
+        }
         return;
     }
+    LOG(ERROR) << "run write thread error.";
+    throw -1;
 }
 
 void DistributeDriver::init(const RouterPtr& router)
@@ -180,21 +190,28 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
 
             DistributeTestSuit::incWriteRequestTimes(request.controller() + "_" + request.action());
 
-            DistributeRequestHooker::get()->setHook(calltype, packed_data);
             request.setCallType(calltype);
-            DistributeRequestHooker::get()->hookCurrentReq(packed_data);
 
             if (calltype == Request::FromLog)
             {
                 // redo log must process the request one by one, so sync needed.
+                DistributeRequestHooker::get()->setHook(calltype, packed_data);
+                DistributeRequestHooker::get()->hookCurrentReq(packed_data);
                 return callHandler(handler, calltype, packed_data, request);
             }
             else
             {
                 if (!async_task_worker_.interruption_requested())
                 {
+                    DistributeRequestHooker::get()->setHook(calltype, packed_data);
+                    DistributeRequestHooker::get()->hookCurrentReq(packed_data);
                     asyncWriteTasks_.push(boost::bind(&callHandler,
                             handler, calltype, packed_data, request));
+                }
+                else
+                {
+                    LOG(INFO) << "write request has been interrupt.";
+                    return false;
                 }
             }
             return true;
@@ -257,13 +274,18 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
     if ((ReqLogType)reqtype == Req_CronJob)
     {
         LOG(INFO) << "got a cron job request from primary." << reqjsondata;
-        DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
-        DistributeRequestHooker::get()->hookCurrentReq(packed_data);
 
         if (!async_task_worker_.interruption_requested())
         {
+            DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
+            DistributeRequestHooker::get()->hookCurrentReq(packed_data);
             asyncWriteTasks_.push(boost::bind(&callCronJob,
                     Request::FromPrimaryWorker, reqjsondata, packed_data));
+        }
+        else
+        {
+            LOG(INFO) << "write task has been interrupt : " << reqjsondata;
+            return false;
         }
         return true;
     }
@@ -278,12 +300,17 @@ bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqj
             return false;
         }
 
-	    DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
-        DistributeRequestHooker::get()->hookCurrentReq(packed_data);
         if (!async_task_worker_.interruption_requested())
         {
+            DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
+            DistributeRequestHooker::get()->hookCurrentReq(packed_data);
             asyncWriteTasks_.push(boost::bind(&callCBWriteHandler,
                     Request::FromPrimaryWorker, reqjsondata, it->second));
+        }
+        else
+        {
+            LOG(INFO) << "write task has been interrupt : " << reqjsondata;
+            return false;
         }
         return true;
     }
@@ -336,15 +363,18 @@ bool DistributeDriver::on_new_req_available()
         else if (reqtype == "cron")
         {
             LOG(INFO) << "got a cron job request from queue." << reqdata;
-            DistributeRequestHooker::get()->setHook(Request::FromDistribute, reqdata);
-            DistributeRequestHooker::get()->hookCurrentReq(reqdata);
-
             if (!async_task_worker_.interruption_requested())
             {
+                DistributeRequestHooker::get()->setHook(Request::FromDistribute, reqdata);
+                DistributeRequestHooker::get()->hookCurrentReq(reqdata);
                 asyncWriteTasks_.push(boost::bind(&callCronJob,
                         Request::FromDistribute, reqdata, reqdata));
+                break;
             }
-            break;
+            else
+            {
+                return false;
+            }
         }
         else if (reqtype == "callback")
         {
@@ -364,15 +394,19 @@ bool DistributeDriver::on_new_req_available()
                 LOG(WARNING) << "callback write request not found on the node: " << callback_name;
                 continue;
             }
-            DistributeRequestHooker::get()->setHook(Request::FromOtherShard, packed_data);
-            DistributeRequestHooker::get()->hookCurrentReq(packed_data);
-
             if (!async_task_worker_.interruption_requested())
             {
+                DistributeRequestHooker::get()->setHook(Request::FromOtherShard, packed_data);
+                DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+
                 asyncWriteTasks_.push(boost::bind(&callCBWriteHandler, Request::FromOtherShard,
                         callback_name, it->second));
+                break;
             }
-            break;
+            else
+            {
+                return false;
+            }
         }
         else
         {
