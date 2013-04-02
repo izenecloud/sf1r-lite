@@ -134,9 +134,15 @@ void IndexWorker::flush(bool mergeBarrel)
 {
     documentManager_->flush();
     idManager_->flush();
-    indexManager_->flush();
     if (indexManager_->isRealTime())
+    {
+        indexManager_->flush(false);
+    }
+    else
+    {
+        indexManager_->flush();
         indexManager_->deletebinlog();
+    }
     if (mergeBarrel)
     {
         indexManager_->optimizeIndex();
