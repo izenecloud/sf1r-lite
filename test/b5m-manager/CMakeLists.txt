@@ -113,11 +113,12 @@ SET_TARGET_PROPERTIES(t_offer_db_recorder PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
 )
 
-ADD_EXECUTABLE(b5m_scd_doc_processor
-b5m_scd_doc_processor.cc
+ADD_EXECUTABLE(t_b5mo_processor
+Runner.cpp
+t_b5mo_processor.cc
 )
-TARGET_LINK_LIBRARIES(b5m_scd_doc_processor  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
-SET_TARGET_PROPERTIES(b5m_scd_doc_processor PROPERTIES
+TARGET_LINK_LIBRARIES(t_b5mo_processor  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(t_b5mo_processor PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin
 )
 

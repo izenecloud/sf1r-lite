@@ -64,6 +64,7 @@ SET(libs
   ${Thrift_LIBS}
   ${LibCURL_LIBRARIES}
   ${ImageMagick_LIBRARIES}
+  ${SYS_LIBS}
   )
 
 FILE(GLOB_RECURSE common_SRC "${CMAKE_SOURCE_DIR}/process/common/*.cpp")
