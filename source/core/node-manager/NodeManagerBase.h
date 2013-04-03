@@ -151,6 +151,11 @@ public:
 
     void registerDistributeService(boost::shared_ptr<IDistributeService> sp_service, bool enable_worker, bool enable_master);
 
+    boost::mutex& getStateLock()
+    {
+        return mutex_;
+    }
+
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
     virtual void onNodeDeleted(const std::string& path);
