@@ -178,6 +178,8 @@ void NodeManagerBase::notifyStop()
 
 void NodeManagerBase::stop()
 {
+    if (stopping_)
+        return;
     stopping_ = true;
     LOG(INFO) << "begin stopping...";
     if (masterStarted_)
@@ -1152,6 +1154,17 @@ void NodeManagerBase::checkPrimaryState(bool primary_deleted)
     }
     NodeStateType primary_state = getPrimaryState();
     LOG(INFO) << "current primary node changed : " << primary_state;
+
+    if (primary_state == NODE_STATE_UNKNOWN)
+    {
+        LOG(WARNING) << "primary may lost .";
+        if (!zookeeper_->isZNodeExists(curr_primary_path_, ZooKeeper::WATCH))
+        {
+            checkForPrimaryElecting();
+            return;
+        }
+    }
+
     switch(nodeState_)
     {
     case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY:
@@ -1448,12 +1461,12 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
 	    MasterManagerBase::get()->enableNewWrite();
     }
 
-    zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
     if (need_stop_ && nodeState_ == NODE_STATE_STARTED)
     {
         stop();
         return;
     }
+    zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
     // notify master got ready for next request.
     if (masterStarted_)
     {
@@ -1503,10 +1516,13 @@ void NodeManagerBase::updateNodeState()
 
 void NodeManagerBase::updateSelfPrimaryNodeState(const ZNode& nodedata)
 {
-    zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
     if (nodeState_ == NODE_STATE_STARTED && need_stop_)
     {
         stop();
+    }
+    else
+    {
+        zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
     }
 }
 
