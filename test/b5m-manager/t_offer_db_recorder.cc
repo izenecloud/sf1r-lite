@@ -1,6 +1,5 @@
-#include <b5m-manager/raw_scd_generator.h>
-#include <b5m-manager/attribute_indexer.h>
 #include <b5m-manager/product_matcher.h>
+#include <b5m-manager/attribute_indexer.h>
 #include <b5m-manager/category_scd_spliter.h>
 #include <b5m-manager/b5mo_scd_generator.h>
 #include <b5m-manager/b5mo_processor.h>
@@ -12,7 +11,6 @@
 #include <b5m-manager/ticket_processor.h>
 #include <b5m-manager/uue_worker.h>
 #include <b5m-manager/b5mp_processor.h>
-#include <b5m-manager/spu_processor.h>
 #include <b5m-manager/b5m_mode.h>
 #include <b5m-manager/b5mc_scd_generator.h>
 #include <b5m-manager/log_server_handler.h>

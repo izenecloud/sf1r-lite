@@ -1,6 +1,5 @@
-#include <b5m-manager/raw_scd_generator.h>
-#include <b5m-manager/attribute_indexer.h>
 #include <b5m-manager/product_matcher.h>
+#include <b5m-manager/attribute_indexer.h>
 #include <b5m-manager/category_scd_spliter.h>
 #include <b5m-manager/b5mo_scd_generator.h>
 #include <b5m-manager/b5mo_processor.h>
@@ -13,7 +12,6 @@
 #include <b5m-manager/tuan_processor.h>
 #include <b5m-manager/uue_worker.h>
 #include <b5m-manager/b5mp_processor.h>
-#include <b5m-manager/spu_processor.h>
 #include <b5m-manager/b5m_mode.h>
 #include <b5m-manager/b5mc_scd_generator.h>
 #include <b5m-manager/log_server_handler.h>
@@ -267,16 +265,15 @@ int do_main(int ac, char** av)
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("raw-generate", "generate standard raw scd")
-        ("attribute-index,A", "build attribute index")
+        ("attribute-index", "build attribute index")
         ("product-train", "do product training")
         ("product-match", "do product matching test")
         ("fuzzy-diff", "test the fuzzy matching diff from no fuzzy")
-        ("b5m-match,B", "make b5m matching")
+        ("b5m-match", "make b5m matching")
         ("psm-index", "psm index")
         ("psm-match", "psm match")
-        ("complete-match,M", "attribute complete matching")
-        ("similarity-match,I", "title based similarity matching")
+        ("complete-match", "attribute complete matching")
+        ("similarity-match", "title based similarity matching")
         ("ticket-generate", "do directly ticket matching")
         ("tuan-generate", "do directly tuan matching")
         ("cmatch-generate", "match to cmatch")
@@ -284,11 +281,11 @@ int do_main(int ac, char** av)
         ("uue-generate", "generate uue")
         ("b5mp-generate", "generate b5mp scd")
         ("b5mc-generate", "generate b5mc scd")
-        ("spu-process", "process and merge all spus")
         ("logserver-update", "update logserver")
-        ("match-test,T", "b5m matching test")
+        ("match-test", "b5m matching test")
         ("frontend-test", "the frontend categorizing")
         ("search-keyword", "get search keywords")
+        ("scd-merge", "merge scd")
         ("mdb-instance", po::value<std::string>(), "specify mdb instance")
         ("last-mdb-instance", po::value<std::string>(), "specify last mdb instance")
         ("mode", po::value<int>(), "specify mode")
@@ -302,24 +299,24 @@ int do_main(int ac, char** av)
         ("synonym,Y", po::value<std::string>(), "specify synonym file")
         ("scd-path,S", po::value<std::string>(), "specify scd path")
         ("old-scd-path", po::value<std::string>(), "specify old processed scd path")
-        ("raw", po::value<std::string>(), "specify raw scd path")
         ("b5mo", po::value<std::string>(), "specify b5mo scd path")
         ("b5mp", po::value<std::string>(), "specify b5mp scd path")
         ("b5mc", po::value<std::string>(), "specify b5mc scd path")
         ("uue", po::value<std::string>(), "uue path")
-        ("spu", po::value<std::string>(), "spu path")
         //("category-group", po::value<std::string>(), "specify category group file")
-        ("output-match,O", po::value<std::string>(), "specify output match path")
+        ("input,I", po::value<std::string>(), "specify input path")
+        ("output,O", po::value<std::string>(), "specify output path")
         ("cma-path,C", po::value<std::string>(), "manually specify cma path")
         ("dictionary", po::value<std::string>(), "specify dictionary path")
         ("mobile-source", po::value<std::string>(), "specify mobile source list file")
         ("human-match", po::value<std::string>(), "specify human edit match file")
-        ("logserver-config,L", po::value<std::string>(), "log server config string")
-        ("imgserver-config,L", po::value<std::string>(), "image server config string")
-        ("exclude,E", "do not generate non matched categories")
-        ("scd-split,P", "split scd files for each categories.")
+        ("logserver-config", po::value<std::string>(), "log server config string")
+        ("imgserver-config", po::value<std::string>(), "image server config string")
+        ("exclude", "do not generate non matched categories")
+        ("scd-split", "split scd files for each categories.")
         ("name,N", po::value<std::string>(), "specify the name")
         ("work-dir,W", po::value<std::string>(), "specify temp working directory")
+        ("all", "specify all flag")
         ("test", "specify test flag")
         ("noprice", "no price flag")
         ("depth", po::value<uint16_t>(), "specify category max depth while categorizing")
@@ -341,12 +338,12 @@ int do_main(int ac, char** av)
     int mode = B5MMode::INC;
     std::string scd_path;
     std::string old_scd_path;
-    std::string raw;
     std::string b5mo;
     std::string b5mp;
     std::string b5mc;
     std::string uue;
-    std::string output_match;
+    std::string input;
+    std::string output;
     std::string knowledge_dir;
     boost::shared_ptr<OfferDb> odb;
     boost::shared_ptr<OfferDb> last_odb;
@@ -364,7 +361,7 @@ int do_main(int ac, char** av)
     std::string cma_path = IZENECMA_KNOWLEDGE ;
     std::string work_dir;
     std::string name;
-    std::string spu;
+    bool all_flag = false;
     bool test_flag = false;
     bool force_flag = false;
     bool noprice = false;
@@ -386,9 +383,6 @@ int do_main(int ac, char** av)
         old_scd_path = vm["old-scd-path"].as<std::string>();
         std::cout << "old-scd-path: " << old_scd_path <<std::endl;
     } 
-    if (vm.count("raw")) {
-        raw = vm["raw"].as<std::string>();
-    } 
     if (vm.count("b5mo")) {
         b5mo = vm["b5mo"].as<std::string>();
     } 
@@ -401,12 +395,13 @@ int do_main(int ac, char** av)
     if (vm.count("uue")) {
         uue = vm["uue"].as<std::string>();
     } 
-    if (vm.count("spu")) {
-        spu = vm["spu"].as<std::string>();
+    if (vm.count("input")) {
+        input = vm["input"].as<std::string>();
+        std::cout << "input: " << input <<std::endl;
     } 
-    if (vm.count("output-match")) {
-        output_match = vm["output-match"].as<std::string>();
-        std::cout << "output-match: " << output_match <<std::endl;
+    if (vm.count("output")) {
+        output = vm["output"].as<std::string>();
+        std::cout << "output: " << output <<std::endl;
     } 
     if (vm.count("knowledge-dir")) {
         knowledge_dir = vm["knowledge-dir"].as<std::string>();
@@ -525,6 +520,10 @@ int do_main(int ac, char** av)
     {
         test_flag = true;
     }
+    if(vm.count("all"))
+    {
+        all_flag = true;
+    }
     if(vm.count("force"))
     {
         force_flag = true;
@@ -550,28 +549,6 @@ int do_main(int ac, char** av)
         std::cout<<"pid:"<<pid<<std::endl;
     }
 
-    if(vm.count("raw-generate"))
-    {
-        if( scd_path.empty() || mdb_instance.empty() || !odb )
-        {
-            return EXIT_FAILURE;
-        }
-        LOG(INFO)<<"raw generator, mode: "<<mode<<std::endl;
-        RawScdGenerator generator(odb.get(), mode, imgserver_config.get());
-        if(!mobile_source.empty())
-        {
-            if(boost::filesystem::exists(mobile_source))
-            {
-                LOG(INFO)<<"raw generator loading mobile source "<<mobile_source<<std::endl;
-                generator.LoadMobileSource(mobile_source);
-            }
-        }
-        if(!generator.Generate(scd_path, mdb_instance))
-        {
-            return EXIT_FAILURE;
-        }
-        LOG(INFO)<<"raw generator successfully"<<std::endl;
-    }
     if(vm.count("scd-split"))
     {
         if( scd_path.empty() || knowledge_dir.empty() || name.empty())
@@ -584,6 +561,17 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
+    }
+    if(vm.count("scd-merge"))
+    {
+        if( input.empty()||output.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ScdMerger merger(input);
+        merger.SetAllType(all_flag);
+        merger.SetOutputPath(output);
+        merger.Run();
     }
     if (vm.count("attribute-index")) {
         if( knowledge_dir.empty() )
@@ -648,7 +636,7 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"matcher open failed"<<std::endl;
             return EXIT_FAILURE;
         }
-        if(!matcher.DoMatch(scd_path, output_match))
+        if(!matcher.DoMatch(scd_path, output))
         {
             return EXIT_FAILURE;
         }
@@ -665,7 +653,7 @@ int do_main(int ac, char** av)
             LOG(ERROR)<<"matcher open failed"<<std::endl;
             return EXIT_FAILURE;
         }
-        if(!matcher.FuzzyDiff(scd_path, output_match))
+        if(!matcher.FuzzyDiff(scd_path, output))
         {
             return EXIT_FAILURE;
         }
@@ -718,39 +706,106 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         matcher.SetUsePriceSim(false);
-        while(true)
+        if(scd_path.empty())
         {
-            std::string line;
-            std::cerr<<"input text:"<<std::endl;
-            getline(std::cin, line);
-            boost::algorithm::trim(line);
-            UString query(line, UString::UTF_8);
+            while(true)
+            {
+                std::string line;
+                std::cerr<<"input text:"<<std::endl;
+                getline(std::cin, line);
+                boost::algorithm::trim(line);
+                UString query(line, UString::UTF_8);
 
-            typedef std::list<std::pair<UString, double> > Hits;
-            Hits hits;
-            Hits left_hits;
-            typedef std::list<UString> Left;
-            Left left;
-            matcher.GetSearchKeywords(query, hits, left_hits, left);
-            for(Hits::const_iterator it = hits.begin();it!=hits.end();++it)
-            {
-                const std::pair<UString, double>& v = *it;
-                std::string str;
-                v.first.convertString(str, UString::UTF_8);
-                std::cout<<"[HITS]"<<str<<","<<v.second<<std::endl;
+                typedef std::list<std::pair<UString, double> > Hits;
+                Hits hits;
+                Hits left_hits;
+                typedef std::list<UString> Left;
+                Left left;
+                matcher.GetSearchKeywords(query, hits, left_hits, left);
+                for(Hits::const_iterator it = hits.begin();it!=hits.end();++it)
+                {
+                    const std::pair<UString, double>& v = *it;
+                    std::string str;
+                    v.first.convertString(str, UString::UTF_8);
+                    std::cout<<"[HITS]"<<str<<","<<v.second<<std::endl;
+                }
+                for(Hits::const_iterator it = left_hits.begin();it!=left_hits.end();++it)
+                {
+                    const std::pair<UString, double>& v = *it;
+                    std::string str;
+                    v.first.convertString(str, UString::UTF_8);
+                    std::cout<<"[LEFT-HITS]"<<str<<","<<v.second<<std::endl;
+                }
+                for(Left::const_iterator it = left.begin();it!=left.end();++it)
+                {
+                    std::string str;
+                    (*it).convertString(str, UString::UTF_8);
+                    std::cout<<"[LEFT]"<<str<<std::endl;
+                }
             }
-            for(Hits::const_iterator it = left_hits.begin();it!=left_hits.end();++it)
+        }
+        else
+        {
+            std::vector<std::string> scd_list;
+            B5MHelper::GetIUScdList(scd_path, scd_list);
+            for(uint32_t i=0;i<scd_list.size();i++)
             {
-                const std::pair<UString, double>& v = *it;
-                std::string str;
-                v.first.convertString(str, UString::UTF_8);
-                std::cout<<"[LEFT-HITS]"<<str<<","<<v.second<<std::endl;
-            }
-            for(Left::const_iterator it = left.begin();it!=left.end();++it)
-            {
-                std::string str;
-                (*it).convertString(str, UString::UTF_8);
-                std::cout<<"[LEFT]"<<str<<std::endl;
+                std::string scd_file = scd_list[i];
+                LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+                ScdParser parser(izenelib::util::UString::UTF_8);
+                parser.load(scd_file);
+                uint32_t n=0;
+                for( ScdParser::iterator doc_iter = parser.begin();
+                  doc_iter!= parser.end(); ++doc_iter, ++n)
+                {
+                    if(n%10000==0)
+                    {
+                        LOG(INFO)<<"Find Documents "<<n<<std::endl;
+                    }
+                    UString title;
+                    SCDDoc& scddoc = *(*doc_iter);
+                    SCDDoc::iterator p = scddoc.begin();
+                    for(; p!=scddoc.end(); ++p)
+                    {
+                        const std::string& property_name = p->first;
+                        if(property_name=="Title")
+                        {
+                            title = p->second;
+                            break;
+                        }
+                    }
+                    if(title.empty()) continue;
+                    typedef std::list<std::pair<UString, double> > Hits;
+                    Hits hits;
+                    Hits left_hits;
+                    typedef std::list<UString> Left;
+                    Left left;
+                    matcher.GetSearchKeywords(title, hits, left_hits, left);
+                    std::string stitle;
+                    title.convertString(stitle, UString::UTF_8);
+                    std::cout<<"[TITLE]"<<stitle<<std::endl;
+                    for(Hits::const_iterator it = hits.begin();it!=hits.end();++it)
+                    {
+                        const std::pair<UString, double>& v = *it;
+                        std::string str;
+                        v.first.convertString(str, UString::UTF_8);
+                        std::cout<<"[HITS]"<<str<<","<<v.second<<std::endl;
+                    }
+                    for(Hits::const_iterator it = left_hits.begin();it!=left_hits.end();++it)
+                    {
+                        const std::pair<UString, double>& v = *it;
+                        std::string str;
+                        v.first.convertString(str, UString::UTF_8);
+                        std::cout<<"[LEFT-HITS]"<<str<<","<<v.second<<std::endl;
+                    }
+                    for(Left::const_iterator it = left.begin();it!=left.end();++it)
+                    {
+                        std::string str;
+                        (*it).convertString(str, UString::UTF_8);
+                        std::cout<<"[LEFT]"<<str<<std::endl;
+                    }
+
+                }
             }
         }
     }
@@ -797,18 +852,6 @@ int do_main(int ac, char** av)
                     std::cout<<"[CATEGORY]"<<products[i].scategory<<std::endl;
                 }
             }
-        }
-    } 
-    if (vm.count("spu-process")) {
-        if(spu.empty())
-        {
-            return EXIT_FAILURE;
-        }
-        SpuProcessor processor(spu);
-
-        if(!processor.Upgrade())
-        {
-            return EXIT_FAILURE;
         }
     } 
     if(vm.count("b5m-match"))
