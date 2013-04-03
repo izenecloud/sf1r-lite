@@ -1,47 +1,7 @@
-#include <b5m-manager/raw_scd_generator.h>
-#include <b5m-manager/attribute_indexer.h>
-#include <b5m-manager/product_matcher.h>
-#include <b5m-manager/category_scd_spliter.h>
-#include <b5m-manager/b5mo_scd_generator.h>
-#include <b5m-manager/b5mo_processor.h>
-#include <b5m-manager/log_server_client.h>
-#include <b5m-manager/image_server_client.h>
-#include <b5m-manager/uue_generator.h>
-#include <b5m-manager/complete_matcher.h>
-#include <b5m-manager/similarity_matcher.h>
-#include <b5m-manager/ticket_processor.h>
-#include <b5m-manager/uue_worker.h>
-#include <b5m-manager/b5mp_processor.h>
-#include <b5m-manager/spu_processor.h>
-#include <b5m-manager/b5m_mode.h>
-#include <b5m-manager/b5mc_scd_generator.h>
-#include <b5m-manager/log_server_handler.h>
-#include <b5m-manager/product_db.h>
-#include <b5m-manager/offer_db.h>
-#include <b5m-manager/offer_db_recorder.h>
-#include <b5m-manager/brand_db.h>
-#include <b5m-manager/comment_db.h>
-#include <b5m-manager/history_db_helper.h>
-#include <b5m-manager/psm_indexer.h>
-#include <b5m-manager/cmatch_generator.h>
-#include "../TestResources.h"
-#include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
-#include <ext/pb_ds/assoc_container.hpp>
-#include <ext/pb_ds/trie_policy.hpp>
-#include <ext/pb_ds/tag_and_trait.hpp>
-#include <stack>
-#include <boost/network/protocol/http/server.hpp>
-#include <boost/network/uri/uri.hpp>
-#include <boost/network/uri/decode.hpp>
-#include <b5m-manager/scd_doc_processor.h>
-#include <b5m-manager/product_db.h>
 #include <boost/test/unit_test.hpp>
-#include <boost/thread.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/bind.hpp>
-#include <util/test/BoostTestThreadSafety.h>
-
+#include <boost/lexical_cast.hpp>
+#include <b5m-manager/b5mo_processor.h>
+#include "TestResources.h"
 using namespace sf1r;
 using namespace std;
 using namespace boost;
@@ -122,19 +82,19 @@ void show(ProductMatcher::Product product)
 }
 
 
+BOOST_AUTO_TEST_SUITE(b5mo_processor_test)
 
-
-
-int main()
+BOOST_AUTO_TEST_CASE(b5mo_processor_process)
 {
     string bdb_path="./bdb";
     string odb_path="./odb";
     std::string cma_path= IZENECMA_KNOWLEDGE ;
-    std::string knowledge_dir= MATCHER_KNOWLEDGE;
+
     //string scd_path="/home/lscm/6indexSCD";
     string output_dir="./output";
-    string file=MOBILE_SOURCE;//"/home/lscm/codebase/b5m-operation/config/collection/mobile_source.txt";
 
+    boost::filesystem::remove_all(bdb_path);
+    boost::filesystem::remove_all(odb_path);
     //b5mo process
     boost::shared_ptr<BrandDb> bdb;
     boost::shared_ptr<OfferDb> odb;
@@ -142,14 +102,9 @@ int main()
     odb.reset(new OfferDb(odb_path));
     odb->open();
     bdb->open();
-    boost::shared_ptr<ProductMatcher> matcher(new ProductMatcher);
-    matcher->SetCmaPath(cma_path);
-    if(!matcher->Open(knowledge_dir))
-    {
-
-    }
     int mode=0;
-
+    ProductMatcher*  matcher=(new ProductMatcher);;
+    matcher->SetCmaPath(cma_path);
 
 
     uint128_t pid=B5MHelper::StringToUint128("5f29098f1f606d9daeb41e49e9a24f87");
@@ -169,22 +124,23 @@ int main()
     odb->insert(1, pid);
     odb->flush();
     odb->get(docid, pid);
-    B5moProcessor processor(odb.get(), matcher.get(), bdb.get(), mode, NULL);
+    B5moProcessor processor(odb.get(), matcher, bdb.get(), mode, NULL);
 
-    processor.LoadMobileSource(file);
+
     processor.Process(doc,type);
 
-    check(doc,"京东","100.00","苹果 iphone4s","平板电脑/MID","品牌:苹果,型号:P85,容量:16G/16GB","1");//1,0x05f29098f1f606d9daeb41e49e9a24f87,"
+    check(doc,"京东","100.00","苹果 iphone4s","","品牌:苹果","");//1,0x05f29098f1f606d9daeb41e49e9a24f87,"
     uint128_t bdocid;
 
     bdocid=B5MHelper::StringToUint128(get(doc,"DOCID"));
     bdb->get(bdocid, brand);
     BOOST_CHECK_EQUAL(toString(brand),"联想");
+    doc.property("Category") =UString("平板电脑/MID", UString::UTF_8);
     type=UPDATE_SCD;
     doc.property("Source") =UString("天猫", UString::UTF_8);
     doc.property("Price") =UString("106.0", UString::UTF_8);
     processor.Process(doc,type);
-    check(doc,"天猫","106.00","苹果 iphone4s", "平板电脑/MID","品牌:苹果,型号:P85,容量:16G/16GB","1");//1,0x5f29098f1f606d9daeb41e49e9a24f87, "
+    check(doc,"天猫","106.00","苹果 iphone4s", "平板电脑/MID","品牌:苹果","");//1,0x5f29098f1f606d9daeb41e49e9a24f87, "
 
 
     type=INSERT_SCD;
@@ -199,9 +155,7 @@ int main()
     odb->flush();
     processor.Process(doc2,type);
     check(doc2,"天猫","154.00","","手机","品牌:三星","");
-    ProductMatcher::Product product;
-    matcher->GetProduct(get(doc2,"uuid"), product);
-    //check(product);
+   
 
     type=DELETE_SCD;
     processor.Process(doc,type);
@@ -228,41 +182,9 @@ int main()
     processor.Process(doc,type);
 
 
-//    mathcher process using namespace ProductMatcher;
-    std::vector<ProductMatcher::Product> result_products;
-
-
-    string spid="7bc999f5d10830d0c59487bd48a73cae",soid="46c999f5d10830d0c59487bd48adce8a",source="苏宁",date="20130301",price="1043",attribute="产地:中国,质量:优",title="华硕  TF700T";
-    doc.property("DATE") = izenelib::util::UString(date, izenelib::util::UString::UTF_8);
-    doc.property("DOCID") =     izenelib::util::UString(spid,izenelib::util::UString::UTF_8);
-    doc.property("Title") = izenelib::util::UString(title, izenelib::util::UString::UTF_8);
-    doc.property("Price") = izenelib::util::UString(price,izenelib::util::UString::UTF_8);
-    doc.property("Source") = izenelib::util::UString(source,izenelib::util::UString::UTF_8);
-    doc.property("Attribute") = izenelib::util::UString(attribute,izenelib::util::UString::UTF_8);
-    matcher->Process(doc, 3, result_products);
-
-    for(unsigned i=0; i<result_products.size(); i++)
-    {
-        check(result_products[i],"电脑办公>电脑整机>笔记本","笔记本电脑","Asus/华硕");
-    }
-    std::vector<ProductMatcher::Product> result_products2;
-    spid="72c999f5d10830d0c59487bd48a73cae",soid="35c999f5d10830d0c59487bd48adce8a",source="凡客",date="20130301",price="1043",attribute="产地:韩国,质量:差",title="2012秋冬新款女外精品棉大衣";
-    doc.property("DATE") = izenelib::util::UString(date, izenelib::util::UString::UTF_8);
-    doc.property("DOCID") =     izenelib::util::UString(spid,izenelib::util::UString::UTF_8);
-    doc.property("Title") = izenelib::util::UString(title, izenelib::util::UString::UTF_8);
-    doc.property("Price") = izenelib::util::UString(price,izenelib::util::UString::UTF_8);
-    doc.property("Source") = izenelib::util::UString(source,izenelib::util::UString::UTF_8);
-    doc.property("Attribute") = izenelib::util::UString(attribute,izenelib::util::UString::UTF_8);
-    matcher->Process(doc, 3, result_products2);
-
-
-
-    for(unsigned i=0; i<result_products2.size(); i++)
-    {
-        check(result_products2[i],"服饰鞋帽>女装","女装/女士精品","");
-    }
-
 }
 
+
+BOOST_AUTO_TEST_SUITE_END()
 
 
