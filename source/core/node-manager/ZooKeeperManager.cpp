@@ -55,6 +55,7 @@ void ZooKeeperManager::stop()
     if (zookeeper->isConnected())
     {
         zookeeper->deleteZNode(ZooKeeperNamespace::getSynchroPath(), false); // clean
+        zookeeper->deleteZNode(ZooKeeperNamespace::getSF1RClusterPath(), false);
     }
 }
 
