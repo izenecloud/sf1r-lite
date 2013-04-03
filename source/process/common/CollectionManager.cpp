@@ -179,6 +179,8 @@ bool CollectionManager::startCollection(const string& collectionName,
         osgiLauncher_.start(miningBundleConfig);
         MiningSearchService* miningSearchService = static_cast<MiningSearchService*>(osgiLauncher_.getService(bundleName, "MiningSearchService"));
         collectionHandler->registerService(miningSearchService);
+        MiningTaskService* miningTaskService = static_cast<MiningTaskService*>(osgiLauncher_.getService(bundleName, "MiningTaskService"));
+        collectionHandler->registerService(miningTaskService);
         collectionHandler->setBundleSchema(miningBundleConfig->mining_schema_);
     }
 
@@ -344,8 +346,8 @@ void CollectionManager::flushCollection(const std::string& collectionName)
             iter->second->indexTaskService_->flush();
         if (iter->second->recommendTaskService_)
             iter->second->recommendTaskService_->flush();
-        if (iter->second->miningSearchService_)
-            iter->second->miningSearchService_->flush();
+        if (iter->second->miningTaskService_)
+            iter->second->miningTaskService_->flush();
         // other service need to add flush interface.
     }
 }

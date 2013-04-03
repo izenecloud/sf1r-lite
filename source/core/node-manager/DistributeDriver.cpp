@@ -27,9 +27,11 @@ DistributeDriver::DistributeDriver()
 
 void DistributeDriver::stop()
 {
+    LOG(INFO) << "begin stopping DistributeDriver...";
     async_task_worker_.interrupt();
     async_task_worker_.join();
     asyncWriteTasks_.clear();
+    LOG(INFO) << "DistributeDriver stop finished...";
 }
 
 void DistributeDriver::run()

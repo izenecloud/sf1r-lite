@@ -275,7 +275,10 @@ bool CobraProcess::initNodeManager()
 
 void CobraProcess::stopDriver()
 {
-    DistributeDriver::get()->stop();
+    if (SF1Config::get()->isDistributedNode())
+    {
+        DistributeDriver::get()->stop();
+    }
     if (driverServer_)
     {
         driverServer_->stop();

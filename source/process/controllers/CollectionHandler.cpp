@@ -9,6 +9,7 @@
 #include <bundles/index/IndexSearchService.h>
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/mining/MiningSearchService.h>
+#include <bundles/mining/MiningTaskService.h>
 #include <bundles/recommend/RecommendTaskService.h>
 #include <bundles/recommend/RecommendSearchService.h>
 #include <aggregator-manager/GetRecommendWorker.h>
@@ -39,6 +40,7 @@ CollectionHandler::CollectionHandler(const string& collection)
         , productSearchService_(0)
         , productTaskService_(0)
         , miningSearchService_(0)
+        , miningTaskService_(0)
         , recommendTaskService_(0)
         , recommendSearchService_(0)
         , getRecommendWorker_(0)

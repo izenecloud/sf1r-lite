@@ -33,9 +33,14 @@ MiningTaskService::~MiningTaskService()
     izenelib::util::Scheduler::removeJob(cronJobName_);
 }
 
-void MiningTaskService::DoMiningCollection()
+bool MiningTaskService::DoMiningCollectionFromAPI()
 {
-    miningManager_->DoMiningCollection();
+    return miningManager_->DoMiningCollectionFromAPI();
+}
+
+void MiningTaskService::DoMiningCollection(int64_t timestamp)
+{
+    miningManager_->DoMiningCollection(timestamp);
 }
 
 void MiningTaskService::DoContinue()
@@ -72,7 +77,7 @@ void MiningTaskService::cronJob_(int calltype)
             return;
         }
 
-        DoMiningCollection();
+        DoMiningCollection(reqlog.cron_time);
         DISTRIBUTE_WRITE_FINISH(true);
     }
 }

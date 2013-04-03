@@ -140,7 +140,8 @@ void IndexWorker::flush(bool mergeBarrel)
         indexManager_->optimizeIndex();
         indexManager_->waitForMergeFinish();
     }
-    miningTaskService_->flush();
+    if (miningTaskService_)
+        miningTaskService_->flush();
 }
 
 bool IndexWorker::reload()
@@ -177,9 +178,10 @@ void IndexWorker::index(unsigned int numdoc, bool& result)
     }
 }
 
-bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
+bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager,
+    int64_t timestamp)
 {
-    rebuildCollection(documentManager);
+    rebuildCollection(documentManager, timestamp);
     return true;
 }
 
@@ -254,13 +256,14 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 
     IndexReqLog reqlog;
     reqlog.scd_list = scdList;
+    reqlog.timestamp = Utilities::createTimeStamp();
     if(!distribute_req_hooker_->prepare(Req_Index, dynamic_cast<CommonReqData&>(reqlog)))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
         return false;
     }
 
-    bool ret = buildCollection(numdoc, scdList);
+    bool ret = buildCollection(numdoc, scdList, reqlog.timestamp);
 
     DISTRIBUTE_WRITE_FINISH(ret);
 
@@ -313,14 +316,14 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
         }
     }
 
-    bool ret = buildCollection(numdoc, reqlog.scd_list);
+    bool ret = buildCollection(numdoc, reqlog.scd_list, reqlog.timestamp);
 
     DISTRIBUTE_WRITE_FINISH(ret);
 
     return ret;
 }
 
-bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList)
+bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList, int64_t timestamp)
 {
     CREATE_PROFILER(buildIndex, "Index:SIAProcess", "Indexer : buildIndex")
 
@@ -508,7 +511,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
         if (miningTaskService_)
         {
             indexManager_->pauseMerge();
-            miningTaskService_->DoMiningCollection();
+            miningTaskService_->DoMiningCollection(timestamp);
             indexManager_->resumeMerge();
         }
     }
@@ -553,7 +556,8 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     return true;
 }
 
-bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager)
+bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager,
+    int64_t timestamp)
 {
     LOG(INFO) << "start BuildCollection";
 
@@ -620,7 +624,6 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         time_t timestamp = -1;
         prepareIndexDocument_(oldId, timestamp, document, indexDocument);
 
-        timestamp = Utilities::createTimeStamp();
         if (!insertDoc_(document, indexDocument, timestamp))
             continue;
 
@@ -643,7 +646,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     if (miningTaskService_)
     {
         indexManager_->pauseMerge();
-        miningTaskService_->DoMiningCollection();
+        miningTaskService_->DoMiningCollection(timestamp);
         indexManager_->resumeMerge();
         miningTaskService_->flush();
     }
@@ -742,7 +745,7 @@ void IndexWorker::lazyOptimizeIndex(int calltype)
     }
 }
 
-void IndexWorker::doMining_()
+void IndexWorker::doMining_(int64_t timestamp)
 {
     if (miningTaskService_)
     {
@@ -752,7 +755,7 @@ void IndexWorker::doMining_()
             int docLimit = miningTaskService_->getMiningBundleConfig()->mining_config_.dcmin_param.docnum_limit;
             if (docLimit != 0 && (indexManager_->numDocs()) % docLimit == 0)
             {
-                miningTaskService_->DoMiningCollection();
+                miningTaskService_->DoMiningCollection(timestamp);
             }
         }
     }
@@ -789,33 +792,35 @@ bool IndexWorker::createDocument(const Value& documentValue)
         return false;
     }
 
-    time_t timestamp = reqlog.timestamp;
-    LOG(INFO) << "create doc timestamp is : " << timestamp;
+    LOG(INFO) << "create doc timestamp is : " << reqlog.timestamp;
 
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
     scd_writer_->Write(scddoc, INSERT_SCD);
-
 
     Document document;
     IndexerDocument indexDocument, oldIndexDocument;
     docid_t oldId = 0;
     std::string source = "";
     IndexWorker::UpdateType updateType;
+    time_t timestamp = reqlog.timestamp;
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType, INSERT_SCD))
         return false;
 
     if(!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
 
-    bool ret = insertDoc_(document, indexDocument, timestamp, true);
-    if (ret)
+    if (DistributeRequestHooker::get()->isRunningPrimary())
     {
-        doMining_();
+        reqlog.timestamp = timestamp;
     }
 
+    bool ret = insertDoc_(document, indexDocument, reqlog.timestamp, true);
+    if (ret)
+    {
+        doMining_(reqlog.timestamp);
+    }
     //flush();
-    reqlog.timestamp = timestamp;
 
     DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
     return ret;
@@ -926,9 +931,14 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
+    if (DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        reqlog.timestamp = timestamp;
+    }
+
     if(!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
-    bool ret = updateDoc_(document, indexDocument, oldIndexDocument, timestamp, updateType, true);
+    bool ret = updateDoc_(document, indexDocument, oldIndexDocument, reqlog.timestamp, updateType, true);
     if (ret && (updateType != IndexWorker::RTYPE))
     {
         if(!bundleConfig_->enable_forceget_doc_)
@@ -939,7 +949,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
             ///together with AllDocumentIterator
             searchWorker_->clearFilterCache();
         }
-        doMining_();
+        doMining_(reqlog.timestamp);
     }
 
     if(updateType != IndexWorker::RTYPE)
@@ -950,7 +960,6 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     scd_writer_->Write(scddoc, UPDATE_SCD);
 
     //flush();
-    reqlog.timestamp = timestamp;
     DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
     return ret;
 }
@@ -1110,8 +1119,9 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         return false;
     }
 
-    NoAdditionReqLog reqlog;
-    if(!distribute_req_hooker_->prepare(Req_NoAdditionDataReq, dynamic_cast<CommonReqData&>(reqlog)))
+    TimestampReqLog reqlog;
+    reqlog.timestamp = Utilities::createTimeStamp();
+    if(!distribute_req_hooker_->prepare(Req_WithTimestamp, dynamic_cast<CommonReqData&>(reqlog)))
     {
         LOG(ERROR) << "prepare failed in: " << __FUNCTION__;
         return false;
@@ -1127,8 +1137,7 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
     scd_writer_->Write(scddoc, DELETE_SCD);
-    time_t timestamp = Utilities::createTimeStamp();
-    bool ret = deleteDoc_(docid, timestamp);
+    bool ret = deleteDoc_(docid, reqlog.timestamp);
     if (ret)
     {
         if(!bundleConfig_->enable_forceget_doc_)
@@ -1139,7 +1148,7 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
             ///together with AllDocumentIterator
             searchWorker_->clearFilterCache();
         }
-        doMining_();
+        doMining_(reqlog.timestamp);
     }
 
     // delete from log server
@@ -1252,7 +1261,10 @@ bool IndexWorker::doBuildCollection_(
     {}
     time_t timestamp = Utilities::createTimeStamp(pt);
     if (timestamp == -1)
+    {
+        LOG(WARNING) << "!!!! create time from scd fileName failed. " << ss.str();
         timestamp = Utilities::createTimeStamp();
+    }
 
     if (scdType == DELETE_SCD)
     {

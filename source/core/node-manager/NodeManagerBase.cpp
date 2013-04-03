@@ -152,6 +152,7 @@ void NodeManagerBase::start()
 
 void NodeManagerBase::notifyStop()
 {
+    LOG(INFO) << "========== notify stop ============= ";
     {
         boost::unique_lock<boost::mutex> lock(mutex_);
         need_stop_ = true;
@@ -172,7 +173,7 @@ void NodeManagerBase::notifyStop()
         }
     }
     zookeeper_->disconnect();
-    LOG(INFO) << "stop finished.";
+    LOG(INFO) << "========== stop finished. ========== ";
 }
 
 void NodeManagerBase::stop()

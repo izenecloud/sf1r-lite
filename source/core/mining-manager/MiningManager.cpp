@@ -744,6 +744,34 @@ bool MiningManager::open()
     return true;
 }
 
+bool MiningManager::DoMiningCollectionFromAPI()
+{
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    TimestampReqLog reqlog;
+    reqlog.timestamp = Utilities::createTimeStamp();
+    if (!DistributeRequestHooker::get()->prepare(Req_WithTimestamp, reqlog))
+    {
+        LOG(INFO) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = false;
+    try
+    {
+        ret = DoMiningCollection(reqlog.timestamp);
+    }
+    catch (std::exception& ex)
+    {
+        std::cerr<<ex.what()<<std::endl;
+        ret = false;
+    }
+
+    DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
+    return ret;
+}
+
 void MiningManager::DoContinue()
 {
     //do mining continue;
@@ -759,7 +787,7 @@ void MiningManager::DoContinue()
         if (boost::filesystem::exists(continue_file))
         {
             boost::filesystem::remove_all(continue_file);
-            DoMiningCollection();
+            DoMiningCollection(0);
         }
         if (boost::filesystem::exists(syncFullScd_file))
         {
@@ -790,7 +818,7 @@ bool MiningManager::DOMiningTask()
     return true;
 }
 
-bool MiningManager::DoMiningCollection()
+bool MiningManager::DoMiningCollection(int64_t timestamp)
 {
     DOMiningTask();
 
@@ -856,12 +884,8 @@ bool MiningManager::DoMiningCollection()
         }
         labelManager_->ClearAllTask();
         MEMLOG("[Mining] TG finished.");
-        IndexReqLog reqlog;
-        DistributeRequestHooker::get()->readPrevChainData(reqlog);
-        if (DistributeRequestHooker::get()->isRunningPrimary())
-            reqlog.timestamp = Utilities::createTimeStamp();
-        LOG(INFO) << "Mining runEvents time: " << reqlog.timestamp;
-        MiningQueryLogHandler::getInstance()->runEvents(reqlog.timestamp);
+        LOG(INFO) << "Mining runEvents time: " << timestamp;
+        MiningQueryLogHandler::getInstance()->runEvents(timestamp);
     }
     //do DUPD
     if (mining_schema_.dupd_enable)

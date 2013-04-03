@@ -10,7 +10,7 @@
 #include <process/common/CollectionManager.h>
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/index/IndexSearchService.h>
-#include <bundles/mining/MiningSearchService.h>
+#include <bundles/mining/MiningTaskService.h>
 #include <core/mining-manager/MiningManager.h>
 #include <bundles/recommend/RecommendTaskService.h>
 #include <aggregator-manager/SearchAggregator.h>
@@ -151,6 +151,26 @@ void CommandsController::index_query_log()
     MiningQueryLogHandler::getInstance()->runEvents(reqlog.timestamp);
 
     DISTRIBUTE_WRITE_FINISH(true);
+}
+
+void CommandsController::mining()
+{
+    IZENELIB_DRIVER_BEFORE_HOOK(checkCollectionName());
+    MiningTaskService* miningService = collectionHandler_->miningTaskService_;
+    if (!miningService)
+    {
+        response().addError("Request failed, mining service not found");
+        return;
+    }
+
+    if (request().callType() != Request::FromAPI)
+    {
+        if( !miningService->DoMiningCollectionFromAPI() )
+            response().addError("failed to do mining.");
+        return;
+    }
+    task_type task = boost::bind(&MiningTaskService::DoMiningCollectionFromAPI, miningService);
+    JobScheduler::get()->addTask(task, collectionName_);
 }
 
 /**

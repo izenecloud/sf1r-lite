@@ -200,8 +200,6 @@ public:
             int limit,
             std::vector<std::vector<std::string> >& pathVec);
 
-    void flush();
-
 private:
     bool HookDistributeRequestForSearch(const std::string& coll, uint32_t workerId);
     MiningBundleConfiguration* bundleConfig_;

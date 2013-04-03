@@ -94,13 +94,13 @@ public:
 
     void index(unsigned int numdoc, bool& result);
 
-    bool reindex(boost::shared_ptr<DocumentManager>& documentManager);
+    bool reindex(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp);
 
     bool buildCollection(unsigned int numdoc);
     bool buildCollectionOnReplica(unsigned int numdoc);
-    bool buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList);
+    bool buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList, int64_t timestamp);
 
-    bool rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager);
+    bool rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp);
 
     bool optimizeIndex();
 
@@ -125,7 +125,7 @@ public:
 private:
     void createPropertyList_();
 
-    void doMining_();
+    void doMining_(int64_t timestamp);
 
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
