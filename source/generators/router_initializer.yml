@@ -32,6 +32,7 @@ controllers:
       - index_recommend
       - optimize_index
       - index_query_log
+      - mining
 
   KeywordsController:
     actions:
