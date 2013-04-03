@@ -190,7 +190,8 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         LOG(WARNING) << "The request has been aborted while prepare";
         return false;
     }
-    if (isprimary && hook_type_ == Request::FromDistribute)
+    // Req_Callback is special, since the data is prepared by other shard.
+    if (isprimary && type != Req_Callback)
     {
         if (chain_status_ == ChainBegin || chain_status_ == NoChain)
             prepared_req.req_json_data = current_req_;

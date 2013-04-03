@@ -30,6 +30,9 @@ enum ReqLogType
     Req_NoAdditionDataNoRollback,
     // used for handle cron job task.
     Req_CronJob,
+    // this kind of request is remote callback.
+    // During a write request on node A, send some write with parameter to other shard nodes.
+    // Note: If the write request has an api method, please do not use callback.
     Req_Callback,
     // this request has only a timestamp with it.
     Req_WithTimestamp,
