@@ -24,8 +24,9 @@ ImgDupDetector::ImgDupDetector(std::string sp,
         bool li,
         bool im,
         int con,
-        int icl)
-:scd_path_(sp), output_path_(op), source_name_(sn), log_info_(li), incremental_mode_(im), controller_(con), image_content_length_(icl), dup_by_url_(false), dup_by_con_(false)
+        int icl,
+        std::string icn)
+:scd_path_(sp), output_path_(op), source_name_(sn), log_info_(li), incremental_mode_(im), controller_(con), image_content_length_(icl), img_content_name_(icn), dup_by_url_(false), dup_by_con_(false)
 {
     SetPsmK(400);
 }
@@ -36,7 +37,8 @@ bool ImgDupDetector::SetParams(std::string sp,
         bool li,
         bool im,
         int con,
-        int icl)
+        int icl,
+        std::string icn)
 {
     SetPsmK(400);
     scd_path_ = sp;
@@ -47,6 +49,7 @@ bool ImgDupDetector::SetParams(std::string sp,
     incremental_mode_ = im;
     controller_ = con;
     image_content_length_ = icl;
+    img_content_name_ = icn;
     dup_by_url_ = false;
     dup_by_con_ = false;
     return true;
@@ -218,6 +221,8 @@ bool ImgDupDetector::DupDetectorMain()
         LOG(INFO)<<"ShareSourceName to be deleted: " << source_name_ << std::endl;
 
         LOG(INFO)<<"Image content length: " << image_content_length_ << std::endl;
+
+        LOG(INFO) <<"Image Content name: " << img_content_name_ << endl;
     }
 
     int fd, wd;
@@ -407,7 +412,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         if(log_info_ && !log_info_)
         {
             key_url_map_[url_key_] = doc["Img"];
-            key_con_map_[url_key_] = doc["Content"];
+            key_con_map_[url_key_] = doc[img_content_name_];
         }
         url_key_++;
     }
@@ -448,7 +453,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         if(log_info_ && !log_info_)
         {
             key_url_map_[url_key_] = doc["Img"];
-            key_con_map_[url_key_] = doc["Content"];
+            key_con_map_[url_key_] = doc[img_content_name_];
         }
         url_key_++;
     }
@@ -512,7 +517,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         std::string docID;
         std::vector<std::pair<std::string, double> > doc_vector;
         PsmAttach attach;
-        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
+        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_, img_content_name_))
         {
             continue;
         }
@@ -521,7 +526,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         con_docid_key_->insert(DocidToUint(docID), con_key_);
         if(log_info_)
         {
-            key_con_map_[con_key_] = doc["Content"];
+            key_con_map_[con_key_] = doc[img_content_name_];
             key_url_map_[con_key_] = doc["Img"];
         }
         con_key_++;
@@ -553,7 +558,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         std::string docID;
         std::vector<std::pair<std::string, double> > doc_vector;
         PsmAttach attach;
-        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
+        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_, img_content_name_))
         {
             continue;
         }
@@ -562,7 +567,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         con_docid_key_->insert(DocidToUint(docID), con_key_);
         if(log_info_)
         {
-            key_con_map_[con_key_] = doc["Content"];
+            key_con_map_[con_key_] = doc[img_content_name_];
             key_url_map_[con_key_] = doc["Img"];
         }
         con_key_++;
@@ -759,7 +764,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         std::string docID;
         std::vector<std::pair<std::string, double> > doc_vector;
         PsmAttach attach;
-        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
+        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_, img_content_name_))
         {
             rest++;
             continue;

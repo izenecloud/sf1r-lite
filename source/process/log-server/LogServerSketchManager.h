@@ -11,6 +11,10 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/bind.hpp>
 #include <util/scheduler.h>
+#include <time.h>
+#include <idmlib/duplicate-detection/psm.h>
+#include <idmlib/duplicate-detection/dup_detector.h>
+#include "LevelDbTable.h"
 
 using namespace boost::posix_time;
 using namespace boost::gregorian;
@@ -44,6 +48,20 @@ public:
         begin = Estimation_.begin();
         end = Estimation_.end();
         return true;;
+    }
+    const EstimationType& GetEstimation()
+    {
+        return Estimation_;
+    }
+    bool SetMaxSize(uint32_t ms)
+    {
+        MaxSize_ = ms;
+        return true;
+    }
+    bool Reset()
+    {
+        Estimation_.clear();
+        return true;
     }
 private:
 
@@ -197,19 +215,26 @@ public:
     typedef std::list< std::pair<std::string, uint32_t> > EstimationType;
     typedef EstimationType::const_iterator ConstIterType;
 
-    LogServerSketchManager(std::string wd)
+    LogServerSketchManager(std::string wd, uint32_t sl = 24*60*60*1000)
     {
         slidCronJobName_ = "EstimationSlidMaker";
         sortCronJobName_ = "LogExternalSorter";
         workdir_ = wd;
-        open();
+        slidLength_ = sl;
+        pastdays = 1;
     }
 
     bool open()
     {
+        ptime now(second_clock::local_time());
+        uint64_t timepast = (now.time_of_day().ticks()) / time_duration::ticks_per_second();
+        uint64_t starttime = (23*60*60+59*60-timepast) * 1000;
+        if(starttime < 0) starttime = 0;
         bool res = izenelib::util::Scheduler::addJob(slidCronJobName_,
-                24*60*60*1000, //each day
-                0,  //start from now
+                //slidLength_,
+                24*60*60*1000,
+                //0,  //start from now
+                starttime,
                 boost::bind(&LogServerSketchManager::makeEstimationSlid, this));
         if(!res)
             LOG(ERROR) <<"Failed in izenelib::util::Scheduler::addJob(), cron job name: " << slidCronJobName_ << endl;
@@ -232,6 +257,31 @@ public:
 
     void makeEstimationSlid()
     {
+        LOG(INFO) <<"makeEstimationSlid ... " << endl;
+        ptime td(day_clock::local_day(), hours(0));
+//        days shift(pastdays);
+//        td = td - shift;
+//        pastdays++;
+        string today = to_iso_string(td);
+        std::map<std::string, QueriesFrequencyEstimation*>::iterator it;
+        for(it=collectionFEMap_.begin();it!=collectionFEMap_.end();it++)
+        {
+            bool res = queryEstimationCache_.insertEstimationOfDay(it->first,
+                    today,
+                    it->second->GetEstimation());
+            if(res)
+            {
+                it->second->Reset();
+                if(collectionSketchMap_.find(it->first) != collectionSketchMap_.end())
+                    collectionSketchMap_[it->first]->clear();
+                else
+                    LOG(ERROR) << "MakeEstimationSlid: find no sketch for collection[" << it->first <<"]" << endl;
+            }
+            else
+            {
+                LOG(ERROR) << "InsertEstimationOfDay ERROR! [" << today <<"]" << endl;
+            }
+        }
     }
 
     void externalSort()
@@ -249,6 +299,8 @@ public:
     {
         if(!checkSketch(collection))
             return false;
+        if(boost::lexical_cast<uint32_t>(hitnum) <= 0)
+            return true;
 
         uint32_t count = collectionSketchMap_[collection]->inc(query.c_str(), query.length());
 
@@ -281,6 +333,9 @@ public:
         QueriesFrequencyEstimation* qfe = new QueriesFrequencyEstimation(boost::lexical_cast<uint32_t>(limit));
         std::map<std::string, uint32_t> Tmap;
 
+        timespec time1;
+        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+        LOG(INFO) << "BeginTime: sec[" << time1.tv_sec <<"]  " << time1.tv_nsec << endl;
         for(it=time_list.begin();it!=time_list.end();it++)
         {
             if(queryEstimationCache_.getEstimationOfDay(collection, *it, iter, end_iter))
@@ -295,6 +350,10 @@ public:
             }
             else if(*it == today)
             {
+                timespec time2;
+                clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+                LOG(INFO) << "Begin to deal with today's data: " << time2.tv_sec <<"  " << time2.tv_nsec << endl;
+
                 if(collectionFEMap_.find(collection) != collectionFEMap_.end())
                 {
                     collectionFEMap_[collection]->GetEstimation(iter, end_iter);
@@ -306,8 +365,13 @@ public:
                         qfe->Insert(iter->first, Tmap[iter->first]);
                     }
                 }
+                clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+                LOG(INFO) << "End of dealing with today's data: " << time2.tv_sec <<"  " << time2.tv_nsec << endl;
             }
         }
+
+        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+        LOG(INFO) << "Finish dealing with all data: " << time1.tv_sec <<"  " << time1.tv_nsec << endl;
 
         qfe->GetEstimation(iter, end_iter);
         for(;iter!=end_iter;iter++)
@@ -317,6 +381,9 @@ public:
             res["count"] = boost::lexical_cast<std::string>(iter->second);
             results.push_back(res);
         }
+        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+        LOG(INFO) << "Get the result: " << time1.tv_sec <<"  " << time1.tv_nsec << endl;
+
         return true;
     }
 
@@ -373,7 +440,10 @@ private:
     std::string workdir_;
     std::string sortCronJobName_;
     std::string slidCronJobName_;
+    //the length of slid (milisecond)
+    uint32_t slidLength_;
 
+    int pastdays;
     QueryEstimationCache queryEstimationCache_;
     std::map<std::string, madoka::Sketch*> collectionSketchMap_;
     std::map<std::string, QueriesFrequencyEstimation*> collectionFEMap_;
