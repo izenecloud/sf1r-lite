@@ -275,11 +275,11 @@ bool CobraProcess::initNodeManager()
 
 void CobraProcess::stopDriver()
 {
+    DistributeDriver::get()->stop();
     if (driverServer_)
     {
         driverServer_->stop();
     }
-    DistributeDriver::get()->stop();
 }
 
 bool CobraProcess::startDistributedServer()
@@ -347,13 +347,13 @@ bool CobraProcess::startDistributedServer()
 
 void CobraProcess::stopDistributedServer()
 {
+    if (SF1Config::get()->isDistributedNode())
+        NodeManagerBase::get()->stop();
+
     ZooKeeperManager::get()->stop();
 
     if (workerServer_)
         workerServer_->stop();
-
-    if (SF1Config::get()->isDistributedNode())
-        NodeManagerBase::get()->stop();
 
     CollectionDataReceiver::get()->stop();
     DistributeFileSyncMgr::get()->stop();

@@ -335,6 +335,7 @@ bool CollectionManager::reopenCollection(const std::string& collectionName)
 
 void CollectionManager::flushCollection(const std::string& collectionName)
 {
+    ScopedReadLock lock(*getCollectionMutex(collectionName));
     // flush all changed data to disk.
     handler_const_iterator iter = collectionHandlers_.find(collectionName);
     if (iter != collectionHandlers_.end())
