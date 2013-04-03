@@ -31,6 +31,8 @@ public:
 
     void index_query_log();
 
+    void mining();
+
     void optimize_index();
 
 private:

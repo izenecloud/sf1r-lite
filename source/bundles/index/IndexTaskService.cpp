@@ -116,14 +116,14 @@ bool IndexTaskService::index(unsigned int numdoc)
     return result;
 }
 
-bool IndexTaskService::reindex_from_scd(const std::vector<std::string>& scd_list)
+bool IndexTaskService::reindex_from_scd(const std::vector<std::string>& scd_list, int64_t timestamp)
 {
-    return indexWorker_->buildCollection(0, scd_list);
+    return indexWorker_->buildCollection(0, scd_list, timestamp);
 }
 
-bool IndexTaskService::index(boost::shared_ptr<DocumentManager>& documentManager)
+bool IndexTaskService::index(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp)
 {
-    return indexWorker_->reindex(documentManager);
+    return indexWorker_->reindex(documentManager, timestamp);
 }
 
 bool IndexTaskService::optimizeIndex()

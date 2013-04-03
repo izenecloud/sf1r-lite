@@ -108,7 +108,7 @@ void RebuildTask::doTask()
     CollectionManager::ScopedReadLock recollLock(*recollMutex);
     rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
     LOG(INFO) << "# # # #  start rebuilding";
-    rebuildCollHandler->indexTaskService_->index(documentManager);
+    rebuildCollHandler->indexTaskService_->index(documentManager, reqlog.cron_time);
     CollectionPath& rebuildCollPath = rebuildCollHandler->indexTaskService_->getCollectionPath();
     rebuildCollDir = rebuildCollPath.getCollectionDataPath() + rebuildCollPath.getCurrCollectionDir();
     rebuildCollBaseDir = rebuildCollPath.getBasePath();
@@ -316,7 +316,7 @@ bool RebuildTask::rebuildFromSCD()
 
 
         LOG(INFO) << "# # # #  start rebuilding from scd.";
-        if(!rebuildCollHandler->indexTaskService_->reindex_from_scd(reqlog.scd_list))
+        if(!rebuildCollHandler->indexTaskService_->reindex_from_scd(reqlog.scd_list, reqlog.timestamp))
         {
             CollectionManager::get()->stopCollection(rebuildCollectionName_);
             return false;

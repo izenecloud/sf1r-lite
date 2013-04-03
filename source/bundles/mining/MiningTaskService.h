@@ -16,7 +16,8 @@ public:
 
     ~MiningTaskService();
 
-    void DoMiningCollection();
+    void DoMiningCollection(int64_t timestamp);
+    bool DoMiningCollectionFromAPI();
 
     void DoContinue();
 

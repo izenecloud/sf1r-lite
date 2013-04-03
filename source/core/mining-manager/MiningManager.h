@@ -165,7 +165,8 @@ public:
 
     void flush();
 
-    bool DoMiningCollection();
+    bool DoMiningCollection(int64_t timestamp);
+    bool DoMiningCollectionFromAPI();
 
     bool DOMiningTask();
 
