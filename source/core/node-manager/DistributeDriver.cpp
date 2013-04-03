@@ -1,5 +1,6 @@
 #include "DistributeDriver.h"
 #include "MasterManagerBase.h"
+#include "NodeManagerBase.h"
 #include "DistributeRequestHooker.h"
 #include "RequestLog.h"
 #include "DistributeTest.hpp"
@@ -48,14 +49,24 @@ void DistributeDriver::run()
     }
     catch (boost::thread_interrupted&)
     {
-        // if any request, run it.
-        if (!asyncWriteTasks_.empty())
+        // if another thread finished check interrupt but not yet
+        // push the task to the queue. It may be ignored.
+        // So here we try lock in node to avoid jingzhen condition.
+        boost::function<bool()> task;
         {
-            LOG(INFO) << "running last request before stopping.";
-            boost::function<bool()> task;
-            asyncWriteTasks_.pop(task);
-            task();
+            boost::unique_lock<boost::mutex> lk(NodeManagerBase::get()->getStateLock());
+            LOG(INFO) << "check task while stopping.";
+            // if any request, run it.
+            if (!asyncWriteTasks_.empty())
+            {
+                LOG(INFO) << "running last request before stopping.";
+                asyncWriteTasks_.pop(task);
+            }
         }
+
+        if (task)
+            task();
+
         return;
     }
     LOG(ERROR) << "run write thread error.";
