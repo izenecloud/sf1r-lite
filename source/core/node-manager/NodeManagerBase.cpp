@@ -1461,7 +1461,7 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
 	    MasterManagerBase::get()->enableNewWrite();
     }
 
-    if (need_stop_ && nodeState_ == NODE_STATE_STARTED)
+    if (need_stop_ && nodeState_ == NODE_STATE_STARTED && MasterManagerBase::get()->hasAnyCachedRequest())
     {
         stop();
         return;
@@ -1516,7 +1516,7 @@ void NodeManagerBase::updateNodeState()
 
 void NodeManagerBase::updateSelfPrimaryNodeState(const ZNode& nodedata)
 {
-    if (nodeState_ == NODE_STATE_STARTED && need_stop_)
+    if (nodeState_ == NODE_STATE_STARTED && need_stop_ && !MasterManagerBase::get()->hasAnyCachedRequest())
     {
         stop();
     }

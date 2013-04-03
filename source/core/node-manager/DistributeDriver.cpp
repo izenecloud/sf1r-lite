@@ -28,6 +28,7 @@ DistributeDriver::DistributeDriver()
 
 void DistributeDriver::stop()
 {
+    NodeManagerBase::get()->notifyStop();
     LOG(INFO) << "begin stopping DistributeDriver...";
     async_task_worker_.interrupt();
     async_task_worker_.join();
@@ -51,22 +52,12 @@ void DistributeDriver::run()
     {
         // if another thread finished check interrupt but not yet
         // push the task to the queue. It may be ignored.
-        // So here we try lock in node to avoid jingzhen condition.
-        boost::function<bool()> task;
+        // So here we try lock in node to avoid contention.
+        LOG(INFO) << "check task while stopping.";
+        if (!asyncWriteTasks_.empty())
         {
-            boost::unique_lock<boost::mutex> lk(NodeManagerBase::get()->getStateLock());
-            LOG(INFO) << "check task while stopping.";
-            // if any request, run it.
-            if (!asyncWriteTasks_.empty())
-            {
-                LOG(INFO) << "running last request before stopping.";
-                asyncWriteTasks_.pop(task);
-            }
+            LOG(INFO) << "has a request while stopping.";
         }
-
-        if (task)
-            task();
-
         return;
     }
     LOG(ERROR) << "run write thread error.";

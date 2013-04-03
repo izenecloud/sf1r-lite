@@ -1358,6 +1358,12 @@ void MasterManagerBase::updateMasterReadyForNew(bool is_ready)
         checkForWriteReq();
 }
 
+bool MasterManagerBase::hasAnyCachedRequest()
+{
+    boost::lock_guard<boost::mutex> lock(state_mutex_);
+    return !cached_write_reqlist_.empty();
+}
+
 void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
