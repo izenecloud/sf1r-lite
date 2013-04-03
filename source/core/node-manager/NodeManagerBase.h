@@ -94,7 +94,7 @@ public:
     /**
      * Stop node manager
      */
-    void stop();
+    void notifyStop();
 
     const Sf1rTopology& getSf1rTopology() const
     {
@@ -214,6 +214,7 @@ protected:
      */
     void leaveCluster();
     bool canAbortRequest();
+    void stop();
 
 protected:
     bool isDistributionEnabled_;
@@ -224,6 +225,7 @@ protected:
 
     uint32_t  processing_step_;
     bool stopping_;
+    bool need_stop_;
     bool slow_write_running_;
 
     ZooKeeperClientPtr zookeeper_;

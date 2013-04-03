@@ -348,7 +348,7 @@ bool CobraProcess::startDistributedServer()
 void CobraProcess::stopDistributedServer()
 {
     if (SF1Config::get()->isDistributedNode())
-        NodeManagerBase::get()->stop();
+        NodeManagerBase::get()->notifyStop();
 
     ZooKeeperManager::get()->stop();
 
