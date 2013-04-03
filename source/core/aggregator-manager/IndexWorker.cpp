@@ -134,15 +134,7 @@ void IndexWorker::flush(bool mergeBarrel)
 {
     documentManager_->flush();
     idManager_->flush();
-    if (indexManager_->isRealTime())
-    {
-        indexManager_->flush(false);
-    }
-    else
-    {
-        indexManager_->flush();
-        indexManager_->deletebinlog();
-    }
+    indexManager_->flush();
     if (mergeBarrel)
     {
         indexManager_->optimizeIndex();
@@ -469,10 +461,10 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
         for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
         {
             bfs::path bkDir = bfs::path(*scd_it).parent_path() / SCD_BACKUP_DIR;
-            bfs::create_directory(bkDir);
             LOG(INFO) << " SCD file : " << *scd_it << " backuped to " << bkDir;
             try
             {
+                bfs::create_directories(bkDir);
                 bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
                 currentDir->appendSCD(bfs::path(*scd_it).filename().string());
             }

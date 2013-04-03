@@ -41,6 +41,7 @@ void DistributeRequestHooker::init()
         boost::bind(&DistributeRequestHooker::onRequestFromPrimary, this, _1, _2));
 
     RecoveryChecker::get()->hasAnyBackup(last_backup_id_);
+    LOG(INFO) << "last backup : " << last_backup_id_;
 }
 
 DistributeRequestHooker::DistributeRequestHooker()
@@ -264,7 +265,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         return true;
     }
 
-    if (isNeedBackup(type) || ( prepared_req.inc_id > last_backup_id_ && (prepared_req.inc_id - last_backup_id_) % 50000 == 0))
+    if (isNeedBackup(type) || ( (prepared_req.inc_id > last_backup_id_ + 1) && (prepared_req.inc_id - last_backup_id_) % 50000 == 0))
     {
         LOG(INFO) << "begin backup";
         if(!RecoveryChecker::get()->backup())
@@ -277,6 +278,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
             return false;
         }
         RecoveryChecker::get()->hasAnyBackup(last_backup_id_);
+        LOG(INFO) << "last backup : " << last_backup_id_;
         //if (hook_type_ != Request::FromLog)
         //    NodeManagerBase::get()->setSlowWriting();
     }
@@ -510,6 +512,7 @@ void DistributeRequestHooker::finish(bool success)
                 forceExit();
             }
             RecoveryChecker::get()->hasAnyBackup(last_backup_id_);
+            LOG(INFO) << "last backup : " << last_backup_id_;
         }
     }
     else
