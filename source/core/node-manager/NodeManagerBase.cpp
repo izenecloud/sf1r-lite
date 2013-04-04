@@ -162,7 +162,7 @@ void NodeManagerBase::notifyStop()
             return;
         }
 
-        if (nodeState_ == NODE_STATE_STARTED || nodeState_ == NODE_STATE_STARTING_WAIT_RETRY)
+        if ((nodeState_ == NODE_STATE_STARTED || nodeState_ == NODE_STATE_STARTING_WAIT_RETRY) && !MasterManagerBase::get()->hasAnyCachedRequest())
         {
             stop();
         }
@@ -1461,7 +1461,7 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
 	    MasterManagerBase::get()->enableNewWrite();
     }
 
-    if (need_stop_ && nodeState_ == NODE_STATE_STARTED && MasterManagerBase::get()->hasAnyCachedRequest())
+    if (need_stop_ && nodeState_ == NODE_STATE_STARTED && !MasterManagerBase::get()->hasAnyCachedRequest())
     {
         stop();
         return;
