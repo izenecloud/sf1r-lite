@@ -1089,6 +1089,11 @@ void NodeManagerBase::checkForPrimaryElecting()
 {
     if (stopping_)
         return;
+    if (!zookeeper_ || !zookeeper_->isConnected())
+    {
+        LOG(INFO) << "ZooKeeper not connected while check for electing.";
+        return;
+    }
     updateCurrentPrimary();
     switch(nodeState_)
     {
@@ -1403,7 +1408,7 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
         NodeStateType state = getNodeState(node_list[i]);
         if (node_list[i] == curr_primary_path_)
             continue;
-        if (state != NODE_STATE_STARTED && state != NODE_STATE_UNKNOWN)
+        if (state != NODE_STATE_STARTED)
         {
             all_secondary_ready = false;
             LOG(INFO) << "one secondary node not ready during electing: " <<
@@ -1411,6 +1416,13 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
             break;
         }
     }
+
+    if (node_list.size() == 0)
+    {
+        LOG(INFO) << "empty children!!!! ZooKeeper may lost" << nodePath_;
+        all_secondary_ready = false;
+    }
+
     if (all_secondary_ready)
     {
         LOG(INFO) << "all secondary ready, ending electing, primary is ready for new request: " << curr_primary_path_;
@@ -1551,7 +1563,8 @@ void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
         NodeStateType state = getNodeState(node_list[i]);
         if (node_list[i] == curr_primary_path_)
             continue;
-        if (state == NODE_STATE_PROCESSING_REQ_RUNNING || state == NODE_STATE_STARTED)
+        if (state == NODE_STATE_PROCESSING_REQ_RUNNING || state == NODE_STATE_STARTED ||
+            state == NODE_STATE_UNKNOWN )
         {
             all_secondary_ready = false;
             LOG(INFO) << "one secondary node has not finished during processing request: " <<
@@ -1568,6 +1581,12 @@ void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
             //    cb_on_abort_request_();
             break;
         }
+    }
+
+    if (node_list.size() == 0)
+    {
+        LOG(INFO) << "empty children!!!! ZooKeeper may lost" << nodePath_;
+        all_secondary_ready = false;
     }
 
     if (!all_secondary_ready)
@@ -1612,7 +1631,8 @@ void NodeManagerBase::checkSecondaryReqFinishLog(bool self_changed)
 
         if (node_list[i] == curr_primary_path_)
             continue;
-        if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY)
+        if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
+            state == NODE_STATE_UNKNOWN )
         {
             all_secondary_ready = false;
             LOG(INFO) << "one secondary node not ready while waiting finish log: " <<
@@ -1630,6 +1650,13 @@ void NodeManagerBase::checkSecondaryReqFinishLog(bool self_changed)
             break;
         }
     }
+
+    if (node_list.size() == 0)
+    {
+        LOG(INFO) << "empty children!!!! ZooKeeper may lost" << nodePath_;
+        all_secondary_ready = false;
+    }
+
     if (all_secondary_ready)
     {
         // all replica finished write log
@@ -1665,7 +1692,8 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
             continue;
         if (state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
             state == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT ||
-            state == NODE_STATE_PROCESSING_REQ_RUNNING)
+            state == NODE_STATE_PROCESSING_REQ_RUNNING ||
+            state == NODE_STATE_UNKNOWN)
         {
             all_secondary_ready = false;
             LOG(INFO) << "one secondary node did not abort while waiting abort request: " <<
@@ -1673,6 +1701,13 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
             break;
         }
     }
+
+    if (node_list.size() == 0)
+    {
+        LOG(INFO) << "empty children!!!! ZooKeeper may lost" << nodePath_;
+        all_secondary_ready = false;
+    }
+
     if (all_secondary_ready)
     {
         LOG(INFO) << "all secondary abort request. primary is ready for new request: " << curr_primary_path_;
