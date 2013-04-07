@@ -274,13 +274,11 @@ void RpcLogServer::GetOldDocId(OldDocIdData& reqdata)
 
 void RpcLogServer::GetFreqUserQueries(GetFreqUserQueriesData& reqdata, std::list< std::map<std::string, std::string> > & results)
 {
-    LOG(INFO) << "RpcLogServer: GetFreqUserQueries" << endl;
     LogServerStorage::get()->sketchManager()->getFreqUserQueries(reqdata.collection_,
             reqdata.begin_time_,
             reqdata.end_time_,
             reqdata.limit_,
             results);
-    LOG(INFO) << "success" << endl;
 }
 
 void RpcLogServer::InjectUserQuery(InjectUserQueryData& reqdata, bool & result)
