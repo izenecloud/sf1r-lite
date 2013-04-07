@@ -68,6 +68,7 @@ public:
     bool pushFileToAllReplicas(const std::string& srcpath, const std::string& destpath, bool recrusive = false);
 
     void checkReplicasStatus(const std::string& colname, std::string& check_errinfo);
+    void checkReplicasLogStatus(std::string& check_errinfo);
     void notifyReportStatusRsp(const ReportStatusRspData& rspdata);
     void sendReportStatusRsp(const std::string& ip, uint16_t port, const ReportStatusRsp& rsp);
 

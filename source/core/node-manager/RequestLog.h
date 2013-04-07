@@ -632,6 +632,11 @@ public:
     // if no more request return false.
     bool getReqData(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset, std::string& req_packed_data);
     bool getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset);
+
+    void getReqLogIdList(uint32_t start, uint32_t max_return, bool needdata,
+        std::vector<uint32_t>& req_logid_list,
+        std::vector<std::string>& req_logdata_list);
+
 private:
     bool getReqPackedDataByHead(const ReqLogHead& head, std::string& req_packed_data);
     std::string getDataPath(uint32_t inc_id);
