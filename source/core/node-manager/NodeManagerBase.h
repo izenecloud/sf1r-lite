@@ -137,11 +137,12 @@ public:
     }
 
     void setRecoveryCallback(NoFailCBFuncT2 on_recovering, NoFailCBFuncT on_recover_wait_primary,
-        NoFailCBFuncT on_recover_wait_replica_finish)
+        NoFailCBFuncT on_recover_wait_replica_finish, CanFailCBFuncT on_recover_check)
     {
         cb_on_recovering_ = on_recovering;
         cb_on_recover_wait_primary_ = on_recover_wait_primary;
         cb_on_recover_wait_replica_finish_ = on_recover_wait_replica_finish;
+        cb_on_recover_check_ = on_recover_check;
     }
 
     inline bool isDistributed() const
@@ -258,6 +259,7 @@ protected:
     NoFailCBFuncT2 cb_on_recovering_;
     NoFailCBFuncT cb_on_recover_wait_primary_;
     NoFailCBFuncT cb_on_recover_wait_replica_finish_;
+    CanFailCBFuncT cb_on_recover_check_;
     NewReqCBFuncT cb_on_new_req_from_primary_;
     //typedef std::map<std::string, NodeStateType> ElectingNodeMapT;
     //ElectingNodeMapT electing_secondaries_;

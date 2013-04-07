@@ -825,7 +825,8 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     NodeManagerBase::get()->setRecoveryCallback(
         boost::bind(&RecoveryChecker::onRecoverCallback, this, _1),
         boost::bind(&RecoveryChecker::onRecoverWaitPrimaryCallback, this),
-        boost::bind(&RecoveryChecker::onRecoverWaitReplicasCallback, this));
+        boost::bind(&RecoveryChecker::onRecoverWaitReplicasCallback, this),
+        boost::bind(&RecoveryChecker::onRecoverCheckLog, this));
 
 }
 
@@ -1169,6 +1170,17 @@ void RecoveryChecker::onRecoverWaitReplicasCallback()
 {
     LOG(INFO) << "all recovery replicas has entered the cluster after recovery finished.";
     LOG(INFO) << "wait recovery finished , primary ready to server";
+}
+
+bool RecoveryChecker::onRecoverCheckLog()
+{
+    LOG(INFO) << "begin check log consistent between replicas.";
+    std::string errinfo;
+    DistributeFileSyncMgr::get()->checkReplicasLogStatus(errinfo);
+    if (errinfo.empty())
+        return true;
+    LOG(WARNING) << "check log failed: " << errinfo;
+    return false;
 }
 
 void RecoveryChecker::syncSCDFiles()

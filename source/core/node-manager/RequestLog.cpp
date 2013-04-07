@@ -336,5 +336,34 @@ void ReqLogMgr::loadLastData()
     }
 }
 
+void ReqLogMgr::getReqLogIdList(uint32_t start, uint32_t max_return, bool needdata,
+    std::vector<uint32_t>& req_logid_list,
+    std::vector<std::string>& req_logdata_list)
+{
+    ReqLogHead head;
+    size_t headoffset;
+    std::string req_packed_data;
+    bool ret = getHeadOffset(start, head, headoffset);
+    if (ret)
+    {
+        max_return = max_return > getLastSuccessReqId() ? getLastSuccessReqId():max_return;
+        req_logid_list.reserve(max_return);
+        if (needdata)
+            req_logdata_list.reserve(max_return);
+        while(true)
+        {
+            ret = getReqDataByHeadOffset(headoffset, head, req_packed_data);
+
+            if(!ret || req_logid_list.size() > max_return)
+                break;
+            req_logid_list.push_back(head.inc_id);
+            if (needdata)
+            {
+                req_logdata_list.push_back(req_packed_data);
+            }
+        }
+    }
+}
+
 }
 

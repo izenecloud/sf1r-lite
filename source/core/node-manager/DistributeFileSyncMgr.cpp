@@ -205,27 +205,18 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             //
             reqdata.success = false;
             boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
-            ReqLogHead head;
-            size_t headoffset;
-            std::string req_packed_data;
-            bool ret = reqlogmgr->getHeadOffset(reqdata.start_inc, head, headoffset);
-            if (!ret)
+            std::vector<uint32_t> logid_list;
+            reqlogmgr->getReqLogIdList(reqdata.start_inc, 10000, true, logid_list, reqdata.logdata_list);
+            if (logid_list.empty())
             {
                 LOG(INFO) << "no more log after inc_id : " << reqdata.start_inc;
+                reqdata.end_inc = reqdata.start_inc;
             }
             else
             {
-                reqdata.logdata_list.reserve(10000);
                 LOG(INFO) << "get log from inc_id : " << reqdata.start_inc;
-                while(true)
-                {
-                    ret = reqlogmgr->getReqDataByHeadOffset(headoffset, head, req_packed_data);
-                    if(!ret || reqdata.logdata_list.size() > 10000)
-                        break;
-                    reqdata.logdata_list.push_back(req_packed_data);
-                    reqdata.end_inc = head.inc_id;
-                }
-                LOG(INFO) << "get log last inc_id :" << head.inc_id;
+                reqdata.end_inc = logid_list.back();;
+                LOG(INFO) << "get log last inc_id :" << reqdata.end_inc; 
             }
             
             reqdata.success = true;
@@ -400,6 +391,154 @@ void DistributeFileSyncMgr::sendReportStatusRsp(const std::string& ip, uint16_t 
     }
 }
 
+void DistributeFileSyncMgr::checkReplicasLogStatus(std::string& check_errinfo)
+{
+    if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
+        return;
+
+    {
+        boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+        while (reporting_)
+        {
+            status_report_cond_.timed_wait(lk, boost::posix_time::seconds(5));
+            check_errinfo = "there is already a report request processing.";
+            LOG(INFO) << check_errinfo;
+        }
+        reporting_ = true;
+    }
+    check_errinfo = "";
+    std::vector<std::string> replica_info;
+    NodeManagerBase::get()->getAllReplicaInfo(replica_info, true);
+    uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
+
+    ReportStatusRequest req;
+    req.param_.req_host = SuperNodeManager::get()->getLocalHostIP();
+
+    boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
+    getFileList(reqlogmgr->getRequestLogPath(), req.param_.check_file_list, ignore_list_, false);
+    int wait_num = 0;
+    for( size_t i = 0; i < replica_info.size(); ++i)
+    {
+        if (replica_info[i] == SuperNodeManager::get()->getLocalHostIP())
+        {
+            continue;
+        }
+        bool rsp_ret = false;
+        try
+        {
+            conn_mgr_->syncRequest(replica_info[i], port, req, rsp_ret);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(INFO) << "send request error while checking status: " << e.what();
+            continue;
+        }
+        if (rsp_ret)
+            ++wait_num;
+    }
+
+    if (wait_num == 0)
+    {
+        boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+        reporting_ = false;
+        LOG(INFO) << "ignore check for no other replicas.";
+        return;
+    }
+    std::vector<std::string> file_checksum_list(req.param_.check_file_list.size());
+    // calculate local.
+    for (size_t i = 0; i < req.param_.check_file_list.size(); ++i)
+    {
+        const std::string& file = req.param_.check_file_list[i];
+        file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file));
+    }
+    // get local redo log id 
+    std::vector<uint32_t> check_logid_list;
+    std::vector<std::string> check_logdata_list;
+    reqlogmgr->getReqLogIdList(0, reqlogmgr->getLastSuccessReqId(), false, check_logid_list,
+        check_logdata_list);
+
+    if (check_logid_list.empty())
+        LOG(INFO) << "no any log on the node";
+    else
+        LOG(INFO) << "start log: " << check_logid_list[0] << ", end log:" << check_logid_list.back();
+
+    bool is_file_mismatch = false;
+    bool is_redolog_mismatch = false;
+    int max_wait = 30;
+    // wait for response.
+    while(wait_num > 0)
+    {
+        std::vector<ReportStatusRspData> rspdata;
+        {
+            boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+            while (status_rsp_list_.empty())
+            {
+                if (--max_wait < 0)
+                {
+                    LOG(INFO) << "wait max time!! no longer wait, no rsp num: " << wait_num;
+                    reporting_ = false;
+                    check_errinfo = "wait report status timeout!!";
+                    return;
+                }
+                status_report_cond_.timed_wait(lk, boost::posix_time::seconds(30));
+            }
+            // reset wait time if got any rsp.
+            max_wait = 10;
+            rspdata.swap(status_rsp_list_);
+        }
+        LOG(INFO) << "status report got rsp: " << rspdata.size();
+        for(size_t i = 0; i < rspdata.size(); ++i)
+        {
+            LOG(INFO) << "checking rsp for host :" << rspdata[i].rsp_host;
+            if (!rspdata[i].success)
+            {
+                LOG(WARNING) << "rsp return false from this host!!";
+                continue;
+            }
+            if (rspdata[i].check_file_result.size() != file_checksum_list.size())
+            {
+                LOG(WARNING) << "rsp file check result size not matched!!!!";
+                is_file_mismatch = true;
+                continue;
+            }
+            for (size_t j = 0; j < file_checksum_list.size(); ++j)
+            {
+                if (file_checksum_list[j] != rspdata[i].check_file_result[j])
+                {
+                    LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
+                    is_file_mismatch =  true;
+                }
+            }
+            if (rspdata[i].check_logid_list.size() != check_logid_list.size())
+            {
+                LOG(ERROR) << "rsp logid list size not matched local, " << rspdata[i].check_logid_list.size() << "," << check_logid_list.size();
+                is_redolog_mismatch = true;
+                continue;
+            }
+            for (size_t j = 0; j < check_logid_list.size(); ++j)
+            {
+                if (rspdata[i].check_logid_list[j] != check_logid_list[j])
+                {
+                    LOG(ERROR) << "rsp logid list id not match, " << rspdata[i].check_logid_list[j] << "," << check_logid_list[j];
+                    is_redolog_mismatch = true;
+                }
+            }
+        }
+        wait_num -= rspdata.size();
+    }
+    if (is_file_mismatch)
+    {
+        check_errinfo += " at least one of file not the same status between replicas. ";
+    }
+    if (is_redolog_mismatch)
+    {
+        check_errinfo += " at least one of logid not the same between replicas.";
+    }
+    LOG(INFO) << "report request finished";
+    boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+    reporting_ = false;
+}
+
 void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std::string& check_errinfo)
 {
     if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
@@ -461,6 +600,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
 
     if (wait_num == 0)
     {
+        boost::unique_lock<boost::mutex> lk(status_report_mutex_);
         reporting_ = false;
         LOG(INFO) << "ignore check for no other replicas.";
         return;
@@ -476,25 +616,13 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
         file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file));
         //LOG(INFO) << "file : " << file << ", checksum:" << file_checksum_list[i];
     }
+    std::vector<std::string> check_collection_list;
     // get local redo log id 
     std::vector<uint32_t> check_logid_list;
-    std::vector<std::string> check_collection_list;
-    ReqLogHead head;
-    size_t headoffset;
-    std::string req_packed_data;
-    uint32_t check_start_inc = 0;
-    ret = reqlogmgr->getHeadOffset(check_start_inc, head, headoffset);
-    if (ret)
-    {
-        check_logid_list.reserve(reqlogmgr->getLastSuccessReqId());
-        while(true)
-        {
-            ret = reqlogmgr->getReqDataByHeadOffset(headoffset, head, req_packed_data);
-            if(!ret)
-                break;
-            check_logid_list.push_back(head.inc_id);
-        }
-    }
+    std::vector<std::string> check_logdata_list;
+    reqlogmgr->getReqLogIdList(0, reqlogmgr->getLastSuccessReqId(), false, check_logid_list,
+        check_logdata_list);
+
     if (check_logid_list.empty())
         LOG(INFO) << "no any log on the node";
     else

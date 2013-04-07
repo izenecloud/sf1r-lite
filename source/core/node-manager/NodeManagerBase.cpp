@@ -78,6 +78,7 @@ void NodeManagerBase::startMasterManager()
 void NodeManagerBase::stopMasterManager()
 {
     MasterManagerBase::get()->stop();
+    masterStarted_ =  false;
 }
 
 void NodeManagerBase::detectMasters()
@@ -208,7 +209,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         {
             // retry start
             nodeState_ = NODE_STATE_STARTING;
-            enterCluster();
+            enterCluster(!masterStarted_);
         }
         else
         {
@@ -226,7 +227,27 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             if (old_primary != curr_primary_path_)
                 LOG(INFO) << "primary changed after auto-reconnect";
 
-            if (!zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
+            if (zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
+            {
+                if (old_primary == self_primary_path_)
+                {
+                    if (old_primary != curr_primary_path_)
+                    {
+                        LOG(INFO) << "I lost primary after auto-reconnect" << self_primary_path_;
+                        RecoveryChecker::forceExit("I lost primary after auto-reconnect");
+                    }
+                    checkSecondaryState(false);
+                }
+                else 
+                {
+                    checkPrimaryState(old_primary != curr_primary_path_);
+                    updateNodeState();
+                }
+            }
+
+            bool need_reenter = !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH) ||
+                !cb_on_recover_check_();
+            if (need_reenter)
             {
                 LOG(INFO) << "my self primary path disconnected, must re-enter.";
                 // abort any current request and re-enter .
@@ -246,6 +267,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                         cb_on_wait_replica_abort_();
                 }
                 stopping_ = true;
+                unregisterPrimary();
                 if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
                 {
                     LOG(INFO) << "self node path is still existed, we need delete it first." <<nodePath_;
@@ -255,21 +277,6 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                 nodeState_ = NODE_STATE_STARTING;
                 enterCluster(false);
                 return;
-            }
-
-            if (old_primary == self_primary_path_)
-            {
-                if (old_primary != curr_primary_path_)
-                {
-                    LOG(INFO) << "I lost primary after auto-reconnect" << self_primary_path_;
-                    RecoveryChecker::forceExit("I lost primary after auto-reconnect");
-                }
-                checkSecondaryState(false);
-            }
-            else 
-            {
-                checkPrimaryState(old_primary != curr_primary_path_);
-                updateNodeState();
             }
         }
     }
@@ -523,9 +530,19 @@ bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool
     {
         if (zookeeper_->getZNodeData(node_list[i], sdata, ZooKeeper::WATCH))
         {
-            replicas.push_back(ip);
             ZNode node;
             node.loadKvString(sdata);
+            uint32_t state = node.getUInt32Value(ZNode::KEY_NODE_STATE);
+            if (state == NODE_STATE_RECOVER_RUNNING ||
+                state == NODE_STATE_RECOVER_WAIT_PRIMARY ||
+                state == NODE_STATE_STARTING_WAIT_RETRY ||
+                state == NODE_STATE_STARTING
+                )
+            {
+                LOG(INFO) << "ignore replica for not ready : " << state;
+                continue;
+            }
+            replicas.push_back(ip);
             replicas.back() = node.getStrValue(ZNode::KEY_HOST);
         }
     }
@@ -1664,8 +1681,8 @@ void NodeManagerBase::checkSecondaryReqFinishLog(bool self_changed)
         if (cb_on_wait_finish_log_)
             cb_on_wait_finish_log_();
         //updateNodeStateToNewState(NODE_STATE_STARTED);
+        LOG(INFO) << "all nodes finished write log.";
         checkSecondaryRecovery(self_changed);
-        LOG(INFO) << "all replica finished write log, ready for next new request.";
     }
     else if (!self_changed)
     {
