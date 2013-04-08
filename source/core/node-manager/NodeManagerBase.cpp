@@ -959,8 +959,11 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
         if (need_check_electing_ || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
         {
+            need_check_electing_ = true;
             LOG(WARNING) << "lost connection from ZooKeeper while finish request." << self_primary_path_;
-            checkForPrimaryElecting();
+            //checkForPrimaryElecting();
+            // update to get notify on event callback and check for electing.
+            updateNodeState(znode);
         }
         else
             updateSelfPrimaryNodeState(znode);
@@ -1036,6 +1039,11 @@ void NodeManagerBase::onDataChanged(const std::string& path)
 {
     LOG(INFO) << "node data changed: " << path;
     boost::unique_lock<boost::mutex> lock(mutex_);
+    if (need_check_electing_)
+    {
+        checkForPrimaryElecting();
+        return;
+    }
     // for primary, need handle the self data changed event.
     // because there may only one node in distribute system.
     if (isPrimaryWithoutLock())
@@ -1096,6 +1104,7 @@ void NodeManagerBase::resetWriteState()
     }
 }
 
+// Note: Must be called in ZooKeeper event handler.
 void NodeManagerBase::checkForPrimaryElecting()
 {
     if (stopping_)
@@ -1187,6 +1196,10 @@ void NodeManagerBase::checkForPrimaryElecting()
     }
 }
 
+// note : all check is for secondary node (except for electing).
+// It should be called only in the thread of event handler in ZooKeeper(like onDataChanged)
+//  or be called while starting up and stopping. 
+//  Any other call may cause deadlock.
 void NodeManagerBase::checkPrimaryState(bool primary_deleted)
 {
     if (stopping_)
@@ -1496,7 +1509,7 @@ void NodeManagerBase::setNodeState(NodeStateType state)
     {
         nodeState_ = state;
         LOG(INFO) << "try to change state to new while electing : " << nodeState_;
-        checkForPrimaryElecting();
+        updateNodeState();
         return;
     }
     updateNodeStateToNewState(state);
