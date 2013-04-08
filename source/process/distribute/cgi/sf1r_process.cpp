@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
             conf.initialSize = 2;
             conf.resize = 2;
             conf.maxSize = 4;
-            conf.timeout = 30;
+            conf.timeout = 60;
             Sf1rProcess::driver = new Sf1Driver(host, conf);
         }
         else
@@ -196,8 +196,8 @@ int main(int argc, char* argv[])
             dconf.initialSize = 2;
             dconf.resize = 2;
             dconf.maxSize = 4;
-            dconf.timeout = 30;
-            dconf.zkTimeout = 20000;  //ms
+            dconf.timeout = 60;
+            dconf.zkTimeout = 5000;  //ms
             dconf.match_master_name = match_master;
 
             if (argc > 8)
