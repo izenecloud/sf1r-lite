@@ -379,6 +379,7 @@ def run_testwrite(testfail_host, testfail_type, test_writereq):
         if len(failed_host) > 0:
             printtofile ('data not consistent while checking after restart failed node.' + time.asctime())
             sys.exit(0)
+            break
         elif len(down_host) > 0 :
             # try again without fail test.
             retry += 1

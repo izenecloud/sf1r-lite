@@ -61,6 +61,11 @@ void MasterManagerBase::start()
         }
 
         boost::lock_guard<boost::mutex> lock(state_mutex_);
+        if (masterState_ != MASTER_STATE_INIT)
+        {
+            LOG(INFO) << "already starting.";
+            return;
+        }
         masterState_ = MASTER_STATE_STARTING;
         doStart();
     }
@@ -191,7 +196,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
             masterState_ = MASTER_STATE_STARTING;
             doStart();
         }
-        else 
+        else if (masterState_ != MASTER_STATE_INIT && masterState_!= MASTER_STATE_STARTING)
         {
             LOG(INFO) << "auto-reconnect in master." << serverRealPath_;
             if (!zookeeper_->isZNodeExists(serverRealPath_, ZooKeeper::WATCH))

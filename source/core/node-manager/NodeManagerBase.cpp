@@ -240,7 +240,8 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             nodeState_ = NODE_STATE_STARTING;
             enterCluster(!masterStarted_);
         }
-        else
+        else if (nodeState_ != NODE_STATE_STARTING &&
+                 nodeState_ != NODE_STATE_INIT)
         {
             LOG(WARNING) << "the zookeeper auto reconnected !!! " << self_primary_path_;
             LOG(INFO) << "begin electing for auto-reconnect.";
