@@ -169,8 +169,20 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
         }
         else 
         {
-            watchAll();
-            checkForWriteReq();
+            LOG(INFO) << "auto-reconnect in master." << serverRealPath_;
+            if (!zookeeper_->isZNodeExists(serverRealPath_, ZooKeeper::WATCH))
+            {
+                LOG(INFO) << "serverPath_ disconnected, must re-enter : " << serverRealPath_;
+
+                serverRealPath_.clear();
+                masterState_ = MASTER_STATE_STARTING;
+                doStart();
+            }
+            else
+            {
+                watchAll();
+                //checkForWriteReq();
+            }
         }
     }
     else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
@@ -1369,6 +1381,11 @@ void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
     boost::lock_guard<boost::mutex> lock(state_mutex_);
     if (stopping_)
         return;
+    if (!is_new_primary)
+    {
+        // try to delete last prepared node.
+        endWriteReq();
+    }
     is_mine_primary_ = is_new_primary;
     LOG(INFO) << "mine primary master state changed: " << is_new_primary;
     if (is_new_primary)

@@ -266,7 +266,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                     if(cb_on_wait_replica_abort_)
                         cb_on_wait_replica_abort_();
                 }
-                MasterManagerBase::notifyChangedPrimary(false);
+                MasterManagerBase::get()->notifyChangedPrimary(false);
                 stopping_ = true;
                 unregisterPrimary();
                 if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
@@ -320,7 +320,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                 return;
             }
 
-            MasterManagerBase::notifyChangedPrimary(false);
+            MasterManagerBase::get()->notifyChangedPrimary(false);
             stopping_ = true;
             self_primary_path_.clear();
         }
