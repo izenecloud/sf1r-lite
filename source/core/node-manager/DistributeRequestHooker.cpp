@@ -503,6 +503,7 @@ void DistributeRequestHooker::finish(bool success)
     {
         LOG(INFO) << "The request has finally finished both on primary and replicas.";
         DistributeTestSuit::updateMemoryState("Last_Success_Request", reqlog.inc_id);
+        NodeManagerBase::get()->updateLastWriteReqId(reqlog.inc_id);
         RecoveryChecker::get()->clearRollbackFlag();
         if (isNeedBackup(type))
         {
