@@ -22,6 +22,7 @@ NodeManagerBase::NodeManagerBase()
     , stopping_(false)
     , need_stop_(false)
     , slow_write_running_(false)
+    , need_check_electing_(false)
     , CLASSNAME("[NodeManagerBase]")
 {
 }
@@ -258,6 +259,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             LOG(WARNING) << "worker node disconnected by zookeeper, state: " << zookeeper_->getStateString();
             LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
             LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
+            need_check_electing_ = true;
             if (nodeState_ == NODE_STATE_RECOVER_RUNNING)
             {
                 LOG (INFO) << " session expired while recovering, wait recover finish.";
@@ -275,6 +277,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             MasterManagerBase::get()->notifyChangedPrimary(false);
             stopping_ = true;
             self_primary_path_.clear();
+            need_check_electing_ = false;
         }
 
         zookeeper_->disconnect();
@@ -954,7 +957,7 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         if (!slow_write_running_)
             processing_step_ = 100;
         znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
-        if (!zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
+        if (need_check_electing_ || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
         {
             LOG(WARNING) << "lost connection from ZooKeeper while finish request." << self_primary_path_;
             checkForPrimaryElecting();
@@ -1103,9 +1106,12 @@ void NodeManagerBase::checkForPrimaryElecting()
         return;
     }
 
-
     switch(nodeState_)
     {
+    case NODE_STATE_ELECTING:
+        break;
+    case NODE_STATE_RECOVER_WAIT_REPLICA_FINISH:
+        break;
     case NODE_STATE_RECOVER_WAIT_PRIMARY:
         {
             LOG(INFO) << "primary changed while recovery waiting primary";
@@ -1127,12 +1133,14 @@ void NodeManagerBase::checkForPrimaryElecting()
     case NODE_STATE_PROCESSING_REQ_RUNNING:
     case NODE_STATE_RECOVER_RUNNING:
         LOG(INFO) << "check electing wait for idle." << nodeState_;
+        need_check_electing_ = true;
         return;
         break;
     default:
         break;
     }
 
+    need_check_electing_ = false;
     updateCurrentPrimary();
 
     resetWriteState();
@@ -1155,6 +1163,12 @@ void NodeManagerBase::checkForPrimaryElecting()
         enterCluster(!masterStarted_);
         return;
     }
+    else
+    {
+        std::string sdata;
+        zookeeper_->getZNodeData(self_primary_path_, sdata, ZooKeeper::WATCH);
+        LOG(WARNING) << "new self_primary_path_ is :" << self_primary_path_ << ", data:" << sdata;
+    }
 
     if (isPrimaryWithoutLock())
     {
@@ -1165,6 +1179,7 @@ void NodeManagerBase::checkForPrimaryElecting()
     }
     else
     {
+        nodeState_ = NODE_STATE_STARTED;
         DistributeTestSuit::testFail(ReplicaFail_At_Electing);
         LOG(INFO) << "begin electing, secondary update self to notify new primary : " << curr_primary_path_;
         // notify new primary mine state.
@@ -1179,6 +1194,7 @@ void NodeManagerBase::checkPrimaryState(bool primary_deleted)
     // 
     if (primary_deleted)
     {
+        need_check_electing_ = true;
         checkForPrimaryElecting();
         return;
     }
@@ -1190,6 +1206,7 @@ void NodeManagerBase::checkPrimaryState(bool primary_deleted)
         LOG(WARNING) << "primary may lost .";
         if (!zookeeper_->isZNodeExists(curr_primary_path_, ZooKeeper::WATCH))
         {
+            need_check_electing_ = true;
             checkForPrimaryElecting();
             return;
         }
@@ -1352,7 +1369,8 @@ void NodeManagerBase::checkPrimaryForFinishWrite(NodeStateType primary_state)
 void NodeManagerBase::checkPrimaryForAbortWrite(NodeStateType primary_state)
 {
     DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary_Abort);
-    if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
+    if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
+        primary_state == NODE_STATE_ELECTING)
     {
         LOG(INFO) << "primary aborted the request while waiting primary." << self_primary_path_;
         if (cb_on_abort_request_)
@@ -1464,12 +1482,7 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
 
 bool NodeManagerBase::isNeedCheckElecting()
 {
-    NodeStateType primary_state = getPrimaryState();
-    if (primary_state == NODE_STATE_ELECTING)
-    {
-        return true;
-    }
-    return !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
+    return need_check_electing_;
 }
 
 // for out caller
