@@ -266,6 +266,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                     if(cb_on_wait_replica_abort_)
                         cb_on_wait_replica_abort_();
                 }
+                MasterManagerBase::notifyChangedPrimary(false);
                 stopping_ = true;
                 unregisterPrimary();
                 if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
@@ -319,6 +320,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                 return;
             }
 
+            MasterManagerBase::notifyChangedPrimary(false);
             stopping_ = true;
             self_primary_path_.clear();
         }
@@ -687,6 +689,7 @@ void NodeManagerBase::enterCluster(bool start_master)
             {
                 throw std::runtime_error(ss.str());
             }
+            LOG(WARNING) << " node already existed : " << nodePath_;
         }
         else
         {
