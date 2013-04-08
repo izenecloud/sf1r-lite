@@ -683,7 +683,10 @@ void NodeManagerBase::enterCluster(bool start_master)
                 << ", node" << sf1rTopology_.curNode_.nodeId_ << "]@"
                 << znode.getStrValue(ZNode::KEY_HOST);
 
-            throw std::runtime_error(ss.str());
+            if (znode.getStrValue(ZNode::KEY_HOST) != sf1rTopology_.curNode_.host_)
+            {
+                throw std::runtime_error(ss.str());
+            }
         }
         else
         {
