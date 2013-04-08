@@ -127,6 +127,7 @@ bool ImgDupDetector::SetPath()
     psm_path_noin_con_ = psm_path_ + "/noin/con";
 
     boost::filesystem::create_directories(output_path_);
+    boost::filesystem::create_directories(output_path_+"/../leveldb");
     boost::filesystem::create_directories(psm_path_);
     boost::filesystem::create_directories(psm_path_incr_);
     boost::filesystem::create_directories(psm_path_incr_url_);
@@ -164,6 +165,12 @@ bool ImgDupDetector::InitFujiMap()
     return true;
 }
 
+bool ImgDupDetector::InitLevelDb()
+{
+    docidImgDbTable = new DocidImgDbTable(output_path_+"/../leveldb/docid_imgurl.db");
+    docidImgDbTable->open();
+    return true;
+}
 bool ImgDupDetector::SaveFujiMap()
 {
 /*
@@ -203,8 +210,9 @@ bool ImgDupDetector::DupDetectorMain()
     ImgDupDetector::SetController();
     ImgDupDetector::SetPath();
     ImgDupDetector::InitFujiMap();
+    ImgDupDetector::InitLevelDb();
     ImgDupDetector::ClearHistory();
-    ImgDupFileManager::get()->SetParam(scd_path_, output_path_, docid_docid_, gid_memcount_);
+    ImgDupFileManager::get()->SetParam(scd_path_, output_path_, docid_docid_, gid_memcount_, docidImgDbTable);
 
 
     if(log_info_ || !log_info_)
@@ -466,7 +474,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
 
     if( url_docid_key_->build() < 0 )
     {
-        LOG(ERROR) << "FujiMap build error [url_docid_key_]" <<endl;
+        LOG(ERROR) << "FujiMap build error [url_docid_key_]" << endl;
         LOG(ERROR) << "Error info: " << url_docid_key_->what() << endl;
         return false;
     }
@@ -772,6 +780,10 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         uint32_t match_key;
         uint32_t current_key;
         uint32_t current_docid = DocidToUint(docID);
+        std::string img_url_str;
+        doc["Img"].convertString(img_url_str, izenelib::util::UString::UTF_8);
+        docidImgDbTable->add_item(current_docid, img_url_str);
+
         if(!psm.Search(doc_vector, attach, match_key))
         {
             rest++;
@@ -930,6 +942,17 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
             gid.assign(UintToDocid(match_docid), izenelib::util::UString::UTF_8);
 
             scddoc.push_back(std::pair<std::string, UString>("GID", gid));
+            std::string guangURL;
+            if(!docidImgDbTable->get_item(match_docid, guangURL))
+            {
+                LOG(INFO) << "Find no img url..." << endl;
+            }
+            else
+            {
+                UString gURL;
+                gURL.assign(guangURL, izenelib::util::UString::UTF_8);
+                scddoc.push_back(std::pair<std::string, UString>("guangURL", gURL));
+            }
             writer0.Append(scddoc);
         }
         else
@@ -937,6 +960,7 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
             //saved
             rest++;
             scddoc.push_back(std::pair<std::string, UString>("GID", doc["DOCID"]));
+            scddoc.push_back(std::pair<std::string, UString>("guangURL", doc["Img"]));
             writer0.Append(scddoc);
 
             std::map<uint32_t, std::vector<uint32_t> >::iterator iter = gid_docids_.find(current_docid);
