@@ -157,6 +157,9 @@ public:
         return mutex_;
     }
 
+    void updateLastWriteReqId(uint32_t req_id);
+    uint32_t getLastWriteReqId();
+
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
     virtual void onNodeDeleted(const std::string& path);

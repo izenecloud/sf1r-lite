@@ -1,7 +1,6 @@
 #include "NodeManagerBase.h"
 #include "SuperNodeManager.h"
 #include "SuperMasterManager.h"
-#include "RequestLog.h"
 #include "MasterManagerBase.h"
 #include "DistributeTest.hpp"
 #include "RecoveryChecker.h"
@@ -1513,6 +1512,35 @@ void NodeManagerBase::setNodeState(NodeStateType state)
         return;
     }
     updateNodeStateToNewState(state);
+}
+
+uint32_t NodeManagerBase::getLastWriteReqId()
+{
+    std::string sdata;
+    ZNode znode;
+    zookeeper_->getZNodeData(primaryNodeParentPath_, sdata, ZooKeeper::WATCH);
+    if (!sdata.empty())
+    {
+        znode.loadKvString(sdata);
+        return znode.getUInt32Value(ZNode::KEY_LAST_WRITE_REQID);
+    }
+    return 0;
+}
+
+void NodeManagerBase::updateLastWriteReqId(uint32_t req_id)
+{
+    // update the success request id to ZooKeeper
+    // This will be used for checking whether request log is newest after auto-reconnected
+    //
+    LOG(INFO) << "update last success request for current replica set : " << req_id;
+    if( req_id < getLastWriteReqId())
+    {
+        LOG(ERROR) << "update the last write request id is smaller than the id on replica set parent node.";
+        RecoveryChecker::forceExit("Update Last Write request id error.");
+    }
+    ZNode znode;
+    znode.setValue(ZNode::KEY_LAST_WRITE_REQID, req_id);
+    zookeeper_->setZNodeData(primaryNodeParentPath_, znode.serialize());
 }
 
 void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
