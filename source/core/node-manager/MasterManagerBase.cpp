@@ -153,6 +153,30 @@ void MasterManagerBase::registerIndexStatus(const std::string& collection, bool 
 
 }
 
+std::string MasterManagerBase::findReCreatedServerPath()
+{
+    std::string new_created_path;
+
+    std::vector<std::string> childrenList;
+    zookeeper_->getZNodeChildren(serverParentPath_, childrenList);
+    for (size_t i = 0; i < childrenList.size(); ++i)
+    {
+        std::string sdata;
+        zookeeper_->getZNodeData(childrenList[i], sdata, ZooKeeper::NOT_WATCH);
+        ZNode znode;
+        znode.loadKvString(sdata);
+        if (znode.getStrValue(ZNode::KEY_HOST) == sf1rTopology_.curNode_.host_)
+        {
+            LOG(INFO) << "found server real path for current : " << childrenList[i];
+            new_created_path = childrenList[i];
+            zookeeper_->isZNodeExists(new_created_path, ZooKeeper::WATCH);
+            break;
+        }
+    }
+
+    return new_created_path;
+}
+
 void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     LOG(INFO) << CLASSNAME << ", "<< state2string(masterState_) <<", "<<zkEvent.toString();
@@ -172,11 +196,20 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
             LOG(INFO) << "auto-reconnect in master." << serverRealPath_;
             if (!zookeeper_->isZNodeExists(serverRealPath_, ZooKeeper::WATCH))
             {
-                LOG(INFO) << "serverPath_ disconnected, must re-enter : " << serverRealPath_;
-
-                serverRealPath_.clear();
-                masterState_ = MASTER_STATE_STARTING;
-                doStart();
+                // because the zookeeper will auto re-create the ephemeral node,
+                // we need try to find the re-created node.
+                serverRealPath_ = findReCreatedServerPath();
+                if (serverRealPath_.empty())
+                {
+                    LOG(INFO) << "serverPath_ disconnected, must re-enter.";
+                    masterState_ = MASTER_STATE_STARTING;
+                    doStart();
+                }
+                else
+                {
+                    LOG(INFO) << "serverRealPath_ changed after auto-reconnect : " << serverRealPath_;
+                    watchAll();
+                }
             }
             else
             {
