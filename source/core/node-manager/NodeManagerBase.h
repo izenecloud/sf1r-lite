@@ -200,6 +200,9 @@ protected:
     void updateSelfPrimaryNodeState(const ZNode& nodedata);
     void updateSelfPrimaryNodeState();
 
+    std::string findReCreatedSelfPrimaryNode();
+    void resetWriteState();
+    bool isNeedCheckElecting();
     NodeStateType getPrimaryState();
     NodeStateType getNodeState(const std::string& nodepath);
     void checkSecondaryState(bool self_changed);

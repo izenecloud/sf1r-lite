@@ -195,6 +195,35 @@ void NodeManagerBase::stop()
     stop_cond_.notify_all();
 }
 
+std::string NodeManagerBase::findReCreatedSelfPrimaryNode()
+{
+    std::string new_self_primary;
+
+    if (zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
+    {
+        return self_primary_path_;
+    }
+
+    std::vector<std::string> childrenList;
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, childrenList, ZooKeeper::WATCH);
+    for (size_t i = 0; i < childrenList.size(); ++i)
+    {
+        std::string sdata;
+        zookeeper_->getZNodeData(childrenList[i], sdata, ZooKeeper::WATCH);
+        ZNode znode;
+        znode.loadKvString(sdata);
+        if (znode.getStrValue(ZNode::KEY_HOST) == sf1rTopology_.curNode_.host_)
+        {
+            LOG(INFO) << "found self primary path for current : " << childrenList[i];
+            new_self_primary = childrenList[i];
+            zookeeper_->isZNodeExists(new_self_primary, ZooKeeper::WATCH);
+            break;
+        }
+    }
+
+    return new_self_primary;
+}
+
 void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     LOG (INFO) << CLASSNAME << " worker node event: " << zkEvent.toString();
@@ -214,71 +243,8 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         else
         {
             LOG(WARNING) << "the zookeeper auto reconnected !!! " << self_primary_path_;
-            if (nodeState_ == NODE_STATE_RECOVER_RUNNING ||
-                nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
-            {
-                LOG(INFO) << "current node is busy running !!! " << nodeState_;
-                return;
-            }
-
-            std::string old_primary = curr_primary_path_;
-            updateCurrentPrimary();
-
-            if (old_primary != curr_primary_path_)
-                LOG(INFO) << "primary changed after auto-reconnect";
-
-            if (zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
-            {
-                if (old_primary == self_primary_path_)
-                {
-                    if (old_primary != curr_primary_path_)
-                    {
-                        LOG(INFO) << "I lost primary after auto-reconnect" << self_primary_path_;
-                        RecoveryChecker::forceExit("I lost primary after auto-reconnect");
-                    }
-                    checkSecondaryState(false);
-                }
-                else 
-                {
-                    checkPrimaryState(old_primary != curr_primary_path_);
-                    updateNodeState();
-                }
-            }
-
-            bool need_reenter = !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH) ||
-                !cb_on_recover_check_();
-            if (need_reenter)
-            {
-                LOG(INFO) << "my self primary path disconnected, must re-enter.";
-                // abort any current request and re-enter .
-                if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
-                    nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
-                {
-                    LOG(INFO) << "abort request on current node because of lost registered primary.";
-                    if (cb_on_abort_request_)
-                        cb_on_abort_request_();
-                }
-                else if ( nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
-                    nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS ||
-                    nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
-                {
-                    LOG(INFO) << "abort request on current primary because of lost registered primary.";
-                    if(cb_on_wait_replica_abort_)
-                        cb_on_wait_replica_abort_();
-                }
-                MasterManagerBase::get()->notifyChangedPrimary(false);
-                stopping_ = true;
-                unregisterPrimary();
-                if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
-                {
-                    LOG(INFO) << "self node path is still existed, we need delete it first." <<nodePath_;
-                    zookeeper_->deleteZNode(nodePath_);
-                }
-                self_primary_path_.clear();
-                nodeState_ = NODE_STATE_STARTING;
-                enterCluster(false);
-                return;
-            }
+            LOG(INFO) << "begin electing for auto-reconnect.";
+            checkForPrimaryElecting();
         }
     }
 
@@ -296,29 +262,14 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                 LOG (INFO) << " session expired while recovering, wait recover finish.";
                 return;
             }
-
-            // this node is expired, it means disconnect from ZooKeeper for a long time.
-            // if any write request not finished, we must abort it.
-            if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY ||
-                nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT)
-            {
-                LOG(INFO) << "abort request on current secondary because of expired session.";
-                if (cb_on_abort_request_)
-                    cb_on_abort_request_();
-            }
-            else if ( nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
-                nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS ||
-                nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
-            {
-                LOG(INFO) << "abort request on current primary because of expired session.";
-                if(cb_on_wait_replica_abort_)
-                    cb_on_wait_replica_abort_();
-            }
-            else if (nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
+            if (nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
             {
                 LOG (INFO) << " session expired while processing request, wait processing finish.";
                 return;
             }
+            // this node is expired, it means disconnect from ZooKeeper for a long time.
+            // if any write request not finished, we must abort it.
+            resetWriteState();
 
             MasterManagerBase::get()->notifyChangedPrimary(false);
             stopping_ = true;
@@ -335,7 +286,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 
         boost::unique_lock<boost::mutex> lock(mutex_);
         nodeState_ = NODE_STATE_STARTING;
-        enterCluster(false);
+        enterCluster(!masterStarted_);
         LOG (WARNING) << " restarted in NodeManagerBase for ZooKeeper Service finished";
     }
     if (zkEvent.type_ == ZOO_CHILD_EVENT && masterStarted_)
@@ -1002,8 +953,13 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         if (!slow_write_running_)
             processing_step_ = 100;
         znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
-        zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
-        updateSelfPrimaryNodeState(znode);
+        if (!zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
+        {
+            LOG(WARNING) << "lost connection from ZooKeeper while finish request." << self_primary_path_;
+            checkForPrimaryElecting();
+        }
+        else
+            updateSelfPrimaryNodeState(znode);
 
         //std::string oldsdata = znode.serialize();
         //std::string sdata;
@@ -1108,20 +1064,19 @@ void NodeManagerBase::onChildrenChanged(const std::string& path)
     }
 }
 
-void NodeManagerBase::checkForPrimaryElecting()
+void NodeManagerBase::resetWriteState()
 {
-    if (stopping_)
-        return;
-    if (!zookeeper_ || !zookeeper_->isConnected())
-    {
-        LOG(INFO) << "ZooKeeper not connected while check for electing.";
-        return;
-    }
-    updateCurrentPrimary();
     switch(nodeState_)
     {
-    case NODE_STATE_ELECTING:
-        // I am the new primary.
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG:
+        {
+            LOG(INFO) << "abort request on current primary because of lost registered primary.";
+            if(cb_on_wait_replica_abort_)
+                cb_on_wait_replica_abort_();
+            nodeState_ = NODE_STATE_STARTED;
+        }
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY:
     case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT:
@@ -1132,9 +1087,28 @@ void NodeManagerBase::checkForPrimaryElecting()
             nodeState_ = NODE_STATE_STARTED;
         }
         break;
+    default:
+        break;
+    }
+}
+
+void NodeManagerBase::checkForPrimaryElecting()
+{
+    if (stopping_)
+        return;
+    if (!zookeeper_ || !zookeeper_->isConnected())
+    {
+        LOG(INFO) << "ZooKeeper not connected while check for electing.";
+        return;
+    }
+
+
+    switch(nodeState_)
+    {
     case NODE_STATE_RECOVER_WAIT_PRIMARY:
         {
             LOG(INFO) << "primary changed while recovery waiting primary";
+            updateCurrentPrimary();
             if (curr_primary_path_ != self_primary_path_)
             {
                 if (cb_on_recover_wait_primary_)
@@ -1146,14 +1120,41 @@ void NodeManagerBase::checkForPrimaryElecting()
                 nodeState_ = NODE_STATE_ELECTING;
             }
             LOG(INFO) << "recovery node sync to new primary finished, begin re-enter to the cluster";
-            enterClusterAfterRecovery();
+            enterClusterAfterRecovery(!masterStarted_);
         }
         break;
-    case NODE_STATE_STARTED:
+    case NODE_STATE_PROCESSING_REQ_RUNNING:
+    case NODE_STATE_RECOVER_RUNNING:
+        LOG(INFO) << "check electing wait for idle." << nodeState_;
+        return;
         break;
     default:
         break;
     }
+
+    updateCurrentPrimary();
+
+    resetWriteState();
+
+    MasterManagerBase::get()->notifyChangedPrimary(false);
+
+    self_primary_path_ = findReCreatedSelfPrimaryNode();
+    LOG(WARNING) << "new self_primary_path_ is :" << self_primary_path_;
+
+    if (self_primary_path_.empty())
+    {
+        LOG(WARNING) << "self_primary_path_ lost, need re-enter";
+        stopping_ = true;
+        if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
+        {
+            LOG(INFO) << "self node path is still existed, we need delete it first." <<nodePath_;
+            zookeeper_->deleteZNode(nodePath_);
+        }
+        nodeState_ = NODE_STATE_STARTING;
+        enterCluster(!masterStarted_);
+        return;
+    }
+
     if (isPrimaryWithoutLock())
     {
         updateNodeStateToNewState(NODE_STATE_ELECTING);
@@ -1376,7 +1377,7 @@ void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
             cb_on_recover_wait_primary_();
         LOG(INFO) << "begin re-enter to the cluster after sync to new primary";
         nodeState_ = NODE_STATE_STARTED;
-        enterClusterAfterRecovery();
+        enterClusterAfterRecovery(!masterStarted_);
     }
 }
 
@@ -1460,6 +1461,16 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
     }
 }
 
+bool NodeManagerBase::isNeedCheckElecting()
+{
+    NodeStateType primary_state = getPrimaryState();
+    if (primary_state == NODE_STATE_ELECTING)
+    {
+        return true;
+    }
+    return !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
+}
+
 // for out caller
 void NodeManagerBase::setNodeState(NodeStateType state)
 {
@@ -1467,8 +1478,7 @@ void NodeManagerBase::setNodeState(NodeStateType state)
     if (stopping_)
         return;
     //updateCurrentPrimary();
-    NodeStateType primary_state = getPrimaryState();
-    if (primary_state == NODE_STATE_ELECTING)
+    if (isNeedCheckElecting())
     {
         nodeState_ = state;
         LOG(INFO) << "try to change state to new while electing : " << nodeState_;

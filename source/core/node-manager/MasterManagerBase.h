@@ -204,6 +204,7 @@ protected:
     bool isAllWorkerIdle();
     //bool isAllWorkerFinished();
     bool isAllWorkerInState(int state);
+    std::string findReCreatedServerPath();
 
 protected:
     Sf1rTopology sf1rTopology_;
