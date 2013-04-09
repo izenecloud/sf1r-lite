@@ -1550,7 +1550,11 @@ void NodeManagerBase::updateLastWriteReqId(uint32_t req_id)
     if( req_id < getLastWriteReqId())
     {
         LOG(ERROR) << "update the last write request id is smaller than the id on replica set parent node.";
-        RecoveryChecker::forceExit("Update Last Write request id error.");
+        if (req_id != 0)
+        {
+            RecoveryChecker::forceExit("Update Last Write request id error.");
+        }
+        LOG(INFO) << "last request id is reseted to 0.";
     }
     else if (req_id == getLastWriteReqId())
         return;
