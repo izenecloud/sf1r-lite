@@ -946,6 +946,7 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
             if(!docidImgDbTable->get_item(match_docid, guangURL))
             {
                 LOG(INFO) << "Find no img url..." << endl;
+                scddoc.puch_back(std::pair<std::string, UString>("guangURL", doc["Img"]));
             }
             else
             {
