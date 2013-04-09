@@ -1158,9 +1158,9 @@ void NodeManagerBase::checkForPrimaryElecting()
     self_primary_path_ = findReCreatedSelfPrimaryNode();
     LOG(WARNING) << "new self_primary_path_ is :" << self_primary_path_;
 
-    if (self_primary_path_.empty())
+    if (self_primary_path_.empty() || !cb_on_recover_check_())
     {
-        LOG(WARNING) << "self_primary_path_ lost, need re-enter";
+        LOG(WARNING) << "self_primary_path_ lost or log fall behind, need re-enter";
         stopping_ = true;
         if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
         {
@@ -1538,6 +1538,8 @@ void NodeManagerBase::updateLastWriteReqId(uint32_t req_id)
         LOG(ERROR) << "update the last write request id is smaller than the id on replica set parent node.";
         RecoveryChecker::forceExit("Update Last Write request id error.");
     }
+    else if (req_id == getLastWriteReqId())
+        return;
     ZNode znode;
     znode.setValue(ZNode::KEY_LAST_WRITE_REQID, req_id);
     zookeeper_->setZNodeData(primaryNodeParentPath_, znode.serialize());
