@@ -1170,16 +1170,28 @@ void RecoveryChecker::onRecoverWaitReplicasCallback()
 {
     LOG(INFO) << "all recovery replicas has entered the cluster after recovery finished.";
     LOG(INFO) << "wait recovery finished , primary ready to server";
+    NodeManagerBase::get()->updateLastWriteReqId(reqlog_mgr_->getLastSuccessReqId());
 }
 
 bool RecoveryChecker::onRecoverCheckLog()
 {
-    LOG(INFO) << "begin check log consistent between replicas.";
-    std::string errinfo;
-    DistributeFileSyncMgr::get()->checkReplicasLogStatus(errinfo);
-    if (errinfo.empty())
+    LOG(INFO) << "check log for re-connect.";
+    uint32_t lastid = NodeManagerBase::get()->getLastWriteReqId();
+    if (lastid == 0)
         return true;
-    LOG(WARNING) << "check log failed: " << errinfo;
+    if (lastid == reqlog_mgr_->getLastSuccessReqId())
+    {
+        LOG(INFO) << "current last is same as zookeeper";
+        return true;
+    }
+    else if (lastid > reqlog_mgr_->getLastSuccessReqId())
+    {
+        LOG(INFO) << "current node log fall behind, need sync to newest " << reqlog_mgr_->getLastSuccessReqId();
+    }
+    else
+    {
+        LOG(INFO) << "current node is forword, something error.";
+    }
     return false;
 }
 
