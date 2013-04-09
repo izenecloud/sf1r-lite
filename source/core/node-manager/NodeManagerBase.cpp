@@ -729,6 +729,17 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         }
     }
 
+    if (!cb_on_recover_check_())
+    {
+        LOG(WARNING) << "check for log failed after enter cluster, must re-enter.";
+        unregisterPrimary();
+        sleep(10);
+        updateCurrentPrimary();
+        need_check_electing_ = true;
+        updateNodeState();
+        return;
+    }
+
     MasterManagerBase::get()->notifyChangedPrimary(curr_primary_path_ == self_primary_path_ && !self_primary_path_.empty());
 
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
@@ -1162,6 +1173,7 @@ void NodeManagerBase::checkForPrimaryElecting()
     {
         LOG(WARNING) << "self_primary_path_ lost or log fall behind, need re-enter";
         stopping_ = true;
+        unregisterPrimary();
         if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
         {
             LOG(INFO) << "self node path is still existed, we need delete it first." <<nodePath_;
