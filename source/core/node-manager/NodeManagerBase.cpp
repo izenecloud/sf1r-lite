@@ -751,7 +751,8 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         return;
     }
 
-    MasterManagerBase::get()->notifyChangedPrimary(curr_primary_path_ == self_primary_path_ && !self_primary_path_.empty());
+    if (nodeState_ == NODE_STATE_STARTED)
+        MasterManagerBase::get()->notifyChangedPrimary(curr_primary_path_ == self_primary_path_ && !self_primary_path_.empty());
 
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     updateNodeState();
@@ -786,7 +787,8 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     {
         detectMasters();
     }
-    MasterManagerBase::get()->updateMasterReadyForNew(true);
+    if (nodeState_ == NODE_STATE_STARTED)
+        MasterManagerBase::get()->updateMasterReadyForNew(true);
 }
 
 void NodeManagerBase::leaveCluster()
@@ -1139,30 +1141,9 @@ void NodeManagerBase::checkForPrimaryElecting()
         return;
     }
 
+    LOG(INFO) << "primary is electing current node state: " << nodeState_;
     switch(nodeState_)
     {
-    case NODE_STATE_ELECTING:
-        break;
-    case NODE_STATE_RECOVER_WAIT_REPLICA_FINISH:
-        break;
-    case NODE_STATE_RECOVER_WAIT_PRIMARY:
-        {
-            LOG(INFO) << "primary changed while recovery waiting primary";
-            updateCurrentPrimary();
-            if (curr_primary_path_ != self_primary_path_)
-            {
-                if (cb_on_recover_wait_primary_)
-                    cb_on_recover_wait_primary_();
-                nodeState_ = NODE_STATE_STARTED;
-            }
-            else
-            {
-                nodeState_ = NODE_STATE_ELECTING;
-            }
-            LOG(INFO) << "recovery node sync to new primary finished, begin re-enter to the cluster";
-            enterClusterAfterRecovery(!masterStarted_);
-        }
-        break;
     case NODE_STATE_PROCESSING_REQ_RUNNING:
     case NODE_STATE_RECOVER_RUNNING:
         LOG(INFO) << "check electing wait for idle." << nodeState_;
