@@ -236,6 +236,11 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         boost::unique_lock<boost::mutex> lock(mutex_);
         if (nodeState_ == NODE_STATE_STARTING_WAIT_RETRY)
         {
+            MasterManagerBase::get()->notifyChangedPrimary(false);
+            self_primary_path_ = findReCreatedSelfPrimaryNode();
+            LOG(WARNING) << "new self_primary_path_ is :" << self_primary_path_;
+            stopping_ = true;
+            unregisterPrimary();
             // retry start
             nodeState_ = NODE_STATE_STARTING;
             enterCluster(!masterStarted_);
@@ -603,6 +608,7 @@ bool NodeManagerBase::registerPrimary(ZNode& znode)
 
 void NodeManagerBase::enterCluster(bool start_master)
 {
+    stopping_ = false;
     if (nodeState_ == NODE_STATE_STARTED)
     {
         return;
@@ -615,7 +621,6 @@ void NodeManagerBase::enterCluster(bool start_master)
         return;
     }
 
-    stopping_ = false;
     // ensure base paths
     tryInitZkNameSpace();
 
@@ -672,6 +677,12 @@ void NodeManagerBase::enterCluster(bool start_master)
     if (curr_primary_path_.empty())
     {
         LOG(INFO) << "no primary worker currently.";
+        if (!zookeeper_->isConnected())
+        {
+            nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
+            LOG(WARNING) << " ZooKeeper lost while enter cluster. wait retry.";
+            return;
+        }
         LOG(INFO) << "I am starting as primary worker.";
     }
     else
@@ -788,6 +799,9 @@ void NodeManagerBase::leaveCluster()
  
     zookeeper_->deleteZNode(nodePath_, true);
 
+    if (!zookeeper_->isConnected())
+        return;
+
     std::string replicaPath = replicaPath_;
     std::vector<std::string> childrenList;
     zookeeper_->getZNodeChildren(replicaPath, childrenList, ZooKeeper::NOT_WATCH, false);
@@ -805,7 +819,7 @@ void NodeManagerBase::leaveCluster()
     if (childrenList.size() <= 0)
     {
         zookeeper_->deleteZNode(topologyPath_);
-        zookeeper_->deleteZNode(primaryBasePath_);
+        zookeeper_->deleteZNode(primaryBasePath_, true);
         // if no any node, we delete all the remaining unhandled write request.
         zookeeper_->isZNodeExists(ZooKeeperNamespace::getRootWriteReqQueueParent(), ZooKeeper::NOT_WATCH);
         zookeeper_->deleteZNode(ZooKeeperNamespace::getRootWriteReqQueueParent(), true);
@@ -1166,7 +1180,14 @@ void NodeManagerBase::checkForPrimaryElecting()
 
     MasterManagerBase::get()->notifyChangedPrimary(false);
 
-    self_primary_path_ = findReCreatedSelfPrimaryNode();
+    int retry = 0;
+    while (retry++ < 3)
+    {
+        self_primary_path_ = findReCreatedSelfPrimaryNode();
+        if (!self_primary_path_.empty())
+            break;
+        sleep(1);
+    }
     LOG(WARNING) << "new self_primary_path_ is :" << self_primary_path_;
 
     if (self_primary_path_.empty() || !cb_on_recover_check_())
