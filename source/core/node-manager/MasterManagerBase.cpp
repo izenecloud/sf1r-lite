@@ -612,7 +612,7 @@ void MasterManagerBase::endPreparedWrite()
 
 bool MasterManagerBase::endWriteReq()
 {
-    if (!zookeeper_->isZNodeExists(write_prepare_node_))
+    if (!zookeeper_ || !zookeeper_->isZNodeExists(write_prepare_node_))
     {
         return true;
     }
