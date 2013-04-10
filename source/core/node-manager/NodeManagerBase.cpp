@@ -1130,6 +1130,52 @@ void NodeManagerBase::resetWriteState()
     }
 }
 
+bool NodeManagerBase::isNeedReEnterCluster()
+{
+    std::string old_self_primary = self_primary_path_;
+    std::string old_primary = curr_primary_path_;
+    int retry = 0;
+    while (retry++ < 3)
+    {
+        self_primary_path_ = findReCreatedSelfPrimaryNode();
+        if (!self_primary_path_.empty())
+            break;
+        sleep(1);
+    }
+    LOG(INFO) << "checking re-enter , self_primary_path_ is :" << self_primary_path_;
+
+    if (self_primary_path_.empty() || old_self_primary != self_primary_path_ )
+    {
+        LOG(WARNING) << "current self primary changed or lost, need re-enter cluster.";
+        return true;
+    }
+
+    std::string sdata;
+    zookeeper_->getZNodeData(self_primary_path_, sdata, ZooKeeper::WATCH);
+    LOG(WARNING) << "new self_primary_path_ data:" << sdata;
+
+    updateCurrentPrimary();
+    if (curr_primary_path_.empty() || old_primary != curr_primary_path_)
+    {
+        LOG(WARNING) << "need re-enter cluster for primary has changed." << old_primary << " vs " << curr_primary_path_;
+        return true;
+    }
+
+    NodeStateType primary_state = getPrimaryState();
+    if (primary_state == NODE_STATE_ELECTING || primary_state == NODE_STATE_UNKNOWN)
+    {
+        LOG(WARNING) << "need re-enter cluster for primary is electing ";
+        return true;
+    }
+    if (!cb_on_recover_check_())
+    {
+        LOG(WARNING) << "need re-enter cluster for request log fall behind.";
+        return true;
+    }
+    LOG(INFO) << "no need re-enter cluster, current state : " << nodeState_;
+    return false;
+}
+
 // Note: Must be called in ZooKeeper event handler.
 void NodeManagerBase::checkForPrimaryElecting()
 {
@@ -1155,58 +1201,53 @@ void NodeManagerBase::checkForPrimaryElecting()
     }
 
     need_check_electing_ = false;
-    updateCurrentPrimary();
 
+    if (!isNeedReEnterCluster())
+    {
+        if (isPrimaryWithoutLock())
+        {
+            checkSecondaryState(false);
+        }
+        else
+        {
+            checkPrimaryState(false);
+        }
+        updateNodeState();
+        return;
+    }
+
+    updateCurrentPrimary();
     resetWriteState();
 
     MasterManagerBase::get()->notifyChangedPrimary(false);
 
-    int retry = 0;
-    while (retry++ < 3)
+    LOG(WARNING) << "self_primary_path_ lost or log fall behind, need re-enter";
+    stopping_ = true;
+    unregisterPrimary();
+    if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
     {
-        self_primary_path_ = findReCreatedSelfPrimaryNode();
-        if (!self_primary_path_.empty())
-            break;
-        sleep(1);
+        LOG(INFO) << "self node path is still existed, we need delete it first." <<nodePath_;
+        zookeeper_->deleteZNode(nodePath_);
     }
-    LOG(WARNING) << "new self_primary_path_ is :" << self_primary_path_;
+    nodeState_ = NODE_STATE_STARTING;
+    enterCluster(!masterStarted_);
+    return;
 
-    if (self_primary_path_.empty() || !cb_on_recover_check_())
-    {
-        LOG(WARNING) << "self_primary_path_ lost or log fall behind, need re-enter";
-        stopping_ = true;
-        unregisterPrimary();
-        if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
-        {
-            LOG(INFO) << "self node path is still existed, we need delete it first." <<nodePath_;
-            zookeeper_->deleteZNode(nodePath_);
-        }
-        nodeState_ = NODE_STATE_STARTING;
-        enterCluster(!masterStarted_);
-        return;
-    }
-    else
-    {
-        std::string sdata;
-        zookeeper_->getZNodeData(self_primary_path_, sdata, ZooKeeper::WATCH);
-        LOG(WARNING) << "new self_primary_path_ is :" << self_primary_path_ << ", data:" << sdata;
-    }
-
-    if (isPrimaryWithoutLock())
-    {
-        updateNodeStateToNewState(NODE_STATE_ELECTING);
-        LOG(INFO) << "begin electing, wait all secondary agree on primary : " << curr_primary_path_;
-        DistributeTestSuit::testFail(PrimaryFail_At_Electing);
-        checkSecondaryElecting(true);
-    }
-    else
-    {
-        nodeState_ = NODE_STATE_STARTED;
-        DistributeTestSuit::testFail(ReplicaFail_At_Electing);
-        LOG(INFO) << "begin electing, secondary update self to notify new primary : " << curr_primary_path_;
-        // notify new primary mine state.
-        updateNodeState();
-    }
+    //if (isPrimaryWithoutLock())
+    //{
+    //    updateNodeStateToNewState(NODE_STATE_ELECTING);
+    //    LOG(INFO) << "begin electing, wait all secondary agree on primary : " << curr_primary_path_;
+    //    DistributeTestSuit::testFail(PrimaryFail_At_Electing);
+    //    checkSecondaryElecting(true);
+    //}
+    //else
+    //{
+    //    nodeState_ = NODE_STATE_STARTED;
+    //    DistributeTestSuit::testFail(ReplicaFail_At_Electing);
+    //    LOG(INFO) << "begin electing, secondary update self to notify new primary : " << curr_primary_path_;
+    //    // notify new primary mine state.
+    //    updateNodeState();
+    //}
 }
 
 // note : all check is for secondary node (except for electing).

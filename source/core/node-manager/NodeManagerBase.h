@@ -205,6 +205,7 @@ protected:
 
     std::string findReCreatedSelfPrimaryNode();
     void resetWriteState();
+    bool isNeedReEnterCluster();
     bool isNeedCheckElecting();
     NodeStateType getPrimaryState();
     NodeStateType getNodeState(const std::string& nodepath);
