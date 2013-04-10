@@ -203,20 +203,18 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
             {
                 // because the zookeeper will auto re-create the ephemeral node,
                 // we need try to find the re-created node.
-                serverRealPath_ = findReCreatedServerPath();
-                if (serverRealPath_.empty())
+                std::string new_server_real = findReCreatedServerPath();
+                if (new_server_real.empty())
                 {
-                    if (!zookeeper_->isConnected())
-                        return;
-                    LOG(INFO) << "serverPath_ disconnected, must re-enter.";
-                    masterState_ = MASTER_STATE_STARTING;
-                    doStart();
+                    LOG(INFO) << "serverPath_ disconnected, waiting reconnect.";
+                    return;
                 }
                 else
                 {
-                    LOG(INFO) << "serverRealPath_ changed after auto-reconnect : " << serverRealPath_;
-                    watchAll();
+                    serverRealPath_ = new_server_real;
+                    LOG(INFO) << "serverRealPath_ reconnected after auto-reconnect : " << serverRealPath_;
                 }
+                watchAll();
             }
             else
             {
