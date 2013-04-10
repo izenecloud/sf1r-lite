@@ -63,7 +63,7 @@ bool convertNumericLabel(const std::string& src, float& target)
     {
         target = boost::lexical_cast<float>(src);
     }
-    catch(const boost::bad_lexical_cast& e)
+    catch (const boost::bad_lexical_cast& e)
     {
         LOG(ERROR) << "failed in casting label from " << src
                    << " to numeric value, exception: " << e.what();
@@ -100,7 +100,7 @@ bool convertRangeLabel(const std::string& src, NumericRange& target)
             upperBound = boost::lexical_cast<int64_t>(sub);
         }
     }
-    catch(const boost::bad_lexical_cast& e)
+    catch (const boost::bad_lexical_cast& e)
     {
         LOG(ERROR) << "failed in casting label from " << src
                     << " to numeric value, exception: " << e.what();
@@ -181,8 +181,7 @@ size_t SuffixMatchManager::longestSuffixMatch(
         size_t max_docs,
         std::vector<std::pair<double, uint32_t> >& res_list) const
 {
-    if (!fmi_manager_) return 0;
-    if (pattern_orig.empty()) return 0;
+    if (!fmi_manager_ || pattern_orig.empty()) return 0;
 
     UString pattern(pattern_orig, UString::UTF_8);
 
@@ -252,19 +251,19 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         UString& analyzedQuery) const
 {
     if (pattern_orig.empty()) return 0;
-	
+
     btree::btree_map<uint32_t, double> res_list_map;
-    std::vector<std::pair<size_t, size_t> > match_ranges_list;
+    std::vector<std::pair<size_t, size_t> > range_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
-    std::vector<double> max_match_list;
+    std::vector<double> score_list;
 
     // tokenize the pattern.
     std::string pattern = pattern_orig;
     boost::to_lower(pattern);
     LOG(INFO) << "original query string: " << pattern_orig;
 
-    std::list<std::pair<UString, double> > all_sub_strpatterns;
-    tokenizer_->GetTokenResults(pattern, all_sub_strpatterns, analyzedQuery);
+    std::list<std::pair<UString, double> > sub_patterns;
+    tokenizer_->GetTokenResults(pattern, sub_patterns, analyzedQuery);
     size_t total_match = 0;
 
     {
@@ -287,35 +286,31 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                 return 0;
         }
 
+        std::pair<size_t, size_t> sub_match_range;
         for (size_t prop_i = 0; prop_i < search_in_properties.size(); ++prop_i)
         {
             const std::string& search_property = search_in_properties[prop_i];
-            match_ranges_list.reserve(all_sub_strpatterns.size());
-            max_match_list.reserve(all_sub_strpatterns.size());
+            range_list.reserve(sub_patterns.size());
+            score_list.reserve(sub_patterns.size());
             LOG(INFO) << "query tokenize match ranges in property : " << search_property;
-            for(std::list<std::pair<UString, double> >::iterator pit = all_sub_strpatterns.begin(); 
-                   pit != all_sub_strpatterns.end(); ++pit)
+            for (std::list<std::pair<UString, double> >::iterator pit = sub_patterns.begin();
+                    pit != sub_patterns.end(); ++pit)
             {
-                if (pit->first.empty())
-                    continue;
-                std::pair<size_t, size_t> sub_match_range;
-                size_t matched = fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range);
-                //LOG(INFO) << "match length: " << matched << ", range:" << sub_match_range.first << "," << sub_match_range.second << endl;
-                if (matched == pit->first.length())
+                if (!pit->first.empty() && fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
                 {
-                    match_ranges_list.push_back(sub_match_range);
-                    max_match_list.push_back(pit->second);					
+                    range_list.push_back(sub_match_range);
+                    score_list.push_back(pit->second);
                 }
             }
-            fmi_manager_->convertMatchRanges(search_property, max_docs, match_ranges_list, max_match_list);
+            fmi_manager_->convertMatchRanges(search_property, max_docs, range_list, score_list);
             if (filter_mode == SearchingMode::OR_Filter)
             {
                 fmi_manager_->getTopKDocIdListByFilter(
                         search_property,
                         prop_id_list,
                         filter_range_list,
-                        match_ranges_list,
-                        max_match_list,
+                        range_list,
+                        score_list,
                         max_docs,
                         single_res_list);
             }
@@ -336,19 +331,19 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             }
             single_res_list.clear();
 
-            for (size_t i = 0; i < match_ranges_list.size(); ++i)
+            for (size_t i = 0; i < range_list.size(); ++i)
             {
-                total_match += match_ranges_list[i].second - match_ranges_list[i].first;
+                total_match += range_list[i].second - range_list[i].first;
             }
-            match_ranges_list.clear();
-            max_match_list.clear();
+            range_list.clear();
+            score_list.clear();
             LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
         }
     }
 
     res_list.reserve(res_list_map.size());
     for (btree::btree_map<uint32_t, double>::const_iterator cit = res_list_map.begin();
-        cit != res_list_map.end(); ++cit)
+            cit != res_list_map.end(); ++cit)
     {
         res_list.push_back(std::make_pair(cit->second, cit->first));
     }

@@ -652,7 +652,7 @@ bool MiningManager::open()
                 //matcher->SetCategoryMaxDepth(2);
             }
             product_categorizer_->SetProductMatcher(matcher);
-            if(suffixMatchManager_)
+            if (suffixMatchManager_)
                 suffixMatchManager_->setProductMatcher(matcher);
 
             SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
@@ -2046,8 +2046,7 @@ bool MiningManager::GetSuffixMatch(
         std::size_t& totalCount,
         faceted::GroupRep& groupRep,
         sf1r::faceted::OntologyRep& attrRep,
-        UString& analyzedQuery
-        )
+        UString& analyzedQuery)
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
@@ -2063,8 +2062,8 @@ bool MiningManager::GetSuffixMatch(
     {
         totalCount = suffixMatchManager_->longestSuffixMatch(
                 actionOperation.actionItem_.env_.queryString_,
-                search_in_properties, 
-                max_docs, 
+                search_in_properties,
+                max_docs,
                 res_list);
     }
     else
@@ -2079,8 +2078,8 @@ bool MiningManager::GetSuffixMatch(
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                actionOperation.actionItem_.env_.queryString_, 
-                search_in_properties, 
+                actionOperation.actionItem_.env_.queryString_,
+                search_in_properties,
                 max_docs,
                 actionOperation.actionItem_.searchingMode_.filtermode_,
                 filter_param,
@@ -2122,15 +2121,12 @@ bool MiningManager::GetSuffixMatch(
             LOG(INFO) << "[]TOPN and cost:" << timer.elapsed() << " seconds" << std::endl;
         }
 
-        if (groupManager_ || attrManager_)
+        if ((groupManager_ || attrManager_) && groupFilterBuilder_)
         {
             PropSharedLockSet propSharedLockSet;
-            boost::scoped_ptr<faceted::GroupFilter> groupFilter;
-            if (groupFilterBuilder_)
-            {
-                groupFilter.reset(
+            boost::scoped_ptr<faceted::GroupFilter> groupFilter(
                     groupFilterBuilder_->createFilter(actionOperation.actionItem_.groupParam_, propSharedLockSet));
-            }
+
             if (groupFilter)
             {
                 for (size_t i = 0; i < res_list.size(); ++i)
@@ -2142,12 +2138,12 @@ bool MiningManager::GetSuffixMatch(
         }
     }
 
-    //We do not use this post delete filtering because deleted documents should never be searched from 
+    //We do not use this post delete filtering because deleted documents should never be searched from
     //suffix index in normal cases, while if there are deleted documents before mining finished, these documents
     //should be abled to searched as well.
     //We ignore the exception case that SF1 quit before mining finished
-    //if(!hasDeletedDocDuringMining_)
-    //    res_list.erase(std::remove_if(res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
+    //if (!hasDeletedDocDuringMining_)
+    //    res_list.erase(std::remove_if (res_list.begin(), res_list.end(), IsDeleted(document_manager_)), res_list.end());
     res_list.resize(std::min(orig_max_docs, res_list.size()));
 
     docIdList.resize(res_list.size());
@@ -2169,9 +2165,9 @@ bool MiningManager::GetSuffixMatch(
 }
 
 bool MiningManager::GetProductCategory(
-    const std::string& squery,
-    int limit,
-    std::vector<std::vector<std::string> >& pathVec)
+        const std::string& squery,
+        int limit,
+        std::vector<std::vector<std::string> >& pathVec)
 {
     return product_categorizer_->GetProductCategory(squery, limit, pathVec);
 }
@@ -2202,7 +2198,7 @@ bool MiningManager::GetProductCategory(const UString& query, UString& backend)
                         }
                     }
                 }
-                if(valid)
+                if (valid)
                 {
                     backend = UString(result_product.scategory, UString::UTF_8);
                     return true;
@@ -2226,7 +2222,7 @@ bool MiningManager::GetProductFrontendCategory(
         std::vector<ProductMatcher::Product> result_products;
         if (matcher->Process(doc, (uint32_t)limit, result_products))
         {
-            for(uint32_t i=0;i<result_products.size();i++)
+            for (uint32_t i = 0; i < result_products.size(); ++i)
             {
                 const std::string& category_name = result_products[i].scategory;
                 if (!category_name.empty())
@@ -2235,7 +2231,7 @@ bool MiningManager::GetProductFrontendCategory(
                     if (!match_category_restrict_.empty())
                     {
                         valid = false;
-                        for (uint32_t i=0;i<match_category_restrict_.size();i++)
+                        for (uint32_t i = 0; i < match_category_restrict_.size(); ++i)
                         {
                             if (boost::regex_match(category_name, match_category_restrict_[i]))
                             {
@@ -2244,7 +2240,7 @@ bool MiningManager::GetProductFrontendCategory(
                             }
                         }
                     }
-                    if(valid&& !result_products[i].fcategory.empty())
+                    if (valid && !result_products[i].fcategory.empty())
                     {
                         frontends.push_back(UString(result_products[i].fcategory, UString::UTF_8));
                     }
@@ -2252,14 +2248,14 @@ bool MiningManager::GetProductFrontendCategory(
             }
         }
     }
-    if(!frontends.empty()) return true;
+    if (!frontends.empty()) return true;
     return false;
 }
 bool MiningManager::GetProductFrontendCategory(const izenelib::util::UString& query, UString& frontend)
 {
     std::vector<UString> frontends;
     GetProductFrontendCategory(query,1, frontends);
-    if(frontends.size()>0)
+    if (!frontends.empty())
     {
         frontend = frontends[0];
         return true;
