@@ -565,6 +565,13 @@ void NodeManagerBase::updateCurrentPrimary()
 
 void NodeManagerBase::unregisterPrimary()
 {
+    std::string my_registed_primary = findReCreatedSelfPrimaryNode();
+    while(!my_registed_primary.empty())
+    {
+        zookeeper_->deleteZNode(my_registed_primary);
+        my_registed_primary = findReCreatedSelfPrimaryNode();
+    }
+
     if (self_primary_path_.empty())
     {
         return;
@@ -1200,6 +1207,12 @@ void NodeManagerBase::checkForPrimaryElecting()
         break;
     }
 
+    if(findReCreatedSelfPrimaryNode().empty())
+    {
+        LOG(INFO) << "waiting self_primary_path_ re-created.";
+        return;
+    }
+
     need_check_electing_ = false;
 
     if (!isNeedReEnterCluster())
@@ -1213,6 +1226,12 @@ void NodeManagerBase::checkForPrimaryElecting()
             checkPrimaryState(false);
         }
         updateNodeState();
+        return;
+    }
+
+    if (!zookeeper_->isConnected())
+    {
+        need_check_electing_ = true;
         return;
     }
 
