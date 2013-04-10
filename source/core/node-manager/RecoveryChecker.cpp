@@ -864,7 +864,7 @@ void RecoveryChecker::onRecoverCallback(bool startup)
     if (startup && (need_rollback || !isLastNormalExit()) )
     {
         LOG(INFO) << "recovery from rollback or from last forceExit !!";
-        if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
+        if (reqlog_mgr_->getLastSuccessReqId() > 0 && !NodeManagerBase::get()->isOtherPrimaryAvailable())
             forceExit("recovery failed. No primary Node!!");
     }
 
