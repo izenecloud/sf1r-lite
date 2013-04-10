@@ -206,6 +206,8 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
                 serverRealPath_ = findReCreatedServerPath();
                 if (serverRealPath_.empty())
                 {
+                    if (!zookeeper_->isConnected())
+                        return;
                     LOG(INFO) << "serverPath_ disconnected, must re-enter.";
                     masterState_ = MASTER_STATE_STARTING;
                     doStart();
@@ -221,6 +223,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
                 watchAll();
                 //checkForWriteReq();
             }
+            updateServiceReadState("ReadyForRead", true);
         }
     }
     else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
@@ -246,6 +249,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
         masterState_ = MASTER_STATE_STARTING;
         doStart();
         LOG (WARNING) << " restarted in MasterManagerBase for ZooKeeper Service finished";
+        updateServiceReadState("ReadyForRead", true);
     }
 }
 
@@ -608,11 +612,6 @@ void MasterManagerBase::endPreparedWrite()
 
 bool MasterManagerBase::endWriteReq()
 {
-    if (!isMinePrimary())
-    {
-        LOG(INFO) << "non-primary master can not end a write request.";
-        return false;
-    }
     if (!zookeeper_->isZNodeExists(write_prepare_node_))
     {
         return true;

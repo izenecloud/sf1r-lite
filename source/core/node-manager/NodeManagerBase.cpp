@@ -1287,8 +1287,10 @@ void NodeManagerBase::checkPrimaryForStartNewWrite(NodeStateType primary_state)
                 LOG(ERROR) << "primary node is gone while getting new request data on replica.";
                 return;
             }
+            LOG(ERROR) << "may be lost from ZooKeeper, waiting reconnected";
+            return;
             // primary is ok, this error can not handle. 
-            RecoveryChecker::forceExit("exit for unrecovery node state.");
+            //RecoveryChecker::forceExit("exit for unrecovery node state.");
         }
         // check if I can start processing
         if (processing_step_ < 100)
