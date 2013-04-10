@@ -123,6 +123,7 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
         max_logid_checknum = 10000000;
     // get local redo log id 
     std::vector<std::string> logdata_list;
+    LOG(INFO) << "report log id list from : " << reqdata.check_log_start_id << ", max check : " << max_logid_checknum;
     reqlogmgr->getReqLogIdList(reqdata.check_log_start_id, max_logid_checknum, false,
         rsp_req.param_.check_logid_list, logdata_list);
     if (rsp_req.param_.check_logid_list.empty())
@@ -573,6 +574,12 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     LOG(INFO) << "checking got file num :" << req.param_.check_file_list.size();
     DistributeTestSuit::getMemoryStateKeyList(req.param_.check_key_list);
 
+    // check at most 10 million.
+    uint32_t max_logid_checknum = reqlogmgr->getLastSuccessReqId();
+    if (max_logid_checknum > 10000000)
+        max_logid_checknum = 10000000;
+    req.param_.check_log_start_id = reqlogmgr->getLastSuccessReqId() - max_logid_checknum;
+
     int wait_num = 0;
     for( size_t i = 0; i < replica_info.size(); ++i)
     {
@@ -616,7 +623,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     // get local redo log id 
     std::vector<uint32_t> check_logid_list;
     std::vector<std::string> check_logdata_list;
-    reqlogmgr->getReqLogIdList(0, reqlogmgr->getLastSuccessReqId(), false, check_logid_list,
+    reqlogmgr->getReqLogIdList(req.param_.check_log_start_id, max_logid_checknum, false, check_logid_list,
         check_logdata_list);
 
     if (check_logid_list.empty())
