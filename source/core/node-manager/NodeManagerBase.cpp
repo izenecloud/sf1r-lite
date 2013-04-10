@@ -751,9 +751,6 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         return;
     }
 
-    if (nodeState_ == NODE_STATE_STARTED)
-        MasterManagerBase::get()->notifyChangedPrimary(curr_primary_path_ == self_primary_path_ && !self_primary_path_.empty());
-
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     updateNodeState();
     updateCurrentPrimary();
@@ -787,8 +784,11 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     {
         detectMasters();
     }
-    if (nodeState_ == NODE_STATE_STARTED)
+    if (masterStarted_ && nodeState_ == NODE_STATE_STARTED)
+    {
+        MasterManagerBase::get()->notifyChangedPrimary(curr_primary_path_ == self_primary_path_ && !self_primary_path_.empty());
         MasterManagerBase::get()->updateMasterReadyForNew(true);
+    }
 }
 
 void NodeManagerBase::leaveCluster()
