@@ -266,7 +266,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         return true;
     }
 
-    if (isNeedBackup(type) || ( (prepared_req.inc_id > last_backup_id_ + 1) && (prepared_req.inc_id - last_backup_id_) % 50000 == 0))
+    if ((prepared_req.inc_id > last_backup_id_ + 1) && (prepared_req.inc_id - last_backup_id_) % 50000 == 0)
     {
         LOG(INFO) << "begin backup";
         if(!RecoveryChecker::get()->backup())

@@ -638,6 +638,7 @@ public:
         std::vector<std::string>& req_logdata_list);
 
 private:
+    bool getHeadOffsetWithoutLock(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset);
     bool getReqPackedDataByHead(const ReqLogHead& head, std::string& req_packed_data);
     std::string getDataPath(uint32_t inc_id);
     ReqLogHead getHeadData(std::ifstream& ifs, size_t offset);

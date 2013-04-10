@@ -202,12 +202,18 @@ bool ReqLogMgr::getReqDataByHeadOffset(size_t& headoffset, ReqLogHead& rethead, 
 bool ReqLogMgr::getReqData(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset, std::string& req_packed_data)
 {
     boost::lock_guard<boost::mutex> lock(lock_);
-    if (!getHeadOffset(inc_id, rethead, headoffset))
+    if (!getHeadOffsetWithoutLock(inc_id, rethead, headoffset))
         return false;
     return getReqPackedDataByHead(rethead, req_packed_data);
 }
 
 bool ReqLogMgr::getHeadOffset(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset)
+{
+    boost::lock_guard<boost::mutex> lock(lock_);
+    return getHeadOffsetWithoutLock(inc_id, rethead, headoffset);
+}
+
+bool ReqLogMgr::getHeadOffsetWithoutLock(uint32_t& inc_id, ReqLogHead& rethead, size_t& headoffset)
 {
     std::ifstream ifs(head_log_path_.c_str(), ios::binary|ios::in);
     if (!ifs.good())
