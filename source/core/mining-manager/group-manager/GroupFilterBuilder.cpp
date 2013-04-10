@@ -26,8 +26,8 @@ GroupFilterBuilder::GroupFilterBuilder(
 }
 
 GroupFilter* GroupFilterBuilder::createFilter(
-    const GroupParam& groupParam,
-    PropSharedLockSet& sharedLockSet) const
+        const GroupParam& groupParam,
+        PropSharedLockSet& sharedLockSet) const
 {
     if (groupParam.isEmpty())
         return NULL;

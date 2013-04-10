@@ -150,7 +150,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     ScdParser parser(bundleConfig_->encoding_);
 
     // saves the name of the scd files in the path
-    vector<string> scdList;
+    std::vector<std::string> scdList;
     try
     {
         if (!bfs::is_directory(scdPath))
@@ -197,10 +197,10 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         return false;
     }
 
-    if ( documentManager_->getMaxDocId() < 1)
+    if (documentManager_->getMaxDocId() < 1)
     {
-        if ( (*(miningTaskService_->getMiningBundleConfig())).mining_schema_.summarization_enable
-            && (*(miningTaskService_->getMiningBundleConfig())).mining_schema_.summarization_schema.isSyncSCDOnly)
+        if (miningTaskService_->getMiningBundleConfig()->mining_schema_.summarization_enable
+            && miningTaskService_->getMiningBundleConfig()->mining_schema_.summarization_schema.isSyncSCDOnly)
         {
             std::string control_scd_path_ = bundleConfig_->indexSCDPath() + "/full";
             fstream outControlFile;
@@ -237,7 +237,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     IndexModeSelector index_mode_selector(indexManager_, threshold, max_realtime_msize);
     index_mode_selector.TrySetIndexMode(indexProgress_.totalFileSize_);
 
-    if(!indexManager_->isRealTime())
+    if (!indexManager_->isRealTime())
     {
         indexManager_->setIndexMode("realtime");
         indexManager_->flush();
@@ -330,7 +330,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 
     //@brief : to check if there is fuzzy numberic or date filter;
     std::set<std::string> suffix_numeric_filter_properties;
-    std::vector<NumericFilterConfig>::iterator pit 
+    std::vector<NumericFilterConfig>::iterator pit
         = miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.begin();
 
     while (pit != miningTaskService_->getMiningBundleConfig()->mining_schema_.suffixmatch_schema.num_filter_properties.end())
@@ -340,13 +340,14 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     }
     std::set<std::string> intersection;
     std::set_intersection(documentManager_->RtypeDocidPros_.begin(),
-                                      documentManager_->RtypeDocidPros_.end(),
-                                      suffix_numeric_filter_properties.begin(),
-                                      suffix_numeric_filter_properties.end(),
-                                      std::inserter(intersection, intersection.begin()));
+                          documentManager_->RtypeDocidPros_.end(),
+                          suffix_numeric_filter_properties.begin(),
+                          suffix_numeric_filter_properties.end(),
+                          std::inserter(intersection, intersection.begin()));
     documentManager_->RtypeDocidPros_.swap(intersection);
-    
-    try{
+
+    try
+    {
         if (hooker_)
         {
             if (!hooker_->FinishHook())
@@ -434,7 +435,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
 
         Document document;
         bool b = documentManager->getDocument(curDocId, document);
-        if(!b) continue;
+        if (!b) continue;
 
         // update docid
         std::string docidName("DOCID");
@@ -551,7 +552,7 @@ bool IndexWorker::createDocument(const Value& documentValue)
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType, INSERT_SCD))
         return false;
 
-    if(!indexManager_->isRealTime())
+    if (!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
 
     bool ret = insertDoc_(document, indexDocument, timestamp, true);
@@ -587,12 +588,12 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
-    if(!indexManager_->isRealTime())
+    if (!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
     bool ret = updateDoc_(document, indexDocument, oldIndexDocument, timestamp, updateType, true);
     if (ret && (updateType != IndexWorker::RTYPE))
     {
-        if(!bundleConfig_->enable_forceget_doc_)
+        if (!bundleConfig_->enable_forceget_doc_)
         {
             searchWorker_->clearSearchCache();
             ///clear filter cache because of * queries:
@@ -603,7 +604,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         doMining_();
     }
 
-    if(updateType != IndexWorker::RTYPE)
+    if (updateType != IndexWorker::RTYPE)
     {
         documentManager_->getRTypePropertiesForDocument(document.getId(),document);
         document2SCDDoc(document,scddoc);
@@ -637,7 +638,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
     typedef Value::ArrayType::iterator iterator;
     for (iterator it = update_propertys->begin(); it != update_propertys->end(); ++it)
     {
-        if(!it->hasKey("property") || !it->hasKey("op") || !it->hasKey("opvalue"))
+        if (!it->hasKey("property") || !it->hasKey("op") || !it->hasKey("opvalue"))
             return false;
 
         std::string propname = asString((*it)["property"]);
@@ -645,7 +646,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
         std::string opvalue = asString((*it)["opvalue"]);
         PropertyValue oldvalue;
         // get old property first, if old property not exist, inplace update will fail.
-        if(documentManager_->getPropertyValue(docid, propname, oldvalue))
+        if (documentManager_->getPropertyValue(docid, propname, oldvalue))
         {
             tempPropertyConfig.propertyName_ = propname;
             IndexBundleSchema::const_iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
@@ -655,7 +656,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
             bool isValidProperty = (iter != bundleConfig_->indexSchema_.end() && !iter->bRange_);
             int inplace_type = 0;
             // determine how to do the inplace operation by different property type.
-            if(isValidProperty)
+            if (isValidProperty)
             {
                 switch(iter->propertyType_)
                 {
@@ -699,20 +700,20 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                 izenelib::util::UString& propertyValueU = oldvalue.get<izenelib::util::UString>();
                 propertyValueU.convertString(oldvalue_str, izenelib::util::UString::UTF_8);
                 ///if a numeric property does not contain valid value, suppose it to be zero
-                if(oldvalue_str.empty()) oldvalue_str = "0";
-                if(op == "add")
+                if (oldvalue_str.empty()) oldvalue_str = "0";
+                if (op == "add")
                 {
-                    if(inplace_type == 0 )
+                    if (inplace_type == 0)
                     {
                         int64_t newv = boost::lexical_cast<int64_t>(oldvalue_str) + boost::lexical_cast<int64_t>(opvalue);
                         new_propvalue = boost::lexical_cast<std::string>(newv);
                     }
-                    else if(inplace_type == 1)
+                    else if (inplace_type == 1)
                     {
                         new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<float>(oldvalue_str) +
                                 boost::lexical_cast<float>(opvalue));
                     }
-                    else if(inplace_type == 2)
+                    else if (inplace_type == 2)
                     {
                         new_propvalue = boost::lexical_cast<std::string>(boost::lexical_cast<double>(oldvalue_str) + boost::lexical_cast<double>(opvalue));
                     }
@@ -728,7 +729,7 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
                 }
                 new_document[propname] = new_propvalue;
             }
-            catch(boost::bad_lexical_cast& e)
+            catch (boost::bad_lexical_cast& e)
             {
                 LOG(WARNING) << "do inplace update failed. " << e.what() << endl;
                 return false;
@@ -767,7 +768,7 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
     bool ret = deleteDoc_(docid, timestamp);
     if (ret)
     {
-        if(!bundleConfig_->enable_forceget_doc_)
+        if (!bundleConfig_->enable_forceget_doc_)
         {
             searchWorker_->clearSearchCache();
             ///clear filter cache because of * queries:
@@ -1238,7 +1239,7 @@ void IndexWorker::flushUpdateBuffer_()
         {
         case INSERT:
         {
-            if(documentManager_->insertDocument(updateData.get<1>()))
+            if (documentManager_->insertDocument(updateData.get<1>()))
             {
                 indexManager_->insertDocument(updateData.get<2>());
                 indexStatus_.numDocs_ = indexManager_->numDocs();
@@ -1258,14 +1259,14 @@ void IndexWorker::flushUpdateBuffer_()
                 break;
             }
 
-            if(documentManager_->removeDocument(oldId))
+            if (documentManager_->removeDocument(oldId))
             {
                 miningTaskService_->EnsureHasDeletedDocDuringMining();
             }
 
             indexManager_->updateDocument(updateData.get<2>());
 
-            if(!documentManager_->insertDocument(updateData.get<1>()))
+            if (!documentManager_->insertDocument(updateData.get<1>()))
             {
                 LOG(ERROR) << "Document Insert Failed in SDB. " << updateData.get<1>().property("DOCID");
             }
@@ -1442,7 +1443,7 @@ bool IndexWorker::prepareDocument_(
             {
             case STRING_PROPERTY_TYPE:
                 {
-                    if(iter->isRTypeString())
+                    if (iter->isRTypeString())
                     {
                         boost::shared_ptr<RTypeStringPropTable>& rtypeprop = documentManager_->getRTypeStringPropTable(iter->getName());
                         izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
@@ -1504,7 +1505,7 @@ bool IndexWorker::prepareDocument_(
                     document.property(fieldStr).swap(propData);
                     prepareIndexDocumentNumericProperty_(docId, p->second, iter, indexDocument);
                 }
-                if(updateType == RTYPE )
+                if (updateType == RTYPE)
                     documentManager_->RtypeDocidPros_.insert(fieldStr);
                 break;
 
@@ -1522,7 +1523,7 @@ bool IndexWorker::prepareDocument_(
                     document.property(fieldStr).swap(propData);
                     prepareIndexDocumentNumericProperty_(docId, p->second, iter, indexDocument);
                 }
-                if(updateType == RTYPE )
+                if (updateType == RTYPE)
                     documentManager_->RtypeDocidPros_.insert(fieldStr);
                 break;
 
@@ -1775,12 +1776,12 @@ bool IndexWorker::prepareIndexRTypeProperties_(
     IndexerPropertyConfig indexerPropertyConfig;
 
     DocumentManager::RTypeStringPropTableMap& rtype_string_proptable = documentManager_->getRTypeStringPropTableMap();
-    for(DocumentManager::RTypeStringPropTableMap::const_iterator rtype_it = rtype_string_proptable.begin();
-        rtype_it != rtype_string_proptable.end(); ++rtype_it)
+    for (DocumentManager::RTypeStringPropTableMap::const_iterator rtype_it = rtype_string_proptable.begin();
+            rtype_it != rtype_string_proptable.end(); ++rtype_it)
     {
         tempPropertyConfig.propertyName_ = rtype_it->first;
         IndexBundleSchema::iterator index_it = bundleConfig_->indexSchema_.find(tempPropertyConfig);
-        if(index_it == bundleConfig_->indexSchema_.end())
+        if (index_it == bundleConfig_->indexSchema_.end())
             continue;
         FieldPair prop_pair;
         std::string s_propvalue;
@@ -2173,7 +2174,7 @@ IndexWorker::UpdateType IndexWorker::checkUpdateType_(
         if (iter == bundleConfig_->indexSchema_.end())
             continue;
 
-        if( iter->isRTypeString() )
+        if (iter->isRTypeString())
             continue;
 
         if (iter->isIndex())
@@ -2403,10 +2404,7 @@ void IndexWorker::value2SCDDoc(const Value& value, SCDDoc& scddoc)
             --propertyId;
         }
         scddoc[insertto].first.assign(asString(it->first));
-        scddoc[insertto].second.assign(
-            asString(it->second),
-            izenelib::util::UString::UTF_8
-            );
+        scddoc[insertto].second.assign(asString(it->second), izenelib::util::UString::UTF_8);
     }
 }
 

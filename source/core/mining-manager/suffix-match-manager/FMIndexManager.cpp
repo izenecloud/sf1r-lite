@@ -9,6 +9,8 @@
 #include "FilterManager.h"
 
 using namespace cma;
+using namespace izenelib::util;
+
 namespace sf1r
 {
 using namespace faceted;
@@ -290,7 +292,7 @@ void FMIndexManager::buildLessDVProperties()
         size_t max_filterstr_id = filter_manager_->getMaxPropFilterStrId(prop_id);
         for (size_t i = 1; i <= max_filterstr_id; ++i)
         {
-            izenelib::util::UString text = filter_manager_->getPropFilterString(prop_id, i);
+            UString text = filter_manager_->getPropFilterString(prop_id, i);
             Algorithm<UString>::to_lower(text);
             text = Algorithm<UString>::trim(text);
             for(size_t c_i = 0; c_i < text.length(); ++c_i)
@@ -385,7 +387,7 @@ void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)
                 }
                 else
                 {
-                    izenelib::util::UString text = dit->second.get<UString>();
+                    UString text = dit->second.get<UString>();
                     Algorithm<UString>::to_lower(text);
                     text = Algorithm<UString>::trim(text);
                     for(size_t c_i = 0; c_i < text.length(); ++c_i)
@@ -439,7 +441,7 @@ bool FMIndexManager::buildCollectionAfter()
 
 void FMIndexManager::getMatchedDocIdList(
         const std::string& property,
-        const RangeListT& match_ranges,
+        const RangeListT& raw_range_list,
         size_t max_docs,
         std::vector<uint32_t>& docid_list,
         std::vector<size_t>& doclen_list) const
@@ -460,7 +462,7 @@ void FMIndexManager::getMatchedDocIdList(
             LOG(ERROR) << "the common property: " << property << " not found in doc array.";
             return;
         }
-        docarray_mgr_.getMatchedDocIdList(cit->second.docarray_mgr_index, false, match_ranges,
+        docarray_mgr_.getMatchedDocIdList(cit->second.docarray_mgr_index, false, raw_range_list,
             max_docs, docid_list, doclen_list);
     }
     else if (cit->second.type == LESS_DV)
@@ -473,7 +475,7 @@ void FMIndexManager::getMatchedDocIdList(
             LOG(ERROR) << "the LESS_DV property: " << property << " not found in filter.";
             return;
         }
-        docarray_mgr_.getMatchedDocIdList(match_filter_index, true, match_ranges,
+        docarray_mgr_.getMatchedDocIdList(match_filter_index, true, raw_range_list,
             max_docs, docid_list, doclen_list);
         // Since doclen is not available in doc array manager for LESS_DV property,
         // we need recompute doclen from common property.
@@ -489,8 +491,8 @@ void FMIndexManager::getMatchedDocIdList(
 void FMIndexManager::convertMatchRanges(
         const std::string& property,
         size_t max_docs,
-        RangeListT& match_ranges,
-        std::vector<double>& max_match_list) const
+        RangeListT& raw_range_list,
+        std::vector<double>& score_list) const
 {
     if (doc_count_ == 0) return;
     FMIndexConstIter cit = all_fmi_.find(property);
@@ -502,24 +504,24 @@ void FMIndexManager::convertMatchRanges(
         return;
     if (!cit->second.fmi)
     {
-        match_ranges.clear();
-        max_match_list.clear();
+        raw_range_list.clear();
+        score_list.clear();
         return;
     }
     std::vector<uint32_t> tmp_docid_list;
     std::vector<size_t> tmp_doclen_list;
     RangeListT converted_match_ranges;
-    std::vector<double> converted_max_match_list;
+    std::vector<double> converted_score_list;
     LOG(INFO) << "convert range for property : " << property;
-    for (size_t i = 0; i < match_ranges.size(); ++i)
+    for (size_t i = 0; i < raw_range_list.size(); ++i)
     {
-        LOG(INFO) << "orig range : " << match_ranges[i].first << ", " << match_ranges[i].second;
-        cit->second.fmi->getMatchedDocIdList(match_ranges[i], max_docs, tmp_docid_list, tmp_doclen_list);
+        LOG(INFO) << "orig range : " << raw_range_list[i].first << ", " << raw_range_list[i].second;
+        cit->second.fmi->getMatchedDocIdList(raw_range_list[i], max_docs, tmp_docid_list, tmp_doclen_list);
         // for LESS_DV, the docid is the distinct value id, we need get all the docid belong to the distinct
         // value from the docarray_mgr_.
         size_t oldsize = converted_match_ranges.size();
         converted_match_ranges.reserve(oldsize + tmp_docid_list.size());
-        converted_max_match_list.reserve(oldsize + tmp_docid_list.size());
+        converted_score_list.reserve(oldsize + tmp_docid_list.size());
         std::sort(tmp_docid_list.begin(), tmp_docid_list.end(), std::less<uint32_t>());
         for (size_t j = 0; j < tmp_docid_list.size(); ++j)
         {
@@ -557,19 +559,19 @@ void FMIndexManager::convertMatchRanges(
                 }
             }
             converted_match_ranges.push_back(doc_array_filterrange);
-            converted_max_match_list.push_back(max_match_list[i]);
+            converted_score_list.push_back(score_list[i]);
         }
         tmp_docid_list.clear();
         tmp_doclen_list.clear();
     }
-    converted_match_ranges.swap(match_ranges);
-    converted_max_match_list.swap(max_match_list);
+    converted_match_ranges.swap(raw_range_list);
+    converted_score_list.swap(score_list);
 }
 
 size_t FMIndexManager::longestSuffixMatch(
         const std::string& property,
-        const izenelib::util::UString& pattern,
-        RangeListT& match_ranges) const
+        const UString& pattern,
+        RangeListT& raw_range_list) const
 {
     if (doc_count_ == 0)
         return 0;
@@ -578,10 +580,10 @@ size_t FMIndexManager::longestSuffixMatch(
     {
         return 0;
     }
-    return cit->second.fmi->longestSuffixMatch(pattern.data(), pattern.length(), match_ranges);
+    return cit->second.fmi->longestSuffixMatch(pattern.data(), pattern.length(), raw_range_list);
 }
 
-size_t FMIndexManager::backwardSearch(const std::string& prop, const izenelib::util::UString& pattern, RangeT& match_range) const
+size_t FMIndexManager::backwardSearch(const std::string& prop, const UString& pattern, RangeT& match_range) const
 {
     if (doc_count_ == 0)
         return 0;
@@ -598,8 +600,8 @@ void FMIndexManager::getTopKDocIdListByFilter(
         const std::string& property,
         const std::vector<size_t> &prop_id_list,
         const std::vector<RangeListT> &filter_ranges,
-        const RangeListT &match_ranges_list,
-        const std::vector<double> &max_match_list,
+        const RangeListT &raw_range_list,
+        const std::vector<double> &score_list,
         size_t max_docs,
         std::vector<std::pair<double, uint32_t> > &res_list) const
 {
@@ -625,8 +627,8 @@ void FMIndexManager::getTopKDocIdListByFilter(
                 filter_ranges,
                 cit->second.docarray_mgr_index,
                 false,
-                match_ranges_list,
-                max_match_list,
+                raw_range_list,
+                score_list,
                 max_docs,
                 res_list);
     }
@@ -646,8 +648,8 @@ void FMIndexManager::getTopKDocIdListByFilter(
                 filter_ranges,
                 match_filter_index,
                 true,
-                match_ranges_list,
-                max_match_list,
+                raw_range_list,
+                score_list,
                 max_docs,
                 res_list);
     }
