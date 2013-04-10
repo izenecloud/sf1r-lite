@@ -294,7 +294,7 @@ void FMIndexManager::buildLessDVProperties()
         {
             UString text = filter_manager_->getPropFilterString(prop_id, i);
             Algorithm<UString>::to_lower(text);
-            text = Algorithm<UString>::trim(text);
+            text = Algorithm<UString>::padForAlphaNum(text);
             for(size_t c_i = 0; c_i < text.length(); ++c_i)
             {
                 if(text[c_i] == succinct::fm_index::DOC_DELIM)
@@ -389,7 +389,7 @@ void FMIndexManager::appendDocsAfter(bool failed, const Document& doc)
                 {
                     UString text = dit->second.get<UString>();
                     Algorithm<UString>::to_lower(text);
-                    text = Algorithm<UString>::trim(text);
+                    text = Algorithm<UString>::padForAlphaNum(text);
                     for(size_t c_i = 0; c_i < text.length(); ++c_i)
                     {
                         if(text[c_i] == succinct::fm_index::DOC_DELIM)
