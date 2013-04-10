@@ -223,7 +223,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
                 watchAll();
                 //checkForWriteReq();
             }
-            updateServiceReadState("ReadyForRead", true);
+            updateServiceReadStateWithoutLock("ReadyForRead", true);
         }
     }
     else if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
@@ -249,7 +249,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
         masterState_ = MASTER_STATE_STARTING;
         doStart();
         LOG (WARNING) << " restarted in MasterManagerBase for ZooKeeper Service finished";
-        updateServiceReadState("ReadyForRead", true);
+        updateServiceReadStateWithoutLock("ReadyForRead", true);
     }
 }
 
@@ -1175,8 +1175,13 @@ void MasterManagerBase::initServices()
 
 void MasterManagerBase::updateServiceReadState(const std::string& my_state, bool include_self)
 {
-    // service is ready for read means all shard workers current master connected are ready for read.
     boost::lock_guard<boost::mutex> lock(state_mutex_);
+    updateServiceReadStateWithoutLock(my_state, include_self);
+}
+
+void MasterManagerBase::updateServiceReadStateWithoutLock(const std::string& my_state, bool include_self)
+{
+    // service is ready for read means all shard workers current master connected are ready for read.
     if (masterState_ != MASTER_STATE_STARTED && masterState_ != MASTER_STATE_STARTING_WAIT_WORKERS)
     {
         return;

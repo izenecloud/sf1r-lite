@@ -205,6 +205,7 @@ protected:
     //bool isAllWorkerFinished();
     bool isAllWorkerInState(int state);
     std::string findReCreatedServerPath();
+    void updateServiceReadStateWithoutLock(const std::string& my_state, bool include_self);
 
 protected:
     Sf1rTopology sf1rTopology_;
