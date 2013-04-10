@@ -117,23 +117,14 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
     }
     DistributeTestSuit::getMemoryState(reqdata.check_key_list, rsp_req.param_.check_key_result);
     boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
+    // check at most 10 million.
+    uint32_t max_logid_checknum = reqlogmgr->getLastSuccessReqId();
+    if (max_logid_checknum > 10000000)
+        max_logid_checknum = 10000000;
     // get local redo log id 
-    ReqLogHead head;
-    size_t headoffset;
-    std::string req_packed_data;
-    uint32_t check_start_inc = 0;
-    bool ret = reqlogmgr->getHeadOffset(check_start_inc, head, headoffset);
-    if (ret)
-    {
-        rsp_req.param_.check_logid_list.reserve(reqlogmgr->getLastSuccessReqId());
-        while(true)
-        {
-            ret = reqlogmgr->getReqDataByHeadOffset(headoffset, head, req_packed_data);
-            if(!ret)
-                break;
-            rsp_req.param_.check_logid_list.push_back(head.inc_id);
-        }
-    }
+    std::vector<std::string> logdata_list;
+    reqlogmgr->getReqLogIdList(reqdata.check_log_start_id, max_logid_checknum, false,
+        rsp_req.param_.check_logid_list, logdata_list);
     if (rsp_req.param_.check_logid_list.empty())
         LOG(INFO) << "no any log on the node";
     else
@@ -416,6 +407,11 @@ void DistributeFileSyncMgr::checkReplicasLogStatus(std::string& check_errinfo)
 
     boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
     getFileList(reqlogmgr->getRequestLogPath(), req.param_.check_file_list, ignore_list_, false);
+    // check at most 10 million.
+    uint32_t max_logid_checknum = reqlogmgr->getLastSuccessReqId();
+    if (max_logid_checknum > 10000000)
+        max_logid_checknum = 10000000;
+    req.param_.check_log_start_id = reqlogmgr->getLastSuccessReqId() - max_logid_checknum;
     int wait_num = 0;
     for( size_t i = 0; i < replica_info.size(); ++i)
     {
@@ -454,7 +450,7 @@ void DistributeFileSyncMgr::checkReplicasLogStatus(std::string& check_errinfo)
     // get local redo log id 
     std::vector<uint32_t> check_logid_list;
     std::vector<std::string> check_logdata_list;
-    reqlogmgr->getReqLogIdList(0, reqlogmgr->getLastSuccessReqId(), false, check_logid_list,
+    reqlogmgr->getReqLogIdList(req.param_.check_log_start_id, max_logid_checknum, false, check_logid_list,
         check_logdata_list);
 
     if (check_logid_list.empty())

@@ -9,8 +9,27 @@ using namespace std;
 using namespace sf1r;
 namespace bfs = boost::filesystem;
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc > 1)
+    {
+        ReqLogMgr reqlogmgr;
+        std::cout << "reading log head inc_id : " << argv[1] << std::endl;
+        reqlogmgr.init(argv[1]);
+        std::vector<uint32_t> logid_list;
+        std::vector<std::string> logdata_list;
+        reqlogmgr.getReqLogIdList(0, reqlogmgr.getLastSuccessReqId(), false, logid_list, logdata_list);
+        for(size_t i = 0; i < logid_list.size(); ++i)
+        {
+            std::cout << logid_list[i] << ",";
+            if (i % 10 == 0)
+            {
+                std::cout << endl;
+            }
+        }
+        std::cout << endl;
+        return 0;
+    }
     bfs::remove_all("./test_reqlog");
     ReqLogMgr reqlogmgr;
     reqlogmgr.init("./test_reqlog");
@@ -201,6 +220,17 @@ int main()
         assert( reqlogmgr.getReqData(inc_id_after, head2, offset2, ret_packed_data2));
         assert(head2.inc_id == i + 5);
     }
+
+    std::cout << "performance test begin :" << time(NULL) << std::endl;
+    isprimary = true;
+    for (size_t i = 1; i < 1000000; ++i)
+    {
+        reqlogmgr.prepareReqLog(test_common_data, isprimary);
+        reqlogmgr.appendTypedReqLog(test_common_data);
+        reqlogmgr.delPreparedReqLog();
+    }
+ 
+    std::cout << "performance test end : " << time(NULL) << ", total :" << reqlogmgr.getLastSuccessReqId() << std::endl;
 
 }
 

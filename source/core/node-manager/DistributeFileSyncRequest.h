@@ -68,7 +68,8 @@ struct ReportStatusReqData : public RpcServerRequestData
     std::string req_host;
     std::vector<std::string> check_file_list;
     std::vector<std::string> check_key_list;
-    MSGPACK_DEFINE(req_host, check_file_list, check_key_list);
+    uint32_t check_log_start_id;
+    MSGPACK_DEFINE(req_host, check_file_list, check_key_list, check_log_start_id);
 };
 
 struct ReportStatusRspData : public RpcServerRequestData
