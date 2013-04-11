@@ -1171,6 +1171,11 @@ void RecoveryChecker::onRecoverWaitReplicasCallback()
     LOG(INFO) << "all recovery replicas has entered the cluster after recovery finished.";
     LOG(INFO) << "wait recovery finished , primary ready to server";
     NodeManagerBase::get()->updateLastWriteReqId(reqlog_mgr_->getLastSuccessReqId());
+    if (need_backup_)
+    {
+        LOG(INFO) << "begin backup for config updated.";
+        backup();
+    }
 }
 
 bool RecoveryChecker::onRecoverCheckLog()
