@@ -85,6 +85,7 @@ bool IndexTaskService::index(unsigned int numdoc)
             std::string masterScdPath = bundleConfig_->masterIndexSCDPath();
             ScdParser parser(bundleConfig_->encoding_);
             bfs::path bkDir = bfs::path(masterScdPath) / SCD_BACKUP_DIR;
+            LOG(INFO) << "creating directory : " << bkDir;
             bfs::create_directories(bkDir);
             for (bfs::directory_iterator itr(masterScdPath); itr != kItrEnd; ++itr)
             {
