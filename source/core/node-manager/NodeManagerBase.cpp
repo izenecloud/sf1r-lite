@@ -826,13 +826,19 @@ void NodeManagerBase::leaveCluster()
     if (childrenList.size() <= 0)
     {
         zookeeper_->deleteZNode(replicaPath);
+    }
+    childrenList.clear();
+
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, childrenList, ZooKeeper::NOT_WATCH, false);
+    if (childrenList.size() <= 0)
+    {
         zookeeper_->deleteZNode(primaryNodeParentPath_);
         zookeeper_->isZNodeExists(ZooKeeperNamespace::getCurrWriteReqQueueParent(sf1rTopology_.curNode_.nodeId_),
             ZooKeeper::NOT_WATCH);
         zookeeper_->deleteZNode(ZooKeeperNamespace::getCurrWriteReqQueueParent(sf1rTopology_.curNode_.nodeId_), true);
     }
-
     childrenList.clear();
+
     zookeeper_->getZNodeChildren(topologyPath_, childrenList, ZooKeeper::NOT_WATCH, false);
     if (childrenList.size() <= 0)
     {
