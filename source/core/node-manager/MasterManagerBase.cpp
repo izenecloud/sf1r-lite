@@ -238,6 +238,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 
         if (!checkZooKeeperService())
         {
+            stopping_ = false;
             masterState_ = MASTER_STATE_STARTING_WAIT_ZOOKEEPER;
             LOG (ERROR) << CLASSNAME << " waiting for ZooKeeper Service...";
             return;
@@ -353,8 +354,6 @@ bool MasterManagerBase::prepareWriteReq()
         return true;
     if (stopping_)
         return false;
-    if (!zookeeper_ || !zookeeper_->isConnected())
-        return false;
     if (!isMinePrimary())
     {
         LOG(WARNING) << "non-primary master can not prepare a write request!";
@@ -391,11 +390,6 @@ bool MasterManagerBase::prepareWriteReq()
 
 bool MasterManagerBase::getWriteReqNodeData(ZNode& znode)
 {
-    if (!zookeeper_->isZNodeExists(write_prepare_node_))
-    {
-        LOG(INFO) << "There is no any write request";
-        return true;
-    }
     std::string sdata;
     if (zookeeper_->getZNodeData(write_prepare_node_, sdata))
     {
@@ -414,11 +408,11 @@ void MasterManagerBase::checkForWriteReq()
     //DistributeTestSuit::loadTestConf();
     if (!isDistributeEnable_)
         return;
-    if (!zookeeper_ || !zookeeper_->isConnected())
-        return;
 
     if (!isMinePrimary())
     {
+        if (!zookeeper_ || !zookeeper_->isConnected())
+            return;
         if (!cached_write_reqlist_.empty())
         {
             LOG(ERROR) << "non primary master but has cached write request, these request will be ignored !!!!!! " << serverRealPath_;
@@ -534,8 +528,6 @@ bool MasterManagerBase::popWriteReq(std::string& reqdata, std::string& type)
 {
     if (!isDistributeEnable_)
         return false;
-    if (!zookeeper_ || !zookeeper_->isConnected())
-        return false;
 
     if (cached_write_reqlist_.empty())
     {
@@ -548,26 +540,26 @@ bool MasterManagerBase::popWriteReq(std::string& reqdata, std::string& type)
     return true;
 }
 
-void MasterManagerBase::pushWriteReq(const std::string& reqdata, const std::string& type)
+bool MasterManagerBase::pushWriteReq(const std::string& reqdata, const std::string& type)
 {
     if (!isDistributeEnable_)
     {
         LOG(ERROR) << "Master is not configured as distributed, write request pushed failed." <<
             "," << reqdata;
-        return;
+        return false;
     }
     if (stopping_)
     {
         LOG(ERROR) << "Master is stopping, write request pushed failed." <<
             "," << reqdata;
-        return;
+        return false;
     }
     // boost::lock_guard<boost::mutex> lock(state_mutex_);
     if (!zookeeper_ || !zookeeper_->isConnected())
     {
         LOG(ERROR) << "Master is not connecting to ZooKeeper, write request pushed failed." <<
             "," << reqdata;
-        return;
+        return false;
     }
     ZNode znode;
     //znode.setValue(ZNode::KEY_REQ_CONTROLLER, controller_name);
@@ -581,7 +573,9 @@ void MasterManagerBase::pushWriteReq(const std::string& reqdata, const std::stri
     {
         LOG(ERROR) << "write request pushed failed." <<
             "," << reqdata;
+        return false;
     }
+    return true;
 }
 
 bool MasterManagerBase::disableNewWrite()

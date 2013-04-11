@@ -22,6 +22,7 @@ NodeManagerBase::NodeManagerBase()
     , need_stop_(false)
     , slow_write_running_(false)
     , need_check_electing_(false)
+    , need_check_recover_(true)
     , CLASSNAME("[NodeManagerBase]")
 {
 }
@@ -287,6 +288,8 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         zookeeper_->disconnect();
         if (!checkZooKeeperService())
         {
+            boost::unique_lock<boost::mutex> lock(mutex_);
+            stopping_ = false;
             // process will be resumed after zookeeper recovered
             LOG (WARNING) << " waiting for ZooKeeper Service while expired ...";
             return;
@@ -1105,6 +1108,7 @@ void NodeManagerBase::onChildrenChanged(const std::string& path)
     if (path == primaryNodeParentPath_ && isPrimaryWithoutLock())
     {
         boost::unique_lock<boost::mutex> lock(mutex_);
+        need_check_recover_ = true;
         checkSecondaryState(false);        
     }
 }
@@ -1214,6 +1218,8 @@ void NodeManagerBase::checkForPrimaryElecting()
     }
 
     need_check_electing_ = false;
+
+    need_check_recover_ =  true;
 
     if (!isNeedReEnterCluster())
     {
@@ -1609,7 +1615,8 @@ void NodeManagerBase::updateLastWriteReqId(uint32_t req_id)
     // This will be used for checking whether request log is newest after auto-reconnected
     //
     LOG(INFO) << "update last success request for current replica set : " << req_id;
-    if( req_id < getLastWriteReqId())
+    uint32_t cur_req_id = getLastWriteReqId();
+    if( req_id < cur_req_id)
     {
         LOG(ERROR) << "update the last write request id is smaller than the id on replica set parent node.";
         if (req_id != 0)
@@ -1618,7 +1625,7 @@ void NodeManagerBase::updateLastWriteReqId(uint32_t req_id)
         }
         LOG(INFO) << "last request id is reseted to 0.";
     }
-    else if (req_id == getLastWriteReqId())
+    else if (req_id == cur_req_id)
         return;
     ZNode znode;
     znode.setValue(ZNode::KEY_LAST_WRITE_REQID, req_id);
@@ -1833,9 +1840,13 @@ void NodeManagerBase::checkSecondaryReqFinishLog(bool self_changed)
         // ready for next new request.
         if (cb_on_wait_finish_log_)
             cb_on_wait_finish_log_();
-        //updateNodeStateToNewState(NODE_STATE_STARTED);
         LOG(INFO) << "all nodes finished write log.";
-        checkSecondaryRecovery(self_changed);
+        if (need_check_recover_)
+        {
+            checkSecondaryRecovery(self_changed);
+        }
+        else
+            updateNodeStateToNewState(NODE_STATE_STARTED);
     }
     else if (!self_changed)
     {
@@ -1925,7 +1936,12 @@ void NodeManagerBase::checkSecondaryRecovery(bool self_changed)
             }
             else
                 updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_REPLICA_FINISH);
+            need_check_recover_ = false;
         }
+    }
+    else if (node_list.size() > 0)
+    {
+        need_check_recover_ = false;
     }
     if (!can_recovery)
     {

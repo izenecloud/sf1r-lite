@@ -241,6 +241,7 @@ protected:
     bool need_stop_;
     bool slow_write_running_;
     bool need_check_electing_;
+    bool need_check_recover_;
 
     ZooKeeperClientPtr zookeeper_;
 
