@@ -261,12 +261,13 @@ bool MiningSearchService::visitDoc(const std::string& collectionName, uint64_t w
     {
         if(!HookDistributeRequestForSearch(collectionName, workerId))
             return false;
-        searchAggregator_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);
-        if (ret)
-        {
-            LOG(INFO) << "send to remote worker to visitDoc success, clear local hook. remote: " << workerId;
-            DistributeRequestHooker::get()->processLocalFinished(true);
-        }
+        ret = true;
+        //searchAggregator_->singleRequest(collectionName, "visitDoc", docId, ret, workerId);
+        //if (ret)
+        //{
+        //    LOG(INFO) << "send to remote worker to visitDoc success, clear local hook. remote: " << workerId;
+        //    DistributeRequestHooker::get()->processLocalFinished(true);
+        //}
     }
 
     return ret;
