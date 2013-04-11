@@ -66,7 +66,14 @@ bool IndexTaskService::index(unsigned int numdoc)
     {
         if (DistributeRequestHooker::get()->isHooked())
         {
-            result = distributedIndex_(numdoc);
+            if (DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
+            {
+                result = distributedIndex_(numdoc);
+            }
+            else
+            {
+                indexWorker_->index(numdoc, result);
+            }
         }
         else
         {
@@ -230,11 +237,13 @@ bool IndexTaskService::distributedIndexImpl_(
     if(!scdDispatcher->dispatch(outScdFileList, masterScdPath, numdoc))
         return false;
 
-    HookDistributeRequestForIndex();
     // 2. send index request to multiple nodes
     LOG(INFO) << "start distributed indexing";
+    HookDistributeRequestForIndex();
     bool ret = true;
-    indexAggregator_->distributeRequest(collectionName, "index", numdoc, ret);
+    
+    //indexAggregator_->distributeRequest(collectionName, "index", numdoc, ret);
+    indexWorker_->index(numdoc, ret);
 
     if (ret)
     {

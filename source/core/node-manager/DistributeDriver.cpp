@@ -355,6 +355,7 @@ bool DistributeDriver::on_new_req_available()
         }
         else if (reqtype == "api_from_shard")
         {
+            LOG(INFO) << "got a api from other shard : " << reqdata;
             if(!handleRequest(reqdata, reqdata, Request::FromOtherShard))
             {
                 LOG(WARNING) << "one api write request from shard failed to deliver :" << reqdata;
