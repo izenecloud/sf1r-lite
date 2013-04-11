@@ -238,7 +238,13 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         if (nodeState_ == NODE_STATE_STARTING_WAIT_RETRY)
         {
             MasterManagerBase::get()->notifyChangedPrimary(false);
-            self_primary_path_ = findReCreatedSelfPrimaryNode();
+            std::string new_self_primary  = findReCreatedSelfPrimaryNode();
+            if (!self_primary_path_.empty() && new_self_primary.empty())
+            {
+                LOG(WARNING) << "waiting self_primary_path_ re-create :" << self_primary_path_;
+                return;
+            }
+            self_primary_path_ = new_self_primary;
             LOG(WARNING) << "new self_primary_path_ is :" << self_primary_path_;
             stopping_ = true;
             unregisterPrimary();
@@ -1143,6 +1149,8 @@ void NodeManagerBase::resetWriteState()
 
 bool NodeManagerBase::isNeedReEnterCluster()
 {
+    if (!masterStarted_)
+        return true;
     std::string old_self_primary = self_primary_path_;
     std::string old_primary = curr_primary_path_;
     int retry = 0;
@@ -1151,7 +1159,7 @@ bool NodeManagerBase::isNeedReEnterCluster()
         self_primary_path_ = findReCreatedSelfPrimaryNode();
         if (!self_primary_path_.empty())
             break;
-        sleep(1);
+        sleep(2);
     }
     LOG(INFO) << "checking re-enter , self_primary_path_ is :" << self_primary_path_;
 
@@ -1211,7 +1219,7 @@ void NodeManagerBase::checkForPrimaryElecting()
         break;
     }
 
-    if(findReCreatedSelfPrimaryNode().empty())
+    if(!self_primary_path_.empty() && findReCreatedSelfPrimaryNode().empty())
     {
         LOG(INFO) << "waiting self_primary_path_ re-created.";
         return;
