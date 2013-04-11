@@ -85,7 +85,7 @@ bool IndexTaskService::index(unsigned int numdoc)
             std::string masterScdPath = bundleConfig_->masterIndexSCDPath();
             ScdParser parser(bundleConfig_->encoding_);
             bfs::path bkDir = bfs::path(masterScdPath) / SCD_BACKUP_DIR;
-            bfs::create_directory(bkDir);
+            bfs::create_directories(bkDir);
             for (bfs::directory_iterator itr(masterScdPath); itr != kItrEnd; ++itr)
             {
                 if (bfs::is_regular_file(itr->status()))
@@ -238,7 +238,7 @@ bool IndexTaskService::distributedIndexImpl_(
     if (ret)
     {
         bfs::path bkDir = bfs::path(masterScdPath) / SCD_BACKUP_DIR;
-        bfs::create_directory(bkDir);
+        bfs::create_directories(bkDir);
         LOG(INFO) << "moving " << outScdFileList.size() << " SCD files to directory " << bkDir;
         for (size_t i = 0; i < outScdFileList.size(); i++)
         {
