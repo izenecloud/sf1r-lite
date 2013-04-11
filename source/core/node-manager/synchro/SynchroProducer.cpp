@@ -1,6 +1,7 @@
 #include "SynchroProducer.h"
 
 #include <node-manager/SuperNodeManager.h>
+#include <node-manager/NodeManagerBase.h>
 #include <net/distribute/DataTransfer2.hpp>
 
 #include <boost/thread.hpp>
@@ -315,7 +316,14 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
             std::string recvDir;
             if (dataType == SynchroData::DATA_TYPE_SCD_INDEX)
             {
-                recvDir = consumerCollection+"/scd/index";
+                if (NodeManagerBase::get()->isDistributed())
+                {
+                    recvDir = consumerCollection+"/scd/master_index";
+                }
+                else
+                {
+                    recvDir = consumerCollection+"/scd/index";
+                }
             }
             else if (dataType == SynchroData::COMMENT_TYPE_FLAG)
             {
