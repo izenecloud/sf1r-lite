@@ -111,7 +111,7 @@ public:
     void endPreparedWrite();
     bool disableNewWrite();
     void enableNewWrite();
-    void pushWriteReq(const std::string& reqdata, const std::string& type = "");
+    bool pushWriteReq(const std::string& reqdata, const std::string& type = "");
     // make sure prepare success before call this.
     bool popWriteReq(std::string& reqdata, std::string& type);
 

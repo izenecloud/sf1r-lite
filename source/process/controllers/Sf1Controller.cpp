@@ -128,7 +128,8 @@ bool Sf1Controller::callDistribute()
             std::string reqdata;
             izenelib::driver::JsonWriter writer;
             writer.write(request().get(), reqdata);
-            MasterManagerBase::get()->pushWriteReq(reqdata);
+            if(!MasterManagerBase::get()->pushWriteReq(reqdata))
+                response().addError("push write request to queue failed.");
             return true;
         }
     }
