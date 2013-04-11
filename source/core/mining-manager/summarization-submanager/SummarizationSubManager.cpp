@@ -121,7 +121,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         boost::shared_ptr<IndexManager> index_manager,
         idmlib::util::IDMAnalyzer* analyzer)
     : last_docid_path_(homePath + "/last_docid.txt")
-    , total_scd_path_(homePath + "/" + SUMMARY_SCD_BACKUP_DIR)
+    , total_scd_path_(scdPath + "/" + SUMMARY_SCD_BACKUP_DIR)
     , collectionName_(collectionName)
     , homePath_(homePath)
     , schema_(schema)
