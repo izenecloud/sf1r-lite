@@ -235,7 +235,6 @@ bool RebuildTask::rebuildFromSCD()
     LOG(INFO) << "## start rebuild from scd for " << collectionName_;
 
     std::string collDir;
-    std::string collBaseDir;
     std::string rebuildCollDir;
     std::string rebuildCollBaseDir;
     std::string configFile = SF1Config::get()->getCollectionConfigFile(collectionName_);
@@ -258,7 +257,6 @@ bool RebuildTask::rebuildFromSCD()
         }
         CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
         collDir = collPath.getCollectionDataPath();
-        collBaseDir = collPath.getBasePath();
         std::string rebuild_scd_src = collPath.getScdPath() + "/rebuild_scd";
 
         bool is_primary = DistributeRequestHooker::get()->isRunningPrimary();
@@ -341,14 +339,14 @@ bool RebuildTask::rebuildFromSCD()
     LOG(INFO) << "## update collection data for " << collectionName_;
     try
     {
-        bfs::remove_all(collBaseDir + "-backup");
-        bfs::rename(collBaseDir, collBaseDir + "-backup");
+        bfs::remove_all(collDir + "-backup");
+        bfs::rename(collDir, collDir + "-backup");
         try {
-            bfs::rename(rebuildCollBaseDir, collBaseDir);
+            bfs::rename(rebuildCollDir, collDir);
         }
         catch (const std::exception& e) {
             LOG(ERROR) << "failed to move data, rollback";
-            bfs::rename(collBaseDir + "-backup", collBaseDir);
+            bfs::rename(collDir + "-backup", collDir);
         }
         bfs::remove_all(rebuildCollBaseDir);
     }
