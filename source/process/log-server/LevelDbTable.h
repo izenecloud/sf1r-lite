@@ -28,6 +28,7 @@ namespace sf1r
     {
     public:
         typedef Table<std::string, std::string> UserQueryDbType;
+        typedef Table<std::string, std::string>::cursor_type cur_type;
         UserQueryDbTable(const std::string& path)
             :path_(path)
             ,userQueryDbTable(NULL)
@@ -44,6 +45,7 @@ namespace sf1r
          */
         bool open()
         {
+            LOG(INFO) << "leveldb: " << path_ << endl;
             userQueryDbTable = new UserQueryDbType(path_);
             return userQueryDbTable->open();
         }
@@ -84,6 +86,7 @@ namespace sf1r
         {
             std::string value;
             if(!packValue_(mapvalue, value)) return false;
+            //LOG(INFO) << "Value: " << value << endl;
             return userQueryDbTable->insert(key, value);
         }
 
@@ -98,7 +101,7 @@ namespace sf1r
             std::string value;
             if(!userQueryDbTable->get(key, value))
             {
-                LOG(INFO) << "UserQueryDbTabl: get false!  key:" << key << endl;
+                LOG(INFO) << "UserQueryDbTable: get false!  key:" << key << endl;
                 return false;
             }
             if(!parseValue_(value, mapvalue))
@@ -131,6 +134,41 @@ namespace sf1r
         bool delete_item(const std::string& key)
         {
             return userQueryDbTable->del(key);
+        }
+
+        cur_type begin()
+        {
+            return userQueryDbTable->begin();
+        }
+
+        bool iterNext(cur_type& cursor)
+        {
+            return userQueryDbTable->iterNext(cursor);
+        }
+
+        bool iterPrev(cur_type& cursor)
+        {
+            return userQueryDbTable->iterPrev(cursor);
+        }
+
+        bool fetch(cur_type& cursor, std::string& key, std::string& value)
+        {
+            return userQueryDbTable->fetch(cursor, key, value);
+        }
+
+        bool fetch(cur_type& cursor,
+                std::string& key,
+                std::map<std::string, std::string>& mapvalue)
+        {
+            std::string value;
+            if(!fetch(cursor, key, value))
+            {
+                LOG(INFO) << "UserQueryDbTable: fetch error! "<< endl;
+                return false;
+            }
+            if(!parseValue_(value, mapvalue))
+                return false;
+            return true;
         }
 
     private:
@@ -172,7 +210,7 @@ namespace sf1r
                 boost::split(temp, *iter, boost::is_any_of(","));
                 if(temp.size() != 2)
                 {
-                    LOG(ERROR) << "UserQueryLevelDb parseValue error! value: " << *iter << endl;
+                    LOG(ERROR) << "UserQueryDbTable parseValue error! value: " << *iter << endl;
                     return false;
                 }
                 else

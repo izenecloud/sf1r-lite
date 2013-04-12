@@ -218,17 +218,18 @@ public:
     LogServerSketchManager(std::string wd, uint32_t sl = 24*60*60*1000)
     {
         slidCronJobName_ = "EstimationSlidMaker";
-        sortCronJobName_ = "LogExternalSorter";
+        saveCronJobName_ = "SaveLevelDb";
         workdir_ = wd;
         slidLength_ = sl;
         pastdays = 1;
+        LOG(INFO) << wd << endl;
     }
 
     bool open()
     {
         ptime now(second_clock::local_time());
         uint64_t timepast = (now.time_of_day().ticks()) / time_duration::ticks_per_second();
-        uint64_t starttime = (23*60*60+59*60-timepast) * 1000;
+        uint64_t starttime = (23*60*60+59*60+50-timepast) * 1000;
         if(starttime < 0) starttime = 0;
         bool res = izenelib::util::Scheduler::addJob(slidCronJobName_,
                 //slidLength_,
@@ -240,14 +241,16 @@ public:
             LOG(ERROR) <<"Failed in izenelib::util::Scheduler::addJob(), cron job name: " << slidCronJobName_ << endl;
         else
             LOG(INFO) <<"Create cron job: " << slidCronJobName_ <<endl;
-        res = izenelib::util::Scheduler::addJob(sortCronJobName_,
-                1000,  //each second
-                0,   //start from now
-                boost::bind(&LogServerSketchManager::externalSort, this));
+        res = izenelib::util::Scheduler::addJob(saveCronJobName_,
+                24*60*60*1000,  //each day
+                //60*1000,
+                //0,   //start from now
+                starttime,
+                boost::bind(&LogServerSketchManager::saveLevelDb, this));
         if(!res)
-            LOG(ERROR) <<"Failed in izenelib::util::Scheduler::addJob(), cron job name: " << sortCronJobName_ << endl;
+            LOG(ERROR) <<"Failed in izenelib::util::Scheduler::addJob(), cron job name: " << saveCronJobName_ << endl;
         else
-            LOG(INFO) <<"Create cron job: " << sortCronJobName_ <<endl;
+            LOG(INFO) <<"Create cron job: " << saveCronJobName_ <<endl;
         return true;
     }
 
@@ -273,7 +276,15 @@ public:
             {
                 it->second->Reset();
                 if(collectionSketchMap_.find(it->first) != collectionSketchMap_.end())
+                {
+                    std::string path = workdir_ + "/sketch/" + it->first + "/";
+                    boost::filesystem::create_directories(path);
+                    path += today + ".sketch";
+//                    if(boost::filesystem::exists(path))
+//                        boost::filesystem::remove(path);
+                    collectionSketchMap_[it->first]->save(path.c_str());
                     collectionSketchMap_[it->first]->clear();
+                }
                 else
                     LOG(ERROR) << "MakeEstimationSlid: find no sketch for collection[" << it->first <<"]" << endl;
             }
@@ -284,9 +295,20 @@ public:
         }
     }
 
-    void externalSort()
+    void saveLevelDb()
     {
-        //LOG(INFO) << "It's time to external sort..." << endl;
+        //LOG(INFO) << "It's time to save level db ..." << endl;
+        std::map<std::string, UserQueryDbTable*>::iterator iter;
+        for(iter=collectionDbMap_.begin();iter!=collectionDbMap_.end();iter++)
+        {
+            iter->second->close();
+            ptime td(day_clock::local_day(), hours(0));
+            days dd(1);
+            td=td+dd;
+            string today = to_iso_string(td);
+            iter->second->set_path(workdir_ + "/leveldb/" + iter->first + "/"+today+".db");
+            iter->second->open();
+        }
     }
 
     bool injectUserQuery(const std::string & query,
@@ -304,13 +326,48 @@ public:
 
         uint32_t count = collectionSketchMap_[collection]->inc(query.c_str(), query.length());
 
-        LOG(INFO) << "query: " << query << " count: " << count << endl;
+//        LOG(INFO) << "query: " << query << " count: " << count << endl;
 
         if(!checkFreqEstimation(collection))
             return false;
         collectionFEMap_[collection]->Insert(query, count);
 
-        //write file (for external sort)
+        if(count == 1)
+        {
+            if(!checkLevelDb(collection))
+            {
+                LOG(INFO) << "open level db false!" << endl;
+                return false;
+            }
+            std::map<std::string, std::string> mapvalue;
+            mapvalue["hit_docs_num"] = hitnum;
+            mapvalue["page_start"] = page_start;
+            mapvalue["page_count"] = page_count;
+            mapvalue["duration"] = duration;
+            mapvalue["timestamp"] = timestamp;
+            collectionDbMap_[collection]->add_item(query, mapvalue);
+        }
+        else
+        {
+            if(!checkLevelDb(collection))
+            {
+                LOG(INFO) << "open level db false!" << endl;
+                return false;
+            }
+            std::string hit_docs_num;
+            collectionDbMap_[collection]->get_item(query, "hit_docs_num", hit_docs_num);
+            if(boost::lexical_cast<uint32_t>(hitnum) > boost::lexical_cast<uint32_t>(hit_docs_num))
+            {
+                collectionDbMap_[collection]->delete_item(query);
+                std::map<std::string, std::string> mapvalue;
+                mapvalue["hit_docs_num"] = hitnum;
+                mapvalue["page_start"] = page_start;
+                mapvalue["page_count"] = page_count;
+                mapvalue["duration"] = duration;
+                mapvalue["timestamp"] = timestamp;
+                collectionDbMap_[collection]->add_item(query, mapvalue);
+            }
+        }
         return true;
     }
 
@@ -320,7 +377,6 @@ public:
             const std::string & limit,
             std::list< std::map<std::string, std::string> > & results)
     {
-        LOG(INFO) << collection << "   " << begin_time << "   " << end_time << "  " <<limit<<endl;
         vector<string> time_list;
         vector<string>::iterator it;
 
@@ -333,9 +389,9 @@ public:
         QueriesFrequencyEstimation* qfe = new QueriesFrequencyEstimation(boost::lexical_cast<uint32_t>(limit));
         std::map<std::string, uint32_t> Tmap;
 
-        timespec time1;
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-        LOG(INFO) << "BeginTime: sec[" << time1.tv_sec <<"]  " << time1.tv_nsec << endl;
+//        timespec time1;
+//        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+//        LOG(INFO) << "BeginTime: sec[" << time1.tv_sec <<"]  " << time1.tv_nsec << endl;
         for(it=time_list.begin();it!=time_list.end();it++)
         {
             if(queryEstimationCache_.getEstimationOfDay(collection, *it, iter, end_iter))
@@ -350,10 +406,6 @@ public:
             }
             else if(*it == today)
             {
-                timespec time2;
-                clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-                LOG(INFO) << "Begin to deal with today's data: " << time2.tv_sec <<"  " << time2.tv_nsec << endl;
-
                 if(collectionFEMap_.find(collection) != collectionFEMap_.end())
                 {
                     collectionFEMap_[collection]->GetEstimation(iter, end_iter);
@@ -365,13 +417,8 @@ public:
                         qfe->Insert(iter->first, Tmap[iter->first]);
                     }
                 }
-                clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-                LOG(INFO) << "End of dealing with today's data: " << time2.tv_sec <<"  " << time2.tv_nsec << endl;
             }
         }
-
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-        LOG(INFO) << "Finish dealing with all data: " << time1.tv_sec <<"  " << time1.tv_nsec << endl;
 
         qfe->GetEstimation(iter, end_iter);
         for(;iter!=end_iter;iter++)
@@ -381,12 +428,48 @@ public:
             res["count"] = boost::lexical_cast<std::string>(iter->second);
             results.push_back(res);
         }
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-        LOG(INFO) << "Get the result: " << time1.tv_sec <<"  " << time1.tv_nsec << endl;
-
+        delete qfe;
         return true;
     }
 
+    bool getUserQueries(const std::string& collection,
+            const std::string& begin_time,
+            const std::string& end_time,
+            std::list<std::map<std::string, std::string> >& results)
+    {
+        vector<string> time_list;
+        vector<string>::iterator it;
+
+        getTimeList(begin_time, end_time, time_list);
+
+        UserQueryDbTable db("");
+        madoka::Sketch sketch;
+        for(it=time_list.begin(); it!=time_list.end();it++)
+        {
+            std::string sketch_path = workdir_ + "/sketch/" + collection + "/" + *it + ".sketch";
+            std::string db_path = workdir_ + "/leveldb/" + collection + "/" + *it + ".db";
+
+            if(!boost::filesystem::exists(sketch_path) || !boost::filesystem::exists(db_path))
+                continue;
+            db.set_path(db_path);
+            if(!db.open())
+            {
+                continue;
+            }
+            sketch.open(sketch_path.c_str());
+            UserQueryDbTable::cur_type iter = db.begin();
+            do
+            {
+                std::string key;
+                std::map<std::string, std::string> values;
+                db.fetch(iter, key, values);
+                values["query"] = key;
+                values["count"] = sketch.get(key.c_str(), key.length());
+                results.push_back(values);
+            }while(db.iterNext(iter));
+        }
+        return true;
+    }
 private:
 
     bool getTimeList(const std::string& begin_time,
@@ -437,8 +520,28 @@ private:
         return true;
     }
 
+    bool checkLevelDb(const std::string& collection)
+    {
+        if(collectionDbMap_.find(collection) == collectionDbMap_.end())
+        {
+            return initLevelDb(collection);
+        }
+        return true;
+    }
+
+    bool initLevelDb(const std::string& collection)
+    {
+        std::string path = workdir_ + "/leveldb/" + collection + "/";
+        boost::filesystem::create_directories(path);
+
+        ptime td(day_clock::local_day(), hours(0));
+        string today = to_iso_string(td);
+        path += today + ".db";
+        collectionDbMap_[collection] = new UserQueryDbTable(path);
+        return collectionDbMap_[collection]->open();
+    }
     std::string workdir_;
-    std::string sortCronJobName_;
+    std::string saveCronJobName_;
     std::string slidCronJobName_;
     //the length of slid (milisecond)
     uint32_t slidLength_;
@@ -447,6 +550,7 @@ private:
     QueryEstimationCache queryEstimationCache_;
     std::map<std::string, madoka::Sketch*> collectionSketchMap_;
     std::map<std::string, QueriesFrequencyEstimation*> collectionFEMap_;
+    std::map<std::string, UserQueryDbTable*> collectionDbMap_;
 };
 }
 }//end of namespace sf1r
