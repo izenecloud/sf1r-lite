@@ -95,6 +95,13 @@ SET_TARGET_PROPERTIES(b5m_search_keyword PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
 
+ADD_EXECUTABLE(b5m_category_mapper
+b5m_category_mapper.cc
+)
+TARGET_LINK_LIBRARIES(b5m_category_mapper  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(b5m_category_mapper PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
+)
 ADD_EXECUTABLE(t_offerdb
 Runner.cpp
 t_offerdb.cc

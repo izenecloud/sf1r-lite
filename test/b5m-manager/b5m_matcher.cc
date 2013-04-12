@@ -1,5 +1,6 @@
 #include <b5m-manager/product_matcher.h>
 #include <b5m-manager/attribute_indexer.h>
+#include <b5m-manager/category_mapper.h>
 #include <b5m-manager/category_scd_spliter.h>
 #include <b5m-manager/b5mo_scd_generator.h>
 #include <b5m-manager/b5mo_processor.h>
@@ -268,6 +269,8 @@ int do_main(int ac, char** av)
         ("attribute-index", "build attribute index")
         ("product-train", "do product training")
         ("product-match", "do product matching test")
+        ("map-index", "do category mapper index")
+        ("map-test", "do category mapper test")
         ("fuzzy-diff", "test the fuzzy matching diff from no fuzzy")
         ("b5m-match", "make b5m matching")
         ("psm-index", "psm index")
@@ -620,6 +623,36 @@ int do_main(int ac, char** av)
             //matcher.LoadCategoryGroup(category_group);
         //}
         if(!matcher.Index(knowledge_dir, scd_path, mode))
+        {
+            return EXIT_FAILURE;
+        }
+    } 
+    if (vm.count("map-index")) {
+        if( knowledge_dir.empty()||scd_path.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        //ProductMatcher::Clear(knowledge_dir, mode);
+        CategoryMapper mapper;
+        mapper.SetCmaPath(cma_path);
+        if(!mapper.Index(knowledge_dir, scd_path))
+        {
+            return EXIT_FAILURE;
+        }
+    } 
+    if (vm.count("map-test")) {
+        if( knowledge_dir.empty()||scd_path.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        //ProductMatcher::Clear(knowledge_dir, mode);
+        CategoryMapper mapper;
+        mapper.SetCmaPath(cma_path);
+        if(!mapper.Open(knowledge_dir))
+        {
+            return EXIT_FAILURE;
+        }
+        if(!mapper.DoMap(scd_path))
         {
             return EXIT_FAILURE;
         }
