@@ -24,9 +24,11 @@ int main(int argc, char **argv)
 //  imgdupdetector.DupDetectorMain();
   ImgDupFujiMap* docid_docid_ = new ImgDupFujiMap(output_path + "/../fujimap/tmp4.kf");
   ImgDupFujiMap* gid_memcount_ = new ImgDupFujiMap(output_path + "/../fujimap/tmp5.kf");
+  DocidImgDbTable* docidImgDbTable = new DocidImgDbTable(output_path +"/../leveldb/docid_imgurl.db");
   docid_docid_->open();
   gid_memcount_->open();
-  ImgDupFileManager imgDupFileManager(scd_path, output_path, docid_docid_, gid_memcount_);
+  docidImgDbTable->open();
+  ImgDupFileManager imgDupFileManager(scd_path, output_path, docid_docid_, gid_memcount_, docidImgDbTable);
   imgDupFileManager.ReBuildAll();
   return 0;
 }

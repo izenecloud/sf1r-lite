@@ -60,7 +60,7 @@ public:
 
     void getMatchedDocIdList(
             const std::string& property,
-            const RangeListT& match_ranges,
+            const RangeListT& raw_range_list,
             size_t max_docs,
             std::vector<uint32_t>& docid_list,
             std::vector<size_t>& doclen_list) const;
@@ -68,13 +68,13 @@ public:
     void convertMatchRanges(
             const std::string& property,
             size_t max_docs,
-            RangeListT& match_ranges,
-            std::vector<double>& max_match_list) const;
+            RangeListT& raw_range_list,
+            std::vector<double>& score_list) const;
 
     size_t longestSuffixMatch(
             const std::string& property,
             const izenelib::util::UString& pattern,
-            RangeListT& match_ranges) const;
+            RangeListT& raw_range_list) const;
 
     size_t backwardSearch(const std::string& prop, const izenelib::util::UString& pattern, RangeT& match_range) const;
 
@@ -83,7 +83,7 @@ public:
             const std::vector<size_t> &prop_id_list,
             const std::vector<RangeListT> &filter_ranges,
             const RangeListT &match_ranges_list,
-            const std::vector<double> &max_match_list,
+            const std::vector<double> &score_list,
             size_t max_docs,
             std::vector<std::pair<double, uint32_t> > &res_list) const;
 
