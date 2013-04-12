@@ -101,10 +101,10 @@ bool IndexTaskService::index(unsigned int numdoc)
                     std::string fileName = itr->path().filename().string();
                     if (parser.checkSCDFormat(fileName))
                     {
+                        try {
                         bfs::copy_file(itr->path().string(), bundleConfig_->indexSCDPath() + "/" + fileName);
                         LOG(INFO) << "SCD File copy to local index path:" << fileName;
                         LOG(INFO) << "moving SCD files to directory " << bkDir;
-                        try {
                             bfs::rename(itr->path().string(), bkDir / itr->path().filename());
                         }
                         catch(const std::exception& e) {
