@@ -1196,6 +1196,12 @@ bool RecoveryChecker::onRecoverCheckLog()
     else
     {
         LOG(INFO) << "current node is forword, something error.";
+        if (lastid + 1 == reqlog_mgr_->getLastSuccessReqId())
+        {
+            LOG(WARNING) << "last update write request id to zookeeper may lost. need re-update.";
+            NodeManagerBase::get()->updateLastWriteReqId(reqlog_mgr_->getLastSuccessReqId());
+            return true;
+        }
     }
     return false;
 }

@@ -9,6 +9,7 @@
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 
+static const bool s_enable_async_ = false;
 
 namespace sf1r
 {
@@ -271,6 +272,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
             LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
             need_check_electing_ = true;
+            MasterManagerBase::get()->disableNewWrite();
             if (nodeState_ == NODE_STATE_RECOVER_RUNNING)
             {
                 LOG (INFO) << " session expired while recovering, wait recover finish.";
@@ -624,9 +626,9 @@ bool NodeManagerBase::registerPrimary(ZNode& znode)
 
 void NodeManagerBase::enterCluster(bool start_master)
 {
-    stopping_ = false;
     if (nodeState_ == NODE_STATE_STARTED)
     {
+        stopping_ = false;
         return;
     }
 
@@ -634,6 +636,7 @@ void NodeManagerBase::enterCluster(bool start_master)
         nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
     {
         LOG(WARNING) << "try to reenter cluster while node is recovering!" << sf1rTopology_.curNode_.toString();
+        stopping_ = false;
         return;
     }
 
@@ -671,6 +674,7 @@ void NodeManagerBase::enterCluster(bool start_master)
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
             LOG (ERROR) << CLASSNAME << " Failed to start (" << zookeeper_->getErrorString()
                 << "), waiting for retry ..." << std::endl;
+            stopping_ = false;
             return;
         }
     }
@@ -697,6 +701,7 @@ void NodeManagerBase::enterCluster(bool start_master)
         {
             nodeState_ = NODE_STATE_STARTING_WAIT_RETRY;
             LOG(WARNING) << " ZooKeeper lost while enter cluster. wait retry.";
+            stopping_ = false;
             return;
         }
         LOG(INFO) << "I am starting as primary worker.";
@@ -717,6 +722,7 @@ void NodeManagerBase::enterCluster(bool start_master)
             setSf1rNodeData(znode);
             registerPrimary(znode);
             updateNodeState();
+            stopping_ = false;
             return;
         }
     }
@@ -763,6 +769,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         sleep(10);
         updateCurrentPrimary();
         need_check_electing_ = true;
+        MasterManagerBase::get()->disableNewWrite();
         updateNodeState();
         return;
     }
@@ -1008,6 +1015,7 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         if (need_check_electing_ || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
         {
             need_check_electing_ = true;
+            MasterManagerBase::get()->disableNewWrite();
             LOG(WARNING) << "lost connection from ZooKeeper while finish request." << self_primary_path_;
             //checkForPrimaryElecting();
             // update to get notify on event callback and check for electing.
@@ -1219,6 +1227,7 @@ void NodeManagerBase::checkForPrimaryElecting()
     case NODE_STATE_RECOVER_RUNNING:
         LOG(INFO) << "check electing wait for idle." << nodeState_;
         need_check_electing_ = true;
+        MasterManagerBase::get()->disableNewWrite();
         return;
         break;
     default:
@@ -1252,6 +1261,7 @@ void NodeManagerBase::checkForPrimaryElecting()
     if (!zookeeper_->isConnected())
     {
         need_check_electing_ = true;
+        MasterManagerBase::get()->disableNewWrite();
         return;
     }
 
@@ -1301,6 +1311,7 @@ void NodeManagerBase::checkPrimaryState(bool primary_deleted)
     if (primary_deleted)
     {
         need_check_electing_ = true;
+        MasterManagerBase::get()->disableNewWrite();
         checkForPrimaryElecting();
         return;
     }
@@ -1313,6 +1324,7 @@ void NodeManagerBase::checkPrimaryState(bool primary_deleted)
         if (!zookeeper_->isZNodeExists(curr_primary_path_, ZooKeeper::WATCH))
         {
             need_check_electing_ = true;
+            MasterManagerBase::get()->disableNewWrite();
             checkForPrimaryElecting();
             return;
         }
@@ -1659,7 +1671,7 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     bool need_update = nodedata.getStrValue(ZNode::KEY_SERVICE_STATE) != oldZnode.getStrValue(ZNode::KEY_SERVICE_STATE) ||
                   nodedata.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH) != oldZnode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
 
-    if (nodeState_ == NODE_STATE_STARTED)
+    if (nodeState_ == NODE_STATE_STARTED && !need_check_electing_)
     {
 	    MasterManagerBase::get()->enableNewWrite();
     }
