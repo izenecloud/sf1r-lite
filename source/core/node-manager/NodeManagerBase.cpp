@@ -735,11 +735,14 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     stopping_ = false;
     if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
     {
+        if (!zookeeper_->isConnected())
+            return;
         ZNode znode;
         setSf1rNodeData(znode);
         if(!registerPrimary(znode))
         {
-            RecoveryChecker::forceExit("register primary failed.");
+            LOG(INFO) << "register primary failed. waiting retry.";
+            return;
         }
 
         updateCurrentPrimary();
@@ -1165,19 +1168,19 @@ bool NodeManagerBase::isNeedReEnterCluster()
 {
     if (!masterStarted_)
         return true;
-    std::string old_self_primary = self_primary_path_;
+    std::string new_self_primary;
     std::string old_primary = curr_primary_path_;
     int retry = 0;
     while (retry++ < 3)
     {
-        self_primary_path_ = findReCreatedSelfPrimaryNode();
-        if (!self_primary_path_.empty())
+        new_self_primary = findReCreatedSelfPrimaryNode();
+        if (!new_self_primary.empty())
             break;
         sleep(2);
     }
-    LOG(INFO) << "checking re-enter , self_primary_path_ is :" << self_primary_path_;
+    LOG(INFO) << "checking re-enter , new_self_primary is :" << new_self_primary;
 
-    if (self_primary_path_.empty() || old_self_primary != self_primary_path_ )
+    if (new_self_primary.empty() || new_self_primary != self_primary_path_ )
     {
         LOG(WARNING) << "current self primary changed or lost, need re-enter cluster.";
         return true;
@@ -1273,11 +1276,6 @@ void NodeManagerBase::checkForPrimaryElecting()
     LOG(WARNING) << "self_primary_path_ lost or log fall behind, need re-enter";
     stopping_ = true;
     unregisterPrimary();
-    if (zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH))
-    {
-        LOG(INFO) << "self node path is still existed, we need delete it first." <<nodePath_;
-        zookeeper_->deleteZNode(nodePath_);
-    }
     nodeState_ = NODE_STATE_STARTING;
     enterCluster(!masterStarted_);
     return;
