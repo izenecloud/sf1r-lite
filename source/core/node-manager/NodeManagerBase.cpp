@@ -1744,7 +1744,11 @@ void NodeManagerBase::updateNodeState(const ZNode& nodedata)
     // update to nodepath to make master got notified.
     zookeeper_->setZNodeData(nodePath_, nodedata.serialize());
     if (masterStarted_)
+    {
         MasterManagerBase::get()->updateServiceReadState(nodedata.getStrValue(ZNode::KEY_SERVICE_STATE), false);
+        if (!need_check_electing_ && nodeState_ == NODE_STATE_STARTED)
+            MasterManagerBase::get()->enableNewWrite();
+    }
     updateSelfPrimaryNodeState(nodedata);
 }
 
