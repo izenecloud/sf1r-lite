@@ -75,7 +75,7 @@ void RebuildTask::doTask()
     }
     boost::shared_ptr<DocumentManager> documentManager = collectionHandler->indexTaskService_->getDocumentManager();
     CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
-    collDir = collPath.getCollectionDataPath() + collPath.getCurrCollectionDir();
+    collDir = collPath.getCollectionDataPath();
 
     CollectionHandler* rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
     if (rebuildCollHandler)
@@ -110,7 +110,7 @@ void RebuildTask::doTask()
     LOG(INFO) << "# # # #  start rebuilding";
     rebuildCollHandler->indexTaskService_->index(documentManager, reqlog.cron_time);
     CollectionPath& rebuildCollPath = rebuildCollHandler->indexTaskService_->getCollectionPath();
-    rebuildCollDir = rebuildCollPath.getCollectionDataPath() + rebuildCollPath.getCurrCollectionDir();
+    rebuildCollDir = rebuildCollPath.getCollectionDataPath();
     rebuildCollBaseDir = rebuildCollPath.getBasePath();
     } // lock scope
 
@@ -139,9 +139,6 @@ void RebuildTask::doTask()
             LOG(ERROR) << "failed to move data, rollback";
             bfs::rename(collDir+"-backup", collDir);
         }
-
-        bfs::remove(collDir+"/scdlogs");
-        bfs::copy_file(collDir+"-backup/scdlogs", collDir+"/scdlogs");
         bfs::remove_all(rebuildCollBaseDir);
     }
     catch (const std::exception& e)
@@ -259,7 +256,7 @@ bool RebuildTask::rebuildFromSCD()
             return false;
         }
         CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
-        collDir = collPath.getCollectionDataPath() + collPath.getCurrCollectionDir();
+        collDir = collPath.getCollectionDataPath();
         std::string rebuild_scd_src = collPath.getScdPath() + "/rebuild_scd";
 
         bool is_primary = DistributeRequestHooker::get()->isRunningPrimary();
@@ -322,7 +319,7 @@ bool RebuildTask::rebuildFromSCD()
             return false;
         }
 
-        rebuildCollDir = rebuildCollPath.getCollectionDataPath() + rebuildCollPath.getCurrCollectionDir();
+        rebuildCollDir = rebuildCollPath.getCollectionDataPath();
         rebuildCollBaseDir = rebuildCollPath.getBasePath();
     } // lock scope
 
@@ -342,18 +339,15 @@ bool RebuildTask::rebuildFromSCD()
     LOG(INFO) << "## update collection data for " << collectionName_;
     try
     {
-        bfs::remove_all(collDir+"-backup");
-        bfs::rename(collDir, collDir+"-backup");
+        bfs::remove_all(collDir + "-backup");
+        bfs::rename(collDir, collDir + "-backup");
         try {
             bfs::rename(rebuildCollDir, collDir);
         }
         catch (const std::exception& e) {
             LOG(ERROR) << "failed to move data, rollback";
-            bfs::rename(collDir+"-backup", collDir);
+            bfs::rename(collDir + "-backup", collDir);
         }
-
-        bfs::remove(collDir+"/scdlogs");
-        bfs::copy_file(collDir+"-backup/scdlogs", collDir+"/scdlogs");
         bfs::remove_all(rebuildCollBaseDir);
     }
     catch (const std::exception& e)

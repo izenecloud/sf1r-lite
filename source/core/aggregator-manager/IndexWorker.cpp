@@ -195,7 +195,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     ///there should exist some missed SCDs since the last backup time,
     ///so we move those SCDs from backup directory, so that these data
     ///could be recovered through indexing
-    recoverSCD_();
+    //recoverSCD_();
 
     string scdPath = bundleConfig_->indexSCDPath();
     Status::Guard statusGuard(indexStatus_);
@@ -275,7 +275,7 @@ bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
 
-    recoverSCD_();
+    //recoverSCD_();
     Status::Guard statusGuard(indexStatus_);
 
     IndexReqLog reqlog;
@@ -2644,53 +2644,11 @@ size_t IndexWorker::getTotalScdSize_(const std::vector<std::string>& scdlist)
 
 bool IndexWorker::requireBackup_(size_t currTotalScdSizeInMB)
 {
-    static size_t threshold = 200;//200M
-    totalSCDSizeSinceLastBackup_ += currTotalScdSizeInMB;
-    const boost::shared_ptr<Directory>& current
-    = directoryRotator_.currentDirectory();
-    const boost::shared_ptr<Directory>& next
-    = directoryRotator_.nextDirectory();
-    if (next
-            && current->name() != next->name())
-        //&& ! (next->valid() && next->parentName() == current->name()))
-    {
-        ///TODO policy required here
-        if (totalSCDSizeSinceLastBackup_ > threshold)
-            return true;
-    }
     return false;
 }
 
 bool IndexWorker::backup_()
 {
-    const boost::shared_ptr<Directory>& current
-    = directoryRotator_.currentDirectory();
-    const boost::shared_ptr<Directory>& next
-    = directoryRotator_.nextDirectory();
-
-    // valid pointer
-    // && not the same directory
-    // && have not copied successfully yet
-    if (next
-            && current->name() != next->name())
-        //&& ! (next->valid() && next->parentName() == current->name()))
-    {
-        try
-        {
-            LOG(INFO) << "Copy index dir from " << current->name()
-                      << " to " << next->name();
-            next->copyFrom(*current);
-            return true;
-        }
-        catch (bfs::filesystem_error& e)
-        {
-            LOG(ERROR) << "Failed to copy index directory " << e.what();
-        }
-
-        // try copying but failed
-        return false;
-    }
-
     // not copy, always returns true
     return true;
 }

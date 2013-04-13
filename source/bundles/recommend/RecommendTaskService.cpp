@@ -129,31 +129,6 @@ void backupSCDFiles(const std::string& scdDir, const std::vector<string>& scdLis
 
 bool backupDataFiles(sf1r::directory::DirectoryRotator& directoryRotator)
 {
-    const boost::shared_ptr<sf1r::directory::Directory>& current = directoryRotator.currentDirectory();
-    const boost::shared_ptr<sf1r::directory::Directory>& next = directoryRotator.nextDirectory();
-
-    // valid pointer
-    // && not the same directory
-    // && have not copied successfully yet
-    if (next
-        && current->name() != next->name()
-        && ! (next->valid() && next->parentName() == current->name()))
-    {
-        try
-        {
-            LOG(INFO) << "Copy data dir from " << current->name() << " to " << next->name();
-            next->copyFrom(*current);
-            return true;
-        }
-        catch(boost::filesystem::filesystem_error& e)
-        {
-            LOG(INFO) << "exception in copy data dir, " << e.what();
-        }
-
-        // try copying but failed
-        return false;
-    }
-
     // not copy, always returns true
     return true;
 }
