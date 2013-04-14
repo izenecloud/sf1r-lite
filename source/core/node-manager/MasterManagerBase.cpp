@@ -275,6 +275,7 @@ void MasterManagerBase::onNodeCreated(const std::string& path)
         // try recover
         recover(path);
     }
+    updateServiceReadStateWithoutLock("ReadyForRead", true);
     //else if (masterState_ == MASTER_STATE_STARTED
     //             && masterState_ != MASTER_STATE_FAILOVERING)
     //{
@@ -300,6 +301,7 @@ void MasterManagerBase::onNodeDeleted(const std::string& path)
             // reset watch.
             std::string sdata;
             zookeeper_->getZNodeData(path, sdata, ZooKeeper::WATCH);
+            updateServiceReadStateWithoutLock("ReadyForRead", true);
         }
     }
     checkForWriteReq();
@@ -320,6 +322,7 @@ void MasterManagerBase::onChildrenChanged(const std::string& path)
             std::string sdata;
             zookeeper_->getZNodeData(path, sdata, ZooKeeper::WATCH);
             detectReplicaSet(path);
+            updateServiceReadStateWithoutLock("ReadyForRead", true);
         }
     }
     checkForWriteReq();
@@ -343,7 +346,10 @@ void MasterManagerBase::onDataChanged(const std::string& path)
     }
     // reset watch.
     if (path.find(topologyPath_) != std::string::npos)
+    {
         zookeeper_->isZNodeExists(path, ZooKeeper::WATCH);
+        updateServiceReadStateWithoutLock("ReadyForRead", true);
+    }
 
     checkForWriteReq();
 }
@@ -1216,14 +1222,18 @@ void MasterManagerBase::updateServiceReadStateWithoutLock(const std::string& my_
                 {
                     LOG(INFO) << "one shard of master service is not ready for read:" << nodepath;
                     all_ready = false;
+                    if (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_)
+                    {
+                        new_state = "BusyForSelf";
+                    }
+                    else
+                        new_state = "BusyForShard";
                     break;
                 }
             }
         }
         if (all_ready)
             new_state = "ReadyForRead";
-        else
-            new_state = "BusyForShard";
     }
     if (old_state == new_state)
         return;
