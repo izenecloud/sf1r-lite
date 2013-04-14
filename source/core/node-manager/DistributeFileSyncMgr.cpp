@@ -622,6 +622,7 @@ bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std
         if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
         {
             LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
+            std::vector<std::string>().swap(saved_log);
             return true;
         }
         LOG(INFO) << "try get newest log from: " << ip << ":" << port;
