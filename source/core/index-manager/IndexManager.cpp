@@ -54,12 +54,13 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
     }
     case QueryFiltering::INCLUDE:
     {
-        for(std::vector<PropertyValue>::const_iterator iter = filterParam.begin(); iter != filterParam.end(); ++iter)
+        std::vector<PropertyType> values(filterParam.size());
+        for(std::size_t i = 0; i < filterParam.size(); ++i)
         {
-            PropertyType value;
-            convertData(propertyL, *iter, value);
-            getDocsByPropertyValue(colId, property, value, *pBitVector);
+            convertData(propertyL, filterParam[i], values[i]);
         }
+        getDocsByPropertyValueIn(colId, property, values, *pBitVector, *docIdSet);
+        return;
     }
         break;
     case QueryFiltering::EXCLUDE:

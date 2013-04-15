@@ -4,6 +4,7 @@
 #include "img_dup_helper.h"
 #include "img_dup_fujimap.h"
 #include "img_dup_fm.h"
+#include "img_dup_leveldb.h"
 #include <string>
 #include <vector>
 #include <product-manager/product_price.h>
@@ -33,7 +34,8 @@ namespace sf1r {
                 bool li,
                 bool im,
                 int con,
-                int icl
+                int icl,
+                std::string icn
                 );
         ~ImgDupDetector();
 
@@ -50,7 +52,8 @@ namespace sf1r {
                 bool li,
                 bool im,
                 int con,
-                int icl
+                int icl,
+                std::string icn
                 );
 
         bool SetController();
@@ -59,6 +62,7 @@ namespace sf1r {
         bool ClearHistoryUrl();
         bool SetPath();
         bool InitFujiMap();
+        bool InitLevelDb();
         bool SaveFujiMap();
         bool LoadFujiMap();
         bool DupDetectorMain();
@@ -84,6 +88,8 @@ namespace sf1r {
 
         std::string cma_path_;
         uint32_t psmk_;
+
+        std::string img_content_name_;
 
         std::string psm_path_;
         std::string psm_path_incr_;
@@ -115,6 +121,8 @@ namespace sf1r {
 
         std::map<uint32_t, UString> key_con_map_;
         std::map<uint32_t, UString> key_url_map_;
+
+        DocidImgDbTable* docidImgDbTable;
 
     };
 }

@@ -70,15 +70,16 @@ public:
             std::string& key,
             std::vector<std::pair<std::string, double> >& doc_vector,
             PsmAttach& attach,
-            uint32_t length)
+            uint32_t length,
+            std::string& img_con_name)
     {
-        if (doc["Content"].length() <= length)
+        if (doc[img_con_name].length() <= length)
         {
 //          LOG(INFO) << "Content Empty...";
             return false;
         }
         doc["DOCID"].convertString(key, izenelib::util::UString::UTF_8);
-        analyzer.Analyze(doc["Content"], doc_vector);
+        analyzer.Analyze(doc[img_con_name], doc_vector);
         return true;
     }
 };

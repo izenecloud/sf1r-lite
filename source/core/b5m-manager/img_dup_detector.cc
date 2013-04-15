@@ -24,8 +24,9 @@ ImgDupDetector::ImgDupDetector(std::string sp,
         bool li,
         bool im,
         int con,
-        int icl)
-:scd_path_(sp), output_path_(op), source_name_(sn), log_info_(li), incremental_mode_(im), controller_(con), image_content_length_(icl), dup_by_url_(false), dup_by_con_(false)
+        int icl,
+        std::string icn)
+:scd_path_(sp), output_path_(op), source_name_(sn), log_info_(li), incremental_mode_(im), controller_(con), image_content_length_(icl), img_content_name_(icn), dup_by_url_(false), dup_by_con_(false)
 {
     SetPsmK(400);
 }
@@ -36,7 +37,8 @@ bool ImgDupDetector::SetParams(std::string sp,
         bool li,
         bool im,
         int con,
-        int icl)
+        int icl,
+        std::string icn)
 {
     SetPsmK(400);
     scd_path_ = sp;
@@ -47,6 +49,7 @@ bool ImgDupDetector::SetParams(std::string sp,
     incremental_mode_ = im;
     controller_ = con;
     image_content_length_ = icl;
+    img_content_name_ = icn;
     dup_by_url_ = false;
     dup_by_con_ = false;
     return true;
@@ -124,6 +127,7 @@ bool ImgDupDetector::SetPath()
     psm_path_noin_con_ = psm_path_ + "/noin/con";
 
     boost::filesystem::create_directories(output_path_);
+    boost::filesystem::create_directories(output_path_+"/../leveldb");
     boost::filesystem::create_directories(psm_path_);
     boost::filesystem::create_directories(psm_path_incr_);
     boost::filesystem::create_directories(psm_path_incr_url_);
@@ -161,6 +165,12 @@ bool ImgDupDetector::InitFujiMap()
     return true;
 }
 
+bool ImgDupDetector::InitLevelDb()
+{
+    docidImgDbTable = new DocidImgDbTable(output_path_+"/../leveldb/docid_imgurl.db");
+    docidImgDbTable->open();
+    return true;
+}
 bool ImgDupDetector::SaveFujiMap()
 {
 /*
@@ -200,8 +210,9 @@ bool ImgDupDetector::DupDetectorMain()
     ImgDupDetector::SetController();
     ImgDupDetector::SetPath();
     ImgDupDetector::InitFujiMap();
+    ImgDupDetector::InitLevelDb();
     ImgDupDetector::ClearHistory();
-    ImgDupFileManager::get()->SetParam(scd_path_, output_path_, docid_docid_, gid_memcount_);
+    ImgDupFileManager::get()->SetParam(scd_path_, output_path_, docid_docid_, gid_memcount_, docidImgDbTable);
 
 
     if(log_info_ || !log_info_)
@@ -218,6 +229,8 @@ bool ImgDupDetector::DupDetectorMain()
         LOG(INFO)<<"ShareSourceName to be deleted: " << source_name_ << std::endl;
 
         LOG(INFO)<<"Image content length: " << image_content_length_ << std::endl;
+
+        LOG(INFO) <<"Image Content name: " << img_content_name_ << endl;
     }
 
     int fd, wd;
@@ -407,7 +420,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         if(log_info_ && !log_info_)
         {
             key_url_map_[url_key_] = doc["Img"];
-            key_con_map_[url_key_] = doc["Content"];
+            key_con_map_[url_key_] = doc[img_content_name_];
         }
         url_key_++;
     }
@@ -448,7 +461,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
         if(log_info_ && !log_info_)
         {
             key_url_map_[url_key_] = doc["Img"];
-            key_con_map_[url_key_] = doc["Content"];
+            key_con_map_[url_key_] = doc[img_content_name_];
         }
         url_key_++;
     }
@@ -461,7 +474,7 @@ bool ImgDupDetector::BuildUrlIndex(const std::string& scd_file, const std::strin
 
     if( url_docid_key_->build() < 0 )
     {
-        LOG(ERROR) << "FujiMap build error [url_docid_key_]" <<endl;
+        LOG(ERROR) << "FujiMap build error [url_docid_key_]" << endl;
         LOG(ERROR) << "Error info: " << url_docid_key_->what() << endl;
         return false;
     }
@@ -512,7 +525,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         std::string docID;
         std::vector<std::pair<std::string, double> > doc_vector;
         PsmAttach attach;
-        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
+        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_, img_content_name_))
         {
             continue;
         }
@@ -521,7 +534,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         con_docid_key_->insert(DocidToUint(docID), con_key_);
         if(log_info_)
         {
-            key_con_map_[con_key_] = doc["Content"];
+            key_con_map_[con_key_] = doc[img_content_name_];
             key_url_map_[con_key_] = doc["Img"];
         }
         con_key_++;
@@ -553,7 +566,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         std::string docID;
         std::vector<std::pair<std::string, double> > doc_vector;
         PsmAttach attach;
-        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
+        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_, img_content_name_))
         {
             continue;
         }
@@ -562,7 +575,7 @@ bool ImgDupDetector::BuildConIndex(const std::string& scd_file, const std::strin
         con_docid_key_->insert(DocidToUint(docID), con_key_);
         if(log_info_)
         {
-            key_con_map_[con_key_] = doc["Content"];
+            key_con_map_[con_key_] = doc[img_content_name_];
             key_url_map_[con_key_] = doc["Img"];
         }
         con_key_++;
@@ -759,7 +772,7 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         std::string docID;
         std::vector<std::pair<std::string, double> > doc_vector;
         PsmAttach attach;
-        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_))
+        if(!PsmHelper::GetPsmItemCon(analyzer, doc, docID, doc_vector, attach, image_content_length_, img_content_name_))
         {
             rest++;
             continue;
@@ -767,6 +780,10 @@ bool ImgDupDetector::DetectCon(const std::string& scd_file, const std::string& p
         uint32_t match_key;
         uint32_t current_key;
         uint32_t current_docid = DocidToUint(docID);
+        std::string img_url_str;
+        doc["Img"].convertString(img_url_str, izenelib::util::UString::UTF_8);
+        docidImgDbTable->add_item(current_docid, img_url_str);
+
         if(!psm.Search(doc_vector, attach, match_key))
         {
             rest++;
@@ -925,6 +942,18 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
             gid.assign(UintToDocid(match_docid), izenelib::util::UString::UTF_8);
 
             scddoc.push_back(std::pair<std::string, UString>("GID", gid));
+            std::string guangURL;
+            if(!docidImgDbTable->get_item(match_docid, guangURL))
+            {
+                LOG(INFO) << "Find no img url..." << endl;
+                scddoc.push_back(std::pair<std::string, UString>("guangURL", doc["Img"]));
+            }
+            else
+            {
+                UString gURL;
+                gURL.assign(guangURL, izenelib::util::UString::UTF_8);
+                scddoc.push_back(std::pair<std::string, UString>("guangURL", gURL));
+            }
             writer0.Append(scddoc);
         }
         else
@@ -932,6 +961,7 @@ bool ImgDupDetector::WriteCurrentFile(const std::string& filename)
             //saved
             rest++;
             scddoc.push_back(std::pair<std::string, UString>("GID", doc["DOCID"]));
+            scddoc.push_back(std::pair<std::string, UString>("guangURL", doc["Img"]));
             writer0.Append(scddoc);
 
             std::map<uint32_t, std::vector<uint32_t> >::iterator iter = gid_docids_.find(current_docid);

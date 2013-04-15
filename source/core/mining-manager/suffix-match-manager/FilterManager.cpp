@@ -53,6 +53,7 @@ void FilterManager::loadStrFilterInvertedData(
     str_filter_data.resize(property_list.size());
     last_docid_list.clear();
     last_docid_list.resize(property_list.size());
+
     for (size_t prop_num = 0; prop_num < property_list.size(); ++prop_num)
     {
         const std::string& property = property_list[prop_num];
@@ -73,7 +74,7 @@ void FilterManager::loadStrFilterInvertedData(
                 ifs.read((char*)&docid_len, sizeof(docid_len));
                 std::vector<uint32_t> docid_list(docid_len);
                 ifs.read((char*)&docid_list[0], sizeof(docid_list[0]) * docid_len);
-                //LOG(INFO) << "filter num: " << i << ", key=" << key << ", docnum: " << docid_len;
+                LOG(INFO) << "filter num: " << i << ", key=" << key << ", docnum: " << docid_len;
                 last_docid_list[prop_num] = std::max(last_docid_list[prop_num], docid_list.back());
                 str_filter_data[prop_num].insert(std::make_pair(UString(key, UString::UTF_8), docid_list));
             }
@@ -176,7 +177,7 @@ void FilterManager::generatePropertyId()
     str_key_sets_.resize(prop_list_.size());
     num_key_sets_.resize(prop_list_.size());
 
-    filter_list_.resize(prop_list_.size());
+    filter_list_.resize(prop_list_.size());////xxxx
     str_filter_map_.resize(str_prop_list_.size());
 }
 
@@ -205,7 +206,7 @@ void FilterManager::generatePropertyIdForList(const std::vector<std::string>& pr
     }
 }
 
-void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid)
+void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid, bool isIncre)
 {
     std::vector<StrFilterItemMapT> group_filter_map;
     std::vector<StrFilterItemMapT> attr_filter_map;
@@ -215,7 +216,7 @@ void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid)
     std::vector<uint32_t> group_last_docid_list;
     std::vector<uint32_t> attr_last_docid_list;
 
-    if (last_docid > 0)
+    if (last_docid > 0 && !isIncre)// for increase data
     {
         loadStrFilterInvertedData(group_prop_list_, group_filter_map, group_last_docid_list);
         loadStrFilterInvertedData(attr_prop_list_, attr_filter_map, attr_last_docid_list);
@@ -226,14 +227,45 @@ void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid)
         attr_last_docid_list.resize(attr_prop_list_.size());
     }
 
+    if (isIncre)
+    {
+        str_filter_ids_.clear();
+        str_filter_ids_.resize(prop_list_.size());
+
+        num_filter_ids_.clear();
+        num_filter_ids_.resize(prop_list_.size());
+
+        filter_list_.clear();
+        filter_list_.resize(prop_list_.size());
+
+        num_key_sets_.clear();
+        num_key_sets_.resize(prop_list_.size());
+        
+        for (std::vector<uint32_t>::iterator i = group_last_docid_list.begin(); i != group_last_docid_list.end(); ++i)
+        {
+            if (*i == 0)
+            {
+                *i = last_docid;
+            }
+        }
+    }
+
     buildGroupFilters(group_last_docid_list, max_docid, group_prop_list_, group_filter_map);
     saveStrFilterInvertedData(group_prop_list_, group_filter_map);
 
     buildAttrFilters(attr_last_docid_list, max_docid, attr_prop_list_, attr_filter_map);
     saveStrFilterInvertedData(attr_prop_list_, attr_filter_map);
 
-    buildDateFilters(0, max_docid, date_prop_list_, date_filter_map);
-    buildNumFilters(0, max_docid, num_prop_list_, num_filter_map);
+    if (isIncre)
+    {
+        buildDateFilters(last_docid, max_docid, date_prop_list_, date_filter_map);
+        buildNumFilters(last_docid, max_docid, num_prop_list_, num_filter_map);
+    }
+    else
+    {
+        buildDateFilters(0, max_docid, date_prop_list_, date_filter_map);
+        buildNumFilters(0, max_docid, num_prop_list_, num_filter_map);
+    }
 }
 
 void FilterManager::buildStringFiltersForDoc(docid_t doc_id, const Document& doc)
@@ -302,10 +334,7 @@ void FilterManager::buildGroupFilters(
 {
     if (!groupManager_) return;
 
-    LOG(INFO) << "begin building group filter data.";
-
     group_filter_data.resize(property_list.size());
-
     // the relationship between group node need rebuild from docid = 1.
     GroupNode* group_root = new GroupNode(UString("root", UString::UTF_8));
     std::vector<GroupNode*> property_root_nodes;
@@ -340,6 +369,7 @@ void FilterManager::buildGroupFilters(
             ", property: " << property << ", pid: " << prop_id;
         LOG(INFO) << "building filter data, end at:" << max_docid;
 
+        // here is all build ....
         for (uint32_t docid = 1; docid <= max_docid; ++docid)
         {
             faceted::PropValueTable::PropIdList propids;
@@ -362,7 +392,7 @@ void FilterManager::buildGroupFilters(
                     curgroup = curgroup->getChild(groupstr);
                     assert(curgroup);
                 }
-                if (docid <= last_docid_forproperty) continue;
+                
                 group_filter_data[j][groupstr].push_back(docid);
             }
         }
@@ -373,7 +403,6 @@ void FilterManager::buildGroupFilters(
                 group_filter_data[j],
                 str_filter_ids_[prop_id],
                 filter_list_[prop_id]);
-
         std::vector<StrFilterKeyT>().swap(prop_filter_str_list_[prop_id]);
         prop_filter_str_list_[prop_id].reserve(str_filter_ids_[prop_id].size() + 1);
 
@@ -384,7 +413,7 @@ void FilterManager::buildGroupFilters(
             prop_filter_str_list_[prop_id].push_back(filterstr_it->first);
         }
 
-        printNode(property_root_nodes[j], 0, str_filter_ids_[prop_id], filter_list_[prop_id]);
+        //printNode(property_root_nodes[j], 0, str_filter_ids_[prop_id], filter_list_[prop_id]);
     }
     delete group_root;
     LOG(INFO) << "finish building group filter data.";
@@ -399,6 +428,9 @@ void FilterManager::mapGroupFilterToFilterId(
     if (node)
     {
         filterids[node->node_name_].start = filter_list.size();
+        string groupstr1;
+        node->node_name_.convertString(groupstr1, UString::UTF_8);
+        
         StrFilterItemMapT::const_iterator cit = group_filter_data.find(node->node_name_);
         if (cit != group_filter_data.end())
             filter_list.push_back(cit->second);
@@ -481,7 +513,7 @@ void FilterManager::mapAttrFilterToFilterId(const StrFilterItemMapT& attr_filter
     }
 }
 
-void FilterManager::buildDateFilters(
+void FilterManager::buildDateFilters( // all rebuild ....
         uint32_t last_docid, uint32_t max_docid,
         const std::vector< std::string >& property_list,
         std::vector<NumFilterItemMapT>& date_filter_data)
@@ -811,6 +843,72 @@ void FilterManager::loadFilterId()
         }
     }
 }
+void FilterManager::saveFilterList()
+{
+    string docid_path = data_root_path_ + "/filter.list";
+    FILE* file;
+    if ((file = fopen(docid_path.c_str(), "wb")) == NULL)
+    {
+        LOG(INFO) << "Cannot open output file"<<endl;
+        return;
+    }
+    unsigned int size_1 = filter_list_.size();
+    fwrite(&size_1, sizeof(size_1), 1, file);
+
+    for (std::vector<std::vector<FilterDocListT> >::iterator i = filter_list_.begin(); i != filter_list_.end(); ++i)
+    {
+        uint32_t size_2 = i->size();
+        fwrite(&size_2, sizeof(size_2), 1, file);
+
+        for (std::vector<FilterDocListT>::iterator j = (*i).begin(); j != (*i).end(); ++j)
+        {
+            uint32_t size_3 = j->size();
+            fwrite(&size_3, sizeof(size_3), 1, file);
+
+            for (FilterDocListT::iterator k = (*j).begin(); k != (*j).end(); ++k)
+            {
+                uint32_t value = *k;
+                fwrite(&value, sizeof(value), 1, file);
+            }
+        }
+    }
+}
+
+bool FilterManager::loadFilterList()
+{
+    string docid_path = data_root_path_ + "/filter.list";
+    FILE* file;
+    if ((file = fopen(docid_path.c_str(), "rb")) == NULL)
+    {
+        LOG(INFO) << "Cannot open output file"<<endl;
+        return false;
+    }
+
+    unsigned int size = 0;
+    if (1 != fread(&size, sizeof(size), 1, file) ) return false;
+
+    for (unsigned int i = 0; i < size; ++i)
+    {
+        unsigned int count = 0;
+        if (1 != fread(&count, sizeof(count), 1, file) ) return false;
+        std::vector<FilterDocListT> v;
+        for (unsigned int j = 0; j < count; ++j)
+        {
+            unsigned int count_1 = 0;
+            if (1 != fread(&count_1, sizeof(count_1), 1, file) ) return false;
+            FilterDocListT filterDocList;
+            for (unsigned int i = 0; i < count_1; ++i)
+            {
+                uint32_t value = 0;
+                if (1 != fread(&value, sizeof(value), 1, file) ) return false;
+                filterDocList.push_back(value);
+            }
+            v.push_back(filterDocList);
+        }
+        filter_list_.push_back(v);
+    }
+    return true;
+}
 
 izenelib::util::UString FilterManager::formatGroupPath(const std::vector<std::string>& groupPath) const
 {
@@ -993,6 +1091,10 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeGreater(size_t pr
     FilterIdRange empty_range;
     NumFilterKeyT num_key = formatNumericFilter(prop_id, num_filter, true);
     const std::vector<NumFilterKeyT>& num_key_set = num_key_sets_[prop_id];
+    if (num_key_set.size() == 0)
+    {
+        return empty_range;
+    }
 
     std::vector<NumFilterKeyT>::const_iterator it = include
         ? std::lower_bound(num_key_set.begin(), num_key_set.end(), num_key)
@@ -1021,6 +1123,11 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLess(size_t prop_
     NumFilterKeyT num_key = formatNumericFilter(prop_id, num_filter, false);
     const std::vector<NumFilterKeyT>& num_key_set = num_key_sets_[prop_id];
 
+    if (num_key_set.size() == 0)
+    {
+        return empty_range;
+    }
+
     std::vector<NumFilterKeyT>::const_iterator it = std::lower_bound(num_key_set.begin(), num_key_set.end(), num_key);
     if (it == num_key_set.begin() && (!include || *it > num_filter))
     {
@@ -1035,7 +1142,7 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLess(size_t prop_
     {
         return empty_range;
     }
-
+    
     empty_range.start = num_filter_ids_[prop_id].find(num_key_set[0])->second.start;
     empty_range.end = nit->second.end;
 

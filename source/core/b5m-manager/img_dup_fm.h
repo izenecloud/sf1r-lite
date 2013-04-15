@@ -3,6 +3,7 @@
 
 #include "img_dup_helper.h"
 #include "img_dup_fujimap.h"
+#include "img_dup_leveldb.h"
 #include <string>
 #include <vector>
 #include "b5m_types.h"
@@ -22,6 +23,7 @@ namespace sf1r {
         std::string current_output_path_;
         ImgDupFujiMap* gid_memcount_;
         ImgDupFujiMap* docid_docid_;
+        DocidImgDbTable* docidImgDbTable;
     public:
         ImgDupFileManager()
         {
@@ -38,22 +40,26 @@ namespace sf1r {
         ImgDupFileManager(std::string ip,
                 std::string op,
                 ImgDupFujiMap* gm,
-                ImgDupFujiMap* dd)
+                ImgDupFujiMap* dd,
+                DocidImgDbTable* dt)
         {
             input_path_ = ip;
             output_path_ = op;
             gid_memcount_ = gm;
             docid_docid_ = dd;
+            docidImgDbTable = dt;
         }
         bool SetParam(std::string ip,
                 std::string op,
                 ImgDupFujiMap* gm,
-                ImgDupFujiMap* dd)
+                ImgDupFujiMap* dd,
+                DocidImgDbTable* dt)
         {
             input_path_ = ip;
             output_path_ = op;
             gid_memcount_ = gm;
             docid_docid_ = dd;
+            docidImgDbTable = dt;
             return true;
         }
 
@@ -145,6 +151,17 @@ namespace sf1r {
                     gid.assign(UintToDocid(match_docid), izenelib::util::UString::UTF_8);
 
                     scddoc.push_back(std::pair<std::string, UString>("GID", gid));
+                    std::string guangURL;
+                    if(!docidImgDbTable->get_item(match_docid, guangURL))
+                    {
+                        LOG(INFO) << "Find no img url..." << endl;
+                    }
+                    else
+                    {
+                        UString gURL;
+                        gURL.assign(guangURL, izenelib::util::UString::UTF_8);
+                        scddoc.push_back(std::pair<std::string, UString>("guangURL", gURL));
+                    }
                     writer0.Append(scddoc);
                 }
                 else
@@ -152,6 +169,7 @@ namespace sf1r {
                     //saved
                     rest++;
                     scddoc.push_back(std::pair<std::string, UString>("GID", doc["DOCID"]));
+                    scddoc.push_back(std::pair<std::string, UString>("guangURL", doc["Img"]));
                     writer0.Append(scddoc);
 
                     uint32_t count;

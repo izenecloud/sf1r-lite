@@ -27,7 +27,12 @@
 #include <configuration-manager/MiningSchema.h>
 #include <configuration-manager/CollectionPath.h>
 #include <ir/id_manager/IDManager.h>
+#include <util/cronexpression.h>
+#include <util/scheduler.h>
+#include <util/ThreadModel.h>
+#if BOOST_VERSION >= 105300
 #include <boost/atomic.hpp>
+#endif
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/thread/mutex.hpp>
@@ -102,7 +107,7 @@ class OfflineProductScorerFactory;
 class ProductRankerFactory;
 class NaiveTopicDetector;
 class SuffixMatchManager;
-class IncrementalManager;
+class IncrementalFuzzyManager;
 class ProductMatcher;
 class QueryCategorizer;
 class MiningTaskBuilder;
@@ -379,8 +384,7 @@ public:
             std::size_t& totalCount,
             faceted::GroupRep& groupRep,
             sf1r::faceted::OntologyRep& attrRep,
-            UString& analyzedQuery
-            );
+            UString& analyzedQuery);
 
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
 
@@ -477,6 +481,8 @@ public:
     {
         return numericTableBuilder_;
     }
+
+    void updateMergeFuzzyIndex();
 
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
@@ -685,7 +691,7 @@ private:
     /** Suffix Match */
     std::string suffix_match_path_;
     SuffixMatchManager* suffixMatchManager_;
-    IncrementalManager* incrementalManager_;
+    IncrementalFuzzyManager* incrementalManager_;
 
     /** Product Matcher */
     std::vector<boost::regex> match_category_restrict_;
@@ -698,8 +704,12 @@ private:
 
     /** MiningTaskBuilder */
     MiningTaskBuilder* miningTaskBuilder_;
-
+    izenelib::util::CronExpression cronExpression_;
+#if BOOST_VERSION >= 105300	
     boost::atomic_bool hasDeletedDocDuringMining_;
+#else
+	bool hasDeletedDocDuringMining_;
+#endif
 };
 
 }
