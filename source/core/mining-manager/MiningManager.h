@@ -482,7 +482,7 @@ public:
         return numericTableBuilder_;
     }
 
-    void updateMergeFuzzyIndex();
+    void updateMergeFuzzyIndex(int calltype);
 
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
