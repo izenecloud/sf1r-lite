@@ -274,6 +274,9 @@ protected:
     //ElectingNodeMapT electing_secondaries_;
     typedef std::map<std::string, boost::shared_ptr<IDistributeService> > ServiceMapT;
     ServiceMapT  all_distributed_services_;
+
+    std::string saved_packed_reqdata_;
+    int saved_reqtype_;
 };
 
 }
