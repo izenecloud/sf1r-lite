@@ -407,11 +407,18 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
     znode.setValue(ZNode::KEY_NODE_STATE, (uint32_t)nodeState_);
 
     //setServicesData(znode);
+    if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
+    {
+        znode.setValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA, saved_packed_reqdata_);
+        znode.setValue(ZNode::KEY_REQ_TYPE, (uint32_t)saved_reqtype_);
+    }
 
     if (nodeState_ == NODE_STATE_STARTED)
     {
         processing_step_ = 0;
         slow_write_running_ = false;
+        saved_packed_reqdata_.clear();
+        saved_reqtype_ = 0;
     }   
     znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
     if (processing_step_ == 0)
@@ -1005,16 +1012,16 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         LOG(INFO) << "send request to other replicas from primary.";
         // write request data to node to notify replica.
         nodeState_ = NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS;
-        ZNode znode;
-        setSf1rNodeData(znode);
-        znode.setValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA, packed_reqdata);
-        znode.setValue(ZNode::KEY_REQ_TYPE, (uint32_t)type);
+        saved_packed_reqdata_ = packed_reqdata;
+        saved_reqtype_ = type;
         // let the 50% replicas to start processing first.
         // after the 50% finished, we change the step to 100%
         processing_step_ = 50;
         if (!slow_write_running_)
             processing_step_ = 100;
-        znode.setValue(ZNode::KEY_REQ_STEP, processing_step_);
+
+        ZNode znode;
+        setSf1rNodeData(znode);
         if (need_check_electing_ || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
         {
             need_check_electing_ = true;
@@ -1026,30 +1033,6 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         }
         else
             updateSelfPrimaryNodeState(znode);
-
-        //std::string oldsdata = znode.serialize();
-        //std::string sdata;
-        //if(zookeeper_->getZNodeData(self_primary_path_, sdata, ZooKeeper::WATCH))
-        //{
-        //    znode.loadKvString(sdata);
-        //    
-        //    std::string packed_reqdata_check = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
-        //    if (packed_reqdata_check != packed_reqdata)
-        //    {
-        //        LOG(ERROR) << "write request data to ZooKeeper error. data len: " << packed_reqdata_check.size();
-        //    }
-        //    if (oldsdata != sdata)
-        //    {
-        //        LOG(ERROR) << "write znode data to ZooKeeper error.";
-        //    }
-        //    znode.loadKvString(oldsdata);
-        //    packed_reqdata_check = znode.getStrValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA);
-        //    if (packed_reqdata_check != packed_reqdata)
-        //    {
-        //        LOG(ERROR) << "znode serialize and unserialize error.";
-        //    }
-        //}
-
         DistributeTestSuit::testFail(PrimaryFail_At_FinishReqLocal);
     }
     else
