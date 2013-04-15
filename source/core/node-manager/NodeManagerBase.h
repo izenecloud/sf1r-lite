@@ -255,6 +255,7 @@ protected:
 
     boost::mutex mutex_;
     boost::condition_variable stop_cond_;
+    boost::condition_variable waiting_reenter_cond_;
 
     std::string CLASSNAME;
     std::string self_primary_path_;
