@@ -12,10 +12,11 @@
 #include "FMIndexManager.h"
 
 #include <3rdparty/am/btree/btree_map.h>
-
+#include <util/ustring/algo.hpp>
 #include <glog/logging.h>
 
 using namespace cma;
+using namespace izenelib::util;
 
 namespace
 {
@@ -296,7 +297,16 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             for (std::list<std::pair<UString, double> >::iterator pit = sub_patterns.begin();
                     pit != sub_patterns.end(); ++pit)
             {
-                if (!pit->first.empty() && fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
+                if (pit->first.empty()) continue;
+                if (is_alphabet<uint16_t>::value(pit->first[0]) || is_numeric<uint16_t>::value(pit->first[0]))
+                {
+                    pit->first.insert(pit->first.begin(), ' ');
+                }
+                if (is_alphabet<uint16_t>::value(*pit->first.end()) || is_numeric<uint16_t>::value(*pit->first.end()))
+                {
+                    pit->first.push_back(' ');
+                }
+                if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
                 {
                     range_list.push_back(sub_match_range);
                     score_list.push_back(pit->second);
@@ -733,7 +743,7 @@ void SuffixMatchManager::buildTokenizeDic()
     cma_fmindex_dic /= boost::filesystem::path("dict");
     cma_fmindex_dic /= boost::filesystem::path(tokenize_dicpath_);
     LOG(INFO) << "fm-index dictionary path : " << cma_fmindex_dic.c_str() << endl;
-    ProductTokenizer::TokenizerType type = tokenize_dicpath_ == "product" ? 
+    ProductTokenizer::TokenizerType type = tokenize_dicpath_ == "product" ?
         ProductTokenizer::TOKENIZER_DICT : ProductTokenizer::TOKENIZER_CMA;
     tokenizer_ = new ProductTokenizer(type, cma_fmindex_dic.c_str());
 }

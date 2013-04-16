@@ -149,9 +149,9 @@ inline bool isProductType(const UString& str)
 }
 
 void ProductTokenizer::DoBigram_(
-    const UString& pattern,
-    std::list<std::pair<UString,double> >& tokens,
-    double score)
+        const UString& pattern,
+        std::list<std::pair<UString,double> >& tokens,
+        double score)
 {
     size_t i, len = pattern.length();
     if (len >= 3)
@@ -243,9 +243,9 @@ void ProductTokenizer::DoBigram_(
 }
 
 void ProductTokenizer::GetLeftTokens_(
-    const std::list<std::string>& input,
-    std::list<std::pair<UString,double> >& tokens,
-    double score)
+        const std::list<std::string>& input,
+        std::list<std::pair<UString,double> >& tokens,
+        double score)
 {
     ///Chinese bigram
     for (std::list<std::string>::const_iterator it = input.begin(); it != input.end(); ++it)
@@ -256,9 +256,9 @@ void ProductTokenizer::GetLeftTokens_(
 }
 
 void ProductTokenizer::GetLeftTokens_(
-    const std::list<UString>& input,
-    std::list<std::pair<UString,double> >& tokens,
-    double score)
+        const std::list<UString>& input,
+        std::list<std::pair<UString,double> >& tokens,
+        double score)
 {
     ///Chinese bigram
     for (std::list<UString>::const_iterator it = input.begin(); it != input.end(); ++it)
@@ -268,9 +268,9 @@ void ProductTokenizer::GetLeftTokens_(
 }
 
 bool ProductTokenizer::GetTokenResults(
-    const std::string& pattern,
-    std::list<std::pair<UString,double> >& token_results,
-    UString& refined_results)
+        const std::string& pattern,
+        std::list<std::pair<UString,double> >& token_results,
+        UString& refined_results)
 {
     if (matcher_ &&
         GetTokenResultsByMatcher_(pattern, token_results, refined_results))
@@ -288,14 +288,14 @@ bool ProductTokenizer::GetTokenResults(
 }
 
 bool ProductTokenizer::GetTokenResultsByCMA_(
-    const std::string& pattern,
-    std::list<std::pair<UString,double> >& token_results,
-    UString& refined_results)
+        const std::string& pattern,
+        std::list<std::pair<UString,double> >& token_results,
+        UString& refined_results)
 {
     Sentence pattern_sentence(pattern.c_str());
     analyzer_->runWithSentence(pattern_sentence);
     LOG(INFO) << "query tokenize by maxprefix match in dictionary: ";
-    for (int i = 0; i < pattern_sentence.getCount(0); i++)
+    for (int i = 0; i < pattern_sentence.getCount(0); ++i)
     {
         printf("%s, ", pattern_sentence.getLexicon(0, i));
         token_results.push_back(std::make_pair(UString(pattern_sentence.getLexicon(0, i), UString::UTF_8), (double)2.0));
@@ -323,9 +323,9 @@ bool ProductTokenizer::GetTokenResultsByCMA_(
 }
 
 bool ProductTokenizer::GetTokenResultsByDict_(
-    const std::string& pattern,
-    std::list<std::pair<UString,double> >& token_results,
-    UString& refined_results)
+        const std::string& pattern,
+        std::list<std::pair<UString,double> >& token_results,
+        UString& refined_results)
 {
     std::list<std::string> input, left;
     std::list<UString> hits;
@@ -367,9 +367,9 @@ bool ProductTokenizer::GetTokenResultsByDict_(
 }
 
 bool ProductTokenizer::GetTokenResultsByMatcher_(
-    const std::string& pattern,
-    std::list<std::pair<UString,double> >& tokens,
-    UString& refined_results)
+        const std::string& pattern,
+        std::list<std::pair<UString,double> >& tokens,
+        UString& refined_results)
 {
     if (!matcher_) return false;
 
