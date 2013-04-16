@@ -1382,11 +1382,10 @@ bool ProductMatcher::DoMatch(const std::string& scd_path, const std::string& out
         for( ScdParser::iterator doc_iter = parser.begin();
           doc_iter!= parser.end(); ++doc_iter, ++n)
         {
-            if(n%1000==0)
+            if(n%10000==0)
             {
                 LOG(INFO)<<"Find Offer Documents "<<n<<std::endl;
             }
-            if(n==150000) break;
             SCDDoc& scddoc = *(*doc_iter);
             SCDDoc::iterator p = scddoc.begin();
             Document doc;
@@ -1408,30 +1407,13 @@ bool ProductMatcher::DoMatch(const std::string& scd_path, const std::string& out
             if(spid.length()>0)
             {
                 spu_matched_count++;
-                ofs<<soid<<","<<spid<<","<<stitle<<","<<sptitle<<","<<scategory<<std::endl;
+                //ofs<<soid<<","<<spid<<","<<stitle<<","<<sptitle<<","<<scategory<<std::endl;
             }
-            else
-            {
-                ofs<<soid<<","<<stitle<<","<<scategory<<std::endl;
-            }
-            //Product product;
-            //if(GetMatched(doc, product))
-            //{
-                //UString oid;
-                //doc.getProperty("DOCID", oid);
-                //std::string soid;
-                //oid.convertString(soid, izenelib::util::UString::UTF_8);
-                //ofs<<soid<<","<<product.spid;
-                //boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
-                //ofs<<","<<boost::posix_time::to_iso_string(now);
-                //std::string stitle;
-                //title.convertString(stitle, UString::UTF_8);
-                //ofs<<","<<stitle<<","<<product.stitle<<std::endl;
-            //}
             //else
             //{
-                ////std::cerr<<"not got pid"<<std::endl;
+                //ofs<<soid<<","<<stitle<<","<<scategory<<std::endl;
             //}
+            ofs<<soid<<","<<spid<<","<<stitle<<","<<sptitle<<","<<scategory<<std::endl;
         }
     }
     ofs.close();
