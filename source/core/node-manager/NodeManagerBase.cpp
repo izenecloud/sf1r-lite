@@ -278,15 +278,10 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
             need_check_electing_ = true;
             MasterManagerBase::get()->disableNewWrite();
-            if (nodeState_ == NODE_STATE_RECOVER_RUNNING)
+            while (nodeState_ == NODE_STATE_RECOVER_RUNNING || nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
             {
-                LOG (INFO) << " session expired while recovering, wait recover finish.";
-                return;
-            }
-            if (nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
-            {
-                LOG (INFO) << " session expired while processing request, wait processing finish.";
-                return;
+                LOG (INFO) << " session expired while processing request or recovering, wait processing finish.";
+                waiting_reenter_cond_.timed_wait(lock, boost::posix_time::seconds(10));
             }
             // this node is expired, it means disconnect from ZooKeeper for a long time.
             // if any write request not finished, we must abort it.
