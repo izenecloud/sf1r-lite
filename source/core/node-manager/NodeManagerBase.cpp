@@ -14,6 +14,11 @@ static const bool s_enable_async_ = false;
 namespace sf1r
 {
 
+bool NodeManagerBase::isAsyncEnabled()
+{
+    return s_enable_async_;
+}
+
 NodeManagerBase::NodeManagerBase()
     : isDistributionEnabled_(false)
     , nodeState_(NODE_STATE_INIT)
@@ -488,6 +493,30 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
     }
 }
 
+bool NodeManagerBase::getCurrPrimaryInfo(std::string& primary_host)
+{
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return false;
+
+    std::vector<std::string> node_list;
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+    if (node_list.empty())
+    {
+        // no primary.
+        return false;
+    }
+    primary_host = node_list.front();
+    std::string sdata;
+    if (zookeeper_->getZNodeData(primary_host, sdata, ZooKeeper::WATCH))
+    {
+        ZNode node;
+        node.loadKvString(sdata);
+        primary_host = node.getStrValue(ZNode::KEY_HOST);
+        return true;
+    }
+    return false;
+}
+
 bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary)
 {
     if (!isDistributionEnabled_)
@@ -728,7 +757,7 @@ void NodeManagerBase::enterCluster(bool start_master)
             ZNode znode;
             setSf1rNodeData(znode);
             registerPrimary(znode);
-            updateNodeState();
+            updateNodeState(znode);
             stopping_ = false;
             return;
         }
@@ -939,6 +968,10 @@ void NodeManagerBase::notifyMasterReadyForNew()
 
 bool NodeManagerBase::canAbortRequest()
 {
+    if (s_enable_async_)
+    {
+        return isPrimaryWithoutLock();
+    }
     // check if abort is allowed, if more than half has finished processing
     // we deny the abort.
     std::vector<std::string> node_list;
@@ -1020,8 +1053,6 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         if (!slow_write_running_)
             processing_step_ = 100;
 
-        ZNode znode;
-        setSf1rNodeData(znode);
         if (need_check_electing_ || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
         {
             need_check_electing_ = true;
@@ -1029,10 +1060,10 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
             LOG(WARNING) << "lost connection from ZooKeeper while finish request." << self_primary_path_;
             //checkForPrimaryElecting();
             // update to get notify on event callback and check for electing.
-            updateNodeState(znode);
+            updateNodeState();
         }
         else
-            updateSelfPrimaryNodeState(znode);
+            updateSelfPrimaryNodeState();
         DistributeTestSuit::testFail(PrimaryFail_At_FinishReqLocal);
     }
     else
@@ -1123,9 +1154,28 @@ void NodeManagerBase::resetWriteState()
 {
     switch(nodeState_)
     {
-    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
+        if (s_enable_async_)
+        {
+            if (cb_on_wait_finish_process_)
+                cb_on_wait_finish_process_();
+            if (cb_on_wait_finish_log_)
+                cb_on_wait_finish_log_();
+            nodeState_ = NODE_STATE_STARTED;
+            return;
+        }
+        //break; walk through by intended
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG:
+        if (s_enable_async_)
+        {
+            LOG(INFO) << "in async mode, waiting write can finish without abort while electing.";
+            if (cb_on_wait_finish_log_)
+                cb_on_wait_finish_log_();
+            nodeState_ = NODE_STATE_STARTED;
+            return;
+        }
+        //break; walk through by intended
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
         {
             LOG(INFO) << "abort request on current primary because of lost registered primary.";
             if(cb_on_wait_replica_abort_)
@@ -1134,6 +1184,15 @@ void NodeManagerBase::resetWriteState()
         }
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY:
+        if (s_enable_async_)
+        {
+            LOG(INFO) << "in async mode, waiting write can finish without abort while electing.";
+            if (cb_on_wait_primary_)
+                cb_on_wait_primary_();
+            nodeState_ = NODE_STATE_STARTED;
+            return;
+        }
+        //break; walk through by intended
     case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT:
         {
             LOG(INFO) << "stop waiting primary for current processing request.";
@@ -1168,10 +1227,6 @@ bool NodeManagerBase::isNeedReEnterCluster()
         LOG(WARNING) << "current self primary changed or lost, need re-enter cluster.";
         return true;
     }
-
-    std::string sdata;
-    zookeeper_->getZNodeData(self_primary_path_, sdata, ZooKeeper::WATCH);
-    LOG(WARNING) << "new self_primary_path_ data:" << sdata;
 
     updateCurrentPrimary();
     if (curr_primary_path_.empty() || old_primary != curr_primary_path_)
@@ -1336,6 +1391,14 @@ void NodeManagerBase::checkPrimaryState(bool primary_deleted)
 
 void NodeManagerBase::checkPrimaryForStartNewWrite(NodeStateType primary_state)
 {
+    if (s_enable_async_)
+    {
+        // in async mode, we just wake up the async log worker to pull new log from primary.
+        DistributeTestSuit::testFail(ReplicaFail_At_ReqProcessing);
+        cb_on_resume_sync_();
+        return;
+    }
+
     if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
     {
         LOG(INFO) << "got primary request notify, begin processing on current replica. " << self_primary_path_;
@@ -1427,6 +1490,11 @@ void NodeManagerBase::checkPrimaryForStartNewWrite(NodeStateType primary_state)
 
 void NodeManagerBase::checkPrimaryForFinishWrite(NodeStateType primary_state)
 {
+    if (s_enable_async_)
+    {
+        checkForAsyncWriteInEventHandler();
+        return;
+    }
     DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary);
     if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
     {
@@ -1469,6 +1537,11 @@ void NodeManagerBase::checkPrimaryForFinishWrite(NodeStateType primary_state)
 
 void NodeManagerBase::checkPrimaryForAbortWrite(NodeStateType primary_state)
 {
+    if (s_enable_async_)
+    {
+        LOG(ERROR) << "in async this should never happen." << nodeState_;
+        return;
+    }
     DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary_Abort);
     if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
         primary_state == NODE_STATE_ELECTING)
@@ -1598,6 +1671,7 @@ void NodeManagerBase::setNodeState(NodeStateType state)
         nodeState_ = state;
         LOG(INFO) << "try to change state to new while electing : " << nodeState_;
         updateNodeState();
+        MasterManagerBase::get()->disableNewWrite();
         return;
     }
     updateNodeStateToNewState(state);
@@ -1622,6 +1696,8 @@ void NodeManagerBase::updateLastWriteReqId(uint32_t req_id)
     // This will be used for checking whether request log is newest after auto-reconnected
     //
     LOG(INFO) << "update last success request for current replica set : " << req_id;
+    if (s_enable_async_)
+        return;
     uint32_t cur_req_id = getLastWriteReqId();
     if( req_id < cur_req_id)
     {
@@ -1647,7 +1723,10 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     nodeState_ = new_state;
     ZNode nodedata;
     ZNode oldZnode;
-    setSf1rNodeData(nodedata, oldZnode);
+    if (!s_enable_async_)
+    {
+        setSf1rNodeData(nodedata, oldZnode);
+    }
 
     bool need_update = nodedata.getStrValue(ZNode::KEY_SERVICE_STATE) != oldZnode.getStrValue(ZNode::KEY_SERVICE_STATE) ||
                   nodedata.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH) != oldZnode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
@@ -1662,7 +1741,10 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
         stop();
         return;
     }
-    zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+    if (!s_enable_async_)
+    {
+        zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+    }
     // notify master got ready for next request.
     if (masterStarted_)
     {
@@ -1698,8 +1780,17 @@ void NodeManagerBase::setSlowWriting()
 
 void NodeManagerBase::updateSelfPrimaryNodeState()
 {
+    if (s_enable_async_)
+    {
+        if (checkForAsyncWrite())
+        {
+            return;
+        }
+    }
     ZNode nodedata;
     setSf1rNodeData(nodedata);
+    if (s_enable_async_)
+        LOG(INFO) << "update self_primary_path_ in async mode : " << nodeState_;
     updateSelfPrimaryNodeState(nodedata);
 }
 
@@ -1742,10 +1833,16 @@ void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
         LOG(INFO) << "only in waiting replica state, check secondary request process need. state: " << nodeState_;
         return;
     }
+    if (s_enable_async_)
+    {
+        checkForAsyncWriteInEventHandler();
+        return;
+    }
+
+    bool all_secondary_ready = true;
     std::vector<std::string> node_list;
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
     LOG(INFO) << "in request processing state found " << node_list.size() << " children in node " << primaryNodeParentPath_;
-    bool all_secondary_ready = true;
     for (size_t i = 0; i < node_list.size(); ++i)
     {
         NodeStateType state = getNodeState(node_list[i]);
@@ -1809,6 +1906,11 @@ void NodeManagerBase::checkSecondaryReqFinishLog(bool self_changed)
         LOG(INFO) << "only in waiting replica finish log state, check secondary request finish log need. state: " << nodeState_;
         return;
     }
+    if (s_enable_async_)
+    {
+        checkForAsyncWriteInEventHandler();
+        return;
+    }
     std::vector<std::string> node_list;
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
     LOG(INFO) << "in request finish log state found " << node_list.size() << " children in node " << primaryNodeParentPath_;
@@ -1870,6 +1972,11 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
     if (nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
     {
         LOG(INFO) << "only in abort state, check secondary abort need. state: " << nodeState_;
+        return;
+    }
+    if (s_enable_async_)
+    {
+        checkForAsyncWriteInEventHandler();
         return;
     }
     std::vector<std::string> node_list;
@@ -1961,6 +2068,84 @@ void NodeManagerBase::checkSecondaryRecovery(bool self_changed)
             cb_on_recover_wait_replica_finish_();
         updateNodeStateToNewState(new_state);
     }
+}
+
+bool NodeManagerBase::checkForAsyncWriteInEventHandler()
+{
+    if (checkForAsyncWrite())
+        return true;
+
+    switch(nodeState_)
+    {
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
+        {
+            LOG(INFO) << "abortting request :" << curr_primary_path_;
+            if(cb_on_wait_replica_abort_)
+                cb_on_wait_replica_abort_();
+            updateNodeStateToNewState(NODE_STATE_STARTED);
+        }
+        break;
+    case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT:
+        break;
+    default:
+        return false;
+        break;
+    }
+    return true;
+}
+
+// some state can handle without ZooKeeper if async write enabled.
+// return true to indicate that event handled, return false means
+// we should handle it by communicating with ZooKeeper.
+bool NodeManagerBase::checkForAsyncWrite()
+{
+    if (need_check_electing_)
+        return false;
+
+    switch(nodeState_)
+    {
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
+        {
+            if (cb_on_wait_finish_process_)
+                cb_on_wait_finish_process_();
+            if (cb_on_wait_finish_log_)
+                cb_on_wait_finish_log_();
+            LOG(INFO) << "finished write log.";
+            if (need_check_recover_)
+            {
+                checkSecondaryRecovery(true);
+            }
+            else
+                updateNodeStateToNewState(NODE_STATE_STARTED);
+        }
+        break;
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG:
+        {
+            LOG(WARNING) << "In async write the nodeState_ is wrong : " << nodeState_;
+            if (cb_on_wait_finish_log_)
+                cb_on_wait_finish_log_();
+            LOG(INFO) << "finished write log.";
+            if (need_check_recover_)
+            {
+                checkSecondaryRecovery(true);
+            }
+            else
+                updateNodeStateToNewState(NODE_STATE_STARTED);
+        }
+        break;
+    case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY:
+        {
+            if (cb_on_wait_primary_)
+                cb_on_wait_primary_();
+            LOG(INFO) << "write request log success on replica: " << self_primary_path_;
+            updateNodeStateToNewState(NODE_STATE_STARTED);
+        }
+        break;
+    default:
+        return false;
+        break;
+    }
+    return true;
 }
 
 }

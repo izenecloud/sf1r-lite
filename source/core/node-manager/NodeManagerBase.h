@@ -31,6 +31,8 @@ public:
         return izenelib::util::Singleton<NodeManagerBase>::get();
     }
 
+    static bool isAsyncEnabled();
+
     typedef boost::function<void()> NoFailCBFuncT;
     typedef boost::function<void(bool)> NoFailCBFuncT2;
     typedef boost::function<bool()> CanFailCBFuncT;
@@ -116,6 +118,7 @@ public:
 
     bool getCurrNodeSyncServerInfo(std::string& ip, int randnum);
     bool getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary = false);
+    bool getCurrPrimaryInfo(std::string& primary_host);
 
     void setSlowWriting();
     void beginReqProcess();
@@ -143,6 +146,12 @@ public:
         cb_on_recover_wait_primary_ = on_recover_wait_primary;
         cb_on_recover_wait_replica_finish_ = on_recover_wait_replica_finish;
         cb_on_recover_check_ = on_recover_check;
+    }
+
+    void setCallbackForAsyncWrite(NoFailCBFuncT on_pause_sync, NoFailCBFuncT on_resume_sync)
+    {
+        cb_on_pause_sync_ = on_pause_sync;
+        cb_on_resume_sync_ = on_resume_sync;
     }
 
     inline bool isDistributed() const
@@ -222,6 +231,8 @@ protected:
     void checkPrimaryForAbortWrite(NodeStateType primary_state);
     void checkPrimaryForRecovery(NodeStateType primary_state);
     void checkForPrimaryElecting();
+    bool checkForAsyncWrite();
+    bool checkForAsyncWriteInEventHandler();
     /**
      * Deregister SF1 node on exit
      */
@@ -270,6 +281,10 @@ protected:
     NoFailCBFuncT cb_on_recover_wait_replica_finish_;
     CanFailCBFuncT cb_on_recover_check_;
     NewReqCBFuncT cb_on_new_req_from_primary_;
+
+    NoFailCBFuncT cb_on_pause_sync_;
+    NoFailCBFuncT cb_on_resume_sync_;
+
     //typedef std::map<std::string, NodeStateType> ElectingNodeMapT;
     //ElectingNodeMapT electing_secondaries_;
     typedef std::map<std::string, boost::shared_ptr<IDistributeService> > ServiceMapT;
