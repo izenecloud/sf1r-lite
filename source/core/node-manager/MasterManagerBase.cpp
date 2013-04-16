@@ -19,6 +19,7 @@ MasterManagerBase::MasterManagerBase()
 , new_write_disabled_(false)
 , is_mine_primary_(false)
 , is_ready_for_new_write_(false)
+, waiting_request_num_(0)
 , CLASSNAME("MasterManagerBase")
 {
 }
@@ -102,6 +103,7 @@ void MasterManagerBase::stop()
     }
     boost::lock_guard<boost::mutex> lock(state_mutex_);
     masterState_ = MASTER_STATE_INIT;
+    waiting_request_num_ = 0;
 }
 
 bool MasterManagerBase::getShardReceiver(
@@ -422,7 +424,7 @@ void MasterManagerBase::checkForWriteReq()
         if (!cached_write_reqlist_.empty())
         {
             LOG(ERROR) << "non primary master but has cached write request, these request will be ignored !!!!!! " << serverRealPath_;
-            cached_write_reqlist_ = std::queue<std::pair<std::string, std::string> >();
+            //cached_write_reqlist_ = std::queue<std::pair<std::string, std::string> >();
         }
         LOG(INFO) << "not a primary master while check write request, ignore." << serverRealPath_;
         zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::NOT_WATCH);
@@ -455,6 +457,7 @@ bool MasterManagerBase::cacheNewWriteFromZNode()
         return false;
     }
 
+    waiting_request_num_ = reqchild.size();
     LOG(INFO) << "there are some write request waiting: " << reqchild.size();
     size_t pop_num = reqchild.size() > 1000 ? 1000:reqchild.size();
 
@@ -567,6 +570,17 @@ bool MasterManagerBase::pushWriteReq(const std::string& reqdata, const std::stri
             "," << reqdata;
         return false;
     }
+
+    if (!isMinePrimary())
+    {
+        usleep(500*1000);
+    }
+    else if (waiting_request_num_ > 10000)
+    {
+        LOG(INFO) << "too many write request waiting, slow down send. " << waiting_request_num_;
+        sleep(1);
+    }
+
     ZNode znode;
     //znode.setValue(ZNode::KEY_REQ_CONTROLLER, controller_name);
     znode.setValue(ZNode::KEY_REQ_TYPE, type);
@@ -1417,7 +1431,7 @@ void MasterManagerBase::updateMasterReadyForNew(bool is_ready)
 bool MasterManagerBase::hasAnyCachedRequest()
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
-    return !cached_write_reqlist_.empty();
+    return is_mine_primary_ && !cached_write_reqlist_.empty();
 }
 
 void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
