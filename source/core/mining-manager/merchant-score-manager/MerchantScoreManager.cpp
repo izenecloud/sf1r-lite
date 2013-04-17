@@ -165,10 +165,17 @@ score_t MerchantScoreManager::getIdScore(
 
 void MerchantScoreManager::setScore(const MerchantStrScoreMap& strScoreMap)
 {
-    ScopedWriteLock lock(mutex_);
+    MerchantIdScoreMap idScoreMap;
+    convertMerchantScore_(strScoreMap, idScoreMap);
+    setIdScore_(idScoreMap);
+}
 
+void MerchantScoreManager::convertMerchantScore_(
+    const MerchantStrScoreMap& strScoreMap,
+    MerchantIdScoreMap& idScoreMap)
+{
     const MerchantStrScoreMap::map_t& merchantStrMap = strScoreMap.map;
-    MerchantIdScoreMap::map_t& merchantIdMap = idScoreMap_.map;
+    MerchantIdScoreMap::map_t& merchantIdMap = idScoreMap.map;
 
     for (MerchantStrScoreMap::map_t::const_iterator merchantIt = merchantStrMap.begin();
         merchantIt != merchantStrMap.end(); ++merchantIt)
@@ -178,7 +185,43 @@ void MerchantScoreManager::setScore(const MerchantStrScoreMap& strScoreMap)
         if (merchantId == 0)
             continue;
 
-        setCategoryIdScore_(merchantIt->second, merchantIdMap[merchantId]);
+        convertCategoryScore_(merchantIt->second, merchantIdMap[merchantId]);
+    }
+}
+
+void MerchantScoreManager::convertCategoryScore_(
+    const CategoryStrScore& categoryStrScore,
+    CategoryIdScore& categoryIdScore)
+{
+    const CategoryStrScore::CategoryScoreMap& categoryStrMap = categoryStrScore.categoryScoreMap;
+    CategoryIdScore::CategoryScoreMap& categoryIdMap = categoryIdScore.categoryScoreMap;
+
+    categoryIdScore.generalScore = categoryStrScore.generalScore;
+
+    for (CategoryStrScore::CategoryScoreMap::const_iterator categoryIt =
+             categoryStrMap.begin(); categoryIt != categoryStrMap.end(); ++categoryIt)
+    {
+        category_id_t categoryId = insertCategoryId_(categoryIt->first);
+
+        if (categoryId == 0)
+            continue;
+
+        categoryIdMap[categoryId] = categoryIt->second;
+    }
+}
+
+void MerchantScoreManager::setIdScore_(const MerchantIdScoreMap& idScoreMap)
+{
+    ScopedWriteLock lock(mutex_);
+
+    const MerchantIdScoreMap::map_t& newIdMap = idScoreMap.map;
+    MerchantIdScoreMap::map_t& totalIdMap = idScoreMap_.map;
+
+    for (MerchantIdScoreMap::map_t::const_iterator merchantIt = newIdMap.begin();
+        merchantIt != newIdMap.end(); ++merchantIt)
+    {
+        merchant_id_t merchantId = merchantIt->first;
+        totalIdMap[merchantId] = merchantIt->second;
     }
 }
 
@@ -198,27 +241,6 @@ void MerchantScoreManager::getCategoryStrScore_(
         getCategoryPath_(categoryIt->first, categoryPath);
 
         categoryStrMap[categoryPath] = categoryIt->second;
-    }
-}
-
-void MerchantScoreManager::setCategoryIdScore_(
-    const CategoryStrScore& categoryStrScore,
-    CategoryIdScore& categoryIdScore)
-{
-    CategoryIdScore::CategoryScoreMap& categoryIdMap = categoryIdScore.categoryScoreMap;
-    const CategoryStrScore::CategoryScoreMap& categoryStrMap = categoryStrScore.categoryScoreMap;
-
-    categoryIdScore.generalScore = categoryStrScore.generalScore;
-    categoryIdMap.clear();
-
-    for (CategoryStrScore::CategoryScoreMap::const_iterator categoryIt =
-             categoryStrMap.begin(); categoryIt != categoryStrMap.end(); ++categoryIt)
-    {
-        category_id_t categoryId = insertCategoryId_(categoryIt->first);
-        if (categoryId == 0)
-            continue;
-
-        categoryIdMap[categoryId] = categoryIt->second;
     }
 }
 
