@@ -68,10 +68,6 @@ private:
         const CategoryIdScore& categoryIdScore,
         CategoryStrScore& categoryStrScore) const;
 
-    void setCategoryIdScore_(
-        const CategoryStrScore& categoryStrScore,
-        CategoryIdScore& categoryIdScore);
-
     merchant_id_t getMerchantId_(const std::string& merchant) const;
 
     merchant_id_t insertMerchantId_(const std::string& merchant);
@@ -84,6 +80,16 @@ private:
     void getCategoryPath_(
         category_id_t categoryId,
         CategoryStrPath& categoryPath) const;
+
+    void convertMerchantScore_(
+        const MerchantStrScoreMap& strScoreMap,
+        MerchantIdScoreMap& idScoreMap);
+
+    void convertCategoryScore_(
+        const CategoryStrScore& categoryStrScore,
+        CategoryIdScore& categoryIdScore);
+
+    void setIdScore_(const MerchantIdScoreMap& idScoreMap);
 
 private:
     faceted::PropValueTable* merchantValueTable_;
