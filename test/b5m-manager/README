@@ -44,5 +44,6 @@ testminute:10
 
 scd_path是用来测试多线程稳定性的，测试的时候matcher会先单线程运行获得结果，再进行多线程运行，将两次结果进行对比验证
 
-3. 在 sf1r-engine/b5m-operation/testbin/运行
-./b5m_product_matcher
+3. 在 sf1r-engine/testbin/运行
+cd testbin
+./product-matcher-test ../test/b5m-manager/test_config

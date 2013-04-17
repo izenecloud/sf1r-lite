@@ -35,11 +35,12 @@ class TrieFactory
             return -1;
         }
 
-        for (std::string key; getline(ifs, key); )
+        for (std::string key; getline(ifs, key);)
         {
-            if (key.size() > 0 && key[key.size()-1] == '\r')
-                key = key.substr(0, key.size()-1);
-            keyList.push_back(key);
+            if (!key.empty() && key[key.size() - 1] == '\r')
+                keyList.push_back(key.substr(0, key.size() - 1));
+            else
+                keyList.push_back(key);
         }
         return 0;
     }
@@ -49,7 +50,7 @@ public:
     ~TrieFactory()
     {
         std::map<std::string, izenelib::am::succinct::ux::Trie*>::iterator tit = tries_.begin();
-        for(; tit != tries_.end(); ++tit)
+        for (; tit != tries_.end(); ++tit)
             delete tit->second;
     }
     static TrieFactory* Get()
@@ -60,12 +61,12 @@ public:
     izenelib::am::succinct::ux::Trie* GetTrie(const std::string& dictPath)
     {
         std::map<std::string, izenelib::am::succinct::ux::Trie*>::iterator kit = tries_.find(dictPath);
-        if( kit != tries_.end())  return kit->second;
+        if (kit != tries_.end())  return kit->second;
         else
         {
             izenelib::am::succinct::ux::Trie* trie = new izenelib::am::succinct::ux::Trie;
             std::vector<std::string> keyList;
-            ReadKeyList_( dictPath, keyList);
+            ReadKeyList_(dictPath, keyList);
             trie->build(keyList);
             tries_[dictPath] = trie;
             return trie;
@@ -83,6 +84,7 @@ class ProductTokenizer
         CHAR_ALNUM, ///Alphebet and digitals
         CHAR_INVALID ///Invalid characters
     };
+
 public:
     enum TokenizerType
     {
@@ -91,15 +93,15 @@ public:
     };
 
     ProductTokenizer(
-        TokenizerType type,
-        const std::string& dict_path);
+            TokenizerType type,
+            const std::string& dict_path);
 
     ~ProductTokenizer();
 
     bool GetTokenResults(
-        const std::string& pattern,
-        std::list<std::pair<UString,double> >& tokens,
-        UString& refined_results);
+            const std::string& pattern,
+            std::list<std::pair<UString,double> >& tokens,
+            UString& refined_results);
 
     void SetProductMatcher(ProductMatcher* matcher)
     {
@@ -116,41 +118,41 @@ private:
     void InitDict_(const std::string& dict_name);
 
     bool GetTokenResultsByCMA_(
-        const std::string& pattern,
-        std::list<std::pair<UString,double> >& tokens,
-        UString& refined_results);
+            const std::string& pattern,
+            std::list<std::pair<UString,double> >& tokens,
+            UString& refined_results);
 
     bool GetTokenResultsByDict_(
-        const std::string& pattern,
-        std::list<std::pair<UString,double> >& tokens,
-        UString& refined_results);
+            const std::string& pattern,
+            std::list<std::pair<UString,double> >& tokens,
+            UString& refined_results);
 
     bool GetTokenResultsByMatcher_(
-        const std::string& pattern,
-        std::list<std::pair<UString,double> >& tokens,
-        UString& refined_results);
+            const std::string& pattern,
+            std::list<std::pair<UString,double> >& tokens,
+            UString& refined_results);
 
     void GetDictTokens_(
-        const std::list<std::string>& input,
-        std::list<std::pair<UString,double> >& tokens,
-        std::list<std::string>& left,
-        izenelib::am::succinct::ux::Trie* dict_trie,
-        double trie_score);
+            const std::list<std::string>& input,
+            std::list<std::pair<UString,double> >& tokens,
+            std::list<std::string>& left,
+            izenelib::am::succinct::ux::Trie* dict_trie,
+            double trie_score);
 
     void DoBigram_(
-        const UString& pattern,
-        std::list<std::pair<UString,double> >& tokens,
-        double score);
+            const UString& pattern,
+            std::list<std::pair<UString,double> >& tokens,
+            double score);
 
     void GetLeftTokens_(
-        const std::list<std::string>& input,
-        std::list<std::pair<UString,double> >& token_results,
-        double score = 1.0);
+            const std::list<std::string>& input,
+            std::list<std::pair<UString,double> >& token_results,
+            double score = 1.0);
 
     void GetLeftTokens_(
-        const std::list<UString>& input,
-        std::list<std::pair<UString,double> >& token_results,
-        double score = 1.0);
+            const std::list<UString>& input,
+            std::list<std::pair<UString,double> >& token_results,
+            double score = 1.0);
 
     TokenizerType type_;
     std::string dict_path_;
@@ -166,7 +168,7 @@ private:
     static const UString SPACE_UCHAR;
     friend class ProductTokenizerTest;
 };
+
 }
 
 #endif
-

@@ -62,6 +62,8 @@ public:
 
     uint32_t img_con_len_;
 
+    std::string img_content_name_;
+
     std::string log_info_;
 
 };

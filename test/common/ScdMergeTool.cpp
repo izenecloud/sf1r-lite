@@ -31,7 +31,7 @@ int main(int ac, char** av)
     std::string input_path;
     std::string output_path;
     //std::string properties;
-    bool i_only = true;
+    bool all_type = false;
     if (vm.count("input-path")) {
         input_path = vm["input-path"].as<std::string>();
     } 
@@ -47,15 +47,16 @@ int main(int ac, char** av)
     }
     if(vm.count("gen-all"))
     {
-        i_only = false;
+        all_type = true;
     }
     //std::vector<std::string> p_vector;
     //if(properties.length()>0)
     //{
         //boost::algorithm::split( p_vector, properties, boost::algorithm::is_any_of(",") );
     //}
-    ScdMerger merger(output_path, i_only);
-    merger.AddInput(input_path);
-    merger.Output();
+    ScdMerger merger(input_path);
+    merger.SetAllType(all_type);
+    merger.SetOutputPath(output_path);
+    merger.Run();
 }
 

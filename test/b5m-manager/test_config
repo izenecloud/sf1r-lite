@@ -1,0 +1,7 @@
+knowledge_dir:/home/lscm/codebase/b5m-operation/db/working_b5m/knowledge/
+scd_path:/home/lscm/6indexSCD/B-00-201301101516-11342-U-C.SCD
+category_test_file:../test/b5m-manager/category_test_file
+process_test_file:../test/b5m-manager/process_test_file
+getSearchKeywords_test_file:../test/b5m-manager/getSearchKeywords_test_file
+threadnum:4
+testminute:2

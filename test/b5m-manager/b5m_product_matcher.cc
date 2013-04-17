@@ -258,6 +258,7 @@ void SearchKeywords(ProductMatcher* matcher,  boost::posix_time::ptime time_end)
         std::list<std::pair<UString, double> > hits;
         std::list<UString> left;
         matcher->GetSearchKeywords(text, hits, left);
+        time_now = boost::posix_time::microsec_clock::local_time();
     }
 }
 
@@ -333,7 +334,7 @@ void MultiThreadSearchKeywordsTest(string scd_file, std::string knowledge_dir, i
     boost::posix_time::ptime time_end=boost::posix_time::microsec_clock::local_time()+boost::posix_time::minutes(minute);
     for(unsigned i=0; i<threadnum; i++)
     {
-        compute_threads_[i]=(new boost::thread(boost::bind(&GetFrontEnd,matcher,time_end)));
+        compute_threads_[i]=(new boost::thread(boost::bind(&SearchKeywords,matcher,time_end)));
 
     }
     cout<<"preadd"<<endl;
@@ -489,7 +490,7 @@ void SegLineToHits(std::string temp, vector<string>& ret)
         ret.push_back(temp);
 
 }
-int main()
+int main(int ac, char** av)
 {
     time_t t(0);
     srand((unsigned)time(&t));
@@ -499,8 +500,13 @@ int main()
     string category_test_file;//
     string process_test_file;//
     string getSearchKeywords_test_file;//
+    if(ac!=2)
+    {
+        LOG(ERROR)<<"command should be like this : ./product-matcher-test ../test/b5m-manager/test_config"  <<endl;
+        return 0;
+    }
     ifstream in;
-    in.open("config",ios::in);
+    in.open(av[1],ios::in);
     string line;
     unsigned threadnum=4;
     unsigned testminute=0;
@@ -685,7 +691,6 @@ int main()
             }
         }
     }
-    cout<<"错误率："<<double(ProcessError)/(40000+DocNum)<<endl;
     /*
 
     for(int i=0; i<10; i++)

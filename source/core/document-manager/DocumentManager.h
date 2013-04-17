@@ -296,12 +296,13 @@ public:
         std::vector<docid_t>().swap(RtypeDocidList_);
     }
 
-    bool isThereRtypeDoc()
+    bool isThereRtypePro()
     {
-        return RtypeDocidList_.size() > 0;
+        return RtypeDocidPros_.size() > 0;
     }
 
     std::set<string> RtypeDocidPros_;
+    std::vector<uint32_t> last_delete_docid_;
 
 private:
     bool loadDelFilter_();

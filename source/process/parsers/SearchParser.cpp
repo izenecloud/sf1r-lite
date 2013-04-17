@@ -83,11 +83,20 @@ using driver::Keys;
  *   We can choose the searching mode to combine our
  *   query parsed term for supporting different search in different applications.
  *   following searching modes are available
- *   - @b and
- *   - @b or
- *   - @b wand
- *   - @b verbose
- *   - @b knn: TODO@n
+ *   - @b and space among terms are explained as boolean AND
+ *   - @b or space among terms are explained as boolean OR
+ *   - @b wand wand means weak and, and \b threshold is used to indicate 
+ *   how close it is to boolean query: the closer \b threshold to 1, the closer it
+ *   is to boolean AND
+ *   - @b knn: simhash based query. The query is hashed into a fingerprint, 
+ *   while the search results are those documents whose fingerprints are within
+ *   a threshold hamming distance
+ *   - @b suffix  using suffix array based succint index to perform queries. 
+ *   \b lucky means top K number during this retrieval, using lucky means there
+ *   exists approximation since they are not the real top K results returned due 
+ *   to performance issue.   \b use_fuzzy is a switch to indicate whether bag-of-words
+ *   based fuzzy queries are enabled for this query. If it is set as false, it means
+ *   the search results only contain the longest suffix of query.
  *   If this is omitted, @b and searching mode is used as the default value.
  * - @b log_keywords (@c Bool = @c true): Whether the keywords should be
  *   logged.

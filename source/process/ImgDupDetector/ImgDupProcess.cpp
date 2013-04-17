@@ -72,7 +72,8 @@ void ImgDupProcess::start()
             li,
             incremental,
             controller,
-            length
+            length,
+            ImgDupCfg::get()->img_content_name_
             );
     ImgDupDetector::get()->DupDetectorMain();
 }
