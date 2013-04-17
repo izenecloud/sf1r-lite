@@ -440,6 +440,8 @@ namespace sf1r {
             uint8_t ngram;
             std::vector<Position> positions;
 
+            void PositionMerge(const Position& pos);
+
             static bool WeightCompare(const KeywordTag& k1, const KeywordTag& k2)
             {
                 return k1.kweight>k2.kweight;
@@ -711,6 +713,7 @@ namespace sf1r {
         bool GetFrontendCategory(UString& backend, UString& frontend) const;
         void GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy = false, cid_t cid=0);
         void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<UString>& left);
+        void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<std::pair<UString, double> >& left_hits, std::list<UString>& left);
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
@@ -810,10 +813,20 @@ namespace sf1r {
             return true;
         }
 
-        bool IsSymbol_(term_t term) const
+        bool IsSymbol_(const Term& term) const
         {
-            return symbol_terms_.find(term)!=symbol_terms_.end();
+            if(term.tag == idmlib::util::IDMTermTag::SYMBOL)
+            {
+                if(!IsTextSymbol_(term.id)) return true;
+            }
+            return false;
+            //return symbol_terms_.find(term)!=symbol_terms_.end();
         }
+
+        //bool IsSymbol_(term_t term) const
+        //{
+            //return symbol_terms_.find(term)!=symbol_terms_.end();
+        //}
 
         bool IsConnectSymbol_(term_t term) const
         {
@@ -843,7 +856,7 @@ namespace sf1r {
         idmlib::util::IDMAnalyzer* char_analyzer_;
         idmlib::util::IDMAnalyzer* chars_analyzer_;
         std::string test_docid_;
-        boost::unordered_set<term_t> symbol_terms_;
+        //boost::unordered_set<term_t> symbol_terms_;
         boost::unordered_set<term_t> text_symbols_;
         std::string left_bracket_;
         std::string right_bracket_;

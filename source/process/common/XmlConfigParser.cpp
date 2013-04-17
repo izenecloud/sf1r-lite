@@ -1498,6 +1498,9 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     //for autofill
     params.GetString("AutofillPara/cron", mining_config.autofill_param.cron);
 
+    //for fuzzy search
+    params.GetString("FuzzyIndexMergePara/cron", mining_config.fuzzyIndexMerge_param.cron);
+
     //for recommend
     params.Get<uint32_t>("RecommendPara/recommendnum", mining_config.recommend_param.recommend_num);
     params.GetString("RecommendPara/cron", mining_config.recommend_param.cron);

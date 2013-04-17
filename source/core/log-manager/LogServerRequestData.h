@@ -147,17 +147,18 @@ struct GetFreqUserQueriesData: public LogServerRequestData
     std::string collection_;
     std::string begin_time_;
     std::string end_time_;
+    std::string limit_;
 
-    MSGPACK_DEFINE(collection_, begin_time_, end_time_);
+    MSGPACK_DEFINE(collection_, begin_time_, end_time_, limit_);
 };
 
 struct InjectUserQueryData: public LogServerRequestData
 {
     std::string query_;
     std::string collection_;
-    uint32_t hitnum_;
-    uint32_t page_start_;
-    uint32_t page_count_;
+    std::string hitnum_;
+    std::string page_start_;
+    std::string page_count_;
     std::string duration_;
     std::string timestamp_;
 

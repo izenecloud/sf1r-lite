@@ -64,10 +64,12 @@ public:
             std::vector<std::pair<double, uint32_t> >& res_list,
             UString& analyzedQuery) const;
 
-    MiningTask* getMiningTask();
+    SuffixMatchMiningTask* getMiningTask();
     bool buildMiningTask();
 
     boost::shared_ptr<FilterManager>& getFilterManager();
+
+    void updateFmindex();
 
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
@@ -97,8 +99,9 @@ private:
 
     boost::shared_ptr<FMIndexManager> fmi_manager_;
     boost::shared_ptr<FilterManager> filter_manager_;
+    boost::shared_ptr<FilterManager> new_filter_manager;
 
-    MiningTask* suffixMatchTask_;
+    SuffixMatchMiningTask* suffixMatchTask_;
 
     typedef boost::shared_mutex MutexType;
     typedef boost::shared_lock<MutexType> ReadLock;

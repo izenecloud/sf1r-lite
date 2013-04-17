@@ -1,5 +1,5 @@
-#ifndef SF1R_B5MMANAGER_TICKETPROCESSOR_H
-#define SF1R_B5MMANAGER_TICKETPROCESSOR_H 
+#ifndef SF1R_B5MMANAGER_TUANPROCESSOR_H
+#define SF1R_B5MMANAGER_TUANPROCESSOR_H 
 #include <util/ustring/UString.h>
 #include <idmlib/duplicate-detection/dup_detector.h>
 #include <product-manager/product_price.h>
@@ -11,43 +11,34 @@
 
 namespace sf1r {
 
-    class TicketProcessor{
+    class TuanProcessor{
         typedef izenelib::util::UString UString;
 
-        class TicketProcessorAttach
+        class TuanProcessorAttach
         {
         public:
             uint32_t sid; //sid should be same
-            std::vector<std::string> time_array;//sorted, should be at least one same
+            ProductPrice price;
 
             template<class Archive>
             void serialize(Archive& ar, const unsigned int version)
             {
-                ar & sid & time_array;
+                ar & sid & price;
             }
 
-            bool dd(const TicketProcessorAttach& other) const
+            bool dd(const TuanProcessorAttach& other) const
             {
                 if(sid!=other.sid) return false;
-                bool found = false;
-                uint32_t i=0,j=0;
-                while(i<time_array.size()&&j<other.time_array.size())
-                {
-                    if(time_array[i]==other.time_array[j])
-                    {
-                        found = true;
-                        break;
-                    }
-                    else if(time_array[i]<other.time_array[j])
-                    {
-                        ++i;
-                    }
-                    else
-                    {
-                        ++j;
-                    }
-                }
-                if(!found) return false;
+                return true;
+                ProductPriceType mid1;
+                ProductPriceType mid2;
+                if(!price.GetMid(mid1)) return false;
+                if(!other.price.GetMid(mid2)) return false;
+                ProductPriceType max = std::max(mid1, mid2);
+                ProductPriceType min = std::min(mid1, mid2);
+                if(min<=0.0) return false;
+                double ratio = max/min;
+                if(ratio>1.5) return false;
                 return true;
             }
         };
@@ -66,13 +57,13 @@ namespace sf1r {
         };
 
 
-        typedef idmlib::dd::DupDetector<DocIdType, uint32_t, TicketProcessorAttach> DDType;
+        typedef idmlib::dd::DupDetector<DocIdType, uint32_t, TuanProcessorAttach> DDType;
         typedef DDType::GroupTableType GroupTableType;
         typedef PairwiseScdMerger::ValueType SValueType;
         typedef boost::unordered_map<uint128_t, SValueType> CacheType;
 
     public:
-        TicketProcessor();
+        TuanProcessor();
         bool Generate(const std::string& scd_path, const std::string& mdb_instance);
 
         void SetCmaPath(const std::string& path)

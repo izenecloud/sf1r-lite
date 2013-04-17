@@ -21,6 +21,8 @@ const LogServerRequest::method_t LogServerRequest::method_names[] =
             "del_old_docid",
             "get_old_uuid",
             "get_old_docid",
+            "get_user_queries",
+            "inject_user_query",
         };
 
 }

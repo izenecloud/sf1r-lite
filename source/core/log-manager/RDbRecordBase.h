@@ -10,6 +10,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <glog/logging.h>
 
 namespace sf1r {
 
@@ -36,6 +37,7 @@ public:
     static bool find_freq_from_logserver(const std::string & collection_name,
         const std::string & begin_time,
         const std::string & end_time,
+        const std::string & limit,
         std::list< std::map<std::string, std::string> > & results)
     {
        LogServerConnection& conn = LogServerConnection::instance();
@@ -43,7 +45,7 @@ public:
        req.param_.collection_ = collection_name;
        req.param_.begin_time_ = begin_time;
        req.param_.end_time_ = end_time;
-
+       req.param_.limit_ = limit;
        conn.syncRequest(req, results);
        return true;
     }

@@ -214,6 +214,7 @@ TARGET_LINK_LIBRARIES(LogServerProcess
   ${Glog_LIBRARIES}
   ${TokyoCabinet_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
+  ${SYS_LIBS}
   )
 
 IF(OpenCV_FOUND)
