@@ -574,6 +574,8 @@ bool NodeManagerBase::getCurrNodeSyncServerInfo(std::string& ip, int randnum)
         if(!zookeeper_->getZNodeData(node_list[i], data, ZooKeeper::WATCH))
         {
             LOG(INFO) << "get node data failed while get filesync server, try next : " << node_list[i];
+            if (i == 0)
+                break;
             continue;
         }
         ZNode node;
