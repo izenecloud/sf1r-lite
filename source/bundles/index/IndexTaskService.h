@@ -51,7 +51,7 @@ public:
 
     uint32_t getKeyCount(const std::string& property_name);
 
-    std::string getScdDir() const;
+    std::string getScdDir(bool rebuild) const;
     izenelib::util::UString::EncodingType getEncode() const;
 
     CollectionPath&  getCollectionPath() const;

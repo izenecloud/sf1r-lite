@@ -20,7 +20,7 @@ class ProductScdReceiver
 {
 public:
 
-    ProductScdReceiver(const std::string& syncID, const std::string& collectionName);
+    ProductScdReceiver(const std::string& syncID, const std::string& collectionName, const std::string& callback);
 
     void Set(IndexTaskService* index_service)
     {
@@ -43,6 +43,7 @@ private:
 
     std::string syncID_;
     std::string collectionName_;
+    std::string callback_type_;
     SynchroConsumerPtr syncConsumer_;
 };
 

@@ -7,10 +7,11 @@
 
 using namespace sf1r;
 namespace bfs = boost::filesystem;
-ProductScdReceiver::ProductScdReceiver(const std::string& syncID, const std::string& collectionName)
+ProductScdReceiver::ProductScdReceiver(const std::string& syncID, const std::string& collectionName, const std::string& callback)
 :index_service_(NULL)
 ,syncID_(syncID)
 ,collectionName_(collectionName)
+,callback_type_(callback)
 {
     syncConsumer_ = SynchroFactory::getConsumer(syncID);
     syncConsumer_->watchProducer(
@@ -25,6 +26,10 @@ bool ProductScdReceiver::pushIndexRequest()
         if (NodeManagerBase::get()->isPrimary())
         {
             std::string json_req = "{\"collection\":\"" + collectionName_ + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
+            if (callback_type_ == "rebuild")
+            {
+                json_req = "{\"collection\":\"" + collectionName_ + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"rebuild_from_scd\",\"controller\":\"collection\"},\"uri\":\"collection/rebuild_from_scd\"}";
+            }
             MasterManagerBase::get()->pushWriteReq(json_req);
             LOG(INFO) << "a json_req pushed from " << __FUNCTION__ << ", data:" << json_req;
         }
@@ -50,15 +55,21 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
     {
         return false;
     }
-    if (!scd_source_dir.empty())
+    std::string mine_source_dir = scd_source_dir;
+    if (mine_source_dir.empty() && callback_type_ == "rebuild")
     {
-        std::string index_scd_dir = index_service_->getScdDir();
+        LOG(INFO) << "copying rebuild scd from index path.";
+        mine_source_dir = index_service_->getScdDir(false);
+    }
+    if (!mine_source_dir.empty())
+    {
+        std::string index_scd_dir = index_service_->getScdDir(callback_type_ == "rebuild");
         bfs::create_directories(index_scd_dir);
-        //copy scds in scd_source_dir/ to index_scd_dir/
+        //copy scds in mine_source_dir/ to index_scd_dir/
         ScdParser parser(izenelib::util::UString::UTF_8);
         static const bfs::directory_iterator kItrEnd;
         std::vector<bfs::path> scd_list;
-        for (bfs::directory_iterator itr(scd_source_dir); itr != kItrEnd; ++itr)
+        for (bfs::directory_iterator itr(mine_source_dir); itr != kItrEnd; ++itr)
         {
             if (bfs::is_regular_file(itr->status()))
             {
