@@ -280,7 +280,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         return true;
     }
 
-    if ((prepared_req.inc_id > last_backup_id_ + 1) && (prepared_req.inc_id - last_backup_id_) % 50000 == 0)
+    if ((prepared_req.inc_id > last_backup_id_ + 1) && (prepared_req.inc_id - last_backup_id_) % 150000 == 0)
     {
         LOG(INFO) << "begin backup";
         if(!RecoveryChecker::get()->backup())
@@ -613,9 +613,13 @@ void DistributeRequestHooker::AsyncLogPullFunc()
                 if (wait_period)
                 {
                     log_sync_mutex_.unlock();
-                    bool ret = NodeManagerBase::get()->checkElectingInAsyncMode();
+                    bool need_electing = false;
+                    if (RecoveryChecker::get()->getReqLogMgr())
+                    {
+                        need_electing = NodeManagerBase::get()->checkElectingInAsyncMode(RecoveryChecker::get()->getReqLogMgr()->getLastSuccessReqId());
+                    }
                     log_sync_mutex_.lock();
-                    if (ret)
+                    if (need_electing)
                     {
                         LOG(INFO) << "log sync paused by electing.";
                         log_sync_paused_ = true;
@@ -627,10 +631,14 @@ void DistributeRequestHooker::AsyncLogPullFunc()
                     LOG(INFO) << "sync log paused, waiting....";
 
                     log_sync_mutex_.unlock();
-                    bool ret = NodeManagerBase::get()->checkElectingInAsyncMode();
+                    bool need_electing = false;
+                    if (RecoveryChecker::get()->getReqLogMgr())
+                    {
+                        need_electing = NodeManagerBase::get()->checkElectingInAsyncMode(RecoveryChecker::get()->getReqLogMgr()->getLastSuccessReqId());
+                    }
                     log_sync_mutex_.lock();
 
-                    if (ret)
+                    if (need_electing)
                     {
                         LOG(INFO) << "log sync paused by electing.";
                         log_sync_paused_ = true;

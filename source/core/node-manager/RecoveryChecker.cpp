@@ -826,7 +826,7 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
         boost::bind(&RecoveryChecker::onRecoverCallback, this, _1),
         boost::bind(&RecoveryChecker::onRecoverWaitPrimaryCallback, this),
         boost::bind(&RecoveryChecker::onRecoverWaitReplicasCallback, this),
-        boost::bind(&RecoveryChecker::onRecoverCheckLog, this));
+        boost::bind(&RecoveryChecker::onRecoverCheckLog, this, _1));
 
 }
 
@@ -1178,9 +1178,69 @@ void RecoveryChecker::onRecoverWaitReplicasCallback()
     }
 }
 
-bool RecoveryChecker::onRecoverCheckLog()
+bool RecoveryChecker::onRecoverCheckLog(bool is_primary)
 {
-
+    if (NodeManagerBase::isAsyncEnabled())
+    {
+        uint32_t newest_reqid = reqlog_mgr_->getLastSuccessReqId();
+        LOG(INFO) << "starting last request is :" << newest_reqid;
+        if (is_primary)
+        {
+            LOG(INFO) << "primary no need check log.";
+            return true;
+        }
+        // check if log data is same or if log data is newer than current primary.
+        // if primary is down and restart, some log may newer than current primary,
+        // we should abandon these log and sync to new primary.
+        uint32_t check_start = 0;
+        std::vector<uint32_t> local_logid_list;
+        std::vector<std::string> local_logdata_list;
+        std::vector<std::string> primary_logdata_list;
+        while(true)
+        {
+            if(!DistributeFileSyncMgr::get()->getNewestReqLog(true, check_start, primary_logdata_list))
+            {
+                LOG(WARNING) << "get newest log from primary failed while checking log data.";
+                return false;
+            }
+            std::vector<uint32_t>().swap(local_logid_list);
+            std::vector<std::string>().swap(local_logdata_list);
+            reqlog_mgr_->getReqLogIdList(check_start, primary_logdata_list.size(), true, local_logid_list, local_logdata_list);
+            if (local_logdata_list.empty())
+            {
+                LOG(INFO) << "check log data success, current node log ok.";
+                return true;
+            }
+            else 
+            {
+                size_t min_size = std::min(local_logdata_list.size(), primary_logdata_list.size());
+                for (size_t i = 0; i < min_size; ++i)
+                {
+                    if( local_logdata_list[i] != primary_logdata_list[i] )
+                    {
+                        LOG(INFO) << "current node log data diff from primary from : " << local_logid_list[i];
+                        break;
+                    }
+                    else
+                    {
+                        check_start = local_logid_list[i];
+                    }
+                }
+                if (check_start != local_logid_list.back())
+                {
+                    LOG(INFO) << "the log data is not ok, need rollback to " << check_start;
+                    setRollbackFlag(check_start + 1);
+                    return false;
+                }
+                if (++check_start > newest_reqid)
+                {
+                    LOG(INFO) << "check log data success, current node log ok.";
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     LOG(INFO) << "check log for re-connect.";
     uint32_t lastid = NodeManagerBase::get()->getLastWriteReqId();
     if (lastid == 0)

@@ -36,6 +36,7 @@ public:
     typedef boost::function<void()> NoFailCBFuncT;
     typedef boost::function<void(bool)> NoFailCBFuncT2;
     typedef boost::function<bool()> CanFailCBFuncT;
+    typedef boost::function<bool(bool)> CanFailCBFuncT2;
     typedef boost::function<bool(int, const std::string&)> NewReqCBFuncT;
     enum NodeStateType
     {
@@ -140,7 +141,7 @@ public:
     }
 
     void setRecoveryCallback(NoFailCBFuncT2 on_recovering, NoFailCBFuncT on_recover_wait_primary,
-        NoFailCBFuncT on_recover_wait_replica_finish, CanFailCBFuncT on_recover_check)
+        NoFailCBFuncT on_recover_wait_replica_finish, CanFailCBFuncT2 on_recover_check)
     {
         cb_on_recovering_ = on_recovering;
         cb_on_recover_wait_primary_ = on_recover_wait_primary;
@@ -148,7 +149,8 @@ public:
         cb_on_recover_check_ = on_recover_check;
     }
 
-    void setCallbackForAsyncWrite(NoFailCBFuncT on_pause_sync, NoFailCBFuncT on_resume_sync)
+    void setCallbackForAsyncWrite(NoFailCBFuncT on_pause_sync,
+        NoFailCBFuncT on_resume_sync)
     {
         cb_on_pause_sync_ = on_pause_sync;
         cb_on_resume_sync_ = on_resume_sync;
@@ -168,7 +170,7 @@ public:
 
     void updateLastWriteReqId(uint32_t req_id);
     uint32_t getLastWriteReqId();
-    bool checkElectingInAsyncMode();
+    bool checkElectingInAsyncMode(uint32_t newest_logid);
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -235,8 +237,8 @@ protected:
     void checkPrimaryForFinishElecting(NodeStateType primary_state);
 
     void checkForPrimaryElecting();
+    void checkForPrimaryElectingInAsyncMode();
     bool checkForAsyncWrite();
-    bool checkForAsyncWriteInEventHandler();
     /**
      * Deregister SF1 node on exit
      */
@@ -285,7 +287,7 @@ protected:
     NoFailCBFuncT2 cb_on_recovering_;
     NoFailCBFuncT cb_on_recover_wait_primary_;
     NoFailCBFuncT cb_on_recover_wait_replica_finish_;
-    CanFailCBFuncT cb_on_recover_check_;
+    CanFailCBFuncT2 cb_on_recover_check_;
     NewReqCBFuncT cb_on_new_req_from_primary_;
 
     NoFailCBFuncT cb_on_pause_sync_;

@@ -66,7 +66,7 @@ public:
     void onRecoverCallback(bool startup = true);
     void onRecoverWaitPrimaryCallback();
     void onRecoverWaitReplicasCallback();
-    bool onRecoverCheckLog();
+    bool onRecoverCheckLog(bool is_primary);
 
     bool updateConfigFromAPI(const std::string& coll, bool is_primary,
         std::map<std::string, std::string>& config_file_list);
