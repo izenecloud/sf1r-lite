@@ -15,6 +15,11 @@ RpcServerConnection::~RpcServerConnection()
 
 bool RpcServerConnection::init(const RpcServerConnectionConfig& config)
 {
+    if (session_pool_)
+    {
+        std::cerr << "RpcServerConnection has already inited!! " << std::endl;
+        return false;
+    }
     config_ = config;
 
     try
@@ -33,9 +38,25 @@ bool RpcServerConnection::init(const RpcServerConnectionConfig& config)
 
 bool RpcServerConnection::testServer()
 {
+    return testServer(config_.host, config_.rpcPort);
+}
+
+void RpcServerConnection::flushRequests()
+{
+    if (need_flush_)
+    {
+        flushRequests(config_.host, config_.rpcPort);
+        need_flush_ = false;
+    }
+}
+
+bool RpcServerConnection::testServer(const std::string& ip, uint16_t port)
+{
     try
     {
-        msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
+        msgpack::rpc::session session = session_pool_->get_session(ip, port);
+
+        session.set_timeout(10);
 
         bool ret = session.call(
                         "test",
@@ -45,20 +66,16 @@ bool RpcServerConnection::testServer()
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Rpc Server (" << config_.host << ":" << config_.rpcPort << "): "
+        std::cerr << "Rpc Server (" << ip << ":" << port << "): "
                   << e.what() << std::endl;
         return false;
     }
 }
 
-void RpcServerConnection::flushRequests()
+void RpcServerConnection::flushRequests(const std::string& ip, uint16_t port)
 {
-    if (need_flush_)
-    {
-        msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
-        session.get_loop()->flush();
-        need_flush_ = false;
-    }
+    msgpack::rpc::session session = session_pool_->get_session(ip, port);
+    session.get_loop()->flush();
 }
 
 }

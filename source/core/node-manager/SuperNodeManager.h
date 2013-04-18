@@ -63,6 +63,11 @@ public:
         return distributedCommon_.dataRecvPort_;
     }
 
+    unsigned int getFileSyncRpcPort() const
+    {
+        return distributedCommon_.filesync_rpcport_;
+    }
+
 private:
     DistributedCommonConfig distributedCommon_;
 };

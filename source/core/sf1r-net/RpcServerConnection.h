@@ -39,6 +39,23 @@ public:
     void syncRequest(const RequestT& req, ResponseDataT& respData);
 
     void flushRequests();
+    //
+    // the rpc server should return a response to the method "test" 
+    bool testServer(const std::string& ip, uint16_t port);
+
+    template <class Method_T, class RequestDataT>
+    void asynRequest(const std::string& ip, uint16_t port, const Method_T& method, const RequestDataT& reqData);
+
+    template <class RequestT>
+    void asynRequest(const std::string& ip, uint16_t port, const RequestT& req);
+
+    template <class Method_T, class RequestDataT, class ResponseDataT>
+    void syncRequest(const std::string& ip, uint16_t port, const Method_T& method, const RequestDataT& reqData, ResponseDataT& respData);
+
+    template <class RequestT, class ResponseDataT>
+    void syncRequest(const std::string& ip, uint16_t port, const RequestT& req, ResponseDataT& respData);
+
+    void flushRequests(const std::string& ip, uint16_t port);
 
 private:
     bool need_flush_;
@@ -71,6 +88,7 @@ void RpcServerConnection::syncRequest(const Method_T& method, const RequestDataT
 {
     flushRequests();
     msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
+    session.set_timeout(10);
     respData = session.call(method, reqData).template get<ResponseDataT>();
 }
 
@@ -79,6 +97,41 @@ void RpcServerConnection::syncRequest(const RequestT& req, ResponseDataT& respDa
 {
     syncRequest(req.method_names[req.method_], req.param_, respData);
 }
+
+template <class Method_T, class RequestDataT>
+void RpcServerConnection::asynRequest(const std::string& ip, uint16_t port, const Method_T& method, const RequestDataT& reqData)
+{
+    static unsigned int count = 0;
+    msgpack::rpc::session session = session_pool_->get_session(ip, port);
+    session.notify(method, reqData);
+    if (++count == 10000)
+    {
+        flushRequests(ip, port);
+        count = 0;
+    }
+}
+
+template <class RequestT>
+void RpcServerConnection::asynRequest(const std::string& ip, uint16_t port, const RequestT& req)
+{
+    asynRequest(ip, port, req.method_names[req.method_], req.param_);
+}
+
+template <class Method_T, class RequestDataT, class ResponseDataT>
+void RpcServerConnection::syncRequest(const std::string& ip, uint16_t port, const Method_T& method, const RequestDataT& reqData, ResponseDataT& respData)
+{
+    flushRequests(ip, port);
+    msgpack::rpc::session session = session_pool_->get_session(ip, port);
+    session.set_timeout(10);
+    respData = session.call(method, reqData).template get<ResponseDataT>();
+}
+
+template <class RequestT, class ResponseDataT>
+void RpcServerConnection::syncRequest(const std::string& ip, uint16_t port, const RequestT& req, ResponseDataT& respData)
+{
+    syncRequest(ip, port, req.method_names[req.method_], req.param_, respData);
+}
+
 
 }
 

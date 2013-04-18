@@ -47,7 +47,7 @@ private:
 
     void process(const SynchronizeData& syncReqData);
 
-    void flushData();
+    void flush();
 
 private:
     boost::posix_time::ptime lastProcessTime_;

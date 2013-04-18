@@ -18,6 +18,12 @@
 #include <common/JobScheduler.h>
 #include <common/Utilities.h>
 #include <aggregator-manager/MasterNotifier.h>
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeFileSyncMgr.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
+#include <util/driver/Request.h>
 
 // xxx
 #include <bundles/index/IndexBundleConfiguration.h>
@@ -25,6 +31,7 @@
 #include <bundles/recommend/RecommendTaskService.h>
 #include <node-manager/synchro/SynchroFactory.h>
 #include <util/profiler/ProfilerGroup.h>
+#include <util/scheduler.h>
 
 #include <la/util/UStringUtil.h>
 
@@ -67,6 +74,7 @@ IndexWorker::IndexWorker(
     , numDeletedDocs_(0)
     , numUpdatedDocs_(0)
     , totalSCDSizeSinceLastBackup_(0)
+    , distribute_req_hooker_(DistributeRequestHooker::get())
 {
     bool hasDateInConfig = false;
     const IndexBundleSchema& indexSchema = bundleConfig_->indexSchema_;
@@ -100,52 +108,96 @@ IndexWorker::IndexWorker(
 
     createPropertyList_();
     scd_writer_->SetFlushLimit(500);
+    scheduleOptimizeTask();
 }
 
 IndexWorker::~IndexWorker()
 {
     delete scd_writer_;
+    if (!optimizeJobDesc_.empty())
+        izenelib::util::Scheduler::removeJob(optimizeJobDesc_);
+}
+
+void IndexWorker::HookDistributeRequestForIndex(int hooktype, const std::string& reqdata, bool& result)
+{
+    LOG(INFO) << "new api request from shard, packeddata len: " << reqdata.size();
+    MasterManagerBase::get()->pushWriteReq(reqdata, "api_from_shard");
+
+    //distribute_req_hooker_->setHook(hooktype, reqdata);
+    //distribute_req_hooker_->hookCurrentReq(reqdata);
+    //distribute_req_hooker_->processLocalBegin();
+    LOG(INFO) << "got hook request on the worker in indexworker." << reqdata;
+    result = true;
+}
+
+void IndexWorker::flush(bool mergeBarrel)
+{
+    documentManager_->flush();
+    idManager_->flush();
+    indexManager_->flush();
+    if (mergeBarrel)
+    {
+        indexManager_->optimizeIndex();
+        indexManager_->waitForMergeFinish();
+    }
+    if (miningTaskService_)
+        miningTaskService_->flush();
+}
+
+bool IndexWorker::reload()
+{
+    if(!documentManager_->reload())
+        return false;
+
+    idManager_->close();
+
+    indexManager_->setDirty();
+    indexManager_->getIndexReader();
+    return true;
 }
 
 void IndexWorker::index(unsigned int numdoc, bool& result)
 {
-    task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
-    JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
     result = true;
+    if (distribute_req_hooker_->isRunningPrimary())
+    {
+        // in distributed, all write api need be called in sync.
+        if (!distribute_req_hooker_->isHooked())
+        {
+            task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
+            JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
+        }
+        else
+        {
+            result = buildCollection(numdoc);
+        }
+    }
+    else
+    {
+        result = buildCollectionOnReplica(numdoc);
+    }
 }
 
-bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager)
+bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager,
+    int64_t timestamp)
 {
-    //task_type task = boost::bind(&IndexWorker::rebuildCollection, this, documentManager);
-    //JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
-    rebuildCollection(documentManager);
+    rebuildCollection(documentManager, timestamp);
     return true;
 }
 
 bool IndexWorker::buildCollection(unsigned int numdoc)
 {
-    documentManager_->last_delete_docid_.clear();
-    size_t currTotalSCDSize = getTotalScdSize_();
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     ///If current directory is the one rotated from the backup directory,
     ///there should exist some missed SCDs since the last backup time,
     ///so we move those SCDs from backup directory, so that these data
     ///could be recovered through indexing
-    recoverSCD_();
+    //recoverSCD_();
 
     string scdPath = bundleConfig_->indexSCDPath();
     Status::Guard statusGuard(indexStatus_);
-    CREATE_PROFILER(buildIndex, "Index:SIAProcess", "Indexer : buildIndex")
-
-    START_PROFILER(buildIndex);
-
-    LOG(INFO) << "start BuildCollection";
-
-    izenelib::util::ClockTimer timer;
-
-    //flush all writing SCDs
-    scd_writer_->Flush();
-
-    indexProgress_.reset();
 
     ScdParser parser(bundleConfig_->encoding_);
 
@@ -184,17 +236,117 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             }
         }
     }
+    //sort scdList
+    sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
 
+    // push scd files to replicas
+    for (size_t file_index = 0; file_index < scdList.size(); ++file_index)
+    {
+        if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scdList[file_index],
+                scdList[file_index]))
+        {
+            LOG(INFO) << "Transfer index scd to the replicas finished for: " << scdList[file_index];
+        }
+        else
+        {
+            LOG(WARNING) << "push index scd file to the replicas failed for:" << scdList[file_index];
+        }
+    }
+
+    IndexReqLog reqlog;
+    reqlog.scd_list = scdList;
+    reqlog.timestamp = Utilities::createTimeStamp();
+    if(!distribute_req_hooker_->prepare(Req_Index, dynamic_cast<CommonReqData&>(reqlog)))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = buildCollection(numdoc, scdList, reqlog.timestamp);
+
+    DISTRIBUTE_WRITE_FINISH(ret);
+
+    return ret;
+}
+
+bool IndexWorker::buildCollectionOnReplica(unsigned int numdoc)
+{
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    //recoverSCD_();
+    Status::Guard statusGuard(indexStatus_);
+
+    IndexReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_Index, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    LOG(INFO) << "got index from primary/log, scd list is : ";
+    for (size_t i = 0; i < reqlog.scd_list.size(); ++i)
+    {
+        LOG(INFO) << reqlog.scd_list[i];
+        bfs::path backup_scd = bfs::path(reqlog.scd_list[i]);
+        backup_scd = backup_scd.parent_path()/bfs::path("backup")/backup_scd.filename();
+        if (bfs::exists(reqlog.scd_list[i]))
+        {
+            LOG(INFO) << "found index scd file in index directory.";
+        }
+        else if (bfs::exists(backup_scd))
+        {
+            // try to find in backup
+            LOG(INFO) << "found index scd file in backup, move to index";
+            bfs::rename(backup_scd, reqlog.scd_list[i]);
+        }
+        else if (!DistributeFileSyncMgr::get()->getFileFromOther(reqlog.scd_list[i]))
+        {
+            if (!DistributeFileSyncMgr::get()->getFileFromOther(backup_scd.string()))
+            {
+                LOG(INFO) << "index scd file missing." << reqlog.scd_list[i];
+                throw std::runtime_error("index scd file missing!");
+            }
+            else
+            {
+                LOG(INFO) << "get index scd file from other's backup, move to index";
+                bfs::rename(backup_scd, reqlog.scd_list[i]);
+            }
+        }
+    }
+
+    bool ret = buildCollection(numdoc, reqlog.scd_list, reqlog.timestamp);
+
+    DISTRIBUTE_WRITE_FINISH(ret);
+
+    return ret;
+}
+
+bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList, int64_t timestamp)
+{
+    CREATE_PROFILER(buildIndex, "Index:SIAProcess", "Indexer : buildIndex")
+
+    START_PROFILER(buildIndex);
+    LOG(INFO) << "start BuildCollection";
+    izenelib::util::ClockTimer timer;
+
+    //flush all writing SCDs
+    scd_writer_->Flush();
+    indexProgress_.reset();
+
+    documentManager_->last_delete_docid_.clear();
+    indexProgress_.totalFileSize_ = getTotalScdSize_(scdList);
+    size_t currTotalSCDSize = indexProgress_.totalFileSize_/(1024*1024);
     indexProgress_.totalFileNum = scdList.size();
 
     if (indexProgress_.totalFileNum == 0)
     {
-        LOG(WARNING) << "SCD Files do not exist. Path " << scdPath;
+        LOG(WARNING) << "SCD Files do not exist. Path ";
         if (miningTaskService_)
         {
             miningTaskService_->DoContinue();
         }
-        return false;
+        return true;
     }
 
     if (documentManager_->getMaxDocId() < 1)
@@ -226,8 +378,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 
     indexProgress_.currentFileIdx = 1;
 
-    //sort scdList
-    sort(scdList.begin(), scdList.end(), ScdParser::compareSCD);
 
     //here, try to set the index mode(default[batch] or realtime)
     //The threshold is set to the scd_file_size/exist_doc_num, if smaller or equal than this threshold then realtime mode will turn on.
@@ -253,13 +403,14 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             return false;
         }
 
-        LOG(INFO) << "SCD Files in Path processed in given order. Path " << scdPath;
-        vector<string>::iterator scd_it;
+        LOG(INFO) << "SCD Files in Path processed in given order.";
+        vector<string>::const_iterator scd_it;
         for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
             LOG(INFO) << "SCD File " << bfs::path(*scd_it).stem();
 
         try
         {
+            ScdParser parser(bundleConfig_->encoding_);
             // loops the list of SCD files that belongs to this collection
             long proccessedFileSize = 0;
             for (scd_it = scdList.begin(); scd_it != scdList.end(); scd_it++)
@@ -308,15 +459,15 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
             return false;
         }
 
-        bfs::path bkDir = bfs::path(scdPath) / SCD_BACKUP_DIR;
-        bfs::create_directory(bkDir);
-        LOG(INFO) << "moving " << scdList.size() << " SCD files to directory " << bkDir;
         const boost::shared_ptr<Directory>& currentDir = directoryRotator_.currentDirectory();
 
         for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
         {
+            bfs::path bkDir = bfs::path(*scd_it).parent_path() / SCD_BACKUP_DIR;
+            LOG(INFO) << " SCD file : " << *scd_it << " backuped to " << bkDir;
             try
             {
+                bfs::create_directories(bkDir);
                 bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
                 currentDir->appendSCD(bfs::path(*scd_it).filename().string());
             }
@@ -361,7 +512,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
         if (miningTaskService_)
         {
             indexManager_->pauseMerge();
-            miningTaskService_->DoMiningCollection();
+            miningTaskService_->DoMiningCollection(timestamp);
             indexManager_->resumeMerge();
         }
     }
@@ -406,9 +557,16 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     return true;
 }
 
-bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager)
+bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager,
+    int64_t timestamp)
 {
     LOG(INFO) << "start BuildCollection";
+
+    if (!distribute_req_hooker_->isValid())
+    {
+        LOG(ERROR) << __FUNCTION__ << " call invalid.";
+        return false;
+    }
 
     if (!documentManager)
     {
@@ -425,6 +583,9 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     docid_t maxDocId = documentManager->getMaxDocId();
     docid_t curDocId = 0;
     docid_t insertedCount = 0;
+
+    LOG(INFO) << "before rebuild : orig doc maxDocId is " << documentManager_->getMaxDocId();
+    LOG(INFO) << "before rebuild : rebuild doc maxDocId is " << documentManager->getMaxDocId();
     for (curDocId = minDocId; curDocId <= maxDocId; curDocId++)
     {
         if (documentManager->isDeleted(curDocId))
@@ -456,7 +617,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         }
         else
         {
-            //LOG(WARNING) << "Failed to create new docid for: " << curDocId;
+            LOG(INFO) << "Failed to create new docid for: " << curDocId;
             continue;
         }
 
@@ -464,7 +625,6 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         time_t timestamp = -1;
         prepareIndexDocument_(oldId, timestamp, document, indexDocument);
 
-        timestamp = Utilities::createTimeStamp();
         if (!insertDoc_(document, indexDocument, timestamp))
             continue;
 
@@ -489,8 +649,9 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
     if (miningTaskService_)
     {
         indexManager_->pauseMerge();
-        miningTaskService_->DoMiningCollection();
+        miningTaskService_->DoMiningCollection(timestamp);
         indexManager_->resumeMerge();
+        miningTaskService_->flush();
     }
 
     LOG(INFO) << "End BuildCollection: ";
@@ -501,8 +662,20 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
 
 bool IndexWorker::optimizeIndex()
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     if (!backup_())
+    {
         return false;
+    }
+
+    NoAdditionNeedBackupReqLog reqlog;
+    if(!distribute_req_hooker_->prepare(Req_NoAdditionData_NeedBackup_Req, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
 
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
@@ -510,11 +683,72 @@ bool IndexWorker::optimizeIndex()
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
+
     indexManager_->optimizeIndex();
+
+    //flush();
+
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 
-void IndexWorker::doMining_()
+void IndexWorker::scheduleOptimizeTask()
+{
+    if(!bundleConfig_->indexConfig_.indexStrategy_.optimizeSchedule_.empty())
+    {
+        scheduleExpression_.setExpression(bundleConfig_->indexConfig_.indexStrategy_.optimizeSchedule_);
+        using namespace izenelib::util;
+        int32_t uuid =  (int32_t)HashFunction<std::string>::generateHash32(bundleConfig_->indexConfig_.indexStrategy_.indexLocation_);
+        char uuidstr[10];
+        memset(uuidstr,0,10);
+        sprintf(uuidstr,"%d",uuid);
+        const string optimizeJob = "optimizeindex" + std::string(uuidstr);
+        ///we need an uuid here because scheduler is an singleton in the system
+        izenelib::util::Scheduler::removeJob(optimizeJob);
+        optimizeJobDesc_ = optimizeJob;
+        boost::function<void (int)> task = boost::bind(&IndexWorker::lazyOptimizeIndex, this, _1);
+        izenelib::util::Scheduler::addJob(optimizeJob, 60*1000, 0, task);
+        LOG(INFO) << "optimizeIndex schedule : " << optimizeJob;
+    }
+}
+
+void IndexWorker::lazyOptimizeIndex(int calltype)
+{
+    if (scheduleExpression_.matches_now() || calltype > 0)
+    {
+        if (calltype == 0 && NodeManagerBase::get()->isDistributed())
+        {
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(optimizeJobDesc_, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << optimizeJobDesc_;
+            }
+            else
+            {
+                LOG(INFO) << "cron job on replica ignored. ";
+            }
+            return;
+        }
+        
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+        CronJobReqLog reqlog;
+        reqlog.cron_time = Utilities::createTimeStamp();
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << optimizeJobDesc_ << std::endl;
+            return;
+        }
+
+        LOG(INFO) << "optimizeIndex cron job begin running: " << optimizeJobDesc_;
+        indexManager_->optimizeIndex();
+
+        DISTRIBUTE_WRITE_FINISH(true);
+    }
+}
+
+void IndexWorker::doMining_(int64_t timestamp)
 {
     if (miningTaskService_)
     {
@@ -524,7 +758,7 @@ void IndexWorker::doMining_()
             int docLimit = miningTaskService_->getMiningBundleConfig()->mining_config_.dcmin_param.docnum_limit;
             if (docLimit != 0 && (indexManager_->numDocs()) % docLimit == 0)
             {
-                miningTaskService_->DoMiningCollection();
+                miningTaskService_->DoMiningCollection(timestamp);
             }
         }
     }
@@ -532,50 +766,162 @@ void IndexWorker::doMining_()
 
 bool IndexWorker::createDocument(const Value& documentValue)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    docid_t docid;
+    uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
+    if (idManager_->getDocIdByDocName(num_docid, docid, false))
+    {
+        if (!documentManager_->isDeleted(docid))
+        {
+            LOG(INFO) << "the document already exist for : " << docid;
+            return false;
+        }
+    }
+
+    CreateOrUpdateDocReqLog reqlog;
+    reqlog.timestamp = Utilities::createTimeStamp();
+    if(!distribute_req_hooker_->prepare(Req_CreateOrUpdate_Doc, dynamic_cast<CommonReqData&>(reqlog)))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
+
+    LOG(INFO) << "create doc timestamp is : " << reqlog.timestamp;
+
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
     scd_writer_->Write(scddoc, INSERT_SCD);
-
-    time_t timestamp = Utilities::createTimeStamp();
 
     Document document;
     IndexerDocument indexDocument, oldIndexDocument;
     docid_t oldId = 0;
     std::string source = "";
     IndexWorker::UpdateType updateType;
+    time_t timestamp = reqlog.timestamp;
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType, INSERT_SCD))
         return false;
 
     if (!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
 
-    bool ret = insertDoc_(document, indexDocument, timestamp, true);
-    if (ret)
+    if (DistributeRequestHooker::get()->isRunningPrimary())
     {
-        doMining_();
+        reqlog.timestamp = timestamp;
     }
 
+    bool ret = insertDoc_(document, indexDocument, reqlog.timestamp, true);
+    if (ret)
+    {
+        doMining_(reqlog.timestamp);
+    }
+    //flush();
+
+    DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
     return ret;
 }
 
+IndexWorker::UpdateType IndexWorker::getUpdateType_(
+        const uint128_t& scdDocId,
+        const SCDDoc& doc,
+        docid_t& oldId,
+        SCD_TYPE scdType) const
+{
+    if (!idManager_->getDocIdByDocName(scdDocId, oldId, false))
+    {
+        return INSERT;
+    }
+
+    if (scdType == RTYPE_SCD)
+    {
+        return RTYPE;
+    }
+
+    SCDDoc::const_iterator p = doc.begin();
+    for (; p != doc.end(); ++p)
+    {
+        const string& fieldName = p->first;
+        const izenelib::util::UString& propertyValueU = p->second;
+        if (boost::iequals(fieldName, DOCID))
+            continue;
+        if (propertyValueU.empty())
+            continue;
+
+        tempPropertyConfig.propertyName_ = fieldName;
+        IndexBundleSchema::const_iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+
+        if (iter == bundleConfig_->indexSchema_.end())
+            continue;
+
+        if( iter->isRTypeString() )
+            continue;
+
+        if (iter->isIndex())
+        {
+            if (iter->isAnalyzed())
+            {
+                return GENERAL;
+            }
+            else if (iter->getIsFilter() && iter->getType() != STRING_PROPERTY_TYPE)
+            {
+                continue;
+            }
+        }
+        return GENERAL;
+    }
+
+    return RTYPE;
+}
+
+
 bool IndexWorker::updateDocument(const Value& documentValue)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    SCDDoc scddoc;
+    value2SCDDoc(documentValue, scddoc);
+    // check for if we can success.
+    {
+        docid_t olddocid;
+        uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
+        UpdateType updateType = getUpdateType_(num_docid, scddoc, olddocid, UPDATE_SCD);
+        if (updateType == RTYPE)
+        {
+            if (documentManager_->isDeleted(olddocid))
+            {
+                LOG(INFO) << "update document for rtype failed for deleted doc." << olddocid;
+                return false;
+            }
+        }
+    }
+
+    CreateOrUpdateDocReqLog reqlog;
+    reqlog.timestamp = Utilities::createTimeStamp();
+    if(!distribute_req_hooker_->prepare(Req_CreateOrUpdate_Doc, dynamic_cast<CommonReqData&>(reqlog)))
+    {
+        LOG(ERROR) << "prepare failed in: " << __FUNCTION__;
+        return false;
+    }
+
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
-    SCDDoc scddoc;
-    value2SCDDoc(documentValue, scddoc);
 
-    time_t timestamp = Utilities::createTimeStamp();
+
+    time_t timestamp = reqlog.timestamp;
+    LOG(INFO) << "update doc timestamp is : " << timestamp;
 
     Document document;
     IndexerDocument indexDocument, oldIndexDocument;
@@ -588,9 +934,14 @@ bool IndexWorker::updateDocument(const Value& documentValue)
         return false;
     }
 
+    if (DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        reqlog.timestamp = timestamp;
+    }
+
     if (!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
-    bool ret = updateDoc_(document, indexDocument, oldIndexDocument, timestamp, updateType, true);
+    bool ret = updateDoc_(document, indexDocument, oldIndexDocument, reqlog.timestamp, updateType, true);
     if (ret && (updateType != IndexWorker::RTYPE))
     {
         if (!bundleConfig_->enable_forceget_doc_)
@@ -601,7 +952,7 @@ bool IndexWorker::updateDocument(const Value& documentValue)
             ///together with AllDocumentIterator
             searchWorker_->clearFilterCache();
         }
-        doMining_();
+        doMining_(reqlog.timestamp);
     }
 
     if (updateType != IndexWorker::RTYPE)
@@ -611,11 +962,16 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     }
     scd_writer_->Write(scddoc, UPDATE_SCD);
 
+    //flush();
+    DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
     return ret;
 }
 
 bool IndexWorker::updateDocumentInplace(const Value& request)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     docid_t docid;
     uint128_t num_docid = Utilities::md5ToUint128(asString(request[DOCID]));
     if (!idManager_->getDocIdByDocName(num_docid, docid, false))
@@ -742,30 +1098,49 @@ bool IndexWorker::updateDocumentInplace(const Value& request)
         }
     }
 
+    DISTRIBUTE_WRITE_FINISH3;
     // do the common update.
     return updateDocument(new_document);
 }
 
 bool IndexWorker::destroyDocument(const Value& documentValue)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    docid_t docid;
+    uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
+
+    if (!idManager_->getDocIdByDocName(num_docid, docid, false))
+    {
+        return false;
+    }
+
+    if (documentManager_->isDeleted(docid))
+    {
+        LOG(INFO) << "doc has been deleted already: " << docid;
+        return false;
+    }
+
+    TimestampReqLog reqlog;
+    reqlog.timestamp = Utilities::createTimeStamp();
+    if(!distribute_req_hooker_->prepare(Req_WithTimestamp, dynamic_cast<CommonReqData&>(reqlog)))
+    {
+        LOG(ERROR) << "prepare failed in: " << __FUNCTION__;
+        return false;
+    }
+
     DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
     if (!dirGuard)
     {
         LOG(ERROR) << "Index directory is corrupted";
         return false;
     }
+
     SCDDoc scddoc;
     value2SCDDoc(documentValue, scddoc);
-
-    docid_t docid;
-    uint128_t num_docid = Utilities::md5ToUint128(asString(documentValue["DOCID"]));
-
-    if (!idManager_->getDocIdByDocName(num_docid, docid, false))
-        return false;
-
     scd_writer_->Write(scddoc, DELETE_SCD);
-    time_t timestamp = Utilities::createTimeStamp();
-    bool ret = deleteDoc_(docid, timestamp);
+    bool ret = deleteDoc_(docid, reqlog.timestamp);
     if (ret)
     {
         if (!bundleConfig_->enable_forceget_doc_)
@@ -776,7 +1151,7 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
             ///together with AllDocumentIterator
             searchWorker_->clearFilterCache();
         }
-        doMining_();
+        doMining_(reqlog.timestamp);
     }
 
     // delete from log server
@@ -795,6 +1170,10 @@ bool IndexWorker::destroyDocument(const Value& documentValue)
         LogServerConnection::instance().asynRequest(deleteReq);
         LogServerConnection::instance().flushRequests();
     }
+
+    //flush();
+
+    DISTRIBUTE_WRITE_FINISH(ret);
 
     return ret;
 }
@@ -885,7 +1264,10 @@ bool IndexWorker::doBuildCollection_(
     {}
     time_t timestamp = Utilities::createTimeStamp(pt);
     if (timestamp == -1)
+    {
+        LOG(WARNING) << "!!!! create time from scd fileName failed. " << ss.str();
         timestamp = Utilities::createTimeStamp();
+    }
 
     if (scdType == DELETE_SCD)
     {
@@ -1003,7 +1385,8 @@ bool IndexWorker::createInsertDocId_(
 
     if (docId <= documentManager_->getMaxDocId())
     {
-        //LOG(WARNING) << "skip insert doc id " << docId << ", it is less than max DocId";
+        LOG(WARNING) << "skip insert doc id " << docId << ", it is less than max DocId" <<
+            documentManager_->getMaxDocId();
         return false;
     }
 
@@ -2248,79 +2631,28 @@ bool IndexWorker::makeForwardIndex_(
     return true;
 }
 
-size_t IndexWorker::getTotalScdSize_()
+size_t IndexWorker::getTotalScdSize_(const std::vector<std::string>& scdlist)
 {
-    string scdPath = bundleConfig_->indexSCDPath();
-
     ScdParser parser(bundleConfig_->encoding_);
-
     size_t sizeInBytes = 0;
-    // search the directory for files
-    static const bfs::directory_iterator kItrEnd;
-    for (bfs::directory_iterator itr(scdPath); itr != kItrEnd; ++itr)
+    for (size_t i = 0; i < scdlist.size(); ++i)
     {
-        if (bfs::is_regular_file(itr->status()))
+        if (bfs::is_regular_file(scdlist[i]))
         {
-            std::string fileName = itr->path().filename().string();
-            if (parser.checkSCDFormat(fileName))
-            {
-                parser.load(scdPath + fileName);
-                sizeInBytes += parser.getFileSize();
-            }
+            parser.load(scdlist[i]);
+            sizeInBytes += parser.getFileSize();
         }
     }
-    return sizeInBytes/(1024*1024);
+    return sizeInBytes;
 }
 
 bool IndexWorker::requireBackup_(size_t currTotalScdSizeInMB)
 {
-    static size_t threshold = 200;//200M
-    totalSCDSizeSinceLastBackup_ += currTotalScdSizeInMB;
-    const boost::shared_ptr<Directory>& current
-    = directoryRotator_.currentDirectory();
-    const boost::shared_ptr<Directory>& next
-    = directoryRotator_.nextDirectory();
-    if (next
-            && current->name() != next->name())
-        //&& ! (next->valid() && next->parentName() == current->name()))
-    {
-        ///TODO policy required here
-        if (totalSCDSizeSinceLastBackup_ > threshold)
-            return true;
-    }
     return false;
 }
 
 bool IndexWorker::backup_()
 {
-    const boost::shared_ptr<Directory>& current
-    = directoryRotator_.currentDirectory();
-    const boost::shared_ptr<Directory>& next
-    = directoryRotator_.nextDirectory();
-
-    // valid pointer
-    // && not the same directory
-    // && have not copied successfully yet
-    if (next
-            && current->name() != next->name())
-        //&& ! (next->valid() && next->parentName() == current->name()))
-    {
-        try
-        {
-            LOG(INFO) << "Copy index dir from " << current->name()
-                      << " to " << next->name();
-            next->copyFrom(*current);
-            return true;
-        }
-        catch (bfs::filesystem_error& e)
-        {
-            LOG(ERROR) << "Failed to copy index directory " << e.what();
-        }
-
-        // try copying but failed
-        return false;
-    }
-
     // not copy, always returns true
     return true;
 }

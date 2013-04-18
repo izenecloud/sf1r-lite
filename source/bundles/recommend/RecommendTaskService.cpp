@@ -18,6 +18,12 @@
 #include <common/ScdParser.h>
 #include <directory-manager/Directory.h>
 #include <directory-manager/DirectoryRotator.h>
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeFileSyncMgr.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
+#include <util/driver/Request.h>
 
 #include <sdb/SDBCursorIterator.h>
 #include <util/scheduler.h>
@@ -32,6 +38,7 @@
 #include <glog/logging.h>
 
 namespace bfs = boost::filesystem;
+using namespace izenelib::driver;
 
 namespace
 {
@@ -122,31 +129,6 @@ void backupSCDFiles(const std::string& scdDir, const std::vector<string>& scdLis
 
 bool backupDataFiles(sf1r::directory::DirectoryRotator& directoryRotator)
 {
-    const boost::shared_ptr<sf1r::directory::Directory>& current = directoryRotator.currentDirectory();
-    const boost::shared_ptr<sf1r::directory::Directory>& next = directoryRotator.nextDirectory();
-
-    // valid pointer
-    // && not the same directory
-    // && have not copied successfully yet
-    if (next
-        && current->name() != next->name()
-        && ! (next->valid() && next->parentName() == current->name()))
-    {
-        try
-        {
-            LOG(INFO) << "Copy data dir from " << current->name() << " to " << next->name();
-            next->copyFrom(*current);
-            return true;
-        }
-        catch(boost::filesystem::filesystem_error& e)
-        {
-            LOG(INFO) << "exception in copy data dir, " << e.what();
-        }
-
-        // try copying but failed
-        return false;
-    }
-
     // not copy, always returns true
     return true;
 }
@@ -289,7 +271,7 @@ RecommendTaskService::RecommendTaskService(
         bool result = izenelib::util::Scheduler::addJob(cronJobName_,
                                                         60*1000, // each minute
                                                         0, // start from now
-                                                        boost::bind(&RecommendTaskService::cronJob_, this));
+                                                        boost::bind(&RecommendTaskService::cronJob_, this, _1));
         if (! result)
         {
             LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
@@ -304,17 +286,20 @@ RecommendTaskService::~RecommendTaskService()
 
 bool RecommendTaskService::addUser(const User& user)
 {
-    return userManager_.addUser(user);
+    bool result = userManager_.addUser(user);
+    return result;
 }
 
 bool RecommendTaskService::updateUser(const User& user)
 {
-    return userManager_.updateUser(user);
+    bool result = userManager_.updateUser(user);
+    return result;
 }
 
 bool RecommendTaskService::removeUser(const std::string& userIdStr)
 {
-    return userManager_.removeUser(userIdStr);
+    bool result = userManager_.removeUser(userIdStr);
+    return result;
 }
 
 bool RecommendTaskService::visitItem(
@@ -331,8 +316,33 @@ bool RecommendTaskService::visitItem(
     }
 
     itemid_t itemId = 0;
-    if (!itemIdGenerator_.strIdToItemId(itemIdStr, itemId) ||
-        !visitManager_.addVisitItem(sessionIdStr, userIdStr, itemId, &visitMatrix_))
+    if (!itemIdGenerator_.strIdToItemId(itemIdStr, itemId))
+    {
+        return false;
+    }
+
+    return visitItemFunc(sessionIdStr, userIdStr, itemId, isRecItem);
+}
+
+bool RecommendTaskService::visitItemFunc(
+    const std::string& sessionIdStr,
+    const std::string& userIdStr,
+    itemid_t itemId,
+    bool isRecItem
+)
+{
+    // this need to be async because there will be rpc call in visitManager_.addVisitItem
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    if (!visitManager_.addVisitItem(sessionIdStr, userIdStr, itemId, &visitMatrix_))
     {
         return false;
     }
@@ -340,12 +350,14 @@ bool RecommendTaskService::visitItem(
     if (isRecItem && !visitManager_.visitRecommendItem(userIdStr, itemId))
     {
         LOG(ERROR) << "error in VisitManager::visitRecommendItem(), userId: " << userIdStr
-                   << ", itemId: " << itemId;
+            << ", itemId: " << itemId;
         return false;
     }
 
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
+
 
 bool RecommendTaskService::purchaseItem(
     const std::string& userIdStr,
@@ -353,7 +365,37 @@ bool RecommendTaskService::purchaseItem(
     const OrderItemVec& orderItemVec
 )
 {
-    return saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_);
+    std::vector<itemid_t> itemIdVec;
+    if (!prepareSaveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_, itemIdVec))
+    {
+        LOG(WARNING) << "saveOrder_ failed.";
+        return false;
+    }
+
+    return purchaseItemFunc(userIdStr, orderIdStr, orderItemVec, itemIdVec);
+}
+
+bool RecommendTaskService::purchaseItemFunc(
+    const std::string& userIdStr,
+    const std::string& orderIdStr,
+    const OrderItemVec& orderItemVec,
+    const std::vector<itemid_t>& itemIdVec
+)
+{
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseMatrix_, itemIdVec);
+
+    DISTRIBUTE_WRITE_FINISH(ret);
+    return ret;
 }
 
 bool RecommendTaskService::updateShoppingCart(
@@ -361,11 +403,35 @@ bool RecommendTaskService::updateShoppingCart(
     const OrderItemVec& cartItemVec
 )
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     std::vector<itemid_t> itemIdVec;
     if (! convertOrderItemVec_(cartItemVec, itemIdVec))
+    {
         return false;
+    }
 
-    return cartManager_.updateCart(userIdStr, itemIdVec);
+    if (!bundleConfig_.cassandraConfig_.enable)
+    {
+        NoAdditionNoRollbackReqLog reqlog;
+        if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+        {
+            LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+            return false;
+        }
+    }
+    bool ret = true;
+    bool need_write = !bundleConfig_.cassandraConfig_.enable;
+    if (!DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        need_write = true;
+    }
+
+    if (need_write)
+        ret = cartManager_.updateCart(userIdStr, itemIdVec);
+    DISTRIBUTE_WRITE_FINISH(ret);
+    return ret;
 }
 
 bool RecommendTaskService::trackEvent(
@@ -375,26 +441,81 @@ bool RecommendTaskService::trackEvent(
     const std::string& itemIdStr
 )
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     itemid_t itemId = 0;
     if (! itemIdGenerator_.strIdToItemId(itemIdStr, itemId))
+    {
         return false;
+    }
 
-    return isAdd ? eventManager_.addEvent(eventStr, userIdStr, itemId) :
-                   eventManager_.removeEvent(eventStr, userIdStr, itemId);
+    if (!bundleConfig_.cassandraConfig_.enable)
+    {
+        NoAdditionReqLog reqlog;
+        if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+        {
+            LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+            return false;
+        }
+    }
+    bool ret = true;
+    bool need_write = !bundleConfig_.cassandraConfig_.enable;
+    if (!DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        need_write = true;
+    }
+
+    if (need_write)
+    {
+        ret = isAdd ? eventManager_.addEvent(eventStr, userIdStr, itemId) :
+            eventManager_.removeEvent(eventStr, userIdStr, itemId);
+    }
+    DISTRIBUTE_WRITE_FINISH(ret);
+    return ret;
 }
 
 bool RecommendTaskService::rateItem(const RateParam& param)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     itemid_t itemId = 0;
     if (! itemIdGenerator_.strIdToItemId(param.itemIdStr, itemId))
+    {
         return false;
+    }
+    if (!bundleConfig_.cassandraConfig_.enable)
+    {
+        NoAdditionReqLog reqlog;
+        if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+        {
+            LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+            return false;
+        }
+    }
+    bool ret = true;
+    bool need_write = !bundleConfig_.cassandraConfig_.enable;
+    if (!DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        need_write = true;
+    }
 
-    return param.isAdd ? rateManager_.addRate(param.userIdStr, itemId, param.rate) :
-                         rateManager_.removeRate(param.userIdStr, itemId);
+    if (need_write)
+    {
+        ret = param.isAdd ? rateManager_.addRate(param.userIdStr, itemId, param.rate) :
+            rateManager_.removeRate(param.userIdStr, itemId);
+    }
+
+    DISTRIBUTE_WRITE_FINISH(ret);
+    return ret;
 }
 
 bool RecommendTaskService::buildCollection()
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     LOG(INFO) << "Start building recommend collection...";
     izenelib::util::ClockTimer timer;
 
@@ -412,25 +533,148 @@ bool RecommendTaskService::buildCollection()
     }
 
     boost::mutex::scoped_lock lock(buildCollectionMutex_);
+    bool ret = false;
 
-    if (loadUserSCD_() && loadOrderSCD_())
+    if (!DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        // on primary
+        ret = buildCollectionOnPrimary();
+    }
+    else
+    {
+        ret = buildCollectionOnReplica();
+    }
+    if (ret)
     {
         LOG(INFO) << "End recommend collection build, elapsed time: " << timer.elapsed() << " seconds";
-        return true;
+    }
+    else
+    {
+        LOG(INFO) << "recommend collection build failed: " ;
+    }
+    DISTRIBUTE_WRITE_FINISH(ret);
+    return ret;
+}
+
+bool RecommendTaskService::buildCollectionOnPrimary()
+{
+    RecommendIndexReqLog reqlog;
+    if (!getBuildingSCDFiles(reqlog.user_scd_list, reqlog.order_scd_list))
+    {
+        return false;
+    }
+    // push scd files to replicas
+    std::vector<std::string> all_scdList = reqlog.user_scd_list;
+    all_scdList.insert(all_scdList.end(), reqlog.order_scd_list.begin(), reqlog.order_scd_list.end());
+
+    for (size_t file_index = 0; file_index < all_scdList.size(); ++file_index)
+    {
+        if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(all_scdList[file_index],
+                all_scdList[file_index]))
+        {
+            LOG(INFO) << "Transfer recommend scd to the replicas finished for: " << all_scdList[file_index];
+        }
+        else
+        {
+            LOG(WARNING) << "push recommend scd file to the replicas failed for:" << all_scdList[file_index];
+        }
     }
 
-    LOG(ERROR) << "Failed recommend collection build";
+    if (!DistributeRequestHooker::get()->prepare(Req_Recommend_Index, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle);
+    if (loadUserSCD_(reqlog.user_scd_list) && loadOrderSCD_(reqlog.order_scd_list))
+    {
+        DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
+        return true;
+    }
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
     return false;
 }
 
-bool RecommendTaskService::loadUserSCD_()
+bool RecommendTaskService::buildCollectionOnReplica()
+{
+    // build on replicas, using the data from primary.
+    RecommendIndexReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_Recommend_Index, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    std::vector<std::string> all_scdList = reqlog.user_scd_list;
+    all_scdList.insert(all_scdList.end(), reqlog.order_scd_list.begin(), reqlog.order_scd_list.end());
+
+    LOG(INFO) << "got recommend from primary/log, scd list is : ";
+    for (size_t i = 0; i < all_scdList.size(); ++i)
+    {
+        LOG(INFO) << all_scdList[i];
+        bfs::path backup_scd = bfs::path(all_scdList[i]);
+        backup_scd = backup_scd.parent_path()/bfs::path(SCD_BACKUP_DIR)/backup_scd.filename();
+        if (bfs::exists(all_scdList[i]))
+        {
+            LOG(INFO) << "found recommend scd file in current directory.";
+        }
+        else if (bfs::exists(backup_scd))
+        {
+            // try to find in backup
+            LOG(INFO) << "found recommend scd file in backup, move to current";
+            bfs::rename(backup_scd, all_scdList[i]);
+        }
+        else if (!DistributeFileSyncMgr::get()->getFileFromOther(all_scdList[i]))
+        {
+            if (!DistributeFileSyncMgr::get()->getFileFromOther(backup_scd.string()))
+            {
+                LOG(INFO) << "recommend scd file missing and get from other failed." << all_scdList[i];
+                throw std::runtime_error("recommend scd file missing!");
+            }
+            else
+            {
+                LOG(INFO) << "get recommend scd file from other's backup, move to index";
+                bfs::rename(backup_scd, all_scdList[i]);
+            }
+        }
+    }
+
+
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainMiddle);
+    bool ret = true;
+    // on replica
+    // if remote storage enabled, replica can get part of data from remote storage.
+    if (!bundleConfig_.cassandraConfig_.enable)
+    {
+        ret = loadUserSCD_(reqlog.user_scd_list);
+        LOG(INFO) << "the recommend did not configure as remote storage, so need to do some write on replicas.";
+    }
+    if (ret && loadOrderSCD_(reqlog.order_scd_list))
+    {
+        DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
+        return true;
+    }
+    DistributeRequestHooker::get()->setChainStatus(DistributeRequestHooker::ChainEnd);
+    return false;
+}
+
+bool RecommendTaskService::getBuildingSCDFiles(std::vector<string>& user_scd_list,
+    std::vector<std::string>& order_scd_list)
 {
     std::string scdDir = bundleConfig_.userSCDPath();
-    std::vector<string> scdList;
-
-    if (scanSCDFiles(scdDir, scdList) == false)
+    if (!scanSCDFiles(scdDir, user_scd_list))
         return false;
 
+    scdDir = bundleConfig_.orderSCDPath();
+    if (!scanSCDFiles(scdDir, order_scd_list))
+        return false;
+
+    return true;
+}
+
+bool RecommendTaskService::loadUserSCD_(const std::vector<string>& scdList)
+{
     if (scdList.empty())
         return true;
 
@@ -442,6 +686,7 @@ bool RecommendTaskService::loadUserSCD_()
 
     userManager_.flush();
 
+    std::string scdDir = bundleConfig_.userSCDPath();
     backupSCDFiles(scdDir, scdList);
 
     return true;
@@ -521,14 +766,8 @@ bool RecommendTaskService::parseUserSCD_(const std::string& scdPath)
     return true;
 }
 
-bool RecommendTaskService::loadOrderSCD_()
+bool RecommendTaskService::loadOrderSCD_(const std::vector<string> &scdList)
 {
-    std::string scdDir = bundleConfig_.orderSCDPath();
-    std::vector<string> scdList;
-
-    if (scanSCDFiles(scdDir, scdList) == false)
-        return false;
-
     if (scdList.empty())
         return true;
 
@@ -547,6 +786,7 @@ bool RecommendTaskService::loadOrderSCD_()
     updateRecommendBase_.buildPurchaseSimMatrix(result);
     updateRecommendBase_.flushRecommendMatrix(result);
 
+    std::string scdDir = bundleConfig_.orderSCDPath();
     backupSCDFiles(scdDir, scdList);
 
     return true;
@@ -624,7 +864,11 @@ void RecommendTaskService::loadOrderItem_(
     {
         OrderItemVec orderItemVec;
         orderItemVec.push_back(orderItem);
-        saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseCoVisitMatrix_);
+        std::vector<itemid_t> itemIdVec;
+        if (prepareSaveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseCoVisitMatrix_, itemIdVec))
+        {
+            saveOrder_(userIdStr, orderIdStr, orderItemVec, &purchaseCoVisitMatrix_, itemIdVec);
+        }
     }
     else
     {
@@ -649,29 +893,44 @@ void RecommendTaskService::loadOrderItem_(
 
 void RecommendTaskService::saveOrderMap_(const OrderMap& orderMap)
 {
+    std::vector<itemid_t> itemIdVec;
     for (OrderMap::const_iterator it = orderMap.begin(); it != orderMap.end(); ++it)
     {
-        saveOrder_(it->first.first, it->first.second, it->second, &purchaseCoVisitMatrix_);
+        if (prepareSaveOrder_(it->first.first, it->first.second, it->second, & purchaseCoVisitMatrix_, itemIdVec))
+        {
+            saveOrder_(it->first.first, it->first.second, it->second, &purchaseCoVisitMatrix_, itemIdVec);
+        }
+        std::vector<itemid_t>().swap(itemIdVec);
     }
+}
+
+bool RecommendTaskService::prepareSaveOrder_(
+    const std::string& userIdStr,
+    const std::string& orderIdStr,
+    const OrderItemVec& orderItemVec,
+    RecommendMatrix* matrix,
+    std::vector<itemid_t>& itemIdVec
+    )
+{
+    if (orderItemVec.empty())
+    {
+        LOG(WARNING) << "empty order in " << __FUNCTION__;
+        return false;
+    }
+
+    if (! convertOrderItemVec_(orderItemVec, itemIdVec))
+        return false;
+    return true;
 }
 
 bool RecommendTaskService::saveOrder_(
     const std::string& userIdStr,
     const std::string& orderIdStr,
     const OrderItemVec& orderItemVec,
-    RecommendMatrix* matrix
+    RecommendMatrix* matrix,
+    const std::vector<itemid_t>& itemIdVec
 )
 {
-    if (orderItemVec.empty())
-    {
-        LOG(WARNING) << "empty order in RecommendTaskService::saveOrder_()";
-        return false;
-    }
-
-    std::vector<itemid_t> itemIdVec;
-    if (! convertOrderItemVec_(orderItemVec, itemIdVec))
-        return false;
-
     orderManager_.addOrder(itemIdVec);
 
     if (purchaseManager_.addPurchaseItem(userIdStr, itemIdVec, matrix) &&
@@ -751,10 +1010,24 @@ void RecommendTaskService::buildFreqItemSet_()
     LOG(INFO) << "finish building frequent item set for collection " << bundleConfig_.collectionName_;
 }
 
-void RecommendTaskService::cronJob_()
+void RecommendTaskService::cronJob_(int calltype)
 {
-    if (cronExpression_.matches_now())
+    if (cronExpression_.matches_now() || calltype > 0)
     {
+        if(calltype == 0 && NodeManagerBase::get()->isDistributed())
+        {
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName_;
+            }
+            else
+                LOG(INFO) << "cron job ignored on replica: " << cronJobName_;
+            return;
+        }
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
         boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
@@ -762,14 +1035,26 @@ void RecommendTaskService::cronJob_()
             LOG(INFO) << "exit recommend cron job as still in building collection " << bundleConfig_.collectionName_;
             return;
         }
+        CronJobReqLog reqlog;
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName_ << std::endl;
+            return;
+        }
 
-        flush_();
+        bool result = true;
+        if (updateRecommendBase_.needRebuildPurchaseSimMatrix())
+        {
+            updateRecommendBase_.buildPurchaseSimMatrix(result);
+        }
+        flush();
 
         buildFreqItemSet_();
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
 
-void RecommendTaskService::flush_()
+void RecommendTaskService::flush()
 {
     LOG(INFO) << "start flushing recommend data for collection " << bundleConfig_.collectionName_;
 
@@ -784,10 +1069,6 @@ void RecommendTaskService::flush_()
     queryPurchaseCounter_.flush();
 
     bool result = true;
-    if (updateRecommendBase_.needRebuildPurchaseSimMatrix())
-    {
-        updateRecommendBase_.buildPurchaseSimMatrix(result);
-    }
     updateRecommendBase_.flushRecommendMatrix(result);
 
     LOG(INFO) << "finish flushing recommend data for collection " << bundleConfig_.collectionName_;

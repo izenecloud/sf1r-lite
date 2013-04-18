@@ -35,6 +35,7 @@ public:
         return ::izenelib::util::Singleton<CollectionManager>::get();
     }
 
+    CollectionManager();
     ~CollectionManager();
 
     OSGILauncher& getOSGILauncher()
@@ -47,10 +48,13 @@ public:
     bool startCollection(
             const std::string& collectionName,
             const std::string& configFileName,
-            bool fixBasePath = false);
+            bool fixBasePath = false,
+            bool checkdata = false);
 
     bool stopCollection(const std::string& collectionName, bool clear = false);
-
+    void flushCollection(const std::string& collectionName);
+    bool reopenCollection(const std::string& collectionName);
+    std::string checkCollectionConsistency(const std::string& collectionName);
     void deleteCollection(const std::string& collectionName);
 
     CollectionHandler* findHandler(const std::string& key) const;

@@ -198,7 +198,7 @@
             <xs:sequence>
                 <xs:element ref="BrokerAgent"/>
                 <xs:element ref="DistributedCommon" minOccurs="1" maxOccurs="1"/>
-                <xs:element ref="DistributedTopology" minOccurs="0" maxOccurs="2"/>
+                <xs:element ref="DistributedTopology" minOccurs="0" maxOccurs="1"/>
                 <xs:element ref="DistributedUtil" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
         </xs:complexType>
@@ -226,6 +226,7 @@
             <xs:attribute name="workerport" type="PortType" use="required"/>
             <xs:attribute name="masterport" type="PortType" use="required"/>
             <xs:attribute name="datarecvport" type="PortType" use="required"/>
+            <xs:attribute name="filesyncport" type="PortType" use="required"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="DistributedTopology">
@@ -234,14 +235,6 @@
                 <xs:element ref="CurrentSf1rNode" minOccurs="1" maxOccurs="1"/>
             </xs:sequence>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
-            <xs:attribute name="type">
-                <xs:simpleType>
-                    <xs:restriction base="xs:string">
-                        <xs:enumeration value="search"/>
-                        <xs:enumeration value="recommend"/>
-                    </xs:restriction>
-                </xs:simpleType>
-            </xs:attribute>
             <xs:attribute name="nodenum" use="required">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
@@ -265,7 +258,7 @@
                         <xs:maxInclusive value="100"/>
                     </xs:restriction>
                 </xs:simpleType>
-                        </xs:attribute>
+            </xs:attribute>
             <xs:attribute name="replicaid" use="required">
                 <xs:simpleType>
                     <xs:restriction base="xs:integer">
@@ -276,10 +269,11 @@
             </xs:attribute>
         </xs:complexType>
     </xs:element>
+    
     <xs:element name="MasterServer">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="Collection" minOccurs="1" maxOccurs="unbounded"/>
+                <xs:element ref="DistributedService" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
             <xs:attribute name="name" use="required">
@@ -292,11 +286,18 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
-            <xs:attribute name="shardnum" use="required">
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="DistributedService">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Collection" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="type">
                 <xs:simpleType>
-                    <xs:restriction base="xs:integer">
-                        <xs:minInclusive value="1"/>
-                        <xs:maxInclusive value="100"/>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="search"/>
+                        <xs:enumeration value="recommend"/>
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
@@ -312,17 +313,9 @@
     <xs:element name="WorkerServer">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="Collection" minOccurs="1" maxOccurs="unbounded"/>
+                <xs:element ref="DistributedService" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
             <xs:attribute name="enable" type="YesNoType" use="required"/>
-            <xs:attribute name="shardid" use="required">
-                <xs:simpleType>
-                    <xs:restriction base="xs:integer">
-                        <xs:minInclusive value="1"/>
-                        <xs:maxInclusive value="100"/>
-                    </xs:restriction>
-                </xs:simpleType>
-            </xs:attribute>
         </xs:complexType>
     </xs:element>
     <xs:element name="DistributedUtil">

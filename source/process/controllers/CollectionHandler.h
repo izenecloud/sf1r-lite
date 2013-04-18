@@ -22,6 +22,7 @@ class RecommendSearchService;
 class IndexTaskService;
 class IndexSearchService;
 class MiningSearchService;
+class MiningTaskService;
 class ProductTaskService;
 class ProductSearchService;
 class GetRecommendWorker;
@@ -81,6 +82,10 @@ public:
         miningSearchService_ = service;
     }
 
+    void registerService(MiningTaskService* service)
+    {
+        miningTaskService_ = service;
+    }
     void registerService(RecommendTaskService* service)
     {
         recommendTaskService_ = service;
@@ -133,6 +138,8 @@ public:
     ProductTaskService* productTaskService_;
 
     MiningSearchService* miningSearchService_;
+
+    MiningTaskService* miningTaskService_;
 
     RecommendTaskService* recommendTaskService_;
 

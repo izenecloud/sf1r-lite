@@ -37,9 +37,11 @@ public:
     void removeTask(const std::string& collection);
 
     void setCapacity(std::size_t capacity);
+    void waitCurrentFinish(const std::string& collection = "");
 
 private:
     void runAsynchronousTasks_();
+    void notifyFinish(int waitid);
 
 private:
     ::izenelib::util::concurrent_queue<task_collection_name_type> asynchronousTasks_;
@@ -47,6 +49,10 @@ private:
     boost::thread asynchronousWorker_;
 
     task_collection_name_type currentTaskCollection_;
+    boost::mutex mutex_;
+    boost::condition_variable cond_;
+    std::map<int, bool>  wait_finish_events_;
+    int wait_event_id_;
 };
 
 struct JobScheduler::RemoveTaskPred
