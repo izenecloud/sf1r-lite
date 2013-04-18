@@ -1417,6 +1417,7 @@ void CollectionConfig::parseProductBundleSchema(const ticpp::Element * product_s
 
     getAttribute(product_schema, "mode", productBundleConfig.mode_);
     getAttribute(product_schema, "id", productBundleConfig.productId_);
+    getAttribute(product_schema, "callback", productBundleConfig.callback_, false);
 
     PMConfig& pm_config = productBundleConfig.pm_config_;
     ticpp::Element* property_node = 0;

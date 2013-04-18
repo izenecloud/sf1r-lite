@@ -326,6 +326,7 @@ bool IndexBundleActivator::openDataDirectories_()
 {
     bfs::create_directories(config_->indexSCDPath());
     bfs::create_directories(config_->masterIndexSCDPath());
+    bfs::create_directories(config_->rebuildIndexSCDPath());
     bfs::create_directories(config_->logSCDPath());
 
     std::vector<std::string>& directories = config_->collectionDataDirectories_;

@@ -62,6 +62,11 @@ public:
     	return collPath_.getScdPath() + "master_index/";
     }
 
+    std::string rebuildIndexSCDPath() const
+    {
+        return collPath_.getScdPath() + "rebuild_scd/";
+    }
+
     std::string logSCDPath() const
     {
         return collPath_.getScdPath() + "log/";

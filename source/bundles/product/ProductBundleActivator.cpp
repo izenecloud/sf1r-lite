@@ -161,7 +161,7 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
             else if(config_->mode_=="a")//in a
             {
                 LOG(INFO)<<"Scd Reciever init with id : "<<config_->productId_<<std::endl;
-                scd_receiver_ = new ProductScdReceiver(config_->productId_, config_->collectionName_);
+                scd_receiver_ = new ProductScdReceiver(config_->productId_, config_->collectionName_, config_->callback_);
                 scd_receiver_->Set(refIndexTaskService_);
             }
 
