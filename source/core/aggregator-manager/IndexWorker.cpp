@@ -1457,7 +1457,7 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
 
         if (!deleteDoc_(*iter, timestamp))
         {
-            LOG(WARNING) << "Cannot delete removed Document. docid. " << *iter;
+            //LOG(WARNING) << "Cannot delete removed Document. docid. " << *iter;
             continue;
         }
         ++indexProgress_.currentFilePos_;
