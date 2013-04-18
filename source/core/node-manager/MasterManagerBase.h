@@ -241,7 +241,7 @@ protected:
     bool is_mine_primary_;
     bool is_ready_for_new_write_;
     std::size_t waiting_request_num_;
-    std::queue<std::pair<std::string, std::string> > cached_write_reqlist_;
+    std::queue< std::pair<std::string, std::pair<std::string, std::string> > > cached_write_reqlist_;
 
 
     std::string CLASSNAME;

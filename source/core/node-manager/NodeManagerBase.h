@@ -168,6 +168,7 @@ public:
 
     void updateLastWriteReqId(uint32_t req_id);
     uint32_t getLastWriteReqId();
+    bool checkElectingInAsyncMode();
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -202,6 +203,7 @@ protected:
 
     void enterCluster(bool start_master = true);
     void enterClusterAfterRecovery(bool start_master = true);
+    void reEnterCluster();
 
     void unregisterPrimary();
     bool registerPrimary(ZNode& znode);
@@ -230,6 +232,8 @@ protected:
     void checkPrimaryForFinishWrite(NodeStateType primary_state);
     void checkPrimaryForAbortWrite(NodeStateType primary_state);
     void checkPrimaryForRecovery(NodeStateType primary_state);
+    void checkPrimaryForFinishElecting(NodeStateType primary_state);
+
     void checkForPrimaryElecting();
     bool checkForAsyncWrite();
     bool checkForAsyncWriteInEventHandler();
@@ -239,6 +243,7 @@ protected:
     void leaveCluster();
     bool canAbortRequest();
     void stop();
+    void setElectingState();
 
 protected:
     bool isDistributionEnabled_;

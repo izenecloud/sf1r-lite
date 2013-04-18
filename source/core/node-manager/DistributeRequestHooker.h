@@ -115,6 +115,7 @@ private:
     boost::thread  async_log_worker_;
     boost::mutex log_sync_mutex_;
     boost::condition_variable log_sync_cond_;
+    boost::condition_variable log_sync_wait_paused_cond_;
     bool log_sync_paused_;
 
     static std::set<ReqLogType> need_backup_types_;

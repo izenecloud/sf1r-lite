@@ -506,7 +506,7 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
     LOG(INFO) << "replay log finished, total replayed: " << replayed_num;
 }
 
-bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
+bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id, uint32_t end_id)
 {
     bool ret = true;
     try
@@ -530,7 +530,7 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
         {
             std::string req_packed_data; 
             bool hasmore = redolog->getReqDataByHeadOffset(redo_offset, rethead, req_packed_data);
-            if (!hasmore)
+            if (!hasmore || rethead.inc_id >= end_id)
                 break;
             LOG(INFO) << "redoing for request id : " << rethead.inc_id;
             CommonReqData req_commondata;
@@ -768,7 +768,7 @@ bool RecoveryChecker::rollbackLastFail(bool starting_up)
         LOG(INFO) << "last backup is out of date. begin redo request.";
         // read redo log and do request to current log.
         last_backup_id++;
-        return redoLog(&redo_req_log_mgr, last_backup_id);
+        return redoLog(&redo_req_log_mgr, last_backup_id, rollback_id);
     }
     bfs::remove_all(redo_log_basepath_);
     return true;
@@ -1180,6 +1180,7 @@ void RecoveryChecker::onRecoverWaitReplicasCallback()
 
 bool RecoveryChecker::onRecoverCheckLog()
 {
+
     LOG(INFO) << "check log for re-connect.";
     uint32_t lastid = NodeManagerBase::get()->getLastWriteReqId();
     if (lastid == 0)
@@ -1229,7 +1230,7 @@ void RecoveryChecker::syncToNewestReqLog()
     while(true)
     {
         uint32_t reqid = reqlog_mgr_->getLastSuccessReqId();
-        while(!DistributeFileSyncMgr::get()->getNewestReqLog(reqid + 1, newlogdata_list))
+        while(!DistributeFileSyncMgr::get()->getNewestReqLog(false, reqid + 1, newlogdata_list))
         {
             LOG(INFO) << "get newest log failed, waiting and retry.";
             sleep(10);

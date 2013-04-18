@@ -428,8 +428,8 @@ void MasterManagerBase::checkForWriteReq()
             return;
         if (!cached_write_reqlist_.empty())
         {
-            LOG(ERROR) << "non primary master but has cached write request, these request will be ignored !!!!!! " << serverRealPath_;
-            //cached_write_reqlist_ = std::queue<std::pair<std::string, std::string> >();
+            LOG(INFO) << "non primary master but has cached write request. clear cache" << serverRealPath_;
+            cached_write_reqlist_ = std::queue< std::pair<std::string, std::pair<std::string, std::string> > >();
         }
         LOG(INFO) << "not a primary master while check write request, ignore." << serverRealPath_;
         zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::NOT_WATCH);
@@ -453,6 +453,8 @@ void MasterManagerBase::checkForWriteReq()
 
 bool MasterManagerBase::cacheNewWriteFromZNode()
 {
+    if (!cached_write_reqlist_.empty())
+        return false;
     std::vector<std::string> reqchild;
     zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::NOT_WATCH);
     if (reqchild.empty())
@@ -472,10 +474,9 @@ bool MasterManagerBase::cacheNewWriteFromZNode()
         std::string sdata;
         zookeeper_->getZNodeData(reqchild[i], sdata);
         znode.loadKvString(sdata);
-        LOG(INFO) << "a request poped : " << reqchild[i] << " on the server: " << serverRealPath_;
-        cached_write_reqlist_.push(std::make_pair(znode.getStrValue(ZNode::KEY_REQ_DATA),
-                znode.getStrValue(ZNode::KEY_REQ_TYPE)));
-        zookeeper_->deleteZNode(reqchild[i]);
+        cached_write_reqlist_.push(std::make_pair(reqchild[i], std::make_pair(znode.getStrValue(ZNode::KEY_REQ_DATA),
+                znode.getStrValue(ZNode::KEY_REQ_TYPE))));
+        //zookeeper_->deleteZNode(reqchild[i]);
     }
     return true;
 }
@@ -548,8 +549,15 @@ bool MasterManagerBase::popWriteReq(std::string& reqdata, std::string& type)
         if (!cacheNewWriteFromZNode())
             return false;
     }
-    reqdata = cached_write_reqlist_.front().first;
-    type = cached_write_reqlist_.front().second;
+
+    reqdata = cached_write_reqlist_.front().second.first;
+    type = cached_write_reqlist_.front().second.second;
+    LOG(INFO) << "a request poped : " << cached_write_reqlist_.front().first << " on the server: " << serverRealPath_;
+    if(!zookeeper_->deleteZNode(cached_write_reqlist_.front().first))
+    {
+        if (!zookeeper_->isConnected())
+            return false;
+    }
     cached_write_reqlist_.pop();
     return true;
 }
@@ -1470,7 +1478,8 @@ void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
             // reset current workers, need detect primary workers.
             detectWorkers();
             zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::WATCH);
-            cacheNewWriteFromZNode();
+            if (cached_write_reqlist_.empty())
+                cacheNewWriteFromZNode();
         }
     }
 }

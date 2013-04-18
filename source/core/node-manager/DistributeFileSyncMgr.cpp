@@ -602,7 +602,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
     reporting_ = false;
 }
 
-bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std::string>& saved_log)
+bool DistributeFileSyncMgr::getNewestReqLog(bool from_primary_only, uint32_t start_from, std::vector<std::string>& saved_log)
 {
     if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return true;
@@ -619,11 +619,29 @@ bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std
         // so the rpc ports for all file sync servers are the same.
         uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
 
-        if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
+        if (from_primary_only)
         {
-            LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
+            if(!NodeManagerBase::get()->getCurrPrimaryInfo(ip))
+            {
+                LOG(INFO) << "get primary sync server failed.";
+                std::vector<std::string>().swap(saved_log);
+                return false;
+            }
+        }
+        else
+        {
+            if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
+            {
+                LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
+                std::vector<std::string>().swap(saved_log);
+                return true;
+            }
+        }
+        if (ip == SuperNodeManager::get()->getLocalHostIP())
+        {
+            LOG(INFO) << "the ip is the same as local : " << ip;
             std::vector<std::string>().swap(saved_log);
-            return true;
+            return false;
         }
         LOG(INFO) << "try get newest log from: " << ip << ":" << port;
         GetReqLogRequest req;

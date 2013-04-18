@@ -586,10 +586,13 @@ void DistributeRequestHooker::pauseLogSync()
 {
     boost::unique_lock<boost::mutex> lock(log_sync_mutex_);
     log_sync_paused_ = true;
+    log_sync_cond_.notify_all();
+    LOG(INFO) << "log sync paused.";
 }
 
 void DistributeRequestHooker::resumeLogSync()
 {
+    LOG(INFO) << "log sync resumed.";
     boost::unique_lock<boost::mutex> lock(log_sync_mutex_);
     log_sync_paused_ = false;
     log_sync_cond_.notify_all();
@@ -609,17 +612,36 @@ void DistributeRequestHooker::AsyncLogPullFunc()
                 boost::unique_lock<boost::mutex> lock(log_sync_mutex_);
                 if (wait_period)
                 {
+                    log_sync_mutex_.unlock();
+                    bool ret = NodeManagerBase::get()->checkElectingInAsyncMode();
+                    log_sync_mutex_.lock();
+                    if (ret)
+                    {
+                        LOG(INFO) << "log sync paused by electing.";
+                        log_sync_paused_ = true;
+                    }
                     log_sync_cond_.timed_wait(lock, boost::posix_time::seconds(5));
                 }
                 while(log_sync_paused_)
                 {
                     LOG(INFO) << "sync log paused, waiting....";
-                    log_sync_cond_.wait(lock);
+
+                    log_sync_mutex_.unlock();
+                    bool ret = NodeManagerBase::get()->checkElectingInAsyncMode();
+                    log_sync_mutex_.lock();
+
+                    if (ret)
+                    {
+                        LOG(INFO) << "log sync paused by electing.";
+                        log_sync_paused_ = true;
+                    }
+                    if (log_sync_paused_)
+                        log_sync_cond_.wait(lock);
                     boost::this_thread::interruption_point();
                 }
                 LOG(INFO) << "begin sync to newest log in async worker.";
                 reqid = RecoveryChecker::get()->getReqLogMgr()->getLastSuccessReqId();
-                if (!DistributeFileSyncMgr::get()->getNewestReqLog(reqid + 1, newlogdata_list))
+                if (!DistributeFileSyncMgr::get()->getNewestReqLog(true, reqid + 1, newlogdata_list))
                 {
                     LOG(INFO) << "get newest log failed, waiting and retry.";
                     wait_period = true;
@@ -634,15 +656,6 @@ void DistributeRequestHooker::AsyncLogPullFunc()
             }
             for (size_t i = 0; i < newlogdata_list.size(); ++i)
             {
-                {
-                    boost::unique_lock<boost::mutex> lock(log_sync_mutex_);
-                    if (log_sync_paused_)
-                    {
-                        LOG(INFO) << "sync log paused while try next redo log";
-                        continue;
-                    }
-                }
-
                 CommonReqData req_commondata;
                 ReqLogMgr::unpackReqLogData(newlogdata_list[i], req_commondata);
                 LOG(INFO) << "sync for request id : " << req_commondata.inc_id;
