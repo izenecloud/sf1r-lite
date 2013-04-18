@@ -82,6 +82,7 @@
 #include <am/3rdparty/rde_hash.h>
 #include <util/ClockTimer.h>
 #include <util/filesystem.h>
+#include <util/driver/Request.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -91,6 +92,9 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/timer.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
 
 #include <fstream>
 #include <iterator>
@@ -731,9 +735,42 @@ bool MiningManager::open()
     return true;
 }
 
+bool MiningManager::DoMiningCollectionFromAPI()
+{
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    TimestampReqLog reqlog;
+    reqlog.timestamp = Utilities::createTimeStamp();
+    if (!DistributeRequestHooker::get()->prepare(Req_WithTimestamp, reqlog))
+    {
+        LOG(INFO) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = false;
+    try
+    {
+        ret = DoMiningCollection(reqlog.timestamp);
+    }
+    catch (std::exception& ex)
+    {
+        std::cerr<<ex.what()<<std::endl;
+        ret = false;
+    }
+
+    DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
+    return ret;
+}
+
 void MiningManager::DoContinue()
 {
     //do mining continue;
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        LOG(INFO) << "continue not allowed in distributed sf1r.";
+        return;
+    }
     try
     {
         std::string continue_file = collectionDataPath_+"/continue";
@@ -741,7 +778,7 @@ void MiningManager::DoContinue()
         if (boost::filesystem::exists(continue_file))
         {
             boost::filesystem::remove_all(continue_file);
-            DoMiningCollection();
+            DoMiningCollection(0);
         }
         if (boost::filesystem::exists(syncFullScd_file))
         {
@@ -772,7 +809,7 @@ bool MiningManager::DOMiningTask()
     return true;
 }
 
-bool MiningManager::DoMiningCollection()
+bool MiningManager::DoMiningCollection(int64_t timestamp)
 {
     MEMLOG("[Mining] DoMiningCollection");
     //do TG
@@ -836,7 +873,8 @@ bool MiningManager::DoMiningCollection()
         }
         labelManager_->ClearAllTask();
         MEMLOG("[Mining] TG finished.");
-        MiningQueryLogHandler::getInstance()->runEvents();
+        LOG(INFO) << "Mining runEvents time: " << timestamp;
+        MiningQueryLogHandler::getInstance()->runEvents(timestamp);
     }
     //do DUPD
     if (mining_schema_.dupd_enable)
@@ -1667,7 +1705,20 @@ bool MiningManager::visitDoc(uint32_t docId)
         return true;
     }
 
-    return ctrManager_->update(docId);
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    NoAdditionNoRollbackReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = ctrManager_->update(docId);
+
+    DISTRIBUTE_WRITE_FINISH(ret);
+    return ret;
 }
 
 bool MiningManager::clickGroupLabel(
@@ -1676,6 +1727,9 @@ bool MiningManager::clickGroupLabel(
     const std::vector<std::string>& groupPath
 )
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
     if (! logger)
     {
@@ -1685,9 +1739,20 @@ bool MiningManager::clickGroupLabel(
 
     faceted::PropValueTable::pvid_t pvId = propValueId_(propName, groupPath);
     if (pvId == 0)
+    {
         return false;
+    }
 
-    return logger->logLabel(query, pvId);
+    NoAdditionNoRollbackReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    bool ret = logger->logLabel(query, pvId);
+    DISTRIBUTE_WRITE_FINISH(ret);
+    return ret;
 }
 
 bool MiningManager::getFreqGroupLabel(
@@ -1787,6 +1852,9 @@ bool MiningManager::setTopGroupLabel(
         const std::vector<std::vector<std::string> >& groupLabels
 )
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     GroupLabelLogger* logger = groupLabelLoggerMap_[propName];
     if (! logger)
     {
@@ -1800,12 +1868,22 @@ bool MiningManager::setTopGroupLabel(
     {
         faceted::PropValueTable::pvid_t pvId = propValueId_(propName, *it);
         if (pvId == 0)
+        {
             return false;
+        }
 
         pvIdVec.push_back(pvId);
     }
+    NoAdditionNoRollbackReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
 
-    return logger->setTopLabel(query, pvIdVec);
+    bool ret = logger->setTopLabel(query, pvIdVec);
+    DISTRIBUTE_WRITE_FINISH(ret);
+    return ret;
 }
 
 bool MiningManager::getMerchantScore(
@@ -1830,10 +1908,23 @@ bool MiningManager::getMerchantScore(
 
 bool MiningManager::setMerchantScore(const MerchantStrScoreMap& merchantScoreMap)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     if (! merchantScoreManager_)
+    {
         return false;
+    }
+    NoAdditionReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
 
     merchantScoreManager_->setScore(merchantScoreMap);
+
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 
@@ -1842,13 +1933,30 @@ bool MiningManager::setCustomRank(
     const CustomRankDocStr& customDocStr
 )
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
     CustomRankDocId customDocId;
 
     bool convertResult = customDocIdConverter_ &&
         customDocIdConverter_->convert(customDocStr, customDocId);
 
+    if (!convertResult)
+    {
+        return false;
+    }
+
+    NoAdditionReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
     bool setResult = customRankManager_ &&
         customRankManager_->setCustomValue(query, customDocStr);
+
+    DISTRIBUTE_WRITE_FINISH(convertResult && setResult);
 
     return convertResult && setResult;
 }
@@ -2265,15 +2373,26 @@ bool MiningManager::GetProductFrontendCategory(const izenelib::util::UString& qu
 
 bool MiningManager::SetKV(const std::string& key, const std::string& value)
 {
-    if (kvManager_)
-    {
-        kvManager_->update(key, value);
-        return true;
-    }
-    else
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
+
+    if (!kvManager_)
     {
         return false;
     }
+
+    NoAdditionReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return false;
+    }
+
+    kvManager_->update(key, value);
+
+    DISTRIBUTE_WRITE_FINISH(true);
+
+    return true;
 }
 
 bool MiningManager::GetKV(const std::string& key, std::string& value)
@@ -2500,6 +2619,23 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
     return true;
 }
 
+void MiningManager::flush()
+{
+    for (GroupLabelLoggerMap::iterator it = groupLabelLoggerMap_.begin();
+            it != groupLabelLoggerMap_.end(); ++it)
+    {
+        it->second->flush();
+    }
+
+    if (customRankManager_) customRankManager_->flush();
+    if (merchantScoreManager_) merchantScoreManager_->flush();
+    if (kvManager_) kvManager_->flush();
+    if (labelManager_) labelManager_->flush();
+    if (label_sim_collector_) label_sim_collector_->Flush();
+    if (rmDb_) rmDb_->flush();
+    if (idManager_) idManager_->flush();
+}
+
 void MiningManager::updateMergeFuzzyIndex()
 {
     if (cronExpression_.matches_now())
@@ -2520,4 +2656,5 @@ void MiningManager::updateMergeFuzzyIndex()
         }
     }
 }
+
 }

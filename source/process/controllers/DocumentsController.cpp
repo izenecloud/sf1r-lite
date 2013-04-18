@@ -10,6 +10,7 @@
 #include <bundles/index/IndexSearchService.h>
 #include <bundles/index/IndexTaskService.h>
 #include <bundles/mining/MiningSearchService.h>
+
 #include <common/Keys.h>
 #include <common/Utilities.h>
 
@@ -73,7 +74,6 @@ bool DocumentsController::checkCollectionService(std::string& error)
         error = "Request failed, no mining search service found.";
         return false;
     }
-
     return true;
 }
 
@@ -958,12 +958,25 @@ void DocumentsController::visit()
     Value& posValue = request()[Keys::resource][Keys::context][Keys::pos];
     context = asString(posValue);
 
-    if (indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(docidStr), internalId)
+    bool need_get_id = false;
+    if (request().callType() == Request::FromAPI ||
+        request().callType() == Request::FromDistribute)
+    {
+        need_get_id = true;
+    }
+    if (need_get_id && indexSearchService_->getInternalDocumentId(collectionName_, Utilities::md5ToUint128(docidStr), internalId)
             && internalId != 0)
     {
         if (!miningSearchService_->visitDoc(collectionName_, internalId))
         {
             response().addError("Failed to visit document");
+        }
+    }
+    else if (!need_get_id)
+    {
+        if (!miningSearchService_->visitDoc(Utilities::md5ToUint128(docidStr)))
+        {
+            response().addError("Failed to visit document in distribute node.");
         }
     }
     else

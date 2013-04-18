@@ -655,7 +655,7 @@ void FacetedController::set_custom_rank()
     {
         if (! miningSearchService_->setCustomRank(query, customDocStr))
         {
-            response().addWarning("failed to set custom rank for some DOCIDs.");
+            response().addError("failed to set custom rank for some DOCIDs.");
         }
     }
 }

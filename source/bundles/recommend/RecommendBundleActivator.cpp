@@ -20,7 +20,7 @@
 #include <aggregator-manager/GetRecommendWorker.h>
 #include <aggregator-manager/UpdateRecommendMaster.h>
 #include <aggregator-manager/UpdateRecommendWorker.h>
-#include <node-manager/RecommendNodeManager.h>
+#include <node-manager/NodeManagerBase.h>
 #include <node-manager/sharding/RecommendShardStrategy.h>
 #include <node-manager/sharding/RecommendMatrixSharder.h>
 
@@ -290,15 +290,15 @@ void RecommendBundleActivator::createItem_(IndexSearchService* indexSearchServic
 
 void RecommendBundleActivator::createSharder_()
 {
-    const RecommendNodeManager* nodeManager = RecommendNodeManager::get();
+    const NodeManagerBase* nodeManager = NodeManagerBase::get();
     const Sf1rNode& sf1rNode = nodeManager->getCurrentSf1rNode();
 
-    shardid_t shardNum = sf1rNode.master_.totalShardNum_;
+    shardid_t shardNum = nodeManager->getTotalShardNum();
     shardStrategy_.reset(new RecommendShardMod(shardNum));
 
     if (config_->recommendNodeConfig_.isWorkerNode_)
     {
-        shardid_t workerShardId = sf1rNode.worker_.shardId_;
+        shardid_t workerShardId = sf1rNode.nodeId_;
         matrixSharder_.reset(new RecommendMatrixSharder(workerShardId, shardStrategy_.get()));
     }
 }
@@ -324,7 +324,8 @@ void RecommendBundleActivator::createWorker_()
     getRecommendWorker_.reset(new GetRecommendWorker(*itemCFManager_, *coVisitManager_));
     getRecommendBase_ = getRecommendWorker_.get();
 
-    updateRecommendWorker_.reset(new UpdateRecommendWorker(*itemCFManager_, *coVisitManager_));
+    updateRecommendWorker_.reset(new UpdateRecommendWorker(config_->collectionName_,
+            *itemCFManager_, *coVisitManager_));
     updateRecommendBase_ = updateRecommendWorker_.get();
 
     Properties props;

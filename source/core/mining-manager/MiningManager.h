@@ -168,7 +168,10 @@ public:
 
     bool open();
 
-    bool DoMiningCollection();
+    void flush();
+
+    bool DoMiningCollection(int64_t timestamp);
+    bool DoMiningCollectionFromAPI();
 
     bool DOMiningTask();
 

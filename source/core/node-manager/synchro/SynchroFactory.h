@@ -12,7 +12,7 @@
 
 #include <node-manager/ZooKeeperNamespace.h>
 #include <node-manager/ZooKeeperManager.h>
-#include <node-manager/SearchNodeManager.h>
+//#include <node-manager/NodeManagerBase.h>
 
 namespace sf1r{
 

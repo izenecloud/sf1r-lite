@@ -9,6 +9,10 @@
 #include <configuration-manager/MiningConfig.h>
 #include <document-manager/DocumentManager.h>
 #include <common/SearchCache.h>
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 #include <util/scheduler.h>
 #include <glog/logging.h>
 #include <boost/scoped_ptr.hpp>
@@ -211,7 +215,7 @@ bool ProductScoreManager::addCronJob_(const ProductRankingPara& bundleParam)
         cronJobName_,
         60 * 1000, // check time once in each minute
         0, // start from now
-        boost::bind(&ProductScoreManager::runCronJob_, this));
+        boost::bind(&ProductScoreManager::runCronJob_, this, _1));
 
     if (!result)
     {
@@ -222,10 +226,34 @@ bool ProductScoreManager::addCronJob_(const ProductRankingPara& bundleParam)
     return result;
 }
 
-void ProductScoreManager::runCronJob_()
+void ProductScoreManager::runCronJob_(int calltype)
 {
-    if (!cronExpression_.matches_now())
+    if (!cronExpression_.matches_now() && calltype == 0)
         return;
+    if (calltype == 0 && NodeManagerBase::get()->isDistributed())
+    {
+        if (NodeManagerBase::get()->isPrimary())
+        {
+            MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+            LOG(INFO) << "push cron job to queue on primary : " << cronJobName_ ;
+        }
+        else
+        {
+            LOG(INFO) << "cron job on replica ignored. ";
+        }
+        return;
+    }
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+    CronJobReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+    {
+        LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << __FUNCTION__ << std::endl;
+        return;
+    }
 
     buildCollection();
+
+    DISTRIBUTE_WRITE_FINISH(true);
 }

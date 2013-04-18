@@ -10,6 +10,7 @@
 #include <log-manager/LogServerRequest.h>
 #include <log-manager/LogServerConnection.h>
 #include <document-manager/DocumentManager.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 #include <common/ScdWriter.h>
 #include <common/Utilities.h>
@@ -502,6 +503,9 @@ bool ProductManager::GenOperations_()
 
 bool ProductManager::UpdateADoc(const Document& doc)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN; 
+
     if (config_.enable_clustering_algo)
     {
         if (inhook_)
@@ -520,10 +524,14 @@ bool ProductManager::UpdateADoc(const Document& doc)
             return false;
         }
     }
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumentType& info, const ProductEditOption& option)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN; 
+
     if (config_.enable_clustering_algo)
     {
         if (inhook_)
@@ -542,6 +550,7 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumen
             return false;
         }
     }
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 
@@ -550,6 +559,9 @@ bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumen
 
 bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN; 
+
     if (config_.enable_clustering_algo)
     {
         if (inhook_)
@@ -568,11 +580,15 @@ bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32
             return false;
         }
     }
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 
 bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option)
 {
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN; 
+
     if (config_.enable_clustering_algo)
     {
         if (inhook_)
@@ -591,6 +607,7 @@ bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint
             return false;
         }
     }
+    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 

@@ -85,8 +85,7 @@ public:
 
     bool DefineDocCategory(const std::vector<faceted::ManmadeDocCategoryItem>& items);
 
-    /// visit document
-    bool visitDoc(uint32_t docId);
+    bool visitDoc(const uint128_t& scdDocId);
 
     /**
      * Log the group label click.
@@ -96,10 +95,9 @@ public:
      * @return true for success, false for failure
      */
     bool clickGroupLabel(
-        const std::string& query,
-        const std::string& propName,
-        const std::vector<std::string>& groupPath
-    );
+            const std::string& query,
+            const std::string& propName,
+            const std::vector<std::string>& groupPath);
 
     /**
      * Get the most frequently clicked group labels.
@@ -112,12 +110,11 @@ public:
      * @post @p freqVec is sorted in descending order.
      */
     bool getFreqGroupLabel(
-        const std::string& query,
-        const std::string& propName,
-        int limit,
-        std::vector<std::vector<std::string> >& pathVec,
-        std::vector<int>& freqVec
-    );
+            const std::string& query,
+            const std::string& propName,
+            int limit,
+            std::vector<std::vector<std::string> >& pathVec,
+            std::vector<int>& freqVec);
 
     /**
      * Set the most frequently clicked group labels.
@@ -127,10 +124,9 @@ public:
      * @return true for success, false for failure
      */
     bool setTopGroupLabel(
-        const std::string& query,
-        const std::string& propName,
-        const std::vector<std::vector<std::string> >& groupLabels
-    );
+            const std::string& query,
+            const std::string& propName,
+            const std::vector<std::vector<std::string> >& groupLabels);
 
     /**
      * Set custom ranking for @p query.
@@ -139,9 +135,8 @@ public:
      * @return true for success, false for failure
      */
     bool setCustomRank(
-        const std::string& query,
-        const CustomRankDocStr& customDocStr
-    );
+            const std::string& query,
+            const CustomRankDocStr& customDocStr);
 
     /**
      * Get the custom ranking for @p query.
@@ -151,10 +146,9 @@ public:
      * @return true for success, false for failure
      */
     bool getCustomRank(
-        const std::string& query,
-        std::vector<Document>& topDocList,
-        std::vector<Document>& excludeDocList
-    );
+            const std::string& query,
+            std::vector<Document>& topDocList,
+            std::vector<Document>& excludeDocList);
 
     /**
      * Get @p queries which have been customized by @c setCustomRank() with
@@ -166,8 +160,8 @@ public:
     bool setMerchantScore(const MerchantStrScoreMap& scoreMap);
 
     bool getMerchantScore(
-        const std::vector<std::string>& merchantNames,
-        MerchantStrScoreMap& merchantScoreMap) const;
+            const std::vector<std::string>& merchantNames,
+            MerchantStrScoreMap& merchantScoreMap) const;
 
     bool GetTdtInTimeRange(const izenelib::util::UString& start, const izenelib::util::UString& end, std::vector<izenelib::util::UString>& topic_list);
     bool GetTdtTopicInfo(const izenelib::util::UString& text, idmlib::tdt::TopicInfoType& topic_info);
@@ -189,24 +183,25 @@ public:
     void FinishQueryRecommendInject();
 
     bool GetSummarizationByRawKey(
-        const std::string& collection,
-        const izenelib::util::UString& rawKey, 
-        Summarization& result);
+            const std::string& collection,
+            const izenelib::util::UString& rawKey,
+            Summarization& result);
 
     bool SetKV(const std::string& key, const std::string& value);
     bool GetKV(const std::string& key, std::string& value);
 
     bool GetProductScore(
-        const std::string& docIdStr,
-        const std::string& scoreType,
-        score_t& scoreValue);
+            const std::string& docIdStr,
+            const std::string& scoreType,
+            score_t& scoreValue);
 
     bool GetProductCategory(
-        const std::string& query, 
-        int limit, 
-        std::vector<std::vector<std::string> >& pathVec );
+            const std::string& query,
+            int limit,
+            std::vector<std::vector<std::string> >& pathVec);
 
 private:
+    bool HookDistributeRequestForSearch(const std::string& coll, uint32_t workerId);
     MiningBundleConfiguration* bundleConfig_;
     boost::shared_ptr<MiningManager> miningManager_;
 

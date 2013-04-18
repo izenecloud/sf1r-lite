@@ -1,0 +1,11 @@
+{
+    "uri":"recommend/visit_item",
+    "collection":"b5mp",
+    "resource":
+    {
+        "session_id":"BF284CFED2417ED5471D7F4BFA6EA8AF-n1",
+        "USERID":"13549473635043613",
+        "ITEMID":"f4b1b3872c00781a9f4f366a0d171751",
+        "is_recommend_item":"false"
+    }
+}

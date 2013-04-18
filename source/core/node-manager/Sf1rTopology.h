@@ -26,9 +26,9 @@ class MasterCollection
 public:
     MasterCollection():isDistributive_(false) {}
 
-    bool checkShard(shardid_t shardid)
+    bool checkShard(shardid_t shardid) const
     {
-        std::vector<shardid_t>::iterator it;
+        std::vector<shardid_t>::const_iterator it;
         for (it = shardList_.begin(); it != shardList_.end(); it++)
         {
             if (*it == shardid)
@@ -43,14 +43,53 @@ public:
     std::vector<shardid_t> shardList_;
 };
 
-class Sf1rNodeMaster
+class WorkerServiceInfo
 {
 public:
-    Sf1rNodeMaster():isEnabled_(false) {}
-
-    bool checkCollection(const std::string& collection)
+    WorkerServiceInfo()
     {
-        std::vector<MasterCollection>::iterator it;
+    }
+    std::string serviceName_;
+    std::vector<std::string> collectionList_;
+
+    bool checkCollection(const std::string& collection) const
+    {
+        std::vector<std::string>::const_iterator it;
+        for (it = collectionList_.begin(); it != collectionList_.end(); it++)
+        {
+            if (*it == collection)
+                return true;
+        }
+        return false;
+    }
+    std::string toString() const
+    {
+        std::stringstream ss;
+
+        ss << "[Worker Service]" << std::endl
+           << "service: " << serviceName_ << std::endl;
+
+        for (std::vector<std::string>::const_iterator it = collectionList_.begin();
+           it != collectionList_.end(); ++it)
+        {
+            ss << "worker collection: " << *it << std::endl;
+        }
+        return ss.str();
+    }
+};
+
+class MasterServiceInfo
+{
+public:
+    std::string serviceName_;
+    std::vector<MasterCollection> collectionList_;
+
+    MasterServiceInfo()
+    {
+    }
+    bool checkCollection(const std::string& collection) const
+    {
+        std::vector<MasterCollection>::const_iterator it;
         for (it = collectionList_.begin(); it != collectionList_.end(); it++)
         {
             if ((*it).name_ == collection)
@@ -59,12 +98,12 @@ public:
         return false;
     }
 
-    bool checkCollectionWorker(const std::string& collection, unsigned int shardid)
+    bool checkCollectionWorker(const std::string& collection, unsigned int shardid) const
     {
-        std::vector<MasterCollection>::iterator it;
+        std::vector<MasterCollection>::const_iterator it;
         for (it = collectionList_.begin(); it != collectionList_.end(); it++)
         {
-            MasterCollection& coll = *it;
+            const MasterCollection& coll = *it;
             if (coll.name_ == collection)
             {
                 if (coll.checkShard(shardid))
@@ -76,9 +115,9 @@ public:
         return false;
     }
 
-    bool getShardidList(const std::string& collection, std::vector<shardid_t>& shardidList)
+    bool getShardidList(const std::string& collection, std::vector<shardid_t>& shardidList) const
     {
-        std::vector<MasterCollection>::iterator it;
+        std::vector<MasterCollection>::const_iterator it;
         for (it = collectionList_.begin(); it != collectionList_.end(); it++)
         {
             if (it->name_ == collection)
@@ -89,21 +128,18 @@ public:
         }
         return false;
     }
-
-    std::string toString()
+    
+    std::string toString() const
     {
         std::stringstream ss;
 
-        ss << "[Master]" << std::endl
-           << "enabled: " << isEnabled_ << std::endl
-           << "alias: " << name_ << std::endl
-           << "port: " << port_ << std::endl
-           << "total shards: " << totalShardNum_ << std::endl;
+        ss << "[MasterService]" << std::endl
+           << "service name: " << serviceName_<< std::endl;
 
-        std::vector<MasterCollection>::iterator it;
+        std::vector<MasterCollection>::const_iterator it;
         for (it = collectionList_.begin(); it != collectionList_.end(); it++)
         {
-            MasterCollection& col = *it;
+            const MasterCollection& col = *it;
 
             ss << "collection: " << col.name_ << ", "
                << (col.isDistributive_ ? "distributive" : "single node");
@@ -119,39 +155,99 @@ public:
 
             ss << std::endl;
         }
+        return ss.str();
+    }
+
+};
+
+class Sf1rNodeMaster
+{
+public:
+    typedef std::map<std::string, MasterServiceInfo> MasterServiceMapT;
+
+    Sf1rNodeMaster()
+        :enabled_(false)
+    {}
+
+    bool checkCollection(const std::string& service, const std::string& collection) const
+    {
+        if (!enabled_)
+            return false;
+        MasterServiceMapT::const_iterator cit = masterServices_.find(service);
+        if (cit == masterServices_.end())
+            return false;
+        return cit->second.checkCollection(collection);
+    }
+
+    bool checkCollectionWorker(const std::string& service, const std::string& collection, unsigned int shardid) const
+    {
+        if (!enabled_)
+            return false;
+        MasterServiceMapT::const_iterator cit = masterServices_.find(service);
+        if (cit == masterServices_.end())
+            return false;
+        return cit->second.checkCollectionWorker(collection, shardid);
+    }
+
+    bool getShardidList(const std::string& service, const std::string& collection, std::vector<shardid_t>& shardidList) const
+    {
+        if (!enabled_)
+            return false;
+        MasterServiceMapT::const_iterator cit = masterServices_.find(service);
+        if (cit == masterServices_.end())
+            return false;
+        return cit->second.getShardidList(collection, shardidList);
+    }
+
+    std::string toString() const
+    {
+        std::stringstream ss;
+
+        ss << "[Master]" << std::endl
+           << "enabled_: " << enabled_ << std::endl
+           << "name: " << name_ << std::endl
+           << "port: " << port_ << std::endl;
+
+        MasterServiceMapT::const_iterator it;
+        for (it = masterServices_.begin(); it != masterServices_.end(); it++)
+        {
+            ss << it->second.toString() << std::endl;
+        }
 
         return ss.str();
     }
 
-public:
-    bool isEnabled_;
-    std::string name_;
-    port_t port_;
+    bool hasAnyService()
+    {
+        return enabled_ && !masterServices_.empty();
+    }
 
+public:
+    bool enabled_;
+    port_t port_;
     // Each shard resides on one of the Workers,
     // so it's also number of Workers, and shardid are used as workerid;
-    shardid_t totalShardNum_;
-
-    std::vector<MasterCollection> collectionList_;
+    //uint32_t totalShardNum_;
+    std::string name_;
+    MasterServiceMapT masterServices_;
 };
 
 class Sf1rNodeWorker
 {
 public:
+    typedef std::map<std::string, WorkerServiceInfo>  WorkerServiceMapT;
     Sf1rNodeWorker()
-        : isEnabled_(false)
-        , isGood_(false)
+        :enabled_(false), isGood_(false)
     {}
 
-    bool checkCollection(const std::string& collection)
+    bool checkCollection(const std::string& service, const std::string& collection)
     {
-        std::vector<std::string>::iterator it;
-        for (it = collectionList_.begin(); it != collectionList_.end(); it++)
-        {
-            if (*it == collection)
-                return true;
-        }
-        return false;
+        if (!enabled_)
+            return false;
+        WorkerServiceMapT::const_iterator cit = workerServices_.find(service);
+        if (cit == workerServices_.end())
+            return false;
+        return cit->second.checkCollection(collection);
     }
 
     std::string toString()
@@ -159,25 +255,29 @@ public:
         std::stringstream ss;
 
         ss << "[Worker]" << std::endl
-           << "enabled: " << isEnabled_ << std::endl
-           << "port: " << port_ << std::endl
-           << "shardid (workerid):" << shardId_ << std::endl;
+           << "enabled_: " << enabled_ << std::endl
+           << "port: " << port_ << std::endl;
 
-        for (size_t i = 0; i < collectionList_.size(); i++)
+        for (WorkerServiceMapT::const_iterator it = workerServices_.begin();
+           it != workerServices_.end(); ++it)
         {
-            ss << "collection: " << collectionList_[i] << std::endl;
+            ss << it->second.toString() << std::endl;
         }
 
         return ss.str();
     }
 
+    bool hasAnyService()
+    {
+        return enabled_ && !workerServices_.empty();
+    }
+
 public:
-    bool isEnabled_;
+    bool enabled_;
     bool isGood_;
     port_t port_;
-    shardid_t shardId_; // id of shard resides on this worker.
 
-    std::vector<std::string> collectionList_;
+    WorkerServiceMapT workerServices_;
 };
 
 class Sf1rNode
@@ -217,37 +317,36 @@ public:
 class Sf1rTopology
 {
 public:
-    enum TopologyType
-    {
-        TOPOLOGY_SEARCH,
-        TOPOLOGY_RECOMMEND
-    };
-
     std::string clusterId_;
-    TopologyType type_;
-
+    // the node number in each replica
     uint32_t nodeNum_;
     uint32_t replicaNum_;
 
     Sf1rNode curNode_;
 
+    enum DistributeServiceType
+    {
+        SearchService,
+        RecommendService,
+    };
+
 public:
     Sf1rTopology()
-        : type_(TOPOLOGY_SEARCH)
-        , nodeNum_(0)
+        :nodeNum_(0)
         , replicaNum_(1)
     {}
 
-    void setType(std::string& type)
+    static std::string getServiceName(DistributeServiceType type)
     {
-        if (type == "search")
+        if (type == SearchService)
         {
-            type_ = TOPOLOGY_SEARCH;
+            return "search";
         }
-        else if (type == "recommend")
+        else if (type == RecommendService)
         {
-            type_ = TOPOLOGY_RECOMMEND;
+            return "recommend";
         }
+        return "";
     }
 
     std::string toString()

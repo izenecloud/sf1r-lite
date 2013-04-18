@@ -28,6 +28,7 @@ public:
         ADD_WORKER_HANDLER(buildPurchaseSimMatrix)
         ADD_WORKER_HANDLER(updateVisitMatrix)
         ADD_WORKER_HANDLER(flushRecommendMatrix)
+        ADD_WORKER_HANDLER(HookDistributeRequestForUpdateRec)
 
         ADD_WORKER_HANDLER_END()
     }
@@ -67,6 +68,9 @@ public:
         worker_->flushRecommendMatrix,
         bool
     )
+
+    WORKER_CONTROLLER_METHOD_3(HookDistributeRequestForUpdateRec,
+        worker_->HookDistributeRequestForUpdateRec, int, std::string, bool)
 
 protected:
     virtual bool checkWorker(std::string& error);

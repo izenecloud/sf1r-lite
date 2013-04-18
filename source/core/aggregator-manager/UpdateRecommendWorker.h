@@ -22,9 +22,12 @@ class UpdateRecommendWorker : public UpdateRecommendBase
 {
 public:
     UpdateRecommendWorker(
+        const std::string& collection,
         ItemCFManager& itemCFManager,
         CoVisitManager& coVisitManager
     );
+
+    ~UpdateRecommendWorker();
 
     virtual bool bindCallProxy(CallProxyType& proxy)
     {
@@ -55,6 +58,7 @@ public:
             flushRecommendMatrix,
             bool
         )
+        BIND_CALL_PROXY_3(HookDistributeRequestForUpdateRec, int, std::string, bool)
         BIND_CALL_PROXY_END()
     }
 
@@ -80,9 +84,16 @@ public:
 
     virtual void flushRecommendMatrix(bool& result);
 
+    void HookDistributeRequestForUpdateRec(int hooktype, const std::string& reqdata, bool& result);
+
     const ItemCFManager& itemCFManager() const { return itemCFManager_; }
 
 private:
+    bool updatePurchaseMatrixFunc(int calltype);
+    bool updatePurchaseCoVisitMatrixFunc(int calltype);
+    bool updateVisitMatrixFunc(int calltype);
+    bool buildPurchaseSimMatrixFunc(int calltype);
+
     void flushImpl_();
 
 private:
@@ -90,6 +101,7 @@ private:
     CoVisitManager& coVisitManager_;
 
     JobScheduler jobScheduler_;
+    std::string collection_;
 };
 
 } // namespace sf1r

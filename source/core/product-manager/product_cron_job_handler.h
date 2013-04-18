@@ -39,7 +39,7 @@ public:
 
 private:
     DISALLOW_COPY_AND_ASSIGN(ProductCronJobHandler);
-    void cronJob_();
+    void cronJob_(int calltype);
 
 private:
     std::vector<ProductPriceTrend *> price_trend_list_;

@@ -33,8 +33,14 @@ public:
     void start_collection();
 
     void stop_collection();
+
+    void check_collection();
     
+    void update_collection_conf();
+
     void rebuild_collection();
+
+    void rebuild_from_scd();
 
     void create_collection();
 
@@ -44,6 +50,10 @@ public:
     void get_kv();
 
     void load_license();
+
+    bool preprocess();
+    bool callDistribute();
+    void postprocess();
 
 private:
     static std::string getConfigPath_()

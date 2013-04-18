@@ -60,9 +60,12 @@ public:
     virtual void flushRecommendMatrix(bool& result);
 
 private:
+    void HookDistributeCBRequestForUpdateRec(const std::string& callback_data, bool include_self = false);
+
     const std::string collection_;
     boost::scoped_ptr<UpdateRecommendMerger> merger_;
     boost::shared_ptr<UpdateRecommendAggregator> aggregator_;
+    UpdateRecommendWorker* localWorker_;
     RecommendShardStrategy* shardStrategy_;
 };
 

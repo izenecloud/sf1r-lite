@@ -1,5 +1,7 @@
 #include "ProductScdReceiver.h"
 #include <bundles/index/IndexTaskService.h>
+#include <node-manager/MasterManagerBase.h>
+#include <node-manager/NodeManagerBase.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 
@@ -16,14 +18,29 @@ ProductScdReceiver::ProductScdReceiver(const std::string& syncID, const std::str
             collectionName);
 }
 
+bool ProductScdReceiver::pushIndexRequest()
+{
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        if (NodeManagerBase::get()->isPrimary())
+        {
+            std::string json_req = "{\"collection\":\"" + collectionName_ + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
+            MasterManagerBase::get()->pushWriteReq(json_req);
+            LOG(INFO) << "a json_req pushed from " << __FUNCTION__ << ", data:" << json_req;
+        }
+        else
+        {
+            LOG(INFO) << "ignore on replica node, " << __FUNCTION__;
+        }
+        return true;
+    }
+    else
+        return index_service_->index(0);
+}
+
 bool ProductScdReceiver::onReceived(const std::string& scd_source_dir)
 {
-    if(!index_service_->index(0))
-    {
-        return false;
-    }
-
-    return true;
+    return pushIndexRequest();
 }
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)
@@ -64,13 +81,7 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
             return false;
         }
     }
-
-    if(!index_service_->index(0))
-    {
-        return false;
-    }
-
-    return true;
+    return pushIndexRequest();
 }
 
 bool ProductScdReceiver::CopyFileListToDir_(const std::vector<boost::filesystem::path>& file_list, const boost::filesystem::path& to_dir)

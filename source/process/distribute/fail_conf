@@ -1,0 +1,28 @@
+# 
+#    NoAnyTest = 0,
+#    NoFail,
+#    PrimaryFail_At_Electing,
+#    PrimaryFail_At_BeginReqProcess,
+#    PrimaryFail_At_ReqProcessing,
+#    PrimaryFail_At_NotifyMasterReadyForNew,
+#    PrimaryFail_At_AbortReq,
+#    PrimaryFail_At_FinishReqLocal,
+#    PrimaryFail_At_Wait_Replica_Abort,
+#    PrimaryFail_At_Wait_Replica_FinishReq,
+#    PrimaryFail_At_Wait_Replica_FinishReqLog,
+#    PrimaryFail_At_Wait_Replica_Recovery,
+#
+#    ReplicaFail_At_Electing,
+#    ReplicaFail_At_Recovering,
+#    ReplicaFail_At_BeginReqProcess,
+#    ReplicaFail_At_ReqProcessing,
+#    ReplicaFail_At_Waiting_Primary,
+#    ReplicaFail_At_Waiting_Primary_Abort,
+#    ReplicaFail_At_AbortReq,
+#    ReplicaFail_At_FinishReqLocal,
+#    ReplicaFail_At_UnpackPrimaryReq,
+#    ReplicaFail_At_Waiting_Recovery,
+#    Fail_At_AfterEnterCluster,
+172.16.5.192 1
+172.16.5.194 1
+172.16.5.195 1

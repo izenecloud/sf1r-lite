@@ -13,6 +13,9 @@
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
 #include <la-manager/LAManager.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/MasterManagerBase.h>
+#include <util/driver/Request.h>
 
 namespace sf1r
 {
@@ -34,8 +37,17 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
     analysisInfo_.tokenizerNameList_.insert("tok_unite");
 }
 
-/// Index Search
+void SearchWorker::HookDistributeRequestForSearch(int hooktype, const std::string& reqdata, bool& result)
+{
+    MasterManagerBase::get()->pushWriteReq(reqdata, "api_from_shard");
+    //DistributeRequestHooker::get()->setHook(hooktype, reqdata);
+    //DistributeRequestHooker::get()->hookCurrentReq(reqdata);
+    //DistributeRequestHooker::get()->processLocalBegin();
+    LOG(INFO) << "got hook request on the search worker." << reqdata;
+    result = true;
+}
 
+/// Index Search
 void SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, DistKeywordSearchInfo& resultItem)
 {
     KeywordSearchResult fakeResultItem;
@@ -48,21 +60,21 @@ void SearchWorker::getDistSearchInfo(const KeywordSearchActionItem& actionItem, 
 
 void SearchWorker::getDistSearchResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    cout << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
+    LOG(INFO) << "[SearchWorker::processGetSearchResult] " << actionItem.collectionName_ << endl;
 
     getSearchResult_(actionItem, resultItem);
 }
 
 void SearchWorker::getSummaryResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    cout << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_ << endl;
+    LOG(INFO) << "[SearchWorker::processGetSummaryResult] " << actionItem.collectionName_ << endl;
 
     getSummaryResult_(actionItem, resultItem);
 }
 
 void SearchWorker::getSummaryMiningResult(const KeywordSearchActionItem& actionItem, KeywordSearchResult& resultItem)
 {
-    cout << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
+    LOG(INFO) << "[SearchWorker::processGetSummaryMiningResult] " << actionItem.collectionName_ << endl;
 
     getSummaryMiningResult_(actionItem, resultItem);
 }
@@ -208,6 +220,16 @@ void SearchWorker::clickGroupLabel(const ClickGroupLabelActionItem& actionItem, 
 void SearchWorker::visitDoc(const uint32_t& docId, bool& result)
 {
     result = miningManager_->visitDoc(docId);
+    //if (DistributeRequestHooker::get()->getHookType() == izenelib::driver::Request::FromDistribute)
+    //{
+    //    // for rpc call from master, we can not decide whether the caller is from
+    //    // local or remote master, so we assume all caller is remote.
+    //    // In order to make sure the hook is cleared, we need return true to 
+    //    // tell caller that we will take the charge to clear any hooked on this request.
+    //    DistributeRequestHooker::get()->processLocalFinished(result);
+    //    result = true;
+    //    LOG(INFO) << " set remote result to true on this write request : " << __FUNCTION__;
+    //}
 }
 
 void SearchWorker::makeQueryIdentity(
@@ -288,6 +310,7 @@ bool SearchWorker::getSearchResult_(
 {
     CREATE_SCOPED_PROFILER ( searchIndex, "IndexSearchService", "processGetSearchResults: search index");
 
+    time_t start_search = time(NULL);
     // Set basic info for response
     resultItem.collectionName_ = actionItem.collectionName_;
     resultItem.encodingType_ =
@@ -342,6 +365,7 @@ bool SearchWorker::getSearchResult_(
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
     uint32_t KNN_TOP_K_NUM = bundleConfig_->kNNTopKNum_;
     uint32_t KNN_DIST = bundleConfig_->kNNDist_;
+    uint32_t fuzzy_lucky = actionOperation.actionItem_.searchingMode_.lucky_;
 
     // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
     // we don't know which part of results should be retrieved in one node. Currently, the limitation of documents
@@ -350,6 +374,21 @@ bool SearchWorker::getSearchResult_(
     {
         topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
     }
+    else
+    {
+        // distributed search need get more topk since 
+        // each worker can only start topk from 0.
+        TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
+        KNN_TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
+        fuzzy_lucky += actionOperation.actionItem_.pageInfo_.start_;
+        if (fuzzy_lucky > 100000)
+        {
+            LOG(WARNING) << " !!!! fuzzy search topk too larger in distributed search. " << fuzzy_lucky;
+            fuzzy_lucky = 100000;
+        }
+    }
+
+    LOG(INFO) << "searching in mode: " << actionOperation.actionItem_.searchingMode_.mode_;
 
     switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
@@ -370,7 +409,7 @@ bool SearchWorker::getSearchResult_(
 
     case SearchingMode::SUFFIX_MATCH:
         if (!miningManager_->GetSuffixMatch(actionOperation,
-                                            actionOperation.actionItem_.searchingMode_.lucky_,
+                                            fuzzy_lucky,
                                             actionOperation.actionItem_.searchingMode_.usefuzzy_,
                                             topKStart,
                                             actionOperation.actionItem_.filteringList_,
@@ -393,6 +432,12 @@ bool SearchWorker::getSearchResult_(
                                                  TOP_K_NUM,
                                                  topKStart))
         {
+            if (time(NULL) - start_search > 5)
+            {
+                LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
+                actionOperation.actionItem_.print();
+            }
+
             std::string newQuery;
 
             if (!bundleConfig_->bTriggerQA_)
@@ -411,12 +456,23 @@ bool SearchWorker::getSearchResult_(
                                                      TOP_K_NUM,
                                                      topKStart))
             {
+                if (time(NULL) - start_search > 5)
+                {
+                    LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
+                    actionOperation.actionItem_.print();
+                }
+
                 return true;
             }
         }
         break;
     }
 
+    if (time(NULL) - start_search > 5)
+    {
+        LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
+        actionOperation.actionItem_.print();
+    }
     // todo, remove duplication globally over all nodes?
     // Remove duplicated docs from the result if the option is on.
     if (actionItem.searchingMode_.mode_ != SearchingMode::KNN

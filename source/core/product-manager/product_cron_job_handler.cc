@@ -3,11 +3,16 @@
 #include <product-manager/product_price_trend.h>
 #include <util/scheduler.h>
 
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 using namespace sf1r;
 
+static const std::string cronJobName = "ProductCronJobHandler";
 
 ProductCronJobHandler::ProductCronJobHandler()
     : wait_seconds_(3600)
@@ -19,7 +24,7 @@ ProductCronJobHandler::ProductCronJobHandler()
 
 ProductCronJobHandler::~ProductCronJobHandler()
 {
-    izenelib::util::Scheduler::removeJob("ProductCronJobHandler");
+    izenelib::util::Scheduler::removeJob(cronJobName);
 }
 
 void ProductCronJobHandler::setParam(uint32_t wait_seconds, uint32_t wait_days)
@@ -65,16 +70,39 @@ bool ProductCronJobHandler::cronStart(const std::string& cron_job)
     {
         return false;
     }
-    boost::function<void (void)> task = boost::bind(&ProductCronJobHandler::cronJob_,this);
-    izenelib::util::Scheduler::addJob("ProductCronJobHandler", 60 * 1000, 0, task);
+    boost::function<void (int)> task = boost::bind(&ProductCronJobHandler::cronJob_,this, _1);
+    izenelib::util::Scheduler::addJob(cronJobName, 60 * 1000, 0, task);
     cron_started_ = true;
     return true;
 }
 
-void ProductCronJobHandler::cronJob_()
+void ProductCronJobHandler::cronJob_(int calltype)
 {
-    if (cron_expression_.matches_now())
+    if (cron_expression_.matches_now() || calltype > 0)
     {
+        if (calltype == 0 && NodeManagerBase::get()->isDistributed())
+        {
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName;
+            }
+            else
+            {
+                LOG(INFO) << "cron job on replica ignored. ";
+            }
+            return;
+        }
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+        CronJobReqLog reqlog;
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << __FUNCTION__ << std::endl;
+            return;
+        }
+
         runEvents();
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }

@@ -80,6 +80,8 @@ public:
     */
     void close();
 
+    void flush();
+
     void insertQuery(
             const izenelib::util::UString& queryStr,
             uint32_t freq = 1);
@@ -101,7 +103,7 @@ public:
             const izenelib::util::UString& query,
             std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
-    void RebuildForAll();
+    void RebuildForAll(int64_t cron_time);
 
     void RebuildForRecommend(
             const std::list<QueryLogType>& queryList,

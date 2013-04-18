@@ -1,0 +1,3 @@
+# fail primary while wait request finish write log and fail the first backup primary to test multi fail while electing.
+172.16.5.195 11
+172.16.5.192 31

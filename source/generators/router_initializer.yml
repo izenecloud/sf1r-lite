@@ -29,8 +29,10 @@ controllers:
   CommandsController:
     actions:
       - index
+      - index_recommend
       - optimize_index
       - index_query_log
+      - mining
 
   KeywordsController:
     actions:
@@ -60,7 +62,10 @@ controllers:
       - get_doc_count
       - get_key_count
 
-  StatusController: ~
+  StatusController:
+    actions:
+      - index
+      - get_distribute_status
 
   TestController:
     test: true
@@ -144,7 +149,10 @@ controllers:
     actions:
       - start_collection
       - stop_collection
+      - check_collection
+      - update_collection_conf
       - rebuild_collection
+      - rebuild_from_scd
       - create_collection
       - delete_collection
       - set_kv

@@ -22,7 +22,7 @@
     <!-- Network addresses of LogServerProcess:
          host=10.10.1.105 is the LAN address of (180.153.140.105)
     -->
-    <LogServerConnection host="10.10.1.105" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
+    <LogServerConnection host="10.10.99.121" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
 
     <!-- Format of value of str:
 
@@ -39,7 +39,7 @@
              - To fully disable use of Cassandra, be free to set it to "__disabled__"
                or any value that can not satisfy the parser :)
     -->
-    <CassandraConnection str="cassandra://180.153.140.105"/>
+    <CassandraConnection str="cassandra://10.10.99.107"/>
 
     <BundlesDefault>
       <!-- Index Bundle Default -->
@@ -49,7 +49,7 @@
           <CollectionDataDirectory>default-collection-dir</CollectionDataDirectory>
           <!-- <CollectionDataDirectory>collection-dir-A</CollectionDataDirectory> -->
           <!-- <CollectionDataDirectory>collection-dir-B</CollectionDataDirectory> -->
-          <IndexStrategy memorypoolsize="128000000" indexlevel="wordlevel" indexpolicy="default" mergepolicy="memory" cron="0 3 * * *" autorebuild="n"/>
+          <IndexStrategy memorypoolsize="128000000" indexlevel="wordlevel" indexpolicy="default" mergepolicy="memory" cron="0 4 1 1 *" autorebuild="y"/>
           <!-- indexlevel could be set for both "doclevel" or "wordlevel", when doclevel is set, PLM ranking model will be changed to BM25 and only
                dfp posting is used for ranking during search process.
           -->
@@ -240,44 +240,38 @@
       notes:
         1) ids are started at 1
     -->
-    <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="172.16.0.36"
-                       workerport="18151" masterport="18131" datarecvport="18121"/>
+    <DistributedCommon clusterid="@LOCAL_HOST_USER_NAME@" username="@LOCAL_HOST_USER_NAME@" localhost="@LOCAL_HOST_IP@" workerport="18151" masterport="18131" datarecvport="18121" filesyncport="18141"/>
 
-    <DistributedTopology enable="n" type="search" nodenum="2">
-      <CurrentSf1rNode nodeid="1" replicaid="1">
-        <!--master names for B5M are www|stage|beta-->
-        <MasterServer enable="y" name="undefined" shardnum="2">
-          <!--for distributive collection, shardid is set to all as default-->
-          <Collection name="web" distributive="n"/>
-          <Collection name="qa" distributive="n"/>
-          <Collection name="b5mo" distributive="n"/>
-          <Collection name="b5mc" distributive="n"/>
-          <Collection name="b5mp" distributive="y" shardids="1,2"/>
-        </MasterServer>
+    <DistributedTopology enable="n" nodenum="2">
+        <CurrentSf1rNode nodeid="1" replicaid="1">
+            <!--master names for B5M are www|stage|beta-->
+            <MasterServer enable="n" name="undefined">
+                <DistributedService type="search" >
+                    <!--for distributive collection, shardid is set to all as default-->
+                    <Collection name="web" distributive="n"/>
+                    <Collection name="qa" distributive="n"/>
+                    <Collection name="b5mo" distributive="n"/>
+                    <Collection name="b5mc" distributive="n"/>
+                    <Collection name="b5mp" distributive="y" shardids="1,2"/>
+                </DistributedService>
+                <!--<DistributedService type="recommend">
+                    <Collection name="b5mp" distributive="y"/>
+                </DistributedService>-->
+            </MasterServer>
 
-        <WorkerServer enable="y" shardid="1">
-          <Collection name="web"/>
-          <Collection name="b5mp"/>
-        </WorkerServer>
-      </CurrentSf1rNode>
-    </DistributedTopology>
-
-    <DistributedTopology enable="n" type="recommend" nodenum="2">
-      <CurrentSf1rNode nodeid="1" replicaid="1">
-        <MasterServer enable="y" name="undefined" shardnum="1">
-          <Collection name="b5mo" distributive="n"/>
-          <Collection name="b5mc" distributive="n"/>
-          <Collection name="b5mp" distributive="y"/>
-        </MasterServer>
-
-        <WorkerServer enable="y" shardid="1">
-          <Collection name="b5mp"/>
-        </WorkerServer>
-      </CurrentSf1rNode>
+            <WorkerServer enable="n">
+                <DistributedService type="search" >
+                    <Collection name="b5mp"/>
+                </DistributedService>
+                <!--<DistributedService type="recommend" >
+                    <Collection name="b5mp"/>
+                </DistributedService>-->
+            </WorkerServer>
+        </CurrentSf1rNode>
     </DistributedTopology>
 
     <DistributedUtil>
-      <ZooKeeper disable="n" servers="180.153.140.110:2181,180.153.140.111:2181,180.153.140.112:2181" sessiontimeout="2000"/>
+      <ZooKeeper disable="n" servers="10.10.99.121:2181,10.10.99.122:2181,10.10.99.123:2181" sessiontimeout="5000"/>
       <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000"/>
     </DistributedUtil>
   </Deployment>
