@@ -5,7 +5,7 @@ PNAME=CobraProcess
 
 LOG_NAME="ll"
 LOG_FOLDER="log"
-SUCCESS_WORD="starting data-receiving service ..."
+SUCCESS_WORD="CobraProcess has started"
 
 
 function verifyconfig() {
