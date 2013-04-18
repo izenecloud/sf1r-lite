@@ -187,7 +187,6 @@ bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager,
 
 bool IndexWorker::buildCollection(unsigned int numdoc)
 {
-    
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
     ///If current directory is the one rotated from the backup directory,
@@ -334,6 +333,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     scd_writer_->Flush();
     indexProgress_.reset();
 
+    documentManager_->last_delete_docid_.clear();
     indexProgress_.totalFileSize_ = getTotalScdSize_(scdList);
     documentManager_->last_delete_docid_.clear();
     size_t currTotalSCDSize = indexProgress_.totalFileSize_/(1024*1024);

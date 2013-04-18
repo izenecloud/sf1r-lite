@@ -440,27 +440,30 @@ int CobraProcess::run()
         LAPool::getInstance()->initLangAnalyzer();
 
         startCollections();
-    
+
         if(!initLAManager())
             throw std::runtime_error("failed in initLAManager()");
 
         if (!startDistributedServer())
             throw std::runtime_error("failed in startDistributedServer()");
 
+        LOG(INFO) << "CobraProcess has started";
+
         driverServer_->run();
 
         stopCollections();
+
+        LOG(INFO) << "CobraProcess has exited";
     }
     catch (const std::exception& e)
     {
         caughtException = true;
-        std::cout << "Caught std exception:  "
-                  << e.what() << std::endl;
+        LOG(ERROR) << "CobraProcess has aborted by std exception: " << e.what();
     }
     catch (...)
     {
         caughtException = true;
-        cout<<"Exit, catch exception here"<<endl;
+        LOG(ERROR) << "CobraProcess has aborted by unknown exception";
     }
 
     return caughtException ? 1 : 0;

@@ -2683,4 +2683,5 @@ void MiningManager::updateMergeFuzzyIndex(int calltype)
         DISTRIBUTE_WRITE_FINISH(true);
     }
 }
+
 }
