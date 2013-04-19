@@ -311,6 +311,35 @@ void CollectionController::update_collection_conf()
     DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
 }
 
+void CollectionController::backup_all()
+{
+    if (!MasterManagerBase::get()->isDistributed())
+    {
+        response().addError("This api only available in distributed mode.");
+        return;
+    }
+
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+    NoAdditionNoRollbackReqLog reqlog;
+    if (!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataNoRollback, reqlog))
+    {
+        response().addError("Backup prepared failed.");
+        return;
+    }
+
+    bool ret = CollectionManager::get()->backup_all();
+    if(!ret)
+    {
+        response().addError("Backup all failed.");
+        return;
+    }
+
+    DISTRIBUTE_WRITE_FINISH(ret);
+}
+
+
 /**
  * @brief Action @b rebuild_from_scd. Clean old data and rebuild new data from full scd files.
  *  please put the full scd files to the specific directory on primary node.

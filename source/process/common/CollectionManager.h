@@ -57,6 +57,8 @@ public:
     std::string checkCollectionConsistency(const std::string& collectionName);
     void deleteCollection(const std::string& collectionName);
 
+    bool backup_all();
+
     CollectionHandler* findHandler(const std::string& key) const;
     
     handler_const_iterator handlerBegin() const;
