@@ -132,16 +132,21 @@ void IndexWorker::HookDistributeRequestForIndex(int hooktype, const std::string&
 
 void IndexWorker::flush(bool mergeBarrel)
 {
+    LOG(INFO) << "Begin flushing in IndexWorker ....";
     documentManager_->flush();
     idManager_->flush();
+    LOG(INFO) << "Begin flushing indexManager_ in IndexWorker ....";
     indexManager_->flush();
     if (mergeBarrel)
     {
+        LOG(INFO) << "Begin merge index ....";
         indexManager_->optimizeIndex();
         indexManager_->waitForMergeFinish();
+        LOG(INFO) << "End merge index ....";
     }
     if (miningTaskService_)
         miningTaskService_->flush();
+    LOG(INFO) << "Flushing finished in IndexWorker";
 }
 
 bool IndexWorker::reload()
