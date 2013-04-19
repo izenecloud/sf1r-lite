@@ -192,6 +192,8 @@ std::string IndexTaskService::getScdDir(bool rebuild) const
 {
     if (rebuild)
         return bundleConfig_->rebuildIndexSCDPath();
+    if( bundleConfig_->isMasterAggregator() )
+        return bundleConfig_->masterIndexSCDPath();
     return bundleConfig_->indexSCDPath();
 }
 
