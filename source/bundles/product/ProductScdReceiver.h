@@ -20,7 +20,7 @@ class ProductScdReceiver
 {
 public:
 
-    ProductScdReceiver(const std::string& syncID, const std::string& collectionName);
+    ProductScdReceiver(const std::string& syncID, const std::string& collectionName, const std::string& callback);
 
     void Set(IndexTaskService* index_service)
     {
@@ -36,12 +36,14 @@ private:
     bool CopyFileListToDir_(const std::vector<boost::filesystem::path>& file_list, const boost::filesystem::path& to_dir);
 
     bool NextScdFileName_(std::string& filename) const;
+    bool pushIndexRequest();
 
 private:
     IndexTaskService* index_service_;
 
     std::string syncID_;
     std::string collectionName_;
+    std::string callback_type_;
     SynchroConsumerPtr syncConsumer_;
 };
 

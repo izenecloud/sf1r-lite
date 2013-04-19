@@ -81,6 +81,7 @@ private:
     bool initTempDir(const std::string& tempDir);
 
 private:
+    std::string service_;
     std::string collectionName_;
     std::string dispatchTempDir_;
     std::map<shardid_t, std::string> shardScdfileMap_;

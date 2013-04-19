@@ -1,0 +1,18 @@
+{
+    "uri":"recommend/purchase_item",
+    "collection":"b5mp",
+    "resource":
+    {
+        "USERID":"13589979117902630",
+        "items":
+        [
+            {
+                "ITEMID":"3a395a6ac7494a6f262e7e6648b84a8f",
+                "price":"138.00",
+                "keywords":"针织衫",
+                "quantity":1,
+                "referer":"search"
+            }
+        ]
+    }
+}

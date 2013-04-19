@@ -15,7 +15,9 @@
 #include <aggregator-manager/SearchMerger.h>
 #include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/IndexWorker.h>
-#include <node-manager/SearchMasterManager.h>
+#include <node-manager/MasterManagerBase.h>
+#include <node-manager/Sf1rTopology.h>
+#include <node-manager/RecoveryChecker.h>
 #include <util/singleton.h>
 
 #include <question-answering/QuestionAnalysis.h>
@@ -323,6 +325,8 @@ std::string IndexBundleActivator::getQueryDataPath_() const
 bool IndexBundleActivator::openDataDirectories_()
 {
     bfs::create_directories(config_->indexSCDPath());
+    bfs::create_directories(config_->masterIndexSCDPath());
+    bfs::create_directories(config_->rebuildIndexSCDPath());
     bfs::create_directories(config_->logSCDPath());
 
     std::vector<std::string>& directories = config_->collectionDataDirectories_;
@@ -344,6 +348,11 @@ bool IndexBundleActivator::openDataDirectories_()
             //clean the corrupt dir
             boost::filesystem::remove_all( dataDir );
             dirtyDirectories.push_back(dataDir);
+            if (MasterManagerBase::get()->isDistributed())
+            {
+                RecoveryChecker::get()->setRollbackFlag(0);
+                RecoveryChecker::forceExit("exit for corrupted collection data. please restart to start auto rollback.");
+            }
         }
     }
 
@@ -527,13 +536,14 @@ IndexBundleActivator::createSearchAggregator_()
     searchWorker_->bindCallProxy(*localWorkerProxy);
 
     boost::shared_ptr<SearchAggregator> ret(
-        new SearchAggregator(mergerProxy.get(), localWorkerProxy.get(), config_->collectionName_));
+        new SearchAggregator(mergerProxy.get(), localWorkerProxy.get(),
+            Sf1rTopology::getServiceName(Sf1rTopology::SearchService), config_->collectionName_));
 
     mergerProxy.release();
     localWorkerProxy.release();
 
     // workers will be detected and set by master node manager
-    SearchMasterManager::get()->registerAggregator(ret);
+    MasterManagerBase::get()->registerAggregator(ret);
     return ret;
 }
 
@@ -556,12 +566,13 @@ IndexBundleActivator::createIndexAggregator_()
     indexWorker_->bindCallProxy(*localWorkerProxy);
 
     boost::shared_ptr<IndexAggregator> ret(
-        new IndexAggregator(mergerProxy.get(), localWorkerProxy.get(), config_->collectionName_));
+        new IndexAggregator(mergerProxy.get(), localWorkerProxy.get(),
+            Sf1rTopology::getServiceName(Sf1rTopology::SearchService), config_->collectionName_));
 
     mergerProxy.release();
     localWorkerProxy.release();
 
-    SearchMasterManager::get()->registerAggregator(ret);
+    MasterManagerBase::get()->registerAggregator(ret);
     return ret;
 }
 

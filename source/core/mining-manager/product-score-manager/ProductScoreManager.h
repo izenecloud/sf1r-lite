@@ -71,7 +71,7 @@ private:
     bool buildScoreType_(ProductScoreType type);
 
     bool addCronJob_(const ProductRankingPara& bundleParam);
-    void runCronJob_();
+    void runCronJob_(int calltype);
 
     void clearSearchCache_();
 

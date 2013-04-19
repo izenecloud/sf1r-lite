@@ -7,11 +7,18 @@
 
 #include "MiningQueryLogHandler.h"
 #include "query-recommend-submanager/RecommendManager.h"
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
+#include <common/Utilities.h>
+
 
 #include <util/scheduler.h>
 
 using namespace sf1r;
 
+static const std::string cronJobName = "MiningQueryLogHandler";
 
 MiningQueryLogHandler::MiningQueryLogHandler()
     : waitSec_(3600)
@@ -22,7 +29,7 @@ MiningQueryLogHandler::MiningQueryLogHandler()
 
 MiningQueryLogHandler::~MiningQueryLogHandler()
 {
-    izenelib::util::Scheduler::removeJob("MiningQueryLogHandler");
+    izenelib::util::Scheduler::removeJob(cronJobName);
 }
 
 void MiningQueryLogHandler::SetParam(uint32_t wait_sec, uint32_t days)
@@ -50,7 +57,7 @@ void MiningQueryLogHandler::deleteCollection(const std::string& name)
 }
 
 
-void MiningQueryLogHandler::runEvents()
+void MiningQueryLogHandler::runEvents(int64_t cron_time)
 {
     boost::unique_lock<boost::mutex> lock(mtx_, boost::try_to_lock);
     if (!lock.owns_lock())
@@ -64,7 +71,7 @@ void MiningQueryLogHandler::runEvents()
     for (map_it_type mlit = recommendManagerList_.begin();
             mlit != recommendManagerList_.end(); ++mlit)
     {
-        mlit->second->RebuildForAll();
+        mlit->second->RebuildForAll(cron_time);
     }
 
     std::cout << "[Updated query information]" << std::endl;
@@ -81,16 +88,41 @@ bool MiningQueryLogHandler::cronStart(const std::string& cron_job)
     {
         return false;
     }
-    boost::function<void (void)> task = boost::bind(&MiningQueryLogHandler::cronJob_, this);
-    izenelib::util::Scheduler::addJob("MiningQueryLogHandler", 60 * 1000, 0, task);
+    boost::function<void (int)> task = boost::bind(&MiningQueryLogHandler::cronJob_, this, _1);
+    izenelib::util::Scheduler::addJob(cronJobName, 60 * 1000, 0, task);
     cron_started_ = true;
     return true;
 }
 
-void MiningQueryLogHandler::cronJob_()
+void MiningQueryLogHandler::cronJob_(int calltype)
 {
-    if (cron_expression_.matches_now())
+    if (cron_expression_.matches_now() || calltype > 0)
     {
-        runEvents();
+        if (calltype == 0 && NodeManagerBase::get()->isDistributed())
+        {
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName;
+            }
+            else
+            {
+                LOG(INFO) << "cron job on replica ignored. ";
+            }
+            return;
+        }
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+        CronJobReqLog reqlog;
+        reqlog.cron_time = sf1r::Utilities::createTimeStamp(boost::posix_time::microsec_clock::local_time());
+
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName << std::endl;
+            return;
+        }
+        runEvents(reqlog.cron_time);
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }

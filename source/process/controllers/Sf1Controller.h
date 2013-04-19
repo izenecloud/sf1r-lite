@@ -36,6 +36,7 @@ public:
 
 public:
     bool preprocess();
+    void postprocess();
 
 protected:
     /**
@@ -63,6 +64,8 @@ protected:
     bool requireResourceProperty(
         const std::string& propName,
         std::string& propValue);
+
+    bool callDistribute();
 
 private:
     /**

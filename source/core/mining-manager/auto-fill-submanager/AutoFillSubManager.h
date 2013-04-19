@@ -27,6 +27,12 @@ public:
     {
     }
      
+    void flush()
+    {
+        if (Child1_) Child1_->flush();
+        if (Child2_) Child2_->flush();
+    }
+
     bool Init(const CollectionPath& collectionPath, const std::string& collectionName, const string& cronExpression)
     {    
          bool ret1 = Child1_->Init(collectionPath, collectionName, cronExpression, "child1");

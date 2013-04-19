@@ -5,8 +5,8 @@
 #include <string>
 
 #include <util/cronexpression.h>
-
 #include <common/JobScheduler.h>
+#include <util/ustring/UString.h>
 
 namespace sf1r
 {
@@ -17,7 +17,6 @@ public:
     CollectionTask(const std::string& collectionName)
         : collectionName_(collectionName)
         , isCronTask_(false)
-        , isRunning_(false)
     {}
 
     virtual ~CollectionTask() {}
@@ -26,6 +25,8 @@ public:
     {
         isCronTask_ = isCronTask;
     }
+
+    virtual std::string getTaskName() const = 0;
 
     bool isCronTask()
     {
@@ -48,8 +49,10 @@ public:
         return cronExpression_;
     }
 
+    void cronTask(int calltype);
+
 public:
-    virtual void startTask() = 0;
+    virtual void doTask() = 0;
 
 protected:
     std::string collectionName_;
@@ -57,10 +60,6 @@ protected:
     bool isCronTask_;
     std::string cronExpressionStr_;
     izenelib::util::CronExpression cronExpression_;
-
-    bool isRunning_;
-
-    JobScheduler asyncJodScheduler_;
 };
 
 class DocumentManager;
@@ -73,9 +72,15 @@ public:
         rebuildCollectionName_ = collectionName + "-rebuild";
     }
 
-    virtual void startTask();
-
-    void doTask();
+    virtual std::string getTaskName() const
+    {
+        return rebuildCollectionName_;
+    }
+    virtual void doTask();
+    bool rebuildFromSCD();
+    void getRebuildScdOnReplica(const std::vector<std::string>& scd_list);
+    bool getRebuildScdOnPrimary(izenelib::util::UString::EncodingType encoding,
+        const std::string& rebuild_scd_src, std::vector<std::string>& scd_list);
 
 private:
     std::string rebuildCollectionName_;
@@ -88,18 +93,22 @@ public:
 						std::pair<uint32_t, uint32_t> licenseDate)
 		: CollectionTask(collectionName)
 	{
+        taskName_ = collectionName + "-expiration";
 		startDate_ = licenseDate.first;
 		endDate_ = licenseDate.second;
 	}
 
-	virtual void startTask();
-
-	void doTask();
+    virtual std::string getTaskName() const
+    {
+        return taskName_;
+    }
+    virtual void doTask();
 
 private:
 	bool checkCollectionHandler(const std::string& collectionName) const;
 
 private:
+    std::string taskName_;
 	uint32_t startDate_;
 	uint32_t endDate_;
 };

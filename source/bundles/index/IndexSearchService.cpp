@@ -45,12 +45,14 @@ bool IndexSearchService::getSearchResult(
 {
     CREATE_SCOPED_PROFILER (query, "IndexSearchService", "processGetSearchResults all: total query time");
 
-    if (!bundleConfig_->isMasterAggregator())
+    LOG(INFO) << "Search Begin." << endl;
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         bool ret = searchWorker_->doLocalSearch(actionItem, resultItem);
         net::aggregator::WorkerResults<KeywordSearchResult> workerResults;
         workerResults.add(0, resultItem);
         searchMerger_->getMiningResult(workerResults, resultItem);
+        LOG(INFO) << "Local Search End." << endl;
         return ret;
     }
 
@@ -74,7 +76,8 @@ bool IndexSearchService::getSearchResult(
     // For distributed search, as it should merge the results over all nodes,
     // the topK start offset is fixed to zero
     const uint32_t topKStart = 0;
-    searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, topKStart);
+    searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_,
+        actionItem.pageInfo_.topKStart(bundleConfig_->topKNum_));
 
     if (!searchCache_->get(identity, resultItem))
     {
@@ -127,6 +130,7 @@ bool IndexSearchService::getSearchResult(
     cout << "Total count: " << resultItem.totalCount_ << endl;
     cout << "Top K count: " << resultItem.topKDocs_.size() << endl;
     cout << "Page Count: " << resultItem.count_ << endl;
+    LOG(INFO) << "Search Finished " << endl;
 
     REPORT_PROFILE_TO_FILE( "PerformanceQueryResult.SIAProcess" );
 
@@ -138,7 +142,7 @@ bool IndexSearchService::getDocumentsByIds(
     RawTextResultFromSIA& resultItem
 )
 {
-    if (!bundleConfig_->isMasterAggregator())
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getDocumentsByIds(actionItem, resultItem);
         return !resultItem.idList_.empty();
@@ -176,7 +180,7 @@ bool IndexSearchService::getInternalDocumentId(
 )
 {
     internalId = 0;
-    if (!bundleConfig_->isMasterAggregator())
+    if (!bundleConfig_->isMasterAggregator() || !searchAggregator_->isNeedDistribute())
     {
         searchWorker_->getInternalDocumentId(scdDocumentId, internalId);
     }

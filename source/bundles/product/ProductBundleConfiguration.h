@@ -25,6 +25,8 @@ public:
 
     std::string productId_;
 
+    std::string callback_;
+
     std::string cron_;
 
     CollectionPath collPath_;

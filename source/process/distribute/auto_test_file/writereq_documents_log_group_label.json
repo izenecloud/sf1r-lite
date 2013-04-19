@@ -1,0 +1,13 @@
+{
+    "uri":"documents/log_group_label",
+    "collection":"b5mp",
+    "resource":
+    {
+        "keywords":"iphone",
+        "group_property":"TargetCategory",
+        "group_label":
+        [
+            "数码"
+        ]
+    }
+}

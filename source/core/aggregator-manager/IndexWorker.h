@@ -20,6 +20,7 @@
 
 #include <ir/id_manager/IDManager.h>
 #include <ir/index_manager/index/IndexerDocument.h>
+#include <util/cronexpression.h>
 
 #include <util/driver/Value.h>
 #include <3rdparty/am/stx/btree_map.h>
@@ -43,6 +44,7 @@ class MiningManager;
 class ScdWriterController;
 class IndexHooker;
 class SearchWorker;
+class DistributeRequestHooker;
 
 class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
 {
@@ -84,16 +86,21 @@ public:
     {
         BIND_CALL_PROXY_BEGIN(IndexWorker, proxy)
         BIND_CALL_PROXY_2(index, unsigned int, bool)
+        BIND_CALL_PROXY_3(HookDistributeRequestForIndex, int, std::string, bool)
         BIND_CALL_PROXY_END()
     }
 
+    void HookDistributeRequestForIndex(int hooktype, const std::string& reqdata, bool& result);
+
     void index(unsigned int numdoc, bool& result);
 
-    bool reindex(boost::shared_ptr<DocumentManager>& documentManager);
+    bool reindex(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp);
 
     bool buildCollection(unsigned int numdoc);
+    bool buildCollectionOnReplica(unsigned int numdoc);
+    bool buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList, int64_t timestamp);
 
-    bool rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager);
+    bool rebuildCollection(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp);
 
     bool optimizeIndex();
 
@@ -112,10 +119,13 @@ public:
 
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
+    void flush(bool mergeBarrel = false);
+    bool reload();
+
 private:
     void createPropertyList_();
 
-    void doMining_();
+    void doMining_(int64_t timestamp);
 
     bool getPropertyValue_( const PropertyValue& value, std::string& valueStr );
 
@@ -220,6 +230,13 @@ private:
             docid_t& docId,
             SCD_TYPE scdType);
 
+    UpdateType getUpdateType_(
+            const uint128_t& scdDocId,
+            const SCDDoc& doc,
+            docid_t& oldId,
+            SCD_TYPE scdType) const;
+
+
     bool makeSentenceBlocks_(
             const izenelib::util::UString& text,
             const unsigned int numOfSummary,
@@ -233,7 +250,7 @@ private:
             unsigned int propertyId,
             const AnalysisInfo& analysisInfo);
 
-    size_t getTotalScdSize_();
+    size_t getTotalScdSize_(const std::vector<std::string>& scdlist);
 
     bool requireBackup_(size_t currTotalScdSize);
 
@@ -249,6 +266,9 @@ private:
      * notify to clear cache on master.
      */
     void clearMasterCache_();
+
+    void scheduleOptimizeTask();
+    void lazyOptimizeIndex(int calltype);
 
 private:
     IndexBundleConfiguration* bundleConfig_;
@@ -284,6 +304,10 @@ private:
     size_t totalSCDSizeSinceLastBackup_;
 
     UpdateBufferType updateBuffer_;
+    DistributeRequestHooker *distribute_req_hooker_;
+
+    izenelib::util::CronExpression scheduleExpression_;
+    std::string optimizeJobDesc_;
 
     friend class IndexSearchService;
     friend class IndexBundleActivator;

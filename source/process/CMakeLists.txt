@@ -31,8 +31,8 @@ FILE(GLOB_RECURSE controller_SRC "controllers/*.cpp")
 FILE(GLOB_RECURSE parsers_SRC "parsers/*.cpp")
 FILE(GLOB_RECURSE renderers_SRC "renderers/*.cpp")
 FILE(GLOB_RECURSE log_server_SRC "log-server/*.cpp")
-FILE(GLOB_RECURSE distribute_SRC "distribute/*.cpp")
 FILE(GLOB_RECURSE img_dup_detector_SRC "ImgDupDetector/*.cpp")
+FILE(GLOB distribute_SRC "distribute/*.cpp")
 
 FILE(GLOB img_dup_process_SRC
   "ImgDup*.cpp"
@@ -51,6 +51,12 @@ FILE(GLOB cobra_process_SRC
   ${distribute_SRC}
   )
 
+FILE(GLOB distribute_tool_SRC
+    "DistributeDataMigrateTool.cpp"
+    ${CMAKE_SOURCE_DIR}/core/configuration-manager/ConfigurationTool.cpp
+    ${CMAKE_SOURCE_DIR}/core/configuration-manager/PropertyConfig.cpp
+    )
+
 FILE(GLOB log_server_process_SRC
   "LogServer*.cpp"
   "common/ProcessOptions.cpp"
@@ -67,6 +73,7 @@ ADD_DEFINITIONS("-fno-strict-aliasing")
 ADD_EXECUTABLE(CobraProcess ${cobra_process_SRC})
 ADD_EXECUTABLE(LogServerProcess ${log_server_process_SRC})
 ADD_EXECUTABLE(ImgDupDetector ${img_dup_process_SRC})
+ADD_EXECUTABLE(DistributeDataMigrateTool ${distribute_tool_SRC})
 
 TARGET_LINK_LIBRARIES(ImgDupDetector
   sf1r_mining_manager
@@ -165,6 +172,21 @@ TARGET_LINK_LIBRARIES(CobraProcess
   ${ImageMagick_LIBRARIES}
   )
 
+TARGET_LINK_LIBRARIES(DistributeDataMigrateTool
+  sf1r_document_manager
+  sf1r_common
+
+  ${ilplib_LIBRARIES}
+  ${wisekma_LIBRARIES}
+  ${izenelib_LIBRARIES}
+  ${izenecma_LIBRARIES}
+  ${izenejma_LIBRARIES}
+
+  #external
+  ${Boost_LIBRARIES}
+  ${Glog_LIBRARIES}
+  )
+
 FIND_PACKAGE(izenelib REQUIRED COMPONENTS
   febird
   izene_util
@@ -243,5 +265,6 @@ ENDIF(OpenCV_FOUND)
 INSTALL(TARGETS
   CobraProcess
   ImgDupDetector
+  DistributeDataMigrateTool
   RUNTIME DESTINATION bin
   COMPONENT sf1r_apps)

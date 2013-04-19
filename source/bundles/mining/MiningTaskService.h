@@ -16,7 +16,8 @@ public:
 
     ~MiningTaskService();
 
-    void DoMiningCollection();
+    void DoMiningCollection(int64_t timestamp);
+    bool DoMiningCollectionFromAPI();
 
     void DoContinue();
 
@@ -24,8 +25,10 @@ public:
 
     MiningBundleConfiguration* getMiningBundleConfig(){ return bundleConfig_; }
 
+    void flush();
+
 private:
-    void cronJob_();
+    void cronJob_(int calltype);
 
 private:
     boost::shared_ptr<MiningManager> miningManager_;

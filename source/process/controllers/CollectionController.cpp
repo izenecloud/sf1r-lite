@@ -9,6 +9,11 @@
 #include "CollectionHandler.h"
 #include "process/common/XmlSchema.h"
 #include "core/license-manager/LicenseCustManager.h"
+#include <node-manager/MasterManagerBase.h>
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/RecoveryChecker.h>
+#include <util/driver/writers/JsonWriter.h>
 
 #include <process/common/CollectionManager.h>
 #include <bundles/mining/MiningSearchService.h>
@@ -19,6 +24,79 @@
 
 namespace sf1r
 {
+
+bool CollectionController::callDistribute()
+{
+    if(request().callType() != Request::FromAPI)
+        return false;
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        bool is_write_req = ReqLogMgr::isWriteRequest(request().controller(), request().action());
+        if (is_write_req)
+        {
+            std::string reqdata;
+            izenelib::driver::JsonWriter writer;
+            writer.write(request().get(), reqdata);
+            if(!MasterManagerBase::get()->pushWriteReq(reqdata))
+                response().addError("push write request to queue failed.");
+            return true;
+        }
+    }
+    return false;
+
+}
+
+bool CollectionController::preprocess()
+{
+    // need call in distribute, so we push it to queue and return false to ignore this request.
+    if(callDistribute())
+        return false;
+    if (request().callType() == Request::FromAPI)
+    {
+        // from api do not need hook, just process as usually. all read only request 
+        // will return from here.
+        return true;
+    }
+    //const std::string& reqdata = DistributeRequestHooker::get()->getAdditionData();
+    //DistributeRequestHooker::get()->hookCurrentReq(reqdata);
+    //DistributeRequestHooker::get()->processLocalBegin();
+    // note: if the request need to shard to different node.
+    // you should do hook again to all shard before you actually do the processing.
+    return true;
+
+}
+
+void CollectionController::postprocess()
+{
+    if (request().callType() != Request::FromAPI)
+    {
+        if (!response().success())
+        {
+            DistributeRequestHooker::get()->processLocalFinished(false);
+            std::string errinfo;
+            try
+            {
+                errinfo = toJsonString(response()[Keys::errors]);
+            }
+            catch(...)
+            {
+            }
+            std::cout << "request failed before send!!" << errinfo << std::endl;
+        }
+        else
+        {
+            //if (request().callType() == Request::FromDistribute &&
+            //    DistributeRequestHooker::isAsyncWriteRequest(request().controller(), request().action()))
+            //{
+            //    std::cout << " a async request finish send, may not finished actually. Leave for async handler." << std::endl;
+            //    return;
+            //}
+            std::cout << " sync request finished success. calltype: " << request().callType()
+                << ", api: " << request().controller() << "_" << request().action() << std::endl;
+            DistributeRequestHooker::get()->processLocalFinished(true);
+        }
+    }
+}
 
 /**
  * @brief Action @b start_collection.
@@ -50,6 +128,23 @@ void CollectionController::start_collection()
         response().addError("Require field collection in request.");
         return;
     }
+
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        response().addError(" Request not allowed in distributed node.");
+        return;
+    }
+
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return;
+    }
+
     std::string configFile = SF1Config::get()->getHomeDirectory();
     std::string slash("");
 #ifdef WIN32
@@ -58,7 +153,9 @@ void CollectionController::start_collection()
         slash = "/";
 #endif
     configFile += slash + collection + ".xml";
-    CollectionManager::get()->startCollection(collection, configFile);
+    bool ret = CollectionManager::get()->startCollection(collection, configFile);
+
+    DISTRIBUTE_WRITE_FINISH(ret);
 }
 
 /**
@@ -101,7 +198,174 @@ void CollectionController::stop_collection()
         response().addError("Collection access denied");
         return;
     }
-    CollectionManager::get()->stopCollection(collection, clear);
+
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        response().addError(" Request not allowed in distributed node.");
+        return;
+    }
+
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+    NoAdditionReqLog reqlog;
+    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        return;
+    }
+
+    bool ret = CollectionManager::get()->stopCollection(collection, clear);
+
+    DISTRIBUTE_WRITE_FINISH(ret);
+}
+/**
+ * @brief Action @b check_collection. Used for consistency check for distribute.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ * - No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "collection": "chwiki"
+ * }
+ * @endcode
+ *
+ */
+void CollectionController::check_collection()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    if (collection.empty())
+    {
+        response().addError("Require field collection in request.");
+        return;
+    }
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+    std::string errinfo = CollectionManager::get()->checkCollectionConsistency(collection);
+    if (!errinfo.empty())
+    {
+        response().addError(errinfo);
+    }
+}
+
+void CollectionController::update_collection_conf()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    if (collection.empty())
+    {
+        response().addError("Require field collection in request.");
+        return;
+    }
+
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!collectionHandler )
+    {
+        response().addError("Collection not found!");
+        return;
+    }
+
+    if (!MasterManagerBase::get()->isDistributed())
+    {
+        response().addError("This api only available in distributed mode.");
+        return;
+    }
+    bool ret = true;
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+    UpdateConfigReqLog reqlog;
+    do {
+        if (!DistributeRequestHooker::get()->prepare(Req_UpdateConfig, reqlog))
+        {
+            ret = false;
+            break;
+        }
+        ret = RecoveryChecker::get()->updateConfigFromAPI(collection,
+            DistributeRequestHooker::get()->isRunningPrimary(), reqlog.config_file_list);
+    }while(false);
+
+    if (!ret)
+    {
+        response().addError("Update Config failed.");
+        return;
+    }
+    DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
+}
+
+/**
+ * @brief Action @b rebuild_from_scd. Clean old data and rebuild new data from full scd files.
+ *  please put the full scd files to the specific directory on primary node.
+ *
+ * @section request
+ *
+ * - @b collection* (@c String): Collection name.
+ *
+ * @section response
+ *
+ * - No extra fields.
+ *
+ * @section example
+ *
+ * Request
+ *
+ * @code
+ * {
+ *   "collection": "chwiki"
+ * }
+ * @endcode
+ *
+ */
+void CollectionController::rebuild_from_scd()
+{
+    std::string collection = asString(request()[Keys::collection]);
+    if (collection.empty())
+    {
+        response().addError("Require field collection in request.");
+        return;
+    }
+    if (!SF1Config::get()->checkCollectionAndACL(collection, request().aclTokens()))
+    {
+        response().addError("Collection access denied");
+        return;
+    }
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!collectionHandler || !collectionHandler->indexTaskService_)
+    {
+        response().addError("Collection not found or no index service!");
+        return;
+    }
+
+    if (!MasterManagerBase::get()->isDistributed())
+    {
+        response().addError("This api only available in distributed mode.");
+        return;
+    }
+    // total clean rebuild .
+    boost::shared_ptr<RebuildTask> task(new RebuildTask(collection));
+    if (!task->rebuildFromSCD())
+    {
+        response().addError("Rebuild from scd failed.");
+        return;
+    }
 }
 
 /**
@@ -128,7 +392,7 @@ void CollectionController::stop_collection()
  */
 void CollectionController::rebuild_collection()
 {
-     std::string collection = asString(request()[Keys::collection]);
+    std::string collection = asString(request()[Keys::collection]);
     if (collection.empty())
     {
         response().addError("Require field collection in request.");
@@ -139,9 +403,25 @@ void CollectionController::rebuild_collection()
         response().addError("Collection access denied");
         return;
     }
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!collectionHandler || !collectionHandler->indexTaskService_)
+    {
+        response().addError("Collection not found or no index service!");
+        return;
+    }
 
     boost::shared_ptr<RebuildTask> task(new RebuildTask(collection));
-    task->doTask();
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        if(!MasterManagerBase::get()->pushWriteReq("CollectionTaskScheduler-" + task->getTaskName(), "cron"))
+        {
+            response().addError("push rebuild task failed, maybe the auto rebuild not enabled.!");
+            return;
+        }
+        LOG(INFO) << "push rebuild cron job to queue from api: " << "CollectionTaskScheduler-" + task->getTaskName();
+    }
+    else
+        task->doTask();
 }
 /**
  * @brief Action @b create_collection.
@@ -183,6 +463,12 @@ void CollectionController::create_collection()
     configFile += slash + collection + ".xml";
     if(bf::exists(configFile)){
         response().addError("Collection already exists");
+        return;
+    }
+
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        response().addError(" Request not allowed in distributed node.");
         return;
     }
 
@@ -296,6 +582,11 @@ void CollectionController::delete_collection(){
         return;
     }
 
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        response().addError(" Request not allowed in distributed node.");
+        return;
+    }
     std::string configFile = SF1Config::get()->getHomeDirectory();
 
     std::string slash("");
@@ -309,6 +600,7 @@ void CollectionController::delete_collection(){
         response().addError("Collection does not exists");
         return;
     }
+
     bf::remove(configFile);
     
     bf::path collection_dir("collection" + slash + collection);
@@ -364,10 +656,11 @@ void CollectionController::set_kv()
         response().addError("collection not found");
         return;
     }
-    if(!handler->miningSearchService_->SetKV(key, value))
+
+    bool ret = handler->miningSearchService_->SetKV(key, value);
+    if(!ret)
     {
         response().addError("set kv fail");
-        return;
     }
 }
 

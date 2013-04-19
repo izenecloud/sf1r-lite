@@ -26,6 +26,7 @@
 #include "OpinionsManager.h"
 #include <am/succinct/wat_array/wat_array.hpp>
 #include <node-manager/synchro/SynchroFactory.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 
 #define OPINION_COMPUTE_THREAD_NUM 4
@@ -120,7 +121,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         boost::shared_ptr<IndexManager> index_manager,
         idmlib::util::IDMAnalyzer* analyzer)
     : last_docid_path_(homePath + "/last_docid.txt")
-    , total_scd_path_(homePath + "/" + SUMMARY_SCD_BACKUP_DIR)
+    , total_scd_path_(scdPath + "/" + SUMMARY_SCD_BACKUP_DIR)
     , collectionName_(collectionName)
     , homePath_(homePath)
     , schema_(schema)
@@ -550,38 +551,41 @@ bool MultiDocSummarizationSubManager::postProcess()
     {
         isFull = false;
     }
-    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-    if (!isFull)
+    if (DistributeRequestHooker::get()->isRunningPrimary())
     {
-        SynchroData syncData;
-        syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-        syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-        syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
-        if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
+        if (!isFull)
         {
-            syncProducer->wait();
+            SynchroData syncData;
+            syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+            syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+            syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
+            if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+            {
+                syncProducer->wait();
+            }
+            else
+            {
+                LOG(WARNING) << "produce syncData error";
+            }
         }
         else
         {
-            LOG(WARNING) << "produce syncData error";
-        }
-    }
-    else
-    {
-        boost::filesystem::remove_all(generated_scds_path);
-        LOG(INFO) << "Send Total SCD files..." << endl;
-        SynchroData syncTotalData;
-        syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-        syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-        syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
+            boost::filesystem::remove_all(generated_scds_path);
+            LOG(INFO) << "Send Total SCD files..." << endl;
+            SynchroData syncTotalData;
+            syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+            syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
 
-        if (syncProducer->produce(syncTotalData))
-        {
-            syncProducer->wait();
-        }
-        else
-        {
-            LOG(WARNING) << "produce syncData error";
+            if (syncProducer->produce(syncTotalData))
+            {
+                syncProducer->wait();
+            }
+            else
+            {
+                LOG(WARNING) << "produce syncData error";
+            }
         }
     }
     total_Opinion_Scd_.close();
@@ -850,38 +854,41 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     {
         isFull = false;
     }
-    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-    if (!isFull)
+    if (DistributeRequestHooker::get()->isRunningPrimary())
     {
-        SynchroData syncData;
-        syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-        syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-        syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
-        if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
+        if (!isFull)
         {
-            syncProducer->wait();
+            SynchroData syncData;
+            syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+            syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+            syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
+            if (syncProducer->produce(syncData, boost::bind(boost::filesystem::remove_all, generated_scds_path.c_str())))
+            {
+                syncProducer->wait();
+            }
+            else
+            {
+                LOG(WARNING) << "produce syncData error";
+            }
         }
         else
         {
-            LOG(WARNING) << "produce syncData error";
-        }
-    }
-    else
-    {
-        boost::filesystem::remove_all(generated_scds_path);
-        LOG(INFO) << "Send Total SCD files..." << endl;
-        SynchroData syncTotalData;
-        syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-        syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-        syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
+            boost::filesystem::remove_all(generated_scds_path);
+            LOG(INFO) << "Send Total SCD files..." << endl;
+            SynchroData syncTotalData;
+            syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
+            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+            syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
 
-        if (syncProducer->produce(syncTotalData))
-        {
-            syncProducer->wait();
-        }
-        else
-        {
-            LOG(WARNING) << "produce syncData error";
+            if (syncProducer->produce(syncTotalData))
+            {
+                syncProducer->wait();
+            }
+            else
+            {
+                LOG(WARNING) << "produce syncData error";
+            }
         }
     }
     total_Opinion_Scd_.close();
@@ -891,6 +898,9 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
 void MultiDocSummarizationSubManager::syncFullSummScd()
 {
+    if (!DistributeRequestHooker::get()->isRunningPrimary())
+        return;
+
     SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
     LOG(INFO) << "Send Total SCD files..." << endl;
     SynchroData syncTotalData;

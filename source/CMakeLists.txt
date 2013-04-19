@@ -233,6 +233,14 @@ IF(NOT LOCAL_HOST_USER_NAME)
   SET(LOCAL_HOST_USER_NAME $ENV{USERNAME})
 ENDIF(NOT LOCAL_HOST_USER_NAME)
 
+EXECUTE_PROCESS(
+    COMMAND hostname -I
+    COMMAND sed "s/^[^1][^ ]* \\| [^1][^ ]*//g"
+    COMMAND awk "BEGIN{ORS=\"\"} {print $1}"
+    OUTPUT_VARIABLE LOCAL_HOST_IP
+    RESULT_VARIABLE LOCAL_HOST_IP_RESULT
+    )
+
 CONFIGURE_FILE(
   "${SF1RENGINE_ROOT}/bin/config/sf1config.xml.in"
   "${SF1RENGINE_ROOT}/bin/config/sf1config.xml"
