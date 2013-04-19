@@ -108,6 +108,19 @@ bool RecommendManager::open()
     return true;
 }
 
+void RecommendManager::flush()
+{
+    if (isOpen_)
+    {
+        serInfo_.flush();
+        if(recommend_db_)
+            recommend_db_->flush();
+        if (concept_id_manager_)
+            concept_id_manager_->Flush();
+    }
+    if (autofill_) autofill_->flush();
+}
+
 void RecommendManager::close()
 {
     if (isOpen_)
@@ -129,9 +142,10 @@ void RecommendManager::close()
     }
 }
 
-void RecommendManager::RebuildForAll()
+void RecommendManager::RebuildForAll(int64_t cron_time)
 {
-    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::ptime time_now;
+    time_now = boost::posix_time::from_time_t(cron_time);
     boost::posix_time::ptime p = time_now - boost::gregorian::days(logdays_);
     std::string time_string = boost::posix_time::to_iso_string(p);
     typedef std::map<std::string, std::string> DbRecordType;

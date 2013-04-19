@@ -28,7 +28,8 @@ public:
            << "BA Port: " << baPort_ << std::endl
            << "worker server port: " << workerPort_ << std::endl
            << "master server port: " << masterPort_  << std::endl
-           << "data receiver port: " << dataRecvPort_ << std::endl;
+           << "data receiver port: " << dataRecvPort_ << std::endl
+           << "file sync rpc port: " << filesync_rpcport_ << std::endl;
         return ss.str();
     }
 
@@ -40,6 +41,7 @@ public:
     unsigned int workerPort_;
     unsigned int masterPort_;
     unsigned int dataRecvPort_;
+    unsigned int filesync_rpcport_;
 };
 
 
@@ -55,7 +57,6 @@ public:
     {
         std::stringstream ss;
         ss << "==== [DistributedTopology] ====" << std::endl;
-        ss << "**** " << type_ << " ****" << std::endl;
         ss << (enabled_ ? "enabled":"disabled") << std::endl;
         ss << sf1rTopology_.toString();
         ss << "==============================="<<std::endl;
@@ -64,7 +65,6 @@ public:
 
 public:
     bool enabled_;
-    std::string type_;
     Sf1rTopology sf1rTopology_;
 };
 

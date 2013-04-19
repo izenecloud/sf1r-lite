@@ -28,9 +28,11 @@ public:
 
     ~IndexTaskService();
 
+
     bool index(unsigned int numdoc);
 
-    bool index(boost::shared_ptr<DocumentManager>& documentManager);
+    bool index(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp);
+    bool reindex_from_scd(const std::vector<std::string>& scdlist, int64_t timestamp);
 
     bool optimizeIndex();
 
@@ -49,13 +51,18 @@ public:
 
     uint32_t getKeyCount(const std::string& property_name);
 
-    std::string getScdDir() const;
+    std::string getScdDir(bool rebuild) const;
+    izenelib::util::UString::EncodingType getEncode() const;
 
     CollectionPath&  getCollectionPath() const;
 
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
+    void flush();
+    bool reload();
+
 private:
+    bool HookDistributeRequestForIndex();
     bool distributedIndex_(unsigned int numdoc);
     bool distributedIndexImpl_(
         unsigned int numdoc,
@@ -68,6 +75,7 @@ private:
         const std::vector<std::string>& shardKeyList);
 
 private:
+    std::string service_;
     IndexBundleConfiguration* bundleConfig_;
 
     boost::shared_ptr<IndexAggregator> indexAggregator_;

@@ -27,6 +27,7 @@
                                 </xs:simpleType>
                             </xs:attribute>
                             <xs:attribute name="id" use="required" type="xs:string" />
+                            <xs:attribute name="callback" use="optional" type="xs:string" />
                         </xs:complexType>
                     </xs:element>
                     <xs:element name="Parameter" minOccurs="0">

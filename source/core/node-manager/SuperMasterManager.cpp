@@ -14,11 +14,8 @@ void SuperMasterManager::start()
         return;
     }
 
-    if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_SEARCH)
-        detectSearchMasters();
-
-    if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_RECOMMEND)
-        detectRecommendMasters();
+    detectSearchMasters();
+    detectRecommendMasters();
 }
 
 void SuperMasterManager::stop()
@@ -33,11 +30,12 @@ void SuperMasterManager::detectSearchMasters()
 
     // Here checked each node by nodePath "/SF1R-XXXX/SearchTopology/ReplicaX/NodeX",
     // actually, all children of "/SF1R-XXXX/SearchTopology/SearchServers" are all Masters.
+    zookeeper_->isZNodeExists(ZooKeeperNamespace::getServerParentPath(), ZooKeeper::WATCH);
     replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
     for (nodeid_t nodeId = 1; nodeId <= sf1rTopology_.nodeNum_; nodeId++)
     {
         std::string data;
-        std::string nodePath = ZooKeeperNamespace::getSearchNodePath(replicaId, nodeId);
+        std::string nodePath = ZooKeeperNamespace::getNodePath(replicaId, nodeId);
         if (zookeeper_->getZNodeData(nodePath, data, ZooKeeper::WATCH))
         {
             ZNode znode;
@@ -77,7 +75,6 @@ void SuperMasterManager::detectSearchMasters()
     }
 
     LOG (INFO) << "detected " << masterMap_.size() 
-               << ((sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_RECOMMEND) ? " recommend" : " search") 
                << " master(s) in cluster.";
 }
 
@@ -85,9 +82,9 @@ void SuperMasterManager::process(ZooKeeperEvent& zkEvent)
 {
     bool restarted = false;
     {
-        boost::lock_guard<boost::mutex> lock(mutex_);
         if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_EXPIRED_SESSION_STATE)
         {
+            boost::lock_guard<boost::mutex> lock(mutex_);
             LOG(WARNING) << "super master node disconnected by zookeeper, state : " << zookeeper_->getStateString();
             zookeeper_->disconnect();
             zookeeper_->connect(true);
@@ -101,11 +98,8 @@ void SuperMasterManager::process(ZooKeeperEvent& zkEvent)
     }
     if (restarted)
     {
-        if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_SEARCH)
-            detectSearchMasters();
-
-        if (sf1rTopology_.type_ == Sf1rTopology::TOPOLOGY_RECOMMEND)
-            detectRecommendMasters();
+        detectSearchMasters();
+        detectRecommendMasters();
         LOG (WARNING) << "restarted ZooKeeper for SuperMasterManager finished";
     }
 }

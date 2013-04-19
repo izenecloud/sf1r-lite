@@ -60,6 +60,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     CREATE_PROFILER(preparerank, "SearchThreadWorker", "search: prepare ranker");
 
     const SearchKeywordOperation& actionOperation = *param.actionOperation;
+    LOG(INFO) << "search in thread worker begin ------------ " << time(NULL);
 
     unsigned int collectionId = 1;
     std::vector<std::string> indexPropertyList(actionOperation.actionItem_.searchPropertyList_);
@@ -304,11 +305,15 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     ScoreDocEvaluator scoreDocEvaluator(productScorer, param.customRanker);
     try
     {
+        time_t start_search = time(NULL);
         bool ret = doSearch_(param,
                              pDocIterator.get(),
                              groupFilter.get(),
                              scoreDocEvaluator,
                              propSharedLockSet);
+
+        if (time(NULL) - start_search > 5)
+            LOG(INFO) << "dosearch cost too long, " << start_search << ", " << time(NULL);
 
         if (groupFilter)
         {

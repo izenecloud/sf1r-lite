@@ -10,8 +10,15 @@
 #include <aggregator-manager/CollectionDataReceiver.h>
 #include <node-manager/ZooKeeperManager.h>
 #include <node-manager/SuperNodeManager.h>
-#include <node-manager/SearchNodeManager.h>
-#include <node-manager/RecommendNodeManager.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/DistributeSearchService.h>
+#include <node-manager/DistributeRecommendService.h>
+#include <node-manager/DistributeDriver.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/RequestLog.h>
+#include <node-manager/RecoveryChecker.h>
+#include <node-manager/DistributeFileSyncMgr.h>
+
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
 #include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
@@ -213,6 +220,7 @@ bool CobraProcess::initDriverServer()
 
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),port);
 
+    DriverThreadPool::init(1, 1);
     // init Router
     driverRouter_.reset(new ::izenelib::driver::Router);
     initQuery();
@@ -226,6 +234,11 @@ bool CobraProcess::initDriverServer()
     driverServer_.reset(
         new DriverServer(endpoint, factory, threadPoolSize)
     );
+
+    if (SF1Config::get()->isDistributedNode())
+    {
+        DistributeDriver::get()->init(driverRouter_);
+    }
 
     addExitHook(boost::bind(&CobraProcess::stopDriver, this));
 
@@ -248,16 +261,24 @@ bool CobraProcess::initNodeManager()
 
     SuperNodeManager::get()->init(SF1Config::get()->distributedCommonConfig_);
 
-    if (SF1Config::get()->isDistributedSearchNode())
-        SearchNodeManager::get()->init(SF1Config::get()->searchTopologyConfig_);
-    if (SF1Config::get()->isDistributedRecommendNode())
-        RecommendNodeManager::get()->init(SF1Config::get()->recommendTopologyConfig_);
+    if (SF1Config::get()->isDistributedNode())
+    {
+        NodeManagerBase::get()->init(SF1Config::get()->topologyConfig_);
+
+        RecoveryChecker::get()->init(configDir_, SF1Config::get()->getWorkingDir());
+        DistributeRequestHooker::get()->init();
+        ReqLogMgr::initWriteRequestSet();
+    }
 
     return true;
 }
 
 void CobraProcess::stopDriver()
 {
+    if (SF1Config::get()->isDistributedNode())
+    {
+        DistributeDriver::get()->stop();
+    }
     if (driverServer_)
     {
         driverServer_->stop();
@@ -271,6 +292,13 @@ bool CobraProcess::startDistributedServer()
         std::cout << "ZooKeeper is disabled!" << std::endl;
         return true;
     }
+
+    // Start data receiver
+    unsigned int dataPort = SF1Config::get()->distributedCommonConfig_.dataRecvPort_;
+    CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
+    CollectionDataReceiver::get()->start();
+
+    DistributeFileSyncMgr::get()->init();
 
     // Start worker server
     if (SF1Config::get()->isSearchWorker() || SF1Config::get()->isRecommendWorker())
@@ -301,15 +329,20 @@ bool CobraProcess::startDistributedServer()
     }
 
     // Start distributed topology node manager(s)
-    if (SF1Config::get()->isDistributedSearchNode())
-        SearchNodeManager::get()->start();
-    if (SF1Config::get()->isDistributedRecommendNode())
-        RecommendNodeManager::get()->start();
+    if (SF1Config::get()->isDistributedNode())
+    {
+        // register distribute services.
+        NodeManagerBase::get()->registerDistributeService(
+            boost::shared_ptr<IDistributeService>(new DistributeSearchService()),
+            SF1Config::get()->isSearchWorker(),
+            SF1Config::get()->isSearchMaster());
+        NodeManagerBase::get()->registerDistributeService(
+            boost::shared_ptr<IDistributeService>(new DistributeRecommendService()),
+            SF1Config::get()->isRecommendWorker(),
+            SF1Config::get()->isRecommendMaster());
 
-    // Start data receiver
-    unsigned int dataPort = SF1Config::get()->distributedCommonConfig_.dataRecvPort_;
-    CollectionDataReceiver::get()->init(dataPort, "./collection"); //xxx
-    CollectionDataReceiver::get()->start();
+        NodeManagerBase::get()->start();
+    }
 
     addExitHook(boost::bind(&CobraProcess::stopDistributedServer, this));
     return true;
@@ -317,17 +350,17 @@ bool CobraProcess::startDistributedServer()
 
 void CobraProcess::stopDistributedServer()
 {
+    if (SF1Config::get()->isDistributedNode())
+        NodeManagerBase::get()->notifyStop();
+
     ZooKeeperManager::get()->stop();
 
     if (workerServer_)
         workerServer_->stop();
 
-    if (SF1Config::get()->isDistributedSearchNode())
-        SearchNodeManager::get()->stop();
-    if (SF1Config::get()->isDistributedRecommendNode())
-        RecommendNodeManager::get()->stop();
-
     CollectionDataReceiver::get()->stop();
+    DistributeFileSyncMgr::get()->stop();
+    RecoveryChecker::clearForceExitFlag();
 }
 
 void CobraProcess::scheduleTask(const std::string& collection)
@@ -353,7 +386,8 @@ void CobraProcess::startCollections()
                 if(!boost::iequals(bfs::path(*iter).filename().string(),"sf1config.xml"))
                 {
                     std::string collectionName = bfs::path(*iter).filename().string().substr(0,bfs::path(*iter).filename().string().rfind(".xml"));
-                    CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string());
+                    CollectionManager::get()->startCollection(collectionName, bfs::path(*iter).string(),
+                        false, true);
                     scheduleTask(collectionName);
                 }
         }

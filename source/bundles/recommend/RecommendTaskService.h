@@ -71,6 +71,7 @@ public:
     bool addUser(const User& user);
     bool updateUser(const User& user);
     bool removeUser(const std::string& userIdStr);
+    void flush();
 
     /**
      * @p sessionIdStr, @p userIdStr and @p itemIdStr must not be empty.
@@ -161,6 +162,19 @@ public:
     UpdateRecommendWorker* updateRecommendWorker() { return updateRecommendWorker_; }
 
 private:
+    bool visitItemFunc(
+        const std::string& sessionIdStr,
+        const std::string& userIdStr,
+        itemid_t itemId,
+        bool isRecItem
+    );
+    bool purchaseItemFunc(
+        const std::string& userIdStr,
+        const std::string& orderIdStr,
+        const OrderItemVec& orderItemVec,
+        const std::vector<itemid_t>& itemIdVec
+    );
+
     /**
      * Convert from @p orderItemVec to @p itemIdVec.
      * @return true for success, false for failure.
@@ -170,10 +184,14 @@ private:
         std::vector<itemid_t>& itemIdVec
     );
 
+    bool buildCollectionOnPrimary();
+    bool buildCollectionOnReplica();
+    bool getBuildingSCDFiles(std::vector<string>& user_scd_list,
+        std::vector<std::string>& order_scd_list);
     /**
      * Load user SCD files.
      */
-    bool loadUserSCD_();
+    bool loadUserSCD_(const std::vector<string>& scdList);
 
     /**
      * Parse user SCD file.
@@ -185,7 +203,7 @@ private:
     /**
      * Load order SCD files.
      */
-    bool loadOrderSCD_();
+    bool loadOrderSCD_(const std::vector<string> &scdList);
 
     /**
      * Parse order SCD file.
@@ -216,6 +234,14 @@ private:
      */
     void saveOrderMap_(const OrderMap& orderMap);
 
+    bool prepareSaveOrder_(
+        const std::string& userIdStr,
+        const std::string& orderIdStr,
+        const OrderItemVec& orderItemVec,
+        RecommendMatrix* matrix,
+        std::vector<itemid_t>& itemIdVec
+    );
+
     /**
      * save the order into @c orderManager_, @c purchaseManager_.
      * @param userIdStr the string of user id
@@ -227,7 +253,8 @@ private:
         const std::string& userIdStr,
         const std::string& orderIdStr,
         const OrderItemVec& orderItemVec,
-        RecommendMatrix* matrix
+        RecommendMatrix* matrix,
+        const std::vector<itemid_t>& itemIdVec
     );
 
     bool insertPurchaseCounter_(
@@ -236,8 +263,7 @@ private:
     );
 
     void buildFreqItemSet_();
-    void cronJob_();
-    void flush_();
+    void cronJob_(int calltype);
 
 private:
     RecommendBundleConfiguration& bundleConfig_;

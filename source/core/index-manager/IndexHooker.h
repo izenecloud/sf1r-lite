@@ -18,7 +18,7 @@ public:
 //     virtual bool HookInsert(Document& doc) {return false;}
 //     virtual bool HookUpdate(docid_t oldid, Document& doc, bool r_type) {return false;}
     virtual bool HookDelete(docid_t docid, time_t timestamp) {return false;}
-    virtual bool FinishHook() {return false;}
+    virtual bool FinishHook(time_t timestamp) {return false;}
 };
 
 }

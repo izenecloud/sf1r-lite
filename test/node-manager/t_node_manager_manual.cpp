@@ -9,6 +9,7 @@
 #include <node-manager/synchro/SynchroData.h>
 
 using namespace sf1r;
+using namespace std;
 
 void callback_on_consumed(bool isSuccess)
 {

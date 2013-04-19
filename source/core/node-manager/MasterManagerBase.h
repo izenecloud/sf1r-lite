@@ -10,10 +10,13 @@
 #include "ZooKeeperNamespace.h"
 #include "ZooKeeperManager.h"
 
+#include "IDistributeService.h"
 #include <map>
 #include <vector>
+#include <queue>
 #include <sstream>
 
+#include <util/singleton.h>
 #include <net/aggregator/AggregatorConfig.h>
 #include <net/aggregator/Aggregator.h>
 
@@ -35,18 +38,25 @@ public:
         MASTER_STATE_STARTING_WAIT_ZOOKEEPER,
         MASTER_STATE_STARTING_WAIT_WORKERS,
         MASTER_STATE_STARTED,
-        MASTER_STATE_FAILOVERING,
-        MASTER_STATE_RECOVERING
+        //MASTER_STATE_FAILOVERING,
+        //MASTER_STATE_RECOVERING,
+        //MASTER_STATE_WAIT_WOKER_FINISH_REQ,
     };
 
     typedef std::map<shardid_t, boost::shared_ptr<Sf1rNode> > WorkerMapT;
+    typedef boost::function<bool()>  EventCBType;
 
 public:
+    static MasterManagerBase* get()
+    {
+        return izenelib::util::Singleton<MasterManagerBase>::get();
+    }
+
     MasterManagerBase();
 
     virtual ~MasterManagerBase() { stop(); };
 
-    virtual bool init() = 0;
+    bool init();
 
     void start();
 
@@ -58,7 +68,9 @@ public:
      */
     void registerAggregator(boost::shared_ptr<AggregatorBase> aggregator)
     {
+        boost::lock_guard<boost::mutex> lock(state_mutex_);
         aggregatorList_.push_back(aggregator);
+        resetAggregatorConfig();
     }
 
     /**
@@ -73,11 +85,45 @@ public:
             std::string& host,
             unsigned int& recvPort);
 
-    bool getCollectionShardids(const std::string& collection, std::vector<shardid_t>& shardidList);
+    bool getCollectionShardids(const std::string& service, const std::string& collection, std::vector<shardid_t>& shardidList);
 
-    bool checkCollectionShardid(const std::string& collection, unsigned int shardid);
+    bool checkCollectionShardid(const std::string& service, const std::string& collection, unsigned int shardid);
 
     void registerIndexStatus(const std::string& collection, bool isIndexing);
+
+    void enableDistribute(bool enable)
+    {
+        isDistributeEnable_ = enable;
+    }
+
+    inline bool isDistributed()
+    {
+        return isDistributeEnable_;
+    }
+
+    void notifyChangedPrimary(bool is_new_primary = true);
+    void updateMasterReadyForNew(bool is_ready);
+
+    bool isMinePrimary();
+    bool isBusy();
+    bool prepareWriteReq();
+    bool endWriteReq();
+    void endPreparedWrite();
+    bool disableNewWrite();
+    void enableNewWrite();
+    bool pushWriteReq(const std::string& reqdata, const std::string& type = "");
+    // make sure prepare success before call this.
+    bool popWriteReq(std::string& reqdata, std::string& type);
+
+    //bool getWriteReqDataFromPreparedNode(std::string& req_json_data);
+    void setCallback(EventCBType on_new_req_available)
+    {
+        on_new_req_available_ = on_new_req_available;
+    }
+    void registerDistributeServiceMaster(boost::shared_ptr<IDistributeService> sp_service, bool enable_master);
+    bool findServiceMasterAddress(const std::string& service, std::string& host, uint32_t& port);
+    void updateServiceReadState(const std::string& my_state, bool include_self);
+    bool hasAnyCachedRequest();
 
 public:
     virtual void process(ZooKeeperEvent& zkEvent);
@@ -87,14 +133,24 @@ public:
     virtual void onNodeDeleted(const std::string& path);
 
     virtual void onChildrenChanged(const std::string& path);
+    virtual void onDataChanged(const std::string& path);
 
     /// test
     void showWorkers();
 
 protected:
-    virtual std::string getReplicaPath(replicaid_t replicaId) = 0;
-
-    virtual std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId) = 0;
+    static std::string getReplicaPath(replicaid_t replicaId)
+    {
+        return ZooKeeperNamespace::getReplicaPath(replicaId);
+    }
+    static std::string getNodePath(replicaid_t replicaId, nodeid_t nodeId)
+    {
+        return ZooKeeperNamespace::getNodePath(replicaId, nodeId);
+    }
+    static std::string getPrimaryNodeParentPath(nodeid_t nodeId)
+    {
+        return ZooKeeperNamespace::getPrimaryNodeParentPath(nodeId);
+    }
 
 protected:
     std::string state2string(MasterStateType e);
@@ -105,8 +161,12 @@ protected:
 
     void doStart();
 
+    bool isPrimaryWorker(replicaid_t replicaId, nodeid_t nodeId);
+
 protected:
     int detectWorkers();
+
+    int detectWorkersInReplica(replicaid_t replicaId, size_t& detected, size_t& good);
 
     void updateWorkerNode(boost::shared_ptr<Sf1rNode>& workerNode, ZNode& znode);
 
@@ -128,13 +188,28 @@ protected:
     /**
      * Register SF1 Server atfer master ready.
      */
-    void registerSearchServer();
+    void registerServiceServer();
+    void initServices();
+    void setServicesData(ZNode& znode);
 
     /***/
     void resetAggregatorConfig();
 
+    bool getWriteReqNodeData(ZNode& znode);
+    //void putWriteReqDataToPreparedNode(const std::string& req_json_data);
+    void checkForWriteReq();
+    //void checkForWriteReqFinished();
+    void checkForNewWriteReq();
+    bool cacheNewWriteFromZNode();
+    bool isAllWorkerIdle();
+    //bool isAllWorkerFinished();
+    bool isAllWorkerInState(int state);
+    std::string findReCreatedServerPath();
+    void updateServiceReadStateWithoutLock(const std::string& my_state, bool include_self);
+
 protected:
     Sf1rTopology sf1rTopology_;
+    bool isDistributeEnable_;
 
     ZooKeeperClientPtr zookeeper_;
 
@@ -148,14 +223,30 @@ protected:
     boost::mutex state_mutex_;
 
     std::vector<replicaid_t> replicaIdList_;
-    boost::mutex replica_mutex_;
+    //boost::mutex replica_mutex_;
 
     WorkerMapT workerMap_;
-    boost::mutex workers_mutex_;
+    //boost::mutex workers_mutex_;
 
     std::vector<boost::shared_ptr<AggregatorBase> > aggregatorList_;
+    EventCBType on_new_req_available_;
+    std::string write_req_queue_root_parent_;
+    std::string write_req_queue_parent_;
+    std::string write_req_queue_;
+    std::string write_prepare_node_;
+    std::string write_prepare_node_parent_;
+    bool stopping_;
+    bool write_prepared_;
+    bool new_write_disabled_;
+    bool is_mine_primary_;
+    bool is_ready_for_new_write_;
+    std::size_t waiting_request_num_;
+    std::queue<std::pair<std::string, std::string> > cached_write_reqlist_;
+
 
     std::string CLASSNAME;
+    typedef std::map<std::string, boost::shared_ptr<IDistributeService> > ServiceMapT;
+    ServiceMapT  all_distributed_services_;
 };
 
 

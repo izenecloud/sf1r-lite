@@ -2,10 +2,15 @@
 
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
+#include <node-manager/RequestLog.h>
+#include <node-manager/DistributeRequestHooker.h>
+#include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 #include <boost/algorithm/string/trim.hpp>
 #include <idmlib/util/directory_switcher.h>
 #include <am/vsynonym/QueryNormalize.h>
 #include <util/scheduler.h>
+#include <common/Utilities.h>
 
 namespace sf1r
 {
@@ -178,7 +183,7 @@ bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath
         bool result = izenelib::util::Scheduler::addJob(cronJobName_,
                       60*1000, // each minute
                       0, // start from now
-                      boost::bind(&AutoFillChildManager::updateAutoFill, this));
+                      boost::bind(&AutoFillChildManager::updateAutoFill, this, _1));
         if (! result)
             LOG(ERROR) << "failed in izenelib::util::Scheduler::addJob(), cron job name: " << cronJobName_;
         else
@@ -1077,22 +1082,47 @@ bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetS
     return true;
 }
 
-void AutoFillChildManager::updateAutoFill()
+void AutoFillChildManager::updateAutoFill(int calltype)
 {
-    if (cronExpression_.matches_now())
+    if (cronExpression_.matches_now() || calltype > 0)
     {
+        if (calltype == 0 && NodeManagerBase::get()->isDistributed())
+        {
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName_ ;
+            }
+            else
+            {
+                LOG(INFO) << "cron job on replica ignored. ";
+            }
+            return;
+        }
+        
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
         boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
         {
-            LOG(INFO) << "Autofill Is initing ....";
+            LOG(INFO) << "Autofill Is already initing ....";
+            return;
+        }
+
+        CronJobReqLog reqlog;
+        reqlog.cron_time = sf1r::Utilities::createTimeStamp(boost::posix_time::microsec_clock::local_time());
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << __FUNCTION__ << std::endl;
             return;
         }
 
         isUpdating_ = true;
         if(!isFromSCD_)
         {
-            updateFromLog();
+            updateFromLog(reqlog.cron_time);
         }
         else
         {
@@ -1100,6 +1130,8 @@ void AutoFillChildManager::updateAutoFill()
         }
         isUpdating_Wat_ = false;
         isUpdating_ = false;
+
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
 
@@ -1138,9 +1170,10 @@ void AutoFillChildManager::updateFromLog_ForTest(std::vector<UserQuery>& query_r
     buildWat_array(false);
 }
 
-void AutoFillChildManager::updateFromLog()
+void AutoFillChildManager::updateFromLog(int64_t cron_time)
 {
-    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::ptime time_now;
+    time_now = boost::posix_time::from_time_t(cron_time);
     boost::posix_time::ptime p = time_now - boost::gregorian::days(updatelogdays_);
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
@@ -1183,6 +1216,15 @@ void AutoFillChildManager::updateFromLog()
     isUpdating_Wat_ = true;
     wa_.Clear();
     buildWat_array(false);
+}
+
+void AutoFillChildManager::flush()
+{
+    dbTable_.flush();
+    dbItem_.flush();
+    SaveItem();
+    SaveWat();
+    if (idManager_) idManager_->flush();
 }
 
 bool AutoFillChildManager::buildIndex(const std::list<ItemValueType>& queryList)

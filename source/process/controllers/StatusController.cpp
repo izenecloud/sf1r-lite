@@ -5,7 +5,7 @@
  */
 #include "StatusController.h"
 #include "CollectionHandler.h"
-
+#include <node-manager/DistributeTest.hpp>
 #include <bundles/index/IndexTaskService.h>
 
 #include <common/Status.h>
@@ -95,6 +95,21 @@ void StatusController::index()
 //             miningStatus.running() ? "running" : "idle";
 //         miningStatusResponse[Keys::last_modified] = miningStatus.lastModified();
 //     }
+}
+
+void StatusController::get_distribute_status()
+{
+    Value& statusResponse = response()[Keys::DistributeStatus];
+    Value& memStatus = statusResponse[Keys::MemoryStatus];
+
+    std::vector<std::string> keylist;
+    std::vector<std::string> valuelist;
+    DistributeTestSuit::getMemoryStateKeyList(keylist);
+    DistributeTestSuit::getMemoryState(keylist, valuelist);
+    for(size_t i = 0; i < keylist.size(); ++i)
+    {
+        memStatus[keylist[i]] = valuelist[i];
+    }
 }
 
 } // namespace sf1r

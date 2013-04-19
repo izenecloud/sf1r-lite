@@ -84,7 +84,7 @@ bool ProductPriceTrend::Insert(
 
     if (IsBufferFull_())
     {
-        return Flush();
+        return Flush(timestamp);
     }
 
     return true;
@@ -109,7 +109,7 @@ bool ProductPriceTrend::Update(
 
     if (IsBufferFull_())
     {
-        return Flush();
+        return Flush(timestamp);
     }
 
     return true;
@@ -120,16 +120,16 @@ bool ProductPriceTrend::IsBufferFull_() const
     return buffer_size_ >= 2000;
 }
 
-bool ProductPriceTrend::Flush()
+bool ProductPriceTrend::Flush(time_t timestamp)
 {
     bool ret = true;
-    time_t now = Utilities::createTimeStamp();
+    //time_t now = Utilities::createTimeStamp();
 
     if (!prop_map_.empty())
     {
         for (uint32_t i = 0; i < time_int_vec_.size(); i++)
         {
-            if (!UpdateTPC_(i, now))
+            if (!UpdateTPC_(i, timestamp))
                 ret = false;
         }
 

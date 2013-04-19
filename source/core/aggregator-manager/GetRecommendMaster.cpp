@@ -1,6 +1,7 @@
 #include "GetRecommendMaster.h"
-#include <node-manager/RecommendMasterManager.h>
+#include <node-manager/MasterManagerBase.h>
 #include <node-manager/sharding/RecommendShardStrategy.h>
+#include <node-manager/Sf1rTopology.h>
 
 #include <memory> // for auto_ptr
 #include <set>
@@ -43,12 +44,13 @@ GetRecommendMaster::GetRecommendMaster(
     }
 
     aggregator_.reset(
-        new GetRecommendAggregator(mergerProxy.get(), localWorkerProxy.get(), collection));
+        new GetRecommendAggregator(mergerProxy.get(), localWorkerProxy.get(),
+            Sf1rTopology::getServiceName(Sf1rTopology::RecommendService), collection));
 
     mergerProxy.release();
     localWorkerProxy.release();
 
-    RecommendMasterManager::get()->registerAggregator(aggregator_);
+    MasterManagerBase::get()->registerAggregator(aggregator_);
 }
 
 void GetRecommendMaster::recommendPurchase(

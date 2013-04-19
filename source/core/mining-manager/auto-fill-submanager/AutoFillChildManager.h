@@ -223,6 +223,7 @@ public:
     
     bool openDB(std::string path_dbTable, std::string path_dbItem);
     void closeDB();
+    void flush();
 
     void buildDbItem();
     bool buildDbIndex(const std::list<QueryType>& queryList);
@@ -250,6 +251,7 @@ public:
     bool getAutoFillListFromWat(const izenelib::util::UString& query
                             , std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
+    void updateAutoFill(int calltype);
     bool getAutoFillListFromDbTable(const izenelib::util::UString& query
                             , std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
 
@@ -257,7 +259,7 @@ public:
                             , std::vector<std::pair<izenelib::util::UString,uint32_t> >& list);
     
     void updateAutoFill();
-    void updateFromLog();
+    void updateFromLog(int64_t cron_time);
     void updateFromLog_ForTest(std::vector<UserQuery>& query_records);
     void updateFromSCD();
     void SaveSCDLog();
