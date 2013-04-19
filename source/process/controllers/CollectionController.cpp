@@ -411,9 +411,17 @@ void CollectionController::rebuild_collection()
     }
 
     boost::shared_ptr<RebuildTask> task(new RebuildTask(collection));
-    MasterManagerBase::get()->pushWriteReq("CollectionTaskScheduler-" + task->getTaskName(), "cron");
-
-    LOG(INFO) << "push rebuild cron job to queue from api: " << "CollectionTaskScheduler-" + task->getTaskName();
+    if (MasterManagerBase::get()->isDistributed())
+    {
+        if(!MasterManagerBase::get()->pushWriteReq("CollectionTaskScheduler-" + task->getTaskName(), "cron"))
+        {
+            response().addError("push rebuild task failed, maybe the auto rebuild not enabled.!");
+            return;
+        }
+        LOG(INFO) << "push rebuild cron job to queue from api: " << "CollectionTaskScheduler-" + task->getTaskName();
+    }
+    else
+        task->doTask();
 }
 /**
  * @brief Action @b create_collection.
