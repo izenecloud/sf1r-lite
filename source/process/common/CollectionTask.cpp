@@ -75,7 +75,8 @@ void RebuildTask::doTask()
     }
     boost::shared_ptr<DocumentManager> documentManager = collectionHandler->indexTaskService_->getDocumentManager();
     CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
-    collDir = collPath.getCollectionDataPath();
+    collDir = bfs::path(collPath.getCollectionDataPath()).string();
+    LOG(INFO) << "data path : " << collDir;
 
     CollectionHandler* rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
     if (rebuildCollHandler)
@@ -110,7 +111,7 @@ void RebuildTask::doTask()
     LOG(INFO) << "# # # #  start rebuilding";
     rebuildCollHandler->indexTaskService_->index(documentManager, reqlog.cron_time);
     CollectionPath& rebuildCollPath = rebuildCollHandler->indexTaskService_->getCollectionPath();
-    rebuildCollDir = rebuildCollPath.getCollectionDataPath();
+    rebuildCollDir = bfs::path(rebuildCollPath.getCollectionDataPath()).string();
     rebuildCollBaseDir = rebuildCollPath.getBasePath();
     } // lock scope
 
@@ -256,7 +257,9 @@ bool RebuildTask::rebuildFromSCD()
             return false;
         }
         CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
-        collDir = collPath.getCollectionDataPath();
+        collDir = bfs::path(collPath.getCollectionDataPath()).string();
+        LOG(INFO) << "data path : " << collDir;
+
         std::string rebuild_scd_src = collPath.getScdPath() + "/rebuild_scd";
 
         bool is_primary = DistributeRequestHooker::get()->isRunningPrimary();
@@ -319,7 +322,7 @@ bool RebuildTask::rebuildFromSCD()
             return false;
         }
 
-        rebuildCollDir = rebuildCollPath.getCollectionDataPath();
+        rebuildCollDir = bfs::path(rebuildCollPath.getCollectionDataPath()).string();
         rebuildCollBaseDir = rebuildCollPath.getBasePath();
     } // lock scope
 
