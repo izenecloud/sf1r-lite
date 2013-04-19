@@ -186,7 +186,7 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     std::string dir = getCurrentCollectionDataPath_()+"/product";
     std::cout<<"product dir : "<<dir<<std::endl;
     boost::filesystem::create_directories(dir);
-    std::string scd_dir = dir+"/scd";
+    std::string scd_dir =  config_->collPath_.getScdPath() +"/product_scd";
     boost::filesystem::create_directories(scd_dir);
     data_source_ = new CollectionProductDataSource(indexService->searchWorker_->documentManager_,
                                                    indexService->searchWorker_->indexManager_,
