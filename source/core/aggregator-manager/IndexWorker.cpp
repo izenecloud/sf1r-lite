@@ -501,7 +501,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     {
         if (hooker_)
         {
-            if (!hooker_->FinishHook())
+            if (!hooker_->FinishHook(timestamp))
             {
                 std::cout<<"[IndexWorker] Hooker Finish failed."<<std::endl;
                 return false;

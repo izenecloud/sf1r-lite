@@ -248,11 +248,11 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
     return true;
 }
 
-bool ProductManager::FinishHook()
+bool ProductManager::FinishHook(time_t timestamp)
 {
     if (has_price_trend_)
     {
-        task_type task = boost::bind(&ProductPriceTrend::Flush, price_trend_);
+        task_type task = boost::bind(&ProductPriceTrend::Flush, price_trend_, timestamp);
         jobScheduler_.addTask(task);
     }
 
