@@ -13,7 +13,7 @@ static unsigned maxDoc = 100;
 BOOST_AUTO_TEST_CASE(alldociter_test)
 {
     {
-        boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
+        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
 
         pFilterIdSet->set(1);
         pFilterIdSet->set(2);
@@ -29,8 +29,8 @@ BOOST_AUTO_TEST_CASE(alldociter_test)
         pFilterIdSet->set(50);
         pFilterIdSet->set(100);
 
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
-        AllDocumentIterator* pIterator = new AllDocumentIterator( pBitmapIter, maxDoc );
+        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        AllDocumentIterator* pIterator = new AllDocumentIterator(pFilterTermDocFreqs, maxDoc);
 
         //pIterator->next();
         unsigned doc = pIterator->skipTo(2);
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(alldociter_test)
     }
 
     {
-        boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
+        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
 
         pFilterIdSet->set(1);
         pFilterIdSet->set(2);
@@ -84,8 +84,8 @@ BOOST_AUTO_TEST_CASE(alldociter_test)
         pFilterIdSet->set(50);
         pFilterIdSet->set(100);
 
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
-        AllDocumentIterator* pIterator = new AllDocumentIterator( pBitmapIter, maxDoc );
+        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        AllDocumentIterator* pIterator = new AllDocumentIterator(pFilterTermDocFreqs, maxDoc);
 
         while(pIterator->next())
         {

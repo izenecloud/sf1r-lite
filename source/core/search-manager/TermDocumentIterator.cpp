@@ -4,7 +4,6 @@
 
 #include <ir/index_manager/index/TermPositions.h>
 #include <ir/index_manager/utility/BitVector.h>
-#include <ir/index_manager/utility/BitMapIterator.h>
 
 #include <util/profiler/ProfilerGroup.h>
 
@@ -110,7 +109,7 @@ bool TermDocumentIterator::accept()
     }
     else
     {
-        boost::shared_ptr<izenelib::am::EWAHBoolArray<uint32_t> > pDocIdSet;
+        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterBitmap;
         boost::shared_ptr<izenelib::ir::indexmanager::BitVector> pBitVector;
         if (!TermTypeDetector::isTypeMatch(rawTerm_, dataType_))
             return false;
@@ -122,13 +121,13 @@ bool TermDocumentIterator::accept()
         bool find = indexManagerPtr_->seekTermFromBTreeIndex(colID_, property_, value);
         if (find)
         {
-            pDocIdSet.reset(new izenelib::am::EWAHBoolArray<uint32_t>());
+            pFilterBitmap.reset(new IndexManager::FilterBitmapT);
             pBitVector.reset(new izenelib::ir::indexmanager::BitVector(pIndexReader_->maxDoc() + 1));
 
             indexManagerPtr_->getDocsByNumericValue(colID_, property_, value, *pBitVector);
-            pBitVector->compressed(*pDocIdSet);
+            pBitVector->compressed(*pFilterBitmap);
             if(pTermDocReader_) delete pTermDocReader_;
-            pTermDocReader_ = new BitMapIterator(pDocIdSet);
+            pTermDocReader_ = new IndexManager::FilterTermDocFreqsT(pFilterBitmap);
             df_ = pTermDocReader_->docFreq();
         }
         return find;
