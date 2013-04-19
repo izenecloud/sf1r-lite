@@ -8,6 +8,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ir/index_manager/index/MockIndexReader.h>
+#include <index-manager/IndexManager.h>
 #include <search-manager/ANDDocumentIterator.h>
 #include <search-manager/FilterDocumentIterator.h>
 
@@ -142,11 +143,11 @@ BOOST_AUTO_TEST_CASE(filter_test)
         MockTermDocumentIterator* pTermDocIterator2 = new MockTermDocumentIterator(2, 1, &indexer,"title",1);
         iter.add(pTermDocIterator2);
 
-        boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
+        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
         pFilterIdSet->set(0);
         pFilterIdSet->set(2);
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
-        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
+        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pFilterTermDocFreqs );
         iter.add(pFilterIterator);
 
         BOOST_CHECK_EQUAL(iter.next(), true );
@@ -163,11 +164,11 @@ BOOST_AUTO_TEST_CASE(filter_test)
         MockTermDocumentIterator* pTermDocIterator3 = new MockTermDocumentIterator(5, 1, &indexer,"title",1);
         iter.add(pTermDocIterator3);
 
-        boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
+        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
         pFilterIdSet->set(2);
         pFilterIdSet->set(3);
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
-        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
+        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pFilterTermDocFreqs );
         iter.add(pFilterIterator);
 
         BOOST_CHECK_EQUAL(iter.next(), false );
@@ -181,11 +182,11 @@ BOOST_AUTO_TEST_CASE(filter_test)
         pTermDocIterator2->setNot(true);
         iter.add(pTermDocIterator2);
 
-        boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
+        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
         pFilterIdSet->set(0);
         pFilterIdSet->set(1);
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
-        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
+        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pFilterTermDocFreqs );
         iter.add(pFilterIterator);
 
         BOOST_CHECK_EQUAL(iter.next(), false );
@@ -199,13 +200,13 @@ BOOST_AUTO_TEST_CASE(filter_test)
         pTermDocIterator2->setNot(true);
         iter.add(pTermDocIterator2);
 
-        boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
+        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
         pFilterIdSet->set(0);
         pFilterIdSet->set(1);
         pFilterIdSet->set(2);
         pFilterIdSet->set(3);
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
-        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
+        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pFilterTermDocFreqs );
         iter.add(pFilterIterator);
 
         BOOST_CHECK_EQUAL(iter.next(), true );
@@ -219,7 +220,7 @@ BOOST_AUTO_TEST_CASE(filter_test)
 
     {
         ANDDocumentIterator iter;
-        boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet(new EWAHBoolArray<uint32_t>());
+        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
 
         int data_size = 100;
         int real_size = 0;
@@ -234,22 +235,14 @@ BOOST_AUTO_TEST_CASE(filter_test)
         // pFilterIdSet->set(0);
         // pFilterIdSet->set(2);
         // pFilterIdSet->set(3);
-        EWAHBoolArrayBitIterator<uint32_t> bitIter = pFilterIdSet->bit_iterator();
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
-        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pBitmapIter );
+
+        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator( pFilterTermDocFreqs );
         iter.add(pFilterIterator);
 
         clock_t start,finish;
         double totaltime;
         start = clock();
-
-        //i = 0;
-        while(bitIter.next())
-        {
-            bitIter.getCurr();
-            // BOOST_CHECK_EQUAL(iter.doc(), copy_data[i] );
-            // i++;
-        }
 
         finish = clock();
         totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
