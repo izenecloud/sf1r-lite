@@ -2165,7 +2165,10 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
     }
     if (s_enable_async_)
     {
-        checkForAsyncWrite();
+        LOG(INFO) << "abortting request :" << self_primary_path_;
+        if(cb_on_wait_replica_abort_)
+            cb_on_wait_replica_abort_();
+        updateNodeStateToNewState(NODE_STATE_STARTED);
         return;
     }
     std::vector<std::string> node_list;
@@ -2311,14 +2314,6 @@ bool NodeManagerBase::checkForAsyncWrite()
             if (cb_on_wait_primary_)
                 cb_on_wait_primary_();
             LOG(INFO) << "write request log success on replica: " << self_primary_path_;
-            updateNodeStateToNewState(NODE_STATE_STARTED);
-        }
-        break;
-    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
-        {
-            LOG(INFO) << "abortting request :" << curr_primary_path_;
-            if(cb_on_wait_replica_abort_)
-                cb_on_wait_replica_abort_();
             updateNodeStateToNewState(NODE_STATE_STARTED);
         }
         break;
