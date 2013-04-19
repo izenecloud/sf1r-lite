@@ -75,7 +75,11 @@ void RebuildTask::doTask()
     }
     boost::shared_ptr<DocumentManager> documentManager = collectionHandler->indexTaskService_->getDocumentManager();
     CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
-    collDir = bfs::path(collPath.getCollectionDataPath()).string();
+
+    bfs::path tmppath = bfs::path(collPath.getCollectionDataPath());
+    if (tmppath.filename().string() == ".")
+        tmppath = tmppath.parent_path();
+    collDir = (tmppath.parent_path()/tmppath.filename()).string();
     LOG(INFO) << "data path : " << collDir;
 
     CollectionHandler* rebuildCollHandler = CollectionManager::get()->findHandler(rebuildCollectionName_);
@@ -115,13 +119,16 @@ void RebuildTask::doTask()
     rebuildCollBaseDir = rebuildCollPath.getBasePath();
     } // lock scope
 
-    bool writing_on_primary = DistributeRequestHooker::get()->isRunningPrimary();
-    DistributeRequestHooker::get()->setReplayingLog(true, reqlog);
-    // replay log for rebuilded collection.
-    RecoveryChecker::get()->replayLog(writing_on_primary,
-        collectionName_, rebuildCollectionName_, reqlog.replayed_id_list);
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        bool writing_on_primary = DistributeRequestHooker::get()->isRunningPrimary();
+        DistributeRequestHooker::get()->setReplayingLog(true, reqlog);
+        // replay log for rebuilded collection.
+        RecoveryChecker::get()->replayLog(writing_on_primary,
+            collectionName_, rebuildCollectionName_, reqlog.replayed_id_list);
 
-    DistributeRequestHooker::get()->setReplayingLog(false, reqlog);
+        DistributeRequestHooker::get()->setReplayingLog(false, reqlog);
+    }
     // replace collection data with rebuilded data
     LOG(INFO) << "## stopCollection: " << collectionName_;
     CollectionManager::get()->stopCollection(collectionName_);
@@ -257,7 +264,11 @@ bool RebuildTask::rebuildFromSCD()
             return false;
         }
         CollectionPath& collPath = collectionHandler->indexTaskService_->getCollectionPath();
-        collDir = bfs::path(collPath.getCollectionDataPath()).string();
+
+        bfs::path tmppath = bfs::path(collPath.getCollectionDataPath());
+        if (tmppath.filename().string() == ".")
+            tmppath = tmppath.parent_path();
+        collDir = (tmppath.parent_path()/tmppath.filename()).string();
         LOG(INFO) << "data path : " << collDir;
 
         std::string rebuild_scd_src = collPath.getScdPath() + "/rebuild_scd";
@@ -326,13 +337,16 @@ bool RebuildTask::rebuildFromSCD()
         rebuildCollBaseDir = rebuildCollPath.getBasePath();
     } // lock scope
 
-    bool writing_on_primary = DistributeRequestHooker::get()->isRunningPrimary();
-    DistributeRequestHooker::get()->setReplayingLog(true, reqlog);
-    // replay log for rebuilded collection.
-    RecoveryChecker::get()->replayLog(writing_on_primary,
-        collectionName_, rebuildCollectionName_, reqlog.replayed_id_list);
+    if (NodeManagerBase::get()->isDistributed())
+    {
+        bool writing_on_primary = DistributeRequestHooker::get()->isRunningPrimary();
+        DistributeRequestHooker::get()->setReplayingLog(true, reqlog);
+        // replay log for rebuilded collection.
+        RecoveryChecker::get()->replayLog(writing_on_primary,
+            collectionName_, rebuildCollectionName_, reqlog.replayed_id_list);
 
-    DistributeRequestHooker::get()->setReplayingLog(false, reqlog);
+        DistributeRequestHooker::get()->setReplayingLog(false, reqlog);
+    }
     // replace collection data with rebuilded data
     LOG(INFO) << "## stopCollection: " << collectionName_;
     CollectionManager::get()->stopCollection(collectionName_);
