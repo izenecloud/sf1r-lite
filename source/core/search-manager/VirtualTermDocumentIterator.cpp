@@ -4,7 +4,6 @@
 
 #include <ir/index_manager/index/TermPositions.h>
 #include <ir/index_manager/utility/BitVector.h>
-#include <ir/index_manager/utility/BitMapIterator.h>
 
 #include <util/profiler/ProfilerGroup.h>
 

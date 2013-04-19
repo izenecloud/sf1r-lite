@@ -1,5 +1,6 @@
 #include "CustomRankDocumentIterator.h"
 #include "FilterDocumentIterator.h"
+#include <index-manager/IndexManager.h>
 #include <algorithm> // sort
 
 namespace
@@ -9,20 +10,20 @@ using namespace sf1r;
 
 FilterDocumentIterator* createFilterDocIterator(CustomRankDocId::DocIdList& docIdList)
 {
-    boost::shared_ptr<izenelib::am::EWAHBoolArray<uint32_t> > docIdSet(
-        new izenelib::am::EWAHBoolArray<uint32_t>());
+    boost::shared_ptr<IndexManager::FilterBitmapT> filterBitmap(
+        new IndexManager::FilterBitmapT);
 
     std::sort(docIdList.begin(), docIdList.end());
     for (CustomRankDocId::DocIdList::const_iterator it = docIdList.begin();
             it != docIdList.end(); ++it)
     {
-        docIdSet->set(*it);
+        filterBitmap->set(*it);
     }
 
-    izenelib::ir::indexmanager::BitMapIterator* bitMapIter =
-        new izenelib::ir::indexmanager::BitMapIterator(docIdSet);
+    IndexManager::FilterTermDocFreqsT* filterTermDocFreqs =
+        new IndexManager::FilterTermDocFreqsT(filterBitmap);
 
-    return new FilterDocumentIterator(bitMapIter);
+    return new FilterDocumentIterator(filterTermDocFreqs);
 }
 
 } // namespace

@@ -29,8 +29,8 @@ void DistributeRequestHooker::init()
 {
     need_backup_types_.insert(Req_NoAdditionData_NeedBackup_Req);
     //need_backup_types_.insert(Req_CronJob);
-    need_backup_types_.insert(Req_Index);
-    need_backup_types_.insert(Req_Rebuild_FromSCD);
+    //need_backup_types_.insert(Req_Index);
+    //need_backup_types_.insert(Req_Rebuild_FromSCD);
     //async_or_shard_write_types_.insert("commands_index");
     //async_or_shard_write_types_.insert("documents_visit");
     // init callback for distribute request.
@@ -280,7 +280,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
         return true;
     }
 
-    if ((prepared_req.inc_id > last_backup_id_ + 1) && (prepared_req.inc_id - last_backup_id_) % 150000 == 0)
+    if ((prepared_req.inc_id > last_backup_id_ + 1) && (prepared_req.inc_id - last_backup_id_) % 250000 == 0)
     {
         LOG(INFO) << "begin backup";
         if(!RecoveryChecker::get()->backup())
