@@ -1810,7 +1810,10 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
         if (cb_on_elect_finished_)
             cb_on_elect_finished_();
         MasterManagerBase::get()->notifyChangedPrimary();
+        NodeStateType oldstate = nodeState_;
         updateNodeStateToNewState(NODE_STATE_STARTED);
+        if (s_enable_async_ && oldstate != NODE_STATE_STARTED)
+            updateNodeState();
     }
     else if(!self_changed)
     {
@@ -2250,9 +2253,14 @@ void NodeManagerBase::checkSecondaryRecovery(bool self_changed)
     if (!can_recovery)
     {
         NodeStateType new_state = NODE_STATE_STARTED;
+        NodeStateType oldstate = nodeState_;
         if (cb_on_recover_wait_replica_finish_)
             cb_on_recover_wait_replica_finish_();
         updateNodeStateToNewState(new_state);
+        if (s_enable_async_ && oldstate != NODE_STATE_STARTED)
+        {
+            updateNodeState();
+        }
     }
 }
 

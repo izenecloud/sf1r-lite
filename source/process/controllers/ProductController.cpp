@@ -699,7 +699,7 @@ void ProductController::migrate_price_history()
  */
 void ProductController::finish_hook()
 {
-    if (!product_manager_->FinishHook())
+    if (!product_manager_->FinishHook(Utilities::createTimeStamp()))
     {
         response().addError(product_manager_->GetLastError());
         return;

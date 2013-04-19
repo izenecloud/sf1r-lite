@@ -39,7 +39,7 @@ bool ProductIndexHooker::HookDelete(docid_t docid, time_t timestamp)
     return product_manager_->HookDelete(docid, timestamp);
 }
 
-bool ProductIndexHooker::FinishHook()
+bool ProductIndexHooker::FinishHook(time_t timestamp)
 {
-    return product_manager_->FinishHook();
+    return product_manager_->FinishHook(timestamp);
 }

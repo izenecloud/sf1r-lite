@@ -700,6 +700,7 @@ bool RecoveryChecker::rollbackLastFail(bool starting_up)
         {
             LOG(ERROR) << "last backup write inc is larger than current failed inc_id: " <<
                 last_backup_id << " vs " << rollback_id;
+            bfs::rename(redo_log_basepath_, request_log_basepath_);
             return false;
         }
     }
