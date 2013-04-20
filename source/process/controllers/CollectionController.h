@@ -42,6 +42,8 @@ public:
 
     void rebuild_from_scd();
 
+    void backup_all();
+
     void create_collection();
 
     void delete_collection();
