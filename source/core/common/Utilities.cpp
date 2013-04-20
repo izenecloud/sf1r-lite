@@ -25,6 +25,10 @@ ptime gregorianISO8601Parser(const std::string& dataStr)
         {
             return ptime(time_from_string(dataStr));
         }
+        else if (dataStr.length() == 15 && dataStr.find("T") != std::string::npos)
+        {
+            return ptime(from_iso_string(dataStr));
+        }
         else
         {
             return ptime(from_simple_string(dataStr));
@@ -125,7 +129,7 @@ time_t Utilities::createTimeStampInSeconds(const izenelib::util::UString& dateSt
     ptime pt = convert(datestr);
     outDateStr.assign(to_iso_string(pt).erase(8, 1), encoding);
     static const ptime epoch(date(1970, 1, 1));
-    return (pt - epoch).total_seconds() + timezone;
+    return (pt - epoch).total_seconds();
 }
 
 time_t Utilities::createTimeStampInSeconds(const izenelib::util::UString& text)
@@ -139,7 +143,7 @@ time_t Utilities::createTimeStampInSeconds(const std::string& dataStr)
 {
     ptime pt = convert(dataStr);
     static const ptime epoch(date(1970, 1, 1));
-    return (pt - epoch).total_seconds() + timezone;
+    return (pt - epoch).total_seconds();
 }
 
 time_t Utilities::createTimeStamp()
@@ -155,7 +159,7 @@ time_t Utilities::createTimeStamp(const ptime& pt)
         return -1;
 
     static const ptime epoch(date(1970, 1, 1));
-    return (pt - epoch).total_microseconds() + timezone * 1000000;
+    return (pt - epoch).total_microseconds();
 }
 
 time_t Utilities::createTimeStamp(const izenelib::util::UString& text)
