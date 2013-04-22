@@ -86,6 +86,8 @@ private:
     bool redoLog(ReqLogMgr* redolog, uint32_t start_id, uint32_t end_id);
     std::map<std::string, std::string> handleConfigUpdate();
 
+    bool checkIfLogForward(bool is_primary);
+
     bool handleConfigUpdateForColl(const std::string& coll,
         std::map<std::string, std::string>& config_file_list);
 
