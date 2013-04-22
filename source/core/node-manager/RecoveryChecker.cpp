@@ -1089,7 +1089,9 @@ void RecoveryChecker::checkDataConsistent(const std::string& coll, std::string& 
 {
     if (flush_col_)
         flush_col_(coll);
-    DistributeFileSyncMgr::get()->checkReplicasStatus(coll, errinfo);
+    std::vector<std::string> coll_list;
+    coll_list.push_back(coll);
+    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, errinfo);
 }
 
 bool RecoveryChecker::checkDataConsistent()
@@ -1102,19 +1104,20 @@ bool RecoveryChecker::checkDataConsistent()
         tmp_all_col_info = all_col_info_;
     }
 
+    std::vector<std::string> coll_list;
     CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
     while(cit != tmp_all_col_info.end())
     {
         if (flush_col_)
             flush_col_(cit->first);
-        DistributeFileSyncMgr::get()->checkReplicasStatus(cit->first, errinfo);
-        if (!errinfo.empty())
-        {
-            LOG(ERROR) << "data is not consistent after recovery, collection : " << cit->first <<
-                ", error : " << errinfo;
-            return false;
-        }
+        coll_list.push_back(cit->first);
         ++cit;
+    }
+    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, errinfo);
+    if (!errinfo.empty())
+    {
+        LOG(ERROR) << "data is not consistent after recovery, error : " << errinfo;
+        return false;
     }
     return true;
 }
@@ -1135,28 +1138,32 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     }
     bool sync_file = bfs::exists("./distribute_sync_file.flag");
 
+    std::vector<std::string> coll_list;
     CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
     while(cit != tmp_all_col_info.end())
     {
         if (flush_col_)
             flush_col_(cit->first);
-        DistributeFileSyncMgr::get()->checkReplicasStatus(cit->first, errinfo);
-        if (!errinfo.empty())
-        {
-            setRollbackFlag(0);
-            LOG(ERROR) << "data is not consistent after recovery, collection : " << cit->first <<
-                ", error : " << errinfo;
-            if (sync_file)
-            {
-                if(!DistributeFileSyncMgr::get()->syncCollectionData(cit->first))
-                    forceExit("recovery failed for sync collection file.");
-            }
-            else
-                forceExit("recovery failed for not consistent."); 
-            clearRollbackFlag();
-        }
+        coll_list.push_back(cit->first);
         ++cit;
     }
+
+    DistributeFileSyncMgr::get()->checkReplicasStatus(coll_list, errinfo);
+    if (!errinfo.empty())
+    {
+        setRollbackFlag(0);
+        LOG(ERROR) << "data is not consistent after recovery, collection : " << cit->first <<
+          ", error : " << errinfo;
+        if (sync_file)
+        {
+            if(!DistributeFileSyncMgr::get()->syncCollectionData(cit->first))
+                forceExit("recovery failed for sync collection file.");
+        }
+        else
+            forceExit("recovery failed for not consistent."); 
+        clearRollbackFlag();
+    }
+
     if (sync_file)
         bfs::remove("./distribute_sync_file.flag");
 

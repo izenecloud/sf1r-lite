@@ -383,19 +383,11 @@ void DistributeFileSyncMgr::sendReportStatusRsp(const std::string& ip, uint16_t 
     }
 }
 
-void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std::string& check_errinfo)
+void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& colname_list, std::string& check_errinfo)
 {
     if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return;
 
-    CollectionPath colpath;
-    bool ret = RecoveryChecker::get()->getCollPath(colname, colpath);
-    if (!ret)
-    {
-        check_errinfo = "check collection not exist for  " + colname;
-        LOG(INFO) << check_errinfo;
-        return;
-    }
     {
         boost::unique_lock<boost::mutex> lk(status_report_mutex_);
         while (reporting_)
@@ -407,14 +399,26 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::string& colname, std:
         reporting_ = true;
     }
     check_errinfo = "";
+
     std::vector<std::string> replica_info;
     NodeManagerBase::get()->getAllReplicaInfo(replica_info, true);
     uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
 
     ReportStatusRequest req;
     req.param_.req_host = SuperNodeManager::get()->getLocalHostIP();
+    for (size_t i = 0; i < colname_list.size(); ++i)
+    {
+        CollectionPath colpath;
+        bool ret = RecoveryChecker::get()->getCollPath(colname_list[i], colpath);
+        if (!ret)
+        {
+            check_errinfo = "check collection not exist for  " + colname_list[i];
+            LOG(INFO) << check_errinfo;
+            return;
+        }
 
-    getFileList(colpath.getCollectionDataPath(), req.param_.check_file_list, ignore_list_, true);
+        getFileList(colpath.getCollectionDataPath(), req.param_.check_file_list, ignore_list_, true);
+    }
     boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
     getFileList(reqlogmgr->getRequestLogPath(), req.param_.check_file_list, ignore_list_, true);
 
