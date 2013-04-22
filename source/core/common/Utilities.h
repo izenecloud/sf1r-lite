@@ -23,13 +23,13 @@ public:
     ~Utilities() {}
 
 public:
-    static time_t createTimeStampInSeconds(const izenelib::util::UString& dataStr, const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr);
-    static time_t createTimeStampInSeconds(const izenelib::util::UString& text);
-    static time_t createTimeStampInSeconds(const std::string& text);
+    static time_t createTimeStampInSeconds(const izenelib::util::UString& dataStr, const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr, bool is_UTC = false);
+    static time_t createTimeStampInSeconds(const izenelib::util::UString& text, bool is_UTC = false);
+    static time_t createTimeStampInSeconds(const std::string& text, bool is_UTC = false);
     static time_t createTimeStamp();
-    static time_t createTimeStamp(const boost::posix_time::ptime& pt);
-    static time_t createTimeStamp(const izenelib::util::UString& text);
-    static time_t createTimeStamp(const std::string& text);
+    static time_t createTimeStamp(const boost::posix_time::ptime& pt, bool is_UTC = false);
+    static time_t createTimeStamp(const izenelib::util::UString& text, bool is_UTC = false);
+    static time_t createTimeStamp(const std::string& text, bool is_UTC = false);
 
     template <typename T>
     static inline std::string toBytes(const T& val)
