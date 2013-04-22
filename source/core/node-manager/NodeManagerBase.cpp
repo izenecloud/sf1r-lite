@@ -163,6 +163,24 @@ void NodeManagerBase::notifyStop()
 {
     LOG(INFO) << "========== notify stop ============= ";
     {
+        if (mutex_.try_lock())
+        {
+            if (nodeState_ == NODE_STATE_STARTING || nodeState_ == NODE_STATE_INIT ||
+                nodeState_ == NODE_STATE_STARTED)
+            {
+                LOG(INFO) << "stopping while starting. " << nodeState_;
+                need_stop_ = true;
+                if (zookeeper_)
+                {
+                    stop();
+                }
+                mutex_.unlock();
+                if (zookeeper_)
+                    zookeeper_->disconnect();
+                return;
+            }
+            mutex_.unlock();
+        }
         boost::unique_lock<boost::mutex> lock(mutex_);
         need_stop_ = true;
         if (stopping_)
@@ -171,7 +189,11 @@ void NodeManagerBase::notifyStop()
             return;
         }
 
-        if ((nodeState_ == NODE_STATE_STARTED || nodeState_ == NODE_STATE_STARTING_WAIT_RETRY) && !MasterManagerBase::get()->hasAnyCachedRequest())
+        if ((nodeState_ == NODE_STATE_STARTED ||
+             nodeState_ == NODE_STATE_STARTING_WAIT_RETRY ||
+             nodeState_ == NODE_STATE_STARTING ||
+             nodeState_ == NODE_STATE_INIT) &&
+            !MasterManagerBase::get()->hasAnyCachedRequest())
         {
             stop();
         }
@@ -190,7 +212,7 @@ void NodeManagerBase::stop()
     if (stopping_)
         return;
     stopping_ = true;
-    LOG(INFO) << "begin stopping...";
+    LOG(INFO) << "begin stopping on state : " << nodeState_;
     if (masterStarted_)
     {
         stopMasterManager();
@@ -825,6 +847,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     {
         LOG(WARNING) << "check for log failed after enter cluster, must re-enter.";
         unregisterPrimary();
+        nodeState_ = NODE_STATE_STARTING;
         sleep(10);
         if (s_enable_async_)
         {
@@ -1800,6 +1823,7 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
             {
                 LOG(INFO) << "I am not the newest while electing, abandon myself primary, and re-enter.";
                 unregisterPrimary();
+                nodeState_ = NODE_STATE_STARTING;
                 sleep(10);
                 reEnterCluster();
                 return;

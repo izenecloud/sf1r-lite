@@ -1298,8 +1298,14 @@ void RecoveryChecker::syncToNewestReqLog()
     while(true)
     {
         uint32_t reqid = reqlog_mgr_->getLastSuccessReqId();
-        while(!DistributeFileSyncMgr::get()->getNewestReqLog(false, reqid + 1, newlogdata_list))
+        bool sync_from_primary = NodeManagerBase::isAsyncEnabled();
+        while(!DistributeFileSyncMgr::get()->getNewestReqLog(sync_from_primary, reqid + 1, newlogdata_list))
         {
+            if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
+            {
+                LOG(INFO) << "no other primary node while sync log.";
+                break;
+            }
             LOG(INFO) << "get newest log failed, waiting and retry.";
             sleep(10);
         }
