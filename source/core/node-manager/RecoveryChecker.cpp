@@ -140,18 +140,22 @@ static void cleanUnnessesaryBackup(const bfs::path& backup_basepath)
     }
 }
 
-static bool getLastBackup(const bfs::path& backup_basepath, std::string& backup_path, uint32_t& backup_inc_id)
+static bool getLastBackup(const bfs::path& backup_basepath, uint32_t less_than, std::string& backup_path, uint32_t& backup_inc_id)
 {
     std::vector<uint32_t> backup_req_incids;
     getBackupList(backup_basepath, backup_req_incids);
     if (backup_req_incids.empty())
         return false;
+    LOG(INFO) << "getting last backup id which is less than : " << less_than;
     for (size_t i = 0; i < backup_req_incids.size(); ++i)
     {
         backup_inc_id = backup_req_incids[i];
         backup_path = (backup_basepath/bfs::path(boost::lexical_cast<std::string>(backup_inc_id))).string() + "/";
         if (CopyGuard::isDirCopyOK(backup_path))
-            return true;
+        {
+            if (less_than == 0 || backup_inc_id < less_than)
+                return true;
+        }
         else 
         {
             LOG(WARNING) << "a corrupted directory removed " << backup_path;
@@ -584,7 +588,7 @@ bool RecoveryChecker::hasAnyBackup(uint32_t& last_backup_id)
     std::string last_backup_path;
     last_backup_id = 0;
     bool has_backup = true;
-    if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
+    if (!getLastBackup(backup_basepath_, 0, last_backup_path, last_backup_id))
     {
         last_backup_id = 0;
         has_backup = false;
@@ -614,10 +618,17 @@ bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
         return true;
     }
 
+    uint32_t rollback_id = 0;
+    ifstream ifs(rollback_file_.c_str());
+    if (ifs.good())
+    {
+        ifs.read((char*)&rollback_id, sizeof(rollback_id));
+    }
+
     std::string last_backup_path;
     uint32_t last_backup_id = 0;
     bool has_backup = true;
-    if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
+    if (!getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
     {
         LOG(ERROR) << "no backup available while check startup.";
         LOG(ERROR) << "need restart to redo all log or get full data from primary.";
@@ -685,7 +696,7 @@ bool RecoveryChecker::rollbackLastFail(bool starting_up)
     ReqLogMgr redo_req_log_mgr;
     redo_req_log_mgr.init(redo_log_basepath_);
     bool has_backup = true;
-    if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
+    if (!getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
     {
         LOG(ERROR) << "no backup available while rollback.";
         LOG(ERROR) << "need restart to redo all log or get full data from primary.";
@@ -803,10 +814,13 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
         ifstream ifs(rollback_file_.c_str());
         if (ifs.good())
         {
-            LOG(INFO) << "rollback at startup, restore the last config file for the rollback.";
+            uint32_t rollback_id = 0;
+            ifs.read((char*)&rollback_id, sizeof(rollback_id));
+
+            LOG(INFO) << "rollback at startup, restore the last config file for the rollback." << rollback_id;
             std::string last_backup_path;
             uint32_t last_backup_id = 0;
-            if (getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
+            if (getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
             {
                 bfs::copy_file(last_backup_path + bfs::path(last_conf_file_).filename().string(), last_conf_file_,
                     bfs::copy_option::overwrite_if_exists);
@@ -1215,6 +1229,7 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
     std::vector<std::string> primary_logdata_list;
     while(true)
     {
+        LOG(INFO) << "checking log start from :" << check_start;
         if(!DistributeFileSyncMgr::get()->getNewestReqLog(true, check_start, primary_logdata_list))
         {
             LOG(WARNING) << "get newest log from primary failed while checking log data.";
