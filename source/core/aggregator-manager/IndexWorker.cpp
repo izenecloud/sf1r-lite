@@ -627,8 +627,8 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         }
 
         IndexerDocument indexDocument;
-        time_t timestamp = -1;
-        prepareIndexDocument_(oldId, timestamp, document, indexDocument);
+        time_t new_timestamp = -1;
+        prepareIndexDocument_(oldId, new_timestamp, document, indexDocument);
 
         if (!insertDoc_(document, indexDocument, timestamp))
             continue;
@@ -818,11 +818,6 @@ bool IndexWorker::createDocument(const Value& documentValue)
     if (!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
 
-    if (DistributeRequestHooker::get()->isRunningPrimary())
-    {
-        reqlog.timestamp = timestamp;
-    }
-
     bool ret = insertDoc_(document, indexDocument, reqlog.timestamp, true);
     if (ret)
     {
@@ -937,11 +932,6 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType, UPDATE_SCD))
     {
         return false;
-    }
-
-    if (DistributeRequestHooker::get()->isRunningPrimary())
-    {
-        reqlog.timestamp = timestamp;
     }
 
     if (!indexManager_->isRealTime())
@@ -1349,12 +1339,12 @@ bool IndexWorker::insertOrUpdateSCD_(
 
         if (scdType == INSERT_SCD || oldId == 0)
         {
-            if (!insertDoc_(document, indexDocument, new_timestamp))
+            if (!insertDoc_(document, indexDocument, timestamp))
                 continue;
         }
         else
         {
-            if (!updateDoc_(document, indexDocument, oldIndexDocument, new_timestamp, updateType))
+            if (!updateDoc_(document, indexDocument, oldIndexDocument, timestamp, updateType))
                 continue;
 
             ++numUpdatedDocs_;
