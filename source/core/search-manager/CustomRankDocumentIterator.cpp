@@ -14,8 +14,12 @@ FilterDocumentIterator* createFilterDocIterator(CustomRankDocId::DocIdList& docI
         new IndexManager::FilterBitmapT);
 
     std::sort(docIdList.begin(), docIdList.end());
+
+    CustomRankDocId::DocIdList::const_iterator uniqueEnd =
+        std::unique(docIdList.begin(), docIdList.end());
+
     for (CustomRankDocId::DocIdList::const_iterator it = docIdList.begin();
-            it != docIdList.end(); ++it)
+         it != uniqueEnd; ++it)
     {
         filterBitmap->set(*it);
     }
