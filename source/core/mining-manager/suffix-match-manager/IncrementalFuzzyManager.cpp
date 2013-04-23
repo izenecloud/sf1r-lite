@@ -767,7 +767,7 @@ namespace sf1r
                             break;
                         case QueryFiltering::RANGE:
                             {
-                                assert(filtertype.valses_size() == 2);
+                                assert(filtertype.values_.size() == 2);
                                 if(j>=1)continue;
                                 double filter_num_2 = filtertype.values_[1].getNumber();
                                 FilterManager::FilterIdRange tmp_range;
