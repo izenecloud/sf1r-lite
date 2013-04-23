@@ -158,10 +158,12 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
     Utilities::getKeyList(key_list, prop_map_);
     if (timestamp == -1)
         timestamp = Utilities::createTimeStamp();
+    time_t end_time = timestamp;
+    LOG(INFO) << "UpdateTPC at : " << timestamp;
     timestamp -= 86400000000LL * time_int_vec_[time_int];
 
     vector<PriceHistoryRow> row_list;
-    if (!price_history_->getMultiSlice(row_list, key_list, serializeLong(timestamp), "", 1))
+    if (!price_history_->getMultiSlice(row_list, key_list, serializeLong(timestamp), serializeLong(end_time), 1))
         return false;
 
     map<string, map<string, TPCQueue> > tpc_cache;
