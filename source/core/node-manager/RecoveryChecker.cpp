@@ -300,18 +300,22 @@ void RecoveryChecker::clearRollbackFlag()
 
 bool RecoveryChecker::backup()
 {
-    boost::unique_lock<boost::mutex> lock(mutex_);
-    if (!reqlog_mgr_)
+    CollInfoMapT tmp_all_col_info;
     {
-        LOG(ERROR) << "RecoveryChecker did not init!";
-        return false;
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        if (!reqlog_mgr_)
+        {
+            LOG(ERROR) << "RecoveryChecker did not init!";
+            return false;
+        }
+        need_backup_ = false;
+        // find all collection and backup.
+        tmp_all_col_info = all_col_info_;
     }
-    need_backup_ = false;
+
     // backup changeable data first, so that we can rollback if old data corrupt while process the request.
     // Ignore SCD files and any other files that will not change during processing.
-
-    // find all collection and backup.
-    CollInfoMapT::const_iterator cit = all_col_info_.begin();
+    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
     bfs::path dest_path = backup_basepath_ + "/" + boost::lexical_cast<std::string>(reqlog_mgr_->getLastSuccessReqId());
     bfs::path dest_coldata_backup = dest_path/bfs::path("backup_data");
 
@@ -328,7 +332,7 @@ bool RecoveryChecker::backup()
         // clear invalide flag after copy. So we can
         // know whether copy is finished correctly by checking flag .
         //
-        while(cit != all_col_info_.end())
+        while(cit != tmp_all_col_info.end())
         {
             LOG(INFO) << "backing up the collection: " << cit->first;
             // flush collection to make sure all changes have been saved to disk.

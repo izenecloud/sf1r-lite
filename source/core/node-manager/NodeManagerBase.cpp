@@ -539,15 +539,19 @@ bool NodeManagerBase::getCurrPrimaryInfo(std::string& primary_host)
     {
         ZNode node;
         node.loadKvString(sdata);
-        if (node.getUInt32Value(ZNode::KEY_NODE_STATE) == NODE_STATE_ELECTING)
+        uint32_t state = node.getUInt32Value(ZNode::KEY_NODE_STATE);
+        if (state == NODE_STATE_ELECTING ||
+            state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
+            state == NODE_STATE_UNKNOWN)
         {
-            LOG(INFO) << "primary is electing while get primary.";
+            LOG(INFO) << "primary is busy while get primary. " << state;
             primary_host.clear();
             return false;
         }
         primary_host = node.getStrValue(ZNode::KEY_HOST);
         return true;
     }
+    primary_host.clear();
     return false;
 }
 
@@ -2203,10 +2207,12 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
     }
     if (s_enable_async_)
     {
+        updateNodeState();
         LOG(INFO) << "abortting request :" << self_primary_path_;
         if(cb_on_wait_replica_abort_)
             cb_on_wait_replica_abort_();
         updateNodeStateToNewState(NODE_STATE_STARTED);
+        updateNodeState();
         return;
     }
     std::vector<std::string> node_list;

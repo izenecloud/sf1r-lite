@@ -328,7 +328,7 @@ DistributeFileSyncMgr::DistributeFileSyncMgr()
 {
     conn_mgr_ = new RpcServerConnection();
     RpcServerConnectionConfig config;
-    config.rpcThreadNum = 4;
+    config.rpcThreadNum = 8;
     conn_mgr_->init(config);
     ignore_list_.insert("LOG");
     ignore_list_.insert("LOG.old");
