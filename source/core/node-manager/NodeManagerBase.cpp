@@ -1173,16 +1173,29 @@ bool NodeManagerBase::isNeedReEnterCluster()
     updateCurrentPrimary();
     if (curr_primary_path_.empty() || old_primary != curr_primary_path_)
     {
-        LOG(WARNING) << "need re-enter cluster for primary has changed." << old_primary << " vs " << curr_primary_path_;
-        return true;
+	    // avoid re-enter cluster if my state is ok while primary changed.
+	    // We just make sure our log is newest.
+	    if (old_primary == self_primary_path_)
+	    {
+		    LOG(WARNING) << "need re-enter cluster for I lost primary." << old_primary << " vs " << curr_primary_path_;
+		    return true;
+	    }
+	    if (nodeState_ != NODE_STATE_STARTED)
+		    return true;
+
+	    if (curr_primary_path_ == self_primary_path_)
+	    {
+		    LOG(WARNING) << "I became the new primary." << old_primary << " vs " << curr_primary_path_;
+		    nodeState_ = NODE_STATE_ELECTING;
+	    }
     }
 
-    NodeStateType primary_state = getPrimaryState();
-    if (primary_state == NODE_STATE_ELECTING || primary_state == NODE_STATE_UNKNOWN)
-    {
-        LOG(WARNING) << "need re-enter cluster for primary is electing ";
-        return true;
-    }
+    //NodeStateType primary_state = getPrimaryState();
+    //if (primary_state == NODE_STATE_ELECTING || primary_state == NODE_STATE_UNKNOWN)
+    //{
+    //    LOG(WARNING) << "need re-enter cluster for primary is electing ";
+    //    return true;
+    //}
     if (!cb_on_recover_check_())
     {
         LOG(WARNING) << "need re-enter cluster for request log fall behind.";
