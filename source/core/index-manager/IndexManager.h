@@ -108,7 +108,7 @@ public:
     ~IndexManager();
 
 public:
-    typedef uint64_t FilterWordT;
+    typedef uint32_t FilterWordT;
     typedef EWAHBoolArray<FilterWordT> FilterBitmapT;
     typedef EWAHTermDocFreqs<FilterWordT> FilterTermDocFreqsT;
 
