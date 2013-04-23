@@ -80,12 +80,15 @@ void QueryBuilder::prepare_filter(
     }
     else
     {
-        unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
-        unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8) + (bitsNum % (sizeof(uint32_t) * 8) == 0 ? 0 : 1);
+        const unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
+        const unsigned int wordBitNum = sizeof(IndexManager::FilterWordT) << 3;
+        const unsigned int wordsNum = (bitsNum - 1) / wordBitNum + 1;
+
         pFilterBitmap.reset(new IndexManager::FilterBitmapT);
         pFilterBitmap->addStreamOfEmptyWords(true, wordsNum);
         boost::shared_ptr<IndexManager::FilterBitmapT> pFilterBitmap2;
         boost::shared_ptr<IndexManager::FilterBitmapT> pFilterBitmap3;
+
         try
         {
             std::vector<QueryFiltering::FilteringType>::const_iterator iter = filtingList.begin();
