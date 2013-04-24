@@ -5,7 +5,7 @@
 #include <vector>
 #include <map>
 #include <list>
-#include <util/sketch/madoka/sketch.h>
+#include <util/datastream/sketch/madoka/sketch.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/lexical_cast.hpp>
