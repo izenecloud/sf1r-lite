@@ -266,6 +266,8 @@ public:
      */
     docid_t getMaxDocId() const;
 
+    uint32_t getNumDocs() const;
+
     bool getDeletedDocIdList(std::vector<docid_t>& docid_list);
 
     boost::shared_ptr<NumericPropertyTableBase>& getNumericPropertyTable(const std::string& propertyName);
@@ -278,22 +280,6 @@ public:
     izenelib::util::UString::EncodingType& getEncondingType()
     {
         return encodingType_;
-    }
-
-    void addRtypeDocid(docid_t docid)
-    {
-        RtypeDocidList_.push_back(docid);
-    }
-
-    std::vector<docid_t>& getRtyeDocidList()
-    {
-        return RtypeDocidList_;
-    }
-
-    void clearRtypeDocidList()
-    {
-        RtypeDocidList_.clear();
-        std::vector<docid_t>().swap(RtypeDocidList_);
     }
 
     bool isThereRtypePro()
@@ -430,7 +416,6 @@ private:
 
     boost::mutex mutex_;
 
-    std::vector<docid_t> RtypeDocidList_;
 private:
     static const std::string INDEX_FILE;
     static const std::string ACL_FILE;

@@ -1182,7 +1182,7 @@ bool IndexWorker::getIndexStatus(Status& status)
 
 uint32_t IndexWorker::getDocNum()
 {
-    return indexManager_->numDocs();
+    return documentManager_->getNumDocs();
 }
 
 uint32_t IndexWorker::getKeyCount(const std::string& property_name)
@@ -1589,7 +1589,6 @@ bool IndexWorker::doUpdateDoc_(
     case RTYPE:
     {
         // Store the old property value.
-        documentManager_->addRtypeDocid(document.getId());
         indexManager_->updateRtypeDocument(oldIndexDocument, indexDocument);
         return true;
     }
@@ -1662,7 +1661,6 @@ void IndexWorker::flushUpdateBuffer_()
         case RTYPE:
         {
             // Store the old property value.
-            documentManager_->addRtypeDocid(updateData.get<1>().getId());
             indexManager_->updateRtypeDocument(updateData.get<3>(), updateData.get<2>());
             break;
         }
