@@ -53,7 +53,7 @@ ptime gregorianISO8601Parser(const std::string& dataStr)
             }
             catch (const std::exception& e){}
         }
-        return second_clock::local_time();
+        return ptime(date(1970,1,1));
     }
 }
 
@@ -103,7 +103,7 @@ ptime convert(const std::string& dataStr)
         }
         catch (const std::exception& e)
         {
-            return second_clock::local_time();
+            return ptime(date(1970,1,1));
         }
     }
     else
@@ -117,7 +117,7 @@ ptime convert(const std::string& dataStr)
             return gregorianISO8601Parser(dataStr);
         }catch (const std::exception& e)
         {
-            return second_clock::local_time();
+            return ptime(date(1970,1,1));
         }
     }
 }
