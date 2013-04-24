@@ -1179,11 +1179,10 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     if (!errinfo.empty())
     {
         setRollbackFlag(0);
-        LOG(ERROR) << "data is not consistent after recovery, collection : " << cit->first <<
-          ", error : " << errinfo;
+        LOG(ERROR) << "data is not consistent after recovery, error : " << errinfo;
         if (sync_file)
         {
-            if(!DistributeFileSyncMgr::get()->syncCollectionData(cit->first))
+            if(!DistributeFileSyncMgr::get()->syncCollectionData(coll_list))
                 forceExit("recovery failed for sync collection file.");
         }
         else

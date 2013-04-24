@@ -249,14 +249,18 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             req.params().convert(&params);
             GetCollectionFileListData& reqdata = params.get<0>();
             reqdata.success = false;
-            CollectionPath colpath;
-            bool ret = RecoveryChecker::get()->getCollPath(reqdata.collection, colpath);
-            if (ret)
+            for (size_t i = 0; i < reqdata.collections.size(); ++i)
             {
-                reqdata.success = true;
-                bfs::path coldata_path = colpath.getCollectionDataPath();
-                // get all files.
-                getFileList(coldata_path.string(), reqdata.file_list, std::set<std::string>(), true);
+                std::string colname = reqdata.collections[i];
+                CollectionPath colpath;
+                bool ret = RecoveryChecker::get()->getCollPath(colname, colpath);
+                if (ret)
+                {
+                    reqdata.success = true;
+                    bfs::path coldata_path = colpath.getCollectionDataPath();
+                    // get all files.
+                    getFileList(coldata_path.string(), reqdata.file_list, std::set<std::string>(), true);
+                }
             }
             req.result(reqdata);
         }
@@ -671,7 +675,7 @@ bool DistributeFileSyncMgr::getNewestReqLog(bool from_primary_only, uint32_t sta
     return false;
 }
 
-bool DistributeFileSyncMgr::syncCollectionData(const std::string& colname)
+bool DistributeFileSyncMgr::syncCollectionData(const std::vector<std::string>& colname_list)
 {
     if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return true;
@@ -691,7 +695,7 @@ bool DistributeFileSyncMgr::syncCollectionData(const std::string& colname)
         LOG(INFO) << "try get collection file list from: " << ip << ":" << port;
 
         GetCollectionFileListRequest req;
-        req.param_.collection = colname;
+        req.param_.collections = colname_list;
         GetCollectionFileListData rsp;
         try
         {

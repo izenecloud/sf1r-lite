@@ -61,7 +61,7 @@ public:
     void stop();
     bool getNewestReqLog(bool from_primary_only, uint32_t start_from, std::vector<std::string>& saved_log);
     bool syncNewestSCDFileList(const std::string& colname);
-    bool syncCollectionData(const std::string& colname);
+    bool syncCollectionData(const std::vector<std::string>& colname_list);
     bool getFileFromOther(const std::string& filepath, bool force_overwrite = false);
     void notifyFinishReceive(const std::string& filepath);
     void sendFinishNotifyToReceiver(const std::string& ip, uint16_t port, const FinishReceiveRequest& req);
