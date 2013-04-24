@@ -1182,7 +1182,7 @@ bool IndexWorker::getIndexStatus(Status& status)
 
 uint32_t IndexWorker::getDocNum()
 {
-    return indexManager_->numDocs();
+    return documentManager_->getNumDocs();
 }
 
 uint32_t IndexWorker::getKeyCount(const std::string& property_name)
