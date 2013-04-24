@@ -781,6 +781,12 @@ void MasterManagerBase::watchAll()
         std::string nodePath = getNodePath(sf1rTopology_.curNode_.replicaId_, nodeid);
         zookeeper_->isZNodeExists(nodePath, ZooKeeper::WATCH);
     }
+
+    if (isMinePrimary())
+    {
+        zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::WATCH);
+        zookeeper_->isZNodeExists(write_req_queue_parent_, ZooKeeper::WATCH);
+    }
 }
 
 bool MasterManagerBase::checkZooKeeperService()

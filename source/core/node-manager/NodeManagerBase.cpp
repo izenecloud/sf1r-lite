@@ -2207,7 +2207,6 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
     }
     if (s_enable_async_)
     {
-        updateNodeState();
         LOG(INFO) << "abortting request :" << self_primary_path_;
         if(cb_on_wait_replica_abort_)
             cb_on_wait_replica_abort_();
