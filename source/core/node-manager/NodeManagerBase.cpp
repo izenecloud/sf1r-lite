@@ -1306,7 +1306,7 @@ bool NodeManagerBase::isNeedReEnterCluster()
             LOG(WARNING) << "need re-enter cluster for I lost primary." << old_primary << " vs " << curr_primary_path_;
             return true;
         }
-        if (nodeState_ != NODE_STATE_STARTED)
+        if (nodeState_ != NODE_STATE_STARTED && nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY)
             return true;
 
         if (curr_primary_path_ == self_primary_path_)
