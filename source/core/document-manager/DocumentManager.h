@@ -266,6 +266,8 @@ public:
      */
     docid_t getMaxDocId() const;
 
+    uint32_t getNumDocs() const;
+
     bool getDeletedDocIdList(std::vector<docid_t>& docid_list);
 
     boost::shared_ptr<NumericPropertyTableBase>& getNumericPropertyTable(const std::string& propertyName);
