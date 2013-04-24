@@ -1589,7 +1589,6 @@ bool IndexWorker::doUpdateDoc_(
     case RTYPE:
     {
         // Store the old property value.
-        documentManager_->addRtypeDocid(document.getId());
         indexManager_->updateRtypeDocument(oldIndexDocument, indexDocument);
         return true;
     }
@@ -1662,7 +1661,6 @@ void IndexWorker::flushUpdateBuffer_()
         case RTYPE:
         {
             // Store the old property value.
-            documentManager_->addRtypeDocid(updateData.get<1>().getId());
             indexManager_->updateRtypeDocument(updateData.get<3>(), updateData.get<2>());
             break;
         }

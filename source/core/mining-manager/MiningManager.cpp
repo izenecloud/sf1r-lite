@@ -1076,7 +1076,6 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
 
     hasDeletedDocDuringMining_ = false;
     LOG (INFO) << "Clear Rtype Docid List";
-    document_manager_->clearRtypeDocidList();
     document_manager_->RtypeDocidPros_.clear();
     document_manager_->last_delete_docid_.clear();
     return true;
