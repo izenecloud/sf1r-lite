@@ -211,6 +211,9 @@ bool ProductPriceTrend::UpdateTPC_(uint32_t time_int, time_t timestamp)
             tpc_btree->update(mit->first, mit->second);
         }
         tpc_btree->flush();
+        // reopen to make sure optimized data written to disk
+        tpc_btree->close();
+        tpc_btree->open();
     }
 
     return true;
