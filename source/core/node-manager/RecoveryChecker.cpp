@@ -1235,8 +1235,14 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
         LOG(INFO) << "checking log start from :" << check_start;
         if(!DistributeFileSyncMgr::get()->getNewestReqLog(true, check_start, primary_logdata_list))
         {
-            LOG(WARNING) << "get newest log from primary failed while checking log data.";
-            return false;
+            if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
+            {
+                LOG(INFO) << "no other primary node while check log.";
+                return true;
+            }
+            LOG(WARNING) << "get newest log from primary failed while checking log data. waiting and retry...";
+            sleep(10);
+            continue;
         }
         std::vector<uint32_t>().swap(local_logid_list);
         std::vector<std::string>().swap(local_logdata_list);
