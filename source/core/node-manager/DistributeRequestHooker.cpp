@@ -283,16 +283,20 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     if ((prepared_req.inc_id > last_backup_id_ + 1) && (prepared_req.inc_id - last_backup_id_) % 250000 == 0)
     {
         LOG(INFO) << "begin backup";
-        if(!RecoveryChecker::get()->backup())
-        {
-            LOG(ERROR) << "backup failed. Maybe not enough space.";
-            if (!isprimary)
-            {
-                forceExit();
-            }
-            return false;
-        }
         RecoveryChecker::get()->hasAnyBackup(last_backup_id_);
+        if (last_backup_id_ != req_log_mgr_->getLastSuccessReqId())
+        {
+            if(!RecoveryChecker::get()->backup())
+            {
+                LOG(ERROR) << "backup failed. Maybe not enough space.";
+                if (!isprimary)
+                {
+                    forceExit();
+                }
+                return false;
+            }
+            RecoveryChecker::get()->hasAnyBackup(last_backup_id_);
+        }
         LOG(INFO) << "last backup : " << last_backup_id_;
         //if (hook_type_ != Request::FromLog)
         //    NodeManagerBase::get()->setSlowWriting();
