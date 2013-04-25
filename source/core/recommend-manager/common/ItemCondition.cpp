@@ -16,11 +16,11 @@ void ItemCondition::createBitVector(QueryBuilder* queryBuilder)
     if (filteringList_.empty() || !queryBuilder)
         return;
 
-    boost::shared_ptr<izenelib::am::EWAHBoolArray<uint32_t> > ewahArray;
-    queryBuilder->prepare_filter(filteringList_, ewahArray);
+    boost::shared_ptr<IndexManager::FilterBitmapT> filterBitmap;
+    queryBuilder->prepare_filter(filteringList_, filterBitmap);
 
     pBitVector_.reset(new izenelib::ir::indexmanager::BitVector);
-    pBitVector_->importFromEWAH(*ewahArray);
+    pBitVector_->importFromEWAH(*filterBitmap);
 }
 
 bool ItemCondition::isMeetCondition(itemid_t itemId) const

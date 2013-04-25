@@ -37,7 +37,7 @@ public:
 
     bool Init();
 
-    bool Flush();
+    bool Flush(time_t timestamp);
 
     bool Insert(
             const uint128_t& docid,

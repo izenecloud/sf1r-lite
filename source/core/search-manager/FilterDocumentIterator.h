@@ -9,7 +9,7 @@
 #define FILTER_DOCUMENT_ITERATOR_H_
 
 #include "DocumentIterator.h"
-#include <ir/index_manager/utility/BitMapIterator.h>
+#include <ir/index_manager/index/TermDocFreqs.h>
 
 #include <string>
 
@@ -19,14 +19,14 @@ namespace sf1r
 class FilterDocumentIterator : public DocumentIterator
 {
 public:
-    FilterDocumentIterator(izenelib::ir::indexmanager::BitMapIterator* bitMapIterator)
-        : bitMapIterator_(bitMapIterator)
+    FilterDocumentIterator(izenelib::ir::indexmanager::TermDocFreqs* termDocFreqs)
+        : termDocFreqs_(termDocFreqs)
     {
     }
 
     ~FilterDocumentIterator()
     {
-        delete bitMapIterator_;
+        delete termDocFreqs_;
     }
 
 public:
@@ -34,18 +34,18 @@ public:
 
     bool next()
     {
-        return bitMapIterator_->next();
+        return termDocFreqs_->next();
     }
 
     docid_t doc()
     {
-        return bitMapIterator_->doc();
+        return termDocFreqs_->doc();
     }
 
 #if SKIP_ENABLED
     docid_t skipTo(docid_t target)
     {
-        return bitMapIterator_->skipTo(target);
+        return termDocFreqs_->skipTo(target);
     }
 #endif
 
@@ -59,14 +59,14 @@ public:
 
     count_t tf()
     {
-        return bitMapIterator_->freq();
+        return termDocFreqs_->freq();
     }
 
     void print(int level = 0) {}
 
 
 protected:
-    izenelib::ir::indexmanager::BitMapIterator* bitMapIterator_;
+    izenelib::ir::indexmanager::TermDocFreqs* termDocFreqs_;
 };
 
 }

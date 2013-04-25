@@ -208,7 +208,7 @@ bool ProductScoreManager::buildScoreType_(ProductScoreType type)
 
 bool ProductScoreManager::addCronJob_(const ProductRankingPara& bundleParam)
 {
-    if (isEmpty_() || !cronExpression_.setExpression(bundleParam.cron))
+    if (!cronExpression_.setExpression(bundleParam.cron))
         return false;
 
     bool result = izenelib::util::Scheduler::addJob(
@@ -228,7 +228,7 @@ bool ProductScoreManager::addCronJob_(const ProductRankingPara& bundleParam)
 
 void ProductScoreManager::runCronJob_(int calltype)
 {
-    if (!cronExpression_.matches_now() && calltype == 0)
+    if ((isEmpty_() || !cronExpression_.matches_now()) && calltype == 0)
         return;
     if (calltype == 0 && NodeManagerBase::get()->isDistributed())
     {

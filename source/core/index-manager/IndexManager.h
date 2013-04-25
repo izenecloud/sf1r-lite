@@ -14,6 +14,7 @@
 #include <ir/index_manager/index/Indexer.h>
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/index_manager/index/rtype/BTreeIndexerManager.h>
+#include <ir/index_manager/utility/EWAHTermDocFreqs.h>
 
 #include <util/string/StringUtils.h>
 
@@ -107,9 +108,13 @@ public:
     ~IndexManager();
 
 public:
+    typedef uint64_t FilterWordT;
+    typedef EWAHBoolArray<FilterWordT> FilterBitmapT;
+    typedef EWAHTermDocFreqs<FilterWordT> FilterTermDocFreqsT;
+
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
-           const std::vector<PropertyValue>& filterParam, boost::shared_ptr<EWAHBoolArray<uint32_t> > docIdSet);
+           const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT> filterBitMap);
 
 private:
     static void convertData(const std::string& property, const PropertyValue& in, PropertyType& out);

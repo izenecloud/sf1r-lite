@@ -153,6 +153,7 @@ controllers:
       - update_collection_conf
       - rebuild_collection
       - rebuild_from_scd
+      - backup_all
       - create_collection
       - delete_collection
       - set_kv

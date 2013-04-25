@@ -4,6 +4,7 @@
 #include <common/ScdWriter.h>
 #include <boost/filesystem.hpp>
 #include <node-manager/synchro/SynchroFactory.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 using namespace sf1r;
 
@@ -64,6 +65,11 @@ bool ScdOperationProcessor::Finish()
     }
     LOG(INFO)<<"ScdOperationProcessor::Finish "<<dir_<<std::endl;
 
+    if (!DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        LOG(INFO) << "not primary no need send scd files.";
+        return true;
+    }
 
     SynchroData syncData;
     syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
