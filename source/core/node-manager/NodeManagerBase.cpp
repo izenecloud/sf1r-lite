@@ -165,21 +165,22 @@ void NodeManagerBase::notifyStop()
     {
         if (mutex_.try_lock())
         {
-            if (nodeState_ == NODE_STATE_STARTING || nodeState_ == NODE_STATE_INIT ||
-                nodeState_ == NODE_STATE_STARTED)
+            LOG(INFO) << "try lock success, we can wait to stop.";
+            mutex_.unlock();
+        }
+        else
+        {
+            if (nodeState_ == NODE_STATE_STARTING || nodeState_ == NODE_STATE_INIT)
             {
                 LOG(INFO) << "stopping while starting. " << nodeState_;
                 need_stop_ = true;
                 if (zookeeper_)
                 {
                     stop();
-                }
-                mutex_.unlock();
-                if (zookeeper_)
                     zookeeper_->disconnect();
+                }
                 return;
             }
-            mutex_.unlock();
         }
         boost::unique_lock<boost::mutex> lock(mutex_);
         need_stop_ = true;
@@ -1425,17 +1426,8 @@ void NodeManagerBase::checkForPrimaryElecting()
         return;
     }
 
-    updateCurrentPrimary();
-    resetWriteState();
-
-    MasterManagerBase::get()->notifyChangedPrimary(false);
-
-    need_check_electing_ = false;
     LOG(WARNING) << "self_primary_path_ lost or log fall behind, need re-enter";
-    stopping_ = true;
-    unregisterPrimary();
-    nodeState_ = NODE_STATE_STARTING;
-    enterCluster(!masterStarted_);
+    reEnterCluster();
     return;
 
     //if (isPrimaryWithoutLock())
