@@ -6,4 +6,5 @@ QUERYNORMALIZE
 image_upload
 b5m_categorizing
 b5m_search_keyword
+b5m_category_mapper
 testbin

@@ -17,7 +17,6 @@
 #include <common/TermTypeDetector.h>
 
 #include <ir/index_manager/utility/BitVector.h>
-#include <ir/index_manager/utility/BitMapIterator.h>
 
 #include <util/get.h>
 
@@ -64,7 +63,7 @@ void QueryBuilder::reset_cache()
 
 void QueryBuilder::prepare_filter(
     const std::vector<QueryFiltering::FilteringType>& filtingList,
-    boost::shared_ptr<EWAHBoolArray<uint32_t> >& pDocIdSet)
+    boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap)
 {
     if (filtingList.size() == 1)
     {
@@ -72,21 +71,24 @@ void QueryBuilder::prepare_filter(
         QueryFiltering::FilteringOperation filterOperation = filteringItem.operation_;
         const std::string& property = filteringItem.property_;
         const std::vector<PropertyValue>& filterParam = filteringItem.values_;
-        if (!filterCache_->get(filteringItem, pDocIdSet))
+        if (!filterCache_->get(filteringItem, pFilterBitmap))
         {
-            pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
-            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pDocIdSet);
-            filterCache_->set(filteringItem, pDocIdSet);
+            pFilterBitmap.reset(new IndexManager::FilterBitmapT);
+            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pFilterBitmap);
+            filterCache_->set(filteringItem, pFilterBitmap);
         }
     }
     else
     {
-        unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
-        unsigned int wordsNum = bitsNum/(sizeof(uint32_t) * 8) + (bitsNum % (sizeof(uint32_t) * 8) == 0 ? 0 : 1);
-        pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
-        pDocIdSet->addStreamOfEmptyWords(true, wordsNum);
-        boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet2;
-        boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet3;
+        const unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
+        const unsigned int wordBitNum = sizeof(IndexManager::FilterWordT) << 3;
+        const unsigned int wordsNum = (bitsNum - 1) / wordBitNum + 1;
+
+        pFilterBitmap.reset(new IndexManager::FilterBitmapT);
+        pFilterBitmap->addStreamOfEmptyWords(true, wordsNum);
+        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterBitmap2;
+        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterBitmap3;
+
         try
         {
             std::vector<QueryFiltering::FilteringType>::const_iterator iter = filtingList.begin();
@@ -95,22 +97,22 @@ void QueryBuilder::prepare_filter(
                 QueryFiltering::FilteringOperation filterOperation = iter->operation_;
                 const std::string& property = iter->property_;
                 const std::vector<PropertyValue>& filterParam = iter->values_;
-                if (!filterCache_->get(*iter, pDocIdSet2))
+                if (!filterCache_->get(*iter, pFilterBitmap2))
                 {
-                    pDocIdSet2.reset(new EWAHBoolArray<uint32_t>());
-                    indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pDocIdSet2);
-                    filterCache_->set(*iter, pDocIdSet2);
+                    pFilterBitmap2.reset(new IndexManager::FilterBitmapT);
+                    indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pFilterBitmap2);
+                    filterCache_->set(*iter, pFilterBitmap2);
                 }
-                pDocIdSet3.reset(new EWAHBoolArray<uint32_t>());
+                pFilterBitmap3.reset(new IndexManager::FilterBitmapT);
                 if (iter->logic_ == QueryFiltering::OR)
                 {
-                    (*pDocIdSet).rawlogicalor(*pDocIdSet2, *pDocIdSet3);
+                    (*pFilterBitmap).rawlogicalor(*pFilterBitmap2, *pFilterBitmap3);
                 }
                 else // if (iter->logic_ == QueryFiltering::AND)
                 {
-                    (*pDocIdSet).rawlogicaland(*pDocIdSet2, *pDocIdSet3);
+                    (*pFilterBitmap).rawlogicaland(*pFilterBitmap2, *pFilterBitmap3);
                 }
-                (*pDocIdSet).swap(*pDocIdSet3);
+                (*pFilterBitmap).swap(*pFilterBitmap3);
             }
         }
         catch (std::exception& e)
@@ -332,7 +334,7 @@ void QueryBuilder::prefetch_term_doc_readers_(
         }
         else
         {
-            boost::shared_ptr<EWAHBoolArray<uint32_t> > pDocIdSet;
+            boost::shared_ptr<IndexManager::FilterBitmapT> pFilterBitmap;
             boost::shared_ptr<BitVector> pBitVector;
 
             if (!TermTypeDetector::isTypeMatch(termStr, dataType))
@@ -351,16 +353,16 @@ void QueryBuilder::prefetch_term_doc_readers_(
                 std::vector<PropertyValue> filterParam;
                 filterParam.push_back(TermTypeDetector::propertyValue_);
                 filteringRule.values_ = filterParam;
-                if(!filterCache_->get(filteringRule, pDocIdSet))
+                if(!filterCache_->get(filteringRule, pFilterBitmap))
                 {
-                    pDocIdSet.reset(new EWAHBoolArray<uint32_t>());
+                    pFilterBitmap.reset(new IndexManager::FilterBitmapT);
                     pBitVector.reset(new BitVector(pIndexReader_->maxDoc() + 1));
 
                     indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pBitVector);
-                    pBitVector->compressed(*pDocIdSet);
-                    filterCache_->set(filteringRule, pDocIdSet);
+                    pBitVector->compressed(*pFilterBitmap);
+                    filterCache_->set(filteringRule, pFilterBitmap);
                 }
-                TermDocFreqs* pTermDocReader = new BitMapIterator( pDocIdSet);
+                TermDocFreqs* pTermDocReader = new IndexManager::FilterTermDocFreqsT(pFilterBitmap);
                 termDocReaders[termId].push_back(pTermDocReader);
             }
         }

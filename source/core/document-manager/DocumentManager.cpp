@@ -392,6 +392,11 @@ docid_t DocumentManager::getMaxDocId() const
     return propertyValueTable_->getMaxDocId();
 }
 
+uint32_t DocumentManager::getNumDocs() const
+{
+    return getMaxDocId() - delfilter_.count();
+}
+
 bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list)
 {
     docid_list.clear();

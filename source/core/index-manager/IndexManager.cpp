@@ -35,7 +35,7 @@ void IndexManager::convertData(const std::string& property, const PropertyValue&
 }
 
 void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
-        const std::vector<PropertyValue>& filterParam, boost::shared_ptr<EWAHBoolArray<uint32_t> > docIdSet)
+        const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT> filterBitMap)
 {
     collectionid_t colId = 1;
     std::string propertyL = boost::to_upper_copy(property);
@@ -49,7 +49,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         PropertyType value;
         BOOST_ASSERT(!filterParam.empty());
         convertData(propertyL,filterParam[0], value);
-        getDocsByPropertyValue(colId, property, value, *docIdSet);
+        getDocsByPropertyValue(colId, property, value, *filterBitMap);
         return;
     }
     case QueryFiltering::INCLUDE:
@@ -59,7 +59,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         {
             convertData(propertyL, filterParam[i], values[i]);
         }
-        getDocsByPropertyValueIn(colId, property, values, *pBitVector, *docIdSet);
+        getDocsByPropertyValueIn(colId, property, values, *pBitVector, *filterBitMap);
         return;
     }
         break;
@@ -154,7 +154,7 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
     }
     //Compress bit vector
     BOOST_ASSERT(pBitVector);
-    pBitVector->compressed(*docIdSet);
+    pBitVector->compressed(*filterBitMap);
 }
 
 }

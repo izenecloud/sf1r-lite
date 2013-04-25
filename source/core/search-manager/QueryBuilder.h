@@ -15,7 +15,6 @@
 #include "WANDDocumentIterator.h"
 #include "VirtualPropertyScorer.h"
 #include "VirtualPropertyTermDocumentIterator.h"
-#include "Filter.h"
 #include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 
@@ -84,7 +83,7 @@ public:
     */
     void prepare_filter(
         const std::vector<QueryFiltering::FilteringType>& filtingList,
-        boost::shared_ptr<EWAHBoolArray<uint32_t> >& pDocIdSet
+        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap
     );
 
     void reset_cache();

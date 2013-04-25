@@ -132,16 +132,21 @@ void IndexWorker::HookDistributeRequestForIndex(int hooktype, const std::string&
 
 void IndexWorker::flush(bool mergeBarrel)
 {
+    LOG(INFO) << "Begin flushing in IndexWorker ....";
     documentManager_->flush();
     idManager_->flush();
+    LOG(INFO) << "Begin flushing indexManager_ in IndexWorker ....";
     indexManager_->flush();
     if (mergeBarrel)
     {
+        LOG(INFO) << "Begin merge index ....";
         indexManager_->optimizeIndex();
         indexManager_->waitForMergeFinish();
+        LOG(INFO) << "End merge index ....";
     }
     if (miningTaskService_)
         miningTaskService_->flush();
+    LOG(INFO) << "Flushing finished in IndexWorker";
 }
 
 bool IndexWorker::reload()
@@ -501,7 +506,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     {
         if (hooker_)
         {
-            if (!hooker_->FinishHook())
+            if (!hooker_->FinishHook(timestamp))
             {
                 std::cout<<"[IndexWorker] Hooker Finish failed."<<std::endl;
                 return false;
@@ -622,8 +627,8 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         }
 
         IndexerDocument indexDocument;
-        time_t timestamp = -1;
-        prepareIndexDocument_(oldId, timestamp, document, indexDocument);
+        time_t new_timestamp = -1;
+        prepareIndexDocument_(oldId, new_timestamp, document, indexDocument);
 
         if (!insertDoc_(document, indexDocument, timestamp))
             continue;
@@ -813,11 +818,6 @@ bool IndexWorker::createDocument(const Value& documentValue)
     if (!indexManager_->isRealTime())
     	indexManager_->setIndexMode("realtime");
 
-    if (DistributeRequestHooker::get()->isRunningPrimary())
-    {
-        reqlog.timestamp = timestamp;
-    }
-
     bool ret = insertDoc_(document, indexDocument, reqlog.timestamp, true);
     if (ret)
     {
@@ -932,11 +932,6 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     if (!prepareDocument_(scddoc, document, indexDocument, oldIndexDocument, oldId, source, timestamp, updateType, UPDATE_SCD))
     {
         return false;
-    }
-
-    if (DistributeRequestHooker::get()->isRunningPrimary())
-    {
-        reqlog.timestamp = timestamp;
     }
 
     if (!indexManager_->isRealTime())
@@ -1187,7 +1182,7 @@ bool IndexWorker::getIndexStatus(Status& status)
 
 uint32_t IndexWorker::getDocNum()
 {
-    return indexManager_->numDocs();
+    return documentManager_->getNumDocs();
 }
 
 uint32_t IndexWorker::getKeyCount(const std::string& property_name)
@@ -1344,12 +1339,12 @@ bool IndexWorker::insertOrUpdateSCD_(
 
         if (scdType == INSERT_SCD || oldId == 0)
         {
-            if (!insertDoc_(document, indexDocument, new_timestamp))
+            if (!insertDoc_(document, indexDocument, timestamp))
                 continue;
         }
         else
         {
-            if (!updateDoc_(document, indexDocument, oldIndexDocument, new_timestamp, updateType))
+            if (!updateDoc_(document, indexDocument, oldIndexDocument, timestamp, updateType))
                 continue;
 
             ++numUpdatedDocs_;
@@ -1594,7 +1589,6 @@ bool IndexWorker::doUpdateDoc_(
     case RTYPE:
     {
         // Store the old property value.
-        documentManager_->addRtypeDocid(document.getId());
         indexManager_->updateRtypeDocument(oldIndexDocument, indexDocument);
         return true;
     }
@@ -1667,7 +1661,6 @@ void IndexWorker::flushUpdateBuffer_()
         case RTYPE:
         {
             // Store the old property value.
-            documentManager_->addRtypeDocid(updateData.get<1>().getId());
             indexManager_->updateRtypeDocument(updateData.get<3>(), updateData.get<2>());
             break;
         }

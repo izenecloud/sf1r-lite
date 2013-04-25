@@ -1076,7 +1076,6 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
 
     hasDeletedDocDuringMining_ = false;
     LOG (INFO) << "Clear Rtype Docid List";
-    document_manager_->clearRtypeDocidList();
     document_manager_->RtypeDocidPros_.clear();
     document_manager_->last_delete_docid_.clear();
     return true;
@@ -2621,12 +2620,14 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
 
 void MiningManager::flush()
 {
+    LOG(INFO) << "begin flush in MiningManager .... ";
     for (GroupLabelLoggerMap::iterator it = groupLabelLoggerMap_.begin();
             it != groupLabelLoggerMap_.end(); ++it)
     {
         it->second->flush();
     }
 
+    LOG(INFO) << "GroupLabelLoggerMap flushed .... ";
     if (customRankManager_) customRankManager_->flush();
     if (merchantScoreManager_) merchantScoreManager_->flush();
     if (kvManager_) kvManager_->flush();
@@ -2634,6 +2635,7 @@ void MiningManager::flush()
     if (label_sim_collector_) label_sim_collector_->Flush();
     if (rmDb_) rmDb_->flush();
     if (idManager_) idManager_->flush();
+    LOG(INFO) << "MiningManager flush finished.";
 }
 
 void MiningManager::updateMergeFuzzyIndex()

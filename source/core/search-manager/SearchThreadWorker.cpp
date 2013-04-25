@@ -97,7 +97,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
 
     std::vector<QueryFiltering::FilteringType>& filtingList =
         actionOperation.actionItem_.filteringList_;
-    boost::shared_ptr<EWAHBoolArray<uint32_t> > pFilterIdSet;
+    boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet;
 
     // when query is "*"
     const bool isFilterQuery =
@@ -146,8 +146,8 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     {
         ///1. Search Filter
         ///2. Select * WHERE    (FilterQuery)
-        BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
-        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator(pBitmapIter);
+        TermDocFreqs* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator(pFilterTermDocFreqs);
         pDocIterator->add(pFilterIterator);
     }
 
@@ -207,10 +207,10 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
             AllDocumentIterator* pFilterIterator = NULL;
             if (pDelFilter)
             {
-                pFilterIdSet.reset(new EWAHBoolArray<uint32_t>());
+                pFilterIdSet.reset(new IndexManager::FilterBitmapT);
                 pDelFilter->compressed(*pFilterIdSet);
-                BitMapIterator* pBitmapIter = new BitMapIterator(pFilterIdSet);
-                pFilterIterator = new AllDocumentIterator(pBitmapIter,maxDoc);
+                TermDocFreqs* pDelTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+                pFilterIterator = new AllDocumentIterator(pDelTermDocFreqs, maxDoc);
             }
             else
             {

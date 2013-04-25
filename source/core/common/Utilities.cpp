@@ -25,6 +25,10 @@ ptime gregorianISO8601Parser(const std::string& dataStr)
         {
             return ptime(time_from_string(dataStr));
         }
+        else if (dataStr.length() == 15 && dataStr.find("T") != std::string::npos)
+        {
+            return ptime(from_iso_string(dataStr));
+        }
         else
         {
             return ptime(from_simple_string(dataStr));
@@ -49,7 +53,7 @@ ptime gregorianISO8601Parser(const std::string& dataStr)
             }
             catch (const std::exception& e){}
         }
-        return second_clock::local_time();
+        return ptime(date(1970,1,1));
     }
 }
 
@@ -99,7 +103,7 @@ ptime convert(const std::string& dataStr)
         }
         catch (const std::exception& e)
         {
-            return second_clock::local_time();
+            return ptime(date(1970,1,1));
         }
     }
     else
@@ -113,33 +117,37 @@ ptime convert(const std::string& dataStr)
             return gregorianISO8601Parser(dataStr);
         }catch (const std::exception& e)
         {
-            return second_clock::local_time();
+            return ptime(date(1970,1,1));
         }
     }
 }
 
-time_t Utilities::createTimeStampInSeconds(const izenelib::util::UString& dateStr,const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr)
+time_t Utilities::createTimeStampInSeconds(const izenelib::util::UString& dateStr,const izenelib::util::UString::EncodingType& encoding, izenelib::util::UString& outDateStr, bool is_UTC)
 {
     std::string datestr;
     dateStr.convertString(datestr, encoding);
     ptime pt = convert(datestr);
     outDateStr.assign(to_iso_string(pt).erase(8, 1), encoding);
     static const ptime epoch(date(1970, 1, 1));
-    return (pt - epoch).total_seconds() + timezone;
+    if (!is_UTC)
+        return (pt - epoch).total_seconds() + timezone;
+    return (pt - epoch).total_seconds();
 }
 
-time_t Utilities::createTimeStampInSeconds(const izenelib::util::UString& text)
+time_t Utilities::createTimeStampInSeconds(const izenelib::util::UString& text, bool is_UTC)
 {
     std::string str;
     text.convertString(str, izenelib::util::UString::UTF_8);
-    return createTimeStampInSeconds(str);
+    return createTimeStampInSeconds(str, is_UTC);
 }
 
-time_t Utilities::createTimeStampInSeconds(const std::string& dataStr)
+time_t Utilities::createTimeStampInSeconds(const std::string& dataStr, bool is_UTC)
 {
     ptime pt = convert(dataStr);
     static const ptime epoch(date(1970, 1, 1));
-    return (pt - epoch).total_seconds() + timezone;
+    if (!is_UTC)
+        return (pt - epoch).total_seconds() + timezone;
+    return (pt - epoch).total_seconds();
 }
 
 time_t Utilities::createTimeStamp()
@@ -149,24 +157,26 @@ time_t Utilities::createTimeStamp()
     return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-time_t Utilities::createTimeStamp(const ptime& pt)
+time_t Utilities::createTimeStamp(const ptime& pt, bool is_UTC)
 {
     if (pt.is_not_a_date_time())
         return -1;
 
     static const ptime epoch(date(1970, 1, 1));
-    return (pt - epoch).total_microseconds() + timezone * 1000000;
+    if (!is_UTC)
+        return (pt - epoch).total_microseconds() + timezone*1000000;
+    return (pt - epoch).total_microseconds();
 }
 
-time_t Utilities::createTimeStamp(const izenelib::util::UString& text)
+time_t Utilities::createTimeStamp(const izenelib::util::UString& text, bool is_UTC)
 {
     std::string str;
     text.convertString(str, izenelib::util::UString::UTF_8);
-    return createTimeStamp(str);
+    return createTimeStamp(str, is_UTC);
 }
 
 // Return -1 when empty, -2 when invalid.
-time_t Utilities::createTimeStamp(const string& text)
+time_t Utilities::createTimeStamp(const string& text, bool is_UTC)
 {
     if (text.empty()) return -1;
     date date_time;
@@ -179,7 +189,7 @@ time_t Utilities::createTimeStamp(const string& text)
     }
     if (!date_time.is_not_a_date())
     {
-        return createTimeStamp(ptime(date_time));
+        return createTimeStamp(ptime(date_time), is_UTC);
     }
     if (text.length() < 8) return -2;
     std::string cand_text = text.substr(0, 8);
@@ -192,7 +202,7 @@ time_t Utilities::createTimeStamp(const string& text)
     }
     if (!date_time.is_not_a_date())
     {
-        return createTimeStamp(ptime(date_time));
+        return createTimeStamp(ptime(date_time), is_UTC);
     }
     return -2;
 }
