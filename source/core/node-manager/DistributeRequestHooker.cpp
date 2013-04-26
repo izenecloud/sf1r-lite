@@ -596,8 +596,9 @@ void DistributeRequestHooker::pauseLogSync()
 
 void DistributeRequestHooker::resumeLogSync()
 {
-    LOG(INFO) << "log sync resumed.";
     boost::unique_lock<boost::mutex> lock(log_sync_mutex_);
+    if (log_sync_paused_)
+        LOG(INFO) << "log sync resumed.";
     log_sync_paused_ = false;
     log_sync_cond_.notify_all();
 }
@@ -651,7 +652,7 @@ void DistributeRequestHooker::AsyncLogPullFunc()
                         log_sync_cond_.wait(lock);
                     boost::this_thread::interruption_point();
                 }
-                LOG(INFO) << "begin sync to newest log in async worker.";
+                //LOG(INFO) << "begin sync to newest log in async worker.";
                 reqid = RecoveryChecker::get()->getReqLogMgr()->getLastSuccessReqId();
                 if (!DistributeFileSyncMgr::get()->getNewestReqLog(true, reqid + 1, newlogdata_list))
                 {
@@ -661,7 +662,7 @@ void DistributeRequestHooker::AsyncLogPullFunc()
                 }
                 if (newlogdata_list.empty())
                 {
-                    LOG(INFO) << "no more log, waiting and retry.";
+                    //LOG(INFO) << "no more log, waiting and retry.";
                     wait_period = true;
                     continue;
                 }

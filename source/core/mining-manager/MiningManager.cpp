@@ -1716,6 +1716,10 @@ bool MiningManager::visitDoc(uint32_t docId)
     }
 
     bool ret = ctrManager_->update(docId);
+    if (!ret)
+    {
+        LOG(INFO) << "visitDoc failed to update ctrManager_ : " << docId;
+    }
 
     DISTRIBUTE_WRITE_FINISH(ret);
     return ret;

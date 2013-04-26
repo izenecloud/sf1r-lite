@@ -1078,6 +1078,7 @@ bool NodeManagerBase::canAbortRequest()
 
 void NodeManagerBase::abortRequest()
 {
+    zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
     // notify abort and wait other aborting.
     if (isPrimary())
     {
