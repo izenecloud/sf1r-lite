@@ -602,7 +602,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         Document document;
         bool b = documentManager->getDocument(curDocId, document);
         if (!b) continue;
-
+        documentManager->getRTypePropertiesForDocument(curDocId, document);
         // update docid
         std::string docidName("DOCID");
         izenelib::util::UString docidValueU;
@@ -629,7 +629,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         IndexerDocument indexDocument;
         time_t new_timestamp = -1;
         prepareIndexDocument_(oldId, new_timestamp, document, indexDocument);
-
+        documentManager_->copyRTypeValues(documentManager, curDocId, newDocId);
         if (!insertDoc_(document, indexDocument, timestamp))
             continue;
 
@@ -2023,7 +2023,7 @@ bool IndexWorker::prepareIndexDocument_(
         }
     }
 
-    documentManager_->moveRTypeValues(oldId, docId);
+    //documentManager_->moveRTypeValues(oldId, docId);
 
     return true;
 }

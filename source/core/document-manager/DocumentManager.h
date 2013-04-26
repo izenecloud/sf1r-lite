@@ -275,6 +275,10 @@ public:
 
     void moveRTypeValues(docid_t oldId, docid_t newId);
 
+    void copyRTypeValues(
+        boost::shared_ptr<DocumentManager>& source,
+        docid_t from, docid_t to);
+
     NumericPropertyTableMap& getNumericPropertyTableMap();
     RTypeStringPropTableMap& getRTypeStringPropTableMap();
     izenelib::util::UString::EncodingType& getEncondingType()
