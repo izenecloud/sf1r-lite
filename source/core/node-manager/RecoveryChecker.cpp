@@ -1273,18 +1273,18 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
             }
         }
 
-        if (++check_start > newest_reqid)
+        if (check_start >= newest_reqid)
         {
             LOG(INFO) << "check log data success, current node log ok.";
             return true;
         }
-
         if (local_logid_list.empty() || check_start != local_logid_list.back())
         {
             LOG(INFO) << "the log data is not ok, need rollback to " << check_start;
-            setRollbackFlag(check_start);
+            setRollbackFlag(check_start + 1);
             return false;
         }
+        ++check_start;
     }
     return false;
 }
