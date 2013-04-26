@@ -876,33 +876,38 @@ void RecoveryChecker::onRecoverCallback(bool startup)
     LOG(INFO) << "recovery finished, wait primary agree before enter cluster.";
 }
 
-bool RecoveryChecker::updateConfigFromAPI(const std::string& coll, bool is_primary,
-    std::map<std::string, std::string>& config_file_list)
+bool RecoveryChecker::removeConfigFromAPI(const std::string& coll)
 {
-    std::string config_file;
-    {
-        boost::unique_lock<boost::mutex> lock(mutex_);
-        CollInfoMapT::const_iterator cit = all_col_info_.find(coll);
-        if (cit == all_col_info_.end())
-            return false;
-        config_file = cit->second.second;
-    }
-
-    bool ret;
-    ret = stop_col_(coll, false);
-    if(!ret)
-    {
+    std::map<std::string, std::string> config_file_list;
+    LOG(INFO) << "remove config file for the collection." << coll;
+    if(!handleConfigUpdateForColl(coll, true, config_file_list))
         return false;
-    }
 
+    UpdateConfigReqLog new_config_log;
+    new_config_log.inc_id = 0;
+    new_config_log.config_file_list = config_file_list;
+    std::string new_conf_data;
+    ReqLogMgr::packReqLogData(new_config_log, new_conf_data);
+
+    std::ofstream ofs;
+    ofs.open(last_conf_file_.c_str(), ios::binary);
+    ofs << new_conf_data << std::flush;
+    ofs.close();
+
+    return true;
+}
+
+bool RecoveryChecker::updateConfigFromAPI(const std::string& coll, bool is_primary,
+    const std::string& config_file, std::map<std::string, std::string>& config_file_list)
+{
     if (!is_primary)
     {
         LOG(INFO) << "write updated config data to last conf file on the secondary.";
     }
     else
     {
-        LOG(INFO) << "begin update config file on primary and restart the collection." << coll;
-        if(!handleConfigUpdateForColl(coll, config_file_list))
+        LOG(INFO) << "begin update config file on primary for the collection." << coll;
+        if(!handleConfigUpdateForColl(coll, false, config_file_list))
             return false;
     }
 
@@ -919,14 +924,10 @@ bool RecoveryChecker::updateConfigFromAPI(const std::string& coll, bool is_prima
 
     handleConfigUpdate();
 
-    if(!start_col_(coll, config_file, false))
-    {
-        return false;
-    }
     return true;
 }
 
-bool RecoveryChecker::handleConfigUpdateForColl(const std::string& coll,
+bool RecoveryChecker::handleConfigUpdateForColl(const std::string& coll, bool delete_conf,
     std::map<std::string, std::string>& config_file_list)
 {
     // read all old config file.
@@ -955,6 +956,16 @@ bool RecoveryChecker::handleConfigUpdateForColl(const std::string& coll,
     // update config for the specific collection.
     bfs::path current(configDir_);
     current /= coll + ".xml";
+
+    if (delete_conf)
+    {
+        config_file_list.erase(current.filename().string());
+        if (bfs::is_regular_file(current))
+            bfs::remove(current);
+        LOG(INFO) << "config file removed : " << current;
+        return true;
+    }
+
     if(!bfs::is_regular_file(current))
     {
         LOG(INFO) << "updating config file not found : " << current;
@@ -1151,8 +1162,7 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     if (!errinfo.empty())
     {
         setRollbackFlag(0);
-        LOG(ERROR) << "data is not consistent after recovery, collection : " << cit->first <<
-          ", error : " << errinfo;
+        LOG(ERROR) << "data is not consistent after recovery, error : " << errinfo;
         if (sync_file)
         {
             if(!DistributeFileSyncMgr::get()->syncCollectionData(cit->first))
