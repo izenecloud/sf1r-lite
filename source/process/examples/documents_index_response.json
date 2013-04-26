@@ -9,7 +9,14 @@
     { "title": "xxx",
       "content": "xxx"},
     { "title": "yyy",
-      "content": "yyy"}
+      "content": "yyy",
+	  "SubDocs": [
+       {"title":"zzz",
+	    "content":"zzz"},
+	   {"title":"aaa"
+	    "content":"aaa"},
+	  ]
+	 }
   ],
 
   "popular_queries": ["a", "b"],
