@@ -35,8 +35,8 @@ void ReqLogMgr::initWriteRequestSet()
     write_req_set_.insert("documents_set_top_group_label");
     write_req_set_.insert("documents_log_group_label");
     write_req_set_.insert("documents_visit");
-    //write_req_set_.insert("collection_start_collection");
-    //write_req_set_.insert("collection_stop_collection");
+    write_req_set_.insert("collection_start_collection");
+    write_req_set_.insert("collection_stop_collection");
     write_req_set_.insert("collection_update_collection_conf");
     write_req_set_.insert("collection_rebuild_from_scd");
     write_req_set_.insert("collection_backup_all");

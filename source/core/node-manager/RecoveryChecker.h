@@ -68,8 +68,9 @@ public:
     void onRecoverWaitReplicasCallback();
     bool onRecoverCheckLog(bool is_primary);
 
+    bool removeConfigFromAPI(const std::string& coll);
     bool updateConfigFromAPI(const std::string& coll, bool is_primary,
-        std::map<std::string, std::string>& config_file_list);
+        const std::string& config_file, std::map<std::string, std::string>& config_file_list);
 
     void replayLog(bool is_primary, const std::string& from_col,
         const std::string& to_col, std::vector<uint32_t>& replayed_id_list);
@@ -88,7 +89,7 @@ private:
 
     bool checkIfLogForward(bool is_primary);
 
-    bool handleConfigUpdateForColl(const std::string& coll,
+    bool handleConfigUpdateForColl(const std::string& coll, bool delete_conf,
         std::map<std::string, std::string>& config_file_list);
 
     StartColCBFuncT start_col_;
