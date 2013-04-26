@@ -1931,6 +1931,16 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     nodeState_ = new_state;
     ZNode nodedata;
     ZNode oldZnode;
+
+    if (s_enable_async_ && nodeState_ != NODE_STATE_STARTED)
+    {
+        if (checkForAsyncWrite())
+            return;
+        LOG(INFO) << "need update self_primary_path_ : " << nodeState_;
+        setSf1rNodeData(nodedata, oldZnode);
+        zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+    }
+
     if (!s_enable_async_)
     {
         setSf1rNodeData(nodedata, oldZnode);
@@ -1956,11 +1966,6 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     if (!s_enable_async_)
     {
         zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
-    }
-    else if (nodeState_ != NODE_STATE_STARTED)
-    {
-        if(checkForAsyncWrite())
-            return;
     }
     // notify master got ready for next request.
     if (masterStarted_)
