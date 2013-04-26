@@ -2,10 +2,6 @@
 
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
-#include <node-manager/RequestLog.h>
-#include <node-manager/DistributeRequestHooker.h>
-#include <node-manager/NodeManagerBase.h>
-#include <node-manager/MasterManagerBase.h>
 #include <boost/algorithm/string/trim.hpp>
 #include <idmlib/util/directory_switcher.h>
 #include <am/vsynonym/QueryNormalize.h>
@@ -1084,45 +1080,19 @@ bool AutoFillChildManager::getOffset(const std::string& query, uint64_t& OffsetS
 
 void AutoFillChildManager::updateAutoFill(int calltype)
 {
-    if (cronExpression_.matches_now() || calltype > 0)
+    if (cronExpression_.matches_now())
     {
-        if (calltype == 0 && NodeManagerBase::get()->isDistributed())
-        {
-            if (NodeManagerBase::get()->isPrimary())
-            {
-                MasterManagerBase::get()->pushWriteReq(cronJobName_, "cron");
-                LOG(INFO) << "push cron job to queue on primary : " << cronJobName_ ;
-            }
-            else
-            {
-                LOG(INFO) << "cron job on replica ignored. ";
-            }
-            return;
-        }
-        
-        DISTRIBUTE_WRITE_BEGIN;
-        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
-
-        boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+       boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
         {
             LOG(INFO) << "Autofill Is already initing ....";
             return;
         }
-
-        CronJobReqLog reqlog;
-        reqlog.cron_time = sf1r::Utilities::createTimeStamp(boost::posix_time::microsec_clock::local_time());
-        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
-        {
-            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << __FUNCTION__ << std::endl;
-            return;
-        }
-
         isUpdating_ = true;
         if(!isFromSCD_)
         {
-            updateFromLog(reqlog.cron_time);
+            updateFromLog();
         }
         else
         {
@@ -1130,8 +1100,6 @@ void AutoFillChildManager::updateAutoFill(int calltype)
         }
         isUpdating_Wat_ = false;
         isUpdating_ = false;
-
-        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
 
@@ -1170,10 +1138,9 @@ void AutoFillChildManager::updateFromLog_ForTest(std::vector<UserQuery>& query_r
     buildWat_array(false);
 }
 
-void AutoFillChildManager::updateFromLog(int64_t cron_time)
+void AutoFillChildManager::updateFromLog()
 {
-    boost::posix_time::ptime time_now;
-    time_now = boost::posix_time::from_time_t(cron_time);
+    boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::ptime p = time_now - boost::gregorian::days(updatelogdays_);
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
