@@ -1744,10 +1744,9 @@ bool IndexWorker::prepareDocument_(
     {
         const std::string& fieldStr = p->first;
         tempPropertyConfig.propertyName_ = fieldStr;
-
         IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
         bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
-
+		
         const izenelib::util::UString & propertyValueU = p->second; // preventing copy
 
         if (!bundleConfig_->productSourceField_.empty()
@@ -1859,7 +1858,14 @@ bool IndexWorker::prepareDocument_(
                     prepareIndexDocumentStringProperty_(docId, *p, iter, indexDocument);
                 }
                 break;
-
+			
+			case SUBDOC_PROPERTY_TYPE:
+			    {
+                    PropertyValue propData(propertyValueU);
+                    document.property(fieldStr).swap(propData);
+                    prepareIndexDocumentStringProperty_(docId, *p, iter, indexDocument);
+			    }
+				break;    
             case INT32_PROPERTY_TYPE:
             case FLOAT_PROPERTY_TYPE:
             case INT8_PROPERTY_TYPE:
