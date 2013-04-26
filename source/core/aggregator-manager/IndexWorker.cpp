@@ -1541,12 +1541,23 @@ bool IndexWorker::updateDoc_(
         return doUpdateDoc_(document, indexDocument, oldIndexDocument, updateType);
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
-    UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
+    std::pair<UpdateBufferType::iterator, bool> insertResult =
+        updateBuffer_.insert(document.getId(), UpdateBufferDataType());
 
+    UpdateBufferDataType& updateData = insertResult.first.data();
     updateData.get<0>() = updateType;
     updateData.get<1>().swap(document);
     updateData.get<2>().swap(indexDocument);
-    updateData.get<3>().swap(oldIndexDocument);
+
+    // for duplicated DOCIDs in update SCD, only the first instance of
+    // oldIndexDocument stores the values before indexing, in order to enable
+    // BTreeIndexer to remove these old values properly, we should keep only
+    // the first instance of oldIndexDocument
+    if (insertResult.second)
+    {
+        updateData.get<3>().swap(oldIndexDocument);
+    }
+
     if (updateBuffer_.size() >= UPDATE_BUFFER_CAPACITY)
     {
         flushUpdateBuffer_();
@@ -1858,14 +1869,13 @@ bool IndexWorker::prepareDocument_(
                     prepareIndexDocumentStringProperty_(docId, *p, iter, indexDocument);
                 }
                 break;
-			
-			case SUBDOC_PROPERTY_TYPE:
-			    {
+            case SUBDOC_PROPERTY_TYPE:
+                {
                     PropertyValue propData(propertyValueU);
                     document.property(fieldStr).swap(propData);
                     prepareIndexDocumentStringProperty_(docId, *p, iter, indexDocument);
-			    }
-				break;    
+                }
+                break;
             case INT32_PROPERTY_TYPE:
             case FLOAT_PROPERTY_TYPE:
             case INT8_PROPERTY_TYPE:
