@@ -43,8 +43,8 @@ enum PropertyDataType
     VECTOR_VECTOR_UNSIGNED_INT_TYPE,
     //customized type
     CUSTOM_RANKING_PROPERTY_TYPE,
-	//subdocument type
-	SUBDOC_PROPERTY_TYPE
+    //subdocument type
+    SUBDOC_PROPERTY_TYPE
 };
 
 typedef std::map<unsigned int, float> ID_FREQ_ORDERED_MAP_T;
