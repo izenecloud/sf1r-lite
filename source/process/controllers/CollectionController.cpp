@@ -129,19 +129,10 @@ void CollectionController::start_collection()
         return;
     }
 
-    if (MasterManagerBase::get()->isDistributed())
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (collectionHandler )
     {
-        response().addError(" Request not allowed in distributed node.");
-        return;
-    }
-
-    DISTRIBUTE_WRITE_BEGIN;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
-
-    NoAdditionReqLog reqlog;
-    if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
-    {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        response().addError("Collection has already started!");
         return;
     }
 
@@ -153,9 +144,46 @@ void CollectionController::start_collection()
         slash = "/";
 #endif
     configFile += slash + collection + ".xml";
-    bool ret = CollectionManager::get()->startCollection(collection, configFile);
 
-    DISTRIBUTE_WRITE_FINISH(ret);
+    DISTRIBUTE_WRITE_BEGIN;
+    DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+    UpdateConfigReqLog reqlog;
+    if (DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        LOG(INFO) << "starting collection on primary. " << collection; 
+        if (!bfs::exists(configFile))
+        {
+            LOG(ERROR) << "starting collection on primary failed, no configFile :" << configFile;
+            response().addError("start collection failed for no config file found.");
+            return;
+        }
+    }
+
+    bool ret = RecoveryChecker::get()->updateConfigFromAPI(collection,
+        DistributeRequestHooker::get()->isRunningPrimary(), configFile, reqlog.config_file_list);
+
+    if (!ret)
+    {
+        response().addError("Update config error while starting collection.");
+        return;
+    }
+
+    if(!DistributeRequestHooker::get()->prepare(Req_UpdateConfig, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        response().addError("prepare failed.");
+        return;
+    }
+
+    ret = CollectionManager::get()->startCollection(collection, configFile);
+    if (!ret)
+    {
+        response().addError("start collection failed.");
+        return;
+    }
+
+    DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
 }
 
 /**
@@ -199,9 +227,10 @@ void CollectionController::stop_collection()
         return;
     }
 
-    if (MasterManagerBase::get()->isDistributed())
+    CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collection);
+    if (!collectionHandler )
     {
-        response().addError(" Request not allowed in distributed node.");
+        response().addError("Collection not found!");
         return;
     }
 
@@ -212,10 +241,20 @@ void CollectionController::stop_collection()
     if(!DistributeRequestHooker::get()->prepare(Req_NoAdditionDataReq, reqlog))
     {
         LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        response().addError("prepare failed.");
         return;
     }
 
+    LOG(INFO) << "begin stopping collection : " << collection;
+
     bool ret = CollectionManager::get()->stopCollection(collection, clear);
+    if (!ret)
+    {
+        response().addError("stop collection failed.");
+        return;
+    }
+
+    RecoveryChecker::get()->removeConfigFromAPI(collection);
 
     DISTRIBUTE_WRITE_FINISH(ret);
 }
@@ -288,9 +327,26 @@ void CollectionController::update_collection_conf()
         response().addError("This api only available in distributed mode.");
         return;
     }
+
     bool ret = true;
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+
+    if(!CollectionManager::get()->stopCollection(collection, false))
+    {
+        LOG(ERROR) << "failed to stop collection while update config." << collection;
+        response().addError("failed to stop collection while update config.");
+        return;
+    }
+
+    std::string configFile = SF1Config::get()->getHomeDirectory();
+    std::string slash("");
+#ifdef WIN32
+        slash = "\\";
+#else
+        slash = "/";
+#endif
+    configFile += slash + collection + ".xml";
 
     UpdateConfigReqLog reqlog;
     do {
@@ -300,7 +356,7 @@ void CollectionController::update_collection_conf()
             break;
         }
         ret = RecoveryChecker::get()->updateConfigFromAPI(collection,
-            DistributeRequestHooker::get()->isRunningPrimary(), reqlog.config_file_list);
+            DistributeRequestHooker::get()->isRunningPrimary(), configFile, reqlog.config_file_list);
     }while(false);
 
     if (!ret)
@@ -308,6 +364,15 @@ void CollectionController::update_collection_conf()
         response().addError("Update Config failed.");
         return;
     }
+
+    ret = CollectionManager::get()->startCollection(collection, configFile);
+    if (!ret)
+    {
+        LOG(ERROR) << "start collection failed after config updated." << collection;
+        response().addError("start collection failed after config updated.");
+        return;
+    }
+
     DISTRIBUTE_WRITE_FINISH2(ret, reqlog);
 }
 
