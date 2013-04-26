@@ -1258,37 +1258,32 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
         std::vector<uint32_t>().swap(local_logid_list);
         std::vector<std::string>().swap(local_logdata_list);
         reqlog_mgr_->getReqLogIdList(check_start, primary_logdata_list.size(), true, local_logid_list, local_logdata_list);
-        if (local_logdata_list.empty())
+
+        size_t min_size = std::min(local_logdata_list.size(), primary_logdata_list.size());
+        for (size_t i = 0; i < min_size; ++i)
+        {
+            if( local_logdata_list[i] != primary_logdata_list[i] )
+            {
+                LOG(INFO) << "current node log data diff from primary from : " << local_logid_list[i];
+                break;
+            }
+            else
+            {
+                check_start = local_logid_list[i];
+            }
+        }
+
+        if (++check_start > newest_reqid)
         {
             LOG(INFO) << "check log data success, current node log ok.";
             return true;
         }
-        else 
+
+        if (local_logid_list.empty() || check_start != local_logid_list.back())
         {
-            size_t min_size = std::min(local_logdata_list.size(), primary_logdata_list.size());
-            for (size_t i = 0; i < min_size; ++i)
-            {
-                if( local_logdata_list[i] != primary_logdata_list[i] )
-                {
-                    LOG(INFO) << "current node log data diff from primary from : " << local_logid_list[i];
-                    break;
-                }
-                else
-                {
-                    check_start = local_logid_list[i];
-                }
-            }
-            if (check_start != local_logid_list.back())
-            {
-                LOG(INFO) << "the log data is not ok, need rollback to " << check_start;
-                setRollbackFlag(check_start + 1);
-                return false;
-            }
-            if (++check_start > newest_reqid)
-            {
-                LOG(INFO) << "check log data success, current node log ok.";
-                return true;
-            }
+            LOG(INFO) << "the log data is not ok, need rollback to " << check_start;
+            setRollbackFlag(check_start);
+            return false;
         }
     }
     return false;

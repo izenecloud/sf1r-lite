@@ -193,7 +193,8 @@ void NodeManagerBase::notifyStop()
         if ((nodeState_ == NODE_STATE_STARTED ||
              nodeState_ == NODE_STATE_STARTING_WAIT_RETRY ||
              nodeState_ == NODE_STATE_STARTING ||
-             nodeState_ == NODE_STATE_INIT) &&
+             nodeState_ == NODE_STATE_INIT ||
+             nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY ) &&
             !MasterManagerBase::get()->hasAnyCachedRequest())
         {
             stop();
