@@ -1869,7 +1869,7 @@ bool IndexWorker::prepareDocument_(
                     prepareIndexDocumentStringProperty_(docId, *p, iter, indexDocument);
                 }
                 break;
-                case SUBDOC_PROPERTY_TYPE:
+            case SUBDOC_PROPERTY_TYPE:
                 {
                     PropertyValue propData(propertyValueU);
                     document.property(fieldStr).swap(propData);
