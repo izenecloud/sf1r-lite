@@ -367,6 +367,13 @@ public:
     }
 
 
+    /**
+	 * @brief Gets whether the property is subdoc 
+	 */
+	 inline bool getIsSubDoc() const
+	 {
+	     return SUBDOC_PROPERTY_TYPE == propertyType_ ? true : false;
+	 }
     inline void setIsMultiValue(const bool bMultiValue)
     {
         bMultiValue_ = bMultiValue;

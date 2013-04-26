@@ -36,6 +36,9 @@ std::string PropertyConfig::toString() const
 
     switch ( propertyType_ )
     {
+	case sf1r::SUBDOC_PROPERTY_TYPE:
+		ss << "subdoc_type";
+		break;
     case sf1r::STRING_PROPERTY_TYPE:
         ss << "string_type";
         break;

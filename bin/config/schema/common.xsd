@@ -34,6 +34,7 @@
                     <xs:enumeration value="float"/>
                     <xs:enumeration value="double"/>
                     <xs:enumeration value="datetime"/>
+                    <xs:enumeration value="subdoc"/>
                 </xs:restriction>
             </xs:simpleType>
         </xs:attribute>
