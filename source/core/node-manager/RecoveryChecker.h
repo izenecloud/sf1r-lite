@@ -31,7 +31,7 @@ public:
     static bool isLastNormalExit();
 
     //RecoveryChecker(const CollectionPath& colpath);
-    bool backup();
+    bool backup(bool force_remove = true);
     bool setRollbackFlag(uint32_t inc_id);
     void clearRollbackFlag();
     bool rollbackLastFail(bool starting_up = false);

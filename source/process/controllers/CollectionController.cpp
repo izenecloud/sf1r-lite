@@ -383,6 +383,8 @@ void CollectionController::backup_all()
         response().addError("This api only available in distributed mode.");
         return;
     }
+    bool force_backup = false;
+    force_backup = asBool(request()[Keys::force_backup]);
 
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
@@ -394,7 +396,7 @@ void CollectionController::backup_all()
         return;
     }
 
-    bool ret = CollectionManager::get()->backup_all();
+    bool ret = CollectionManager::get()->backup_all(force_backup);
     if(!ret)
     {
         response().addError("Backup all failed.");

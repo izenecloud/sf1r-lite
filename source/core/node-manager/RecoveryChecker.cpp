@@ -298,7 +298,7 @@ void RecoveryChecker::clearRollbackFlag()
         bfs::remove(rollback_file_);
 }
 
-bool RecoveryChecker::backup()
+bool RecoveryChecker::backup(bool force_remove)
 {
     CollInfoMapT tmp_all_col_info;
     {
@@ -320,7 +320,14 @@ bool RecoveryChecker::backup()
     bfs::path dest_coldata_backup = dest_path/bfs::path("backup_data");
 
     if (bfs::exists(dest_path))
+    {
+        if (CopyGuard::isDirCopyOK(dest_path.string()) && !force_remove)
+        {
+            LOG(INFO) << "backup already exists : " << dest_path;
+            return true;
+        }
         CopyGuard::safe_remove_all(dest_path.string());
+    }
     bfs::create_directories(dest_path);
 
     {

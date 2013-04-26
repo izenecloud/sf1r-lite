@@ -352,9 +352,9 @@ void CollectionManager::flushCollection(const std::string& collectionName)
     }
 }
 
-bool CollectionManager::backup_all()
+bool CollectionManager::backup_all(bool force_remove)
 {
-    return RecoveryChecker::get()->backup();
+    return RecoveryChecker::get()->backup(force_remove);
 }
 
 std::string CollectionManager::checkCollectionConsistency(const std::string& collectionName)
