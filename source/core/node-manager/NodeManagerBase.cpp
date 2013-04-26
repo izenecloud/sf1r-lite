@@ -1935,10 +1935,16 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     if (s_enable_async_ && nodeState_ != NODE_STATE_STARTED)
     {
         if (checkForAsyncWrite())
-            return;
-        LOG(INFO) << "need update self_primary_path_ : " << nodeState_;
-        setSf1rNodeData(nodedata, oldZnode);
-        zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+        {
+            if (oldstate != NODE_STATE_STARTED)
+                return;
+        }
+        else
+        {
+            LOG(INFO) << "need update self_primary_path_ : " << nodeState_;
+            setSf1rNodeData(nodedata, oldZnode);
+            zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+        }
     }
 
     if (!s_enable_async_)
@@ -2358,6 +2364,9 @@ bool NodeManagerBase::checkForAsyncWrite()
             LOG(INFO) << "write request log success on replica: " << self_primary_path_;
             updateNodeStateToNewState(NODE_STATE_STARTED);
         }
+        break;
+    case NODE_STATE_PROCESSING_REQ_RUNNING:
+        LOG(INFO) << "write request running.";
         break;
     default:
         return false;
