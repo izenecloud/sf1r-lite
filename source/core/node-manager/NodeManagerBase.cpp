@@ -648,12 +648,23 @@ void NodeManagerBase::updateCurrentPrimary()
         LOG(INFO) << "primary is empty";
         curr_primary_path_.clear();
         DistributeTestSuit::updateMemoryState("IsMinePrimary", 0);
+        DistributeTestSuit::updateMemoryState("CurrentPrimary", "Empty");
         return;
     }
     curr_primary_path_ = primaryList[0];
     LOG(INFO) << "current primary is : " << curr_primary_path_;
     DistributeTestSuit::updateMemoryState("IsMinePrimary", self_primary_path_ == curr_primary_path_?1:0);
     getPrimaryState();
+
+    std::string primary_ip;
+    std::string sdata;
+    if (zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
+    {
+        ZNode node;
+        node.loadKvString(sdata);
+        primary_ip = node.getStrValue(ZNode::KEY_HOST);
+        DistributeTestSuit::updateMemoryState("CurrentPrimary", curr_primary_path_ + " : " + primary_ip);
+    }
 }
 
 void NodeManagerBase::unregisterPrimary()
