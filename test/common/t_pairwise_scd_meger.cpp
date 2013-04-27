@@ -303,7 +303,7 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
 
             if(it->second.type==INSERT_SCD)
             {
-                 
+
                 idValuemap.insert(std::make_pair(id,value));
                 value.type=INSERT_SCD;
                 idValuemap[id]=value;
@@ -324,7 +324,7 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
                 idValuemap[id]=value;
 
             }
-            else 
+            else
             {
 
                 idValuemap.insert(std::make_pair(id,value));
@@ -360,7 +360,7 @@ void scdinit(ScdTypeWriter& scd,unsigned docnum,int ty=0 )
                 idValuemap[id]=value;
             }
         }
-     
+
     }
 
 
@@ -446,7 +446,7 @@ BOOST_AUTO_TEST_CASE(pairwise_Append)
         ScdTypeWriter  scd("./pairewise_test");
 
 
-        for(int i=0; i<rand()%20+1; i++)
+        for(int j=0; j<rand()%20+1; j++)
         {
             ScdTypeWriter  scdexist("./scd_exist");
             scdinit(scdexist,10000);
