@@ -546,9 +546,13 @@ bool NodeManagerBase::getCurrPrimaryInfo(std::string& primary_host)
             state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
             state == NODE_STATE_UNKNOWN)
         {
-            LOG(INFO) << "primary is busy while get primary. " << state;
-            primary_host.clear();
-            return false;
+            if (nodeState_ != NODE_STATE_RECOVER_RUNNING &&
+                nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY)
+            {
+                LOG(INFO) << "primary is busy while get primary. " << state;
+                primary_host.clear();
+                return false;
+            }
         }
         primary_host = node.getStrValue(ZNode::KEY_HOST);
         return true;
@@ -804,7 +808,7 @@ void NodeManagerBase::enterCluster(bool start_master)
             return;
         }
     }
-    nodeState_ = NODE_STATE_STARTED;
+    //nodeState_ = NODE_STATE_STARTED;
     enterClusterAfterRecovery(start_master);
 }
 
@@ -866,6 +870,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         return;
     }
 
+    nodeState_ = NODE_STATE_STARTED;
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     updateNodeState();
     updateCurrentPrimary();
@@ -1716,7 +1721,7 @@ void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
         if (cb_on_recover_wait_primary_)
             cb_on_recover_wait_primary_();
         LOG(INFO) << "begin re-enter to the cluster after sync to new primary";
-        nodeState_ = NODE_STATE_STARTED;
+        //nodeState_ = NODE_STATE_STARTED;
         enterClusterAfterRecovery(!masterStarted_);
     }
 }
