@@ -176,6 +176,7 @@ bool SynchroProducer::doProduce(SynchroData& syncData)
     if (zookeeper_->isConnected())
     {
         // ensure synchro node
+        zookeeper_->createZNode(ZooKeeperNamespace::getSynchroPath());
         zookeeper_->createZNode(syncZkNode_);
 
         // create producer node (ephemeral)
