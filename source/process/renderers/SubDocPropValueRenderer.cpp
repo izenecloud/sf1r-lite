@@ -13,7 +13,6 @@ void SubDocPropValueRenderer::renderSubDocPropValue(
         return;
     rapidjson::Document doc;
     doc.Parse<0>(origText.c_str());
-    assert(doc.IsArray());
     const rapidjson::Value& subDocs = doc;
     assert(subDocs.IsArray());
     for (rapidjson::Value::ConstValueIterator vit = subDocs.Begin();
