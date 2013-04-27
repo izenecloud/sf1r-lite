@@ -12,10 +12,12 @@
 #include <stdint.h>
 #include <memory.h>
 
+#include "PropSharedLock.h"
+
 namespace sf1r
 {
 
-class RTypeStringPropTable 
+class RTypeStringPropTable : public PropSharedLock
 {
 public:
     RTypeStringPropTable(PropertyDataType type)
@@ -33,6 +35,19 @@ public:
             data_->close();
             delete data_;
         }
+    }
+
+    PropertyDataType getType() const
+    {
+        return type_;
+    }
+
+    
+    std::size_t size(bool isLock = true) const
+    {
+        
+        ScopedReadBoolLock lock(mutex_, isLock);
+        return data_->num_items();
     }
 
     bool init(const std::string& path)
@@ -113,6 +128,20 @@ public:
             return updateRTypeString(docId_to, result);
         }
         return false;
+    }
+
+    int compareValues(std::size_t lhs, std::size_t rhs, bool isLock) const
+    {
+       ScopedReadBoolLock lock(mutex_, isLock);
+       std::string lv, rv;
+       if (!getRTypeString((unsigned int)lhs, lv) ||
+            getRTypeString((unsigned int)rhs, rv)  )
+       {
+            return -1;
+       }
+       if (lv < rv ) return -1;
+       if (lv > rv ) return 1;
+       return 0;
     }
 
 protected:

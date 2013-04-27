@@ -20,6 +20,7 @@ namespace sf1r
 class Sorter;
 class NumericPropertyTableBase;
 class DocumentIterator;
+class DocumentManager;
 class RankQueryProperty;
 class PropertyRanker;
 class ProductScorerFactory;
@@ -61,6 +62,12 @@ public:
         const SearchKeywordOperation& actionOperation,
         boost::shared_ptr<Sorter>& pSorter,
         CustomRankerPtr& customRanker);
+    
+    void prepareSorterCustomRanker(
+        const SearchKeywordOperation& actionOperation,
+        boost::shared_ptr<Sorter>& pSorter,
+        CustomRankerPtr& customRanker,
+        DocumentManager* documentManagerPtr);
 
     template<class UnaryOperator>
     void preparePropertyList(

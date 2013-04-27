@@ -863,7 +863,6 @@ void DocumentManager::initRTypeStringPropTable(
     rtype_string_prop->init(path_ + propertyName + ".rtypestring_data");
 }
 
-
 void DocumentManager::moveRTypeValues(docid_t oldId, docid_t newId)
 {
     for (NumericPropertyTableMap::iterator it = numericPropertyTables_.begin();
@@ -875,6 +874,44 @@ void DocumentManager::moveRTypeValues(docid_t oldId, docid_t newId)
         rtype_it != rtype_string_proptable_.end(); ++rtype_it)
     {
         rtype_it->second->copyValue(oldId, newId);
+    }
+}
+
+void DocumentManager::copyRTypeValues(
+    boost::shared_ptr<DocumentManager>& source,
+    docid_t from, docid_t to)
+{
+    for (IndexBundleSchema::const_iterator it = indexSchema_.begin();
+            it != indexSchema_.end(); ++it)
+    {
+        if(it->isRTypeString())
+        {
+            std::string fieldValue;
+            boost::shared_ptr<RTypeStringPropTable> sourceTable = source->getRTypeStringPropTable(it->getName());
+            if(!sourceTable) continue;
+            boost::shared_ptr<RTypeStringPropTable> rtypeStringPropertyTable = rtype_string_proptable_[it->getName()];
+            bool ret = sourceTable->getRTypeString(from, fieldValue);
+            if(ret) rtypeStringPropertyTable->updateRTypeString(to, fieldValue);
+        }
+        else if (it->isRTypeNumeric())
+        {
+            boost::shared_ptr<NumericPropertyTableBase> sourceTable = source->getNumericPropertyTable(it->getName());
+            if(!sourceTable) continue;
+            boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable = numericPropertyTables_[it->getName()];
+            if( (it->getType() == DATETIME_PROPERTY_TYPE) &&
+                (it->getIsFilter() && !it->getIsMultiValue()) )
+            {
+                time_t fieldValue;
+                bool ret = sourceTable->getInt64Value(from, fieldValue);
+                if(ret) numericPropertyTable->setInt64Value(to, fieldValue);
+            }
+            else
+            {
+                std::string fieldValue;
+                bool ret = sourceTable->getStringValue(from, fieldValue);
+                if(ret) numericPropertyTable->setStringValue(to, fieldValue);
+            }
+        }
     }
 }
 

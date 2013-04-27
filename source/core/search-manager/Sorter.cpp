@@ -5,6 +5,7 @@
 #include <index-manager/IndexManager.h>
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <common/PropSharedLockSet.h>
+#include <common/RTypeStringPropTable.h>
 
 using namespace std;
 
@@ -109,8 +110,16 @@ void Sorter::createComparators(PropSharedLockSet& propSharedLockSet)
             break;
         case SortProperty::AUTO:
         case SortProperty::CTR:
-            pSortProperty->pComparator_ = createNumericComparator_(propName,
+            if (STRING_PROPERTY_TYPE == pSortProperty->getPropertyDataType())
+            {
+                pSortProperty->pComparator_ = createRTypeStringComparator_(propName,
+                                                                  propSharedLockSet);
+            }
+            else
+            {
+                pSortProperty->pComparator_ = createNumericComparator_(propName,
                                                                    propSharedLockSet);
+            }
             break;
         case SortProperty::CUSTOM:
             pSortProperty->pComparator_ = new SortPropertyComparator(CUSTOM_RANKING_PROPERTY_TYPE);
@@ -157,6 +166,19 @@ void Sorter::createComparators(PropSharedLockSet& propSharedLockSet)
     }
 }
 
+
+SortPropertyComparator* Sorter::createRTypeStringComparator_(
+    const std::string& propName,
+    PropSharedLockSet& propSharedLockSet)
+{
+    if (!documentManagerPtr_)
+        return NULL;
+    boost::shared_ptr<RTypeStringPropTable> propTable =
+        documentManagerPtr_->getRTypeStringPropTable(propName);
+
+    propSharedLockSet.insertSharedLock(propTable.get());
+    return new SortPropertyComparator(propTable);
+}
 SortPropertyComparator* Sorter::createNumericComparator_(
     const std::string& propName,
     PropSharedLockSet& propSharedLockSet)

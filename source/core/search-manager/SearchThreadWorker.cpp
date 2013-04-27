@@ -157,7 +157,8 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     {
         preprocessor_.prepareSorterCustomRanker(actionOperation,
                                                 param.pSorter,
-                                                param.customRanker);
+                                                param.customRanker),
+                                                documentManagerPtr_;
     }
     catch (std::exception& e)
     {

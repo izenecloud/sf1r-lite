@@ -35,6 +35,15 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
     boost::shared_ptr<Sorter>& pSorter,
     CustomRankerPtr& customRanker)
 {
+    prepareSorterCustomRanker(actionOperation, pSorter, customRanker, NULL);
+}
+
+void SearchManagerPreProcessor::prepareSorterCustomRanker(
+    const SearchKeywordOperation& actionOperation,
+    boost::shared_ptr<Sorter>& pSorter,
+    CustomRankerPtr& customRanker,
+    DocumentManager* documentManagerPtr)
+{
     std::vector<std::pair<std::string, bool> >& sortPropertyList
         = actionOperation.actionItem_.sortPriorityList_;
     if (!sortPropertyList.empty())
@@ -116,6 +125,16 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
             switch (propertyType)
             {
             case STRING_PROPERTY_TYPE:
+            {
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
+                pSorter->setDocumentManagerPtr(documentManagerPtr);
+                SortProperty* pSortProperty = new SortProperty(
+                    iter->first,
+                    propertyType,
+                    iter->second);
+                pSorter->addSortProperty(pSortProperty);
+                break;
+            }
             case INT32_PROPERTY_TYPE:
             case FLOAT_PROPERTY_TYPE:
             case DATETIME_PROPERTY_TYPE:
