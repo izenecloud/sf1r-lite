@@ -460,8 +460,8 @@ bool DocumentsSearchHandler::parse()
     actionItem_.requireRelatedQueries_ = searchParser.isRequireRelatedQueries();
     // filteringParser
     swap(
-        actionItem_.filteringList_,
-        filteringParser.mutableFilteringRules()
+        actionItem_.filteringTreeList_,
+        filteringParser.mutableFilteringTreeRules()
     );
 
     // CustomRankingParser

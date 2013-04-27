@@ -49,6 +49,8 @@ struct QueryIdentity
 
     std::vector<QueryFiltering::FilteringType> filterInfo;
 
+    std::vector<QueryFiltering::FilteringTreeValue> filteringTreeList_;
+
     /// @brief param for group filter
     faceted::GroupParam groupParam;
 
@@ -90,6 +92,7 @@ struct QueryIdentity
             && counterList == other.counterList
             && sortInfo == other.sortInfo
             && filterInfo == other.filterInfo
+            && filteringTreeList_ == other.filteringTreeList_
             && groupParam == other.groupParam
             && removeDuplicatedDocs == other.removeDuplicatedDocs
             && rangeProperty == other.rangeProperty
@@ -108,7 +111,7 @@ struct QueryIdentity
     }
 
     DATA_IO_LOAD_SAVE(QueryIdentity, & query & userId & searchingMode & rankingType & laInfo
-            & properties & counterList & sortInfo & filterInfo & groupParam & removeDuplicatedDocs 
+            & properties & counterList & sortInfo & filterInfo &filteringTreeList_ & groupParam & removeDuplicatedDocs 
             & rangeProperty & strExp & paramConstValueMap & paramPropertyValueMap & simHash
             & start & distActionType & isRandomRank & querySource);
 };

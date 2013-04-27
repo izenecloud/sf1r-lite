@@ -12,7 +12,9 @@
 #include <bundles/mining/MiningBundleConfiguration.h>
 #include <query-manager/QueryTypeDef.h>
 
+#include <common/parsers/ConditionsTree.h>
 #include <string>
+#include <stack>
 
 namespace sf1r {
 
@@ -29,10 +31,21 @@ public:
 
     bool parse(const Value& conditions);
     
+    bool parse_tree(const Value& conditions);
+
+    bool pre_parse_tree(std::vector<QueryFiltering::FilteringTreeValue>& filteringTreeRules_
+        , std::stack<boost::shared_ptr<ConditionsNode> >& nodeStack);
+
     std::vector<QueryFiltering::FilteringType>&
     mutableFilteringRules()
     {
         return filteringRules_;
+    }
+
+    std::vector<QueryFiltering::FilteringTreeValue>&
+    mutableFilteringTreeRules()
+    {
+        return filteringTreeRules_;
     }
 
     const std::vector<QueryFiltering::FilteringType>&
@@ -50,6 +63,7 @@ private:
     const MiningSchema& miningSchema_;
 
     std::vector<QueryFiltering::FilteringType> filteringRules_;
+    std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules_;
 };
 
 } // namespace sf1r

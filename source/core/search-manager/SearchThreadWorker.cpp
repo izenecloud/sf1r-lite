@@ -95,8 +95,8 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     MultiPropertyScorer* pMultiPropertyIterator = NULL;
     WANDDocumentIterator* pWandDocIterator = NULL;
 
-    std::vector<QueryFiltering::FilteringType>& filtingList =
-        actionOperation.actionItem_.filteringList_;
+    std::vector<QueryFiltering::FilteringTreeValue>& filtingTreeList =
+        actionOperation.actionItem_.filteringTreeList_;
     boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet;
 
     // when query is "*"
@@ -105,9 +105,8 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
 
     try
     {
-        if (!filtingList.empty())
-            queryBuilder_.prepare_filter(filtingList, pFilterIdSet);
-
+        if (!filtingTreeList.empty())
+            queryBuilder_.prepare_filter(filtingTreeList, pFilterIdSet);
         if (isFilterQuery == false)
         {
             if (isWandSearch)

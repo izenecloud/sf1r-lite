@@ -304,6 +304,7 @@ public:
         , displayPropertyList_(obj.displayPropertyList_)
         , sortPriorityList_(obj.sortPriorityList_)
         , filteringList_(obj.filteringList_)
+        , filteringTreeList_(obj.filteringTreeList_)
         , rangePropertyName_(obj.rangePropertyName_)
         , groupParam_(obj.groupParam_)
         , strExp_(obj.strExp_)
@@ -330,6 +331,7 @@ public:
         displayPropertyList_ = obj.displayPropertyList_;
         sortPriorityList_    = obj.sortPriorityList_;
         filteringList_ = obj.filteringList_;
+        filteringTreeList_ = obj.filteringTreeList_;
         rangePropertyName_ = obj.rangePropertyName_;
         groupParam_ = obj.groupParam_;
         strExp_ = obj.strExp_;
@@ -356,6 +358,7 @@ public:
             && displayPropertyList_ == obj.displayPropertyList_
             && sortPriorityList_    == obj.sortPriorityList_
             && filteringList_ == obj.filteringList_
+            && filteringTreeList_ == obj.filteringTreeList_
             && rangePropertyName_ == obj.rangePropertyName_
             && groupParam_ == obj.groupParam_
             && strExp_ == obj.strExp_
@@ -497,6 +500,11 @@ public:
     std::vector<QueryFiltering::FilteringType> filteringList_;
 
     ///
+    ///
+    ///
+    std::vector<QueryFiltering::FilteringTreeValue> filteringTreeList_;
+
+    ///
     /// @brief a list of counters
     ///
     std::vector<std::string> counterList_;
@@ -532,12 +540,12 @@ public:
 
     DATA_IO_LOAD_SAVE(KeywordSearchActionItem, & env_ & refinedQueryString_ & collectionName_
              & rankingType_ & searchingMode_ & pageInfo_ & languageAnalyzerInfo_ & searchPropertyList_ & removeDuplicatedDocs_
-             & displayPropertyList_ & sortPriorityList_ & filteringList_ & counterList_ & rangePropertyName_ & groupParam_
+             & displayPropertyList_ & sortPriorityList_ & filteringList_ & filteringTreeList_ & counterList_ & rangePropertyName_ & groupParam_
              & strExp_ & paramConstValueMap_ & paramPropertyValueMap_ & isRandomRank_ & requireRelatedQueries_);
 
     /// msgpack serializtion
     MSGPACK_DEFINE(env_, refinedQueryString_, collectionName_, rankingType_, searchingMode_, pageInfo_, languageAnalyzerInfo_,
-            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_, counterList_,
+            searchPropertyList_, removeDuplicatedDocs_, displayPropertyList_, sortPriorityList_, filteringList_, filteringTreeList_, counterList_,
                    rangePropertyName_, groupParam_, strExp_, paramConstValueMap_, paramPropertyValueMap_, isRandomRank_, requireRelatedQueries_);
 
 private:
@@ -559,6 +567,7 @@ private:
         ar & displayPropertyList_;
         ar & sortPriorityList_;
         ar & filteringList_;
+        ar & filteringTreeList_;
         ar & counterList_;
         ar & rangePropertyName_;
         ar & groupParam_;

@@ -75,6 +75,53 @@ private:
     }
 };
 
+struct FilteringTreeValue
+{
+    FilteringType fitleringType_;
+    bool isRelationNode_;
+    std::string relation_;
+    unsigned int childNum_;
+
+    FilteringTreeValue()
+    {
+        isRelationNode_ = false;
+        relation_ = "";
+        childNum_ = 0;
+    }
+
+    bool operator==(const FilteringTreeValue& obj) const
+    {
+        return fitleringType_ == obj.fitleringType_
+                && isRelationNode_ == obj.isRelationNode_
+                && relation_ == obj.relation_
+                && childNum_ == obj.childNum_;
+    }
+
+    void print()
+    {
+        cout<<"is RelationNode:"<<isRelationNode_<<endl;
+        if (isRelationNode_)
+        {
+            cout<<"relation_"<<endl;
+        }
+        cout<<"childNum_:"<<childNum_<<endl;
+    }
+
+    MSGPACK_DEFINE(fitleringType_, isRelationNode_, relation_, childNum_)
+    DATA_IO_LOAD_SAVE(FilteringTreeValue, & fitleringType_ & isRelationNode_ & relation_ & childNum_);
+
+private:
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int version)
+    {
+        ar & fitleringType_;
+        ar & isRelationNode_;
+        ar & relation_;
+        ar & childNum_;
+    }
+};
+
 } // end namespace QueryFiltering
 } // end namespace sf1r
 

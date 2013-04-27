@@ -22,6 +22,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/threadpool.hpp>
+#include <common/parsers/ConditionsTree.h>
 
 #include <vector>
 
@@ -78,6 +79,9 @@ public:
         const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
     );
 
+    void prepare_filter(
+        std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules_,
+        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap);
     /*
     *@brief Generate Filter, filter will be released by the user.
     */

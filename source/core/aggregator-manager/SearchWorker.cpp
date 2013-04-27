@@ -273,7 +273,7 @@ void SearchWorker::makeQueryIdentity(
         identity.properties = item.searchPropertyList_;
         identity.counterList = item.counterList_;
         identity.sortInfo = item.sortPriorityList_;
-        identity.filterInfo = item.filteringList_;
+        identity.filteringTreeList_ = item.filteringTreeList_;
         identity.groupParam = item.groupParam_;
         identity.removeDuplicatedDocs = item.removeDuplicatedDocs_;
         identity.rangeProperty = item.rangePropertyName_;
