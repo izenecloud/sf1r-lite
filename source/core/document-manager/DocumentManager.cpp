@@ -895,7 +895,6 @@ void DocumentManager::copyRTypeValues(
         }
         else if (it->isRTypeNumeric())
         {
-            initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
             boost::shared_ptr<NumericPropertyTableBase> sourceTable = source->getNumericPropertyTable(it->getName());
             if(!sourceTable) continue;
             boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable = numericPropertyTables_[it->getName()];
