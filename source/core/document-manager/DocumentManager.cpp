@@ -881,36 +881,38 @@ void DocumentManager::copyRTypeValues(
     boost::shared_ptr<DocumentManager>& source,
     docid_t from, docid_t to)
 {
-    for (NumericPropertyTableMap::iterator it = source->getNumericPropertyTableMap().begin();
-            it != source->getNumericPropertyTableMap().end(); ++it)
+    for (IndexBundleSchema::const_iterator it = indexSchema_.begin();
+            it != indexSchema_.end(); ++it)
     {
-        PropertyConfig tempPropertyConfig;
-        tempPropertyConfig.propertyName_ = it->first;
-        IndexBundleSchema::iterator iter = indexSchema_.find(tempPropertyConfig);
-        if( (iter->getType() == DATETIME_PROPERTY_TYPE) &&
-          (iter->getIsFilter() && !iter->getIsMultiValue()) )
-        {
-            time_t fieldValue;
-            it->second->getInt64Value(from, fieldValue);
-            boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable = numericPropertyTables_[it->first];
-            numericPropertyTable->setInt64Value(to, fieldValue);
-        }
-        else
+        if(it->isRTypeString())
         {
             std::string fieldValue;
-            it->second->getStringValue(from, fieldValue);
-            boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable = numericPropertyTables_[it->first];
-            numericPropertyTable->setStringValue(to, fieldValue);
+            boost::shared_ptr<RTypeStringPropTable> sourceTable = source->getRTypeStringPropTable(it->getName());
+            if(!sourceTable) continue;
+            boost::shared_ptr<RTypeStringPropTable> rtypeStringPropertyTable = rtype_string_proptable_[it->getName()];
+            bool ret = sourceTable->getRTypeString(from, fieldValue);
+            if(ret) rtypeStringPropertyTable->updateRTypeString(to, fieldValue);
         }
-    }
-
-    for(RTypeStringPropTableMap::iterator rtype_it = source->getRTypeStringPropTableMap().begin();
-        rtype_it != source->getRTypeStringPropTableMap().end(); ++rtype_it)
-    {
-        std::string fieldValue;
-        rtype_it->second->getRTypeString(from, fieldValue);
-        boost::shared_ptr<RTypeStringPropTable> rtypeStringPropertyTable = rtype_string_proptable_[rtype_it->first];
-        rtypeStringPropertyTable->updateRTypeString(to, fieldValue);
+        else if (it->isRTypeNumeric())
+        {
+            initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
+            boost::shared_ptr<NumericPropertyTableBase> sourceTable = source->getNumericPropertyTable(it->getName());
+            if(!sourceTable) continue;
+            boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable = numericPropertyTables_[it->getName()];
+            if( (it->getType() == DATETIME_PROPERTY_TYPE) &&
+                (it->getIsFilter() && !it->getIsMultiValue()) )
+            {
+                time_t fieldValue;
+                bool ret = sourceTable->getInt64Value(from, fieldValue);
+                if(ret) numericPropertyTable->setInt64Value(to, fieldValue);
+            }
+            else
+            {
+                std::string fieldValue;
+                bool ret = sourceTable->getStringValue(from, fieldValue);
+                if(ret) numericPropertyTable->setStringValue(to, fieldValue);
+            }
+        }
     }
 }
 
