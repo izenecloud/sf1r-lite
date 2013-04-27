@@ -1,4 +1,5 @@
 #include "SortPropertyComparator.h"
+#include <common/RTypeStringPropTable.h>
 
 namespace sf1r
 {
@@ -11,7 +12,15 @@ SortPropertyComparator::SortPropertyComparator()
 }
 
 SortPropertyComparator::SortPropertyComparator(const boost::shared_ptr<NumericPropertyTableBase>& propData)
-    : propertyTable_(propData)
+    : numericPropTable_(propData)
+    , type_(propData->getType())
+    , size_(propData->size(false))
+{
+    initComparator();
+}
+
+SortPropertyComparator::SortPropertyComparator(const boost::shared_ptr<RTypeStringPropTable>& propData)
+    : RTypePropTable_(propData)
     , type_(propData->getType())
     , size_(propData->size(false))
 {
@@ -30,6 +39,8 @@ void SortPropertyComparator::initComparator()
     switch (type_)
     {
     case STRING_PROPERTY_TYPE:
+        comparator_ = &SortPropertyComparator::compareImplRTypeString;
+        break;
     case INT32_PROPERTY_TYPE:
     case FLOAT_PROPERTY_TYPE:
     case DATETIME_PROPERTY_TYPE:
@@ -60,11 +71,15 @@ int SortPropertyComparator::compareImplDefault(const ScoreDoc& doc1, const Score
 {
     return 0;
 }
-
+int SortPropertyComparator::compareImplRTypeString(const ScoreDoc& doc1, const ScoreDoc& doc2) const
+{
+    //if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
+    return RTypePropTable_->compareValues(doc1.docId, doc2.docId, false);
+}
 int SortPropertyComparator::compareImplNumeric(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
     if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
-    return propertyTable_->compareValues(doc1.docId, doc2.docId, false);
+    return numericPropTable_->compareValues(doc1.docId, doc2.docId, false);
 }
 
 int SortPropertyComparator::compareImplUnknown(const ScoreDoc& doc1, const ScoreDoc& doc2) const

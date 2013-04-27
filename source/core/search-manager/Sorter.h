@@ -107,6 +107,8 @@ private:
 /*
 * @brief Sorter main interface exposed.
 */
+class DocumentManager;
+
 class Sorter
 {
 public:
@@ -116,6 +118,11 @@ public:
 
 public:
     void addSortProperty(SortProperty* pSortProperty);
+    
+    void setDocumentManagerPtr(DocumentManager* documentManagerPtr)
+    {
+        documentManagerPtr_ = documentManagerPtr;
+    }
 
     bool requireScorer()
     {
@@ -156,6 +163,10 @@ private:
     SortPropertyComparator* createNumericComparator_(
         const std::string& propName,
         PropSharedLockSet& propSharedLockSet);
+    
+    SortPropertyComparator* createRTypeStringComparator_(
+        const std::string& propName,
+        PropSharedLockSet& propSharedLockSet);
 
 private:
     NumericPropertyTableBuilder* numericTableBuilder_;
@@ -167,6 +178,8 @@ private:
     int* reverseMul_;
 
     std::size_t nNumProperties_;
+
+    DocumentManager* documentManagerPtr_;
 
     friend class SearchManager;
     friend class SearchManagerPreProcessor;

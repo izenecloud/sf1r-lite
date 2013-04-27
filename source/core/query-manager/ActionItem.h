@@ -54,7 +54,7 @@ public:
         summarySentenceNum_(0),
         isHighlightOn_(false),
         isSplitPropertyValue_(false),
-		isSubDocPropertyValue_(false)
+        isSubDocPropertyValue_(false)
     {}
 
     DisplayProperty(const std::string& obj) :
@@ -64,7 +64,7 @@ public:
         summaryPropertyAlias_(),
         isHighlightOn_(false),
         isSplitPropertyValue_(false),
-		isSubDocPropertyValue_(false),
+        isSubDocPropertyValue_(false),
         propertyString_(obj)
     {}
 
@@ -76,7 +76,7 @@ public:
         ss << "---------------------------------" << endl;
         ss << "Property : " << propertyString_ << endl;
         ss << "isSplitPropertyValue_ : " << isSplitPropertyValue_ << endl;
-		ss << "isSubDocPropertyValue_ : " << isSubDocPropertyValue_ << endl;
+        ss << "isSubDocPropertyValue_ : " << isSubDocPropertyValue_ << endl;
         ss << "isHighlightOn_ : " << isHighlightOn_ << endl;
         ss << "isSnippetOn_   : " << isSnippetOn_   << endl;
         ss << "isSummaryOn_   : " << isSummaryOn_   << endl;
@@ -117,10 +117,10 @@ public:
     ///
     bool isSplitPropertyValue_;
 
-	///
-	/// @brief a flag for subdoc property
-	///
-	bool isSubDocPropertyValue_;
+    ///
+    /// @brief a flag for subdoc property
+    ///
+    bool isSubDocPropertyValue_;
 
     ///
     /// @brief analyzed query string of specific property
@@ -147,7 +147,7 @@ private:
         ar & summaryPropertyAlias_;
         ar & isHighlightOn_;
         ar & isSplitPropertyValue_;
-		ar & isSubDocPropertyValue_;
+        ar & isSubDocPropertyValue_;
         ar & propertyString_;
     }
 }; // end - class DisplayProperty
