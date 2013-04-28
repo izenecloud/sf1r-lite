@@ -1432,6 +1432,8 @@ void NodeManagerBase::checkForPrimaryElecting()
         }
         else
         {
+            if (nodeState_ == NODE_STATE_RECOVER_RUNNING)
+                return;
             checkPrimaryState(false);
         }
         updateNodeState();
