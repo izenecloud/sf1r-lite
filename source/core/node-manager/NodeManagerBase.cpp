@@ -2341,12 +2341,6 @@ void NodeManagerBase::checkSecondaryRecovery(bool self_changed)
 // we should handle it by communicating with ZooKeeper.
 bool NodeManagerBase::checkForAsyncWrite()
 {
-    if (need_check_electing_)
-    {
-        LOG(INFO) << "ignore check async write while need electing";
-        return false;
-    }
-
     switch(nodeState_)
     {
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
