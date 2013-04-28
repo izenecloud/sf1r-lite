@@ -58,6 +58,7 @@
 
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
+#include <search-manager/RTypeStringPropTableBuilder.h>
 #include <index-manager/IndexManager.h>
 #include <common/SearchCache.h>
 
@@ -152,6 +153,7 @@ MiningManager::MiningManager(
     , tgInfo_(NULL)
     , idManager_(idManager)
     , numericTableBuilder_(NULL)
+    , rtypeStringPropTableBuilder_(NULL)
     , groupManager_(NULL)
     , attrManager_(NULL)
     , groupFilterBuilder_(NULL)
@@ -404,6 +406,9 @@ bool MiningManager::open()
         if (numericTableBuilder_) delete numericTableBuilder_;
         numericTableBuilder_ = new NumericPropertyTableBuilderImpl(
             *document_manager_, ctrManager_.get());
+
+        if (rtypeStringPropTableBuilder_) delete rtypeStringPropTableBuilder_;
+        rtypeStringPropTableBuilder_ = new RTypeStringPropTableBuilder(*document_manager_);
 
         /** group */
         if (mining_schema_.group_enable)

@@ -1,12 +1,15 @@
 /**
  * @file core/common/BundleSchemaHelpers.cpp
  * @author Ian Yang
+ * @author Kevin Lin
  * @date Created <2010-07-12 11:19:38>
+ * @date Updated <2013-04-27>
  */
 #include "BundleSchemaHelpers.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string.hpp>
+#include <glog/logging.h>
 
 namespace sf1r {
 
@@ -83,7 +86,6 @@ void getDefaultSelectPropertyNames(
 
     result.swap(names);
 }
-
 bool isPropertySortable(
     const IndexBundleSchema& schema,
     const std::string& property
@@ -96,7 +98,9 @@ bool isPropertySortable(
         propertyConfig.setName(property);
 
         IndexBundleSchema::iterator it = schema.find(propertyConfig);
-        if (it == schema.end() || !it->isRTypeNumeric())
+        if (it == schema.end() || 
+            (!it->isRTypeNumeric() && 
+            !it->isRTypeString()))
             return false;
     }
 

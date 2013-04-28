@@ -127,6 +127,12 @@ bool DocumentManager::reload()
 bool DocumentManager::flush()
 {
     propertyValueTable_->flush();
+    for (RTypeStringPropTableMap::iterator it = rtype_string_proptable_.begin();
+            it != rtype_string_proptable_.end(); ++it)
+    {
+        it->second->flush();
+    }
+    
     for (NumericPropertyTableMap::iterator it = numericPropertyTables_.begin();
             it != numericPropertyTables_.end(); ++it)
     {
@@ -863,7 +869,6 @@ void DocumentManager::initRTypeStringPropTable(
     rtype_string_prop->init(path_ + propertyName + ".rtypestring_data");
 }
 
-
 void DocumentManager::moveRTypeValues(docid_t oldId, docid_t newId)
 {
     for (NumericPropertyTableMap::iterator it = numericPropertyTables_.begin();
@@ -875,6 +880,43 @@ void DocumentManager::moveRTypeValues(docid_t oldId, docid_t newId)
         rtype_it != rtype_string_proptable_.end(); ++rtype_it)
     {
         rtype_it->second->copyValue(oldId, newId);
+    }
+}
+
+void DocumentManager::copyRTypeValues(
+    boost::shared_ptr<DocumentManager>& source,
+    docid_t from, docid_t to)
+{
+    for (NumericPropertyTableMap::iterator it = source->getNumericPropertyTableMap().begin();
+            it != source->getNumericPropertyTableMap().end(); ++it)
+    {
+        PropertyConfig tempPropertyConfig;
+        tempPropertyConfig.propertyName_ = it->first;
+        IndexBundleSchema::iterator iter = indexSchema_.find(tempPropertyConfig);
+        if( (iter->getType() == DATETIME_PROPERTY_TYPE) &&
+          (iter->getIsFilter() && !iter->getIsMultiValue()) )
+        {
+            time_t fieldValue;
+            it->second->getInt64Value(from, fieldValue);
+            boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable = numericPropertyTables_[it->first];
+            numericPropertyTable->setInt64Value(to, fieldValue);
+        }
+        else
+        {
+            std::string fieldValue;
+            it->second->getStringValue(from, fieldValue);
+            boost::shared_ptr<NumericPropertyTableBase> numericPropertyTable = numericPropertyTables_[it->first];
+            numericPropertyTable->setStringValue(to, fieldValue);
+        }
+    }
+
+    for(RTypeStringPropTableMap::iterator rtype_it = source->getRTypeStringPropTableMap().begin();
+        rtype_it != source->getRTypeStringPropTableMap().end(); ++rtype_it)
+    {
+        std::string fieldValue;
+        rtype_it->second->getRTypeString(from, fieldValue);
+        boost::shared_ptr<RTypeStringPropTable> rtypeStringPropertyTable = rtype_string_proptable_[rtype_it->first];
+        rtypeStringPropertyTable->updateRTypeString(to, fieldValue);
     }
 }
 

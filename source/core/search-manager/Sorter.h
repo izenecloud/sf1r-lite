@@ -25,6 +25,7 @@ class IndexManager;
 class IndexBundleConfiguration;
 class PropSharedLockSet;
 class NumericPropertyTableBuilder;
+class RTypeStringPropTableBuilder;
 
 namespace faceted
 {
@@ -110,13 +111,17 @@ private:
 class Sorter
 {
 public:
+    // Downward compatibiltiy
     Sorter(NumericPropertyTableBuilder* numericTableBuilder);
+    
+    Sorter(NumericPropertyTableBuilder* numericTableBuilder,
+           RTypeStringPropTableBuilder* rtypeStringPropBuilder);
 
     ~Sorter();
 
 public:
     void addSortProperty(SortProperty* pSortProperty);
-
+    
     bool requireScorer()
     {
         for(std::size_t i = 0; i < nNumProperties_; ++i)
@@ -156,9 +161,14 @@ private:
     SortPropertyComparator* createNumericComparator_(
         const std::string& propName,
         PropSharedLockSet& propSharedLockSet);
+    
+    SortPropertyComparator* createRTypeStringComparator_(
+        const std::string& propName,
+        PropSharedLockSet& propSharedLockSet);
 
 private:
     NumericPropertyTableBuilder* numericTableBuilder_;
+    RTypeStringPropTableBuilder* rtypeStringPropBuilder_;
 
     std::list<SortProperty*> sortProperties_;
 

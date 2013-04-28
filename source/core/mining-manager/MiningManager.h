@@ -113,6 +113,7 @@ class QueryCategorizer;
 class MiningTaskBuilder;
 class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
+class RTypeStringPropTableBuilder;
 
 namespace sim
 {
@@ -482,6 +483,11 @@ public:
         return numericTableBuilder_;
     }
 
+    RTypeStringPropTableBuilder* GetRTypeStringPropTableBuilder()
+    {
+        return rtypeStringPropTableBuilder_;
+    }
+
     void updateMergeFuzzyIndex();
 
 private:
@@ -643,6 +649,8 @@ private:
     boost::shared_ptr<faceted::CTRManager> ctrManager_;
 
     NumericPropertyTableBuilder* numericTableBuilder_;
+    
+    RTypeStringPropTableBuilder* rtypeStringPropTableBuilder_;
 
     /** GROUP BY */
     faceted::GroupManager* groupManager_;

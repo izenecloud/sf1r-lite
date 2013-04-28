@@ -17,13 +17,16 @@
 namespace sf1r
 {
 
+class RTypeStringPropTable;
+
 class SortPropertyComparator
 {
 public:
     int compare(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
 
 private:
-    boost::shared_ptr<NumericPropertyTableBase> propertyTable_;
+    boost::shared_ptr<NumericPropertyTableBase> numericPropTable_;
+    boost::shared_ptr<RTypeStringPropTable> RTypePropTable_;
     PropertyDataType type_;
     size_t size_;
     int (SortPropertyComparator::*comparator_)(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
@@ -31,12 +34,14 @@ private:
 public:
     SortPropertyComparator();
     explicit SortPropertyComparator(const boost::shared_ptr<NumericPropertyTableBase>& propData);
+    explicit SortPropertyComparator(const boost::shared_ptr<RTypeStringPropTable>& propData);
     explicit SortPropertyComparator(PropertyDataType dataType);
 
 private:
     void initComparator();
     int compareImplDefault(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplNumeric(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
+    int compareImplRTypeString(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplDouble(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplUnknown(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
     int compareImplCustomRanking(const ScoreDoc& doc1, const ScoreDoc& doc2) const;
