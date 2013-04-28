@@ -53,6 +53,11 @@ GetRecommendMaster::GetRecommendMaster(
     MasterManagerBase::get()->registerAggregator(aggregator_);
 }
 
+GetRecommendMaster::~GetRecommendMaster()
+{
+    MasterManagerBase::get()->unregisterAggregator(aggregator_);
+}
+
 void GetRecommendMaster::recommendPurchase(
     const RecommendInputParam& inputParam,
     idmlib::recommender::RecommendItemVec& results

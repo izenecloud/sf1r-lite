@@ -68,9 +68,27 @@ public:
      */
     void registerAggregator(boost::shared_ptr<AggregatorBase> aggregator)
     {
+        if (!aggregator)
+            return;
         boost::lock_guard<boost::mutex> lock(state_mutex_);
         aggregatorList_.push_back(aggregator);
-        resetAggregatorConfig();
+        resetAggregatorConfig(aggregator);
+    }
+
+    void unregisterAggregator(boost::shared_ptr<AggregatorBase> aggregator)
+    {
+        if (!aggregator)
+            return;
+        boost::lock_guard<boost::mutex> lock(state_mutex_);
+        std::vector<boost::shared_ptr<AggregatorBase> >::iterator it = aggregatorList_.begin();
+        for (; it != aggregatorList_.end(); ++it)
+        {
+            if ((*it).get() == aggregator.get())
+            {
+                aggregatorList_.erase(it);
+                break;
+            }
+        }
     }
 
     /**
@@ -194,6 +212,7 @@ protected:
 
     /***/
     void resetAggregatorConfig();
+    void resetAggregatorConfig(boost::shared_ptr<AggregatorBase>& aggregator);
 
     bool getWriteReqNodeData(ZNode& znode);
     //void putWriteReqDataToPreparedNode(const std::string& req_json_data);

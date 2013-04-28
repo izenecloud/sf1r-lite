@@ -17,6 +17,8 @@
 
 #include "PropSharedLock.h"
 
+#include "PropSharedLock.h"
+
 namespace sf1r
 {
 
@@ -26,18 +28,17 @@ class RTypeStringPropTable : public PropSharedLock
 public:
     RTypeStringPropTable(PropertyDataType type)
         : type_(type)
-        , data_(NULL)
+        , data_(new Lux::IO::Array(Lux::IO::NONCLUSTER))
         , sortEnabled_(false)
         , maxDocId_(0)
     {
-        data_ = new Lux::IO::Array(Lux::IO::NONCLUSTER);
         data_->set_noncluster_params(Lux::IO::Linked);
         data_->set_lock_type(Lux::IO::LOCK_THREAD);
     }
 
     ~RTypeStringPropTable()
     {
-        if(data_)
+        if (data_)
         {
             data_->close();
             delete data_;
@@ -74,7 +75,7 @@ public:
         path_ = path;
         try
         {
-            if ( !boost::filesystem::exists(path_) )
+            if (!boost::filesystem::exists(path_))
             {
                 data_->open(path_.c_str(), Lux::IO::DB_CREAT);
             }
@@ -115,7 +116,7 @@ public:
             return false;
         }
 
-        if ( val_p->size == 0 )
+        if (val_p->size == 0)
         {
             data_->clean_data(val_p);
             return false;

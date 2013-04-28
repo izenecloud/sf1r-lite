@@ -16,7 +16,7 @@ void SubDocPropValueRenderer::renderSubDocPropValue(
     const rapidjson::Value& subDocs = doc;
     assert(subDocs.IsArray());
     for (rapidjson::Value::ConstValueIterator vit = subDocs.Begin();
-         vit != subDocs.End(); vit++)
+            vit != subDocs.End(); vit++)
     {
         izenelib::driver::Value& subDoc = resourceValue();
         for (rapidjson::Value::ConstMemberIterator mit = vit->MemberBegin();

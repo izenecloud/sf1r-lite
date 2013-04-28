@@ -37,7 +37,7 @@ public:
     {
     }
 
-    bool init(SearchMasterAddressFinder* addressFinder, int threadNum = 30)
+    bool init(SearchMasterAddressFinder* addressFinder, int threadNum = 10)
     {
         searchMasterAddressFinder_ = addressFinder;
         isFoundMaster_ = false;

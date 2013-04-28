@@ -108,6 +108,8 @@ private:
 /*
 * @brief Sorter main interface exposed.
 */
+class DocumentManager;
+
 class Sorter
 {
 public:
@@ -121,7 +123,6 @@ public:
 
 public:
     void addSortProperty(SortProperty* pSortProperty);
-    
     bool requireScorer()
     {
         for(std::size_t i = 0; i < nNumProperties_; ++i)
@@ -177,6 +178,8 @@ private:
     int* reverseMul_;
 
     std::size_t nNumProperties_;
+
+    DocumentManager* documentManagerPtr_;
 
     friend class SearchManager;
     friend class SearchManagerPreProcessor;
