@@ -139,6 +139,9 @@ void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
         taskServiceReg_ = 0;
         taskService_ = 0;
     }
+
+    MasterManagerBase::get()->unregisterAggregator(searchAggregator_);
+    MasterManagerBase::get()->unregisterAggregator(indexAggregator_);
 }
 
 bool IndexBundleActivator::addingService( const ServiceReference& ref )
