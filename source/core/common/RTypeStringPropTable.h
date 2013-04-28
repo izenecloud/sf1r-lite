@@ -11,7 +11,7 @@
 #include <boost/filesystem.hpp>
 #include <stdint.h>
 #include <memory.h>
-#include <map>
+#include <vector>
 #include <limits>
 #include <glog/logging.h>
 
@@ -24,13 +24,14 @@ namespace sf1r
 
 class RTypeStringPropTable : public PropSharedLock
 {
-    typedef std::map<std::size_t, std::string> RTypeMap;
+    typedef std::vector<std::string> RTypeVector;
 public:
     RTypeStringPropTable(PropertyDataType type)
         : type_(type)
         , data_(new Lux::IO::Array(Lux::IO::NONCLUSTER))
         , sortEnabled_(false)
         , maxDocId_(0)
+        , invalidValue_("")
     {
         data_->set_noncluster_params(Lux::IO::Linked);
         data_->set_lock_type(Lux::IO::LOCK_THREAD);
@@ -154,7 +155,11 @@ public:
             ScopedWriteBoolLock lock(mutex_, true);
             if (sortEnabled_)
             {
-                rtypeMap_[docId]=rtype_value;
+                if (docId > dataInMem_.size())
+                {
+                    dataInMem_.resize(docId+1, invalidValue_);
+                }
+                dataInMem_[docId]=rtype_value;
             }
             if (docId > maxDocId_)
             {
@@ -184,19 +189,10 @@ public:
         {
             return -1;
         }
-        std::string lv, rv;
-        RTypeMap::const_iterator it = rtypeMap_.find(lhs);
-        if (it == rtypeMap_.end())
-        {
-            return -1;
-        }
-        lv = it->second;
-        it = rtypeMap_.find(rhs);
-        if (it == rtypeMap_.end())
-        { 
-            return -1;
-        }
-        rv = it->second;
+        const std::string lv = dataInMem_[lhs];
+        if (lv == invalidValue_) return -1;
+        const std::string rv = dataInMem_[rhs];
+        if (rv == invalidValue_) return 1;
         if (lv < rv ) return -1;
         if (lv > rv ) return 1;
         return 0;
@@ -204,14 +200,14 @@ public:
 private:
     void load_()
     {
-        rtypeMap_.clear();
-
+        dataInMem_.clear();
+        dataInMem_.resize(maxDocId_, invalidValue_);
         for (unsigned int docId = 0; docId < maxDocId_; docId++)
         {
             std::string value;
             if (getRTypeString(docId, value))
             {
-                rtypeMap_[docId]=value;
+                dataInMem_[docId]=value;
             }
         }
     }
@@ -219,9 +215,10 @@ protected:
     PropertyDataType type_;
     std::string path_;
     Lux::IO::Array* data_;
-    RTypeMap rtypeMap_;
+    RTypeVector dataInMem_;
     bool sortEnabled_;
     unsigned int maxDocId_;
+    std::string invalidValue_;
 };
 
 }
