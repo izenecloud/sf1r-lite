@@ -1067,10 +1067,10 @@ void CollectionConfig::parseCollectionSchema(const ticpp::Element * documentSche
             {
                 dataType = STRING_PROPERTY_TYPE;
             }
-			else if (type == "subdoc")
-			{
-			    dataType = SUBDOC_PROPERTY_TYPE;
-			}
+            else if (type == "subdoc")
+            {
+                dataType = SUBDOC_PROPERTY_TYPE;
+            }
             else if (type == "int8")
             {
                 dataType = INT8_PROPERTY_TYPE;

@@ -49,15 +49,15 @@ void renderPropertyList(
                 propertyName, snippetText, newResource[propertyName]
             );
         }
-		else if (propertyList[p].isSubDocPropertyValue_)
-		{
+        else if (propertyList[p].isSubDocPropertyValue_)
+        {
             snippetText.convertString(
                 propertyValueBuffer, kEncoding
             );
-				SubDocPropValueRenderer::renderSubDocPropValue(
+            SubDocPropValueRenderer::renderSubDocPropValue(
                 propertyName, propertyValueBuffer, newResource[propertyName]
-            	);
-		}
+            );
+        }
         else
         {
             snippetText.convertString(
