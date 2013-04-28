@@ -1887,11 +1887,14 @@ void NodeManagerBase::setNodeState(NodeStateType state)
     //updateCurrentPrimary();
     if (isNeedCheckElecting())
     {
-        nodeState_ = state;
-        LOG(INFO) << "try to change state to new while electing : " << nodeState_;
-        updateNodeState();
-        MasterManagerBase::get()->disableNewWrite();
-        return;
+        LOG(INFO) << "try to change state to new while electing : " << state;
+        if (!s_enable_async_)
+        {
+            nodeState_ = state;
+            updateNodeState();
+            MasterManagerBase::get()->disableNewWrite();
+            return;
+        }
     }
     updateNodeStateToNewState(state);
 }
