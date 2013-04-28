@@ -21,16 +21,15 @@ class RTypeStringPropTable : public PropSharedLock
 {
 public:
     RTypeStringPropTable(PropertyDataType type)
-        : type_(type), data_(NULL)
+        : type_(type), data_(new Lux::IO::Array(Lux::IO::NONCLUSTER))
     {
-        data_ = new Lux::IO::Array(Lux::IO::NONCLUSTER);
         data_->set_noncluster_params(Lux::IO::Linked);
         data_->set_lock_type(Lux::IO::LOCK_THREAD);
     }
 
     ~RTypeStringPropTable()
     {
-        if(data_)
+        if (data_)
         {
             data_->close();
             delete data_;
@@ -42,10 +41,8 @@ public:
         return type_;
     }
 
-    
     std::size_t size(bool isLock = true) const
     {
-        
         ScopedReadBoolLock lock(mutex_, isLock);
         return data_->num_items();
     }
@@ -55,7 +52,7 @@ public:
         path_ = path;
         try
         {
-            if ( !boost::filesystem::exists(path_) )
+            if (!boost::filesystem::exists(path_))
             {
                 data_->open(path_.c_str(), Lux::IO::DB_CREAT);
             }
@@ -80,7 +77,7 @@ public:
             return false;
         }
 
-        if ( val_p->size == 0 )
+        if (val_p->size == 0)
         {
             data_->clean_data(val_p);
             return false;
@@ -132,16 +129,26 @@ public:
 
     int compareValues(std::size_t lhs, std::size_t rhs, bool isLock) const
     {
-       ScopedReadBoolLock lock(mutex_, isLock);
-       std::string lv, rv;
-       if (!getRTypeString((unsigned int)lhs, lv) ||
-            getRTypeString((unsigned int)rhs, rv)  )
-       {
+        ScopedReadBoolLock lock(mutex_, isLock);
+        std::string lv, rv;
+        if (!getRTypeString((unsigned int)lhs, lv) || !getRTypeString((unsigned int)rhs, rv))
+        {
             return -1;
-       }
-       if (lv < rv ) return -1;
-       if (lv > rv ) return 1;
-       return 0;
+        }
+
+        int comp = lv.compare(rv);
+        if (comp == 0)
+        {
+            return 0;
+        }
+        else if (comp > 0)
+        {
+            return 1;
+        }
+        else
+        {
+            return -1;
+        }
     }
 
 protected:

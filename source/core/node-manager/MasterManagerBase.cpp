@@ -1377,45 +1377,48 @@ void MasterManagerBase::registerServiceServer()
     zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::WATCH);
 }
 
+void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>& aggregator)
+{
+    // get shardids for collection of aggregator
+    std::vector<shardid_t> shardidList;
+    if (!sf1rTopology_.curNode_.master_.getShardidList(aggregator->service(),
+            aggregator->collection(), shardidList))
+    {
+        return;
+    }
+
+    // set workers for aggregator
+    AggregatorConfig aggregatorConfig;
+    for (size_t i = 0; i < shardidList.size(); i++)
+    {
+        WorkerMapT::iterator it = workerMap_.find(shardidList[i]);
+        if (it != workerMap_.end())
+        {
+            if(!it->second->worker_.isGood_)
+            {
+                LOG(INFO) << "worker_ : " << it->second->nodeId_ << " is not good, so do not added to aggregator.";
+                continue;
+            }
+            bool isLocal = (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_);
+            aggregatorConfig.addWorker(it->second->host_, it->second->worker_.port_, shardidList[i], isLocal);
+        }
+        else
+        {
+            LOG (ERROR) << "worker " << shardidList[i] << " was not found for Aggregator of "
+                << aggregator->collection() << " in service " << aggregator->service();
+        }
+    }
+
+    //std::cout << aggregator->collection() << ":" << std::endl << aggregatorConfig.toString();
+    aggregator->setAggregatorConfig(aggregatorConfig);
+}
+
 void MasterManagerBase::resetAggregatorConfig()
 {
     std::vector<boost::shared_ptr<AggregatorBase> >::iterator agg_it;
     for (agg_it = aggregatorList_.begin(); agg_it != aggregatorList_.end(); agg_it++)
     {
-        boost::shared_ptr<AggregatorBase>& aggregator = *agg_it;
-
-        // get shardids for collection of aggregator
-        std::vector<shardid_t> shardidList;
-        if (!sf1rTopology_.curNode_.master_.getShardidList(aggregator->service(),
-                aggregator->collection(), shardidList))
-        {
-            continue;
-        }
-
-        // set workers for aggregator
-        AggregatorConfig aggregatorConfig;
-        for (size_t i = 0; i < shardidList.size(); i++)
-        {
-            WorkerMapT::iterator it = workerMap_.find(shardidList[i]);
-            if (it != workerMap_.end())
-            {
-                if(!it->second->worker_.isGood_)
-                {
-                    LOG(INFO) << "worker_ : " << it->second->nodeId_ << " is not good, so do not added to aggregator.";
-                    continue;
-                }
-                bool isLocal = (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_);
-                aggregatorConfig.addWorker(it->second->host_, it->second->worker_.port_, shardidList[i], isLocal);
-            }
-            else
-            {
-                LOG (ERROR) << "worker " << shardidList[i] << " was not found for Aggregator of "
-                            << aggregator->collection() << " in service " << aggregator->service();
-            }
-        }
-
-        //std::cout << aggregator->collection() << ":" << std::endl << aggregatorConfig.toString();
-        aggregator->setAggregatorConfig(aggregatorConfig);
+        resetAggregatorConfig(*agg_it);
     }
 }
 

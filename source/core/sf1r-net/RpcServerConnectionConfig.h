@@ -17,7 +17,7 @@ public:
     RpcServerConnectionConfig(
         const std::string& host_addr = "localhost",
         unsigned int rpc_port = 0,
-        unsigned int rpc_thread_num = 30,
+        unsigned int rpc_thread_num = 10,
         unsigned int driver_port = 0
     )
         : host(host_addr)

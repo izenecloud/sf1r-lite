@@ -112,13 +112,11 @@ void Sorter::createComparators(PropSharedLockSet& propSharedLockSet)
         case SortProperty::CTR:
             if (STRING_PROPERTY_TYPE == pSortProperty->getPropertyDataType())
             {
-                pSortProperty->pComparator_ = createRTypeStringComparator_(propName,
-                                                                  propSharedLockSet);
+                pSortProperty->pComparator_ = createRTypeStringComparator_(propName, propSharedLockSet);
             }
             else
             {
-                pSortProperty->pComparator_ = createNumericComparator_(propName,
-                                                                   propSharedLockSet);
+                pSortProperty->pComparator_ = createNumericComparator_(propName, propSharedLockSet);
             }
             break;
         case SortProperty::CUSTOM:

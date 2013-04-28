@@ -33,6 +33,8 @@ public:
         GetRecommendWorker* localWorker
     );
 
+    ~GetRecommendMaster();
+
     virtual void recommendPurchase(
         const RecommendInputParam& inputParam,
         idmlib::recommender::RecommendItemVec& results

@@ -118,7 +118,7 @@ public:
 
 public:
     void addSortProperty(SortProperty* pSortProperty);
-    
+
     void setDocumentManagerPtr(DocumentManager* documentManagerPtr)
     {
         documentManagerPtr_ = documentManagerPtr;
@@ -161,12 +161,12 @@ public:
 
 private:
     SortPropertyComparator* createNumericComparator_(
-        const std::string& propName,
-        PropSharedLockSet& propSharedLockSet);
-    
+            const std::string& propName,
+            PropSharedLockSet& propSharedLockSet);
+
     SortPropertyComparator* createRTypeStringComparator_(
-        const std::string& propName,
-        PropSharedLockSet& propSharedLockSet);
+            const std::string& propName,
+            PropSharedLockSet& propSharedLockSet);
 
 private:
     NumericPropertyTableBuilder* numericTableBuilder_;
