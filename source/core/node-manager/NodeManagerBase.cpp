@@ -1470,7 +1470,7 @@ void NodeManagerBase::checkForPrimaryElecting()
 bool NodeManagerBase::checkElectingInAsyncMode(uint32_t last_reqid)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
-    if (!zookeeper_ || !zookeeper_->isConnected())
+    if (stopping_ || !zookeeper_ || !zookeeper_->isConnected())
         return false;
     updateCurrentPrimary();
     if (getPrimaryState() == NODE_STATE_ELECTING || need_check_electing_)
