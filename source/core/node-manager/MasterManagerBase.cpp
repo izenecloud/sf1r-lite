@@ -1229,6 +1229,8 @@ void MasterManagerBase::updateServiceReadStateWithoutLock(const std::string& my_
     {
         return;
     }
+    if (stopping_)
+        return;
     ZNode znode;
     std::string olddata;
     if(zookeeper_->getZNodeData(serverRealPath_, olddata, ZooKeeper::WATCH))
@@ -1460,7 +1462,7 @@ void MasterManagerBase::updateMasterReadyForNew(bool is_ready)
     is_ready_for_new_write_ = is_ready;
     if (is_ready_for_new_write_)
     {
-        if (!isMinePrimary())
+        if (!isMinePrimary() || stopping_)
             return;
         checkForWriteReq();
     }
