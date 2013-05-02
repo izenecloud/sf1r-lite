@@ -1157,6 +1157,7 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
             LOG(WARNING) << "lost connection from ZooKeeper while finish request." << self_primary_path_;
             //checkForPrimaryElecting();
             // update to get notify on event callback and check for electing.
+            setElectingState();
             updateNodeState();
         }
         else
@@ -1489,6 +1490,12 @@ bool NodeManagerBase::checkElectingInAsyncMode(uint32_t last_reqid)
     updateCurrentPrimary();
     if (getPrimaryState() == NODE_STATE_ELECTING || need_check_electing_)
     {
+        if (nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING ||
+            nodeState_ == NODE_STATE_RECOVER_RUNNING)
+        {
+            LOG(INFO) << "current node busy while check electing." << nodeState_;
+            return false;
+        }
         LOG(INFO) << "in check point, electing needed, ready to electing on current" << self_primary_path_;
         resetWriteState();
         nodeState_ = NODE_STATE_ELECTING;
