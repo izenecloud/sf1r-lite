@@ -69,7 +69,6 @@ bool Sf1Controller::preprocess()
 
     if (request().callType() != Request::FromAPI)
     {
-        DistributeRequestHooker::get()->processFinishedBeforePrepare(false);
         std::string errinfo;
         try
         {
@@ -79,6 +78,7 @@ bool Sf1Controller::preprocess()
         {
         }
         std::cout << "request failed before send!!" << errinfo << std::endl;
+        DistributeRequestHooker::get()->processFinishedBeforePrepare(false);
     }
 
     return false;
@@ -90,7 +90,6 @@ void Sf1Controller::postprocess()
     {
         if (!response().success())
         {
-            DistributeRequestHooker::get()->processLocalFinished(false);
             std::string errinfo;
             try
             {
@@ -100,6 +99,7 @@ void Sf1Controller::postprocess()
             {
             }
             std::cout << "request failed before send!!" << errinfo << std::endl;
+            DistributeRequestHooker::get()->processLocalFinished(false);
         }
         else
         {
