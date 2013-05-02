@@ -1130,6 +1130,8 @@ void MasterManagerBase::recover(const std::string& zpath)
     if (mine_primary)
         LOG(INFO) << "I am primary master ";
 
+    bool need_reset_agg = false;
+
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
         boost::shared_ptr<Sf1rNode>& sf1rNode = it->second;
@@ -1171,12 +1173,14 @@ void MasterManagerBase::recover(const std::string& zpath)
                 sf1rNode->host_ = znode.getStrValue(ZNode::KEY_HOST);
                 // recovered, and notify aggregators
                 sf1rNode->worker_.isGood_ = true;
+                need_reset_agg = true;
                 break;
             }
         }
     }
 
-    resetAggregatorConfig();
+    if (need_reset_agg)
+        resetAggregatorConfig();
 }
 
 void MasterManagerBase::setServicesData(ZNode& znode)
@@ -1385,6 +1389,7 @@ void MasterManagerBase::registerServiceServer()
 
 void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>& aggregator)
 {
+    LOG(INFO) << "resetting aggregator...";
     // get shardids for collection of aggregator
     std::vector<shardid_t> shardidList;
     if (!sf1rTopology_.curNode_.master_.getShardidList(aggregator->service(),
