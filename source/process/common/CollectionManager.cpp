@@ -25,6 +25,8 @@ namespace sf1r
 
 CollectionManager::CollectionManager()
 {
+    if (!SF1Config::get()->isDistributedNode())
+        return;
     RecoveryChecker::get()->setRestartCallback(
         boost::bind(&CollectionManager::startCollection, this, _1, _2, false, _3),
         boost::bind(&CollectionManager::stopCollection, this, _1, _2));
@@ -141,9 +143,12 @@ bool CollectionManager::startCollection(const string& collectionName,
         recommendBundleConfig->collPath_ =  indexBundleConfig->collPath_;
     }
 
-    if (checkdata && !RecoveryChecker::get()->checkAndRestoreBackupFile(collectionMeta.getCollectionPath()))
+    if (SF1Config::get()->isDistributedNode())
     {
-        throw std::runtime_error("start collection failed while check backup file and restore.");
+        if (checkdata && !RecoveryChecker::get()->checkAndRestoreBackupFile(collectionMeta.getCollectionPath()))
+        {
+            throw std::runtime_error("start collection failed while check backup file and restore.");
+        }
     }
 
     ///createIndexBundle
@@ -209,8 +214,11 @@ bool CollectionManager::startCollection(const string& collectionName,
 
     collectionHandlers_[collectionName] = collectionHandler.release();
 
-    RecoveryChecker::get()->addCollection(collectionName, collectionMeta.getCollectionPath(),
-        SF1Config::get()->getCollectionConfigFile(collectionName));
+    if (SF1Config::get()->isDistributedNode())
+    {
+        RecoveryChecker::get()->addCollection(collectionName, collectionMeta.getCollectionPath(),
+            SF1Config::get()->getCollectionConfigFile(collectionName));
+    }
 
     }catch (std::exception& e)
     {
@@ -283,7 +291,8 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
     {
         collectionMetaMap.erase(findIt);
     }
-    RecoveryChecker::get()->removeCollection(collectionName);
+    if (SF1Config::get()->isDistributedNode())
+        RecoveryChecker::get()->removeCollection(collectionName);
     if (clear)
     {
         namespace bfs = boost::filesystem;
@@ -354,11 +363,16 @@ void CollectionManager::flushCollection(const std::string& collectionName)
 
 bool CollectionManager::backup_all(bool force_remove)
 {
+    if (!SF1Config::get()->isDistributedNode())
+        return false;
+
     return RecoveryChecker::get()->backup(force_remove);
 }
 
 std::string CollectionManager::checkCollectionConsistency(const std::string& collectionName)
 {
+    if (!SF1Config::get()->isDistributedNode())
+        return "";
     std::string errinfo;
     RecoveryChecker::get()->checkDataConsistent(collectionName, errinfo);
     return errinfo;
