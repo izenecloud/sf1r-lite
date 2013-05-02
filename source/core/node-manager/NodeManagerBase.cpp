@@ -324,7 +324,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                 while (nodeState_ != NODE_STATE_ELECTING)
                 {
                     LOG(INFO) << "waiting log sync thread while re-connect after expired : " << nodeState_;
-                    waiting_reenter_cond_.timed_wait(lock, boost::posix_time::second(5));
+                    waiting_reenter_cond_.timed_wait(lock, boost::posix_time::seconds(5));
                 }
             }
             // this node is expired, it means disconnect from ZooKeeper for a long time.
