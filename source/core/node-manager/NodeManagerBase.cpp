@@ -201,7 +201,7 @@ void NodeManagerBase::notifyStop()
         }
         else
         {
-            LOG(INFO) << "waiting the node become idle while stopping ...";
+            LOG(INFO) << "waiting the node become idle while stopping ..." << nodeState_;
             stop_cond_.wait(lock);
         }
     }

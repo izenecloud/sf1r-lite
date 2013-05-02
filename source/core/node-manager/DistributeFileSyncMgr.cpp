@@ -405,7 +405,21 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
     check_errinfo = "";
 
     std::vector<std::string> replica_info;
-    NodeManagerBase::get()->getAllReplicaInfo(replica_info, true);
+    //NodeManagerBase::get()->getAllReplicaInfo(replica_info, true);
+    std::string cur_primary_ip;
+    if(!NodeManagerBase::get()->getCurrPrimaryInfo(cur_primary_ip))
+    {
+        boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+        reporting_ = false;
+        if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
+        {
+            return;
+        }
+        check_errinfo = "get other primary failed.";
+        return;
+    }
+    replica_info.push_back(cur_primary_ip);
+
     uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
 
     ReportStatusRequest req;
@@ -418,6 +432,8 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
         {
             check_errinfo = "check collection not exist for  " + colname_list[i];
             LOG(INFO) << check_errinfo;
+            boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+            reporting_ = false;
             return;
         }
 
