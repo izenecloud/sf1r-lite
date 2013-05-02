@@ -240,6 +240,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 
         if (!checkZooKeeperService())
         {
+            boost::lock_guard<boost::mutex> lock(state_mutex_);
             stopping_ = false;
             masterState_ = MASTER_STATE_STARTING_WAIT_ZOOKEEPER;
             LOG (ERROR) << CLASSNAME << " waiting for ZooKeeper Service...";
