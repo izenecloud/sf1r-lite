@@ -649,6 +649,9 @@ bool MasterManagerBase::endWriteReq()
         return true;
     }
 
+    if (stopping_)
+        return true;
+
     if (!zookeeper_ || !zookeeper_->isZNodeExists(write_prepare_node_))
     {
         return true;
@@ -1475,8 +1478,6 @@ bool MasterManagerBase::hasAnyCachedRequest()
 void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
-    if (stopping_)
-        return;
     if (!is_new_primary)
     {
         // try to delete last prepared node.
@@ -1488,6 +1489,8 @@ void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
     {
         if (masterState_ == MASTER_STATE_STARTED || masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
         {
+            if (stopping_)
+                return;
             // reset current workers, need detect primary workers.
             detectWorkers();
             zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::WATCH);
