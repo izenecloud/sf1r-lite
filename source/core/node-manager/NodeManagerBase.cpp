@@ -9,7 +9,7 @@
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 
-static const bool s_enable_async_ = true;
+static const bool s_enable_async_ = false;
 
 namespace sf1r
 {
