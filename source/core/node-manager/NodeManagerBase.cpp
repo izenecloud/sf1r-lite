@@ -988,6 +988,11 @@ void NodeManagerBase::leaveCluster()
     }
 }
 
+bool NodeManagerBase::isConnected()
+{
+    return zookeeper_ && zookeeper_->isConnected();
+}
+
 bool NodeManagerBase::isOtherPrimaryAvailable()
 {
     return !curr_primary_path_.empty() && (curr_primary_path_ != self_primary_path_);

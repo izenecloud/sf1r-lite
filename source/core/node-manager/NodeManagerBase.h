@@ -116,6 +116,7 @@ public:
 
     bool isPrimary();
     bool isOtherPrimaryAvailable();
+    bool isConnected();
 
     bool getCurrNodeSyncServerInfo(std::string& ip, int randnum);
     bool getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary = false);

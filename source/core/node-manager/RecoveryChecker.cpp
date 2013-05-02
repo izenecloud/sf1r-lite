@@ -1,5 +1,6 @@
 #include "RecoveryChecker.h"
 #include "DistributeFileSyncMgr.h"
+//#include "DistributeFileSys.h"
 #include "DistributeDriver.h"
 #include "RequestLog.h"
 #include "NodeManagerBase.h"
@@ -806,6 +807,10 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     last_conf_file_ = workdir + "/distribute_last_conf";
     configDir_ = conf_dir;
     need_backup_ = false;
+    //if (DistributeFileSys::get()->isEnabled())
+    //{
+    //    backup_basepath_ = DistributeFileSys::get()->getDFSLocalFullPath("/req-backup");
+    //}
 
     reqlog_mgr_.reset(new ReqLogMgr());
     try
@@ -1253,6 +1258,11 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
         LOG(INFO) << "checking log start from :" << check_start;
         if(!DistributeFileSyncMgr::get()->getNewestReqLog(true, check_start, primary_logdata_list))
         {
+            if (!NodeManagerBase::get()->isConnected())
+            {
+                LOG(ERROR) << "zookeeper connection lost!!!";
+                return false;
+            }
             if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
             {
                 LOG(INFO) << "no other primary node while check log.";
@@ -1354,6 +1364,11 @@ void RecoveryChecker::syncToNewestReqLog()
         bool sync_from_primary = NodeManagerBase::isAsyncEnabled();
         while(!DistributeFileSyncMgr::get()->getNewestReqLog(sync_from_primary, reqid + 1, newlogdata_list))
         {
+            if (!NodeManagerBase::get()->isConnected())
+            {
+                LOG(ERROR) << "zookeeper connection lost!!!";
+                break;
+            }
             if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
             {
                 LOG(INFO) << "no other primary node while sync log.";
