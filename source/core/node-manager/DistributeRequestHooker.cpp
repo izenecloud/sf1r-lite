@@ -569,6 +569,7 @@ void DistributeRequestHooker::clearHook(bool force)
 
 void DistributeRequestHooker::forceExit()
 {
+    clearHook(true);
     RecoveryChecker::forceExit("force exit in DistributeRequestHooker");
 }
 
