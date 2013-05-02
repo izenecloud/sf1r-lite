@@ -11,6 +11,11 @@
 #include <boost/filesystem.hpp>
 #include <stdint.h>
 #include <memory.h>
+#include <vector>
+#include <limits>
+#include <glog/logging.h>
+
+#include "PropSharedLock.h"
 
 #include "PropSharedLock.h"
 
@@ -19,9 +24,14 @@ namespace sf1r
 
 class RTypeStringPropTable : public PropSharedLock
 {
+    typedef std::vector<std::string> RTypeVector;
 public:
     RTypeStringPropTable(PropertyDataType type)
-        : type_(type), data_(new Lux::IO::Array(Lux::IO::NONCLUSTER))
+        : type_(type)
+        , data_(new Lux::IO::Array(Lux::IO::NONCLUSTER))
+        , sortEnabled_(false)
+        , maxDocId_(0)
+        , invalidValue_("")
     {
         data_->set_noncluster_params(Lux::IO::Linked);
         data_->set_lock_type(Lux::IO::LOCK_THREAD);
@@ -36,15 +46,29 @@ public:
         }
     }
 
+    void flush()
+    {
+        Lux::IO::insert_mode_t flag = Lux::IO::APPEND;
+        if(exist(0))
+            flag = Lux::IO::OVERWRITE;
+        data_->put(0, &maxDocId_, sizeof(maxDocId_), flag);
+    }
+
     PropertyDataType getType() const
     {
         return type_;
     }
 
+    void enableSort()
+    {
+        ScopedWriteBoolLock(mutex_, true);
+        sortEnabled_ = true;
+        load_();
+    }
+    
     std::size_t size(bool isLock = true) const
     {
-        ScopedReadBoolLock lock(mutex_, isLock);
-        return data_->num_items();
+        return maxDocId_;
     }
 
     bool init(const std::string& path)
@@ -65,6 +89,22 @@ public:
         {
             return false;
         }
+        
+        Lux::IO::data_t *val_p = NULL;
+        if (!data_->get(0, &val_p, Lux::IO::SYSTEM))
+        {
+            data_->clean_data(val_p);
+            return false;
+        }
+
+        if ( val_p->size != sizeof(maxDocId_) )
+        {
+            data_->clean_data(val_p);
+            return false;
+        }
+
+        memcpy(&maxDocId_, val_p->data, val_p->size);
+
         return true;
     }
 
@@ -111,6 +151,21 @@ public:
         {
             return false;
         }
+        {
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (sortEnabled_)
+            {
+                if (docId > dataInMem_.size())
+                {
+                    dataInMem_.resize(docId+1, invalidValue_);
+                }
+                dataInMem_[docId]=rtype_value;
+            }
+            if (docId > maxDocId_)
+            {
+                maxDocId_ = docId;
+            }
+        }
         Lux::IO::insert_mode_t flag = Lux::IO::APPEND;
         if(exist(docId))
             flag = Lux::IO::OVERWRITE;
@@ -127,34 +182,43 @@ public:
         return false;
     }
 
-    int compareValues(std::size_t lhs, std::size_t rhs, bool isLock) const
+    int compareValues(std::size_t lhs, std::size_t rhs, bool isLock)
     {
         ScopedReadBoolLock lock(mutex_, isLock);
-        std::string lv, rv;
-        if (!getRTypeString((unsigned int)lhs, lv) || !getRTypeString((unsigned int)rhs, rv))
+        if ( lhs > maxDocId_ || rhs > maxDocId_ )
         {
             return -1;
         }
-
-        int comp = lv.compare(rv);
-        if (comp == 0)
+        const std::string lv = dataInMem_[lhs];
+        if (lv == invalidValue_) return -1;
+        const std::string rv = dataInMem_[rhs];
+        if (rv == invalidValue_) return 1;
+        if (lv < rv ) return -1;
+        if (lv > rv ) return 1;
+        return 0;
+    }
+private:
+    void load_()
+    {
+        dataInMem_.clear();
+        dataInMem_.resize(maxDocId_, invalidValue_);
+        for (unsigned int docId = 0; docId < maxDocId_; docId++)
         {
-            return 0;
-        }
-        else if (comp > 0)
-        {
-            return 1;
-        }
-        else
-        {
-            return -1;
+            std::string value;
+            if (getRTypeString(docId, value))
+            {
+                dataInMem_[docId]=value;
+            }
         }
     }
-
 protected:
     PropertyDataType type_;
     std::string path_;
     Lux::IO::Array* data_;
+    RTypeVector dataInMem_;
+    bool sortEnabled_;
+    unsigned int maxDocId_;
+    std::string invalidValue_;
 };
 
 }

@@ -73,7 +73,7 @@ int SortPropertyComparator::compareImplDefault(const ScoreDoc& doc1, const Score
 }
 int SortPropertyComparator::compareImplRTypeString(const ScoreDoc& doc1, const ScoreDoc& doc2) const
 {
-    //if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
+    if (doc1.docId >= size_ || doc2.docId >= size_) return 0;
     return RTypePropTable_->compareValues(doc1.docId, doc2.docId, false);
 }
 int SortPropertyComparator::compareImplNumeric(const ScoreDoc& doc1, const ScoreDoc& doc2) const

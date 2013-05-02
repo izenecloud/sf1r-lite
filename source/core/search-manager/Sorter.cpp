@@ -1,5 +1,6 @@
 #include "Sorter.h"
 #include "NumericPropertyTableBuilder.h"
+#include "RTypeStringPropTableBuilder.h"
 
 #include <document-manager/DocumentManager.h>
 #include <index-manager/IndexManager.h>
@@ -71,6 +72,16 @@ Sorter::Sorter(NumericPropertyTableBuilder* numericTableBuilder)
 {
 }
 
+Sorter::Sorter(NumericPropertyTableBuilder* numericTableBuilder,
+               RTypeStringPropTableBuilder* rtypeStringBuilder)
+    : numericTableBuilder_(numericTableBuilder)
+    , rtypeStringPropBuilder_(rtypeStringBuilder)
+    , ppSortProperties_(0)
+    , reverseMul_(0)
+    , nNumProperties_(0)
+{
+}
+
 Sorter::~Sorter()
 {
     for (std::list<SortProperty*>::iterator iter = sortProperties_.begin();
@@ -112,11 +123,13 @@ void Sorter::createComparators(PropSharedLockSet& propSharedLockSet)
         case SortProperty::CTR:
             if (STRING_PROPERTY_TYPE == pSortProperty->getPropertyDataType())
             {
-                pSortProperty->pComparator_ = createRTypeStringComparator_(propName, propSharedLockSet);
+                pSortProperty->pComparator_ = createRTypeStringComparator_(propName,
+                                                                  propSharedLockSet);
             }
             else
             {
-                pSortProperty->pComparator_ = createNumericComparator_(propName, propSharedLockSet);
+                pSortProperty->pComparator_ = createNumericComparator_(propName,
+                                                                   propSharedLockSet);
             }
             break;
         case SortProperty::CUSTOM:
@@ -169,11 +182,14 @@ SortPropertyComparator* Sorter::createRTypeStringComparator_(
     const std::string& propName,
     PropSharedLockSet& propSharedLockSet)
 {
-    if (!documentManagerPtr_)
+    if (!rtypeStringPropBuilder_)
         return NULL;
     boost::shared_ptr<RTypeStringPropTable> propTable =
-        documentManagerPtr_->getRTypeStringPropTable(propName);
-
+        rtypeStringPropBuilder_->createPropertyTable(propName);
+    /*
+     * Notice the lock order!
+     */
+    (propTable.get())->enableSort();
     propSharedLockSet.insertSharedLock(propTable.get());
     return new SortPropertyComparator(propTable);
 }

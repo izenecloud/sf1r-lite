@@ -127,6 +127,12 @@ bool DocumentManager::reload()
 bool DocumentManager::flush()
 {
     propertyValueTable_->flush();
+    for (RTypeStringPropTableMap::iterator it = rtype_string_proptable_.begin();
+            it != rtype_string_proptable_.end(); ++it)
+    {
+        it->second->flush();
+    }
+    
     for (NumericPropertyTableMap::iterator it = numericPropertyTables_.begin();
             it != numericPropertyTables_.end(); ++it)
     {

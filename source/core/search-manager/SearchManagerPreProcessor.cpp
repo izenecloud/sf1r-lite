@@ -1,6 +1,7 @@
 #include "SearchManagerPreProcessor.h"
 #include "Sorter.h"
 #include "NumericPropertyTableBuilder.h"
+#include "RTypeStringPropTableBuilder.h"
 #include "DocumentIterator.h"
 #include <ranking-manager/RankQueryProperty.h>
 #include <ranking-manager/PropertyRanker.h>
@@ -22,6 +23,7 @@ const std::string CUSTOM_RANK_PROPERTY("custom_rank");
 SearchManagerPreProcessor::SearchManagerPreProcessor(const IndexBundleSchema& indexSchema)
     : productScorerFactory_(NULL)
     , numericTableBuilder_(NULL)
+    , rtypeStringPropTableBuilder_(NULL)
 {
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin();
          iter != indexSchema.end(); ++iter)
@@ -34,15 +36,6 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
     const SearchKeywordOperation& actionOperation,
     boost::shared_ptr<Sorter>& pSorter,
     CustomRankerPtr& customRanker)
-{
-    prepareSorterCustomRanker(actionOperation, pSorter, customRanker, NULL);
-}
-
-void SearchManagerPreProcessor::prepareSorterCustomRanker(
-    const SearchKeywordOperation& actionOperation,
-    boost::shared_ptr<Sorter>& pSorter,
-    CustomRankerPtr& customRanker,
-    DocumentManager* documentManagerPtr)
 {
     std::vector<std::pair<std::string, bool> >& sortPropertyList
         = actionOperation.actionItem_.sortPriorityList_;
@@ -67,7 +60,7 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
                 }
                 //customRanker->printESTree();
 
-                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     "CUSTOM_RANK",
                     CUSTOM_RANKING_PROPERTY_TYPE,
@@ -79,7 +72,7 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
             // sort by rank
             if (fieldNameL == RANK_PROPERTY)
             {
-                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     "RANK",
                     UNKNOWN_DATA_PROPERTY_TYPE,
@@ -91,7 +84,7 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
             // sort by date
             if (fieldNameL == DATE_PROPERTY)
             {
-                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     iter->first,
                     INT64_PROPERTY_TYPE,
@@ -102,7 +95,7 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
             // sort by ctr (click through rate)
             if (fieldNameL == faceted::CTRManager::kCtrPropName)
             {
-                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     iter->first,
                     INT32_PROPERTY_TYPE,
@@ -125,16 +118,6 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
             switch (propertyType)
             {
             case STRING_PROPERTY_TYPE:
-            {
-                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
-                pSorter->setDocumentManagerPtr(documentManagerPtr);
-                SortProperty* pSortProperty = new SortProperty(
-                    iter->first,
-                    propertyType,
-                    iter->second);
-                pSorter->addSortProperty(pSortProperty);
-                break;
-            }
             case INT32_PROPERTY_TYPE:
             case FLOAT_PROPERTY_TYPE:
             case DATETIME_PROPERTY_TYPE:
@@ -144,7 +127,7 @@ void SearchManagerPreProcessor::prepareSorterCustomRanker(
             case DOUBLE_PROPERTY_TYPE:
             case NOMINAL_PROPERTY_TYPE:
             {
-                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_));
+                if (!pSorter) pSorter.reset(new Sorter(numericTableBuilder_,rtypeStringPropTableBuilder_));
                 SortProperty* pSortProperty = new SortProperty(
                     iter->first,
                     propertyType,

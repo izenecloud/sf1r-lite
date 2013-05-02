@@ -113,6 +113,7 @@ class QueryCategorizer;
 class MiningTaskBuilder;
 class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
+class RTypeStringPropTableBuilder;
 
 namespace sim
 {
@@ -483,6 +484,10 @@ public:
     }
 
     void updateMergeFuzzyIndex(int calltype);
+    RTypeStringPropTableBuilder* GetRTypeStringPropTableBuilder()
+    {
+        return rtypeStringPropTableBuilder_;
+    }
 
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
@@ -643,6 +648,8 @@ private:
     boost::shared_ptr<faceted::CTRManager> ctrManager_;
 
     NumericPropertyTableBuilder* numericTableBuilder_;
+    
+    RTypeStringPropTableBuilder* rtypeStringPropTableBuilder_;
 
     /** GROUP BY */
     faceted::GroupManager* groupManager_;
