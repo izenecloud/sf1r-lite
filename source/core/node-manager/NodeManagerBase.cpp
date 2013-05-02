@@ -318,6 +318,15 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                 LOG (INFO) << " session expired while processing request or recovering, wait processing finish.";
                 waiting_reenter_cond_.timed_wait(lock, boost::posix_time::seconds(10));
             }
+            if (s_enable_async_)
+            {
+                // in async mode we need wait the log sync thread to be paused.
+                while (nodeState_ != NODE_STATE_ELECTING)
+                {
+                    LOG(INFO) << "waiting log sync thread while re-connect after expired : " << nodeState_;
+                    waiting_reenter_cond_.timed_wait(lock, boost::posix_time::second(5));
+                }
+            }
             // this node is expired, it means disconnect from ZooKeeper for a long time.
             // if any write request not finished, we must abort it.
             resetWriteState();
