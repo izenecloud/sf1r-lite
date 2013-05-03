@@ -246,15 +246,15 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     // push scd files to replicas
     for (size_t file_index = 0; file_index < scdList.size(); ++file_index)
     {
-        if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scdList[file_index],
-                scdList[file_index]))
-        {
-            LOG(INFO) << "Transfer index scd to the replicas finished for: " << scdList[file_index];
-        }
-        else
-        {
-            LOG(WARNING) << "push index scd file to the replicas failed for:" << scdList[file_index];
-        }
+        //if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scdList[file_index],
+        //        scdList[file_index]))
+        //{
+        //    LOG(INFO) << "Transfer index scd to the replicas finished for: " << scdList[file_index];
+        //}
+        //else
+        //{
+        //    LOG(WARNING) << "push index scd file to the replicas failed for:" << scdList[file_index];
+        //}
     }
 
     IndexReqLog reqlog;

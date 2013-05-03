@@ -569,15 +569,15 @@ bool RecommendTaskService::buildCollectionOnPrimary()
 
     for (size_t file_index = 0; file_index < all_scdList.size(); ++file_index)
     {
-        if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(all_scdList[file_index],
-                all_scdList[file_index]))
-        {
-            LOG(INFO) << "Transfer recommend scd to the replicas finished for: " << all_scdList[file_index];
-        }
-        else
-        {
-            LOG(WARNING) << "push recommend scd file to the replicas failed for:" << all_scdList[file_index];
-        }
+        //if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(all_scdList[file_index],
+        //        all_scdList[file_index]))
+        //{
+        //    LOG(INFO) << "Transfer recommend scd to the replicas finished for: " << all_scdList[file_index];
+        //}
+        //else
+        //{
+        //    LOG(WARNING) << "push recommend scd file to the replicas failed for:" << all_scdList[file_index];
+        //}
     }
 
     if (!DistributeRequestHooker::get()->prepare(Req_Recommend_Index, reqlog))
