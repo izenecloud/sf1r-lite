@@ -323,6 +323,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
                 // in async mode we need wait the log sync thread to be paused.
                 while (nodeState_ != NODE_STATE_ELECTING)
                 {
+                    setElectingState();
                     LOG(INFO) << "waiting log sync thread while re-connect after expired : " << nodeState_;
                     waiting_reenter_cond_.timed_wait(lock, boost::posix_time::seconds(5));
                 }
@@ -1485,10 +1486,17 @@ void NodeManagerBase::checkForPrimaryElecting()
 bool NodeManagerBase::checkElectingInAsyncMode(uint32_t last_reqid)
 {
     boost::unique_lock<boost::mutex> lock(mutex_);
+    NodeStateType primary_state = NODE_STATE_UNKNOWN;
     if (stopping_ || !zookeeper_ || !zookeeper_->isConnected())
-        return false;
-    updateCurrentPrimary();
-    if (getPrimaryState() == NODE_STATE_ELECTING || need_check_electing_)
+    {
+        LOG(INFO) << "checking electing in async mode while connection lost";
+    }
+    else
+    {
+        updateCurrentPrimary();
+        primary_state = getPrimaryState();
+    }
+    if (primary_state == NODE_STATE_ELECTING || need_check_electing_)
     {
         if (nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING ||
             nodeState_ == NODE_STATE_RECOVER_RUNNING)
@@ -1500,10 +1508,13 @@ bool NodeManagerBase::checkElectingInAsyncMode(uint32_t last_reqid)
         resetWriteState();
         nodeState_ = NODE_STATE_ELECTING;
         need_check_electing_ = false;
-        ZNode nodedata;
-        setSf1rNodeData(nodedata);
-        nodedata.setValue(ZNode::KEY_LAST_WRITE_REQID, last_reqid);
-        updateNodeState(nodedata);
+        if (primary_state != NODE_STATE_UNKNOWN)
+        {
+            ZNode nodedata;
+            setSf1rNodeData(nodedata);
+            nodedata.setValue(ZNode::KEY_LAST_WRITE_REQID, last_reqid);
+            updateNodeState(nodedata);
+        }
         return true;
     }
     return false;
