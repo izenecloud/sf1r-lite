@@ -949,6 +949,8 @@ int MasterManagerBase::detectWorkers()
             break;
         if (old_it->second->worker_.isGood_ != new_it->second->worker_.isGood_)
             break;
+        ++old_it;
+        ++new_it;
         ++compared_size;
     }
 
