@@ -201,6 +201,7 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
             }
         }
     }
+    sort(scd_list.begin(), scd_list.end(), ScdParser::compareSCD);
     return !scd_list.empty();
 }
 

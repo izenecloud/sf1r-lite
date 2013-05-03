@@ -26,6 +26,7 @@ public:
     void init(const RouterPtr& router);
     void stop();
     bool on_new_req_available();
+    bool handleReqFromPrimaryInAsyncMode(int reqtype, const std::string& reqjsondata, const std::string& packed_data);
     bool handleReqFromPrimary(int reqtype, const std::string& reqjsondata, const std::string& packed_data);
     bool handleReqFromLog(int reqtype, const std::string& reqjsondata, const std::string& packed_data);
     bool addCallbackWriteHandler(const std::string& name, const CBWriteHandlerT& handler);

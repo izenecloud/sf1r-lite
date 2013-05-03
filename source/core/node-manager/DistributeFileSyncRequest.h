@@ -27,9 +27,9 @@ struct GetSCDListData : public RpcServerRequestData
 struct GetCollectionFileListData : public RpcServerRequestData
 {
     bool success;
-    std::string  collection;
+    std::vector<std::string>  collections;
     std::vector<std::string> file_list;
-    MSGPACK_DEFINE(success, collection, file_list);
+    MSGPACK_DEFINE(success, collections, file_list);
 };
 
 

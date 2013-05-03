@@ -483,12 +483,11 @@ public:
         return numericTableBuilder_;
     }
 
+    void updateMergeFuzzyIndex(int calltype);
     RTypeStringPropTableBuilder* GetRTypeStringPropTableBuilder()
     {
         return rtypeStringPropTableBuilder_;
     }
-
-    void updateMergeFuzzyIndex();
 
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>

@@ -29,6 +29,8 @@ DistributeDriver::DistributeDriver()
 void DistributeDriver::stop()
 {
     NodeManagerBase::get()->notifyStop();
+    if (NodeManagerBase::isAsyncEnabled())
+        DistributeRequestHooker::get()->stopLogSync();
     LOG(INFO) << "begin stopping DistributeDriver...";
     async_task_worker_.interrupt();
     async_task_worker_.join();
@@ -196,7 +198,9 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
 
             request.setCallType(calltype);
 
-            if (calltype == Request::FromLog)
+            if (calltype == Request::FromLog ||
+                (calltype == Request::FromPrimaryWorker &&
+                 NodeManagerBase::isAsyncEnabled()) )
             {
                 // redo log must process the request one by one, so sync needed.
                 DistributeRequestHooker::get()->setHook(calltype, packed_data);
@@ -271,6 +275,36 @@ bool DistributeDriver::handleReqFromLog(int reqtype, const std::string& reqjsond
     }
 
     return handleRequest(reqjsondata, packed_data, Request::FromLog);
+}
+
+// in async mode, we need call request from primary in sync, because in async mode it is just like redo log.
+bool DistributeDriver::handleReqFromPrimaryInAsyncMode(int reqtype, const std::string& reqjsondata, const std::string& packed_data)
+{
+    if ((ReqLogType)reqtype == Req_CronJob)
+    {
+        LOG(INFO) << "got a cron job request from primary." << reqjsondata;
+
+        DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
+        DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+        return callCronJob(Request::FromPrimaryWorker, reqjsondata, packed_data);
+    }
+    else if((ReqLogType)reqtype == Req_Callback)
+    {
+	    LOG(INFO) << "got a callback request from primary." << reqjsondata;
+
+        std::map<std::string, CBWriteHandlerT>::const_iterator it = callback_handlers_.find(reqjsondata);
+        if (it == callback_handlers_.end())
+        {
+            LOG(WARNING) << "callback write request not found on the node: " << reqjsondata;
+            return false;
+        }
+
+        DistributeRequestHooker::get()->setHook(Request::FromPrimaryWorker, packed_data);
+        DistributeRequestHooker::get()->hookCurrentReq(packed_data);
+        return callCBWriteHandler(Request::FromPrimaryWorker, reqjsondata, it->second);
+    }
+
+    return handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker);
 }
 
 bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqjsondata, const std::string& packed_data)

@@ -361,7 +361,7 @@ void ReqLogMgr::getReqLogIdList(uint32_t start, uint32_t max_return, bool needda
         {
             ret = getReqDataByHeadOffset(headoffset, head, req_packed_data);
 
-            if(!ret || req_logid_list.size() > max_return)
+            if(!ret || req_logid_list.size() >= max_return)
                 break;
             req_logid_list.push_back(head.inc_id);
             if (needdata)

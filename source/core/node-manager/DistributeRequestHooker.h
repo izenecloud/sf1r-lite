@@ -83,11 +83,17 @@ public:
 
     void setReplayingLog(bool running, CommonReqData& saved_reqlog);
 
+    void pauseLogSync();
+    void resumeLogSync();
+    void stopLogSync();
+
 private:
     static bool isNeedBackup(ReqLogType type);
     void finish(bool success);
     void forceExit();
     void clearHook(bool force = false);
+
+    void AsyncLogPullFunc();
 
     //std::string colname_;
     //CollectionPath colpath_;
@@ -105,6 +111,12 @@ private:
     int saved_hook_type_;
     ChainStatus saved_chain_status_;
     uint32_t last_backup_id_;
+
+    boost::thread  async_log_worker_;
+    boost::mutex log_sync_mutex_;
+    boost::condition_variable log_sync_cond_;
+    boost::condition_variable log_sync_wait_paused_cond_;
+    bool log_sync_paused_;
 
     static std::set<ReqLogType> need_backup_types_;
     static std::set<std::string> async_or_shard_write_types_;
