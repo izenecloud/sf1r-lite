@@ -5,8 +5,10 @@
  * @date Created <2010-06-11 13:03:57>
  */
 #include "DocumentsRenderer.h"
+#include "SubDocPropValueRenderer.h"
 #include <common/Keys.h>
 #include <query-manager/ActionItem.h>
+#include <glog/logging.h>
 
 #include <boost/assert.hpp>
 
@@ -40,11 +42,20 @@ void renderPropertyList(
 
         const izenelib::util::UString& snippetText =
             docResults.snippetTextOfDocumentInPage_[p][column];
-
+            
         if (propertyList[p].isSplitPropertyValue_)
         {
             splitRenderer.renderPropValue(
                 propertyName, snippetText, newResource[propertyName]
+            );
+        }
+        else if (propertyList[p].isSubDocPropertyValue_)
+        {
+            snippetText.convertString(
+                propertyValueBuffer, kEncoding
+            );
+            SubDocPropValueRenderer::renderSubDocPropValue(
+                propertyName, propertyValueBuffer, newResource[propertyName]
             );
         }
         else

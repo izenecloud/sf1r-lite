@@ -14,6 +14,11 @@ static const bool s_enable_async_ = false;
 namespace sf1r
 {
 
+bool NodeManagerBase::isAsyncEnabled()
+{
+    return s_enable_async_;
+}
+
 NodeManagerBase::NodeManagerBase()
     : isDistributionEnabled_(false)
     , nodeState_(NODE_STATE_INIT)
@@ -52,6 +57,7 @@ void NodeManagerBase::init(const DistributedTopologyConfig& distributedTopologyC
 
     setZNodePaths();
     MasterManagerBase::get()->enableDistribute(isDistributionEnabled_);
+    LOG(INFO) << "node starting mode : " << s_enable_async_;
 }
 
 void NodeManagerBase::registerDistributeService(boost::shared_ptr<IDistributeService> sp_service,
@@ -157,6 +163,25 @@ void NodeManagerBase::notifyStop()
 {
     LOG(INFO) << "========== notify stop ============= ";
     {
+        if (mutex_.try_lock())
+        {
+            LOG(INFO) << "try lock success, we can wait to stop.";
+            mutex_.unlock();
+        }
+        else
+        {
+            if (nodeState_ == NODE_STATE_STARTING || nodeState_ == NODE_STATE_INIT)
+            {
+                LOG(INFO) << "stopping while starting. " << nodeState_;
+                need_stop_ = true;
+                if (zookeeper_)
+                {
+                    stop();
+                    zookeeper_->disconnect();
+                }
+                return;
+            }
+        }
         boost::unique_lock<boost::mutex> lock(mutex_);
         need_stop_ = true;
         if (stopping_)
@@ -165,13 +190,18 @@ void NodeManagerBase::notifyStop()
             return;
         }
 
-        if ((nodeState_ == NODE_STATE_STARTED || nodeState_ == NODE_STATE_STARTING_WAIT_RETRY) && !MasterManagerBase::get()->hasAnyCachedRequest())
+        if ((nodeState_ == NODE_STATE_STARTED ||
+             nodeState_ == NODE_STATE_STARTING_WAIT_RETRY ||
+             nodeState_ == NODE_STATE_STARTING ||
+             nodeState_ == NODE_STATE_INIT ||
+             nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY ) &&
+            !MasterManagerBase::get()->hasAnyCachedRequest())
         {
             stop();
         }
         else
         {
-            LOG(INFO) << "waiting the node become idle while stopping ...";
+            LOG(INFO) << "waiting the node become idle while stopping ..." << nodeState_;
             stop_cond_.wait(lock);
         }
     }
@@ -184,7 +214,7 @@ void NodeManagerBase::stop()
     if (stopping_)
         return;
     stopping_ = true;
-    LOG(INFO) << "begin stopping...";
+    LOG(INFO) << "begin stopping on state : " << nodeState_;
     if (masterStarted_)
     {
         stopMasterManager();
@@ -195,6 +225,17 @@ void NodeManagerBase::stop()
 
     nodeState_ = NODE_STATE_INIT;
     stop_cond_.notify_all();
+}
+
+void NodeManagerBase::setElectingState()
+{
+    need_check_electing_ = true;
+    if (s_enable_async_)
+    {
+        cb_on_pause_sync_();
+    }
+    
+    MasterManagerBase::get()->disableNewWrite();
 }
 
 std::string NodeManagerBase::findReCreatedSelfPrimaryNode()
@@ -271,12 +312,21 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             LOG(WARNING) << "worker node disconnected by zookeeper, state: " << zookeeper_->getStateString();
             LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
             LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
-            need_check_electing_ = true;
-            MasterManagerBase::get()->disableNewWrite();
+            setElectingState();
             while (nodeState_ == NODE_STATE_RECOVER_RUNNING || nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
             {
                 LOG (INFO) << " session expired while processing request or recovering, wait processing finish.";
                 waiting_reenter_cond_.timed_wait(lock, boost::posix_time::seconds(10));
+            }
+            if (s_enable_async_)
+            {
+                // in async mode we need wait the log sync thread to be paused.
+                while (nodeState_ != NODE_STATE_ELECTING)
+                {
+                    setElectingState();
+                    LOG(INFO) << "waiting log sync thread while re-connect after expired : " << nodeState_;
+                    waiting_reenter_cond_.timed_wait(lock, boost::posix_time::seconds(5));
+                }
             }
             // this node is expired, it means disconnect from ZooKeeper for a long time.
             // if any write request not finished, we must abort it.
@@ -483,6 +533,44 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
     }
 }
 
+bool NodeManagerBase::getCurrPrimaryInfo(std::string& primary_host)
+{
+    if (!zookeeper_ || !zookeeper_->isConnected())
+        return false;
+
+    std::vector<std::string> node_list;
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+    if (node_list.empty())
+    {
+        // no primary.
+        return false;
+    }
+    primary_host = node_list.front();
+    std::string sdata;
+    if (zookeeper_->getZNodeData(primary_host, sdata, ZooKeeper::WATCH))
+    {
+        ZNode node;
+        node.loadKvString(sdata);
+        uint32_t state = node.getUInt32Value(ZNode::KEY_NODE_STATE);
+        if (state == NODE_STATE_ELECTING ||
+            state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
+            state == NODE_STATE_UNKNOWN)
+        {
+            if (nodeState_ != NODE_STATE_RECOVER_RUNNING &&
+                nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY)
+            {
+                LOG(INFO) << "primary is busy while get primary. " << state;
+                primary_host.clear();
+                return false;
+            }
+        }
+        primary_host = node.getStrValue(ZNode::KEY_HOST);
+        return true;
+    }
+    primary_host.clear();
+    return false;
+}
+
 bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary)
 {
     if (!isDistributionEnabled_)
@@ -570,12 +658,23 @@ void NodeManagerBase::updateCurrentPrimary()
         LOG(INFO) << "primary is empty";
         curr_primary_path_.clear();
         DistributeTestSuit::updateMemoryState("IsMinePrimary", 0);
+        DistributeTestSuit::updateMemoryState("CurrentPrimary", "Empty");
         return;
     }
     curr_primary_path_ = primaryList[0];
     LOG(INFO) << "current primary is : " << curr_primary_path_;
     DistributeTestSuit::updateMemoryState("IsMinePrimary", self_primary_path_ == curr_primary_path_?1:0);
     getPrimaryState();
+
+    std::string primary_ip;
+    std::string sdata;
+    if (zookeeper_->getZNodeData(curr_primary_path_, sdata, ZooKeeper::WATCH))
+    {
+        ZNode node;
+        node.loadKvString(sdata);
+        primary_ip = node.getStrValue(ZNode::KEY_HOST);
+        DistributeTestSuit::updateMemoryState("CurrentPrimary", curr_primary_path_ + " : " + primary_ip);
+    }
 }
 
 void NodeManagerBase::unregisterPrimary()
@@ -725,12 +824,12 @@ void NodeManagerBase::enterCluster(bool start_master)
             ZNode znode;
             setSf1rNodeData(znode);
             registerPrimary(znode);
-            updateNodeState();
+            updateNodeState(znode);
             stopping_ = false;
             return;
         }
     }
-    nodeState_ = NODE_STATE_STARTED;
+    //nodeState_ = NODE_STATE_STARTED;
     enterClusterAfterRecovery(start_master);
 }
 
@@ -765,22 +864,34 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
                 LOG(INFO) << "begin wait new entered primary and try re-enter when sync to new primary.";
                 return;
             }
+            else if (s_enable_async_)
+            {
+                nodeState_ = NODE_STATE_ELECTING;
+                updateSelfPrimaryNodeState();
+                return;
+            }
             LOG(INFO) << "new primary is electing, get ready to notify new primary.";
         }
     }
 
-    if (!cb_on_recover_check_())
+    if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
     {
         LOG(WARNING) << "check for log failed after enter cluster, must re-enter.";
         unregisterPrimary();
+        nodeState_ = NODE_STATE_STARTING;
         sleep(10);
+        if (s_enable_async_)
+        {
+            reEnterCluster();
+            return;
+        }
         updateCurrentPrimary();
-        need_check_electing_ = true;
-        MasterManagerBase::get()->disableNewWrite();
+        setElectingState();
         updateNodeState();
         return;
     }
 
+    nodeState_ = NODE_STATE_STARTED;
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     updateNodeState();
     updateCurrentPrimary();
@@ -819,6 +930,21 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         MasterManagerBase::get()->notifyChangedPrimary(curr_primary_path_ == self_primary_path_ && !self_primary_path_.empty());
         MasterManagerBase::get()->updateMasterReadyForNew(true);
     }
+}
+
+void NodeManagerBase::reEnterCluster()
+{
+    resetWriteState();
+
+    MasterManagerBase::get()->notifyChangedPrimary(false);
+    updateCurrentPrimary();
+    need_check_electing_ = false;
+
+    LOG(WARNING) << "begin re-enter cluster";
+    stopping_ = true;
+    unregisterPrimary();
+    nodeState_ = NODE_STATE_STARTING;
+    enterCluster(!masterStarted_);
 }
 
 void NodeManagerBase::leaveCluster()
@@ -870,6 +996,11 @@ void NodeManagerBase::leaveCluster()
     {
         zookeeper_->deleteZNode(clusterPath_);
     }
+}
+
+bool NodeManagerBase::isConnected()
+{
+    return zookeeper_ && zookeeper_->isConnected();
 }
 
 bool NodeManagerBase::isOtherPrimaryAvailable()
@@ -936,6 +1067,10 @@ void NodeManagerBase::notifyMasterReadyForNew()
 
 bool NodeManagerBase::canAbortRequest()
 {
+    if (s_enable_async_)
+    {
+        return isPrimaryWithoutLock();
+    }
     // check if abort is allowed, if more than half has finished processing
     // we deny the abort.
     std::vector<std::string> node_list;
@@ -975,6 +1110,7 @@ bool NodeManagerBase::canAbortRequest()
 
 void NodeManagerBase::abortRequest()
 {
+    zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
     // notify abort and wait other aborting.
     if (isPrimary())
     {
@@ -1017,19 +1153,16 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
         if (!slow_write_running_)
             processing_step_ = 100;
 
-        ZNode znode;
-        setSf1rNodeData(znode);
         if (need_check_electing_ || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
         {
-            need_check_electing_ = true;
-            MasterManagerBase::get()->disableNewWrite();
             LOG(WARNING) << "lost connection from ZooKeeper while finish request." << self_primary_path_;
             //checkForPrimaryElecting();
             // update to get notify on event callback and check for electing.
-            updateNodeState(znode);
+            setElectingState();
+            updateNodeState();
         }
         else
-            updateSelfPrimaryNodeState(znode);
+            updateSelfPrimaryNodeState();
         DistributeTestSuit::testFail(PrimaryFail_At_FinishReqLocal);
     }
     else
@@ -1051,9 +1184,9 @@ void NodeManagerBase::onNodeDeleted(const std::string& path)
         if (!stopping_)
         {
             LOG(ERROR) << "node was deleted while not stopping: " << self_primary_path_;
-            // try re-enter while session expired.
-            zookeeper_->isZNodeExists(nodePath_, ZooKeeper::WATCH);
-            zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH);
+            // try re-enter 
+            LOG(WARNING) << "need re-enter";
+            reEnterCluster();
         }
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)
@@ -1120,9 +1253,28 @@ void NodeManagerBase::resetWriteState()
 {
     switch(nodeState_)
     {
-    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
+        if (s_enable_async_)
+        {
+            if (cb_on_wait_finish_process_)
+                cb_on_wait_finish_process_();
+            if (cb_on_wait_finish_log_)
+                cb_on_wait_finish_log_();
+            nodeState_ = NODE_STATE_STARTED;
+            return;
+        }
+        //break; walk through by intended
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG:
+        if (s_enable_async_)
+        {
+            LOG(INFO) << "in async mode, waiting write can finish without abort while electing.";
+            if (cb_on_wait_finish_log_)
+                cb_on_wait_finish_log_();
+            nodeState_ = NODE_STATE_STARTED;
+            return;
+        }
+        //break; walk through by intended
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT:
         {
             LOG(INFO) << "abort request on current primary because of lost registered primary.";
             if(cb_on_wait_replica_abort_)
@@ -1131,6 +1283,15 @@ void NodeManagerBase::resetWriteState()
         }
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY:
+        if (s_enable_async_)
+        {
+            LOG(INFO) << "in async mode, waiting write can finish without abort while electing.";
+            if (cb_on_wait_primary_)
+                cb_on_wait_primary_();
+            nodeState_ = NODE_STATE_STARTED;
+            return;
+        }
+        //break; walk through by intended
     case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY_ABORT:
         {
             LOG(INFO) << "stop waiting primary for current processing request.";
@@ -1146,6 +1307,10 @@ void NodeManagerBase::resetWriteState()
 
 bool NodeManagerBase::isNeedReEnterCluster()
 {
+    // starting, no need to re enter. It will check after recover finished.
+    if (nodeState_ == NODE_STATE_RECOVER_RUNNING && self_primary_path_.empty())
+        return false;
+
     if (!masterStarted_)
         return true;
     std::string new_self_primary;
@@ -1166,28 +1331,24 @@ bool NodeManagerBase::isNeedReEnterCluster()
         return true;
     }
 
-    std::string sdata;
-    zookeeper_->getZNodeData(self_primary_path_, sdata, ZooKeeper::WATCH);
-    LOG(WARNING) << "new self_primary_path_ data:" << sdata;
-
     updateCurrentPrimary();
     if (curr_primary_path_.empty() || old_primary != curr_primary_path_)
     {
-	    // avoid re-enter cluster if my state is ok while primary changed.
-	    // We just make sure our log is newest.
-	    if (old_primary == self_primary_path_)
-	    {
-		    LOG(WARNING) << "need re-enter cluster for I lost primary." << old_primary << " vs " << curr_primary_path_;
-		    return true;
-	    }
-	    if (nodeState_ != NODE_STATE_STARTED)
-		    return true;
+        // avoid re-enter cluster if my state is ok while primary changed.
+        // We just make sure our log is newest.
+        if (old_primary == self_primary_path_)
+        {
+            LOG(WARNING) << "need re-enter cluster for I lost primary." << old_primary << " vs " << curr_primary_path_;
+            return true;
+        }
+        if (nodeState_ != NODE_STATE_STARTED && nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY)
+            return true;
 
-	    if (curr_primary_path_ == self_primary_path_)
-	    {
-		    LOG(WARNING) << "I became the new primary." << old_primary << " vs " << curr_primary_path_;
-		    nodeState_ = NODE_STATE_ELECTING;
-	    }
+        if (curr_primary_path_ == self_primary_path_)
+        {
+            LOG(WARNING) << "I became the new primary." << old_primary << " vs " << curr_primary_path_;
+            nodeState_ = NODE_STATE_ELECTING;
+        }
     }
 
     //NodeStateType primary_state = getPrimaryState();
@@ -1196,13 +1357,47 @@ bool NodeManagerBase::isNeedReEnterCluster()
     //    LOG(WARNING) << "need re-enter cluster for primary is electing ";
     //    return true;
     //}
-    if (!cb_on_recover_check_())
+    if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
     {
         LOG(WARNING) << "need re-enter cluster for request log fall behind.";
         return true;
     }
     LOG(INFO) << "no need re-enter cluster, current state : " << nodeState_;
     return false;
+}
+
+void NodeManagerBase::checkForPrimaryElectingInAsyncMode()
+{
+    LOG(INFO) << "primary is electing current node state: " << nodeState_;
+    switch(nodeState_)
+    {
+    case NODE_STATE_RECOVER_RUNNING:
+        break;
+    case NODE_STATE_PROCESSING_REQ_RUNNING:
+        LOG(INFO) << "check electing wait for idle." << nodeState_;
+        setElectingState();
+        return;
+        break;
+    default:
+        break;
+    }
+
+    if(!self_primary_path_.empty() && findReCreatedSelfPrimaryNode().empty())
+    {
+        LOG(INFO) << "waiting self_primary_path_ re-created.";
+        return;
+    }
+    need_check_recover_ =  true;
+    updateCurrentPrimary();
+    if (isPrimaryWithoutLock())
+    {
+        if (nodeState_ != NODE_STATE_ELECTING)
+        {
+            setElectingState();
+            LOG(INFO) << "notify log sync worker to pause and begin electing.";
+            return;
+        }
+    }
 }
 
 // Note: Must be called in ZooKeeper event handler.
@@ -1216,14 +1411,19 @@ void NodeManagerBase::checkForPrimaryElecting()
         return;
     }
 
+    if (s_enable_async_)
+    {
+        checkForPrimaryElectingInAsyncMode();
+        return;
+    }
     LOG(INFO) << "primary is electing current node state: " << nodeState_;
     switch(nodeState_)
     {
-    case NODE_STATE_PROCESSING_REQ_RUNNING:
     case NODE_STATE_RECOVER_RUNNING:
+        break;
+    case NODE_STATE_PROCESSING_REQ_RUNNING:
         LOG(INFO) << "check electing wait for idle." << nodeState_;
-        need_check_electing_ = true;
-        MasterManagerBase::get()->disableNewWrite();
+        setElectingState();
         return;
         break;
     default:
@@ -1236,18 +1436,20 @@ void NodeManagerBase::checkForPrimaryElecting()
         return;
     }
 
-    need_check_electing_ = false;
 
     need_check_recover_ =  true;
 
     if (!isNeedReEnterCluster())
     {
+        need_check_electing_ = false;
         if (isPrimaryWithoutLock())
         {
             checkSecondaryState(false);
         }
         else
         {
+            if (nodeState_ == NODE_STATE_RECOVER_RUNNING)
+                return;
             checkPrimaryState(false);
         }
         updateNodeState();
@@ -1256,21 +1458,12 @@ void NodeManagerBase::checkForPrimaryElecting()
 
     if (!zookeeper_->isConnected())
     {
-        need_check_electing_ = true;
-        MasterManagerBase::get()->disableNewWrite();
+        setElectingState();
         return;
     }
 
-    updateCurrentPrimary();
-    resetWriteState();
-
-    MasterManagerBase::get()->notifyChangedPrimary(false);
-
     LOG(WARNING) << "self_primary_path_ lost or log fall behind, need re-enter";
-    stopping_ = true;
-    unregisterPrimary();
-    nodeState_ = NODE_STATE_STARTING;
-    enterCluster(!masterStarted_);
+    reEnterCluster();
     return;
 
     //if (isPrimaryWithoutLock())
@@ -1290,6 +1483,43 @@ void NodeManagerBase::checkForPrimaryElecting()
     //}
 }
 
+bool NodeManagerBase::checkElectingInAsyncMode(uint32_t last_reqid)
+{
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    NodeStateType primary_state = NODE_STATE_UNKNOWN;
+    if (stopping_ || !zookeeper_ || !zookeeper_->isConnected())
+    {
+        LOG(INFO) << "checking electing in async mode while connection lost";
+    }
+    else
+    {
+        updateCurrentPrimary();
+        primary_state = getPrimaryState();
+    }
+    if (primary_state == NODE_STATE_ELECTING || need_check_electing_)
+    {
+        if (nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING ||
+            nodeState_ == NODE_STATE_RECOVER_RUNNING)
+        {
+            LOG(INFO) << "current node busy while check electing." << nodeState_;
+            return false;
+        }
+        LOG(INFO) << "in check point, electing needed, ready to electing on current" << self_primary_path_;
+        resetWriteState();
+        nodeState_ = NODE_STATE_ELECTING;
+        need_check_electing_ = false;
+        if (primary_state != NODE_STATE_UNKNOWN)
+        {
+            ZNode nodedata;
+            setSf1rNodeData(nodedata);
+            nodedata.setValue(ZNode::KEY_LAST_WRITE_REQID, last_reqid);
+            updateNodeState(nodedata);
+        }
+        return true;
+    }
+    return false;
+}
+
 // note : all check is for secondary node (except for electing).
 // It should be called only in the thread of event handler in ZooKeeper(like onDataChanged)
 //  or be called while starting up and stopping. 
@@ -1301,8 +1531,7 @@ void NodeManagerBase::checkPrimaryState(bool primary_deleted)
     // 
     if (primary_deleted)
     {
-        need_check_electing_ = true;
-        MasterManagerBase::get()->disableNewWrite();
+        setElectingState();
         checkForPrimaryElecting();
         return;
     }
@@ -1314,8 +1543,7 @@ void NodeManagerBase::checkPrimaryState(bool primary_deleted)
         LOG(WARNING) << "primary may lost .";
         if (!zookeeper_->isZNodeExists(curr_primary_path_, ZooKeeper::WATCH))
         {
-            need_check_electing_ = true;
-            MasterManagerBase::get()->disableNewWrite();
+            setElectingState();
             checkForPrimaryElecting();
             return;
         }
@@ -1339,13 +1567,35 @@ void NodeManagerBase::checkPrimaryState(bool primary_deleted)
     case NODE_STATE_STARTED:
         checkPrimaryForStartNewWrite(primary_state);
         break;
+    case NODE_STATE_ELECTING:
+        checkPrimaryForFinishElecting(primary_state);
     default:
         break;
     }
 }
 
+void NodeManagerBase::checkPrimaryForFinishElecting(NodeStateType primary_state)
+{
+    if (!s_enable_async_)
+        return;
+    if (primary_state != NODE_STATE_ELECTING && !need_check_electing_)
+    {
+        LOG(INFO) << "primary electing finished. replicas begin sync to new.";
+        nodeState_ = NODE_STATE_STARTED;
+        updateNodeState();
+    }
+}
+
 void NodeManagerBase::checkPrimaryForStartNewWrite(NodeStateType primary_state)
 {
+    if (s_enable_async_ && !isPrimaryWithoutLock())
+    {
+        // in async mode, we just wake up the async log worker to pull new log from primary.
+        DistributeTestSuit::testFail(ReplicaFail_At_ReqProcessing);
+        cb_on_resume_sync_();
+        return;
+    }
+
     if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
     {
         LOG(INFO) << "got primary request notify, begin processing on current replica. " << self_primary_path_;
@@ -1437,6 +1687,11 @@ void NodeManagerBase::checkPrimaryForStartNewWrite(NodeStateType primary_state)
 
 void NodeManagerBase::checkPrimaryForFinishWrite(NodeStateType primary_state)
 {
+    if (s_enable_async_)
+    {
+        checkForAsyncWrite();
+        return;
+    }
     DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary);
     if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG)
     {
@@ -1479,6 +1734,11 @@ void NodeManagerBase::checkPrimaryForFinishWrite(NodeStateType primary_state)
 
 void NodeManagerBase::checkPrimaryForAbortWrite(NodeStateType primary_state)
 {
+    if (s_enable_async_)
+    {
+        LOG(ERROR) << "in async this should never happen." << nodeState_;
+        return;
+    }
     DistributeTestSuit::testFail(ReplicaFail_At_Waiting_Primary_Abort);
     if (primary_state == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT ||
         primary_state == NODE_STATE_ELECTING)
@@ -1506,7 +1766,7 @@ void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
         if (cb_on_recover_wait_primary_)
             cb_on_recover_wait_primary_();
         LOG(INFO) << "begin re-enter to the cluster after sync to new primary";
-        nodeState_ = NODE_STATE_STARTED;
+        //nodeState_ = NODE_STATE_STARTED;
         enterClusterAfterRecovery(!masterStarted_);
     }
 }
@@ -1557,17 +1817,46 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
     LOG(INFO) << "in electing state found " << node_list.size() << " children in node " << primaryNodeParentPath_;
     bool all_secondary_ready = true;
+    uint32_t newest_reqid = 0;
     for (size_t i = 0; i < node_list.size(); ++i)
     {
         NodeStateType state = getNodeState(node_list[i]);
         if (node_list[i] == curr_primary_path_)
             continue;
-        if (state != NODE_STATE_STARTED)
+        if (s_enable_async_)
         {
-            all_secondary_ready = false;
-            LOG(INFO) << "one secondary node not ready during electing: " <<
-                node_list[i] << ", state: " << state << ", keep waiting.";
-            break;
+            if (state != NODE_STATE_ELECTING)
+            {
+                all_secondary_ready = false;
+                LOG(INFO) << "one secondary node not ready for electing : " <<
+                    node_list[i] << ", state: " << state << ", keep waiting.";
+                break;
+            }
+            std::string sdata;
+            if (zookeeper_->getZNodeData(node_list[i], sdata, ZooKeeper::WATCH))
+            {
+                ZNode znode;
+                znode.loadKvString(sdata);
+                if (newest_reqid < znode.getUInt32Value(ZNode::KEY_LAST_WRITE_REQID))
+                {
+                    newest_reqid = znode.getUInt32Value(ZNode::KEY_LAST_WRITE_REQID);
+                }
+            }
+            else
+            {
+                all_secondary_ready = false;
+                break;
+            }
+        }
+        else
+        {
+            if (state != NODE_STATE_STARTED)
+            {
+                all_secondary_ready = false;
+                LOG(INFO) << "one secondary node not ready during electing: " <<
+                    node_list[i] << ", state: " << state << ", keep waiting.";
+                break;
+            }
         }
     }
 
@@ -1579,11 +1868,38 @@ void NodeManagerBase::checkSecondaryElecting(bool self_changed)
 
     if (all_secondary_ready)
     {
+        if (s_enable_async_)
+        {
+            LOG(INFO) << "In async write mode, all secondary is ready for electing, current primary checking electing.";
+            std::string sdata;
+            uint32_t my_logid = 0;
+            if (zookeeper_->getZNodeData(self_primary_path_, sdata, ZooKeeper::WATCH))
+            {
+                ZNode znode;
+                znode.loadKvString(sdata);
+                my_logid = znode.getUInt32Value(ZNode::KEY_LAST_WRITE_REQID);
+            }
+
+            LOG(INFO) << "my logid " << my_logid << ", newest logid : " << newest_reqid;
+            if (my_logid < newest_reqid)
+            {
+                LOG(INFO) << "I am not the newest while electing, abandon myself primary, and re-enter.";
+                unregisterPrimary();
+                nodeState_ = NODE_STATE_STARTING;
+                sleep(10);
+                reEnterCluster();
+                return;
+            }
+            LOG(INFO) << "current primary is newest, keep mine primary!";
+        }
         LOG(INFO) << "all secondary ready, ending electing, primary is ready for new request: " << curr_primary_path_;
         if (cb_on_elect_finished_)
             cb_on_elect_finished_();
         MasterManagerBase::get()->notifyChangedPrimary();
+        NodeStateType oldstate = nodeState_;
         updateNodeStateToNewState(NODE_STATE_STARTED);
+        if (s_enable_async_ && oldstate != NODE_STATE_STARTED)
+            updateNodeState();
     }
     else if(!self_changed)
     {
@@ -1605,10 +1921,14 @@ void NodeManagerBase::setNodeState(NodeStateType state)
     //updateCurrentPrimary();
     if (isNeedCheckElecting())
     {
-        nodeState_ = state;
-        LOG(INFO) << "try to change state to new while electing : " << nodeState_;
-        updateNodeState();
-        return;
+        LOG(INFO) << "try to change state to new while electing : " << state;
+        if (!s_enable_async_)
+        {
+            nodeState_ = state;
+            updateNodeState();
+            MasterManagerBase::get()->disableNewWrite();
+            return;
+        }
     }
     updateNodeStateToNewState(state);
 }
@@ -1632,6 +1952,13 @@ void NodeManagerBase::updateLastWriteReqId(uint32_t req_id)
     // This will be used for checking whether request log is newest after auto-reconnected
     //
     LOG(INFO) << "update last success request for current replica set : " << req_id;
+    if (s_enable_async_)
+    {
+        // in async mode, each node in replicas will update itself newest logid while 
+        // primary is electing. The node with the newest logid will be elected as 
+        // new primary, and other node need re-register and sync to the new primary.
+        return;
+    }
     uint32_t cur_req_id = getLastWriteReqId();
     if( req_id < cur_req_id)
     {
@@ -1657,7 +1984,26 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     nodeState_ = new_state;
     ZNode nodedata;
     ZNode oldZnode;
-    setSf1rNodeData(nodedata, oldZnode);
+
+    if (s_enable_async_ && nodeState_ != NODE_STATE_STARTED)
+    {
+        if (checkForAsyncWrite())
+        {
+            if (oldstate != NODE_STATE_STARTED)
+                return;
+        }
+        else
+        {
+            LOG(INFO) << "need update self_primary_path_ : " << nodeState_;
+            setSf1rNodeData(nodedata, oldZnode);
+            zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+        }
+    }
+
+    if (!s_enable_async_)
+    {
+        setSf1rNodeData(nodedata, oldZnode);
+    }
 
     bool need_update = nodedata.getStrValue(ZNode::KEY_SERVICE_STATE) != oldZnode.getStrValue(ZNode::KEY_SERVICE_STATE) ||
                   nodedata.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH) != oldZnode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
@@ -1665,6 +2011,10 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     if (nodeState_ == NODE_STATE_STARTED && !need_check_electing_)
     {
 	    MasterManagerBase::get()->enableNewWrite();
+        if (s_enable_async_ && !isPrimaryWithoutLock())
+        {
+            cb_on_resume_sync_();
+        }
     }
 
     if (need_stop_ && nodeState_ == NODE_STATE_STARTED && !MasterManagerBase::get()->hasAnyCachedRequest())
@@ -1672,7 +2022,10 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
         stop();
         return;
     }
-    zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+    if (!s_enable_async_)
+    {
+        zookeeper_->setZNodeData(self_primary_path_, nodedata.serialize());
+    }
     // notify master got ready for next request.
     if (masterStarted_)
     {
@@ -1708,8 +2061,17 @@ void NodeManagerBase::setSlowWriting()
 
 void NodeManagerBase::updateSelfPrimaryNodeState()
 {
+    if (s_enable_async_)
+    {
+        if (checkForAsyncWrite())
+        {
+            return;
+        }
+    }
     ZNode nodedata;
     setSf1rNodeData(nodedata);
+    if (s_enable_async_)
+        LOG(INFO) << "update self_primary_path_ in async mode : " << nodeState_;
     updateSelfPrimaryNodeState(nodedata);
 }
 
@@ -1740,8 +2102,16 @@ void NodeManagerBase::updateNodeState(const ZNode& nodedata)
     {
         MasterManagerBase::get()->updateServiceReadState(nodedata.getStrValue(ZNode::KEY_SERVICE_STATE), false);
         if (!need_check_electing_ && nodeState_ == NODE_STATE_STARTED)
+        {
             MasterManagerBase::get()->enableNewWrite();
+        }
     }
+    if (!need_check_electing_ && nodeState_ == NODE_STATE_STARTED && s_enable_async_
+        && !isPrimaryWithoutLock())
+    {
+        cb_on_resume_sync_();
+    }
+
     updateSelfPrimaryNodeState(nodedata);
 }
 
@@ -1752,10 +2122,16 @@ void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
         LOG(INFO) << "only in waiting replica state, check secondary request process need. state: " << nodeState_;
         return;
     }
+    if (s_enable_async_)
+    {
+        checkForAsyncWrite();
+        return;
+    }
+
+    bool all_secondary_ready = true;
     std::vector<std::string> node_list;
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
     LOG(INFO) << "in request processing state found " << node_list.size() << " children in node " << primaryNodeParentPath_;
-    bool all_secondary_ready = true;
     for (size_t i = 0; i < node_list.size(); ++i)
     {
         NodeStateType state = getNodeState(node_list[i]);
@@ -1819,6 +2195,11 @@ void NodeManagerBase::checkSecondaryReqFinishLog(bool self_changed)
         LOG(INFO) << "only in waiting replica finish log state, check secondary request finish log need. state: " << nodeState_;
         return;
     }
+    if (s_enable_async_)
+    {
+        checkForAsyncWrite();
+        return;
+    }
     std::vector<std::string> node_list;
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
     LOG(INFO) << "in request finish log state found " << node_list.size() << " children in node " << primaryNodeParentPath_;
@@ -1880,6 +2261,15 @@ void NodeManagerBase::checkSecondaryReqAbort(bool self_changed)
     if (nodeState_ != NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT)
     {
         LOG(INFO) << "only in abort state, check secondary abort need. state: " << nodeState_;
+        return;
+    }
+    if (s_enable_async_)
+    {
+        LOG(INFO) << "abortting request :" << self_primary_path_;
+        if(cb_on_wait_replica_abort_)
+            cb_on_wait_replica_abort_();
+        updateNodeStateToNewState(NODE_STATE_STARTED);
+        updateNodeState();
         return;
     }
     std::vector<std::string> node_list;
@@ -1967,10 +2357,69 @@ void NodeManagerBase::checkSecondaryRecovery(bool self_changed)
     if (!can_recovery)
     {
         NodeStateType new_state = NODE_STATE_STARTED;
+        NodeStateType oldstate = nodeState_;
         if (cb_on_recover_wait_replica_finish_)
             cb_on_recover_wait_replica_finish_();
         updateNodeStateToNewState(new_state);
+        if (s_enable_async_ && oldstate != NODE_STATE_STARTED)
+        {
+            updateNodeState();
+        }
     }
+}
+
+// some state can handle without ZooKeeper if async write enabled.
+// return true to indicate that event handled, return false means
+// we should handle it by communicating with ZooKeeper.
+bool NodeManagerBase::checkForAsyncWrite()
+{
+    switch(nodeState_)
+    {
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
+        {
+            if (cb_on_wait_finish_process_)
+                cb_on_wait_finish_process_();
+            if (cb_on_wait_finish_log_)
+                cb_on_wait_finish_log_();
+            LOG(INFO) << "finished write log.";
+            if (need_check_recover_)
+            {
+                checkSecondaryRecovery(true);
+            }
+            else
+                updateNodeStateToNewState(NODE_STATE_STARTED);
+        }
+        break;
+    case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG:
+        {
+            LOG(WARNING) << "In async write the nodeState_ is wrong : " << nodeState_;
+            if (cb_on_wait_finish_log_)
+                cb_on_wait_finish_log_();
+            LOG(INFO) << "finished write log.";
+            if (need_check_recover_)
+            {
+                checkSecondaryRecovery(true);
+            }
+            else
+                updateNodeStateToNewState(NODE_STATE_STARTED);
+        }
+        break;
+    case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY:
+        {
+            if (cb_on_wait_primary_)
+                cb_on_wait_primary_();
+            LOG(INFO) << "write request log success on replica: " << self_primary_path_;
+            updateNodeStateToNewState(NODE_STATE_STARTED);
+        }
+        break;
+    case NODE_STATE_PROCESSING_REQ_RUNNING:
+        LOG(INFO) << "write request running.";
+        break;
+    default:
+        return false;
+        break;
+    }
+    return true;
 }
 
 }

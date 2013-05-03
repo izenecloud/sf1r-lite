@@ -68,9 +68,27 @@ public:
      */
     void registerAggregator(boost::shared_ptr<AggregatorBase> aggregator)
     {
+        if (!aggregator)
+            return;
         boost::lock_guard<boost::mutex> lock(state_mutex_);
         aggregatorList_.push_back(aggregator);
-        resetAggregatorConfig();
+        resetAggregatorConfig(aggregator);
+    }
+
+    void unregisterAggregator(boost::shared_ptr<AggregatorBase> aggregator)
+    {
+        if (!aggregator)
+            return;
+        boost::lock_guard<boost::mutex> lock(state_mutex_);
+        std::vector<boost::shared_ptr<AggregatorBase> >::iterator it = aggregatorList_.begin();
+        for (; it != aggregatorList_.end(); ++it)
+        {
+            if ((*it).get() == aggregator.get())
+            {
+                aggregatorList_.erase(it);
+                break;
+            }
+        }
     }
 
     /**
@@ -194,6 +212,7 @@ protected:
 
     /***/
     void resetAggregatorConfig();
+    void resetAggregatorConfig(boost::shared_ptr<AggregatorBase>& aggregator);
 
     bool getWriteReqNodeData(ZNode& znode);
     //void putWriteReqDataToPreparedNode(const std::string& req_json_data);
@@ -241,8 +260,7 @@ protected:
     bool is_mine_primary_;
     bool is_ready_for_new_write_;
     std::size_t waiting_request_num_;
-    std::queue<std::pair<std::string, std::string> > cached_write_reqlist_;
-
+    std::queue< std::pair<std::string, std::pair<std::string, std::string> > > cached_write_reqlist_;
 
     std::string CLASSNAME;
     typedef std::map<std::string, boost::shared_ptr<IDistributeService> > ServiceMapT;

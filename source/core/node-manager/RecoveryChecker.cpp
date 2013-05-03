@@ -1,5 +1,6 @@
 #include "RecoveryChecker.h"
 #include "DistributeFileSyncMgr.h"
+//#include "DistributeFileSys.h"
 #include "DistributeDriver.h"
 #include "RequestLog.h"
 #include "NodeManagerBase.h"
@@ -140,18 +141,22 @@ static void cleanUnnessesaryBackup(const bfs::path& backup_basepath)
     }
 }
 
-static bool getLastBackup(const bfs::path& backup_basepath, std::string& backup_path, uint32_t& backup_inc_id)
+static bool getLastBackup(const bfs::path& backup_basepath, uint32_t less_than, std::string& backup_path, uint32_t& backup_inc_id)
 {
     std::vector<uint32_t> backup_req_incids;
     getBackupList(backup_basepath, backup_req_incids);
     if (backup_req_incids.empty())
         return false;
+    LOG(INFO) << "getting last backup id which is less than : " << less_than;
     for (size_t i = 0; i < backup_req_incids.size(); ++i)
     {
         backup_inc_id = backup_req_incids[i];
         backup_path = (backup_basepath/bfs::path(boost::lexical_cast<std::string>(backup_inc_id))).string() + "/";
         if (CopyGuard::isDirCopyOK(backup_path))
-            return true;
+        {
+            if (less_than == 0 || backup_inc_id < less_than)
+                return true;
+        }
         else 
         {
             LOG(WARNING) << "a corrupted directory removed " << backup_path;
@@ -294,25 +299,36 @@ void RecoveryChecker::clearRollbackFlag()
         bfs::remove(rollback_file_);
 }
 
-bool RecoveryChecker::backup()
+bool RecoveryChecker::backup(bool force_remove)
 {
-    boost::unique_lock<boost::mutex> lock(mutex_);
-    if (!reqlog_mgr_)
+    CollInfoMapT tmp_all_col_info;
     {
-        LOG(ERROR) << "RecoveryChecker did not init!";
-        return false;
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        if (!reqlog_mgr_)
+        {
+            LOG(ERROR) << "RecoveryChecker did not init!";
+            return false;
+        }
+        need_backup_ = false;
+        // find all collection and backup.
+        tmp_all_col_info = all_col_info_;
     }
-    need_backup_ = false;
+
     // backup changeable data first, so that we can rollback if old data corrupt while process the request.
     // Ignore SCD files and any other files that will not change during processing.
-
-    // find all collection and backup.
-    CollInfoMapT::const_iterator cit = all_col_info_.begin();
+    CollInfoMapT::const_iterator cit = tmp_all_col_info.begin();
     bfs::path dest_path = backup_basepath_ + "/" + boost::lexical_cast<std::string>(reqlog_mgr_->getLastSuccessReqId());
     bfs::path dest_coldata_backup = dest_path/bfs::path("backup_data");
 
     if (bfs::exists(dest_path))
+    {
+        if (CopyGuard::isDirCopyOK(dest_path.string()) && !force_remove)
+        {
+            LOG(INFO) << "backup already exists : " << dest_path;
+            return true;
+        }
         CopyGuard::safe_remove_all(dest_path.string());
+    }
     bfs::create_directories(dest_path);
 
     {
@@ -324,7 +340,7 @@ bool RecoveryChecker::backup()
         // clear invalide flag after copy. So we can
         // know whether copy is finished correctly by checking flag .
         //
-        while(cit != all_col_info_.end())
+        while(cit != tmp_all_col_info.end())
         {
             LOG(INFO) << "backing up the collection: " << cit->first;
             // flush collection to make sure all changes have been saved to disk.
@@ -506,7 +522,7 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
     LOG(INFO) << "replay log finished, total replayed: " << replayed_num;
 }
 
-bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
+bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id, uint32_t end_id)
 {
     bool ret = true;
     try
@@ -530,7 +546,7 @@ bool RecoveryChecker::redoLog(ReqLogMgr* redolog, uint32_t start_id)
         {
             std::string req_packed_data; 
             bool hasmore = redolog->getReqDataByHeadOffset(redo_offset, rethead, req_packed_data);
-            if (!hasmore)
+            if (!hasmore || rethead.inc_id >= end_id)
                 break;
             LOG(INFO) << "redoing for request id : " << rethead.inc_id;
             CommonReqData req_commondata;
@@ -584,7 +600,7 @@ bool RecoveryChecker::hasAnyBackup(uint32_t& last_backup_id)
     std::string last_backup_path;
     last_backup_id = 0;
     bool has_backup = true;
-    if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
+    if (!getLastBackup(backup_basepath_, 0, last_backup_path, last_backup_id))
     {
         last_backup_id = 0;
         has_backup = false;
@@ -614,10 +630,17 @@ bool RecoveryChecker::checkAndRestoreBackupFile(const CollectionPath& colpath)
         return true;
     }
 
+    uint32_t rollback_id = 0;
+    ifstream ifs(rollback_file_.c_str());
+    if (ifs.good())
+    {
+        ifs.read((char*)&rollback_id, sizeof(rollback_id));
+    }
+
     std::string last_backup_path;
     uint32_t last_backup_id = 0;
     bool has_backup = true;
-    if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
+    if (!getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
     {
         LOG(ERROR) << "no backup available while check startup.";
         LOG(ERROR) << "need restart to redo all log or get full data from primary.";
@@ -685,7 +708,7 @@ bool RecoveryChecker::rollbackLastFail(bool starting_up)
     ReqLogMgr redo_req_log_mgr;
     redo_req_log_mgr.init(redo_log_basepath_);
     bool has_backup = true;
-    if (!getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
+    if (!getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
     {
         LOG(ERROR) << "no backup available while rollback.";
         LOG(ERROR) << "need restart to redo all log or get full data from primary.";
@@ -700,6 +723,7 @@ bool RecoveryChecker::rollbackLastFail(bool starting_up)
         {
             LOG(ERROR) << "last backup write inc is larger than current failed inc_id: " <<
                 last_backup_id << " vs " << rollback_id;
+            bfs::rename(redo_log_basepath_, request_log_basepath_);
             return false;
         }
     }
@@ -768,7 +792,7 @@ bool RecoveryChecker::rollbackLastFail(bool starting_up)
         LOG(INFO) << "last backup is out of date. begin redo request.";
         // read redo log and do request to current log.
         last_backup_id++;
-        return redoLog(&redo_req_log_mgr, last_backup_id);
+        return redoLog(&redo_req_log_mgr, last_backup_id, rollback_id);
     }
     bfs::remove_all(redo_log_basepath_);
     return true;
@@ -783,6 +807,10 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     last_conf_file_ = workdir + "/distribute_last_conf";
     configDir_ = conf_dir;
     need_backup_ = false;
+    //if (DistributeFileSys::get()->isEnabled())
+    //{
+    //    backup_basepath_ = DistributeFileSys::get()->getDFSLocalFullPath("/req-backup");
+    //}
 
     reqlog_mgr_.reset(new ReqLogMgr());
     try
@@ -802,10 +830,13 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
         ifstream ifs(rollback_file_.c_str());
         if (ifs.good())
         {
-            LOG(INFO) << "rollback at startup, restore the last config file for the rollback.";
+            uint32_t rollback_id = 0;
+            ifs.read((char*)&rollback_id, sizeof(rollback_id));
+
+            LOG(INFO) << "rollback at startup, restore the last config file for the rollback." << rollback_id;
             std::string last_backup_path;
             uint32_t last_backup_id = 0;
-            if (getLastBackup(backup_basepath_, last_backup_path, last_backup_id))
+            if (getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
             {
                 bfs::copy_file(last_backup_path + bfs::path(last_conf_file_).filename().string(), last_conf_file_,
                     bfs::copy_option::overwrite_if_exists);
@@ -826,7 +857,7 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
         boost::bind(&RecoveryChecker::onRecoverCallback, this, _1),
         boost::bind(&RecoveryChecker::onRecoverWaitPrimaryCallback, this),
         boost::bind(&RecoveryChecker::onRecoverWaitReplicasCallback, this),
-        boost::bind(&RecoveryChecker::onRecoverCheckLog, this));
+        boost::bind(&RecoveryChecker::onRecoverCheckLog, this, _1));
 
 }
 
@@ -866,6 +897,15 @@ void RecoveryChecker::onRecoverCallback(bool startup)
         LOG(INFO) << "recovery from rollback or from last forceExit !!";
         if (reqlog_mgr_->getLastSuccessReqId() > 0 && !NodeManagerBase::get()->isOtherPrimaryAvailable())
             forceExit("recovery failed. No primary Node!!");
+    }
+
+    if (NodeManagerBase::get()->isOtherPrimaryAvailable() && !checkIfLogForward(false))
+    {
+        LOG(INFO) << "check log failed while recover, need rollback";
+        if(!rollbackLastFail(false))
+        {
+            forceExit("rollback failed for forword log.");
+        }
     }
 
     setForceExitFlag();
@@ -1165,7 +1205,7 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
         LOG(ERROR) << "data is not consistent after recovery, error : " << errinfo;
         if (sync_file)
         {
-            if(!DistributeFileSyncMgr::get()->syncCollectionData(cit->first))
+            if(!DistributeFileSyncMgr::get()->syncCollectionData(coll_list))
                 forceExit("recovery failed for sync collection file.");
         }
         else
@@ -1195,8 +1235,83 @@ void RecoveryChecker::onRecoverWaitReplicasCallback()
     }
 }
 
-bool RecoveryChecker::onRecoverCheckLog()
+// check whether the current node log is newer than primary,
+// If true, we need abandon the newer log and rollback.
+bool RecoveryChecker::checkIfLogForward(bool is_primary)
 {
+    uint32_t newest_reqid = reqlog_mgr_->getLastSuccessReqId();
+    LOG(INFO) << "starting last request is :" << newest_reqid;
+    if (is_primary)
+    {
+        LOG(INFO) << "primary no need check log.";
+        return true;
+    }
+    // check if log data is same or if log data is newer than current primary.
+    // if primary is down and restart, some log may newer than current primary,
+    // we should abandon these log and sync to new primary.
+    uint32_t check_start = 0;
+    std::vector<uint32_t> local_logid_list;
+    std::vector<std::string> local_logdata_list;
+    std::vector<std::string> primary_logdata_list;
+    while(true)
+    {
+        LOG(INFO) << "checking log start from :" << check_start;
+        if(!DistributeFileSyncMgr::get()->getNewestReqLog(true, check_start, primary_logdata_list))
+        {
+            if (!NodeManagerBase::get()->isConnected())
+            {
+                LOG(ERROR) << "zookeeper connection lost!!!";
+                return false;
+            }
+            if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
+            {
+                LOG(INFO) << "no other primary node while check log.";
+                return true;
+            }
+            LOG(WARNING) << "get newest log from primary failed while checking log data. waiting and retry...";
+            sleep(10);
+            continue;
+        }
+        std::vector<uint32_t>().swap(local_logid_list);
+        std::vector<std::string>().swap(local_logdata_list);
+        reqlog_mgr_->getReqLogIdList(check_start, primary_logdata_list.size(), true, local_logid_list, local_logdata_list);
+
+        size_t min_size = std::min(local_logdata_list.size(), primary_logdata_list.size());
+        for (size_t i = 0; i < min_size; ++i)
+        {
+            if( local_logdata_list[i] != primary_logdata_list[i] )
+            {
+                LOG(INFO) << "current node log data diff from primary from : " << local_logid_list[i];
+                break;
+            }
+            else
+            {
+                check_start = local_logid_list[i];
+            }
+        }
+
+        if (check_start >= newest_reqid)
+        {
+            LOG(INFO) << "check log data success, current node log ok.";
+            return true;
+        }
+        if (local_logid_list.empty() || check_start != local_logid_list.back())
+        {
+            LOG(INFO) << "the log data is not ok, need rollback to " << check_start;
+            setRollbackFlag(check_start + 1);
+            return false;
+        }
+        ++check_start;
+    }
+    return false;
+}
+
+bool RecoveryChecker::onRecoverCheckLog(bool is_primary)
+{
+    if (NodeManagerBase::isAsyncEnabled())
+    {
+        return checkIfLogForward(is_primary);
+    }
     LOG(INFO) << "check log for re-connect.";
     uint32_t lastid = NodeManagerBase::get()->getLastWriteReqId();
     if (lastid == 0)
@@ -1246,8 +1361,19 @@ void RecoveryChecker::syncToNewestReqLog()
     while(true)
     {
         uint32_t reqid = reqlog_mgr_->getLastSuccessReqId();
-        while(!DistributeFileSyncMgr::get()->getNewestReqLog(reqid + 1, newlogdata_list))
+        bool sync_from_primary = NodeManagerBase::isAsyncEnabled();
+        while(!DistributeFileSyncMgr::get()->getNewestReqLog(sync_from_primary, reqid + 1, newlogdata_list))
         {
+            if (!NodeManagerBase::get()->isConnected())
+            {
+                LOG(ERROR) << "zookeeper connection lost!!!";
+                break;
+            }
+            if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
+            {
+                LOG(INFO) << "no other primary node while sync log.";
+                break;
+            }
             LOG(INFO) << "get newest log failed, waiting and retry.";
             sleep(10);
         }

@@ -33,6 +33,8 @@ public:
         UpdateRecommendWorker* localWorker
     );
 
+    ~UpdateRecommendMaster();
+
     virtual bool isMasterNode() const { return true; }
 
     virtual void updatePurchaseMatrix(

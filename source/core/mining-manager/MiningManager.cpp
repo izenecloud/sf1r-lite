@@ -58,6 +58,7 @@
 
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
+#include <search-manager/RTypeStringPropTableBuilder.h>
 #include <index-manager/IndexManager.h>
 #include <common/SearchCache.h>
 
@@ -95,6 +96,7 @@
 #include <node-manager/RequestLog.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/NodeManagerBase.h>
+#include <node-manager/MasterManagerBase.h>
 
 #include <fstream>
 #include <iterator>
@@ -152,6 +154,7 @@ MiningManager::MiningManager(
     , tgInfo_(NULL)
     , idManager_(idManager)
     , numericTableBuilder_(NULL)
+    , rtypeStringPropTableBuilder_(NULL)
     , groupManager_(NULL)
     , attrManager_(NULL)
     , groupFilterBuilder_(NULL)
@@ -405,6 +408,9 @@ bool MiningManager::open()
         numericTableBuilder_ = new NumericPropertyTableBuilderImpl(
             *document_manager_, ctrManager_.get());
 
+        if (rtypeStringPropTableBuilder_) delete rtypeStringPropTableBuilder_;
+        rtypeStringPropTableBuilder_ = new RTypeStringPropTableBuilder(*document_manager_);
+
         /** group */
         if (mining_schema_.group_enable)
         {
@@ -607,12 +613,12 @@ bool MiningManager::open()
                 {
                     if (cronExpression_.setExpression(miningConfig_.fuzzyIndexMerge_param.cron))
                     {
-                        string cronJobName_ = "fuzzy_index_merge";
+                        string cronJobName = "fuzzy_index_merge";
                         
-                        bool result = izenelib::util::Scheduler::addJob(cronJobName_,
+                        bool result = izenelib::util::Scheduler::addJob(cronJobName,
                         60*1000, // each minute
                         0, // start from now
-                        boost::bind(&MiningManager::updateMergeFuzzyIndex, this));
+                        boost::bind(&MiningManager::updateMergeFuzzyIndex, this, _1));
                         if (result)
                         {
                             LOG (INFO) << "ADD cron job for fuzzy_index_merge ......";
@@ -1715,6 +1721,10 @@ bool MiningManager::visitDoc(uint32_t docId)
     }
 
     bool ret = ctrManager_->update(docId);
+    if (!ret)
+    {
+        LOG(INFO) << "visitDoc failed to update ctrManager_ : " << docId;
+    }
 
     DISTRIBUTE_WRITE_FINISH(ret);
     return ret;
@@ -2638,10 +2648,35 @@ void MiningManager::flush()
     LOG(INFO) << "MiningManager flush finished.";
 }
 
-void MiningManager::updateMergeFuzzyIndex()
+void MiningManager::updateMergeFuzzyIndex(int calltype)
 {
-    if (cronExpression_.matches_now())
+    if (cronExpression_.matches_now() || calltype > 0)
     {
+        static const string cronJobName = "fuzzy_index_merge";
+        if (calltype == 0 && NodeManagerBase::get()->isDistributed())
+        {
+            if (NodeManagerBase::get()->isPrimary())
+            {
+                MasterManagerBase::get()->pushWriteReq(cronJobName, "cron");
+                LOG(INFO) << "push cron job to queue on primary : " << cronJobName;
+            }
+            else
+            {
+                LOG(INFO) << "cron job on replica ignored. ";
+            }
+            return;
+        }
+
+        DISTRIBUTE_WRITE_BEGIN;
+        DISTRIBUTE_WRITE_CHECK_VALID_RETURN2;
+        CronJobReqLog reqlog;
+        reqlog.cron_time = Utilities::createTimeStamp();
+        if (!DistributeRequestHooker::get()->prepare(Req_CronJob, reqlog))
+        {
+            LOG(ERROR) << "!!!! prepare log failed while running cron job. : " << cronJobName << std::endl;
+            return;
+        }
+
         if (!incrementalManager_->isEmpty())
         {
             LOG (INFO) << "update cron-job with fm-index";
@@ -2656,6 +2691,7 @@ void MiningManager::updateMergeFuzzyIndex()
             docid = miningTask->getLastDocId();
             incrementalManager_->setLastDocid(docid);
         }
+        DISTRIBUTE_WRITE_FINISH(true);
     }
 }
 

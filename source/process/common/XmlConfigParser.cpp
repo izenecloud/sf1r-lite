@@ -860,7 +860,6 @@ bool CollectionConfig::parseConfigFile(const string& collectionName ,const strin
             std::cerr << "[SF1Config] Schema File doesn't exist." << std::endl;
             return false;
         }
-
         XmlSchema schema(schema_file_string);
         bool schema_valid = schema.validate(fileName);
         std::list<std::string> schema_warning = schema.getSchemaValidityWarnings();
@@ -1068,6 +1067,10 @@ void CollectionConfig::parseCollectionSchema(const ticpp::Element * documentSche
             {
                 dataType = STRING_PROPERTY_TYPE;
             }
+            else if (type == "subdoc")
+            {
+                dataType = SUBDOC_PROPERTY_TYPE;
+            }
             else if (type == "int8")
             {
                 dataType = INT8_PROPERTY_TYPE;
@@ -1098,7 +1101,7 @@ void CollectionConfig::parseCollectionSchema(const ticpp::Element * documentSche
             }
             else
             {
-                throw_TypeMismatch(property.Get(), "name", type, "\"string\", \"int\" or \"float\"");
+                throw_TypeMismatch(property.Get(), "name", type, "\"string\", \"subdoc\", \"int\" or \"float\"");
             }
             propertyConfig.propertyName_ = propertyName;
             propertyConfig.propertyType_ = dataType;

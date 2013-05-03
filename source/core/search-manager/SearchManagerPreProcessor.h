@@ -20,12 +20,14 @@ namespace sf1r
 class Sorter;
 class NumericPropertyTableBase;
 class DocumentIterator;
+class DocumentManager;
 class RankQueryProperty;
 class PropertyRanker;
 class ProductScorerFactory;
 class ProductScorer;
 class PropSharedLockSet;
 class NumericPropertyTableBuilder;
+class RTypeStringPropTableBuilder;
 
 class SearchManagerPreProcessor
 {
@@ -44,6 +46,11 @@ public:
     {
         numericTableBuilder_ = builder;
     }
+    
+    void setRTypeStringPropTableBuilder(RTypeStringPropTableBuilder* builder)
+    {
+        rtypeStringPropTableBuilder_ = builder;
+    }
 
     /**
      * @brief get data list of each sort property for documents referred by docIdList,
@@ -61,7 +68,7 @@ public:
         const SearchKeywordOperation& actionOperation,
         boost::shared_ptr<Sorter>& pSorter,
         CustomRankerPtr& customRanker);
-
+    
     template<class UnaryOperator>
     void preparePropertyList(
         std::vector<std::string>& indexPropertyList,
@@ -127,6 +134,8 @@ private:
     ProductScorerFactory* productScorerFactory_;
 
     NumericPropertyTableBuilder* numericTableBuilder_;
+    
+    RTypeStringPropTableBuilder* rtypeStringPropTableBuilder_;
 };
 
 } // end of sf1r

@@ -55,6 +55,11 @@ UpdateRecommendMaster::UpdateRecommendMaster(
     MasterManagerBase::get()->registerAggregator(aggregator_);
 }
 
+UpdateRecommendMaster::~UpdateRecommendMaster()
+{
+    MasterManagerBase::get()->unregisterAggregator(aggregator_);
+}
+
 void UpdateRecommendMaster::HookDistributeCBRequestForUpdateRec(const std::string& callback_data, bool include_self)
 {
     Request::kCallType hooktype = (Request::kCallType)DistributeRequestHooker::get()->getHookType();

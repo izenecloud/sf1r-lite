@@ -194,7 +194,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 {
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
-
     ///If current directory is the one rotated from the backup directory,
     ///there should exist some missed SCDs since the last backup time,
     ///so we move those SCDs from backup directory, so that these data
@@ -341,6 +340,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
 
     documentManager_->last_delete_docid_.clear();
     indexProgress_.totalFileSize_ = getTotalScdSize_(scdList);
+    documentManager_->last_delete_docid_.clear();
     size_t currTotalSCDSize = indexProgress_.totalFileSize_/(1024*1024);
     indexProgress_.totalFileNum = scdList.size();
 
@@ -602,7 +602,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         Document document;
         bool b = documentManager->getDocument(curDocId, document);
         if (!b) continue;
-
+        documentManager->getRTypePropertiesForDocument(curDocId, document);
         // update docid
         std::string docidName("DOCID");
         izenelib::util::UString docidValueU;
@@ -629,7 +629,7 @@ bool IndexWorker::rebuildCollection(boost::shared_ptr<DocumentManager>& document
         IndexerDocument indexDocument;
         time_t new_timestamp = -1;
         prepareIndexDocument_(oldId, new_timestamp, document, indexDocument);
-
+        documentManager_->copyRTypeValues(documentManager, curDocId, newDocId);
         if (!insertDoc_(document, indexDocument, timestamp))
             continue;
 
@@ -1541,12 +1541,23 @@ bool IndexWorker::updateDoc_(
         return doUpdateDoc_(document, indexDocument, oldIndexDocument, updateType);
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
-    UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
+    std::pair<UpdateBufferType::iterator, bool> insertResult =
+        updateBuffer_.insert(document.getId(), UpdateBufferDataType());
 
+    UpdateBufferDataType& updateData = insertResult.first.data();
     updateData.get<0>() = updateType;
     updateData.get<1>().swap(document);
     updateData.get<2>().swap(indexDocument);
-    updateData.get<3>().swap(oldIndexDocument);
+
+    // for duplicated DOCIDs in update SCD, only the first instance of
+    // oldIndexDocument stores the values before indexing, in order to enable
+    // BTreeIndexer to remove these old values properly, we should keep only
+    // the first instance of oldIndexDocument
+    if (insertResult.second)
+    {
+        updateData.get<3>().swap(oldIndexDocument);
+    }
+
     if (updateBuffer_.size() >= UPDATE_BUFFER_CAPACITY)
     {
         flushUpdateBuffer_();
@@ -1744,10 +1755,9 @@ bool IndexWorker::prepareDocument_(
     {
         const std::string& fieldStr = p->first;
         tempPropertyConfig.propertyName_ = fieldStr;
-
         IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
         bool isIndexSchema = (iter != bundleConfig_->indexSchema_.end());
-
+		
         const izenelib::util::UString & propertyValueU = p->second; // preventing copy
 
         if (!bundleConfig_->productSourceField_.empty()
@@ -1859,7 +1869,13 @@ bool IndexWorker::prepareDocument_(
                     prepareIndexDocumentStringProperty_(docId, *p, iter, indexDocument);
                 }
                 break;
-
+            case SUBDOC_PROPERTY_TYPE:
+                {
+                    PropertyValue propData(propertyValueU);
+                    document.property(fieldStr).swap(propData);
+                    prepareIndexDocumentStringProperty_(docId, *p, iter, indexDocument);
+                }
+                break;
             case INT32_PROPERTY_TYPE:
             case FLOAT_PROPERTY_TYPE:
             case INT8_PROPERTY_TYPE:
@@ -2007,7 +2023,7 @@ bool IndexWorker::prepareIndexDocument_(
         }
     }
 
-    documentManager_->moveRTypeValues(oldId, docId);
+    //documentManager_->moveRTypeValues(oldId, docId);
 
     return true;
 }

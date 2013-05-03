@@ -35,6 +35,9 @@ void SearchManager::setMiningManager(
 
     preprocessor_.setNumericTableBuilder(
         miningManager->GetNumericTableBuilder());
+    
+    preprocessor_.setRTypeStringPropTableBuilder(
+        miningManager->GetRTypeStringPropTableBuilder());
 
     topKReranker_.setProductRankerFactory(
         miningManager->GetProductRankerFactory());

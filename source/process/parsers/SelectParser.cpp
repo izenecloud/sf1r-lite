@@ -13,6 +13,8 @@
 
 #include <util/swap.h>
 
+#include <glog/logging.h>
+
 namespace sf1r {
 
 using driver::Keys;
@@ -97,6 +99,12 @@ bool SelectParser::parse(const Value& select)
         for (std::size_t i = 0; i < defaultSelectProperties.size(); ++i)
         {
             properties_[i].propertyString_ = defaultSelectProperties[i];
+            PropertyConfig propertyConfig;
+            propertyConfig.setName(properties_[i].propertyString_);
+            if (!getPropertyConfig(indexSchema_, propertyConfig))
+                continue;
+            if (propertyConfig.getIsSubDoc())
+                properties_[i].isSubDocPropertyValue_ = true;
         }
 
         return true;
@@ -136,6 +144,7 @@ bool SelectParser::parse(const Value& select)
         properties_[i].summarySentenceNum_ = kDefaultSummarySentenceCount;
         properties_[i].summaryPropertyAlias_.resize(0);
         properties_[i].isSnippetOn_ = false;
+        properties_[i].isSubDocPropertyValue_ = false;
 
         if (currentProperty.type() != Value::kObjectType)
         {
@@ -211,6 +220,10 @@ bool SelectParser::parse(const Value& select)
         {
             properties_[i].summaryPropertyAlias_ =
                 properties_[i].propertyString_ + kDefaultSummaryPropertySuffix;
+        }
+        if (propertyConfig.getIsSubDoc())
+        {
+            properties_[i].isSubDocPropertyValue_ = true;
         }
     }
 
