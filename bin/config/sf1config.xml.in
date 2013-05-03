@@ -272,7 +272,7 @@
 
     <DistributedUtil>
       <ZooKeeper disable="n" servers="10.10.99.121:2181,10.10.99.122:2181,10.10.99.123:2181" sessiontimeout="5000"/>
-      <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000"/>
+      <DFS type="hdfs" supportfuse="n" mountdir="" server="localhost" port="9000"/>
     </DistributedUtil>
   </Deployment>
 

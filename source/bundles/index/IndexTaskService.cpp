@@ -9,6 +9,7 @@
 #include <node-manager/sharding/ScdDispatcher.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/DistributeFileSyncMgr.h>
+#include <node-manager/DistributeFileSys.h>
 #include <util/driver/Request.h>
 
 #include <glog/logging.h>
@@ -57,9 +58,23 @@ bool IndexTaskService::HookDistributeRequestForIndex()
     return ret;
 }
 
-bool IndexTaskService::index(unsigned int numdoc)
+bool IndexTaskService::index(unsigned int numdoc, std::string scd_path)
 {
     bool result = true;
+
+    if (DistributeFileSys::get()->isEnabled())
+    {
+        if (scd_path.empty())
+        {
+            LOG(ERROR) << "scd path should be specified while dfs is enabled.";
+            return false;
+        }
+        scd_path = DistributeFileSys::get()->getDFSPath(scd_path);
+    }
+    else
+    {
+        scd_path = bundleConfig_->indexSCDPath();
+    }
 
     if (bundleConfig_->isMasterAggregator() && indexAggregator_->isNeedDistribute() &&
         DistributeRequestHooker::get()->isRunningPrimary())
@@ -68,23 +83,23 @@ bool IndexTaskService::index(unsigned int numdoc)
         {
             if (DistributeRequestHooker::get()->getHookType() == Request::FromDistribute)
             {
-                result = distributedIndex_(numdoc);
+                result = distributedIndex_(numdoc, scd_path);
             }
             else
             {
-                indexWorker_->index(numdoc, result);
+                indexWorker_->index(scd_path, numdoc, result);
             }
         }
         else
         {
-            task_type task = boost::bind(&IndexTaskService::distributedIndex_, this, numdoc);
+            task_type task = boost::bind(&IndexTaskService::distributedIndex_, this, numdoc, scd_path);
             JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
         }
     }
     else
     {
         if (bundleConfig_->isMasterAggregator() &&
-            DistributeRequestHooker::get()->isRunningPrimary())
+            DistributeRequestHooker::get()->isRunningPrimary() && !DistributeFileSys::get()->isEnabled())
         {
             LOG(INFO) << "only local worker available, copy master scd files and indexing local.";
             // search the directory for files
@@ -118,7 +133,7 @@ bool IndexTaskService::index(unsigned int numdoc)
                 }
             }
         }
-        indexWorker_->index(numdoc, result);
+        indexWorker_->index(scd_path, numdoc, result);
     }
 
     return result;
@@ -207,17 +222,22 @@ boost::shared_ptr<DocumentManager> IndexTaskService::getDocumentManager() const
     return indexWorker_->getDocumentManager();
 }
 
-bool IndexTaskService::distributedIndex_(unsigned int numdoc)
+bool IndexTaskService::distributedIndex_(unsigned int numdoc, std::string scd_dir)
 {
     // notify that current master is indexing for the specified collection,
     // we may need to check that whether other Master it's indexing this collection in some cases,
     // or it's depends on Nginx router strategy.
     MasterManagerBase::get()->registerIndexStatus(bundleConfig_->collectionName_, true);
 
+    if (!DistributeFileSys::get()->isEnabled())
+    {
+        scd_dir = bundleConfig_->masterIndexSCDPath();
+    }
+
     bool ret = distributedIndexImpl_(
                     numdoc,
                     bundleConfig_->collectionName_,
-                    bundleConfig_->masterIndexSCDPath(),
+                    scd_dir,
                     bundleConfig_->indexShardKeys_);
 
     MasterManagerBase::get()->registerIndexStatus(bundleConfig_->collectionName_, false);
@@ -231,25 +251,30 @@ bool IndexTaskService::distributedIndexImpl_(
     const std::string& masterScdPath,
     const std::vector<std::string>& shardKeyList)
 {
-    // 1. dispatching scd to multiple nodes
-    boost::shared_ptr<ScdSharder> scdSharder;
-    if (!createScdSharder(scdSharder, shardKeyList))
-        return false;
-
-    boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder, collectionName));
+    std::string scd_dir = masterScdPath;
     std::vector<std::string> outScdFileList;
-    if(!scdDispatcher->dispatch(outScdFileList, masterScdPath, numdoc))
-        return false;
+    if (!DistributeFileSys::get()->isEnabled())
+    {
+        // 1. dispatching scd to multiple nodes
+        boost::shared_ptr<ScdSharder> scdSharder;
+        if (!createScdSharder(scdSharder, shardKeyList))
+            return false;
 
+        boost::shared_ptr<ScdDispatcher> scdDispatcher(new BatchScdDispatcher(scdSharder, collectionName));
+        if(!scdDispatcher->dispatch(outScdFileList, masterScdPath, numdoc))
+            return false;
+
+        scd_dir = bundleConfig_->indexSCDPath();
+    }
     // 2. send index request to multiple nodes
     LOG(INFO) << "start distributed indexing";
     HookDistributeRequestForIndex();
     bool ret = true;
     
     //indexAggregator_->distributeRequest(collectionName, "index", numdoc, ret);
-    indexWorker_->index(numdoc, ret);
+    indexWorker_->index(scd_dir, numdoc, ret);
 
-    if (ret)
+    if (ret && !DistributeFileSys::get()->isEnabled())
     {
         bfs::path bkDir = bfs::path(masterScdPath) / SCD_BACKUP_DIR;
         bfs::create_directories(bkDir);
