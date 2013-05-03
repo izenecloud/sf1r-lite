@@ -194,7 +194,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
 {
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
-
     ///If current directory is the one rotated from the backup directory,
     ///there should exist some missed SCDs since the last backup time,
     ///so we move those SCDs from backup directory, so that these data
@@ -341,6 +340,7 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
 
     documentManager_->last_delete_docid_.clear();
     indexProgress_.totalFileSize_ = getTotalScdSize_(scdList);
+    documentManager_->last_delete_docid_.clear();
     size_t currTotalSCDSize = indexProgress_.totalFileSize_/(1024*1024);
     indexProgress_.totalFileNum = scdList.size();
 

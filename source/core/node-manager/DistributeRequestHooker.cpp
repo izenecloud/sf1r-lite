@@ -2,6 +2,7 @@
 #include "DistributeDriver.h"
 #include "RecoveryChecker.h"
 #include "DistributeTest.hpp"
+#include "DistributeFileSyncMgr.h"
 
 #include <boost/filesystem.hpp>
 #include <util/driver/writers/JsonWriter.h>
@@ -9,12 +10,14 @@
 #include <util/scheduler.h>
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <node-manager/NodeManagerBase.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "RequestLog.h"
 
 using namespace izenelib::driver;
 using namespace izenelib;
 namespace bfs = boost::filesystem;
+using namespace boost::posix_time;
 
 namespace sf1r
 {
@@ -42,6 +45,17 @@ void DistributeRequestHooker::init()
 
     RecoveryChecker::get()->hasAnyBackup(last_backup_id_);
     LOG(INFO) << "last backup : " << last_backup_id_;
+
+    log_sync_paused_ = true;
+    if (NodeManagerBase::isAsyncEnabled())
+    {
+        NodeManagerBase::get()->setCallbackForAsyncWrite(
+            boost::bind(&DistributeRequestHooker::pauseLogSync, this),
+            boost::bind(&DistributeRequestHooker::resumeLogSync, this));
+
+        LOG(INFO) << "async write enabled, starting the async log worker.";
+        async_log_worker_ = boost::thread(&DistributeRequestHooker::AsyncLogPullFunc, this);
+    }
 }
 
 DistributeRequestHooker::DistributeRequestHooker()
@@ -269,7 +283,7 @@ bool DistributeRequestHooker::prepare(ReqLogType type, CommonReqData& prepared_r
     if ((prepared_req.inc_id > last_backup_id_ + 1) && (prepared_req.inc_id - last_backup_id_) % 250000 == 0)
     {
         LOG(INFO) << "begin backup";
-        if(!RecoveryChecker::get()->backup())
+        if(!RecoveryChecker::get()->backup(false))
         {
             LOG(ERROR) << "backup failed. Maybe not enough space.";
             if (!isprimary)
@@ -512,7 +526,7 @@ void DistributeRequestHooker::finish(bool success)
         if (isNeedBackup(type))
         {
             LOG(INFO) << "begin backup after finished.";
-            if(!RecoveryChecker::get()->backup())
+            if(!RecoveryChecker::get()->backup(false))
             {
                 LOG(ERROR) << "backup failed. Maybe not enough space.";
                 forceExit();
@@ -555,7 +569,127 @@ void DistributeRequestHooker::clearHook(bool force)
 
 void DistributeRequestHooker::forceExit()
 {
+    clearHook(true);
     RecoveryChecker::forceExit("force exit in DistributeRequestHooker");
+}
+
+void DistributeRequestHooker::stopLogSync()
+{
+    if (!NodeManagerBase::isAsyncEnabled())
+        return;
+    async_log_worker_.interrupt();
+    resumeLogSync();
+    async_log_worker_.join();
+    LOG(INFO) << "log sync thread stopped.";
+}
+
+void DistributeRequestHooker::pauseLogSync()
+{
+    boost::unique_lock<boost::mutex> lock(log_sync_mutex_);
+    log_sync_paused_ = true;
+    log_sync_cond_.notify_all();
+    LOG(INFO) << "log sync paused.";
+}
+
+void DistributeRequestHooker::resumeLogSync()
+{
+    boost::unique_lock<boost::mutex> lock(log_sync_mutex_);
+    if (log_sync_paused_)
+        LOG(INFO) << "log sync resumed.";
+    log_sync_paused_ = false;
+    log_sync_cond_.notify_all();
+}
+
+void DistributeRequestHooker::AsyncLogPullFunc()
+{
+    bool wait_period = false;
+    while(true)
+    {
+        try
+        {
+            boost::this_thread::interruption_point();
+            std::vector<std::string> newlogdata_list;
+            uint32_t reqid;
+            {
+                boost::unique_lock<boost::mutex> lock(log_sync_mutex_);
+                if (wait_period)
+                {
+                    log_sync_mutex_.unlock();
+                    bool need_electing = false;
+                    if (RecoveryChecker::get()->getReqLogMgr())
+                    {
+                        need_electing = NodeManagerBase::get()->checkElectingInAsyncMode(RecoveryChecker::get()->getReqLogMgr()->getLastSuccessReqId());
+                    }
+                    log_sync_mutex_.lock();
+                    if (need_electing)
+                    {
+                        LOG(INFO) << "log sync paused by electing.";
+                        log_sync_paused_ = true;
+                    }
+                    log_sync_cond_.timed_wait(lock, boost::posix_time::seconds(5));
+                }
+                while(log_sync_paused_)
+                {
+                    LOG(INFO) << "sync log paused, waiting....";
+
+                    log_sync_mutex_.unlock();
+                    bool need_electing = false;
+                    if (RecoveryChecker::get()->getReqLogMgr())
+                    {
+                        need_electing = NodeManagerBase::get()->checkElectingInAsyncMode(RecoveryChecker::get()->getReqLogMgr()->getLastSuccessReqId());
+                    }
+                    log_sync_mutex_.lock();
+
+                    if (need_electing)
+                    {
+                        LOG(INFO) << "log sync paused by electing.";
+                        log_sync_paused_ = true;
+                    }
+                    if (log_sync_paused_)
+                        log_sync_cond_.wait(lock);
+                    boost::this_thread::interruption_point();
+                }
+                //LOG(INFO) << "begin sync to newest log in async worker.";
+                reqid = RecoveryChecker::get()->getReqLogMgr()->getLastSuccessReqId();
+                if (!DistributeFileSyncMgr::get()->getNewestReqLog(true, reqid + 1, newlogdata_list))
+                {
+                    LOG(INFO) << "get newest log failed, waiting and retry.";
+                    wait_period = true;
+                    continue;
+                }
+                if (newlogdata_list.empty())
+                {
+                    //LOG(INFO) << "no more log, waiting and retry.";
+                    wait_period = true;
+                    continue;
+                }
+            }
+            for (size_t i = 0; i < newlogdata_list.size(); ++i)
+            {
+                CommonReqData req_commondata;
+                ReqLogMgr::unpackReqLogData(newlogdata_list[i], req_commondata);
+                LOG(INFO) << "sync for request id : " << req_commondata.inc_id;
+                if (req_commondata.inc_id <= reqid)
+                {
+                    LOG(ERROR) << "get new log data is out of order in sync log worker.";
+                    forceExit();
+                }
+                reqid = req_commondata.inc_id;
+
+                NodeManagerBase::get()->beginReqProcess();
+                if(!DistributeDriver::get()->handleReqFromPrimaryInAsyncMode(req_commondata.reqtype, req_commondata.req_json_data, newlogdata_list[i]))
+                {
+                    LOG(INFO) << "sync log failed in sync log worker: " << req_commondata.inc_id;
+                    forceExit();
+                }
+            }
+            boost::this_thread::interruption_point();
+        }
+        catch (boost::thread_interrupted&)
+        {
+            break;
+        }
+    }
 }
 
 DistributeWriteGuard::DistributeWriteGuard(bool async)

@@ -240,6 +240,7 @@ void MasterManagerBase::process(ZooKeeperEvent& zkEvent)
 
         if (!checkZooKeeperService())
         {
+            boost::lock_guard<boost::mutex> lock(state_mutex_);
             stopping_ = false;
             masterState_ = MASTER_STATE_STARTING_WAIT_ZOOKEEPER;
             LOG (ERROR) << CLASSNAME << " waiting for ZooKeeper Service...";
@@ -374,6 +375,11 @@ bool MasterManagerBase::prepareWriteReq()
         LOG(INFO) << "prepare a write request failed for new write temporal disabled!";
         return false;
     }
+    if (NodeManagerBase::isAsyncEnabled())
+    {
+        write_prepared_ = true;
+        return true;
+    }
     ZNode znode;
     znode.setValue(ZNode::KEY_MASTER_SERVER_REAL_PATH, serverRealPath_);
     if (!zookeeper_->createZNode(write_prepare_node_, znode.serialize(), ZooKeeper::ZNODE_EPHEMERAL))
@@ -423,8 +429,8 @@ void MasterManagerBase::checkForWriteReq()
             return;
         if (!cached_write_reqlist_.empty())
         {
-            LOG(ERROR) << "non primary master but has cached write request, these request will be ignored !!!!!! " << serverRealPath_;
-            //cached_write_reqlist_ = std::queue<std::pair<std::string, std::string> >();
+            LOG(INFO) << "non primary master but has cached write request. clear cache" << serverRealPath_;
+            cached_write_reqlist_ = std::queue< std::pair<std::string, std::pair<std::string, std::string> > >();
         }
         LOG(INFO) << "not a primary master while check write request, ignore." << serverRealPath_;
         zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::NOT_WATCH);
@@ -448,6 +454,8 @@ void MasterManagerBase::checkForWriteReq()
 
 bool MasterManagerBase::cacheNewWriteFromZNode()
 {
+    if (!cached_write_reqlist_.empty())
+        return false;
     std::vector<std::string> reqchild;
     zookeeper_->getZNodeChildren(write_req_queue_parent_, reqchild, ZooKeeper::NOT_WATCH);
     if (reqchild.empty())
@@ -467,10 +475,9 @@ bool MasterManagerBase::cacheNewWriteFromZNode()
         std::string sdata;
         zookeeper_->getZNodeData(reqchild[i], sdata);
         znode.loadKvString(sdata);
-        LOG(INFO) << "a request poped : " << reqchild[i] << " on the server: " << serverRealPath_;
-        cached_write_reqlist_.push(std::make_pair(znode.getStrValue(ZNode::KEY_REQ_DATA),
-                znode.getStrValue(ZNode::KEY_REQ_TYPE)));
-        zookeeper_->deleteZNode(reqchild[i]);
+        cached_write_reqlist_.push(std::make_pair(reqchild[i], std::make_pair(znode.getStrValue(ZNode::KEY_REQ_DATA),
+                znode.getStrValue(ZNode::KEY_REQ_TYPE))));
+        //zookeeper_->deleteZNode(reqchild[i]);
     }
     return true;
 }
@@ -543,8 +550,15 @@ bool MasterManagerBase::popWriteReq(std::string& reqdata, std::string& type)
         if (!cacheNewWriteFromZNode())
             return false;
     }
-    reqdata = cached_write_reqlist_.front().first;
-    type = cached_write_reqlist_.front().second;
+
+    reqdata = cached_write_reqlist_.front().second.first;
+    type = cached_write_reqlist_.front().second.second;
+    LOG(INFO) << "a request poped : " << cached_write_reqlist_.front().first << " on the server: " << serverRealPath_;
+    if(!zookeeper_->deleteZNode(cached_write_reqlist_.front().first))
+    {
+        if (!zookeeper_->isConnected())
+            return false;
+    }
     cached_write_reqlist_.pop();
     return true;
 }
@@ -573,7 +587,14 @@ bool MasterManagerBase::pushWriteReq(const std::string& reqdata, const std::stri
 
     if (!isMinePrimary())
     {
-        usleep(500*1000);
+        if (NodeManagerBase::isAsyncEnabled())
+        {
+            usleep(10*1000);
+        }
+        else
+        {
+            usleep(500*1000);
+        }
     }
     else if (waiting_request_num_ > 10000)
     {
@@ -624,6 +645,14 @@ void MasterManagerBase::endPreparedWrite()
 
 bool MasterManagerBase::endWriteReq()
 {
+    if (NodeManagerBase::isAsyncEnabled())
+    {
+        return true;
+    }
+
+    if (stopping_)
+        return true;
+
     if (!zookeeper_ || !zookeeper_->isZNodeExists(write_prepare_node_))
     {
         return true;
@@ -883,6 +912,8 @@ int MasterManagerBase::detectWorkers()
 {
     size_t detected = 0;
     size_t good = 0;
+    WorkerMapT old_workers = workerMap_;
+
     workerMap_.clear();
     // detect workers from "current" replica first
     replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
@@ -901,10 +932,33 @@ int MasterManagerBase::detectWorkers()
         LOG(INFO) << "begin detect workers in other replica : " << replicaIdList_[i];
         detectWorkersInReplica(replicaIdList_[i], detected, good);
     }
-    //
-    // update workers' info to aggregators
-    resetAggregatorConfig();
+    WorkerMapT::iterator old_it = old_workers.begin();
+    WorkerMapT::iterator new_it = workerMap_.begin();
+    size_t compared_size = 0;
+    while(old_it != old_workers.end() && new_it != workerMap_.end())
+    {
+        if (old_it->first != new_it->first)
+            break;
+        if (old_it->second->nodeId_ != new_it->second->nodeId_)
+            break;
+        if (old_it->second->replicaId_ != new_it->second->replicaId_)
+            break;
+        if (old_it->second->host_ != new_it->second->host_)
+            break;
+        if (old_it->second->worker_.port_ != new_it->second->worker_.port_)
+            break;
+        if (old_it->second->worker_.isGood_ != new_it->second->worker_.isGood_)
+            break;
+        ++compared_size;
+    }
 
+    if ((compared_size != old_workers.size()) ||
+        (compared_size != workerMap_.size()))
+    {
+        //
+        // update workers' info to aggregators
+        resetAggregatorConfig();
+    }
     return good;
 }
 
@@ -978,6 +1032,7 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
         detectWorkers();
     }
 
+    bool need_reset_agg = false;
     WorkerMapT::iterator it;
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
@@ -990,7 +1045,14 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
                 LOG(WARNING) << "one of worker failed and can not cover this failure.";
                 masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
             }
+            need_reset_agg = true;
         }
+    }
+
+    if (need_reset_agg)
+    {
+        // notify aggregators
+        resetAggregatorConfig();
     }
 }
 
@@ -1009,14 +1071,15 @@ void MasterManagerBase::failover(const std::string& zpath)
             if (failover(sf1rNode))
             {
                 LOG (INFO) << "failover: finished.";
-                return;
             }
             else
             {
                 LOG (INFO) << "failover: failed to cover this failure.";
                 masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
-                return;
             }
+            // notify aggregators
+            resetAggregatorConfig();
+            return;
         }
     }
     LOG (INFO) << "failed node is not in my watching workers . " << zpath;
@@ -1084,8 +1147,6 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
         }
     }
 
-    // notify aggregators
-    resetAggregatorConfig();
 
     // Watch current replica, waiting for node recover
     zookeeper_->isZNodeExists(getNodePath(sf1rNode->replicaId_, sf1rNode->nodeId_), ZooKeeper::WATCH);
@@ -1100,6 +1161,8 @@ void MasterManagerBase::recover(const std::string& zpath)
     bool mine_primary = isMinePrimary();
     if (mine_primary)
         LOG(INFO) << "I am primary master ";
+
+    bool need_reset_agg = false;
 
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
@@ -1142,12 +1205,14 @@ void MasterManagerBase::recover(const std::string& zpath)
                 sf1rNode->host_ = znode.getStrValue(ZNode::KEY_HOST);
                 // recovered, and notify aggregators
                 sf1rNode->worker_.isGood_ = true;
+                need_reset_agg = true;
                 break;
             }
         }
     }
 
-    resetAggregatorConfig();
+    if (need_reset_agg)
+        resetAggregatorConfig();
 }
 
 void MasterManagerBase::setServicesData(ZNode& znode)
@@ -1204,6 +1269,8 @@ void MasterManagerBase::updateServiceReadStateWithoutLock(const std::string& my_
     {
         return;
     }
+    if (stopping_)
+        return;
     ZNode znode;
     std::string olddata;
     if(zookeeper_->getZNodeData(serverRealPath_, olddata, ZooKeeper::WATCH))
@@ -1354,6 +1421,7 @@ void MasterManagerBase::registerServiceServer()
 
 void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>& aggregator)
 {
+    LOG(INFO) << "resetting aggregator...";
     // get shardids for collection of aggregator
     std::vector<shardid_t> shardidList;
     if (!sf1rTopology_.curNode_.master_.getShardidList(aggregator->service(),
@@ -1434,7 +1502,11 @@ void MasterManagerBase::updateMasterReadyForNew(bool is_ready)
     boost::lock_guard<boost::mutex> lock(state_mutex_);
     is_ready_for_new_write_ = is_ready;
     if (is_ready_for_new_write_)
+    {
+        if (!isMinePrimary() || stopping_)
+            return;
         checkForWriteReq();
+    }
 }
 
 bool MasterManagerBase::hasAnyCachedRequest()
@@ -1446,8 +1518,6 @@ bool MasterManagerBase::hasAnyCachedRequest()
 void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
 {
     boost::lock_guard<boost::mutex> lock(state_mutex_);
-    if (stopping_)
-        return;
     if (!is_new_primary)
     {
         // try to delete last prepared node.
@@ -1459,10 +1529,13 @@ void MasterManagerBase::notifyChangedPrimary(bool is_new_primary)
     {
         if (masterState_ == MASTER_STATE_STARTED || masterState_ == MASTER_STATE_STARTING_WAIT_WORKERS)
         {
+            if (stopping_)
+                return;
             // reset current workers, need detect primary workers.
             detectWorkers();
             zookeeper_->isZNodeExists(write_prepare_node_, ZooKeeper::WATCH);
-            cacheNewWriteFromZNode();
+            if (cached_write_reqlist_.empty())
+                cacheNewWriteFromZNode();
         }
     }
 }

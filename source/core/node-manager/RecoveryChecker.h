@@ -31,7 +31,7 @@ public:
     static bool isLastNormalExit();
 
     //RecoveryChecker(const CollectionPath& colpath);
-    bool backup();
+    bool backup(bool force_remove = true);
     bool setRollbackFlag(uint32_t inc_id);
     void clearRollbackFlag();
     bool rollbackLastFail(bool starting_up = false);
@@ -66,7 +66,7 @@ public:
     void onRecoverCallback(bool startup = true);
     void onRecoverWaitPrimaryCallback();
     void onRecoverWaitReplicasCallback();
-    bool onRecoverCheckLog();
+    bool onRecoverCheckLog(bool is_primary);
 
     bool removeConfigFromAPI(const std::string& coll);
     bool updateConfigFromAPI(const std::string& coll, bool is_primary,
@@ -84,11 +84,13 @@ private:
     bool backupColl(const CollectionPath& colpath, const bfs::path& dest_path);
     void syncToNewestReqLog();
     void syncSCDFiles();
-    bool redoLog(ReqLogMgr* redolog, uint32_t start_id);
+    bool redoLog(ReqLogMgr* redolog, uint32_t start_id, uint32_t end_id);
     std::map<std::string, std::string> handleConfigUpdate();
 
+    bool checkIfLogForward(bool is_primary);
+
     bool handleConfigUpdateForColl(const std::string& coll, bool delete_conf,
-         std::map<std::string, std::string>& config_file_list);
+        std::map<std::string, std::string>& config_file_list);
 
     StartColCBFuncT start_col_;
     StopColCBFuncT stop_col_;

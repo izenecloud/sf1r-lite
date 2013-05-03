@@ -249,14 +249,18 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             req.params().convert(&params);
             GetCollectionFileListData& reqdata = params.get<0>();
             reqdata.success = false;
-            CollectionPath colpath;
-            bool ret = RecoveryChecker::get()->getCollPath(reqdata.collection, colpath);
-            if (ret)
+            for (size_t i = 0; i < reqdata.collections.size(); ++i)
             {
-                reqdata.success = true;
-                bfs::path coldata_path = colpath.getCollectionDataPath();
-                // get all files.
-                getFileList(coldata_path.string(), reqdata.file_list, std::set<std::string>(), true);
+                std::string colname = reqdata.collections[i];
+                CollectionPath colpath;
+                bool ret = RecoveryChecker::get()->getCollPath(colname, colpath);
+                if (ret)
+                {
+                    reqdata.success = true;
+                    bfs::path coldata_path = colpath.getCollectionDataPath();
+                    // get all files.
+                    getFileList(coldata_path.string(), reqdata.file_list, std::set<std::string>(), true);
+                }
             }
             req.result(reqdata);
         }
@@ -328,7 +332,7 @@ DistributeFileSyncMgr::DistributeFileSyncMgr()
 {
     conn_mgr_ = new RpcServerConnection();
     RpcServerConnectionConfig config;
-    config.rpcThreadNum = 4;
+    config.rpcThreadNum = 8;
     conn_mgr_->init(config);
     ignore_list_.insert("LOG");
     ignore_list_.insert("LOG.old");
@@ -401,7 +405,21 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
     check_errinfo = "";
 
     std::vector<std::string> replica_info;
-    NodeManagerBase::get()->getAllReplicaInfo(replica_info, true);
+    //NodeManagerBase::get()->getAllReplicaInfo(replica_info, true);
+    std::string cur_primary_ip;
+    if(!NodeManagerBase::get()->getCurrPrimaryInfo(cur_primary_ip))
+    {
+        boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+        reporting_ = false;
+        if (!NodeManagerBase::get()->isOtherPrimaryAvailable())
+        {
+            return;
+        }
+        check_errinfo = "get other primary failed.";
+        return;
+    }
+    replica_info.push_back(cur_primary_ip);
+
     uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
 
     ReportStatusRequest req;
@@ -414,6 +432,8 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
         {
             check_errinfo = "check collection not exist for  " + colname_list[i];
             LOG(INFO) << check_errinfo;
+            boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+            reporting_ = false;
             return;
         }
 
@@ -606,7 +626,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
     reporting_ = false;
 }
 
-bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std::string>& saved_log)
+bool DistributeFileSyncMgr::getNewestReqLog(bool from_primary_only, uint32_t start_from, std::vector<std::string>& saved_log)
 {
     if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return true;
@@ -623,11 +643,29 @@ bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std
         // so the rpc ports for all file sync servers are the same.
         uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
 
-        if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
+        if (from_primary_only)
         {
-            LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
+            if(!NodeManagerBase::get()->getCurrPrimaryInfo(ip))
+            {
+                LOG(INFO) << "get primary sync server failed.";
+                std::vector<std::string>().swap(saved_log);
+                return false;
+            }
+        }
+        else
+        {
+            if(!NodeManagerBase::get()->getCurrNodeSyncServerInfo(ip, rand()))
+            {
+                LOG(INFO) << "get file sync server failed. This may happen if only one sf1r node.";
+                std::vector<std::string>().swap(saved_log);
+                return true;
+            }
+        }
+        if (ip == SuperNodeManager::get()->getLocalHostIP())
+        {
+            LOG(INFO) << "the ip is the same as local : " << ip;
             std::vector<std::string>().swap(saved_log);
-            return true;
+            return false;
         }
         LOG(INFO) << "try get newest log from: " << ip << ":" << port;
         GetReqLogRequest req;
@@ -653,7 +691,7 @@ bool DistributeFileSyncMgr::getNewestReqLog(uint32_t start_from, std::vector<std
     return false;
 }
 
-bool DistributeFileSyncMgr::syncCollectionData(const std::string& colname)
+bool DistributeFileSyncMgr::syncCollectionData(const std::vector<std::string>& colname_list)
 {
     if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return true;
@@ -673,7 +711,7 @@ bool DistributeFileSyncMgr::syncCollectionData(const std::string& colname)
         LOG(INFO) << "try get collection file list from: " << ip << ":" << port;
 
         GetCollectionFileListRequest req;
-        req.param_.collection = colname;
+        req.param_.collections = colname_list;
         GetCollectionFileListData rsp;
         try
         {
