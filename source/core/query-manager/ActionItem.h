@@ -500,7 +500,7 @@ public:
     std::vector<QueryFiltering::FilteringType> filteringList_;
 
     ///
-    ///
+    /// @brief a list of new tree-like filteringType for bool combination option
     ///
     std::vector<QueryFiltering::FilteringTreeValue> filteringTreeList_;
 
@@ -611,14 +611,17 @@ public:
     /// @brief filtering options
     std::vector<QueryFiltering::FilteringType> filteringList_;
 
+    /// @brief filtering tree-likes options
+    std::vector<QueryFiltering::FilteringTreeValue> filteringTreeList_;
+
     DATA_IO_LOAD_SAVE(
         GetDocumentsByIdsActionItem,
         & env_ & languageAnalyzerInfo_ & collectionName_ & displayPropertyList_
-        & idList_ & docIdList_ & propertyName_ & propertyValueList_ & filteringList_
+        & idList_ & docIdList_ & propertyName_ & propertyValueList_ & filteringList_ &filteringTreeList_
     )
 
     MSGPACK_DEFINE(env_, languageAnalyzerInfo_, collectionName_, displayPropertyList_,
-            idList_, docIdList_, propertyName_, propertyValueList_, filteringList_);
+            idList_, docIdList_, propertyName_, propertyValueList_, filteringList_, filteringTreeList_);
 
 public:
     std::set<sf1r::workerid_t> getDocWorkerIdLists(
@@ -644,7 +647,7 @@ private:
     void serialize(Archive& ar, const unsigned int version)
     {
         ar & env_ & languageAnalyzerInfo_ & collectionName_ & displayPropertyList_
-            & idList_ & docIdList_ & filteringList_;
+            & idList_ & docIdList_ & filteringList_ & filteringTreeList_;
     }
 }; // end - class GetDocumentsByIdsActionItem
 

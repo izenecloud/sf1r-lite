@@ -33,7 +33,7 @@ public:
     
     bool parse_tree(const Value& conditions);
 
-    bool pre_parse_tree(std::vector<QueryFiltering::FilteringTreeValue>& filteringTreeRules_
+    bool post_parse_tree(std::vector<QueryFiltering::FilteringTreeValue>& filteringTreeRules_
         , std::stack<boost::shared_ptr<ConditionsNode> >& nodeStack);
 
     std::vector<QueryFiltering::FilteringType>&

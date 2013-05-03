@@ -2,6 +2,9 @@
  * @file core/common/parsers/FilteringParser.cpp
  * @author Ian Yang
  * @date Created <2010-06-11 17:31:38>
+ * @update Hongliang Zhao
+ * @date Created <2013-04-27>
+ * @brief support bool combination
  */
 #include "FilteringParser.h"
 #include <common/parsers/ConditionArrayParser.h>
@@ -11,30 +14,29 @@
 
 namespace sf1r {
 
-bool FilteringParser::parse_tree(const Value& conditions) // {}
+bool FilteringParser::parse_tree(const Value& conditions)
 {
     clearMessages();
 
     ConditionTreeParser conditionsParser;
-    if (!conditionsParser.parse(conditions)) //{}
+    if (!conditionsParser.parse(conditions))
     {
         error() = conditionsParser.errorMessage();
         return false;
     }
 
     std::stack<boost::shared_ptr<ConditionsNode> > nodeStack;
-    nodeStack.push(conditionsParser.parsedConditions()->getRoot()); //condition Tree root ... 
+    nodeStack.push(conditionsParser.parsedConditions()->getRoot());
 
-    pre_parse_tree(filteringTreeRules_, nodeStack);
+    post_parse_tree(filteringTreeRules_, nodeStack);
     return true;
 }
 
-bool FilteringParser::pre_parse_tree(std::vector<QueryFiltering::FilteringTreeValue>& filteringTreeRules
+bool FilteringParser::post_parse_tree(std::vector<QueryFiltering::FilteringTreeValue>& filteringTreeRules
         , stack<boost::shared_ptr<ConditionsNode> >& nodeStack)
 {
     if (nodeStack.empty())
     {
-        cout<<"the nodeStack is empty..."<<endl;
         return false;
     }
 
@@ -83,7 +85,7 @@ bool FilteringParser::pre_parse_tree(std::vector<QueryFiltering::FilteringTreeVa
     for (unsigned int i = 0; i < node->getConditionNodeList().size(); ++i)
     {
         nodeStack.push(node->getConditionNodeList()[i]);
-        pre_parse_tree(filteringTreeRules, nodeStack);
+        post_parse_tree(filteringTreeRules, nodeStack);
     }
     nodeStack.pop();
     return true;
@@ -93,12 +95,14 @@ bool FilteringParser::pre_parse_tree(std::vector<QueryFiltering::FilteringTreeVa
 bool FilteringParser::parse(const Value& conditions)
 {
     clearMessages();
-    if (conditions.type() == Value::kObjectType)    //{}
+    if (conditions.type() == Value::kObjectType)
     {
+        cout<<"x-x-x-x-x-"<<endl;
         parse_tree(conditions);
     }
     else if (conditions.type() == Value::kArrayType)
     {
+        cout<<"-----"<<endl;
         ConditionArrayParser conditionsParser;
         if (!conditionsParser.parse(conditions))
         {
@@ -141,7 +145,9 @@ bool FilteringParser::parse(const Value& conditions)
                 );
             }
         }
-        // add a "and" relationship ConditonNode;
+        
+        // Translate old condition array to new condition value ;
+        // Into array add a "and" relationship ConditonNode;
         QueryFiltering::FilteringTreeValue relationNode;
         relationNode.isRelationNode_ = true;
         relationNode.relation_ = "and";
@@ -154,8 +160,10 @@ bool FilteringParser::parse(const Value& conditions)
             relationNode1.isRelationNode_ = false;
             filteringTreeRules_.push_back(relationNode1);
         }
-        cout<<"--------------Test old condition situation end ...."<<endl;
     }
+    else
+        return false;
+    
     return true;
 }
 
