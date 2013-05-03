@@ -2,97 +2,93 @@
 
 #include <index-manager/IndexManager.h>
 #include <search-manager/AllDocumentIterator.h>
+#include <algorithm> // std::set_difference
 
 using namespace sf1r;
-using namespace izenelib::ir::indexmanager;
 
-BOOST_AUTO_TEST_SUITE( AllDocumentIterator_Suite )
-
-static unsigned maxDoc = 100;
-
-BOOST_AUTO_TEST_CASE(alldociter_test)
+namespace
 {
+
+static const sf1r::docid_t MAX_DOCID = 100;
+
+static const sf1r::docid_t DELETE_DOCIDS[] = {
+    1, 2, 3, 4, 5, 6,
+    10, 20, 30, 33, 40, 50,
+    100
+};
+
+static const std::size_t DELETE_DOCIDS_NUM =
+    sizeof(DELETE_DOCIDS) / sizeof(DELETE_DOCIDS[0]);
+
+AllDocumentIterator* createAllDocumentIterator()
+{
+    boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(
+        new IndexManager::FilterBitmapT);
+
+    for (std::size_t i = 0; i < DELETE_DOCIDS_NUM; ++i)
     {
-        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
-
-        pFilterIdSet->set(1);
-        pFilterIdSet->set(2);
-        pFilterIdSet->set(3);
-        pFilterIdSet->set(4);
-        pFilterIdSet->set(5);
-        pFilterIdSet->set(6);
-        pFilterIdSet->set(10);
-        pFilterIdSet->set(20);
-        pFilterIdSet->set(30);
-        pFilterIdSet->set(33);
-        pFilterIdSet->set(40);
-        pFilterIdSet->set(50);
-        pFilterIdSet->set(100);
-
-        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
-        AllDocumentIterator* pIterator = new AllDocumentIterator(pFilterTermDocFreqs, maxDoc);
-
-        //pIterator->next();
-        unsigned doc = pIterator->skipTo(2);
-        BOOST_CHECK_EQUAL(doc, 7U);
-        doc = pIterator->skipTo(3);
-        BOOST_CHECK_EQUAL(doc, 7U);
-        doc = pIterator->skipTo(4);
-        BOOST_CHECK_EQUAL(doc, 7U);
-        doc = pIterator->skipTo(5);
-        BOOST_CHECK_EQUAL(doc, 7);
-        doc = pIterator->skipTo(6);
-        BOOST_CHECK_EQUAL(doc, 7U);
-        doc = pIterator->skipTo(8);
-        BOOST_CHECK_EQUAL(doc, 9U);
-        doc = pIterator->skipTo(9);
-        BOOST_CHECK_EQUAL(doc, 11U);
-        doc = pIterator->skipTo(10);
-        BOOST_CHECK_EQUAL(doc, 11U);
-        doc = pIterator->skipTo(20);
-        BOOST_CHECK_EQUAL(doc, 21U);
-        doc = pIterator->skipTo(30);
-        BOOST_CHECK_EQUAL(doc, 31U);
-        doc = pIterator->skipTo(40);
-        BOOST_CHECK_EQUAL(doc, 41U);
-        doc = pIterator->skipTo(50);
-        BOOST_CHECK_EQUAL(doc, 51U);
-        doc = pIterator->skipTo(60);
-        BOOST_CHECK_EQUAL(doc, 61U);
-        doc = pIterator->skipTo(98);
-        BOOST_CHECK_EQUAL(doc, 99U);
-        doc = pIterator->skipTo(99);
-        BOOST_CHECK_EQUAL(doc, -1U);
-        doc = pIterator->skipTo(100);
-        BOOST_CHECK_EQUAL(doc, -1U);
+        pFilterIdSet->set(DELETE_DOCIDS[i]);
     }
 
+    IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs =
+        new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+
+    return new AllDocumentIterator(pFilterTermDocFreqs, MAX_DOCID);
+
+}
+
+}
+
+BOOST_AUTO_TEST_SUITE(AllDocumentIterator_Suite)
+
+BOOST_AUTO_TEST_CASE(testSkipTo)
+{
+    const sf1r::docid_t skipTestData[][2] = {
+        {2, 7}, {3, 7}, {4, 7}, {5, 7}, {6, 7},
+        {8, 9}, {9, 11}, {10, 11}, {20, 21},
+        {30, 31}, {40, 41}, {50, 51}, {60, 61},
+        {98, 99}, {99, -1}, {100, -1}
+    };
+    const int num = sizeof(skipTestData) / sizeof(skipTestData[0]);
+
+    AllDocumentIterator* pIterator = createAllDocumentIterator();
+
+    for (int i = 0; i < num; ++i)
     {
-        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(new IndexManager::FilterBitmapT);
+        sf1r::docid_t target = skipTestData[i][0];
+        sf1r::docid_t gold = skipTestData[i][1];
+        BOOST_TEST_MESSAGE("target: " << target << ", gold: " << gold);
 
-        pFilterIdSet->set(1);
-        pFilterIdSet->set(2);
-        pFilterIdSet->set(3);
-        pFilterIdSet->set(4);
-        pFilterIdSet->set(5);
-        pFilterIdSet->set(6);
-        pFilterIdSet->set(10);
-        pFilterIdSet->set(20);
-        pFilterIdSet->set(30);
-        pFilterIdSet->set(33);
-        pFilterIdSet->set(40);
-        pFilterIdSet->set(50);
-        pFilterIdSet->set(100);
-
-        IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
-        AllDocumentIterator* pIterator = new AllDocumentIterator(pFilterTermDocFreqs, maxDoc);
-
-        while(pIterator->next())
-        {
-            std::cout<<"doc "<<pIterator->doc()<<std::endl;
-        }
+        BOOST_CHECK_EQUAL(pIterator->skipTo(target), gold);
     }
 
+    delete pIterator;
+}
+
+BOOST_AUTO_TEST_CASE(testNext)
+{
+    std::vector<sf1r::docid_t> allDocIds;
+    for (sf1r::docid_t docId = 1; docId <= MAX_DOCID; ++docId)
+    {
+        allDocIds.push_back(docId);
+    }
+
+    std::vector<sf1r::docid_t> existDocIds(allDocIds.size() - DELETE_DOCIDS_NUM);
+    std::set_difference(allDocIds.begin(), allDocIds.end(),
+                        DELETE_DOCIDS, DELETE_DOCIDS + DELETE_DOCIDS_NUM,
+                        existDocIds.begin());
+
+    AllDocumentIterator* pIterator = createAllDocumentIterator();
+
+    for (std::vector<sf1r::docid_t>::const_iterator it = existDocIds.begin();
+         it != existDocIds.end(); ++it)
+    {
+        BOOST_CHECK(pIterator->next());
+        BOOST_CHECK_EQUAL(pIterator->doc(), *it);
+        BOOST_TEST_MESSAGE("next doc: " << pIterator->doc());
+    }
+
+    delete pIterator;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
