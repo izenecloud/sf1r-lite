@@ -106,11 +106,11 @@ void QueryBuilder::prepare_filter(
                 pFilterBitmap3.reset(new IndexManager::FilterBitmapT);
                 if (iter->logic_ == QueryFiltering::OR)
                 {
-                    (*pFilterBitmap).rawlogicalor(*pFilterBitmap2, *pFilterBitmap3);
+                    (*pFilterBitmap).logicalor(*pFilterBitmap2, *pFilterBitmap3);
                 }
                 else // if (iter->logic_ == QueryFiltering::AND)
                 {
-                    (*pFilterBitmap).rawlogicaland(*pFilterBitmap2, *pFilterBitmap3);
+                    (*pFilterBitmap).logicaland(*pFilterBitmap2, *pFilterBitmap3);
                 }
                 (*pFilterBitmap).swap(*pFilterBitmap3);
             }
