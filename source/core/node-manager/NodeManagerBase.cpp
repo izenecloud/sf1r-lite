@@ -1226,6 +1226,8 @@ void NodeManagerBase::onDataChanged(const std::string& path)
     else if (path == self_primary_path_ || path == nodePath_)
     {
         LOG(INFO) << "myself node was changed: " << path;
+        if(s_enable_async_ && nodeState_ == NODE_STATE_ELECTING)
+            checkPrimaryState(false);
     }
     else if (path.find(primaryNodeParentPath_) == std::string::npos)
     {

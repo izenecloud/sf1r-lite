@@ -28,9 +28,9 @@ DistributeDriver::DistributeDriver()
 
 void DistributeDriver::stop()
 {
+    NodeManagerBase::get()->notifyStop();
     if (NodeManagerBase::isAsyncEnabled())
         DistributeRequestHooker::get()->stopLogSync();
-    NodeManagerBase::get()->notifyStop();
     LOG(INFO) << "begin stopping DistributeDriver...";
     async_task_worker_.interrupt();
     async_task_worker_.join();
