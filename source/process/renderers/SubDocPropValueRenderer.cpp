@@ -12,7 +12,10 @@ void SubDocPropValueRenderer::renderSubDocPropValue(
     if (origText.empty())
         return;
     rapidjson::Document doc;
-    doc.Parse<0>(origText.c_str());
+    if (doc.Parse<0>(origText.c_str()).HasParseError());
+    {
+        return;
+    }
     const rapidjson::Value& subDocs = doc;
     assert(subDocs.IsArray());
     for (rapidjson::Value::ConstValueIterator vit = subDocs.Begin();

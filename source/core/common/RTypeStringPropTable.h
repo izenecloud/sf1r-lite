@@ -62,6 +62,8 @@ public:
     void enableSort()
     {
         ScopedWriteBoolLock(mutex_, true);
+        if (sortEnabled_)
+            return;
         sortEnabled_ = true;
         load_();
     }
