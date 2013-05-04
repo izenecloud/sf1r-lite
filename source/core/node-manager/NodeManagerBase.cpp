@@ -836,6 +836,7 @@ void NodeManagerBase::enterCluster(bool start_master)
 void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 {
     stopping_ = false;
+    nodeState_ = NODE_STATE_STARTED;
     if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
     {
         if (!zookeeper_->isConnected())
@@ -849,29 +850,18 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         }
 
         updateCurrentPrimary();
-        if (curr_primary_path_ == self_primary_path_)
-        {
-            LOG(INFO) << "I enter as primary success." << self_primary_path_;
-            nodeState_ = NODE_STATE_ELECTING;
-            checkSecondaryElecting(false);
-        }
-        else
+        if (curr_primary_path_ != self_primary_path_)
         {
             LOG(INFO) << "enter as primary fail, maybe another node is entering at the same time.";
-            if (getPrimaryState() != NODE_STATE_ELECTING)
-            {
-                updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_PRIMARY);
-                LOG(INFO) << "begin wait new entered primary and try re-enter when sync to new primary.";
-                return;
-            }
-            else if (s_enable_async_)
-            {
-                nodeState_ = NODE_STATE_ELECTING;
-                updateSelfPrimaryNodeState();
-                return;
-            }
-            LOG(INFO) << "new primary is electing, get ready to notify new primary.";
+            updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_PRIMARY);
+            LOG(INFO) << "begin wait new entered primary and try re-enter when sync to new primary.";
+            return;
         }
+    }
+
+    if (curr_primary_path_ == self_primary_path_)
+    {
+        LOG(INFO) << "I enter as primary success." << self_primary_path_;
     }
 
     if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
@@ -891,7 +881,6 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         return;
     }
 
-    nodeState_ = NODE_STATE_STARTED;
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     updateNodeState();
     updateCurrentPrimary();
