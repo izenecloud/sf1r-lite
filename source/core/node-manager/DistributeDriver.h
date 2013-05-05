@@ -34,7 +34,7 @@ public:
     bool pushCallbackWrite(const std::string& name, const std::string& packed_data);
 
 private:
-    bool handleRequest(const std::string& reqjsondata, const std::string& packed_data, izenelib::driver::Request::kCallType calltype);
+    bool handleRequest(const std::string& reqjsondata, const std::string& packed_data, izenelib::driver::Request::kCallType calltype, bool call_sync = false);
 
     void run();
     std::map<std::string, CBWriteHandlerT>  callback_handlers_;

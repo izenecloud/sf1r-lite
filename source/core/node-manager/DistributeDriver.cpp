@@ -158,7 +158,7 @@ bool DistributeDriver::addCallbackWriteHandler(const std::string& name, const CB
     return true;
 }
 
-bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::string& packed_data, Request::kCallType calltype)
+bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::string& packed_data, Request::kCallType calltype, bool call_sync)
 {
     static izenelib::driver::JsonReader reader;
     Value requestValue;
@@ -198,9 +198,7 @@ bool DistributeDriver::handleRequest(const std::string& reqjsondata, const std::
 
             request.setCallType(calltype);
 
-            if (calltype == Request::FromLog ||
-                (calltype == Request::FromPrimaryWorker &&
-                 NodeManagerBase::isAsyncEnabled()) )
+            if (calltype == Request::FromLog || call_sync)
             {
                 // redo log must process the request one by one, so sync needed.
                 DistributeRequestHooker::get()->setHook(calltype, packed_data);
@@ -304,7 +302,7 @@ bool DistributeDriver::handleReqFromPrimaryInAsyncMode(int reqtype, const std::s
         return callCBWriteHandler(Request::FromPrimaryWorker, reqjsondata, it->second);
     }
 
-    return handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker);
+    return handleRequest(reqjsondata, packed_data, Request::FromPrimaryWorker, true);
 }
 
 bool DistributeDriver::handleReqFromPrimary(int reqtype, const std::string& reqjsondata, const std::string& packed_data)
