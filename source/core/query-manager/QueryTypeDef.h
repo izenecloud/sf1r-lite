@@ -102,9 +102,9 @@ struct FilteringTreeValue
         cout<<"is RelationNode:"<<isRelationNode_<<endl;
         if (isRelationNode_)
         {
-            cout<<"relation_"<<endl;
+            cout<<"relation_"<<relation_<<endl;
         }
-        cout<<"childNum_:"<<childNum_<<endl;
+        cout<<"childNum_:"<<childNum_<<endl<<endl;
     }
 
     MSGPACK_DEFINE(fitleringType_, isRelationNode_, relation_, childNum_)

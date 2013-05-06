@@ -85,10 +85,6 @@ public:
     /*
     *@brief Generate Filter, filter will be released by the user.
     */
-    void prepare_filter(
-        const std::vector<QueryFiltering::FilteringType>& filtingList,
-        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap
-    );
 
     void reset_cache();
 
@@ -196,6 +192,11 @@ private:
         std::vector<termid_t>& outTermIds,
         std::vector<termid_t>& outTermIndexes
     );
+
+    void do_process_node(
+        QueryFiltering::FilteringTreeValue &filteringTreeRules,
+        std::stack<boost::shared_ptr<IndexManager::FilterBitmapT> >& BitMapSetStack, 
+        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap);
 
 private:
     boost::shared_ptr<DocumentManager> documentManagerPtr_;

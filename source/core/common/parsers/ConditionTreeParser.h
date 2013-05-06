@@ -40,8 +40,6 @@ private:
 
 };
 
-/// @}
-
 }
 
 #endif // SF1R_DRIVER_PARSERS_CONDITION_TREE_PARSER_H

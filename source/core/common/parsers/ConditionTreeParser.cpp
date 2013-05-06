@@ -67,9 +67,9 @@ namespace sf1r {
     {
         clearMessages();
 
-        if (conditions.type() == Value::kNullType)
+        if (conditions.type() == Value::kNullType) // for the only {} situation;
         {
-            return true;
+            return true; 
         }
 
         if (conditions.type() != Value::kObjectType)

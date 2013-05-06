@@ -21,7 +21,8 @@ struct ItemCondition
     ItemManager* itemManager_;
 
     /** a list of filtering conditions */
-    std::vector<QueryFiltering::FilteringType> filteringList_;
+    std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules_;
+
 
     /** bit 1 for meet condition, bit 0 for not meet condition */
     boost::scoped_ptr<izenelib::ir::indexmanager::BitVector> pBitVector_;

@@ -464,6 +464,11 @@ bool DocumentsSearchHandler::parse()
         filteringParser.mutableFilteringTreeRules()
     );
 
+    swap(
+        actionItem_.filteringList_,
+        filteringParser.mutableFilteringRules()
+    );
+
     // CustomRankingParser
     swap(
         actionItem_.customRanker_,

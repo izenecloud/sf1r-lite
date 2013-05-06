@@ -69,18 +69,6 @@ void ConditionsTree::addConditionNode(boost::shared_ptr<ConditionsNode>& pCurren
 
 void ConditionsTree::printConditionsTree(boost::shared_ptr<ConditionsNode> pNode)
 {
-    std::cout << "<<<" << std::endl;
-    std::cout << "<The relation is>" << pNode->getRelation() << std::endl;
-    /*for (unsigned int i = 0; i < pNode->conditionLeafList_.size(); ++i)
-    {
-        std::cout << "The leaf condition is:" << pNode->conditionLeafList_[i].print() << std::endl;
-    }
-
-    for (unsigned int i = 0; i < pNode->pConditionNodeList_.size(); ++i)
-    {
-        printConditionsTree(pNode->pConditionNodeList_[i]);
-    }*/
-    std::cout << ">>>" << std::endl;
 }
 
 }

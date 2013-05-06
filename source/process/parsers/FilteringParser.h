@@ -57,6 +57,14 @@ public:
     static QueryFiltering::FilteringOperation toFilteringOperation(
         const std::string& op
     );
+
+    void printTree()
+    {
+        for (unsigned int i = 0; i < filteringTreeRules_.size(); ++i)
+        {
+            filteringTreeRules_[i].print();
+        }
+    }
     
 private:
     const IndexBundleSchema& indexSchema_;

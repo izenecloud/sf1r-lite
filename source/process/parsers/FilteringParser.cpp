@@ -29,6 +29,7 @@ bool FilteringParser::parse_tree(const Value& conditions)
     nodeStack.push(conditionsParser.parsedConditions()->getRoot());
 
     post_parse_tree(filteringTreeRules_, nodeStack);
+    printTree();
     return true;
 }
 
@@ -97,12 +98,10 @@ bool FilteringParser::parse(const Value& conditions)
     clearMessages();
     if (conditions.type() == Value::kObjectType)
     {
-        cout<<"x-x-x-x-x-"<<endl;
         parse_tree(conditions);
     }
     else if (conditions.type() == Value::kArrayType)
     {
-        cout<<"-----"<<endl;
         ConditionArrayParser conditionsParser;
         if (!conditionsParser.parse(conditions))
         {
@@ -161,9 +160,6 @@ bool FilteringParser::parse(const Value& conditions)
             filteringTreeRules_.push_back(relationNode1);
         }
     }
-    else
-        return false;
-    
     return true;
 }
 
