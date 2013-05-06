@@ -313,7 +313,8 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             LOG(WARNING) << "try reconnect : " << sf1rTopology_.curNode_.toString();
             LOG(WARNING) << "before restart, nodeState_ : " << nodeState_;
             setElectingState();
-            while (nodeState_ == NODE_STATE_RECOVER_RUNNING || nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING)
+            while (nodeState_ == NODE_STATE_RECOVER_RUNNING || nodeState_ == NODE_STATE_PROCESSING_REQ_RUNNING
+                || !MasterManagerBase::get()->disableNewWrite())
             {
                 LOG (INFO) << " session expired while processing request or recovering, wait processing finish.";
                 waiting_reenter_cond_.timed_wait(lock, boost::posix_time::seconds(10));
@@ -836,6 +837,7 @@ void NodeManagerBase::enterCluster(bool start_master)
 void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 {
     stopping_ = false;
+    nodeState_ = NODE_STATE_STARTED;
     if (self_primary_path_.empty() || !zookeeper_->isZNodeExists(self_primary_path_, ZooKeeper::WATCH))
     {
         if (!zookeeper_->isConnected())
@@ -849,29 +851,18 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         }
 
         updateCurrentPrimary();
-        if (curr_primary_path_ == self_primary_path_)
-        {
-            LOG(INFO) << "I enter as primary success." << self_primary_path_;
-            nodeState_ = NODE_STATE_ELECTING;
-            checkSecondaryElecting(false);
-        }
-        else
+        if (curr_primary_path_ != self_primary_path_)
         {
             LOG(INFO) << "enter as primary fail, maybe another node is entering at the same time.";
-            if (getPrimaryState() != NODE_STATE_ELECTING)
-            {
-                updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_PRIMARY);
-                LOG(INFO) << "begin wait new entered primary and try re-enter when sync to new primary.";
-                return;
-            }
-            else if (s_enable_async_)
-            {
-                nodeState_ = NODE_STATE_ELECTING;
-                updateSelfPrimaryNodeState();
-                return;
-            }
-            LOG(INFO) << "new primary is electing, get ready to notify new primary.";
+            updateNodeStateToNewState(NODE_STATE_RECOVER_WAIT_PRIMARY);
+            LOG(INFO) << "begin wait new entered primary and try re-enter when sync to new primary.";
+            return;
         }
+    }
+
+    if (curr_primary_path_ == self_primary_path_)
+    {
+        LOG(INFO) << "I enter as primary success." << self_primary_path_;
     }
 
     if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
@@ -891,7 +882,6 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         return;
     }
 
-    nodeState_ = NODE_STATE_STARTED;
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     updateNodeState();
     updateCurrentPrimary();
@@ -1384,6 +1374,12 @@ void NodeManagerBase::checkForPrimaryElectingInAsyncMode()
         break;
     }
 
+    if (!MasterManagerBase::get()->disableNewWrite())
+    {
+        LOG(INFO) << "disableNewWrite failed while check electing, maybe already prepared.";
+        setElectingState();
+        return;
+    }
     if(!self_primary_path_.empty() && findReCreatedSelfPrimaryNode().empty())
     {
         LOG(INFO) << "waiting self_primary_path_ re-created.";
@@ -1393,12 +1389,9 @@ void NodeManagerBase::checkForPrimaryElectingInAsyncMode()
     updateCurrentPrimary();
     if (isPrimaryWithoutLock())
     {
-        if (nodeState_ != NODE_STATE_ELECTING)
-        {
-            setElectingState();
-            LOG(INFO) << "notify log sync worker to pause and begin electing.";
-            return;
-        }
+        setElectingState();
+        LOG(INFO) << "notify log sync worker to pause and begin electing.";
+        return;
     }
 }
 
@@ -1430,6 +1423,13 @@ void NodeManagerBase::checkForPrimaryElecting()
         break;
     default:
         break;
+    }
+
+    if (!MasterManagerBase::get()->disableNewWrite())
+    {
+        LOG(INFO) << "disableNewWrite failed while check electing, maybe already prepared.";
+        setElectingState();
+        return;
     }
 
     if(!self_primary_path_.empty() && findReCreatedSelfPrimaryNode().empty())
@@ -1504,6 +1504,11 @@ bool NodeManagerBase::checkElectingInAsyncMode(uint32_t last_reqid)
             nodeState_ == NODE_STATE_RECOVER_RUNNING)
         {
             LOG(INFO) << "current node busy while check electing." << nodeState_;
+            return false;
+        }
+        if ( !MasterManagerBase::get()->disableNewWrite() )
+        {
+            LOG(INFO) << "disableNewWrite failed while ready to elect, a request already prepared.";
             return false;
         }
         LOG(INFO) << "in check point, electing needed, ready to electing on current" << self_primary_path_;
@@ -1921,7 +1926,7 @@ void NodeManagerBase::setNodeState(NodeStateType state)
     if (stopping_)
         return;
     //updateCurrentPrimary();
-    if (isNeedCheckElecting())
+    if (isNeedCheckElecting() && state != NODE_STATE_PROCESSING_REQ_RUNNING)
     {
         LOG(INFO) << "try to change state to new while electing : " << state;
         if (!s_enable_async_)
@@ -2010,12 +2015,19 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
     bool need_update = nodedata.getStrValue(ZNode::KEY_SERVICE_STATE) != oldZnode.getStrValue(ZNode::KEY_SERVICE_STATE) ||
                   nodedata.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH) != oldZnode.getStrValue(ZNode::KEY_SELF_REG_PRIMARY_PATH);
 
-    if (nodeState_ == NODE_STATE_STARTED && !need_check_electing_)
+    if (nodeState_ == NODE_STATE_STARTED)
     {
-	    MasterManagerBase::get()->enableNewWrite();
-        if (s_enable_async_ && !isPrimaryWithoutLock())
+        if (!need_check_electing_)
         {
-            cb_on_resume_sync_();
+            MasterManagerBase::get()->enableNewWrite();
+            if (s_enable_async_ && !isPrimaryWithoutLock())
+            {
+                cb_on_resume_sync_();
+            }
+        }
+        else 
+        {
+            setElectingState();
         }
     }
 
