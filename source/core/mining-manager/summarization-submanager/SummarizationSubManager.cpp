@@ -42,6 +42,7 @@ static const char* SUMMARY_CONTROL_FLAG = "b5m_control";
 static const char* SUMMARY_SCD_BACKUP_DIR = "summary_backup";
 static const char* scd_control_recevier = "full";
 static const UString DOCID("DOCID", UString::UTF_8);
+static const std::size_t COMPUTE_COMMENT_NUM = 4;
 
 bool CheckParentKeyLogFormat(
         const SCDDocPtr& doc,
@@ -969,7 +970,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
 
         if(advantage_opinions.empty() && (!advantage_comments.empty()))
         {
-            for(unsigned i = 0; i < min(advantage_comments.size(), 4);i++)
+            for(unsigned i = 0; i < min(advantage_comments.size(), COMPUTE_COMMENT_NUM);i++)
             {
                 std::vector< std::pair<double, UString> > temp;
                 SegmentToSentece(advantage_comments[i], temp);
@@ -995,7 +996,7 @@ void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
         
         if(disadvantage_opinions.empty() && (!disadvantage_comments.empty()))
         {
-            for(unsigned i = 0;i < min(disadvantage_comments.size(), 4); i++)
+            for(unsigned i = 0;i < min(disadvantage_comments.size(), COMPUTE_COMMENT_NUM); i++)
             {
                 std::vector< std::pair<double, UString> > temp;
                 SegmentToSentece(disadvantage_comments[i], temp);
