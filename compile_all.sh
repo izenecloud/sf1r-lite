@@ -52,6 +52,10 @@ do
 
   git pull
 
+  if [ $? -ne 0 ];then
+      exit $?
+  fi
+
   if [ -f CMakeCache.txt ];then
     rm CMakeCache.txt
   else
