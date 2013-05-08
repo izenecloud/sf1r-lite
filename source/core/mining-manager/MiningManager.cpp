@@ -2276,6 +2276,7 @@ bool MiningManager::GetSuffixMatch(
     searchManager_->fuzzySearchRanker_.rank(actionOperation, start, docIdList,
             rankScoreList, customRankScoreList);
 
+    if(start > docIdList.size()) start = docIdList.size();
     docIdList.erase(docIdList.begin(), docIdList.begin() + start);
     rankScoreList.erase(rankScoreList.begin(), rankScoreList.begin() + start);
     customRankScoreList.erase(customRankScoreList.begin(), customRankScoreList.begin() + start);
