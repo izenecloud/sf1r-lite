@@ -338,7 +338,9 @@ void FilterManager::finishBuildStringFilters()
     for (size_t i = 0; i < str_filter_map_.size(); ++i)
     {
         StrFilterItemMapT::iterator it = str_filter_map_[i].begin();
-        LOG(INFO) << "clear deleted docid for filter : " << it->first;
+        string tmpstr;
+        it->first.convertString(tmpstr, UString::UTF_8);
+        LOG(INFO) << "clear deleted docid for filter : " << tmpstr;
         while(it != str_filter_map_[i].end())
         {
             it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
@@ -430,7 +432,9 @@ void FilterManager::buildGroupFilters(
         for (size_t i = 0; i < group_filter_data.size(); ++i)
         {
             StrFilterItemMapT::iterator it = group_filter_data[i].begin();
-            LOG(INFO) << "clear deleted docid for filter : " << it->first;
+            string tmpstr;
+            it->first.convertString(tmpstr, UString::UTF_8);
+            LOG(INFO) << "clear deleted docid for filter : " << tmpstr;
             while(it != group_filter_data[i].end())
             {
                 it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
@@ -524,7 +528,9 @@ void FilterManager::buildAttrFilters(
     for (size_t i = 0; i < attr_filter_data.size(); ++i)
     {
         StrFilterItemMapT::iterator it = attr_filter_data[i].begin();
-        LOG(INFO) << "clear deleted docid for filter : " << it->first;
+        string tmpstr;
+        it->first.convertString(tmpstr, UString::UTF_8);
+        LOG(INFO) << "clear deleted docid for filter : " << tmpstr;
         while(it != attr_filter_data[i].end())
         {
             it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
