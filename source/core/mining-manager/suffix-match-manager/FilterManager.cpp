@@ -259,7 +259,7 @@ void FilterManager::buildFilters(uint32_t last_docid, uint32_t max_docid, bool i
 
         num_key_sets_.clear();
         num_key_sets_.resize(prop_list_.size());
-        
+
         for (std::vector<uint32_t>::iterator i = group_last_docid_list.begin(); i != group_last_docid_list.end(); ++i)
         {
             if (*i == 0)
@@ -422,7 +422,7 @@ void FilterManager::buildGroupFilters(
                     curgroup = curgroup->getChild(groupstr);
                     assert(curgroup);
                 }
-                
+
                 group_filter_data[j][groupstr].push_back(docid);
             }
         }
@@ -471,7 +471,7 @@ void FilterManager::mapGroupFilterToFilterId(
         filterids[node->node_name_].start = filter_list.size();
         string groupstr1;
         node->node_name_.convertString(groupstr1, UString::UTF_8);
-        
+
         StrFilterItemMapT::const_iterator cit = group_filter_data.find(node->node_name_);
         if (cit != group_filter_data.end())
             filter_list.push_back(cit->second);
@@ -1193,7 +1193,7 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLess(size_t prop_
     {
         return empty_range;
     }
-    
+
     empty_range.start = num_filter_ids_[prop_id].find(num_key_set[0])->second.start;
     empty_range.end = nit->second.end;
 

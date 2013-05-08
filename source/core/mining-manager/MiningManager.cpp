@@ -2255,6 +2255,8 @@ bool MiningManager::GetSuffixMatch(
         }
     }
 
+    if(!totalCount ||res_list.empty()) return false;
+
     //We do not use this post delete filtering because deleted documents should never be searched from
     //suffix index in normal cases, while if there are deleted documents before mining finished, these documents
     //should be abled to searched as well.
