@@ -76,6 +76,8 @@ ADD_EXECUTABLE(ImgDupDetector ${img_dup_process_SRC})
 ADD_EXECUTABLE(DistributeDataMigrateTool ${distribute_tool_SRC})
 
 TARGET_LINK_LIBRARIES(ImgDupDetector
+  sf1r_product_manager
+  sf1r_configuration_manager
   sf1r_mining_manager
   sf1r_license_manager
   sf1r_b5m_manager
@@ -85,14 +87,13 @@ TARGET_LINK_LIBRARIES(ImgDupDetector
   sf1r_search_manager
   sf1r_query_manager
   sf1r_la_manager
-  sf1r_configuration_manager
   sf1r_index_manager
   sf1r_directory_manager
   sf1r_common
   sf1r_recommend_manager
   sf1r_aggregator_manager
   sf1r_node_manager
-  sf1r_product_manager
+
   sf1r_b5m_manager
   sf1r_image_manager
   sf1r_net
