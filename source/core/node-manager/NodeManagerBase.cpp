@@ -864,6 +864,10 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     {
         LOG(INFO) << "I enter as primary success." << self_primary_path_;
     }
+    else
+    {
+        nodeState_ = NODE_STATE_RECOVER_WAIT_PRIMARY;
+    }
 
     if (!cb_on_recover_check_(curr_primary_path_ == self_primary_path_))
     {
@@ -882,6 +886,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         return;
     }
 
+    nodeState_ = NODE_STATE_STARTED;
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
     updateNodeState();
     updateCurrentPrimary();
