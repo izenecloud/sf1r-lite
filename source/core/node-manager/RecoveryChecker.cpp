@@ -894,6 +894,7 @@ void RecoveryChecker::onRecoverCallback(bool startup)
     // re-enter cluster.
     if (startup && (need_rollback || !isLastNormalExit()) )
     {
+        flushAllData();
         LOG(INFO) << "recovery from rollback or from last forceExit !!";
         if (reqlog_mgr_->getLastSuccessReqId() > 0 && !NodeManagerBase::get()->isOtherPrimaryAvailable())
             forceExit("recovery failed. No primary Node!!");
