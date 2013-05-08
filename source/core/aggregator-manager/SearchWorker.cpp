@@ -395,7 +395,7 @@ bool SearchWorker::getSearchResult_(
     if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
     {
         unsigned int size = actionOperation.actionItem_.filteringTreeList_.size();
-        for (unsigned int i = size -1 ; i >= 1; --i)
+        for (int i = size -1 ; i >= 1; --i)
         {
             filteringRules.push_back(actionOperation.actionItem_.filteringTreeList_[i].fitleringType_);
         }

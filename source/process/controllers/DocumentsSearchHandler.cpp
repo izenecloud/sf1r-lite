@@ -520,7 +520,7 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
 
     std::vector<QueryFiltering::FilteringType> filteringRules;
     unsigned int size = actionItem_.filteringTreeList_.size();
-    for (unsigned int i = size -1 ; i >= 0; --i)
+    for (int i = size -1 ; i >= 0; --i)
     {
         if (actionItem_.filteringTreeList_[i].isRelationNode_ == true)
         {
