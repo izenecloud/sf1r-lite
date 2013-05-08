@@ -24,12 +24,11 @@ bool FilteringParser::parse_tree(const Value& conditions)
         error() = conditionsParser.errorMessage();
         return false;
     }
-
     std::stack<boost::shared_ptr<ConditionsNode> > nodeStack;
     nodeStack.push(conditionsParser.parsedConditions()->getRoot());
 
     post_parse_tree(filteringTreeRules_, nodeStack);
-    printTree();
+    //printTree();
     return true;
 }
 
@@ -92,11 +91,15 @@ bool FilteringParser::post_parse_tree(std::vector<QueryFiltering::FilteringTreeV
     return true;
 }
 
-
 bool FilteringParser::parse(const Value& conditions)
 {
     clearMessages();
-    if (conditions.type() == Value::kObjectType)
+
+    if (conditions.type() == Value::kNullType)
+    {
+        return true;
+    }
+    else if (conditions.type() == Value::kObjectType)
     {
         parse_tree(conditions);
     }
@@ -110,13 +113,16 @@ bool FilteringParser::parse(const Value& conditions)
         }
 
         std::size_t conditionCount = conditionsParser.parsedConditionCount();
-        filteringRules_.resize(conditionCount);
+
+        std::vector<QueryFiltering::FilteringType> filteringRulesList;
+        filteringRulesList.resize(conditionCount);
+        
         for (std::size_t i = 0; i < conditionCount; ++i)
         {
             // create two alias
             const ConditionParser& condition =
                 conditionsParser.parsedConditions(i);
-            QueryFiltering::FilteringType& filteringRule = filteringRules_[i];
+            QueryFiltering::FilteringType& filteringRule = filteringRulesList[i];
 
             // validation
             sf1r::PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
@@ -147,19 +153,28 @@ bool FilteringParser::parse(const Value& conditions)
         
         // Translate old condition array to new condition value ;
         // Into array add a "and" relationship ConditonNode;
-        QueryFiltering::FilteringTreeValue relationNode;
-        relationNode.isRelationNode_ = true;
-        relationNode.relation_ = "and";
-        relationNode.childNum_ = conditionCount;
-        filteringTreeRules_.push_back(relationNode);
+        if (conditionCount != 0)
+        {
+            QueryFiltering::FilteringTreeValue relationNode;
+            relationNode.isRelationNode_ = true;
+            relationNode.relation_ = "and";
+            relationNode.childNum_ = conditionCount;
+            filteringTreeRules_.push_back(relationNode);
+        }
         for (unsigned int j = 0; j < conditionCount; ++j)
         {
             QueryFiltering::FilteringTreeValue relationNode1;
-            relationNode1.fitleringType_ = filteringRules_[j];
+            relationNode1.fitleringType_ = filteringRulesList[j];
             relationNode1.isRelationNode_ = false;
             filteringTreeRules_.push_back(relationNode1);
         }
     }
+    else
+    {
+        error() = "Filter conditions's type must be ObjectType or ArrayType";
+        return false;
+    }
+
     return true;
 }
 

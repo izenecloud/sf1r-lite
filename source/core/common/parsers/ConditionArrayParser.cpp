@@ -55,12 +55,7 @@ bool ConditionArrayParser::parse(const Value& conditions)
 {
     clearMessages();
     parsers_.clear();
-
-    if (conditions.type() == Value::kNullType)
-    {
-        return true;
-    }
-
+    
     const Value::ArrayType* array = conditions.getPtr<Value::ArrayType>();
     if (!array)
     {

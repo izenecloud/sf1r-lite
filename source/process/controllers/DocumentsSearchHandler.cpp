@@ -464,11 +464,6 @@ bool DocumentsSearchHandler::parse()
         filteringParser.mutableFilteringTreeRules()
     );
 
-    swap(
-        actionItem_.filteringList_,
-        filteringParser.mutableFilteringRules()
-    );
-
     // CustomRankingParser
     swap(
         actionItem_.customRanker_,
@@ -522,7 +517,25 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
     if (actionItem_.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH
             || !actionItem_.searchingMode_.usefuzzy_)
         return true;
-    const std::vector<QueryFiltering::FilteringType>& filter_param = actionItem_.filteringList_;
+
+    std::vector<QueryFiltering::FilteringType> filteringRules;
+    unsigned int size = actionItem_.filteringTreeList_.size();
+    for (unsigned int i = size -1 ; i >= 0; --i)
+    {
+        if (actionItem_.filteringTreeList_[i].isRelationNode_ == true)
+        {
+            if (i != 0)
+            {
+                message = "The Suffix Match search do not support nesting filter condition";
+                return false;
+            }
+            else
+                break;
+        }
+        filteringRules.push_back(actionItem_.filteringTreeList_[i].fitleringType_);
+    }
+    
+    const std::vector<QueryFiltering::FilteringType>& filter_param = filteringRules;
     const SuffixMatchConfig& suffixconfig = miningSchema_.suffixmatch_schema;
     for (size_t i = 0; i < filter_param.size(); ++i)
     {
@@ -920,7 +933,25 @@ void DocumentsSearchHandler::addAclFilters()
         PropertyValue value(std::string("@@ALL@@"));
         filter.values_.push_back(value);
 
-        izenelib::util::swapBack(actionItem_.filteringList_, filter);
+        QueryFiltering::FilteringTreeValue filteringTreeValue;
+        filteringTreeValue.fitleringType_ = filter;
+        std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules;
+        QueryFiltering::FilteringTreeValue filteringTreeValue_root;
+        filteringTreeValue_root.isRelationNode_ = true;
+
+        if (actionItem_.filteringTreeList_.size() == 0)
+            filteringTreeValue_root.childNum_ = 1;
+        else
+            filteringTreeValue_root.childNum_ = 2;
+
+        filteringTreeValue_root.relation_ = "and";
+        filteringTreeRules.push_back(filteringTreeValue_root);
+        filteringTreeRules.push_back(filteringTreeValue);
+        for (unsigned int i = 0; i < actionItem_.filteringTreeList_.size(); ++i)
+        {
+            filteringTreeRules.push_back(actionItem_.filteringTreeList_[i]);
+        }
+        actionItem_.filteringTreeList_.swap(filteringTreeRules);
     }
 
     // ACL_DENY
@@ -932,7 +963,25 @@ void DocumentsSearchHandler::addAclFilters()
 
         filter.values_.assign(tokens.begin(), tokens.end());
 
-        izenelib::util::swapBack(actionItem_.filteringList_, filter);
+        QueryFiltering::FilteringTreeValue filteringTreeValue;
+        filteringTreeValue.fitleringType_ = filter;
+        std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules;
+        QueryFiltering::FilteringTreeValue filteringTreeValue_root;
+        filteringTreeValue_root.isRelationNode_ = true;
+
+        if (actionItem_.filteringTreeList_.size() == 0)
+            filteringTreeValue_root.childNum_ = 1;
+        else
+            filteringTreeValue_root.childNum_ = 2;
+
+        filteringTreeValue_root.relation_ = "and";
+        filteringTreeRules.push_back(filteringTreeValue_root);
+        filteringTreeRules.push_back(filteringTreeValue);
+        for (unsigned int i = 0; i < actionItem_.filteringTreeList_.size(); ++i)
+        {
+            filteringTreeRules.push_back(actionItem_.filteringTreeList_[i]);
+        }
+        actionItem_.filteringTreeList_.swap(filteringTreeRules);
     }
 }
 

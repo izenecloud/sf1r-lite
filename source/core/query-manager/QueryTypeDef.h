@@ -49,7 +49,8 @@ struct FilteringType
     std::vector<PropertyValue> values_;
 
     FilteringType()
-        : logic_(AND)
+        : operation_(NULL_OPERATOR)
+        , logic_(AND) 
     {}
 
     bool operator==(const FilteringType& obj) const
@@ -83,10 +84,9 @@ struct FilteringTreeValue
     unsigned int childNum_;
 
     FilteringTreeValue()
+        : isRelationNode_(false)
+        , childNum_(0)
     {
-        isRelationNode_ = false;
-        relation_ = "";
-        childNum_ = 0;
     }
 
     bool operator==(const FilteringTreeValue& obj) const
@@ -99,12 +99,12 @@ struct FilteringTreeValue
 
     void print()
     {
-        cout<<"is RelationNode:"<<isRelationNode_<<endl;
+        std::cout << "is RelationNode:" << isRelationNode_ << std::endl;
         if (isRelationNode_)
         {
-            cout<<"relation_"<<relation_<<endl;
+            std::cout << "relation_" << relation_ << std::endl;
         }
-        cout<<"childNum_:"<<childNum_<<endl<<endl;
+        std::cout << "childNum_:" << childNum_ << std::endl << std::endl;
     }
 
     MSGPACK_DEFINE(fitleringType_, isRelationNode_, relation_, childNum_)
@@ -121,6 +121,8 @@ private:
         ar & childNum_;
     }
 };
+
+//
 
 } // end namespace QueryFiltering
 } // end namespace sf1r

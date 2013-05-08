@@ -36,22 +36,10 @@ public:
     bool post_parse_tree(std::vector<QueryFiltering::FilteringTreeValue>& filteringTreeRules_
         , std::stack<boost::shared_ptr<ConditionsNode> >& nodeStack);
 
-    std::vector<QueryFiltering::FilteringType>&
-    mutableFilteringRules()
-    {
-        return filteringRules_;
-    }
-
     std::vector<QueryFiltering::FilteringTreeValue>&
     mutableFilteringTreeRules()
     {
         return filteringTreeRules_;
-    }
-
-    const std::vector<QueryFiltering::FilteringType>&
-    filteringRules() const
-    {
-        return filteringRules_;
     }
 
     static QueryFiltering::FilteringOperation toFilteringOperation(
@@ -70,7 +58,6 @@ private:
     const IndexBundleSchema& indexSchema_;
     const MiningSchema& miningSchema_;
 
-    std::vector<QueryFiltering::FilteringType> filteringRules_;
     std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules_;
 };
 

@@ -16,7 +16,7 @@
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/MasterManagerBase.h>
 #include <util/driver/Request.h>
-
+#include <query-manager/QueryTypeDef.h>
 namespace sf1r
 {
 
@@ -250,7 +250,7 @@ void SearchWorker::makeQueryIdentity(
     case SearchingMode::SUFFIX_MATCH:
         identity.query = item.env_.queryString_;
         identity.properties = item.searchPropertyList_;
-        identity.filterInfo = item.filteringList_;
+        identity.filteringTreeList_ = item.filteringTreeList_;
         identity.sortInfo = item.sortPriorityList_;
         identity.strExp = item.strExp_;
         identity.paramConstValueMap = item.paramConstValueMap_;
@@ -390,6 +390,17 @@ bool SearchWorker::getSearchResult_(
 
     LOG(INFO) << "searching in mode: " << actionOperation.actionItem_.searchingMode_.mode_;
 
+
+    std::vector<QueryFiltering::FilteringType> filteringRules;
+    if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
+    {
+        unsigned int size = actionOperation.actionItem_.filteringTreeList_.size();
+        for (unsigned int i = size -1 ; i >= 1; --i)
+        {
+            filteringRules.push_back(actionOperation.actionItem_.filteringTreeList_[i].fitleringType_);
+        }
+    }
+
     switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
@@ -412,7 +423,7 @@ bool SearchWorker::getSearchResult_(
                                             fuzzy_lucky,
                                             actionOperation.actionItem_.searchingMode_.usefuzzy_,
                                             topKStart,
-                                            actionOperation.actionItem_.filteringList_,
+                                            filteringRules,
                                             resultItem.topKDocs_,
                                             resultItem.topKRankScoreList_,
                                             resultItem.topKCustomRankScoreList_,
