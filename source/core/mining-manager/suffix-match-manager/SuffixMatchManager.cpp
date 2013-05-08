@@ -142,7 +142,7 @@ SuffixMatchManager::SuffixMatchManager(
     }
     buildTokenizeDic();
 
-    filter_manager_.reset(new FilterManager(groupmanager, data_root_path_,
+    filter_manager_.reset(new FilterManager(document_manager_, groupmanager, data_root_path_,
             attrmanager, numeric_tablebuilder));
     fmi_manager_.reset(new FMIndexManager(data_root_path_, document_manager_, filter_manager_));
 }

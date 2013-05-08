@@ -35,7 +35,7 @@ bool SuffixMatchMiningTask::preProcess()
 {
     if (!is_incrememtalTask_)
     {
-        new_filter_manager.reset(new FilterManager(filter_manager_->getGroupManager(), data_root_path_,
+        new_filter_manager.reset(new FilterManager(document_manager_, filter_manager_->getGroupManager(), data_root_path_,
                     filter_manager_->getAttrManager(), filter_manager_->getNumericTableBuilder()));
         new_filter_manager->copyPropertyInfo(filter_manager_);
         new_filter_manager->generatePropertyId();

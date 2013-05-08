@@ -4,21 +4,40 @@
 #include "../attr-manager/AttrManager.h"
 #include <search-manager/NumericPropertyTableBuilder.h>
 #include <document-manager/Document.h>
+#include <document-manager/DocumentManager.h>
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <iostream>
 
 using namespace izenelib::util;
+namespace
+{
+struct IsDeleted
+{
+    IsDeleted(const boost::shared_ptr<sf1r::DocumentManager>& doc_manager)
+        :inner_doc_manager_(doc_manager)
+    {
+    }
+    bool operator()(uint32_t single_res) const
+    {
+        return inner_doc_manager_->isDeleted(single_res);
+    }
+private:
+    const boost::shared_ptr<sf1r::DocumentManager>& inner_doc_manager_;
+};
+}
 
 namespace sf1r
 {
 
 FilterManager::FilterManager(
+        const boost::shared_ptr<DocumentManager>& d,
         faceted::GroupManager* g,
         const std::string& rootpath,
         faceted::AttrManager* attr,
         NumericPropertyTableBuilder* builder)
-    : groupManager_(g)
+    : document_manager_(d)
+    , groupManager_(g)
     , attrManager_(attr)
     , numericTableBuilder_(builder)
     , data_root_path_(rootpath)
@@ -316,6 +335,17 @@ void FilterManager::buildStringFiltersForDoc(docid_t doc_id, const Document& doc
 
 void FilterManager::finishBuildStringFilters()
 {
+    for (size_t i = 0; i < str_filter_map_.size(); ++i)
+    {
+        StrFilterItemMapT::iterator it = str_filter_map_[i].begin();
+        LOG(INFO) << "clear deleted docid for filter : " << it->first;
+        while(it != str_filter_map_[i].end())
+        {
+            it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
+            ++it;
+        }
+    }
+
     for (size_t i = 0; i < str_prop_list_.size(); ++i)
     {
         size_t prop_id = prop_id_map_[str_prop_list_[i]];
@@ -394,6 +424,17 @@ void FilterManager::buildGroupFilters(
                 }
                 
                 group_filter_data[j][groupstr].push_back(docid);
+            }
+        }
+
+        for (size_t i = 0; i < group_filter_data.size(); ++i)
+        {
+            StrFilterItemMapT::iterator it = group_filter_data[i].begin();
+            LOG(INFO) << "clear deleted docid for filter : " << it->first;
+            while(it != group_filter_data[i].end())
+            {
+                it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
+                ++it;
             }
         }
 
@@ -480,6 +521,16 @@ void FilterManager::buildAttrFilters(
         }
     }
 
+    for (size_t i = 0; i < attr_filter_data.size(); ++i)
+    {
+        StrFilterItemMapT::iterator it = attr_filter_data[i].begin();
+        LOG(INFO) << "clear deleted docid for filter : " << it->first;
+        while(it != attr_filter_data[i].end())
+        {
+            it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
+            ++it;
+        }
+    }
     // map the attribute filter string to filter id.
     mapAttrFilterToFilterId(attr_filter_data[0], str_filter_ids_[prop_id], filter_list_[prop_id]);
 
