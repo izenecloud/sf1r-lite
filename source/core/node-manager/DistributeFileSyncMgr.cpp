@@ -508,7 +508,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
     bool is_file_mismatch = false;
     bool is_collection_mismatch = false;
     bool is_redolog_mismatch = false;
-    int max_wait = 30;
+    int max_wait = 100;
     // wait for response.
     while(wait_num > 0)
     {
