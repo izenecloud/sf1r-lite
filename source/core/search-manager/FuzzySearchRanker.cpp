@@ -116,4 +116,11 @@ void FuzzySearchRanker::rank(
             custom_score_list[need_count - i - 1] = pScoreItem.custom_score;
         }
     }
+
+    if(start > docid_list.size()) start = docid_list.size();
+    docid_list.erase(docid_list.begin(), docid_list.begin() + start);
+    result_score_list.erase(result_score_list.begin(), result_score_list.begin() + start);
+
+    if(customRanker) 
+        custom_score_list.erase(custom_score_list.begin(), custom_score_list.begin() + start);
 }
