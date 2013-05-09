@@ -105,10 +105,11 @@ void DocumentsSearchHandler::search()
                 response_[Keys::total_count] = searchResult.totalCount_;
 
                 std::size_t topKCount = searchResult.topKDocs_.size();
-                if (topKStart + topKCount <= searchResult.totalCount_)
-                {
-                    topKCount += topKStart;
-                }
+                if((actionItem_.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH)&&
+                   (actionItem_.searchingMode_.mode_ != SearchingMode::KNN))
+                    if (topKStart + topKCount <= searchResult.totalCount_)
+                        topKCount += topKStart;
+
                 response_[Keys::top_k_count] = topKCount;
 
                 renderDocuments(searchResult);

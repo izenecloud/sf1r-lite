@@ -370,11 +370,7 @@ bool SearchWorker::getSearchResult_(
     // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
     // we don't know which part of results should be retrieved in one node. Currently, the limitation of documents
     // to be retrieved in one node is set to TOP_K_NUM.
-    if (!isDistributedSearch)
-    {
-        topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
-    }
-    else
+    if (isDistributedSearch)
     {
         // distributed search need get more topk since 
         // each worker can only start topk from 0.
@@ -393,6 +389,7 @@ bool SearchWorker::getSearchResult_(
     switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
+        topKStart = actionItem.pageInfo_.topKStart(KNN_TOP_K_NUM);
         if (identity.simHash.empty())
             miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
         if (!miningManager_->GetKNNListBySignature(identity.simHash,
@@ -408,6 +405,7 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::SUFFIX_MATCH:
+        topKStart = actionItem.pageInfo_.topKStart(fuzzy_lucky);
         if (!miningManager_->GetSuffixMatch(actionOperation,
                                             fuzzy_lucky,
                                             actionOperation.actionItem_.searchingMode_.usefuzzy_,
@@ -427,6 +425,7 @@ bool SearchWorker::getSearchResult_(
         break;
 
     default:
+        topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
         if (!searchManager_->searchBase_->search(actionOperation,
                                                  resultItem,
                                                  TOP_K_NUM,
