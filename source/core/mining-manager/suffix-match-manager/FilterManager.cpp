@@ -71,7 +71,7 @@ void FilterManager::loadStrFilterInvertedData(
 {
     str_filter_data.resize(property_list.size());
     last_docid_list.clear();
-    last_docid_list.resize(property_list.size());
+    last_docid_list.resize(property_list.size(), 0);
 
     for (size_t prop_num = 0; prop_num < property_list.size(); ++prop_num)
     {
@@ -93,8 +93,12 @@ void FilterManager::loadStrFilterInvertedData(
                 ifs.read((char*)&docid_len, sizeof(docid_len));
                 std::vector<uint32_t> docid_list(docid_len);
                 ifs.read((char*)&docid_list[0], sizeof(docid_list[0]) * docid_len);
+                
                 LOG(INFO) << "filter num: " << i << ", key=" << key << ", docnum: " << docid_len;
-                last_docid_list[prop_num] = std::max(last_docid_list[prop_num], docid_list.back());
+                if (!docid_list.empty())
+                {
+                    last_docid_list[prop_num] = std::max(last_docid_list[prop_num], docid_list.back());
+                }
                 str_filter_data[prop_num].insert(std::make_pair(UString(key, UString::UTF_8), docid_list));
             }
         }
@@ -341,6 +345,11 @@ void FilterManager::finishBuildStringFilters()
         while(it != str_filter_map_[i].end())
         {
             it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
+            if (it->second.empty())
+            {
+                str_filter_map_[i].erase(it++);
+                continue;
+            }
             ++it;
         }
     }
@@ -432,6 +441,11 @@ void FilterManager::buildGroupFilters(
             while(it != group_filter_data[i].end())
             {
                 it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
+                if (it->second.empty())
+                {
+                    group_filter_data[i].erase(it++);
+                    continue;
+                }
                 ++it;
             }
         }
@@ -525,6 +539,11 @@ void FilterManager::buildAttrFilters(
         while(it != attr_filter_data[i].end())
         {
             it->second.erase(std::remove_if (it->second.begin(), it->second.end(), IsDeleted(document_manager_)), it->second.end());
+            if (it->second.empty())
+            {
+                attr_filter_data[i].erase(it++);
+                continue;
+            }
             ++it;
         }
     }
