@@ -27,13 +27,13 @@ void FuzzySearchRanker::setFuzzyScoreWeight(const ProductRankingConfig& rankConf
 }
 
 void FuzzySearchRanker::rank(
-    const SearchKeywordOperation& actionOperation,
-    uint32_t start,
-    std::vector<uint32_t>& docid_list,
-    std::vector<float>& result_score_list,
-    std::vector<float>& custom_score_list)
+        const SearchKeywordOperation& actionOperation,
+        uint32_t start,
+        std::vector<uint32_t>& docid_list,
+        std::vector<float>& result_score_list,
+        std::vector<float>& custom_score_list)
 {
-    if(docid_list.empty())
+    if (docid_list.size() <= start)
         return;
 
     CustomRankerPtr customRanker;
@@ -62,7 +62,6 @@ void FuzzySearchRanker::rank(
 
     ScoreDocEvaluator scoreDocEvaluator(productScorer, customRanker);
     const std::size_t count = docid_list.size();
-    result_score_list.resize(count);
 
     boost::scoped_ptr<HitQueue> scoreItemQueue;
     if (pSorter)
@@ -78,13 +77,13 @@ void FuzzySearchRanker::rank(
     }
 
     ScoreDoc tmpdoc;
-    for(size_t i = 0; i < count; ++i)
+    for (size_t i = 0; i < count; ++i)
     {
         tmpdoc.docId = docid_list[i];
         scoreDocEvaluator.evaluate(tmpdoc);
 
         float fuzzyScore = result_score_list[i];
-        if(productScorer == NULL)
+        if (!productScorer)
         {
             tmpdoc.score = fuzzyScore;
         }
@@ -97,7 +96,7 @@ void FuzzySearchRanker::rank(
         //cout << "doc : " << tmpdoc.docId << ", score is:" << tmpdoc.score << "," << tmpdoc.custom_score << endl;
     }
 
-    const std::size_t need_count = start > 0 ? (scoreItemQueue->size() - start) : scoreItemQueue->size();
+    const std::size_t need_count = scoreItemQueue->size() - start;
     docid_list.resize(need_count);
     result_score_list.resize(need_count);
 
@@ -116,11 +115,4 @@ void FuzzySearchRanker::rank(
             custom_score_list[need_count - i - 1] = pScoreItem.custom_score;
         }
     }
-
-    if(start > docid_list.size()) start = docid_list.size();
-    docid_list.erase(docid_list.begin(), docid_list.begin() + start);
-    result_score_list.erase(result_score_list.begin(), result_score_list.begin() + start);
-
-    if(customRanker) 
-        custom_score_list.erase(custom_score_list.begin(), custom_score_list.begin() + start);
 }
