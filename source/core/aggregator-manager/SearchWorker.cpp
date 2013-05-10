@@ -147,7 +147,7 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     START_PROFILER( cacheoverhead )
 
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
-    uint32_t topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
+    uint32_t topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM, IsTopKComesFromConfig(actionItem));
 
     QueryIdentity identity;
     makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, topKStart);
@@ -388,7 +388,7 @@ bool SearchWorker::getSearchResult_(
     }
     else
     {
-        topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
+        topKStart = identity.start;
     }
 
     LOG(INFO) << "searching in mode: " << actionOperation.actionItem_.searchingMode_.mode_;
@@ -529,7 +529,10 @@ bool SearchWorker::getSummaryResult_(
     {
         // get current page docs
         std::vector<sf1r::docid_t> docsInPage;
-        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_%bundleConfig_->topKNum_;
+        size_t TOPK = bundleConfig_->topKNum_;
+        if(actionItem.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH) 
+            TOPK = actionItem.searchingMode_.lucky_;
+        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_% TOPK;
         for (size_t i = 0 ; it != resultItem.topKDocs_.end() && i < resultItem.count_; i++, it++)
         {
             docsInPage.push_back(*it);

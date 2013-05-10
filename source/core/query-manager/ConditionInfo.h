@@ -57,9 +57,9 @@ public:
         count_ = 0;
     }
 
-    unsigned topKStart(unsigned topKNum) const
+    unsigned topKStart(unsigned topKNum, bool topKFromConfig = false) const
     {
-        return Utilities::roundDown(start_, topKNum);
+        return topKFromConfig ? Utilities::roundDown(start_, topKNum) : 0;
     }
 
     DATA_IO_LOAD_SAVE(PageInfo, &start_&count_);
