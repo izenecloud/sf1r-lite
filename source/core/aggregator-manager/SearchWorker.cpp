@@ -299,6 +299,9 @@ bool SearchWorker::getSearchResult_(
         bool isDistributedSearch)
 {
     QueryIdentity identity;
+    uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
+    uint32_t topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM, IsTopKComesFromConfig(actionItem));
+    makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, topKStart);
     return getSearchResult_(actionItem, resultItem, identity, isDistributedSearch);
 }
 
@@ -368,8 +371,8 @@ bool SearchWorker::getSearchResult_(
     uint32_t fuzzy_lucky = actionOperation.actionItem_.searchingMode_.lucky_;
 
     uint32_t search_limit = TOP_K_NUM;
-    uint32_t knn_limit = KNN_TOP_K_NUM;
-    uint32_t fuzzy_limit = fuzzy_lucky;
+    resultItem.TOP_K_NUM = TOP_K_NUM;
+
     // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
     // we don't know which part of results should be retrieved in one node. Currently, the limitation of documents
     // to be retrieved in one node is set to TOP_K_NUM.
@@ -378,13 +381,6 @@ bool SearchWorker::getSearchResult_(
         // distributed search need get more topk since 
         // each worker can only start topk from 0.
         search_limit += actionOperation.actionItem_.pageInfo_.start_;
-        knn_limit += actionOperation.actionItem_.pageInfo_.start_;
-        fuzzy_limit += actionOperation.actionItem_.pageInfo_.start_;
-        if (fuzzy_limit > 100000)
-        {
-            LOG(WARNING) << " !!!! fuzzy search topk too larger in distributed search. " << fuzzy_limit;
-            fuzzy_limit = 100000;
-        }
     }
     else
     {
@@ -396,13 +392,14 @@ bool SearchWorker::getSearchResult_(
     switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
+        resultItem.TOP_K_NUM = KNN_TOP_K_NUM;
         if (identity.simHash.empty())
             miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
         if (!miningManager_->GetKNNListBySignature(identity.simHash,
                                                    resultItem.topKDocs_,
                                                    resultItem.topKRankScoreList_,
                                                    resultItem.totalCount_,
-                                                   knn_limit,
+                                                   KNN_TOP_K_NUM,
                                                    KNN_DIST,
                                                    topKStart))
         {
@@ -411,8 +408,9 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::SUFFIX_MATCH:
+        resultItem.TOP_K_NUM = fuzzy_lucky;
         if (!miningManager_->GetSuffixMatch(actionOperation,
-                                            fuzzy_limit,
+                                            fuzzy_lucky,
                                             actionOperation.actionItem_.searchingMode_.usefuzzy_,
                                             topKStart,
                                             actionOperation.actionItem_.filteringList_,
@@ -529,13 +527,13 @@ bool SearchWorker::getSummaryResult_(
     {
         // get current page docs
         std::vector<sf1r::docid_t> docsInPage;
-        size_t TOPK = bundleConfig_->topKNum_;
-        if(actionItem.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH) 
-            TOPK = actionItem.searchingMode_.lucky_;
-        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_% TOPK;
-        for (size_t i = 0 ; it != resultItem.topKDocs_.end() && i < resultItem.count_; i++, it++)
+        if ((resultItem.start_ % resultItem.TOP_K_NUM) < resultItem.topKDocs_.size())
         {
-            docsInPage.push_back(*it);
+            std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_% resultItem.TOP_K_NUM;
+            for (size_t i = 0 ; it != resultItem.topKDocs_.end() && i < resultItem.count_; i++, it++)
+            {
+                docsInPage.push_back(*it);
+            }
         }
         resultItem.count_ = docsInPage.size();
 

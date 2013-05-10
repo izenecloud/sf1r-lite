@@ -76,6 +76,8 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     mergeResult.queryTermIdList_ = result0.queryTermIdList_;
     mergeResult.propertyQueryTermList_ = result0.propertyQueryTermList_;
     mergeResult.totalCount_ = 0;
+    mergeResult.TOP_K_NUM = result0.TOP_K_NUM;
+    TOP_K_NUM = result0.TOP_K_NUM;
     size_t totalTopKCount = 0;
     bool hasCustomRankScore = false;
     float rangeLow = numeric_limits<float>::max(), rangeHigh = numeric_limits<float>::min();
@@ -112,7 +114,7 @@ void SearchMerger::getDistSearchResult(const net::aggregator::WorkerResults<Keyw
     size_t endTopK = Utilities::roundUp(endOffset, TOP_K_NUM);
     size_t topKCount = std::min(endTopK, totalTopKCount);
 
-    LOG(INFO) << "SearchMerger topKCount: " << topKCount << ", totalTopKCount: " << totalTopKCount << endl;
+    LOG(INFO) << "SearchMerger topKStart : << " << endTopK << ", topKCount: " << topKCount << ", totalTopKCount: " << totalTopKCount << endl;
 
     mergeResult.topKDocs_.resize(topKCount);
     mergeResult.topKWorkerIds_.resize(topKCount);

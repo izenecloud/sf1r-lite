@@ -75,9 +75,8 @@ bool IndexSearchService::getSearchResult(
     QueryIdentity identity;
     // For distributed search, as it should merge the results over all nodes,
     // the topK start offset is fixed to zero
-    const uint32_t topKStart = 0;
-    searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_,
-        actionItem.pageInfo_.topKStart(bundleConfig_->topKNum_));
+    uint32_t topKStart = actionItem.pageInfo_.topKStart(bundleConfig_->topKNum_, IsTopKComesFromConfig(actionItem));
+    searchWorker_->makeQueryIdentity(identity, actionItem, distResultItem.distSearchInfo_.option_, topKStart);
 
     if (!searchCache_->get(identity, resultItem))
     {

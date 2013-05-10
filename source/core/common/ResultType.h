@@ -93,7 +93,7 @@ public:
         : encodingType_(izenelib::util::UString::UTF_8)
         , totalCount_(0), topKDocs_(0), topKRankScoreList_(0), topKCustomRankScoreList_(0)
         , start_(0), count_(0)
-        , timeStamp_(0)
+        , timeStamp_(0), TOP_K_NUM(0)
     {
     }
 
@@ -261,6 +261,7 @@ public:
         ss << "autoSelectGroupLabels_:" << endl;
         ss << autoSelectGroupLabels_ << endl;
 
+        ss << "TOP_K_NUM : " << TOP_K_NUM << endl;
         ss << "Finish time : " << std::ctime(&timeStamp_) << endl;
 
         ss << "===================================" << endl;
@@ -411,6 +412,9 @@ public:
     /// Finish time of searching
     std::time_t timeStamp_;
 
+    // the max possible returned result.
+    int TOP_K_NUM;
+
     void getTopKWDocs(std::vector<sf1r::wdocid_t>& topKWDocs) const
     {
         if (topKWorkerIds_.size() <= 0)
@@ -486,6 +490,7 @@ public:
         relatedQueryList_.swap(other.relatedQueryList_);
         rqScore_.swap(other.rqScore_);
         swap(timeStamp_, other.timeStamp_);
+        TOP_K_NUM = other.TOP_K_NUM;
     }
 
 //  DATA_IO_LOAD_SAVE(KeywordSearchResult,
@@ -504,7 +509,7 @@ public:
             snippetTextOfDocumentInPage_, rawTextOfSummaryInPage_,
             numberOfDuplicatedDocs_, numberOfSimilarDocs_, docCategories_,
             tg_input, taxonomyString_, numOfTGDocs_, taxonomyLevel_, tgDocIdList_,
-            neList_, onto_rep_, groupRep_, attrRep_, autoSelectGroupLabels_, relatedQueryList_, rqScore_, timeStamp_);
+            neList_, onto_rep_, groupRep_, attrRep_, autoSelectGroupLabels_, relatedQueryList_, rqScore_, timeStamp_, TOP_K_NUM);
 };
 
 
