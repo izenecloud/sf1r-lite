@@ -367,6 +367,9 @@ bool SearchWorker::getSearchResult_(
     uint32_t KNN_DIST = bundleConfig_->kNNDist_;
     uint32_t fuzzy_lucky = actionOperation.actionItem_.searchingMode_.lucky_;
 
+    uint32_t search_limit = TOP_K_NUM;
+    uint32_t knn_limit = KNN_TOP_K_NUM;
+    uint32_t fuzzy_limit = fuzzy_lucky;
     // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
     // we don't know which part of results should be retrieved in one node. Currently, the limitation of documents
     // to be retrieved in one node is set to TOP_K_NUM.
@@ -374,14 +377,18 @@ bool SearchWorker::getSearchResult_(
     {
         // distributed search need get more topk since 
         // each worker can only start topk from 0.
-        TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
-        KNN_TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
-        fuzzy_lucky += actionOperation.actionItem_.pageInfo_.start_;
-        if (fuzzy_lucky > 100000)
+        search_limit += actionOperation.actionItem_.pageInfo_.start_;
+        knn_limit += actionOperation.actionItem_.pageInfo_.start_;
+        fuzzy_limit += actionOperation.actionItem_.pageInfo_.start_;
+        if (fuzzy_limit > 100000)
         {
-            LOG(WARNING) << " !!!! fuzzy search topk too larger in distributed search. " << fuzzy_lucky;
-            fuzzy_lucky = 100000;
+            LOG(WARNING) << " !!!! fuzzy search topk too larger in distributed search. " << fuzzy_limit;
+            fuzzy_limit = 100000;
         }
+    }
+    else
+    {
+        topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
     }
 
     LOG(INFO) << "searching in mode: " << actionOperation.actionItem_.searchingMode_.mode_;
@@ -389,14 +396,13 @@ bool SearchWorker::getSearchResult_(
     switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
-        topKStart = actionItem.pageInfo_.topKStart(KNN_TOP_K_NUM);
         if (identity.simHash.empty())
             miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
         if (!miningManager_->GetKNNListBySignature(identity.simHash,
                                                    resultItem.topKDocs_,
                                                    resultItem.topKRankScoreList_,
                                                    resultItem.totalCount_,
-                                                   KNN_TOP_K_NUM,
+                                                   knn_limit,
                                                    KNN_DIST,
                                                    topKStart))
         {
@@ -405,9 +411,8 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::SUFFIX_MATCH:
-        topKStart = actionItem.pageInfo_.topKStart(fuzzy_lucky);
         if (!miningManager_->GetSuffixMatch(actionOperation,
-                                            fuzzy_lucky,
+                                            fuzzy_limit,
                                             actionOperation.actionItem_.searchingMode_.usefuzzy_,
                                             topKStart,
                                             actionOperation.actionItem_.filteringList_,
@@ -425,10 +430,9 @@ bool SearchWorker::getSearchResult_(
         break;
 
     default:
-        topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
         if (!searchManager_->searchBase_->search(actionOperation,
                                                  resultItem,
-                                                 TOP_K_NUM,
+                                                 search_limit,
                                                  topKStart))
         {
             if (time(NULL) - start_search > 5)
@@ -452,7 +456,7 @@ bool SearchWorker::getSearchResult_(
 
             if (!searchManager_->searchBase_->search(actionOperation,
                                                      resultItem,
-                                                     TOP_K_NUM,
+                                                     search_limit,
                                                      topKStart))
             {
                 if (time(NULL) - start_search > 5)
