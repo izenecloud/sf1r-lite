@@ -3,7 +3,7 @@
 
 #include "summarization_types.h"
 
-#include <am/bitmap/Ewah.h>
+#include <am/bitmap/ewah.h>
 
 namespace sf1r
 {

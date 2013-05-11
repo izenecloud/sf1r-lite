@@ -54,7 +54,7 @@ namespace sf1r
         {
             boost::filesystem::create_directories(index_path_);
         }
-        filter_manager_.reset(new FilterManager(groupmanager, index_path_,
+        filter_manager_.reset(new FilterManager(document_manager_, groupmanager, index_path_,
             attrmanager, numeric_tablebuilder));
     }
 

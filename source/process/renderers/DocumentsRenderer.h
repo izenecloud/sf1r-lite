@@ -71,6 +71,11 @@ public:
     void renderTopGroupLabel(const KeywordSearchResult& miaResult,
                              izenelib::driver::Value& renderValue);
 
+    void setTopKNum(int topknum)
+    {
+        TOP_K_NUM = topknum;
+    }
+
 private:
     int TOP_K_NUM;
 };

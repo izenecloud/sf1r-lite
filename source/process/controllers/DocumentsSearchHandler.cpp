@@ -93,7 +93,18 @@ void DocumentsSearchHandler::search()
         KeywordSearchResult searchResult;
         preprocess(searchResult);
 
-        int topKStart = actionItem_.pageInfo_.topKStart(TOP_K_NUM);
+        searchResult.TOP_K_NUM = TOP_K_NUM;
+        if (actionItem_.searchingMode_.mode_ == SearchingMode::SUFFIX_MATCH)
+        {
+            searchResult.TOP_K_NUM = actionItem_.searchingMode_.lucky_;
+        }
+        else if (actionItem_.searchingMode_.mode_ == SearchingMode::KNN)
+        {
+            searchResult.TOP_K_NUM = indexSearchService_->getBundleConfig()->kNNTopKNum_;
+        }
+        renderer_.setTopKNum(searchResult.TOP_K_NUM);
+
+        int topKStart = actionItem_.pageInfo_.topKStart(TOP_K_NUM, IsTopKComesFromConfig(actionItem_));
 
         if (actionItem_.env_.taxonomyLabel_.empty()
             && actionItem_.env_.nameEntityItem_.empty())
@@ -105,10 +116,10 @@ void DocumentsSearchHandler::search()
                 response_[Keys::total_count] = searchResult.totalCount_;
 
                 std::size_t topKCount = searchResult.topKDocs_.size();
-                if (topKStart + topKCount <= searchResult.totalCount_)
-                {
-                    topKCount += topKStart;
-                }
+                if(IsTopKComesFromConfig(actionItem_))
+                    if (topKStart + topKCount <= searchResult.totalCount_)
+                        topKCount += topKStart;
+
                 response_[Keys::top_k_count] = topKCount;
 
                 renderDocuments(searchResult);

@@ -13,7 +13,14 @@ SingleCollectionItemIdGenerator::SingleCollectionItemIdGenerator(const std::stri
 
 bool SingleCollectionItemIdGenerator::strIdToItemId(const std::string& strId, itemid_t& itemId)
 {
-    idManager_.getDocIdByDocName(strId, itemId);
+    try
+    {
+        idManager_.getDocIdByDocName(strId, itemId);
+    }
+    catch(const std::exception& e)
+    {
+        LOG(WARNING) << " strIdToItemId exception: " << e.what();
+    }
     return true;
 }
 

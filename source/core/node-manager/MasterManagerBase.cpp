@@ -912,6 +912,8 @@ int MasterManagerBase::detectWorkers()
 {
     size_t detected = 0;
     size_t good = 0;
+    WorkerMapT old_workers = workerMap_;
+
     workerMap_.clear();
     // detect workers from "current" replica first
     replicaid_t replicaId = sf1rTopology_.curNode_.replicaId_;
@@ -930,10 +932,35 @@ int MasterManagerBase::detectWorkers()
         LOG(INFO) << "begin detect workers in other replica : " << replicaIdList_[i];
         detectWorkersInReplica(replicaIdList_[i], detected, good);
     }
-    //
-    // update workers' info to aggregators
-    resetAggregatorConfig();
+    WorkerMapT::iterator old_it = old_workers.begin();
+    WorkerMapT::iterator new_it = workerMap_.begin();
+    size_t compared_size = 0;
+    while(old_it != old_workers.end() && new_it != workerMap_.end())
+    {
+        if (old_it->first != new_it->first)
+            break;
+        if (old_it->second->nodeId_ != new_it->second->nodeId_)
+            break;
+        if (old_it->second->replicaId_ != new_it->second->replicaId_)
+            break;
+        if (old_it->second->host_ != new_it->second->host_)
+            break;
+        if (old_it->second->worker_.port_ != new_it->second->worker_.port_)
+            break;
+        if (old_it->second->worker_.isGood_ != new_it->second->worker_.isGood_)
+            break;
+        ++old_it;
+        ++new_it;
+        ++compared_size;
+    }
 
+    if ((compared_size != old_workers.size()) ||
+        (compared_size != workerMap_.size()))
+    {
+        //
+        // update workers' info to aggregators
+        resetAggregatorConfig();
+    }
     return good;
 }
 
@@ -1007,6 +1034,7 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
         detectWorkers();
     }
 
+    bool need_reset_agg = false;
     WorkerMapT::iterator it;
     for (it = workerMap_.begin(); it != workerMap_.end(); it++)
     {
@@ -1019,7 +1047,14 @@ void MasterManagerBase::detectReplicaSet(const std::string& zpath)
                 LOG(WARNING) << "one of worker failed and can not cover this failure.";
                 masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
             }
+            need_reset_agg = true;
         }
+    }
+
+    if (need_reset_agg)
+    {
+        // notify aggregators
+        resetAggregatorConfig();
     }
 }
 
@@ -1038,14 +1073,15 @@ void MasterManagerBase::failover(const std::string& zpath)
             if (failover(sf1rNode))
             {
                 LOG (INFO) << "failover: finished.";
-                return;
             }
             else
             {
                 LOG (INFO) << "failover: failed to cover this failure.";
                 masterState_ = MASTER_STATE_STARTING_WAIT_WORKERS;
-                return;
             }
+            // notify aggregators
+            resetAggregatorConfig();
+            return;
         }
     }
     LOG (INFO) << "failed node is not in my watching workers . " << zpath;
@@ -1113,8 +1149,6 @@ bool MasterManagerBase::failover(boost::shared_ptr<Sf1rNode>& sf1rNode)
         }
     }
 
-    // notify aggregators
-    resetAggregatorConfig();
 
     // Watch current replica, waiting for node recover
     zookeeper_->isZNodeExists(getNodePath(sf1rNode->replicaId_, sf1rNode->nodeId_), ZooKeeper::WATCH);

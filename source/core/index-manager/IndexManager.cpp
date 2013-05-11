@@ -62,16 +62,14 @@ void IndexManager::makeRangeQuery(QueryFiltering::FilteringOperation filterOpera
         getDocsByPropertyValueIn(colId, property, values, *pBitVector, *filterBitMap);
         return;
     }
-        break;
     case QueryFiltering::EXCLUDE:
     {
-        for(std::vector<PropertyValue>::const_iterator iter = filterParam.begin(); iter != filterParam.end(); ++iter)
+        std::vector<PropertyType> values(filterParam.size());
+        for(std::size_t i = 0; i < filterParam.size(); ++i)
         {
-            PropertyType value;
-            convertData(propertyL, *iter, value);
-            getDocsByPropertyValue(colId, property, value, *pBitVector);
+            convertData(propertyL, filterParam[i], values[i]);
         }
-        pBitVector->toggle();
+        getDocsByPropertyValueNotIn(colId, property, values, *pBitVector);
     }
         break;
     case QueryFiltering::NOT_EQUAL:

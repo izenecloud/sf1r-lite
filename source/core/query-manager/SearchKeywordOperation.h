@@ -92,6 +92,8 @@ public:
     bool isPhraseOrWildcardQuery_;
 }; // end - class SearchKeywordOperation
 
+bool IsTopKComesFromConfig(const KeywordSearchActionItem& actionItem);
+
 } // end - namespace sf1vt
 
 #endif // _SEARCHKEYWORDOPERATION_H_

@@ -147,7 +147,7 @@ bool SearchWorker::doLocalSearch(const KeywordSearchActionItem& actionItem, Keyw
     START_PROFILER( cacheoverhead )
 
     uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
-    uint32_t topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
+    uint32_t topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM, IsTopKComesFromConfig(actionItem));
 
     QueryIdentity identity;
     makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, topKStart);
@@ -299,6 +299,9 @@ bool SearchWorker::getSearchResult_(
         bool isDistributedSearch)
 {
     QueryIdentity identity;
+    uint32_t TOP_K_NUM = bundleConfig_->topKNum_;
+    uint32_t topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM, IsTopKComesFromConfig(actionItem));
+    makeQueryIdentity(identity, actionItem, resultItem.distSearchInfo_.option_, topKStart);
     return getSearchResult_(actionItem, resultItem, identity, isDistributedSearch);
 }
 
@@ -367,25 +370,21 @@ bool SearchWorker::getSearchResult_(
     uint32_t KNN_DIST = bundleConfig_->kNNDist_;
     uint32_t fuzzy_lucky = actionOperation.actionItem_.searchingMode_.lucky_;
 
+    uint32_t search_limit = TOP_K_NUM;
+    resultItem.TOP_K_NUM = TOP_K_NUM;
+
     // XXX, For distributed search, the page start(offset) should be measured in results over all nodes,
     // we don't know which part of results should be retrieved in one node. Currently, the limitation of documents
     // to be retrieved in one node is set to TOP_K_NUM.
-    if (!isDistributedSearch)
-    {
-        topKStart = actionItem.pageInfo_.topKStart(TOP_K_NUM);
-    }
-    else
+    if (isDistributedSearch)
     {
         // distributed search need get more topk since 
         // each worker can only start topk from 0.
-        TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
-        KNN_TOP_K_NUM += actionOperation.actionItem_.pageInfo_.start_;
-        fuzzy_lucky += actionOperation.actionItem_.pageInfo_.start_;
-        if (fuzzy_lucky > 100000)
-        {
-            LOG(WARNING) << " !!!! fuzzy search topk too larger in distributed search. " << fuzzy_lucky;
-            fuzzy_lucky = 100000;
-        }
+        search_limit += actionOperation.actionItem_.pageInfo_.start_;
+    }
+    else
+    {
+        topKStart = identity.start;
     }
 
     LOG(INFO) << "searching in mode: " << actionOperation.actionItem_.searchingMode_.mode_;
@@ -393,6 +392,7 @@ bool SearchWorker::getSearchResult_(
     switch (actionOperation.actionItem_.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
+        resultItem.TOP_K_NUM = KNN_TOP_K_NUM;
         if (identity.simHash.empty())
             miningManager_->GetSignatureForQuery(actionOperation.actionItem_, identity.simHash);
         if (!miningManager_->GetKNNListBySignature(identity.simHash,
@@ -408,6 +408,7 @@ bool SearchWorker::getSearchResult_(
         break;
 
     case SearchingMode::SUFFIX_MATCH:
+        resultItem.TOP_K_NUM = fuzzy_lucky;
         if (!miningManager_->GetSuffixMatch(actionOperation,
                                             fuzzy_lucky,
                                             actionOperation.actionItem_.searchingMode_.usefuzzy_,
@@ -429,7 +430,7 @@ bool SearchWorker::getSearchResult_(
     default:
         if (!searchManager_->searchBase_->search(actionOperation,
                                                  resultItem,
-                                                 TOP_K_NUM,
+                                                 search_limit,
                                                  topKStart))
         {
             if (time(NULL) - start_search > 5)
@@ -453,7 +454,7 @@ bool SearchWorker::getSearchResult_(
 
             if (!searchManager_->searchBase_->search(actionOperation,
                                                      resultItem,
-                                                     TOP_K_NUM,
+                                                     search_limit,
                                                      topKStart))
             {
                 if (time(NULL) - start_search > 5)
@@ -526,10 +527,13 @@ bool SearchWorker::getSummaryResult_(
     {
         // get current page docs
         std::vector<sf1r::docid_t> docsInPage;
-        std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_%bundleConfig_->topKNum_;
-        for (size_t i = 0 ; it != resultItem.topKDocs_.end() && i < resultItem.count_; i++, it++)
+        if ((resultItem.start_ % resultItem.TOP_K_NUM) < resultItem.topKDocs_.size())
         {
-            docsInPage.push_back(*it);
+            std::vector<sf1r::docid_t>::iterator it = resultItem.topKDocs_.begin() + resultItem.start_% resultItem.TOP_K_NUM;
+            for (size_t i = 0 ; it != resultItem.topKDocs_.end() && i < resultItem.count_; i++, it++)
+            {
+                docsInPage.push_back(*it);
+            }
         }
         resultItem.count_ = docsInPage.size();
 

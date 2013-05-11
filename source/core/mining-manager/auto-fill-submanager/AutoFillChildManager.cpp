@@ -576,26 +576,31 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
     sameprefix.insert(sameprefix.end(),havedone.begin(),havedone.end());
 
     sort( sameprefix.begin(), sameprefix.end(), d1);
+    vector<QueryTypeToDeleteDup> qtddvec;
     unsigned int indextemp = 0;
     for (unsigned int i = 1; i < sameprefix.size(); i++)
     {
         if(sameprefix[i].cmp(sameprefix[indextemp]))
         {
             sameprefix[indextemp].freq_ += sameprefix[i].freq_;
+            sameprefix[indextemp].HitNum_ =max( sameprefix[i].HitNum_,sameprefix[indextemp].HitNum_);
         }
         else
         {
             indextemp = i;
+
         }
     }
     sameprefix.erase(std::unique(sameprefix.begin(), sameprefix.end(),d2), sameprefix.end());
-    vector<QueryTypeToDeleteDup> qtddvec;
+
+
     for (unsigned i=0;i<sameprefix.size();i++)
     {
         QueryTypeToDeleteDup qtdd;
         qtdd.initfrom(sameprefix[i]);
         qtddvec.push_back(qtdd);
     }
+
     sort( qtddvec.begin(),qtddvec.end());
 
     qtddvec.erase(std::unique(qtddvec.begin(), qtddvec.end()), qtddvec.end());

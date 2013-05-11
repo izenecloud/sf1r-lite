@@ -3,6 +3,7 @@
 #include <common/Utilities.h>
 #include <log-manager/PriceHistory.h>
 #include <document-manager/DocumentManager.h>
+#include <node-manager/DistributeRequestHooker.h>
 
 #include <am/range/AmIterator.h>
 #include <libcassandra/util_functions.h>
@@ -124,6 +125,11 @@ bool ProductPriceTrend::Flush(time_t timestamp)
 {
     bool ret = true;
     //time_t now = Utilities::createTimeStamp();
+    if (DistributeRequestHooker::get()->isRunningPrimary())
+    {
+        if (!price_history_->updateMultiRow(price_history_buffer_))
+            ret = false;
+    }
 
     if (!prop_map_.empty())
     {
@@ -135,9 +141,6 @@ bool ProductPriceTrend::Flush(time_t timestamp)
 
         PropMapType().swap(prop_map_);
     }
-
-    if (!price_history_->updateMultiRow(price_history_buffer_))
-        ret = false;
 
     buffer_size_ = 0;
 

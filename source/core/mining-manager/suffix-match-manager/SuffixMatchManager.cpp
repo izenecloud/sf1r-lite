@@ -142,7 +142,7 @@ SuffixMatchManager::SuffixMatchManager(
     }
     buildTokenizeDic();
 
-    filter_manager_.reset(new FilterManager(groupmanager, data_root_path_,
+    filter_manager_.reset(new FilterManager(document_manager_, groupmanager, data_root_path_,
             attrmanager, numeric_tablebuilder));
     fmi_manager_.reset(new FMIndexManager(data_root_path_, document_manager_, filter_manager_));
 }
@@ -559,25 +559,24 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
 
     for (size_t i = 0; i < filter_param.size(); ++i)
     {
-        const QueryFiltering::FilteringType& filtertype = filter_param[i];
+        const QueryFiltering::FilteringType& filter = filter_param[i];
+        if (filter.values_.empty()) return false;
 
-        bool is_numeric = filter_manager_->isNumericProp(filtertype.property_)
-            || filter_manager_->isDateProp(filtertype.property_);
-        size_t prop_id = filter_manager_->getPropertyId(filtertype.property_);
+        bool is_numeric = filter_manager_->isNumericProp(filter.property_)
+            || filter_manager_->isDateProp(filter.property_);
+        size_t prop_id = filter_manager_->getPropertyId(filter.property_);
         if (prop_id == (size_t)-1) return false;
 
         RangeListT temp_range_list;
-        for (size_t j = 0; j < filtertype.values_.size(); ++j)
+        try
         {
-            try
+            if (is_numeric)
             {
-                if (is_numeric)
-                {
-                    double filter_num = filtertype.values_[j].getNumber();
-                    LOG(INFO) << "filter num by : " << filter_num;
+                double filter_num = filter.values_[0].getNumber();
+                LOG(INFO) << "filter num by : " << filter_num;
 
-                    switch (filtertype.operation_)
-                    {
+                switch (filter.operation_)
+                {
                     case QueryFiltering::LESS_THAN_EQUAL:
                         filterid_range = filter_manager_->getNumFilterIdRangeLess(prop_id, filter_num, true);
                         break;
@@ -596,11 +595,10 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
 
                     case QueryFiltering::RANGE:
                         {
-                            assert(filtertype.values_.size() == 2);
-                            if (j >= 1) return false;
-                            double filter_num_2 = filtertype.values_[1].getNumber();
-                            FilterManager::FilterIdRange tmp_range;
-                            tmp_range = filter_manager_->getNumFilterIdRangeLess(prop_id, std::max(filter_num, filter_num_2), true);
+                            if (filter.values_.size() < 2) return false;
+
+                            double filter_num_2 = filter.values_[1].getNumber();
+                            FilterManager::FilterIdRange tmp_range = filter_manager_->getNumFilterIdRangeLess(prop_id, std::max(filter_num, filter_num_2), true);
                             filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, std::min(filter_num, filter_num_2), true);
                             filterid_range.start = std::max(filterid_range.start, tmp_range.start);
                             filterid_range.end = std::min(filterid_range.end, tmp_range.end);
@@ -614,88 +612,87 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
                     default:
                         LOG(WARNING) << "not support filter operation for numeric property in fuzzy searching.";
                         return false;
-                    }
                 }
-                else
+            }
+            else
+            {
+                const std::string& filter_str = filter.values_[0].get<std::string>();
+                LOG(INFO) << "filter range by : " << filter_str;
+
+                switch (filter.operation_)
                 {
-                    const std::string& filter_str = filtertype.values_[j].get<std::string>();
-                    LOG(INFO) << "filter range by : " << filter_str;
+                case QueryFiltering::EQUAL:
+                    filterid_range = filter_manager_->getStrFilterIdRangeExact(prop_id, UString(filter_str, UString::UTF_8));
+                    break;
 
-                    switch (filtertype.operation_)
+                case QueryFiltering::GREATER_THAN:
+                    filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), false);
+                    break;
+
+                case QueryFiltering::GREATER_THAN_EQUAL:
+                    filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
+                    break;
+
+                case QueryFiltering::LESS_THAN:
+                    filterid_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), false);
+                    break;
+
+                case QueryFiltering::LESS_THAN_EQUAL:
+                    filterid_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true);
+                    break;
+
+                case QueryFiltering::RANGE:
                     {
-                    case QueryFiltering::EQUAL:
-                        filterid_range = filter_manager_->getStrFilterIdRangeExact(prop_id, UString(filter_str, UString::UTF_8));
-                        break;
+                        if (filter.values_.size() < 2) return false;
 
-                    case QueryFiltering::GREATER_THAN:
-                        filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), false);
-                        break;
-
-                    case QueryFiltering::GREATER_THAN_EQUAL:
-                        filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
-                        break;
-
-                    case QueryFiltering::LESS_THAN:
-                        filterid_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), false);
-                        break;
-
-                    case QueryFiltering::LESS_THAN_EQUAL:
-                        filterid_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true);
-                        break;
-
-                    case QueryFiltering::RANGE:
+                        const std::string& filter_str1 = filter.values_[1].get<std::string>();
+                        FilterManager::FilterIdRange tmp_range;
+                        if (filter_str < filter_str1)
                         {
-                            assert(filtertype.values_.size() == 2);
-                            if (j >= 1) return false;
-                            const std::string& filter_str1 = filtertype.values_[1].get<std::string>();
-                            FilterManager::FilterIdRange tmp_range;
-                            if (filter_str < filter_str1)
-                            {
-                                tmp_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str1, UString::UTF_8), true);
-                                filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
-                            }
-                            else
-                            {
-                                tmp_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true);
-                                filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str1, UString::UTF_8), true);
-                            }
-                            filterid_range.start = std::max(filterid_range.start, tmp_range.start);
-                            filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                            tmp_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str1, UString::UTF_8), true);
+                            filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
                         }
-                        break;
-
-                    case QueryFiltering::PREFIX:
-                        filterid_range = filter_manager_->getStrFilterIdRangePrefix(prop_id, UString(filter_str, UString::UTF_8));
-                        break;
-
-                    default:
-                        LOG(WARNING) << "not support filter operation for string property in fuzzy searching.";
-                        return false;
+                        else
+                        {
+                            tmp_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true);
+                            filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str1, UString::UTF_8), true);
+                        }
+                        filterid_range.start = std::max(filterid_range.start, tmp_range.start);
+                        filterid_range.end = std::min(filterid_range.end, tmp_range.end);
                     }
+                    break;
+
+                case QueryFiltering::PREFIX:
+                    filterid_range = filter_manager_->getStrFilterIdRangePrefix(prop_id, UString(filter_str, UString::UTF_8));
+                    break;
+
+                default:
+                    LOG(WARNING) << "not support filter operation for string property in fuzzy searching.";
+                    return false;
                 }
             }
-            catch (const boost::bad_get &)
-            {
-                LOG(INFO) << "get filter string failed. boost::bad_get.";
-                return false;
-            }
-
-            if (filterid_range.start >= filterid_range.end)
-            {
-                LOG(WARNING) << "filter id range not found. ";
-                return false;
-            }
-
-            if (!fmi_manager_->getFilterRange(prop_id, std::make_pair(filterid_range.start, filterid_range.end), filter_range))
-            {
-                LOG(WARNING) << "get filter DocArray range failed.";
-                return false;
-            }
-
-            temp_range_list.push_back(filter_range);
-            LOG(INFO) << "filter range is : " << filterid_range.start << ", " << filterid_range.end;
-            LOG(INFO) << "filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
         }
+        catch (const boost::bad_get &)
+        {
+            LOG(INFO) << "get filter string failed. boost::bad_get.";
+            return false;
+        }
+
+        if (filterid_range.start >= filterid_range.end)
+        {
+            LOG(WARNING) << "filter id range not found. ";
+            return false;
+        }
+
+        if (!fmi_manager_->getFilterRange(prop_id, std::make_pair(filterid_range.start, filterid_range.end), filter_range))
+        {
+            LOG(WARNING) << "get filter DocArray range failed.";
+            return false;
+        }
+
+        temp_range_list.push_back(filter_range);
+        LOG(INFO) << "filter range is : " << filterid_range.start << ", " << filterid_range.end;
+        LOG(INFO) << "filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
 
         if (!temp_range_list.empty())
         {

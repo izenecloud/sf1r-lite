@@ -185,15 +185,15 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
             {
                 LOG(INFO) << "found a SCD File for rebuild:" << fileName;
                 scd_list.push_back(itr->path().string());
-                if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scd_list.back(),
-                        scd_list.back()))
-                {
-                    LOG(INFO) << "Transfer index scd to the replicas finished for: " << scd_list.back();
-                }
-                else
-                {
-                    LOG(WARNING) << "push index scd file to the replicas failed for:" << scd_list.back();
-                }
+                //if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scd_list.back(),
+                //        scd_list.back()))
+                //{
+                //    LOG(INFO) << "Transfer index scd to the replicas finished for: " << scd_list.back();
+                //}
+                //else
+                //{
+                //    LOG(WARNING) << "push index scd file to the replicas failed for:" << scd_list.back();
+                //}
             }
             else
             {

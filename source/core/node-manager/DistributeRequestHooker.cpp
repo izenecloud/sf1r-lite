@@ -667,12 +667,18 @@ void DistributeRequestHooker::AsyncLogPullFunc()
             for (size_t i = 0; i < newlogdata_list.size(); ++i)
             {
                 CommonReqData req_commondata;
-                ReqLogMgr::unpackReqLogData(newlogdata_list[i], req_commondata);
+                bool is_ok = ReqLogMgr::unpackReqLogData(newlogdata_list[i], req_commondata);
                 LOG(INFO) << "sync for request id : " << req_commondata.inc_id;
+                if (!is_ok)
+                {
+                    LOG(ERROR) << "unpack log data failed in log worker. retry: " << newlogdata_list[i];
+                    break;
+                }
                 if (req_commondata.inc_id <= reqid)
                 {
-                    LOG(ERROR) << "get new log data is out of order in sync log worker.";
-                    forceExit();
+                    LOG(ERROR) << "get new log data is out of order in sync log worker. retry";
+                    break;
+                    //forceExit();
                 }
                 reqid = req_commondata.inc_id;
 

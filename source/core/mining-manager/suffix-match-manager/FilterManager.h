@@ -13,6 +13,7 @@ class AttrManager;
 }
 class NumericPropertyTableBuilder;
 class Document;
+class DocumentManager;
 
 class GroupNode
 {
@@ -116,6 +117,7 @@ public:
     typedef std::map<NumFilterKeyT, FilterDocListT> NumFilterItemMapT;
 
     FilterManager(
+            const boost::shared_ptr<DocumentManager>& d,
             faceted::GroupManager* g,
             const std::string& rootpath,
             faceted::AttrManager* attr,
@@ -315,6 +317,7 @@ private:
         return ifs;
     }
 
+    boost::shared_ptr<DocumentManager> document_manager_;
     faceted::GroupManager* groupManager_;
     faceted::AttrManager* attrManager_;
     NumericPropertyTableBuilder* numericTableBuilder_;
