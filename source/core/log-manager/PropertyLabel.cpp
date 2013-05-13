@@ -11,6 +11,8 @@ const char* PropertyLabel::ColumnMeta[EoC] = { "Text", "Text", "integer" };
 
 const char* PropertyLabel::TableName = "property_labels";
 
+const std::string PropertyLabel::service_ = "property-label";
+
 void PropertyLabel::save( std::map<std::string, std::string> & rawdata )
 {
     rawdata.clear();
@@ -35,6 +37,10 @@ void PropertyLabel::load( const std::map<std::string, std::string> & rawdata )
             setHitDocsNum(boost::lexical_cast<std::size_t>(it->second));
         }
     }
+}
+
+void PropertyLabel::save_to_logserver()
+{
 }
 
 }

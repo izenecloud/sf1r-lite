@@ -5,6 +5,7 @@
 #include "LogServerConnection.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <string>
 
 namespace sf1r
 {
@@ -179,7 +180,14 @@ public:
 
     void load( const std::map<std::string, std::string> & rawdata );
 
+    static bool getTopK(const std::string& c, const std::string& b, const std::string& e,
+            const std::string& limit, std::list<std::map<std::string, std::string> >& res)
+    {
+        return true;
+    }
 private:
+
+    static const std::string service_;
 
     std::string query_;
     bool queryPresent_;

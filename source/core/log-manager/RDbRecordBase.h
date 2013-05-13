@@ -34,24 +34,11 @@ public:
         return RDbConnection::instance().exec(sql);
     }
 
-    static bool find_freq_from_logserver(const std::string & collection_name,
-        const std::string & begin_time,
-        const std::string & end_time,
-        const std::string & limit,
-        std::list< std::map<std::string, std::string> > & results)
+    static bool getTopK(const std::string& s, const std::string& c, const std::string& b,
+            const std::string& e, const uint32_t& limit, std::list<std::map<std::string, std::string> >& res)
     {
-       LogServerConnection& conn = LogServerConnection::instance();
-       GetFreqUserQueriesRequest req;
-       req.param_.collection_ = collection_name;
-       req.param_.begin_time_ = begin_time;
-       req.param_.end_time_ = end_time;
-       req.param_.limit_ = limit;
-       conn.syncRequest(req, results);
-       return true;
+        return true;
     }
-
-
-
     /// Save record into a map
     virtual void save( std::map<std::string, std::string> & ) = 0;
 
@@ -188,7 +175,10 @@ static bool del_record(const std::string & conditions)
     } \
     \
     void save() { \
-        ::sf1r::save(*this); \
+        if(RDbConnection::instance().logServer()) \
+            save_to_logserver(); \
+        else \
+            ::sf1r::save(*this); \
     }\
     \
     static bool del_record(const std::string & conditions) {\

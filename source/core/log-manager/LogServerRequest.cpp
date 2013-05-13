@@ -6,6 +6,13 @@ namespace sf1r
 const LogServerRequest::method_t LogServerRequest::method_names[] =
         {
             "test",
+            "insert",
+            "insert_with_values",
+            "get_current_topk",
+            "get_topk",
+            "get_current_dvc",
+            "get_dvc",
+            "get_values"
             "update_uuid",
             "synchronize",
             "get_uuid",
@@ -21,8 +28,6 @@ const LogServerRequest::method_t LogServerRequest::method_names[] =
             "del_old_docid",
             "get_old_uuid",
             "get_old_docid",
-            "get_user_queries",
-            "inject_user_query",
         };
 
 }

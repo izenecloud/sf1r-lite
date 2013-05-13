@@ -15,6 +15,19 @@ public:
     enum METHOD
     {
         METHOD_TEST = 0,
+
+        METHOD_INSERT,
+        METHOD_INSERT_WITH_VALUES,
+        METHOD_GET_CURRENT_TOPK,
+        METHOD_GET_TOPK,
+        METHOD_GET_CURRENT_DVC,
+        METHOD_GET_DVC,
+        METHOD_GET_VALUES,
+
+        METHOD_STRID_TO_ITEMID,
+        METHOD_ITEMID_TO_STRID,
+        METHOD_GET_MAX_ITEMID,
+
         METHOD_UPDATE_UUID,
         METHOD_SYNCHRONIZE,
         METHOD_GET_UUID,
@@ -22,17 +35,11 @@ public:
         METHOD_CREATE_SCD_DOC,
         METHOD_DELETE_SCD_DOC,
         METHOD_GET_SCD_FILE,
-        METHOD_STRID_TO_ITEMID,
-        METHOD_ITEMID_TO_STRID,
-        METHOD_GET_MAX_ITEMID,
         METHOD_ADD_OLD_UUID,     // when uuid change to a new one, log the old uuid for the changing doc
         METHOD_ADD_OLD_DOCID,    // when doc moved to a new uuid, add the docid to the old uuid group.
         METHOD_DEL_OLD_DOCID,    // when doc deleted, remove the docid from all the uuid groups who hold it.
         METHOD_GET_OLD_UUID,
         METHOD_GET_OLD_DOCID,
-
-        METHOD_GET_FREQ_USER_QUERIES,
-        METHOD_INJECT_USER_QUERY,
 
         COUNT_OF_METHODS
     };
@@ -58,6 +65,72 @@ public:
     RequestDataT param_;
 
     MSGPACK_DEFINE(param_)
+};
+
+class InsertRequest: public LogRequestRequestT<InsertData>
+{
+public:
+    InsertRequest()
+        : LogRequestRequestT<InsertData>(METHOD_INSERT)
+    {
+    }
+};
+
+class InsertWithValuesDataRequest: public LogRequestRequestT<InsertWithValuesData>
+{
+public:
+    InsertWithValuesDataRequest()
+        : LogRequestRequestT<InsertWithValuesData>(METHOD_INSERT_WITH_VALUES)
+    {
+    }
+};
+
+class GetCurrentTopKRequest: public LogRequestRequestT<GetCurrentTopKData>
+{
+public:
+    GetCurrentTopKRequest()
+        : LogRequestRequestT<GetCurrentTopKData>(METHOD_GET_CURRENT_TOPK)
+    {
+    }
+};
+
+class GetTopKRequest: public LogRequestRequestT<GetTopKData>
+{
+public:
+    GetTopKRequest()
+        : LogRequestRequestT<GetTopKData>(METHOD_GET_TOPK)
+    {
+    }
+};
+
+
+class GetCurrentDVCRequest: public LogRequestRequestT<GetCurrentDVCData>
+{
+public:
+    GetCurrentDVCRequest()
+        : LogRequestRequestT<GetCurrentDVCData>(METHOD_GET_CURRENT_DVC)
+    {
+    }
+};
+
+
+
+class GetDVCRequest: public LogRequestRequestT<GetDVCData>
+{
+public:
+    GetDVCRequest()
+        : LogRequestRequestT<GetDVCData>(METHOD_GET_DVC)
+    {
+    }
+};
+
+class GetValueRequest: public LogRequestRequestT<GetValueData>
+{
+public:
+    GetValueRequest()
+        : LogRequestRequestT<GetValueData>(METHOD_GET_VALUES)
+    {
+    }
 };
 
 class UpdateUUIDRequest : public LogRequestRequestT<UUID2DocidList>
@@ -164,24 +237,6 @@ class GetOldDocIdRequest : public LogRequestRequestT<OldDocIdData>
 public:
     GetOldDocIdRequest ()
         : LogRequestRequestT<OldDocIdData>(METHOD_GET_OLD_DOCID)
-    {
-    }
-};
-
-class GetFreqUserQueriesRequest : public LogRequestRequestT<GetFreqUserQueriesData>
-{
-public:
-    GetFreqUserQueriesRequest()
-        : LogRequestRequestT<GetFreqUserQueriesData>(METHOD_GET_FREQ_USER_QUERIES)
-    {
-    }
-};
-
-class InjectUserQueryRequest : public LogRequestRequestT<InjectUserQueryData>
-{
-public:
-    InjectUserQueryRequest()
-        : LogRequestRequestT<InjectUserQueryData>(METHOD_INJECT_USER_QUERY)
     {
     }
 };

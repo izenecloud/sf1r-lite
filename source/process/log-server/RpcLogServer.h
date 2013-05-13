@@ -46,10 +46,6 @@ public:
     void GetOldUUID(OldUUIDData& reqdata);
     void GetOldDocId(OldDocIdData& reqdata);
 
-    void GetFreqUserQueries(GetFreqUserQueriesData & reqdata,
-            std::list< std::map<std::string, std::string> > & results);
-    void InjectUserQuery(InjectUserQueryData & reqdata,
-            bool & result);
     void synchronize(const SynchronizeData& syncReqData);
 
     /// Will be called when update is actually performed

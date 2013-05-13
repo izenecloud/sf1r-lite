@@ -43,8 +43,13 @@ public:
 
     const std::string& getSqlKeyword(SQL_KEYWORD type) const;
 
+    bool logServer()
+    {
+        return logserver_;
+    }
 private:
     RDbConnectionBase* impl_;
+    bool logserver_;
 };
 
 }

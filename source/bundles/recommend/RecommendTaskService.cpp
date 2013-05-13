@@ -13,8 +13,6 @@
 #include <recommend-manager/storage/OrderManager.h>
 #include <aggregator-manager/UpdateRecommendBase.h>
 #include <aggregator-manager/UpdateRecommendWorker.h>
-#include <log-manager/OrderLogger.h>
-#include <log-manager/ItemLogger.h>
 #include <common/ScdParser.h>
 #include <directory-manager/Directory.h>
 #include <directory-manager/DirectoryRotator.h>

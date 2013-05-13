@@ -5,8 +5,6 @@
 #include "UserQuery.h"
 #include "PropertyLabel.h"
 #include "ProductCount.h"
-#include "OrderLogger.h"
-#include "ItemLogger.h"
 
 #include "CassandraConnection.h"
 #include "PriceHistory.h"
@@ -47,8 +45,6 @@ bool LogManager::init(const std::string& pathParam, const std::string& language)
     UserQuery::createTable();
     PropertyLabel::createTable();
     ProductCount::createTable();
-    OrderLogger::createTable();
-    ItemLogger::createTable();
 
     return true;
 }
