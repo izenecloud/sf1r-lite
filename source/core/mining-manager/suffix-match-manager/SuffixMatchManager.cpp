@@ -298,14 +298,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                     pit != sub_patterns.end(); ++pit)
             {
                 if (pit->first.empty()) continue;
-                if (is_alphabet<uint16_t>::value(pit->first[0]) || is_numeric<uint16_t>::value(pit->first[0]))
-                {
-                    pit->first.insert(pit->first.begin(), ' ');
-                }
-                if (is_alphabet<uint16_t>::value(*pit->first.end()) || is_numeric<uint16_t>::value(*pit->first.end()))
-                {
-                    pit->first.push_back(' ');
-                }
+                pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
                 if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
                 {
                     range_list.push_back(sub_match_range);
