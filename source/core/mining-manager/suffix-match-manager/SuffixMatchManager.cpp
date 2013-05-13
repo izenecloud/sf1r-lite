@@ -15,107 +15,9 @@
 #include <util/ustring/algo.hpp>
 #include <glog/logging.h>
 
+
 using namespace cma;
 using namespace izenelib::util;
-
-namespace
-{
-const char* NUMERIC_RANGE_DELIMITER = "-";
-
-typedef std::pair<int64_t, int64_t> NumericRange;
-
-using namespace sf1r::faceted;
-
-/**
- * check parameter of group label
- * @param[in] labelParam parameter to check
- * @param[out] isRange true for group on range, false for group on single numeric value
- * @return true for success, false for failure
-*/
-bool checkLabelParam(const GroupParam::GroupLabelParam& labelParam, bool& isRange)
-{
-    const GroupParam::GroupPathVec& labelPaths = labelParam.second;
-
-    if (labelPaths.empty())
-        return false;
-
-    const GroupParam::GroupPath& path = labelPaths[0];
-    if (path.empty())
-        return false;
-
-    const std::string& propValue = path[0];
-    std::size_t delimitPos = propValue.find(NUMERIC_RANGE_DELIMITER);
-    isRange = (delimitPos != std::string::npos);
-
-    return true;
-}
-
-bool convertNumericLabel(const std::string& src, float& target)
-{
-    std::size_t delimitPos = src.find(NUMERIC_RANGE_DELIMITER);
-    if (delimitPos != std::string::npos)
-    {
-        LOG(ERROR) << "group label parameter: " << src
-                   << ", it should be specified as single numeric value";
-        return false;
-    }
-
-    try
-    {
-        target = boost::lexical_cast<float>(src);
-    }
-    catch (const boost::bad_lexical_cast& e)
-    {
-        LOG(ERROR) << "failed in casting label from " << src
-                   << " to numeric value, exception: " << e.what();
-        return false;
-    }
-
-    return true;
-}
-
-bool convertRangeLabel(const std::string& src, NumericRange& target)
-{
-    std::size_t delimitPos = src.find(NUMERIC_RANGE_DELIMITER);
-    if (delimitPos == std::string::npos)
-    {
-        LOG(ERROR) << "group label parameter: " << src
-                   << ", it should be specified as numeric range value";
-        return false;
-    }
-
-    int64_t lowerBound = std::numeric_limits<int64_t>::min();
-    int64_t upperBound = std::numeric_limits<int64_t>::max();
-
-    try
-    {
-        if (delimitPos)
-        {
-            std::string sub = src.substr(0, delimitPos);
-            lowerBound = boost::lexical_cast<int64_t>(sub);
-        }
-
-        if (delimitPos+1 != src.size())
-        {
-            std::string sub = src.substr(delimitPos+1);
-            upperBound = boost::lexical_cast<int64_t>(sub);
-        }
-    }
-    catch (const boost::bad_lexical_cast& e)
-    {
-        LOG(ERROR) << "failed in casting label from " << src
-                    << " to numeric value, exception: " << e.what();
-        return false;
-    }
-
-    target.first = lowerBound;
-    target.second = upperBound;
-
-    return true;
-}
-
-}
-
 
 namespace sf1r
 {
@@ -376,7 +278,7 @@ bool SuffixMatchManager::getAllFilterRangeFromAttrLable_(
     }
 
     size_t prop_id = filter_manager_->getAttrPropertyId();
-    if (prop_id == (size_t)-1) return true;
+    if (prop_id == (size_t)-1) return false;
 
     FMIndexManager::FilterRangeT filter_range;
     FilterManager::FilterIdRange filterid_range;
@@ -394,12 +296,12 @@ bool SuffixMatchManager::getAllFilterRangeFromAttrLable_(
             if (filterid_range.start >= filterid_range.end)
             {
                 LOG(WARNING) << "attribute filter id range not found. " << attr_filterstr;
-                return false;
+                continue;
             }
             if (!fmi_manager_->getFilterRange(prop_id, std::make_pair(filterid_range.start, filterid_range.end), filter_range))
             {
                 LOG(WARNING) << "get filter DocArray range failed.";
-                return false;
+                continue;
             }
 
             LOG(INFO) << "attribute filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
@@ -407,7 +309,11 @@ bool SuffixMatchManager::getAllFilterRangeFromAttrLable_(
         }
     }
 
-    if (!temp_range_list.empty())
+    if (temp_range_list.empty())
+    {
+        return false;
+    }
+    else
     {
         prop_id_list.push_back(prop_id);
         filter_range_list.push_back(temp_range_list);
@@ -443,29 +349,51 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
         RangeListT temp_range_list;
         for (size_t i = 0; i < group_values.size(); ++i)
         {
+            if (group_values[i].empty()) continue;
+
             if (is_numeric)
             {
-                bool is_range = false;
-                if (!checkLabelParam(*cit, is_range))
+                const std::string& str_value = group_values[i][0];
+                size_t delimitPos = str_value.find('-');
+                if (delimitPos != std::string::npos)
                 {
-                    return false;
-                }
-                if (is_range)
-                {
-                    NumericRange range;
-                    if (!convertRangeLabel(group_values[i][0], range))
-                        return false;
-                    FilterManager::FilterIdRange tmp_range;
-                    tmp_range = filter_manager_->getNumFilterIdRangeLess(prop_id, std::max(range.first, range.second), true);
-                    filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, std::min(range.first, range.second), true);
-                    filterid_range.start = std::max(filterid_range.start, tmp_range.start);
-                    filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                    int64_t lowerBound = std::numeric_limits<int64_t>::min();
+                    int64_t upperBound = std::numeric_limits<int64_t>::max();
+
+                    try
+                    {
+                        if (delimitPos)
+                        {
+                            lowerBound = boost::lexical_cast<int64_t>(str_value.substr(0, delimitPos));
+                        }
+
+                        if (delimitPos + 1 != str_value.size())
+                        {
+                            upperBound = boost::lexical_cast<int64_t>(str_value.substr(delimitPos + 1));
+                        }
+                    }
+                    catch (const boost::bad_lexical_cast& e)
+                    {
+                        LOG(ERROR) << "failed in casting label from " << str_value
+                            << " to numeric value, exception: " << e.what();
+                        continue;
+                    }
+                    filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, lowerBound, true);
+                    filterid_range.merge(filter_manager_->getNumFilterIdRangeLess(prop_id, upperBound, true));
                 }
                 else
                 {
                     float value = 0;
-                    if (!convertNumericLabel(group_values[i][0], value))
-                        return false;
+                    try
+                    {
+                        value = boost::lexical_cast<float>(str_value);
+                    }
+                    catch (const boost::bad_lexical_cast& e)
+                    {
+                        LOG(ERROR) << "failed in casting label from " << str_value
+                            << " to numeric value, exception: " << e.what();
+                        continue;
+                    }
                     filterid_range = filter_manager_->getNumFilterIdRangeExact(prop_id, value);
                 }
             }
@@ -477,7 +405,7 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
                 if (!dsf.apiDateStrToDateVec(propValue, date_vec))
                 {
                     LOG(WARNING) << "get date from datestr error. " << propValue;
-                    return false;
+                    continue;
                 }
                 double value = (double)dsf.createDate(date_vec);
                 LOG(INFO) << "date value is : " << value;
@@ -497,15 +425,12 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
                     }
                     else
                     {
-                        return false;
+                        continue;
                     }
                     double end_value = (double)dsf.createDate(end_date_vec);
                     LOG(INFO) << "end date value is : " << end_value;
-                    FilterManager::FilterIdRange tmp_range;
-                    tmp_range = filter_manager_->getNumFilterIdRangeLess(prop_id, end_value, true);
                     filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, value, true);
-                    filterid_range.start = std::max(filterid_range.start, tmp_range.start);
-                    filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                    filterid_range.merge(filter_manager_->getNumFilterIdRangeLess(prop_id, end_value, true));
                 }
                 else
                 {
@@ -521,19 +446,23 @@ bool SuffixMatchManager::getAllFilterRangeFromGroupLable_(
             if (filterid_range.start >= filterid_range.end)
             {
                 LOG(WARNING) << "one of group label filter id range not found.";
-                return false;
+                continue;
             }
             if (!fmi_manager_->getFilterRange(prop_id, std::make_pair(filterid_range.start, filterid_range.end), filter_range))
             {
                 LOG(WARNING) << "get filter DocArray range failed.";
-                return false;
+                continue;
             }
 
             temp_range_list.push_back(filter_range);
             LOG(INFO) << "group label filter DocArray range is : " << filter_range.first << ", " << filter_range.second;
         }
 
-        if (!temp_range_list.empty())
+        if (temp_range_list.empty())
+        {
+            return false;
+        }
+        else
         {
             prop_id_list.push_back(prop_id);
             filter_range_list.push_back(temp_range_list);
@@ -598,10 +527,8 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
                             if (filter.values_.size() < 2) return false;
 
                             double filter_num_2 = filter.values_[1].getNumber();
-                            FilterManager::FilterIdRange tmp_range = filter_manager_->getNumFilterIdRangeLess(prop_id, std::max(filter_num, filter_num_2), true);
                             filterid_range = filter_manager_->getNumFilterIdRangeGreater(prop_id, std::min(filter_num, filter_num_2), true);
-                            filterid_range.start = std::max(filterid_range.start, tmp_range.start);
-                            filterid_range.end = std::min(filterid_range.end, tmp_range.end);
+                            filterid_range.merge(filter_manager_->getNumFilterIdRangeLess(prop_id, std::max(filter_num, filter_num_2), true));
                         }
                         break;
 
@@ -646,19 +573,16 @@ bool SuffixMatchManager::getAllFilterRangeFromFilterParam_(
                         if (filter.values_.size() < 2) return false;
 
                         const std::string& filter_str1 = filter.values_[1].get<std::string>();
-                        FilterManager::FilterIdRange tmp_range;
                         if (filter_str < filter_str1)
                         {
-                            tmp_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str1, UString::UTF_8), true);
                             filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str, UString::UTF_8), true);
+                            filterid_range.merge(filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str1, UString::UTF_8), true));
                         }
                         else
                         {
-                            tmp_range = filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true);
                             filterid_range = filter_manager_->getStrFilterIdRangeGreater(prop_id, UString(filter_str1, UString::UTF_8), true);
+                            filterid_range.merge(filter_manager_->getStrFilterIdRangeLess(prop_id, UString(filter_str, UString::UTF_8), true));
                         }
-                        filterid_range.start = std::max(filterid_range.start, tmp_range.start);
-                        filterid_range.end = std::min(filterid_range.end, tmp_range.end);
                     }
                     break;
 
