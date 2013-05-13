@@ -558,6 +558,8 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
             return false;
         totalSCDSizeSinceLastBackup_ = 0;
     }
+    searchWorker_->clearSearchCache();
+    searchWorker_->clearFilterCache();
 
     return true;
 }
@@ -1461,9 +1463,6 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
 
     // interrupt when closing the process
     boost::this_thread::interruption_point();
-
-    searchWorker_->clearSearchCache();
-    searchWorker_->clearFilterCache();
 
     return true;
 }
