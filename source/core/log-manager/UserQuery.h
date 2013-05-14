@@ -183,6 +183,14 @@ public:
     static bool getTopK(const std::string& c, const std::string& b, const std::string& e,
             const std::string& limit, std::list<std::map<std::string, std::string> >& res)
     {
+        LogServerConnection& conn = LogServerConnection::instance();
+        GetTopKRequest req;
+        req.param_.service_ = service_;
+        req.param_.collection_=c;
+        req.param_.begin_time_ = b;
+        req.param_.end_time_ = e;
+        req.param_.limit_=boost::lexical_cast<uint32_t>(limit);
+        conn.syncRequest(req,res);
         return true;
     }
 private:

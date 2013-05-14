@@ -107,5 +107,4 @@ void UserQuery::save_to_logserver()
     bool res;
     conn.syncRequest(req, res);
 }
-
 }

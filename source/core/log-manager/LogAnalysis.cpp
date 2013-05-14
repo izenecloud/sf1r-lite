@@ -1,8 +1,6 @@
 #include "LogManager.h"
-#include "UserQuery.h"
 #include "LogAnalysis.h"
 #include <query-manager/QMCommonFunc.h>
-//extern class QueryType;
 
 namespace sf1r
 {
@@ -32,33 +30,15 @@ void LogAnalysis::getRecentKeywordList(const std::string& collectionName, uint32
     }
 }
 
-//author wang qian
-void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, uint32_t limit, std::vector<QueryType>& queryList)
+//stime_string: 120days, 90days, 7days, 1days
+void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, const std::string& time_string, std::vector<UserQuery>& queryList)
 {
-    queryList.resize(0);
-    if (limit==0 ) return;
-    std::vector<UserQuery> query_records;
     UserQuery::find(
         "query ,max(hit_docs_num) as hit_docs_num,count(*) as count",
-        "collection = '" + collectionName + "'" + " and " + "hit_docs_num > 0",
+        "collection = '" + collectionName + "' and hit_docs_num > 0 and TimeStamp >= '" + time_string +"'",
         "query",
         "",
-        boost::lexical_cast<std::string>(limit),
-        query_records);
-
-    std::vector<UserQuery>::const_iterator it = query_records.begin();
-    for ( ; it!=query_records.end(); ++it )
-    {
-        QueryType TempQuery;
-        TempQuery.strQuery_ = it->getQuery();
-        TempQuery.freq_ = it->getCount();
-        //TempQuery.HitNum_ = it->gethit_docs_num();
-        queryList.push_back(TempQuery );
-    }
+        "",
+        queryList);
 }
-
-//
-
-
-
 }
