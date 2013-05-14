@@ -41,6 +41,16 @@ void PropertyLabel::load( const std::map<std::string, std::string> & rawdata )
 
 void PropertyLabel::save_to_logserver()
 {
+    LogServerConnection& conn = LogServerConnection::instance();
+    InsertWithValuesDataRequest req;
+    req.param_.service_ = service_;
+    req.param_.collection_ = collection_;
+    req.param_.key_ = labelName_;
+    req.param_.values_["label_name"] = labelName_;
+    req.param_.values_["hit_docs_num"] = hitDocsNum_;
+
+    bool res;
+    conn.syncRequest(req, res);
 }
 
 }

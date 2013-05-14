@@ -30,7 +30,7 @@ void LogAnalysis::getRecentKeywordList(const std::string& collectionName, uint32
     }
 }
 
-//stime_string: 120days, 90days, 7days, 1days
+
 void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, const std::string& time_string, std::vector<UserQuery>& queryList)
 {
     UserQuery::find(
