@@ -98,11 +98,11 @@ void UserQuery::save_to_logserver()
     req.param_.key_ = query_;
     req.param_.values_["query"] = query_;
     req.param_.values_["collection"] = collection_;
-    req.param_.values_["hit_num"] = boost::lexical_cast<string>(hitDocsNum_);
+    req.param_.values_["hit_docs_num"] = boost::lexical_cast<string>(hitDocsNum_);
     req.param_.values_["page_start"] = boost::lexical_cast<string>(pageStart_);
     req.param_.values_["page_count"] = boost::lexical_cast<string>(pageCount_);
     req.param_.values_["duration"] = to_iso_string(duration_);
-    req.param_.values_["timestamp"] = to_iso_string(timeStamp_);
+    req.param_.values_["TimeStamp"] = to_iso_string(timeStamp_);
 
     bool res;
     conn.syncRequest(req, res);
