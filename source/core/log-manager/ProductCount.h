@@ -119,7 +119,11 @@ public:
 
     void load( const std::map<std::string, std::string> & rawdata );
 
+    void save_to_logserver();
+
 private:
+
+    static const std::string service_;
 
     std::string source_;
     bool sourcePresent_;

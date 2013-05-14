@@ -152,13 +152,8 @@ void RecommendManager::RebuildForAll(int64_t cron_time)
     typedef std::map<std::string, std::string> DbRecordType;
 
     std::vector<UserQuery> query_records;
-    UserQuery::find(
-            "query, max(hit_docs_num) as hit_docs_num, count(*) AS page_count",
-            "collection = '" + collection_name_ + "' AND hit_docs_num > 0 AND TimeStamp >= '" + time_string + "'",
-            "query",
-            "",
-            "",
-            query_records);
+
+    LogAnalysis::getRecentKeywordFreqList(collection_name_, time_string, query_records);
 
     std::list<QueryLogType> queryList;
     for (std::vector<UserQuery>::const_iterator it = query_records.begin();

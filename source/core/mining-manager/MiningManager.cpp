@@ -588,7 +588,7 @@ bool MiningManager::open()
                         mining_schema_.suffixmatch_schema.suffix_match_tokenize_dicpath,
                         mining_schema_.suffixmatch_schema.suffix_match_properties,
                         document_manager_, idManager_, laManager_, indexSchema_,
-                        groupManager_, attrManager_, numericTableBuilder_); 
+                        groupManager_, attrManager_, numericTableBuilder_);
                 incrementalManager_->Init();
                 boost::shared_ptr<FilterManager>& filter_manager_inc = incrementalManager_->getFilterManager();
                 filter_manager_inc->setGroupFilterProperties(mining_schema_.suffixmatch_schema.group_filter_properties);
@@ -608,13 +608,13 @@ bool MiningManager::open()
                 suffixMatchManager_->buildMiningTask();
                 MiningTask* miningTask = suffixMatchManager_->getMiningTask();
                 miningTaskBuilder_->addTask(miningTask);
-                
+
                 if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
                 {
                     if (cronExpression_.setExpression(miningConfig_.fuzzyIndexMerge_param.cron))
                     {
                         string cronJobName = "fuzzy_index_merge";
-                        
+
                         bool result = izenelib::util::Scheduler::addJob(cronJobName,
                         60*1000, // each minute
                         0, // start from now
@@ -975,7 +975,7 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
             @brief: if there is -D SCD, the fuzzy index will merge and rebuid;
             @for incremental is for -U and -R scd;
             **/
-            if (last_docid == document_manager_->getMaxDocId()) /// for -D SCD and -R SCD 
+            if (last_docid == document_manager_->getMaxDocId()) /// for -D SCD and -R SCD
             {
                 if (document_manager_->last_delete_docid_.size() > 0) /// merge and rebuild fm-index;
                 {
@@ -986,9 +986,9 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
                 else if (document_manager_->isThereRtypePro())
                 {
                     std::vector<string> unchangedProperties;
-                    const std::vector<std::pair<int32_t, std::string> >& prop_list 
+                    const std::vector<std::pair<int32_t, std::string> >& prop_list
                     = suffixMatchManager_->getFilterManager()->getProp_list();
-                    
+
                     for (std::vector<std::pair<int32_t, std::string> >::const_iterator i = prop_list.begin()
                         ; i != prop_list.end(); ++i)
                     {
@@ -998,7 +998,7 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
                             unchangedProperties.push_back((*i).second);
                         }
                     }
-                    /// all just rebuid filter ... 
+                    /// all just rebuid filter ...
                     if (suffixMatchManager_->getMiningTask()->getLastDocId() - 1 == document_manager_->getMaxDocId()) /// only fm-index;
                     {
                         SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
@@ -1008,13 +1008,13 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
                     else /// each just update it's filter;
                     {
                         /*
-                        @brief: because the fm-index will not rebuild, so even the filter docid num is 
+                        @brief: because the fm-index will not rebuild, so even the filter docid num is
                         more than fm-index docid num, there is no effect.
                         */
                         SuffixMatchMiningTask* miningTask = suffixMatchManager_->getMiningTask();
                         bool isIncre = false;
                         miningTask->isRtypeIncremental_ = true;
-                        miningTask->setTaskStatus(isIncre);// 
+                        miningTask->setTaskStatus(isIncre);//
 
                         incrementalManager_->updateFilterForRtype(); // use extra filter update for incre;
                     }
@@ -2255,7 +2255,7 @@ bool MiningManager::GetSuffixMatch(
         }
     }
 
-    if(!totalCount ||res_list.empty()) return false;
+    if (!totalCount ||res_list.empty()) return false;
 
     //We do not use this post delete filtering because deleted documents should never be searched from
     //suffix index in normal cases, while if there are deleted documents before mining finished, these documents

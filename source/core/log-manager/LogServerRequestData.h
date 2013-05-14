@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 namespace sf1r
 {
@@ -19,6 +20,75 @@ inline std::ostream& operator<<(std::ostream& os, uint128_t uint128)
 struct LogServerRequestData
 {
 };
+
+struct InsertData: public LogServerRequestData
+{
+    std::string service_;
+    std::string collection_;
+    std::string key_;
+
+    MSGPACK_DEFINE(service_, collection_, key_);
+};
+
+struct InsertWithValuesData: public LogServerRequestData
+{
+    std::string service_;
+    std::string collection_;
+    std::string key_;
+    std::map<std::string, std::string> values_;
+
+    MSGPACK_DEFINE(service_, collection_, key_, values_);
+};
+
+struct GetCurrentTopKData: public LogServerRequestData
+{
+    std::string service_;
+    std::string collection_;
+    uint32_t limit_;
+
+    MSGPACK_DEFINE(service_, collection_, limit_);
+};
+
+struct GetTopKData: public LogServerRequestData
+{
+    std::string service_;
+    std::string collection_;
+    std::string begin_time_;
+    std::string end_time_;
+    uint32_t limit_;
+
+    MSGPACK_DEFINE(service_, collection_, begin_time_, end_time_, limit_);
+};
+
+struct GetCurrentDVCData: public LogServerRequestData
+{
+    std::string service_;
+    std::string collection_;
+
+    MSGPACK_DEFINE(service_, collection_);
+};
+
+struct GetDVCData: public LogServerRequestData
+{
+    std::string service_;
+    std::string collection_;
+    std::string begin_time_;
+    std::string end_time_;
+
+    MSGPACK_DEFINE(service_, collection_, begin_time_, end_time_);
+};
+
+struct GetValueData: public LogServerRequestData
+{
+    std::string service_;
+    std::string collection_;
+    std::string time_;
+    uint32_t limit_;
+
+    MSGPACK_DEFINE(service_, collection_, time_, limit_);
+};
+
+
 
 struct UUID2DocidList : public LogServerRequestData
 {
@@ -140,29 +210,6 @@ struct DelOldDocIdData: public LogServerRequestData
     //std::string toString() const;
 
     MSGPACK_DEFINE(success_, olddocid_, uuid_list_)
-};
-
-struct GetFreqUserQueriesData: public LogServerRequestData
-{
-    std::string collection_;
-    std::string begin_time_;
-    std::string end_time_;
-    std::string limit_;
-
-    MSGPACK_DEFINE(collection_, begin_time_, end_time_, limit_);
-};
-
-struct InjectUserQueryData: public LogServerRequestData
-{
-    std::string query_;
-    std::string collection_;
-    std::string hitnum_;
-    std::string page_start_;
-    std::string page_count_;
-    std::string duration_;
-    std::string timestamp_;
-
-    MSGPACK_DEFINE(query_, collection_, hitnum_, page_start_, page_count_, duration_, timestamp_);
 };
 
 }
