@@ -1,7 +1,87 @@
 #include "product_db.h"
+#include "product_matcher.h"
 #include <mining-manager/util/split_ustr.h>
 #include <sstream>
 using namespace sf1r;
+
+void B5mpDoc::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc)
+{
+    pdoc.type=UPDATE_SCD;
+    int64_t itemcount=0;
+    std::set<std::string> psource;
+    ProductPrice pprice;
+    UString pdate;
+    UString spu_title;
+    std::vector<ProductMatcher::Attribute> pattributes;
+    bool independent=true;
+    //std::cerr<<"odocs count "<<odocs.size()<<std::endl;
+    UString pid;
+    odocs.front().getProperty("uuid", pid);
+    for(uint32_t i=0;i<odocs.size();i++)
+    {
+        const ScdDocument& doc=odocs[i];
+        if(doc.type==NOT_SCD||doc.type==DELETE_SCD)
+        {
+            continue;
+        }
+        UString oid;
+        doc.getProperty("DOCID", oid);
+        if(oid!=pid) independent=false;
+        doc.getProperty(B5MHelper::GetSPTPropertyName(), spu_title);
+        pdoc.merge(doc);
+        itemcount+=1;
+        UString usource;
+        UString uprice;
+        UString uattribute;
+        UString udate;
+        doc.getProperty("Source", usource);
+        doc.getProperty("Price", uprice);
+        doc.getProperty("Attribute", uattribute);
+        doc.getProperty("DATE", udate);
+        if(udate.compare(pdate)>0) pdate=udate;
+        ProductPrice price;
+        price.Parse(uprice);
+        pprice+=price;
+        if(usource.length()>0)
+        {
+            std::string ssource;
+            usource.convertString(ssource, UString::UTF_8);
+            psource.insert(ssource);
+        }
+        if(!uattribute.empty())
+        {
+            std::vector<ProductMatcher::Attribute> attributes;
+            ProductMatcher::ParseAttributes(uattribute, attributes);
+            ProductMatcher::MergeAttributes(pattributes, attributes);
+        }
+    }
+    if(!spu_title.empty())
+    {
+        independent=false;
+        pdoc.property("Title") = spu_title;
+    }
+    pdoc.eraseProperty(B5MHelper::GetSPTPropertyName());
+    pdoc.eraseProperty("uuid");
+
+    pdoc.property("DOCID") = pid;
+    pdoc.property("itemcount") = itemcount;
+    pdoc.property("independent") = (int64_t)independent;
+    if(!pdate.empty()) pdoc.property("DATE") = pdate;
+    pdoc.property("Price") = pprice.ToUString();
+    std::string ssource;
+    for(std::set<std::string>::const_iterator it=psource.begin();it!=psource.end();++it)
+    {
+        if(!ssource.empty()) ssource+=",";
+        ssource+=*it;
+    }
+    pdoc.property("Source") = UString(ssource, UString::UTF_8);
+    pdoc.property("Attribute") = ProductMatcher::AttributesText(pattributes); 
+    if(itemcount==0)
+    {
+        pdoc.type=DELETE_SCD;
+        pdoc.clearExceptDOCID();
+    }
+}
 
 ProductProperty::ProductProperty()
 :itemcount(0), independent(false)

@@ -146,6 +146,10 @@ namespace sf1r {
         {
             return mdb_instance+"/b5mo";
         }
+        static std::string GetB5moBlockPath(const std::string& mdb_instance)
+        {
+            return mdb_instance+"/b5mo_block";
+        }
         static std::string GetB5mpPath(const std::string& mdb_instance)
         {
             return mdb_instance+"/b5mp";

@@ -13,6 +13,7 @@
 #include <b5m-manager/tuan_processor.h>
 #include <b5m-manager/uue_worker.h>
 #include <b5m-manager/b5mp_processor.h>
+#include <b5m-manager/b5mp_processor2.h>
 #include <b5m-manager/b5m_mode.h>
 #include <b5m-manager/b5mc_scd_generator.h>
 #include <b5m-manager/log_server_handler.h>
@@ -1055,7 +1056,7 @@ int do_main(int ac, char** av)
         {
             return EXIT_FAILURE;
         }
-        B5mpProcessor processor(mdb_instance, last_mdb_instance);
+        B5mpProcessor2 processor(mdb_instance, last_mdb_instance);
         if(!processor.Generate())
         {
             std::cout<<"b5mp processor failed"<<std::endl;

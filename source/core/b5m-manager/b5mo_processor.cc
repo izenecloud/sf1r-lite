@@ -22,7 +22,7 @@ using namespace sf1r;
 B5moProcessor::B5moProcessor(OfferDb* odb, ProductMatcher* matcher, BrandDb* bdb,
     int mode, 
     RpcServerConnectionConfig* img_server_config)
-:odb_(odb), matcher_(matcher), bdb_(bdb), mode_(mode), img_server_cfg_(img_server_config)
+:odb_(odb), matcher_(matcher), bdb_(bdb), sorter_(NULL), mode_(mode), img_server_cfg_(img_server_config)
 {
 }
 
@@ -102,9 +102,11 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     std::string sdocid;
     doc.getString("DOCID", sdocid);
     uint128_t oid = B5MHelper::StringToUint128(sdocid);
+    sdocid = B5MHelper::Uint128ToString(oid); //to avoid DOCID error;
+    std::string spid;
+    std::string old_spid;
     if(type==RTYPE_SCD)
     {
-        std::string spid;
         if(odb_->get(sdocid, spid)) 
         {
             doc.property("uuid") = UString(spid, UString::UTF_8);
@@ -118,7 +120,6 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     }
     else if(type!=DELETE_SCD) //I or U
     {
-        std::string spid;
         UString ptitle;
         UString category;
         UString brand;
@@ -144,7 +145,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
                 is_human_edit = true;
             }
         }
-        std::string old_spid = spid;
+        old_spid = spid;
         bool need_do_match = false;
         if(is_human_edit)
         {
@@ -275,8 +276,8 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     else
     {
         doc.clearExceptDOCID();
-        std::string spid;
         odb_->get(sdocid, spid);
+        old_spid = spid;
         if(spid.empty()) type=NOT_SCD;
         else
         {
@@ -286,6 +287,27 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     if(!changed_match_.empty())
     {
         changed_match_.erase(oid);
+    }
+    if(sorter_!=NULL)
+    {
+        if(type!=DELETE_SCD)
+        {
+            ScdDocument sdoc(doc, type);
+            sorter_->Append(sdoc, ts_);
+            if(old_spid!=spid&&!old_spid.empty())
+            {
+                ScdDocument old_doc;
+                old_doc.property("DOCID") = UString(sdocid, UString::UTF_8);
+                old_doc.property("uuid") = UString(old_spid, UString::UTF_8);
+                old_doc.type=DELETE_SCD;
+                sorter_->Append(old_doc, last_ts_);
+            }
+        }
+        else
+        {
+            ScdDocument sdoc(doc, DELETE_SCD);
+            sorter_->Append(sdoc, ts_);
+        }
     }
 }
 
@@ -300,6 +322,15 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
             return false;
         }
     }
+    //if(!last_odb_->is_open())
+    //{
+        //LOG(INFO)<<"open last_odb..."<<std::endl;
+        //if(!last_odb_->open())
+        //{
+            //LOG(ERROR)<<"last_odb open fail"<<std::endl;
+            //return false;
+        //}
+    //}
     if(!bdb_->is_open())
     {
         LOG(INFO)<<"open bdb..."<<std::endl;
@@ -309,6 +340,17 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
             return false;
         }
     }
+    namespace bfs = boost::filesystem;
+    ts_ = bfs::path(mdb_instance).filename().string();
+    last_ts_="";
+    if(!last_mdb_instance.empty())
+    {
+        last_ts_ = bfs::path(last_mdb_instance).filename().string();
+    }
+    std::string sorter_path = B5MHelper::GetB5moBlockPath(mdb_instance); 
+    B5MHelper::PrepareEmptyDir(sorter_path);
+    sorter_ = new B5moSorter(sorter_path, 200000);
+
     //if(!matcher_->IsOpen())
     //{
         //LOG(INFO)<<"open matcher..."<<std::endl;
@@ -384,6 +426,10 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
     cmatch_ofs_.close();
     odb_->flush();
     bdb_->flush();
+    if(sorter_!=NULL)
+    {
+        sorter_->StageOne();
+    }
     //if(!changed_match_.empty())
     //{
         //if(last_mdb_instance.empty())
