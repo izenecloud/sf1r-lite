@@ -136,6 +136,7 @@
     <xs:complexType name="QueryCorrectionParaType">
         <xs:attribute name="enableCN" type="YesNoType" use="required"/>
         <xs:attribute name="enableEK" type="YesNoType" use="required"/>
+        <xs:attribute name="fromDb" type="YesNoType" use="optional"/>
     </xs:complexType>
     <xs:complexType name="ProductRankingParaType">
         <xs:attribute name="cron" type="xs:string" use="required" />

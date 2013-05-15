@@ -39,6 +39,7 @@ public:
         const std::string& queryDataPath, 
         bool enableEK, 
         bool enableChn, 
+        bool fromDb, 
         int ed = DEFAULT_MAX_EDITDISTANCE_);
 
     ~QueryCorrectionSubmanager();
@@ -95,11 +96,13 @@ protected:
 public:
     static std::string system_resource_path_;
     static std::string system_working_path_;
+    static bool system_fromDb_;
 
 private:
     std::string queryDataPath_;
     bool enableEK_;
     bool enableChn_;
+    bool fromDb_;
     int ed_;
 
     /**

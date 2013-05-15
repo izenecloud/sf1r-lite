@@ -41,4 +41,17 @@ void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, co
         "",
         queryList);
 }
+
+void LogAnalysis::getRecentKeywordFreqList(const std::string& time_string, std::vector<UserQuery>& queryList)
+{
+    UserQuery::find(
+        "query ,max(hit_docs_num) as hit_docs_num,count(*) as count",
+        " hit_docs_num > 0 and TimeStamp >= '" + time_string +"'",
+        "query",
+        "",
+        "",
+        queryList);
+}
+
+
 }

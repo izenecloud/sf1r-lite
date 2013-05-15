@@ -320,7 +320,7 @@ bool MiningManager::open()
         uint32_t logdays = 7;
 
         qcManager_.reset(new QueryCorrectionSubmanager(queryDataPath_, miningConfig_.query_correction_param.enableEK,
-                    miningConfig_.query_correction_param.enableCN));
+                    miningConfig_.query_correction_param.enableCN,miningConfig_.query_correction_param.fromDb));
         rmDb_.reset(new RecommendManager(collectionName_, collectionPath_, mining_schema_, miningConfig_, document_manager_,
                     qcManager_, analyzer_, logdays));
 

@@ -154,7 +154,7 @@ void CobraProcess::initQuery()
     }
     QueryCorrectionSubmanager::system_resource_path_ = SF1Config::get()->getResourceDir();
     QueryCorrectionSubmanager::system_working_path_ = SF1Config::get()->getWorkingDir();
-    QueryCorrectionSubmanager::getInstance();
+    //QueryCorrectionSubmanager::getInstance();
     AutoFillChildManager::system_resource_path_ = SF1Config::get()->getResourceDir();
     OpinionsClassificationManager::system_resource_path_ = SF1Config::get()->getResourceDir();
 }

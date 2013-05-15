@@ -103,7 +103,7 @@
                storeimagelocally: whether the image will be copied and stored locally in the server.
           -->
           <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
-          <QueryCorrectionPara enableEK="y" enableCN="y"/>
+          <QueryCorrectionPara enableEK="y" enableCN="y" fromDb="n"/>
           <ProductRankingPara cron="0 23 * * *"/>
         </Parameter>
       </MiningBundle>

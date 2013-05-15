@@ -24,6 +24,7 @@
 #include <sstream>
 
 #include <boost/asio.hpp>
+#include <mining-manager/query-correction-submanager//QueryCorrectionSubmanager.h>
 
 using namespace std;
 using namespace izenelib::util::ticpp;
@@ -1524,6 +1525,10 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     //for query correction
     params.Get("QueryCorrectionPara/enableEK", mining_config.query_correction_param.enableEK);
     params.Get("QueryCorrectionPara/enableCN", mining_config.query_correction_param.enableCN);
+    params.Get("QueryCorrectionPara/fromDb", mining_config.query_correction_param.fromDb);
+    QueryCorrectionSubmanager::system_fromDb_= mining_config.query_correction_param.fromDb;
+    QueryCorrectionSubmanager::getInstance();
+
 
     // for product ranking
     params.GetString("ProductRankingPara/cron",
