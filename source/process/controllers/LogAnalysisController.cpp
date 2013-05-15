@@ -315,7 +315,7 @@ void LogAnalysisController::get_freq_user_queries_from_logserver()
 
         if(!user_queries_cache.getValueNoInsert(sql.str(), user_queries)
                 || ((std::time(NULL) - user_queries.first) > refreshInterval) ){
-            if ( !UserQuery::find_freq_from_logserver(collection_name, begin_time, end_time, limit, sqlResults) )
+            if ( !UserQuery::getTopK(collection_name, begin_time, end_time, limit, sqlResults) )
             {
                 LOG(INFO) << "Fail" << endl;
                 response().addError("[LogManager] Fail to process such a request");

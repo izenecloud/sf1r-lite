@@ -35,13 +35,8 @@ public:
         std::string time_string = boost::posix_time::to_iso_string(p);
         std::vector<UserQuery> query_records;
 
-        UserQuery::find(
-            "query ,max(hit_docs_num) as hit_docs_num, count(*) as count ",
-            "collection = '" + collectionName_ + "' and hit_docs_num > 0 AND TimeStamp >= '" + time_string + "'",
-            "query",
-            "",
-            "",
-            query_records);
+        LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records);
+
         std::vector<UserQuery>::const_iterator it = query_records.begin();
         for (; it != query_records.end(); ++it)
         {

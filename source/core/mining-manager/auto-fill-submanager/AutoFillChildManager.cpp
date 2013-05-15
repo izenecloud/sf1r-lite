@@ -105,7 +105,7 @@ bool AutoFillChildManager::LoadWat()
         return false;
 }
 
-bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath 
+bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath
                                     , const std::string& collectionName
                                     , const string& cronExpression
                                     , const string& instanceName
@@ -194,7 +194,7 @@ bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath
     return true;
 }
 
-bool AutoFillChildManager::Init_ForTest(const CollectionPath& collectionPath 
+bool AutoFillChildManager::Init_ForTest(const CollectionPath& collectionPath
                                     , const std::string& collectionName
                                     , const string& cronExpression
                                     , const string& instanceName
@@ -423,13 +423,8 @@ bool AutoFillChildManager::InitFromLog()
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
 
-    UserQuery::find(
-        "query ,max(hit_docs_num) as hit_docs_num, count(*) as count ",
-        "collection = '" + collectionName_ + "' and hit_docs_num > 0 AND TimeStamp >= '" + time_string + "'",
-        "query",
-        "",
-        "",
-        query_records);
+    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records);
+
     list<ItemValueType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();
 
@@ -479,7 +474,7 @@ bool AutoFillChildManager::buildDbIndex(const std::list<QueryType>& queryList)
     {
         querynum++;
         std::vector<izenelib::util::UString> pinyins;
-        
+
         FREQ_TYPE freq = (*it).freq_;
         uint32_t HitNum = (*it).HitNum_;
         std::string strT = (*it).strQuery_;
@@ -1150,13 +1145,8 @@ void AutoFillChildManager::updateFromLog()
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
 
-    UserQuery::find(
-        "query ,max(hit_docs_num) as hit_docs_num, count(*) as count ",
-        "collection = '" + collectionName_ + "' and hit_docs_num > 0 AND TimeStamp >= '" + time_string + "'",
-        "query",
-        "",
-        "",
-        query_records);
+    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records);
+
     list<QueryType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();
     for ( ; it != query_records.end(); ++it)
