@@ -1,6 +1,7 @@
 #include "SynchroConsumer.h"
 
 #include <node-manager/SuperNodeManager.h>
+#include <node-manager/DistributeFileSys.h>
 #include <util/string/StringUtils.h>
 
 #include <glog/logging.h>
@@ -256,7 +257,10 @@ bool SynchroConsumer::consume(SynchroData& producerMsg)
             LOG(INFO) << "source path is only needed for local consume and producer.";
             LOG(INFO) << "local consume is : " << SuperNodeManager::get()->getLocalHostIP();
             LOG(INFO) << "producer is : " << producerMsg.getStrValue(SynchroData::KEY_HOST);
-            src_path.clear();
+            if (!DistributeFileSys::get()->isEnabled())
+            {
+                src_path.clear();
+            }
         }
         ret = callback_on_produced_(src_path);
     }

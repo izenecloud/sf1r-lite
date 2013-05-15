@@ -2,6 +2,7 @@
 #include <bundles/index/IndexTaskService.h>
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/NodeManagerBase.h>
+#include <node-manager/DistributeFileSys.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 
@@ -19,16 +20,16 @@ ProductScdReceiver::ProductScdReceiver(const std::string& syncID, const std::str
             collectionName);
 }
 
-bool ProductScdReceiver::pushIndexRequest()
+bool ProductScdReceiver::pushIndexRequest(const std::string& scd_source_dir)
 {
     if (MasterManagerBase::get()->isDistributed())
     {
         if (NodeManagerBase::get()->isPrimary())
         {
-            std::string json_req = "{\"collection\":\"" + collectionName_ + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
+            std::string json_req = "{\"collection\":\"" + collectionName_ + "\",\"index_scd_path\":\"" + scd_source_dir + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"index\",\"controller\":\"commands\"},\"uri\":\"commands/index\"}";
             if (callback_type_ == "rebuild")
             {
-                json_req = "{\"collection\":\"" + collectionName_ + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"rebuild_from_scd\",\"controller\":\"collection\"},\"uri\":\"collection/rebuild_from_scd\"}";
+                json_req = "{\"collection\":\"" + collectionName_ + "\",\"index_scd_path\":\"" + scd_source_dir + "\",\"header\":{\"acl_tokens\":\"\",\"action\":\"rebuild_from_scd\",\"controller\":\"collection\"},\"uri\":\"collection/rebuild_from_scd\"}";
             }
             MasterManagerBase::get()->pushWriteReq(json_req);
             LOG(INFO) << "a json_req pushed from " << __FUNCTION__ << ", data:" << json_req;
@@ -40,12 +41,12 @@ bool ProductScdReceiver::pushIndexRequest()
         return true;
     }
     else
-        return index_service_->index(0);
+        return index_service_->index(0, "");
 }
 
 bool ProductScdReceiver::onReceived(const std::string& scd_source_dir)
 {
-    return pushIndexRequest();
+    return pushIndexRequest(scd_source_dir);
 }
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)
@@ -61,7 +62,7 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
         LOG(INFO) << "copying rebuild scd from index path.";
         mine_source_dir = index_service_->getScdDir(false);
     }
-    if (!mine_source_dir.empty())
+    if (!mine_source_dir.empty() && !DistributeFileSys::get()->isEnabled())
     {
         std::string index_scd_dir = index_service_->getScdDir(callback_type_ == "rebuild");
         bfs::create_directories(index_scd_dir);
@@ -92,7 +93,9 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
             return false;
         }
     }
-    return pushIndexRequest();
+    if (!DistributeFileSys::get()->isEnabled())
+        mine_source_dir.clear();
+    return pushIndexRequest(mine_source_dir);
 }
 
 bool ProductScdReceiver::CopyFileListToDir_(const std::vector<boost::filesystem::path>& file_list, const boost::filesystem::path& to_dir)

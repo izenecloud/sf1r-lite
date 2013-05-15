@@ -29,7 +29,7 @@ public:
     ~IndexTaskService();
 
 
-    bool index(unsigned int numdoc, std::string scd_dir = "");
+    bool index(unsigned int numdoc, std::string scd_dir);
 
     bool index(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp);
     bool reindex_from_scd(const std::vector<std::string>& scdlist, int64_t timestamp);

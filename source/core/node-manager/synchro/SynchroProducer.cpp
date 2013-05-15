@@ -2,6 +2,7 @@
 
 #include <node-manager/SuperNodeManager.h>
 #include <node-manager/NodeManagerBase.h>
+#include <node-manager/DistributeFileSys.h>
 #include <net/distribute/DataTransfer2.hpp>
 
 #include <boost/thread.hpp>
@@ -62,6 +63,20 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
         syncData.setValue(SynchroData::KEY_HOST, SuperNodeManager::get()->getLocalHostIP());
         syncData_ = syncData;
         init();
+    }
+
+    std::string dataPath = syncData.getStrValue(SynchroData::KEY_DATA_PATH);
+    std::string dataType = syncData.getStrValue(SynchroData::KEY_DATA_TYPE);
+    if (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::DATA_TYPE_SCD_INDEX)
+    {
+        if(!DistributeFileSys::get()->copyToDFS(dataPath, "/produce/index_scd/"))
+        {
+            LOG(WARNING) << "copy file to dfs failed.";
+            return false;
+        }
+        LOG(INFO) << "copy scd files to dfs success : " << dataPath;
+        syncData.setValue(SynchroData::KEY_DATA_PATH, dataPath);
+        syncData_ = syncData;
     }
 
     // produce
@@ -337,10 +352,18 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
 
             LOG(INFO) << SYNCHRO_PRODUCER << " transfer data " << dataPath
                       << " to " << consumerHost << ":" <<consumerPort;
-            izenelib::net::distribute::DataTransfer2 transfer(consumerHost, consumerPort);
-            if (not transfer.syncSend(dataPath, recvDir, false))
+            if (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::DATA_TYPE_SCD_INDEX)
             {
-                ret = false;
+                LOG(INFO) << "scd file no need transfer while DFS enabled .";
+                ret = true;
+            }
+            else
+            {
+                izenelib::net::distribute::DataTransfer2 transfer(consumerHost, consumerPort);
+                if (not transfer.syncSend(dataPath, recvDir, false))
+                {
+                    ret = false;
+                }
             }
         }
     }

@@ -4,6 +4,7 @@
 #include "RequestLog.h"
 #include "RecoveryChecker.h"
 #include "DistributeTest.hpp"
+#include "DistributeFileSys.h"
 
 #include <net/distribute/DataTransfer2.hpp>
 #include <configuration-manager/CollectionPath.h>
@@ -759,6 +760,11 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
 {
     if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
         return true;
+    if (DistributeFileSys::get()->isEnabled())
+    {
+        LOG(INFO) << "DFS enabled, no need sync scd files.";
+        return true;
+    }
     // get the backup scd file list used for index.
     
     // get primary file sync ip:port
