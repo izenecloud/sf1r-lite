@@ -823,7 +823,7 @@ void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
     ticpp::Element* dfs = getUniqChildElement(distributedUtil, "DFS");
     getAttribute(dfs, "type", distributedUtilConfig_.dfsConfig_.type_, false);
     getAttribute(dfs, "supportfuse", distributedUtilConfig_.dfsConfig_.isSupportFuse_, false);
-    getAttribute(dfs, "mountdir", distributedUtilConfig_.dfsConfig_.mountDir_, true);
+    getAttribute(dfs, "mountdir", distributedUtilConfig_.dfsConfig_.mountDir_, false);
     getAttribute(dfs, "server", distributedUtilConfig_.dfsConfig_.server_, false);
     getAttribute(dfs, "port", distributedUtilConfig_.dfsConfig_.port_, false);
 }
