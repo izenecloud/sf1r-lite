@@ -508,7 +508,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
     bool is_file_mismatch = false;
     bool is_collection_mismatch = false;
     bool is_redolog_mismatch = false;
-    int max_wait = 30;
+    int max_wait = 100;
     // wait for response.
     while(wait_num > 0)
     {
@@ -556,9 +556,12 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
                         continue;
                     }
                     // exclude tc hash db file.
-                    if ( name.length() > 4 && name.substr(name.length() - 4) == ".tch")
+                    // exclude tpc file.
+                    if ( name.length() > 4 &&
+                         (name.substr(name.length() - 4) == ".tch" ||
+                          name.substr(name.length() - 4) == ".tpc") )
                     {
-                        LOG(WARNING) << "tc hash db ignored: " << name;
+                        LOG(WARNING) << "tc hash db or tpc file ignored: " << name;
                         continue;
                     }
                     LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];

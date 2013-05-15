@@ -93,7 +93,7 @@ void VirtualTermDocumentIterator::accept()
         bool find = pTermReader_->seek(&term);
         if (find)
         {
-            df_ += pTermReader_->docFreq(&term);                
+            df_ += pTermReader_->docFreq(&term);
             if(pTermDocReaderList_[i]) 
             {
                 delete pTermDocReaderList_[i];
@@ -189,7 +189,8 @@ void VirtualTermDocumentIterator::doc_item(
         for (unsigned int i = 0; i < reinterpret_cast<ORDocumentIterator*>(OrDocIterator_)->getdocIteratorList_().size(); ++i)
         {
             sf1r::DocumentIterator* pEntry = reinterpret_cast<ORDocumentIterator*>(OrDocIterator_)->getdocIteratorList_()[i];
-            if (pEntry->doc() == docid)
+
+            if (pEntry != NULL && pEntry->doc() == docid)
             {
                 freq += (reinterpret_cast<TermDocumentIterator*>(pEntry))->tf();
             }

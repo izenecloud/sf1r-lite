@@ -80,6 +80,7 @@ class Sf1rProcess: public Fastcgipp::Request<char>
         if(environment().requestMethod != Http::HTTP_METHOD_GET && 
             environment().requestMethod != Http::HTTP_METHOD_POST )
         {
+            error_log("bad method for sf1r");
             out << "Status: 403 Forbidden\r\n\r\n";
             return true;
         }
@@ -100,6 +101,7 @@ class Sf1rProcess: public Fastcgipp::Request<char>
         }
 		else
         {
+            error_log("bad sf1r request: " + requri + "," + body);
             out << "Status: 400 Bad Request\r\n\r\n";
             return true;
         }

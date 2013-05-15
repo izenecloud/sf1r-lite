@@ -894,6 +894,7 @@ void RecoveryChecker::onRecoverCallback(bool startup)
     // re-enter cluster.
     if (startup && (need_rollback || !isLastNormalExit()) )
     {
+        flushAllData();
         LOG(INFO) << "recovery from rollback or from last forceExit !!";
         if (reqlog_mgr_->getLastSuccessReqId() > 0 && !NodeManagerBase::get()->isOtherPrimaryAvailable())
             forceExit("recovery failed. No primary Node!!");
@@ -918,6 +919,11 @@ void RecoveryChecker::onRecoverCallback(bool startup)
 
 bool RecoveryChecker::removeConfigFromAPI(const std::string& coll)
 {
+    if (!NodeManagerBase::get()->isDistributed())
+    {
+        return true;
+    }
+
     std::map<std::string, std::string> config_file_list;
     LOG(INFO) << "remove config file for the collection." << coll;
     if(!handleConfigUpdateForColl(coll, true, config_file_list))
@@ -940,6 +946,10 @@ bool RecoveryChecker::removeConfigFromAPI(const std::string& coll)
 bool RecoveryChecker::updateConfigFromAPI(const std::string& coll, bool is_primary,
     const std::string& config_file, std::map<std::string, std::string>& config_file_list)
 {
+    if (!NodeManagerBase::get()->isDistributed())
+    {
+        return true;
+    }
     if (!is_primary)
     {
         LOG(INFO) << "write updated config data to last conf file on the secondary.";

@@ -12,6 +12,7 @@ const char* SystemEvent::ColumnMeta[EoC] = { "Text", "TEXT", "TEXT", "TEXT" };
 
 const char* SystemEvent::TableName = "system_events";
 
+const std::string SystemEvent::service_ = "system-event";
 void SystemEvent::save( std::map<std::string, std::string> & rawdata )
 {
     rawdata.clear();
@@ -46,6 +47,10 @@ void SystemEvent::load( const std::map<std::string, std::string> & rawdata )
             setTimeStamp(from_iso_string(it->second));
         }
     }
+}
+
+void SystemEvent::save_to_logserver()
+{
 }
 
 }

@@ -9,7 +9,8 @@ using namespace std;
 namespace sf1r {
 
 RDbConnection::RDbConnection()
-:impl_(NULL)
+:impl_(NULL),
+logserver_(false)
 {
 }
 
@@ -33,6 +34,7 @@ bool RDbConnection::init(const std::string& str )
 {
     std::string sqlite3_prefix = "sqlite3://";
     std::string mysql_prefix = "mysql://";
+    std::string logserver_prefix = "logserver";
     if(boost::algorithm::starts_with(str, sqlite3_prefix))
     {
         impl_ = new Sqlite3DbConnection();
@@ -44,6 +46,10 @@ bool RDbConnection::init(const std::string& str )
         impl_ = new MysqlDbConnection();
         std::string mysql_str = str.substr(mysql_prefix.length());
         return impl_->init(mysql_str);
+    }
+    else if(boost::algorithm::starts_with(str, logserver_prefix))
+    {
+        logserver_ = true;
     }
     else
     {

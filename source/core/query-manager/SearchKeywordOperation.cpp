@@ -92,4 +92,9 @@ void SearchKeywordOperation::clear()
     propertyTermInfo_.clear();
 }
 
+bool IsTopKComesFromConfig(const KeywordSearchActionItem& actionItem)
+{
+    return actionItem.searchingMode_.mode_ != SearchingMode::SUFFIX_MATCH &&
+             actionItem.searchingMode_.mode_ != SearchingMode::KNN;
+}
 } // end - sf1r
