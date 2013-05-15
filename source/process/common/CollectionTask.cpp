@@ -254,6 +254,7 @@ bool RebuildTask::rebuildFromSCD()
     RebuildFromSCDReqLog reqlog;
     reqlog.timestamp = Utilities::createTimeStamp();
 
+    bool failed = false;
     {
         // check collection resource
         CollectionManager::MutexType* collMutex = CollectionManager::get()->getCollectionMutex(collectionName_);
@@ -328,15 +329,17 @@ bool RebuildTask::rebuildFromSCD()
 
 
         LOG(INFO) << "# # # #  start rebuilding from scd.";
-        if(!rebuildCollHandler->indexTaskService_->reindex_from_scd(reqlog.scd_list, reqlog.timestamp))
-        {
-            CollectionManager::get()->stopCollection(rebuildCollectionName_);
-            return false;
-        }
+        failed = !rebuildCollHandler->indexTaskService_->reindex_from_scd(reqlog.scd_list, reqlog.timestamp);
 
         rebuildCollDir = bfs::path(rebuildCollPath.getCollectionDataPath()).string();
         rebuildCollBaseDir = rebuildCollPath.getBasePath();
     } // lock scope
+
+    if (failed)
+    {
+        CollectionManager::get()->stopCollection(rebuildCollectionName_);
+        return false;
+    }
 
     if (NodeManagerBase::get()->isDistributed())
     {
