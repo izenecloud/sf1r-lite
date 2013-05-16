@@ -24,6 +24,7 @@ public:
         METHOD_GET_DVC,
         METHOD_GET_VALUES,
         METHOD_GET_VALUE_AND_COUNT,
+        METHOD_GET_ALL_COLLECTION,
 
         METHOD_STRID_TO_ITEMID,
         METHOD_ITEMID_TO_STRID,
@@ -139,6 +140,15 @@ class GetValueAndCountRequest: public LogRequestRequestT<GetValueAndCountData>
 public:
     GetValueAndCountRequest()
         : LogRequestRequestT<GetValueAndCountData>(METHOD_GET_VALUE_AND_COUNT)
+    {
+    }
+};
+
+class GetAllCollectionRequest: public LogRequestRequestT<GetAllCollectionData>
+{
+public:
+    GetAllCollectionRequest()
+        : LogRequestRequestT<GetAllCollectionData>(METHOD_GET_ALL_COLLECTION)
     {
     }
 };

@@ -40,7 +40,8 @@ bool LogManager::init(const std::string& pathParam, const std::string& language)
 {
     if (!RDbConnection::instance().init(pathParam))
         return false;
-
+    if (RDbConnection::instance().logServer())
+        return true;
     SystemEvent::createTable();
     UserQuery::createTable();
     PropertyLabel::createTable();

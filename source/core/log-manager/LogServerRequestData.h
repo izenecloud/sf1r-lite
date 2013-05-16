@@ -98,7 +98,13 @@ struct GetValueAndCountData: public LogServerRequestData
     MSGPACK_DEFINE(service_, collection_, begin_time_);
 };
 
+struct GetAllCollectionData: public LogServerRequestData
+{
+    std::string service_;
+    std::string begin_time_;
 
+    MSGPACK_DEFINE(service_, begin_time_);
+};
 
 struct UUID2DocidList : public LogServerRequestData
 {
