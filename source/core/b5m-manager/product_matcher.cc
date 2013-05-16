@@ -2438,6 +2438,7 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     Compute_(doc, term_list, keyword_vector, 1, result_products);
     //typedef boost::unordered_set<TermList> Strict;
     typedef boost::unordered_set<std::string> Strict;
+    typedef boost::unordered_map<std::string,UString> StrictMap;
     Strict strict;
     bool spu_matched = false;
     if(result_products.size()==1&&!result_products[0].spid.empty()&&!result_products[0].stitle.empty())
@@ -2446,6 +2447,7 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     }
     if(spu_matched)//is spu matched
     {
+        StrictMap map;
         const Product& p = result_products.front();
         for(uint32_t a = 0;a<p.attributes.size();a++)
         {
@@ -2457,11 +2459,28 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
                 UString text(attr.values[v], UString::UTF_8);
                 GetTermsString_(text, terms_str);
                 strict.insert(terms_str);
+                map.insert(std::make_pair(terms_str, text));
+#ifdef B5M_DEBUG
+                LOG(INFO)<<"spu keyword "<<attr.values[v]<<","<<terms_str<<std::endl;
+#endif
                 //TermList term_list;
                 //GetTerms_(attr.values[v], term_list);
                 //strict.insert(term_list);
             }
         }
+        for(uint32_t i=0;i<keyword_vector.size();i++)
+        {
+            KeywordTag& ki = keyword_vector[i];
+            std::string terms_str;
+            GetTermsString_(ki.text, terms_str);
+            StrictMap::const_iterator it = map.find(terms_str);
+            if(it!=map.end())
+            {
+                ki.text = it->second;
+                ki.kweight=1.0;
+            }
+        }
+
     }
     //do attribute synomym filter
     for(uint32_t i=0;i<keyword_vector.size();i++)
@@ -2479,9 +2498,15 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
                     if(ki.kweight<kj.kweight)
                     {
                         ki.kweight = 0.0;
+#ifdef B5M_DEBUG
+                        LOG(INFO)<<"keyword "<<i<<" set to 0"<<std::endl;
+#endif
                     }
                     else
                     {
+#ifdef B5M_DEBUG
+                        LOG(INFO)<<"keyword "<<j<<" set to 0"<<std::endl;
+#endif
                         kj.kweight = 0.0;
                     }
                 }
@@ -2495,10 +2520,16 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
                         bool cnj = kj.text.isChineseChar(0);
                         if(!cni&&cnj)
                         {
+#ifdef B5M_DEBUG
+                            LOG(INFO)<<"keyword "<<i<<" set to 0"<<std::endl;
+#endif
                             ki.kweight = 0.0;
                         }
                         else
                         {
+#ifdef B5M_DEBUG
+                            LOG(INFO)<<"keyword "<<j<<" set to 0"<<std::endl;
+#endif
                             kj.kweight = 0.0;
                         }
                     }
@@ -2582,6 +2613,15 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
             ////std::cerr<<"type matching "<<tmatch<<std::endl;
         //}
     }
+#ifdef B5M_DEBUG
+    for(uint32_t i=0;i<keyword_vector.size();i++)
+    {
+        std::string str;
+        keyword_vector[i].text.convertString(str, UString::UTF_8);
+        LOG(INFO)<<"keyword "<<str<<","<<keyword_vector[i].kweight<<std::endl;
+    }
+#endif
+
     typedef boost::dynamic_bitset<> AllStrict;
     AllStrict all_strict(term_list.size());
     for(uint32_t i=0;i<keyword_vector.size();i++)
@@ -2601,6 +2641,11 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
         if(k.kweight==0.0 || (!strict.empty()&&strict.find(terms_str)==strict.end()) )
         {
             left_hits.push_back(std::make_pair(k.text, left_weight));
+#ifdef B5M_DEBUG
+            std::string str;
+            k.text.convertString(str, UString::UTF_8);
+            LOG(INFO)<<"left hit "<<str<<std::endl;
+#endif
         }
         else
         {
@@ -2643,6 +2688,11 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
             //k.text.convertString(stext, UString::UTF_8);
             //std::cerr<<"[HITS]"<<stext<<std::endl;
             hits.push_back(std::make_pair(k.text, kweight));
+#ifdef B5M_DEBUG
+            std::string str;
+            k.text.convertString(str, UString::UTF_8);
+            LOG(INFO)<<"hit "<<str<<std::endl;
+#endif
         }
     }
     UString left_text;
@@ -2673,6 +2723,11 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     if(!left_text.empty()&&has_text)
     {
         left.push_back(left_text);
+#ifdef B5M_DEBUG
+        std::string str;
+        left_text.convertString(str, UString::UTF_8);
+        LOG(INFO)<<"left "<<str<<std::endl;
+#endif
     }
 }
 

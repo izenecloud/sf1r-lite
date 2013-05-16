@@ -3,6 +3,8 @@
 
 #include "RDbRecordBase.h"
 #include "LogServerConnection.h"
+#include <list>
+#include <map>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <string>
@@ -193,6 +195,8 @@ public:
         conn.syncRequest(req,res);
         return true;
     }
+
+    static void getRecentKeyword(const std::string& c, const std::string& b, std::list<std::map<std::string, std::string> >& res);
 private:
 
     static const std::string service_;
