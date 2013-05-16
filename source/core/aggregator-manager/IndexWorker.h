@@ -120,7 +120,6 @@ public:
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
     void flush(bool mergeBarrel = false);
-    bool reload();
 
 private:
     void createPropertyList_();

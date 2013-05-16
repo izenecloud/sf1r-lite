@@ -32,7 +32,6 @@ CollectionManager::CollectionManager()
         boost::bind(&CollectionManager::stopCollection, this, _1, _2));
 
     RecoveryChecker::get()->setColCallback(
-        boost::bind(&CollectionManager::reopenCollection, this, _1),
         boost::bind(&CollectionManager::flushCollection, this, _1));
 }
 
@@ -328,18 +327,6 @@ bool CollectionManager::stopCollection(const std::string& collectionName, bool c
             std::cerr<<"clear collection "<<collectionName<<" error: "<<ex.what()<<std::endl;
             return false;
         }
-    }
-    return true;
-}
-
-bool CollectionManager::reopenCollection(const std::string& collectionName)
-{
-    handler_const_iterator iter = collectionHandlers_.find(collectionName);
-    if (iter != collectionHandlers_.end())
-    {
-        if (iter->second->indexTaskService_ && !iter->second->indexTaskService_->reload())
-            return false;
-        // reopen other service data if needed.
     }
     return true;
 }

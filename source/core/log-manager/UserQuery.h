@@ -197,6 +197,7 @@ public:
     }
 
     static void getRecentKeyword(const std::string& c, const std::string& b, std::list<std::map<std::string, std::string> >& res);
+    static void getRecentKeyword(const std::string& b, std::list<std::map<std::string, std::string> >& res);
 private:
 
     static const std::string service_;

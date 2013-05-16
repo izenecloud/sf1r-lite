@@ -150,18 +150,6 @@ void IndexWorker::flush(bool mergeBarrel)
     LOG(INFO) << "Flushing finished in IndexWorker";
 }
 
-bool IndexWorker::reload()
-{
-    if(!documentManager_->reload())
-        return false;
-
-    idManager_->close();
-
-    indexManager_->setDirty();
-    indexManager_->getIndexReader();
-    return true;
-}
-
 void IndexWorker::index(const std::string& scd_path, unsigned int numdoc, bool& result)
 {
     result = true;

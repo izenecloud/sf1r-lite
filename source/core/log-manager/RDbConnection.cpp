@@ -50,6 +50,7 @@ bool RDbConnection::init(const std::string& str )
     else if(boost::algorithm::starts_with(str, logserver_prefix))
     {
         logserver_ = true;
+        return true;
     }
     else
     {
