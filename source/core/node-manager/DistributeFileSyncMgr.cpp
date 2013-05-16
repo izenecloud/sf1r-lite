@@ -414,16 +414,25 @@ void DistributeFileSyncMgr::saveCachedCheckSum()
 
 bool DistributeFileSyncMgr::getCachedCheckSum(const std::string& filepath, std::string& ret_checksum)
 {
-    boost::unique_lock<boost::mutex> lk(status_report_mutex_);
-    std::map<std::string, FileCheckData>::const_iterator cit = cached_checksum_.find(filepath);
-    if (cit != cached_checksum_.end())
+    try
     {
-        if (bfs::last_write_time(filepath) ==  cit->second.last_modify &&
-            bfs::file_size(filepath) == cit->second.file_size)
+        boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+        std::map<std::string, FileCheckData>::const_iterator cit = cached_checksum_.find(filepath);
+        if (cit != cached_checksum_.end())
         {
-            ret_checksum = cit->second.check_sum;
-            return true;
+            if (!bfs::exists(filepath))
+                return false;
+            if (bfs::last_write_time(filepath) ==  cit->second.last_modify &&
+                bfs::file_size(filepath) == cit->second.file_size)
+            {
+                ret_checksum = cit->second.check_sum;
+                return true;
+            }
         }
+    }
+    catch(const std::exception& e)
+    {
+        LOG(WARNING) << "get cached checksum error : " << e.what();
     }
     return false;
 }
