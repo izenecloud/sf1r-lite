@@ -692,7 +692,18 @@ bool  SearchWorker::getResultItem(
     );
 
     //queryTerms is begin segmented after analyze_()
-    analyze_(actionItem.env_.queryString_, queryTerms, true);
+    bool isRequireHighlight = false;
+    for(std::vector<DisplayProperty>::const_iterator it = actionItem.displayPropertyList_.begin(); 
+        it != actionItem.displayPropertyList_.end(); ++it)
+    {
+        if(it->isHighlightOn_ ||it->isSnippetOn_)
+        {
+            isRequireHighlight = true;
+            break;
+        }
+    }
+    if(isRequireHighlight)
+        analyze_(actionItem.env_.queryString_, queryTerms, false);
 
     // propertyOption
     if (!actionItem.env_.taxonomyLabel_.empty())
