@@ -15,6 +15,7 @@ const LogServerRequest::method_t LogServerRequest::method_names[] =
             "get_dvc",
             "get_values",
             "get_value_and_count",
+            "get_all_collection",
 
             "strid_to_itemid",
             "itemid_to_strid",

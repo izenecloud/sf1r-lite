@@ -119,4 +119,14 @@ void UserQuery::getRecentKeyword(const std::string& c, const std::string& b, std
     conn.syncRequest(req, res);
 }
 
+void UserQuery::getRecentKeyword(const std::string& b, std::list<std::map<std::string, std::string> >& res)
+{
+    LogServerConnection& conn = LogServerConnection::instance();
+    GetAllCollectionRequest req;
+    req.param_.service_ = service_;
+    req.param_.begin_time_ = b;
+
+    conn.syncRequest(req, res);
+}
+
 }

@@ -124,7 +124,7 @@ void LogAnalysis::getRecentKeywordFreqList(const std::string& time_string, std::
     if(RDbConnection::instance().logServer())
     {
         std::list<std::map<std::string, std::string> > res;
-//        UserQuery::getRecentKeyword(time_string, res);
+        UserQuery::getRecentKeyword(time_string, res);
         std::list<std::map<std::string, std::string> >::iterator it;
         for(it=res.begin();it!=res.end();it++)
         {
