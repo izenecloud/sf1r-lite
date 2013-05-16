@@ -564,13 +564,12 @@ bool SearchWorker::getSummaryMiningResult_(
 
 void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results, bool isQA)
 {
-    results.clear();
-    izenelib::util::UString question(qstr, izenelib::util::UString::UTF_8);
-    la::TermList termList;
-
     la::LA* pLA = LAPool::getInstance()->popSearchLA( analysisInfo_);
 //    pLA->process_search(question, termList);
     if (!pLA) return;
+    results.clear();
+    izenelib::util::UString question(qstr, izenelib::util::UString::UTF_8);
+    la::TermList termList;
     pLA->process(question, termList);
     LAPool::getInstance()->pushSearchLA( analysisInfo_, pLA );
 
