@@ -8,6 +8,7 @@
 #include <map>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/lexical_cast.hpp>
 #include <string>
 
 namespace sf1r
@@ -188,12 +189,22 @@ public:
     {
         LogAnalysisConnection& conn = LogAnalysisConnection::instance();
         GetTopKRequest req;
+        std::list<std::pair<std::string, uint32_t> >tmp;
         req.param_.service_ = service_;
         req.param_.collection_=c;
         req.param_.begin_time_ = b;
         req.param_.end_time_ = e;
         req.param_.limit_=boost::lexical_cast<uint32_t>(limit);
-        conn.syncRequest(req,res);
+        conn.syncRequest(req,tmp);
+
+        std::list<std::pair<std::string, uint32_t> >::iterator it;
+        for(it=tmp.begin();it!=tmp.end();it++)
+        {
+            std::map<std::string, std::string> m;
+            m["query"] = it->first;
+            m["count"] = boost::lexical_cast<std::string>(it->second);
+            res.push_back(m);
+        }
         return true;
     }
 
