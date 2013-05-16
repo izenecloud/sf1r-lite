@@ -22,7 +22,7 @@
     <!-- Network addresses of LogServerProcess:
          host=10.10.1.105 is the LAN address of (180.153.140.105)
     -->
-    <LogServerConnection host="10.10.99.121" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
+    <LogServerConnection host="172.16.5.168" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
 
     <!-- Format of value of str:
 
