@@ -176,6 +176,7 @@ TARGET_LINK_LIBRARIES(CobraProcess
 TARGET_LINK_LIBRARIES(DistributeDataMigrateTool
   sf1r_document_manager
   sf1r_common
+  sf1r_license_manager
 
   ${ilplib_LIBRARIES}
   ${wisekma_LIBRARIES}
