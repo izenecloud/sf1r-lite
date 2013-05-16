@@ -2,6 +2,7 @@
 #define _USER_QUERY_H_
 
 #include "RDbRecordBase.h"
+#include "LogAnalysisConnection.h"
 #include "LogServerConnection.h"
 #include <list>
 #include <map>
@@ -185,7 +186,7 @@ public:
     static bool getTopK(const std::string& c, const std::string& b, const std::string& e,
             const std::string& limit, std::list<std::map<std::string, std::string> >& res)
     {
-        LogServerConnection& conn = LogServerConnection::instance();
+        LogAnalysisConnection& conn = LogAnalysisConnection::instance();
         GetTopKRequest req;
         req.param_.service_ = service_;
         req.param_.collection_=c;

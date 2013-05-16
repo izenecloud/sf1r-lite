@@ -2,7 +2,7 @@
 #define _RDB_RECORD_BASE_H_
 
 #include "RDbConnection.h"
-#include "LogServerConnection.h"
+#include "LogAnalysisConnection.h"
 #include "LogServerRequest.h"
 #include <iostream>
 #include <sstream>
@@ -34,11 +34,6 @@ public:
         return RDbConnection::instance().exec(sql);
     }
 
-    static bool getTopK(const std::string& s, const std::string& c, const std::string& b,
-            const std::string& e, const uint32_t& limit, std::list<std::map<std::string, std::string> >& res)
-    {
-        return true;
-    }
     /// Save record into a map
     virtual void save( std::map<std::string, std::string> & ) = 0;
 

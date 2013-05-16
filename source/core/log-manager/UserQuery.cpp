@@ -48,6 +48,8 @@ void UserQuery::load( const std::map<std::string, std::string> & rawdata )
     {
         if (it->first == ColumnName[Query] )
         {
+
+            
             setQuery(it->second);
         }
         else if (it->first == ColumnName[Collection])
@@ -91,7 +93,7 @@ void UserQuery::load( const std::map<std::string, std::string> & rawdata )
 
 void UserQuery::save_to_logserver()
 {
-    LogServerConnection& conn = LogServerConnection::instance();
+    LogAnalysisConnection& conn = LogAnalysisConnection::instance();
     InsertWithValuesDataRequest req;
     req.param_.service_ = service_;
     req.param_.collection_=collection_;
@@ -110,7 +112,7 @@ void UserQuery::save_to_logserver()
 
 void UserQuery::getRecentKeyword(const std::string& c, const std::string& b, std::list<std::map<std::string, std::string> >& res)
 {
-    LogServerConnection& conn = LogServerConnection::instance();
+    LogAnalysisConnection& conn = LogAnalysisConnection::instance();
     GetValueAndCountRequest req;
     req.param_.service_ = service_;
     req.param_.collection_ = c;
@@ -121,7 +123,7 @@ void UserQuery::getRecentKeyword(const std::string& c, const std::string& b, std
 
 void UserQuery::getRecentKeyword(const std::string& b, std::list<std::map<std::string, std::string> >& res)
 {
-    LogServerConnection& conn = LogServerConnection::instance();
+    LogAnalysisConnection& conn = LogAnalysisConnection::instance();
     GetAllCollectionRequest req;
     req.param_.service_ = service_;
     req.param_.begin_time_ = b;

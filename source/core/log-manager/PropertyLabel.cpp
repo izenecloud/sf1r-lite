@@ -41,7 +41,7 @@ void PropertyLabel::load( const std::map<std::string, std::string> & rawdata )
 
 void PropertyLabel::save_to_logserver()
 {
-    LogServerConnection& conn = LogServerConnection::instance();
+    LogAnalysisConnection& conn = LogAnalysisConnection::instance();
     InsertWithValuesDataRequest req;
     req.param_.service_ = service_;
     req.param_.collection_ = collection_;
