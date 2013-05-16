@@ -1,10 +1,13 @@
 #include "DistributeFileSys.h"
+#include <common/Utilities.h>
 
 #include <glog/logging.h>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 
 namespace bfs = boost::filesystem;
+
+static const std::string dfs_copy_prefix = "/sf1r_global_data";
 
 namespace sf1r
 {
@@ -51,11 +54,12 @@ std::string DistributeFileSys::getDFSLocalFullPath(const std::string& dfs_locati
 bool DistributeFileSys::copyToDFS(std::string& in_out_path, const std::string& custom_prefix)
 {
     static const bfs::directory_iterator end_it = bfs::directory_iterator();
-    bfs::path dfs_out_path = bfs::path(custom_prefix)/bfs::path(boost::lexical_cast<std::string>(time(NULL)));
+    bfs::path dfs_out_path = bfs::path(dfs_copy_prefix)/bfs::path(custom_prefix);
+    dfs_out_path /= bfs::path(boost::lexical_cast<std::string>(Utilities::createTimeStamp()));
     bfs::path dest = bfs::path(getDFSPath(dfs_out_path.string()));
     if (!bfs::exists(dest))
     {
-        //bfs::create_directories(dest);
+        bfs::create_directories(dest);
     }
     try
     {

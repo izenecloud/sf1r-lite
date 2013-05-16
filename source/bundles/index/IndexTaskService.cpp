@@ -87,6 +87,15 @@ bool IndexTaskService::index(unsigned int numdoc, std::string scd_path)
             }
             else
             {
+                if (DistributeFileSys::get()->isEnabled())
+                {
+                    // TODO: while dfs enabled, shard the scd file under the scd_path to sub-directory directly on dfs.
+                    // and the shard worker only index the sub-directory belong to it.
+                    //
+                    //std::string myshard;
+                    //myshard = boost::lexical_cast<std::string>(MasterManagerBase::get()->getMyShardId());
+                    //scd_path = (bfs::path(scd_path)/bfs::path(myshard)).string();
+                }
                 indexWorker_->index(scd_path, numdoc, result);
             }
         }
