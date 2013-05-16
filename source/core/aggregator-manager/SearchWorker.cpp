@@ -691,7 +691,8 @@ bool  SearchWorker::getResultItem(
             actionItem.languageAnalyzerInfo_.useOriginalKeyword_
     );
 
-    //analyze_(actionItem.env_.queryString_, queryTerms);
+    //queryTerms is begin segmented after analyze_()
+    analyze_(actionItem.env_.queryString_, queryTerms, true);
 
     // propertyOption
     if (!actionItem.env_.taxonomyLabel_.empty())
