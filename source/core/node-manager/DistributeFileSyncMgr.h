@@ -47,6 +47,13 @@ private:
 
 class RpcServerConnection;
 
+struct FileCheckData
+{
+    size_t file_size;
+    time_t last_modify;
+    std::string check_sum;
+};
+
 class DistributeFileSyncMgr
 {
 public:
@@ -71,8 +78,12 @@ public:
     void checkReplicasLogStatus(std::string& check_errinfo);
     void notifyReportStatusRsp(const ReportStatusRspData& rspdata);
     void sendReportStatusRsp(const std::string& ip, uint16_t port, const ReportStatusRsp& rsp);
+    bool getCachedCheckSum(const std::string& filepath, std::string& ret_checksum);
+    void updateCachedCheckSum(const std::string& filepath, const std::string& checksum);
 
 private:
+    void saveCachedCheckSum();
+    void loadCachedCheckSum();
     bool getFileInfo(const std::string& ip, uint16_t port, GetFileData& fileinfo);
     bool getFileFromOther(const std::string& ip, uint16_t port, const std::string& filepath, uint64_t filesize, bool force_overwrite = false);
     RpcServerConnection* conn_mgr_;
@@ -85,6 +96,7 @@ private:
     boost::condition_variable status_report_cond_;
     std::vector<ReportStatusRspData>  status_rsp_list_;
     std::set<std::string>  ignore_list_;
+    std::map<std::string, FileCheckData> cached_checksum_;
 };
 
 }

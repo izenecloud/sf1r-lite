@@ -70,13 +70,18 @@ static void getFileList(const std::string& dir, std::vector<std::string>& file_l
     }
 }
 
-static uint32_t getFileCRC(const std::string& file)
+static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL, size_t tmp_bufsize = 0)
 {
     if (!bfs::exists(file))
         return 0;
     boost::crc_32_type crc_computer;
-    static const size_t bufsize = 1024*512;
-    char *buf = new char[bufsize];
+    size_t bufsize = tmp_bufsize;
+    char *buf = tmp_buf;
+    if (tmp_buf == NULL || tmp_bufsize == 0)
+    {
+        bufsize = 1024*1024*10;
+        buf = new char[bufsize];
+    }
     try
     {
         ifstream ifs(file.c_str(), ios::binary);
@@ -93,10 +98,12 @@ static uint32_t getFileCRC(const std::string& file)
     catch(const std::exception& e)
     {
         LOG(INFO) << "error while get crc for file:" << file << ", err:" << e.what();
-        delete[] buf;
+        if (tmp_buf == NULL || tmp_bufsize == 0)
+            delete[] buf;
         return 0;
     }
-    delete[] buf;
+    if (tmp_buf == NULL || tmp_bufsize == 0)
+        delete[] buf;
     return crc_computer.checksum();
 }
 
@@ -109,12 +116,21 @@ static void doReportStatus(const ReportStatusReqData& reqdata)
     rsp_req.param_.rsp_host = SuperNodeManager::get()->getLocalHostIP();
     rsp_req.param_.success = true;
     rsp_req.param_.check_file_result.resize(reqdata.check_file_list.size());
+    size_t bufsize = 1024*1024*32;
+    char* cal_buf = new char[bufsize];
     for (size_t i = 0; i < reqdata.check_file_list.size(); ++i)
     {
         const std::string& file = reqdata.check_file_list[i];
-        rsp_req.param_.check_file_result[i] = boost::lexical_cast<std::string>(getFileCRC(file));
+        if (DistributeFileSyncMgr::get()->getCachedCheckSum(file, rsp_req.param_.check_file_result[i]))
+        {
+            continue;
+        }
+        rsp_req.param_.check_file_result[i] = boost::lexical_cast<std::string>(getFileCRC(file, cal_buf, bufsize));
+        DistributeFileSyncMgr::get()->updateCachedCheckSum(file, rsp_req.param_.check_file_result[i]);
         //LOG(INFO) << "file : " << file << ", checksum:" << rsp_req.param_.check_file_result[i];
     }
+    delete[] cal_buf;
+
     DistributeTestSuit::getMemoryState(reqdata.check_key_list, rsp_req.param_.check_key_result);
     boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
     // check at most 10 million.
@@ -349,6 +365,7 @@ void DistributeFileSyncMgr::init()
     transfer_rpcserver_.reset(new FileSyncServer(SuperNodeManager::get()->getLocalHostIP(),
             SuperNodeManager::get()->getFileSyncRpcPort(), 4));
     transfer_rpcserver_->start();
+    loadCachedCheckSum();
 }
 
 DistributeFileSyncMgr::~DistributeFileSyncMgr()
@@ -362,6 +379,65 @@ void DistributeFileSyncMgr::stop()
     conn_mgr_ = NULL;
     if (transfer_rpcserver_)
         transfer_rpcserver_->stop();
+    saveCachedCheckSum();
+}
+
+void DistributeFileSyncMgr::loadCachedCheckSum()
+{
+    std::ifstream ifs;
+    ifs.open("./distributed_checksum");
+    while (ifs.good())
+    {
+        std::string filepath;
+        FileCheckData checkdata;
+        //std::getline(ifs, line);
+        ifs >> filepath >> checkdata.file_size >> checkdata.last_modify >> checkdata.check_sum;
+        if (!filepath.empty() && !checkdata.check_sum.empty())
+            cached_checksum_[filepath] = checkdata;
+    }
+    LOG(INFO) << "cached checksum loaded from file : " << cached_checksum_.size();
+    ifs.close();
+}
+
+void DistributeFileSyncMgr::saveCachedCheckSum()
+{
+    std::ofstream ofs;
+    ofs.open("./distributed_checksum");
+    std::map<std::string, FileCheckData>::const_iterator cit = cached_checksum_.begin();
+    while(cit != cached_checksum_.end())
+    {
+        ofs << cit->first << " " << cit->second.file_size << " " << cit->second.last_modify << " " << cit->second.check_sum << std::endl;
+        ++cit;
+    }
+    ofs.close();
+}
+
+bool DistributeFileSyncMgr::getCachedCheckSum(const std::string& filepath, std::string& ret_checksum)
+{
+    boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+    std::map<std::string, FileCheckData>::const_iterator cit = cached_checksum_.find(filepath);
+    if (cit != cached_checksum_.end())
+    {
+        if (bfs::last_write_time(filepath) ==  cit->second.last_modify &&
+            bfs::file_size(filepath) == cit->second.file_size)
+        {
+            ret_checksum = cit->second.check_sum;
+            return true;
+        }
+    }
+    return false;
+}
+
+void DistributeFileSyncMgr::updateCachedCheckSum(const std::string& filepath, const std::string& checksum)
+{
+    if (filepath.empty() || checksum.empty() || !bfs::exists(filepath))
+        return;
+    boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+    FileCheckData checkdata;
+    checkdata.file_size = bfs::file_size(filepath);
+    checkdata.last_modify = bfs::last_write_time(filepath);
+    checkdata.check_sum = checksum;
+    cached_checksum_[filepath] = checkdata;
 }
 
 void DistributeFileSyncMgr::notifyReportStatusRsp(const ReportStatusRspData& rspdata)
@@ -385,6 +461,8 @@ void DistributeFileSyncMgr::sendReportStatusRsp(const std::string& ip, uint16_t 
     {
         LOG(ERROR) << "send report status response failed.";
     }
+    boost::unique_lock<boost::mutex> lk(status_report_mutex_);
+    saveCachedCheckSum();
 }
 
 void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& colname_list, std::string& check_errinfo)
@@ -472,24 +550,26 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
             ++wait_num;
     }
 
-    if (wait_num == 0)
-    {
-        boost::unique_lock<boost::mutex> lk(status_report_mutex_);
-        reporting_ = false;
-        LOG(INFO) << "ignore check for no other replicas.";
-        return;
-    }
     std::vector<std::string> file_checksum_list(req.param_.check_file_list.size());
     std::vector<std::string> memory_state_list;
     DistributeTestSuit::getMemoryState(req.param_.check_key_list, memory_state_list);
 
     // calculate local.
+    size_t bufsize = 1024*1024*32;
+    char* cal_buf = new char[bufsize];
     for (size_t i = 0; i < req.param_.check_file_list.size(); ++i)
     {
         const std::string& file = req.param_.check_file_list[i];
-        file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file));
+        if (getCachedCheckSum(file, file_checksum_list[i]))
+        {
+            continue;
+        }
+        file_checksum_list[i] = boost::lexical_cast<std::string>(getFileCRC(file, cal_buf, bufsize));
+        updateCachedCheckSum(file, file_checksum_list[i]);
         //LOG(INFO) << "file : " << file << ", checksum:" << file_checksum_list[i];
     }
+    delete[] cal_buf;
+
     std::vector<std::string> check_collection_list;
     // get local redo log id 
     std::vector<uint32_t> check_logid_list;
@@ -627,6 +707,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
     LOG(INFO) << "report request finished";
     boost::unique_lock<boost::mutex> lk(status_report_mutex_);
     reporting_ = false;
+    saveCachedCheckSum();
 }
 
 bool DistributeFileSyncMgr::getNewestReqLog(bool from_primary_only, uint32_t start_from, std::vector<std::string>& saved_log)

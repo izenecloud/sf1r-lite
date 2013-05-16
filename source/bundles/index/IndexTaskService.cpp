@@ -163,11 +163,6 @@ void IndexTaskService::flush()
     indexWorker_->flush(true);
 }
 
-bool IndexTaskService::reload()
-{
-    return indexWorker_->reload();
-}
-
 bool IndexTaskService::getIndexStatus(Status& status)
 {
     return indexWorker_->getIndexStatus(status);

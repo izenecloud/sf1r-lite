@@ -93,37 +93,6 @@ DocumentManager::~DocumentManager()
     if (highlighter_) delete highlighter_;
 }
 
-bool DocumentManager::reload()
-{
-    if (propertyValueTable_) delete propertyValueTable_;
-    if (snippetGenerator_) delete snippetGenerator_;
-    if (highlighter_) delete highlighter_;
-
-    propertyValueTable_ = new DocContainer(path_);
-    propertyValueTable_->open();
-
-    buildPropertyIdMapper_();
-    restorePropertyLengthDb_();
-    loadDelFilter_();
-    //aclTable_.open();
-    snippetGenerator_ = new SnippetGeneratorSubManager;
-    highlighter_ = new Highlighter;
-
-    for (IndexBundleSchema::const_iterator it = indexSchema_.begin();
-            it != indexSchema_.end(); ++it)
-    {
-        if(it->isRTypeString())
-        {
-            initRTypeStringPropTable(it->getName());
-        }
-        else if (it->isRTypeNumeric())
-        {
-            initNumericPropertyTable_(it->getName(), it->getType(), it->getIsRange());
-        }
-    }
-    return true;
-}
-
 bool DocumentManager::flush()
 {
     propertyValueTable_->flush();

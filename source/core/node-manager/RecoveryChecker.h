@@ -19,7 +19,6 @@ public:
     typedef boost::function<bool(const std::string&, const std::string&, bool)> StartColCBFuncT;
     typedef boost::function<bool(const std::string&, bool)> StopColCBFuncT;
     typedef boost::function<void(const std::string&)> FlushColCBFuncT;
-    typedef boost::function<bool(const std::string&)> ReopenColCBFuncT;
 
     static RecoveryChecker* get()
     {
@@ -46,9 +45,8 @@ public:
         stop_col_ = stop_col;
     }
 
-    void setColCallback(ReopenColCBFuncT reopen_cb, FlushColCBFuncT flush_cb)
+    void setColCallback(FlushColCBFuncT flush_cb)
     {
-        reopen_col_ = reopen_cb;
         flush_col_ = flush_cb;
     }
 
@@ -94,7 +92,6 @@ private:
 
     StartColCBFuncT start_col_;
     StopColCBFuncT stop_col_;
-    ReopenColCBFuncT reopen_col_;
     FlushColCBFuncT flush_col_;
     std::string backup_basepath_;
     std::string request_log_basepath_;
