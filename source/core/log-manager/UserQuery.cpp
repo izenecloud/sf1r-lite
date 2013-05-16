@@ -110,10 +110,13 @@ void UserQuery::save_to_logserver()
 
 void UserQuery::getRecentKeyword(const std::string& c, const std::string& b, std::list<std::map<std::string, std::string> >& res)
 {
-    //LogServerConnection& conn = LogServerConnection::instance();
-    /*
-    * TODO
-    */
+    LogServerConnection& conn = LogServerConnection::instance();
+    GetValueAndCountRequest req;
+    req.param_.service_ = service_;
+    req.param_.collection_ = c;
+    req.param_.begin_time_ = b;
+
+    conn.syncRequest(req, res);
 }
 
 }
