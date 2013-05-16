@@ -13,7 +13,10 @@ void SubDocPropValueRenderer::renderSubDocPropValue(
     if (origText.empty())
         return;
     izenelib::driver::JsonReader reader;
-    reader.read(origText, resourceValue);
+    if(!reader.read(origText, resourceValue))
+    {
+        resourceValue[propName] = origText;
+    }
     /*
     rapidjson::Document doc;
     if (doc.Parse<0>(origText.c_str()).HasParseError())
