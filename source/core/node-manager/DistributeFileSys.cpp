@@ -19,6 +19,7 @@ DistributeFileSys::DistributeFileSys()
 
 bool DistributeFileSys::isEnabled()
 {
+    return false;
     return dfs_enabled_ && !dfs_mount_dir_.empty();
 }
 
