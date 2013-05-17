@@ -457,7 +457,7 @@ void CollectionController::rebuild_from_scd()
     }
     // total clean rebuild .
     boost::shared_ptr<RebuildTask> task(new RebuildTask(collection));
-    if (!task->rebuildFromSCD())
+    if (!task->rebuildFromSCD(asString(request()[Keys::index_scd_path])))
     {
         response().addError("Rebuild from scd failed.");
         return;

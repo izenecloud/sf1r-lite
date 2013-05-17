@@ -78,7 +78,7 @@ void CommandsController::indexSearch_()
         // 0 indicates no limit
         Value::UintType documentCount = asUint(request()[Keys::document_count]);
 
-        if(!taskService->index(documentCount))
+        if(!taskService->index(documentCount, asString(request()[Keys::index_scd_path])))
             response().addError("index in search failed.");
         else
         {

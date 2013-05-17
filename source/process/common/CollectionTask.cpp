@@ -12,6 +12,7 @@
 #include <node-manager/MasterManagerBase.h>
 #include <node-manager/RecoveryChecker.h>
 #include <node-manager/DistributeFileSyncMgr.h>
+#include <node-manager/DistributeFileSys.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -239,7 +240,7 @@ void RebuildTask::getRebuildScdOnReplica(const std::vector<std::string>& scd_lis
     }
 }
 
-bool RebuildTask::rebuildFromSCD()
+bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
 {
     LOG(INFO) << "## start rebuild from scd for " << collectionName_;
 
@@ -278,6 +279,12 @@ bool RebuildTask::rebuildFromSCD()
         bool is_primary = DistributeRequestHooker::get()->isRunningPrimary();
         if (is_primary)
         {
+            if (DistributeFileSys::get()->isEnabled())
+            {
+                rebuild_scd_src = DistributeFileSys::get()->getDFSPath(scd_path);
+                LOG(INFO) << "rebuild from dfs path : " << rebuild_scd_src;
+            }
+
             if (!getRebuildScdOnPrimary(collectionHandler->indexTaskService_->getEncode(),
                     rebuild_scd_src, reqlog.scd_list))
                 return false;
