@@ -5,6 +5,7 @@
 #include <vector>
 #include <product-manager/product_price.h>
 #include <document-manager/Document.h>
+#include <document-manager/ScdDocument.h>
 #include "b5m_types.h"
 #include <am/tc/BTree.h>
 #include <am/leveldb/Table.h>
@@ -13,6 +14,15 @@
 
 namespace sf1r {
 
+    class B5mpDocGenerator
+    {
+    public:
+        B5mpDocGenerator();
+        void Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc);
+
+    private:
+        boost::unordered_set<std::string> sub_doc_props_;
+    };
 
     class ProductProperty
     {

@@ -1,7 +1,141 @@
 #include "product_db.h"
+#include "product_matcher.h"
+#include <document-manager/JsonDocument.h>
 #include <mining-manager/util/split_ustr.h>
 #include <sstream>
 using namespace sf1r;
+
+B5mpDocGenerator::B5mpDocGenerator()
+{
+    sub_doc_props_.insert("DOCID");
+    sub_doc_props_.insert("Title");
+    sub_doc_props_.insert("Url");
+    sub_doc_props_.insert("Price");
+    sub_doc_props_.insert("Picture");
+    sub_doc_props_.insert("OriginalPicture");
+    sub_doc_props_.insert("Source");
+    sub_doc_props_.insert("OriginalCategory");
+    sub_doc_props_.insert("PicPrpt");
+    //sub_doc_props_.clear();
+}
+void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc)
+{
+    pdoc.type=UPDATE_SCD;
+    int64_t itemcount=0;
+    std::set<std::string> psource;
+    std::vector<Document> subdocs;
+    ProductPrice pprice;
+    UString pdate;
+    UString spu_title;
+    UString url;
+    ProductPrice min_price;
+    std::vector<ProductMatcher::Attribute> pattributes;
+    bool independent=true;
+    UString pid;
+    odocs.front().getProperty("uuid", pid);
+    //std::cerr<<"b5mp gen "<<pid<<","<<odocs.size()<<std::endl;
+    for(uint32_t i=0;i<odocs.size();i++)
+    {
+        const ScdDocument& doc=odocs[i];
+        if(doc.type==NOT_SCD||doc.type==DELETE_SCD)
+        {
+            continue;
+        }
+        if(!sub_doc_props_.empty())
+        {
+            Document subdoc;
+            for(ScdDocument::property_const_iterator it=doc.propertyBegin();it!=doc.propertyEnd();++it)
+            {
+                if(sub_doc_props_.find(it->first)!=sub_doc_props_.end())
+                {
+                    subdoc.property(it->first) = it->second;
+                }
+            }
+            if(subdoc.getPropertySize()>0)
+            {
+                subdocs.push_back(subdoc);
+            }
+        }
+        UString oid;
+        doc.getProperty("DOCID", oid);
+        if(oid!=pid) independent=false;
+        doc.getProperty(B5MHelper::GetSPTPropertyName(), spu_title);
+        pdoc.merge(doc);
+        itemcount+=1;
+        UString usource;
+        UString uprice;
+        UString uattribute;
+        UString udate;
+        UString uurl;
+        doc.getProperty("Source", usource);
+        doc.getProperty("Price", uprice);
+        doc.getProperty("Attribute", uattribute);
+        doc.getProperty("DATE", udate);
+        doc.getProperty("Url", uurl);
+        if(udate.compare(pdate)>0) pdate=udate;
+        ProductPrice price;
+        price.Parse(uprice);
+        pprice+=price;
+        if(!min_price.Valid()) 
+        {
+            url = uurl;
+            min_price = price;
+        }
+        else if(price.Valid())
+        {
+            if(price.value.first<min_price.value.first)
+            {
+                min_price=price;
+                url = uurl;
+            }
+        }
+        if(usource.length()>0)
+        {
+            std::string ssource;
+            usource.convertString(ssource, UString::UTF_8);
+            psource.insert(ssource);
+        }
+        if(!uattribute.empty())
+        {
+            std::vector<ProductMatcher::Attribute> attributes;
+            ProductMatcher::ParseAttributes(uattribute, attributes);
+            ProductMatcher::MergeAttributes(pattributes, attributes);
+        }
+    }
+    if(!spu_title.empty())
+    {
+        independent=false;
+        pdoc.property("Title") = spu_title;
+    }
+    pdoc.eraseProperty(B5MHelper::GetSPTPropertyName());
+    pdoc.eraseProperty("uuid");
+    if(!subdocs.empty()&&!independent)
+    {
+        UString text;
+        JsonDocument::ToJsonText(subdocs, text);
+        pdoc.property(B5MHelper::GetSubDocsPropertyName()) = text;
+    }
+
+    pdoc.property("DOCID") = pid;
+    pdoc.property("itemcount") = itemcount;
+    pdoc.property("independent") = (int64_t)independent;
+    if(!pdate.empty()) pdoc.property("DATE") = pdate;
+    pdoc.property("Price") = pprice.ToUString();
+    pdoc.property("Url") = url;
+    std::string ssource;
+    for(std::set<std::string>::const_iterator it=psource.begin();it!=psource.end();++it)
+    {
+        if(!ssource.empty()) ssource+=",";
+        ssource+=*it;
+    }
+    if(!ssource.empty()) pdoc.property("Source") = UString(ssource, UString::UTF_8);
+    if(!pattributes.empty()) pdoc.property("Attribute") = ProductMatcher::AttributesText(pattributes); 
+    if(itemcount==0)
+    {
+        pdoc.type=DELETE_SCD;
+        pdoc.clearExceptDOCID();
+    }
+}
 
 ProductProperty::ProductProperty()
 :itemcount(0), independent(false)

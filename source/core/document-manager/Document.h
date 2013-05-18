@@ -183,6 +183,64 @@ public:
         }
         return modified;
     }
+    void merge(const Document& doc)
+    {
+        copyPropertiesFromDocument(doc, true);
+    }
+
+    void diff(const Document& doc, Document& diff_doc) const
+    {
+        for(property_const_iterator it=propertyBegin();it!=propertyEnd();++it)
+        {
+            const std::string& key=it->first;
+            property_const_iterator ait=doc.findProperty(key);
+            bool dd=true;
+            if(key=="DOCID"||ait==doc.propertyEnd())
+            {
+                dd=false;
+            }
+            else
+            {
+                if(it->second!=ait->second)
+                {
+                    dd=false;
+                }
+            }
+            if(!dd)
+            {
+                diff_doc.property(key)=it->second;
+            }
+        }
+    }
+    void diff(const Document& doc)
+    {
+        std::vector<std::string> erase_vec;
+        for(property_const_iterator it=propertyBegin();it!=propertyEnd();++it)
+        {
+            const std::string& key=it->first;
+            property_const_iterator ait=doc.findProperty(key);
+            bool dd=true;
+            if(key=="DOCID"||ait==doc.propertyEnd())
+            {
+                dd=false;
+            }
+            else
+            {
+                if(it->second!=ait->second)
+                {
+                    dd=false;
+                }
+            }
+            if(dd)
+            {
+                erase_vec.push_back(key);
+            }
+        }
+        for(uint32_t i=0;i<erase_vec.size();i++)
+        {
+            eraseProperty(erase_vec[i]);
+        }
+    }
 
 private:
     /// document identifier in the collection

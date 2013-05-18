@@ -7,6 +7,7 @@
 #include "offer_db.h"
 #include "brand_db.h"
 #include "product_matcher.h"
+#include "b5mo_sorter.h"
 //#include "history_db_helper.h"
 
 namespace sf1r {
@@ -30,6 +31,9 @@ namespace sf1r {
         OfferDb* odb_;
         ProductMatcher* matcher_;
         BrandDb* bdb_;
+        std::string ts_;
+        std::string last_ts_;
+        B5moSorter* sorter_;
         int mode_;
         std::string human_match_file_;
         boost::unordered_set<std::string> mobile_source_;
