@@ -91,6 +91,7 @@ namespace sf1r {
         void OBag_(std::vector<Value>& docs);
         static void ODocMerge_(std::vector<ScdDocument>& vec, const ScdDocument& doc);
         bool GenMirrorBlock_(const std::string& mirror_path);
+        bool GenMBlock_();
 
     private:
         std::string m_;

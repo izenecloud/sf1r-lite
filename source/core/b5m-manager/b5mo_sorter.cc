@@ -49,6 +49,11 @@ bool B5moSorter::StageTwo(const std::string& last_m)
                 LOG(ERROR)<<"gen mirror block fail"<<std::endl;
                 return false;
             }
+            if(!GenMBlock_())
+            {
+                LOG(ERROR)<<"gen b5mo block fail"<<std::endl;
+                return false;
+            }
         }
 
         cmd+=" "+last_mirror_block;
@@ -299,3 +304,53 @@ bool B5moSorter::GenMirrorBlock_(const std::string& mirror_path)
 
     return true;
 }
+bool B5moSorter::GenMBlock_()
+{
+    std::string b5mo_path = B5MHelper::GetB5moPath(m_);
+    std::string block_path = B5MHelper::GetB5moBlockPath(m_);
+    std::vector<std::string> scd_list;
+    ScdParser::getScdList(b5mo_path, scd_list);
+    if(scd_list.size()==0)
+    {
+        return false;
+    }
+    B5MHelper::PrepareEmptyDir(block_path);
+    std::vector<Value> values;
+    for(uint32_t i=0;i<scd_list.size();i++)
+    {
+        std::string scd_file = scd_list[i];
+        SCD_TYPE scd_type = ScdParser::checkSCDType(scd_file);
+        ScdParser parser(izenelib::util::UString::UTF_8);
+        parser.load(scd_file);
+        uint32_t n=0;
+        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+        for( ScdParser::iterator doc_iter = parser.begin();
+          doc_iter!= parser.end(); ++doc_iter, ++n)
+        {
+            if(n%100000==0)
+            {
+                LOG(INFO)<<"Find B5mo Documents "<<n<<std::endl;
+            }
+            Value value;
+            value.doc.type = scd_type;
+            value.ts = ts_;
+            SCDDoc& scddoc = *(*doc_iter);
+            SCDDoc::iterator p = scddoc.begin();
+            for(; p!=scddoc.end(); ++p)
+            {
+                value.doc.property(p->first) = p->second;
+            }
+            values.push_back(value);
+        }
+    }
+    std::sort(values.begin(), values.end(), PidCompare_);
+    std::string block_file = block_path+"/1";
+    std::ofstream ofs(block_file.c_str());
+    for(uint32_t i=0;i<values.size();i++)
+    {
+        WriteValue_(ofs, values[i].doc, values[i].ts);
+    }
+    ofs.close();
+    return true;
+}
+
