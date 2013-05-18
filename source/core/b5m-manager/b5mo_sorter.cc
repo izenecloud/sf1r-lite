@@ -33,11 +33,25 @@ bool B5moSorter::StageTwo(const std::string& last_m)
     namespace bfs=boost::filesystem;    
     std::string sorter_path = B5MHelper::GetB5moBlockPath(m_); 
     ts_ = bfs::path(m_).filename().string();
+    if(ts_==".")
+    {
+        ts_ = bfs::path(m_).parent_path().filename().string();
+    }
     std::string cmd = "sort -m --buffer-size=1000M "+sorter_path+"/*";
     if(!last_m.empty())
     {
-        std::string last_sorter_path = B5MHelper::GetB5moMirrorPath(last_m); 
-        cmd+=" "+last_sorter_path+"/block";
+        std::string last_mirror = B5MHelper::GetB5moMirrorPath(last_m); 
+        std::string last_mirror_block = last_mirror+"/block";
+        if(!bfs::exists(last_mirror_block))
+        {
+            if(!GenMirrorBlock_(last_mirror))
+            {
+                LOG(ERROR)<<"gen mirror block fail"<<std::endl;
+                return false;
+            }
+        }
+
+        cmd+=" "+last_mirror_block;
     }
     std::string mirror_path = B5MHelper::GetB5moMirrorPath(m_);
     B5MHelper::PrepareEmptyDir(mirror_path);
@@ -156,13 +170,22 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
     bool modified=false;
     for(uint32_t i=0;i<docs.size();i++)
     {
+        //std::cerr<<"ts "<<docs[i].ts<<","<<ts_<<std::endl;
         if(docs[i].ts==ts_)
         {
             modified=true;
             break;
         }
     }
-    if(!modified) return;
+    //std::cerr<<"docs count "<<docs.size()<<","<<modified<<std::endl;
+    if(!modified)
+    {
+        for(uint32_t i=0;i<docs.size();i++)
+        {
+            WriteValue_(mirror_ofs_, docs[i].doc, docs[i].ts);
+        }
+        return;
+    }
 
     std::sort(docs.begin(), docs.end(), OCompare_);
     std::vector<ScdDocument> prev_odocs;
@@ -182,34 +205,44 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
             ODocMerge_(prev_odocs, doc);
         }
     }
+    //std::cerr<<"odocs count "<<odocs.size()<<std::endl;
     for(uint32_t i=0;i<odocs.size();i++)
     {
-        WriteValue_(mirror_ofs_, odocs[i], ts_);
+        if(odocs[i].type!=DELETE_SCD)
+        {
+            WriteValue_(mirror_ofs_, odocs[i], ts_);
+        }
     }
     ScdDocument pdoc;
-    ScdDocument prev_pdoc;
-    B5mpDoc::Gen(odocs, pdoc);
-    if(!prev_odocs.empty())
+    pgenerator_.Gen(odocs, pdoc);
+    if(pdoc.type==DELETE_SCD)
     {
-        B5mpDoc::Gen(prev_odocs, prev_pdoc);
+        pwriter_->Append(pdoc, pdoc.type);
     }
-    Document diff_pdoc;
-    pdoc.diff(prev_pdoc, diff_pdoc);
-    SCD_TYPE ptype = pdoc.type;
-    if(diff_pdoc.getPropertySize()<2)
+    else
     {
-        ptype = NOT_SCD;
-    }
-    else if(diff_pdoc.getPropertySize()==2)//DATE only update
-    {
-        if(diff_pdoc.hasProperty("DATE"))
+        ScdDocument prev_pdoc;
+        if(!prev_odocs.empty())
+        {
+            pgenerator_.Gen(prev_odocs, prev_pdoc);
+            pdoc.diff(prev_pdoc);
+        }
+        SCD_TYPE ptype = pdoc.type;
+        if(pdoc.getPropertySize()<2)
         {
             ptype = NOT_SCD;
         }
-    }
-    if(ptype!=NOT_SCD)
-    {
-        pwriter_->Append(diff_pdoc, ptype);
+        else if(pdoc.getPropertySize()==2)//DATE only update
+        {
+            if(pdoc.hasProperty("DATE"))
+            {
+                ptype = NOT_SCD;
+            }
+        }
+        if(ptype!=NOT_SCD)
+        {
+            pwriter_->Append(pdoc, ptype);
+        }
     }
 }
 
@@ -229,3 +262,40 @@ void B5moSorter::ODocMerge_(std::vector<ScdDocument>& vec, const ScdDocument& do
     }
 }
 
+bool B5moSorter::GenMirrorBlock_(const std::string& mirror_path)
+{
+    std::vector<std::string> scd_list;
+    ScdParser::getScdList(mirror_path, scd_list);
+    if(scd_list.size()!=1)
+    {
+        return false;
+    }
+    std::string ts = boost::filesystem::path(mirror_path).parent_path().filename().string();
+    std::string scd_file = scd_list.front();
+    SCD_TYPE scd_type = ScdParser::checkSCDType(scd_file);
+    ScdParser parser(izenelib::util::UString::UTF_8);
+    parser.load(scd_file);
+    std::ofstream block_ofs((mirror_path+"/block").c_str());
+    uint32_t n=0;
+    for( ScdParser::iterator doc_iter = parser.begin();
+      doc_iter!= parser.end(); ++doc_iter, ++n)
+    {
+        if(n%100000==0)
+        {
+            LOG(INFO)<<"Find Mirror Documents "<<n<<std::endl;
+        }
+        ScdDocument doc;
+        doc.type = scd_type;
+        SCDDoc& scddoc = *(*doc_iter);
+        SCDDoc::iterator p = scddoc.begin();
+        for(; p!=scddoc.end(); ++p)
+        {
+            doc.property(p->first) = p->second;
+        }
+        WriteValue_(block_ofs, doc, ts);
+    }
+    block_ofs.close();
+
+
+    return true;
+}

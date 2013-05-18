@@ -11,6 +11,7 @@
 #include <boost/thread.hpp>
 #include "b5m_helper.h"
 #include "b5m_types.h"
+#include "product_db.h"
 
 namespace sf1r {
     using izenelib::util::UString;
@@ -89,6 +90,7 @@ namespace sf1r {
         void Sort_(std::vector<Value>& docs);
         void OBag_(std::vector<Value>& docs);
         static void ODocMerge_(std::vector<ScdDocument>& vec, const ScdDocument& doc);
+        bool GenMirrorBlock_(const std::string& mirror_path);
 
     private:
         std::string m_;
@@ -99,6 +101,7 @@ namespace sf1r {
         boost::thread* sort_thread_;
         std::ofstream mirror_ofs_;
         boost::shared_ptr<ScdTypeWriter> pwriter_;
+        B5mpDocGenerator pgenerator_;
     };
 
 }

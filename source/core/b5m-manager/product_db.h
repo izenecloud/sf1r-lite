@@ -14,10 +14,14 @@
 
 namespace sf1r {
 
-    class B5mpDoc
+    class B5mpDocGenerator
     {
     public:
-        static void Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc);
+        B5mpDocGenerator();
+        void Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc);
+
+    private:
+        boost::unordered_set<std::string> sub_doc_props_;
     };
 
     class ProductProperty

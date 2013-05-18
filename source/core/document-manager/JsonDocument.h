@@ -44,6 +44,13 @@ class JsonDocument
         Json::Value& json;
     };
 public:
+    static void JsonToText(const Json::Value& json, izenelib::util::UString& text)
+    {
+        Json::FastWriter writer;
+        std::string str_value = writer.write(json);
+        boost::algorithm::trim(str_value);
+        text = izenelib::util::UString(str_value, izenelib::util::UString::UTF_8);
+    }
     template <class Document>
     static void ToJson(const Document& doc, Json::Value& json)
     {
@@ -51,6 +58,34 @@ public:
         {
             boost::apply_visitor( Visitor(it->first, json), it->second.getVariant());
         }
+    }
+    template <class Document>
+    static void ToJsonText(const Document& doc, izenelib::util::UString& text)
+    {
+        Json::Value json;
+        ToJson(doc, json);
+        JsonToText(json, text);
+    }
+    template <class Document>
+    static void ToJson(const std::vector<Document>& docs, Json::Value& json)
+    {
+        //json.reset<Json::Value::ArrayType>();
+        json.resize(docs.size());
+        for(uint32_t i=0;i<docs.size();i++)
+        {
+            const Document& doc = docs[i];
+            for(typename Document::property_const_iterator it=doc.propertyBegin();it!=doc.propertyEnd();++it)
+            {
+                boost::apply_visitor( Visitor(it->first, json[i]), it->second.getVariant());
+            }
+        }
+    }
+    template <class Document>
+    static void ToJsonText(const std::vector<Document>& docs, izenelib::util::UString& text)
+    {
+        Json::Value json(Json::arrayValue);
+        ToJson(docs, json);
+        JsonToText(json, text);
     }
     template <class Document>
     static void ToDocument(const Json::Value& json, Document& doc)

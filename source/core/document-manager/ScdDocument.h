@@ -23,7 +23,7 @@ public:
     void merge(const ScdDocument& doc)
     {
         type=doc.type;
-        if(type==NOT_SCD||type==DELETE_SCD) clear();
+        if(type==NOT_SCD) clear();
         else
         {
             Document::merge(doc);
