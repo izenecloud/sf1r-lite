@@ -77,7 +77,7 @@ public:
         return rebuildCollectionName_;
     }
     virtual void doTask();
-    bool rebuildFromSCD();
+    bool rebuildFromSCD(const std::string& scd_path);
     void getRebuildScdOnReplica(const std::vector<std::string>& scd_list);
     bool getRebuildScdOnPrimary(izenelib::util::UString::EncodingType encoding,
         const std::string& rebuild_scd_src, std::vector<std::string>& scd_list);

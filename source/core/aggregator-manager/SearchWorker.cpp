@@ -564,13 +564,12 @@ bool SearchWorker::getSummaryMiningResult_(
 
 void SearchWorker::analyze_(const std::string& qstr, std::vector<izenelib::util::UString>& results, bool isQA)
 {
-    results.clear();
-    izenelib::util::UString question(qstr, izenelib::util::UString::UTF_8);
-    la::TermList termList;
-
     la::LA* pLA = LAPool::getInstance()->popSearchLA( analysisInfo_);
 //    pLA->process_search(question, termList);
     if (!pLA) return;
+    results.clear();
+    izenelib::util::UString question(qstr, izenelib::util::UString::UTF_8);
+    la::TermList termList;
     pLA->process(question, termList);
     LAPool::getInstance()->pushSearchLA( analysisInfo_, pLA );
 
@@ -691,7 +690,19 @@ bool  SearchWorker::getResultItem(
             actionItem.languageAnalyzerInfo_.useOriginalKeyword_
     );
 
-    //analyze_(actionItem.env_.queryString_, queryTerms);
+    //queryTerms is begin segmented after analyze_()
+    bool isRequireHighlight = false;
+    for(std::vector<DisplayProperty>::const_iterator it = actionItem.displayPropertyList_.begin(); 
+        it != actionItem.displayPropertyList_.end(); ++it)
+    {
+        if(it->isHighlightOn_ ||it->isSnippetOn_)
+        {
+            isRequireHighlight = true;
+            break;
+        }
+    }
+    if(isRequireHighlight)
+        analyze_(actionItem.env_.queryString_, queryTerms, false);
 
     // propertyOption
     if (!actionItem.env_.taxonomyLabel_.empty())

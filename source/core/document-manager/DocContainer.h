@@ -204,7 +204,21 @@ private:
         try
         {
             ///Not Used. Array[0] could be used to store maxDocID since all doc ids start from 1
-            containerPtr_->put(0, &maxDocID_, sizeof(unsigned int), Lux::IO::OVERWRITE);
+            bool need_update_db = true;
+            Lux::IO::data_t *val_p = NULL;
+            if (containerPtr_->get(0, &val_p, Lux::IO::SYSTEM))
+            {
+                if ( val_p->size == sizeof(maxDocID_) )
+                {
+                    need_update_db = maxDocID_ != *((docid_t*)val_p->data);
+                }
+            }
+            containerPtr_->clean_data(val_p);
+
+            if (need_update_db)
+            {
+                containerPtr_->put(0, &maxDocID_, sizeof(unsigned int), Lux::IO::OVERWRITE);
+            }
             std::ofstream ofs(maxDocIdDb_.c_str());
             if (ofs)
             {

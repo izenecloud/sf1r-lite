@@ -24,6 +24,7 @@
 #include <sstream>
 
 #include <boost/asio.hpp>
+#include <mining-manager/query-correction-submanager//QueryCorrectionSubmanager.h>
 
 using namespace std;
 using namespace izenelib::util::ticpp;
@@ -823,7 +824,7 @@ void SF1Config::parseDistributedUtil(const ticpp::Element * distributedUtil)
     ticpp::Element* dfs = getUniqChildElement(distributedUtil, "DFS");
     getAttribute(dfs, "type", distributedUtilConfig_.dfsConfig_.type_, false);
     getAttribute(dfs, "supportfuse", distributedUtilConfig_.dfsConfig_.isSupportFuse_, false);
-    getAttribute(dfs, "mountdir", distributedUtilConfig_.dfsConfig_.mountDir_, true);
+    getAttribute(dfs, "mountdir", distributedUtilConfig_.dfsConfig_.mountDir_, false);
     getAttribute(dfs, "server", distributedUtilConfig_.dfsConfig_.server_, false);
     getAttribute(dfs, "port", distributedUtilConfig_.dfsConfig_.port_, false);
 }
@@ -1524,6 +1525,10 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     //for query correction
     params.Get("QueryCorrectionPara/enableEK", mining_config.query_correction_param.enableEK);
     params.Get("QueryCorrectionPara/enableCN", mining_config.query_correction_param.enableCN);
+    params.Get("QueryCorrectionPara/fromDb", mining_config.query_correction_param.fromDb);
+    QueryCorrectionSubmanager::system_fromDb_= mining_config.query_correction_param.fromDb;
+    QueryCorrectionSubmanager::getInstance();
+
 
     // for product ranking
     params.GetString("ProductRankingPara/cron",

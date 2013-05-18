@@ -18,6 +18,7 @@
 #include <node-manager/RequestLog.h>
 #include <node-manager/RecoveryChecker.h>
 #include <node-manager/DistributeFileSyncMgr.h>
+#include <node-manager/DistributeFileSys.h>
 
 #include <mining-manager/query-correction-submanager/QueryCorrectionSubmanager.h>
 #include <mining-manager/summarization-submanager/OpinionsClassificationManager.h>
@@ -154,7 +155,7 @@ void CobraProcess::initQuery()
     }
     QueryCorrectionSubmanager::system_resource_path_ = SF1Config::get()->getResourceDir();
     QueryCorrectionSubmanager::system_working_path_ = SF1Config::get()->getWorkingDir();
-    QueryCorrectionSubmanager::getInstance();
+    //QueryCorrectionSubmanager::getInstance();
     AutoFillChildManager::system_resource_path_ = SF1Config::get()->getResourceDir();
     OpinionsClassificationManager::system_resource_path_ = SF1Config::get()->getResourceDir();
 }
@@ -263,9 +264,23 @@ bool CobraProcess::initNodeManager()
 
     if (SF1Config::get()->isDistributedNode())
     {
-        NodeManagerBase::get()->init(SF1Config::get()->topologyConfig_);
 
+        std::string dfs_local_root = SF1Config::get()->distributedUtilConfig_.dfsConfig_.mountDir_;
+        if (!dfs_local_root.empty())
+        {
+            std::stringstream ss;
+            ss << dfs_local_root << std::string("/sf1r/nodedata/")
+                << SF1Config::get()->topologyConfig_.sf1rTopology_.clusterId_
+                << std::string("/node") << SF1Config::get()->topologyConfig_.sf1rTopology_.curNode_.nodeId_;
+            dfs_local_root =  ss.str();
+            LOG(INFO) << "local dfs enabled as : " << dfs_local_root;
+            DistributeFileSys::get()->enableDFS(SF1Config::get()->distributedUtilConfig_.dfsConfig_.mountDir_,
+                dfs_local_root);
+        }
+
+        NodeManagerBase::get()->init(SF1Config::get()->topologyConfig_);
         RecoveryChecker::get()->init(configDir_, SF1Config::get()->getWorkingDir());
+
         DistributeRequestHooker::get()->init();
         ReqLogMgr::initWriteRequestSet();
     }

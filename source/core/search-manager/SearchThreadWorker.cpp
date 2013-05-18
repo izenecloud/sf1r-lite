@@ -103,6 +103,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     const bool isFilterQuery =
         actionOperation.rawQueryTree_->type_ == QueryTree::FILTER_QUERY;
 
+    LOG(INFO) << "search in thread worker begin prepare doc iterator -------- " << time(NULL);
     try
     {
         if (!filtingList.empty())
@@ -225,6 +226,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     }
     START_PROFILER(preparerank)
 
+    LOG(INFO) << "search in thread worker begin prepare ranker -------- " << time(NULL);
     ///prepare data for rankingmanager;
     DocumentFrequencyInProperties dfmap;
     CollectionTermFrequencyInProperties ctfmap;

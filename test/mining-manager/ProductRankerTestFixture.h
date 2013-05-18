@@ -13,9 +13,11 @@
 #include <mining-manager/merchant-score-manager/MerchantScoreManager.h>
 #include <string>
 #include <vector>
+#include <boost/shared_ptr.hpp>
 
 namespace sf1r
 {
+class NumericPropertyTableBase;
 
 class ProductRankerTestFixture
 {
@@ -26,6 +28,8 @@ public:
 
     void setDocId(const std::string& docIdList);
     void setTopKScore(const std::string& scoreList);
+
+    void setOfferItemCount(const std::string& offerCountList);
 
     void setMultiDocMerchantId(const std::string& merchantList);
     void setSingleDocMerchantId(const std::string& merchantList);
@@ -56,6 +60,7 @@ protected:
     ProductRankingConfig rankConfig_;
     faceted::PropValueTable merchantValueTable_;
     MerchantScoreManager merchantScoreManager_;
+    boost::shared_ptr<NumericPropertyTableBase> offerItemCountTable_;
 
     std::vector<docid_t> docIds_;
     std::vector<score_t> topKScores_;

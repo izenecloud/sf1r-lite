@@ -22,7 +22,7 @@
     <!-- Network addresses of LogServerProcess:
          host=10.10.1.105 is the LAN address of (180.153.140.105)
     -->
-    <LogServerConnection host="10.10.99.121" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
+    <LogServerConnection host="172.16.5.168" rpcport="18811" rpc_thread_num="30" driverport="18812"/>
 
     <!-- Format of value of str:
 
@@ -103,7 +103,7 @@
                storeimagelocally: whether the image will be copied and stored locally in the server.
           -->
           <IsePara buildimageindex="y" storeimagelocally="n" maximagenum="1000000" relatedimagenum="50"/>
-          <QueryCorrectionPara enableEK="y" enableCN="y"/>
+          <QueryCorrectionPara enableEK="y" enableCN="y" fromDb="n"/>
           <ProductRankingPara cron="0 23 * * *"/>
         </Parameter>
       </MiningBundle>
@@ -272,7 +272,7 @@
 
     <DistributedUtil>
       <ZooKeeper disable="n" servers="10.10.99.121:2181,10.10.99.122:2181,10.10.99.123:2181" sessiontimeout="5000"/>
-      <DFS type="hdfs" supportfuse="y" mountdir="/mnt/hdfs" server="localhost" port="9000"/>
+      <DFS type="hdfs" supportfuse="n" mountdir="" server="localhost" port="9000"/>
     </DistributedUtil>
   </Deployment>
 

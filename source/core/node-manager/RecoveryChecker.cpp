@@ -1,6 +1,6 @@
 #include "RecoveryChecker.h"
 #include "DistributeFileSyncMgr.h"
-//#include "DistributeFileSys.h"
+#include "DistributeFileSys.h"
 #include "DistributeDriver.h"
 #include "RequestLog.h"
 #include "NodeManagerBase.h"
@@ -166,6 +166,15 @@ static bool getLastBackup(const bfs::path& backup_basepath, uint32_t less_than, 
     return false;
 }
 
+static void copy_file_keep_modification(const bfs::path& from, const bfs::path& to)
+{
+    bfs::copy_file(from, to, bfs::copy_option::overwrite_if_exists);
+    try
+    {
+        bfs::last_write_time(to, bfs::last_write_time(from));
+    }catch(const std::exception& e){}
+}
+
 static void copyDir(bfs::path src, bfs::path dest)
 {
     if( !bfs::exists(src) ||
@@ -200,7 +209,7 @@ static void copyDir(bfs::path src, bfs::path dest)
 
             DistributeTestSuit::testFail(Fail_At_CopyRemove_File);
             // Found file: Copy
-            bfs::copy_file(current, dest / current.filename(), bfs::copy_option::overwrite_if_exists);
+            copy_file_keep_modification(current, dest / current.filename());
             //LOG(INFO) << "copying : " << current << " to " << dest;
         }
     }
@@ -357,8 +366,7 @@ bool RecoveryChecker::backup(bool force_remove)
         try
         {
             copy_dir(request_log_basepath_, dest_path, false);
-            bfs::copy_file(last_conf_file_, dest_path/bfs::path(last_conf_file_).filename(),
-                bfs::copy_option::overwrite_if_exists);
+            copy_file_keep_modification(last_conf_file_, dest_path/bfs::path(last_conf_file_).filename());
         }
         catch(const std::exception& e)
         {
@@ -752,8 +760,7 @@ bool RecoveryChecker::rollbackLastFail(bool starting_up)
         LOG(INFO) << "rollback begin update config file and restart the collection." << last_backup_path;
         // check if config file changed. if so, we need restart to finish rollback.
         std::string restore_conf_file = last_backup_path + bfs::path(last_conf_file_).filename().string();
-        bfs::copy_file(restore_conf_file, last_conf_file_,
-            bfs::copy_option::overwrite_if_exists);
+        copy_file_keep_modification(restore_conf_file, last_conf_file_);
 
         std::map<std::string, std::string> new_running_col = handleConfigUpdate();
 
@@ -807,10 +814,10 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     last_conf_file_ = workdir + "/distribute_last_conf";
     configDir_ = conf_dir;
     need_backup_ = false;
-    //if (DistributeFileSys::get()->isEnabled())
-    //{
-    //    backup_basepath_ = DistributeFileSys::get()->getDFSLocalFullPath("/req-backup");
-    //}
+    if (DistributeFileSys::get()->isEnabled())
+    {
+        backup_basepath_ = DistributeFileSys::get()->getDFSLocalFullPath("/req-backup");
+    }
 
     reqlog_mgr_.reset(new ReqLogMgr());
     try
@@ -838,8 +845,7 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
             uint32_t last_backup_id = 0;
             if (getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
             {
-                bfs::copy_file(last_backup_path + bfs::path(last_conf_file_).filename().string(), last_conf_file_,
-                    bfs::copy_option::overwrite_if_exists);
+                copy_file_keep_modification(last_backup_path + bfs::path(last_conf_file_).filename().string(), last_conf_file_);
                 LOG(INFO) << "restore config file from : " << last_backup_path;
             }
             else

@@ -85,18 +85,18 @@ public:
     virtual bool bindCallProxy(CallProxyType& proxy)
     {
         BIND_CALL_PROXY_BEGIN(IndexWorker, proxy)
-        BIND_CALL_PROXY_2(index, unsigned int, bool)
+        BIND_CALL_PROXY_3(index, std::string, unsigned int, bool)
         BIND_CALL_PROXY_3(HookDistributeRequestForIndex, int, std::string, bool)
         BIND_CALL_PROXY_END()
     }
 
     void HookDistributeRequestForIndex(int hooktype, const std::string& reqdata, bool& result);
 
-    void index(unsigned int numdoc, bool& result);
+    void index(const std::string& scd_path, unsigned int numdoc, bool& result);
 
     bool reindex(boost::shared_ptr<DocumentManager>& documentManager, int64_t timestamp);
 
-    bool buildCollection(unsigned int numdoc);
+    bool buildCollection(const std::string& scd_path, unsigned int numdoc);
     bool buildCollectionOnReplica(unsigned int numdoc);
     bool buildCollection(unsigned int numdoc, const std::vector<std::string>& scdList, int64_t timestamp);
 
@@ -120,7 +120,6 @@ public:
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
     void flush(bool mergeBarrel = false);
-    bool reload();
 
 private:
     void createPropertyList_();

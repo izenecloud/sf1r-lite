@@ -2,9 +2,13 @@
 #define _USER_QUERY_H_
 
 #include "RDbRecordBase.h"
+#include "LogAnalysisConnection.h"
 #include "LogServerConnection.h"
+#include <list>
+#include <map>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/lexical_cast.hpp>
 #include <string>
 
 namespace sf1r
@@ -183,16 +187,29 @@ public:
     static bool getTopK(const std::string& c, const std::string& b, const std::string& e,
             const std::string& limit, std::list<std::map<std::string, std::string> >& res)
     {
-        LogServerConnection& conn = LogServerConnection::instance();
+        LogAnalysisConnection& conn = LogAnalysisConnection::instance();
         GetTopKRequest req;
+        std::list<std::pair<std::string, uint32_t> >tmp;
         req.param_.service_ = service_;
         req.param_.collection_=c;
         req.param_.begin_time_ = b;
         req.param_.end_time_ = e;
         req.param_.limit_=boost::lexical_cast<uint32_t>(limit);
-        conn.syncRequest(req,res);
+        conn.syncRequest(req,tmp);
+
+        std::list<std::pair<std::string, uint32_t> >::iterator it;
+        for(it=tmp.begin();it!=tmp.end();it++)
+        {
+            std::map<std::string, std::string> m;
+            m["query"] = it->first;
+            m["count"] = boost::lexical_cast<std::string>(it->second);
+            res.push_back(m);
+        }
         return true;
     }
+
+    static void getRecentKeyword(const std::string& c, const std::string& b, std::list<std::map<std::string, std::string> >& res);
+    static void getRecentKeyword(const std::string& b, std::list<std::map<std::string, std::string> >& res);
 private:
 
     static const std::string service_;

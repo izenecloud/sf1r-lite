@@ -337,7 +337,7 @@
         <xs:complexType>
             <xs:attribute name="type" type="xs:string" use="optional"/>
             <xs:attribute name="supportfuse" type="YesNoType" use="optional"/>
-            <xs:attribute name="mountdir" type="xs:string" use="required"/>
+            <xs:attribute name="mountdir" type="xs:string" use="optional"/>
             <xs:attribute name="server" type="xs:string" use="optional"/>
             <xs:attribute name="port" type="PortType" use="optional"/>
         </xs:complexType>

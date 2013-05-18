@@ -236,6 +236,7 @@ private:
 public:
     bool enableEK;
     bool enableCN;
+    bool fromDb;
 
 };
 

@@ -2,12 +2,13 @@
 #include "ProductRanker.h"
 #include "ProductRankParam.h"
 #include "CategoryScoreEvaluator.h"
-#include "MerchantCountEvaluator.h"
+#include "OfferItemCountEvaluator.h"
 #include "DiversityRoundEvaluator.h"
 #include "MerchantScoreEvaluator.h"
 #include "RandomScoreEvaluator.h"
 #include "../group-manager/PropValueTable.h"
 #include <configuration-manager/ProductRankingConfig.h>
+#include <common/NumericPropertyTableBase.h>
 #include <memory> // auto_ptr
 #include <algorithm> // min
 
@@ -34,12 +35,14 @@ score_t minCustomCategoryWeight(const ProductRankingConfig& config)
 
 ProductRankerFactory::ProductRankerFactory(
     const ProductRankingConfig& config,
-    const faceted::PropValueTable* merchantValueTable,
     const faceted::PropValueTable* categoryValueTable,
+    const boost::shared_ptr<const NumericPropertyTableBase>& offerItemCountTable,
+    const faceted::PropValueTable* diversityValueTable,
     const MerchantScoreManager* merchantScoreManager)
     : config_(config)
-    , merchantValueTable_(merchantValueTable)
     , categoryValueTable_(categoryValueTable)
+    , offerItemCountTable_(offerItemCountTable)
+    , diversityValueTable_(diversityValueTable)
     , merchantScoreManager_(merchantScoreManager)
     , isRandomScoreConfig_(config.scores[RANDOM_SCORE].weight != 0)
 {
@@ -58,7 +61,9 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankParam& param
     }
     else
     {
+        addOfferItemCountEvaluator_(*ranker);
         addDiversityEvaluator_(*ranker);
+        addMerchantScoreEvaluator_(*ranker);
     }
 
     return ranker.release();
@@ -79,15 +84,25 @@ void ProductRankerFactory::addRandomEvaluator_(ProductRanker& ranker) const
     ranker.addEvaluator(new RandomScoreEvaluator);
 }
 
-void ProductRankerFactory::addDiversityEvaluator_(ProductRanker& ranker) const
+void ProductRankerFactory::addOfferItemCountEvaluator_(ProductRanker& ranker) const
 {
-    if (!merchantValueTable_)
+    if (!offerItemCountTable_)
         return;
 
-    ranker.addEvaluator(new MerchantCountEvaluator(*merchantValueTable_));
-    ranker.addEvaluator(new DiversityRoundEvaluator);
+   ranker.addEvaluator(new OfferItemCountEvaluator(offerItemCountTable_));
+}
 
-    if (!merchantScoreManager_)
+void ProductRankerFactory::addDiversityEvaluator_(ProductRanker& ranker) const
+{
+    if (!diversityValueTable_)
+        return;
+
+    ranker.addEvaluator(new DiversityRoundEvaluator(*diversityValueTable_));
+}
+
+void ProductRankerFactory::addMerchantScoreEvaluator_(ProductRanker& ranker) const
+{
+    if (!diversityValueTable_ || !merchantScoreManager_)
         return;
 
     MerchantScoreEvaluator* merchantScoreEvaluator = categoryValueTable_ ?

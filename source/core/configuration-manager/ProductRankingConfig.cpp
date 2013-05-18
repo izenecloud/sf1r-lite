@@ -93,6 +93,9 @@ bool checkScoreConfig(
     case POPULARITY_SCORE:
         return isNumericFilter(scoreConfig.factors, collectionMeta, error);
 
+    case OFFER_ITEM_COUNT_SCORE:
+        return isNumericFilter(scoreConfig, collectionMeta, error);
+
     default:
         return true;
     }
@@ -108,6 +111,7 @@ const std::string ProductRankingConfig::kScoreTypeName[] =
     "relevance",    // RELEVANCE_SCORE
     "popularity",   // POPULARITY_SCORE
     "fuzzy",        // FUZZY_SCORE
+    "offer_item_count", // OFFER_ITEM_COUNT_SCORE
     "diversity",    // DIVERSITY_SCORE
     "random"        // RANDOM_SCORE
 };

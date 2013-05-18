@@ -320,7 +320,7 @@ bool MiningManager::open()
         uint32_t logdays = 7;
 
         qcManager_.reset(new QueryCorrectionSubmanager(queryDataPath_, miningConfig_.query_correction_param.enableEK,
-                    miningConfig_.query_correction_param.enableCN));
+                    miningConfig_.query_correction_param.enableCN,miningConfig_.query_correction_param.fromDb));
         rmDb_.reset(new RecommendManager(collectionName_, collectionPath_, mining_schema_, miningConfig_, document_manager_,
                     qcManager_, analyzer_, logdays));
 
@@ -2592,16 +2592,36 @@ bool MiningManager::initProductScorerFactory_(const ProductRankingConfig& rankCo
 
 bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankConfig)
 {
+    if (!rankConfig.isEnable)
+        return true;
+
+    const std::string& offerCountPropName =
+        rankConfig.scores[OFFER_ITEM_COUNT_SCORE].propName;
     const std::string& diversityPropName =
         rankConfig.scores[DIVERSITY_SCORE].propName;
     const score_t randomScoreWeight =
         rankConfig.scores[RANDOM_SCORE].weight;
 
-    if (!rankConfig.isEnable)
+    if (offerCountPropName.empty() &&
+        diversityPropName.empty() &&
+        randomScoreWeight == 0)
         return true;
 
-    if (diversityPropName.empty() && randomScoreWeight == 0)
-        return true;
+    const std::string& categoryPropName =
+        rankConfig.scores[CATEGORY_SCORE].propName;
+
+    const faceted::PropValueTable* categoryValueTable =
+        GetPropValueTable(categoryPropName);
+
+    const boost::shared_ptr<const NumericPropertyTableBase>& offerItemCountTable =
+        numericTableBuilder_->createPropertyTable(offerCountPropName);
+
+    if (!offerCountPropName.empty() && !offerItemCountTable)
+    {
+        LOG(ERROR) << "the NumericPropertyTableBase is not initialized for property: "
+                   << offerCountPropName;
+        return false;
+    }
 
     const faceted::PropValueTable* diversityValueTable =
         GetPropValueTable(diversityPropName);
@@ -2613,15 +2633,11 @@ bool MiningManager::initProductRankerFactory_(const ProductRankingConfig& rankCo
         return false;
     }
 
-    const std::string& categoryPropName =
-        rankConfig.scores[CATEGORY_SCORE].propName;
-    const faceted::PropValueTable* categoryValueTable =
-        GetPropValueTable(categoryPropName);
-
     if (productRankerFactory_) delete productRankerFactory_;
     productRankerFactory_ = new ProductRankerFactory(rankConfig,
-                                                     diversityValueTable,
                                                      categoryValueTable,
+                                                     offerItemCountTable,
+                                                     diversityValueTable,
                                                      merchantScoreManager_);
     return true;
 }

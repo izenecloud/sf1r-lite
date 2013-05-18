@@ -23,6 +23,7 @@
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/NodeManagerBase.h>
 #include <node-manager/MasterManagerBase.h>
+#include <node-manager/DistributeFileSys.h>
 #include <util/driver/Request.h>
 
 // xxx
@@ -149,19 +150,7 @@ void IndexWorker::flush(bool mergeBarrel)
     LOG(INFO) << "Flushing finished in IndexWorker";
 }
 
-bool IndexWorker::reload()
-{
-    if(!documentManager_->reload())
-        return false;
-
-    idManager_->close();
-
-    indexManager_->setDirty();
-    indexManager_->getIndexReader();
-    return true;
-}
-
-void IndexWorker::index(unsigned int numdoc, bool& result)
+void IndexWorker::index(const std::string& scd_path, unsigned int numdoc, bool& result)
 {
     result = true;
     if (distribute_req_hooker_->isRunningPrimary())
@@ -169,12 +158,12 @@ void IndexWorker::index(unsigned int numdoc, bool& result)
         // in distributed, all write api need be called in sync.
         if (!distribute_req_hooker_->isHooked())
         {
-            task_type task = boost::bind(&IndexWorker::buildCollection, this, numdoc);
+            task_type task = boost::bind(&IndexWorker::buildCollection, this, scd_path, numdoc);
             JobScheduler::get()->addTask(task, bundleConfig_->collectionName_);
         }
         else
         {
-            result = buildCollection(numdoc);
+            result = buildCollection(scd_path, numdoc);
         }
     }
     else
@@ -190,7 +179,7 @@ bool IndexWorker::reindex(boost::shared_ptr<DocumentManager>& documentManager,
     return true;
 }
 
-bool IndexWorker::buildCollection(unsigned int numdoc)
+bool IndexWorker::buildCollection(const std::string& scd_path, unsigned int numdoc)
 {
     DISTRIBUTE_WRITE_BEGIN;
     DISTRIBUTE_WRITE_CHECK_VALID_RETURN;
@@ -201,6 +190,9 @@ bool IndexWorker::buildCollection(unsigned int numdoc)
     //recoverSCD_();
 
     string scdPath = bundleConfig_->indexSCDPath();
+    if (!scd_path.empty())
+        scdPath = scd_path;
+
     Status::Guard statusGuard(indexStatus_);
 
     ScdParser parser(bundleConfig_->encoding_);
@@ -466,19 +458,22 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
 
         const boost::shared_ptr<Directory>& currentDir = directoryRotator_.currentDirectory();
 
-        for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
+        if (!DistributeFileSys::get()->isEnabled())
         {
-            bfs::path bkDir = bfs::path(*scd_it).parent_path() / SCD_BACKUP_DIR;
-            LOG(INFO) << " SCD file : " << *scd_it << " backuped to " << bkDir;
-            try
+            for (scd_it = scdList.begin(); scd_it != scdList.end(); ++scd_it)
             {
-                bfs::create_directories(bkDir);
-                bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
-                currentDir->appendSCD(bfs::path(*scd_it).filename().string());
-            }
-            catch (bfs::filesystem_error& e)
-            {
-                LOG(WARNING) << "exception in rename file " << *scd_it << ": " << e.what();
+                bfs::path bkDir = bfs::path(*scd_it).parent_path() / SCD_BACKUP_DIR;
+                LOG(INFO) << " SCD file : " << *scd_it << " backuped to " << bkDir;
+                try
+                {
+                    bfs::create_directories(bkDir);
+                    bfs::rename(*scd_it, bkDir / bfs::path(*scd_it).filename());
+                    currentDir->appendSCD(bfs::path(*scd_it).filename().string());
+                }
+                catch (bfs::filesystem_error& e)
+                {
+                    LOG(WARNING) << "exception in rename file " << *scd_it << ": " << e.what();
+                }
             }
         }
 

@@ -18,22 +18,25 @@
 #define SF1R_DIVERSITY_ROUND_EVALUATOR_H
 
 #include "ProductScoreEvaluator.h"
-//#include <map>
+#include <common/PropSharedLock.h>
 #include <3rdparty/am/btree/btree_map.h>
 
 namespace sf1r
 {
+namespace faceted { class PropValueTable; }
 
 class DiversityRoundEvaluator : public ProductScoreEvaluator
 {
 public:
-    DiversityRoundEvaluator();
+    DiversityRoundEvaluator(const faceted::PropValueTable& diversityValueTable);
 
     virtual score_t evaluate(ProductScore& productScore);
 
 private:
-    score_t lastCategoryScore_;
+    const faceted::PropValueTable& diversityValueTable_;
+    PropSharedLock::ScopedReadLock lock_;
 
+    score_t lastCategoryScore_;
     btree::btree_map<merchant_id_t, int> roundMap_;
 };
 
