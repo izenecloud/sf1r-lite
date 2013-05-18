@@ -3,7 +3,7 @@
 #include "SearchThreadParam.h"
 #include "ScoreDocEvaluator.h"
 #include "QueryBuilder.h"
-#include "CombinedDocumentIterator.h"
+#include "DocumentIteratorContainer.h"
 #include "FilterDocumentIterator.h"
 #include "AllDocumentIterator.h"
 #include "CustomRankDocumentIterator.h"
@@ -22,6 +22,7 @@
 #include <memory> // auto_ptr
 #include <limits>
 #include <boost/bind.hpp>
+#include <boost/scoped_ptr.hpp>
 
 using namespace sf1r;
 
@@ -91,6 +92,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     rankingManagerPtr_->createPropertyRankers(pTextRankingType, indexPropertySize, propertyRankers);
     bool readTermPosition = propertyRankers[0]->requireTermPosition();
 
+    boost::scoped_ptr<DocumentIteratorContainer> docIterContainer(new DocumentIteratorContainer);
     std::auto_ptr<DocumentIterator> scoreDocIterPtr;
     MultiPropertyScorer* pMultiPropertyIterator = NULL;
     WANDDocumentIterator* pWandDocIterator = NULL;
@@ -141,15 +143,14 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     {
         return false;
     }
-    boost::shared_ptr<CombinedDocumentIterator> pDocIterator(
-        new CombinedDocumentIterator());
+
     if (pFilterIdSet)
     {
         ///1. Search Filter
         ///2. Select * WHERE    (FilterQuery)
         TermDocFreqs* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator(pFilterTermDocFreqs);
-        pDocIterator->add(pFilterIterator);
+        docIterContainer->add(pFilterIterator);
     }
 
     STOP_PROFILER(preparedociter)
@@ -184,46 +185,41 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
         pScoreDocIterator = combineCustomDocIterator_(
             actionOperation.actionItem_, scoreDocIterPtr.release());
 
-        if (pScoreDocIterator == NULL)
-        {
-            const std::string& query =
-                actionOperation.actionItem_.env_.queryString_;
-
-            LOG(INFO) << "empty search result for query [" << query << "]";
-            return false;
-        }
-
-        pDocIterator->add(pScoreDocIterator);
+        docIterContainer->add(pScoreDocIterator);
     }
-    if (isFilterQuery && !pFilterIdSet)
+
+    //SELECT * and filter is null ORDER BY
+    if (isFilterQuery && !pFilterIdSet && param.pSorter)
     {
-        //SELECT * , and filter is null
-        if (param.pSorter)
+        unsigned maxDoc = documentManagerPtr_->getMaxDocId();
+        if (maxDoc == 0)
+            return false;
+        boost::shared_ptr<BitVector> pDelFilter(indexManagerPtr_->getBTreeIndexer()->getFilter());
+        AllDocumentIterator* pFilterIterator = NULL;
+        if (pDelFilter)
         {
-            ///SELECT * ORDER BY
-            unsigned maxDoc = documentManagerPtr_->getMaxDocId();
-            if (maxDoc == 0)
-                return false;
-            boost::shared_ptr<BitVector> pDelFilter(indexManagerPtr_->getBTreeIndexer()->getFilter());
-            AllDocumentIterator* pFilterIterator = NULL;
-            if (pDelFilter)
-            {
-                pFilterIdSet.reset(new IndexManager::FilterBitmapT);
-                pDelFilter->compressed(*pFilterIdSet);
-                TermDocFreqs* pDelTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
-                pFilterIterator = new AllDocumentIterator(pDelTermDocFreqs, maxDoc);
-            }
-            else
-            {
-                pFilterIterator = new AllDocumentIterator(maxDoc);
-            }
-            pDocIterator->add(pFilterIterator);
+            pFilterIdSet.reset(new IndexManager::FilterBitmapT);
+            pDelFilter->compressed(*pFilterIdSet);
+            TermDocFreqs* pDelTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+            pFilterIterator = new AllDocumentIterator(pDelTermDocFreqs, maxDoc);
         }
         else
         {
-            return false;
+            pFilterIterator = new AllDocumentIterator(maxDoc);
         }
+        docIterContainer->add(pFilterIterator);
     }
+
+    boost::scoped_ptr<DocumentIterator> docIterPtr(docIterContainer->combine());
+    if (!docIterPtr)
+    {
+        const std::string& query =
+            actionOperation.actionItem_.env_.queryString_;
+
+        LOG(INFO) << "empty search result for query [" << query << "]";
+        return false;
+    }
+
     START_PROFILER(preparerank)
 
     LOG(INFO) << "search in thread worker begin prepare ranker -------- " << time(NULL);
@@ -232,14 +228,14 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     CollectionTermFrequencyInProperties ctfmap;
     MaxTermFrequencyInProperties maxtfmap;
 
-    // until now all the pDocIterators is the same, so we can just compute the df, ctf and maxtf use
-    // any one.
+    // until now all the docIterPtrs is the same, so we can just use any one to
+    // compute the df, ctf and maxtf
     DistKeywordSearchInfo& distSearchInfo = *param.distSearchInfo;
     if (distSearchInfo.effective_)
     {
         if (distSearchInfo.isOptionGatherInfo())
         {
-            pDocIterator->df_cmtf(dfmap, ctfmap, maxtfmap);
+            docIterPtr->df_cmtf(dfmap, ctfmap, maxtfmap);
             distSearchInfo.dfmap_.swap(dfmap);
             distSearchInfo.ctfmap_.swap(ctfmap);
             distSearchInfo.maxtfmap_.swap(maxtfmap);
@@ -254,7 +250,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     }
     else
     {
-        pDocIterator->df_cmtf(dfmap, ctfmap, maxtfmap);
+        docIterPtr->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
     std::vector<RankQueryProperty> rankQueryProperties(indexPropertyList.size());
 
@@ -309,7 +305,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     {
         time_t start_search = time(NULL);
         bool ret = doSearch_(param,
-                             pDocIterator.get(),
+                             *docIterPtr,
                              groupFilter.get(),
                              scoreDocEvaluator,
                              propSharedLockSet);
@@ -362,7 +358,7 @@ DocumentIterator* SearchThreadWorker::combineCustomDocIterator_(
 
 bool SearchThreadWorker::doSearch_(
     SearchThreadParam& param,
-    CombinedDocumentIterator* pDocIterator,
+    DocumentIterator& docIterator,
     faceted::GroupFilter* groupFilter,
     ScoreDocEvaluator& scoreDocEvaluator,
     PropSharedLockSet& propSharedLockSet)
@@ -400,12 +396,12 @@ bool SearchThreadWorker::doSearch_(
         }
     }
 
-    pDocIterator->skipTo(param.docIdBegin);
+    docIterator.skipTo(param.docIdBegin);
 
     do
     {
 
-        docid_t curDocId = pDocIterator->doc();
+        docid_t curDocId = docIterator.doc();
 
         if (curDocId >= param.docIdEnd)
             break;
@@ -457,7 +453,7 @@ bool SearchThreadWorker::doSearch_(
         STOP_PROFILER(inserttoqueue)
 
     }
-    while (pDocIterator->next());
+    while (docIterator.next());
 
     if (rangePropertyTable && lowValue <= highValue)
     {
