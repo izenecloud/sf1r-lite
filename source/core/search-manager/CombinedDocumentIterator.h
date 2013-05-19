@@ -2,6 +2,7 @@
 #define SF1R_SEARCHMANAGER_COMBINED_DOCITERATOR_H
 
 #include "ANDDocumentIterator.h"
+#include <util/profiler/ProfilerGroup.h>
 
 namespace sf1r
 {
@@ -29,4 +30,3 @@ public:
 }
 
 #endif
-

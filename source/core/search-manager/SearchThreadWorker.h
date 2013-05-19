@@ -20,7 +20,6 @@ class SearchManagerPreProcessor;
 class CustomRankManager;
 class KeywordSearchActionItem;
 class DocumentIterator;
-class CombinedDocumentIterator;
 class ScoreDocEvaluator;
 class PropSharedLockSet;
 class QueryBuilder;
@@ -63,7 +62,7 @@ private:
 
     bool doSearch_(
         SearchThreadParam& param,
-        CombinedDocumentIterator* pDocIterator,
+        DocumentIterator& docIterator,
         faceted::GroupFilter* groupFilter,
         ScoreDocEvaluator& scoreDocEvaluator,
         PropSharedLockSet& propSharedLockSet);
