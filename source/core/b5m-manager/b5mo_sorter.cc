@@ -232,6 +232,9 @@ void B5moSorter::OBag_(std::vector<Value>& docs)
             pgenerator_.Gen(prev_odocs, prev_pdoc);
             pdoc.diff(prev_pdoc);
         }
+        int64_t itemcount=0;
+        pdoc.getProperty("itemcount", itemcount);
+        if(itemcount>=100) return;
         SCD_TYPE ptype = pdoc.type;
         if(pdoc.getPropertySize()<2)
         {
