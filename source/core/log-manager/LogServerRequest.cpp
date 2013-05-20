@@ -16,6 +16,9 @@ const LogServerRequest::method_t LogServerRequest::method_names[] =
             "get_values",
             "get_value_and_count",
             "get_all_collection",
+            "insert_prop_label",
+            "get_prop_label",
+            "del_prop_label"
 
             "strid_to_itemid",
             "itemid_to_strid",

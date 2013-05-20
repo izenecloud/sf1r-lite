@@ -42,12 +42,30 @@ void PropertyLabel::load( const std::map<std::string, std::string> & rawdata )
 void PropertyLabel::save_to_logserver()
 {
     LogAnalysisConnection& conn = LogAnalysisConnection::instance();
-    InsertWithValuesDataRequest req;
-    req.param_.service_ = service_;
+    InsertPropLabelRequest req;
     req.param_.collection_ = collection_;
-    req.param_.key_ = labelName_;
-    req.param_.values_["label_name"] = labelName_;
-    req.param_.values_["hit_docs_num"] = hitDocsNum_;
+    req.param_.label_name_ = labelName_;
+    req.param_.hitnum_ = hitDocsNum_;
+
+    bool res;
+    conn.syncRequest(req, res);
+}
+
+void PropertyLabel::get_from_logserver(const std::string& collection,
+    std::list<std::map<std::string, std::string> >& res)
+{
+    LogAnalysisConnection& conn = LogAnalysisConnection::instance();
+    GetPropLabelRequest req;
+    req.param_.collection_ = collection;
+
+    conn.syncRequest(req, res);
+}
+
+void PropertyLabel::del_from_logserver(const std::string& collection)
+{
+    LogAnalysisConnection& conn = LogAnalysisConnection::instance();
+    DelPropLabelRequest req;
+    req.param_.collection_ = collection;
 
     bool res;
     conn.syncRequest(req, res);

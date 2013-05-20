@@ -25,6 +25,9 @@ public:
         METHOD_GET_VALUES,
         METHOD_GET_VALUE_AND_COUNT,
         METHOD_GET_ALL_COLLECTION,
+        METHOD_INSERT_PROP_LABEL,
+        METHOD_GET_PROP_LABEL,
+        METHOD_DEL_PROP_LABEL,
 
         METHOD_STRID_TO_ITEMID,
         METHOD_ITEMID_TO_STRID,
@@ -149,6 +152,31 @@ class GetAllCollectionRequest: public LogRequestRequestT<GetAllCollectionData>
 public:
     GetAllCollectionRequest()
         : LogRequestRequestT<GetAllCollectionData>(METHOD_GET_ALL_COLLECTION)
+    {
+    }
+};
+
+class InsertPropLabelRequest: public LogRequestRequestT<InsertPropLabelData>
+{
+public:
+    InsertPropLabelRequest()
+        : LogRequestRequestT<InsertPropLabelData>(METHOD_INSERT_PROP_LABEL)
+    {
+    }
+};
+class GetPropLabelRequest: public LogRequestRequestT<GetPropLabelData>
+{
+public:
+    GetPropLabelRequest()
+        : LogRequestRequestT<GetPropLabelData>(METHOD_GET_PROP_LABEL)
+    {
+    }
+};
+class DelPropLabelRequest: public LogRequestRequestT<DelPropLabelData>
+{
+public:
+    DelPropLabelRequest()
+        : LogRequestRequestT<DelPropLabelData>(METHOD_DEL_PROP_LABEL)
     {
     }
 };

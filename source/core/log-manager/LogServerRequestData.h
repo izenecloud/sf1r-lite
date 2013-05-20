@@ -106,6 +106,29 @@ struct GetAllCollectionData: public LogServerRequestData
     MSGPACK_DEFINE(service_, begin_time_);
 };
 
+struct InsertPropLabelData: public LogServerRequestData
+{
+    std::string collection_;
+    std::string label_name_;
+    uint64_t hitnum_;
+
+    MSGPACK_DEFINE(collection_, label_name_, hitnum_);
+};
+
+struct GetPropLabelData: public LogServerRequestData
+{
+    std::string collection_;
+
+    MSGPACK_DEFINE(collection_);
+};
+
+struct DelPropLabelData: public LogServerRequestData
+{
+    std::string collection_;
+
+    MSGPACK_DEFINE(collection_);
+};
+
 struct UUID2DocidList : public LogServerRequestData
 {
     typedef std::vector<uint128_t> DocidListType;
