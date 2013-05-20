@@ -152,4 +152,51 @@ void LogAnalysis::getRecentKeywordFreqList(const std::string& time_string, std::
     }
 }
 
+void LogAnalysis::getPropertyLabel(const std::string& collection, std::vector<PropertyLabel>& propertyList)
+{
+    if(RDbConnection::instance().logServer())
+    {
+        std::list<std::map<std::string, std::string> > res;
+        PropertyLabel::get_from_logserver(collection, res);
+        std::list<std::map<std::string, std::string> >::iterator it;
+        for(it=res.begin(); it!=res.end();it++)
+        {
+            PropertyLabel pl;
+            pl.load(*it);
+            propertyList.push_back(pl);
+        }
+    }
+    else
+    {
+        std::stringstream sql;
+        sql << "select label_name, sum(hit_docs_num) AS hit_docs_num";
+        sql << " where collection = '" << collection <<"'";
+        sql << " group by label_name;";
+        std::list<std::map<std::string, std::string> > res;
+        PropertyLabel::find_by_sql(sql.str(), res);
+        std::list<std::map<std::string, std::string> >::iterator it;
+        for(it=res.begin(); it!=res.end();it++)
+        {
+            PropertyLabel pl;
+            pl.load(*it);
+            propertyList.push_back(pl);
+        }
+    }
+}
+
+void LogAnalysis::delPropertyLabel(const std::string& collection)
+{
+    if(RDbConnection::instance().logServer())
+    {
+        PropertyLabel::del_from_logserver(collection);
+    }
+    else
+    {
+        std::stringstream sql;
+        sql << "delete from " << PropertyLabel::TableName;
+        sql << " where collection = '" << collection <<"';";
+        PropertyLabel::delete_by_sql(sql.str()) && RDbConnection::instance().exec("vacuum");
+    }
+}
+
 }
