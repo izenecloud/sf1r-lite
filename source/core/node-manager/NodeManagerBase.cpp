@@ -455,7 +455,17 @@ void NodeManagerBase::setSf1rNodeData(ZNode& znode, ZNode& oldZnode)
     //setServicesData(znode);
     if (nodeState_ == NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS)
     {
-        znode.setValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA, saved_packed_reqdata_);
+        // zookeeper is designed to store less than 1MB data on znode.
+        // this is used for temp compatible with old code.
+        // Remove storing the packed data while all node is upgraded.
+        if (saved_packed_reqdata_.size() < 1024*512)
+        {
+            znode.setValue(ZNode::KEY_PRIMARY_WORKER_REQ_DATA, saved_packed_reqdata_);
+        }
+        else
+        {
+            LOG(INFO) << "packed data not saved to zookeeper since it's too large.";
+        }
         znode.setValue(ZNode::KEY_REQ_TYPE, (uint32_t)saved_reqtype_);
     }
 

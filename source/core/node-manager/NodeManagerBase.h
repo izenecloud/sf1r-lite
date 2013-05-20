@@ -127,6 +127,10 @@ public:
     void notifyMasterReadyForNew();
     void abortRequest();
     void finishLocalReqProcess(int type, const std::string& reqdata);
+    inline std::string getSavedPackedData()
+    {
+        return saved_packed_reqdata_;
+    }
 
     void setCallback(NoFailCBFuncT on_elect_finished, NoFailCBFuncT on_wait_finish_process,
         NoFailCBFuncT on_wait_finish_log, NoFailCBFuncT on_wait_primary, NoFailCBFuncT on_abort_request,

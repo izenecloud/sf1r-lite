@@ -231,6 +231,16 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             reqdata.success = true;
             req.result(reqdata);
         }
+        else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_GET_RUNNING_REQLOG])
+        {
+            msgpack::type::tuple<GetRunningReqLogData> params;
+            req.params().convert(&params);
+            GetRunningReqLogData& reqdata = params.get<0>();
+            reqdata.success = false;
+            reqdata.running_logdata = NodeManagerBase::get()->getSavedPackedData();
+            reqdata.success = true;
+            req.result(reqdata);
+        }
         else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_GET_SCD_LIST])
         {
             msgpack::type::tuple<GetSCDListData> params;
@@ -718,6 +728,49 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
     boost::unique_lock<boost::mutex> lk(status_report_mutex_);
     reporting_ = false;
     saveCachedCheckSum();
+}
+
+bool DistributeFileSyncMgr::getCurrentRunningReqLog(std::string& saved_log)
+{
+    if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
+        return true;
+    int retry = 3;
+    saved_log.clear();
+    while(retry-- > 0)
+    {
+        std::string ip;
+        uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
+        if(!NodeManagerBase::get()->getCurrPrimaryInfo(ip))
+        {
+            LOG(INFO) << "get primary sync server failed.";
+            return false;
+        }
+        if (ip == SuperNodeManager::get()->getLocalHostIP())
+        {
+            LOG(INFO) << "the ip is the same as local : " << ip;
+            return false;
+        }
+
+        LOG(INFO) << "try get running log from: " << ip << ":" << port;
+        GetRunningReqLogRequest req;
+        GetRunningReqLogData rsp;
+        try
+        {
+            conn_mgr_->syncRequest(ip, port, req, rsp);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(INFO) << "send request error, will retry : " << e.what();
+            continue;
+        }
+        if (rsp.success)
+        {
+            saved_log = rsp.running_logdata;
+            return true;
+        }
+    }
+    LOG(INFO) << "get current running log data failed .";
+    return false;
 }
 
 bool DistributeFileSyncMgr::getNewestReqLog(bool from_primary_only, uint32_t start_from, std::vector<std::string>& saved_log)

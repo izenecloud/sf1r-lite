@@ -66,6 +66,7 @@ public:
     ~DistributeFileSyncMgr();
     void init();
     void stop();
+    bool getCurrentRunningReqLog(std::string& saved_log);
     bool getNewestReqLog(bool from_primary_only, uint32_t start_from, std::vector<std::string>& saved_log);
     bool syncNewestSCDFileList(const std::string& colname);
     bool syncCollectionData(const std::vector<std::string>& colname_list);
