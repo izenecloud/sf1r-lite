@@ -642,8 +642,7 @@ void QueryBuilder::prepare_for_virtual_property_(
             {
                 for (size_t i =0; i < it->second.size(); ++i )
                 {
-                    if(it->second[i])
-                        delete it->second[i];
+                    delete it->second[i];
                 }
                 it->second.clear();
             }
@@ -652,6 +651,7 @@ void QueryBuilder::prepare_for_virtual_property_(
     if (pIter)
     {
         pScorer->add(properyConfig.getPropertyId(), pIter);
+        pScorer->add(termDocReadersList);
         success_properties++;
     }
 }
@@ -744,12 +744,15 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
                         pIterator = pTermIterator;
                     else
                         pIterator->add(pTermIterator);
+
+                    constIt->second.pop_back();
                 }
                 else
                 {
+                    delete pTermIterator;
+                    pTermIterator = NULL;
                     pVirtualTermDocIter->set(0);
                 }
-                constIt->second.pop_back();
             }
 
             pVirtualTermDocIter->add(pIterator);
