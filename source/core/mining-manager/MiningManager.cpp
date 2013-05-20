@@ -196,6 +196,7 @@ MiningManager::~MiningManager()
     if (groupManager_) delete groupManager_;
     if (attrManager_) delete attrManager_;
     if (numericTableBuilder_) delete numericTableBuilder_;
+    if (rtypeStringPropTableBuilder_) delete rtypeStringPropTableBuilder_;
     if (tdt_storage_) delete tdt_storage_;
     if (topicDetector_) delete topicDetector_;
     if (suffixMatchManager_) delete suffixMatchManager_;
