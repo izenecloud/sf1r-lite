@@ -1307,6 +1307,11 @@ bool NodeManagerBase::isNeedReEnterCluster()
     // starting, no need to re enter. It will check after recover finished.
     if (nodeState_ == NODE_STATE_RECOVER_RUNNING && self_primary_path_.empty())
         return false;
+    if (nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY && !masterStarted_)
+    {
+        LOG(INFO) << "waiting enter cluster for first time no need re-enter.";
+        return false;
+    }
 
     if (!masterStarted_)
         return true;
