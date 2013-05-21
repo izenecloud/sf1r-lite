@@ -201,6 +201,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             {
                 if (pit->first.empty()) continue;
                 pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
+                Algorithm<UString>::to_lower(pit->first);
                 if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
                 {
                     range_list.push_back(sub_match_range);
