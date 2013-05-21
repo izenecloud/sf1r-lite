@@ -146,7 +146,7 @@ private:
         std::vector<PropertyDataType>& propertyDataTypes,
         bool isNumericFilter,
         bool isReadPosition,
-        std::map<termid_t, unsigned> termIndexMap,
+        const std::map<termid_t, unsigned>& termIndexMap,
         DocumentIteratorPointer& pDocIterator,
         std::vector<std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> > >& termDocReadersList,
         bool hasUnigramProperty,
