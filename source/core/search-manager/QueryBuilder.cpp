@@ -633,6 +633,7 @@ void QueryBuilder::prepare_for_virtual_property_(
                 actionOperation.hasUnigramProperty_,
                 actionOperation.isUnigramSearchMode_
             );
+
     if (!ret)
     {
         for(unsigned j = 0; j < properyConfig.subProperties_.size(); ++j)
@@ -647,12 +648,29 @@ void QueryBuilder::prepare_for_virtual_property_(
                 it->second.clear();
             }
         }
+        return;
     }
+
     if (pIter)
     {
         pScorer->add(properyConfig.getPropertyId(), pIter);
         pScorer->add(termDocReadersList);
         success_properties++;
+    }
+    else
+    {
+        for(unsigned j = 0; j < properyConfig.subProperties_.size(); ++j)
+        {
+            for (std::map<termid_t, std::vector<TermDocFreqs*> >::iterator
+                    it = termDocReadersList[j].begin(); it != termDocReadersList[j].end(); ++it)
+            {
+                for (size_t i =0; i < it->second.size(); ++i )
+                {
+                    delete it->second[i];
+                }
+                it->second.clear();
+            }
+        }
     }
 }
 
@@ -664,7 +682,7 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
     std::vector<PropertyDataType>& propertyDataTypes,
     bool isNumericFilter,
     bool isReadPosition,
-    std::map<termid_t, unsigned> termIndexMap,
+    const std::map<termid_t, unsigned>& termIndexMap,
     DocumentIteratorPointer& pDocIterator,
     std::vector<std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> > >& termDocReadersList,
     bool hasUnigramProperty,

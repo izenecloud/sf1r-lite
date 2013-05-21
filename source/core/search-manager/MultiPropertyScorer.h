@@ -34,10 +34,7 @@ public:
             {
                 for(size_t j =0; j<it->second.size(); j ++ )
                 {
-                    if (it->second[j])
-                    {
-                        delete it->second[j];
-                    }
+                    delete it->second[j];
                 }
                 it->second.clear();
             }
@@ -52,11 +49,7 @@ public:
             {
                 for(size_t j =0; j<it->second.size(); j ++ )
                 {
-                    if (it->second[j])
-                    {
-                        delete it->second[j];
-                    }
-                    
+                    delete it->second[j];
                 }
                 it->second.clear();
             }
