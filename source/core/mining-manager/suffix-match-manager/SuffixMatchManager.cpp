@@ -217,6 +217,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                         filter_range_list,
                         range_list,
                         score_list,
+                        0,
                         max_docs,
                         single_res_list);
             }

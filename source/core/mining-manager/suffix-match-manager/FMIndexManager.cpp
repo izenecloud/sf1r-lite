@@ -602,6 +602,7 @@ void FMIndexManager::getTopKDocIdListByFilter(
         const std::vector<RangeListT> &filter_ranges,
         const RangeListT &raw_range_list,
         const std::vector<double> &score_list,
+        size_t thres,
         size_t max_docs,
         std::vector<std::pair<double, uint32_t> > &res_list) const
 {
@@ -629,6 +630,7 @@ void FMIndexManager::getTopKDocIdListByFilter(
                 false,
                 raw_range_list,
                 score_list,
+                thres,
                 max_docs,
                 res_list);
     }
@@ -650,6 +652,7 @@ void FMIndexManager::getTopKDocIdListByFilter(
                 true,
                 raw_range_list,
                 score_list,
+                thres,
                 max_docs,
                 res_list);
     }
