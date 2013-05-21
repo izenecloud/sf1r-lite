@@ -168,13 +168,8 @@ void RecommendManager::RebuildForAll(int64_t cron_time)
     }
 
     std::vector<PropertyLabel> label_records;
-    PropertyLabel::find(
-            "label_name, sum(hit_docs_num) AS hit_docs_num",
-            "collection = '" + collection_name_ + "'",
-            "label_name",
-            "",
-            "",
-            label_records);
+
+    LogAnalysis::getPropertyLabel(collection_name_, label_records);
 
     std::list<PropertyLabelType> labelList;
     for (std::vector<PropertyLabel>::const_iterator it = label_records.begin();
