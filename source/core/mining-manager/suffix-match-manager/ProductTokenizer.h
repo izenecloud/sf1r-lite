@@ -100,7 +100,8 @@ public:
 
     bool GetTokenResults(
             const std::string& pattern,
-            std::list<std::pair<UString,double> >& tokens,
+            std::list<std::pair<UString, double> >& major_tokens,
+            std::list<std::pair<UString, double> >& minor_tokens,
             UString& refined_results);
 
     void SetProductMatcher(ProductMatcher* matcher)
@@ -129,7 +130,8 @@ private:
 
     bool GetTokenResultsByMatcher_(
             const std::string& pattern,
-            std::list<std::pair<UString,double> >& tokens,
+            std::list<std::pair<UString, double> >& major_tokens,
+            std::list<std::pair<UString, double> >& minor_tokens,
             UString& refined_results);
 
     void GetDictTokens_(
@@ -144,12 +146,12 @@ private:
             std::list<std::pair<UString,double> >& tokens,
             double score);
 
-    void GetLeftTokens_(
+    bool GetLeftTokens_(
             const std::list<std::string>& input,
             std::list<std::pair<UString,double> >& token_results,
             double score = 1.0);
 
-    void GetLeftTokens_(
+    bool GetLeftTokens_(
             const std::list<UString>& input,
             std::list<std::pair<UString,double> >& token_results,
             double score = 1.0);
@@ -165,7 +167,7 @@ private:
     std::vector<std::pair<std::string, double> > dict_names_;
     std::vector<izenelib::am::succinct::ux::Trie*> tries_;
 
-    static const UString SPACE_UCHAR;
+    static const UString::CharT SPACE_UCHAR;
     friend class ProductTokenizerTest;
 };
 

@@ -6,7 +6,6 @@
  */
 
 #include "WANDDocumentIterator.h"
-
 using namespace sf1r;
 
 WANDDocumentIterator::~WANDDocumentIterator()
@@ -318,7 +317,10 @@ sf1r::docid_t WANDDocumentIterator::do_skipTo(sf1r::docid_t target)
         initDocIteratorSorter();
     }
     if(docIteratorSorter_.size() == 0)
-        return false;
+    {
+        currDoc_ = MAX_DOC_ID;
+        return MAX_DOC_ID;
+    }
 
     std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
     for ( ; iter != docIteratorList_.end(); ++iter)
@@ -335,9 +337,14 @@ sf1r::docid_t WANDDocumentIterator::do_skipTo(sf1r::docid_t target)
     else
     {
         if(next() == true)
+        {
             return currDoc_;
+        }
         else
+        {
+            currDoc_ = MAX_DOC_ID;
             return MAX_DOC_ID;
+        }
     }
 }
 
