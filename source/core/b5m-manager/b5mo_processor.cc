@@ -222,9 +222,10 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
                     {
                         ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
                     }
-                    ProductMatcher::MergeAttributes(eattributes, attributes);
-                    ProductMatcher::MergeAttributes(eattributes, dattributes);
-                    doc.property("Attribute") = ProductMatcher::AttributesText(eattributes); 
+                    std::vector<ProductMatcher::Attribute> new_attributes(attributes);
+                    ProductMatcher::MergeAttributes(new_attributes, dattributes);
+                    ProductMatcher::MergeAttributes(new_attributes, eattributes);
+                    doc.property("Attribute") = ProductMatcher::AttributesText(new_attributes); 
                 }
             }
             match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
