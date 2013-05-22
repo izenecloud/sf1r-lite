@@ -423,6 +423,7 @@ namespace sf1r {
             //}
         //};
         typedef stdmap<std::string, uint32_t> KeywordTypeApp;
+        typedef boost::unordered_map<cid_t, double> CategoryContributor;
         struct KeywordTag
         {
             KeywordTag();
@@ -439,6 +440,7 @@ namespace sf1r {
             double kweight;
             uint8_t ngram;
             std::vector<Position> positions;
+            CategoryContributor cc;
 
             void PositionMerge(const Position& pos);
 
@@ -766,6 +768,7 @@ namespace sf1r {
         void AddKeyword_(const UString& text);
         void ConstructKeywordTrie_(const TrieType& suffix_trie);
         void GetFuzzyKeywords_(const ATermList& term_list, KeywordVector& keyword_vector, cid_t cid);
+        void SearchKeywordsFilter_(std::vector<KeywordTag>& keywords);
         bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
         void Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);

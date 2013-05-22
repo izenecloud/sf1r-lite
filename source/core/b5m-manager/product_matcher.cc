@@ -2731,6 +2731,11 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     }
 }
 
+void ProductMatcher::SearchKeywordsFilter_(std::vector<KeywordTag>& keywords)
+{
+    std::
+}
+
 void ProductMatcher::GetFuzzyKeywords_(const ATermList& term_list, KeywordVector& keyword_vector, cid_t cid)
 {
 #ifdef B5M_DEBUG
@@ -2997,6 +3002,42 @@ bool ProductMatcher::EqualOrIsParent_(uint32_t parent, uint32_t child) const
         cid = c.parent_cid;
     }
     return false;
+}
+void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products)
+{
+    UString title;
+    doc.getProperty("Title", title);
+    std::string stitle;
+    title.convertString(stitle, UString::UTF_8);
+#ifdef B5M_DEBUG
+    std::cout<<"[TITLE]"<<stitle<<std::endl;
+#endif
+    double price = 0.0;
+    UString uprice;
+    if(doc.getProperty("Price", uprice))
+    {
+        ProductPrice pp;
+        pp.Parse(uprice);
+        pp.GetMid(price);
+    }
+    CategoryContributor all_cc;
+    for(KeywordVector::iterator it = keywords.begin();it!=keywords.end();++it)
+    {
+        const TermList& tl = it->term_list;
+        const KeywordTag& tag = *it;
+        double kweight = tag.kweight;
+        //double aweight = tag.aweight;
+        double terms_length = tl.size()-(tag.ngram-1);
+        double len_weight = terms_length/text_term_len;
+        //double count_weight = 1.0/keyword_count;
+#ifdef B5M_DEBUG
+        std::string text = GetText_(tl);
+        std::cout<<"[KEYWORD]"<<text<<","<<kweight<<","<<std::endl;
+#endif
+        GenContributor_(tag);
+        MergeContributor_(all_cc, tag.cc);
+    }
+        
 }
 
 void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& result_products)
