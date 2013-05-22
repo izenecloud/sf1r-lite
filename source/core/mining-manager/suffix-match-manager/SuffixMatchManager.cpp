@@ -165,8 +165,9 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     boost::to_lower(pattern);
     LOG(INFO) << "original query string: " << pattern_orig;
 
-    std::list<std::pair<UString, double> > sub_patterns;
-    tokenizer_->GetTokenResults(pattern, sub_patterns, analyzedQuery);
+    std::list<std::pair<UString, double> > major_tokens;
+    std::list<std::pair<UString, double> > minor_tokens;
+    tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
     size_t total_match = 0;
 
     {
@@ -193,21 +194,38 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         for (size_t prop_i = 0; prop_i < search_in_properties.size(); ++prop_i)
         {
             const std::string& search_property = search_in_properties[prop_i];
-            range_list.reserve(sub_patterns.size());
-            score_list.reserve(sub_patterns.size());
+            range_list.reserve(major_tokens.size() + minor_tokens.size());
+            score_list.reserve(range_list.size());
             LOG(INFO) << "query tokenize match ranges in property : " << search_property;
-            for (std::list<std::pair<UString, double> >::iterator pit = sub_patterns.begin();
-                    pit != sub_patterns.end(); ++pit)
+
+            for (std::list<std::pair<UString, double> >::iterator pit = major_tokens.begin();
+                    pit != major_tokens.end(); ++pit)
             {
                 if (pit->first.empty()) continue;
-                pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
                 Algorithm<UString>::to_lower(pit->first);
+                pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
                 if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
                 {
                     range_list.push_back(sub_match_range);
                     score_list.push_back(pit->second);
                 }
             }
+
+            size_t thres = range_list.size();
+
+            for (std::list<std::pair<UString, double> >::iterator pit = minor_tokens.begin();
+                    pit != minor_tokens.end(); ++pit)
+            {
+                if (pit->first.empty()) continue;
+                Algorithm<UString>::to_lower(pit->first);
+                pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
+                if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
+                {
+                    range_list.push_back(sub_match_range);
+                    score_list.push_back(pit->second);
+                }
+            }
+
             fmi_manager_->convertMatchRanges(search_property, max_docs, range_list, score_list);
             if (filter_mode == SearchingMode::OR_Filter)
             {
@@ -217,7 +235,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
                         filter_range_list,
                         range_list,
                         score_list,
-                        0,
+                        thres,
                         max_docs,
                         single_res_list);
             }
