@@ -1076,6 +1076,16 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
                 {
                     if(!opinion_compute_threads_[i]->timed_join(boost::posix_time::millisec(1)))
                     {
+                        if (opinion_compute_threads_[i]->get_id() == boost::thread::id())
+                        {
+                            LOG(INFO) << "timed_join returned for Not-Thread-Id";
+                            continue;
+                        }
+                        if (!opinion_compute_threads_[i]->joinable())
+                        {
+                            LOG(INFO) << "timed_join returned for Not-Joinable";
+                            continue;
+                        }
                         // not finished
                         all_finished = false;
                         break;
