@@ -66,6 +66,7 @@ driver_ruby_tool = driver_ruby_dir + 'bin/distribute_tools.rb'
 driver_ruby_index = driver_ruby_dir + 'bin/distribute_test/index_col.json'
 driver_ruby_check = driver_ruby_dir + 'bin/distribute_test/check_col.json'
 driver_ruby_getstate = driver_ruby_dir + 'bin/distribute_test/get_status.json'
+driver_ruby_backup_data = driver_ruby_dir + 'bin/distribute_test/backup_data.json'
 ruby_bin = 'ruby1.9.1'
 auto_testfile_dir = './auto_test_file/'
 
@@ -295,7 +296,17 @@ def get_all_status(args):
 
     for host in hosts:
         (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_getstate, col])
-        printtofile('info : ' + error)
+        printtofile(host + ' info : ' + error)
+        printtofile(out)
+
+def backup_data(args):
+    if len(args) < 3:
+        print 'no host given'
+        sys.exit(0)
+    hosts = args[2:]
+    for host in hosts:
+        (out, error) = run_prog_and_getoutput([ruby_bin, driver_ruby_tool, host, '18181', driver_ruby_backup_data])
+        printtofile(host + ' info : ' + error)
         printtofile(out)
 
 def mv_scd_to_index(args):
@@ -521,6 +532,7 @@ handler_dict = { 'syncfile':syncfiles,
         'auto_restart':auto_restart,
         'simple_update':simple_update,
         'get_all_status':get_all_status,
+        'backup_data':backup_data,
         'run_auto_fail_test':run_auto_fail_test
         }
 
@@ -566,6 +578,8 @@ print ''
 print 'simple_update sf1r_tar_file host1 host2 # simple update the sf1r on the given host list using the given tar file.'
 print ''
 print 'get_all_status collection host1 host2 # get the node running status on the given host list from the given collection.'
+print ''
+print 'backup_data host1 host2 # backup the data for the given host list.'
 print ''
 print 'auto_restart host1 host2 # make sure the sf1r in host list is running, check in every 60s and try restart if not started.'
 print ''
