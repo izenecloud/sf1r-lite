@@ -38,9 +38,9 @@ namespace bfs = boost::filesystem;
 
 namespace sf1r
 {
-static const char* SUMMARY_CONTROL_FLAG = "b5m_control";
+
+static const std::string syncID_totalComment = "TOTAL_COMMENT";
 static const char* SUMMARY_SCD_BACKUP_DIR = "summary_backup";
-static const char* scd_control_recevier = "full";
 static const UString DOCID("DOCID", UString::UTF_8);
 static const std::size_t COMPUTE_COMMENT_NUM = 4;
 
@@ -133,12 +133,10 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , summarization_storage_(new SummarizationStorage(homePath))
     , corpus_(new Corpus())
 {
-    scd_control_recevier_ = new ScdControlRecevier(SUMMARY_CONTROL_FLAG, collectionName, homePath_ + "/full");
 }
 
 MultiDocSummarizationSubManager::~MultiDocSummarizationSubManager()
 {
-    delete scd_control_recevier_;
     delete summarization_storage_;
     delete comment_cache_storage_;
     delete corpus_;
@@ -321,8 +319,8 @@ bool MultiDocSummarizationSubManager::preProcess()
     {
         boost::filesystem::create_directory(totalscdPath);
     }
-    std::string opinionScdName = "B-00-201001071530-00000-R-C.SCD";
-    std::string scoreScdName = "B-00-201001071530-00001-R-C.SCD";
+    std::string opinionScdName = "B-00-205001071530-00000-R-C.SCD";
+    std::string scoreScdName = "B-00-205001071530-00001-R-C.SCD";
     
     std::vector<docid_t> del_docid_list;
     std::set<KeyType> del_key_set;
@@ -540,23 +538,11 @@ bool MultiDocSummarizationSubManager::postProcess()
 
     comment_cache_storage_->ClearDirtyKey();
     //sync data;
-    std::string controlfilePath_str = homePath_ + "/" + scd_control_recevier;
-    boost::filesystem::path controlfilePath(controlfilePath_str);
-    bool isFull = false;
-    if (boost::filesystem::exists(controlfilePath))
-    {
-        isFull = true;
-        boost::filesystem::remove_all(controlfilePath);
-    }
-    else
-    {
-        isFull = false;
-    }
+   
     if (DistributeRequestHooker::get()->isRunningPrimary())
     {
-        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-        if (!isFull)
         {
+            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
             SynchroData syncData;
             syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
             syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
@@ -567,16 +553,16 @@ bool MultiDocSummarizationSubManager::postProcess()
             }
             else
             {
-                LOG(WARNING) << "produce syncData error";
+                LOG(WARNING) << "produce incre syncData error";
             }
         }
-        else
+
         {
-            boost::filesystem::remove_all(generated_scds_path);
-            LOG(INFO) << "Send Total SCD files..." << endl;
+            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(syncID_totalComment);
             SynchroData syncTotalData;
             syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+
+            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::TOTAL_COMMENT_SCD);
             syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
 
             if (syncProducer->produce(syncTotalData))
@@ -585,7 +571,7 @@ bool MultiDocSummarizationSubManager::postProcess()
             }
             else
             {
-                LOG(WARNING) << "produce syncData error";
+                LOG(WARNING) << "produce total syncData error";
             }
         }
     }
@@ -607,8 +593,8 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
     {
         boost::filesystem::create_directory(totalscdPath);
     }
-    std::string opinionScdName = "B-00-201001071530-00000-R-C.SCD";
-    std::string scoreScdName = "B-00-201001071530-00001-R-C.SCD";
+    std::string opinionScdName = "B-00-205001071530-00000-R-C.SCD";
+    std::string scoreScdName = "B-00-205001071530-00001-R-C.SCD";
     
     std::vector<docid_t> del_docid_list;
     std::set<KeyType> del_key_set;
@@ -843,23 +829,11 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
 
     comment_cache_storage_->ClearDirtyKey();
     //sync data;
-    std::string controlfilePath_str = homePath_ + "/" + scd_control_recevier;
-    boost::filesystem::path controlfilePath(controlfilePath_str);
-    bool isFull = false;
-    if (boost::filesystem::exists(controlfilePath))
-    {
-        isFull = true;
-        boost::filesystem::remove_all(controlfilePath);
-    }
-    else
-    {
-        isFull = false;
-    }
+
     if (DistributeRequestHooker::get()->isRunningPrimary())
     {
-        SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-        if (!isFull)
         {
+            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
             SynchroData syncData;
             syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
             syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
@@ -870,16 +844,16 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             }
             else
             {
-                LOG(WARNING) << "produce syncData error";
+                LOG(WARNING) << "produce incre syncData error";
             }
         }
-        else
+
         {
-            boost::filesystem::remove_all(generated_scds_path);
-            LOG(INFO) << "Send Total SCD files..." << endl;
+            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(syncID_totalComment);
             SynchroData syncTotalData;
             syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
+
+            syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::TOTAL_COMMENT_SCD);
             syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
 
             if (syncProducer->produce(syncTotalData))
@@ -888,35 +862,13 @@ void MultiDocSummarizationSubManager::EvaluateSummarization()
             }
             else
             {
-                LOG(WARNING) << "produce syncData error";
+                LOG(WARNING) << "produce total syncData error";
             }
         }
     }
     total_Opinion_Scd_.close();
     total_Score_Scd_.close();
     LOG(INFO) << "Finish evaluating summarization.";
-}
-
-void MultiDocSummarizationSubManager::syncFullSummScd()
-{
-    if (!DistributeRequestHooker::get()->isRunningPrimary())
-        return;
-
-    SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
-    LOG(INFO) << "Send Total SCD files..." << endl;
-    SynchroData syncTotalData;
-    syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
-    syncTotalData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
-    syncTotalData.setValue(SynchroData::KEY_DATA_PATH, total_scd_path_.c_str());
-
-    if (syncProducer->produce(syncTotalData))
-    {
-        syncProducer->wait();
-    }
-    else
-    {
-        LOG(WARNING) << "produce syncData error";
-    }
 }
 
 void MultiDocSummarizationSubManager::DoComputeOpinion(OpinionsManager* Op)
@@ -1076,6 +1028,16 @@ void MultiDocSummarizationSubManager::DoWriteOpinionResult()
                 {
                     if(!opinion_compute_threads_[i]->timed_join(boost::posix_time::millisec(1)))
                     {
+                        if (opinion_compute_threads_[i]->get_id() == boost::thread::id())
+                        {
+                            LOG(INFO) << "timed_join returned for Not-Thread-Id";
+                            continue;
+                        }
+                        if (!opinion_compute_threads_[i]->joinable())
+                        {
+                            LOG(INFO) << "timed_join returned for Not-Joinable";
+                            continue;
+                        }
                         // not finished
                         all_finished = false;
                         break;

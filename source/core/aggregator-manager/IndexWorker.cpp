@@ -346,33 +346,6 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
         return true;
     }
 
-    if (documentManager_->getMaxDocId() < 1)
-    {
-        if (miningTaskService_->getMiningBundleConfig()->mining_schema_.summarization_enable
-            && miningTaskService_->getMiningBundleConfig()->mining_schema_.summarization_schema.isSyncSCDOnly)
-        {
-            std::string control_scd_path_ = bundleConfig_->indexSCDPath() + "/full";
-            fstream outControlFile;
-            outControlFile.open(control_scd_path_.c_str(), ios::out);
-            outControlFile<<"full"<<endl;
-            outControlFile.close();
-
-            SynchroData syncControlFile;
-            syncControlFile.setValue(SynchroData::KEY_COLLECTION, bundleConfig_->collectionName_);
-            syncControlFile.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::COMMENT_TYPE_FLAG);
-            syncControlFile.setValue(SynchroData::KEY_DATA_PATH, control_scd_path_.c_str());
-            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(SUMMARY_CONTROL_FLAG);
-            if (syncProducer->produce(syncControlFile, boost::bind(boost::filesystem::remove_all, control_scd_path_.c_str())))
-            {
-                syncProducer->wait(10);
-            }
-            else
-            {
-                LOG(WARNING) << "produce syncData error";
-            }
-        }
-    }
-
     indexProgress_.currentFileIdx = 1;
 
 
