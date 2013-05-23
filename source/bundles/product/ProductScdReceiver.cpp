@@ -19,7 +19,7 @@ ProductScdReceiver::ProductScdReceiver(const std::string& syncID, const std::str
             boost::bind(&ProductScdReceiver::Run, this, _1),
             collectionName);
 
-    syncConsumerRebuildComment_ = SynchroFactory::getConsumer(syncID_totalComment);
+    syncConsumerRebuildComment_ = SynchroFactory::getConsumer(syncID + syncID_totalComment);
     syncConsumerRebuildComment_->watchProducer(
             boost::bind(&ProductScdReceiver::getTotalComment, this, _1),
             collectionName);

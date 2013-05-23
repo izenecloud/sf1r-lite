@@ -558,7 +558,7 @@ bool MultiDocSummarizationSubManager::postProcess()
         }
 
         {
-            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(syncID_totalComment);
+            SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId + syncID_totalComment);
             SynchroData syncTotalData;
             syncTotalData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
 
