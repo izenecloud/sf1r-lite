@@ -489,7 +489,7 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
             std::string collection = asString(request[Keys::collection]);
             if (collection != from_col)
             {
-                LOG(INFO) << "not match collection : " << collection;
+                //LOG(INFO) << "not match collection : " << collection;
                 if (!is_primary)
                     break;
                 continue;
