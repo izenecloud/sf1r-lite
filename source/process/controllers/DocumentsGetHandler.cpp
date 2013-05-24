@@ -392,11 +392,9 @@ bool DocumentsGetHandler::getIdListFromConditions()
             PropertyValue propertyValue;
             if (theOnlyCondition.property() == Keys::uuid)
             {
-                cout<<"uuid"<<asString(theOnlyCondition(i))<<"type"<<theOnlyCondition.id_type()<<endl;
                 if(theOnlyCondition.id_type()=="isbn")
                 {
                     std::string originid=B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
-                    cout<<"isbn2uuid   "<<originid<<endl;
                     ValueConverter::driverValue2PropertyValue(dataType, originid, propertyValue);
                 }
                 else  if(theOnlyCondition.id_type()=="url")
