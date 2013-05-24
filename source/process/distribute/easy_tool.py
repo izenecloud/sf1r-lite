@@ -31,11 +31,13 @@ all_primary_host = []
 all_replicas_host = []
 loginuser = 'ops'
 
+inc_num = 0
 for replica_set in replica_set_list:
     all_primary_host += replica_set['primary']
     all_replicas_host += replica_set['replica']
-    print 'replica set hosts : ' 
+    print 'replica set hosts : ' + str(inc_num)
     print replica_set
+    inc_num += 1
 
 cur_replica_set = 0
 cur_replica_set = int(raw_input( 'please set the replica set you want to use, -1 for all replica set: '))
@@ -282,7 +284,7 @@ def simple_update(args):
         print error
         print out
 
-    cmdstr = 'cd ~/script; ./distribute_tools.sh simple_update /opt/' + tarfile
+    cmdstr = 'cd ~/script; ./distribute_tools.sh simple_update /opt/' + tarfile + ' >> simple_update.log 2>&1 &'
     send_cmd_afterssh(hosts, cmdstr)
 
 def get_all_status(args):

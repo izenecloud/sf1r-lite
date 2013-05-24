@@ -6,6 +6,7 @@
 #include "StatusController.h"
 #include "CollectionHandler.h"
 #include <node-manager/DistributeTest.hpp>
+#include <node-manager/NodeManagerBase.h>
 #include <bundles/index/IndexTaskService.h>
 
 #include <common/Status.h>
@@ -104,12 +105,20 @@ void StatusController::get_distribute_status()
 
     std::vector<std::string> keylist;
     std::vector<std::string> valuelist;
+    std::vector<std::string> nodelist;
     DistributeTestSuit::getMemoryStateKeyList(keylist);
     DistributeTestSuit::getMemoryState(keylist, valuelist);
+    NodeManagerBase::get()->getAllReplicaInfo(nodelist, true, true);
     for(size_t i = 0; i < keylist.size(); ++i)
     {
         memStatus[keylist[i]] = valuelist[i];
     }
+    std::string nodeliststr;
+    for(size_t i = 0; i < nodelist.size(); ++i)
+    {
+        nodeliststr += nodelist[i] + ", ";
+    }
+    memStatus["AliveNodeList"] = nodeliststr;
 }
 
 } // namespace sf1r
