@@ -358,9 +358,11 @@ bool DocumentsGetHandler::getIdListFromConditions()
         for (std::size_t i = 0;
                 i < theOnlyCondition.size(); ++i)
         {
+            cout<<"DOCID"<<asString(theOnlyCondition(i))<<"type"<<theOnlyCondition.id_type()<<endl;
             if(theOnlyCondition.id_type()=="isbn")
             {
                 std::string originid=B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
+                cout<<"originid"<<originid<<endl;
                 actionItem_.docIdList_.push_back(originid);
             }
             else  if(theOnlyCondition.id_type()=="url")
@@ -374,6 +376,7 @@ bool DocumentsGetHandler::getIdListFromConditions()
     }
     else
     {
+
         actionItem_.propertyName_ = theOnlyCondition.property();
         if (!isPropertyFilterable(indexSchema_, actionItem_.propertyName_))
         {
@@ -387,7 +390,28 @@ bool DocumentsGetHandler::getIdListFromConditions()
                 i < theOnlyCondition.size(); ++i)
         {
             PropertyValue propertyValue;
-            ValueConverter::driverValue2PropertyValue(dataType, theOnlyCondition(i), propertyValue);
+            if (theOnlyCondition.property() == Keys::uuid)
+            {
+                cout<<"uuid"<<asString(theOnlyCondition(i))<<"type"<<theOnlyCondition.id_type()<<endl;
+                if(theOnlyCondition.id_type()=="isbn")
+                {
+                    std::string originid=B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
+                    cout<<"isbn2uuid   "<<originid<<endl;
+                    ValueConverter::driverValue2PropertyValue(dataType, originid, propertyValue);
+                }
+                else  if(theOnlyCondition.id_type()=="url")
+                {
+                    std::string originid=B5MHelper::GetPidByUrl(asString(theOnlyCondition(i)));
+                    ValueConverter::driverValue2PropertyValue(dataType, originid, propertyValue);
+                }
+                else
+                    ValueConverter::driverValue2PropertyValue(dataType, theOnlyCondition(i), propertyValue);
+                
+            }
+            else
+            {
+                ValueConverter::driverValue2PropertyValue(dataType, theOnlyCondition(i), propertyValue);
+            }
             actionItem_.propertyValueList_.push_back(propertyValue);
         }
     }
