@@ -2181,6 +2181,7 @@ bool MiningManager::GetSuffixMatch(
         }
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
+
         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                 actionOperation.actionItem_.env_.queryString_,
                 search_in_properties,

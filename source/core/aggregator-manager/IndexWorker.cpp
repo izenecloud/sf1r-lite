@@ -51,7 +51,6 @@ namespace sf1r
 namespace
 {
 /** the directory for scd file backup */
-const char* SUMMARY_CONTROL_FLAG = "b5m_control";
 const char* SCD_BACKUP_DIR = "backup";
 const std::string DOCID("DOCID");
 const std::string DATE("DATE");

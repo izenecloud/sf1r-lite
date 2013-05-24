@@ -205,6 +205,7 @@ private:
     bool isRandomRank_;
     std::string querySource_;
     bool requireRelatedQueries_;
+    //bool requireRefinedQuery_;
 };
 
 /// @}

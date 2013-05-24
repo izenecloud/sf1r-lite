@@ -9,33 +9,6 @@
 namespace sf1r
 {
 
-void assembleConjunction(std::vector<izenelib::util::UString> keywords, std::string& result)
-{
-    result.clear();
-    int size = keywords.size();
-    for(int i = 0; i < size; ++i)
-    {
-        std::string str;
-        keywords[i].convertString(str, izenelib::util::UString::UTF_8);
-        result += str;
-        result += " ";
-    }
-}
-
-void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result)
-{
-    result.clear();
-    int size = keywords.size();
-    for(int i = 0; i < size; ++i)
-    {
-        std::string str;
-        keywords[i].convertString(str, izenelib::util::UString::UTF_8);
-        result += str;
-        result += "|";
-    }
-    boost::trim_right_if(result, boost::is_any_of("|"));
-}
-
 bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bundleConfig, std::string& btqError,  PersonalSearchInfo& personalSearchInfo)
 {
     action.clear();
@@ -45,7 +18,8 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
     UString::EncodingType encodingType =
         UString::convertEncodingTypeFromStringToEnum(
             action.actionItem_.env_.encodingType_.c_str() );
-    UString queryUStr(action.actionItem_.env_.queryString_, encodingType);
+    UString queryUStr(action.actionItem_.env_.queryString_, encodingType);//xxx
+    
     if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_, action.hasUnigramProperty_ ) )
         return false;
 

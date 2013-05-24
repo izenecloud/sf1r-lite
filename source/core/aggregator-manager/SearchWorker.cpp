@@ -10,6 +10,9 @@
 #include <search-manager/SearchManager.h>
 #include <search-manager/SearchBase.h>
 #include <search-manager/PersonalizedSearchInfo.h>
+#include <search-manager/QueryPruneFactory.h>
+#include <search-manager/QueryPruneBase.h>
+#include <search-manager/QueryHelper.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
 #include <la-manager/LAManager.h>
@@ -27,6 +30,7 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
                                     bundleConfig_->refreshCacheInterval_,
                                     bundleConfig_->refreshSearchCache_))
     , pQA_(NULL)
+    , queryPruneFactory_(new QueryPruneFactory())
 {
     ///LA can only be got from a pool because it is not thread safe
     ///For some situation, we need to get the la not according to the property
@@ -422,6 +426,7 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.attrRep_,
                                             resultItem.analyzedQuery_))
         {
+            
             return true;
         }
 
@@ -438,12 +443,37 @@ bool SearchWorker::getSearchResult_(
                 LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
                 actionOperation.actionItem_.print();
             }
+            /// muti thread ....
+            /// * star search 
+            const bool isFilterQuery =
+            actionOperation.rawQueryTree_->type_ == QueryTree::FILTER_QUERY;
 
-            std::string newQuery;
-
-            if (!bundleConfig_->bTriggerQA_)
+            if (isFilterQuery)
                 return true;
-            assembleDisjunction(keywords, newQuery);
+
+            /// query frune 
+            std::string newQuery;
+            QueryPruneBase* queryPrunePtr = NULL;
+            QueryPruneType qrType;
+
+            if ( actionOperation.actionItem_.searchingMode_.useQueryFrune_ == true)
+            {
+                qrType = AND_TRIGGER;
+            }
+            else if (bundleConfig_->bTriggerQA_)
+                qrType = QA_TRIGGER;
+            else
+                return true;
+
+            queryPrunePtr = queryPruneFactory_->getQueryPrune(qrType);
+            if (queryPrunePtr != NULL)
+            {
+                if(!queryPrunePtr->queryPrune(keywords, newQuery))
+                {
+                    LOG(INFO) << "There is no Prune query";
+                    return true;
+                }
+            }
 
             actionOperation.actionItem_.env_.queryString_ = newQuery;
             resultItem.propertyQueryTermList_.clear();

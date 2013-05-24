@@ -341,6 +341,8 @@ bool SearchParser::parse(const Value& search)
         if (mode == "and")
         {
             searchingModeInfo_.mode_ = SearchingMode::DefaultSearchingMode;
+            searchingModeInfo_.useQueryFrune_ = asBool(searching_mode[Keys::queryfrune]);
+
         }
         else if (mode == "or")
         {
@@ -361,6 +363,7 @@ bool SearchParser::parse(const Value& search)
         else if (mode == "suffix")
         {
             searchingModeInfo_.mode_ = SearchingMode::SUFFIX_MATCH;
+            searchingModeInfo_.useQueryFrune_ = asBool(searching_mode[Keys::queryfrune]);
         }
         else
         {
