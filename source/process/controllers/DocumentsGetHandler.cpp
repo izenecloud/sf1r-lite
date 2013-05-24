@@ -363,6 +363,11 @@ bool DocumentsGetHandler::getIdListFromConditions()
                 std::string originid=B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
                 actionItem_.docIdList_.push_back(originid);
             }
+            else  if(theOnlyCondition.id_type()=="url")
+            {
+                std::string originid=B5MHelper::GetPidByUrl(asString(theOnlyCondition(i)));
+                actionItem_.docIdList_.push_back(originid);
+            }
             else
                 actionItem_.docIdList_.push_back(asString(theOnlyCondition(i)));
         }
