@@ -20,7 +20,7 @@
 #include <common/Utilities.h>
 
 #include <configuration-manager/Acl.h>
-
+#include <b5m-manager/b5m_helper.h>
 #include <util/swap.h>
 
 namespace sf1r
@@ -358,7 +358,13 @@ bool DocumentsGetHandler::getIdListFromConditions()
         for (std::size_t i = 0;
                 i < theOnlyCondition.size(); ++i)
         {
-            actionItem_.docIdList_.push_back(asString(theOnlyCondition(i)));
+            if(theOnlyCondition.id_type()=="isbn")
+            {
+                std::string originid=B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
+                actionItem_.docIdList_.push_back(originid);
+            }
+            else
+                actionItem_.docIdList_.push_back(asString(theOnlyCondition(i)));
         }
     }
     else
