@@ -2182,15 +2182,78 @@ bool MiningManager::GetSuffixMatch(
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
 
-        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                actionOperation.actionItem_.env_.queryString_,
-                search_in_properties,
-                max_docs,
-                actionOperation.actionItem_.searchingMode_.filtermode_,
-                filter_param,
-                actionOperation.actionItem_.groupParam_,
-                res_list,
-                analyzedQuery);
+        int totalCount = 0;
+        std::string pattern_orig = actionOperation.actionItem_.env_.queryString_;
+
+        if (pattern_orig.empty())
+            return 0;
+
+        std::string pattern = pattern_orig;
+        boost::to_lower(pattern);
+
+        LOG(INFO) << "original query string: " << pattern_orig;
+
+        std::list<std::pair<UString, double> > major_tokens;
+        std::list<std::pair<UString, double> > minor_tokens;
+        suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
+
+        if (actionOperation.actionItem_.searchingMode_.useQueryFrune_ == true)
+        {
+            //dian nao ...
+            std::list<std::pair<UString, double> > major_tokens_frune;
+            std::list<std::pair<UString, double> > minor_tokens_frune;
+    
+            if (major_tokens.size() + minor_tokens.size() < 4)
+            {
+                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin();
+                        i != major_tokens.end(); ++i)
+                {
+                    major_tokens_frune.push_back(*i);
+                }
+
+                for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
+                        i != minor_tokens.end(); ++i)
+                {
+                    major_tokens_frune.push_back(*i);
+                }
+            }
+
+            totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                        major_tokens_frune,
+                                        minor_tokens_frune,
+                                        search_in_properties,
+                                        max_docs,
+                                        actionOperation.actionItem_.searchingMode_.filtermode_,
+                                        filter_param,
+                                        actionOperation.actionItem_.groupParam_,
+                                        res_list);
+
+            if (totalCount < 2)
+            {
+                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                        major_tokens,
+                                        minor_tokens,
+                                        search_in_properties,
+                                        max_docs,
+                                        actionOperation.actionItem_.searchingMode_.filtermode_,
+                                        filter_param,
+                                        actionOperation.actionItem_.groupParam_,
+                                        res_list);
+            }
+        }
+        else
+        {
+            totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                        major_tokens,
+                                        minor_tokens,
+                                        search_in_properties,
+                                        max_docs,
+                                        actionOperation.actionItem_.searchingMode_.filtermode_,
+                                        filter_param,
+                                        actionOperation.actionItem_.groupParam_,
+                                        res_list);
+
+        }
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {

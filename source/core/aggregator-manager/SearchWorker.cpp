@@ -426,7 +426,6 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.attrRep_,
                                             resultItem.analyzedQuery_))
         {
-            
             return true;
         }
 

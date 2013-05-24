@@ -143,31 +143,29 @@ size_t SuffixMatchManager::longestSuffixMatch(
     return total_match;
 }
 
+void SuffixMatchManager::GetTokenResults(std::string pattern,
+                                std::list<std::pair<UString, double> >& major_tokens,
+                                std::list<std::pair<UString, double> >& manor_tokens,
+                                UString& analyzedQuery)
+{
+    tokenizer_->GetTokenResults(pattern, major_tokens, manor_tokens, analyzedQuery);
+}
+
 size_t SuffixMatchManager::AllPossibleSuffixMatch(
-        const std::string& pattern_orig,
+        std::list<std::pair<UString, double> > major_tokens,
+        std::list<std::pair<UString, double> > minor_tokens,
         std::vector<std::string> search_in_properties,
         size_t max_docs,
         const SearchingMode::SuffixMatchFilterMode& filter_mode,
         const std::vector<QueryFiltering::FilteringType>& filter_param,
         const GroupParam& group_param,
-        std::vector<std::pair<double, uint32_t> >& res_list,
-        UString& analyzedQuery) const
+        std::vector<std::pair<double, uint32_t> >& res_list) const
 {
-    if (pattern_orig.empty()) return 0;
-
     btree::btree_map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > range_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> score_list;
 
-    // tokenize the pattern.
-    std::string pattern = pattern_orig;
-    boost::to_lower(pattern);
-    LOG(INFO) << "original query string: " << pattern_orig;
-
-    std::list<std::pair<UString, double> > major_tokens;
-    std::list<std::pair<UString, double> > minor_tokens;
-    tokenizer_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
     size_t total_match = 0;
 
     {
