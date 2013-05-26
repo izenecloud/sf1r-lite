@@ -586,6 +586,10 @@ bool NodeManagerBase::isAnyWriteRunningInReplicas()
 {
     if (!isDistributionEnabled_ || !zookeeper_)
         return false;
+    if (nodeState_ != NODE_STATE_STARTED &&
+        nodeState_ != NODE_STATE_RECOVER_RUNNING &&
+        nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY)
+        return true;
     std::vector<std::string> node_list;
     zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
     std::string sdata;
