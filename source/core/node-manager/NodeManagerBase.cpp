@@ -162,6 +162,9 @@ void NodeManagerBase::start()
 void NodeManagerBase::notifyStop()
 {
     LOG(INFO) << "========== notify stop ============= ";
+    if (!zookeeper_)
+        return;
+
     {
         if (mutex_.try_lock())
         {
@@ -1000,6 +1003,10 @@ void NodeManagerBase::reEnterCluster()
 
 void NodeManagerBase::leaveCluster()
 {
+    if (!zookeeper_)
+    {
+        return;
+    }
     if (!self_primary_path_.empty())
     {
         zookeeper_->deleteZNode(self_primary_path_);

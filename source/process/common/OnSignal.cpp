@@ -6,6 +6,7 @@
  */
 #include "OnSignal.h"
 
+#include <glog/logging.h>
 #include <core/config.h>
 
 #include <boost/bind.hpp>
@@ -14,25 +15,17 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
-
+#include <stdio.h>
 #include <cstdlib>
 // only register signal for system that supports
 #ifdef HAVE_SIGNAL_H
 # include <signal.h>
 #endif
 
+static sigset_t maskset;
+
 namespace sf1r
 {
-
-void setupDefaultSignalHandlers()
-{
-#ifdef HAVE_SIGNAL_H
-    registerExitSignal(SIGINT);
-    registerExitSignal(SIGQUIT);
-    registerExitSignal(SIGTERM);
-    registerExitSignal(SIGHUP);
-#endif // HAVE_SIGNAL_H
-}
 
 namespace   // {anonymous}
 {
@@ -44,11 +37,6 @@ std::vector<OnSignalHook>& gOnExit()
 {
     static std::vector<OnSignalHook> onExit;
     return onExit;
-}
-
-void gForceExit(int)
-{
-    _exit(1);
 }
 
 void gRunHooksOnExitWithSignal(int signal)
@@ -67,7 +55,63 @@ void gRunHooksOnExitWithSignal(int signal)
         _exit(1);
     }
 }
+
 } // namespace {anonymous}
+
+static void* sig_thread(void* arg)
+{
+    sigset_t *set = (sigset_t *)arg;
+    int s, sig;
+    for(;;)
+    {
+        s = sigwait(set, &sig);
+        if (s != 0)
+        {
+            perror("wait signal failed.");
+            exit(1);
+        }
+        switch(sig)
+        {
+        case SIGINT:
+        case SIGHUP:
+        case SIGTERM:
+        case SIGQUIT:
+            LOG(INFO) << "got interrupt signal, begin quit : " << sig << std::endl;
+            gRunHooksOnExitWithSignal(sig);
+            break;
+        default:
+            LOG(INFO) << "got signal, ignore: " << sig << std::endl;
+            break;
+        }
+    }
+}
+
+void setupDefaultSignalHandlers()
+{
+#ifdef HAVE_SIGNAL_H
+    LOG(INFO) << "begin setup signal handler." << std::endl;
+    sigemptyset(&maskset);
+    sigaddset(&maskset, SIGINT);
+    sigaddset(&maskset, SIGHUP);
+    sigaddset(&maskset, SIGTERM);
+    sigaddset(&maskset, SIGQUIT);
+    int ret;
+    ret = pthread_sigmask(SIG_BLOCK, &maskset, NULL);
+    if (ret != 0)
+    {
+        perror("failed to block signal!");
+        exit(1);
+    }
+    pthread_t thread;
+    ret = pthread_create(&thread, NULL, &sig_thread, (void*)&maskset);
+    
+    if (ret != 0)
+    {
+        perror("failed to create the singal handle thread.");
+        exit(1);
+    }
+#endif // HAVE_SIGNAL_H
+}
 
 void gRunHooksOnExit()
 {
@@ -77,41 +121,6 @@ void gRunHooksOnExit()
 void addExitHook(const OnSignalHook& hook)
 {
     gOnExit().push_back(hook);
-}
-
-void registerExitSignal(int signal)
-{
-    if (signal == 0)
-    {
-        atexit(gRunHooksOnExit);
-        return;
-    }
-
-#ifdef HAVE_SIGNAL_H
-    struct ::sigaction action;
-    action.sa_handler = gRunHooksOnExitWithSignal;
-    ::sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-
-    sigaction(signal, &action, 0);
-#endif
-}
-
-void gThrowException(int)
-{
-    throw std::runtime_error("bad malloc" );
-}
-
-void registerExceptionSignal(int signal)
-{
-#ifdef HAVE_SIGNAL_H
-    struct ::sigaction action;
-    action.sa_handler = gThrowException;
-    ::sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-
-    sigaction(signal, &action, 0);
-#endif
 }
 
 } // namespace sf1r
