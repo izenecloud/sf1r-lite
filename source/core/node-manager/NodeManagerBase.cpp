@@ -1495,6 +1495,7 @@ void NodeManagerBase::checkForPrimaryElecting()
 
     if (!isNeedReEnterCluster())
     {
+        updateCurrentPrimary();
         need_check_electing_ = false;
         if (isPrimaryWithoutLock())
         {
