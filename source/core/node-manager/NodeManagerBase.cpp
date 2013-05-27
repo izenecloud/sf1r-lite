@@ -2107,7 +2107,8 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
 
     if (need_stop_ && nodeState_ == NODE_STATE_STARTED && !MasterManagerBase::get()->hasAnyCachedRequest())
     {
-        stop();
+        if (!s_enable_async_)
+            stop();
         return;
     }
     if (!s_enable_async_)
@@ -2174,7 +2175,8 @@ void NodeManagerBase::updateSelfPrimaryNodeState(const ZNode& nodedata)
 {
     if (nodeState_ == NODE_STATE_STARTED && need_stop_ && !MasterManagerBase::get()->hasAnyCachedRequest())
     {
-        stop();
+        if (!s_enable_async_)
+            stop();
     }
     else
     {
