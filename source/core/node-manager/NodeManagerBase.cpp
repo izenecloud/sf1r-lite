@@ -1589,7 +1589,7 @@ bool NodeManagerBase::checkElectingInAsyncMode(uint32_t last_reqid)
         resetWriteState();
         nodeState_ = NODE_STATE_ELECTING;
         need_check_electing_ = false;
-        if (primary_state != NODE_STATE_UNKNOWN)
+        if (primary_state != NODE_STATE_UNKNOWN && !need_stop_)
         {
             ZNode nodedata;
             setSf1rNodeData(nodedata);
