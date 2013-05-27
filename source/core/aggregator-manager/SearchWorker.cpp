@@ -455,7 +455,7 @@ bool SearchWorker::getSearchResult_(
             QueryPruneBase* queryPrunePtr = NULL;
             QueryPruneType qrType;
 
-            if ( actionOperation.actionItem_.searchingMode_.useQueryFrune_ == true)
+            if ( actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true)
             {
                 qrType = AND_TRIGGER;
             }

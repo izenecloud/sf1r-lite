@@ -151,7 +151,7 @@ public:
 
     SearchingMode::SuffixMatchFilterMode filtermode_;
 
-    bool useQueryFrune_;
+    bool useQueryPrune_;
 
     /// @brief a constructor
     SearchingModeInfo(void);
@@ -159,9 +159,9 @@ public:
     /// @brief clear member variables
     void clear(void);
 
-    DATA_IO_LOAD_SAVE(SearchingModeInfo, & mode_ & threshold_ & lucky_ & useOriginalQuery_ & usefuzzy_ & filtermode_ & useQueryFrune_)
+    DATA_IO_LOAD_SAVE(SearchingModeInfo, & mode_ & threshold_ & lucky_ & useOriginalQuery_ & usefuzzy_ & filtermode_ & useQueryPrune_)
 
-    MSGPACK_DEFINE(mode_, threshold_, lucky_, useOriginalQuery_, usefuzzy_, filtermode_, useQueryFrune_);
+    MSGPACK_DEFINE(mode_, threshold_, lucky_, useOriginalQuery_, usefuzzy_, filtermode_, useQueryPrune_);
 
 private:
     // Log : 2009.09.08
@@ -176,7 +176,7 @@ private:
         ar & useOriginalQuery_;
         ar & usefuzzy_;
         ar & filtermode_;
-        ar & useQueryFrune_;
+        ar & useQueryPrune_;
     }
 };
 
@@ -189,7 +189,7 @@ inline bool operator==(const SearchingModeInfo& a,
         && a.useOriginalQuery_ == b.useOriginalQuery_
         && a.usefuzzy_ == b.usefuzzy_ 
         && a.filtermode_ == b.filtermode_ 
-        && a.useQueryFrune_ == b.useQueryFrune_ ;
+        && a.useQueryPrune_ == b.useQueryPrune_ ;
 }
 
 } // end - namespace sf1r

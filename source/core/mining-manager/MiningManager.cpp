@@ -2182,7 +2182,6 @@ bool MiningManager::GetSuffixMatch(
 
         LOG(INFO) << "suffix searching using fuzzy mode " << endl;
 
-        int totalCount = 0;
         std::string pattern_orig = actionOperation.actionItem_.env_.queryString_;
 
         if (pattern_orig.empty())
@@ -2197,25 +2196,24 @@ bool MiningManager::GetSuffixMatch(
         std::list<std::pair<UString, double> > minor_tokens;
         suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
 
-        if (actionOperation.actionItem_.searchingMode_.useQueryFrune_ == true)
+        if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true && 
+                                    major_tokens.size() + minor_tokens.size() < 7 && major_tokens.size() < 4)
         {
-            //dian nao ...
+            LOG (INFO) << "Use Query prune in fuzzy search ....";
+
             std::list<std::pair<UString, double> > major_tokens_frune;
             std::list<std::pair<UString, double> > minor_tokens_frune;
     
-            if (major_tokens.size() + minor_tokens.size() < 4)
+            for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin();
+                    i != major_tokens.end(); ++i)
             {
-                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin();
-                        i != major_tokens.end(); ++i)
-                {
-                    major_tokens_frune.push_back(*i);
-                }
+                major_tokens_frune.push_back(*i);
+            }
 
-                for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
-                        i != minor_tokens.end(); ++i)
-                {
-                    major_tokens_frune.push_back(*i);
-                }
+            for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
+                    i != minor_tokens.end(); ++i)
+            {
+                major_tokens_frune.push_back(*i);
             }
 
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
@@ -2227,9 +2225,10 @@ bool MiningManager::GetSuffixMatch(
                                         filter_param,
                                         actionOperation.actionItem_.groupParam_,
                                         res_list);
-
-            if (totalCount < 2)
+            if (res_list.empty())
             {
+                LOG (INFO) << "The prune search result number is zero, back to Normal fuzzy search ... ";
+
                 totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                         major_tokens,
                                         minor_tokens,
@@ -2327,6 +2326,7 @@ bool MiningManager::GetSuffixMatch(
     searchManager_->fuzzySearchRanker_.rank(actionOperation, start, docIdList,
             rankScoreList, customRankScoreList);
 
+    cout<<"return true"<<endl;
     return true;
 }
 
