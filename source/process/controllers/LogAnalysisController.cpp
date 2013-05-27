@@ -257,7 +257,7 @@ void LogAnalysisController::system_events()
  * - @b user_queries: All user queries which fit conditions.
  *
  */
-void LogAnalysisController::get_freq_user_queries_from_logserver()
+void LogAnalysisController::user_queries()
 {
     bool existAggregateFunc = false;
     std::string collection_name;
@@ -323,7 +323,10 @@ void LogAnalysisController::get_freq_user_queries_from_logserver()
             }
             else
             {
-                user_queries_cache.updateValue(sql.str(), std::make_pair(std::time(NULL), sqlResults));
+                ptime now(second_clock::local_time());
+                std::string cur_t = to_iso_string(now);
+                if(cur_t > end_time)
+                    user_queries_cache.updateValue(sql.str(), std::make_pair(std::time(NULL), sqlResults));
             }
         }
         else
@@ -375,7 +378,7 @@ void LogAnalysisController::get_freq_user_queries_from_logserver()
  * - @b user_queries: All user queries which fit conditions.
  *
  */
-void LogAnalysisController::user_queries()
+void LogAnalysisController::get_freq_user_queries_from_logserver()
 {
     bool existAggregateFunc = false;
     string select = parseSelect(existAggregateFunc);

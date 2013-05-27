@@ -582,9 +582,38 @@ bool NodeManagerBase::getCurrPrimaryInfo(std::string& primary_host)
     return false;
 }
 
-bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary)
+bool NodeManagerBase::isAnyWriteRunningInReplicas()
 {
-    if (!isDistributionEnabled_)
+    if (!isDistributionEnabled_ || !zookeeper_)
+        return false;
+    if (nodeState_ != NODE_STATE_STARTED &&
+        nodeState_ != NODE_STATE_RECOVER_RUNNING &&
+        nodeState_ != NODE_STATE_RECOVER_WAIT_PRIMARY)
+        return true;
+    std::vector<std::string> node_list;
+    zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+    std::string sdata;
+    for (size_t i = 0; i < node_list.size(); ++i)
+    {
+        if (zookeeper_->getZNodeData(node_list[i], sdata, ZooKeeper::WATCH))
+        {
+            ZNode node;
+            node.loadKvString(sdata);
+            uint32_t state = node.getUInt32Value(ZNode::KEY_NODE_STATE);
+            if (state != NODE_STATE_STARTED &&
+                state != NODE_STATE_RECOVER_RUNNING &&
+                state != NODE_STATE_RECOVER_WAIT_PRIMARY)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary, bool force)
+{
+    if (!isDistributionEnabled_ || !zookeeper_)
         return true;
     size_t start_node = 1;
     if (includeprimary)
@@ -605,15 +634,18 @@ bool NodeManagerBase::getAllReplicaInfo(std::vector<std::string>& replicas, bool
         {
             ZNode node;
             node.loadKvString(sdata);
-            uint32_t state = node.getUInt32Value(ZNode::KEY_NODE_STATE);
-            if (state == NODE_STATE_RECOVER_RUNNING ||
-                state == NODE_STATE_RECOVER_WAIT_PRIMARY ||
-                state == NODE_STATE_STARTING_WAIT_RETRY ||
-                state == NODE_STATE_STARTING
-                )
+            if (!force)
             {
-                LOG(INFO) << "ignore replica for not ready : " << state;
-                continue;
+                uint32_t state = node.getUInt32Value(ZNode::KEY_NODE_STATE);
+                if (state == NODE_STATE_RECOVER_RUNNING ||
+                    state == NODE_STATE_RECOVER_WAIT_PRIMARY ||
+                    state == NODE_STATE_STARTING_WAIT_RETRY ||
+                    state == NODE_STATE_STARTING
+                   )
+                {
+                    LOG(INFO) << "ignore replica for not ready : " << state;
+                    continue;
+                }
             }
             replicas.push_back(ip);
             replicas.back() = node.getStrValue(ZNode::KEY_HOST);

@@ -118,8 +118,9 @@ public:
     bool isOtherPrimaryAvailable();
     bool isConnected();
 
+    bool isAnyWriteRunningInReplicas();
     bool getCurrNodeSyncServerInfo(std::string& ip, int randnum);
-    bool getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary = false);
+    bool getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary = false, bool force = false);
     bool getCurrPrimaryInfo(std::string& primary_host);
 
     void setSlowWriting();

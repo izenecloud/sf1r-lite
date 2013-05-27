@@ -7,6 +7,7 @@ const char* SynchroData::KEY_HOST = "host";
 const char* SynchroData::KEY_DATA_PORT = "port";
 const char* SynchroData::KEY_DATA_TYPE = "datatype";
 const char* SynchroData::DATA_TYPE_SCD_INDEX = "scdindex";
+const char* SynchroData::TOTAL_COMMENT_SCD = "totalcommentscd";
 const char* SynchroData::COMMENT_TYPE_FLAG = "commentflag";
 const char* SynchroData::KEY_DATA_PATH = "path";
 const char* SynchroData::KEY_COLLECTION = "colletion";

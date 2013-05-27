@@ -128,11 +128,12 @@ void ProductTokenizerTest::tokenize( const std::string& pattern, std::string& re
 {
     typedef std::list<std::pair<UString,double> > tokens_type;
 
-    tokens_type token_results;
+    tokens_type major_tokens;
+    tokens_type minor_tokens;
     UString refined_results(refined, UString::UTF_8);
-    tokenizer_.GetTokenResults(pattern, token_results, refined_results);
+    tokenizer_.GetTokenResults(pattern, major_tokens, minor_tokens, refined_results);
     std::cout<<"tokenization:";
-    for(tokens_type::iterator tit = token_results.begin(); tit != token_results.end(); ++tit)
+    for(tokens_type::iterator tit = minor_tokens.begin(); tit != minor_tokens.end(); ++tit)
     {
         std::string str;
         tit->first.convertString(str, UString::UTF_8);
@@ -226,4 +227,3 @@ BOOST_AUTO_TEST_CASE(tokenize)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-

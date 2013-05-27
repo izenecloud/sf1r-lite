@@ -28,6 +28,11 @@ public:
         return property_;
     }
 
+    const std::string& id_type() const
+    {
+        return id_type_;
+    }
+
     const std::string& op() const
     {
         return op_;
@@ -48,6 +53,8 @@ private:
     Value::ArrayType array_;
     std::string property_;
     std::string op_;
+    std::string id_type_;
+
 };
 
 inline void swap(ConditionParser& a, ConditionParser& b)

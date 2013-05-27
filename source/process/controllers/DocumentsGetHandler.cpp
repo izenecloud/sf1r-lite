@@ -20,7 +20,7 @@
 #include <common/Utilities.h>
 
 #include <configuration-manager/Acl.h>
-
+#include <b5m-manager/b5m_helper.h>
 #include <util/swap.h>
 
 namespace sf1r
@@ -358,11 +358,25 @@ bool DocumentsGetHandler::getIdListFromConditions()
         for (std::size_t i = 0;
                 i < theOnlyCondition.size(); ++i)
         {
-            actionItem_.docIdList_.push_back(asString(theOnlyCondition(i)));
+            cout<<"DOCID"<<asString(theOnlyCondition(i))<<"type"<<theOnlyCondition.id_type()<<endl;
+            if(theOnlyCondition.id_type()=="isbn")
+            {
+                std::string originid=B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
+                cout<<"originid"<<originid<<endl;
+                actionItem_.docIdList_.push_back(originid);
+            }
+            else  if(theOnlyCondition.id_type()=="url")
+            {
+                std::string originid=B5MHelper::GetPidByUrl(asString(theOnlyCondition(i)));
+                actionItem_.docIdList_.push_back(originid);
+            }
+            else
+                actionItem_.docIdList_.push_back(asString(theOnlyCondition(i)));
         }
     }
     else
     {
+
         actionItem_.propertyName_ = theOnlyCondition.property();
         if (!isPropertyFilterable(indexSchema_, actionItem_.propertyName_))
         {
@@ -376,7 +390,26 @@ bool DocumentsGetHandler::getIdListFromConditions()
                 i < theOnlyCondition.size(); ++i)
         {
             PropertyValue propertyValue;
-            ValueConverter::driverValue2PropertyValue(dataType, theOnlyCondition(i), propertyValue);
+            if (theOnlyCondition.property() == Keys::uuid)
+            {
+                if(theOnlyCondition.id_type()=="isbn")
+                {
+                    std::string originid=B5MHelper::GetPidByIsbn(asString(theOnlyCondition(i)));
+                    ValueConverter::driverValue2PropertyValue(dataType, originid, propertyValue);
+                }
+                else  if(theOnlyCondition.id_type()=="url")
+                {
+                    std::string originid=B5MHelper::GetPidByUrl(asString(theOnlyCondition(i)));
+                    ValueConverter::driverValue2PropertyValue(dataType, originid, propertyValue);
+                }
+                else
+                    ValueConverter::driverValue2PropertyValue(dataType, theOnlyCondition(i), propertyValue);
+                
+            }
+            else
+            {
+                ValueConverter::driverValue2PropertyValue(dataType, theOnlyCondition(i), propertyValue);
+            }
             actionItem_.propertyValueList_.push_back(propertyValue);
         }
     }

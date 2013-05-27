@@ -18,6 +18,11 @@ ProductScdReceiver::ProductScdReceiver(const std::string& syncID, const std::str
     syncConsumer_->watchProducer(
             boost::bind(&ProductScdReceiver::Run, this, _1),
             collectionName);
+
+    syncConsumerRebuildComment_ = SynchroFactory::getConsumer(syncID + syncID_totalComment);
+    syncConsumerRebuildComment_->watchProducer(
+            boost::bind(&ProductScdReceiver::getTotalComment, this, _1),
+            collectionName);
 }
 
 bool ProductScdReceiver::pushIndexRequest(const std::string& scd_source_dir)
@@ -47,6 +52,42 @@ bool ProductScdReceiver::pushIndexRequest(const std::string& scd_source_dir)
 bool ProductScdReceiver::onReceived(const std::string& scd_source_dir)
 {
     return pushIndexRequest(scd_source_dir);
+}
+
+bool ProductScdReceiver::getTotalComment(const std::string& scd_source_dir)
+{
+    LOG(INFO)<<"ProductScdReceiver::getTotalComment "<<scd_source_dir<<std::endl;
+    bool isRebuild = true;
+    std::string rebuild_scd_dir = index_service_->getScdDir(isRebuild);
+    LOG(INFO)<<"rebuild_scd_dir"<<rebuild_scd_dir;
+
+    bfs::create_directories(rebuild_scd_dir);
+    ScdParser parser(izenelib::util::UString::UTF_8);
+    static const bfs::directory_iterator kItrEnd;
+    std::vector<bfs::path> scd_list;
+    for (bfs::directory_iterator itr(scd_source_dir); itr != kItrEnd; ++itr)
+    {
+        if (bfs::is_regular_file(itr->status()))
+        {
+            std::string fileName = itr->path().filename().string();
+            if (parser.checkSCDFormat(fileName) )
+            {
+                LOG(INFO)<<"[ProductScdReceiver] find SCD "<<fileName<<std::endl;
+                scd_list.push_back(itr->path());
+            }
+        }
+    }
+    if(scd_list.empty())
+    {
+        LOG(INFO)<<"[ProductScdReceiver] No SCD file found."<<std::endl;
+        return true;
+    }
+    bfs::path to_dir(rebuild_scd_dir);
+    if(!CopyTotalCommentToDir_(scd_list, to_dir))
+    {
+        return false;
+    }
+    return true;
 }
 
 bool ProductScdReceiver::Run(const std::string& scd_source_dir)
@@ -96,6 +137,33 @@ bool ProductScdReceiver::Run(const std::string& scd_source_dir)
     if (!DistributeFileSys::get()->isEnabled())
         mine_source_dir.clear();
     return pushIndexRequest(mine_source_dir);
+}
+
+bool ProductScdReceiver::CopyTotalCommentToDir_(const std::vector<boost::filesystem::path>& file_list, const boost::filesystem::path& to_dir)
+{
+    for(uint32_t i=0;i<file_list.size();i++)
+    {
+        std::string to_filename = file_list[i].filename().string();
+        
+        bfs::path to_file = to_dir/to_filename;
+        try
+        {
+            if(!bfs::exists(to_file))
+            {
+                bfs::copy_file(file_list[i], to_file);
+            }
+            else
+            {
+                bfs::remove_all(to_file);
+                bfs::copy_file(file_list[i], to_file);
+            }
+        }
+        catch(std::exception& ex)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool ProductScdReceiver::CopyFileListToDir_(const std::vector<boost::filesystem::path>& file_list, const boost::filesystem::path& to_dir)

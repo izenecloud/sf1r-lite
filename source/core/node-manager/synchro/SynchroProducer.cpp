@@ -345,6 +345,11 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
             {
                 recvDir = consumerCollection+"/scd/summarization";
             }
+            else if (dataType == SynchroData::TOTAL_COMMENT_SCD)
+            {
+
+                recvDir = consumerCollection+"/scd/rebuild_scd";
+            }
             else
             {
                 //xx extend;
