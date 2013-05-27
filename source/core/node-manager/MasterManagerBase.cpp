@@ -1454,14 +1454,14 @@ void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>&
         }
     }
 
-    //std::cout << aggregator->collection() << ":" << std::endl << aggregatorConfig.toString();
-    aggregator->setAggregatorConfig(aggregatorConfig);
+    LOG(INFO) << aggregator->collection() << ":" << aggregatorConfig.toString();
+    aggregator->setAggregatorConfig(aggregatorConfig, true);
 }
 
 void MasterManagerBase::resetAggregatorConfig()
 {
     std::vector<boost::shared_ptr<AggregatorBase> >::iterator agg_it;
-    for (agg_it = aggregatorList_.begin(); agg_it != aggregatorList_.end(); agg_it++)
+    for (agg_it = aggregatorList_.begin(); agg_it != aggregatorList_.end(); ++agg_it)
     {
         resetAggregatorConfig(*agg_it);
     }

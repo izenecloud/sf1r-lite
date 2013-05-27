@@ -119,6 +119,7 @@ void StatusController::get_distribute_status()
         nodeliststr += nodelist[i] + ", ";
     }
     memStatus["AliveNodeList"] = nodeliststr;
+    memStatus["IsAnyWriteRunning"] = NodeManagerBase::get()->isAnyWriteRunningInReplicas()?"yes":"no";
 }
 
 } // namespace sf1r

@@ -365,7 +365,7 @@ DistributeFileSyncMgr::DistributeFileSyncMgr()
     ignore_list_.insert("LOG.old");
     ignore_list_.insert("cookie");
     ignore_list_.insert("CURRENT");
-    //ignore_list_.insert("MANIFEST-");
+    ignore_list_.insert("barrels");
     reporting_ = false;
 }
 
