@@ -2,6 +2,7 @@
 #include <util/hashFunction.h>
 #include <common/ScdParser.h>
 #include <common/ScdWriter.h>
+#include <document-manager/JsonDocument.h>
 #include <mining-manager/util/split_ustr.h>
 #include <product-manager/product_price.h>
 #include <boost/unordered_set.hpp>
@@ -1357,6 +1358,68 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
     LOG(INFO)<<"index offer end"<<std::endl;
 }
 
+bool ProductMatcher::OutputCategoryMap(const std::string& scd_path, const std::string& output_file)
+{
+    izenelib::util::ClockTimer clocker;
+    std::vector<std::string> scd_list;
+    B5MHelper::GetIUScdList(scd_path, scd_list);
+    if(scd_list.empty()) return false;
+    std::ofstream ofs(output_file.c_str());
+    for(uint32_t i=0;i<scd_list.size();i++)
+    {
+        std::string scd_file = scd_list[i];
+        LOG(INFO)<<"Processing "<<scd_file<<std::endl;
+        ScdParser parser(izenelib::util::UString::UTF_8);
+        parser.load(scd_file);
+        uint32_t n=0;
+        for( ScdParser::iterator doc_iter = parser.begin();
+          doc_iter!= parser.end(); ++doc_iter, ++n)
+        {
+            if(n%10000==0)
+            {
+                LOG(INFO)<<"Find Offer Documents "<<n<<std::endl;
+            }
+            SCDDoc& scddoc = *(*doc_iter);
+            SCDDoc::iterator p = scddoc.begin();
+            Document doc;
+            for(; p!=scddoc.end(); ++p)
+            {
+                const std::string& property_name = p->first;
+                doc.property(property_name) = p->second;
+            }
+            std::string scategory;
+            doc.getString("Category", scategory);
+            if(scategory.empty()) continue;
+            std::string socategory;
+            doc.getString("OriginalCategory", socategory);
+            boost::algorithm::replace_all(socategory, "\t", "");
+            boost::algorithm::replace_all(socategory, " ", "");
+            if(socategory.empty()) continue;
+            std::string ssource;
+            doc.getString("Source", ssource);
+            if(ssource.empty()) continue;
+            doc.eraseProperty("Category");
+            std::string key = ssource+","+socategory;
+
+            Product result_product;
+            Process(doc, result_product, true);
+            doc.property("Category") = scategory;
+            std::string srcategory = result_product.scategory;
+            if(!srcategory.empty())
+            {
+                doc.property("PCategory") = srcategory;
+            }
+            UString value_text;
+            JsonDocument::ToJsonText(doc, value_text);
+            std::string str;
+            value_text.convertString(str, UString::UTF_8);
+            ofs<<key<<"\t"<<str<<std::endl;
+        }
+    }
+    ofs.close();
+    LOG(INFO)<<"clocker used "<<clocker.elapsed()<<std::endl;
+    return true;
+}
 
 bool ProductMatcher::DoMatch(const std::string& scd_path, const std::string& output_file)
 {

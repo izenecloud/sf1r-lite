@@ -270,6 +270,7 @@ int do_main(int ac, char** av)
         ("attribute-index", "build attribute index")
         ("product-train", "do product training")
         ("product-match", "do product matching test")
+        ("output-categorymap", "output category map info from SCD")
         ("map-index", "do category mapper index")
         ("map-test", "do category mapper test")
         ("fuzzy-diff", "test the fuzzy matching diff from no fuzzy")
@@ -287,6 +288,7 @@ int do_main(int ac, char** av)
         ("b5mc-generate", "generate b5mc scd")
         ("logserver-update", "update logserver")
         ("match-test", "b5m matching test")
+        ("isbn-test", "b5m isbn pid test")
         ("frontend-test", "the frontend categorizing")
         ("search-keyword", "get search keywords")
         ("scd-merge", "merge scd")
@@ -552,6 +554,12 @@ int do_main(int ac, char** av)
         odb->get(name, pid);
         std::cout<<"pid:"<<pid<<std::endl;
     }
+    if(vm.count("isbn-test"))
+    {
+        name = "9787532744237";
+        std::string pid = B5MHelper::GetPidByIsbn(name);
+        std::cout<<"pid:"<<pid<<std::endl;
+    }
 
     if(vm.count("scd-split"))
     {
@@ -671,6 +679,23 @@ int do_main(int ac, char** av)
             return EXIT_FAILURE;
         }
         if(!matcher.DoMatch(scd_path, output))
+        {
+            return EXIT_FAILURE;
+        }
+    } 
+    if (vm.count("output-categorymap")) {
+        if( knowledge_dir.empty()||scd_path.empty()||output.empty())
+        {
+            return EXIT_FAILURE;
+        }
+        ProductMatcher matcher;
+        matcher.SetCmaPath(cma_path);
+        if(!matcher.Open(knowledge_dir))
+        {
+            LOG(ERROR)<<"matcher open failed"<<std::endl;
+            return EXIT_FAILURE;
+        }
+        if(!matcher.OutputCategoryMap(scd_path, output))
         {
             return EXIT_FAILURE;
         }
