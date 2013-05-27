@@ -1317,6 +1317,68 @@ bool QueryBuilder::do_prepare_for_property_(
         }
         break;
     } // end - QueryTree::AND
+/*    case QueryTree::WAND:
+    {
+#ifdef VERBOSE_SERACH_MANAGER
+        cout<<"WAND query "<<property<<endl;
+#endif
+        DocumentIterator* pIterator = new WANDDocumentIterator();
+        bool ret = false;
+        try
+        {
+            for (QTIter wandChildIter = queryTree->children_.begin();
+                    wandChildIter != queryTree->children_.end(); ++wandChildIter)
+            {
+                ret |= do_prepare_for_property_(
+                           *wandChildIter,
+                           colID,
+                           property,
+                           propertyId,
+                           propertyDataType,
+                           isNumericFilter,
+                           readPositions,
+                           termIndexMapInProperty,
+                           pIterator,
+                           virtualTermIters,
+                           termDocReaders,
+                           hasUnigramProperty,
+                           isUnigramSearchMode,
+                           virtualProperty,
+                           1
+                       );
+            }
+            if (!ret)
+            {
+                delete pIterator;
+                return false;
+            }
+            
+            if(!virtualProperty.empty())
+            {
+                if(!parentAndOrFlag)
+                {
+                    if(NULL == pDocIterator)
+                    {
+                        pDocIterator = pIterator;
+                    }
+                    else delete pIterator;
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                    for(; vit != virtualTermIters.end(); ++vit)
+                        pDocIterator->add(vit->second);
+                }
+            }
+            else if (NULL == pDocIterator)
+                pDocIterator = pIterator;
+            else
+                pDocIterator->add(pIterator);
+        }
+        catch(std::exception& e)
+        {
+            delete pIterator;
+            return false;
+        }
+        break;
+    } // end - QueryTree::WAND*/
     case QueryTree::OR:
     {
 #ifdef VERBOSE_SERACH_MANAGER

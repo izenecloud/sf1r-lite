@@ -52,7 +52,7 @@ public:
 
     void init_threshold(float threshold);
 
-    void set_threshold (float realThreshold);
+    void setThreshold (float realThreshold);
 
     bool next();
 

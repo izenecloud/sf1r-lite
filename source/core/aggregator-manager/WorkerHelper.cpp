@@ -22,18 +22,34 @@ void assembleConjunction(std::vector<izenelib::util::UString> keywords, std::str
     }
 }
 
-void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result)
+void assembleDisjunction(std::vector<izenelib::util::UString> keywords
+                         , std::string& result
+                         , SearchingMode::SearchingModeType mode)
 {
     result.clear();
     int size = keywords.size();
-    for(int i = 0; i < size; ++i)
+    if (SearchingMode::OR == mode)
     {
-        std::string str;
-        keywords[i].convertString(str, izenelib::util::UString::UTF_8);
-        result += str;
-        result += "|";
+        for(int i = 0; i < size; ++i)
+        {
+            std::string str;
+            keywords[i].convertString(str, izenelib::util::UString::UTF_8);
+            result += str;
+            result += "|";
+        }
+        boost::trim_right_if(result, boost::is_any_of("|"));
     }
-    boost::trim_right_if(result, boost::is_any_of("|"));
+    else if (SearchingMode::WAND == mode)
+    {
+        for(int i = 0; i < size; ++i)
+        {
+            std::string str;
+            keywords[i].convertString(str, izenelib::util::UString::UTF_8);
+            result += str;
+            result += "#";
+        }
+        boost::trim_right_if(result, boost::is_any_of("#"));
+    }
 }
 
 bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bundleConfig, std::string& btqError,  PersonalSearchInfo& personalSearchInfo)

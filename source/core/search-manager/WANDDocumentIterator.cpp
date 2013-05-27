@@ -120,7 +120,15 @@ void WANDDocumentIterator::init_threshold(float threshold)
 {
     std::string currProperty;
     size_t currIndex;
-    float sumUBs = 0.0F;
+    float* sumUBs = new float[propertyWeightList_.size()];
+   
+    /*
+    for(int i = 0; i < propertyWightList_.size(); i++)
+    {
+        sumUBs[i] = 0.0F;
+    }*/
+
+    float maxSumUBs = 0.0F;
     std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
     for(; iter != docIteratorList_.end(); ++iter)
     {
@@ -129,23 +137,26 @@ void WANDDocumentIterator::init_threshold(float threshold)
         {
             currProperty = pEntry->property_;
             currIndex = getIndexOfProperty_(currProperty);
-            sumUBs += pEntry->ub_ * propertyWeightList_[currIndex];
+            sumUBs[currIndex] += pEntry->ub_ * propertyWeightList_[currIndex];
+            if ( maxSumUBs < sumUBs[currIndex] )
+                maxSumUBs = sumUBs[currIndex];
         }
     }
+    delete[] sumUBs;
 
     if(threshold > 0.0F)
     {
-        currThreshold_ = sumUBs * threshold;
+        currThreshold_ = maxSumUBs * threshold;
     }
     else
     {
-        currThreshold_ = sumUBs * 0.5;
+        currThreshold_ = maxSumUBs * 0.5;
     }
 
-    //LOG(INFO)<<"the initial currThreshold = "<<currThreshold_;
+    //LOG(INFO)<<"the initial currThreshold = "<<currThreshold_<<"  "<<sumUBs;
 }
 
-void WANDDocumentIterator::set_threshold(float realThreshold)
+void WANDDocumentIterator::setThreshold(float realThreshold)
 {
     currThreshold_ = realThreshold;
     //LOG(INFO)<<"the updated threshold :"<<currThreshold_;
@@ -264,7 +275,9 @@ bool WANDDocumentIterator::do_next()
         }
 
         if (findPivot() == false)
+        {
             return false;
+        }
 
         //std::cout<<std::endl<<"===the pivot document:"<<pivotDoc_<<std::endl;
         //std::cout<<"===the current doc:"<<currDoc_<<std::endl;
@@ -272,13 +285,17 @@ bool WANDDocumentIterator::do_next()
         if (pivotDoc_ <= currDoc_)
         {
             if(processPrePostings(currDoc_ + 1) == false)
+            {
                 return false;
+            }
         }
         else //pivotTerm_ > currdoc_
         {
             if(front->doc() == pivotDoc_)
             {
                 currDoc_ = pivotDoc_;
+            
+                processPrePostings(currDoc_ );
 
                 std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
                 for ( ; iter != docIteratorList_.end(); ++iter)
@@ -296,6 +313,7 @@ bool WANDDocumentIterator::do_next()
             }
             else
             {
+            //LOG(INFO)<<"NOT if(front->doc() == pivotDoc_)";
                 if(processPrePostings(pivotDoc_) == false)
                     return false;
             }

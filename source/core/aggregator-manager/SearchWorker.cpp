@@ -337,12 +337,14 @@ bool SearchWorker::getSearchResult_(
             actionOperation.actionItem_.env_.queryString_ = newQuery;
         }
     }
-    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR)
+    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR ||
+             actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::WAND)
     {
         analyze_(actionOperation.actionItem_.env_.queryString_, keywords, false);
-        assembleDisjunction(keywords, newQuery);
+        assembleDisjunction(keywords, newQuery, actionOperation.actionItem_.searchingMode_.mode_);
         actionOperation.actionItem_.env_.queryString_ = newQuery;
     }
+
 
     // Get Personalized Search information (user profile)
     PersonalSearchInfo personalSearchInfo;
@@ -443,7 +445,7 @@ bool SearchWorker::getSearchResult_(
 
             if (!bundleConfig_->bTriggerQA_)
                 return true;
-            assembleDisjunction(keywords, newQuery);
+             assembleDisjunction(keywords, newQuery, actionOperation.actionItem_.searchingMode_.mode_);
 
             actionOperation.actionItem_.env_.queryString_ = newQuery;
             resultItem.propertyQueryTermList_.clear();

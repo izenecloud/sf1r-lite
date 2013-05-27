@@ -397,6 +397,7 @@ bool SearchThreadWorker::doSearch_(
     }
 
     docIterator.skipTo(param.docIdBegin);
+    double minScore = 0.0F;
 
     do
     {
@@ -451,6 +452,11 @@ bool SearchThreadWorker::doSearch_(
         START_PROFILER(inserttoqueue)
         param.scoreItemQueue->insert(scoreItem);
         STOP_PROFILER(inserttoqueue)
+        
+        if (param.totalCount >= param.heapSize)
+        {
+            //docIterator.setThreshold((*param.scoreItemQueue)[param.heapSize].score);
+        }
 
     }
     while (docIterator.next());

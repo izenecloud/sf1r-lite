@@ -83,7 +83,11 @@ public:
     {
         return 0.0f;
     }
-
+        
+    virtual void setThreshold(float)
+    {
+        return;
+    }
     void setCurrent(bool current)
     {
         current_ = current;
