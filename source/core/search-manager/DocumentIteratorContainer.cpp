@@ -15,9 +15,6 @@ DocumentIteratorContainer::~DocumentIteratorContainer()
 
 void DocumentIteratorContainer::add(DocumentIterator* docIter)
 {
-    if (docIter == NULL)
-        return;
-
     docIters_.push_back(docIter);
 }
 
@@ -38,6 +35,12 @@ DocumentIterator* DocumentIteratorContainer::combine()
         for (std::vector<DocumentIterator*>::iterator it = docIters_.begin();
              it != docIters_.end(); ++it)
         {
+            if (NULL == *it)
+            {
+                delete result;
+                docIters_.clear();
+                return NULL;
+            }
             result->add(*it);
         }
     }
