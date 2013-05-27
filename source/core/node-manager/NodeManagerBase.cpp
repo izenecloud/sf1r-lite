@@ -190,19 +190,33 @@ void NodeManagerBase::notifyStop()
             return;
         }
 
-        if ((nodeState_ == NODE_STATE_STARTED ||
-             nodeState_ == NODE_STATE_STARTING_WAIT_RETRY ||
-             nodeState_ == NODE_STATE_STARTING ||
-             nodeState_ == NODE_STATE_INIT ||
-             nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY ) &&
-            !MasterManagerBase::get()->hasAnyCachedRequest())
+        if (s_enable_async_)
         {
+            // in async mode we need wait the log sync thread to be paused.
+            while (nodeState_ != NODE_STATE_ELECTING)
+            {
+                setElectingState();
+                LOG(INFO) << "waiting log sync thread while stopping : " << nodeState_;
+                stop_cond_.timed_wait(lock, boost::posix_time::seconds(3));
+            }
             stop();
         }
         else
         {
-            LOG(INFO) << "waiting the node become idle while stopping ..." << nodeState_;
-            stop_cond_.wait(lock);
+            if ((nodeState_ == NODE_STATE_STARTED ||
+                    nodeState_ == NODE_STATE_STARTING_WAIT_RETRY ||
+                    nodeState_ == NODE_STATE_STARTING ||
+                    nodeState_ == NODE_STATE_INIT ||
+                    nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY ) &&
+                !MasterManagerBase::get()->hasAnyCachedRequest())
+            {
+                stop();
+            }
+            else
+            {
+                LOG(INFO) << "waiting the node become idle while stopping ..." << nodeState_;
+                stop_cond_.wait(lock);
+            }
         }
     }
     zookeeper_->disconnect();
