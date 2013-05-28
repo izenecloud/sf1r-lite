@@ -348,7 +348,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             }
             // this node is expired, it means disconnect from ZooKeeper for a long time.
             // if any write request not finished, we must abort it.
-            resetWriteState();
+            resetWriteState(true);
 
             MasterManagerBase::get()->notifyChangedPrimary(false);
             stopping_ = true;
@@ -989,7 +989,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 
 void NodeManagerBase::reEnterCluster()
 {
-    resetWriteState();
+    resetWriteState(true);
 
     MasterManagerBase::get()->notifyChangedPrimary(false);
     updateCurrentPrimary();
@@ -1315,12 +1315,12 @@ void NodeManagerBase::onChildrenChanged(const std::string& path)
     }
 }
 
-void NodeManagerBase::resetWriteState()
+void NodeManagerBase::resetWriteState(bool need_re_enter)
 {
     switch(nodeState_)
     {
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
-        if (s_enable_async_)
+        if (s_enable_async_ || need_re_enter)
         {
             if (cb_on_wait_finish_process_)
                 cb_on_wait_finish_process_();
@@ -1331,9 +1331,9 @@ void NodeManagerBase::resetWriteState()
         }
         //break; walk through by intended
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG:
-        if (s_enable_async_)
+        if (s_enable_async_ || need_re_enter)
         {
-            LOG(INFO) << "in async mode, waiting write can finish without abort while electing.";
+            LOG(INFO) << "waiting write can finish without abort while electing.";
             if (cb_on_wait_finish_log_)
                 cb_on_wait_finish_log_();
             nodeState_ = NODE_STATE_STARTED;
@@ -1349,9 +1349,9 @@ void NodeManagerBase::resetWriteState()
         }
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY:
-        if (s_enable_async_)
+        if (s_enable_async_ || need_re_enter)
         {
-            LOG(INFO) << "in async mode, waiting write can finish without abort while electing.";
+            LOG(INFO) << "waiting write can finish without abort while electing.";
             if (cb_on_wait_primary_)
                 cb_on_wait_primary_();
             nodeState_ = NODE_STATE_STARTED;
@@ -2256,8 +2256,6 @@ void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
             LOG(WARNING) << "request aborted by one replica while waiting finish process. " << node_list[i];
             LOG(INFO) << "begin abort the request on primary and wait all replica to abort it.";
             updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
-            //if(cb_on_abort_request_)
-            //    cb_on_abort_request_();
             break;
         }
     }
@@ -2329,8 +2327,6 @@ void NodeManagerBase::checkSecondaryReqFinishLog(bool self_changed)
             LOG(WARNING) << "request aborted by one replica when waiting finish log." << node_list[i];
             LOG(INFO) << "begin abort the request on primary and wait all replica to abort it.";
             updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
-            //if(cb_on_abort_request_)
-            //    cb_on_abort_request_();
             break;
         }
     }

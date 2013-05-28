@@ -223,7 +223,7 @@ protected:
     void updateSelfPrimaryNodeState();
 
     std::string findReCreatedSelfPrimaryNode();
-    void resetWriteState();
+    void resetWriteState(bool need_re_enter = false);
     bool isNeedReEnterCluster();
     bool isNeedCheckElecting();
     NodeStateType getPrimaryState();
