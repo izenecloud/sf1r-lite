@@ -1218,8 +1218,12 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
             LOG(WARNING) << "lost connection from ZooKeeper while finish request." << self_primary_path_;
             //checkForPrimaryElecting();
             // update to get notify on event callback and check for electing.
+            
             setElectingState();
-            updateNodeState();
+            if (s_enable_async_)
+                updateSelfPrimaryNodeState();
+            else
+                updateNodeState();
         }
         else
             updateSelfPrimaryNodeState();
