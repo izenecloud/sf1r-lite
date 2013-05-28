@@ -1850,6 +1850,12 @@ void NodeManagerBase::checkPrimaryForRecovery(NodeStateType primary_state)
         //nodeState_ = NODE_STATE_STARTED;
         enterClusterAfterRecovery(!masterStarted_);
     }
+    else if (primary_state == NODE_STATE_STARTED)
+    {
+        LOG(INFO) << "waiting primary to notify me recover.";
+        sleep(1);
+        updateSelfPrimaryNodeState();
+    }
 }
 
 // note : all check is for primary node. and they 
@@ -1889,6 +1895,9 @@ void NodeManagerBase::checkSecondaryState(bool self_changed)
 
 void NodeManagerBase::checkSecondaryElecting(bool self_changed)
 {
+    if (s_enable_async_ && need_stop_)
+        return;
+
     if (nodeState_ != NODE_STATE_ELECTING)
     {
         LOG(INFO) << "only in electing state, check secondary need. state: " << nodeState_;
