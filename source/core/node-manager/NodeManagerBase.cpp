@@ -919,6 +919,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         }
     }
 
+    updateCurrentPrimary();
     if (curr_primary_path_ == self_primary_path_)
     {
         LOG(INFO) << "I enter as primary success." << self_primary_path_;
@@ -1063,7 +1064,8 @@ bool NodeManagerBase::isConnected()
 
 bool NodeManagerBase::isOtherPrimaryAvailable()
 {
-    return !curr_primary_path_.empty() && (curr_primary_path_ != self_primary_path_);
+    return !curr_primary_path_.empty() && (curr_primary_path_ != self_primary_path_) &&
+        (zookeeper_ && zookeeper_->isZNodeExists(curr_primary_path_, ZooKeeper::WATCH));
 }
 
 bool NodeManagerBase::isPrimary()
