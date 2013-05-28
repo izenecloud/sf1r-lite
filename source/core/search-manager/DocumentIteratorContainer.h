@@ -15,6 +15,8 @@ class DocumentIterator;
 class DocumentIteratorContainer
 {
 public:
+    DocumentIteratorContainer()
+        :hasNullDocIterator_(false){}
     ~DocumentIteratorContainer();
 
     /**
@@ -35,6 +37,7 @@ public:
 
 private:
     std::vector<DocumentIterator*> docIters_;
+    bool hasNullDocIterator_;
 };
 
 } // namespace sf1r

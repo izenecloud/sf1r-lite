@@ -1,6 +1,7 @@
 #include "CobraProcess.h"
 #include "common/ProcessOptions.h"
 
+#include <common/OnSignal.h>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
@@ -19,6 +20,7 @@ void savePid(string pidFile);
 
 int main(int argc, char * argv[])
 {
+    sf1r::setupDefaultSignalHandlers();
     try
     {
         ProcessOptions po;
