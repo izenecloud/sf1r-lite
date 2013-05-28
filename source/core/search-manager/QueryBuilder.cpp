@@ -1317,12 +1317,12 @@ bool QueryBuilder::do_prepare_for_property_(
         }
         break;
     } // end - QueryTree::AND
-/*    case QueryTree::WAND:
+    case QueryTree::WAND:
     {
 #ifdef VERBOSE_SERACH_MANAGER
         cout<<"WAND query "<<property<<endl;
 #endif
-        DocumentIterator* pIterator = new WANDDocumentIterator();
+        /*DocumentIterator* pIterator = new WANDDocumentIterator();
         bool ret = false;
         try
         {
@@ -1377,8 +1377,8 @@ bool QueryBuilder::do_prepare_for_property_(
             delete pIterator;
             return false;
         }
-        break;
-    } // end - QueryTree::WAND*/
+        break;*/
+    } // end - QueryTree::WAND
     case QueryTree::OR:
     {
 #ifdef VERBOSE_SERACH_MANAGER

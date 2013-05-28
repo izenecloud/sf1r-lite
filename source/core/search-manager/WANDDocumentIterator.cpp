@@ -118,39 +118,24 @@ void WANDDocumentIterator::set_ub(bool useOriginalQuery, UpperBoundInProperties&
 
 void WANDDocumentIterator::init_threshold(float threshold)
 {
-    std::string currProperty;
-    size_t currIndex;
-    float* sumUBs = new float[propertyWeightList_.size()];
-   
-    /*
-    for(int i = 0; i < propertyWightList_.size(); i++)
-    {
-        sumUBs[i] = 0.0F;
-    }*/
-
-    float maxSumUBs = 0.0F;
+    float sumUBs = 0.0F;
     std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
     for(; iter != docIteratorList_.end(); ++iter)
     {
         TermDocumentIterator* pEntry = (*iter);
         if (pEntry)
         {
-            currProperty = pEntry->property_;
-            currIndex = getIndexOfProperty_(currProperty);
-            sumUBs[currIndex] += pEntry->ub_ * propertyWeightList_[currIndex];
-            if ( maxSumUBs < sumUBs[currIndex] )
-                maxSumUBs = sumUBs[currIndex];
+            sumUBs += pEntry->ub_ ;
         }
     }
-    delete[] sumUBs;
 
     if(threshold > 0.0F)
     {
-        currThreshold_ = maxSumUBs * threshold;
+        currThreshold_ = sumUBs * threshold;
     }
     else
     {
-        currThreshold_ = maxSumUBs * 0.5;
+        currThreshold_ = sumUBs * 0.5;
     }
 
     //LOG(INFO)<<"the initial currThreshold = "<<currThreshold_<<"  "<<sumUBs;
@@ -313,7 +298,6 @@ bool WANDDocumentIterator::do_next()
             }
             else
             {
-            //LOG(INFO)<<"NOT if(front->doc() == pivotDoc_)";
                 if(processPrePostings(pivotDoc_) == false)
                     return false;
             }
