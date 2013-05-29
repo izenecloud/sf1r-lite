@@ -288,8 +288,11 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     LOG (INFO) << CLASSNAME << " worker node event: " << zkEvent.toString();
 
-    if (stopping_)
-        return;
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        if (stopping_)
+            return;
+    }
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
@@ -357,16 +360,15 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         }
 
         zookeeper_->disconnect();
+
+        boost::unique_lock<boost::mutex> lock(mutex_);
         if (!checkZooKeeperService())
         {
-            boost::unique_lock<boost::mutex> lock(mutex_);
             stopping_ = false;
             // process will be resumed after zookeeper recovered
             LOG (WARNING) << " waiting for ZooKeeper Service while expired ...";
             return;
         }
-
-        boost::unique_lock<boost::mutex> lock(mutex_);
         nodeState_ = NODE_STATE_STARTING;
         enterCluster(!masterStarted_);
         LOG (WARNING) << " restarted in NodeManagerBase for ZooKeeper Service finished";

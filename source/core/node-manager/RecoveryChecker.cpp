@@ -1187,9 +1187,19 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     LOG(INFO) << "primary agreed , sync new request druing waiting recovery.";
     // check new request during wait recovery.
     syncSCDFiles();
-    syncToNewestReqLog();
-    LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
     // check data consistent with primary.
+    //
+    if (NodeManagerBase::isAsyncEnabled() && NodeManagerBase::get()->isOtherPrimaryAvailable() && !checkIfLogForward(false))
+    {
+        LOG(INFO) << "check log failed while recover, need rollback";
+        if(!rollbackLastFail(false))
+        {
+            forceExit("rollback failed for forword log.");
+        }
+    }
+    LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
+    syncToNewestReqLog();
+
     std::string errinfo;
     CollInfoMapT tmp_all_col_info;
     {
