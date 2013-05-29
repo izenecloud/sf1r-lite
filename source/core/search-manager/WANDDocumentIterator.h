@@ -50,7 +50,7 @@ public:
         return currDoc_;
     }
 
-    void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0) {}
+    inline void doc_item(RankDocumentProperty& rankDocumentProperty, unsigned propIndex = 0);
 
     void df_cmtf(
         DocumentFrequencyInProperties& dfmap,
@@ -67,6 +67,8 @@ public:
     {
         return docIteratorList_.empty();
     }
+    
+    void queryBoosting(double& score, double& weight);
 
 #if SKIP_ENABLED
     docid_t skipTo(docid_t target);
@@ -99,6 +101,20 @@ protected:
 
     boost::mutex mutex_;
 };
+
+inline void WANDDocumentIterator::doc_item(
+    RankDocumentProperty& rankDocumentProperty,
+    unsigned propIndex)
+{
+    TermDocumentIterator* pEntry;
+    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for (; iter != docIteratorList_.end(); ++iter)
+    {
+        pEntry = (*iter);
+        if (pEntry->isCurrent())
+            pEntry->doc_item(rankDocumentProperty,propIndex);
+    }
+}
 
 }
 

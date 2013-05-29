@@ -324,3 +324,17 @@ void WANDDocumentIterator::df_cmtf(
             pEntry->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
 }
+
+void WANDDocumentIterator::queryBoosting(
+    double& score,
+    double& weight)
+{
+    TermDocumentIterator* pEntry;
+    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    for (; iter != docIteratorList_.end(); ++iter)
+    {
+        pEntry = (*iter);
+        if (pEntry)
+            pEntry->queryBoosting(score, weight);
+    }
+}

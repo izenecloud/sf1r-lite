@@ -1329,6 +1329,8 @@ bool QueryBuilder::do_prepare_for_property_(
             for (QTIter wandChildIter = queryTree->children_.begin();
                     wandChildIter != queryTree->children_.end(); ++wandChildIter)
             {
+                if (QueryTree::KEYWORD != (*wandChildIter)->type_)
+                    continue;
                 ret |= do_prepare_for_property_(
                            *wandChildIter,
                            colID,
