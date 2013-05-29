@@ -443,7 +443,6 @@ void CobraProcess::stopCollections()
 
 int CobraProcess::run()
 {
-    setupDefaultSignalHandlers();
 
     bool caughtException = false;
 

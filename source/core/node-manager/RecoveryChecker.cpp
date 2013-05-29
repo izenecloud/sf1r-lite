@@ -1,6 +1,5 @@
 #include "RecoveryChecker.h"
 #include "DistributeFileSyncMgr.h"
-#include "DistributeFileSys.h"
 #include "DistributeDriver.h"
 #include "RequestLog.h"
 #include "NodeManagerBase.h"
@@ -814,11 +813,6 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     last_conf_file_ = workdir + "/distribute_last_conf";
     configDir_ = conf_dir;
     need_backup_ = false;
-    if (DistributeFileSys::get()->isEnabled())
-    {
-        backup_basepath_ = DistributeFileSys::get()->getDFSLocalFullPath("/req-backup");
-    }
-
     reqlog_mgr_.reset(new ReqLogMgr());
     try
     {
