@@ -82,10 +82,8 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
 
 
     TextRankingType& pTextRankingType = actionOperation.actionItem_.rankingType_;
-    bool isWandStrategy = actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::WAND;
     bool isTFIDFModel = (pTextRankingType == RankingType::BM25 ||
                          config_.rankingManagerConfig_.rankingConfigUnit_.textRankingModel_ == RankingType::BM25);
-    bool isWandSearch = isWandStrategy && isTFIDFModel && !actionOperation.isPhraseOrWildcardQuery_;
     bool useOriginalQuery = actionOperation.actionItem_.searchingMode_.useOriginalQuery_;
 
     std::vector<boost::shared_ptr<PropertyRanker> > propertyRankers;
@@ -95,7 +93,6 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     boost::scoped_ptr<DocumentIteratorContainer> docIterContainer(new DocumentIteratorContainer);
     std::auto_ptr<DocumentIterator> scoreDocIterPtr;
     MultiPropertyScorer* pMultiPropertyIterator = NULL;
-    WANDDocumentIterator* pWandDocIterator = NULL;
 
     std::vector<QueryFiltering::FilteringType>& filtingList =
         actionOperation.actionItem_.filteringList_;
@@ -113,30 +110,15 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
 
         if (isFilterQuery == false)
         {
-            if (isWandSearch)
-            {
-                pWandDocIterator = queryBuilder_.prepare_wand_dociterator(
-                                       actionOperation,
-                                       collectionId,
-                                       propertyWeightMap_,
-                                       indexPropertyList,
-                                       indexPropertyIdList,
-                                       readTermPosition,
-                                       termIndexMaps);
-                scoreDocIterPtr.reset(pWandDocIterator);
-            }
-            else
-            {
-                pMultiPropertyIterator = queryBuilder_.prepare_dociterator(
-                                             actionOperation,
-                                             collectionId,
-                                             propertyWeightMap_,
-                                             indexPropertyList,
-                                             indexPropertyIdList,
-                                             readTermPosition,
-                                             termIndexMaps);
-                scoreDocIterPtr.reset(pMultiPropertyIterator);
-            }
+            pMultiPropertyIterator = queryBuilder_.prepare_dociterator(
+                                         actionOperation,
+                                         collectionId,
+                                         propertyWeightMap_,
+                                         indexPropertyList,
+                                         indexPropertyIdList,
+                                         readTermPosition,
+                                         termIndexMaps);
+            scoreDocIterPtr.reset(pMultiPropertyIterator);
         }
     }
     catch (std::exception& e)
@@ -267,17 +249,14 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
         propertyRankers);
 
     UpperBoundInProperties ubmap;
-    if (pWandDocIterator)
+    for (size_t i = 0; i < indexPropertyList.size(); ++i)
     {
-        for (size_t i = 0; i < indexPropertyList.size(); ++i)
-        {
-            const std::string& currentProperty = indexPropertyList[i];
-            ID_FREQ_MAP_T& ub = ubmap[currentProperty];
-            propertyRankers[i]->calculateTermUBs(rankQueryProperties[i], ub);
-        }
-        pWandDocIterator->set_ub(useOriginalQuery, ubmap);
-        pWandDocIterator->init_threshold(actionOperation.actionItem_.searchingMode_.threshold_);
+        const std::string& currentProperty = indexPropertyList[i];
+        ID_FREQ_MAP_T& ub = ubmap[currentProperty];
+        propertyRankers[i]->calculateTermUBs(rankQueryProperties[i], ub);
     }
+    docIterPtr->setUB(useOriginalQuery, ubmap);
+    docIterPtr->initThreshold(actionOperation.actionItem_.searchingMode_.threshold_);
 
     STOP_PROFILER(preparerank)
 
@@ -397,7 +376,6 @@ bool SearchThreadWorker::doSearch_(
     }
 
     docIterator.skipTo(param.docIdBegin);
-    double minScore = 0.0F;
 
     do
     {
@@ -452,12 +430,6 @@ bool SearchThreadWorker::doSearch_(
         START_PROFILER(inserttoqueue)
         param.scoreItemQueue->insert(scoreItem);
         STOP_PROFILER(inserttoqueue)
-        
-        if (param.totalCount >= param.heapSize)
-        {
-            //docIterator.setThreshold((*param.scoreItemQueue)[param.heapSize].score);
-        }
-
     }
     while (docIterator.next());
 

@@ -29,28 +29,17 @@ class WANDDocumentIterator : public DocumentIterator
     typedef ID_FREQ_MAP_T::const_iterator term_index_ub_iterator;
 
 public:
-    WANDDocumentIterator(
-        const property_weight_map& propertyWeightMap,
-        const std::vector<unsigned int>& propertyIds,
-        const std::vector<std::string>& properties
-    )
-        :indexPropertyList_(properties)
-        ,indexPropertyIdList_(propertyIds)
-    {
-        init_(propertyWeightMap);
-    }
-
+    WANDDocumentIterator();
+    
     virtual ~WANDDocumentIterator();
 
 public:
 
-    void add(TermDocumentIterator* pDocIterator);
+    void add(DocumentIterator* pDocIterator); 
 
-    void add(DocumentIterator* pDocIterator) {}
+    void setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap);
 
-    void set_ub(bool useOriginalQuery, UpperBoundInProperties& ubmap);
-
-    void init_threshold(float threshold);
+    void initThreshold(float threshold);
 
     void setThreshold (float realThreshold);
 
@@ -68,9 +57,6 @@ public:
         CollectionTermFrequencyInProperties& ctfmap,
         MaxTermFrequencyInProperties& maxtfmap);
 
-    double score(
-        const std::vector<RankQueryProperty>& rankQueryProperties,
-        const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers);
 
     count_t tf()
     {
@@ -90,13 +76,8 @@ protected:
 #endif
 
 protected:
-    size_t getIndexOfPropertyId_(propertyid_t propertyId);
-
-    size_t getIndexOfProperty_(const std::string& property);
 
     void initDocIteratorSorter();
-
-    void init_(const property_weight_map& propertyWeightMap);
 
     bool do_next();
 
@@ -105,11 +86,6 @@ protected:
     bool processPrePostings(docid_t target);
 
 protected:
-    std::vector<std::string> indexPropertyList_;
-
-    std::vector<propertyid_t> indexPropertyIdList_;
-
-    std::vector<double> propertyWeightList_;
 
     std::vector<TermDocumentIterator*> docIteratorList_;
 
@@ -122,9 +98,6 @@ protected:
     docid_t pivotDoc_;
 
     boost::mutex mutex_;
-
-    ///@brief reuse in score() for performance, so score() is not thread-safe
-    RankDocumentProperty rankDocumentProperty_;
 };
 
 }

@@ -131,7 +131,7 @@ WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
     const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
 )
 {
-    size_t size_of_properties = propertyIds.size();
+    /*size_t size_of_properties = propertyIds.size();
 
     WANDDocumentIterator* pWandScorer = new WANDDocumentIterator(
         propertyWeightMap,
@@ -170,7 +170,7 @@ WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
         delete pWandScorer;
         throw std::runtime_error("Failed to prepare wanddociterator");
         return NULL;
-    }
+    }*/
 }
 
 void QueryBuilder::prepare_for_wand_property_(
@@ -1322,7 +1322,7 @@ bool QueryBuilder::do_prepare_for_property_(
 #ifdef VERBOSE_SERACH_MANAGER
         cout<<"WAND query "<<property<<endl;
 #endif
-        /*DocumentIterator* pIterator = new WANDDocumentIterator();
+        DocumentIterator* pIterator = new WANDDocumentIterator();
         bool ret = false;
         try
         {
@@ -1377,7 +1377,7 @@ bool QueryBuilder::do_prepare_for_property_(
             delete pIterator;
             return false;
         }
-        break;*/
+        break;
     } // end - QueryTree::WAND
     case QueryTree::OR:
     {

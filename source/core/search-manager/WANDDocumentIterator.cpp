@@ -3,10 +3,20 @@
  * \brief
  * \date Feb 29, 2012
  * \author Xin Liu
+ * \brief:
+ * \1) One WANDDocumentIterator for only one property.
+ * \2) Query items whose UB is 0 make contribution to threshold.
+ * \update May 29, 2013
+ * \author Kevin Lin
  */
 
 #include "WANDDocumentIterator.h"
 using namespace sf1r;
+
+WANDDocumentIterator::WANDDocumentIterator()
+{
+    
+}
 
 WANDDocumentIterator::~WANDDocumentIterator()
 {
@@ -18,83 +28,42 @@ WANDDocumentIterator::~WANDDocumentIterator()
     }
 }
 
-void WANDDocumentIterator::add(TermDocumentIterator* pDocIterator)
+void WANDDocumentIterator::add(DocumentIterator* pDocIterator)
 {
+    TermDocumentIterator* pTermDocIter = (TermDocumentIterator*)pDocIterator;
     boost::mutex::scoped_lock lock(mutex_);
-    docIteratorList_.push_back(pDocIterator);
+    docIteratorList_.push_back(pTermDocIter);
 }
 
-size_t WANDDocumentIterator::getIndexOfPropertyId_(propertyid_t propertyId)
+void WANDDocumentIterator::setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap)
 {
-    size_t numProperties = indexPropertyIdList_.size();
-    for (size_t i = 0; i < numProperties; ++i)
-    {
-        if(indexPropertyIdList_[i] == propertyId)
-            return i;
-    }
-    return 0;
-}
+    if (docIteratorList_.begin() == docIteratorList_.end())
+        return;
 
-size_t WANDDocumentIterator::getIndexOfProperty_(const std::string& property)
-{
-    size_t numProperties = indexPropertyList_.size();
-    for (size_t i = 0; i < numProperties; ++i)
-    {
-        if(indexPropertyList_[i] == property)
-            return i;
-    }
-    return 0;
-}
-
-void WANDDocumentIterator::init_(const property_weight_map& propertyWeightMap)
-{
-    currDoc_ = 0;
-    currThreshold_ = 0.0F;
-    size_t numProperties = indexPropertyList_.size();
-    propertyWeightList_.resize(numProperties);
-
-    for (size_t i = 0; i < numProperties; ++i)
-    {
-        property_weight_map::const_iterator found
-        = propertyWeightMap.find(indexPropertyIdList_[i]);
-        if (found != propertyWeightMap.end())
-        {
-            propertyWeightList_[i] = found->second;
-        }
-        else
-            propertyWeightList_[i] = 0.0F;
-    }
-}
-
-void WANDDocumentIterator::set_ub(bool useOriginalQuery, UpperBoundInProperties& ubmap)
-{
     float sum = 0.0F, termThreshold = 0.0F;
-    size_t nTerms= 0;
+    size_t nTerms = 0, nZeroTerms = 0;
+    
+    ID_FREQ_MAP_T& ubs = ubmap[(*docIteratorList_.begin())->property_]; 
 
-    if (!useOriginalQuery)
+    term_index_ub_iterator term_iter = ubs.begin();
+    for(; term_iter != ubs.end(); ++term_iter)
     {
-        property_name_term_index_iterator property_iter = ubmap.begin();
-        for(; property_iter != ubmap.end(); ++property_iter)
-        {
-            term_index_ub_iterator term_iter = (property_iter->second).begin();
-            for(; term_iter != (property_iter->second).end(); ++term_iter)
-            {
-                sum += term_iter->second;
-                ++nTerms;
-            }
-        }
-
-        termThreshold = sum/nTerms * 0.8F;
+        if ((1e-6 > term_iter->second) && (-1e-6 < term_iter->second))
+            nZeroTerms++;
+        sum += term_iter->second;
+        ++nTerms;
     }
+    currThreshold_ = sum * nTerms / (nTerms - nZeroTerms);
+    termThreshold = sum/nTerms * 0.8F;
+    
     std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
     for( ; iter != docIteratorList_.end(); ++iter )
     {
         TermDocumentIterator* pEntry = (*iter);
         if (pEntry)
         {
-            std::string currentProperty = pEntry->property_;
             size_t termIndex = pEntry->termIndex_;
-            float ub = ubmap[currentProperty][termIndex];
+            float ub = ubs[termIndex];
 
             if(useOriginalQuery)
             {
@@ -116,29 +85,18 @@ void WANDDocumentIterator::set_ub(bool useOriginalQuery, UpperBoundInProperties&
     }
 }
 
-void WANDDocumentIterator::init_threshold(float threshold)
+void WANDDocumentIterator::initThreshold(float threshold)
 {
-    float sumUBs = 0.0F;
-    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
-    for(; iter != docIteratorList_.end(); ++iter)
-    {
-        TermDocumentIterator* pEntry = (*iter);
-        if (pEntry)
-        {
-            sumUBs += pEntry->ub_ ;
-        }
-    }
-
     if(threshold > 0.0F)
     {
-        currThreshold_ = sumUBs * threshold;
+        currThreshold_ *= threshold;
     }
     else
     {
-        currThreshold_ = sumUBs * 0.5;
+        currThreshold_ *= 0.5;
     }
 
-    //LOG(INFO)<<"the initial currThreshold = "<<currThreshold_<<"  "<<sumUBs;
+    //LOG(INFO)<<"the initial currThreshold = "<<currThreshold_<<"for property:  "<<(*docIteratorList_.begin())->property_;
 }
 
 void WANDDocumentIterator::setThreshold(float realThreshold)
@@ -189,8 +147,8 @@ bool WANDDocumentIterator::findPivot() // multimap sorter as temporary variables
         TermDocumentIterator* pDocIterator = iter->second;
         if(pDocIterator)
         {
-            size_t index = getIndexOfPropertyId_(pDocIterator->propertyId_);
-            sumUB += pDocIterator->ub_ * propertyWeightList_[index];
+            //size_t index = getIndexOfPropertyId_(pDocIterator->propertyId_);
+            sumUB += pDocIterator->ub_;// * propertyWeightList_[index];
             if(sumUB > currThreshold_)
             {
                 pivotDoc_ = iter->first;
@@ -365,47 +323,4 @@ void WANDDocumentIterator::df_cmtf(
         if(pEntry)
             pEntry->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
-}
-
-double WANDDocumentIterator::score(
-    const std::vector<RankQueryProperty>& rankQueryProperties,
-    const std::vector<boost::shared_ptr<PropertyRanker> >& propertyRankers
-)
-{
-    CREATE_PROFILER ( compute_score, "SearchManager", "doSearch_: compute score in WANDDocumentIterator");
-    CREATE_PROFILER ( get_doc_item, "SearchManager", "doSearch_: get doc_item");
-
-    TermDocumentIterator* pEntry = 0;
-    double score = 0.0F;
-
-    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
-    for (; iter != docIteratorList_.end(); ++iter)
-    {
-        pEntry = (*iter);
-        if (pEntry && pEntry->isCurrent())
-        {
-            size_t index = getIndexOfPropertyId_(pEntry->propertyId_);
-            double weight = propertyWeightList_[index];
-            if (weight != 0.0F)
-            {
-                rankDocumentProperty_.resize_and_initdata(rankQueryProperties[index].size());
-                pEntry->doc_item(rankDocumentProperty_);
-
-                //START_PROFILER ( compute_score )
-                score += weight * propertyRankers[index]->getScore(
-                             rankQueryProperties[index],
-                             rankDocumentProperty_
-                         );
-                //STOP_PROFILER ( compute_score )
-                // LOG(INFO) << "current property's sum score:"<<score;
-            }
-        }
-    }
-
-    if (! (score < (numeric_limits<float>::max) ()))
-    {
-        score = (numeric_limits<float>::max) ();
-    }
-
-    return score;
 }

@@ -88,6 +88,17 @@ public:
     {
         return;
     }
+    
+    virtual void setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap)
+    {
+        return;
+    }
+    
+    virtual void initThreshold(float threshold)
+    {
+        return;
+    }
+
     void setCurrent(bool current)
     {
         current_ = current;
