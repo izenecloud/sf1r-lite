@@ -665,6 +665,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
                         continue;
                     }
                     LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
+                    LOG(INFO) << "local : " << file_checksum_list[j] << " VS " << rspdata[i].check_file_result[j];
                     is_file_mismatch =  true;
                 }
             }

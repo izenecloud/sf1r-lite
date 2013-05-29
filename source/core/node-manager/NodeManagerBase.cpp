@@ -925,6 +925,8 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
     if (curr_primary_path_ == self_primary_path_)
     {
         LOG(INFO) << "I enter as primary success." << self_primary_path_;
+        // sleep to wait secondary node.
+        sleep(10);
     }
     else
     {
@@ -950,6 +952,17 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 
     nodeState_ = NODE_STATE_STARTED;
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
+    if (curr_primary_path_ == self_primary_path_ && masterStarted_)
+    {
+        std::vector<std::string> node_list;
+        zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+        if (node_list.size() <= 1)
+        {
+            LOG(INFO) << "waiting other secondary nodes.";
+            // sleep to wait secondary node.
+            sleep(15);
+        }
+    }
     updateNodeState();
     updateCurrentPrimary();
 
