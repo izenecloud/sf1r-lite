@@ -159,6 +159,12 @@ void CollectionController::start_collection()
             return;
         }
     }
+    if(!DistributeRequestHooker::get()->prepare(Req_UpdateConfig, reqlog))
+    {
+        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
+        response().addError("prepare failed.");
+        return;
+    }
 
     bool ret = RecoveryChecker::get()->updateConfigFromAPI(collection,
         DistributeRequestHooker::get()->isRunningPrimary(), configFile, reqlog.config_file_list);
@@ -166,13 +172,6 @@ void CollectionController::start_collection()
     if (!ret)
     {
         response().addError("Update config error while starting collection.");
-        return;
-    }
-
-    if(!DistributeRequestHooker::get()->prepare(Req_UpdateConfig, reqlog))
-    {
-        LOG(ERROR) << "prepare failed in " << __FUNCTION__;
-        response().addError("prepare failed.");
         return;
     }
 
