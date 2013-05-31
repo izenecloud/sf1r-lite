@@ -58,7 +58,8 @@ void ProductRanker::loadScore_()
     for (std::size_t i = 0; i < docNum; ++i)
     {
         ProductScore score(rankParam_.docIds_[i],
-                           rankParam_.topKScores_[i]);
+                           rankParam_.topKScores_[i],
+                           docNum);
         evaluateScore_(score);
         scoreList_.push_back(score);
     }

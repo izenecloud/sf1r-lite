@@ -13,6 +13,7 @@
 
 #include <common/Keys.h>
 #include <common/Utilities.h>
+#include <common/QueryNormalizer.h>
 
 namespace sf1r
 {
@@ -759,8 +760,11 @@ void DocumentsController::log_group_label()
         requireGroupProperty(propName) &&
         requireGroupLabel(groupPath))
     {
+        std::string normalizedQuery;
+        QueryNormalizer::normalize(query, normalizedQuery);
+
         if (! miningSearchService_->clickGroupLabel(
-            query, propName, groupPath))
+                normalizedQuery, propName, groupPath))
         {
             response().addError("Request Failed.");
         }
@@ -827,10 +831,13 @@ void DocumentsController::get_freq_group_labels()
     Value& input = request()[Keys::resource];
     int limit = asUintOr(input[Keys::limit], 1);
 
+    std::string normalizedQuery;
+    QueryNormalizer::normalize(query, normalizedQuery);
+
     std::vector<std::vector<std::string> > pathVec;
     std::vector<int> freqVec;
     if (! miningSearchService_->getFreqGroupLabel(
-        query, propName, limit, pathVec, freqVec))
+            normalizedQuery, propName, limit, pathVec, freqVec))
     {
         response().addError("Request Failed.");
         return;
@@ -898,8 +905,11 @@ void DocumentsController::set_top_group_label()
         requireGroupProperty(propName) &&
         requireGroupLabelVec(groupPathVec))
     {
+        std::string normalizedQuery;
+        QueryNormalizer::normalize(query, normalizedQuery);
+
         if (! miningSearchService_->setTopGroupLabel(
-            query, propName, groupPathVec))
+                normalizedQuery, propName, groupPathVec))
         {
             response().addError("Request Failed.");
         }
