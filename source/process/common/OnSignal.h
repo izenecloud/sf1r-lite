@@ -23,6 +23,7 @@ namespace sf1r
  */
 void setupDefaultSignalHandlers();
 
+void waitSignalThread();
 /**
  * Handler accepts one argument which indicates the system signal number. 0
  * indicates the process exits normally.

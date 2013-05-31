@@ -23,6 +23,7 @@
 #endif
 
 static sigset_t maskset;
+static pthread_t sig_thread_id;
 
 namespace sf1r
 {
@@ -78,12 +79,13 @@ static void* sig_thread(void* arg)
         case SIGQUIT:
             LOG(INFO) << "got interrupt signal, begin quit : " << sig << std::endl;
             gRunHooksOnExitWithSignal(sig);
-            break;
+            return 0;
         default:
             LOG(INFO) << "got signal, ignore: " << sig << std::endl;
             break;
         }
     }
+    return 0;
 }
 
 void setupDefaultSignalHandlers()
@@ -102,8 +104,7 @@ void setupDefaultSignalHandlers()
         perror("failed to block signal!");
         exit(1);
     }
-    pthread_t thread;
-    ret = pthread_create(&thread, NULL, &sig_thread, (void*)&maskset);
+    ret = pthread_create(&sig_thread_id, NULL, &sig_thread, (void*)&maskset);
     
     if (ret != 0)
     {
@@ -111,6 +112,11 @@ void setupDefaultSignalHandlers()
         exit(1);
     }
 #endif // HAVE_SIGNAL_H
+}
+
+void waitSignalThread()
+{
+    pthread_join(sig_thread_id, NULL);
 }
 
 void gRunHooksOnExit()
