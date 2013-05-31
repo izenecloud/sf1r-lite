@@ -51,22 +51,22 @@ void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, co
         if(!fromautofill)
         {
             sql << "select query ,max(hit_docs_num) as hit_docs_num,count(*) as count ";
-        }
-        else
-        {
-            sql << " select query ,hit_docs_num,max(TimeStamp) as TimeStamp, count(*) as count ";
-        }
-        sql << " from " << UserQuery::TableName ;
-        if(!fromautofill)
-        {
+            sql << " from " << UserQuery::TableName ;
             sql << " where " << ("collection = '" + collectionName + "' and hit_docs_num > 0 and TimeStamp >= '" + time_string +"'");
+            sql << " group by " << "query";
+            sql <<";";
         }
         else
         {
-            sql << " where " << ("collection = '" + collectionName + "' and TimeStamp >= '" + time_string +"'");
+           sql << "select t1.query,t1.hit_docs_num,t2.count ";
+           sql << "from " << UserQuery::TableName ;
+           sql << " t1 inner join "; 
+           sql << "(select max(TimeStamp) as TimeStamp,count(*) as count  ";
+           sql << "from " << UserQuery::TableName ;
+           sql << "where " << ("collection = '" + collectionName+ "and TimeStamp >= '" + time_string +"' group by query) t2");
+           sql << "on t2.TimeStamp= t1.TimeStamp";
+           sql << ";";
         }
-        sql << " group by " << "query";
-        sql <<";";
         std::list<std::map<std::string, std::string> > res;
         UserQuery::find_by_sql(sql.str(), res);
         cout<<sql.str()<<endl;
