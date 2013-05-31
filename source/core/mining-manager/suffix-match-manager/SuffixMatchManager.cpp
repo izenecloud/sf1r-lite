@@ -119,12 +119,12 @@ size_t SuffixMatchManager::longestSuffixMatch(
             for (size_t j = 0; j < docid_list.size(); ++j)
             {
                 assert(doclen_list[j] > 0);
-                res_list_map[docid_list[i]] += double(max_match) / double(doclen_list[j]);
+                res_list_map[docid_list[j]] += double(max_match) / double(doclen_list[j]);
             }
 
             for (size_t j = 0; j < match_ranges.size(); ++j)
             {
-                total_match += match_ranges[i].second - match_ranges[i].first;
+                total_match += match_ranges[j].second - match_ranges[j].first;
             }
             docid_list.clear();
             doclen_list.clear();
