@@ -11,6 +11,7 @@
 namespace sf1r
 {
 std::string AutoFillChildManager::system_resource_path_;
+bool AutoFillChildManager::enableUpdateHitnum_;
 
 AutoFillChildManager::AutoFillChildManager(bool isfromSCD)
     : isFromSCD_(isfromSCD)
@@ -422,8 +423,7 @@ bool AutoFillChildManager::InitFromLog()
     boost::posix_time::ptime p = time_now - boost::gregorian::days(alllogdays_);
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
-
-    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records,true);
+    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records,AutoFillChildManager::enableUpdateHitnum_);
 
     list<ItemValueType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();
@@ -1221,7 +1221,7 @@ void AutoFillChildManager::updateFromLog()
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
 
-    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records,true);
+    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records,AutoFillChildManager::enableUpdateHitnum_);
 
     list<QueryType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();

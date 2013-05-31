@@ -97,10 +97,11 @@ private:
     template <typename Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
-        ar & cron ;
+        ar & cron & enableUpdateHitnum;
     }
 public:
     std::string cron;
+    bool enableUpdateHitnum;
 };
 
 /**

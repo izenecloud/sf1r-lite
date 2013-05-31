@@ -63,7 +63,7 @@ void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, co
         }
         else
         {
-            sql << " where " << ("collection = '" + collectionName + "' and hit_docs_num > 0 and TimeStamp >= '" + time_string +"'");
+            sql << " where " << ("collection = '" + collectionName + "' and TimeStamp >= '" + time_string +"'");
         }
         sql << " group by " << "query";
         sql <<";";
