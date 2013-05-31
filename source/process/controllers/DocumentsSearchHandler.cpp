@@ -27,6 +27,7 @@
 
 #include <common/Keys.h>
 #include <common/parsers/PageInfoParser.h>
+#include <common/QueryNormalizer.h>
 
 #include <log-manager/UserQuery.h>
 
@@ -944,6 +945,9 @@ void DocumentsSearchHandler::addAclFilters()
 
 void DocumentsSearchHandler::preprocess(KeywordSearchResult& searchResult)
 {
+    QueryNormalizer::normalize(actionItem_.env_.queryString_,
+                               actionItem_.env_.normalizedQueryString_);
+
     GroupLabelPreProcessor processor(miningSearchService_);
     processor.process(actionItem_, searchResult);
 }
