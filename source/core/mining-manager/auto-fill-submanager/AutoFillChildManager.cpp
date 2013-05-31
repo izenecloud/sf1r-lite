@@ -53,7 +53,7 @@ void AutoFillChildManager::SaveItem()
         }
         else
         {
-           //LOG(ERROR)<<"open saveItem file error"<<endl;
+            //LOG(ERROR)<<"open saveItem file error"<<endl;
         }
     }
 }
@@ -106,10 +106,10 @@ bool AutoFillChildManager::LoadWat()
 }
 
 bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath
-                                    , const std::string& collectionName
-                                    , const string& cronExpression
-                                    , const string& instanceName
-                                    , bool & isBuildFromLeveldb)
+        , const std::string& collectionName
+        , const string& cronExpression
+        , const string& instanceName
+        , bool & isBuildFromLeveldb)
 {
     AutofillPath_ = collectionPath.getQueryDataPath() + "/autofill" + "/" + instanceName;
     collectionName_ = collectionName;
@@ -195,11 +195,11 @@ bool AutoFillChildManager::PrepareForInit(const CollectionPath& collectionPath
 }
 
 bool AutoFillChildManager::Init_ForTest(const CollectionPath& collectionPath
-                                    , const std::string& collectionName
-                                    , const string& cronExpression
-                                    , const string& instanceName
-                                    , bool & isBuildFromLeveldb
-                                    , std::vector<UserQuery>& query_records)
+                                        , const std::string& collectionName
+                                        , const string& cronExpression
+                                        , const string& instanceName
+                                        , bool & isBuildFromLeveldb
+                                        , std::vector<UserQuery>& query_records)
 {
     isBuildFromLeveldb = false;
     if (!PrepareForInit(collectionPath, collectionName, cronExpression, instanceName, isBuildFromLeveldb))
@@ -423,7 +423,7 @@ bool AutoFillChildManager::InitFromLog()
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
 
-    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records);
+    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records,true);
 
     list<ItemValueType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();
@@ -568,39 +568,107 @@ void AutoFillChildManager::buildDbIndexForEach( std::pair<std::string,std::vecto
     queryover d1;
     queryequal d2;
     std::vector<QueryType>  havedone = valueToQueryTypeVector(value);
-    sameprefix.insert(sameprefix.end(),havedone.begin(),havedone.end());
-
     sort( sameprefix.begin(), sameprefix.end(), d1);
+    sort( havedone.begin(), havedone.end(), d1);
     vector<QueryTypeToDeleteDup> qtddvec;
-    unsigned int indextemp = 0;
-    for (unsigned int i = 1; i < sameprefix.size(); i++)
+    std::vector<QueryType>::iterator SubstrIter_a=sameprefix.begin(),SubstrIter_b=havedone.begin(),SubstrIter_a_end=sameprefix.end(),SubstrIter_b_end=havedone.end();
+    std::vector<QueryType>::iterator LastQueryType;
+    bool begin=true;
+    while(SubstrIter_a < SubstrIter_a_end || SubstrIter_b < SubstrIter_b_end)
     {
-        if(sameprefix[i].cmp(sameprefix[indextemp]))
+        if(SubstrIter_a==SubstrIter_a_end )
         {
-            sameprefix[indextemp].freq_ += sameprefix[i].freq_;
-            sameprefix[indextemp].HitNum_ =max( sameprefix[i].HitNum_,sameprefix[indextemp].HitNum_);
+            if(!begin)
+            {
+                if(d2(*LastQueryType,*SubstrIter_b))
+                {
+                    LastQueryType->freq_+=SubstrIter_b->freq_;
+                }
+                if(LastQueryType->HitNum_>0)
+                {
+                    QueryTypeToDeleteDup qtdd;
+                    qtdd.initfrom(*LastQueryType);
+                    qtddvec.push_back(qtdd);
+                }
+            }
+            LastQueryType=SubstrIter_b;
+            begin=false;
+            ++SubstrIter_b;
+            continue;
+        }
+        else if(SubstrIter_b==SubstrIter_b_end)
+        {
+            if(!begin)
+            {
+                if(d2(*LastQueryType,*SubstrIter_a))
+                {
+                    LastQueryType->freq_+=SubstrIter_a->freq_;
+                }
+                if(LastQueryType->HitNum_>0)
+                {
+                    QueryTypeToDeleteDup qtdd;
+                    qtdd.initfrom(*LastQueryType);
+                    qtddvec.push_back(qtdd);
+                }
+            }
+            LastQueryType=SubstrIter_a;
+            begin=false;
+            ++SubstrIter_a;
+            continue;
+        }
+        if((*SubstrIter_a).strQuery_> (*SubstrIter_b).strQuery_ )
+        {
+            if(!begin)
+            {
+                if(d2(*LastQueryType,*SubstrIter_a))
+                {
+                    LastQueryType->freq_+=SubstrIter_a->freq_;
+                    LastQueryType->HitNum_=SubstrIter_a->HitNum_;
+                }
+                if(LastQueryType->HitNum_>0)
+                {
+                    QueryTypeToDeleteDup qtdd;
+                    qtdd.initfrom(*LastQueryType);
+                    qtddvec.push_back(qtdd);
+                }
+            }
+            LastQueryType=SubstrIter_a;
+            begin=false;
+            ++SubstrIter_a;
         }
         else
         {
-            indextemp = i;
-
+            if(!begin)
+            {
+                if(d2(*LastQueryType,*SubstrIter_b))
+                {
+                    LastQueryType->freq_+=SubstrIter_b->freq_;
+                }
+                if(LastQueryType->HitNum_>0)
+                {
+                    QueryTypeToDeleteDup qtdd;
+                    qtdd.initfrom(*LastQueryType);
+                    qtddvec.push_back(qtdd);
+                }
+            }
+            LastQueryType=SubstrIter_b;
+            begin=false;
+            ++SubstrIter_b;
         }
     }
-    sameprefix.erase(std::unique(sameprefix.begin(), sameprefix.end(),d2), sameprefix.end());
-
-
-    for (unsigned i=0;i<sameprefix.size();i++)
+    if(!begin)
     {
-        QueryTypeToDeleteDup qtdd;
-        qtdd.initfrom(sameprefix[i]);
-        qtddvec.push_back(qtdd);
+        if(LastQueryType->HitNum_>0)
+        {
+            QueryTypeToDeleteDup qtdd;
+            qtdd.initfrom(*LastQueryType);
+            qtddvec.push_back(qtdd);
+        }
     }
-
     sort( qtddvec.begin(),qtddvec.end());
-
     qtddvec.erase(std::unique(qtddvec.begin(), qtddvec.end()), qtddvec.end());
     sameprefix.clear();
-    for (unsigned i=0;i<qtddvec.size();i++)
+    for (unsigned i=0; i<qtddvec.size(); i++)
     {
         sameprefix.push_back(qtddvec[i].qt_);
     }
@@ -996,6 +1064,14 @@ void AutoFillChildManager::buildWat_array(bool _fromleveldb)
                 break;
             ValueType newValue;
             newValue.setValueType(str);
+            /*
+                        if(newValue.HitNum_>0)
+                        {
+                            offset += *(uint32_t*)str;
+                            str += *(uint32_t*)str;
+                            continue;
+                        }
+            */
             newValue.getHitString(IDstring);
             if (IDstring != oldIDstring)
             {
@@ -1082,7 +1158,7 @@ void AutoFillChildManager::updateAutoFill(int calltype)
 {
     if (cronExpression_.matches_now())
     {
-       boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
+        boost::mutex::scoped_try_lock lock(buildCollectionMutex_);
 
         if (lock.owns_lock() == false)
         {
@@ -1145,7 +1221,7 @@ void AutoFillChildManager::updateFromLog()
     std::string time_string = boost::posix_time::to_iso_string(p);
     std::vector<UserQuery> query_records;
 
-    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records);
+    LogAnalysis::getRecentKeywordFreqList(collectionName_, time_string, query_records,true);
 
     list<QueryType> querylist;
     std::vector<UserQuery>::const_iterator it = query_records.begin();
