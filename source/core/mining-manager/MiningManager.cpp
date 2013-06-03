@@ -2293,17 +2293,15 @@ bool MiningManager::GetSuffixMatch(
 
                     unsigned int maxTokenCount = 4;
                     unsigned int count = 0;
-
+                    double boundary = v_pair[maxTokenCount - 1].second;
                     std::list<std::pair<UString, double> > new_major_tokens;
                     for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
                     {
-                        if (count < maxTokenCount)
+                        if (count < maxTokenCount && i->second >= boundary)
                         {
                             new_major_tokens.push_back(*i);
                             count++;
                         }
-                        else
-                            break;
                     }
 
                     cout<<"The new prune query is";

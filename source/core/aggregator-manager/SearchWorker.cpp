@@ -435,7 +435,7 @@ bool SearchWorker::getSearchResult_(
     default:
         unsigned int QueryPruneTimes = 2;
         bool isUsePrune = false;
-        isUsePrune = actionOperation.actionItem_.searchingMode_.useQueryPrune_;
+        //isUsePrune = actionOperation.actionItem_.searchingMode_.useQueryPrune_;
         bool is_getResult = true;
         if (!searchManager_->searchBase_->search(actionOperation,
                                                  resultItem,
