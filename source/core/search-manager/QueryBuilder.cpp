@@ -783,6 +783,7 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
         }
         catch(std::exception& e)
         {
+            LOG (ERROR) << "exception in virtual keyword search...";
             delete pIterator;
             return false;
         }
