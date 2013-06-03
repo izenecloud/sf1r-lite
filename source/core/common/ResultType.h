@@ -104,6 +104,7 @@ public:
         ss << "==== Class KeywordSearchResult ====" << endl;
         ss << "-----------------------------------" << endl;
         ss << "rawQueryString_    : " << rawQueryString_ << endl;
+        ss << "pruneQueryString_  : " << pruneQueryString_ << endl;
         ss << "encodingType_      : " << encodingType_ << endl;
         ss << "collectionName_    : " << collectionName_ << endl;
         ss << "analyzedQuery_     : " ;
@@ -269,6 +270,8 @@ public:
     }
 
     std::string rawQueryString_;
+
+    std::string pruneQueryString_;
 
     /// Distributed search info
     DistKeywordSearchInfo distSearchInfo_;

@@ -36,6 +36,7 @@ class SearchManager;
 class MiningManager;
 class QueryIdentity;
 class SearchCache;
+class QueryPruneFactory;
 
 class SearchWorker : public net::aggregator::BindCallProxyBase<SearchWorker>
 {
@@ -159,6 +160,8 @@ private:
     ilplib::qa::QuestionAnalysis* pQA_;
 
     AnalysisInfo analysisInfo_;
+    boost::shared_ptr<QueryPruneFactory> queryPruneFactory_;
+
 
     friend class IndexBundleActivator;
     friend class MiningBundleActivator;
