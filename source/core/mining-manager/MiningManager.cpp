@@ -2201,6 +2201,19 @@ bool MiningManager::GetSuffixMatch(
         std::list<std::pair<UString, double> > major_tokens;
         std::list<std::pair<UString, double> > minor_tokens;
         suffixMatchManager_->GetTokenResults(pattern, major_tokens, minor_tokens, analyzedQuery);
+        for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+        {
+            std::string key;
+            (i->first).convertString(key, izenelib::util::UString::UTF_8);
+            cout << key << " " << i->second << endl;
+        }
+        cout<<"-----"<<endl;
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+        {
+            std::string key;
+            (i->first).convertString(key, izenelib::util::UString::UTF_8);
+            cout << key << " " << i->second << endl;
+        }
 
         if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true && 
                                     major_tokens.size() + minor_tokens.size() < 7 && major_tokens.size() < 4)
