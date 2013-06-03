@@ -770,6 +770,8 @@ namespace sf1r {
         void GetFuzzyKeywords_(const ATermList& term_list, KeywordVector& keyword_vector, cid_t cid);
         void SearchKeywordsFilter_(std::vector<KeywordTag>& keywords);
         bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
+        void GenContributor_(KeywordTag& tag);
+        void MergeContributor_(CategoryContributor& cc, const CategoryContributor& cc2);
         void Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
         uint32_t GetCidByMaxDepth_(uint32_t cid);

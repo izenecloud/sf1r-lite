@@ -3003,6 +3003,15 @@ bool ProductMatcher::EqualOrIsParent_(uint32_t parent, uint32_t child) const
     }
     return false;
 }
+
+void ProductMatcher::GenContributor_(KeywordTag& tag)
+{
+}
+
+void ProductMatcher::MergeContributor_(CategoryContributor& cc, const CategoryContributor& cc2)
+{
+}
+
 void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products)
 {
     UString title;
