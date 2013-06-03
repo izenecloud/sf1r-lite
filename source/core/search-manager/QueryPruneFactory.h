@@ -11,10 +11,14 @@
 #include "QueryPruneBase.h"
 #include "QueryPruneALL.h"
 #include "common/type_defs.h"
+#include <boost/shared_ptr.hpp>
+
 #include <map>
 
 namespace sf1r
 {
+class SuffixMatchManager;
+class MiningManager;
 
 enum QueryPruneType 
 {
@@ -27,12 +31,16 @@ class QueryPruneFactory
 {
 public:
     QueryPruneFactory();
+
+    void init(boost::shared_ptr<MiningManager>& miningManager_);
+
     ~QueryPruneFactory();
 
     QueryPruneBase* getQueryPrune(QueryPruneType type) const;
 
 private:
     std::map<QueryPruneType, QueryPruneBase*> QueryPruneMap_;
+    boost::shared_ptr<MiningManager> miningManager_;
 };
 
 }

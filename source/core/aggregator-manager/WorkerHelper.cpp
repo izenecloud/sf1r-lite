@@ -43,7 +43,7 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
         if ( action.queryTreeMap_.find( *propertyIter ) != action.queryTreeMap_.end()
                 && action.propertyTermInfo_.find( *propertyIter ) != action.propertyTermInfo_.end() )
             continue;
-        std::cout << "----------------->  processing query for Property : " << *propertyIter << std::endl;
+        //std::cout << "----------------->  processing query for Property : " << *propertyIter << std::endl;
 
         QueryTreePtr tmpQueryTree;
         if ( applyLA )
@@ -87,7 +87,7 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
         else // store raw query's info into it.
             tmpQueryTree = action.rawQueryTree_;
 
-        tmpQueryTree->print();
+        //tmpQueryTree->print();
         action.queryTreeMap_.insert( std::make_pair(*propertyIter,tmpQueryTree) );
         PropertyTermInfo ptInfo;
         tmpQueryTree->getPropertyTermInfo(ptInfo);

@@ -114,6 +114,11 @@
 namespace sf1r
 {
 
+bool greater_pair(const std::pair<std::string, double>& obj1, const std::pair<std::string, double>& obj2)
+{
+    return obj1.second > obj2.second;
+}
+
 using namespace boost::filesystem;
 using namespace izenelib::ir::idmanager;
 namespace bfs = boost::filesystem;
@@ -2150,7 +2155,8 @@ bool MiningManager::GetSuffixMatch(
         std::size_t& totalCount,
         faceted::GroupRep& groupRep,
         sf1r::faceted::OntologyRep& attrRep,
-        UString& analyzedQuery)
+        UString& analyzedQuery,
+        std::string& pruneQueryString_)
 {
     if (!mining_schema_.suffixmatch_schema.suffix_match_enable || !suffixMatchManager_)
         return false;
@@ -2204,15 +2210,23 @@ bool MiningManager::GetSuffixMatch(
             std::list<std::pair<UString, double> > major_tokens_frune;
             std::list<std::pair<UString, double> > minor_tokens_frune;
     
+            cout<<"major_tokens: ";
             for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin();
                     i != major_tokens.end(); ++i)
             {
+                std::string key;
+                (i->first).convertString(key, izenelib::util::UString::UTF_8);
+                cout<<key<<" ";
                 major_tokens_frune.push_back(*i);
             }
-
+            cout<<endl<<"minor_tokens: ";
             for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
                     i != minor_tokens.end(); ++i)
             {
+
+                std::string key;
+                (i->first).convertString(key, izenelib::util::UString::UTF_8);
+                cout<<key<<" ";
                 major_tokens_frune.push_back(*i);
             }
 
@@ -2251,7 +2265,55 @@ bool MiningManager::GetSuffixMatch(
                                         filter_param,
                                         actionOperation.actionItem_.groupParam_,
                                         res_list);
+            if (res_list.empty())
+            {
+                if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true && major_tokens.size() >= 5)
+                {
+                    std::vector<std::pair<std::string, double> > v_pair;
+                    for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+                    {
+                        std::string key;
+                        (i->first).convertString(key, izenelib::util::UString::UTF_8);
+                        v_pair.push_back(make_pair(key, i->second));
+                    }
+                    std::sort(v_pair.begin(), v_pair.end(), greater_pair);
 
+                    unsigned int maxTokenCount = 4;
+                    unsigned int count = 0;
+
+                    std::list<std::pair<UString, double> > new_major_tokens;
+                    for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+                    {
+                        if (count < maxTokenCount)
+                        {
+                            new_major_tokens.push_back(*i);
+                            count++;
+                        }
+                        else
+                            break;
+                    }
+
+                    cout<<"The new prune query is";
+                    for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); i != new_major_tokens.end(); ++i)
+                    {
+                        std::string word;
+                        (i->first).convertString(word, izenelib::util::UString::UTF_8);
+                        cout<<" " << word;
+                        pruneQueryString_ += word;
+                        pruneQueryString_ += " ";
+                    }
+                    cout<<endl;
+                    totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                        new_major_tokens,
+                                        minor_tokens,
+                                        search_in_properties,
+                                        max_docs,
+                                        actionOperation.actionItem_.searchingMode_.filtermode_,
+                                        filter_param,
+                                        actionOperation.actionItem_.groupParam_,
+                                        res_list);
+                }
+            }
         }
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)

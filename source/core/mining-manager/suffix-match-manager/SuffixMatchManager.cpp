@@ -149,6 +149,7 @@ void SuffixMatchManager::GetTokenResults(std::string pattern,
                                 UString& analyzedQuery)
 {
     tokenizer_->GetTokenResults(pattern, major_tokens, manor_tokens, analyzedQuery);
+    //
 }
 
 size_t SuffixMatchManager::AllPossibleSuffixMatch(

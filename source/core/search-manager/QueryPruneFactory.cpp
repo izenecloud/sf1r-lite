@@ -1,10 +1,17 @@
 #include "QueryPruneFactory.h"
+#include <mining-manager/MiningManager.h>
 
 namespace sf1r{
 
     QueryPruneFactory::QueryPruneFactory()
     {
-        QueryPruneBase* and_qr = new AddQueryPrune();
+
+    }
+
+    void QueryPruneFactory::init(boost::shared_ptr<MiningManager>& miningManager_)
+    {
+        QueryPruneBase* and_qr = new AddQueryPrune(miningManager_);
+
         QueryPruneBase* qa_qr = new QAQueryPrune();
         QueryPruneMap_[QA_TRIGGER] = qa_qr;
         QueryPruneMap_[AND_TRIGGER] = and_qr;

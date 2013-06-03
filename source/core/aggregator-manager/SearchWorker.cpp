@@ -424,7 +424,8 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.totalCount_,
                                             resultItem.groupRep_,
                                             resultItem.attrRep_,
-                                            resultItem.analyzedQuery_))
+                                            resultItem.analyzedQuery_,
+                                            resultItem.pruneQueryString_))
         {
             return true;
         }
@@ -432,16 +433,22 @@ bool SearchWorker::getSearchResult_(
         break;
 
     default:
+        unsigned int QueryPruneTimes = 2;
+        bool isUsePrune = false;
+        isUsePrune = actionOperation.actionItem_.searchingMode_.useQueryPrune_;
+        bool is_getResult = true;
         if (!searchManager_->searchBase_->search(actionOperation,
                                                  resultItem,
                                                  search_limit,
-                                                 topKStart))
+                                                 topKStart) || resultItem.totalCount_ == 0)
         {
+            cout<<"resultItem.totalCount_:"<<resultItem.totalCount_<<endl;
             if (time(NULL) - start_search > 5)
             {
                 LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
                 actionOperation.actionItem_.print();
             }
+
             /// muti thread ....
             /// * star search 
             const bool isFilterQuery =
@@ -451,11 +458,10 @@ bool SearchWorker::getSearchResult_(
                 return true;
 
             /// query frune 
-            std::string newQuery;
             QueryPruneBase* queryPrunePtr = NULL;
             QueryPruneType qrType;
 
-            if ( actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true)
+            if ( isUsePrune == true)
             {
                 qrType = AND_TRIGGER;
             }
@@ -464,36 +470,35 @@ bool SearchWorker::getSearchResult_(
             else
                 return true;
 
-            queryPrunePtr = queryPruneFactory_->getQueryPrune(qrType);
-            if (queryPrunePtr != NULL)
+            std::string rawQuery = actionOperation.actionItem_.env_.queryString_;
+
+            do
             {
-                if(!queryPrunePtr->queryPrune(keywords, newQuery))
+                std::string newQuery = "";
+                queryPrunePtr = queryPruneFactory_->getQueryPrune(qrType);
+
+                if (queryPrunePtr != NULL)
                 {
-                    LOG(INFO) << "There is no Prune query";
+                    if(!queryPrunePtr->queryPrune(rawQuery, keywords, newQuery))
+                    {
+                        LOG(INFO) << "There is no Prune query";
+                        return true;
+                    }
+                }
+                LOG(INFO) << "[QUERY PRUNE] the new query is" <<  newQuery << endl;
+                actionOperation.actionItem_.env_.queryString_ = newQuery;
+                resultItem.propertyQueryTermList_.clear();
+                if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+                {
                     return true;
                 }
-            }
-
-            actionOperation.actionItem_.env_.queryString_ = newQuery;
-            resultItem.propertyQueryTermList_.clear();
-            if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
-            {
-                return true;
-            }
-
-            if (!searchManager_->searchBase_->search(actionOperation,
-                                                     resultItem,
-                                                     search_limit,
-                                                     topKStart))
-            {
-                if (time(NULL) - start_search > 5)
-                {
-                    LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
-                    actionOperation.actionItem_.print();
-                }
-
-                return true;
-            }
+                QueryPruneTimes--;
+                is_getResult =  searchManager_->searchBase_->search(actionOperation,
+                                                         resultItem,
+                                                         search_limit,
+                                                         topKStart);
+                rawQuery = newQuery;
+            } while(isUsePrune && QueryPruneTimes > 0 && (!is_getResult || resultItem.totalCount_ == 0));
         }
         break;
     }

@@ -8,6 +8,7 @@
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchFactory.h>
 #include <search-manager/SearchManager.h>
+#include <search-manager/QueryPruneFactory.h>
 #include <ranking-manager/RankingManager.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAManager.h>
@@ -153,8 +154,11 @@ bool IndexBundleActivator::addingService( const ServiceReference& ref )
         {
             MiningSearchService* service = reinterpret_cast<MiningSearchService*> ( const_cast<IService*>(ref.getService()) );
             cout << "[IndexBundleActivator#addingService] Calling MiningSearchService..." << endl;
-            searchService_->searchMerger_->miningManager_ = service->GetMiningManager();
             searchService_->searchWorker_->miningManager_ = service->GetMiningManager();
+            searchService_->searchMerger_->miningManager_ = service->GetMiningManager();
+
+            searchService_->searchWorker_->queryPruneFactory_->init(searchService_->searchWorker_->miningManager_);
+
             searchManager_->setMiningManager(service->GetMiningManager());
             return true;
         }

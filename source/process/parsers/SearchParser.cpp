@@ -368,6 +368,7 @@ bool SearchParser::parse(const Value& search)
         else
         {
             warning() = "Unknown searchingMode. Default searching mode is used.";
+            searchingModeInfo_.useQueryPrune_ = asBool(searching_mode[Keys::query_prune]);
         }
 
         if (searching_mode.hasKey(Keys::threshold))

@@ -129,6 +129,7 @@ class CTRManager;
 class GroupFilterBuilder;
 }
 
+
 /**
  * @brief MiningManager manages all the data mining tasks.
  * Those tasks needs heavy offline mining computation. Also, it manages the online query to
@@ -383,7 +384,8 @@ public:
             std::size_t& totalCount,
             faceted::GroupRep& groupRep,
             sf1r::faceted::OntologyRep& attrRep,
-            UString& analyzedQuery);
+            UString& analyzedQuery,
+            std::string& pruneQuery);
 
     bool GetProductCategory(const std::string& squery, int limit, std::vector<std::vector<std::string> >& pathVec );
 
@@ -482,10 +484,17 @@ public:
     }
 
     void updateMergeFuzzyIndex(int calltype);
+    
     RTypeStringPropTableBuilder* GetRTypeStringPropTableBuilder()
     {
         return rtypeStringPropTableBuilder_;
     }
+
+    SuffixMatchManager* getSuffixManager()
+    {
+        return suffixMatchManager_;
+    }
+
 
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>

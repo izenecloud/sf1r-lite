@@ -216,11 +216,6 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
         const std::string& query =
             actionOperation.actionItem_.env_.queryString_;
 
-        //xxx
-        /*
-        std::string reset_query = reset_query(query);
-        research(reset_query);
-        */
         LOG(INFO) << "empty search result for query [" << query << "]";
         return false;
     }

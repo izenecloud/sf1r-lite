@@ -19,7 +19,9 @@ public:
 
     virtual ~QueryPruneBase() {}
 
-    virtual bool queryPrune(const std::vector<izenelib::util::UString> keywords, std::string& newQuery) = 0;
+    virtual bool queryPrune(std::string& query_orig,
+                    std::vector<izenelib::util::UString> keywords,
+                    std::string& newQuery) = 0;
 };
 
 }
