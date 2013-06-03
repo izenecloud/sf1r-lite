@@ -25,7 +25,7 @@
 
 #include <boost/asio.hpp>
 #include <mining-manager/query-correction-submanager//QueryCorrectionSubmanager.h>
-
+#include <mining-manager/auto-fill-submanager/AutoFillChildManager.h>
 using namespace std;
 using namespace izenelib::util::ticpp;
 
@@ -1502,7 +1502,16 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
 
     //for autofill
     params.GetString("AutofillPara/cron", mining_config.autofill_param.cron);
-
+    bool enableUpdateHitnumget=params.Get("AutofillPara/enableUpdateHitnum", mining_config.autofill_param.enableUpdateHitnum);
+    if(!enableUpdateHitnumget)
+    {
+        AutoFillChildManager::enableUpdateHitnum_=false;
+        mining_config.autofill_param.enableUpdateHitnum=false;
+    }
+    else
+    {
+        AutoFillChildManager::enableUpdateHitnum_= mining_config.autofill_param.enableUpdateHitnum;
+    }
     //for fuzzy search
     params.GetString("FuzzyIndexMergePara/cron", mining_config.fuzzyIndexMerge_param.cron);
 
@@ -1525,8 +1534,16 @@ void CollectionConfig::parseMiningBundleParam(const ticpp::Element * mining, Col
     //for query correction
     params.Get("QueryCorrectionPara/enableEK", mining_config.query_correction_param.enableEK);
     params.Get("QueryCorrectionPara/enableCN", mining_config.query_correction_param.enableCN);
-    params.Get("QueryCorrectionPara/fromDb", mining_config.query_correction_param.fromDb);
-    QueryCorrectionSubmanager::system_fromDb_= mining_config.query_correction_param.fromDb;
+    bool fromDbget=params.Get("QueryCorrectionPara/fromDb", mining_config.query_correction_param.fromDb);
+    if(!fromDbget)
+    {
+        mining_config.query_correction_param.fromDb=false;
+        QueryCorrectionSubmanager::system_fromDb_=false;
+    }
+    else
+    {
+        QueryCorrectionSubmanager::system_fromDb_= mining_config.query_correction_param.fromDb;
+    }
     QueryCorrectionSubmanager::getInstance();
 
 

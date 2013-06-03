@@ -37,7 +37,14 @@ void prepareQueryData_Update(std::vector<UserQuery> & QueryList)
     {
         ++queryCount;
         UserQuery userQuery;
-        userQuery.setHitDocsNum(queryCount);
+        if("iphone4s"==*i)
+        {
+           userQuery.setHitDocsNum(0);
+        }
+        else
+        {
+           userQuery.setHitDocsNum(queryCount);
+        }
         userQuery.setCount(queryCount);
         userQuery.setQuery(*i);
 
@@ -146,14 +153,14 @@ public:
         izenelib::util::UString Uquery(prefix, izenelib::util::UString::UTF_8);
         ResultList.clear();
         autofillManager_->getAutoFillList(Uquery, ResultList);
-        BOOST_CHECK_EQUAL(ResultList.size(), 8U);
+        BOOST_CHECK_EQUAL(ResultList.size(), 7U);
         cout<<"TEST 1"<<endl;
         izenelib::util::UString USTR;
         USTR = ResultList[0].first;
         USTR.convertString(topString, izenelib::util::UString::UTF_8);
         USTR = ResultList[ResultList.size() - 1].first;
         USTR.convertString(bottomString, izenelib::util::UString::UTF_8);
-        BOOST_CHECK_EQUAL(topString, "iphone4s");
+        BOOST_CHECK_EQUAL(topString, "iphone");
         BOOST_CHECK_EQUAL(bottomString, "ipad 3");
 
         prefix = "j";

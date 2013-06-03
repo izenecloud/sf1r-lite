@@ -22,11 +22,13 @@ struct ProductScore
     score_t topKScore_;
     merchant_id_t singleMerchantId_; // used in merchant diversity
     std::vector<score_t> rankScores_;
+    int topKNum_;
 
-    ProductScore(docid_t docId, score_t topKScore)
+    ProductScore(docid_t docId, score_t topKScore, int topKNum)
         : docId_(docId)
         , topKScore_(topKScore)
         , singleMerchantId_(0)
+        , topKNum_(topKNum)
     {}
 
     /**
@@ -45,6 +47,7 @@ struct ProductScore
         swap(topKScore_, other.topKScore_);
         swap(singleMerchantId_, other.singleMerchantId_);
         swap(rankScores_, other.rankScores_);
+        swap(topKNum_, other.topKNum_);
     }
 };
 

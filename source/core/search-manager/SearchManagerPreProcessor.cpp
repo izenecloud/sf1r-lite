@@ -307,7 +307,7 @@ ProductScorer* SearchManagerPreProcessor::createProductScorer(
     if (!isProductRanking_(actionItem))
         return relevanceScorerPtr.release();
 
-    ProductScoreParam scoreParam(actionItem.env_.queryString_,
+    ProductScoreParam scoreParam(actionItem.env_.normalizedQueryString_,
                                  actionItem.env_.querySource_,
                                  actionItem.groupParam_.boostGroupLabels_,
                                  propSharedLockSet,

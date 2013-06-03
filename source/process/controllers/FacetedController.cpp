@@ -2,6 +2,7 @@
 #include "CollectionHandler.h"
 
 #include <common/Keys.h>
+#include <common/QueryNormalizer.h>
 #include <bundles/mining/MiningSearchService.h>
 #include <mining-manager/merchant-score-manager/MerchantScore.h>
 #include <mining-manager/merchant-score-manager/MerchantScoreParser.h>
@@ -653,7 +654,10 @@ void FacetedController::set_custom_rank()
         getDocIdList_(Keys::top_docid_list, customDocStr.topIds) &&
         getDocIdList_(Keys::exclude_docid_list, customDocStr.excludeIds))
     {
-        if (! miningSearchService_->setCustomRank(query, customDocStr))
+        std::string normalizedQuery;
+        QueryNormalizer::normalize(query, normalizedQuery);
+
+        if (! miningSearchService_->setCustomRank(normalizedQuery, customDocStr))
         {
             response().addError("failed to set custom rank for some DOCIDs.");
         }
@@ -718,11 +722,14 @@ void FacetedController::get_custom_rank()
     if (requireKeywords_(query) &&
         getPropNameList_(propNameList))
     {
+        std::string normalizedQuery;
+        QueryNormalizer::normalize(query, normalizedQuery);
+
         std::vector<Document> topDocList;
         std::vector<Document> excludeDocList;
 
-        if (miningSearchService_->getCustomRank(query,
-            topDocList, excludeDocList))
+        if (miningSearchService_->getCustomRank(normalizedQuery,
+                                                topDocList, excludeDocList))
         {
             renderCustomRank_(Keys::top_docs, topDocList, propNameList);
             renderCustomRank_(Keys::exclude_docs, excludeDocList, propNameList);

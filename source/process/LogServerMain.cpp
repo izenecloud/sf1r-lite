@@ -30,6 +30,7 @@ int main(int argc, char* argv[])
             {
                 logServerProcess.start();
                 logServerProcess.join();
+                waitSignalThread();
             }
             else
             {

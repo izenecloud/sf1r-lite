@@ -269,6 +269,7 @@ public:
     std::vector<QueryType> valueToQueryTypeVector(string value);
     
     static std::string system_resource_path_;
+    static bool enableUpdateHitnum_;
 
 private:
     bool isFromSCD_;

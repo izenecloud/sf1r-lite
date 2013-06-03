@@ -69,6 +69,12 @@ IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND AND Boost_SERIALIZATION_FOUND
     )
   TARGET_LINK_LIBRARIES(t_pairwise_scd_meger ${libs})
 
+  ADD_EXECUTABLE(t_QueryNormalizer
+    Runner.cpp
+    t_QueryNormalizer.cpp
+    )
+  TARGET_LINK_LIBRARIES(t_QueryNormalizer ${libs})
+
 ENDIF()
 
 ADD_EXECUTABLE(ScdMerger

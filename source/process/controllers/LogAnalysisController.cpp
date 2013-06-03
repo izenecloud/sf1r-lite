@@ -3,6 +3,7 @@
 #include <log-manager/SystemEvent.h>
 #include <log-manager/UserQuery.h>
 #include <log-manager/ProductCount.h>
+#include <log-manager/LogAnalysis.h>
 #include <common/SFLogger.h>
 #include <common/parsers/OrderArrayParser.h>
 #include <common/parsers/ConditionArrayParser.h>
@@ -257,8 +258,13 @@ void LogAnalysisController::system_events()
  * - @b user_queries: All user queries which fit conditions.
  *
  */
-void LogAnalysisController::user_queries()
+void LogAnalysisController::get_freq_user_queries_from_logserver()
 {
+    if(!(RDbConnection::instance().logServer()))
+    {
+        user_queries();
+        return;
+    }
     bool existAggregateFunc = false;
     std::string collection_name;
     std::string begin_time;
@@ -378,8 +384,13 @@ void LogAnalysisController::user_queries()
  * - @b user_queries: All user queries which fit conditions.
  *
  */
-void LogAnalysisController::get_freq_user_queries_from_logserver()
+void LogAnalysisController::user_queries()
 {
+    if(RDbConnection::instance().logServer())
+    {
+        get_freq_user_queries_from_logserver();
+        return;
+    }
     bool existAggregateFunc = false;
     string select = parseSelect(existAggregateFunc);
     string conditions = parseConditions();

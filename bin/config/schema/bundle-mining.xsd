@@ -75,6 +75,7 @@
     </xs:complexType>
     <xs:complexType name="AutofillParaType">
         <xs:attribute name="cron" type="xs:string" use="required" />
+        <xs:attribute name="enableUpdateHitnum" type="YesNoType" use="optional" />
     </xs:complexType>
     <xs:complexType name="FuzzyIndexMergeParaType">
         <xs:attribute name="cron" type="xs:string" use="required" />
