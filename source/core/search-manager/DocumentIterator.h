@@ -89,14 +89,30 @@ public:
         return;
     }
     
-    virtual void setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap)
+    virtual void setUB( bool useOriginalQuery
+              , UpperBoundInProperties& ubmap)
     {
         return;
     }
-    
+
+    virtual float getUB()
+    {
+        return 0.0;
+    }
+
+    virtual const char* getProperty()
+    {
+        return NULL;
+    }
+
     virtual void initThreshold(float threshold)
     {
         return;
+    }
+
+    void setMissRate(float missRate)
+    {
+        missRate_ = missRate;
     }
 
     void setCurrent(bool current)
@@ -129,6 +145,8 @@ protected:
     bool not_; ///whether it is NOT iterator
 
     bool scorer_;
+
+    float missRate_; ///for WAND overlap fearture
 };
 
 }

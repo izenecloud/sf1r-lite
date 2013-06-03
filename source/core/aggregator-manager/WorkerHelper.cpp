@@ -22,33 +22,58 @@ void assembleConjunction(std::vector<izenelib::util::UString> keywords, std::str
     }
 }
 
-void assembleDisjunction(std::vector<izenelib::util::UString> keywords
-                         , std::string& result
-                         , SearchingMode::SearchingModeType mode)
+void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result)
 {
     result.clear();
     int size = keywords.size();
-    if (SearchingMode::OR == mode)
+    for(int i = 0; i < size; ++i)
     {
-        for(int i = 0; i < size; ++i)
-        {
-            std::string str;
-            keywords[i].convertString(str, izenelib::util::UString::UTF_8);
-            result += str;
-            result += "|";
-        }
-        boost::trim_right_if(result, boost::is_any_of("|"));
+        std::string str;
+        keywords[i].convertString(str, izenelib::util::UString::UTF_8);
+        result += str;
+        result += "|";
     }
-    else if (SearchingMode::WAND == mode)
+    boost::trim_right_if(result, boost::is_any_of("|"));
+}
+
+static void buildWANDQueryTree(QueryTreePtr& rawQueryTree)
+{
+    if (rawQueryTree->type_ == QueryTree::KEYWORD)
+        return;
+    rawQueryTree->type_ = QueryTree::WAND;
+    QTIter it = rawQueryTree->children_.begin();
+    for (; it != rawQueryTree->children_.end(); it++)
     {
-        for(int i = 0; i < size; ++i)
+        if (QueryTree::KEYWORD == (*it)->type_)
         {
-            std::string str;
-            keywords[i].convertString(str, izenelib::util::UString::UTF_8);
-            result += str;
-            result += "#";
+            rawQueryTree->type_ = QueryTree::WAND;
+            return;
         }
-        boost::trim_right_if(result, boost::is_any_of("#"));
+        buildWANDQueryTree((*it));
+    }
+}
+
+static void buildWANDQueryTree(QueryTreePtr& rawQueryTree, QueryTreePtr& analyzedQueryTree)
+{
+    if (QueryTree::KEYWORD == rawQueryTree->type_)
+    {
+        if (analyzedQueryTree->children_.begin() != analyzedQueryTree->children_.end())
+            analyzedQueryTree->type_ = QueryTree::WAND;
+        return;
+    }
+    analyzedQueryTree->type_ = QueryTree::WAND;
+    QTIter itRaw = rawQueryTree->children_.begin();
+    QTIter itAna = analyzedQueryTree->children_.begin();
+    for (; itRaw != rawQueryTree->children_.end() 
+         , itAna != analyzedQueryTree->children_.end(); itRaw++, itAna++)
+    {
+        if (QueryTree::KEYWORD == (*itRaw)->type_)
+        {
+            if ((*itAna)->children_.begin() != (*itAna)->children_.end())
+                (*itAna)->type_ = QueryTree::WAND;
+        }
+        else
+            buildWANDQueryTree((*itRaw), (*itAna));
     }
 }
 
@@ -73,6 +98,10 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
         action.isPhraseOrWildcardQuery_ = true;
 
     //queryUStr.convertString(action.actionItem_.env_.queryString_, encodingType);
+    if (action.actionItem_.searchingMode_.mode_ == SearchingMode::WAND) 
+    {
+        buildWANDQueryTree(action.rawQueryTree_);
+    }
     action.rawQueryTree_->print();
 
     // Build property query map
@@ -129,6 +158,11 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
         else // store raw query's info into it.
             tmpQueryTree = action.rawQueryTree_;
 
+        if (action.actionItem_.searchingMode_.mode_ == SearchingMode::WAND) 
+        {
+            buildWANDQueryTree(action.rawQueryTree_, tmpQueryTree);
+        }
+        
         tmpQueryTree->print();
         action.queryTreeMap_.insert( std::make_pair(*propertyIter,tmpQueryTree) );
         PropertyTermInfo ptInfo;

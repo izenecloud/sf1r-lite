@@ -1260,6 +1260,7 @@ bool QueryBuilder::do_prepare_for_property_(
         cout<<"AND query "<<property<<endl;
 #endif
         DocumentIterator* pIterator = new ANDDocumentIterator();
+        pIterator->setMissRate(queryTree->children_.size());
         bool ret = false;
         try
         {
@@ -1323,14 +1324,13 @@ bool QueryBuilder::do_prepare_for_property_(
         cout<<"WAND query "<<property<<endl;
 #endif
         DocumentIterator* pIterator = new WANDDocumentIterator();
+        pIterator->setMissRate(queryTree->children_.size());
         bool ret = false;
         try
         {
             for (QTIter wandChildIter = queryTree->children_.begin();
                     wandChildIter != queryTree->children_.end(); ++wandChildIter)
             {
-                if (QueryTree::KEYWORD != (*wandChildIter)->type_)
-                    continue;
                 ret |= do_prepare_for_property_(
                            *wandChildIter,
                            colID,
@@ -1387,6 +1387,7 @@ bool QueryBuilder::do_prepare_for_property_(
         cout<<"OR query "<<property<<endl;
 #endif
         DocumentIterator* pIterator = new ORDocumentIterator();
+        pIterator->setMissRate(queryTree->children_.size());
         bool ret = false;
         try
         {

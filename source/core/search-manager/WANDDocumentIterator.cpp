@@ -11,16 +11,22 @@
  */
 
 #include "WANDDocumentIterator.h"
-using namespace sf1r;
+#include <common/type_defs.h>
+#include <util/get.h>
+
+namespace sf1r
+{
 
 WANDDocumentIterator::WANDDocumentIterator()
 {
-    
+    currThreshold_ = 0.0;
+    currDoc_   = 0;
+    pivotDoc_  = 0;
 }
 
 WANDDocumentIterator::~WANDDocumentIterator()
 {
-    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
     for (; iter != docIteratorList_.end(); ++iter)
     {
         if(*iter)
@@ -30,73 +36,62 @@ WANDDocumentIterator::~WANDDocumentIterator()
 
 void WANDDocumentIterator::add(DocumentIterator* pDocIterator)
 {
-    TermDocumentIterator* pTermDocIter = (TermDocumentIterator*)pDocIterator;
     boost::mutex::scoped_lock lock(mutex_);
-    docIteratorList_.push_back(pTermDocIter);
+    docIteratorList_.push_back(pDocIterator);
 }
 
 void WANDDocumentIterator::setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap)
 {
     if (docIteratorList_.begin() == docIteratorList_.end())
         return;
-
-    float sum = 0.0F, termThreshold = 0.0F;
-    size_t nTerms = 0, nZeroTerms = 0;
     
-    ID_FREQ_MAP_T& ubs = ubmap[(*docIteratorList_.begin())->property_]; 
-
-    term_index_ub_iterator term_iter = ubs.begin();
-    for(; term_iter != ubs.end(); ++term_iter)
-    {
-        if ((1e-6 > term_iter->second) && (-1e-6 < term_iter->second))
-            nZeroTerms++;
-        sum += term_iter->second;
-        ++nTerms;
-    }
-    currThreshold_ = sum * nTerms / (nTerms - nZeroTerms);
-    termThreshold = sum/nTerms * 0.8F;
-    
-    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
     for( ; iter != docIteratorList_.end(); ++iter )
     {
-        TermDocumentIterator* pEntry = (*iter);
+        DocumentIterator* pEntry = (*iter);
         if (pEntry)
         {
-            size_t termIndex = pEntry->termIndex_;
-            float ub = ubs[termIndex];
-
-            if(useOriginalQuery)
-            {
-                pEntry->set_ub(ub);
-            }
-            else
-            {
-                if (ub > termThreshold)
-                {
-                    pEntry->set_ub(ub);
-                }
-                else
-                {
-                    *iter = NULL;
-                    delete pEntry;
-                }
-            }
+            pEntry->setUB(useOriginalQuery, ubmap);
         }
     }
+
+    unsigned short nItems = docIteratorList_.size();
+    //LOG(INFO)<<"==nTotal=="<<missRate_<<"==nItems=="<<nItems;
+    missRate_ = (missRate_ - nItems) / missRate_;
+    //LOG(INFO)<<"====WAND::missRate===>>"<<missRate_;
+    //LOG(INFO)<<"====WAND::getUB===>>"<<getUB();
+    
+}
+
+float WANDDocumentIterator::getUB()
+{
+    float sumUB = 0.0;
+    std::vector<DocumentIterator*>::iterator it = docIteratorList_.begin();
+    for (; it != docIteratorList_.end(); it++)
+    {
+        sumUB += (*it)->getUB();
+    }
+    return sumUB / (1 - missRate_);
 }
 
 void WANDDocumentIterator::initThreshold(float threshold)
 {
+    std::vector<DocumentIterator*>::iterator it = docIteratorList_.begin();
+    for (; it != docIteratorList_.end(); it++)
+    {
+        (*it)->initThreshold(threshold);
+    }
+    float sumUBs = getUB();
     if(threshold > 0.0F)
     {
-        currThreshold_ *= threshold;
+        currThreshold_ = sumUBs * threshold;
     }
     else
     {
-        currThreshold_ *= 0.5;
+        currThreshold_ = sumUBs * 0.5;
     }
 
-    //LOG(INFO)<<"the initial currThreshold = "<<currThreshold_<<"for property:  "<<(*docIteratorList_.begin())->property_;
+    //LOG(INFO)<<"the initial currThreshold = "<<currThreshold_<<"for property:  "<<(*docIteratorList_.begin())->getProperty();
 }
 
 void WANDDocumentIterator::setThreshold(float realThreshold)
@@ -110,8 +105,8 @@ void WANDDocumentIterator::initDocIteratorSorter()
     if(docIteratorList_.size() < 1)
         return;
 
-    TermDocumentIterator* pDocIterator;
-    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    DocumentIterator* pDocIterator;
+    std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
     for( ; iter != docIteratorList_.end(); ++iter)
     {
         pDocIterator = (*iter);
@@ -139,16 +134,16 @@ bool WANDDocumentIterator::next()
 bool WANDDocumentIterator::findPivot() // multimap sorter as temporary variables
 {
     float sumUB = 0.0F; //sum of upper bounds of all terms
-    typedef std::multimap<docid_t, TermDocumentIterator*>::const_iterator const_map_iter;
+    typedef std::multimap<docid_t, DocumentIterator*>::const_iterator const_map_iter;
 
     const_map_iter iter = docIteratorSorter_.begin();
     for(; iter != docIteratorSorter_.end(); ++iter)
     {
-        TermDocumentIterator* pDocIterator = iter->second;
+        DocumentIterator* pDocIterator = iter->second;
         if(pDocIterator)
         {
             //size_t index = getIndexOfPropertyId_(pDocIterator->propertyId_);
-            sumUB += pDocIterator->ub_;// * propertyWeightList_[index];
+            sumUB += pDocIterator->getUB();// * propertyWeightList_[index];
             if(sumUB > currThreshold_)
             {
                 pivotDoc_ = iter->first;
@@ -165,7 +160,7 @@ bool WANDDocumentIterator::processPrePostings(docid_t target)//multimap sorter a
         return false;
     docid_t nFoundId = MAX_DOC_ID;
 
-    TermDocumentIterator* front = docIteratorSorter_.begin()->second;
+    DocumentIterator* front = docIteratorSorter_.begin()->second;
     while (front != NULL && front->doc() < target)
     {
         nFoundId = front->skipTo(target);
@@ -199,7 +194,7 @@ bool WANDDocumentIterator::do_next()
             return false;
 
         //////
-        TermDocumentIterator* front = docIteratorSorter_.begin()->second;
+        DocumentIterator* front = docIteratorSorter_.begin()->second;
         while(front != NULL && front->isCurrent())
         {
             front->setCurrent(false);
@@ -240,10 +235,10 @@ bool WANDDocumentIterator::do_next()
             
                 processPrePostings(currDoc_ );
 
-                std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+                std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
                 for ( ; iter != docIteratorList_.end(); ++iter)
                 {
-                    TermDocumentIterator* pEntry = (*iter);
+                    DocumentIterator* pEntry = (*iter);
                     if(pEntry)
                     {
                         if (currDoc_ == pEntry->doc())
@@ -282,10 +277,10 @@ sf1r::docid_t WANDDocumentIterator::do_skipTo(sf1r::docid_t target)
         return MAX_DOC_ID;
     }
 
-    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
     for ( ; iter != docIteratorList_.end(); ++iter)
     {
-        TermDocumentIterator* pEntry = (*iter);
+        DocumentIterator* pEntry = (*iter);
         if(pEntry)
         {
             pEntry->setCurrent(false);
@@ -315,8 +310,8 @@ void WANDDocumentIterator::df_cmtf(
     CollectionTermFrequencyInProperties& ctfmap,
     MaxTermFrequencyInProperties& maxtfmap)
 {
-    TermDocumentIterator* pEntry;
-    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    DocumentIterator* pEntry;
+    std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
     for( ; iter != docIteratorList_.end(); ++iter )
     {
         pEntry = (*iter);
@@ -329,12 +324,14 @@ void WANDDocumentIterator::queryBoosting(
     double& score,
     double& weight)
 {
-    TermDocumentIterator* pEntry;
-    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    DocumentIterator* pEntry;
+    std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
     for (; iter != docIteratorList_.end(); ++iter)
     {
         pEntry = (*iter);
         if (pEntry)
             pEntry->queryBoosting(score, weight);
     }
+}
+
 }

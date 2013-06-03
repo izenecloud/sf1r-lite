@@ -11,7 +11,7 @@
 namespace sf1r
 {
 void assembleConjunction(std::vector<izenelib::util::UString> keywords, std::string& result);
-void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result, SearchingMode::SearchingModeType mode);
+void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result);
 
 bool buildQueryTree(
         SearchKeywordOperation&action,

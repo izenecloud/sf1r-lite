@@ -337,11 +337,10 @@ bool SearchWorker::getSearchResult_(
             actionOperation.actionItem_.env_.queryString_ = newQuery;
         }
     }
-    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR ||
-             actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::WAND)
+    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR) 
     {
         analyze_(actionOperation.actionItem_.env_.queryString_, keywords, false);
-        assembleDisjunction(keywords, newQuery, actionOperation.actionItem_.searchingMode_.mode_);
+        assembleDisjunction(keywords, newQuery);
         actionOperation.actionItem_.env_.queryString_ = newQuery;
     }
 
@@ -445,7 +444,7 @@ bool SearchWorker::getSearchResult_(
 
             if (!bundleConfig_->bTriggerQA_)
                 return true;
-             assembleDisjunction(keywords, newQuery, actionOperation.actionItem_.searchingMode_.mode_);
+             assembleDisjunction(keywords, newQuery);
 
             actionOperation.actionItem_.env_.queryString_ = newQuery;
             resultItem.propertyQueryTermList_.clear();

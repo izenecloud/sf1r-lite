@@ -38,6 +38,15 @@ public:
     void add(DocumentIterator* pDocIterator); 
 
     void setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap);
+    
+    float getUB();
+    
+    const char* getProperty()
+    {
+        if (docIteratorList_.begin() == docIteratorList_.end())
+            return NULL;
+        return (*docIteratorList_.begin())->getProperty();
+    }
 
     void initThreshold(float threshold);
 
@@ -89,9 +98,9 @@ protected:
 
 protected:
 
-    std::vector<TermDocumentIterator*> docIteratorList_;
+    std::vector<DocumentIterator*> docIteratorList_;
 
-    std::multimap<docid_t, TermDocumentIterator*> docIteratorSorter_;
+    std::multimap<docid_t, DocumentIterator*> docIteratorSorter_;
 
     docid_t currDoc_;
 
@@ -106,8 +115,8 @@ inline void WANDDocumentIterator::doc_item(
     RankDocumentProperty& rankDocumentProperty,
     unsigned propIndex)
 {
-    TermDocumentIterator* pEntry;
-    std::vector<TermDocumentIterator*>::iterator iter = docIteratorList_.begin();
+    DocumentIterator* pEntry;
+    std::vector<DocumentIterator*>::iterator iter = docIteratorList_.begin();
     for (; iter != docIteratorList_.end(); ++iter)
     {
         pEntry = (*iter);
