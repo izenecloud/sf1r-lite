@@ -120,7 +120,7 @@ inline void WANDDocumentIterator::doc_item(
     for (; iter != docIteratorList_.end(); ++iter)
     {
         pEntry = (*iter);
-        if (pEntry->isCurrent())
+        if (pEntry && pEntry->isCurrent())
             pEntry->doc_item(rankDocumentProperty,propIndex);
     }
 }
