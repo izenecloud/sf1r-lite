@@ -1,5 +1,6 @@
 #include "RecoveryChecker.h"
 #include "DistributeFileSyncMgr.h"
+#include "DistributeFileSys.h"
 #include "DistributeDriver.h"
 #include "RequestLog.h"
 #include "NodeManagerBase.h"
@@ -813,6 +814,10 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     last_conf_file_ = workdir + "/distribute_last_conf";
     configDir_ = conf_dir;
     need_backup_ = false;
+    if (DistributeFileSys::get()->isEnabled())
+    {
+        backup_basepath_ = DistributeFileSys::get()->getDFSLocalFullPath("/req-backup");
+    }
     reqlog_mgr_.reset(new ReqLogMgr());
     try
     {
@@ -1187,9 +1192,19 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     LOG(INFO) << "primary agreed , sync new request druing waiting recovery.";
     // check new request during wait recovery.
     syncSCDFiles();
-    syncToNewestReqLog();
-    LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
     // check data consistent with primary.
+    //
+    if (NodeManagerBase::isAsyncEnabled() && NodeManagerBase::get()->isOtherPrimaryAvailable() && !checkIfLogForward(false))
+    {
+        LOG(INFO) << "check log failed while recover, need rollback";
+        if(!rollbackLastFail(false))
+        {
+            forceExit("rollback failed for forword log.");
+        }
+    }
+    LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
+    syncToNewestReqLog();
+
     std::string errinfo;
     CollInfoMapT tmp_all_col_info;
     {
@@ -1229,7 +1244,7 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     if (need_backup_)
     {
         LOG(INFO) << "begin backup for config updated.";
-        backup();
+        backup(!DistributeFileSys::get()->isEnabled());
     }
 }
 

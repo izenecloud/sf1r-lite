@@ -81,7 +81,12 @@ bool CollectionParameterConfig::Get(const std::string& key, bool& value)
 {
     std::string str_value;
     bool b = value_.get(key, str_value);
-    if (!b) return false;
+    if (!b)
+    {
+        value = false;
+        return false;
+    }
+
     boost::to_lower(str_value);
     if ( str_value == "y" || str_value == "yes" )
     {

@@ -288,8 +288,11 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
 {
     LOG (INFO) << CLASSNAME << " worker node event: " << zkEvent.toString();
 
-    if (stopping_)
-        return;
+    {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+        if (stopping_)
+            return;
+    }
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && zkEvent.state_ == ZOO_CONNECTED_STATE)
     {
@@ -348,7 +351,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             }
             // this node is expired, it means disconnect from ZooKeeper for a long time.
             // if any write request not finished, we must abort it.
-            resetWriteState();
+            resetWriteState(true);
 
             MasterManagerBase::get()->notifyChangedPrimary(false);
             stopping_ = true;
@@ -357,16 +360,15 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
         }
 
         zookeeper_->disconnect();
+
+        boost::unique_lock<boost::mutex> lock(mutex_);
         if (!checkZooKeeperService())
         {
-            boost::unique_lock<boost::mutex> lock(mutex_);
             stopping_ = false;
             // process will be resumed after zookeeper recovered
             LOG (WARNING) << " waiting for ZooKeeper Service while expired ...";
             return;
         }
-
-        boost::unique_lock<boost::mutex> lock(mutex_);
         nodeState_ = NODE_STATE_STARTING;
         enterCluster(!masterStarted_);
         LOG (WARNING) << " restarted in NodeManagerBase for ZooKeeper Service finished";
@@ -919,9 +921,12 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
         }
     }
 
+    updateCurrentPrimary();
     if (curr_primary_path_ == self_primary_path_)
     {
         LOG(INFO) << "I enter as primary success." << self_primary_path_;
+        // sleep to wait secondary node.
+        sleep(10);
     }
     else
     {
@@ -947,6 +952,17 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 
     nodeState_ = NODE_STATE_STARTED;
     LOG(INFO) << "recovery finished. Begin enter cluster after recovery";
+    if (curr_primary_path_ == self_primary_path_ && masterStarted_)
+    {
+        std::vector<std::string> node_list;
+        zookeeper_->getZNodeChildren(primaryNodeParentPath_, node_list, ZooKeeper::WATCH);
+        if (node_list.size() <= 1)
+        {
+            LOG(INFO) << "waiting other secondary nodes.";
+            // sleep to wait secondary node.
+            sleep(15);
+        }
+    }
     updateNodeState();
     updateCurrentPrimary();
 
@@ -988,7 +1004,7 @@ void NodeManagerBase::enterClusterAfterRecovery(bool start_master)
 
 void NodeManagerBase::reEnterCluster()
 {
-    resetWriteState();
+    resetWriteState(true);
 
     MasterManagerBase::get()->notifyChangedPrimary(false);
     updateCurrentPrimary();
@@ -1063,7 +1079,8 @@ bool NodeManagerBase::isConnected()
 
 bool NodeManagerBase::isOtherPrimaryAvailable()
 {
-    return !curr_primary_path_.empty() && (curr_primary_path_ != self_primary_path_);
+    return !curr_primary_path_.empty() && (curr_primary_path_ != self_primary_path_) &&
+        (zookeeper_ && zookeeper_->isZNodeExists(curr_primary_path_, ZooKeeper::WATCH));
 }
 
 bool NodeManagerBase::isPrimary()
@@ -1216,8 +1233,12 @@ void NodeManagerBase::finishLocalReqProcess(int type, const std::string& packed_
             LOG(WARNING) << "lost connection from ZooKeeper while finish request." << self_primary_path_;
             //checkForPrimaryElecting();
             // update to get notify on event callback and check for electing.
+            
             setElectingState();
-            updateNodeState();
+            if (s_enable_async_)
+                updateSelfPrimaryNodeState();
+            else
+                updateNodeState();
         }
         else
             updateSelfPrimaryNodeState();
@@ -1309,12 +1330,12 @@ void NodeManagerBase::onChildrenChanged(const std::string& path)
     }
 }
 
-void NodeManagerBase::resetWriteState()
+void NodeManagerBase::resetWriteState(bool need_re_enter)
 {
     switch(nodeState_)
     {
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_PROCESS:
-        if (s_enable_async_)
+        if (s_enable_async_ || need_re_enter)
         {
             if (cb_on_wait_finish_process_)
                 cb_on_wait_finish_process_();
@@ -1325,9 +1346,9 @@ void NodeManagerBase::resetWriteState()
         }
         //break; walk through by intended
     case NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_FINISH_LOG:
-        if (s_enable_async_)
+        if (s_enable_async_ || need_re_enter)
         {
-            LOG(INFO) << "in async mode, waiting write can finish without abort while electing.";
+            LOG(INFO) << "waiting write can finish without abort while electing.";
             if (cb_on_wait_finish_log_)
                 cb_on_wait_finish_log_();
             nodeState_ = NODE_STATE_STARTED;
@@ -1343,9 +1364,9 @@ void NodeManagerBase::resetWriteState()
         }
         break;
     case NODE_STATE_PROCESSING_REQ_WAIT_PRIMARY:
-        if (s_enable_async_)
+        if (s_enable_async_ || need_re_enter)
         {
-            LOG(INFO) << "in async mode, waiting write can finish without abort while electing.";
+            LOG(INFO) << "waiting write can finish without abort while electing.";
             if (cb_on_wait_primary_)
                 cb_on_wait_primary_();
             nodeState_ = NODE_STATE_STARTED;
@@ -2250,8 +2271,6 @@ void NodeManagerBase::checkSecondaryReqProcess(bool self_changed)
             LOG(WARNING) << "request aborted by one replica while waiting finish process. " << node_list[i];
             LOG(INFO) << "begin abort the request on primary and wait all replica to abort it.";
             updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
-            //if(cb_on_abort_request_)
-            //    cb_on_abort_request_();
             break;
         }
     }
@@ -2323,8 +2342,6 @@ void NodeManagerBase::checkSecondaryReqFinishLog(bool self_changed)
             LOG(WARNING) << "request aborted by one replica when waiting finish log." << node_list[i];
             LOG(INFO) << "begin abort the request on primary and wait all replica to abort it.";
             updateNodeStateToNewState(NODE_STATE_PROCESSING_REQ_WAIT_REPLICA_ABORT);
-            //if(cb_on_abort_request_)
-            //    cb_on_abort_request_();
             break;
         }
     }

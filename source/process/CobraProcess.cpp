@@ -465,6 +465,7 @@ int CobraProcess::run()
         stopCollections();
 
         LOG(INFO) << "CobraProcess has exited";
+        waitSignalThread();
     }
     catch (const std::exception& e)
     {

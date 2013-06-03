@@ -70,7 +70,14 @@ void LogAnalysisConnection::syncRequest(const LogServerRequest::method_t& method
     flushRequests();
     msgpack::rpc::session session = session_pool_->get_session(config_.host, config_.rpcPort);
     session.set_timeout(120);
-    respData = session.call(method, reqData).template get<ResponseDataT>();
+    try
+    {
+        respData = session.call(method, reqData).template get<ResponseDataT>();
+    }
+    catch(...)
+    {
+        LOG(INFO)<<"rpc call error"<<endl;
+    }
 }
 
 template <class RequestT, class ResponseDataT>

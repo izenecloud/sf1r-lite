@@ -312,7 +312,7 @@ DocumentIterator* SearchThreadWorker::combineCustomDocIterator_(
     if (customRankManager_ &&
         preprocessor_.isNeedCustomDocIterator(actionItem))
     {
-        const std::string& query = actionItem.env_.queryString_;
+        const std::string& query = actionItem.env_.normalizedQueryString_;
         CustomRankDocId customDocId;
 
         if (!customRankManager_->getCustomValue(query, customDocId) ||

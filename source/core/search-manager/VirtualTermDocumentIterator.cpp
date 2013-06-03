@@ -35,6 +35,7 @@ VirtualTermDocumentIterator::VirtualTermDocumentIterator(
     , propertyIdList_(propertyIdList)
     , dataTypeList_(dataTypeList)
     , termIndex_(termIndex)
+    , OrDocIterator_(NULL)
 {
     readPositions_ = false;
 }
@@ -58,6 +59,7 @@ VirtualTermDocumentIterator::VirtualTermDocumentIterator(
     , propertyIdList_(propertyIdList)
     , dataTypeList_(dataTypeList)
     , termIndex_(termIndex)
+    , OrDocIterator_(NULL)
 {
     readPositions_ = false;
 }

@@ -1195,12 +1195,14 @@ FilterManager::FilterIdRange FilterManager::getNumFilterIdRangeLess(size_t prop_
         return empty_range;
     }
 
-    std::vector<NumFilterKeyT>::const_iterator it = std::lower_bound(num_key_set.begin(), num_key_set.end(), num_key);
+    std::vector<NumFilterKeyT>::const_iterator it = include
+        ? std::upper_bound(num_key_set.begin(), num_key_set.end(), num_key)
+        : std::lower_bound(num_key_set.begin(), num_key_set.end(), num_key);
     if (it == num_key_set.begin() && (!include || *it > num_filter))
     {
         return empty_range;
     }
-    if (it == num_key_set.end())
+    if (it != num_key_set.begin())
     {
         --it;
     }

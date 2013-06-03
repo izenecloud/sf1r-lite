@@ -665,6 +665,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
                         continue;
                     }
                     LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
+                    LOG(INFO) << "local : " << file_checksum_list[j] << " VS " << rspdata[i].check_file_result[j];
                     is_file_mismatch =  true;
                 }
             }
@@ -963,7 +964,7 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
                     LOG(INFO) << "get file from other failed, retry next." << file_rsp.filepath;
                     break;
                 }
-                LOG(INFO) << "a scd file finished :" << file_rsp.filepath;
+                //LOG(INFO) << "a scd file finished :" << file_rsp.filepath;
                 if (i == rsp.scd_list.size() - 1)
                     return true;
             }
@@ -1044,7 +1045,7 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& filepath, bool f
             continue;
         }
 
-        LOG(INFO) << "get file finished :" << file_rsp.filepath;
+        //LOG(INFO) << "get file finished :" << file_rsp.filepath;
         return true;
     }
     return false;
@@ -1068,7 +1069,7 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& ip, uint16_t por
         {
             if(bfs::file_size(filepath) == filesize)
             {
-                LOG(INFO) << "local file is the same size : " << filepath;
+                //LOG(INFO) << "local file is the same size : " << filepath;
                 if (!force_overwrite)
                     return true;
             }

@@ -17,7 +17,7 @@ void GroupLabelPreProcessor::process(
     if (limitMap.empty())
         return;
 
-    const std::string& query = actionItem.env_.queryString_;
+    const std::string& query = actionItem.env_.normalizedQueryString_;
     typedef faceted::GroupParam::GroupLabelMap GroupLabelMap;
     GroupLabelMap& totalLabels = groupParam.groupLabels_;
     GroupLabelMap& autoSelectLabels = searchResult.autoSelectGroupLabels_;

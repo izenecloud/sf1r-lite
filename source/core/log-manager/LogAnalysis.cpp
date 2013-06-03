@@ -31,7 +31,7 @@ void LogAnalysis::getRecentKeywordList(const std::string& collectionName, uint32
 }
 
 
-void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, const std::string& time_string, std::vector<UserQuery>& queryList)
+void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, const std::string& time_string, std::vector<UserQuery>& queryList,bool fromautofill)
 {
     if(RDbConnection::instance().logServer())
     {
@@ -48,13 +48,28 @@ void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, co
     else
     {
         std::stringstream sql;
-        sql << "select query ,max(hit_docs_num) as hit_docs_num,count(*) as count ";
-        sql << " from " << UserQuery::TableName ;
-        sql << " where " << ("collection = '" + collectionName + "' and hit_docs_num > 0 and TimeStamp >= '" + time_string +"'");
-        sql << " group by " << "query";
-        sql <<";";
+        if(!fromautofill)
+        {
+            sql << "select query ,max(hit_docs_num) as hit_docs_num,count(*) as count ";
+            sql << " from " << UserQuery::TableName ;
+            sql << " where " << ("collection = '" + collectionName + "' and hit_docs_num > 0 and TimeStamp >= '" + time_string +"'");
+            sql << " group by " << "query";
+            sql <<";";
+        }
+        else
+        {
+           sql << "  select t1.query,t1.hit_docs_num,t2.count ";
+           sql << "  from " << UserQuery::TableName ;
+           sql << "  t1 inner join "; 
+           sql << "  (select query,max(TimeStamp) as TimeStamp,count(*) as count  ";
+           sql << "  from   " << UserQuery::TableName ;
+           sql << "  where " << ("collection = '" + collectionName+ "' and TimeStamp >= '" + time_string +"' group by query) t2");
+           sql << "  on t2.TimeStamp= t1.TimeStamp and  t2.query= t1.query ";
+           sql << ";";
+        }
         std::list<std::map<std::string, std::string> > res;
         UserQuery::find_by_sql(sql.str(), res);
+        cout<<sql.str()<<endl;
         std::list<std::map<std::string, std::string> >::iterator it;
         for(it=res.begin();it!=res.end();it++)
         {
