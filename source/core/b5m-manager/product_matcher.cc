@@ -2689,7 +2689,20 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     AllStrict all_strict(term_list.size());
     for(uint32_t i=0;i<keyword_vector.size();i++)
     {
-        const KeywordTag& k = keyword_vector[i];
+        KeywordTag& k = keyword_vector[i];
+        UString original_text;
+        if(!k.positions.empty())
+        {
+            const Position& pos = k.positions.front();
+            for(uint32_t b=pos.begin;b<pos.end;b++)
+            {
+                original_text.append(term_list[b].text);
+            }
+        }
+        if(!original_text.empty())
+        {
+            k.text = original_text;
+        }
         for(uint32_t p=0;p<k.positions.size();p++)
         {
             const Position& pos = k.positions[p];
