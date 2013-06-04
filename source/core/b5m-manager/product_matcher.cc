@@ -528,8 +528,14 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         if(!Open(path_))
         {
             mode = 2;
+            Init_();
         }
-        Init_();
+        if(IsIndexDone())
+        {
+            std::cout<<"product trained at "<<path_<<std::endl;
+            Init_();
+            return true;
+        }
     }
     LOG(INFO)<<"mode "<<mode<<std::endl;
     if(mode==3)
@@ -541,11 +547,6 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         SetIndexDone_(kpath, false);
         std::string bdb_path = kpath+"/bdb";
         B5MHelper::PrepareEmptyDir(bdb_path);
-    }
-    if(IsIndexDone())
-    {
-        std::cout<<"product trained at "<<path_<<std::endl;
-        return true;
     }
     SetIndexDone_(kpath, false);
     Init_();
