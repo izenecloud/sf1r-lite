@@ -433,6 +433,11 @@ void ProductMatcher::SetIndexDone_(const std::string& path, bool b)
         boost::filesystem::remove_all(file);
     }
 }
+bool ProductMatcher::IsIndexDone() const
+{
+    return trie_.size()>0;
+}
+
 bool ProductMatcher::IsIndexDone_(const std::string& path)
 {
     static const std::string file(path+"/index.done");
@@ -537,7 +542,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         std::string bdb_path = kpath+"/bdb";
         B5MHelper::PrepareEmptyDir(bdb_path);
     }
-    if(IsIndexDone_(path_))
+    if(IsIndexDone())
     {
         std::cout<<"product trained at "<<path_<<std::endl;
         return true;
