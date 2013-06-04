@@ -10,6 +10,9 @@
 #include <search-manager/SearchManager.h>
 #include <search-manager/SearchBase.h>
 #include <search-manager/PersonalizedSearchInfo.h>
+#include <search-manager/QueryPruneFactory.h>
+#include <search-manager/QueryPruneBase.h>
+#include <search-manager/QueryHelper.h>
 #include <document-manager/DocumentManager.h>
 #include <mining-manager/MiningManager.h>
 #include <la-manager/LAManager.h>
@@ -27,6 +30,7 @@ SearchWorker::SearchWorker(IndexBundleConfiguration* bundleConfig)
                                     bundleConfig_->refreshCacheInterval_,
                                     bundleConfig_->refreshSearchCache_))
     , pQA_(NULL)
+    , queryPruneFactory_(new QueryPruneFactory())
 {
     ///LA can only be got from a pool because it is not thread safe
     ///For some situation, we need to get the la not according to the property
@@ -421,7 +425,8 @@ bool SearchWorker::getSearchResult_(
                                             resultItem.totalCount_,
                                             resultItem.groupRep_,
                                             resultItem.attrRep_,
-                                            resultItem.analyzedQuery_))
+                                            resultItem.analyzedQuery_,
+                                            resultItem.pruneQueryString_))
         {
             return true;
         }
@@ -429,43 +434,72 @@ bool SearchWorker::getSearchResult_(
         break;
 
     default:
+        unsigned int QueryPruneTimes = 2;
+        bool isUsePrune = false;
+        //isUsePrune = actionOperation.actionItem_.searchingMode_.useQueryPrune_;
+        bool is_getResult = true;
         if (!searchManager_->searchBase_->search(actionOperation,
                                                  resultItem,
                                                  search_limit,
-                                                 topKStart))
+                                                 topKStart) || resultItem.totalCount_ == 0)
         {
+            cout<<"resultItem.totalCount_:"<<resultItem.totalCount_<<endl;
             if (time(NULL) - start_search > 5)
             {
                 LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
                 actionOperation.actionItem_.print();
             }
 
-            std::string newQuery;
+            /// muti thread ....
+            /// * star search 
+            const bool isFilterQuery =
+            actionOperation.rawQueryTree_->type_ == QueryTree::FILTER_QUERY;
 
-            if (!bundleConfig_->bTriggerQA_)
+            if (isFilterQuery)
                 return true;
-             assembleDisjunction(keywords, newQuery);
 
-            actionOperation.actionItem_.env_.queryString_ = newQuery;
-            resultItem.propertyQueryTermList_.clear();
-            if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+            /// query frune 
+            QueryPruneBase* queryPrunePtr = NULL;
+            QueryPruneType qrType;
+
+            if ( isUsePrune == true)
             {
-                return true;
+                qrType = AND_TRIGGER;
             }
+            else if (bundleConfig_->bTriggerQA_)
+                qrType = QA_TRIGGER;
+            else
+                return true;
 
-            if (!searchManager_->searchBase_->search(actionOperation,
-                                                     resultItem,
-                                                     search_limit,
-                                                     topKStart))
+            std::string rawQuery = actionOperation.actionItem_.env_.queryString_;
+
+            do
             {
-                if (time(NULL) - start_search > 5)
+                std::string newQuery = "";
+                queryPrunePtr = queryPruneFactory_->getQueryPrune(qrType);
+
+                if (queryPrunePtr != NULL)
                 {
-                    LOG(INFO) << "search cost too long : " << start_search << " , " << time(NULL);
-                    actionOperation.actionItem_.print();
+                    if(!queryPrunePtr->queryPrune(rawQuery, keywords, newQuery))
+                    {
+                        LOG(INFO) << "There is no Prune query";
+                        return true;
+                    }
                 }
-
-                return true;
-            }
+                LOG(INFO) << "[QUERY PRUNE] the new query is" <<  newQuery << endl;
+                actionOperation.actionItem_.env_.queryString_ = newQuery;
+                resultItem.propertyQueryTermList_.clear();
+                if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
+                {
+                    return true;
+                }
+                QueryPruneTimes--;
+                is_getResult =  searchManager_->searchBase_->search(actionOperation,
+                                                         resultItem,
+                                                         search_limit,
+                                                         topKStart);
+                rawQuery = newQuery;
+            } while(isUsePrune && QueryPruneTimes > 0 && (!is_getResult || resultItem.totalCount_ == 0));
         }
         break;
     }

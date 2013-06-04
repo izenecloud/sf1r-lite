@@ -341,6 +341,9 @@ bool SearchParser::parse(const Value& search)
         if (mode == "and")
         {
             searchingModeInfo_.mode_ = SearchingMode::DefaultSearchingMode;
+            //searchingModeInfo_.useQueryPrune_ = asBool(searching_mode[Keys::query_prune]);
+            searchingModeInfo_.useQueryPrune_ = true;
+
         }
         else if (mode == "or")
         {
@@ -361,10 +364,13 @@ bool SearchParser::parse(const Value& search)
         else if (mode == "suffix")
         {
             searchingModeInfo_.mode_ = SearchingMode::SUFFIX_MATCH;
+            //searchingModeInfo_.useQueryPrune_ = asBool(searching_mode[Keys::query_prune]);
+            searchingModeInfo_.useQueryPrune_ = true;
         }
         else
         {
             warning() = "Unknown searchingMode. Default searching mode is used.";
+            //searchingModeInfo_.useQueryPrune_ = asBool(searching_mode[Keys::query_prune]);
         }
 
         if (searching_mode.hasKey(Keys::threshold))

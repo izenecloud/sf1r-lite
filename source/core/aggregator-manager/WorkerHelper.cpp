@@ -8,34 +8,6 @@
 
 namespace sf1r
 {
-
-void assembleConjunction(std::vector<izenelib::util::UString> keywords, std::string& result)
-{
-    result.clear();
-    int size = keywords.size();
-    for(int i = 0; i < size; ++i)
-    {
-        std::string str;
-        keywords[i].convertString(str, izenelib::util::UString::UTF_8);
-        result += str;
-        result += " ";
-    }
-}
-
-void assembleDisjunction(std::vector<izenelib::util::UString> keywords, std::string& result)
-{
-    result.clear();
-    int size = keywords.size();
-    for(int i = 0; i < size; ++i)
-    {
-        std::string str;
-        keywords[i].convertString(str, izenelib::util::UString::UTF_8);
-        result += str;
-        result += "|";
-    }
-    boost::trim_right_if(result, boost::is_any_of("|"));
-}
-
 static void buildWANDQueryTree(QueryTreePtr& rawQueryTree)
 {
     if (rawQueryTree->type_ == QueryTree::KEYWORD)
@@ -86,7 +58,8 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
     UString::EncodingType encodingType =
         UString::convertEncodingTypeFromStringToEnum(
             action.actionItem_.env_.encodingType_.c_str() );
-    UString queryUStr(action.actionItem_.env_.queryString_, encodingType);
+    UString queryUStr(action.actionItem_.env_.queryString_, encodingType);//xxx
+    
     if ( !action.queryParser_.parseQuery( queryUStr, action.rawQueryTree_, action.unigramFlag_, action.hasUnigramProperty_ ) )
         return false;
 
@@ -114,7 +87,7 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
         if ( action.queryTreeMap_.find( *propertyIter ) != action.queryTreeMap_.end()
                 && action.propertyTermInfo_.find( *propertyIter ) != action.propertyTermInfo_.end() )
             continue;
-        std::cout << "----------------->  processing query for Property : " << *propertyIter << std::endl;
+        //std::cout << "----------------->  processing query for Property : " << *propertyIter << std::endl;
 
         QueryTreePtr tmpQueryTree;
         if ( applyLA )
@@ -163,7 +136,7 @@ bool buildQueryTree(SearchKeywordOperation& action, IndexBundleConfiguration& bu
             buildWANDQueryTree(action.rawQueryTree_, tmpQueryTree);
         }
         
-        tmpQueryTree->print();
+        //tmpQueryTree->print();
         action.queryTreeMap_.insert( std::make_pair(*propertyIter,tmpQueryTree) );
         PropertyTermInfo ptInfo;
         tmpQueryTree->getPropertyTermInfo(ptInfo);

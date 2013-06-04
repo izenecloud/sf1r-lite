@@ -55,16 +55,22 @@ public:
             std::vector<std::pair<double, uint32_t> >& res_list) const;
 
     size_t AllPossibleSuffixMatch(
-            const std::string& pattern,
+            std::list<std::pair<UString, double> > major_tokens,
+            std::list<std::pair<UString, double> > minor_tokens,
             std::vector<std::string> search_in_properties,
             size_t max_docs,
             const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             const faceted::GroupParam& group_param,
-            std::vector<std::pair<double, uint32_t> >& res_list,
-            UString& analyzedQuery) const;
+            std::vector<std::pair<double, uint32_t> >& res_list) const;
+
+    void GetTokenResults(std::string pattern,
+                    std::list<std::pair<UString, double> >& major_tokens,
+                    std::list<std::pair<UString, double> >& manor_tokens,
+                    UString& analyzedQuery);
 
     SuffixMatchMiningTask* getMiningTask();
+    
     bool buildMiningTask();
 
     boost::shared_ptr<FilterManager>& getFilterManager();

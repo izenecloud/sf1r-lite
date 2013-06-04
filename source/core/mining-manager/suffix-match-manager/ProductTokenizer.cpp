@@ -384,17 +384,26 @@ bool ProductTokenizer::GetTokenResultsByMatcher_(
 {
     if (!matcher_) return false;
 
+    UString patternUStr(pattern, UString::UTF_8);
     std::list<UString> left;
 
-    matcher_->GetSearchKeywords(UString(pattern, UString::UTF_8), major_tokens, minor_tokens, left);
+    matcher_->GetSearchKeywords(patternUStr, major_tokens, minor_tokens, left);
 
     if (!major_tokens.empty())
     {
-        for (std::list<std::pair<UString,double> >::iterator it = major_tokens.begin();
-                it != major_tokens.end(); ++it)
+        std::list<std::pair<UString,double> >::iterator it = major_tokens.begin();
+        while (it != major_tokens.end())
         {
-            refined_results.append(it->first);
-            refined_results.push_back(SPACE_UCHAR);
+            if (patternUStr.find(it->first) != UString::npos)
+            {
+                refined_results.append(it->first);
+                refined_results.push_back(SPACE_UCHAR);
+                ++it;
+            }
+            else
+            {
+                it = major_tokens.erase(it);
+            }
         }
     }
 
