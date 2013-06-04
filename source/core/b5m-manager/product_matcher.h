@@ -718,6 +718,7 @@ namespace sf1r {
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
+        bool IsIndexDone() const;
 
         void SetUsePriceSim(bool sim)
         { use_price_sim_ = sim; }

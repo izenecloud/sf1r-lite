@@ -341,12 +341,13 @@ bool SearchWorker::getSearchResult_(
             actionOperation.actionItem_.env_.queryString_ = newQuery;
         }
     }
-    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR)
+    else if (actionOperation.actionItem_.searchingMode_.mode_ == SearchingMode::OR) 
     {
         analyze_(actionOperation.actionItem_.env_.queryString_, keywords, false);
         assembleDisjunction(keywords, newQuery);
         actionOperation.actionItem_.env_.queryString_ = newQuery;
     }
+
 
     // Get Personalized Search information (user profile)
     PersonalSearchInfo personalSearchInfo;
