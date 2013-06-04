@@ -15,6 +15,8 @@
  *     - Corrent the formula.
  *   - 2012-12-15 Hongliang Zhao
  *     - If df is big than nDocs in virtual search, set df = nDocs.
+ *   - 2013-05-29 Kevin Lin
+ *     - Query items whose UB is zero also make contribution.
  */
 #include "BM25Ranker.h"
 #include <glog/logging.h>
@@ -65,6 +67,10 @@ void BM25Ranker::calculateTermUBs(const RankQueryProperty& queryProperty, ID_FRE
             float tf_LNPart = (k1_ + 1) * maxtf / denominatorTF_LN;
             float qtfPart = (k3_ + 1) * tfInQuery / (k3_ + tfInQuery);
             ub[i] = idfParts_[i] * qtfPart * tf_LNPart;
+        }
+        else //ub = 0 make contribution also.
+        {
+            ub[i] = 0.0;
         }
     }
 }
