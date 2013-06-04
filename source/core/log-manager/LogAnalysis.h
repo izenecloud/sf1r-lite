@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include "UserQuery.h"
+#include "PropertyLabel.h"
 
 #include <util/ustring/UString.h>
 #include <util/ustring/algo.hpp>
@@ -104,10 +105,12 @@ class LogAnalysis
 public:
 
     static void getRecentKeywordList(const std::string& collectionName, uint32_t limit, std::vector<izenelib::util::UString>& recentKeywords);
-    static void getRecentKeywordFreqList(const std::string& collectionName, const std::string& time_string, std::vector<UserQuery>& queryList);
+    static void getRecentKeywordFreqList(const std::string& collectionName, const std::string& time_string, std::vector<UserQuery>& queryList,bool fromautofill=false);
     static void getRecentKeywordFreqList(const std::string& collectionName, const std::string& time_string, boost::unordered_map<std::string, UserQuery> queryList);
     static void getRecentKeywordFreqList(const std::string& time_string, std::vector<UserQuery>& queryList);
 
+    static void getPropertyLabel(const std::string& collection, std::vector<PropertyLabel>& propertyList);
+    static void delPropertyLabel(const std::string& collection);
 
 private:
 

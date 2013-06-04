@@ -75,8 +75,6 @@ FILE(GLOB_RECURSE log_server_SRC "${CMAKE_SOURCE_DIR}/process/log-server/*.cpp")
 FILE(GLOB distribute_SRC "${CMAKE_SOURCE_DIR}/process/distribute/*.cpp")
 
 SET(Boost_USE_STATIC_LIBS OFF)
-FIND_PACKAGE(Boost ${Boost_FIND_VERSION}
-  COMPONENTS unit_test_framework)
 
 IF(Boost_FOUND AND Boost_UNIT_TEST_FRAMEWORK_FOUND)
   INCLUDE_DIRECTORIES(

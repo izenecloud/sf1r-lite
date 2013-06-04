@@ -214,6 +214,12 @@ namespace sf1r {
             //uint128_t pid = izenelib::util::HashFunction<UString>::generateHash128(UString(pid_str, UString::UTF_8));
             return B5MHelper::Uint128ToString(digest_union.md5_int_value);
         }
+
+        static std::string GetPidByUrl(const std::string& url)
+        {
+            return "";
+        }
+
     };
 
 }

@@ -231,6 +231,16 @@ void FileSyncServer::dispatch(msgpack::rpc::request req)
             reqdata.success = true;
             req.result(reqdata);
         }
+        else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_GET_RUNNING_REQLOG])
+        {
+            msgpack::type::tuple<GetRunningReqLogData> params;
+            req.params().convert(&params);
+            GetRunningReqLogData& reqdata = params.get<0>();
+            reqdata.success = false;
+            reqdata.running_logdata = NodeManagerBase::get()->getSavedPackedData();
+            reqdata.success = true;
+            req.result(reqdata);
+        }
         else if (method == FileSyncServerRequest::method_names[FileSyncServerRequest::METHOD_GET_SCD_LIST])
         {
             msgpack::type::tuple<GetSCDListData> params;
@@ -355,7 +365,7 @@ DistributeFileSyncMgr::DistributeFileSyncMgr()
     ignore_list_.insert("LOG.old");
     ignore_list_.insert("cookie");
     ignore_list_.insert("CURRENT");
-    //ignore_list_.insert("MANIFEST-");
+    ignore_list_.insert("barrels");
     reporting_ = false;
 }
 
@@ -655,6 +665,7 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
                         continue;
                     }
                     LOG(WARNING) << "one of file not the same as local : " << req.param_.check_file_list[j];
+                    LOG(INFO) << "local : " << file_checksum_list[j] << " VS " << rspdata[i].check_file_result[j];
                     is_file_mismatch =  true;
                 }
             }
@@ -718,6 +729,49 @@ void DistributeFileSyncMgr::checkReplicasStatus(const std::vector<std::string>& 
     boost::unique_lock<boost::mutex> lk(status_report_mutex_);
     reporting_ = false;
     saveCachedCheckSum();
+}
+
+bool DistributeFileSyncMgr::getCurrentRunningReqLog(std::string& saved_log)
+{
+    if (!NodeManagerBase::get()->isDistributed() || conn_mgr_ == NULL)
+        return true;
+    int retry = 3;
+    saved_log.clear();
+    while(retry-- > 0)
+    {
+        std::string ip;
+        uint16_t port = SuperNodeManager::get()->getFileSyncRpcPort();
+        if(!NodeManagerBase::get()->getCurrPrimaryInfo(ip))
+        {
+            LOG(INFO) << "get primary sync server failed.";
+            return false;
+        }
+        if (ip == SuperNodeManager::get()->getLocalHostIP())
+        {
+            LOG(INFO) << "the ip is the same as local : " << ip;
+            return false;
+        }
+
+        LOG(INFO) << "try get running log from: " << ip << ":" << port;
+        GetRunningReqLogRequest req;
+        GetRunningReqLogData rsp;
+        try
+        {
+            conn_mgr_->syncRequest(ip, port, req, rsp);
+        }
+        catch(const std::exception& e)
+        {
+            LOG(INFO) << "send request error, will retry : " << e.what();
+            continue;
+        }
+        if (rsp.success)
+        {
+            saved_log = rsp.running_logdata;
+            return true;
+        }
+    }
+    LOG(INFO) << "get current running log data failed .";
+    return false;
 }
 
 bool DistributeFileSyncMgr::getNewestReqLog(bool from_primary_only, uint32_t start_from, std::vector<std::string>& saved_log)
@@ -910,7 +964,7 @@ bool DistributeFileSyncMgr::syncNewestSCDFileList(const std::string& colname)
                     LOG(INFO) << "get file from other failed, retry next." << file_rsp.filepath;
                     break;
                 }
-                LOG(INFO) << "a scd file finished :" << file_rsp.filepath;
+                //LOG(INFO) << "a scd file finished :" << file_rsp.filepath;
                 if (i == rsp.scd_list.size() - 1)
                     return true;
             }
@@ -991,7 +1045,7 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& filepath, bool f
             continue;
         }
 
-        LOG(INFO) << "get file finished :" << file_rsp.filepath;
+        //LOG(INFO) << "get file finished :" << file_rsp.filepath;
         return true;
     }
     return false;
@@ -1015,7 +1069,7 @@ bool DistributeFileSyncMgr::getFileFromOther(const std::string& ip, uint16_t por
         {
             if(bfs::file_size(filepath) == filesize)
             {
-                LOG(INFO) << "local file is the same size : " << filepath;
+                //LOG(INFO) << "local file is the same size : " << filepath;
                 if (!force_overwrite)
                     return true;
             }

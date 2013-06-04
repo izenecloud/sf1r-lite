@@ -700,6 +700,7 @@ namespace sf1r {
         static std::string GetRVersion(const std::string& path);
         bool Index(const std::string& path, const std::string& scd_path, int mode);
         void Test(const std::string& scd_path);
+        bool OutputCategoryMap(const std::string& scd_path, const std::string& output_file);
         bool DoMatch(const std::string& scd_path, const std::string& output_file="");
         bool FuzzyDiff(const std::string& scd_path, const std::string& output_file="");
         bool Process(const Document& doc, Product& result_product, bool use_fuzzy = false);
@@ -719,6 +720,7 @@ namespace sf1r {
 
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
+        bool IsIndexDone() const;
 
         void SetUsePriceSim(bool sim)
         { use_price_sim_ = sim; }

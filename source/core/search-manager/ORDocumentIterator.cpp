@@ -3,6 +3,7 @@
 #include "VirtualPropertyTermDocumentIterator.h"
 
 #include <algorithm>
+#include <limits>
 
 using namespace std;
 using namespace sf1r;
@@ -300,6 +301,33 @@ void ORDocumentIterator::df_cmtf(
         if(pEntry)
             pEntry->df_cmtf(dfmap, ctfmap, maxtfmap);
     }
+}
+
+void ORDocumentIterator:: setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap)
+{
+    std::vector<DocumentIterator*>::iterator it = docIteratorList_.begin();
+    for (; it != docIteratorList_.end(); it++)
+    {
+        (*it)->setUB(useOriginalQuery, ubmap);
+    }
+
+    unsigned short nItems = docIteratorList_.size();
+    missRate_ = (missRate_ - nItems) / missRate_;
+    //LOG(INFO)<<"====OR::missRate===>>"<<missRate_;
+    //LOG(INFO)<<"====OR::getUB===>>"<<getUB();
+}
+
+float ORDocumentIterator::getUB()
+{
+    float minUB = std::numeric_limits<float>::max();
+    std::vector<DocumentIterator*>::iterator it = docIteratorList_.begin();
+    for (; it != docIteratorList_.end(); it++)
+    {
+        float ub = (*it)->getUB();
+        if (ub < minUB )
+            minUB = ub;
+    }
+    return minUB / (1 - missRate_);
 }
 
 count_t ORDocumentIterator::tf()

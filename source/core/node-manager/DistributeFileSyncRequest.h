@@ -16,6 +16,13 @@ struct GetReqLogData : public RpcServerRequestData
     MSGPACK_DEFINE(success, start_inc, end_inc, logdata_list);
 };
 
+struct GetRunningReqLogData : public RpcServerRequestData
+{
+    bool success;
+    std::string  running_logdata;
+    MSGPACK_DEFINE(success, running_logdata);
+};
+
 struct GetSCDListData : public RpcServerRequestData
 {
     bool success;
@@ -99,6 +106,7 @@ public:
         METHOD_FINISH_RECEIVE,
         METHOD_REPORT_STATUS_REQ,
         METHOD_REPORT_STATUS_RSP,
+        METHOD_GET_RUNNING_REQLOG,
         COUNT_OF_METHODS
     };
     static const method_t method_names[COUNT_OF_METHODS];
@@ -111,6 +119,15 @@ class GetReqLogRequest : public RpcRequestRequestT<GetReqLogData, FileSyncServer
 public:
     GetReqLogRequest()
         :RpcRequestRequestT<GetReqLogData, FileSyncServerRequest>(METHOD_GET_REQLOG)
+    {
+    }
+};
+
+class GetRunningReqLogRequest : public RpcRequestRequestT<GetRunningReqLogData, FileSyncServerRequest>
+{
+public:
+    GetRunningReqLogRequest()
+        :RpcRequestRequestT<GetRunningReqLogData, FileSyncServerRequest>(METHOD_GET_RUNNING_REQLOG)
     {
     }
 };

@@ -31,7 +31,7 @@ void LogAnalysis::getRecentKeywordList(const std::string& collectionName, uint32
 }
 
 
-void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, const std::string& time_string, std::vector<UserQuery>& queryList)
+void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, const std::string& time_string, std::vector<UserQuery>& queryList,bool fromautofill)
 {
     if(RDbConnection::instance().logServer())
     {
@@ -48,13 +48,28 @@ void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, co
     else
     {
         std::stringstream sql;
-        sql << "select query ,max(hit_docs_num) as hit_docs_num,count(*) as count ";
-        sql << " from " << UserQuery::TableName ;
-        sql << " where " << ("collection = '" + collectionName + "' and hit_docs_num > 0 and TimeStamp >= '" + time_string +"'");
-        sql << " group by " << "query";
-        sql <<";";
+        if(!fromautofill)
+        {
+            sql << "select query ,max(hit_docs_num) as hit_docs_num,count(*) as count ";
+            sql << " from " << UserQuery::TableName ;
+            sql << " where " << ("collection = '" + collectionName + "' and hit_docs_num > 0 and TimeStamp >= '" + time_string +"'");
+            sql << " group by " << "query";
+            sql <<";";
+        }
+        else
+        {
+           sql << "  select t1.query,t1.hit_docs_num,t2.count ";
+           sql << "  from " << UserQuery::TableName ;
+           sql << "  t1 inner join "; 
+           sql << "  (select query,max(TimeStamp) as TimeStamp,count(*) as count  ";
+           sql << "  from   " << UserQuery::TableName ;
+           sql << "  where " << ("collection = '" + collectionName+ "' and TimeStamp >= '" + time_string +"' group by query) t2");
+           sql << "  on t2.TimeStamp= t1.TimeStamp and  t2.query= t1.query ";
+           sql << ";";
+        }
         std::list<std::map<std::string, std::string> > res;
         UserQuery::find_by_sql(sql.str(), res);
+        cout<<sql.str()<<endl;
         std::list<std::map<std::string, std::string> >::iterator it;
         for(it=res.begin();it!=res.end();it++)
         {
@@ -149,6 +164,53 @@ void LogAnalysis::getRecentKeywordFreqList(const std::string& time_string, std::
             uquery.load(*it);
             queryList.push_back(uquery);
         }
+    }
+}
+
+void LogAnalysis::getPropertyLabel(const std::string& collection, std::vector<PropertyLabel>& propertyList)
+{
+    if(RDbConnection::instance().logServer())
+    {
+        std::list<std::map<std::string, std::string> > res;
+        PropertyLabel::get_from_logserver(collection, res);
+        std::list<std::map<std::string, std::string> >::iterator it;
+        for(it=res.begin(); it!=res.end();it++)
+        {
+            PropertyLabel pl;
+            pl.load(*it);
+            propertyList.push_back(pl);
+        }
+    }
+    else
+    {
+        std::stringstream sql;
+        sql << "select label_name, sum(hit_docs_num) AS hit_docs_num";
+        sql << " where collection = '" << collection <<"'";
+        sql << " group by label_name;";
+        std::list<std::map<std::string, std::string> > res;
+        PropertyLabel::find_by_sql(sql.str(), res);
+        std::list<std::map<std::string, std::string> >::iterator it;
+        for(it=res.begin(); it!=res.end();it++)
+        {
+            PropertyLabel pl;
+            pl.load(*it);
+            propertyList.push_back(pl);
+        }
+    }
+}
+
+void LogAnalysis::delPropertyLabel(const std::string& collection)
+{
+    if(RDbConnection::instance().logServer())
+    {
+        PropertyLabel::del_from_logserver(collection);
+    }
+    else
+    {
+        std::stringstream sql;
+        sql << "delete from " << PropertyLabel::TableName;
+        sql << " where collection = '" << collection <<"';";
+        PropertyLabel::delete_by_sql(sql.str()) && RDbConnection::instance().exec("vacuum");
     }
 }
 

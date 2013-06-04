@@ -15,6 +15,7 @@
 
 namespace sf1r
 {
+const std::string syncID_totalComment = "TOTAL_COMMENT";
 class IndexTaskService;
 class ProductScdReceiver
 {
@@ -31,11 +32,16 @@ public:
 
     bool Run(const std::string& scd_source_dir);
 
+    bool getTotalComment(const std::string& scd_source_dir);
+
 private:
 
     bool CopyFileListToDir_(const std::vector<boost::filesystem::path>& file_list, const boost::filesystem::path& to_dir);
 
+    bool CopyTotalCommentToDir_(const std::vector<boost::filesystem::path>& file_list, const boost::filesystem::path& to_dir);
+
     bool NextScdFileName_(std::string& filename) const;
+    
     bool pushIndexRequest(const std::string& scd_source_dir);
 
 private:
@@ -45,6 +51,7 @@ private:
     std::string collectionName_;
     std::string callback_type_;
     SynchroConsumerPtr syncConsumer_;
+    SynchroConsumerPtr syncConsumerRebuildComment_;
 };
 
 }

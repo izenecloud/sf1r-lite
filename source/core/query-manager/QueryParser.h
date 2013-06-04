@@ -54,7 +54,19 @@ namespace sf1r {
                     rootQuery = root_node_d[eps_p] >> +boolQuery;
 
                     boolQuery = (stringQuery | notQuery | priorQuery | exactQuery | orderedQuery | nearbyQuery)
-                        >> !( (root_node_d[chlit<uint16_t>('&')] >> boolQuery) | (root_node_d[chlit<uint16_t>('|')] >> boolQuery) );
+                        >> !( (root_node_d[chlit<uint16_t>('&')] >> boolQuery) 
+                            | (root_node_d[chlit<uint16_t>('#')] >> boolQuery) 
+                            | (root_node_d[chlit<uint16_t>('|')] >> boolQuery) );
+                    
+                    notQuery = root_node_d[chlit<uint16_t>('!')] >> (stringQuery | priorQuery | exactQuery);
+
+                    stringQuery = leaf_node_d[ lexeme_d[+(~chset<uint16_t>(operUStr_.c_str()))] ];
+
+                    exactQuery = root_node_d[chlit<uint16_t>('\"')] >> exactString >> no_node_d[chlit<uint16_t>('\"')];
+                    exactString = leaf_node_d[ lexeme_d[+(~chlit<uint16_t>('\"'))] ];
+
+                    orderedQuery = root_node_d[chlit<uint16_t>('[')] >> orderedString >> no_node_d[chlit<uint16_t>(']')];
+                    orderedString = leaf_node_d[ lexeme_d[+(~chlit<uint16_t>(']'))] ];
                     notQuery = root_node_d[chlit<uint16_t>('!')] >> (stringQuery | priorQuery | exactQuery);
 
                     stringQuery = leaf_node_d[ lexeme_d[+(~chset<uint16_t>(operUStr_.c_str()))] ];

@@ -120,8 +120,25 @@ void DistributeRequestHooker::hookCurrentReq(const std::string& reqdata)
     LOG(INFO) << "current request hooked, data len: " << current_req_.size() << ", data:" << current_req_;
 }
 
-bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& packed_reqdata)
+bool DistributeRequestHooker::onRequestFromPrimary(int type, const std::string& old_packed_reqdata)
 {
+    // get current request packed data from primary.
+    // zookeeper only allow 1MB data. So this can not be stored to zookeeper.
+    std::string packed_reqdata;
+    if( !DistributeFileSyncMgr::get()->getCurrentRunningReqLog(packed_reqdata) )
+    {
+        LOG(ERROR) << "get current running reqlog data from primary failed.";
+        if (!old_packed_reqdata.empty())
+        {
+            LOG(INFO) << "get running reqdata failed. Using old packeddata from zookeeper.";
+            packed_reqdata = old_packed_reqdata;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     TEST_FALSE_RETURN(FalseReturn_At_UnPack);
     LOG(INFO) << "callback for new request from primary, packeddata len: " << packed_reqdata.size();
     CommonReqData reqloghead;

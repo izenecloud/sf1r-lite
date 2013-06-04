@@ -1307,7 +1307,7 @@ void MasterManagerBase::updateServiceReadStateWithoutLock(const std::string& my_
                 ZNode worker_znode;
                 worker_znode.loadKvString(sdata);
                 std::string value = worker_znode.getStrValue(ZNode::KEY_SERVICE_STATE);
-                if (!value.empty() && value != "ReadyForRead" && value != "BusyForShard")
+                if (value != "ReadyForRead" && value != "BusyForShard")
                 {
                     LOG(INFO) << "one shard of master service is not ready for read:" << nodepath;
                     all_ready = false;
@@ -1317,6 +1317,16 @@ void MasterManagerBase::updateServiceReadStateWithoutLock(const std::string& my_
                     }
                     else
                         new_state = "BusyForShard";
+                    break;
+                }
+            }
+            else
+            {
+                LOG(INFO) << "get node data failed: " << nodepath;
+                if (it->second->nodeId_ == sf1rTopology_.curNode_.nodeId_)
+                {
+                    all_ready = false;
+                    new_state = "BusyForSelf";
                     break;
                 }
             }
@@ -1454,14 +1464,14 @@ void MasterManagerBase::resetAggregatorConfig(boost::shared_ptr<AggregatorBase>&
         }
     }
 
-    //std::cout << aggregator->collection() << ":" << std::endl << aggregatorConfig.toString();
-    aggregator->setAggregatorConfig(aggregatorConfig);
+    LOG(INFO) << aggregator->collection() << ":" << aggregatorConfig.toString();
+    aggregator->setAggregatorConfig(aggregatorConfig, true);
 }
 
 void MasterManagerBase::resetAggregatorConfig()
 {
     std::vector<boost::shared_ptr<AggregatorBase> >::iterator agg_it;
-    for (agg_it = aggregatorList_.begin(); agg_it != aggregatorList_.end(); agg_it++)
+    for (agg_it = aggregatorList_.begin(); agg_it != aggregatorList_.end(); ++agg_it)
     {
         resetAggregatorConfig(*agg_it);
     }

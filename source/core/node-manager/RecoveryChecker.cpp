@@ -489,7 +489,7 @@ void RecoveryChecker::replayLog(bool is_primary, const std::string& from_col,
             std::string collection = asString(request[Keys::collection]);
             if (collection != from_col)
             {
-                LOG(INFO) << "not match collection : " << collection;
+                //LOG(INFO) << "not match collection : " << collection;
                 if (!is_primary)
                     break;
                 continue;
@@ -818,7 +818,6 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     {
         backup_basepath_ = DistributeFileSys::get()->getDFSLocalFullPath("/req-backup");
     }
-
     reqlog_mgr_.reset(new ReqLogMgr());
     try
     {
@@ -1193,9 +1192,19 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     LOG(INFO) << "primary agreed , sync new request druing waiting recovery.";
     // check new request during wait recovery.
     syncSCDFiles();
-    syncToNewestReqLog();
-    LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
     // check data consistent with primary.
+    //
+    if (NodeManagerBase::isAsyncEnabled() && NodeManagerBase::get()->isOtherPrimaryAvailable() && !checkIfLogForward(false))
+    {
+        LOG(INFO) << "check log failed while recover, need rollback";
+        if(!rollbackLastFail(false))
+        {
+            forceExit("rollback failed for forword log.");
+        }
+    }
+    LOG(INFO) << "primary agreed and my recovery finished, begin enter cluster";
+    syncToNewestReqLog();
+
     std::string errinfo;
     CollInfoMapT tmp_all_col_info;
     {
@@ -1235,7 +1244,7 @@ void RecoveryChecker::onRecoverWaitPrimaryCallback()
     if (need_backup_)
     {
         LOG(INFO) << "begin backup for config updated.";
-        backup();
+        backup(!DistributeFileSys::get()->isEnabled());
     }
 }
 

@@ -131,7 +131,7 @@ WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
     const std::vector<std::map<termid_t, unsigned> >& termIndexMaps
 )
 {
-    size_t size_of_properties = propertyIds.size();
+    /*size_t size_of_properties = propertyIds.size();
 
     WANDDocumentIterator* pWandScorer = new WANDDocumentIterator(
         propertyWeightMap,
@@ -170,7 +170,7 @@ WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
         delete pWandScorer;
         throw std::runtime_error("Failed to prepare wanddociterator");
         return NULL;
-    }
+    }*/
 }
 
 void QueryBuilder::prepare_for_wand_property_(
@@ -633,6 +633,7 @@ void QueryBuilder::prepare_for_virtual_property_(
                 actionOperation.hasUnigramProperty_,
                 actionOperation.isUnigramSearchMode_
             );
+
     if (!ret)
     {
         for(unsigned j = 0; j < properyConfig.subProperties_.size(); ++j)
@@ -642,17 +643,34 @@ void QueryBuilder::prepare_for_virtual_property_(
             {
                 for (size_t i =0; i < it->second.size(); ++i )
                 {
-                    if(it->second[i])
-                        delete it->second[i];
+                    delete it->second[i];
                 }
                 it->second.clear();
             }
         }
+        return;
     }
+
     if (pIter)
     {
         pScorer->add(properyConfig.getPropertyId(), pIter);
+        pScorer->add(termDocReadersList);
         success_properties++;
+    }
+    else
+    {
+        for(unsigned j = 0; j < properyConfig.subProperties_.size(); ++j)
+        {
+            for (std::map<termid_t, std::vector<TermDocFreqs*> >::iterator
+                    it = termDocReadersList[j].begin(); it != termDocReadersList[j].end(); ++it)
+            {
+                for (size_t i =0; i < it->second.size(); ++i )
+                {
+                    delete it->second[i];
+                }
+                it->second.clear();
+            }
+        }
     }
 }
 
@@ -664,7 +682,7 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
     std::vector<PropertyDataType>& propertyDataTypes,
     bool isNumericFilter,
     bool isReadPosition,
-    std::map<termid_t, unsigned> termIndexMap,
+    const std::map<termid_t, unsigned>& termIndexMap,
     DocumentIteratorPointer& pDocIterator,
     std::vector<std::map<termid_t, std::vector<izenelib::ir::indexmanager::TermDocFreqs*> > >& termDocReadersList,
     bool hasUnigramProperty,
@@ -744,12 +762,15 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
                         pIterator = pTermIterator;
                     else
                         pIterator->add(pTermIterator);
+
+                    constIt->second.pop_back();
                 }
                 else
                 {
+                    delete pTermIterator;
+                    pTermIterator = NULL;
                     pVirtualTermDocIter->set(0);
                 }
-                constIt->second.pop_back();
             }
 
             pVirtualTermDocIter->add(pIterator);
@@ -762,6 +783,7 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
         }
         catch(std::exception& e)
         {
+            LOG (ERROR) << "exception in virtual keyword search...";
             delete pIterator;
             return false;
         }
@@ -1239,6 +1261,7 @@ bool QueryBuilder::do_prepare_for_property_(
         cout<<"AND query "<<property<<endl;
 #endif
         DocumentIterator* pIterator = new ANDDocumentIterator();
+        pIterator->setMissRate(queryTree->children_.size());
         bool ret = false;
         try
         {
@@ -1296,12 +1319,76 @@ bool QueryBuilder::do_prepare_for_property_(
         }
         break;
     } // end - QueryTree::AND
+    case QueryTree::WAND:
+    {
+#ifdef VERBOSE_SERACH_MANAGER
+        cout<<"WAND query "<<property<<endl;
+#endif
+        DocumentIterator* pIterator = new WANDDocumentIterator();
+        pIterator->setMissRate(queryTree->children_.size());
+        bool ret = false;
+        try
+        {
+            for (QTIter wandChildIter = queryTree->children_.begin();
+                    wandChildIter != queryTree->children_.end(); ++wandChildIter)
+            {
+                ret |= do_prepare_for_property_(
+                           *wandChildIter,
+                           colID,
+                           property,
+                           propertyId,
+                           propertyDataType,
+                           isNumericFilter,
+                           readPositions,
+                           termIndexMapInProperty,
+                           pIterator,
+                           virtualTermIters,
+                           termDocReaders,
+                           hasUnigramProperty,
+                           isUnigramSearchMode,
+                           virtualProperty,
+                           1
+                       );
+            }
+            if (!ret)
+            {
+                delete pIterator;
+                return false;
+            }
+            
+            if(!virtualProperty.empty())
+            {
+                if(!parentAndOrFlag)
+                {
+                    if(NULL == pDocIterator)
+                    {
+                        pDocIterator = pIterator;
+                    }
+                    else delete pIterator;
+                    std::map<termid_t, VirtualPropertyTermDocumentIterator* >::iterator vit = virtualTermIters.begin();
+                    for(; vit != virtualTermIters.end(); ++vit)
+                        pDocIterator->add(vit->second);
+                }
+            }
+            else if (NULL == pDocIterator)
+                pDocIterator = pIterator;
+            else
+                pDocIterator->add(pIterator);
+        }
+        catch(std::exception& e)
+        {
+            delete pIterator;
+            return false;
+        }
+        break;
+    } // end - QueryTree::WAND
     case QueryTree::OR:
     {
 #ifdef VERBOSE_SERACH_MANAGER
         cout<<"OR query "<<property<<endl;
 #endif
         DocumentIterator* pIterator = new ORDocumentIterator();
+        pIterator->setMissRate(queryTree->children_.size());
         bool ret = false;
         try
         {

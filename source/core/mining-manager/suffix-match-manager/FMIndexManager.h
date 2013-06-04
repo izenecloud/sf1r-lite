@@ -84,6 +84,7 @@ public:
             const std::vector<RangeListT> &filter_ranges,
             const RangeListT &match_ranges_list,
             const std::vector<double> &score_list,
+            size_t thres,
             size_t max_docs,
             std::vector<std::pair<double, uint32_t> > &res_list) const;
 

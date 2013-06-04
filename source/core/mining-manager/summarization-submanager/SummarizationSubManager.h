@@ -55,8 +55,6 @@ public:
             const izenelib::util::UString& rawKey,
             Summarization& result);
     
-    void syncFullSummScd();
-
     virtual bool buildDocument(docid_t docID, const Document& doc);
 
     virtual bool preProcess();
@@ -96,8 +94,6 @@ private:
     std::string collectionName_;
     std::string homePath_;
     SummarizeConfig schema_;
-
-    ScdControlRecevier* scd_control_recevier_;
 
     fstream total_Opinion_Scd_;
     fstream total_Score_Scd_;

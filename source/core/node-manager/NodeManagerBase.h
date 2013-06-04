@@ -118,8 +118,9 @@ public:
     bool isOtherPrimaryAvailable();
     bool isConnected();
 
+    bool isAnyWriteRunningInReplicas();
     bool getCurrNodeSyncServerInfo(std::string& ip, int randnum);
-    bool getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary = false);
+    bool getAllReplicaInfo(std::vector<std::string>& replicas, bool includeprimary = false, bool force = false);
     bool getCurrPrimaryInfo(std::string& primary_host);
 
     void setSlowWriting();
@@ -127,6 +128,10 @@ public:
     void notifyMasterReadyForNew();
     void abortRequest();
     void finishLocalReqProcess(int type, const std::string& reqdata);
+    inline std::string getSavedPackedData()
+    {
+        return saved_packed_reqdata_;
+    }
 
     void setCallback(NoFailCBFuncT on_elect_finished, NoFailCBFuncT on_wait_finish_process,
         NoFailCBFuncT on_wait_finish_log, NoFailCBFuncT on_wait_primary, NoFailCBFuncT on_abort_request,
@@ -218,7 +223,7 @@ protected:
     void updateSelfPrimaryNodeState();
 
     std::string findReCreatedSelfPrimaryNode();
-    void resetWriteState();
+    void resetWriteState(bool need_re_enter = false);
     bool isNeedReEnterCluster();
     bool isNeedCheckElecting();
     NodeStateType getPrimaryState();

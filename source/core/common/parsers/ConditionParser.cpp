@@ -11,6 +11,8 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+#include <iostream>
+
 namespace sf1r {
 
 using driver::Keys;
@@ -90,8 +92,11 @@ bool ConditionParser::parse(const Value& condition)
     }
 
     // use formal name
+
     op_ = operatorInfo->second.name;
 
+    id_type_ = asString(condition["id_type"]);
+    //std::cout<<"id_type"<<id_type<<std::endl;
     return true;
 }
 

@@ -10,7 +10,7 @@ using namespace cma;
 
 namespace sf1r
 {
-const UString ProductTokenizer::SPACE_UCHAR(" ", UString::UTF_8);
+const UString::CharT ProductTokenizer::SPACE_UCHAR = ' ';
 
 ProductTokenizer::ProductTokenizer(
     TokenizerType type,
@@ -85,8 +85,8 @@ void ProductTokenizer::GetDictTokens_(
     size_t len, lastpos, beginpos, retLen;
     for (std::list<std::string>::const_iterator it = input.begin(); it != input.end(); ++it)
     {
-        const char* start = (*it).c_str();
-        len = (*it).length();
+        const char* start = it->c_str();
+        len = it->length();
         lastpos = beginpos = 0;
         while (beginpos < len)
         {
@@ -109,7 +109,9 @@ void ProductTokenizer::GetDictTokens_(
             }
         }
         if (beginpos > lastpos)
+        {
             left.push_back(std::string(start + lastpos, beginpos - lastpos));
+        }
     }
 }
 
@@ -150,7 +152,7 @@ inline bool isProductType(const UString& str)
 
 void ProductTokenizer::DoBigram_(
         const UString& pattern,
-        std::list<std::pair<UString,double> >& tokens,
+        std::list<std::pair<UString, double> >& tokens,
         double score)
 {
     size_t i, len = pattern.length();
@@ -239,10 +241,13 @@ void ProductTokenizer::DoBigram_(
             }
         }
     }
-    else tokens.push_back(std::make_pair(pattern, score));
+    else
+    {
+        tokens.push_back(std::make_pair(pattern, score));
+    }
 }
 
-void ProductTokenizer::GetLeftTokens_(
+bool ProductTokenizer::GetLeftTokens_(
         const std::list<std::string>& input,
         std::list<std::pair<UString,double> >& tokens,
         double score)
@@ -250,12 +255,13 @@ void ProductTokenizer::GetLeftTokens_(
     ///Chinese bigram
     for (std::list<std::string>::const_iterator it = input.begin(); it != input.end(); ++it)
     {
-        UString pattern(*it, UString::UTF_8);
-        DoBigram_(pattern, tokens, score);
+        DoBigram_(UString(*it, UString::UTF_8), tokens, score);
     }
+
+    return !tokens.empty();
 }
 
-void ProductTokenizer::GetLeftTokens_(
+bool ProductTokenizer::GetLeftTokens_(
         const std::list<UString>& input,
         std::list<std::pair<UString,double> >& tokens,
         double score)
@@ -265,25 +271,29 @@ void ProductTokenizer::GetLeftTokens_(
     {
         DoBigram_(*it, tokens, score);
     }
+
+    return !tokens.empty();
 }
 
 bool ProductTokenizer::GetTokenResults(
         const std::string& pattern,
-        std::list<std::pair<UString,double> >& token_results,
+        std::list<std::pair<UString,double> >& major_tokens,
+        std::list<std::pair<UString,double> >& minor_tokens,
         UString& refined_results)
 {
-    if (matcher_ &&
-        GetTokenResultsByMatcher_(pattern, token_results, refined_results))
+    if (matcher_ && GetTokenResultsByMatcher_(pattern, major_tokens, minor_tokens, refined_results))
     {
         return true;
     }
+
     switch (type_)
     {
     case TOKENIZER_DICT:
-        return GetTokenResultsByDict_(pattern, token_results, refined_results);
+        return GetTokenResultsByDict_(pattern, minor_tokens, refined_results);
     case TOKENIZER_CMA:
-        return GetTokenResultsByCMA_(pattern, token_results, refined_results);
+        return GetTokenResultsByCMA_(pattern, minor_tokens, refined_results);
     }
+
     return false;
 }
 
@@ -306,8 +316,8 @@ bool ProductTokenizer::GetTokenResultsByCMA_(
     {
         for (std::list<std::pair<UString,double> >::iterator it = token_results.begin(); it != token_results.end(); ++it)
         {
-            refined_results += it->first;
-            refined_results += SPACE_UCHAR;
+            refined_results.append(it->first);
+            refined_results.push_back(SPACE_UCHAR);
         }
     }
 
@@ -342,70 +352,68 @@ bool ProductTokenizer::GetTokenResultsByDict_(
     {
         for (std::list<std::pair<UString,double> >::iterator it = token_results.begin(); it != token_results.end(); ++it)
         {
-            refined_results += it->first;
-            refined_results += SPACE_UCHAR;
+            refined_results.append(it->first);
+            refined_results.push_back(SPACE_UCHAR);
         }
     }
 
     std::list<std::pair<UString, double> > left_tokens;
-    GetLeftTokens_(input, left_tokens);
-    if (!left_tokens.empty())
+    if (GetLeftTokens_(input, left_tokens))
     {
-        std::list<std::pair<UString,double> >::iterator it = left_tokens.begin();
-        for (; it != left_tokens.end(); ++it)
+        for (std::list<std::pair<UString,double> >::iterator it = left_tokens.begin();
+                it != left_tokens.end(); ++it)
         {
             if (isProductType(it->first))
             {
                 it->second += 1.0;
-                refined_results += it->first;
-                refined_results += SPACE_UCHAR;
+                refined_results.append(it->first);
+                refined_results.push_back(SPACE_UCHAR);
             }
         }
         token_results.splice(token_results.end(), left_tokens);
     }
+
     return !token_results.empty();
 }
 
 bool ProductTokenizer::GetTokenResultsByMatcher_(
         const std::string& pattern,
-        std::list<std::pair<UString,double> >& tokens,
+        std::list<std::pair<UString, double> >& major_tokens,
+        std::list<std::pair<UString, double> >& minor_tokens,
         UString& refined_results)
 {
     if (!matcher_) return false;
 
-    std::list<std::pair<UString,double> > left_hits;
+    UString patternUStr(pattern, UString::UTF_8);
     std::list<UString> left;
 
-    matcher_->GetSearchKeywords(UString(pattern, UString::UTF_8), tokens, left_hits, left);
+    matcher_->GetSearchKeywords(patternUStr, major_tokens, minor_tokens, left);
 
-    if (!tokens.empty())
+    if (!major_tokens.empty())
     {
-        std::list<std::pair<UString,double> >::iterator it = tokens.begin();
-        for (; it != tokens.end(); ++it)
+        std::list<std::pair<UString,double> >::iterator it = major_tokens.begin();
+        while (it != major_tokens.end())
         {
-            refined_results += it->first;
-            refined_results += SPACE_UCHAR;
+            if (patternUStr.find(it->first) != UString::npos)
+            {
+                refined_results.append(it->first);
+                refined_results.push_back(SPACE_UCHAR);
+                ++it;
+            }
+            else
+            {
+                it = major_tokens.erase(it);
+            }
         }
     }
-    tokens.splice(tokens.end(), left_hits);
+
     std::list<std::pair<UString, double> > left_tokens;
-    GetLeftTokens_(left, left_tokens, 0.1);
-    if (!left_tokens.empty())
+    if (GetLeftTokens_(left, left_tokens, 0.1))
     {
-        /*
-        std::list<std::pair<UString,double> >::iterator it = left_tokens.begin();
-        for (; it != left_tokens.end(); ++it)
-        {
-            if (isProductType(it->first))
-            {
-                it->second += 0.1;
-                refined_results += it->first;
-                refined_results += SPACE_UCHAR;
-            }
-        }*/
-        tokens.splice(tokens.end(), left_tokens);
+        minor_tokens.splice(minor_tokens.end(), left_tokens);
     }
-    return !tokens.empty();
+
+    return !(major_tokens.empty() && minor_tokens.empty());
 }
 
 }

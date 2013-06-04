@@ -443,7 +443,6 @@ void CobraProcess::stopCollections()
 
 int CobraProcess::run()
 {
-    setupDefaultSignalHandlers();
 
     bool caughtException = false;
 
@@ -466,6 +465,7 @@ int CobraProcess::run()
         stopCollections();
 
         LOG(INFO) << "CobraProcess has exited";
+        waitSignalThread();
     }
     catch (const std::exception& e)
     {

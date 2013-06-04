@@ -111,9 +111,19 @@ public:
         return pTermDocReader_->freq();
     }
 
-    void set_ub(float ub)
+    void setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap)
     {
-        ub_ = ub;
+        ub_ = ubmap[property_][termIndex_]; 
+    }
+
+    float getUB()
+    {
+        return ub_;
+    }
+    
+    const char* getProperty()
+    {
+        return property_.c_str();
     }
 
     termid_t termId()
@@ -171,6 +181,7 @@ protected:
     bool readPositions_;
 
     float ub_;
+
     friend class WANDDocumentIterator;
     friend class VirtualPropertyTermDocumentIterator;
 };

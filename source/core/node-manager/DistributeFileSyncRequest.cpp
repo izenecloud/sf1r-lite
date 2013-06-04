@@ -13,7 +13,8 @@ const FileSyncServerRequest::method_t FileSyncServerRequest::method_names[] =
     "ready_receive",
     "finish_receive",
     "report_status_req",
-    "report_status_rsp"
+    "report_status_rsp",
+    "get_running_reqlog"
 };
 
 }

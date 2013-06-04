@@ -151,6 +151,7 @@ void TuanEnricher::GetEnrichedQuery(
             false,
             match_ranges_list,
             max_match_list,
+            0,
             max_docs,
             single_res_list);
 
@@ -223,4 +224,3 @@ void TuanEnricher::GetEnrichedQuery(
 }
 
 }
-

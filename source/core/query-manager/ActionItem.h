@@ -213,6 +213,11 @@ public:
     std::string expandedQueryString_;
 
     ///
+    /// @brief the normalized query string.
+    ///
+    std::string normalizedQueryString_;
+
+    ///
     /// @brief a user id. The user id is accompanied with the query string
     ///          in a search request.
     ///
@@ -242,11 +247,13 @@ public:
     std::string querySource_;
 
     DATA_IO_LOAD_SAVE(RequesterEnvironment,
-            & isLogging_ & encodingType_ & queryString_ & expandedQueryString_
+            & isLogging_ & encodingType_
+            & queryString_ & expandedQueryString_ & normalizedQueryString_
             & userID_ & taxonomyLabel_ & nameEntityItem_ & nameEntityType_
             & ipAddress_ & querySource_);
 
-    MSGPACK_DEFINE(isLogging_, encodingType_, queryString_, expandedQueryString_,
+    MSGPACK_DEFINE(isLogging_, encodingType_,
+            queryString_, expandedQueryString_, normalizedQueryString_,
             userID_, taxonomyLabel_, nameEntityItem_, nameEntityItem_, nameEntityType_,
             ipAddress_, querySource_);
 
@@ -261,6 +268,7 @@ private:
         ar & encodingType_;
         ar & queryString_;
         ar & expandedQueryString_;
+        ar & normalizedQueryString_;
         ar & userID_;
         ar & taxonomyLabel_;
         ar & nameEntityItem_;

@@ -35,6 +35,7 @@ VirtualTermDocumentIterator::VirtualTermDocumentIterator(
     , propertyIdList_(propertyIdList)
     , dataTypeList_(dataTypeList)
     , termIndex_(termIndex)
+    , OrDocIterator_(NULL)
 {
     readPositions_ = false;
 }
@@ -58,22 +59,16 @@ VirtualTermDocumentIterator::VirtualTermDocumentIterator(
     , propertyIdList_(propertyIdList)
     , dataTypeList_(dataTypeList)
     , termIndex_(termIndex)
+    , OrDocIterator_(NULL)
 {
     readPositions_ = false;
 }
 
 VirtualTermDocumentIterator::~VirtualTermDocumentIterator()
 {
-    if (pTermReader_)
+    if (OrDocIterator_)
     {
-        delete pTermReader_;
-    }
-    for (uint32_t i = 0; i < pTermDocReaderList_.size(); ++i)
-    {
-        if (pTermDocReaderList_[i])
-        {
-            delete pTermDocReaderList_[i];
-        }
+        delete OrDocIterator_;
     }
 }
 

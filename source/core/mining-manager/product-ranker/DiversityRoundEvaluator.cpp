@@ -27,9 +27,13 @@ score_t DiversityRoundEvaluator::evaluate(ProductScore& productScore)
     faceted::PropValueTable::PropIdList propIdList;
     diversityValueTable_.getPropIdList(productScore.docId_, propIdList);
 
-    // ignore multiple merchants
-    if (propIdList.size() != 1)
+    // maximum score for multiple merchants
+    if (propIdList.size() > 1)
         return 0;
+
+    // minimum score for empty merchant
+    if (propIdList.empty())
+        return -productScore.topKNum_;
 
     // reset the round status when "category score" is changed
     const score_t categoryScore = rankScores[0];
