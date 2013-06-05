@@ -23,7 +23,8 @@ public:
     std::string getDFSPath(const std::string& dfs_location);
     // return the full path for local shard node, node_prefix_path will be inserted.
     std::string getDFSLocalFullPath(const std::string& dfs_location);
-    bool copyToDFS(std::string& in_out_path, const std::string& custom_prefix);
+    bool copyToDFS(std::string& in_out_path, const std::string& custom_prefix, bool fixedpath = false);
+    std::string getFixedCopyPath(const std::string& custom_prefix);
 
 private:
     bool dfs_enabled_;

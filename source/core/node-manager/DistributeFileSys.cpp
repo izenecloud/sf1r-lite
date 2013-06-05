@@ -1,4 +1,5 @@
 #include "DistributeFileSys.h"
+#include "SuperNodeManager.h"
 #include <common/Utilities.h>
 
 #include <glog/logging.h>
@@ -52,11 +53,19 @@ std::string DistributeFileSys::getDFSLocalFullPath(const std::string& dfs_locati
     return dfs_local_root_ + "/" + dfs_location;
 }
 
-bool DistributeFileSys::copyToDFS(std::string& in_out_path, const std::string& custom_prefix)
+std::string DistributeFileSys::getFixedCopyPath(const std::string& custom_prefix)
+{
+    return dfs_copy_prefix + "/" + SuperNodeManager::get()->getClusterId() + "/" + custom_prefix;
+}
+
+bool DistributeFileSys::copyToDFS(std::string& in_out_path, const std::string& custom_prefix, bool fixedpath)
 {
     static const bfs::directory_iterator end_it = bfs::directory_iterator();
-    bfs::path dfs_out_path = bfs::path(dfs_copy_prefix)/bfs::path(custom_prefix);
-    dfs_out_path /= bfs::path(boost::lexical_cast<std::string>(Utilities::createTimeStamp()));
+    bfs::path dfs_out_path(getFixedCopyPath(custom_prefix));
+
+    if (!fixedpath)
+        dfs_out_path /= bfs::path(boost::lexical_cast<std::string>(Utilities::createTimeStamp()));
+
     bfs::path dest = bfs::path(getDFSPath(dfs_out_path.string()));
     if (!bfs::exists(dest))
     {

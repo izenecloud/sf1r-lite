@@ -81,6 +81,10 @@ public:
     void sendReportStatusRsp(const std::string& ip, uint16_t port, const ReportStatusRsp& rsp);
     bool getCachedCheckSum(const std::string& filepath, std::string& ret_checksum);
     void updateCachedCheckSum(const std::string& filepath, const std::string& checksum);
+    boost::mutex& getFlushComputeLock()
+    {
+        return flush_compute_mutex_;
+    }
 
 private:
     void saveCachedCheckSum();
@@ -93,6 +97,7 @@ private:
     boost::condition_variable cond_;
     std::map<std::string, bool> wait_finish_notify_;
     boost::mutex status_report_mutex_;
+    boost::mutex flush_compute_mutex_;
     bool  reporting_;
     boost::condition_variable status_report_cond_;
     std::vector<ReportStatusRspData>  status_rsp_list_;
