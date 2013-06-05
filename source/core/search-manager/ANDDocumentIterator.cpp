@@ -60,6 +60,31 @@ void ANDDocumentIterator::df_cmtf(
     }
 }
 
+void ANDDocumentIterator:: setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap)
+{
+    std::list<DocumentIterator*>::iterator it = docIterList_.begin();
+    for (; it != docIterList_.end(); it++)
+    {
+        (*it)->setUB(useOriginalQuery, ubmap);
+    }
+
+    unsigned short nItems = docIterList_.size();
+    missRate_ = (missRate_ - nItems) / missRate_;
+    //LOG(INFO)<<"====AND::missRate===>>"<<missRate_;
+    //LOG(INFO)<<"====AND::getUB===>>"<<getUB();
+}
+
+float ANDDocumentIterator::getUB()
+{
+    float sumUB = 0.0;
+    std::list<DocumentIterator*>::iterator it = docIterList_.begin();
+    for (; it != docIterList_.end(); it++)
+    {
+        sumUB += (*it)->getUB();
+    }
+    return sumUB / (1 - missRate_);
+}
+
 count_t ANDDocumentIterator::tf()
 {
     DocumentIterator* pEntry;

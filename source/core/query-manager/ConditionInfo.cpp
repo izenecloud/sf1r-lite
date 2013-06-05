@@ -34,7 +34,7 @@ SearchingModeInfo::SearchingModeInfo(void):
     useOriginalQuery_(true),
     usefuzzy_(false),
     filtermode_(SearchingMode::DefaultFilterMode),
-    useQueryPrune_(false)
+    useQueryPrune_(true)
 {
 }
 
@@ -46,7 +46,7 @@ void SearchingModeInfo::clear(void)
     useOriginalQuery_ = true;
     usefuzzy_ = false;
     filtermode_ = SearchingMode::DefaultFilterMode;
-    useQueryPrune_ = false;
+    useQueryPrune_ = true;
 }
 
 } // end - namespace sf1r

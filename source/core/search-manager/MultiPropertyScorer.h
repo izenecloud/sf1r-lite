@@ -80,6 +80,10 @@ public:
         termDocReadersListVirtual_ = termDocReadersList;
     }
 
+    void setUB(bool useOriginalQuery, UpperBoundInProperties& ubmap);
+
+    void initThreshold(float threshold);
+
     /**
      * @warn not thread-safe, use multiple instances in multiple threads.
      */

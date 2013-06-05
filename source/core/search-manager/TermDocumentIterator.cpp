@@ -36,6 +36,7 @@ TermDocumentIterator::TermDocumentIterator(
     ,pTermDocReader_(0)
     ,df_(0)
     ,readPositions_(readPositions)
+    ,ub_(0)
 {
 }
 
