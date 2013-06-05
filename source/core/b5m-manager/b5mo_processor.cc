@@ -430,6 +430,8 @@ bool B5moProcessor::Generate(const std::string& scd_path, const std::string& mdb
     if(sorter_!=NULL)
     {
         sorter_->StageOne();
+        delete sorter_;
+        sorter_ = NULL;
     }
     //if(!changed_match_.empty())
     //{
