@@ -72,7 +72,7 @@ bool QueryCategorizer::GetCategoryByMatcher_(
 
     return frontends.empty() ? false : true;
 }
-
+/*
 bool QueryCategorizer::GetCategoryBySPU_(
     const std::string& query,
     std::vector<UString>& frontCategories)
@@ -135,7 +135,7 @@ bool QueryCategorizer::GetCategoryBySuffixMatcher_(
     }
 
     return !frontCategories.empty();
-}
+}*/
 
 bool QueryCategorizer::GetSplittedCategories_(
     std::vector<UString>& frontends,
@@ -215,7 +215,8 @@ bool QueryCategorizer::GetProductCategory(
             return true;
         }
     }
-    if(!modes_.empty()&&frontCategories.empty())
+    
+/*    if(!modes_.empty()&&frontCategories.empty())
     {
         std::string enriched_query;
         spu_classifier_->GetEnrichedQuery(query, enriched_query);
@@ -238,7 +239,7 @@ bool QueryCategorizer::GetProductCategory(
                 break;
             }
         }
-    }
+    }*/
     bool ret = GetSplittedCategories_(frontCategories, limit, pathVec);
     cache_.insertValue(query, pathVec);
     return ret;
