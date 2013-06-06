@@ -515,10 +515,11 @@ bool MiningManager::open()
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
-        
-        if (queryIntentManager_) delete queryIntentManager_;
-        queryIntentManager_ = new QueryIntentManager();
-        
+        if (mining_schema_.query_intent_enable)
+        {
+            if (queryIntentManager_) delete queryIntentManager_;
+            queryIntentManager_ = new QueryIntentManager(&(mining_schema_.query_intent_config));
+        }
         /** tdt **/
         if (mining_schema_.tdt_enable)
         {

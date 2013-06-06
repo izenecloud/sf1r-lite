@@ -20,7 +20,14 @@ class ClassifierContext
 class ClassifierFactory
 {
 public:
+    ClassifierFactory(QueryIntentConfig* config)
+        : config_(config)
+    {
+    }
+public:
     Classifier* createClassifier(ClassifierContext& context);
+private:
+    QueryIntentConfig* config_;
 };
 
 }

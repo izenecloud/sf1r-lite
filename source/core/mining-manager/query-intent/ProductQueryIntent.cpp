@@ -1,5 +1,4 @@
 #include "ProductQueryIntent.h"
-#include "QueryIntentType.h"
 #include "QueryIntentHelper.h"
 
 #include <common/Keys.h>
@@ -20,8 +19,7 @@ void ProductQueryIntent::process(izenelib::driver::Request& request)
         return;
     
     std::string keywords = asString(request[Keys::search][Keys::keywords]);
-    LOG(INFO)<<keywords;
-    std::map<QueryIntentType, std::list<std::string> > intents;
+    std::list<std::pair<QueryIntentCategory, std::list<std::string> > > intents;
     int ret = classifier_->classify(intents, keywords);
   
     if (-1 == ret)

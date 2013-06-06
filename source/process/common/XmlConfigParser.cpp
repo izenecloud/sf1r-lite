@@ -2142,11 +2142,29 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         std::sort(mining_schema.suffixmatch_schema.date_filter_properties.begin(), mining_schema.suffixmatch_schema.date_filter_properties.end());
         std::sort(mining_schema.suffixmatch_schema.num_filter_properties.begin(), mining_schema.suffixmatch_schema.num_filter_properties.end());
     }
+    
     task_node = getUniqChildElement(mining_schema_node, "ProductMatcher", false);
     if (task_node)
     {
         mining_schema.product_matcher_enable = true;
         getAttribute(task_node, "mode", mining_schema.product_categorizer_mode, false);
+    }
+    
+    task_node = getUniqChildElement(mining_schema_node, "QueryIntent", false);
+    mining_schema.query_intent_enable = false;
+    if (task_node)
+    {
+        mining_schema.query_intent_enable = true;
+        Iterator<Element> it("Category");
+        for (it = it.begin(task_node); it != it.end(); ++it)
+        {
+            const ticpp::Element* cate_node = it.Get();
+            std::string cate_name, prop_name, op;
+            getAttribute(cate_node, "name", cate_name);
+            getAttribute(cate_node, "property", prop_name);
+            getAttribute(cate_node, "operator", op);
+            mining_schema.query_intent_config.insertQueryIntentConfig(cate_name, prop_name, op);
+        }
     }
 }
 

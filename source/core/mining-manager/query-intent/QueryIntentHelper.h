@@ -10,17 +10,13 @@
 #include <map>
 #include <list>
 
-#include "QueryIntentType.h"
-
 #include <util/driver/Request.h>
+#include <configuration-manager/QueryIntentConfig.h>
 
 namespace sf1r
 {
-
-const char* intentToString(QueryIntentType intentType);
-
 void rewriteRequest(izenelib::driver::Request& request,
-             std::map<QueryIntentType, std::list<std::string> >& intents);
+             std::list<std::pair<QueryIntentCategory, std::list<std::string> > >& intents);
 }
 
 #endif // QueryIntentHelper.h

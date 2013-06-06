@@ -8,11 +8,11 @@
 #ifndef SF1R_CLASSIFIER_H
 #define SF1R_CLASSIFIER_H
 
-#include "QueryIntentType.h"
-
-#include <map>
 #include <list>
 #include <string>
+#include <utility>
+
+#include <configuration-manager/QueryIntentConfig.h>
 
 namespace sf1r
 {
@@ -20,6 +20,10 @@ namespace sf1r
 class Classifier
 {
 public:
+    Classifier(QueryIntentConfig* config)
+        : config_(config)
+    {
+    }
     virtual ~Classifier()
     {
     }
@@ -27,7 +31,9 @@ public:
     //
     // classify query into several QueryIntentType, remove classified keywords from query.
     //
-    virtual int classify(std::map<QueryIntentType, std::list<std::string> >& , std::string& query) = 0;
+    virtual int classify(std::list<std::pair<QueryIntentCategory, std::list<std::string> > >& , std::string& query) = 0;
+protected:
+    QueryIntentConfig* config_;
 };
 
 }

@@ -5,6 +5,6 @@ namespace sf1r
 {
 Classifier* ClassifierFactory::createClassifier(ClassifierContext& context)
 {
-    return new NaiveBayesClassifier();
+    return new NaiveBayesClassifier(config_);
 }
 }

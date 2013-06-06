@@ -3,10 +3,11 @@
 namespace sf1r
 {
 
-QueryIntentManager::QueryIntentManager()
+QueryIntentManager::QueryIntentManager(QueryIntentConfig* config)
 {
+    config_ = config;
     intentFactory_ = new QueryIntentFactory();
-    classifierFactory_ = new ClassifierFactory();
+    classifierFactory_ = new ClassifierFactory(config);
 }
 
 QueryIntentManager::~QueryIntentManager()

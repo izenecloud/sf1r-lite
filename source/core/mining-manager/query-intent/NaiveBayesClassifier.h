@@ -15,7 +15,12 @@ namespace sf1r
 class NaiveBayesClassifier : public Classifier
 {
 public:
-    int classify(std::map<QueryIntentType, std::list<std::string> >& , std::string& query);
+    NaiveBayesClassifier(QueryIntentConfig* config)
+        : Classifier(config)
+    {
+    }
+public:
+    int classify(std::list<std::pair<QueryIntentCategory, std::list<std::string> > >& , std::string& query);
 };
 
 }

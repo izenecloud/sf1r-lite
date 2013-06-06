@@ -13,20 +13,21 @@
 #include "ClassifierFactory.h"
 
 #include <util/driver/Request.h>
-
+#include <configuration-manager/QueryIntentConfig.h>
 namespace sf1r
 {
 
 class QueryIntentManager
 {
 public:
-    QueryIntentManager();
+    QueryIntentManager(QueryIntentConfig* config);
     ~QueryIntentManager();
 public:
     void queryIntent(izenelib::driver::Request& request);   
 private:
     QueryIntentFactory* intentFactory_;
     ClassifierFactory* classifierFactory_;
+    QueryIntentConfig* config_;
 };
 
 }

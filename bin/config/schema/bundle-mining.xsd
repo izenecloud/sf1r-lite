@@ -162,6 +162,7 @@
                             <xs:element ref="Summarization" minOccurs="0"/>
                             <xs:element ref="SuffixMatch" minOccurs="0"/>
                             <xs:element ref="ProductMatcher" minOccurs="0"/>
+                            <xs:element ref="QueryIntent" minOccurs="0"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -259,6 +260,15 @@
             </xs:sequence>
         </xs:complexType>
     </xs:element>
+    
+    <xs:element name="QueryIntent">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Category" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
 
     <xs:element name="TokenizeDictionary">
         <xs:complexType>
