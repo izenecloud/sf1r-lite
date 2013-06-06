@@ -79,6 +79,18 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
         syncData_ = syncData;
     }
 
+    if (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::TOTAL_COMMENT_SCD)
+    {
+        if (!DistributeFileSys::get()->copyToDFS(dataPath, "/produce/total_comment_scd/", true))
+        {
+            LOG(WARNING) << "copy file to dfs failed.";
+            return false;
+        }
+        LOG(INFO) << "copy total comment scd files to dfs success : " << dataPath;
+        syncData.setValue(SynchroData::KEY_DATA_PATH, dataPath);
+        syncData_ = syncData;
+    }
+
     // produce
     if (doProduce(syncData))
     {
@@ -313,7 +325,7 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
 
     bool ret = true;
     // to local host
-    if (consumerHost == SuperNodeManager::get()->getLocalHostIP())
+    if (consumerHost == SuperNodeManager::get()->getLocalHostIP()) // call_back
     {
         LOG(INFO) << SYNCHRO_PRODUCER << " consumerHost: " << consumerHost << " is on localhost";
         ret = true;
@@ -347,8 +359,14 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
             }
             else if (dataType == SynchroData::TOTAL_COMMENT_SCD)
             {
-
-                recvDir = consumerCollection+"/scd/rebuild_scd";
+                if (NodeManagerBase::get()->isDistributed())
+                {
+                    //xxx  use DFS already ...
+                }
+                else
+                {
+                    recvDir = consumerCollection+"/scd/rebuild_scd";
+                }
             }
             else
             {
@@ -357,7 +375,8 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
 
             LOG(INFO) << SYNCHRO_PRODUCER << " transfer data " << dataPath
                       << " to " << consumerHost << ":" <<consumerPort;
-            if (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::DATA_TYPE_SCD_INDEX)
+            if ( (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::DATA_TYPE_SCD_INDEX) ||
+                (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::TOTAL_COMMENT_SCD) )
             {
                 LOG(INFO) << "scd file no need transfer while DFS enabled .";
                 ret = true;

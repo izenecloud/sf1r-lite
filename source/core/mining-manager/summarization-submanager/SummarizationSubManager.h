@@ -46,8 +46,6 @@ public:
 
     ~MultiDocSummarizationSubManager();
 
-    void EvaluateSummarization();
-
     void AppendSearchFilter(
             std::vector<QueryFiltering::FilteringType>& filtingList);
 
