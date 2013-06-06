@@ -55,6 +55,7 @@
 
 #include "product-classifier/SPUProductClassifier.hpp"
 #include "product-classifier/QueryCategorizer.hpp"
+#include "query-intent/QueryIntentManager.h"
 
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
@@ -171,6 +172,7 @@ MiningManager::MiningManager(
     , groupLabelKnowledge_(NULL)
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
+    , queryIntentManager_(NULL)
     , tdt_storage_(NULL)
     , topicDetector_(NULL)
     , summarizationManagerTask_(NULL)
@@ -190,6 +192,7 @@ MiningManager::~MiningManager()
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
     if (productRankerFactory_) delete productRankerFactory_;
+    if (queryIntentManager_) delete queryIntentManager_;
     if (productScorerFactory_) delete productScorerFactory_;
     if (groupLabelKnowledge_) delete groupLabelKnowledge_;
     if (productScoreManager_) delete productScoreManager_;
@@ -512,7 +515,10 @@ bool MiningManager::open()
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
-
+        
+        if (queryIntentManager_) delete queryIntentManager_;
+        queryIntentManager_ = new QueryIntentManager();
+        
         /** tdt **/
         if (mining_schema_.tdt_enable)
         {
