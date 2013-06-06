@@ -355,7 +355,7 @@ bool DocumentsSearchHandler::doGet(
 bool DocumentsSearchHandler::parse()
 {
     QueryIntentManager* queryIntentManager =miningSearchService_->GetMiningManager()->getQueryIntentManager(); 
-    if (queryIntentManagr)
+    if (queryIntentManager)
         queryIntentManager->queryIntent(request_);
 
     std::vector<Parser*> parsers;
