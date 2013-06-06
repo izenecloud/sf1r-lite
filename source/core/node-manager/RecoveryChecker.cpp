@@ -816,7 +816,7 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
     need_backup_ = false;
     if (DistributeFileSys::get()->isEnabled())
     {
-        backup_basepath_ = DistributeFileSys::get()->getDFSLocalFullPath("/req-backup");
+        backup_basepath_ = DistributeFileSys::get()->getDFSPathForLocalNode("/req-backup");
     }
     reqlog_mgr_.reset(new ReqLogMgr());
     try

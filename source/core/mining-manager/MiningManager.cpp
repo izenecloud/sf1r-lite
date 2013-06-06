@@ -2271,6 +2271,24 @@ bool MiningManager::GetSuffixMatch(
                                         filter_param,
                                         actionOperation.actionItem_.groupParam_,
                                         res_list);
+                if (res_list.empty())
+                {
+                    for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin();
+                    i != major_tokens.end(); ++i)
+                    {
+                        minor_tokens.push_back(*i);
+                    }
+                    major_tokens.clear();
+                    totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                        major_tokens,
+                                        minor_tokens,
+                                        search_in_properties,
+                                        max_docs,
+                                        actionOperation.actionItem_.searchingMode_.filtermode_,
+                                        filter_param,
+                                        actionOperation.actionItem_.groupParam_,
+                                        res_list);
+                }
             }
         }
         else
@@ -2284,9 +2302,8 @@ bool MiningManager::GetSuffixMatch(
                                         filter_param,
                                         actionOperation.actionItem_.groupParam_,
                                         res_list);
-            if (res_list.empty())
+            if (res_list.empty() && major_tokens.size() != 0)
             {
-                
                 std::vector<std::pair<std::string, double> > v_pair;
                 for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
                 {
@@ -2304,7 +2321,12 @@ bool MiningManager::GetSuffixMatch(
                     maxTokenCount = major_tokens.size() -1;
 
                 unsigned int count = 0;
-                double boundary = v_pair[maxTokenCount - 1].second;
+                double boundary = 0;
+                if (major_tokens.size() == 1)
+                    boundary = 0.01;
+                else
+                    boundary = v_pair[maxTokenCount - 1].second;
+                
                 std::list<std::pair<UString, double> > new_major_tokens;
                 std::list<std::pair<UString, double> > new_minor_tokens;
                 for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
