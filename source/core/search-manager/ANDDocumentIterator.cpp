@@ -80,6 +80,8 @@ float ANDDocumentIterator::getUB()
     std::list<DocumentIterator*>::iterator it = docIterList_.begin();
     for (; it != docIterList_.end(); it++)
     {
+        if (!*it)
+            continue;
         sumUB += (*it)->getUB();
     }
     return sumUB / (1 - missRate_);

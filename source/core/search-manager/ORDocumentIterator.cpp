@@ -323,6 +323,8 @@ float ORDocumentIterator::getUB()
     std::vector<DocumentIterator*>::iterator it = docIteratorList_.begin();
     for (; it != docIteratorList_.end(); it++)
     {
+        if (!*it)
+            continue;
         float ub = (*it)->getUB();
         if (ub < minUB )
             minUB = ub;
