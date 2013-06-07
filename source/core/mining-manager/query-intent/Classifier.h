@@ -8,6 +8,7 @@
 #ifndef SF1R_CLASSIFIER_H
 #define SF1R_CLASSIFIER_H
 
+#include <map>
 #include <list>
 #include <string>
 #include <utility>
@@ -17,11 +18,24 @@
 namespace sf1r
 {
 
+class ClassifierContext
+{
+public:
+    ClassifierContext(QueryIntentConfig& config, std::string& directory)
+        : config_(config)
+        , lexiconDirectory_(directory)
+    {
+    }
+public:
+    QueryIntentConfig& config_;
+    std::string& lexiconDirectory_;
+};
+
 class Classifier
 {
 public:
-    Classifier(QueryIntentConfig* config)
-        : config_(config)
+    Classifier(ClassifierContext& context)
+        : context_(context)
     {
     }
     virtual ~Classifier()
@@ -31,9 +45,9 @@ public:
     //
     // classify query into several QueryIntentType, remove classified keywords from query.
     //
-    virtual int classify(std::list<std::pair<QueryIntentCategory, std::list<std::string> > >& , std::string& query) = 0;
+    virtual bool classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query) = 0;
 protected:
-    QueryIntentConfig* config_;
+    ClassifierContext& context_;
 };
 
 }

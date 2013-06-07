@@ -9,21 +9,23 @@
 #define SF1R_PRODUCT_QUERY_INTENT_H
 
 #include "QueryIntent.h"
+#include <list>
 
 namespace sf1r
 {
 class ProductQueryIntent : public QueryIntent
 {
 public:
-    ~ProductQueryIntent()
-    {
-    }
+    ProductQueryIntent();
+    ~ProductQueryIntent();
 public:
     void process(izenelib::driver::Request& request);
-    void setClassifier(Classifier* classifier)
+    void addClassifier(Classifier* classifier)
     {
-        classifier_ = classifier;
+        classifiers_.push_back(classifier);
     }
+private:
+    std::list<Classifier*> classifiers_;
 };
 }
 #endif //ProductQueryIntent.h

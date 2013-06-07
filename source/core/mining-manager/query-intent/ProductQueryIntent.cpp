@@ -13,16 +13,37 @@ namespace sf1r
 using driver::Keys;
 using namespace izenelib::driver;
 
+ProductQueryIntent::ProductQueryIntent()
+{
+    classifiers_.clear();
+}
+
+ProductQueryIntent::~ProductQueryIntent()
+{
+    std::list<Classifier*>::iterator it = classifiers_.begin();
+    for(; it != classifiers_.end(); it++)
+    {
+        if(*it)
+            delete *it;
+    }
+    classifiers_.clear();
+}
+
 void ProductQueryIntent::process(izenelib::driver::Request& request)
 {
-    if (NULL == classifier_)
+    if (classifiers_.empty())
         return;
     
     std::string keywords = asString(request[Keys::search][Keys::keywords]);
-    std::list<std::pair<QueryIntentCategory, std::list<std::string> > > intents;
-    int ret = classifier_->classify(intents, keywords);
+    std::map<QueryIntentCategory, std::list<std::string> > intents;
+    bool ret = false;
+    std::list<Classifier*>::iterator it = classifiers_.begin();
+    for(; it != classifiers_.end(); it++)
+    {
+       ret |= (*it)->classify(intents, keywords);
+    }
   
-    if (-1 == ret)
+    if (!ret)
         return;
     if (keywords.empty())
         request[Keys::search][Keys::keywords] = "*";

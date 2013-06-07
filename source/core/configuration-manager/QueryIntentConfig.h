@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace sf1r
 {
@@ -15,10 +16,18 @@ namespace sf1r
 class QueryIntentCategory
 {
 public:
+    bool operator<(const QueryIntentCategory& value) const
+    {
+        return this->name_ < value.name_;
+    }
+public:
     std::string name_;
     std::string property_;
     std::string op_;
 };
+
+class QueryIntentConfig;
+typedef std::vector<QueryIntentCategory>::iterator QIIterator;
 
 class QueryIntentConfig
 {
@@ -46,6 +55,16 @@ public:
             }
         }
         return -1;
+    }
+    
+    QIIterator begin()
+    {
+        return intents_.begin();
+    }
+    
+    QIIterator end()
+    {
+        return intents_.end();
     }
 public:
     std::vector<QueryIntentCategory> intents_;

@@ -4,11 +4,11 @@
 namespace sf1r
 {
 
-int NaiveBayesClassifier::classify(std::list<std::pair<QueryIntentCategory, std::list<std::string> > >& intents, std::string& query)
+bool NaiveBayesClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
 {
     //The classifier is just for function test, so arbitrarily return for performance.
-    //return -1; 
-    std::string source = "女鞋";
+    return false; 
+    /*std::string source = "女鞋";
     QueryIntentCategory intent;
     intent.name_ = "CATEGORY";
     size_t begin = query.find(source); 
@@ -21,7 +21,7 @@ int NaiveBayesClassifier::classify(std::list<std::pair<QueryIntentCategory, std:
     list.push_back(source);
     intents.push_back(make_pair(intent, list));
     query.erase(begin, end);
-    return 0;
+    return 0;*/
 }
 
 }

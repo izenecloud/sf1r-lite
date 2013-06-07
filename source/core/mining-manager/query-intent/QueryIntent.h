@@ -17,22 +17,12 @@ namespace sf1r
 class QueryIntent
 {
 public:
-    QueryIntent(Classifier* classifier)
-        :classifier_(classifier)
-    {
-    }
-    QueryIntent()
-        :classifier_(NULL)
-    {
-    }
     virtual ~QueryIntent()
     {
     }
 public:
     virtual void process(izenelib::driver::Request& request) = 0;
-    virtual void setClassifier(Classifier* classifier) = 0;
-public:
-    Classifier* classifier_;
+    virtual void addClassifier(Classifier* classifier) = 0;
 };
 
 }

@@ -14,20 +14,27 @@
 
 #include <util/driver/Request.h>
 #include <configuration-manager/QueryIntentConfig.h>
+#include <configuration-manager/CollectionPath.h>
 namespace sf1r
 {
 
 class QueryIntentManager
 {
 public:
-    QueryIntentManager(QueryIntentConfig* config);
+    QueryIntentManager(QueryIntentConfig* config, std::string& resource);
     ~QueryIntentManager();
 public:
     void queryIntent(izenelib::driver::Request& request);   
 private:
+    void init_();
+    void destroy_();
+private:
     QueryIntentFactory* intentFactory_;
     ClassifierFactory* classifierFactory_;
+    QueryIntent* intent_;
+    
     QueryIntentConfig* config_;
+    std::string lexiconDirectory_;
 };
 
 }

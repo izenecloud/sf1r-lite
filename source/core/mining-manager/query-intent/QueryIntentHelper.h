@@ -16,7 +16,7 @@
 namespace sf1r
 {
 void rewriteRequest(izenelib::driver::Request& request,
-             std::list<std::pair<QueryIntentCategory, std::list<std::string> > >& intents);
+             std::map<QueryIntentCategory, std::list<std::string> >& intents);
 }
 
 #endif // QueryIntentHelper.h

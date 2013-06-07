@@ -3,15 +3,39 @@
 namespace sf1r
 {
 
-QueryIntentManager::QueryIntentManager(QueryIntentConfig* config)
+QueryIntentManager::QueryIntentManager(QueryIntentConfig* config, std::string& resource)
 {
     config_ = config;
-    intentFactory_ = new QueryIntentFactory();
-    classifierFactory_ = new ClassifierFactory(config);
+    lexiconDirectory_ = resource + "/query-intent/";
+    init_();
 }
 
 QueryIntentManager::~QueryIntentManager()
 {
+    destroy_();
+}
+
+void QueryIntentManager::init_()
+{
+    intentFactory_ = new QueryIntentFactory();
+    classifierFactory_ = new ClassifierFactory(*config_);
+   
+    ClassifierContext cContext(*config_, lexiconDirectory_);
+    Classifier* classifier = classifierFactory_->createClassifier(cContext);
+    
+    QueryIntentContext iContext;
+    intent_ = intentFactory_ ->createQueryIntent(iContext);
+
+    intent_->addClassifier(classifier);
+}
+
+void QueryIntentManager::destroy_()
+{
+    if (intent_)
+    {
+        delete intent_;
+        intent_ = NULL;
+    }
     if (intentFactory_)
     {
         delete intentFactory_;
@@ -26,19 +50,8 @@ QueryIntentManager::~QueryIntentManager()
 
 void QueryIntentManager::queryIntent(izenelib::driver::Request& request)
 {
-    ClassifierContext cContext;
-    Classifier* classifier = classifierFactory_->createClassifier(cContext);
-
-    QueryIntentContext iContext;
-    QueryIntent* intent = intentFactory_ ->createQueryIntent(iContext);
-
-    intent->setClassifier(classifier);
-    intent->process(request);
-
-    delete classifier;
-    classifier = NULL;
-    delete intent;
-    intent = NULL;
+    if (intent_)
+        intent_->process(request);
 }
 
 }
