@@ -361,7 +361,7 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
             {
                 if (NodeManagerBase::get()->isDistributed())
                 {
-                    //xxx  use DFS already ...
+                    recvDir = consumerCollection+"/scd/rebuild_scd";
                 }
                 else
                 {
