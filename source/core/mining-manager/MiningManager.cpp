@@ -2410,27 +2410,29 @@ bool MiningManager::GetSuffixMatch(
                                     pruneQueryString_ = "";
                                     minor_tokens.push_back(new_major_tokens.back());
                                     new_major_tokens.pop_back();
-
-                                    std::cout << "The third new query is:";
-                                    for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); 
-                                        i != new_major_tokens.end(); ++i)
+                                    if (new_major_tokens.size() > 1)
                                     {
-                                        std::string word;
-                                        (i->first).convertString(word, izenelib::util::UString::UTF_8);
-                                        std::cout << " " << word;
-                                        pruneQueryString_ += word;
-                                        pruneQueryString_ += " ";
+                                        std::cout << "The third new query is:";
+                                        for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); 
+                                            i != new_major_tokens.end(); ++i)
+                                        {
+                                            std::string word;
+                                            (i->first).convertString(word, izenelib::util::UString::UTF_8);
+                                            std::cout << " " << word;
+                                            pruneQueryString_ += word;
+                                            pruneQueryString_ += " ";
+                                        }
+                                        std::cout << std::endl;
+                                        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                                        new_major_tokens,
+                                                        minor_tokens,
+                                                        search_in_properties,
+                                                        max_docs,
+                                                        actionOperation.actionItem_.searchingMode_.filtermode_,
+                                                        filter_param,
+                                                        actionOperation.actionItem_.groupParam_,
+                                                        res_list);
                                     }
-                                    std::cout << std::endl;
-                                    totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                                    new_major_tokens,
-                                                    minor_tokens,
-                                                    search_in_properties,
-                                                    max_docs,
-                                                    actionOperation.actionItem_.searchingMode_.filtermode_,
-                                                    filter_param,
-                                                    actionOperation.actionItem_.groupParam_,
-                                                    res_list);
 
                                     if (res_list.empty())
                                     {
