@@ -161,6 +161,7 @@ void B5moSorter::Sort_(std::vector<Value>& docs)
     std::sort(docs.begin(), docs.end(), PidCompare_);
     uint32_t index = ++index_;
     std::string file = m_+"/"+boost::lexical_cast<std::string>(index);
+    LOG(INFO)<<"writing block file "<<file<<std::endl;
     std::ofstream ofs(file.c_str());
     for(uint32_t i=0;i<docs.size();i++)
     {
