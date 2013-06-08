@@ -16,6 +16,10 @@ B5mpDocGenerator::B5mpDocGenerator()
     sub_doc_props_.insert("Source");
     sub_doc_props_.insert("OriginalCategory");
     sub_doc_props_.insert("PicPrpt");
+    sub_doc_props_.insert("SalesAmount");
+    sub_doc_props_.insert("isFreeDelivery");
+    sub_doc_props_.insert("isCOD");
+    sub_doc_props_.insert("isGenuine");
     //sub_doc_props_.clear();
 }
 void B5mpDocGenerator::Gen(const std::vector<ScdDocument>& odocs, ScdDocument& pdoc)

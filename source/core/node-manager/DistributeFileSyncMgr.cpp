@@ -110,46 +110,49 @@ static uint32_t getFileCRC(const std::string& file, char* tmp_buf = NULL, size_t
 
 static void doReportStatus(const ReportStatusReqData& reqdata)
 {
-    //
-    // flush data first
-    RecoveryChecker::get()->flushAllData();
     ReportStatusRsp rsp_req;
-    rsp_req.param_.rsp_host = SuperNodeManager::get()->getLocalHostIP();
-    rsp_req.param_.success = true;
-    rsp_req.param_.check_file_result.resize(reqdata.check_file_list.size());
-    size_t bufsize = 1024*1024*32;
-    char* cal_buf = new char[bufsize];
-    for (size_t i = 0; i < reqdata.check_file_list.size(); ++i)
     {
-        const std::string& file = reqdata.check_file_list[i];
-        if (DistributeFileSyncMgr::get()->getCachedCheckSum(file, rsp_req.param_.check_file_result[i]))
+        boost::unique_lock<boost::mutex> guard(DistributeFileSyncMgr::get()->getFlushComputeLock());
+        //
+        // flush data first
+        RecoveryChecker::get()->flushAllData();
+        rsp_req.param_.rsp_host = SuperNodeManager::get()->getLocalHostIP();
+        rsp_req.param_.success = true;
+        rsp_req.param_.check_file_result.resize(reqdata.check_file_list.size());
+        size_t bufsize = 1024*1024*32;
+        char* cal_buf = new char[bufsize];
+        for (size_t i = 0; i < reqdata.check_file_list.size(); ++i)
         {
-            continue;
+            const std::string& file = reqdata.check_file_list[i];
+            if (DistributeFileSyncMgr::get()->getCachedCheckSum(file, rsp_req.param_.check_file_result[i]))
+            {
+                continue;
+            }
+            rsp_req.param_.check_file_result[i] = boost::lexical_cast<std::string>(getFileCRC(file, cal_buf, bufsize));
+            DistributeFileSyncMgr::get()->updateCachedCheckSum(file, rsp_req.param_.check_file_result[i]);
+            //LOG(INFO) << "file : " << file << ", checksum:" << rsp_req.param_.check_file_result[i];
         }
-        rsp_req.param_.check_file_result[i] = boost::lexical_cast<std::string>(getFileCRC(file, cal_buf, bufsize));
-        DistributeFileSyncMgr::get()->updateCachedCheckSum(file, rsp_req.param_.check_file_result[i]);
-        //LOG(INFO) << "file : " << file << ", checksum:" << rsp_req.param_.check_file_result[i];
+        delete[] cal_buf;
+
+        DistributeTestSuit::getMemoryState(reqdata.check_key_list, rsp_req.param_.check_key_result);
+        boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
+        // check at most 10 million.
+        uint32_t max_logid_checknum = reqlogmgr->getLastSuccessReqId();
+        if (max_logid_checknum > 10000000)
+            max_logid_checknum = 10000000;
+        // get local redo log id 
+        std::vector<std::string> logdata_list;
+        LOG(INFO) << "report log id list from : " << reqdata.check_log_start_id << ", max check : " << max_logid_checknum;
+        reqlogmgr->getReqLogIdList(reqdata.check_log_start_id, max_logid_checknum, false,
+            rsp_req.param_.check_logid_list, logdata_list);
+        if (rsp_req.param_.check_logid_list.empty())
+            LOG(INFO) << "no any log on the node";
+        else
+            LOG(INFO) << "start log: " << rsp_req.param_.check_logid_list[0] << ", end log:" << rsp_req.param_.check_logid_list.back();
+
+        // get local running collections.
+        RecoveryChecker::get()->getCollList(rsp_req.param_.check_collection_list);
     }
-    delete[] cal_buf;
-
-    DistributeTestSuit::getMemoryState(reqdata.check_key_list, rsp_req.param_.check_key_result);
-    boost::shared_ptr<ReqLogMgr> reqlogmgr = RecoveryChecker::get()->getReqLogMgr();
-    // check at most 10 million.
-    uint32_t max_logid_checknum = reqlogmgr->getLastSuccessReqId();
-    if (max_logid_checknum > 10000000)
-        max_logid_checknum = 10000000;
-    // get local redo log id 
-    std::vector<std::string> logdata_list;
-    LOG(INFO) << "report log id list from : " << reqdata.check_log_start_id << ", max check : " << max_logid_checknum;
-    reqlogmgr->getReqLogIdList(reqdata.check_log_start_id, max_logid_checknum, false,
-        rsp_req.param_.check_logid_list, logdata_list);
-    if (rsp_req.param_.check_logid_list.empty())
-        LOG(INFO) << "no any log on the node";
-    else
-        LOG(INFO) << "start log: " << rsp_req.param_.check_logid_list[0] << ", end log:" << rsp_req.param_.check_logid_list.back();
-
-    // get local running collections.
-    RecoveryChecker::get()->getCollList(rsp_req.param_.check_collection_list);
 
     DistributeFileSyncMgr::get()->sendReportStatusRsp(reqdata.req_host, SuperNodeManager::get()->getFileSyncRpcPort(), rsp_req);
 }

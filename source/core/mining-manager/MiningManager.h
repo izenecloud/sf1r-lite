@@ -114,6 +114,7 @@ class MiningTaskBuilder;
 class GroupLabelKnowledge;
 class NumericPropertyTableBuilder;
 class RTypeStringPropTableBuilder;
+class QueryIntentManager;
 
 namespace sim
 {
@@ -495,7 +496,11 @@ public:
         return suffixMatchManager_;
     }
 
-
+    QueryIntentManager* getQueryIntentManager()
+    {
+        return queryIntentManager_;
+    }
+    
 private:
     class WordPriorityQueue_ : public izenelib::util::PriorityQueue<ResultT>
     {
@@ -692,6 +697,9 @@ private:
 
     /** For Merchant Diversity */
     ProductRankerFactory* productRankerFactory_;
+
+    /** For Query Intent */
+    QueryIntentManager* queryIntentManager_;
 
     /** TDT */
     std::string tdt_path_;

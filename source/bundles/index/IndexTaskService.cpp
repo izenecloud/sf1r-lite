@@ -69,7 +69,7 @@ bool IndexTaskService::index(unsigned int numdoc, std::string scd_path)
             LOG(ERROR) << "scd path should be specified while dfs is enabled.";
             return false;
         }
-        scd_path = DistributeFileSys::get()->getDFSPath(scd_path);
+        scd_path = DistributeFileSys::get()->getDFSPathForLocal(scd_path);
     }
     else
     {
