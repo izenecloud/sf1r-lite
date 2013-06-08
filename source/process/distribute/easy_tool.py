@@ -158,10 +158,13 @@ def start_all(args):
     printtofile ('start all finished.')
 
 def stop_all(args):
-    # stop replicas first.
-    send_cmd_andstay(replicas_host,  'cd ' + sf1r_bin_dir + ';' + stop_prog)
-    time.sleep(5)
-    send_cmd_afterssh(primary_host,  'cd ' + sf1r_bin_dir + ';' + stop_prog)
+    if len(args) > 2:
+        send_cmd_andstay(args[2:],  'cd ' + sf1r_bin_dir + ';' + stop_prog)
+    else:
+        # stop replicas first.
+        send_cmd_andstay(replicas_host,  'cd ' + sf1r_bin_dir + ';' + stop_prog)
+        time.sleep(5)
+        send_cmd_afterssh(primary_host,  'cd ' + sf1r_bin_dir + ';' + stop_prog)
     printtofile ('stop all finished.')
 
 def update_src(args):
@@ -280,7 +283,7 @@ def simple_update(args):
     
     for host in hosts:
         print 'transferring file to dest host: ' + host
-        (out, error) = run_prog_and_getoutput(["scp", tarfile, loginuser+'@'+host+':/opt'])
+        (out, error) = run_prog_and_getoutput(["rsync", "-av", tarfile, loginuser+'@'+host+':/opt'])
         print error
         print out
 
