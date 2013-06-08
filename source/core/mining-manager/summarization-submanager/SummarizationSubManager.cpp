@@ -121,7 +121,8 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         boost::shared_ptr<DocumentManager> document_manager,
         boost::shared_ptr<IndexManager> index_manager,
         idmlib::util::IDMAnalyzer* analyzer)
-    : last_docid_path_(homePath + "/last_docid.txt")
+    : is_rebuild_(false)
+    , last_docid_path_(homePath + "/last_docid.txt")
     , total_scd_path_(scdPath + "/" + SUMMARY_SCD_BACKUP_DIR)
     , collectionName_(collectionName)
     , homePath_(homePath)
@@ -314,6 +315,8 @@ bool MultiDocSummarizationSubManager::buildDocument(docid_t docID, const Documen
 
 bool MultiDocSummarizationSubManager::preProcess()
 {
+    check_rebuild();
+
     boost::filesystem::path totalscdPath(total_scd_path_);
     if (!boost::filesystem::exists(totalscdPath))
     {
@@ -541,10 +544,10 @@ bool MultiDocSummarizationSubManager::postProcess()
    
     if (DistributeRequestHooker::get()->isRunningPrimary())
     {
+        if (!is_rebuild_)
         {
             SynchroProducerPtr syncProducer = SynchroFactory::getProducer(schema_.opinionSyncId);
             SynchroData syncData;
-            cout << "collectionName_" << collectionName_ << endl;
             syncData.setValue(SynchroData::KEY_COLLECTION, collectionName_);
             syncData.setValue(SynchroData::KEY_DATA_TYPE, SynchroData::DATA_TYPE_SCD_INDEX);
             syncData.setValue(SynchroData::KEY_DATA_PATH, generated_scds_path.c_str());
@@ -938,6 +941,16 @@ void MultiDocSummarizationSubManager::AppendSearchFilter(
             }
         }
     }
+}
+
+void MultiDocSummarizationSubManager::check_rebuild()
+{
+    std::ifstream ifs(last_docid_path_.c_str());
+
+    if (!ifs) 
+        is_rebuild_ = true;
+    else
+        is_rebuild_ = false;
 }
 
 uint32_t MultiDocSummarizationSubManager::GetLastDocid_() const
