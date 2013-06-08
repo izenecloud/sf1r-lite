@@ -2329,28 +2329,41 @@ bool MiningManager::GetSuffixMatch(
                 
                 std::list<std::pair<UString, double> > new_major_tokens;
                 std::list<std::pair<UString, double> > new_minor_tokens;
-                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+                for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
                 {
-                    if (count < maxTokenCount && i->second >= boundary)
-                    {
-                        new_major_tokens.push_back(*i);
-                        new_minor_tokens.push_back(*i);
-                        count++;
-                    }
+                    new_minor_tokens.push_back(*i);
                 }
 
+                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+                {
+                    if (count < maxTokenCount)
+                    {
+                        if (i->second >= boundary)
+                        {
+                            new_major_tokens.push_back(*i);
+                            count++;
+                        }
+                        else
+                            minor_tokens.push_back(*i);
+                    }
+                    else
+                        minor_tokens.push_back(*i);
+
+                    new_minor_tokens.push_back(*i);
+                }
+                
                 if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true && major_tokens.size() >= 4)
                 {
-                    cout<<"The new prune query is";
+                    std::cout << "The new prune query is";
                     for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); i != new_major_tokens.end(); ++i)
                     {
                         std::string word;
                         (i->first).convertString(word, izenelib::util::UString::UTF_8);
-                        cout<<" " << word;
+                        std::cout << " " << word;
                         pruneQueryString_ += word;
                         pruneQueryString_ += " ";
                     }
-                    cout<<endl;
+                    cout << endl;
                     totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                         new_major_tokens,
                                         minor_tokens,
@@ -2364,17 +2377,18 @@ bool MiningManager::GetSuffixMatch(
                     {
                         if (new_major_tokens.size() > 1)
                         {
-                            cout<<"Start second search ........................."<<endl;
+                            std::cout << "Start second search ........................." << std::endl;
                             pruneQueryString_ = "";
+                            minor_tokens.push_back(new_major_tokens.back());
                             new_major_tokens.pop_back();
 
-                            cout << "The second new query is:";
+                            std::cout << "The second new query is:";
                             for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); 
                                     i != new_major_tokens.end(); ++i)
                             {
                                 std::string word;
                                 (i->first).convertString(word, izenelib::util::UString::UTF_8);
-                                cout<<" " << word;
+                                std::cout << " " << word;
                                 pruneQueryString_ += word;
                                 pruneQueryString_ += " ";
                             }
@@ -2392,20 +2406,22 @@ bool MiningManager::GetSuffixMatch(
                             {
                                 if (new_major_tokens.size() > 1)
                                 {
-                                    cout<<"Start third search ........................."<<endl;
+                                    std::cout << "Start third search ........................." << std::endl;
                                     pruneQueryString_ = "";
+                                    minor_tokens.push_back(new_major_tokens.back());
                                     new_major_tokens.pop_back();
 
-                                    cout << "The third new query is:";
+                                    std::cout << "The third new query is:";
                                     for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); 
                                         i != new_major_tokens.end(); ++i)
                                     {
                                         std::string word;
                                         (i->first).convertString(word, izenelib::util::UString::UTF_8);
-                                        cout<<" " << word;
+                                        std::cout << " " << word;
                                         pruneQueryString_ += word;
                                         pruneQueryString_ += " ";
                                     }
+                                    std::cout << std::endl;
                                     totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                                     new_major_tokens,
                                                     minor_tokens,
@@ -2419,7 +2435,7 @@ bool MiningManager::GetSuffixMatch(
                                     if (res_list.empty())
                                     {
                                         new_major_tokens.clear();
-                                        cout << "USE minor search ...."<<endl;
+                                        std::cout << "USE minor search ...." << std::endl;
                                         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                                 new_major_tokens,
                                                 new_minor_tokens,
@@ -2440,7 +2456,7 @@ bool MiningManager::GetSuffixMatch(
                     if (res_list.empty())
                     {
                         new_major_tokens.clear();
-                        cout << "USE minor search ...."<<endl;
+                        std::cout << "USE minor search ...." << std::endl;
                         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                         new_major_tokens,
                         new_minor_tokens,
