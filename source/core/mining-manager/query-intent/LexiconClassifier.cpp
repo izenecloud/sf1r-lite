@@ -4,7 +4,8 @@
 #include <iostream>
 namespace sf1r
 {
-
+const char* FORMAL_ALIAS_DELIMITER = ":";
+const char* ALIAS_DELIMITER = ";";
 LexiconClassifier::LexiconClassifier(ClassifierContext& context)
     : Classifier(context)
 {
@@ -32,18 +33,66 @@ void LexiconClassifier::loadLexicon_()
         fs.open(lexiconFile.c_str(), std::ios::in);
         if (!fs)
             continue;
-        std::string word;
+        std::string line;
         while (!fs.eof())
         {
-            getline(fs, word);
-            unsigned short size= word.size();
-            if (0 == size)
-                continue;
-            if ( maxLength_ < size )
-                maxLength_ = size;
-            if ( minLength_ > size )
-                minLength_ = size;
-            lexicons_[iCategory].insert(word);
+            getline(fs, line);
+            std::size_t formalEnd = line.find(FORMAL_ALIAS_DELIMITER);
+            if (std::string::npos == formalEnd)
+            {
+                unsigned short size= line.size();
+                if (0 == size)
+                    continue;
+                if ( maxLength_ < size )
+                    maxLength_ = size;
+                if ( minLength_ > size )
+                    minLength_ = size;
+                lexicons_[iCategory].insert(make_pair(line, line));
+                std::cout<<line<<" "<< line<<"\n";
+            }
+            else
+            {
+                std::string formalName = line.substr(0, formalEnd);
+                unsigned short size= formalName.size();
+                if (0 == size)
+                    continue;
+                if ( maxLength_ < size )
+                    maxLength_ = size;
+                if ( minLength_ > size )
+                    minLength_ = size;
+                lexicons_[iCategory].insert(make_pair(formalName, formalName));
+                std::cout<<formalName<<" "<< formalName<<"\n";
+                
+                line.erase(0, formalEnd + 1);
+                while (true)
+                {
+                    std::size_t aliasEnd = line.find(ALIAS_DELIMITER);
+                    if (std::string::npos == aliasEnd)
+                    {
+                        unsigned short size= line.size();
+                        if (0 == size)
+                            break;
+                        if ( maxLength_ < size )
+                            maxLength_ = size;
+                        if ( minLength_ > size )
+                            minLength_ = size;
+                        lexicons_[iCategory].insert(make_pair(line, formalName));
+                std::cout<<line<<" "<< formalName<<"\n";
+                        break;
+                    }
+                    std::string aliasName = line.substr(0, aliasEnd);
+                    line.erase(0, aliasEnd + 1);
+                    unsigned short size= aliasName.size();
+                    if (0 == size)
+                        continue;
+                    if ( maxLength_ < size )
+                        maxLength_ = size;
+                    if ( minLength_ > size )
+                        minLength_ = size;
+                    lexicons_[iCategory].insert(make_pair(aliasName, formalName));
+                std::cout<<aliasName<<" "<< formalName<<"\n";
+                }
+            }
         }
         fs.close();
     }
@@ -68,11 +117,13 @@ bool LexiconClassifier::classify(std::map<QueryIntentCategory, std::list<std::st
             }
             
             std::string word = query.substr(pos, wordSize);
-            std::map<QueryIntentCategory, boost::unordered_set<std::string> >::iterator it = lexicons_.begin();
+            std::map<QueryIntentCategory, boost::unordered_map<std::string, std::string> >::iterator it = lexicons_.begin();
             for(; it != lexicons_.end(); it++)
             {
-                if (it->second.end() != it->second.find(word))
+                boost::unordered_map<std::string, std::string>::iterator itAlais= it->second.find(word);
+                if (it->second.end() != itAlais)
                 {
+                    word = itAlais->second;
                     break;
                 }
             }

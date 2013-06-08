@@ -15,6 +15,9 @@
 #include <util/driver/Request.h>
 #include <configuration-manager/QueryIntentConfig.h>
 #include <configuration-manager/CollectionPath.h>
+
+#include <sys/time.h>
+#define QUERY_INTENT_TIMER
 namespace sf1r
 {
 
@@ -35,6 +38,10 @@ private:
     
     QueryIntentConfig* config_;
     std::string lexiconDirectory_;
+#ifdef QUERY_INTENT_TIMER    
+    unsigned int nQuery_;
+    unsigned long int microseconds_;
+#endif
 };
 
 }

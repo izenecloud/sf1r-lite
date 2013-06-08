@@ -9,7 +9,7 @@
 #define SF1R_LEXICON_CLASSIFIER_H
 
 #include "Classifier.h"
-#include <boost/unordered_set.hpp>
+#include <boost/unordered_map.hpp>
 
 namespace sf1r
 {
@@ -24,7 +24,7 @@ public:
 private:
     void loadLexicon_();
 private:
-    std::map<QueryIntentCategory, boost::unordered_set<std::string> >lexicons_;
+    std::map<QueryIntentCategory, boost::unordered_map<std::string, std::string> >lexicons_;
     unsigned short maxLength_;
     unsigned short minLength_;
 };
