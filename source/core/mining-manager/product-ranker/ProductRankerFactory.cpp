@@ -9,6 +9,7 @@
 #include "../group-manager/PropValueTable.h"
 #include <configuration-manager/ProductRankingConfig.h>
 #include <common/NumericPropertyTableBase.h>
+#include <common/QueryNormalizer.h>
 #include <memory> // auto_ptr
 #include <algorithm> // min
 
@@ -53,7 +54,9 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankParam& param
     std::auto_ptr<ProductRanker> ranker(
         new ProductRanker(param, config_.isDebug));
 
-    addCategoryEvaluator_(*ranker);
+    const bool isLongQuery = QueryNormalizer::get()->isLongQuery(param.query_);
+
+    addCategoryEvaluator_(*ranker, isLongQuery);
 
     if (param.isRandomRank_)
     {
@@ -61,7 +64,7 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankParam& param
     }
     else
     {
-        addOfferItemCountEvaluator_(*ranker);
+        addOfferItemCountEvaluator_(*ranker, isLongQuery);
         addDiversityEvaluator_(*ranker);
         addMerchantScoreEvaluator_(*ranker);
     }
@@ -69,11 +72,11 @@ ProductRanker* ProductRankerFactory::createProductRanker(ProductRankParam& param
     return ranker.release();
 }
 
-void ProductRankerFactory::addCategoryEvaluator_(ProductRanker& ranker) const
+void ProductRankerFactory::addCategoryEvaluator_(ProductRanker& ranker, bool isLongQuery) const
 {
     const score_t minWeight = minCustomCategoryWeight(config_);
 
-    ranker.addEvaluator(new CategoryScoreEvaluator(minWeight));
+    ranker.addEvaluator(new CategoryScoreEvaluator(minWeight, isLongQuery));
 }
 
 void ProductRankerFactory::addRandomEvaluator_(ProductRanker& ranker) const
@@ -84,9 +87,9 @@ void ProductRankerFactory::addRandomEvaluator_(ProductRanker& ranker) const
     ranker.addEvaluator(new RandomScoreEvaluator);
 }
 
-void ProductRankerFactory::addOfferItemCountEvaluator_(ProductRanker& ranker) const
+void ProductRankerFactory::addOfferItemCountEvaluator_(ProductRanker& ranker, bool isLongQuery) const
 {
-    if (!offerItemCountTable_)
+    if (!offerItemCountTable_ || isLongQuery)
         return;
 
    ranker.addEvaluator(new OfferItemCountEvaluator(offerItemCountTable_));

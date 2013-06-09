@@ -24,14 +24,18 @@ struct ProductRankParam
 
     bool isRandomRank_;
 
+    const std::string& query_;
+
     ProductRankParam(
         std::vector<docid_t>& docIds,
         std::vector<score_t>& topKScores,
-        bool isRandomRank)
+        bool isRandomRank,
+        const std::string& query)
         : docIds_(docIds)
         , topKScores_(topKScores)
         , docNum_(docIds.size())
         , isRandomRank_(isRandomRank)
+        , query_(query)
     {}
 
     bool isValid() const
