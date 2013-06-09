@@ -2354,6 +2354,7 @@ bool MiningManager::GetSuffixMatch(
                                             actionOperation.actionItem_.groupParam_,
                                             res_list);
                     }
+
                 }
             }
         }
