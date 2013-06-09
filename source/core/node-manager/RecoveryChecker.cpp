@@ -1379,6 +1379,29 @@ void RecoveryChecker::syncSCDFiles()
     }
 }
 
+static void scanForCronJobLog(const std::vector<std::string>& logdata_list,
+    std::map<std::string, uint32_t>& delayed_cronjob_list)
+{
+    for(size_t i = 0; i < logdata_list.size(); ++i)
+    {
+        CommonReqData req_commondata;
+        ReqLogMgr::unpackReqLogData(logdata_list[i], req_commondata);
+        if (req_commondata.reqtype == Req_CronJob)
+        {
+            CronJobReqLog crondata;
+            if(ReqLogMgr::unpackReqLogData(logdata_list[i], crondata))
+            {
+                if (crondata.cron_time == 0)
+                {
+                    LOG(INFO) << "the cron job without timestamp can be delayed to last. " << crondata.req_json_data;
+                    LOG(INFO) << "delay to id : " << crondata.inc_id;
+                    delayed_cronjob_list[crondata.req_json_data] = crondata.inc_id;
+                }
+            }
+        }
+    }
+}
+
 void RecoveryChecker::syncToNewestReqLog()
 {
     LOG(INFO) << "begin sync to newest log.";
@@ -1404,6 +1427,8 @@ void RecoveryChecker::syncToNewestReqLog()
         }
         if (newlogdata_list.empty())
             break;
+        std::map<std::string, uint32_t> delayed_cronjob_list;
+        scanForCronJobLog(newlogdata_list, delayed_cronjob_list);
         for (size_t i = 0; i < newlogdata_list.size(); ++i)
         {
             // do new redo RequestLog.
@@ -1416,6 +1441,23 @@ void RecoveryChecker::syncToNewestReqLog()
                 forceExit("syncToNewestReqLog failed.");
             }
             reqid = req_commondata.inc_id;
+
+            if (req_commondata.reqtype == Req_CronJob)
+            {
+                CronJobReqLog crondata;
+                if(ReqLogMgr::unpackReqLogData(newlogdata_list[i], crondata) &&
+                    crondata.cron_time == 0)
+                {
+                    std::map<std::string, uint32_t>::iterator it;
+                    it = delayed_cronjob_list.find(crondata.req_json_data);
+                    if (it != delayed_cronjob_list.end() &&
+                        crondata.inc_id != it->second)
+                    {
+                        LOG(INFO) << "this cronjob id " << crondata.inc_id << " delay to id : " << it->second;
+                        continue;
+                    }
+                }
+            }
 
             if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, newlogdata_list[i]))
             {
