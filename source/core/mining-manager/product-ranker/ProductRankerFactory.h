@@ -33,9 +33,9 @@ public:
     ProductRanker* createProductRanker(ProductRankParam& param);
 
 private:
-    void addCategoryEvaluator_(ProductRanker& ranker) const;
+    void addCategoryEvaluator_(ProductRanker& ranker, bool isLongQuery) const;
     void addRandomEvaluator_(ProductRanker& ranker) const;
-    void addOfferItemCountEvaluator_(ProductRanker& ranker) const;
+    void addOfferItemCountEvaluator_(ProductRanker& ranker, bool isLongQuery) const;
     void addDiversityEvaluator_(ProductRanker& ranker) const;
     void addMerchantScoreEvaluator_(ProductRanker& ranker) const;
 

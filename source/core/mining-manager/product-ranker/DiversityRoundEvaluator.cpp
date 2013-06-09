@@ -46,5 +46,5 @@ score_t DiversityRoundEvaluator::evaluate(ProductScore& productScore)
     const merchant_id_t merchantId = propIdList[0];
     productScore.singleMerchantId_ = merchantId;
 
-    return --roundMap_[merchantId];
+    return roundMap_[merchantId]--;
 }

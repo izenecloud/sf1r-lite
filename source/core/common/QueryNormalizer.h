@@ -1,13 +1,12 @@
 /**
  * @file QueryNormalizer.h
- * @brief normalize the query string for the cases such as below:
- * 1. mapping from query to label
- * 2. mapping from query to custom rank
+ * @brief This class is used to normalize the query string (in UTF-8 encoding).
  */
 
 #ifndef SF1R_QUERY_NORMALIZER_H
 #define SF1R_QUERY_NORMALIZER_H
 
+#include <util/singleton.h>
 #include <string>
 
 namespace sf1r
@@ -16,10 +15,15 @@ namespace sf1r
 class QueryNormalizer
 {
 public:
+    static QueryNormalizer* get()
+    {
+        return izenelib::util::Singleton<QueryNormalizer>::get();
+    }
+
     /*
-     * Normalize the query (in UTF-8 encoding) from @p fromStr to @p toStr.
+     * Normalize the query from @p fromStr to @p toStr.
      *
-     * The normalization consists of below steps:
+     * It consists of below steps:
      * 1. extract the tokens using white space as delimiter
      * 2. convert the alphabets in tokens to lower case
      * 3. sort the tokens in lexicographical order
@@ -28,7 +32,31 @@ public:
      * For example, given the query "三星 Galaxy I9300",
      * it would be normalized to "galaxy i9300 三星".
      */
-    static void normalize(const std::string& fromStr, std::string& toStr);
+    void normalize(const std::string& fromStr, std::string& toStr);
+
+    /*
+     * Count the number of normalized characters in @p query.
+     * The continuous alphabets and digits would be seemed as one character.
+     *
+     * For example, given the query "三星 Galaxy I9300", the normalized characters
+     * would be "三", "星", "Galaxy", "I9300", so it would return 4.
+     */
+    std::size_t countCharNum(const std::string& query);
+
+    /*
+     * Whether the @p query is long.
+     */
+    bool isLongQuery(const std::string& query)
+    {
+        return countCharNum(query) >= LONG_QUERY_MIN_CHAR_NUM;
+    }
+
+private:
+
+    enum
+    {
+        LONG_QUERY_MIN_CHAR_NUM = 8 // the mininum character number for long query
+    };
 };
 
 } // namespace sf1r
