@@ -1454,6 +1454,9 @@ void RecoveryChecker::syncToNewestReqLog()
                         crondata.inc_id != it->second)
                     {
                         LOG(INFO) << "this cronjob id " << crondata.inc_id << " delay to id : " << it->second;
+                        reqlog_mgr_->prepareReqLog(crondata, false);
+                        reqlog_mgr_->appendReqData(newlogdata_list[i]);
+                        reqlog_mgr_->delPreparedReqLog();
                         continue;
                     }
                 }
