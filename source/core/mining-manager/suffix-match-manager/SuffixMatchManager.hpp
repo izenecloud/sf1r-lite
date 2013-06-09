@@ -55,6 +55,7 @@ public:
             std::vector<std::pair<double, uint32_t> >& res_list) const;
 
     size_t AllPossibleSuffixMatch(
+            bool use_synonym,            
             std::list<std::pair<UString, double> > major_tokens,
             std::list<std::pair<UString, double> > minor_tokens,
             std::vector<std::string> search_in_properties,
@@ -62,7 +63,7 @@ public:
             const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             const faceted::GroupParam& group_param,
-            std::vector<std::pair<double, uint32_t> >& res_list) const;
+            std::vector<std::pair<double, uint32_t> >& res_list);
 
     void GetTokenResults(std::string pattern,
                     std::list<std::pair<UString, double> >& major_tokens,
@@ -80,7 +81,8 @@ public:
 private:
     typedef izenelib::am::succinct::fm_index::FMIndex<uint16_t> FMIndexType;
     typedef FMIndexType::MatchRangeListT RangeListT;
-
+    bool GetSynonymSet_(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
+    void ExpandSynonym_(const std::vector<std::pair<UString, double> >& tokens, std::vector<std::vector<std::pair<UString, double> > >& refine_tokens, size_t& major_size);
     bool getAllFilterRangeFromGroupLable_(
             const faceted::GroupParam& group_param,
             std::vector<size_t>& prop_id_list,

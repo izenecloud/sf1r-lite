@@ -73,7 +73,10 @@ struct QueryIdentity
 
     /// @brief whether rank randomly
     bool isRandomRank;
-
+    
+    /// @brief whether use synonym in search
+    bool isSynonym;
+    
     /// @brief where does the query come from, used to decide
     ///        the categories to boost in product ranking.
     std::string querySource;
@@ -99,6 +102,7 @@ struct QueryIdentity
             && start == other.start
             && distActionType == other.distActionType
             && isRandomRank == other.isRandomRank
+            && isSynonym == other.isSynonym            
             && querySource == other.querySource;
     }
 

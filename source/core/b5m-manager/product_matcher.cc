@@ -299,7 +299,24 @@ bool ProductMatcher::Open(const std::string& kpath)
             //izenelib::am::ssf::Util<>::Load(path, nf_map);
             //nf_.insert(nf_map.begin(), nf_map.end());
             //LOG(INFO)<<"nf size "<<nf_.size()<<std::endl;
+            std::vector<std::pair<size_t, string> > synonym_pairs;            
+            path = path_+"/synonym_map";
+            izenelib::am::ssf::Util<>::Load(path, synonym_pairs);      
+            for (size_t i = 0; i < synonym_pairs.size(); ++i)
+                synonym_map_.insert(std::make_pair(synonym_pairs[i].second, synonym_pairs[i].first));            
 
+            std::vector<string> tmp_sets;
+            path = path_+"/synonym_dict";
+            izenelib::am::ssf::Util<>::Load(path, tmp_sets);
+            for (size_t i = 0; i < tmp_sets.size(); ++i)
+            {
+                std::vector<string> tmp_set;                
+                boost::algorithm::split(tmp_set, tmp_sets[i], boost::algorithm::is_any_of("/"));
+                synonym_dict_.push_back(tmp_set);
+            }
+                        
+            LOG(INFO)<<"synonym map size "<<synonym_pairs.size();
+            LOG(INFO)<<"synonym dict size "<<synonym_dict_.size();
         }
         catch(std::exception& ex)
         {
@@ -311,6 +328,31 @@ bool ProductMatcher::Open(const std::string& kpath)
     return true;
 }
 
+bool ProductMatcher::GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid)
+{
+    if (synonym_map_.empty() || synonym_dict_.empty())
+    {
+        LOG(INFO)<<"synonym dict is empty!";    
+        return false;
+    }
+    string st;
+    pattern.convertString(st, UString::UTF_8);
+    if (synonym_map_.find(st) == synonym_map_.end())
+    {
+        return false;
+    }
+    else 
+    {
+        setid = synonym_map_[st];
+        for (size_t i = 0; i < synonym_dict_[setid].size(); ++i)
+        {
+            UString ust;
+            ust.assign(synonym_dict_[setid][i], UString::UTF_8);     
+            synonym_set.push_back(ust);
+        }
+    }
+    return true;
+}
 //void ProductMatcher::Clear(const std::string& path, int omode)
 //{
     //int mode = omode;
@@ -698,6 +740,10 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     ScdParser parser(izenelib::util::UString::UTF_8);
     parser.load(spu_scd);
     uint32_t n=0;
+    size_t synonym_dict_size = 0;
+    std::vector<std::pair<size_t, string> > synonym_pairs;
+    std::vector<string> term_set;
+        
     for( ScdParser::iterator doc_iter = parser.begin();
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
@@ -776,6 +822,54 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         product.cid = cid;
         product.price = price;
         ParseAttributes(attrib_ustr, product.attributes);
+
+        for (size_t i = 0; i < product.attributes.size(); ++i)        
+            if (product.attributes[i].name == "品牌")
+            {
+                if (product.attributes[i].values.empty() || product.attributes[i].values.size() < 2) continue;
+        
+                size_t count = 0;
+                size_t tmp_id = 0;
+                string lower_string;                
+                for (size_t j = 0; j < product.attributes[i].values.size(); ++j)
+                {
+                    lower_string = product.attributes[i].values[j];
+                    boost::to_lower(lower_string);
+                    if (synonym_map_.find(lower_string)!=synonym_map_.end())//term is not in synonym map
+                    {
+                        ++count;
+                        tmp_id = synonym_map_[lower_string];
+                    }
+                }
+                if (!count)//new synonym set
+                {   
+                    string st;
+                    for (size_t j = 0; j < product.attributes[i].values.size(); ++j)
+                    {
+                        lower_string = product.attributes[i].values[j];
+                        boost::to_lower(lower_string);
+                        synonym_map_.insert(std::make_pair(lower_string, synonym_dict_size));
+                        synonym_pairs.push_back(std::make_pair(synonym_dict_size, lower_string));
+                        st += (lower_string + '/');
+                    }
+                    term_set.push_back(st);
+                    ++synonym_dict_size;
+                }
+                else if (count < product.attributes[i].values.size())//add term in synonym set
+                {
+                    for (size_t j = 0; j < product.attributes[i].values.size(); ++j)
+                    {
+                        lower_string = product.attributes[i].values[j];
+                        boost::to_lower(lower_string);
+                        if (synonym_map_.find(lower_string) == synonym_map_.end())
+                        {
+                            synonym_map_.insert(std::make_pair(lower_string, tmp_id));
+                            synonym_pairs.push_back(std::make_pair(tmp_id, lower_string));
+                            term_set[tmp_id] += lower_string + '/';
+                        }   
+                    }
+                }
+            }               
         if(product.attributes.size()<2) continue;
         UString dattribute_ustr;
         doc.getProperty("DAttribute", dattribute_ustr);
@@ -907,6 +1001,12 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     //path = path_+"/nf";
     //std::map<uint64_t, uint32_t> nf_map(nf_.begin(), nf_.end());
     //izenelib::am::ssf::Util<>::Save(path, nf_map);
+    path = path_+"/synonym_map";
+    izenelib::am::ssf::Util<>::Save(path, synonym_pairs);
+    for (size_t i = 0; i < term_set.size(); ++i)
+        if (term_set[i][term_set[i].length() - 1] == '/') term_set[i].erase(term_set[i].length() - 1, 1);
+    path = path_+"/synonym_dict";
+    izenelib::am::ssf::Util<>::Save(path, term_set);
     {
         std::string aversion_file = path_+"/AVERSION";
         std::ofstream ofs(aversion_file.c_str());
