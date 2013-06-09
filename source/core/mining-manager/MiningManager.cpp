@@ -55,6 +55,7 @@
 
 #include "product-classifier/SPUProductClassifier.hpp"
 #include "product-classifier/QueryCategorizer.hpp"
+#include "query-intent/QueryIntentManager.h"
 
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
@@ -171,6 +172,7 @@ MiningManager::MiningManager(
     , groupLabelKnowledge_(NULL)
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
+    , queryIntentManager_(NULL)
     , tdt_storage_(NULL)
     , topicDetector_(NULL)
     , summarizationManagerTask_(NULL)
@@ -190,6 +192,7 @@ MiningManager::~MiningManager()
     if (c_analyzer_) delete c_analyzer_;
     if (kpe_analyzer_) delete kpe_analyzer_;
     if (productRankerFactory_) delete productRankerFactory_;
+    if (queryIntentManager_) delete queryIntentManager_;
     if (productScorerFactory_) delete productScorerFactory_;
     if (groupLabelKnowledge_) delete groupLabelKnowledge_;
     if (productScoreManager_) delete productScoreManager_;
@@ -512,7 +515,10 @@ bool MiningManager::open()
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
-
+        
+        if (queryIntentManager_) delete queryIntentManager_;
+        queryIntentManager_ = new QueryIntentManager();
+        
         /** tdt **/
         if (mining_schema_.tdt_enable)
         {
@@ -567,7 +573,7 @@ bool MiningManager::open()
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.searchable_properties, FMIndexManager::LESS_DV);
             suffixMatchManager_->addFMIndexProperties(mining_schema_.suffixmatch_schema.suffix_match_properties, FMIndexManager::COMMON, true);
 
-            product_categorizer_->SetSuffixMatchManager(suffixMatchManager_);
+            //product_categorizer_->SetSuffixMatchManager(suffixMatchManager_);
             product_categorizer_->SetDocumentManager(document_manager_);
             // reading suffix config and load filter data here.
             boost::shared_ptr<FilterManager>& filter_manager = suffixMatchManager_->getFilterManager();
@@ -671,10 +677,10 @@ bool MiningManager::open()
             if (suffixMatchManager_)
                 suffixMatchManager_->setProductMatcher(matcher);
 
-            SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
-            product_classifier->Open(system_resource_path_+"/spu-classifier");
-            product_categorizer_->SetSPUProductClassifier(product_classifier);
-            product_categorizer_->SetWorkingMode(mining_schema_.product_categorizer_mode);
+            //SPUProductClassifier* product_classifier = SPUProductClassifier::Get();
+            //product_classifier->Open(system_resource_path_+"/spu-classifier");
+            //product_categorizer_->SetSPUProductClassifier(product_classifier);
+            //product_categorizer_->SetWorkingMode(mining_schema_.product_categorizer_mode);
             //test
             std::ifstream ifs("./querylog.txt");
             std::string line;
@@ -2265,6 +2271,24 @@ bool MiningManager::GetSuffixMatch(
                                         filter_param,
                                         actionOperation.actionItem_.groupParam_,
                                         res_list);
+                if (res_list.empty())
+                {
+                    for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin();
+                    i != major_tokens.end(); ++i)
+                    {
+                        minor_tokens.push_back(*i);
+                    }
+                    major_tokens.clear();
+                    totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                        major_tokens,
+                                        minor_tokens,
+                                        search_in_properties,
+                                        max_docs,
+                                        actionOperation.actionItem_.searchingMode_.filtermode_,
+                                        filter_param,
+                                        actionOperation.actionItem_.groupParam_,
+                                        res_list);
+                }
             }
         }
         else
@@ -2278,42 +2302,68 @@ bool MiningManager::GetSuffixMatch(
                                         filter_param,
                                         actionOperation.actionItem_.groupParam_,
                                         res_list);
-            if (res_list.empty())
+            if (res_list.empty() && major_tokens.size() != 0)
             {
-                if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true && major_tokens.size() >= 5)
+                std::vector<std::pair<std::string, double> > v_pair;
+                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
                 {
-                    std::vector<std::pair<std::string, double> > v_pair;
-                    for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
-                    {
-                        std::string key;
-                        (i->first).convertString(key, izenelib::util::UString::UTF_8);
-                        v_pair.push_back(make_pair(key, i->second));
-                    }
-                    std::sort(v_pair.begin(), v_pair.end(), greater_pair);
+                    std::string key;
+                    (i->first).convertString(key, izenelib::util::UString::UTF_8);
+                    v_pair.push_back(make_pair(key, i->second));
+                }
+                std::sort(v_pair.begin(), v_pair.end(), greater_pair);
+                unsigned int maxTokenCount = 0;
+                if (major_tokens.size() >= 5)
+                {
+                    maxTokenCount = 4;
+                }
+                else
+                    maxTokenCount = major_tokens.size() -1;
 
-                    unsigned int maxTokenCount = 4;
-                    unsigned int count = 0;
-                    double boundary = v_pair[maxTokenCount - 1].second;
-                    std::list<std::pair<UString, double> > new_major_tokens;
-                    for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+                unsigned int count = 0;
+                double boundary = 0;
+                if (major_tokens.size() == 1)
+                    boundary = 0.01;
+                else
+                    boundary = v_pair[maxTokenCount - 1].second;
+                
+                std::list<std::pair<UString, double> > new_major_tokens;
+                std::list<std::pair<UString, double> > new_minor_tokens;
+                for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+                {
+                    new_minor_tokens.push_back(*i);
+                }
+
+                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
+                {
+                    if (count < maxTokenCount)
                     {
-                        if (count < maxTokenCount && i->second >= boundary)
+                        if (i->second >= boundary)
                         {
                             new_major_tokens.push_back(*i);
                             count++;
                         }
+                        else
+                            minor_tokens.push_back(*i);
                     }
+                    else
+                        minor_tokens.push_back(*i);
 
-                    cout<<"The new prune query is";
+                    new_minor_tokens.push_back(*i);
+                }
+                
+                if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true && major_tokens.size() >= 4)
+                {
+                    std::cout << "The new prune query is";
                     for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); i != new_major_tokens.end(); ++i)
                     {
                         std::string word;
                         (i->first).convertString(word, izenelib::util::UString::UTF_8);
-                        cout<<" " << word;
+                        std::cout << " " << word;
                         pruneQueryString_ += word;
                         pruneQueryString_ += " ";
                     }
-                    cout<<endl;
+                    cout << endl;
                     totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                         new_major_tokens,
                                         minor_tokens,
@@ -2323,6 +2373,102 @@ bool MiningManager::GetSuffixMatch(
                                         filter_param,
                                         actionOperation.actionItem_.groupParam_,
                                         res_list);
+                    if (res_list.empty())
+                    {
+                        if (new_major_tokens.size() > 1)
+                        {
+                            std::cout << "Start second search ........................." << std::endl;
+                            pruneQueryString_ = "";
+                            minor_tokens.push_back(new_major_tokens.back());
+                            new_major_tokens.pop_back();
+
+                            std::cout << "The second new query is:";
+                            for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); 
+                                    i != new_major_tokens.end(); ++i)
+                            {
+                                std::string word;
+                                (i->first).convertString(word, izenelib::util::UString::UTF_8);
+                                std::cout << " " << word;
+                                pruneQueryString_ += word;
+                                pruneQueryString_ += " ";
+                            }
+                            totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                            new_major_tokens,
+                                            minor_tokens,
+                                            search_in_properties,
+                                            max_docs,
+                                            actionOperation.actionItem_.searchingMode_.filtermode_,
+                                            filter_param,
+                                            actionOperation.actionItem_.groupParam_,
+                                            res_list);
+
+                            if (res_list.empty())
+                            {
+                                if (new_major_tokens.size() > 1)
+                                {
+                                    std::cout << "Start third search ........................." << std::endl;
+                                    pruneQueryString_ = "";
+                                    minor_tokens.push_back(new_major_tokens.back());
+                                    new_major_tokens.pop_back();
+                                    if (new_major_tokens.size() > 1)
+                                    {
+                                        std::cout << "The third new query is:";
+                                        for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); 
+                                            i != new_major_tokens.end(); ++i)
+                                        {
+                                            std::string word;
+                                            (i->first).convertString(word, izenelib::util::UString::UTF_8);
+                                            std::cout << " " << word;
+                                            pruneQueryString_ += word;
+                                            pruneQueryString_ += " ";
+                                        }
+                                        std::cout << std::endl;
+                                        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                                        new_major_tokens,
+                                                        minor_tokens,
+                                                        search_in_properties,
+                                                        max_docs,
+                                                        actionOperation.actionItem_.searchingMode_.filtermode_,
+                                                        filter_param,
+                                                        actionOperation.actionItem_.groupParam_,
+                                                        res_list);
+                                    }
+
+                                    if (res_list.empty())
+                                    {
+                                        new_major_tokens.clear();
+                                        std::cout << "USE minor search ...." << std::endl;
+                                        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                                new_major_tokens,
+                                                new_minor_tokens,
+                                                search_in_properties,
+                                                max_docs,
+                                                actionOperation.actionItem_.searchingMode_.filtermode_,
+                                                filter_param,
+                                                actionOperation.actionItem_.groupParam_,
+                                                res_list);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (res_list.empty())
+                    {
+                        new_major_tokens.clear();
+                        std::cout << "USE minor search ...." << std::endl;
+                        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                        new_major_tokens,
+                        new_minor_tokens,
+                        search_in_properties,
+                        max_docs,
+                        actionOperation.actionItem_.searchingMode_.filtermode_,
+                        filter_param,
+                        actionOperation.actionItem_.groupParam_,
+                        res_list);
+                    }
                 }
             }
         }

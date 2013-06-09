@@ -281,7 +281,7 @@ bool RebuildTask::rebuildFromSCD(const std::string& scd_path)
         {
             if (DistributeFileSys::get()->isEnabled())
             {
-                rebuild_scd_src = DistributeFileSys::get()->getDFSPath(scd_path);
+                rebuild_scd_src = DistributeFileSys::get()->getDFSPathForLocal(scd_path);
                 LOG(INFO) << "rebuild from dfs path : " << rebuild_scd_src;
             }
 

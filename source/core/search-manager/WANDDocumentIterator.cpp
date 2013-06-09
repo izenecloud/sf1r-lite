@@ -69,6 +69,8 @@ float WANDDocumentIterator::getUB()
     std::vector<DocumentIterator*>::iterator it = docIteratorList_.begin();
     for (; it != docIteratorList_.end(); it++)
     {
+        if (!*it)
+            continue;
         sumUB += (*it)->getUB();
     }
     return sumUB / (1 - missRate_);

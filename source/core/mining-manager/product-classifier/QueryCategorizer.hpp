@@ -31,14 +31,17 @@ public:
     {
         matcher_ = matcher;
     }
+/*    
     void SetSPUProductClassifier(SPUProductClassifier* spu_classifier)
     {
         spu_classifier_ = spu_classifier;
     }
+
     void SetSuffixMatchManager(SuffixMatchManager* suffix_manager)
     {
         suffix_manager_ = suffix_manager;
     }
+*/
     void SetDocumentManager(boost::shared_ptr<DocumentManager> document_manager)
     {
         document_manager_ = document_manager;
@@ -56,7 +59,7 @@ private:
         const std::string& query,
         int limit,
         std::vector<UString>& frontends);
-
+/*
     bool GetCategoryBySPU_(
         const std::string& query,
         std::vector<UString>& frontCategories);
@@ -64,7 +67,7 @@ private:
     bool GetCategoryBySuffixMatcher_(
         const std::string& query,
         std::vector<UString>& frontCategories);
-
+*/
     bool GetSplittedCategories_(
         std::vector<UString>& frontends,
         int limit,
