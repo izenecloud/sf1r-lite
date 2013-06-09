@@ -179,7 +179,8 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
     {
         static const bfs::directory_iterator kItrEnd;
         std::string dfs_total_comment_path = "/produce/total_comment_scd/";
-        std::string local_total_comment_path = DistributeFileSys::get()->getDFSPathForLocal(dfs_total_comment_path);
+        std::string local_total_comment_path = DistributeFileSys::get()->getFixedCopyPath(dfs_total_comment_path);
+        local_total_comment_path = DistributeFileSys::get()->getDFSPathForLocal(local_total_comment_path);
         std::string last_dir = "";
         if (bfs::exists(local_total_comment_path) && !local_total_comment_path.empty())
         {
@@ -196,11 +197,10 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
             }
             LOG (INFO) << "Get comment SCD from dir :" << last_dir ;
 
-            //xxxx
-            //local_total_comment_path += last_dir;
-            last_dir += "/";
+            local_total_comment_path += last_dir;
+            local_total_comment_path += "/";
 
-            bfs::path to_file(rebuild_scd_src); 
+            bfs::path to_dir(rebuild_scd_src); 
             if (!last_dir.empty())
             {
                 try
@@ -210,8 +210,9 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
                         if (bfs::is_regular_file(itr->status()))
                         {
                             std::string fileName = itr->path().filename().string();
-                            std::cout << "Copy comment scd file " << fileName << "to rebuild_scd_src: " << rebuild_scd_src << std::endl;
-                            bfs::copy_file(itr->path(), to_file);
+                            bfs::path from_file(local_total_comment_path + fileName);
+                            std::cout << "Copy comment scd file " << fileName << " to rebuild_scd_src: " << rebuild_scd_src << std::endl;
+                            bfs::copy_file(from_file, to_dir);
                         }
                     }
                 }
