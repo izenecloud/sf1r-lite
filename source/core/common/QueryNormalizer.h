@@ -33,6 +33,30 @@ public:
      * it would be normalized to "galaxy i9300 三星".
      */
     void normalize(const std::string& fromStr, std::string& toStr);
+
+    /*
+     * Count the number of normalized characters in @p query.
+     * The continuous alphabets and digits would be seemed as one character.
+     *
+     * For example, given the query "三星 Galaxy I9300", the normalized characters
+     * would be "三", "星", "Galaxy", "I9300", so it would return 4.
+     */
+    std::size_t countCharNum(const std::string& query);
+
+    /*
+     * Whether the @p query is long.
+     */
+    bool isLongQuery(const std::string& query)
+    {
+        return countCharNum(query) >= LONG_QUERY_MIN_CHAR_NUM;
+    }
+
+private:
+
+    enum
+    {
+        LONG_QUERY_MIN_CHAR_NUM = 8 // the mininum character number for long query
+    };
 };
 
 } // namespace sf1r
