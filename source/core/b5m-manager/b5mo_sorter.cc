@@ -25,6 +25,7 @@ bool B5moSorter::StageOne()
     if(!buffer_.empty())
     {
         DoSort_();
+        WaitUntilSortFinish_();
     }
     return true;
 }
