@@ -4,7 +4,7 @@
 
 namespace sf1r
 {
-Classifier* ClassifierFactory::createClassifier(ClassifierContext& context)
+Classifier* ClassifierFactory::createClassifier(ClassifierContext* context)
 {
     return new LexiconClassifier(context);
 }

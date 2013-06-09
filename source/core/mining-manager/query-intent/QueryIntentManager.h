@@ -27,7 +27,8 @@ public:
     QueryIntentManager(QueryIntentConfig* config, std::string& resource);
     ~QueryIntentManager();
 public:
-    void queryIntent(izenelib::driver::Request& request);   
+    void queryIntent(izenelib::driver::Request& request);
+    void reload();
 private:
     void init_();
     void destroy_();

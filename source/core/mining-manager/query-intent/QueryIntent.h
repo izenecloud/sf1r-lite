@@ -23,6 +23,7 @@ public:
 public:
     virtual void process(izenelib::driver::Request& request) = 0;
     virtual void addClassifier(Classifier* classifier) = 0;
+    virtual void reload() = 0;
 };
 
 }

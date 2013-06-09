@@ -10,6 +10,7 @@
 
 #include "Classifier.h"
 #include <boost/unordered_map.hpp>
+#include <boost/thread/thread.hpp>
 
 namespace sf1r
 {
@@ -17,16 +18,20 @@ namespace sf1r
 class LexiconClassifier : public Classifier
 {
 public:
-    LexiconClassifier(ClassifierContext& context);
+    LexiconClassifier(ClassifierContext* context);
     ~LexiconClassifier();
 public:
     bool classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query);
+    void reload();
 private:
     void loadLexicon_();
 private:
     std::map<QueryIntentCategory, boost::unordered_map<std::string, std::string> >lexicons_;
     unsigned short maxLength_;
     unsigned short minLength_;
+
+    //boost::thread reloadThread_;
+    boost::shared_mutex  mtx_;
 };
 
 }

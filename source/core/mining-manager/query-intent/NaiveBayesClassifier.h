@@ -15,7 +15,7 @@ namespace sf1r
 class NaiveBayesClassifier : public Classifier
 {
 public:
-    NaiveBayesClassifier(ClassifierContext& context)
+    NaiveBayesClassifier(ClassifierContext* context)
         : Classifier(context)
     {
     }

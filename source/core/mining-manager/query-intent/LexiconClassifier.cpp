@@ -1,17 +1,24 @@
 #include "LexiconClassifier.h"
 #include <boost/filesystem.hpp>
+#include <boost/thread/locks.hpp>
+#include <boost/thread/lock_types.hpp>
+
 #include <fstream>
 #include <iostream>
+
+#include <sys/inotify.h>
+
 namespace sf1r
 {
 const char* FORMAL_ALIAS_DELIMITER = ":";
 const char* ALIAS_DELIMITER = ";";
-LexiconClassifier::LexiconClassifier(ClassifierContext& context)
+LexiconClassifier::LexiconClassifier(ClassifierContext* context)
     : Classifier(context)
 {
     maxLength_ = 0;
     minLength_ = -1;
     loadLexicon_();
+    //reloadThread_= boost::thread(&LexiconClassifier::reloadLexicon_, this);
 }
 
 LexiconClassifier::~LexiconClassifier()
@@ -21,11 +28,11 @@ LexiconClassifier::~LexiconClassifier()
 
 void LexiconClassifier::loadLexicon_()
 {
-    QIIterator it = context_.config_.begin();
-    for(; it != context_.config_.end(); it++)
+    QIIterator it = context_->config_->begin();
+    for(; it != context_->config_->end(); it++)
     {
         QueryIntentCategory iCategory = (*it);
-        std::string lexiconFile = context_.lexiconDirectory_ + iCategory.name_;
+        std::string lexiconFile = context_->lexiconDirectory_ + iCategory.name_;
         if (!boost::filesystem::exists(lexiconFile) 
             || !boost::filesystem::is_regular_file(lexiconFile))
             continue;
@@ -48,7 +55,7 @@ void LexiconClassifier::loadLexicon_()
                 if ( minLength_ > size )
                     minLength_ = size;
                 lexicons_[iCategory].insert(make_pair(line, line));
-                std::cout<<line<<" "<< line<<"\n";
+                //std::cout<<line<<" "<< line<<"\n";
             }
             else
             {
@@ -61,7 +68,7 @@ void LexiconClassifier::loadLexicon_()
                 if ( minLength_ > size )
                     minLength_ = size;
                 lexicons_[iCategory].insert(make_pair(formalName, formalName));
-                std::cout<<formalName<<" "<< formalName<<"\n";
+                //std::cout<<formalName<<" "<< formalName<<"\n";
                 
                 line.erase(0, formalEnd + 1);
                 while (true)
@@ -77,7 +84,7 @@ void LexiconClassifier::loadLexicon_()
                         if ( minLength_ > size )
                             minLength_ = size;
                         lexicons_[iCategory].insert(make_pair(line, formalName));
-                std::cout<<line<<" "<< formalName<<"\n";
+                //std::cout<<line<<" "<< formalName<<"\n";
                         break;
                     }
                     std::string aliasName = line.substr(0, aliasEnd);
@@ -90,7 +97,7 @@ void LexiconClassifier::loadLexicon_()
                     if ( minLength_ > size )
                         minLength_ = size;
                     lexicons_[iCategory].insert(make_pair(aliasName, formalName));
-                std::cout<<aliasName<<" "<< formalName<<"\n";
+                //std::cout<<aliasName<<" "<< formalName<<"\n";
                 }
             }
         }
@@ -99,8 +106,50 @@ void LexiconClassifier::loadLexicon_()
     return;
 }
 
+void LexiconClassifier::reload()
+{
+    boost::unique_lock<boost::shared_mutex> ul(mtx_);
+    loadLexicon_();
+    /*const char* lexiconDirectory = context_->lexiconDirectory_.c_str();
+    int ld = -1;
+    if (-1 == (ld = inotify_add_watch(inotify_init(), lexiconDirectory, 
+        IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_MOVED_FROM)))
+    {
+        std::cout<<"Inotify Init Error\n";
+        return;
+    }
+    struct inotify_event ievent;
+    while (true)
+    {
+        int ret = read(ld, &ievent, sizeof(ievent));
+        if ((-1 == ret) && (EINTR == errno))
+            continue;
+        if (IN_MODIFY == ievent.mask)
+        {
+            std::string fileName = ievent.name;
+            QIIterator it = context_->config_->begin();
+            for(; it != context_->config_->end(); it++)
+            {
+                if (fileName == it->name_)
+                    break;
+            }
+            if (it != context_->config_->end())
+            {
+                boost::unique_lock<boost::shared_mutex> ul(mtx_);
+                loadLexicon_();
+            }
+        }
+    }*/
+}
+
 bool LexiconClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
 {
+    boost::shared_lock<boost::shared_mutex> sl(mtx_, boost::try_to_lock);
+    if (!sl)
+    {
+        std::cout<<"shared_lock::try_lock return'\n";
+        return -1;
+    }
     if ((0 == maxLength_) || lexicons_.empty())
         return false;
     size_t pos = 0;

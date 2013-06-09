@@ -24,6 +24,7 @@ public:
     {
         classifiers_.push_back(classifier);
     }
+    void reload();
 private:
     std::list<Classifier*> classifiers_;
 };

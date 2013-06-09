@@ -24,7 +24,10 @@ ProductQueryIntent::~ProductQueryIntent()
     for(; it != classifiers_.end(); it++)
     {
         if(*it)
+        {
             delete *it;
+            *it = NULL;
+        }
     }
     classifiers_.clear();
 }
@@ -50,6 +53,16 @@ void ProductQueryIntent::process(izenelib::driver::Request& request)
     else
         request[Keys::search][Keys::keywords] = keywords;
     rewriteRequest(request, intents);
+}
+
+void ProductQueryIntent::reload()
+{
+    std::list<Classifier*>::iterator it = classifiers_.begin();
+    for(; it != classifiers_.end(); it++)
+    {
+        if(*it)
+            (*it)->reload();
+    }
 }
 
 }

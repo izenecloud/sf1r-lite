@@ -28,9 +28,9 @@ QueryIntentManager::~QueryIntentManager()
 void QueryIntentManager::init_()
 {
     intentFactory_ = new QueryIntentFactory();
-    classifierFactory_ = new ClassifierFactory(*config_);
+    classifierFactory_ = new ClassifierFactory(config_);
    
-    ClassifierContext cContext(*config_, lexiconDirectory_);
+    ClassifierContext* cContext = new ClassifierContext(config_, lexiconDirectory_);
     Classifier* classifier = classifierFactory_->createClassifier(cContext);
     
     QueryIntentContext iContext;
@@ -72,6 +72,12 @@ void QueryIntentManager::queryIntent(izenelib::driver::Request& request)
     nQuery_++;
     microseconds_ = 1e6 * (end.tv_sec - begin.tv_sec) + (end.tv_usec - begin.tv_usec);
 #endif
+}
+
+void QueryIntentManager::reload()
+{
+    if(intent_)
+        intent_->reload();
 }
 
 }
