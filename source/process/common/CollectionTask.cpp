@@ -199,8 +199,7 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
 
             local_total_comment_path += last_dir;
             local_total_comment_path += "/";
-
-            bfs::path to_dir(rebuild_scd_src); 
+ 
             if (!last_dir.empty())
             {
                 try
@@ -211,6 +210,8 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
                         {
                             std::string fileName = itr->path().filename().string();
                             bfs::path from_file(local_total_comment_path + fileName);
+                            bfs::path to_dir(rebuild_scd_src);
+                            to_dir /= fileName;
                             std::cout << "Copy comment scd file " << fileName << " to rebuild_scd_src: " << rebuild_scd_src << std::endl;
                             bfs::copy_file(from_file, to_dir);
                         }
@@ -218,7 +219,8 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
                 }
                 catch(std::exception& ex)
                 {
-                    LOG (ERROR) << "Not all comment scds is send to" << rebuild_scd_src ;
+
+                    LOG (ERROR) << "Not all comment scds is send to" << rebuild_scd_src  <<", exception: " << ex.what();
                 }
             }
         }
