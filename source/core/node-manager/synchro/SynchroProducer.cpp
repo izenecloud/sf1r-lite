@@ -16,11 +16,12 @@ using namespace sf1r;
 
 SynchroProducer::SynchroProducer(
         boost::shared_ptr<ZooKeeper>& zookeeper,
-        const std::string& syncZkNode,
+        const std::string& syncID,
         DataTransferPolicy transferPolicy)
 : transferPolicy_(transferPolicy)
 , zookeeper_(zookeeper)
-, syncZkNode_(syncZkNode)
+, syncID_(syncID)
+, syncZkNode_(ZooKeeperNamespace::getSynchroPath() + "/" + syncID)
 , isSynchronizing_(false)
 {
     if (zookeeper_)
@@ -69,7 +70,7 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
     std::string dataType = syncData.getStrValue(SynchroData::KEY_DATA_TYPE);
     if (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::DATA_TYPE_SCD_INDEX)
     {
-        if(!DistributeFileSys::get()->copyToDFS(dataPath, "/produce/index_scd/"))
+        if(!DistributeFileSys::get()->copyToDFS(dataPath, syncID_ + "/produce/index_scd/"))
         {
             LOG(WARNING) << "copy file to dfs failed.";
             return false;

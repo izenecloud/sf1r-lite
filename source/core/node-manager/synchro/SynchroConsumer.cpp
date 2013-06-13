@@ -1,5 +1,6 @@
 #include "SynchroConsumer.h"
 
+#include <node-manager/ZooKeeperNamespace.h>
 #include <node-manager/SuperNodeManager.h>
 #include <node-manager/DistributeFileSys.h>
 #include <util/string/StringUtils.h>
@@ -14,9 +15,10 @@ using namespace sf1r;
 
 SynchroConsumer::SynchroConsumer(
         boost::shared_ptr<ZooKeeper>& zookeeper,
-        const std::string& syncZkNode)
+        const std::string& syncID)
 : zookeeper_(zookeeper)
-, syncZkNode_(syncZkNode)
+, syncID_(syncID)
+, syncZkNode_(ZooKeeperNamespace::getSynchroPath() + "/" + syncID)
 , consumerStatus_(CONSUMER_STATUS_INIT)
 {
     if (zookeeper_)
