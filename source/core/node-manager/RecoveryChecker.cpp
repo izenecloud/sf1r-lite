@@ -1315,6 +1315,13 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
             }
         }
 
+        if (min_size == 0 && check_start <= newest_reqid)
+        {
+            LOG(INFO) << "local log data is forword at id " << check_start;
+            setRollbackFlag(check_start);
+            return false;
+        }
+
         if (check_start >= newest_reqid)
         {
             LOG(INFO) << "check log data success, current node log ok.";
