@@ -195,7 +195,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             const std::string& search_property = search_in_properties[prop_i];
             range_list.reserve(major_tokens.size() + minor_tokens.size());
             score_list.reserve(range_list.size());
-            LOG(INFO) << "query tokenize match ranges in property : " << search_property;
+            //LOG(INFO) << "query tokenize match ranges in property : " << search_property;
 
             for (std::list<std::pair<UString, double> >::iterator pit = major_tokens.begin();
                     pit != major_tokens.end(); ++pit)
@@ -247,7 +247,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             {
                 LOG(ERROR) << "unknown filter mode.";
             }
-            LOG(INFO) << "topk finished in property : " << search_property;
+            //LOG(INFO) << "topk finished in property : " << search_property;
             size_t oldsize = res_list_map.size();
             for (size_t i = 0; i < single_res_list.size(); ++i)
             {
@@ -261,7 +261,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             }
             range_list.clear();
             score_list.clear();
-            LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
+            //LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
         }
     }
 

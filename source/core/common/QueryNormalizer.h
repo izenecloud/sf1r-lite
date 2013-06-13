@@ -8,6 +8,7 @@
 
 #include <util/singleton.h>
 #include <string>
+#include <vector>
 
 namespace sf1r
 {
@@ -19,6 +20,13 @@ public:
     {
         return izenelib::util::Singleton<QueryNormalizer>::get();
     }
+
+    /*
+    * tokenizeQuery
+    * For example, given the query "三星 Galaxy I9300"
+    * The result is the vector of "三星"\"Galaxy\I9300"
+    */
+    void tokenizeQuery(const std::string& query, std::vector<std::string>& tokens);
 
     /*
      * Normalize the query from @p fromStr to @p toStr.

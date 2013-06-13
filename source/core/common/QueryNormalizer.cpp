@@ -1,6 +1,5 @@
 #include "QueryNormalizer.h"
 #include <util/ustring/UString.h>
-#include <vector>
 #include <cctype> // isspace, tolower
 #include <algorithm> // sort
 
@@ -26,7 +25,26 @@ const UString::CharT kCarriageReturn = UString("\r", kEncodeType)[0];
 
 const char kMergeTokenDelimiter = ' ';
 
-void tokenizeQuery(const std::string& query, std::vector<std::string>& tokens)
+void mergeTokens(const std::vector<std::string>& tokens, std::string& output)
+{
+    output.clear();
+    const int lastPos = static_cast<int>(tokens.size()) - 1;
+
+    for (int i = 0; i < lastPos; ++i)
+    {
+        output += tokens[i];
+        output += kMergeTokenDelimiter;
+    }
+
+    if (lastPos >= 0)
+    {
+        output += tokens[lastPos];
+    }
+}
+
+} // namespace
+
+void QueryNormalizer::tokenizeQuery(const std::string& query, std::vector<std::string>& tokens)
 {
     std::string current;
     const std::size_t length = query.size();
@@ -51,25 +69,6 @@ void tokenizeQuery(const std::string& query, std::vector<std::string>& tokens)
         tokens.push_back(current);
     }
 }
-
-void mergeTokens(const std::vector<std::string>& tokens, std::string& output)
-{
-    output.clear();
-    const int lastPos = static_cast<int>(tokens.size()) - 1;
-
-    for (int i = 0; i < lastPos; ++i)
-    {
-        output += tokens[i];
-        output += kMergeTokenDelimiter;
-    }
-
-    if (lastPos >= 0)
-    {
-        output += tokens[lastPos];
-    }
-}
-
-} // namespace
 
 void QueryNormalizer::normalize(const std::string& fromStr, std::string& toStr)
 {
