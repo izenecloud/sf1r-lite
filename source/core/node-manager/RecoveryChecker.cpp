@@ -52,24 +52,32 @@ public:
     static void safe_remove_all(const std::string& dir)
     {
         CopyGuard dir_guard(dir);
-        // remove other files first and then remove flag.
-        static bfs::directory_iterator end_it = bfs::directory_iterator();
-        bfs::directory_iterator dir_it = bfs::directory_iterator(dir);
-        while(dir_it != end_it)
+        try
         {
-            bfs::path current(dir_it->path());
-            if (bfs::is_regular_file(current) &&
-                current.filename().string() == getGuardFileName())
+            // remove other files first and then remove flag.
+            static bfs::directory_iterator end_it = bfs::directory_iterator();
+            bfs::directory_iterator dir_it = bfs::directory_iterator(dir);
+            while(dir_it != end_it)
             {
+                bfs::path current(dir_it->path());
+                if (bfs::is_regular_file(current) &&
+                    current.filename().string() == getGuardFileName())
+                {
+                    ++dir_it;
+                    continue;
+                }
+                DistributeTestSuit::testFail(Fail_At_CopyRemove_File);
+                bfs::remove_all(current);
                 ++dir_it;
-                continue;
             }
-            DistributeTestSuit::testFail(Fail_At_CopyRemove_File);
-            bfs::remove_all(current);
-            ++dir_it;
+            bfs::remove(dir + "/" + getGuardFileName());
+            bfs::remove_all(dir);
         }
-        bfs::remove(dir + "/" + getGuardFileName());
-        bfs::remove_all(dir);
+        catch(const std::exception& e)
+        {
+            LOG(ERROR) << "safe remove error: " << e.what();
+            return;
+        }
         dir_guard.setOK();
     }
 
