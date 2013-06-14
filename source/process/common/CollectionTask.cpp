@@ -6,6 +6,7 @@
 #include <common/Utilities.h>
 
 #include <bundles/index/IndexTaskService.h>
+#include <bundles/product/ProductBundleActivator.h>
 #include <core/license-manager/LicenseCustManager.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/NodeManagerBase.h>
@@ -174,11 +175,46 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
         return false;
     }
 
+    static const bfs::directory_iterator kItrEnd;
+    ScdParser parser(encoding);
+    for (bfs::directory_iterator itr(rebuild_scd_src); itr != kItrEnd; ++itr)
+    {
+        if (bfs::is_regular_file(itr->status()))
+        {
+            std::string fileName = itr->path().filename().string();
+            if (parser.checkSCDFormat(fileName))
+            {
+                LOG(INFO) << "found a SCD File for rebuild:" << fileName;
+                scd_list.push_back(itr->path().string());
+                //if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scd_list.back(),
+                //        scd_list.back()))
+                //{
+                //    LOG(INFO) << "Transfer index scd to the replicas finished for: " << scd_list.back();
+                //}
+                //else
+                //{
+                //    LOG(WARNING) << "push index scd file to the replicas failed for:" << scd_list.back();
+                //}
+            }
+            else
+            {
+                LOG(WARNING) << "SCD File not valid " << fileName;
+            }
+        }
+    }
+
+    if (scd_list.empty())
+        return false;
     //copy Total_Comment_SCD to rebuild_scd_src
     if( DistributeFileSys::get()->isEnabled())
     {
         static const bfs::directory_iterator kItrEnd;
-        std::string dfs_total_comment_path = "/produce/total_comment_scd/";
+
+        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collectionName_);
+        std::string productID = collectionHandler->productTaskService_->getbundleConfig()->productId_;
+        std::cout << "productID: " << productID << std::endl;
+
+        std::string dfs_total_comment_path = productID + "/produce/total_comment_scd/";
         std::string local_total_comment_path = DistributeFileSys::get()->getFixedCopyPath(dfs_total_comment_path);
         local_total_comment_path = DistributeFileSys::get()->getDFSPathForLocal(local_total_comment_path);
         std::string last_dir = "";
@@ -210,10 +246,8 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
                         {
                             std::string fileName = itr->path().filename().string();
                             bfs::path from_file(local_total_comment_path + fileName);
-                            bfs::path to_dir(rebuild_scd_src);
-                            to_dir /= fileName;
-                            std::cout << "Copy comment scd file " << fileName << " to rebuild_scd_src: " << rebuild_scd_src << std::endl;
-                            bfs::copy_file(from_file, to_dir);
+                            cout<<"Comment SCD: " << from_file.string();
+                            scd_list.push_back(from_file.string());
                         }
                     }
                 }
@@ -228,36 +262,9 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
             LOG(WARNING) << "there is no total comment scd files" ;
     }// there is no else, the total comment is already in rebuild_scd ;
 
-    // search the directory for files
-    static const bfs::directory_iterator kItrEnd;
-    ScdParser parser(encoding);
-    for (bfs::directory_iterator itr(rebuild_scd_src); itr != kItrEnd; ++itr)
-    {
-        if (bfs::is_regular_file(itr->status()))
-        {
-            std::string fileName = itr->path().filename().string();
-            if (parser.checkSCDFormat(fileName))
-            {
-                LOG(INFO) << "found a SCD File for rebuild:" << fileName;
-                scd_list.push_back(itr->path().string());
-                //if(DistributeFileSyncMgr::get()->pushFileToAllReplicas(scd_list.back(),
-                //        scd_list.back()))
-                //{
-                //    LOG(INFO) << "Transfer index scd to the replicas finished for: " << scd_list.back();
-                //}
-                //else
-                //{
-                //    LOG(WARNING) << "push index scd file to the replicas failed for:" << scd_list.back();
-                //}
-            }
-            else
-            {
-                LOG(WARNING) << "SCD File not valid " << fileName;
-            }
-        }
-    }
     sort(scd_list.begin(), scd_list.end(), ScdParser::compareSCD);
-    return !scd_list.empty();
+    return true;
+
 }
 
 void RebuildTask::getRebuildScdOnReplica(const std::vector<std::string>& scd_list)
