@@ -246,7 +246,7 @@ void SearchWorker::makeQueryIdentity(
     identity.userId = item.env_.userID_;
     identity.start = start;
     identity.searchingMode = item.searchingMode_;
-
+    identity.isSynonym = item.languageAnalyzerInfo_.synonymExtension_;
     switch (item.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
