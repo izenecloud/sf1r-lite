@@ -82,7 +82,7 @@ bool SynchroProducer::produce(SynchroData& syncData, callback_on_consumed_t call
 
     if (DistributeFileSys::get()->isEnabled() && dataType == SynchroData::TOTAL_COMMENT_SCD)
     {
-        if (!DistributeFileSys::get()->copyToDFS(dataPath, "/produce/total_comment_scd/"))
+        if (!DistributeFileSys::get()->copyToDFS(dataPath, syncID_ + "/produce/total_comment_scd/"))
         {
             LOG(WARNING) << "copy file to dfs failed.";
             return false;
@@ -360,14 +360,7 @@ bool SynchroProducer::transferData(const std::string& consumerZnodePath)
             }
             else if (dataType == SynchroData::TOTAL_COMMENT_SCD)
             {
-                if (NodeManagerBase::get()->isDistributed())
-                {
-                    recvDir = consumerCollection+"/scd/rebuild_scd";
-                }
-                else
-                {
-                    recvDir = consumerCollection+"/scd/rebuild_scd";
-                }
+                recvDir = consumerCollection+"/scd/rebuild_scd";
             }
             else
             {
