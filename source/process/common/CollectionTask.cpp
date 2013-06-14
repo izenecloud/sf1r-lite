@@ -6,6 +6,7 @@
 #include <common/Utilities.h>
 
 #include <bundles/index/IndexTaskService.h>
+#include <bundles/product/ProductBundleActivator.h>
 #include <core/license-manager/LicenseCustManager.h>
 #include <node-manager/DistributeRequestHooker.h>
 #include <node-manager/NodeManagerBase.h>
@@ -174,7 +175,6 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
         return false;
     }
 
-    // search the directory for files
     static const bfs::directory_iterator kItrEnd;
     ScdParser parser(encoding);
     for (bfs::directory_iterator itr(rebuild_scd_src); itr != kItrEnd; ++itr)
@@ -202,8 +202,69 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
             }
         }
     }
+
+    if (scd_list.empty())
+        return false;
+    //copy Total_Comment_SCD to rebuild_scd_src
+    if( DistributeFileSys::get()->isEnabled())
+    {
+        static const bfs::directory_iterator kItrEnd;
+
+        CollectionHandler* collectionHandler = CollectionManager::get()->findHandler(collectionName_);
+        std::string productID = collectionHandler->productTaskService_->getbundleConfig()->productId_;
+        std::cout << "productID: " << productID << std::endl;
+
+        std::string dfs_total_comment_path = productID + "/produce/total_comment_scd/";
+        std::string local_total_comment_path = DistributeFileSys::get()->getFixedCopyPath(dfs_total_comment_path);
+        local_total_comment_path = DistributeFileSys::get()->getDFSPathForLocal(local_total_comment_path);
+        std::string last_dir = "";
+        if (bfs::exists(local_total_comment_path) && !local_total_comment_path.empty())
+        {
+             for (bfs::directory_iterator itr(local_total_comment_path); itr != kItrEnd; ++itr)
+            {
+                if (bfs::is_directory(itr->status()))
+                {
+                    std::string fileName = itr->path().filename().string();
+                    if (fileName > last_dir)
+                    {
+                        last_dir = fileName;
+                    }
+                }
+            }
+            LOG (INFO) << "Get comment SCD from dir :" << last_dir ;
+
+            local_total_comment_path += last_dir;
+            local_total_comment_path += "/";
+ 
+            if (!last_dir.empty())
+            {
+                try
+                {
+                    for (bfs::directory_iterator itr(local_total_comment_path); itr != kItrEnd; ++itr)
+                    {
+                        if (bfs::is_regular_file(itr->status()))
+                        {
+                            std::string fileName = itr->path().filename().string();
+                            bfs::path from_file(local_total_comment_path + fileName);
+                            cout<<"Comment SCD: " << from_file.string();
+                            scd_list.push_back(from_file.string());
+                        }
+                    }
+                }
+                catch(std::exception& ex)
+                {
+
+                    LOG (ERROR) << "Not all comment scds is send to" << rebuild_scd_src  <<", exception: " << ex.what();
+                }
+            }
+        }
+        else
+            LOG(WARNING) << "there is no total comment scd files" ;
+    }// there is no else, the total comment is already in rebuild_scd ;
+
     sort(scd_list.begin(), scd_list.end(), ScdParser::compareSCD);
-    return !scd_list.empty();
+    return true;
+
 }
 
 void RebuildTask::getRebuildScdOnReplica(const std::vector<std::string>& scd_list)

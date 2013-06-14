@@ -2271,6 +2271,7 @@ bool MiningManager::GetSuffixMatch(
                 if ( useShort)
                 {
                     totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                             major_tokens_short,
                                             minor_tokens_short,
                                             search_in_properties,
@@ -2311,6 +2312,7 @@ bool MiningManager::GetSuffixMatch(
                 }
 
                 totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                             major_tokens_frune,
                                             minor_tokens_frune,
                                             search_in_properties,
@@ -2325,6 +2327,7 @@ bool MiningManager::GetSuffixMatch(
                     LOG (INFO) << "[SHORT BACK TO NORMAL FUZZY SEARCH]The prune search result number is zero, back to Normal fuzzy search ... ";
 
                     totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                             major_tokens,
                                             minor_tokens,
                                             search_in_properties,
@@ -2342,6 +2345,7 @@ bool MiningManager::GetSuffixMatch(
                         }
                         major_tokens.clear();
                         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                             major_tokens,
                                             minor_tokens,
                                             search_in_properties,
@@ -2351,12 +2355,14 @@ bool MiningManager::GetSuffixMatch(
                                             actionOperation.actionItem_.groupParam_,
                                             res_list);
                     }
+
                 }
             }
         }
         else
         {
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                        actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                         major_tokens,
                                         minor_tokens,
                                         search_in_properties,
@@ -2428,6 +2434,7 @@ bool MiningManager::GetSuffixMatch(
                     }
                     cout << endl;
                     totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                        actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                         new_major_tokens,
                                         minor_tokens,
                                         search_in_properties,
@@ -2456,6 +2463,7 @@ bool MiningManager::GetSuffixMatch(
                                 pruneQueryString_ += " ";
                             }
                             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                             new_major_tokens,
                                             minor_tokens,
                                             search_in_properties,
@@ -2487,6 +2495,7 @@ bool MiningManager::GetSuffixMatch(
                                         }
                                         std::cout << std::endl;
                                         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                                        actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                                         new_major_tokens,
                                                         minor_tokens,
                                                         search_in_properties,
@@ -2502,6 +2511,7 @@ bool MiningManager::GetSuffixMatch(
                                         new_major_tokens.clear();
                                         std::cout << "USE minor search ...." << std::endl;
                                         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                                actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                                 new_major_tokens,
                                                 new_minor_tokens,
                                                 search_in_properties,
@@ -2523,6 +2533,7 @@ bool MiningManager::GetSuffixMatch(
                         new_major_tokens.clear();
                         std::cout << "USE minor search ...." << std::endl;
                         totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                        actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                         new_major_tokens,
                         new_minor_tokens,
                         search_in_properties,

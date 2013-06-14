@@ -17,12 +17,12 @@ ProductScdReceiver::ProductScdReceiver(const std::string& syncID, const std::str
     syncConsumer_ = SynchroFactory::getConsumer(syncID);
     syncConsumer_->watchProducer(
             boost::bind(&ProductScdReceiver::Run, this, _1),
-            collectionName);
+            collectionName);//in comment for increment data;
 
     syncConsumerRebuildComment_ = SynchroFactory::getConsumer(syncID + syncID_totalComment);
     syncConsumerRebuildComment_->watchProducer(
             boost::bind(&ProductScdReceiver::getTotalComment, this, _1),
-            collectionName);
+            collectionName);//in comment for total data;
 }
 
 bool ProductScdReceiver::pushIndexRequest(const std::string& scd_source_dir)
@@ -51,12 +51,13 @@ bool ProductScdReceiver::pushIndexRequest(const std::string& scd_source_dir)
 
 bool ProductScdReceiver::onReceived(const std::string& scd_source_dir)
 {
-    return pushIndexRequest(scd_source_dir);
+    return pushIndexRequest(scd_source_dir);// build index ....
 }
 
 bool ProductScdReceiver::getTotalComment(const std::string& scd_source_dir)
 {
-    LOG(INFO)<<"ProductScdReceiver::getTotalComment "<<scd_source_dir<<std::endl;
+    std::string mine_source_dir = scd_source_dir;
+    LOG(INFO)<<"ProductScdReceiver::getTotalComment "<<mine_source_dir<<std::endl;
     bool isRebuild = true;
     std::string rebuild_scd_dir = index_service_->getScdDir(isRebuild);
     LOG(INFO)<<"rebuild_scd_dir"<<rebuild_scd_dir;
@@ -65,27 +66,30 @@ bool ProductScdReceiver::getTotalComment(const std::string& scd_source_dir)
     ScdParser parser(izenelib::util::UString::UTF_8);
     static const bfs::directory_iterator kItrEnd;
     std::vector<bfs::path> scd_list;
-    for (bfs::directory_iterator itr(scd_source_dir); itr != kItrEnd; ++itr)
+    if (!mine_source_dir.empty() && !DistributeFileSys::get()->isEnabled())
     {
-        if (bfs::is_regular_file(itr->status()))
+        for (bfs::directory_iterator itr(mine_source_dir); itr != kItrEnd; ++itr)
         {
-            std::string fileName = itr->path().filename().string();
-            if (parser.checkSCDFormat(fileName) )
+            if (bfs::is_regular_file(itr->status()))
             {
-                LOG(INFO)<<"[ProductScdReceiver] find SCD "<<fileName<<std::endl;
-                scd_list.push_back(itr->path());
+                std::string fileName = itr->path().filename().string();
+                if (parser.checkSCDFormat(fileName) )
+                {
+                    LOG(INFO)<<"[ProductScdReceiver] find SCD "<<fileName<<std::endl;
+                    scd_list.push_back(itr->path());
+                }
             }
         }
-    }
-    if(scd_list.empty())
-    {
-        LOG(INFO)<<"[ProductScdReceiver] No SCD file found."<<std::endl;
-        return true;
-    }
-    bfs::path to_dir(rebuild_scd_dir);
-    if(!CopyTotalCommentToDir_(scd_list, to_dir))
-    {
-        return false;
+        if(scd_list.empty())
+        {
+            LOG(INFO)<<"[ProductScdReceiver] No SCD file found."<<std::endl;
+            return true;
+        }
+        bfs::path to_dir(rebuild_scd_dir);
+        if(!CopyTotalCommentToDir_(scd_list, to_dir))
+        {
+            return false;
+        }
     }
     return true;
 }

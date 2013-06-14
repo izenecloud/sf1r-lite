@@ -152,7 +152,70 @@ void SuffixMatchManager::GetTokenResults(std::string pattern,
     //
 }
 
+bool SuffixMatchManager::GetSynonymSet_(const UString& pattern, std::vector<UString>& synonym_set, int& setid)
+{
+    if (!tokenizer_)
+    {
+        LOG(INFO)<<"tokenizer_ = NULL";
+        return false;
+    }
+    return tokenizer_->GetSynonymSet(pattern, synonym_set, setid);
+}
+
+void SuffixMatchManager::ExpandSynonym_(const std::vector<std::pair<UString, double> >& tokens, std::vector<std::vector<std::pair<UString, double> > >& refine_tokens, size_t& major_size)
+{
+    const size_t tmp_size = major_size;
+    std::vector<size_t> set_id;
+    for (size_t j = 0; j < tokens.size(); ++j)
+    {
+        std::vector<UString> synonym_set;
+        std::vector<std::pair<UString, double> > tmp_tokens;
+        int id = -1, find_flag = -1;
+        if (!GetSynonymSet_(tokens[j].first, synonym_set, id))//term doesn't have synonym
+        {
+            tmp_tokens.push_back(tokens[j]);
+            refine_tokens.push_back(tmp_tokens);
+            continue;
+        }
+        for (size_t i = 0; i < set_id.size(); ++i)//check if the synonym set has been added
+            if (set_id[i] == id)
+            {
+                find_flag = i;
+                break;
+            }
+            
+        if (-1 == find_flag)//the synonym set hasn't been added
+        {
+            set_id.push_back(id);
+            for (size_t i = 0; i < synonym_set.size(); ++i)
+            {
+                if (synonym_set[i] == tokens[j].first)
+                {
+                    tmp_tokens.push_back(std::make_pair(synonym_set[i], tokens[j].second));
+                }
+                else
+                {
+                    tmp_tokens.push_back(std::make_pair(synonym_set[i], tokens[j].second * 0.8));                    
+                }
+            }
+            refine_tokens.push_back(tmp_tokens);
+        }
+        else//has been added
+        {
+            if (j < tmp_size) --major_size;
+            for (size_t i = 0; i < refine_tokens[find_flag].size(); ++i)
+                if (refine_tokens[find_flag][i].first == tokens[j].first)
+                {
+                    refine_tokens[find_flag][i].second = tokens[j].second;
+                    break;
+                }
+        }
+    }
+    
+}
+
 size_t SuffixMatchManager::AllPossibleSuffixMatch(
+        bool use_synonym,
         std::list<std::pair<UString, double> > major_tokens,
         std::list<std::pair<UString, double> > minor_tokens,
         std::vector<std::string> search_in_properties,
@@ -160,12 +223,27 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         const SearchingMode::SuffixMatchFilterMode& filter_mode,
         const std::vector<QueryFiltering::FilteringType>& filter_param,
         const GroupParam& group_param,
-        std::vector<std::pair<double, uint32_t> >& res_list) const
+        std::vector<std::pair<double, uint32_t> >& res_list)
 {
+
     btree::btree_map<uint32_t, double> res_list_map;
     std::vector<std::pair<size_t, size_t> > range_list;
     std::vector<std::pair<double, uint32_t> > single_res_list;
     std::vector<double> score_list;
+    std::vector<vector<std::pair<UString, double> > > synonym_tokens;
+    size_t major_size = 0;    
+   
+   
+    if (use_synonym)
+    {
+        std::vector<std::pair<UString, double> > tmp_tokens;
+
+        for (std::list<std::pair<UString, double> >::iterator it = major_tokens.begin(); it != major_tokens.end(); ++it, ++major_size)
+            tmp_tokens.push_back((*it));
+        for (std::list<std::pair<UString, double> >::iterator it = minor_tokens.begin(); it != minor_tokens.end(); ++it)
+            tmp_tokens.push_back((*it));       
+        ExpandSynonym_(tmp_tokens, synonym_tokens, major_size);
+    }
 
     size_t total_match = 0;
 
@@ -190,53 +268,89 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         }
 
         std::pair<size_t, size_t> sub_match_range;
+        
         for (size_t prop_i = 0; prop_i < search_in_properties.size(); ++prop_i)
         {
+            size_t thres = 0;
             const std::string& search_property = search_in_properties[prop_i];
             range_list.reserve(major_tokens.size() + minor_tokens.size());
             score_list.reserve(range_list.size());
-            //LOG(INFO) << "query tokenize match ranges in property : " << search_property;
+            std::vector<std::vector<boost::tuple<size_t, size_t, double> > > synonym_range_list;             
+            if (use_synonym)
+            {            
 
-            for (std::list<std::pair<UString, double> >::iterator pit = major_tokens.begin();
-                    pit != major_tokens.end(); ++pit)
-            {
-                if (pit->first.empty()) continue;
-                Algorithm<UString>::to_lower(pit->first);
-                pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
-                if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
+                boost::tuple<size_t, size_t, double> tmp_tuple;            
+                for (size_t i = 0; i < synonym_tokens.size(); ++i)
                 {
-                    range_list.push_back(sub_match_range);
-                    score_list.push_back(pit->second);
+                    std::vector<boost::tuple<size_t, size_t, double> > synonym_match_range;
+                    for (size_t j = 0; j < synonym_tokens[i].size(); ++j)
+                    {    
+                        synonym_tokens[i][j].first = Algorithm<UString>::padForAlphaNum(synonym_tokens[i][j].first);
+                        if (fmi_manager_->backwardSearch(search_property, synonym_tokens[i][j].first, sub_match_range) == synonym_tokens[i][j].first.length())
+                        {
+                            tmp_tuple.get<0>() = sub_match_range.first;
+                            tmp_tuple.get<1>() = sub_match_range.second;
+                            tmp_tuple.get<2>() = synonym_tokens[i][j].second;                        
+                            synonym_match_range.push_back(tmp_tuple);
+                        }
+                    }
+                    if (!synonym_match_range.empty())
+                    {
+                        if (i < major_size) ++thres;
+                        synonym_range_list.push_back(synonym_match_range);
+                    }
                 }
+
             }
-
-            size_t thres = range_list.size();
-
-            for (std::list<std::pair<UString, double> >::iterator pit = minor_tokens.begin();
-                    pit != minor_tokens.end(); ++pit)
+            else
             {
-                if (pit->first.empty()) continue;
-                Algorithm<UString>::to_lower(pit->first);
-                pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
-                if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
+                for (std::list<std::pair<UString, double> >::iterator pit = major_tokens.begin();
+                        pit != major_tokens.end(); ++pit)
                 {
-                    range_list.push_back(sub_match_range);
-                    score_list.push_back(pit->second);
+                    if (pit->first.empty()) continue;
+                    Algorithm<UString>::to_lower(pit->first);
+                    pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
+                    if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
+                    {
+                        range_list.push_back(sub_match_range);
+                        score_list.push_back(pit->second);
+                    }
                 }
-            }
 
-            fmi_manager_->convertMatchRanges(search_property, max_docs, range_list, score_list);
+                thres = range_list.size();
+    
+                for (std::list<std::pair<UString, double> >::iterator pit = minor_tokens.begin();
+                        pit != minor_tokens.end(); ++pit)
+                {
+                    if (pit->first.empty()) continue;
+                    Algorithm<UString>::to_lower(pit->first);
+                    pit->first = Algorithm<UString>::padForAlphaNum(pit->first);
+                    if (fmi_manager_->backwardSearch(search_property, pit->first, sub_match_range) == pit->first.length())
+                    {
+                        range_list.push_back(sub_match_range);
+                        score_list.push_back(pit->second);
+                    }
+                }
+                fmi_manager_->convertMatchRanges(search_property, max_docs, range_list, score_list);
+            }
             if (filter_mode == SearchingMode::OR_Filter)
             {
-                fmi_manager_->getTopKDocIdListByFilter(
-                        search_property,
-                        prop_id_list,
-                        filter_range_list,
-                        range_list,
-                        score_list,
-                        thres,
-                        max_docs,
-                        single_res_list);
+                if (use_synonym)
+                {
+                    fmi_manager_->getTopKDocIdListByFilter(search_property, prop_id_list, filter_range_list, synonym_range_list, thres,max_docs, single_res_list);                        
+                }    
+                else
+                {
+                    fmi_manager_->getTopKDocIdListByFilter(
+                            search_property,
+                            prop_id_list,
+                            filter_range_list,
+                            range_list,
+                            score_list,
+                            thres,
+                            max_docs,
+                            single_res_list);
+                }                             
             }
             else if (filter_mode == SearchingMode::AND_Filter)
             {
@@ -247,7 +361,7 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             {
                 LOG(ERROR) << "unknown filter mode.";
             }
-            //LOG(INFO) << "topk finished in property : " << search_property;
+            LOG(INFO) << "topk finished in property : " << search_property;
             size_t oldsize = res_list_map.size();
             for (size_t i = 0; i < single_res_list.size(); ++i)
             {
@@ -255,13 +369,21 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
             }
             single_res_list.clear();
 
-            for (size_t i = 0; i < range_list.size(); ++i)
+            if (use_synonym)  
             {
-                total_match += range_list[i].second - range_list[i].first;
+                for (size_t i = 0; i < synonym_range_list.size(); ++i)
+                    for (size_t j = 0; j < synonym_range_list[i].size(); ++j)
+                        total_match += synonym_range_list[i][j].get<1>() - synonym_range_list[i][j].get<0>();
+            }
+            else
+            {
+                for (size_t i = 0; i < range_list.size(); ++i)
+                    total_match += range_list[i].second - range_list[i].first;
             }
             range_list.clear();
             score_list.clear();
-            //LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
+            
+            LOG(INFO) << "new added docid number: " << res_list_map.size() - oldsize;
         }
     }
 
@@ -274,7 +396,9 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
     if (res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
-    LOG(INFO) << "all property fuzzy search finished";
+        
+    LOG(INFO) << "all property fuzzy search finished, answer is: "<<res_list.size();
+
     return total_match;
 }
 

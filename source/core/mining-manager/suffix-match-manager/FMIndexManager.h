@@ -87,7 +87,16 @@ public:
             size_t thres,
             size_t max_docs,
             std::vector<std::pair<double, uint32_t> > &res_list) const;
-
+            
+    void getTopKDocIdListByFilter(
+        const std::string& property,
+        const std::vector<size_t> &prop_id_list,
+        const std::vector<RangeListT> &filter_ranges,
+        const std::vector<std::vector<boost::tuple<size_t, size_t, double> > > &synonym_range_list,
+        size_t thres,
+        size_t max_docs,
+        std::vector<std::pair<double, uint32_t> > &res_list) const;
+        
     void getDocLenList(const std::vector<uint32_t>& docid_list, std::vector<size_t>& doclen_list) const;
     void getLessDVStrLenList(const std::string& property, const std::vector<uint32_t>& dvid_list, std::vector<size_t>& dvlen_list) const;
 
