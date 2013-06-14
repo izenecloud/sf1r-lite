@@ -174,6 +174,60 @@ bool RebuildTask::getRebuildScdOnPrimary(izenelib::util::UString::EncodingType e
         return false;
     }
 
+    //copy Total_Comment_SCD to rebuild_scd_src
+    if( DistributeFileSys::get()->isEnabled())
+    {
+        static const bfs::directory_iterator kItrEnd;
+        std::string dfs_total_comment_path = "/produce/total_comment_scd/";
+        std::string local_total_comment_path = DistributeFileSys::get()->getFixedCopyPath(dfs_total_comment_path);
+        local_total_comment_path = DistributeFileSys::get()->getDFSPathForLocal(local_total_comment_path);
+        std::string last_dir = "";
+        if (bfs::exists(local_total_comment_path) && !local_total_comment_path.empty())
+        {
+             for (bfs::directory_iterator itr(local_total_comment_path); itr != kItrEnd; ++itr)
+            {
+                if (bfs::is_directory(itr->status()))
+                {
+                    std::string fileName = itr->path().filename().string();
+                    if (fileName > last_dir)
+                    {
+                        last_dir = fileName;
+                    }
+                }
+            }
+            LOG (INFO) << "Get comment SCD from dir :" << last_dir ;
+
+            local_total_comment_path += last_dir;
+            local_total_comment_path += "/";
+ 
+            if (!last_dir.empty())
+            {
+                try
+                {
+                    for (bfs::directory_iterator itr(local_total_comment_path); itr != kItrEnd; ++itr)
+                    {
+                        if (bfs::is_regular_file(itr->status()))
+                        {
+                            std::string fileName = itr->path().filename().string();
+                            bfs::path from_file(local_total_comment_path + fileName);
+                            bfs::path to_dir(rebuild_scd_src);
+                            to_dir /= fileName;
+                            std::cout << "Copy comment scd file " << fileName << " to rebuild_scd_src: " << rebuild_scd_src << std::endl;
+                            bfs::copy_file(from_file, to_dir);
+                        }
+                    }
+                }
+                catch(std::exception& ex)
+                {
+
+                    LOG (ERROR) << "Not all comment scds is send to" << rebuild_scd_src  <<", exception: " << ex.what();
+                }
+            }
+        }
+        else
+            LOG(WARNING) << "there is no total comment scd files" ;
+    }// there is no else, the total comment is already in rebuild_scd ;
+
     // search the directory for files
     static const bfs::directory_iterator kItrEnd;
     ScdParser parser(encoding);
