@@ -1,6 +1,7 @@
 #include <configuration-manager/PropertyConfig.h>
 #include <document-manager/DocumentManager.h>
 #include <common/PropSharedLockSet.h>
+#include <common/QueryNormalizer.h>
 #include "MiningManager.h"
 #include "MiningQueryLogHandler.h"
 #include "MiningTaskBuilder.h"
