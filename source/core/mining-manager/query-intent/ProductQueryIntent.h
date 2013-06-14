@@ -15,18 +15,20 @@ namespace sf1r
 {
 class ProductQueryIntent : public QueryIntent
 {
+typedef std::map<std::string, std::pair<bool, Classifier*> > ContainerType;
+typedef ContainerType::iterator ContainerIterator;
 public:
-    ProductQueryIntent();
+    ProductQueryIntent(IntentContext* context);
     ~ProductQueryIntent();
 public:
     void process(izenelib::driver::Request& request);
     void addClassifier(Classifier* classifier)
     {
-        classifiers_.push_back(classifier);
+        classifiers_[classifier->name()] = (make_pair(true,classifier));
     }
     void reload();
 private:
-    std::list<Classifier*> classifiers_;
+    ContainerType classifiers_;
 };
 }
 #endif //ProductQueryIntent.h

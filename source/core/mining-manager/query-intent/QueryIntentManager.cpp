@@ -3,10 +3,11 @@
 namespace sf1r
 {
 
-QueryIntentManager::QueryIntentManager(QueryIntentConfig* config, std::string& resource)
+QueryIntentManager::QueryIntentManager(QueryIntentConfig* config, std::string& resource, MiningManager* miningManager)
 {
     config_ = config;
     lexiconDirectory_ = resource + "/query-intent/";
+    miningManager_ = miningManager;
 #ifdef QUERY_INTENT_TIMER    
     nQuery_ = 0;
     microseconds_ = 0;
@@ -28,15 +29,20 @@ QueryIntentManager::~QueryIntentManager()
 void QueryIntentManager::init_()
 {
     intentFactory_ = new QueryIntentFactory();
-    classifierFactory_ = new ClassifierFactory(config_);
-   
-    ClassifierContext* cContext = new ClassifierContext(config_, lexiconDirectory_);
-    Classifier* classifier = classifierFactory_->createClassifier(cContext);
     
-    QueryIntentContext iContext;
+    IntentContext* iContext = new IntentContext(config_);
     intent_ = intentFactory_ ->createQueryIntent(iContext);
 
-    intent_->addClassifier(classifier);
+    classifierFactory_ = new ClassifierFactory();
+
+    QIIterator it = config_->begin();
+    for (; it != config_->end(); it++)
+    {
+        ClassifierContext* cContext = new ClassifierContext(config_, lexiconDirectory_, miningManager_, it->property_);
+        Classifier* classifier = classifierFactory_->createClassifier(cContext);
+        if (classifier)
+            intent_->addClassifier(classifier);
+    }
 }
 
 void QueryIntentManager::destroy_()

@@ -2,6 +2,7 @@
 
 #include <util/driver/Value.h>
 #include <common/Keys.h>
+#include <glog/logging.h>
 
 namespace sf1r
 {
@@ -19,12 +20,14 @@ void rewriteRequest(izenelib::driver::Request& request,
         izenelib::driver::Value& condition = conditions();
         if (array->second.empty())
             continue;
+         LOG(INFO)<<array->first.property_;
         condition[Keys::property] = array->first.property_;
         condition["operator"] = array->first.op_;
         izenelib::driver::Value& values = condition[Keys::value];
         for (item = array->second.begin(); item != array->second.end(); item++)
         {
             values() = *item;
+            LOG(INFO)<<*item;
         }
     }
 }

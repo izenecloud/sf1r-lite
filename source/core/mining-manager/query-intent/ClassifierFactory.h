@@ -16,14 +16,11 @@ namespace sf1r
 class ClassifierFactory
 {
 public:
-    ClassifierFactory(QueryIntentConfig* config)
-        : config_(config)
+    ClassifierFactory()
     {
     }
 public:
     Classifier* createClassifier(ClassifierContext* context);
-private:
-    QueryIntentConfig* config_;
 };
 
 }

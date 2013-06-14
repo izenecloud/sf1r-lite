@@ -2159,11 +2159,10 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         for (it = it.begin(task_node); it != it.end(); ++it)
         {
             const ticpp::Element* cate_node = it.Get();
-            std::string cate_name, prop_name, op;
-            getAttribute(cate_node, "name", cate_name);
+            std::string prop_name, op;
             getAttribute(cate_node, "property", prop_name);
             getAttribute(cate_node, "operator", op);
-            mining_schema.query_intent_config.insertQueryIntentConfig(cate_name, prop_name, op);
+            mining_schema.query_intent_config.insertQueryIntentConfig(prop_name, op);
         }
     }
 }

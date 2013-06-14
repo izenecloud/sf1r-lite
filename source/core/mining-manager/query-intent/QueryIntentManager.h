@@ -24,7 +24,7 @@ namespace sf1r
 class QueryIntentManager
 {
 public:
-    QueryIntentManager(QueryIntentConfig* config, std::string& resource);
+    QueryIntentManager(QueryIntentConfig* config, std::string& resource, MiningManager* miningManager);
     ~QueryIntentManager();
 public:
     void queryIntent(izenelib::driver::Request& request);
@@ -39,6 +39,7 @@ private:
     
     QueryIntentConfig* config_;
     std::string lexiconDirectory_;
+    MiningManager* miningManager_;
 #ifdef QUERY_INTENT_TIMER    
     unsigned int nQuery_;
     unsigned long int microseconds_;

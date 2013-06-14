@@ -14,16 +14,37 @@
 namespace sf1r
 {
 
+class IntentContext
+{
+public:
+    IntentContext(QueryIntentConfig* config) 
+        : config_(config)
+    {
+    }
+public:
+    QueryIntentConfig* config_;
+};
 class QueryIntent
 {
 public:
+    QueryIntent(IntentContext* context)
+        : context_(context)
+    {
+    }
     virtual ~QueryIntent()
     {
+        if (context_)
+        {
+            delete context_;
+            context_ = NULL;
+        }
     }
 public:
     virtual void process(izenelib::driver::Request& request) = 0;
     virtual void addClassifier(Classifier* classifier) = 0;
     virtual void reload() = 0;
+protected:
+    IntentContext* context_;
 };
 
 }

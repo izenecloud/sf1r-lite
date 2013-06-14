@@ -13,14 +13,10 @@
 namespace sf1r
 {
 
-class QueryIntentContext
-{
-};
-
 class QueryIntentFactory
 {
 public:
-    QueryIntent* createQueryIntent(QueryIntentContext& context);
+    QueryIntent* createQueryIntent(IntentContext* context);
 };
 
 }

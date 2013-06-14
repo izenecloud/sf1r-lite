@@ -14,21 +14,29 @@
 #include <utility>
 
 #include <configuration-manager/QueryIntentConfig.h>
+#include "../MiningManager.h"
 
 namespace sf1r
 {
 
+typedef std::string ClassifierType;
+
 class ClassifierContext
 {
 public:
-    ClassifierContext(QueryIntentConfig* config, std::string directory)
+    ClassifierContext(QueryIntentConfig* config, std::string directory, 
+        MiningManager* miningManager,ClassifierType type)
         : config_(config)
         , lexiconDirectory_(directory)
+        , miningManager_(miningManager)
+        , type_(type)
     {
     }
 public:
     QueryIntentConfig* config_;
     std::string lexiconDirectory_;
+    MiningManager* miningManager_;
+    ClassifierType type_;
 };
 
 class Classifier
@@ -52,8 +60,15 @@ public:
     //
     virtual bool classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query) = 0;
 
+    virtual const char* name() = 0;
+
     virtual void reload()
     {
+    }
+
+    static const char* Type()
+    {
+        return NULL;
     }
 protected:
     ClassifierContext* context_;

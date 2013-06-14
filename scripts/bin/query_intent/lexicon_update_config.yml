@@ -5,4 +5,4 @@ sf1:
 collection:
   - b5mp
 
-resource: ../../../package/resource/query-intent/MERCHANT
+resource: ../../../package/resource/query-intent/Source

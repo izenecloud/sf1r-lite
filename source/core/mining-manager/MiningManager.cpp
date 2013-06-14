@@ -518,7 +518,7 @@ bool MiningManager::open()
         if (mining_schema_.query_intent_enable)
         {
             if (queryIntentManager_) delete queryIntentManager_;
-            queryIntentManager_ = new QueryIntentManager(&(mining_schema_.query_intent_config), system_resource_path_);
+            queryIntentManager_ = new QueryIntentManager(&(mining_schema_.query_intent_config), system_resource_path_, this);
         }
         /** tdt **/
         if (mining_schema_.tdt_enable)
