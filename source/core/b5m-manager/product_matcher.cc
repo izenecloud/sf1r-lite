@@ -24,7 +24,7 @@ using namespace idmlib::util;
 namespace bfs = boost::filesystem;
 
 
-#define B5M_DEBUG
+//#define B5M_DEBUG
 
 const std::string ProductMatcher::AVERSION("20130315");
 
@@ -212,6 +212,24 @@ bool ProductMatcher::KeywordTag::IsAttribSynonym(const KeywordTag& another) cons
         if(result) break;
     }
     return result;
+}
+bool ProductMatcher::KeywordTag::IsBrand() const
+{
+    for(uint32_t i=0;i<attribute_apps.size();i++)
+    {
+        const AttributeApp& ai = attribute_apps[i];
+        if(ai.attribute_name=="品牌") return true;
+    }
+    return false;
+}
+bool ProductMatcher::KeywordTag::IsModel() const
+{
+    for(uint32_t i=0;i<attribute_apps.size();i++)
+    {
+        const AttributeApp& ai = attribute_apps[i];
+        if(ai.attribute_name=="型号") return true;
+    }
+    return false;
 }
 
 ProductMatcher::ProductMatcher()
@@ -1889,7 +1907,7 @@ bool ProductMatcher::Process(const Document& doc, uint32_t limit, std::vector<Pr
     KeywordVector keyword_vector;
     //GetKeywords_(term_list, keyword_vector, use_ngram_, true);
     GetKeywords(term_list, keyword_vector, use_fuzzy, cid);
-    Compute_(doc, term_list, keyword_vector, limit, result_products);
+    Compute2_(doc, term_list, keyword_vector, limit, result_products);
     for(uint32_t i=0;i<result_products.size();i++)
     {
         //gen frontend category
@@ -2555,11 +2573,11 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     for(uint32_t i=0;i<keyword_vector.size();i++)
     {
         KeywordTag& ki = keyword_vector[i];
-        if(ki.kweight==0.0) continue;
+        if(ki.kweight<=0.0) continue;
         for(uint32_t j=i+1;j<keyword_vector.size();j++)
         {
             KeywordTag& kj = keyword_vector[j];
-            if(kj.kweight==0.0) continue;
+            if(kj.kweight<=0.0) continue;
             if(ki.IsAttribSynonym(kj))
             {
                 if(ki.kweight!=kj.kweight)
@@ -2720,7 +2738,7 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
         std::string terms_str;
         GetTermsString_(k.text, terms_str);
         //all_strict.insert(terms_str);
-        if(k.kweight==0.0 || (!strict.empty()&&strict.find(terms_str)==strict.end()) )
+        if(k.kweight<=0.0 || (!strict.empty()&&strict.find(terms_str)==strict.end()) )
         {
             left_hits.push_back(std::make_pair(k.text, left_weight));
 #ifdef B5M_DEBUG
@@ -3086,15 +3104,15 @@ bool ProductMatcher::EqualOrIsParent_(uint32_t parent, uint32_t child) const
     return false;
 }
 
-void ProductMatcher::GenContributor_(KeywordTag& tag)
+void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryContributor& cc)
 {
-    tag.cc.clear();
     double kweight = tag.kweight;
+    if(kweight<=0.0) return;
     double all_score = 0.0;
 #ifdef B5M_DEBUG
-    std::string stext;
-    tag.text.convertString(stext, UString::UTF_8);
-    std::cout<<"[TAGTEXT]"<<stext<<std::endl;
+    //std::string stext;
+    //tag.text.convertString(stext, UString::UTF_8);
+    //std::cout<<"[TAGTEXT]"<<stext<<std::endl;
 #endif
 
     uint32_t category_name_count=0;
@@ -3116,7 +3134,7 @@ void ProductMatcher::GenContributor_(KeywordTag& tag)
         //else if(count_weight>=0.5) times = 2.0;
         double share_point = times*depth_ratio;
         if(!app.is_complete) share_point*=0.6;
-        double add_score = share_point*kweight;
+        double add_score = share_point;
         CategoryContributor::iterator it = ccc.find(app.cid);
         if(it==ccc.end())
         {
@@ -3126,50 +3144,8 @@ void ProductMatcher::GenContributor_(KeywordTag& tag)
         {
             it->second = add_score;
         }
-        //add_score *= std::log((double)tag.category_name_apps.size()+2);
-        //add_score *= tag.category_name_apps.size();
-        //CategoryContributor::iterator it = tag.cc.find(app.cid);
-        //if(it==tag.cc.end())
-        //{
-            //tag.cc.insert(std::make_pair(app.cid, add_score));
-        //}
-        //else
-        //{
-            //it->second += add_score;
-        //}
-        //all_score+=add_score;
 #ifdef B5M_DEBUG
         std::cout<<"[CNA]"<<category_list_[app.cid].name<<","<<app.depth<<","<<app.is_complete<<","<<add_score<<std::endl;
-#endif
-    }
-    for(uint32_t i=0;i<tag.offer_category_apps.size();i++)
-    {
-        const OfferCategoryApp& app = tag.offer_category_apps[i];
-        //if(matcher_only)
-        //{
-            //if(!EqualOrIsParent_(given_cid, app.cid)) continue;
-        //}
-        uint32_t app_count = app.count;
-        if(app_count>20) app_count = 20;
-        double depth_ratio = 1.0;
-        double times = app_count*0.05;
-        //if(count_weight>=0.8) times *= 2.5;
-        //else if(count_weight>=0.5) times *= 2.0;
-        double share_point = times*depth_ratio;
-        double add_score = share_point*kweight;
-        CategoryContributor::iterator it = tag.cc.find(app.cid);
-        if(it==tag.cc.end())
-        {
-            tag.cc.insert(std::make_pair(app.cid, add_score));
-        }
-        else
-        {
-            it->second += add_score;
-        }
-        all_score+=add_score;
-        //cid_score[app.cid] += add_score;
-#ifdef B5M_DEBUG
-        std::cout<<"[CNO]"<<category_list_[app.cid].name<<","<<add_score<<std::endl;
 #endif
     }
     CategoryContributor acc;
@@ -3177,12 +3153,7 @@ void ProductMatcher::GenContributor_(KeywordTag& tag)
     {
         const AttributeApp& app = tag.attribute_apps[i];
         if(app.spu_id==0) continue;
-        //if(app.is_optional) continue;
         const Product& p = products_[app.spu_id];
-        //if(matcher_only)
-        //{
-            //if(!EqualOrIsParent_(given_cid, p.cid)) continue;
-        //}
         double share_point = 0.0;
         double p_point = 0.0;
         if(app.is_optional) 
@@ -3208,7 +3179,7 @@ void ProductMatcher::GenContributor_(KeywordTag& tag)
             share_point = 0.2;
             p_point = 1.0;
         }
-        double add_score = share_point*kweight;
+        double add_score = share_point;
         CategoryContributor::iterator it = acc.find(p.cid);
         if(it==acc.end())
         {
@@ -3218,23 +3189,15 @@ void ProductMatcher::GenContributor_(KeywordTag& tag)
         {
             it->second += add_score;
         }
-        //all_score+=add_score;
-        //WeightType& wt = pid_weight[app.spu_id];
-        //wt.aweight+=share_point*kweight;
-        //double paweight = p_point;
-        //wt.paweight+=paweight;
-        //wt.paratio+=len_weight;
-        //if(app.attribute_name=="型号") wt.type_match = true;
-        //if(app.attribute_name=="品牌") wt.brand_match = true;
     }
     for(CategoryContributor::const_iterator it = acc.begin();it!=acc.end();it++)
     {
         double score = it->second;
         if(score>0.4) score = 0.4;
-        CategoryContributor::iterator it2 = tag.cc.find(it->first);
-        if(it2==tag.cc.end())
+        CategoryContributor::iterator it2 = cc.find(it->first);
+        if(it2==cc.end())
         {
-            tag.cc.insert(std::make_pair(it->first, score));
+            cc.insert(std::make_pair(it->first, score));
         }
         else
         {
@@ -3248,40 +3211,75 @@ void ProductMatcher::GenContributor_(KeywordTag& tag)
     }
     for(CategoryContributor::const_iterator it = ccc.begin();it!=ccc.end();it++)
     {
-        CategoryContributor::iterator it2 = tag.cc.find(it->first);
+        CategoryContributor::iterator it2 = cc.find(it->first);
         double score = it->second;
-        if(it2==tag.cc.end())
+        if(it2==cc.end())
         {
-            tag.cc.insert(std::make_pair(it->first, score));
+            cc.insert(std::make_pair(it->first, score));
         }
         else
         {
             it2->second += score;
         }
     }
+    CategoryContributor occ;
+    for(uint32_t i=0;i<tag.offer_category_apps.size();i++)
+    {
+        const OfferCategoryApp& app = tag.offer_category_apps[i];
+        //if(matcher_only)
+        //{
+            //if(!EqualOrIsParent_(given_cid, app.cid)) continue;
+        //}
+        uint32_t app_count = app.count;
+        if(app_count>20) app_count = 20;
+        double depth_ratio = 1.0;
+        double times = app_count*0.05;
+        //if(count_weight>=0.8) times *= 2.5;
+        //else if(count_weight>=0.5) times *= 2.0;
+        double share_point = times*depth_ratio;
+        double add_score = share_point;
+        CategoryContributor::iterator it = occ.find(app.cid);
+        if(it==occ.end())
+        {
+            occ.insert(std::make_pair(app.cid, add_score));
+        }
+        else
+        {
+            it->second += add_score;
+        }
+        //all_score+=add_score;
+    }
+    for(CategoryContributor::const_iterator it = occ.begin();it!=occ.end();it++)
+    {
+        CategoryContributor::iterator it2 = cc.find(it->first);
+        double score = it->second;
+        if(it2==cc.end())
+        {
+            //score/=2.0;
+            cc.insert(std::make_pair(it->first, score));
+        }
+        else
+        {
+            it2->second += score;
+        }
+        all_score+=score;
+#ifdef B5M_DEBUG
+        std::cout<<"[CNO]"<<category_list_[it->first].name<<","<<score<<std::endl;
+#endif
+    }
     double inner_kweight = 1.0;
     if(category_name_count==0&& brand_count==0 && model_count==0 && optional_count>=5)
     {
         inner_kweight = 0.3;
     }
-    //double inner_kweight = category_name_count*0.5+brand_count*0.1+model_count*0.4;
-    //inner_kweight+=0.3;
-    //if(inner_kweight>1.0) inner_kweight = 1.0;
 #ifdef B5M_DEBUG
-    std::cout<<"[INNERK]"<<inner_kweight<<std::endl;
+    //std::cout<<"[INNERK]"<<inner_kweight<<std::endl;
 #endif
     if(all_score>0.0)
     {
-        for(CategoryContributor::iterator it = tag.cc.begin();it!=tag.cc.end();++it)
+        for(CategoryContributor::iterator it = cc.begin();it!=cc.end();++it)
         {
-            //std::cerr<<"score "<<it->second<<","<<all_score<<std::endl;
-            uint32_t cid = it->first;
-            const Category& c = category_list_[cid];
-            if(c.depth==1) //if important category
-            {
-                it->second*=1.01;
-            }
-            it->second*=(inner_kweight/all_score);
+            it->second*=(inner_kweight/all_score)*kweight;
 #ifdef B5M_DEBUG
             std::cout<<"[ALLN]"<<category_list_[it->first].name<<","<<it->second<<std::endl;
 #endif
@@ -3289,7 +3287,7 @@ void ProductMatcher::GenContributor_(KeywordTag& tag)
     }
 }
 
-void ProductMatcher::MergeContributor_(CategoryContributor& cc, const CategoryContributor& cc2)
+void ProductMatcher::MergeCategoryContributor_(CategoryContributor& cc, const CategoryContributor& cc2)
 {
     //static double default_score = 0.001;
     //for(CategoryContributor::const_iterator it = cc2.begin();it!=cc2.end();it++)
@@ -3318,6 +3316,94 @@ void ProductMatcher::MergeContributor_(CategoryContributor& cc, const CategoryCo
     }
 }
 
+void ProductMatcher::GenSpuContributor_(const KeywordTag& tag, SpuContributor& sc)
+{
+#ifdef B5M_DEBUG
+    //std::string stext;
+    //tag.text.convertString(stext, UString::UTF_8);
+    //std::cout<<"[TAGTEXT]"<<stext<<std::endl;
+#endif
+
+    for(uint32_t i=0;i<tag.attribute_apps.size();i++)
+    {
+        const AttributeApp& app = tag.attribute_apps[i];
+        if(app.spu_id==0) continue;
+        SpuContributorValue& scv = sc[app.spu_id];
+        double p_point = 0.0;
+        if(app.is_optional) 
+        {
+            p_point = 0.1;
+        }
+        else if(app.attribute_name=="型号") 
+        {
+            p_point = 1.5;
+            scv.model_match = true;
+        }
+        else if(app.attribute_name=="品牌")
+        {
+            scv.brand_match = true;
+            p_point = 1.0;
+        }
+        else 
+        {
+            p_point = 1.0;
+        }
+        double paweight = p_point;
+        scv.paweight+=paweight;
+        scv.lenweight+=tag.term_list.size();
+
+        //const Product& p = products_[app.spu_id];
+        //std::string stext;
+        //tag.text.convertString(stext, UString::UTF_8);
+        //LOG(ERROR)<<"lenweight add "<<stext<<","<<p.stitle<<","<<scv.lenweight<<","<<tag.term_list.size()<<std::endl;
+    }
+}
+void ProductMatcher::ComputeT_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products)
+{
+    //UString title;
+    //doc.getProperty("Title", title);
+    //std::string stitle;
+    //title.convertString(stitle, UString::UTF_8);
+//#ifdef B5M_DEBUG
+    //std::cout<<"[TITLE]"<<stitle<<std::endl;
+//#endif
+    //double price = 0.0;
+    //UString uprice;
+    //if(doc.getProperty("Price", uprice))
+    //{
+        //ProductPrice pp;
+        //pp.Parse(uprice);
+        //pp.GetMid(price);
+    //}
+    //CategoryContributor all_cc;
+    //for(KeywordVector::iterator it = keywords.begin();it!=keywords.end();++it)
+    //{
+        //KeywordTag& tag = *it;
+        ////double kweight = tag.kweight;
+        ////double terms_length = tl.size()-(tag.ngram-1);
+        ////double len_weight = terms_length/text_term_len;
+//#ifdef B5M_DEBUG
+        //const TermList& tl = it->term_list;
+        //std::string text = GetText_(tl);
+        //std::cout<<"[KEYWORD]"<<text<<","<<tag.kweight<<std::endl;
+//#endif
+        //GenContributor_(tag);
+        //MergeContributor_(all_cc, tag.cc);
+    //}
+    //std::vector<std::pair<double, std::string> > candidates;
+    //for(CategoryContributor::const_iterator it=all_cc.begin();it!=all_cc.end();++it)
+    //{
+        //candidates.push_back(std::make_pair(it->second, category_list_[it->first].name));
+    //}
+    //std::sort(candidates.begin(), candidates.end(), std::greater<std::pair<double, std::string> >());
+    //std::size_t clen = std::min(5ul, candidates.size());
+    //for(std::size_t i=0;i<clen;i++)
+    //{
+        //std::cout<<candidates[i].second<<":"<<candidates[i].first<<std::endl;
+    //}
+        
+}
+
 void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products)
 {
     UString title;
@@ -3336,30 +3422,221 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         pp.GetMid(price);
     }
     CategoryContributor all_cc;
-    for(KeywordVector::iterator it = keywords.begin();it!=keywords.end();++it)
+    std::vector<CategoryContributor> ccs(keywords.size());
+    SpuContributor spu_cc;
+    for(uint32_t i=0;i<keywords.size();i++)
     {
-        KeywordTag& tag = *it;
+        const KeywordTag& tag = keywords[i];
         //double kweight = tag.kweight;
         //double terms_length = tl.size()-(tag.ngram-1);
         //double len_weight = terms_length/text_term_len;
 #ifdef B5M_DEBUG
-        const TermList& tl = it->term_list;
+        const TermList& tl = tag.term_list;
         std::string text = GetText_(tl);
         std::cout<<"[KEYWORD]"<<text<<","<<tag.kweight<<std::endl;
 #endif
-        GenContributor_(tag);
-        MergeContributor_(all_cc, tag.cc);
+        GenCategoryContributor_(tag,  ccs[i]);
+        MergeCategoryContributor_(all_cc, ccs[i]);
+        if(price>0.0)
+        {
+            GenSpuContributor_(tag, spu_cc);
+        }
     }
-    std::vector<std::pair<double, std::string> > candidates;
+    std::vector<std::pair<double, cid_t> > candidates;
     for(CategoryContributor::const_iterator it=all_cc.begin();it!=all_cc.end();++it)
     {
-        candidates.push_back(std::make_pair(it->second, category_list_[it->first].name));
+        candidates.push_back(std::make_pair(it->second, it->first));
     }
-    std::sort(candidates.begin(), candidates.end(), std::greater<std::pair<double, std::string> >());
-    std::size_t clen = std::min(5ul, candidates.size());
+    std::sort(candidates.begin(), candidates.end(), std::greater<std::pair<double, cid_t> >());
+    std::size_t clen = std::min(3ul, candidates.size());
+    candidates.resize(clen);
     for(std::size_t i=0;i<clen;i++)
     {
-        std::cout<<candidates[i].second<<":"<<candidates[i].first<<std::endl;
+        cid_t cid = candidates[i].second;
+        const Category& c = category_list_[cid];
+        bool kcategory = false;
+        if(c.depth==1) //if important category
+        {
+            kcategory = true;
+        }
+        double ssim = string_similarity_.Sim(category_list_[cid].name, stitle);
+        if(kcategory)
+        {
+            candidates[i].first *= 1.1;
+        }
+        candidates[i].first *= (ssim/10.0)+1.0;
+    }
+    std::sort(candidates.begin(), candidates.end(), std::greater<std::pair<double, cid_t> >());
+#ifdef B5M_DEBUG
+    for(std::size_t i=0;i<clen;i++)
+    {
+        std::cout<<category_list_[candidates[i].second].name<<":"<<candidates[i].first<<std::endl;
+    }
+#endif
+    bool matcher_only = matcher_only_;
+    uint32_t given_cid = 0;
+    UString given_category;
+    doc.getProperty("Category", given_category);
+    std::string sgiven_category;
+    given_category.convertString(sgiven_category, UString::UTF_8);
+    if(!given_category.empty())
+    {
+        CategoryIndex::const_iterator it = category_index_.find(sgiven_category);
+        if(it!=category_index_.end())
+        {
+            given_cid = it->second;
+        }
+    }
+    std::size_t text_term_len = 0;
+    for(uint32_t i=0;i<term_list.size();i++)
+    {
+        if(!IsSymbol_(term_list[i]))
+        {
+            ++text_term_len;
+        }
+    }
+    std::vector<uint32_t> cid_list;
+    //typedef boost::unordered_map<cid_t, uint32_t> CidIndex;
+    //CidIndex cid_index;
+    if(given_cid!=0)
+    {
+        //cid_index[given_cid] = cid_list.size();
+        cid_list.push_back(given_cid);
+    }
+    for(uint32_t i=0;i<clen;i++)
+    {
+        cid_t cid = candidates[i].second;
+        if(cid==given_cid) continue;
+        //cid_index[cid] = cid_list.size();
+        cid_list.push_back(cid);
+    }
+    if(cid_list.empty()) return;
+    {
+        cid_t top_cid = cid_list.front();
+        double top_cid_weight = 0.0;
+        {
+            CategoryContributor::const_iterator it = all_cc.find(top_cid);
+            if(it!=all_cc.end())
+            {
+                top_cid_weight = it->second;
+            }
+        }
+        if(top_cid_weight>0.0)
+        {
+            std::vector<uint32_t> remove_list;
+            uint32_t remove_valid_count = 0;
+            for(uint32_t i=0;i<ccs.size();i++)
+            {
+                const CategoryContributor& cc = ccs[i];
+                KeywordTag& keyword = keywords[i];
+                if(keyword.kweight>0.0)
+                {
+                    remove_valid_count++;
+                    CategoryContributor::const_iterator it = cc.find(top_cid);
+                    double weight = 0.0;
+                    if(it!=cc.end())
+                    {
+                        weight = it->second;
+                    }
+                    double ratio = weight/top_cid_weight;
+                    bool can_remove = true;
+                    if(!keyword.category_name_apps.empty())
+                    {
+                        can_remove = false;
+                    }
+                    else
+                    {
+                        uint32_t optional_count=0;
+                        uint32_t vol_count=0;
+                        for(uint32_t a=0;a<keyword.attribute_apps.size();a++)
+                        {
+                            const AttributeApp& app = keyword.attribute_apps[a];
+                            if(app.is_optional)
+                            {
+                                optional_count++;
+                            }
+                            if(app.attribute_name=="容量")
+                            {
+                                vol_count++;
+                            }
+                        }
+                        double optional_ratio = (double)optional_count/keyword.attribute_apps.size();
+                        if(optional_ratio<0.5||vol_count>=2)
+                        {
+                            can_remove = false;
+                        }
+                    }
+                    if(ratio<0.01&&can_remove)
+                    {
+                        remove_list.push_back(i);
+#ifdef B5M_DEBUG
+                        std::string str;
+                        keyword.text.convertString(str, UString::UTF_8);
+                        LOG(INFO)<<"candidate keyword remove "<<str<<","<<ratio<<std::endl;
+#endif
+                    }
+                }
+            }
+            double remove_ratio = (double)remove_list.size()/remove_valid_count;
+            if(remove_ratio<=0.2)
+            {
+                for(uint32_t i=0;i<remove_list.size();i++)
+                {
+                    KeywordTag& keyword = keywords[remove_list[i]];
+                    keyword.kweight = -1.0;
+#ifdef B5M_DEBUG
+                    std::string str;
+                    keyword.text.convertString(str, UString::UTF_8);
+                    LOG(INFO)<<"keyword remove "<<str<<std::endl;
+#endif
+
+                }
+            }
+        }
+    }
+    std::vector<SpuMatchCandidate> spu_match_candidates;
+    for(SpuContributor::iterator it = spu_cc.begin();it!=spu_cc.end();it++)
+    {
+        uint32_t spuid = it->first;
+        const Product& p = products_[spuid];
+        SpuContributorValue& scv = it->second;
+        LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<std::endl;
+        scv.lenweight/=text_term_len;
+        if(IsSpuMatch_(p, scv))
+        {
+            SpuMatchCandidate smc;
+            bool cid_found = false;
+            for(uint32_t i=0;i<cid_list.size();i++)
+            {
+                if(EqualOrIsParent_(cid_list[i], p.cid))
+                {
+                    cid_found = true;
+                    smc.cid_index = i;
+                    break;
+                }
+            }
+            if(!cid_found) continue;
+            smc.spuid = spuid;
+            smc.paweight = scv.paweight;
+            smc.price_diff = std::abs(p.price - price);
+            spu_match_candidates.push_back(smc);
+        }
+    }
+    if(!spu_match_candidates.empty())
+    {
+        std::sort(spu_match_candidates.begin(), spu_match_candidates.end());
+        const Product& matchp = products_[spu_match_candidates.front().spuid];
+        result_products.push_back(matchp);
+    }
+    else
+    {
+        std::size_t count = std::min((std::size_t)limit, cid_list.size());
+        for(std::size_t i=0;i<count;i++)
+        {
+            Product p;
+            p.scategory = category_list_[cid_list[i]].name;
+            result_products.push_back(p);
+        }
     }
         
 }
@@ -4484,6 +4761,15 @@ bool ProductMatcher::SpuMatched_(const WeightType& weight, const Product& p) con
     if(p.spid.empty()) return false; //detect empty product
     double paweight = weight.paweight;
     if(weight.paratio>=0.8&&weight.type_match) paweight*=2;
+    if(paweight>=1.5&&paweight>=p.aweight) return true;
+    return false;
+}
+bool ProductMatcher::IsSpuMatch_(const Product& p, const SpuContributorValue& scv) const
+{
+    if(p.spid.empty()) return false; //detect empty product
+    double paweight = scv.paweight;
+    //LOG(INFO)<<p.stitle<<","<<scv.lenweight<<","<<scv.model_match<<","<<paweight<<std::endl;
+    if(scv.lenweight>=0.8&&scv.model_match) paweight*=2;
     if(paweight>=1.5&&paweight>=p.aweight) return true;
     return false;
 }

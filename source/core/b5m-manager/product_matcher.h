@@ -424,6 +424,57 @@ namespace sf1r {
         //};
         typedef stdmap<std::string, uint32_t> KeywordTypeApp;
         typedef boost::unordered_map<cid_t, double> CategoryContributor;
+        struct SpuContributorValue
+        {
+            SpuContributorValue()
+            : paweight(0.0), lenweight(0.0), model_match(false), brand_match(false)
+            {
+            }
+            //double cweight;
+            //double aweight;
+            //double tweight;
+            //double kweight;
+            double paweight;
+            double lenweight;
+            bool model_match;
+            bool brand_match;
+            //double price_diff;
+            //friend class boost::serialization::access;
+            //template<class Archive>
+            //void serialize(Archive & ar, const unsigned int version)
+            //{
+                //ar & cweight & aweight & tweight & kweight & paweight;
+            //}
+
+            //inline double sum() const
+            //{
+                //return (cweight+aweight+tweight)*kweight;
+            //}
+
+            //bool operator<(const WeightType& another) const
+            //{
+                //return sum()<another.sum();
+            //}
+            //friend std::ostream& operator<<(std::ostream& out, const WeightType& wt)
+            //{
+                //out<<"cweight:"<<wt.cweight<<",aweight:"<<wt.aweight<<",tweight:"<<wt.tweight<<",kweight:"<<wt.kweight<<",paweight:"<<wt.paweight<<",paratio:"<<wt.paratio<<",typematch:"<<wt.type_match<<",brandmatch:"<<wt.brand_match<<",pricediff:"<<wt.price_diff;
+                //return out;
+            //}
+        };
+        typedef boost::unordered_map<uint32_t, SpuContributorValue> SpuContributor;
+        struct SpuMatchCandidate
+        {
+            uint32_t spuid;
+            double price_diff;
+            double paweight;
+            uint32_t cid_index;
+            bool operator<(const SpuMatchCandidate& another) const
+            {
+                if(cid_index!=another.cid_index) return cid_index<another.cid_index;
+                if(paweight!=another.paweight) return paweight>another.paweight;
+                return price_diff<another.price_diff;
+            }
+        };
         struct KeywordTag
         {
             KeywordTag();
@@ -440,7 +491,6 @@ namespace sf1r {
             double kweight;
             uint8_t ngram;
             std::vector<Position> positions;
-            CategoryContributor cc;
 
             void PositionMerge(const Position& pos);
 
@@ -459,6 +509,8 @@ namespace sf1r {
             void Append(const KeywordTag& another, bool is_complete);
             bool Combine(const KeywordTag& another);
             bool IsAttribSynonym(const KeywordTag& another) const;
+            bool IsBrand() const;
+            bool IsModel() const;
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version)
@@ -772,14 +824,17 @@ namespace sf1r {
         void GetFuzzyKeywords_(const ATermList& term_list, KeywordVector& keyword_vector, cid_t cid);
         void SearchKeywordsFilter_(std::vector<KeywordTag>& keywords);
         bool EqualOrIsParent_(uint32_t parent, uint32_t child) const;
-        void GenContributor_(KeywordTag& tag);
-        void MergeContributor_(CategoryContributor& cc, const CategoryContributor& cc2);
+        void GenCategoryContributor_(const KeywordTag& tag, CategoryContributor& cc);
+        void MergeCategoryContributor_(CategoryContributor& cc, const CategoryContributor& cc2);
+        void GenSpuContributor_(const KeywordTag& tag, SpuContributor& sc);
         void Compute_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keyword_vector, uint32_t limit, std::vector<Product>& p);
         void Compute2_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products);
+        void ComputeT_(const Document& doc, const std::vector<Term>& term_list, KeywordVector& keywords, uint32_t limit, std::vector<Product>& result_products);
         uint32_t GetCidBySpuId_(uint32_t spu_id);
         uint32_t GetCidByMaxDepth_(uint32_t cid);
         cid_t GetCid_(const UString& category) const;
 
+        bool IsSpuMatch_(const Product& p, const SpuContributorValue& scv) const;
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
         bool IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& app) const;
