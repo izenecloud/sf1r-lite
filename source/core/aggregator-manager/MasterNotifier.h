@@ -51,16 +51,19 @@ public:
     {
         boost::lock_guard<boost::mutex> lock(mutex_);
 
+        std::cout << "master notfiy host " << std::endl;
         if (masterList_.empty())
         {
             return false;
         }
 
+        
         try
         {
             std::vector<Master>::iterator it;
             for (it = masterList_.begin(); it != masterList_.end(); it++)
             {
+                std::cout << "master notfiy host :" << it->host_ << ", port :" << it->port_ << std::endl;
                 msgpack::rpc::client cli(it->host_, it->port_);
                 cli.notify("notify", msg);
                 cli.get_loop()->flush();

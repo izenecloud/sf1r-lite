@@ -206,12 +206,11 @@ void NodeManagerBase::notifyStop()
         }
         else
         {
-            if ((nodeState_ == NODE_STATE_STARTED ||
-                    nodeState_ == NODE_STATE_STARTING_WAIT_RETRY ||
-                    nodeState_ == NODE_STATE_STARTING ||
-                    nodeState_ == NODE_STATE_INIT ||
-                    nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY ) &&
-                !MasterManagerBase::get()->hasAnyCachedRequest())
+            if (nodeState_ == NODE_STATE_STARTED ||
+                nodeState_ == NODE_STATE_STARTING_WAIT_RETRY ||
+                nodeState_ == NODE_STATE_STARTING ||
+                nodeState_ == NODE_STATE_INIT ||
+                nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
             {
                 stop();
             }
@@ -2135,7 +2134,7 @@ void NodeManagerBase::updateNodeStateToNewState(NodeStateType new_state)
         }
     }
 
-    if (need_stop_ && nodeState_ == NODE_STATE_STARTED && !MasterManagerBase::get()->hasAnyCachedRequest())
+    if (need_stop_ && nodeState_ == NODE_STATE_STARTED)
     {
         if (!s_enable_async_)
             stop();
@@ -2203,7 +2202,7 @@ void NodeManagerBase::updateNodeState()
 
 void NodeManagerBase::updateSelfPrimaryNodeState(const ZNode& nodedata)
 {
-    if (nodeState_ == NODE_STATE_STARTED && need_stop_ && !MasterManagerBase::get()->hasAnyCachedRequest())
+    if (nodeState_ == NODE_STATE_STARTED && need_stop_)
     {
         if (!s_enable_async_)
             stop();

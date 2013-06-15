@@ -103,7 +103,7 @@ public:
             std::list<std::pair<UString, double> >& major_tokens,
             std::list<std::pair<UString, double> >& minor_tokens,
             UString& refined_results);
-
+    bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
     void SetProductMatcher(ProductMatcher* matcher)
     {
         matcher_ = matcher;

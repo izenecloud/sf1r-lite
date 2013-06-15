@@ -146,7 +146,7 @@ public:
     uint32_t lucky_;
 
     bool useOriginalQuery_;
-
+    
     bool usefuzzy_;
 
     SearchingMode::SuffixMatchFilterMode filtermode_;

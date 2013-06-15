@@ -43,7 +43,7 @@ public:
     };
 
 public:
-    SynchroConsumer(boost::shared_ptr<ZooKeeper>& zookeeper, const std::string& syncZkNode);
+    SynchroConsumer(boost::shared_ptr<ZooKeeper>& zookeeper, const std::string& syncID);
 
     ~SynchroConsumer();
 
@@ -74,6 +74,7 @@ private:
 private:
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
+    std::string syncID_;
     std::string syncZkNode_;
     std::string producerZkNode_;
 

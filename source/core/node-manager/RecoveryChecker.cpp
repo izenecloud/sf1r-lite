@@ -52,24 +52,32 @@ public:
     static void safe_remove_all(const std::string& dir)
     {
         CopyGuard dir_guard(dir);
-        // remove other files first and then remove flag.
-        static bfs::directory_iterator end_it = bfs::directory_iterator();
-        bfs::directory_iterator dir_it = bfs::directory_iterator(dir);
-        while(dir_it != end_it)
+        try
         {
-            bfs::path current(dir_it->path());
-            if (bfs::is_regular_file(current) &&
-                current.filename().string() == getGuardFileName())
+            // remove other files first and then remove flag.
+            static bfs::directory_iterator end_it = bfs::directory_iterator();
+            bfs::directory_iterator dir_it = bfs::directory_iterator(dir);
+            while(dir_it != end_it)
             {
+                bfs::path current(dir_it->path());
+                if (bfs::is_regular_file(current) &&
+                    current.filename().string() == getGuardFileName())
+                {
+                    ++dir_it;
+                    continue;
+                }
+                DistributeTestSuit::testFail(Fail_At_CopyRemove_File);
+                bfs::remove_all(current);
                 ++dir_it;
-                continue;
             }
-            DistributeTestSuit::testFail(Fail_At_CopyRemove_File);
-            bfs::remove_all(current);
-            ++dir_it;
+            bfs::remove(dir + "/" + getGuardFileName());
+            bfs::remove_all(dir);
         }
-        bfs::remove(dir + "/" + getGuardFileName());
-        bfs::remove_all(dir);
+        catch(const std::exception& e)
+        {
+            LOG(ERROR) << "safe remove error: " << e.what();
+            return;
+        }
         dir_guard.setOK();
     }
 
@@ -1315,6 +1323,13 @@ bool RecoveryChecker::checkIfLogForward(bool is_primary)
             }
         }
 
+        if (min_size == 0 && check_start <= newest_reqid)
+        {
+            LOG(INFO) << "local log data is forword at id " << check_start;
+            setRollbackFlag(check_start);
+            return false;
+        }
+
         if (check_start >= newest_reqid)
         {
             LOG(INFO) << "check log data success, current node log ok.";
@@ -1379,6 +1394,29 @@ void RecoveryChecker::syncSCDFiles()
     }
 }
 
+static void scanForCronJobLog(const std::vector<std::string>& logdata_list,
+    std::map<std::string, uint32_t>& delayed_cronjob_list)
+{
+    for(size_t i = 0; i < logdata_list.size(); ++i)
+    {
+        CommonReqData req_commondata;
+        ReqLogMgr::unpackReqLogData(logdata_list[i], req_commondata);
+        if (req_commondata.reqtype == Req_CronJob)
+        {
+            CronJobReqLog crondata;
+            if(ReqLogMgr::unpackReqLogData(logdata_list[i], crondata))
+            {
+                if (crondata.cron_time == 0)
+                {
+                    LOG(INFO) << "the cron job without timestamp can be delayed to last. " << crondata.req_json_data;
+                    LOG(INFO) << "delay to id : " << crondata.inc_id;
+                    delayed_cronjob_list[crondata.req_json_data] = crondata.inc_id;
+                }
+            }
+        }
+    }
+}
+
 void RecoveryChecker::syncToNewestReqLog()
 {
     LOG(INFO) << "begin sync to newest log.";
@@ -1404,6 +1442,8 @@ void RecoveryChecker::syncToNewestReqLog()
         }
         if (newlogdata_list.empty())
             break;
+        std::map<std::string, uint32_t> delayed_cronjob_list;
+        scanForCronJobLog(newlogdata_list, delayed_cronjob_list);
         for (size_t i = 0; i < newlogdata_list.size(); ++i)
         {
             // do new redo RequestLog.
@@ -1416,6 +1456,26 @@ void RecoveryChecker::syncToNewestReqLog()
                 forceExit("syncToNewestReqLog failed.");
             }
             reqid = req_commondata.inc_id;
+
+            if (req_commondata.reqtype == Req_CronJob)
+            {
+                CronJobReqLog crondata;
+                if(ReqLogMgr::unpackReqLogData(newlogdata_list[i], crondata) &&
+                    crondata.cron_time == 0)
+                {
+                    std::map<std::string, uint32_t>::iterator it;
+                    it = delayed_cronjob_list.find(crondata.req_json_data);
+                    if (it != delayed_cronjob_list.end() &&
+                        crondata.inc_id != it->second)
+                    {
+                        LOG(INFO) << "this cronjob id " << crondata.inc_id << " delay to id : " << it->second;
+                        reqlog_mgr_->prepareReqLog(crondata, false);
+                        reqlog_mgr_->appendReqData(newlogdata_list[i]);
+                        reqlog_mgr_->delPreparedReqLog();
+                        continue;
+                    }
+                }
+            }
 
             if(!DistributeDriver::get()->handleReqFromLog(req_commondata.reqtype, req_commondata.req_json_data, newlogdata_list[i]))
             {

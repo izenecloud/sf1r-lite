@@ -6,6 +6,7 @@
 
 #include <common/SearchCache.h>
 #include <common/Utilities.h>
+#include <common/QueryNormalizer.h>
 #include <index-manager/IndexManager.h>
 #include <search-manager/SearchManager.h>
 #include <search-manager/SearchBase.h>
@@ -245,7 +246,7 @@ void SearchWorker::makeQueryIdentity(
     identity.userId = item.env_.userID_;
     identity.start = start;
     identity.searchingMode = item.searchingMode_;
-
+    identity.isSynonym = item.languageAnalyzerInfo_.synonymExtension_;
     switch (item.searchingMode_.mode_)
     {
     case SearchingMode::KNN:
@@ -471,7 +472,8 @@ bool SearchWorker::getSearchResult_(
             else
                 return true;
 
-            std::string rawQuery = actionOperation.actionItem_.env_.queryString_;
+            RequesterEnvironment& requestEnv = actionOperation.actionItem_.env_;
+            std::string rawQuery = requestEnv.queryString_;
 
             do
             {
@@ -487,7 +489,10 @@ bool SearchWorker::getSearchResult_(
                     }
                 }
                 LOG(INFO) << "[QUERY PRUNE] the new query is" <<  newQuery << endl;
-                actionOperation.actionItem_.env_.queryString_ = newQuery;
+                requestEnv.queryString_ = newQuery;
+                QueryNormalizer::get()->normalize(requestEnv.queryString_,
+                                                  requestEnv.normalizedQueryString_);
+
                 resultItem.propertyQueryTermList_.clear();
                 if (!buildQuery(actionOperation, resultItem.propertyQueryTermList_, resultItem, personalSearchInfo))
                 {

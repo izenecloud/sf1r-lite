@@ -431,6 +431,8 @@ void FilterManager::buildGroupFilters(
                     assert(curgroup);
                 }
 
+                if (docid <= last_docid_forproperty) continue;
+
                 group_filter_data[j][groupstr].push_back(docid);
             }
         }

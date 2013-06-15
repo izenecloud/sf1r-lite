@@ -655,7 +655,7 @@ void FacetedController::set_custom_rank()
         getDocIdList_(Keys::exclude_docid_list, customDocStr.excludeIds))
     {
         std::string normalizedQuery;
-        QueryNormalizer::normalize(query, normalizedQuery);
+        QueryNormalizer::get()->normalize(query, normalizedQuery);
 
         if (! miningSearchService_->setCustomRank(normalizedQuery, customDocStr))
         {
@@ -723,7 +723,7 @@ void FacetedController::get_custom_rank()
         getPropNameList_(propNameList))
     {
         std::string normalizedQuery;
-        QueryNormalizer::normalize(query, normalizedQuery);
+        QueryNormalizer::get()->normalize(query, normalizedQuery);
 
         std::vector<Document> topDocList;
         std::vector<Document> excludeDocList;

@@ -761,7 +761,7 @@ void DocumentsController::log_group_label()
         requireGroupLabel(groupPath))
     {
         std::string normalizedQuery;
-        QueryNormalizer::normalize(query, normalizedQuery);
+        QueryNormalizer::get()->normalize(query, normalizedQuery);
 
         if (! miningSearchService_->clickGroupLabel(
                 normalizedQuery, propName, groupPath))
@@ -832,7 +832,7 @@ void DocumentsController::get_freq_group_labels()
     int limit = asUintOr(input[Keys::limit], 1);
 
     std::string normalizedQuery;
-    QueryNormalizer::normalize(query, normalizedQuery);
+    QueryNormalizer::get()->normalize(query, normalizedQuery);
 
     std::vector<std::vector<std::string> > pathVec;
     std::vector<int> freqVec;
@@ -906,7 +906,7 @@ void DocumentsController::set_top_group_label()
         requireGroupLabelVec(groupPathVec))
     {
         std::string normalizedQuery;
-        QueryNormalizer::normalize(query, normalizedQuery);
+        QueryNormalizer::get()->normalize(query, normalizedQuery);
 
         if (! miningSearchService_->setTopGroupLabel(
                 normalizedQuery, propName, groupPathVec))

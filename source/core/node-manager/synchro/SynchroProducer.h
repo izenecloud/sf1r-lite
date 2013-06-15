@@ -45,7 +45,7 @@ public:
 public:
     SynchroProducer(
             boost::shared_ptr<ZooKeeper>& zookeeper,
-            const std::string& syncZkNode,
+            const std::string& syncID,
             DataTransferPolicy transferPolicy = DATA_TRANSFER_POLICY_SOCKET);
 
     ~SynchroProducer();
@@ -105,6 +105,7 @@ private:
 
     boost::shared_ptr<ZooKeeper> zookeeper_;
 
+    std::string syncID_;
     std::string syncZkNode_;
     std::string producerZkNode_;
 
