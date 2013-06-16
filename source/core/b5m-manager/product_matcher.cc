@@ -3700,7 +3700,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         uint32_t spuid = it->first;
         const Product& p = products_[spuid];
         SpuContributorValue& scv = it->second;
-        LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<std::endl;
+        //LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<std::endl;
         scv.lenweight/=text_term_len;
         if(IsSpuMatch_(p, scv))
         {
