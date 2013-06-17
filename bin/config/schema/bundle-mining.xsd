@@ -264,7 +264,7 @@
     <xs:element name="QueryIntent">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="Category" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Property" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>

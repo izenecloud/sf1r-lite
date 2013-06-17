@@ -11,11 +11,13 @@
 #include <list>
 
 #include <util/driver/Request.h>
+#include <util/driver/Response.h>
 #include <configuration-manager/QueryIntentConfig.h>
 
 namespace sf1r
 {
-void rewriteRequest(izenelib::driver::Request& request,
+void refineRequest(izenelib::driver::Request& request,
+             izenelib::driver::Response& response,
              std::map<QueryIntentCategory, std::list<std::string> >& intents);
 }
 

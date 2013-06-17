@@ -1,4 +1,4 @@
-#include "SourceClassifier.h"
+#include "LexiconClassifier.h"
 #include <boost/filesystem.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/lock_types.hpp>
@@ -12,31 +12,31 @@ namespace sf1r
 const char* FORMAL_ALIAS_DELIMITER = ":";
 const char* ALIAS_DELIMITER = ";";
 
-const char* SourceClassifier::name_ = "Source";
+const char* LexiconClassifier::type_ = "lexicon";
 
-SourceClassifier::SourceClassifier(ClassifierContext* context)
+LexiconClassifier::LexiconClassifier(ClassifierContext* context)
     : Classifier(context)
 {
     maxLength_ = 0;
     minLength_ = -1;
     loadLexicon_();
-    iCategory_.property_ = name_;
+    iCategory_.name_ = context_->name_;
     QIIterator it = context_->config_->find(iCategory_);
     if (context_->config_->end() == it)
         iCategory_.op_ = " ";
      else
         iCategory_.op_ = it->op_;
-    //reloadThread_= boost::thread(&SourceClassifier::reloadLexicon_, this);
+    //reloadThread_= boost::thread(&LexiconClassifier::reloadLexicon_, this);
 }
 
-SourceClassifier::~SourceClassifier()
+LexiconClassifier::~LexiconClassifier()
 {
     lexicons_.clear();
 }
 
-void SourceClassifier::loadLexicon_()
+void LexiconClassifier::loadLexicon_()
 {
-    std::string lexiconFile = context_->lexiconDirectory_ + name_;
+    std::string lexiconFile = context_->lexiconDirectory_ + context_->name_;
     if (!boost::filesystem::exists(lexiconFile) 
         || !boost::filesystem::is_regular_file(lexiconFile))
         return;
@@ -114,7 +114,7 @@ void SourceClassifier::loadLexicon_()
     return;
 }
 
-void SourceClassifier::reload()
+void LexiconClassifier::reload()
 {
     boost::unique_lock<boost::shared_mutex> ul(mtx_);
     loadLexicon_();
@@ -150,8 +150,11 @@ void SourceClassifier::reload()
     }*/
 }
 
-bool SourceClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
+bool LexiconClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
 {
+    LOG(INFO)<<"LexiconClassifier:"<<priority();
+    if (query.empty())
+        return false;
     boost::shared_lock<boost::shared_mutex> sl(mtx_, boost::try_to_lock);
     if (!sl)
     {

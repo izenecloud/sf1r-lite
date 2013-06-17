@@ -20,16 +20,18 @@ namespace sf1r
 {
 
 typedef std::string ClassifierType;
+typedef std::string ClassifierName;
 
 class ClassifierContext
 {
 public:
     ClassifierContext(QueryIntentConfig* config, std::string directory, 
-        MiningManager* miningManager,ClassifierType type)
+        MiningManager* miningManager,ClassifierType type, ClassifierName name)
         : config_(config)
         , lexiconDirectory_(directory)
         , miningManager_(miningManager)
         , type_(type)
+        , name_(name)
     {
     }
 public:
@@ -37,6 +39,7 @@ public:
     std::string lexiconDirectory_;
     MiningManager* miningManager_;
     ClassifierType type_;
+    ClassifierName name_;
 };
 
 class Classifier
@@ -61,6 +64,8 @@ public:
     virtual bool classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query) = 0;
 
     virtual const char* name() = 0;
+
+    virtual int priority() = 0;
 
     virtual void reload()
     {

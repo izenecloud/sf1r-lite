@@ -27,7 +27,7 @@ public:
     QueryIntentManager(QueryIntentConfig* config, std::string& resource, MiningManager* miningManager);
     ~QueryIntentManager();
 public:
-    void queryIntent(izenelib::driver::Request& request);
+    void queryIntent(izenelib::driver::Request& request,izenelib::driver::Response& response);
     void reload();
 private:
     void init_();

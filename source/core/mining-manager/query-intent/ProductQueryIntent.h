@@ -9,27 +9,37 @@
 #define SF1R_PRODUCT_QUERY_INTENT_H
 
 #include "QueryIntent.h"
-#include <list>
+#include <vector>
 
 namespace sf1r
 {
+
 class ProductQueryIntent : public QueryIntent
 {
-typedef std::map<std::string, std::pair<bool, Classifier*> > ContainerType;
+typedef std::list<Classifier*> ContainerType;
 typedef ContainerType::iterator ContainerIterator;
+typedef std::vector<ContainerType> PriorityContainer;
 public:
     ProductQueryIntent(IntentContext* context);
     ~ProductQueryIntent();
 public:
-    void process(izenelib::driver::Request& request);
+    void process(izenelib::driver::Request& request, izenelib::driver::Response& response);
+    
     void addClassifier(Classifier* classifier)
     {
-        classifiers_[classifier->name()] = (make_pair(true,classifier));
+        std::size_t priority = classifier->priority();
+        if (priority >= classifiers_.size())
+        {
+            classifiers_.resize(priority + 1);
+        }
+        classifiers_[priority].push_back(classifier);
     }
+    
     void reload();
 private:
-    ContainerType classifiers_;
+    PriorityContainer classifiers_;
 };
+
 }
 #endif //ProductQueryIntent.h
 

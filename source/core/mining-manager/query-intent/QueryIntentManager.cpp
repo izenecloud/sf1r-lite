@@ -38,7 +38,7 @@ void QueryIntentManager::init_()
     QIIterator it = config_->begin();
     for (; it != config_->end(); it++)
     {
-        ClassifierContext* cContext = new ClassifierContext(config_, lexiconDirectory_, miningManager_, it->property_);
+        ClassifierContext* cContext = new ClassifierContext(config_, lexiconDirectory_, miningManager_, it->type_, it->name_);
         Classifier* classifier = classifierFactory_->createClassifier(cContext);
         if (classifier)
             intent_->addClassifier(classifier);
@@ -64,14 +64,16 @@ void QueryIntentManager::destroy_()
     }
 }
 
-void QueryIntentManager::queryIntent(izenelib::driver::Request& request)
+void QueryIntentManager::queryIntent(
+    izenelib::driver::Request& request,
+    izenelib::driver::Response& response)
 {
 #ifdef QUERY_INTENT_TIMER    
     struct timeval begin;
     gettimeofday(&begin, NULL);
 #endif
     if (intent_)
-        intent_->process(request);
+        intent_->process(request, response);
 #ifdef QUERY_INTENT_TIMER    
     struct timeval end;
     gettimeofday(&end, NULL);

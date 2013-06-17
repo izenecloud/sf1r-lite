@@ -1,12 +1,12 @@
 /**
- * @file SourceClassifier.h
+ * @file LexiconClassifier.h
  * @brief classify qyery string via Lexicon
  * @author Kevin Lin
  * @date Created 2013-06-07
  */
 
-#ifndef SF1R_SOURCE_CLASSIFIER_H
-#define SF1R_SOURCE_CLASSIFIER_H
+#ifndef SF1R_LEXICON_CLASSIFIER_H
+#define SF1R_LEXICON_CLASSIFIER_H
 
 #include "Classifier.h"
 #include <boost/unordered_map.hpp>
@@ -15,22 +15,30 @@
 namespace sf1r
 {
 
-class SourceClassifier : public Classifier
+class LexiconClassifier : public Classifier
 {
 public:
-    SourceClassifier(ClassifierContext* context);
-    ~SourceClassifier();
+    LexiconClassifier(ClassifierContext* context);
+    ~LexiconClassifier();
 public:
     bool classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query);
+   
     const char* name()
     {
-        return name_;
+        return context_->name_.c_str();
     }
+    
     static const char* type()
     {
-        return name_;
+        return type_;
     }
+    
     void reload();
+
+    int priority()
+    {
+        return 0;
+    }
 private:
     void loadLexicon_();
 private:
@@ -39,7 +47,7 @@ private:
     unsigned short maxLength_;
     unsigned short minLength_;
     QueryIntentCategory iCategory_;
-    static const char* name_;
+    static const char* type_;
 
     //boost::thread reloadThread_;
     boost::shared_mutex  mtx_;

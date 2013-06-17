@@ -1,11 +1,11 @@
 /**
- * @file QueryClassifier.h
+ * @file ProductClassifier.h
  * @brief 
  * @author Kevin Lin
  * @date Created 2013-06-i13
  */
-#ifndef SF1R_QUERY_CATEGORY_CLASSIFIER_H
-#define SF1R_QUERY_CATEGORY_CLASSIFIER_H
+#ifndef SF1R_PRODUCT_CLASSIFIER_H
+#define SF1R_PRODUCT_CLASSIFIER_H
 
 #include "Classifier.h"
 #include "../product-classifier/SPUProductClassifier.hpp"
@@ -13,25 +13,32 @@
 namespace sf1r
 {
 
-class QueryCategoryClassifier : public Classifier
+class ProductClassifier : public Classifier
 {
 public:
-    QueryCategoryClassifier(ClassifierContext* context)
+    ProductClassifier(ClassifierContext* context)
         : Classifier(context)
     {
     }
 public:
     bool classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query);
+    
     const char* name()
     {
-        return name_;
+        return context_->name_.c_str();
     }
+    
     static const char* type()
     {
-        return name_;
+        return type_;
+    }
+
+    int priority()
+    {
+        return 1;
     }
 private:
-    static const char* name_;
+    static const char* type_;
 };
 
 }

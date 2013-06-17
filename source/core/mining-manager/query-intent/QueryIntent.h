@@ -9,6 +9,7 @@
 #define SF1R_QUERY_INTENT_H
 
 #include <util/driver/Request.h>
+#include <util/driver/Response.h>
 #include "Classifier.h"
 
 namespace sf1r
@@ -40,7 +41,7 @@ public:
         }
     }
 public:
-    virtual void process(izenelib::driver::Request& request) = 0;
+    virtual void process(izenelib::driver::Request& request, izenelib::driver::Response& response) = 0;
     virtual void addClassifier(Classifier* classifier) = 0;
     virtual void reload() = 0;
 protected:

@@ -1,4 +1,4 @@
-#include "QueryCategoryClassifier.h"
+#include "ProductClassifier.h"
 #include <util/ustring/UString.h>
 #include <vector>
 #include <list>
@@ -10,12 +10,15 @@ namespace sf1r
 
 using izenelib::util::UString;
 
-const char* QueryCategoryClassifier::name_ = "TargetCategory";
+const char* ProductClassifier::type_ = "product";
 
-bool QueryCategoryClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
+bool ProductClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
 {
+    LOG(INFO)<<"ProductClassifier:"<<priority();
+    if (query.empty())
+        return false;
     QueryIntentCategory iCategory;
-    iCategory.property_ = name_;
+    iCategory.name_ = context_->name_;
     QIIterator it = context_->config_->find(iCategory);
     if (context_->config_->end() == it)
         return false;

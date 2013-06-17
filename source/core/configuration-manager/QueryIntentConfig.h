@@ -18,10 +18,11 @@ class QueryIntentCategory
 public:
     bool operator<(const QueryIntentCategory& value) const
     {
-        return this->property_ < value.property_;
+        return this->name_ < value.name_;
     }
 public:
-    std::string property_;
+    std::string name_;
+    std::string type_;
     std::string op_;
 };
 
@@ -31,10 +32,11 @@ typedef std::vector<QueryIntentCategory>::iterator QIIterator;
 class QueryIntentConfig
 {
 public:
-    void insertQueryIntentConfig(std::string property, std::string op)
+    void insertQueryIntentConfig(std::string name, std::string type, std::string op)
     {
         QueryIntentCategory category;
-        category.property_ = property;
+        category.name_ = name;
+        category.type_ = type;
         category.op_ = op;
         intents_.push_back(category);
     }
@@ -54,7 +56,7 @@ public:
         QIIterator it = intents_.begin();
         for (; it != intents_.end(); it++)
         {
-            if (iCategory.property_ == it->property_)
+            if (iCategory.name_ == it->name_)
                 return it;
         }
         return intents_.end();
