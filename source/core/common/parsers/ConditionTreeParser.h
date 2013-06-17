@@ -12,7 +12,6 @@
 #include "ConditionsTree.h"
 
 #include <vector>
-#include <stack>
 
 namespace sf1r {
 //using namespace izenelib::driver;
@@ -21,22 +20,21 @@ class ConditionTreeParser : public ::izenelib::driver::Parser
 {
 public:
     ConditionTreeParser()
+    : conditionsTree_(new ConditionsNode())
     {
-        boost::shared_ptr<ConditionsTree> tmp(new ConditionsTree());
-        conditionsTree_ = tmp;
     }
 
     bool parse(const Value& conditions);
 
-    boost::shared_ptr<ConditionsTree>& parsedConditions()
+    boost::shared_ptr<ConditionsNode>& parsedConditions()
     {
         return conditionsTree_;
     }
 
-    std::stack<boost::shared_ptr<ConditionsNode> > ConditionsNodeStack_;
+    bool parseTree(const Value& conditions, boost::shared_ptr<ConditionsNode>& pnode);
 
 private:
-    boost::shared_ptr<ConditionsTree> conditionsTree_;
+    boost::shared_ptr<ConditionsNode> conditionsTree_;
 
 };
 

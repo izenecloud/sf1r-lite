@@ -1,7 +1,7 @@
 #include "ConditionsTree.h" 
 
 namespace sf1r {
-
+/*
 bool ConditionsNode::setRelation(const std::string relation)
 {
     if (relation == "AND" || relation == "and")
@@ -70,5 +70,5 @@ void ConditionsTree::addConditionNode(boost::shared_ptr<ConditionsNode>& pCurren
 void ConditionsTree::printConditionsTree(boost::shared_ptr<ConditionsNode> pNode)
 {
 }
-
+*/
 }

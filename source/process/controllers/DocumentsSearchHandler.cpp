@@ -519,7 +519,19 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
         return true;
 
     std::vector<QueryFiltering::FilteringType> filteringRules;
-    unsigned int size = actionItem_.filteringTreeList_.size();
+
+    if (actionItem_.filterTree_->pConditionsNodeList_.size() > 0)
+    {
+        message = "The Suffix Match search do not support nesting filter condition";
+        return false;
+    }
+
+    for (unsigned int i = 0; i < actionItem_.filterTree_->conditionLeafList_.size(); ++i)
+    {
+        filteringRules.push_back(actionItem_.filterTree_->conditionLeafList_[i]);
+    }
+
+    /*
     for (int i = size -1 ; i >= 0; --i)
     {
         if (actionItem_.filteringTreeList_[i].isRelationNode_ == true)
@@ -534,7 +546,8 @@ bool DocumentsSearchHandler::checkSuffixMatchParam(std::string& message)
         }
         filteringRules.push_back(actionItem_.filteringTreeList_[i].fitleringType_);
     }
-    
+    */
+
     const std::vector<QueryFiltering::FilteringType>& filter_param = filteringRules;
     const SuffixMatchConfig& suffixconfig = miningSchema_.suffixmatch_schema;
     for (size_t i = 0; i < filter_param.size(); ++i)

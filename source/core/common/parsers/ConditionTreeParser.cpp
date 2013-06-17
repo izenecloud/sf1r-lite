@@ -62,6 +62,47 @@ namespace sf1r {
  * @endcode
  */
     using driver::Keys;
+
+    bool parseTree(const Value& conditions, boost::shared_ptr<ConditionsNode>& pnode)
+    {
+        Value conditionArray;
+        std::string relation;
+        conditionArray = conditions[Keys::condition_array];
+        relation = asString(conditions[Keys::relation]);
+
+        pnode->setRelation(relation);
+        const Value::ArrayType* cond_array = conditionArray.getPtr<Value::ArrayType>();
+        if (!cond_array)
+        {
+            error() = "Conditions must be an array";
+            return false;
+        }
+        
+        for (unsigned int i = 0; i < cond_array->size(); ++i)
+        {
+            std::string property_ = asString(((*cond_array)[i])[Keys::property]); // check if is leaf-node
+            if (property_.empty())
+            {
+                boost::shared_ptr<ConditionsNode> pChildNode(new ConditionsNode());
+                pnode->conditionLeafList_.push_back(pChildNode);
+                if ( !parseTree((*cond_array)[i], pChildNode))
+                    return false;
+            }
+            else
+            {
+                ConditionParser conditionParser;
+                conditionParser.parse((*cond_array)[i]);
+
+                QueryFiltering::FilteringType filterLeafNode;
+                filterLeafNode.operation_ = conditionParser.op();
+                filterLeafNode.property_ = conditionParser.property();
+                filterLeafNode.values_ = conditionParser.array();
+                pnode->conditionLeafList_.push_back(filterLeafNode);
+            }
+        }
+
+        return true;
+    }
     
     bool ConditionTreeParser::parse(const Value& conditions) //{}
     {
@@ -78,50 +119,6 @@ namespace sf1r {
             return false;
         }
 
-        Value conditionArray; //[]
-        std::string relation;
-        conditionArray = conditions[Keys::condition_array];
-        relation = asString(conditions[Keys::relation]);
-
-        // here deal with two situaions 
-        if (conditionsTree_->isEmpty())
-        {
-            boost::shared_ptr<ConditionsNode> proot(new ConditionsNode());
-            conditionsTree_->setRoot(proot);
-            ConditionsNodeStack_.push(proot);
-        }
-
-        //get current need to deal node
-        boost::shared_ptr<ConditionsNode> pCurrentNode = ConditionsNodeStack_.top();
-        pCurrentNode->setRelation(relation);
-
-        //check if the object is leafe or non-leafe;
-        const Value::ArrayType* cond_array = conditionArray.getPtr<Value::ArrayType>();
-        if (!cond_array)
-        {
-            error() = "Conditions must be an array";
-            return false;
-        }
-
-        for (unsigned int i = 0; i < cond_array->size(); ++i)
-        {
-            std::string property_ = asString(((*cond_array)[i])[Keys::property]); // check if is leaf-node
-            if (property_.empty())
-            {
-                boost::shared_ptr<ConditionsNode> pChildNode(new ConditionsNode());
-                ConditionsNodeStack_.push(pChildNode);
-                conditionsTree_->addConditionNode(pCurrentNode, pChildNode);
-                parse((*cond_array)[i]);
-            }
-            else
-            {
-                ConditionParser condition;
-                condition.parse((*cond_array)[i]);
-                conditionsTree_->addConditionLeaf(pCurrentNode, condition);
-            }
-        }
-
-        ConditionsNodeStack_.pop();
-        return true;
+        return parseTree(conditions, conditionsTree_);
     }
 }

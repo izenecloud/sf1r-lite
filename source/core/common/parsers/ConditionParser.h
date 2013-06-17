@@ -34,6 +34,11 @@ public:
         return op_;
     }
 
+    const Value::ArrayType& array() const
+    {
+        return array_;
+    }
+
     bool parse(const Value& condition);
 
     void swap(ConditionParser& other)

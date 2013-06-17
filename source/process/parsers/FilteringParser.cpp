@@ -24,70 +24,6 @@ bool FilteringParser::parse_tree(const Value& conditions)
         error() = conditionsParser.errorMessage();
         return false;
     }
-    std::stack<boost::shared_ptr<ConditionsNode> > nodeStack;
-    nodeStack.push(conditionsParser.parsedConditions()->getRoot());
-
-    post_parse_tree(filteringTreeRules_, nodeStack);
-    //printTree();
-    return true;
-}
-
-bool FilteringParser::post_parse_tree(std::vector<QueryFiltering::FilteringTreeValue>& filteringTreeRules
-        , stack<boost::shared_ptr<ConditionsNode> >& nodeStack)
-{
-    if (nodeStack.empty())
-    {
-        return false;
-    }
-
-    boost::shared_ptr<ConditionsNode> node = nodeStack.top();
-
-    QueryFiltering::FilteringTreeValue filteringTreeValueRelation;
-    filteringTreeValueRelation.isRelationNode_ = true;
-    filteringTreeValueRelation.relation_ = node->getRelation();
-    filteringTreeValueRelation.childNum_ = node->getChildNum();
-
-    filteringTreeRules.push_back(filteringTreeValueRelation);
-    //deal with leaf
-    for (unsigned int i = 0; i < node->getConditionLeafList().size(); ++i)
-    {
-        const ConditionParser& condition = node->getConditionLeafList()[i];
-        QueryFiltering::FilteringTreeValue filteringTreeValue;
-        QueryFiltering::FilteringType& filteringRule = filteringTreeValue.fitleringType_;
-        sf1r::PropertyDataType dataType = UNKNOWN_DATA_PROPERTY_TYPE;
-
-        if (isPropertyFilterable(indexSchema_, condition.property()))
-        {
-            dataType =getPropertyDataType(indexSchema_, condition.property());
-            if (dataType == sf1r::UNKNOWN_DATA_PROPERTY_TYPE)
-            {
-                error() = "Property's data type is unknown: " +
-                                condition.property();
-                return false;
-            }
-        }
-
-        filteringRule.operation_ = toFilteringOperation(condition.op());
-        filteringRule.property_ = condition.property();
-
-        filteringRule.values_.resize(condition.size());
-        for (std::size_t v = 0; v < condition.size(); ++v)
-        {
-            ValueConverter::driverValue2PropertyValue(
-                    dataType,
-                    condition(v),
-                    filteringRule.values_[v]
-            );
-        }
-        filteringTreeRules.push_back(filteringTreeValue);
-    }
-    //deal with relationNode ...
-    for (unsigned int i = 0; i < node->getConditionNodeList().size(); ++i)
-    {
-        nodeStack.push(node->getConditionNodeList()[i]);
-        post_parse_tree(filteringTreeRules, nodeStack);
-    }
-    nodeStack.pop();
     return true;
 }
 
@@ -101,7 +37,8 @@ bool FilteringParser::parse(const Value& conditions)
     }
     else if (conditions.type() == Value::kObjectType)
     {
-        parse_tree(conditions);
+        if ( !parse_tree(conditions))
+            return false;
     }
     else if (conditions.type() == Value::kArrayType)
     {
@@ -153,20 +90,14 @@ bool FilteringParser::parse(const Value& conditions)
         
         // Translate old condition array to new condition value ;
         // Into array add a "and" relationship ConditonNode;
+
         if (conditionCount != 0)
         {
-            QueryFiltering::FilteringTreeValue relationNode;
-            relationNode.isRelationNode_ = true;
-            relationNode.relation_ = "and";
-            relationNode.childNum_ = conditionCount;
-            filteringTreeRules_.push_back(relationNode);
-        }
-        for (unsigned int j = 0; j < conditionCount; ++j)
-        {
-            QueryFiltering::FilteringTreeValue relationNode1;
-            relationNode1.fitleringType_ = filteringRulesList[j];
-            relationNode1.isRelationNode_ = false;
-            filteringTreeRules_.push_back(relationNode1);
+            filterConditionTree_->relation_ = "and";
+            for (unsigned int i = 0; i < filteringRulesList.size(); ++i)
+            {
+                filterConditionTree_->conditionLeafList_.push_back(filteringRulesList[i])
+            }
         }
     }
     else

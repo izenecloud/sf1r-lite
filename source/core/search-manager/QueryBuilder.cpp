@@ -61,6 +61,95 @@ void QueryBuilder::reset_cache()
     filterCache_->clear();
 }
 
+bool QueryBuilder::do_process_filtertree(
+        boost::shared_ptr<ConditionsNode>& conditionsTree_,
+        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap)
+{
+    if (conditionsTree_->conditionLeafList_.size() == 1 
+            && conditionsTree_->pConditionsNodeList_.size() == 0)
+    {
+        if (!filterCache_->get(conditionsTree_->conditionLeafList_[0], pFilterBitmap))
+        {
+            pFilterBitmap.reset(new IndexManager::FilterBitmapT);
+
+            QueryFiltering::FilteringOperation filterOperation = fconditionsTree_->conditionLeafList_[0].operation_;
+            const std::string& property = conditionsTree_->conditionLeafList_[0].property_;
+            const std::vector<PropertyValue>& filterParam = conditionsTree_->conditionLeafList_[0].values_;
+
+            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pFilterBitmap);
+
+            filterCache_->set(conditionsTree_->conditionLeafList_[i], pFilterBitmap);
+        }
+        return true;
+    }
+    /// not leaf node;
+    std::string relation = conditionsTree_->relation_;
+    boost::shared_ptr<IndexManager::FilterBitmapT> filterBitmapTList1;
+    filterBitmapTList1.resize(conditionsTree_->conditionLeafList_.size());
+    for (unsigned int i = 0; i < conditionsTree_->conditionLeafList_.size(); ++i)
+    {
+        if (!filterCache_->get(conditionsTree_->conditionLeafList_[i], filterBitmapTList1[i]))
+        {
+            filterBitmapTList1[i].reset(new IndexManager::FilterBitmapT);
+
+            QueryFiltering::FilteringOperation filterOperation = fconditionsTree_->conditionLeafList_[i].operation_;
+            const std::string& property = conditionsTree_->conditionLeafList_[i].property_;
+            const std::vector<PropertyValue>& filterParam = conditionsTree_->conditionLeafList_[i].values_;
+
+            indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, filterBitmapTList1[i]);
+
+            filterCache_->set(conditionsTree_->conditionLeafList_[i], ilterBitmapTList1[i]);
+        }
+    }
+
+    boost::shared_ptr<IndexManager::FilterBitmapT> filterBitmapTList2;
+    filterBitmapTList2.resize(conditionsTree_->pConditionsNodeList_.size());
+    for (unsigned int j = 0; j < conditionsTree_->pConditionsNodeList_.size(); ++j)
+    {
+        if (!do_process_filtertree(conditionsTree_->pConditionsNodeList_[j], filterBitmapTList2[j]))
+            return false;
+    }
+
+    if (relation == "and")
+    {
+        for (unsigned int k = 1; k < filterBitmapTList1.size(); ++k)
+        {
+            boost::shared_ptr<IndexManager::FilterBitmapT> dest(new IndexManager::FilterBitmapT);
+            pFilterBitmap->logicaland(*filterBitmapTList1[k], *dest);
+            pFilterBitmap = dest;
+        }
+        for (unsigned int k = 1; k < filterBitmapTList1.size(); ++k)
+        {
+            boost::shared_ptr<IndexManager::FilterBitmapT> dest(new IndexManager::FilterBitmapT);
+            pFilterBitmap->logicaland(*filterBitmapTList1[k], *dest);
+            pFilterBitmap = dest;
+        }
+    }
+    else if (relation == "or")
+    {
+        for (unsigned int k = 1; k < filterBitmapTList2.size(); ++k)
+        {
+            boost::shared_ptr<IndexManager::FilterBitmapT> dest(new IndexManager::FilterBitmapT);
+            pFilterBitmap->logicalor(*filterBitmapTList2[k], *dest);
+            pFilterBitmap = dest;
+        }
+        for (unsigned int k = 1; k < filterBitmapTList2.size(); ++k)
+        {
+            boost::shared_ptr<IndexManager::FilterBitmapT> dest(new IndexManager::FilterBitmapT);
+            pFilterBitmap->logicalor(*filterBitmapTList2[k], *dest);
+            pFilterBitmap = dest;
+        }
+    }
+    return true;
+}
+
+bool QueryBuilder::prepare_filter(
+        boost::shared_ptr<ConditionsNode>& conditionsTree_,
+        boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmapx)
+{
+    return do_process_filtertree(do_process_filtertree, pFilterBitmapx);
+}
+/*
 void QueryBuilder::do_process_node(
     QueryFiltering::FilteringTreeValue &filteringTreeRules
     , std::stack<boost::shared_ptr<IndexManager::FilterBitmapT> >& BitMapSetStack
@@ -145,6 +234,7 @@ void QueryBuilder::prepare_filter(
         }
     }
 }
+*/
 
 WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
     const SearchKeywordOperation& actionOperation,

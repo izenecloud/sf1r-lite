@@ -27,38 +27,28 @@ public:
         const MiningSchema& miningSchema)
     : indexSchema_(indexSchema)
     , miningSchema_(miningSchema)
+    , filterConditionTree_(new ConditionsNode())
     {}
 
     bool parse(const Value& conditions);
     
     bool parse_tree(const Value& conditions);
 
-    bool post_parse_tree(std::vector<QueryFiltering::FilteringTreeValue>& filteringTreeRules_
-        , std::stack<boost::shared_ptr<ConditionsNode> >& nodeStack);
-
-    std::vector<QueryFiltering::FilteringTreeValue>&
+    boost::shared_ptr<ConditionsNode>&
     mutableFilteringTreeRules()
     {
-        return filteringTreeRules_;
+        return filterConditionTree_;
     }
 
     static QueryFiltering::FilteringOperation toFilteringOperation(
         const std::string& op
     );
-
-    void printTree()
-    {
-        for (unsigned int i = 0; i < filteringTreeRules_.size(); ++i)
-        {
-            filteringTreeRules_[i].print();
-        }
-    }
     
 private:
     const IndexBundleSchema& indexSchema_;
     const MiningSchema& miningSchema_;
 
-    std::vector<QueryFiltering::FilteringTreeValue> filteringTreeRules_;
+    boost::shared_ptr<ConditionsNode> filterConditionTree_;
 };
 
 } // namespace sf1r

@@ -10,7 +10,6 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-#include "ConditionParser.h"
 
 #define MAXSIZE 5
 
@@ -18,6 +17,47 @@
 namespace sf1r {
 using namespace izenelib::driver;
 
+///this is node with with relatonship, the leaf node is FilteringType;
+struct ConditionsNode
+{
+    std::string relation_;
+    
+    std::vector<QueryFiltering::FilteringType> conditionLeafList_;
+    
+    std::vector<boost::shared_ptr<ConditionsNode> > pConditionsNodeList_;
+
+    ConditionsNode()
+    : relation_("and")
+    {}
+
+    bool isLeafNode()
+    {
+        return conditionLeafList_.size() != 0 && pConditionsNodeList_.size() == 0;
+    }
+
+    unsigned int getChildNum()
+    {
+        return conditionLeafList_.size() + pConditionsNodeList_.size();
+    }
+
+    bool setRelation(const std::string relation)
+    {
+        if (relation == "AND" || relation == "and")
+        {
+            relation_ = "and";
+        }
+        else if (relation == "OR" || relation == "or")
+        {
+            relation_ = "or";
+        }
+        else
+            return false;
+
+        return true;
+    }
+};
+
+/*
 class ConditionsNode
 {
 public:
@@ -44,7 +84,6 @@ public:
     std::string getRelation();
     void addConditionLeaf(const ConditionParser& condParser);
     void addConditionNode(const boost::shared_ptr<ConditionsNode> pCondNode);
-
 
     std::vector<ConditionParser>& getConditionLeafList()
     {
@@ -91,7 +130,7 @@ public:
 private:
     boost::shared_ptr<ConditionsNode> root_;
     bool isempty_;
-};
+};*/
 
 }
 
