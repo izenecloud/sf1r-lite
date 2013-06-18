@@ -3699,6 +3699,8 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     {
         uint32_t spuid = it->first;
         const Product& p = products_[spuid];
+        double psim = PriceSim_(price, p.price);
+        if(psim<0.25) continue;
         SpuContributorValue& scv = it->second;
         //LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<std::endl;
         scv.lenweight/=text_term_len;
@@ -3719,6 +3721,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
             smc.spuid = spuid;
             smc.paweight = scv.paweight;
             smc.price_diff = std::abs(p.price - price);
+            if(p.price==0.0) smc.price_diff = 999999.00;
             spu_match_candidates.push_back(smc);
         }
     }
