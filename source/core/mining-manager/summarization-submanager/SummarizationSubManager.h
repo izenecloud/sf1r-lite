@@ -46,8 +46,6 @@ public:
 
     ~MultiDocSummarizationSubManager();
 
-    void EvaluateSummarization();
-
     void AppendSearchFilter(
             std::vector<QueryFiltering::FilteringType>& filtingList);
 
@@ -88,7 +86,10 @@ private:
 
     void SetLastDocid_(uint32_t docid) const;
 
+    void check_rebuild();
+
 private:
+    bool is_rebuild_;
     std::string last_docid_path_;
     std::string total_scd_path_;
     std::string collectionName_;

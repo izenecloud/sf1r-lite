@@ -662,6 +662,70 @@ void FMIndexManager::getTopKDocIdListByFilter(
     }
 }
 
+//yy
+void FMIndexManager::getTopKDocIdListByFilter(
+        const std::string& property,
+        const std::vector<size_t> &prop_id_list,
+        const std::vector<RangeListT> &filter_ranges,
+        const std::vector<std::vector<boost::tuple<size_t, size_t, double> > > &synonym_range_list,
+        size_t thres,
+        size_t max_docs,
+        std::vector<std::pair<double, uint32_t> > &res_list) const
+{
+    if (doc_count_ == 0)
+        return;
+
+    FMIndexConstIter cit = all_fmi_.find(property);
+    if (cit == all_fmi_.end())
+    {
+        LOG(INFO) << "get topk failed for not exist property : " << property;
+        return;
+    }
+    if (cit->second.type == COMMON)
+    {
+        LOG(INFO) << "get topk in common property : " << property;
+        if (cit->second.docarray_mgr_index == (size_t)-1)
+        {
+            LOG(ERROR) << "the common property: " << property << " not found in doc array.";
+            return;
+        }
+        docarray_mgr_.getTopKDocIdListByFilter(
+                prop_id_list,
+                filter_ranges,
+                cit->second.docarray_mgr_index,
+                false,
+                synonym_range_list,
+                thres,
+                max_docs,
+                res_list);
+    }
+    else if (cit->second.type == LESS_DV)
+    {
+        if (!filter_manager_) return;
+
+        LOG(INFO) << "get topk in LESS_DV property : " << property;
+        size_t match_filter_index = filter_manager_->getPropertyId(property);
+        if (match_filter_index == (size_t)-1)
+        {
+            LOG(ERROR) << "the LESS_DV property: " << property << " not found in filter.";
+            return;
+        }
+        docarray_mgr_.getTopKDocIdListByFilter(
+                prop_id_list,
+                filter_ranges,
+                match_filter_index,
+                true,
+                synonym_range_list,
+                thres,
+                max_docs,
+                res_list);
+    }
+    else
+    {
+        assert(false);
+    }
+}
+
 void FMIndexManager::getDocLenList(const std::vector<uint32_t>& docid_list, std::vector<size_t>& doclen_list) const
 {
     // the doclen is total length for common property only.

@@ -952,8 +952,8 @@ void DocumentsSearchHandler::addAclFilters()
 
 void DocumentsSearchHandler::preprocess(KeywordSearchResult& searchResult)
 {
-    QueryNormalizer::normalize(actionItem_.env_.queryString_,
-                               actionItem_.env_.normalizedQueryString_);
+    QueryNormalizer::get()->normalize(actionItem_.env_.queryString_,
+                                      actionItem_.env_.normalizedQueryString_);
 
     GroupLabelPreProcessor processor(miningSearchService_);
     processor.process(actionItem_, searchResult);

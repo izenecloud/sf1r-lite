@@ -18,6 +18,7 @@ namespace
 {
 const std::string kTestDir = "test_product_ranker";
 const std::string kMerchantPropName = "Source";
+const std::string kQueryStr = "iphone";
 const izenelib::util::UString::EncodingType ENCODING_TYPE =
     izenelib::util::UString::UTF_8;
 }
@@ -124,7 +125,7 @@ void ProductRankerTestFixture::setMerchantScore(const std::string& merchantScore
 void ProductRankerTestFixture::rank()
 {
     const bool isRandomRank = (rankConfig_.scores[RANDOM_SCORE].weight != 0);
-    ProductRankParam param(docIds_, topKScores_, isRandomRank);
+    ProductRankParam param(docIds_, topKScores_, isRandomRank, kQueryStr);
     ProductRankerFactory rankerFactory(rankConfig_,
                                        NULL,
                                        offerItemCountTable_,

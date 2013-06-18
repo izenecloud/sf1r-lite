@@ -10,13 +10,33 @@ void LogAnalysis::getRecentKeywordList(const std::string& collectionName, uint32
     recentKeywords.resize(0);
     if (limit==0 ) return;
     std::vector<UserQuery> query_records;
-    UserQuery::find(
-        "distinct query",
-        "collection = '" + collectionName + "'" + " and " + "hit_docs_num > 0",
-        "",
-        "TimeStamp desc",
-        boost::lexical_cast<std::string>(limit),
-        query_records);
+    if(RDbConnection::instance().logServer())
+    {
+        std::list<std::map<std::string, std::string> > res;
+        boost::posix_time::ptime time_now = boost::posix_time::microsec_clock::local_time();
+        boost::posix_time::ptime p = time_now - boost::gregorian::days(20);
+        std::string time_string = boost::posix_time::to_iso_string(p);
+
+        UserQuery::getRecentKeyword(collectionName, time_string , res);
+        std::list<std::map<std::string, std::string> >::iterator it;
+        for(it = res.begin();it!=res.end();it++)
+        {
+            UserQuery uquery;
+            uquery.load(*it);
+            query_records.push_back(uquery);
+        }
+        query_records.resize(limit);
+    }
+    else
+    {
+        UserQuery::find(
+            "distinct query",
+            "collection = '" + collectionName + "'" + " and " + "hit_docs_num > 0",
+            "",
+            "TimeStamp desc",
+            boost::lexical_cast<std::string>(limit),
+            query_records);
+    }
 
     std::vector<UserQuery>::const_iterator it = query_records.begin();
     for ( ; it!=query_records.end(); ++it )
@@ -60,7 +80,7 @@ void LogAnalysis::getRecentKeywordFreqList(const std::string& collectionName, co
         {
            sql << "  select t1.query,t1.hit_docs_num,t2.count ";
            sql << "  from " << UserQuery::TableName ;
-           sql << "  t1 inner join "; 
+           sql << "  t1 inner join ";
            sql << "  (select query,max(TimeStamp) as TimeStamp,count(*) as count  ";
            sql << "  from   " << UserQuery::TableName ;
            sql << "  where " << ("collection = '" + collectionName+ "' and TimeStamp >= '" + time_string +"' group by query) t2");

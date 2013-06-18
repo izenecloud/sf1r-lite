@@ -7,6 +7,7 @@
 #include "../custom-rank-manager/CustomRankManager.h"
 #include "../product-score-manager/ProductScoreManager.h"
 #include <common/PropSharedLockSet.h>
+#include <common/QueryNormalizer.h>
 #include <configuration-manager/ProductRankingConfig.h>
 #include <memory> // auto_ptr
 #include <glog/logging.h>
@@ -118,7 +119,8 @@ ProductScorer* ProductScorerFactory::createCategoryScorer_(
     const ProductScoreConfig& scoreConfig,
     const ProductScoreParam& scoreParam)
 {
-    if (!labelSelector_)
+    if (!labelSelector_ ||
+        QueryNormalizer::get()->isLongQuery(scoreParam.query_))
         return NULL;
 
     scoreParam.propSharedLockSet_.insertSharedLock(categoryValueTable_);

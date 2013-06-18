@@ -88,6 +88,13 @@ TARGET_LINK_LIBRARIES(categorize_test  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${l
 SET_TARGET_PROPERTIES(categorize_test PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin/b5m
 )
+ADD_EXECUTABLE(spu_match_test
+spu_match_test.cc
+)
+TARGET_LINK_LIBRARIES(spu_match_test  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(spu_match_test PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin/b5m
+)
 ADD_EXECUTABLE(t_commentdb
 Runner.cpp
 t_commentdb.cc
