@@ -25,7 +25,7 @@ bool LoggerClassifier::classify(std::map<QueryIntentCategory, std::list<std::str
     std::vector<std::vector<std::string> > pathVec;
     std::vector<int> freqVec;
     std::string normalizedQuery;
-    QueryNormalizer::normalize(query, normalizedQuery);
+    QueryNormalizer::get()->normalize(query, normalizedQuery);
     if (!(context_->miningManager_->getFreqGroupLabel(normalizedQuery, context_->name_, 1, pathVec, freqVec)))
         return false;
 
