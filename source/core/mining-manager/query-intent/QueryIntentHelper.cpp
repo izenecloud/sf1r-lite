@@ -4,6 +4,9 @@
 #include <util/driver/Request.h>
 #include <util/driver/Response.h>
 #include <common/Keys.h>
+
+#include <limits>
+
 #include <glog/logging.h>
 
 namespace sf1r
@@ -26,11 +29,17 @@ void refineRequest(izenelib::driver::Request& request,
             continue;
         condition[Keys::property] = array->first.name_;
         condition["operator"] = array->first.op_;
+        int operands = array->first.operands_;
+        if (-1 == operands)
+            operands = std::numeric_limits<int>::max();
         izenelib::driver::Value& values = condition[Keys::value];
         izenelib::driver::Value& queryIntent = queryIntents();
         izenelib::driver::Value& queryIntentValues = queryIntent[array->first.name_];
-        for (item = array->second.begin(); item != array->second.end(); item++)
+        int i = 0;
+        for (item = array->second.begin(); item != array->second.end(); i++, item++)
         {
+            if (i >= operands)
+                break;
             values() = *item;
             queryIntentValues() = *item;
         }

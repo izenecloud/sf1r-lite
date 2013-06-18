@@ -152,7 +152,6 @@ void LexiconClassifier::reload()
 
 bool LexiconClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
 {
-    LOG(INFO)<<"LexiconClassifier:"<<priority();
     if (query.empty())
         return false;
     boost::shared_lock<boost::shared_mutex> sl(mtx_, boost::try_to_lock);

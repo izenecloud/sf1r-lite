@@ -24,6 +24,7 @@ public:
     std::string name_;
     std::string type_;
     std::string op_;
+    int operands_;
 };
 
 class QueryIntentConfig;
@@ -32,12 +33,13 @@ typedef std::vector<QueryIntentCategory>::iterator QIIterator;
 class QueryIntentConfig
 {
 public:
-    void insertQueryIntentConfig(std::string name, std::string type, std::string op)
+    void insertQueryIntentConfig(std::string name, std::string type, std::string op, int operands)
     {
         QueryIntentCategory category;
         category.name_ = name;
         category.type_ = type;
         category.op_ = op;
+        category.operands_ = operands;
         intents_.push_back(category);
     }
 

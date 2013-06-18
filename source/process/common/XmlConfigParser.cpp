@@ -2160,9 +2160,11 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
         {
             const ticpp::Element* cate_node = it.Get();
             std::string prop_name, type, op;
+            int operands;
             getAttribute(cate_node, "name", prop_name);
             getAttribute(cate_node, "type", type);
             getAttribute(cate_node, "operator", op);
+            getAttribute_IntType(cate_node, "operands", operands);
     
             IndexBundleSchema& indexSchema = collectionMeta.indexBundleConfig_->indexSchema_;
             PropertyConfig p;
@@ -2212,7 +2214,7 @@ void CollectionConfig::parseMiningBundleSchema(const ticpp::Element * mining_sch
                 LOG(WARNING)<<"Property ["<<prop_name<<"] in <Query_intent> is not filter type in <SuffixMatch>.";
             }
 NEXT:
-            mining_schema.query_intent_config.insertQueryIntentConfig(prop_name, type, op);
+            mining_schema.query_intent_config.insertQueryIntentConfig(prop_name, type, op, operands);
         }
     }
 }

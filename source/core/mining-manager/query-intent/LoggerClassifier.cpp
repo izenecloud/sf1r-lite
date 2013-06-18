@@ -1,5 +1,6 @@
-#include "ProductClassifier.h"
+#include "LoggerClassifier.h"
 #include <util/ustring/UString.h>
+#include <common/QueryNormalizer.h>
 #include <vector>
 #include <list>
 
@@ -10,9 +11,9 @@ namespace sf1r
 
 using izenelib::util::UString;
 
-const char* ProductClassifier::type_ = "product";
+const char* LoggerClassifier::type_ = "logger";
 
-bool ProductClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
+bool LoggerClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
 {
     if (query.empty())
         return false;
@@ -22,7 +23,11 @@ bool ProductClassifier::classify(std::map<QueryIntentCategory, std::list<std::st
     if (context_->config_->end() == it)
         return false;
     std::vector<std::vector<std::string> > pathVec;
-    context_->miningManager_->GetProductCategory(query, 1, pathVec);
+    std::vector<int> freqVec;
+    std::string normalizedQuery;
+    QueryNormalizer::normalize(query, normalizedQuery);
+    if (!(context_->miningManager_->getFreqGroupLabel(normalizedQuery, context_->name_, 1, pathVec, freqVec)))
+        return false;
 
     if (pathVec.empty())
         return false;
