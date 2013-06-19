@@ -647,6 +647,7 @@ namespace sf1r {
             std::string fcategory; //front-end category
             cid_t cid;
             double price;
+            //ProductPrice price;
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
             std::string sbrand;
@@ -795,8 +796,11 @@ namespace sf1r {
         static void SetIndexDone_(const std::string& path, bool b);
         static bool IsIndexDone_(const std::string& path);
         void Init_();
-        bool PriceMatch_(double p1, double p2);
-        double PriceSim_(double offerp, double spup);
+        double PriceSim_(double offerp, double spup) const;
+        bool IsValuePriceSim_(double op, double p) const;
+        bool IsPriceSim_(const ProductPrice& op, const ProductPrice& p) const;
+        double PriceDiff_(double op, double p) const;
+        double PriceDiff_(const ProductPrice& op, const ProductPrice& p) const;
         void AnalyzeNoSymbol_(const izenelib::util::UString& text, std::vector<Term>& result);
         void Analyze_(const izenelib::util::UString& text, std::vector<Term>& result);
         //void AnalyzeCR_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);

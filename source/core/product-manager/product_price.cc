@@ -143,6 +143,11 @@ bool ProductPrice::Valid() const
     return value.first >= 0.0 && value.second >= 0.0;
 }
 
+bool ProductPrice::Positive() const
+{
+    return value.first>0.0&&value.second>0.0;
+}
+
 void ProductPrice::Check_()
 {
     if (value.first > value.second)

@@ -818,13 +818,11 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
             //if(category.is_parent) continue;
             category.has_spu = true;
         }
-        double price = 0.0;
+        ProductPrice price;
         UString uprice;
         if(doc.getProperty("Price", uprice))
         {
-            ProductPrice pp;
-            pp.Parse(uprice);
-            pp.GetMid(price);
+            price.Parse(uprice);
         }
         std::string stitle;
         title.convertString(stitle, izenelib::util::UString::UTF_8);
@@ -838,7 +836,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         product.stitle = stitle;
         product.scategory = scategory;
         product.cid = cid;
-        product.price = price;
+        product.price = price.Mid();
         ParseAttributes(attrib_ustr, product.attributes);
 
         for (size_t i = 0; i < product.attributes.size(); ++i)
@@ -2034,7 +2032,7 @@ void ProductMatcher::GetFrontendCategory(const UString& text, uint32_t limit, st
     Analyze_(title, term_list);
     KeywordVector keyword_vector;
     GetKeywords(term_list, keyword_vector, false);
-    std::cerr<<"keywords count "<<keyword_vector.size()<<std::endl;
+    //std::cerr<<"keywords count "<<keyword_vector.size()<<std::endl;
     uint32_t flimit = limit*2;
     std::vector<Product> result_products;
     Compute2_(doc, term_list, keyword_vector, flimit, result_products);
@@ -3729,13 +3727,11 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
 #ifdef B5M_DEBUG
     std::cout<<"[TITLE]"<<stitle<<std::endl;
 #endif
-    double price = 0.0;
+    ProductPrice price;
     UString uprice;
     if(doc.getProperty("Price", uprice))
     {
-        ProductPrice pp;
-        pp.Parse(uprice);
-        pp.GetMid(price);
+        price.Parse(uprice);
     }
     CategoryContributor all_cc;
     std::vector<CategoryContributor> ccs(keywords.size());
@@ -3753,7 +3749,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
 #endif
         GenCategoryContributor_(tag,  ccs[i]);
         MergeCategoryContributor_(all_cc, ccs[i]);
-        if(price>0.0)
+        if(price.Positive())
         {
             GenSpuContributor_(tag, spu_cc);
         }
@@ -3789,7 +3785,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         std::cout<<category_list_[candidates[i].second].name<<":"<<candidates[i].first<<std::endl;
     }
 #endif
-    bool matcher_only = matcher_only_;
+    //bool matcher_only = matcher_only_;
     uint32_t given_cid = 0;
     UString given_category;
     doc.getProperty("Category", given_category);
@@ -3812,12 +3808,22 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         }
     }
     std::vector<uint32_t> cid_list;
+    std::vector<double> cid_score_list;
     //typedef boost::unordered_map<cid_t, uint32_t> CidIndex;
     //CidIndex cid_index;
     if(given_cid!=0)
     {
         //cid_index[given_cid] = cid_list.size();
         cid_list.push_back(given_cid);
+        if(!candidates.empty())
+        {
+            cid_score_list.push_back(candidates.front().first);
+        }
+        else
+        {
+            cid_score_list.push_back(1.0);
+        }
+                    
     }
     for(uint32_t i=0;i<clen;i++)
     {
@@ -3825,6 +3831,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         if(cid==given_cid) continue;
         //cid_index[cid] = cid_list.size();
         cid_list.push_back(cid);
+        cid_score_list.push_back(candidates[i].first);
     }
     if(cid_list.empty()) return;
     {
@@ -3915,8 +3922,8 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     {
         uint32_t spuid = it->first;
         const Product& p = products_[spuid];
-        double psim = PriceSim_(price, p.price);
-        if(psim<0.25) continue;
+        //if(!IsPriceSim_(price, p.price)) continue;
+        if(!IsValuePriceSim_(price.Mid(), p.price)) continue;
         SpuContributorValue& scv = it->second;
         //LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<std::endl;
         scv.lenweight/=text_term_len;
@@ -3936,8 +3943,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
             if(!cid_found) continue;
             smc.spuid = spuid;
             smc.paweight = scv.paweight;
-            smc.price_diff = std::abs(p.price - price);
-            if(p.price==0.0) smc.price_diff = 999999.00;
+            smc.price_diff = PriceDiff_(price.Mid(), p.price);
             spu_match_candidates.push_back(smc);
         }
     }
@@ -3946,6 +3952,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         std::sort(spu_match_candidates.begin(), spu_match_candidates.end());
         const Product& matchp = products_[spu_match_candidates.front().spuid];
         result_products.push_back(matchp);
+        result_products.back().score = 1.0;
     }
     else
     {
@@ -3954,6 +3961,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         {
             Product p;
             p.scategory = category_list_[cid_list[i]].name;
+            p.score = cid_score_list[i];
             result_products.push_back(p);
         }
     }
@@ -4130,14 +4138,9 @@ void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term
             wt.paratio+=len_weight;
             if(app.attribute_name=="型号") wt.type_match = true;
             if(app.attribute_name=="品牌") wt.brand_match = true;
-            if(p.price==0.0)
-            {
-                wt.price_diff = 99999999.0; //set to a huge value
-            }
-            else
-            {
-                wt.price_diff = std::fabs(price-p.price);
-            }
+            //double pprice = 0.0;
+            //p.price.GetMid(pprice);
+            wt.price_diff = PriceDiff_(price, p.price);
             sa_app.insert(sa_app_value);
 #ifdef B5M_DEBUG
             //std::cerr<<"[AN]"<<category_list_[p.cid].name<<","<<share_point*kweight<<std::endl;
@@ -4390,7 +4393,7 @@ void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term
     //}
 }
 
-double ProductMatcher::PriceSim_(double offerp, double spup)
+double ProductMatcher::PriceSim_(double offerp, double spup) const
 {
     if(!use_price_sim_) return 0.25;
     if(spup==0.0) return 0.25;
@@ -4399,14 +4402,38 @@ double ProductMatcher::PriceSim_(double offerp, double spup)
     else return offerp/spup;
 }
 
-bool ProductMatcher::PriceMatch_(double p1, double p2)
+bool ProductMatcher::IsValuePriceSim_(double op, double p) const
 {
-    static double min_ratio = 0.25;
-    static double max_ratio = 3;
-    double ratio = p1/p2;
-    return (ratio>=min_ratio)&&(ratio<=max_ratio);
+    if(p<=0.0) return true;
+    if(op<=0.0) return false;
+    double ratio = 4.0;
+    //if(p<=50.0) ratio = 4.0;
+    //else if(p<=1000.0) ratio = 3.0;
+    //else ratio = 2.0;
+    double r = std::max(op, p)/std::min(op,p);
+    if(r<=ratio) return true;
+    return false;
 }
 
+bool ProductMatcher::IsPriceSim_(const ProductPrice& op, const ProductPrice& p) const
+{
+    if(!p.Positive()) return true;
+    if(!op.Positive()) return false;
+    if(IsValuePriceSim_(op.Min(), p.Min())) return true;
+    if(IsValuePriceSim_(op.Max(), p.Max())) return true;
+    return false;
+}
+
+double ProductMatcher::PriceDiff_(double op, double p) const
+{
+    if(op<=0.0||p<=0.0) return 999999.00;
+    return std::abs(op-p);
+}
+double ProductMatcher::PriceDiff_(const ProductPrice& op, const ProductPrice& p) const
+{
+    if(!p.Positive()||!op.Positive()) return 999999.00;
+    return std::min( std::abs(p.Min()-op.Min()), std::abs(p.Max()-op.Max()));
+}
 
 void ProductMatcher::Analyze_(const izenelib::util::UString& btext, std::vector<Term>& result)
 {
