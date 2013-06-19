@@ -6,7 +6,6 @@
 #include <common/Keys.h>
 
 #include <limits>
-
 #include <glog/logging.h>
 
 namespace sf1r

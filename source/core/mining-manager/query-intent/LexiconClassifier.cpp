@@ -25,7 +25,10 @@ LexiconClassifier::LexiconClassifier(ClassifierContext* context)
     if (context_->config_->end() == it)
         iCategory_.op_ = " ";
      else
+     {
         iCategory_.op_ = it->op_;
+        iCategory_.operands_ = it->operands_;
+     }
     //reloadThread_= boost::thread(&LexiconClassifier::reloadLexicon_, this);
 }
 

@@ -48,7 +48,6 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
         return;
     
     izenelib::driver::Value& conditions = request[Keys::conditions];
-    
     const izenelib::driver::Value::ArrayType* array = conditions.getPtr<Value::ArrayType>();
     boost::unordered_map<std::string, bool> bitmap;
     if (array && (0 != array->size()))
@@ -72,6 +71,31 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
             }
         }
     }
+    
+    izenelib::driver::Value& disables = request["query_intent"];
+    array = disables.getPtr<Value::ArrayType>();
+    if (array && (0 != array->size()))
+    {
+        for (std::size_t i = 0; i < array->size(); i++)
+        {
+            std::string condition = asString((*array)[i][Keys::property]);
+            for (std::size_t priority = 0; priority < classifiers_.size(); priority++)
+            {
+                ContainerIterator it = classifiers_[priority].begin();
+                for (; it != classifiers_[priority].end(); it++)
+                {
+                    if (condition == (*it)->name())
+                    {
+                        bitmap.insert(make_pair(condition, false));
+                        break;
+                    }
+                }
+                if (it != classifiers_[priority].end())
+                    break;
+            }
+        }
+    }
+    
     std::string keywords = asString(request[Keys::search][Keys::keywords]);
     std::map<QueryIntentCategory, std::list<std::string> > intents;
     bool ret = false;
