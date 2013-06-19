@@ -46,7 +46,10 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
         return;
     if (classifiers_.empty())
         return;
-    
+    std::string keywords = asString(request[Keys::search][Keys::keywords]);
+    if (keywords.empty() || "*" == keywords)
+        return;
+   
     izenelib::driver::Value& conditions = request[Keys::conditions];
     const izenelib::driver::Value::ArrayType* array = conditions.getPtr<Value::ArrayType>();
     boost::unordered_map<std::string, bool> bitmap;
@@ -96,7 +99,6 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
         }
     }
     
-    std::string keywords = asString(request[Keys::search][Keys::keywords]);
     std::map<QueryIntentCategory, std::list<std::string> > intents;
     bool ret = false;
     for (std::size_t priority = 0; priority < classifiers_.size(); priority++)
