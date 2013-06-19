@@ -2227,8 +2227,7 @@ bool MiningManager::GetSuffixMatch(
         // three chars without space -> one word
         // short query with sapces -> words with spaces ...
 
-        if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true && 
-                                    major_tokens.size() + minor_tokens.size() < 7 && major_tokens.size() < 4)
+        if (major_tokens.size() + minor_tokens.size() < 7 && major_tokens.size() < 4)
         {
             if (!QueryNormalizer::get()->isLongQuery(pattern)) // short query
             {
@@ -2336,7 +2335,7 @@ bool MiningManager::GetSuffixMatch(
                                             filter_param,
                                             actionOperation.actionItem_.groupParam_,
                                             res_list);
-                    if (res_list.empty())
+                    if (res_list.empty() && actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true)
                     {
                         for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin();
                         i != major_tokens.end(); ++i)
@@ -2359,7 +2358,7 @@ bool MiningManager::GetSuffixMatch(
                 }
             }
         }
-        else
+        else if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true)
         {
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                         actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
@@ -2545,6 +2544,20 @@ bool MiningManager::GetSuffixMatch(
                     }
                 }
             }
+        }
+        else // prune == false
+        {
+            std::cout << "use Query_prune is false for long query" <<std::endl;
+            totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                                actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
+                                                major_tokens,
+                                                minor_tokens,
+                                                search_in_properties,
+                                                max_docs,
+                                                actionOperation.actionItem_.searchingMode_.filtermode_,
+                                                filter_param,
+                                                actionOperation.actionItem_.groupParam_,
+                                                res_list);
         }
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
