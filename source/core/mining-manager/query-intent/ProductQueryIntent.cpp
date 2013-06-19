@@ -112,14 +112,15 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
   
     if (!ret)
         return;
-    if (keywords.empty())
+    request[Keys::search][Keys::keywords] = keywords;
+    
+    boost::trim(keywords);
+    if (keywords.empty() )
         request[Keys::search][Keys::keywords] = "*";
-    else
-        request[Keys::search][Keys::keywords] = keywords;
     refineRequest(request, response, intents);
 }
 
-void ProductQueryIntent::reload()
+void ProductQueryIntent::reloadLexicon()
 {
     for (std::size_t i = 0; i < classifiers_.size(); i++)
     {
@@ -128,7 +129,7 @@ void ProductQueryIntent::reload()
         {
             if(*it)
             {
-                (*it)->reload();
+                (*it)->reloadLexicon();
             }
         }
     }

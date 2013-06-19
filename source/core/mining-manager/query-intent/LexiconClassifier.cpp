@@ -19,7 +19,7 @@ LexiconClassifier::LexiconClassifier(ClassifierContext* context)
 {
     maxLength_ = 0;
     minLength_ = -1;
-    loadLexicon_();
+//    loadLexicon_();
     iCategory_.name_ = context_->name_;
     QIIterator it = context_->config_->find(iCategory_);
     if (context_->config_->end() == it)
@@ -37,7 +37,7 @@ LexiconClassifier::~LexiconClassifier()
     lexicons_.clear();
 }
 
-void LexiconClassifier::loadLexicon_()
+void LexiconClassifier::loadLexicon()
 {
     std::string lexiconFile = context_->lexiconDirectory_ + context_->name_;
     if (!boost::filesystem::exists(lexiconFile) 
@@ -117,10 +117,10 @@ void LexiconClassifier::loadLexicon_()
     return;
 }
 
-void LexiconClassifier::reload()
+void LexiconClassifier::reloadLexicon()
 {
     boost::unique_lock<boost::shared_mutex> ul(mtx_);
-    loadLexicon_();
+    loadLexicon();
     /*const char* lexiconDirectory = context_->lexiconDirectory_.c_str();
     int ld = -1;
     if (-1 == (ld = inotify_add_watch(inotify_init(), lexiconDirectory, 

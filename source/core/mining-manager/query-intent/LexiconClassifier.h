@@ -33,20 +33,20 @@ public:
         return type_;
     }
     
-    void reload();
+    void reloadLexicon();
+    void loadLexicon();
 
     int priority()
     {
         return 0;
     }
-private:
-    void loadLexicon_();
-private:
-    //std::map<QueryIntentCategory, boost::unordered_map<std::string, std::string> >lexicons_;
+protected:
     boost::unordered_map<std::string, std::string> lexicons_;
     unsigned short maxLength_;
     unsigned short minLength_;
     QueryIntentCategory iCategory_;
+private:
+    //std::map<QueryIntentCategory, boost::unordered_map<std::string, std::string> >lexicons_;
     static const char* type_;
 
     //boost::thread reloadThread_;

@@ -85,7 +85,7 @@ void QueryIntentManager::queryIntent(
 void QueryIntentManager::reload()
 {
     if(intent_)
-        intent_->reload();
+        intent_->reloadLexicon();
 }
 
 }

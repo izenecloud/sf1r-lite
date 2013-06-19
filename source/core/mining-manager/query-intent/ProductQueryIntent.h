@@ -35,7 +35,7 @@ public:
         classifiers_[priority].push_back(classifier);
     }
     
-    void reload();
+    void reloadLexicon();
 private:
     PriorityContainer classifiers_;
 };

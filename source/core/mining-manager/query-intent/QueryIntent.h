@@ -43,7 +43,7 @@ public:
 public:
     virtual void process(izenelib::driver::Request& request, izenelib::driver::Response& response) = 0;
     virtual void addClassifier(Classifier* classifier) = 0;
-    virtual void reload() = 0;
+    virtual void reloadLexicon() = 0;
 protected:
     IntentContext* context_;
 };

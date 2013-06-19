@@ -67,7 +67,11 @@ public:
 
     virtual int priority() = 0;
 
-    virtual void reload()
+    virtual void loadLexicon()
+    {
+    }
+
+    virtual void reloadLexicon()
     {
     }
 

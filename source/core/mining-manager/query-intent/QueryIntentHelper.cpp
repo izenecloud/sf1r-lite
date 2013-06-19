@@ -37,10 +37,12 @@ void refineRequest(izenelib::driver::Request& request,
         int i = 0;
         for (item = array->second.begin(); item != array->second.end(); i++, item++)
         {
+            LOG(INFO)<<*item;
             if (i >= operands)
                 break;
             values() = *item;
             queryIntentValues() = *item;
+            LOG(INFO)<<*item;
         }
     }
 }

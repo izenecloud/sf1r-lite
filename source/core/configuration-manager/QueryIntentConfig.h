@@ -20,6 +20,14 @@ public:
     {
         return this->name_ < value.name_;
     }
+    QueryIntentCategory& operator=(const QueryIntentCategory& value)
+    { 
+        name_ = value.name_;
+        type_ = value.type_;
+        op_ = value.op_;
+        operands_ = value.operands_;
+        return *this;
+    }
 public:
     std::string name_;
     std::string type_;
