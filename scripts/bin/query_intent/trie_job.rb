@@ -26,67 +26,37 @@ module RestClient
 
 end
 
-class LexiconJob
+class TrieJob
+  CONFIG_FILE = "lexicon_update_config.yml"
   REST_TIMEOUT = 10
   REST_OPEN_TIMEOUT = 10
 
   def initialize(config, property)
-      @config = YAML::load_file CONFIG_FILE
+      @config = config
       host = @config["sf1"]
       ip = host["ip"]
       port = host["port"]
       @uri_prefix = "http://#{ip}:#{port}/sf1r"
-      
-      @property =property
+      @property = property
       directory =@config["directory"]
       directory += "/"
       @file_path = directory + property
-      
+      file = File.open(@file_path, 'w')
+      file.close()
       @collections = @config["collection"].to_set
-      @hash = Hash.new
-      @toAppend = Array.new
   end
 
   def run
-    read_file()
     @collections.each do |collection|
-      request = source_request_template
+      request = request_template
       request[:collection] = collection
       #request[:group][:property] = @property
       response = send_request(request)
-      get_labels(response)
-    end
-    update_file()
-    @collections.each do |collection|
-      request = query_intent_request_template
-      request[:collection] = collection
-      response = send_request(request)
-      if response["header"] && response["header"]["success"]
-        $stdout.print "Reload lexicon successfully for collection: #{collection}\n"
-      end
+      update_labels(response)
     end
   end
 
   protected
-
-  def read_file
-    @hash.clear()
-    file = File.open(@file_path, "r")
-    while(line = file.gets)
-      line.chomp!()
-      name = line.split(":")[0]
-      @hash.store(name,name)
-    end
-  end
-
-  def update_file
-    file = File.open(@file_path, 'a')
-
-    @toAppend.each do |item|
-       file.puts(item)
-    end
-    @toAppend.clear()
-  end
 
   def send_request(request)
     uri = get_uri(request)
@@ -106,16 +76,35 @@ class LexiconJob
     @uri = "#{@uri_prefix}/#{controller}/#{action}"
   end
 
-  def get_labels(response)
-    group = response["group"];
+  def update_labels(response)
+    group = response["group"]
     group.each do |item|
-        labels = item["labels"]
-        labels.each do |label|
-            la = label["label"]
-            if false == @hash.has_key?(la)
-                @toAppend.push(la)
+      labels = item["labels"]
+      file = File.open(@file_path, 'a')
+      labels.each do |label|
+        s =  label["label"]
+        file.puts s
+        file.puts "["
+        sub_labels = label["sub_labels"]
+        if nil != sub_labels
+          sub_labels.each do |sub_label|
+            sub = "    "
+            sub += sub_label["label"]
+            file.puts sub
+            file.puts "    ["
+            sub_sub_labels = sub_label["sub_labels"]
+            if nil != sub_sub_labels
+              sub_sub_labels.each do|sub_sub_label|
+                sub_sub = "        "
+                sub_sub += sub_sub_label["label"]
+                file.puts sub_sub
+              end
             end
+            file.puts "    ]"
+          end
         end
+        file.puts "]"
+      end
     end
   end
   def query_intent_request_template
@@ -128,7 +117,7 @@ class LexiconJob
    }
   end
 
-  def source_request_template 
+  def request_template 
     @request = {
       :header=> {
         :controller=> "documents",
@@ -141,7 +130,7 @@ class LexiconJob
       :group=>
       [
         {
-          :property=>"Source"
+          :property=>"TargetCategory"
         }
       ]
     }
