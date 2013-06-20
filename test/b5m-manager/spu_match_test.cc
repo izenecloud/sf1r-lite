@@ -41,6 +41,7 @@ int main(int ac, char** av)
     }
     std::vector<std::string> scd_list;
     ScdParser::getScdList(scd_path, scd_list);
+    izenelib::util::ClockTimer clocker;
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
@@ -80,6 +81,7 @@ int main(int ac, char** av)
         }
         
     }
+    std::cerr<<"clocker used "<<clocker.elapsed()<<std::endl;
     return EXIT_SUCCESS;
 }
 

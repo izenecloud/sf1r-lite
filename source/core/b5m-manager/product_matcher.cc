@@ -26,7 +26,7 @@ namespace bfs = boost::filesystem;
 
 //#define B5M_DEBUG
 
-const std::string ProductMatcher::AVERSION("20130315");
+const std::string ProductMatcher::AVERSION("20130620000000");
 
 ProductMatcher::KeywordTag::KeywordTag():type_app(0), kweight(0.0), ngram(1)
 {
@@ -312,6 +312,9 @@ bool ProductMatcher::Open(const std::string& kpath)
             izenelib::am::ssf::Util<>::Load(path, b2f_map);
             back2front_.insert(b2f_map.begin(), b2f_map.end());
             LOG(INFO)<<"back2front size "<<back2front_.size()<<std::endl;
+            path = path_+"/feature_vector";
+            izenelib::am::ssf::Util<>::LoadOne(path, feature_vectors_);
+            
             //path = path_+"/nf";
             //std::map<uint64_t, uint32_t> nf_map;
             //izenelib::am::ssf::Util<>::Load(path, nf_map);
@@ -561,6 +564,7 @@ void ProductMatcher::Init_()
     //ftrie_.clear();
     term_index_map_.clear();
     back2front_.clear();
+    feature_vectors_.clear();
     //nf_.clear();
 
 }
@@ -836,7 +840,7 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         product.stitle = stitle;
         product.scategory = scategory;
         product.cid = cid;
-        product.price = price.Mid();
+        product.price = price;
         ParseAttributes(attrib_ustr, product.attributes);
 
         for (size_t i = 0; i < product.attributes.size(); ++i)
@@ -1014,6 +1018,8 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
     izenelib::am::ssf::Util<>::Save(path, tmap);
     path = path_+"/back2front";
     izenelib::am::ssf::Util<>::Save(path, b2f_map);
+    path = path_+"/feature_vector";
+    izenelib::am::ssf::Util<>::SaveOne(path, feature_vectors_);
     //path = path_+"/nf";
     //std::map<uint64_t, uint32_t> nf_map(nf_.begin(), nf_.end());
     //izenelib::am::ssf::Util<>::Save(path, nf_map);
@@ -1291,6 +1297,8 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
     parser.load(offer_scd);
     uint32_t n=0;
     NgramFrequent nf;
+    feature_vectors_.resize(category_list_.size());
+    std::vector<uint32_t> fv_count(category_list_.size(), 0);
     for( ScdParser::iterator doc_iter = parser.begin();
       doc_iter!= parser.end(); ++doc_iter, ++n)
     {
@@ -1339,6 +1347,22 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
             const TermList& tl = keyword_vector[i].term_list;
             trie_[tl].offer_category_apps.push_back(app);
         }
+        //process feature vector
+        cid_t cid1 = GetLevelCid_(scategory, 1);
+        cid_t cid2 = GetLevelCid_(scategory, 2);
+        FeatureVector feature_vector;
+        GenFeatureVector_(keyword_vector, feature_vector);
+        if(cid1!=0)
+        {
+            FeatureVectorAdd_(feature_vectors_[cid1], feature_vector);
+            fv_count[cid1]++;
+        }
+        if(cid2!=0)
+        {
+            FeatureVectorAdd_(feature_vectors_[cid2], feature_vector);
+            fv_count[cid2]++;
+        }
+        
 
         if(use_ngram_)
         {
@@ -1357,6 +1381,15 @@ void ProductMatcher::IndexOffer_(const std::string& offer_scd)
             }
         }
 
+    }
+    for(uint32_t i=0;i<feature_vectors_.size();i++)
+    {
+        FeatureVector& feature_vector = feature_vectors_[i];
+        for(uint32_t j=0;j<feature_vector.size();j++)
+        {
+            feature_vector[j].second/=fv_count[i];
+        }
+        FeatureVectorNorm_(feature_vector);
     }
     for(TrieType::iterator it = trie_.begin();it!=trie_.end();it++)
     {
@@ -3591,9 +3624,15 @@ void ProductMatcher::GenCategoryContributor_(const KeywordTag& tag, CategoryCont
 #endif
     if(all_score>0.0)
     {
+        double divide = all_score;
+        //if(category_name_count>=2)
+        //{
+            //divide /= 1.8;
+        //}
         for(CategoryContributor::iterator it = cc.begin();it!=cc.end();++it)
         {
-            it->second*=(inner_kweight/all_score)*kweight;
+            it->second*=(inner_kweight/divide)*kweight;
+            //it->second*=inner_kweight*kweight;
 #ifdef B5M_DEBUG
             std::cout<<"[ALLN]"<<category_list_[it->first].name<<","<<it->second<<std::endl;
 #endif
@@ -3834,6 +3873,69 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         cid_score_list.push_back(candidates[i].first);
     }
     if(cid_list.empty()) return;
+    //do vsm filter
+    if(given_cid==0)
+    {
+        FeatureVector feature_vector;
+        GenFeatureVector_(keywords, feature_vector);
+        //std::vector<double> cosine_list(cid_list.size());
+        for(uint32_t i=0;i<cid_list.size();i++)
+        {
+            cid_t cid = cid_list[i];
+            const std::string& scategory = category_list_[cid].name;
+            cid_t cid1 = GetLevelCid_(scategory, 1);
+            cid_t cid2 = GetLevelCid_(scategory, 2);
+            //double cosine1 = 0.0;
+            //double cosine2 = 0.0;
+            //if(cid1>0) cosine1 = Cosine_(feature_vector, feature_vectors_[cid1]);
+            //if(cid2>0) cosine2 = Cosine_(feature_vector, feature_vectors_[cid2]);
+            double cosine = 0.0;
+            if(cid2>0) cosine = Cosine_(feature_vector, feature_vectors_[cid2]);
+            else if(cid1>0) cosine = Cosine_(feature_vector, feature_vectors_[cid1]);
+            //cosine_list[i] = cosine;
+            cid_score_list[i] = cosine;
+#ifdef B5M_DEBUG
+            //std::cerr<<"vsm cosine "<<category_list_[cid].name<<" : "<<cosine1<<","<<cosine2<<std::endl;
+            std::cerr<<"vsm cosine "<<category_list_[cid].name<<" : "<<cosine<<std::endl;
+#endif
+        }
+        double top_cosine = cid_score_list.front();
+        if(top_cosine<0.06)
+        {
+            uint32_t replace_index = 0;
+            double replace_ratio = 0.0;
+            for(uint32_t i=1;i<cid_list.size();i++)
+            {
+                double cosine = cid_score_list[i];
+                double ratio = cosine/top_cosine;
+                bool b = false;
+                if(cosine>=0.1&&ratio>=6.0) b=true;
+                else if(cosine>=0.05&&ratio>=10.0) b=true;
+                if(b&&ratio>replace_ratio)
+                {
+                    replace_index = i;
+                    replace_ratio = ratio;
+                }
+            }
+            if(replace_index>0)
+            {
+#ifdef B5M_DEBUG
+                std::cerr<<"vsm change "<<category_list_[cid_list[0]].name<<" to "<<category_list_[cid_list[replace_index]].name<<std::endl;
+#endif
+                std::swap(cid_list[0], cid_list[replace_index]);
+                std::swap(cid_score_list[0], cid_score_list[replace_index]);
+            }
+            else
+            {
+                if(top_cosine<0.01)
+                {
+                    cid_list.clear();
+                    cid_score_list.clear();
+                }
+            }
+        }
+        if(cid_list.empty()) return;
+    }
     {
         cid_t top_cid = cid_list.front();
         double top_cid_weight = 0.0;
@@ -3922,8 +4024,8 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     {
         uint32_t spuid = it->first;
         const Product& p = products_[spuid];
-        //if(!IsPriceSim_(price, p.price)) continue;
-        if(!IsValuePriceSim_(price.Mid(), p.price)) continue;
+        if(!IsPriceSim_(price, p.price)) continue;
+        //if(!IsValuePriceSim_(price.Mid(), p.price)) continue;
         SpuContributorValue& scv = it->second;
         //LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<std::endl;
         scv.lenweight/=text_term_len;
@@ -3943,7 +4045,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
             if(!cid_found) continue;
             smc.spuid = spuid;
             smc.paweight = scv.paweight;
-            smc.price_diff = PriceDiff_(price.Mid(), p.price);
+            smc.price_diff = PriceDiff_(price, p.price);
             spu_match_candidates.push_back(smc);
         }
     }
@@ -4110,7 +4212,7 @@ void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term
             {
                 if(!EqualOrIsParent_(given_cid, p.cid)) continue;
             }
-            double psim = PriceSim_(price, p.price);
+            double psim = PriceSim_(price, p.price.Mid());
             if(psim<0.25) continue;
             std::pair<uint32_t, std::string> sa_app_value(app.spu_id, app.attribute_name);
             if(sa_app.find(sa_app_value)!=sa_app.end()) continue;
@@ -4140,7 +4242,7 @@ void ProductMatcher::Compute_(const Document& doc, const std::vector<Term>& term
             if(app.attribute_name=="品牌") wt.brand_match = true;
             //double pprice = 0.0;
             //p.price.GetMid(pprice);
-            wt.price_diff = PriceDiff_(price, p.price);
+            wt.price_diff = PriceDiff_(price, p.price.Mid());
             sa_app.insert(sa_app_value);
 #ifdef B5M_DEBUG
             //std::cerr<<"[AN]"<<category_list_[p.cid].name<<","<<share_point*kweight<<std::endl;
@@ -4407,9 +4509,9 @@ bool ProductMatcher::IsValuePriceSim_(double op, double p) const
     if(p<=0.0) return true;
     if(op<=0.0) return false;
     double ratio = 4.0;
-    //if(p<=50.0) ratio = 4.0;
-    //else if(p<=1000.0) ratio = 3.0;
-    //else ratio = 2.0;
+    if(p<=100.0) ratio = 4.0;
+    else if(p<=5000.0) ratio = 3.0;
+    else ratio = 2.0;
     double r = std::max(op, p)/std::min(op,p);
     if(r<=ratio) return true;
     return false;
@@ -5173,3 +5275,105 @@ bool ProductMatcher::IsBlankSplit_(const UString& t1, const UString& t2) const
     if(t1.isDigitChar(t1.length()-1) && t2.isDigitChar(0)) return true;
     return false;
 }
+ProductMatcher::cid_t ProductMatcher::GetLevelCid_(const std::string& scategory, uint32_t level) const
+{
+    if(level==0) return 0;
+    std::vector<std::string> vec;
+    boost::algorithm::split(vec, scategory, boost::algorithm::is_any_of(">"));
+    if(vec.size()<level) return 0;
+    std::string category;
+    for(uint16_t i=0;i<level;i++)
+    {
+        if(!category.empty()) category+=">";
+        category+=vec[i];
+    }
+    CategoryIndex::const_iterator cit = category_index_.find(category);;
+    if(cit==category_index_.end()) return 0;
+    return cit->second;
+}
+
+void ProductMatcher::GenFeatureVector_(const std::vector<KeywordTag>& keywords, FeatureVector& feature_vector) const
+{
+    for(uint32_t i=0;i<keywords.size();i++)
+    {
+        const KeywordTag& tag = keywords[i];
+        double weight = tag.kweight;
+        if(weight>0.0)
+        {
+            uint32_t id = tag.id;
+            feature_vector.push_back(std::make_pair(id, weight));
+        }
+    }
+    std::sort(feature_vector.begin(), feature_vector.end());
+    FeatureVectorNorm_(feature_vector);
+}
+void ProductMatcher::FeatureVectorAdd_(FeatureVector& o, const FeatureVector& a) const
+{
+    FeatureVector n;
+    uint32_t i=0,j=0;
+    while(i<o.size()&&j<a.size())
+    {
+        if(o[i].first<a[j].first)
+        {
+            n.push_back(o[i++]);
+        }
+        else if (o[i].first==a[j].first)
+        {
+            n.push_back(std::make_pair(o[i].first, o[i].second+a[j].second));
+            i++;
+            j++;
+        }
+        else
+        {
+            n.push_back(a[j++]);
+        }
+    }
+    while(i<o.size())
+    {
+        n.push_back(o[i++]);
+    }
+    while(j<a.size())
+    {
+        n.push_back(a[j++]);
+    }
+    o.swap(n);
+}
+void ProductMatcher::FeatureVectorNorm_(FeatureVector& v) const
+{
+    double sum = 0.0;
+    for(uint32_t i=0;i<v.size();i++)
+    {
+        sum += v[i].second*v[i].second;
+    }
+    sum = std::sqrt(sum);
+    for(uint32_t i=0;i<v.size();i++)
+    {
+        v[i].second /= sum;
+    }
+
+}
+
+double ProductMatcher::Cosine_(const FeatureVector& v1, const FeatureVector& v2) const
+{
+    double c = 0.0;
+    uint32_t i=0,j=0;
+    while(i<v1.size()&&j<v2.size())
+    {
+        if(v1[i].first<v2[j].first)
+        {
+            i++;
+        }
+        else if (v1[i].first==v2[j].first)
+        {
+            c += v1[i].second*v2[j].second;
+            i++;
+            j++;
+        }
+        else
+        {
+            j++;
+        }
+    }
+    return c;
+}
+

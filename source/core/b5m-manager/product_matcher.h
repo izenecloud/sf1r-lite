@@ -47,6 +47,7 @@ namespace sf1r {
         typedef std::vector<std::pair<uint32_t, uint32_t> > FrequentValue;
         typedef boost::unordered_map<TermList, FrequentValue> NgramFrequent;
         typedef boost::unordered_map<TermList, UString> KeywordText;
+        typedef std::vector<std::pair<uint32_t, double> > FeatureVector;
 
         struct Position
         {
@@ -638,7 +639,7 @@ namespace sf1r {
         struct Product
         {
             Product()
-            : cid(0), price(0.0), aweight(0.0), tweight(0.0), score(0.0)
+            : cid(0), aweight(0.0), tweight(0.0), score(0.0)
             {
             }
             std::string spid;
@@ -646,8 +647,8 @@ namespace sf1r {
             std::string scategory;
             std::string fcategory; //front-end category
             cid_t cid;
-            double price;
-            //ProductPrice price;
+            //double price;
+            ProductPrice price;
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
             std::string sbrand;
@@ -844,6 +845,12 @@ namespace sf1r {
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
         bool IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& app) const;
 
+        cid_t GetLevelCid_(const std::string& scategory, uint32_t level) const;
+        void GenFeatureVector_(const std::vector<KeywordTag>& keywords, FeatureVector& feature_vector) const;
+        void FeatureVectorAdd_(FeatureVector& o, const FeatureVector& a) const;
+        void FeatureVectorNorm_(FeatureVector& v) const;
+        double Cosine_(const FeatureVector& v1, const FeatureVector& v2) const;
+
         static uint32_t TextLength_(const std::string& text)
         {
             UString u(text, UString::UTF_8);
@@ -954,6 +961,8 @@ namespace sf1r {
 
         std::map<string, size_t> synonym_map_;
         std::vector<std::vector<string> > synonym_dict_;
+
+        std::vector<FeatureVector> feature_vectors_;
 
         //NgramFrequent nf_;
 
