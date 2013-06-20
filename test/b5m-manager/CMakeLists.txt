@@ -121,6 +121,15 @@ SET_TARGET_PROPERTIES(b5m_search_keyword PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
 
+ADD_EXECUTABLE(b5m_extract_keyword
+b5m_extract_keyword.cc
+)
+TARGET_LINK_LIBRARIES(b5m_extract_keyword  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(b5m_extract_keyword PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
+)
+
+
 ADD_EXECUTABLE(b5m_category_mapper
 b5m_category_mapper.cc
 )

@@ -2384,7 +2384,7 @@ void ProductMatcher::GetKeywords(const ATermList& term_list, KeywordVector& keyw
     }
 
 }
-void ProductMatcher::ExactKeywordsFromPage(const UString& text, std::list<std::pair<UString, uint32_t> >& res)
+void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, uint32_t> >& res)
 {
     if(!IsOpen()) return;
     if(text.length() == 0) return;
@@ -2456,11 +2456,16 @@ void ProductMatcher::ExactKeywordsFromPage(const UString& text, std::list<std::p
         boost::unordered_map<uint32_t, uint32_t> spus;
         std::vector<AttributeApp>::iterator it1 = ki.attribute_apps.begin();
         bool is_brand = false;
+        bool is_model = false;
         while(it1!=ki.attribute_apps.end())
         {
             if(it1->attribute_name == "品牌")
             {
                 is_brand = true;
+            }
+            if(it1->attribute_name == "型号")
+            {
+                is_model = true;
             }
             spus[it1->spu_id]=1;
             it1++;
@@ -2506,16 +2511,37 @@ void ProductMatcher::ExactKeywordsFromPage(const UString& text, std::list<std::p
             for(uint32_t m=0;m<term.size();m++)
             {
                 if(term.at(m) <'0' || term.at(m) > '9')
+                {
                     is_res = true;
+                    break;
+                }
             }
             if(!is_res) continue;
         }
         if(note.find(term) == note.end())
         {
-            note[term]=1;
-            UString usterm;
-            usterm.assign(term, izenelib::util::UString::UTF_8);
-            res.push_back(std::make_pair(usterm, ki.positions[0].begin));
+            ki.text.convertString(str, izenelib::util::UString::UTF_8);
+            if(term.compare(str)!=0 || is_brand)
+            {
+                note[term]=1;
+                UString usterm;
+                usterm.assign(term, izenelib::util::UString::UTF_8);
+                res.push_back(std::make_pair(usterm, ki.positions[0].begin));
+            }
+            else if(is_model)
+            {
+                for(uint32_t m=0;m<term.size();m++)
+                {
+                    if((term.at(m)>='a' && term.at(m)<='z') || (term.at(m)>='A' && term.at(m)<='Z'))
+                    {
+                        note[term]=1;
+                        UString usterm;
+                        usterm.assign(term, izenelib::util::UString::UTF_8);
+                        res.push_back(std::make_pair(usterm, ki.positions[0].begin));
+                        break;
+                    }
+                }
+            }
         }
     }
 /*
