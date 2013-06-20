@@ -42,8 +42,6 @@ ProductQueryIntent::~ProductQueryIntent()
 
 void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::driver::Response& response)
 {
-    if ("no" == asString(request["query_intent"]))
-        return;
     if (classifiers_.empty())
         return;
     std::string keywords = asString(request[Keys::search][Keys::keywords]);
