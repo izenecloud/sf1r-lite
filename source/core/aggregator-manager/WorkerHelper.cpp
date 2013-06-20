@@ -10,6 +10,8 @@ namespace sf1r
 {
 static void buildWANDQueryTree(QueryTreePtr& rawQueryTree)
 {
+    if (NULL == rawQueryTree)
+        return;
     if (rawQueryTree->type_ == QueryTree::KEYWORD)
         return;
     if (QueryTree::AND == rawQueryTree->type_)
@@ -23,6 +25,8 @@ static void buildWANDQueryTree(QueryTreePtr& rawQueryTree)
 
 static void buildWANDQueryTree(QueryTreePtr& rawQueryTree, QueryTreePtr& analyzedQueryTree)
 {
+    if (NULL == rawQueryTree || NULL == analyzedQueryTree)
+        return;
     if (QueryTree::KEYWORD == rawQueryTree->type_)
     {
         if (analyzedQueryTree->children_.begin() != analyzedQueryTree->children_.end())
