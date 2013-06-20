@@ -38,7 +38,7 @@ struct ServerHandler
         cmd = uri::decoded(cmd);
         std::cout<<"cmd:"<<cmd<<std::endl;
         UString text(cmd, UString::UTF_8);
-        typedef std::list<std::pair<UString, double> > Hits;
+        typedef std::list<std::pair<UString, uint32_t> > Hits;
         Hits hits;
         Hits left_hits;
         typedef std::list<UString> Left;
