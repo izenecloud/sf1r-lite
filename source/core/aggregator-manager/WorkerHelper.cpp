@@ -17,7 +17,7 @@ static void buildWANDQueryTree(QueryTreePtr& rawQueryTree)
     if (QueryTree::AND == rawQueryTree->type_)
         rawQueryTree->type_ = QueryTree::WAND;
     QTIter it = rawQueryTree->children_.begin();
-    for (; it != rawQueryTree->children_.end(); it++)
+    for (; it != rawQueryTree->children_.end(); ++it)
     {
         buildWANDQueryTree((*it));
     }
@@ -38,8 +38,8 @@ static void buildWANDQueryTree(QueryTreePtr& rawQueryTree, QueryTreePtr& analyze
         analyzedQueryTree->type_ = QueryTree::WAND;
         QTIter itRaw = rawQueryTree->children_.begin();
         QTIter itAna = analyzedQueryTree->children_.begin();
-        for (; itRaw != rawQueryTree->children_.end() 
-             , itAna != analyzedQueryTree->children_.end(); itRaw++, itAna++)
+        for (; (itRaw != rawQueryTree->children_.end()) 
+             && (itAna != analyzedQueryTree->children_.end()); ++itRaw, ++itAna)
         {
             buildWANDQueryTree((*itRaw), (*itAna));
         }
