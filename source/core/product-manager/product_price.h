@@ -37,7 +37,13 @@ public:
 
     bool Valid() const;
 
+    bool Positive() const;
+
     bool GetMid(ProductPriceType& mid) const;
+
+    ProductPriceType Min() const { return value.first; }
+    ProductPriceType Max() const { return value.second; }
+    ProductPriceType Mid() const { return (Min()+Max())/2.0; }
 
 private:
     static bool Convert_(const std::string& str, ProductPriceType& p);
