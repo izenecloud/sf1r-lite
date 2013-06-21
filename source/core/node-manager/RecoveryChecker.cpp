@@ -839,26 +839,26 @@ void RecoveryChecker::init(const std::string& conf_dir, const std::string& workd
         reqlog_mgr_->init(request_log_basepath_);
     }
 
-    if (bfs::exists(rollback_file_))
+    if (isNeedRollback(true))
     {
+        uint32_t rollback_id = 0;
         ifstream ifs(rollback_file_.c_str());
         if (ifs.good())
         {
-            uint32_t rollback_id = 0;
             ifs.read((char*)&rollback_id, sizeof(rollback_id));
+        }
 
-            LOG(INFO) << "rollback at startup, restore the last config file for the rollback." << rollback_id;
-            std::string last_backup_path;
-            uint32_t last_backup_id = 0;
-            if (getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
-            {
-                copy_file_keep_modification(last_backup_path + bfs::path(last_conf_file_).filename().string(), last_conf_file_);
-                LOG(INFO) << "restore config file from : " << last_backup_path;
-            }
-            else
-            {
-                LOG(ERROR) << "no backup available while check startup.";
-            }
+        LOG(INFO) << "rollback at startup, restore the last config file for the rollback." << rollback_id;
+        std::string last_backup_path;
+        uint32_t last_backup_id = 0;
+        if (getLastBackup(backup_basepath_, rollback_id, last_backup_path, last_backup_id))
+        {
+            copy_file_keep_modification(last_backup_path + bfs::path(last_conf_file_).filename().string(), last_conf_file_);
+            LOG(INFO) << "restore config file from : " << last_backup_path;
+        }
+        else
+        {
+            LOG(ERROR) << "no backup available while check startup.";
         }
     }
 
