@@ -42,6 +42,10 @@ public:
 
     bool getInternalDocumentId(const std::string& collectionName, const uint128_t& scdDocumentId, uint64_t& internalId);
 
+    uint32_t getDocNum();
+
+    uint32_t getKeyCount(const std::string& property_name);
+
 private:
     IndexBundleConfiguration* bundleConfig_;
     boost::shared_ptr<SearchAggregator> searchAggregator_;

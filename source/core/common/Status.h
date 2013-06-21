@@ -18,7 +18,7 @@ public:
     typedef StatusModificationGuard Guard;
 
     Status()
-    : numDocs_(0), progress_(0.0f),
+    : /*numDocs_(0), */progress_(0.0f),
       elapsedTime_(0,0,0,0), leftTime_(0,0,0,0),
       running_(false), lastModified_(std::time(0)),
       counter_(0)
@@ -91,7 +91,7 @@ public:
         ++counter_;
     }
 
-    size_t numDocs_;
+    //size_t numDocs_;
     float progress_;
     boost::posix_time::time_duration elapsedTime_;
     boost::posix_time::time_duration leftTime_;
@@ -105,7 +105,7 @@ private:
     template<class Archive>
     void serialize(Archive& ar, const unsigned version)
     {
-        ar & running_  & progress_ & elapsedTime_ & leftTime_ & metaInfo_ & lastModified_ & numDocs_ & counter_ ;
+        ar & running_  & progress_ & elapsedTime_ & leftTime_ & metaInfo_ & lastModified_ & counter_ ;
     }
 };
 

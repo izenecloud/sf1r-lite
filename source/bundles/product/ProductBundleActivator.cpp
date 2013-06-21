@@ -7,7 +7,6 @@
 #include <bundles/index/IndexSearchService.h>
 
 #include <common/SFLogger.h>
-#include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/IndexWorker.h>
@@ -189,7 +188,7 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     std::string scd_dir =  config_->collPath_.getScdPath() +"/product_scd";
     boost::filesystem::create_directories(scd_dir);
     data_source_ = new CollectionProductDataSource(indexService->searchWorker_->documentManager_,
-                                                   indexService->searchWorker_->indexManager_,
+                                                   indexService->searchWorker_->invertedIndexManager_,
                                                    indexService->searchWorker_->idManager_,
                                                    indexService->searchWorker_->searchManager_,
                                                    config_->pm_config_,

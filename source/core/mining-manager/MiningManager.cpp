@@ -61,7 +61,7 @@
 #include <search-manager/SearchManager.h>
 #include <search-manager/NumericPropertyTableBuilderImpl.h>
 #include <search-manager/RTypeStringPropTableBuilder.h>
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <common/SearchCache.h>
 
 #include <idmlib/tdt/integrator.h>
@@ -133,7 +133,7 @@ MiningManager::MiningManager(
         const CollectionPath& collectionPath,
         const boost::shared_ptr<DocumentManager>& documentManager,
         const boost::shared_ptr<LAManager>& laManager,
-        const boost::shared_ptr<IndexManager>& index_manager,
+        const boost::shared_ptr<InvertedIndexManager>& index_manager,
         const boost::shared_ptr<SearchManager>& searchManager,
         const boost::shared_ptr<SearchCache>& searchCache,
         const boost::shared_ptr<IDManager>& idManager,
@@ -553,7 +553,6 @@ bool MiningManager::open()
                                                     collectionPath_.getScdPath(),
                                                     mining_schema_.summarization_schema,
                                                     document_manager_,
-                                                    index_manager_,
                                                     c_analyzer_);
             miningTaskBuilder_->addTask(summarizationManagerTask_);
             if (!mining_schema_.summarization_schema.uuidPropName.empty())

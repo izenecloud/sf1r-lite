@@ -40,7 +40,7 @@ namespace sf1r
 
 QueryBuilder::QueryBuilder(
     const boost::shared_ptr<DocumentManager> documentManager,
-    const boost::shared_ptr<IndexManager> indexManager,
+    const boost::shared_ptr<InvertedIndexManager> indexManager,
     const schema_map& schemaMap,
     size_t filterCacheNum
 )
@@ -63,7 +63,7 @@ void QueryBuilder::reset_cache()
 
 void QueryBuilder::prepare_filter(
     const std::vector<QueryFiltering::FilteringType>& filtingList,
-    boost::shared_ptr<IndexManager::FilterBitmapT>& pFilterBitmap)
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT>& pFilterBitmap)
 {
     if (filtingList.size() == 1)
     {
@@ -73,7 +73,7 @@ void QueryBuilder::prepare_filter(
         const std::vector<PropertyValue>& filterParam = filteringItem.values_;
         if (!filterCache_->get(filteringItem, pFilterBitmap))
         {
-            pFilterBitmap.reset(new IndexManager::FilterBitmapT);
+            pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
             indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pFilterBitmap);
             filterCache_->set(filteringItem, pFilterBitmap);
         }
@@ -81,13 +81,13 @@ void QueryBuilder::prepare_filter(
     else
     {
         const unsigned int bitsNum = pIndexReader_->maxDoc() + 1;
-        const unsigned int wordBitNum = sizeof(IndexManager::FilterWordT) << 3;
+        const unsigned int wordBitNum = sizeof(InvertedIndexManager::FilterWordT) << 3;
         const unsigned int wordsNum = (bitsNum - 1) / wordBitNum + 1;
 
-        pFilterBitmap.reset(new IndexManager::FilterBitmapT);
+        pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
         pFilterBitmap->addStreamOfEmptyWords(true, wordsNum);
-        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterBitmap2;
-        boost::shared_ptr<IndexManager::FilterBitmapT> pFilterBitmap3;
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap2;
+        boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap3;
 
         try
         {
@@ -99,11 +99,11 @@ void QueryBuilder::prepare_filter(
                 const std::vector<PropertyValue>& filterParam = iter->values_;
                 if (!filterCache_->get(*iter, pFilterBitmap2))
                 {
-                    pFilterBitmap2.reset(new IndexManager::FilterBitmapT);
+                    pFilterBitmap2.reset(new InvertedIndexManager::FilterBitmapT);
                     indexManagerPtr_->makeRangeQuery(filterOperation, property, filterParam, pFilterBitmap2);
                     filterCache_->set(*iter, pFilterBitmap2);
                 }
-                pFilterBitmap3.reset(new IndexManager::FilterBitmapT);
+                pFilterBitmap3.reset(new InvertedIndexManager::FilterBitmapT);
                 if (iter->logic_ == QueryFiltering::OR)
                 {
                     (*pFilterBitmap).logicalor(*pFilterBitmap2, *pFilterBitmap3);
@@ -171,6 +171,7 @@ WANDDocumentIterator* QueryBuilder::prepare_wand_dociterator(
         throw std::runtime_error("Failed to prepare wanddociterator");
         return NULL;
     }*/
+    return NULL;
 }
 
 void QueryBuilder::prepare_for_wand_property_(
@@ -334,7 +335,7 @@ void QueryBuilder::prefetch_term_doc_readers_(
         }
         else
         {
-            boost::shared_ptr<IndexManager::FilterBitmapT> pFilterBitmap;
+            boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterBitmap;
             boost::shared_ptr<BitVector> pBitVector;
 
             if (!TermTypeDetector::isTypeMatch(termStr, dataType))
@@ -355,14 +356,14 @@ void QueryBuilder::prefetch_term_doc_readers_(
                 filteringRule.values_ = filterParam;
                 if(!filterCache_->get(filteringRule, pFilterBitmap))
                 {
-                    pFilterBitmap.reset(new IndexManager::FilterBitmapT);
+                    pFilterBitmap.reset(new InvertedIndexManager::FilterBitmapT);
                     pBitVector.reset(new BitVector(pIndexReader_->maxDoc() + 1));
 
                     indexManagerPtr_->getDocsByNumericValue(colID, property, value, *pBitVector);
                     pBitVector->compressed(*pFilterBitmap);
                     filterCache_->set(filteringRule, pFilterBitmap);
                 }
-                TermDocFreqs* pTermDocReader = new IndexManager::FilterTermDocFreqsT(pFilterBitmap);
+                TermDocFreqs* pTermDocReader = new InvertedIndexManager::FilterTermDocFreqsT(pFilterBitmap);
                 termDocReaders[termId].push_back(pTermDocReader);
             }
         }
@@ -708,7 +709,6 @@ bool QueryBuilder::do_prepare_for_virtual_property_(
             keyword,
             colID,
             pIndexReader_,
-            indexManagerPtr_,
             properties,
             propertyIds,
             propertyDataTypes,
