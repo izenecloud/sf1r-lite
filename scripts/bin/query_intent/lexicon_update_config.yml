@@ -6,3 +6,9 @@ collection:
   - b5mp
 
 directory: ../../../package/resource/query-intent
+
+lexicon:
+  - Source
+  - Brand
+trie:
+  - TargetCategory
