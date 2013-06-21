@@ -2438,10 +2438,31 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             std::string term;
             ki.text.convertString(term, izenelib::util::UString::UTF_8);
             if(note.find(term) ==note.end())
-            {
-                res.push_back(std::make_pair(ki.text, ki.positions[0].begin));
-                note[term]=1;
-            }
+             {
+                 std::vector<CategoryNameApp>::iterator it = ki.category_name_apps.begin();
+                 bool is_res = false;
+                 for(;it!=ki.category_name_apps.end();it++)
+                 {
+                     cout<<"term: " <<term
+                       <<" cid: "<<it->cid
+                       <<" depth: "<<it->depth
+                       <<" is_complete: "<<it->is_complete
+                       <<" category: "<< category_list_[it->cid].name
+                       <<" parent_cid: " <<category_list_[it->cid].parent_cid
+                       <<" is_parent: " <<category_list_[it->cid].is_parent
+                       <<" depth: " <<category_list_[it->cid].depth
+                       <<" has_spu: " << category_list_[it->cid].has_spu<<endl;
+                     std::string man_category = category_list_[it->cid].name.substr(0,category_list_[it->cid].name.find_first_of(">"));
+                     if(man_category.find(term) != std::string::npos)
+                         is_res = true;
+                 }
+                 if(is_res)
+                 {
+                     res.push_back(std::make_pair(ki.text, ki.positions[0].begin));
+                     note[term]=1;
+                 }
+             }
+
             uint32_t j = i+1;
             if(j<keyword_vector.size())
                 if(keyword_vector[j].positions[0].begin <= ki.positions[0].end)
@@ -2490,19 +2511,33 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         std::vector<AttributeApp>::iterator it1 = ki.attribute_apps.begin();
         bool is_brand = false;
         bool is_model = false;
+	uint32_t brand_count = 0;
+        uint32_t model_count = 0;
         while(it1!=ki.attribute_apps.end())
         {
             if(it1->attribute_name == "品牌")
             {
-                is_brand = true;
+                brand_count++;
+                cout<<" term " <<term << " brand匹配到: " <<products_[it1->spu_id].sbrand<<endl;
             }
             if(it1->attribute_name == "型号")
             {
-                is_model = true;
+                model_count++;
+                cout<<" term "<<term << " model匹配到: ";
+                std::vector<Attribute>::iterator it;
+                for(it=products_[it1->spu_id].attributes.begin();it!=products_[it1->spu_id].attributes.end();it++)
+                    if(it->name == "型号")
+                        cout<<it->values[0];
+                cout<<endl;
             }
             spus[it1->spu_id]=1;
             it1++;
         }
+        if(brand_count > 20)
+            is_brand = true;
+        if(model_count > 10)
+            is_model = true;
+
         while(j<temp_k.size()-1)
         {
             j++;
