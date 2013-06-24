@@ -256,8 +256,9 @@ void SearchKeywords(ProductMatcher* matcher,  boost::posix_time::ptime time_end)
     {
         UString text(rand_str(), UString::UTF_8);
         std::list<std::pair<UString, double> > hits;
+        std::list<std::pair<UString, double> > hits_left;
         std::list<UString> left;
-        matcher->GetSearchKeywords(text, hits, left);
+        matcher->GetSearchKeywords(text, hits, hits_left, left);
         time_now = boost::posix_time::microsec_clock::local_time();
     }
 }
@@ -667,8 +668,9 @@ int main(int ac, char** av)
                 SegLineToHits(line,hitanswer);
                 UString text(title, UString::UTF_8);
                 std::list<std::pair<UString, double> > hits;
+                std::list<std::pair<UString, double> > hits_left;
                 std::list<UString> left;
-                matcher.GetSearchKeywords(text, hits, left);
+                matcher.GetSearchKeywords(text, hits, hits_left, left);
                 //out<<title<<endl;
                 vector<string> hitresult;
                 for(std::list<std::pair<UString, double> >::iterator i=hits.begin(); i!=hits.end(); i++)
