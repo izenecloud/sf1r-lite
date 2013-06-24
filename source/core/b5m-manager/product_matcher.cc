@@ -3855,6 +3855,19 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     {
         price.Parse(uprice);
     }
+    uint32_t given_cid = 0;
+    UString given_category;
+    doc.getProperty("Category", given_category);
+    std::string sgiven_category;
+    given_category.convertString(sgiven_category, UString::UTF_8);
+    if(!given_category.empty())
+    {
+        CategoryIndex::const_iterator it = category_index_.find(sgiven_category);
+        if(it!=category_index_.end())
+        {
+            given_cid = it->second;
+        }
+    }
     CategoryContributor all_cc;
     std::vector<CategoryContributor> ccs(keywords.size());
     SpuContributor spu_cc;
@@ -3908,19 +3921,6 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     }
 #endif
     //bool matcher_only = matcher_only_;
-    uint32_t given_cid = 0;
-    UString given_category;
-    doc.getProperty("Category", given_category);
-    std::string sgiven_category;
-    given_category.convertString(sgiven_category, UString::UTF_8);
-    if(!given_category.empty())
-    {
-        CategoryIndex::const_iterator it = category_index_.find(sgiven_category);
-        if(it!=category_index_.end())
-        {
-            given_cid = it->second;
-        }
-    }
     std::size_t text_term_len = 0;
     for(uint32_t i=0;i<term_list.size();i++)
     {
@@ -3947,13 +3947,14 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         }
                     
     }
-    for(uint32_t i=0;i<clen;i++)
+    else
     {
-        cid_t cid = candidates[i].second;
-        if(cid==given_cid) continue;
-        //cid_index[cid] = cid_list.size();
-        cid_list.push_back(cid);
-        cid_score_list.push_back(candidates[i].first);
+        for(uint32_t i=0;i<clen;i++)
+        {
+            cid_t cid = candidates[i].second;
+            cid_list.push_back(cid);
+            cid_score_list.push_back(candidates[i].first);
+        }
     }
     if(cid_list.empty()) return;
     //do vsm filter
