@@ -135,7 +135,12 @@ void GroupLabelLoggerTestFixture::checkLogLabel_(
     const LabelCountMap& labelCountMap
 )
 {
-    const int resultNum = labelIdVec.size();
+    // as the precision of query/label mapping in click log is not
+    // high enough, it is disabled, so it should return empty result
+    BOOST_CHECK_EQUAL(labelIdVec.size(), 0U);
+    BOOST_CHECK_EQUAL(freqVec.size(), 0U);
+
+    /*const int resultNum = labelIdVec.size();
     const int totalNum = labelCountMap.size();
     BOOST_CHECK_EQUAL(resultNum, std::min(totalNum, limit));
 
@@ -168,7 +173,7 @@ void GroupLabelLoggerTestFixture::checkLogLabel_(
         {
             BOOST_CHECK_LE(mapIt->second, maxFreq);
         }
-    }
+    }*/
 }
 
 void GroupLabelLoggerTestFixture::checkSetLabel_(

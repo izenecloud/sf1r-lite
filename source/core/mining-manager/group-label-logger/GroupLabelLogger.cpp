@@ -48,7 +48,9 @@ bool GroupLabelLogger::getFreqLabel(
 
     if (labelCounter.setLabelIds_.empty())
     {
-        labelCounter.freqCounter_.getFreqClick(limit, labelIdVec, freqVec);
+        // as the precision of query/label mapping in click log is not
+        // high enough, it is disabled below
+        // labelCounter.freqCounter_.getFreqClick(limit, labelIdVec, freqVec);
     }
     else
     {
