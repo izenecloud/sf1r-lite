@@ -647,7 +647,7 @@ void IndexWorker::doMining_(int64_t timestamp)
         if (cronStr.empty())
         {
             int docLimit = miningTaskService_->getMiningBundleConfig()->mining_config_.dcmin_param.docnum_limit;
-            if (docLimit != 0 && (inc_supported_index_manager_.numDocs()) % docLimit == 0)
+            if (docLimit != 0 && (documentManager_->getMaxDocId() % docLimit) == 0)
             {
                 miningTaskService_->DoMiningCollection(timestamp);
             }
@@ -1352,6 +1352,7 @@ bool IndexWorker::insertDoc_(
     UpdateBufferDataType& updateData = updateBuffer_[document.getId()];
     updateData.get<0>() = INSERT;
     updateData.get<1>().swap(document);
+    updateData.get<2>() = 0;
     updateData.get<3>() = timestamp;
     if (updateBuffer_.size() >= UPDATE_BUFFER_CAPACITY)
     {
@@ -1401,6 +1402,7 @@ bool IndexWorker::updateDoc_(
     updateData.get<0>() = updateType;
     updateData.get<1>().swap(document);
     updateData.get<2>() = oldId;
+    updateData.get<3>() = timestamp;
 
     if (updateBuffer_.size() >= UPDATE_BUFFER_CAPACITY)
     {
@@ -1448,7 +1450,9 @@ bool IndexWorker::doUpdateDoc_(
     }
 
     default:
-        return false;
+    {
+        break;
+    }
     }
 
     inc_supported_index_manager_.updateDocument(oldDoc, document, updateType, timestamp);

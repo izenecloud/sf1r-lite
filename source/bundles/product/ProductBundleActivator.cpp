@@ -10,6 +10,7 @@
 #include <document-manager/DocumentManager.h>
 #include <aggregator-manager/SearchWorker.h>
 #include <aggregator-manager/IndexWorker.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <product-manager/product_manager.h>
 #include <product-manager/collection_product_data_source.h>
 #include <product-manager/scd_operation_processor.h>
@@ -130,7 +131,7 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
 
                 if(refIndexTaskService_ )
                 {
-                    addIndexHook_(refIndexTaskService_);
+                    addIndexHook_(service);
                 }
             }
 
@@ -154,7 +155,8 @@ bool ProductBundleActivator::addingService( const ServiceReference& ref )
             {
                 if(productManager_)
                 {
-                    addIndexHook_(refIndexTaskService_);
+                    IndexSearchService* service = reinterpret_cast<IndexSearchService*> ( const_cast<IService*>(ref.getService()) );
+                    addIndexHook_(service);
                 }
             }
             else if(config_->mode_=="a")//in a
@@ -226,9 +228,9 @@ ProductBundleActivator::createProductManager_(IndexSearchService* indexService)
     return product_manager;
 }
 
-void ProductBundleActivator::addIndexHook_(IndexTaskService* indexService) const
+void ProductBundleActivator::addIndexHook_(IndexSearchService* indexService) const
 {
-    indexService->indexWorker_->hooker_.reset(new ProductIndexHooker(productManager_));
+    indexService->searchWorker_->invertedIndexManager_->hooker_.reset(new ProductIndexHooker(productManager_));
 }
 
 void ProductBundleActivator::removedService( const ServiceReference& ref )

@@ -11,7 +11,6 @@ class IIncSupportedIndex
 {
 public:
     virtual ~IIncSupportedIndex() {}
-    virtual size_t numDocs() = 0;
     virtual void flush(bool force) = 0;
     virtual void optimize(bool wait) = 0;
 

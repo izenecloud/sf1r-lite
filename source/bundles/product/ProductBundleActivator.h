@@ -54,7 +54,7 @@ private:
     std::string getQueryDataPath_() const;
 
     boost::shared_ptr<ProductManager> createProductManager_(IndexSearchService* indexService);
-    void addIndexHook_(IndexTaskService* indexService) const;
+    void addIndexHook_(IndexSearchService* indexService) const;
 
 public:
     ProductBundleActivator();

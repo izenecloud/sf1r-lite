@@ -9,6 +9,9 @@
 #include <document-manager/DocumentManager.h>
 #include <ir/index_manager/utility/StringUtils.h>
 #include <ir/index_manager/utility/BitVector.h>
+#include <common/NumericPropertyTable.h>
+#include <common/NumericRangePropertyTable.h>
+#include <common/RTypeStringPropTable.h>
 
 #include <common/Utilities.h>
 
@@ -20,8 +23,16 @@ namespace
 {
 const static std::string DOCID("DOCID");
 const static std::string DATE("DATE");
-const static size_t UPDATE_BUFFER_CAPACITY = 8192;
-PropertyConfig tempPropertyConfig;
+sf1r::PropertyConfig tempPropertyConfig;
+
+enum UpdateType
+{
+    UNKNOWN,
+    INSERT, ///Not update, it's a new document
+    GENERAL, ///General update, equals to del + insert
+    REPLACE, ///Don't need to change index, just adjust DocumentManager
+    RTYPE  ///RType update to index
+};
 
 void split_string(const izenelib::util::UString& szText, std::list<PropertyType>& out, izenelib::util::UString::EncodingType encoding, char Separator)
 {
@@ -194,13 +205,15 @@ void split_datetime(const izenelib::util::UString& szText, std::list<PropertyTyp
 
 }
 
-using namespace izenelib::ir::indexmanager;
+using izenelib::ir::idmanager::IDManager;
+
 namespace sf1r
 {
 
 InvertedIndexManager::InvertedIndexManager(IndexBundleConfiguration* bundleConfig)
     :bundleConfig_(bundleConfig)
 {
+    bool hasDateInConfig = false;
     collectionId_ = 1;
     const IndexBundleSchema& indexSchema = bundleConfig_->indexSchema_;
     for (IndexBundleSchema::const_iterator iter = indexSchema.begin(), iterEnd = indexSchema.end();
@@ -366,11 +379,6 @@ void InvertedIndexManager::makeRangeQuery(QueryFiltering::FilteringOperation fil
     //Compress bit vector
     BOOST_ASSERT(pBitVector);
     pBitVector->compressed(*filterBitMap);
-}
-
-size_t InvertedIndexManager::numDocs()
-{
-    return izenelib::ir::indexmanager::Indexer::numDocs();
 }
 
 void InvertedIndexManager::flush(bool force)
@@ -934,9 +942,10 @@ bool InvertedIndexManager::prepareIndexDocumentNumericProperty_(
     return true;
 }
 
-bool InvertedIndexManager::prepareIndexDocumentCommon(const Document& newdoc,
+void InvertedIndexManager::prepareIndexDocumentCommon(const Document& document,
     const IndexBundleSchema& schema, IndexerDocument& indexdoc)
 {
+    docid_t docId = document.getId();
     Document::property_const_iterator it = document.propertyBegin();
     for (; it != document.propertyEnd(); ++it)
     {
@@ -950,7 +959,7 @@ bool InvertedIndexManager::prepareIndexDocumentCommon(const Document& newdoc,
         {
             continue;
         }
-        else if (boost::iequals(fieldStr, dateProperty_.getName()))
+        else if (boost::iequals(propertyName, dateProperty_.getName()))
         {
             continue;
         }
@@ -1005,10 +1014,10 @@ bool InvertedIndexManager::prepareIndexDocumentForUpdate(const Document& olddoc,
     docid_t oldId = olddoc.getId();
     if (updateType == RTYPE)
     {
-        prepareIndexRTypeProperties_(oldId, old_indexdoc);
+        prepareIndexRTypeProperties_(oldId, schema, old_indexdoc);
     }
-    indexdoc.setOldId(oldId);
-    indexdoc.setDocId(docId, collectionId_);
+    new_indexdoc.setOldId(oldId);
+    new_indexdoc.setDocId(docId, collectionId_);
     prepareIndexDocumentCommon(newdoc, schema, new_indexdoc);
 
     return true;
@@ -1017,12 +1026,13 @@ bool InvertedIndexManager::prepareIndexDocumentForUpdate(const Document& olddoc,
 bool InvertedIndexManager::insertDocument(const Document& newdoc, time_t timestamp)
 {
     IndexerDocument indexdoc;
-    prepareIndexDocumentForInsert(newdoc, bundleConfig_->schema, indexdoc);
+    prepareIndexDocumentForInsert(newdoc, bundleConfig_->indexSchema_, indexdoc);
 
     prepareIndexRTypeProperties_(newdoc.getId(), bundleConfig_->indexSchema_, indexdoc);
     if (hooker_)
     {
-        if (!hooker_->HookInsert(document, indexdoc, timestamp))
+        Document tmpdoc = newdoc;
+        if (!hooker_->HookInsert(tmpdoc, indexdoc, timestamp))
             return false;
     }
     return izenelib::ir::indexmanager::Indexer::insertDocument(indexdoc);
@@ -1036,11 +1046,12 @@ bool InvertedIndexManager::updateDocument(const Document& olddoc, const Document
     prepareIndexDocumentForUpdate(olddoc, newdoc, updateType, bundleConfig_->indexSchema_,
         new_indexdoc, old_indexdoc);
 
-    prepareIndexRTypeProperties_(newdoc.getId(), new_indexdoc);
+    prepareIndexRTypeProperties_(newdoc.getId(), bundleConfig_->indexSchema_, new_indexdoc);
     if (hooker_)
     {
+        Document tmpdoc = newdoc;
         ///Notice: the success of HookUpdate will not affect following update
-        hooker_->HookUpdate(document, new_indexdoc, timestamp);
+        hooker_->HookUpdate(tmpdoc, new_indexdoc, timestamp);
     }
 
     switch (updateType)
@@ -1091,14 +1102,15 @@ bool InvertedIndexManager::mergeDocument_(
         LOG(INFO) << "olddoc is empty while merge for IndexDocument";
         return false;
     }
-    for (Document::property_iterator it = olddoc.propertyBegin(); it != olddoc.propertyEnd(); ++it)
+    docid_t newid = newdoc.getId();
+    for (Document::property_const_iterator it = olddoc.propertyBegin(); it != olddoc.propertyEnd(); ++it)
     {
-        if (!doc.hasProperty(it->first))
+        if (!newdoc.hasProperty(it->first))
         {
             ///Properties that only exist within old doc, while not in new doc
             ///Require to prepare for IndexDocument
             tempPropertyConfig.propertyName_ = it->first;
-            IndexBundleSchema::iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
+            IndexBundleSchema::const_iterator iter = bundleConfig_->indexSchema_.find(tempPropertyConfig);
             if (iter != bundleConfig_->indexSchema_.end())
             {
                 const izenelib::util::UString& propValue = olddoc.property(it->first).get<izenelib::util::UString>();
@@ -1109,7 +1121,7 @@ bool InvertedIndexManager::mergeDocument_(
                     prepareIndexDocumentStringProperty_(newid, it->first, propValue, iter, indexDocument);
                 }
                 else
-                    prepareIndexDocumentNumericProperty_(newId, propValue, iter, indexDocument);
+                    prepareIndexDocumentNumericProperty_(newid, propValue, iter, indexDocument);
             }
         }
     }

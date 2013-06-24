@@ -11,13 +11,6 @@ void IncSupportedIndexManager::addIndex(boost::shared_ptr<IIncSupportedIndex> in
         inc_index_list_.push_back(index);
 }
 
-size_t IncSupportedIndexManager::numDocs()
-{
-    if (inc_index_list_.empty())
-        return 0;
-    return inc_index_list_.front()->numDocs();
-}
-
 void IncSupportedIndexManager::flush()
 {
     for (size_t i = 0; i< inc_index_list_.size(); ++i)

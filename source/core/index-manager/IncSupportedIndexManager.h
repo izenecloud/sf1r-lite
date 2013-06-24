@@ -20,7 +20,6 @@ public:
     ~IncSupportedIndexManager() {}
     void addIndex(boost::shared_ptr<IIncSupportedIndex> index);
 
-    size_t numDocs();
     void flush();
     void optimize(bool wait);
     void preBuildFromSCD(size_t total_filesize);

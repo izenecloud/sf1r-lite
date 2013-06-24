@@ -266,12 +266,12 @@ bool IndexBundleActivator::init_()
     laManager_ = createLAManager_();
     SF1R_ENSURE_INIT(laManager_);
     SF1R_ENSURE_INIT(initializeQueryManager_());
-    std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open index manager.."<<std::endl;
-    invertedIndexManager_ = createInvertedIndexManager_();
-    SF1R_ENSURE_INIT(invertedIndexManager_);
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open document manager.."<<std::endl;
     documentManager_ = createDocumentManager_();
     SF1R_ENSURE_INIT(documentManager_);
+    std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open index manager.."<<std::endl;
+    invertedIndexManager_ = createInvertedIndexManager_();
+    SF1R_ENSURE_INIT(invertedIndexManager_);
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open ranking manager.."<<std::endl;
     rankingManager_ = createRankingManager_();
     SF1R_ENSURE_INIT(rankingManager_);
@@ -309,7 +309,7 @@ bool IndexBundleActivator::init_()
     taskService_->indexAggregator_ = indexAggregator_;
     taskService_->indexWorker_ = indexWorker_;
     taskService_->indexWorker_->idManager_ = idManager_;
-    taskService_->indexWorker_->laManager_ = laManager_;
+    //taskService_->indexWorker_->laManager_ = laManager_;
     taskService_->indexWorker_->documentManager_ = documentManager_;
     taskService_->indexWorker_->searchWorker_= searchWorker_;
     taskService_->indexWorker_->summarizer_.init(LAPool::getInstance()->getLangId(), idManager_);
@@ -434,7 +434,7 @@ IndexBundleActivator::createInvertedIndexManager_() const
     boost::filesystem::create_directories(dir);
     boost::shared_ptr<InvertedIndexManager> ret;
 
-    ret.reset(new InvertedIndexManager());
+    ret.reset(new InvertedIndexManager(config_));
     if (ret)
     {
         IndexManagerConfig config(config_->indexConfig_);
@@ -474,6 +474,9 @@ IndexBundleActivator::createInvertedIndexManager_() const
         collectionIdMapping[config_->collectionName_] = 1;
 
         ret->setIndexManagerConfig(config, collectionIdMapping);
+        ret->idManager_ = idManager_;
+        ret->laManager_ = laManager_;
+        ret->documentManager_ = documentManager_;
     }
     return ret;
 }

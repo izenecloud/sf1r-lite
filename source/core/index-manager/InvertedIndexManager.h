@@ -15,9 +15,11 @@
 #include <ir/index_manager/index/IndexReader.h>
 #include <ir/index_manager/index/rtype/BTreeIndexerManager.h>
 #include <ir/index_manager/utility/EWAHTermDocFreqs.h>
+#include <ir/id_manager/IDManager.h>
 
 #include <util/string/StringUtils.h>
 #include <configuration-manager/ConfigurationTool.h>
+#include <configuration-manager/PropertyConfig.h>
 
 #include <3rdparty/am/stx/btree_map.h>
 #include <boost/tuple/tuple.hpp>
@@ -127,7 +129,6 @@ public:
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
            const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT> filterBitMap);
     
-    virtual size_t numDocs();
     virtual void flush(bool force = true);
     virtual void optimize(bool wait);
     virtual void preBuildFromSCD(size_t total_filesize);
@@ -157,7 +158,7 @@ private:
             izenelib::util::UString::EncodingType encoding,
             char separator);
 
-    bool prepareIndexDocumentCommon(const Document& newdoc,
+    void prepareIndexDocumentCommon(const Document& newdoc,
         const IndexBundleSchema& schema, izenelib::ir::indexmanager::IndexerDocument& indexdoc);
     bool prepareIndexDocumentForInsert(const Document& newdoc, const IndexBundleSchema& schema, izenelib::ir::indexmanager::IndexerDocument& indexdoc);
     bool prepareIndexDocumentForUpdate(const Document& olddoc, const Document& newdoc,
@@ -188,7 +189,6 @@ private:
 
 private:
     // update type, newdoc, olddoc, newindexdoc, oldindexdoc.
-    static std::string DATE;
     boost::shared_ptr<IndexModeSelector> index_mode_selector_;
     unsigned int collectionId_;
     std::vector<boost::shared_ptr<LAInput> > laInputs_;
@@ -197,6 +197,11 @@ private:
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IndexHooker> hooker_;
     boost::shared_ptr<DocumentManager> documentManager_;
+    boost::shared_ptr<izenelib::ir::idmanager::IDManager> idManager_;
+    PropertyConfig dateProperty_;
+
+    friend class IndexBundleActivator;
+    friend class ProductBundleActivator;
 };
 
 }
