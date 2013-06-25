@@ -3882,44 +3882,63 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         std::string text = GetText_(tl);
         std::cout<<"[KEYWORD]"<<text<<","<<tag.kweight<<std::endl;
 #endif
-        GenCategoryContributor_(tag,  ccs[i]);
-        MergeCategoryContributor_(all_cc, ccs[i]);
+        if(given_cid==0)
+        {
+            GenCategoryContributor_(tag,  ccs[i]);
+            MergeCategoryContributor_(all_cc, ccs[i]);
+        }
         if(price.Positive())
         {
             GenSpuContributor_(tag, spu_cc);
         }
     }
-    std::vector<std::pair<double, cid_t> > candidates;
-    for(CategoryContributor::const_iterator it=all_cc.begin();it!=all_cc.end();++it)
+    std::vector<uint32_t> cid_list;
+    std::vector<double> cid_score_list;
+    if(given_cid==0)
     {
-        candidates.push_back(std::make_pair(it->second, it->first));
-    }
-    std::sort(candidates.begin(), candidates.end(), std::greater<std::pair<double, cid_t> >());
-    std::size_t clen = std::min(3ul, candidates.size());
-    candidates.resize(clen);
-    for(std::size_t i=0;i<clen;i++)
-    {
-        cid_t cid = candidates[i].second;
-        const Category& c = category_list_[cid];
-        bool kcategory = false;
-        if(c.depth==1) //if important category
+        std::vector<std::pair<double, cid_t> > candidates;
+        for(CategoryContributor::const_iterator it=all_cc.begin();it!=all_cc.end();++it)
         {
-            kcategory = true;
+            candidates.push_back(std::make_pair(it->second, it->first));
         }
-        double ssim = string_similarity_.Sim(category_list_[cid].name, stitle);
-        if(kcategory)
+        std::sort(candidates.begin(), candidates.end(), std::greater<std::pair<double, cid_t> >());
+        std::size_t clen = std::min(3ul, candidates.size());
+        candidates.resize(clen);
+        for(std::size_t i=0;i<clen;i++)
         {
-            candidates[i].first *= 1.1;
+            cid_t cid = candidates[i].second;
+            const Category& c = category_list_[cid];
+            bool kcategory = false;
+            if(c.depth==1) //if important category
+            {
+                kcategory = true;
+            }
+            double ssim = string_similarity_.Sim(category_list_[cid].name, stitle);
+            if(kcategory)
+            {
+                candidates[i].first *= 1.1;
+            }
+            candidates[i].first *= (ssim/10.0)+1.0;
         }
-        candidates[i].first *= (ssim/10.0)+1.0;
-    }
-    std::sort(candidates.begin(), candidates.end(), std::greater<std::pair<double, cid_t> >());
+        std::sort(candidates.begin(), candidates.end(), std::greater<std::pair<double, cid_t> >());
 #ifdef B5M_DEBUG
-    for(std::size_t i=0;i<clen;i++)
-    {
-        std::cout<<category_list_[candidates[i].second].name<<":"<<candidates[i].first<<std::endl;
-    }
+        for(std::size_t i=0;i<clen;i++)
+        {
+            std::cout<<category_list_[candidates[i].second].name<<":"<<candidates[i].first<<std::endl;
+        }
 #endif
+        for(uint32_t i=0;i<clen;i++)
+        {
+            cid_t cid = candidates[i].second;
+            cid_list.push_back(cid);
+            cid_score_list.push_back(candidates[i].first);
+        }
+    }
+    else
+    {
+        cid_list.push_back(given_cid);
+        cid_score_list.push_back(1.0);
+    }
     //bool matcher_only = matcher_only_;
     std::size_t text_term_len = 0;
     for(uint32_t i=0;i<term_list.size();i++)
@@ -3927,33 +3946,6 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         if(!IsSymbol_(term_list[i]))
         {
             ++text_term_len;
-        }
-    }
-    std::vector<uint32_t> cid_list;
-    std::vector<double> cid_score_list;
-    //typedef boost::unordered_map<cid_t, uint32_t> CidIndex;
-    //CidIndex cid_index;
-    if(given_cid!=0)
-    {
-        //cid_index[given_cid] = cid_list.size();
-        cid_list.push_back(given_cid);
-        if(!candidates.empty())
-        {
-            cid_score_list.push_back(candidates.front().first);
-        }
-        else
-        {
-            cid_score_list.push_back(1.0);
-        }
-                    
-    }
-    else
-    {
-        for(uint32_t i=0;i<clen;i++)
-        {
-            cid_t cid = candidates[i].second;
-            cid_list.push_back(cid);
-            cid_score_list.push_back(candidates[i].first);
         }
     }
     if(cid_list.empty()) return;
@@ -4020,6 +4012,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         }
         if(cid_list.empty()) return;
     }
+    if(given_cid==0)
     {
         cid_t top_cid = cid_list.front();
         double top_cid_weight = 0.0;
