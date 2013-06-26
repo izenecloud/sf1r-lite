@@ -14,25 +14,15 @@ ProductIndexHooker::~ProductIndexHooker()
 
 }
 
-bool ProductIndexHooker::HookInsert(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp)
+bool ProductIndexHooker::HookInsert(Document& doc, time_t timestamp)
 {
-    return product_manager_->HookInsert(doc, index_document, timestamp);
+    return product_manager_->HookInsert(doc, timestamp);
 }
 
-bool ProductIndexHooker::HookUpdate(Document& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp)
+bool ProductIndexHooker::HookUpdate(Document& doc, docid_t oldid, time_t timestamp)
 {
-    return product_manager_->HookUpdate(doc, index_document, timestamp);
+    return product_manager_->HookUpdate(doc, oldid, timestamp);
 }
-
-// bool ProductIndexHooker::HookInsert(Document& doc)
-// {
-//     return product_manager_->HookInsert(doc);
-// }
-//
-// bool ProductIndexHooker::HookUpdate(docid_t oldid, Document& doc, bool r_type)
-// {
-//     return product_manager_->HookUpdate(oldid, doc, r_type);
-// }
 
 bool ProductIndexHooker::HookDelete(docid_t docid, time_t timestamp)
 {

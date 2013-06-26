@@ -24,9 +24,8 @@ public:
         : pm_config_()
         , document_list_(new std::vector<PMDocumentType>())
         , data_source_(new SimpleDataSource(pm_config_, document_list_))
-        , op_processor_(new SimpleOperationProcessor())
         , price_trend_(NULL)
-        , pm_(new ProductManager("./", boost::shared_ptr<DocumentManager>(), data_source_, op_processor_, price_trend_, pm_config_))
+        , pm_(new ProductManager("./", boost::shared_ptr<DocumentManager>(), data_source_, price_trend_, pm_config_))
     {
     }
 
@@ -34,14 +33,11 @@ public:
     {
         delete document_list_;
         delete data_source_;
-        delete op_processor_;
         delete pm_;
     }
 
     void Test(const std::vector<std::string>& input_list, const std::vector<std::string>& result_list)
     {
-        std::vector<std::pair<SCD_TYPE, PMDocumentType> >& source = op_processor_->Data();
-        uint32_t source_start = source.size();
         for(uint32_t i=0;i<input_list.size();i++)
         {
             std::string line = input_list[i];
@@ -70,37 +66,12 @@ public:
                 PMTestParserD::Parse(line, docid);
                 D_(docid);
             }
-            else if(first=='C')
-            {
-                std::vector<uint32_t> docid_list;
-                bool succ = false;
-                PMTestParserC::Parse(line, docid_list, succ);
-                C_(docid_list, succ);
-            }
-            else if(first=='A')
-            {
-                uint32_t uuid_docid = 0;
-                std::vector<uint32_t> docid_list;
-                bool succ = false;
-                PMTestParserA::Parse(line, uuid_docid, docid_list, succ);
-                A_(uuid_docid, docid_list, succ);
-            }
-            else if(first=='R')
-            {
-                uint32_t uuid_docid = 0;
-                std::vector<uint32_t> docid_list;
-                bool succ = false;
-                PMTestParserR::Parse(line, uuid_docid, docid_list, succ);
-                R_(uuid_docid, docid_list, succ);
-            }
             else
             {
                 BOOST_CHECK_MESSAGE( false, "invalid input "+line);
             }
         }
         BOOST_CHECK( pm_->FinishHook(Utilities::createTimeStamp()) );
-        Validation_(source_start, result_list);
-//         ShowAllDocs();
     }
 
     void ShowAllDocs()
@@ -136,8 +107,7 @@ private:
         {
             return;//not new
         }
-        izenelib::ir::indexmanager::IndexerDocument index_document;
-        BOOST_CHECK( pm_->HookInsert(doc, index_document, Utilities::createTimeStamp()) );
+        BOOST_CHECK( pm_->HookInsert(doc, Utilities::createTimeStamp()) );
         BOOST_CHECK( data_source_->AddDocument(docid, doc) );
 //         (*document_list_)[docid-1] = doc;
     }
@@ -149,7 +119,7 @@ private:
         if(oldid > document_list_->size()) return;
         if(r_type && docid>document_list_->size() ) return;
         if(!r_type && docid<=document_list_->size() ) return;
-        BOOST_CHECK( pm_->HookUpdate(doc, index_document, Utilities::createTimeStamp()) );
+        BOOST_CHECK( pm_->HookUpdate(doc, index_document.getOldId(), Utilities::createTimeStamp()) );
         if(r_type)
         {
             BOOST_CHECK( data_source_->UpdateDocument(docid, doc) );
@@ -174,19 +144,6 @@ private:
 //         (*document_list_)[docid-1] = PMDocumentType();
     }
 
-    void C_(const std::vector<uint32_t>& docid_list, bool succ)
-    {
-        izenelib::util::UString gen_uuid;
-        PMDocumentType doc;
-        ProductEditOption option;
-        bool bsucc = pm_->AddGroup(docid_list, doc, option);
-        if(!bsucc)
-        {
-            std::cout<<pm_->GetLastError()<<std::endl;
-        }
-        BOOST_CHECK( bsucc==succ);
-    }
-
     void GetUuid_(uint32_t docid, izenelib::util::UString& uuid)
     {
         BOOST_CHECK( document_list_->size()>=docid);
@@ -194,46 +151,6 @@ private:
         PMDocumentType::property_iterator it = doc.findProperty(pm_config_.uuid_property_name);
         BOOST_CHECK( it != doc.propertyEnd());
         uuid = it->second.get<izenelib::util::UString>();
-    }
-
-    void A_(uint32_t uuid_docid, const std::vector<uint32_t>& docid_list, bool succ)
-    {
-        izenelib::util::UString uuid;
-        GetUuid_(uuid_docid, uuid);
-        ProductEditOption option;
-        bool bsucc = pm_->AppendToGroup(uuid, docid_list, option);
-        if(!bsucc)
-        {
-            std::cout<<pm_->GetLastError()<<std::endl;
-        }
-        BOOST_CHECK( bsucc==succ);
-    }
-
-    void R_(uint32_t uuid_docid, const std::vector<uint32_t>& docid_list, bool succ)
-    {
-        izenelib::util::UString uuid;
-        GetUuid_(uuid_docid, uuid);
-        ProductEditOption option;
-        bool bsucc = pm_->RemoveFromGroup(uuid, docid_list, option);
-        if(!bsucc)
-        {
-            std::cout<<pm_->GetLastError()<<std::endl;
-        }
-        BOOST_CHECK( bsucc==succ);
-    }
-
-    void Validation_(uint32_t start, const std::vector<std::string>& result_list)
-    {
-        std::vector<std::pair<SCD_TYPE, PMDocumentType> >& all_source = op_processor_->Data();
-        std::vector<std::pair<SCD_TYPE, PMDocumentType> > source(all_source.begin()+start, all_source.end());
-        BOOST_CHECK(source.size()==result_list.size());
-
-        for(uint32_t i=0;i<result_list.size();i++)
-        {
-            PMTestResultItem item;
-            PMTestParser::ParseResult(result_list[i], item);
-            ResultCheck_(item, source[i]);
-        }
     }
 
     void ResultCheck_(const PMTestResultItem& item, const std::pair<SCD_TYPE, PMDocumentType>& result)
@@ -285,7 +202,6 @@ private:
     PMConfig pm_config_;
     std::vector<PMDocumentType>* document_list_;
     SimpleDataSource* data_source_;
-    SimpleOperationProcessor* op_processor_;
     ProductPriceTrend* price_trend_;
     ProductManager* pm_;
 

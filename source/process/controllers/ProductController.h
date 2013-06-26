@@ -22,16 +22,6 @@ class ProductManager;
 class ProductController : public Sf1Controller
 {
 public:
-    void add_new_group();
-
-    void append_to_group();
-
-    void remove_from_group();
-
-    void recover();
-
-    void update_a_doc();
-
     void get_multi_price_history();
 
     void get_top_price_cut_list();

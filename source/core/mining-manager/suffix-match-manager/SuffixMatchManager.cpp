@@ -223,7 +223,8 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
         const SearchingMode::SuffixMatchFilterMode& filter_mode,
         const std::vector<QueryFiltering::FilteringType>& filter_param,
         const GroupParam& group_param,
-        std::vector<std::pair<double, uint32_t> >& res_list)
+        std::vector<std::pair<double, uint32_t> >& res_list,
+        double rank_boundary)
 {
 
     btree::btree_map<uint32_t, double> res_list_map;
@@ -391,8 +392,13 @@ size_t SuffixMatchManager::AllPossibleSuffixMatch(
     for (btree::btree_map<uint32_t, double>::const_iterator cit = res_list_map.begin();
             cit != res_list_map.end(); ++cit)
     {
-        res_list.push_back(std::make_pair(cit->second, cit->first));
+        if (cit->second > rank_boundary)
+            res_list.push_back(std::make_pair(cit->second, cit->first));
     }
+    
+    if (res_list.empty())
+        return total_match;
+    
     std::sort(res_list.begin(), res_list.end(), std::greater<std::pair<double, uint32_t> >());
     if (res_list.size() > max_docs)
         res_list.erase(res_list.begin() + max_docs, res_list.end());
