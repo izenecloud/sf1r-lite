@@ -63,7 +63,8 @@ public:
             const SearchingMode::SuffixMatchFilterMode& filter_mode,
             const std::vector<QueryFiltering::FilteringType>& filter_param,
             const faceted::GroupParam& group_param,
-            std::vector<std::pair<double, uint32_t> >& res_list);
+            std::vector<std::pair<double, uint32_t> >& res_list,
+            double rank_boundary);
 
     void GetTokenResults(std::string pattern,
                     std::list<std::pair<UString, double> >& major_tokens,
