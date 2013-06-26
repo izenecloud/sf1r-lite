@@ -85,7 +85,7 @@ bool B5moSorter::StageTwo(const std::string& last_m)
     while(std::getline(is, line))
     {
         Value value;
-        if(!value.Parse(line))
+        if(!value.Parse(line, &json_reader_))
         {
             std::cerr<<"invalid line "<<line<<std::endl;
             continue;
