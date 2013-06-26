@@ -1,9 +1,6 @@
 #include "product_manager.h"
 #include "product_data_source.h"
-#include "operation_processor.h"
 #include "uuid_generator.h"
-#include "product_editor.h"
-#include "product_clustering.h"
 #include "product_price_trend.h"
 #include "pm_util.h"
 
@@ -31,18 +28,14 @@ ProductManager::ProductManager(
         const std::string& work_dir,
         const boost::shared_ptr<DocumentManager>& document_manager,
         ProductDataSource* data_source,
-        OperationProcessor* op_processor,
         ProductPriceTrend* price_trend,
         const PMConfig& config)
     : work_dir_(work_dir)
     , config_(config)
     , document_manager_(document_manager)
     , data_source_(data_source)
-    , op_processor_(op_processor)
     , price_trend_(price_trend)
     , util_(new PMUtil(config, data_source))
-    , clustering_(NULL)
-    , editor_(new ProductEditor(data_source, op_processor, config, util_))
     , has_price_trend_(false)
     , inhook_(false)
 {
@@ -67,49 +60,9 @@ ProductManager::ProductManager(
 ProductManager::~ProductManager()
 {
     delete util_;
-    delete clustering_;
-    delete editor_;
 }
 
-bool ProductManager::Recover()
-{
-//     if (backup_==NULL)
-//     {
-//         error_ = "Backup not initialzed.";
-//         return false;
-//     }
-//     if (!backup_->Recover(this))
-//     {
-// //         error_ = "Backup recover failed.";
-//         return false;
-//     }
-//     if (!GenOperations_())
-//     {
-//         return false;
-//     }
-//     return true;
-    return false;
-}
-
-ProductClustering* ProductManager::GetClustering_()
-{
-    if (!clustering_)
-    {
-        if (config_.enable_clustering_algo)
-        {
-            clustering_ = new ProductClustering(work_dir_+"/clustering", config_, util_);
-            if (!clustering_->Open())
-            {
-                std::cout<<"ProductClustering open failed"<<std::endl;
-                delete clustering_;
-                clustering_ = NULL;
-            }
-        }
-    }
-    return clustering_;
-}
-
-bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp)
+bool ProductManager::HookInsert(PMDocumentType& doc, time_t timestamp)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
@@ -126,34 +79,20 @@ bool ProductManager::HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager:
                 docid.convertString(docid_str, UString::UTF_8);
                 if (timestamp == -1) GetTimestamp_(doc, timestamp);
                 uint128_t num_docid = Utilities::md5ToUint128(docid_str);
-                //std::map<std::string, std::string> group_prop_map;
-                //GetGroupProperties_(doc, group_prop_map);
-                //task_type task = boost::bind(&ProductPriceTrend::Update, price_trend_, num_docid, price, timestamp, group_prop_map);
                 task_type task = boost::bind(&ProductPriceTrend::Insert, price_trend_, num_docid, price, timestamp);
                 jobScheduler_.addTask(task);
             }
         }
     }
-    ProductClustering* clustering = GetClustering_();
-    if (clustering)
-    {
-        UString uuid;
-        doc.property(config_.uuid_property_name) = uuid;
-        if (!data_source_->SetUuid(index_document, uuid)) return false; // set a empty uuid for rtype update later
-//      PMDocumentType new_doc(doc);
-//      data_source_->GetRTypePropertiesForDocument(new_doc.getId(), new_doc);
-//      clustering->Insert(new_doc);
-        clustering->Insert(doc);
-    }
     return true;
 }
 
-bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp)
+bool ProductManager::HookUpdate(PMDocumentType& to, docid_t oldid, time_t timestamp)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
 
-    uint32_t fromid = index_document.getOldId(); //oldid
+    uint32_t fromid = oldid; //oldid
     PMDocumentType from;
     if (!data_source_->GetDocument(fromid, from,true))
     {
@@ -188,48 +127,6 @@ bool ProductManager::HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::
         }
     }
 
-    if (config_.enable_clustering_algo)
-    {
-        std::vector<uint32_t> docid_list;
-        data_source_->GetDocIdList(from_uuid, docid_list, fromid); // except from.docid
-        if (docid_list.empty()) // the from doc is unique, so delete it and insert 'to'
-        {
-            if (!data_source_->SetUuid(index_document, from_uuid))
-            {
-                inhook_ = false;
-                return false;
-            }
-            PMDocumentType new_doc(to);
-            data_source_->GetRTypePropertiesForDocument(new_doc.getId(), new_doc);
-            to.property(config_.uuid_property_name) = from_uuid;
-            new_doc.property(config_.docid_property_name) = from_uuid;
-            util_->SetItemCount(new_doc, 1);
-            op_processor_->Append(UPDATE_SCD, new_doc);// if r_type, only numeric properties in 'to'
-        }
-        else
-        {
-            //need not to update(insert) to.uuid,
-            if (!data_source_->SetUuid(index_document, from_uuid))
-            {
-                inhook_ = false;
-                return false;
-            }
-            to.property(config_.uuid_property_name) = from_uuid;
-            //update price only
-            if (from_price != to_price)
-            {
-                PMDocumentType diff_properties;
-                ProductPrice price(to_price);
-                util_->GetPrice(docid_list, price);
-                diff_properties.property(config_.price_property_name) = price.ToUString();
-                diff_properties.property(config_.docid_property_name) = from_uuid;
-                //auto r_type? itemcount no need?
-    //                 diff_properties.property(config_.itemcount_property_name) = UString(boost::lexical_cast<std::string>(docid_list.size()+1), UString::UTF_8);
-
-                op_processor_->Append(UPDATE_SCD, diff_properties);
-            }
-        }
-    }
     return true;
 }
 
@@ -237,14 +134,6 @@ bool ProductManager::HookDelete(uint32_t docid, time_t timestamp)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
-    if (config_.enable_clustering_algo)
-    {
-        std::vector<uint32_t> deleting_docids;
-        deleting_docids.push_back(docid);
-        ProductEditOption edit_op;
-        edit_op.force = true;
-        editor_->RemovePermanentlyFromAnyGroup(deleting_docids, edit_op);
-    }
     return true;
 }
 
@@ -255,359 +144,7 @@ bool ProductManager::FinishHook(time_t timestamp)
         task_type task = boost::bind(&ProductPriceTrend::Flush, price_trend_, timestamp);
         jobScheduler_.addTask(task);
     }
-
-    if (clustering_)
-    {
-        uint32_t max_in_group = 20;
-        if (!clustering_->Run())
-        {
-            std::cout<<"ProductClustering Run failed"<<std::endl;
-            return false;
-        }
-        typedef ProductClustering::GroupTableType GroupTableType;
-        GroupTableType* group_table = clustering_->GetGroupTable();
-        typedef izenelib::util::UString UuidType;
-        typedef boost::unordered_map<GroupTableType::GroupIdType, std::pair<PMDocumentType, ProductPrice> > GroupDocMapType;
-        GroupDocMapType g2doc_map;
-
-        //output DOCID -> uuid map SCD
-        ScdWriter* uuid_map_writer = NULL;
-        if (!config_.uuid_map_path.empty())
-        {
-            boost::filesystem::create_directories(config_.uuid_map_path);
-            uuid_map_writer = new ScdWriter(config_.uuid_map_path, INSERT_SCD);
-        }
-        const std::vector<std::vector<GroupTableType::DocIdType> >& group_info = group_table->GetGroupInfo();
-        LOG(INFO)<<"Start building group info."<<std::endl;
-        LogServerConnection& conn = LogServerConnection::instance();
-        for (uint32_t gid = 0; gid < group_info.size(); gid++)
-        {
-            std::vector<GroupTableType::DocIdType> in_group = group_info[gid];
-            if (in_group.size() < 2) continue;
-            if (max_in_group > 0 && in_group.size() > max_in_group) continue;
-            std::sort(in_group.begin(), in_group.end());
-            izenelib::util::UString docname(in_group[0], izenelib::util::UString::UTF_8);
-            UuidType uuid = docname;
-            std::string uuidstr;
-            uuid.convertString(uuidstr, izenelib::util::UString::UTF_8);
-            //UuidGenerator::Gen(docname, uuidstr, uuid);
-            PMDocumentType doc;
-            doc.property(config_.docid_property_name) = docname;
-            doc.property(config_.source_property_name) = izenelib::util::UString("", izenelib::util::UString::UTF_8);
-            doc.property(config_.uuid_property_name) = uuid;
-            util_->SetItemCount(doc, in_group.size());
-            g2doc_map[gid] = std::make_pair(doc, ProductPrice());
-            if (uuid_map_writer)
-            {
-                UpdateUUIDRequest uuidReq;
-                uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuidstr);
-                for (uint32_t i = 0; i < in_group.size(); i++)
-                {
-                    PMDocumentType map_doc;
-                    map_doc.property(config_.docid_property_name) = izenelib::util::UString(in_group[i], izenelib::util::UString::UTF_8);
-                    map_doc.property(config_.uuid_property_name) = uuid;
-                    uuid_map_writer->Append(map_doc);
-                    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(in_group[i]));
-                }
-                conn.asynRequest(uuidReq);
-            }
-        }
-        LOG(INFO)<<"Finished building group info."<<std::endl;
-        std::vector<std::pair<uint32_t, izenelib::util::UString> > uuid_update_list;
-        uint32_t append_count = 0;
-//         uint32_t has_comparison_count = 0;
-#ifdef PM_PROFILER
-        static double t1=0.0;
-        static double t2=0.0;
-        static double t3=0.0;
-        static double t4=0.0;
-//         std::cout<<"start buffer size : "<<common_compressed_.bufferCapacity()<<std::endl;
-        izenelib::util::ClockTimer timer;
-#endif
-        uuid_update_list.reserve(data_source_->GetMaxDocId());
-        for (uint32_t docid = 1; docid <= data_source_->GetMaxDocId(); ++docid)
-        {
-            if (docid % 100000 == 0)
-            {
-                LOG(INFO)<<"Process "<<docid<<" docs"<<std::endl;
-            }
-#ifdef PM_PROFILER
-            if (docid % 10 == 0)
-            {
-                LOG(INFO)<<"PM_PROFILER : ["<<has_comparison_count<<"] "<<t1<<","<<t2<<","<<t3<<","<<t4<<std::endl;
-            }
-#endif
-            PMDocumentType doc;
-#ifdef PM_PROFILER
-            timer.restart();
-#endif
-            if (!data_source_->GetDocument(docid, doc))
-            {
-                continue;
-            }
-#ifdef PM_PROFILER
-            t1 += timer.elapsed();
-#endif
-            UString udocid;
-            std::string sdocid;
-            doc.getProperty(config_.docid_property_name, udocid);
-            ProductPrice price;
-            util_->GetPrice(doc, price);
-            udocid.convertString(sdocid, izenelib::util::UString::UTF_8);
-            GroupTableType::GroupIdType group_id;
-            bool in_group = false;
-            if (group_table->GetGroupId(sdocid, group_id))
-            {
-                if (g2doc_map.find(group_id) != g2doc_map.end())
-                {
-                    in_group = true;
-                }
-            }
-
-//             uint32_t itemcount = 1;
-//             std::vector<std::string> docid_list_in_group;
-//             bool append = true;
-            if (in_group)
-            {
-//                 boost::unordered_map<GroupTableType::GroupIdType, UuidType>::iterator g2u_it = g2u_map.find(group_id);
-                GroupDocMapType::iterator g2doc_it = g2doc_map.find(group_id);
-                PMDocumentType& combine_doc = g2doc_it->second.first;
-                ProductPrice& combine_price = g2doc_it->second.second;
-                combine_price += price;
-                izenelib::util::UString base_udocid = doc.property(config_.docid_property_name).get<izenelib::util::UString>();
-                UString uuid = combine_doc.property(config_.uuid_property_name).get<izenelib::util::UString>();
-                UString source;
-                UString combine_source;
-                doc.getProperty(config_.source_property_name, source);
-                combine_doc.getProperty(config_.source_property_name, combine_source);
-                util_->AddSource(combine_source, source);
-                combine_doc.property(config_.source_property_name) = combine_source;
-                if (udocid == base_udocid)
-                {
-                    combine_doc.copyPropertiesFromDocument(doc, false);
-                }
-                g2doc_it->second.second = combine_price;
-                uuid_update_list.push_back(std::make_pair(docid, uuid));
-
-                //std::string suuid;
-                //uuid.convertString(suuid, UString::UTF_8);
-                //if(suuid=="170a27507844214ab15a6527629ede8f")
-                //{
-                    //std::string ssource;
-                    //std::string scsource;
-                    //source.convertString(ssource, UString::UTF_8);
-                    //combine_source.convertString(scsource, UString::UTF_8);
-                    //std::cerr<<"sdocid : "<<sdocid<<std::endl;
-                    //std::cerr<<"suuid : "<<suuid<<std::endl;
-                    //std::cerr<<"source : "<<ssource<<std::endl;
-                    //std::cerr<<"csource : "<<scsource<<std::endl;
-                    //std::cerr<<"price : "<<combine_price.ToString()<<std::endl;
-                //}
-            }
-            else
-            {
-                //not in any group
-                UuidType uuid = udocid;
-                std::string uuidstr;
-                uuid.convertString(uuidstr, izenelib::util::UString::UTF_8);
-                //UuidGenerator::Gen(udocid, uuidstr, uuid);
-                doc.property(config_.uuid_property_name) = uuid;
-                uuid_update_list.push_back(std::make_pair(docid, uuid));
-                PMDocumentType new_doc(doc);
-                data_source_->GetRTypePropertiesForDocument(new_doc.getId(), new_doc);
-                new_doc.property(config_.docid_property_name) = uuid;
-                new_doc.eraseProperty(config_.uuid_property_name);
-                new_doc.eraseProperty(config_.olduuid_property_name);
-                util_->SetItemCount(new_doc, 1);
-                new_doc.property(config_.oldofferids_property_name) = "";
-                op_processor_->Append(INSERT_SCD, new_doc);
-                if (uuid_map_writer)
-                {
-                    UpdateUUIDRequest uuidReq;
-                    uuidReq.param_.uuid_ = Utilities::uuidToUint128(uuidstr);
-                    PMDocumentType map_doc;
-                    map_doc.property(config_.docid_property_name) = udocid;
-                    map_doc.property(config_.uuid_property_name) = uuid;
-                    uuid_map_writer->Append(map_doc);
-                    uuidReq.param_.docidList_.push_back(Utilities::md5ToUint128(sdocid));
-                    conn.asynRequest(uuidReq);
-                }
-                ++append_count;
-            }
-        }
-        if (uuid_map_writer)
-        {
-            uuid_map_writer->Close();
-            delete uuid_map_writer;
-        }
-        SynchronizeRequest syncReq;
-        conn.asynRequest(syncReq);
-        conn.flushRequests();
-
-        //process the comparison items.
-        GroupDocMapType::iterator g2doc_it = g2doc_map.begin();
-        while (g2doc_it != g2doc_map.end())
-        {
-            PMDocumentType& doc = g2doc_it->second.first;
-            PMDocumentType new_doc(doc);
-            new_doc.property(config_.docid_property_name) = new_doc.property(config_.uuid_property_name);
-            new_doc.property(config_.oldofferids_property_name) = "";
-            new_doc.property(config_.price_property_name) = g2doc_it->second.second.ToUString();
-            new_doc.eraseProperty(config_.uuid_property_name);
-            new_doc.eraseProperty(config_.olduuid_property_name);
-            op_processor_->Append(INSERT_SCD, new_doc);
-            ++append_count;
-            ++g2doc_it;
-        }
-
-        //process update_list
-        LOG(INFO)<<"Total update list count : "<<uuid_update_list.size()<<std::endl;
-        for (uint32_t i = 0; i < uuid_update_list.size(); i++)
-        {
-            if (i % 100000 == 0)
-            {
-                LOG(INFO)<<"Updated "<<i<<std::endl;
-            }
-            std::vector<uint32_t> update_docid_list(1, uuid_update_list[i].first);
-            if (!data_source_->UpdateUuid(update_docid_list, uuid_update_list[i].second))
-            {
-                LOG(INFO)<<"UpdateUuid fail for docid : "<<uuid_update_list[i].first<<" | "<<uuid_update_list[i].second<<std::endl;
-            }
-        }
-        data_source_->Flush();
-        LOG(INFO)<<"Generate "<<append_count<<" docs for b5ma"<<std::endl;
-        delete clustering_;
-        clustering_ = NULL;
-    }
-
-    bool rvalue = true;
-    if (config_.enable_clustering_algo)
-    {
-        rvalue = GenOperations_();
-    }
     if (inhook_) inhook_ = false;
-    return rvalue;
-}
-
-bool ProductManager::GenOperations_()
-{
-    bool result = true;
-    if (!op_processor_->Finish())
-    {
-        error_ = op_processor_->GetLastError();
-        result = false;
-    }
-    return result;
-
-}
-
-bool ProductManager::UpdateADoc(const Document& doc)
-{
-    DISTRIBUTE_WRITE_BEGIN;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN; 
-
-    if (config_.enable_clustering_algo)
-    {
-        if (inhook_)
-        {
-            error_ = "In Hook locks, collection was indexing, plz wait.";
-            return false;
-        }
-        boost::mutex::scoped_lock lock(human_mutex_);
-        if (!editor_->UpdateADoc(doc))
-        {
-            error_ = editor_->GetLastError();
-            return false;
-        }
-        if (!GenOperations_())
-        {
-            return false;
-        }
-    }
-    DISTRIBUTE_WRITE_FINISH(true);
-    return true;
-}
-bool ProductManager::AddGroup(const std::vector<uint32_t>& docid_list, PMDocumentType& info, const ProductEditOption& option)
-{
-    DISTRIBUTE_WRITE_BEGIN;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN; 
-
-    if (config_.enable_clustering_algo)
-    {
-        if (inhook_)
-        {
-            error_ = "In Hook locks, collection was indexing, plz wait.";
-            return false;
-        }
-        boost::mutex::scoped_lock lock(human_mutex_);
-        if (!editor_->AddGroup(docid_list, info, option))
-        {
-            error_ = editor_->GetLastError();
-            return false;
-        }
-        if (!GenOperations_())
-        {
-            return false;
-        }
-    }
-    DISTRIBUTE_WRITE_FINISH(true);
-    return true;
-}
-
-
-
-
-bool ProductManager::AppendToGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option)
-{
-    DISTRIBUTE_WRITE_BEGIN;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN; 
-
-    if (config_.enable_clustering_algo)
-    {
-        if (inhook_)
-        {
-            error_ = "In Hook locks, collection was indexing, plz wait.";
-            return false;
-        }
-        boost::mutex::scoped_lock lock(human_mutex_);
-        if (!editor_->AppendToGroup(uuid, docid_list, option))
-        {
-            error_ = editor_->GetLastError();
-            return false;
-        }
-        if (!GenOperations_())
-        {
-            return false;
-        }
-    }
-    DISTRIBUTE_WRITE_FINISH(true);
-    return true;
-}
-
-bool ProductManager::RemoveFromGroup(const UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option)
-{
-    DISTRIBUTE_WRITE_BEGIN;
-    DISTRIBUTE_WRITE_CHECK_VALID_RETURN; 
-
-    if (config_.enable_clustering_algo)
-    {
-        if (inhook_)
-        {
-            error_ = "In Hook locks, collection was indexing, plz wait.";
-            return false;
-        }
-        boost::mutex::scoped_lock lock(human_mutex_);
-        if (!editor_->RemoveFromGroup(uuid, docid_list, option))
-        {
-            error_ = editor_->GetLastError();
-            return false;
-        }
-        if (!GenOperations_())
-        {
-            return false;
-        }
-    }
-    DISTRIBUTE_WRITE_FINISH(true);
     return true;
 }
 

@@ -131,10 +131,6 @@ controllers:
 
   ProductController:
     actions:
-      - add_new_group
-      - append_to_group
-      - remove_from_group
-      - update_a_doc
       - get_multi_price_history
       - get_top_price_cut_list
       - migrate_price_history
