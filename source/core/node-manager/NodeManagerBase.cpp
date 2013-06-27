@@ -312,6 +312,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             // retry start
             nodeState_ = NODE_STATE_STARTING;
             enterCluster(!masterStarted_);
+            return;
         }
         else if (nodeState_ != NODE_STATE_STARTING &&
                  nodeState_ != NODE_STATE_INIT)
@@ -320,6 +321,7 @@ void NodeManagerBase::process(ZooKeeperEvent& zkEvent)
             LOG(INFO) << "begin electing for auto-reconnect.";
             checkForPrimaryElecting();
         }
+        updateNodeState();
     }
 
     if (zkEvent.type_ == ZOO_SESSION_EVENT && 
@@ -1540,6 +1542,14 @@ void NodeManagerBase::checkForPrimaryElecting()
         need_check_electing_ = false;
         if (isPrimaryWithoutLock())
         {
+            if (nodeState_ == NODE_STATE_RECOVER_WAIT_PRIMARY)
+            {
+                LOG(WARNING) << "begin re-enter to the cluster after I became new primary";
+                // primary is waiting sync to recovery.
+                if (cb_on_recover_wait_primary_)
+                    cb_on_recover_wait_primary_();
+                enterClusterAfterRecovery(!masterStarted_);
+            }
             checkSecondaryState(false);
         }
         else
