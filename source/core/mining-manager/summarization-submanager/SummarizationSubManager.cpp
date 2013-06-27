@@ -3,7 +3,6 @@
 #include "CommentCacheStorage.h"
 #include "splm.h"
 
-#include <index-manager/IndexManager.h>
 #include <document-manager/DocumentManager.h>
 #include <la-manager/LAPool.h>
 
@@ -119,7 +118,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
         const std::string& scdPath,
         SummarizeConfig schema,
         boost::shared_ptr<DocumentManager> document_manager,
-        boost::shared_ptr<IndexManager> index_manager,
+        //boost::shared_ptr<IndexManager> index_manager,
         idmlib::util::IDMAnalyzer* analyzer)
     : is_rebuild_(false)
     , last_docid_path_(homePath + "/last_docid.txt")
@@ -128,7 +127,7 @@ MultiDocSummarizationSubManager::MultiDocSummarizationSubManager(
     , homePath_(homePath)
     , schema_(schema)
     , document_manager_(document_manager)
-    , index_manager_(index_manager)
+    //, index_manager_(index_manager)
     , analyzer_(analyzer)
     , comment_cache_storage_(new CommentCacheStorage(homePath))
     , summarization_storage_(new SummarizationStorage(homePath))
@@ -882,66 +881,66 @@ bool MultiDocSummarizationSubManager::GetSummarizationByRawKey(
     return summarization_storage_->Get(Utilities::uuidToUint128(key_str), result);
 }
 
-void MultiDocSummarizationSubManager::AppendSearchFilter(
-        std::vector<QueryFiltering::FilteringType>& filtingList)
-{
-    ///When search filter is based on ParentKey, get its associated values,
-    ///and add those values to filter conditions.
-    ///The typical situation of this happen when :
-    ///SELECT * FROM comments WHERE product_type="foo"
-    ///This hook will translate the semantic into:
-    ///SELECT * FROM comments WHERE product_id="1" OR product_id="2" ...
-
-    typedef std::vector<QueryFiltering::FilteringType>::iterator IteratorType;
-    IteratorType it = std::find_if(filtingList.begin(),
-            filtingList.end(), IsParentKeyFilterProperty(schema_.uuidPropName));
-    if (it != filtingList.end())
-    {
-        const std::vector<PropertyValue>& filterParam = it->values_;
-        if (!filterParam.empty())
-        {
-            try
-            {
-                const std::string& paramValue = get<std::string>(filterParam[0]);
-                KeyType param = Utilities::uuidToUint128(paramValue);
-
-                LogServerConnection& conn = LogServerConnection::instance();
-                GetDocidListRequest req;
-                UUID2DocidList resp;
-
-                req.param_.uuid_ = param;
-                conn.syncRequest(req, resp);
-                if (req.param_.uuid_ != resp.uuid_) return;
-
-                BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
-                QueryFiltering::FilteringType filterRule;
-                filterRule.operation_ = QueryFiltering::INCLUDE;
-                filterRule.property_ = schema_.docidPropName;
-                for (std::vector<KeyType>::const_iterator rit = resp.docidList_.begin();
-                        rit != resp.docidList_.end(); ++rit)
-                {
-                    UString result(Utilities::uint128ToMD5(*rit), UString::UTF_8);
-                    if (pBTreeIndexer->seek(schema_.docidPropName, result))
-                    {
-                        ///Protection
-                        ///Or else, too many unexisted keys are added
-                        PropertyValue v(result);
-                        filterRule.values_.push_back(v);
-                    }
-                }
-                //filterRule.logic_ = QueryFiltering::OR;
-                filtingList.erase(it);
-                //it->logic_ = QueryFiltering::OR;
-                filtingList.push_back(filterRule);
-            }
-            catch (const boost::bad_get &)
-            {
-                filtingList.erase(it);
-                return;
-            }
-        }
-    }
-}
+//void MultiDocSummarizationSubManager::AppendSearchFilter(
+//        std::vector<QueryFiltering::FilteringType>& filtingList)
+//{
+//    ///When search filter is based on ParentKey, get its associated values,
+//    ///and add those values to filter conditions.
+//    ///The typical situation of this happen when :
+//    ///SELECT * FROM comments WHERE product_type="foo"
+//    ///This hook will translate the semantic into:
+//    ///SELECT * FROM comments WHERE product_id="1" OR product_id="2" ...
+//
+//    typedef std::vector<QueryFiltering::FilteringType>::iterator IteratorType;
+//    IteratorType it = std::find_if(filtingList.begin(),
+//            filtingList.end(), IsParentKeyFilterProperty(schema_.uuidPropName));
+//    if (it != filtingList.end())
+//    {
+//        const std::vector<PropertyValue>& filterParam = it->values_;
+//        if (!filterParam.empty())
+//        {
+//            try
+//            {
+//                const std::string& paramValue = get<std::string>(filterParam[0]);
+//                KeyType param = Utilities::uuidToUint128(paramValue);
+//
+//                LogServerConnection& conn = LogServerConnection::instance();
+//                GetDocidListRequest req;
+//                UUID2DocidList resp;
+//
+//                req.param_.uuid_ = param;
+//                conn.syncRequest(req, resp);
+//                if (req.param_.uuid_ != resp.uuid_) return;
+//
+//                BTreeIndexerManager* pBTreeIndexer = index_manager_->getBTreeIndexer();
+//                QueryFiltering::FilteringType filterRule;
+//                filterRule.operation_ = QueryFiltering::INCLUDE;
+//                filterRule.property_ = schema_.docidPropName;
+//                for (std::vector<KeyType>::const_iterator rit = resp.docidList_.begin();
+//                        rit != resp.docidList_.end(); ++rit)
+//                {
+//                    UString result(Utilities::uint128ToMD5(*rit), UString::UTF_8);
+//                    if (pBTreeIndexer->seek(schema_.docidPropName, result))
+//                    {
+//                        ///Protection
+//                        ///Or else, too many unexisted keys are added
+//                        PropertyValue v(result);
+//                        filterRule.values_.push_back(v);
+//                    }
+//                }
+//                //filterRule.logic_ = QueryFiltering::OR;
+//                filtingList.erase(it);
+//                //it->logic_ = QueryFiltering::OR;
+//                filtingList.push_back(filterRule);
+//            }
+//            catch (const boost::bad_get &)
+//            {
+//                filtingList.erase(it);
+//                return;
+//            }
+//        }
+//    }
+//}
 
 void MultiDocSummarizationSubManager::check_rebuild()
 {

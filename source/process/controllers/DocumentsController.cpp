@@ -1078,7 +1078,7 @@ void DocumentsController::get_summarization()
  */
 void DocumentsController::get_doc_count()
 {
-    uint32_t doc_count = indexTaskService_->getDocNum();
+    uint32_t doc_count = indexSearchService_->getDocNum();
     response()[Keys::count] = doc_count;
 }
 
@@ -1113,7 +1113,7 @@ void DocumentsController::get_key_count()
         response().addError("Expect property name!");
         return;
     }
-    uint32_t doc_count = indexTaskService_->getKeyCount(property_name);
+    uint32_t doc_count = indexSearchService_->getKeyCount(property_name);
     response()[Keys::count] = doc_count;
 }
 

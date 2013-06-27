@@ -12,7 +12,7 @@
 #include <common/PropSharedLockSet.h>
 #include <bundles/index/IndexBundleConfiguration.h>
 #include <document-manager/DocumentManager.h>
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <ranking-manager/RankingManager.h>
 #include <mining-manager/group-manager/GroupFilterBuilder.h>
 #include <mining-manager/group-manager/GroupFilter.h>
@@ -29,7 +29,7 @@ using namespace sf1r;
 SearchThreadWorker::SearchThreadWorker(
     const IndexBundleConfiguration& config,
     const boost::shared_ptr<DocumentManager>& documentManager,
-    const boost::shared_ptr<IndexManager>& indexManager,
+    const boost::shared_ptr<InvertedIndexManager>& indexManager,
     const boost::shared_ptr<RankingManager>& rankingManager,
     SearchManagerPreProcessor& preprocessor,
     QueryBuilder& queryBuilder)
@@ -96,7 +96,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
 
     std::vector<QueryFiltering::FilteringType>& filtingList =
         actionOperation.actionItem_.filteringList_;
-    boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet;
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterIdSet;
 
     // when query is "*"
     const bool isFilterQuery =
@@ -130,7 +130,7 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
     {
         ///1. Search Filter
         ///2. Select * WHERE    (FilterQuery)
-        TermDocFreqs* pFilterTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+        TermDocFreqs* pFilterTermDocFreqs = new InvertedIndexManager::FilterTermDocFreqsT(pFilterIdSet);
         FilterDocumentIterator* pFilterIterator = new FilterDocumentIterator(pFilterTermDocFreqs);
         docIterContainer->add(pFilterIterator);
     }
@@ -180,9 +180,9 @@ bool SearchThreadWorker::search(SearchThreadParam& param)
         AllDocumentIterator* pFilterIterator = NULL;
         if (pDelFilter)
         {
-            pFilterIdSet.reset(new IndexManager::FilterBitmapT);
+            pFilterIdSet.reset(new InvertedIndexManager::FilterBitmapT);
             pDelFilter->compressed(*pFilterIdSet);
-            TermDocFreqs* pDelTermDocFreqs = new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+            TermDocFreqs* pDelTermDocFreqs = new InvertedIndexManager::FilterTermDocFreqsT(pFilterIdSet);
             pFilterIterator = new AllDocumentIterator(pDelTermDocFreqs, maxDoc);
         }
         else

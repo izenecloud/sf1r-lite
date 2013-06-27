@@ -1,6 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <search-manager/AllDocumentIterator.h>
 #include <algorithm> // std::set_difference
 
@@ -22,16 +22,16 @@ static const std::size_t DELETE_DOCIDS_NUM =
 
 AllDocumentIterator* createAllDocumentIterator()
 {
-    boost::shared_ptr<IndexManager::FilterBitmapT> pFilterIdSet(
-        new IndexManager::FilterBitmapT);
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> pFilterIdSet(
+        new InvertedIndexManager::FilterBitmapT);
 
     for (std::size_t i = 0; i < DELETE_DOCIDS_NUM; ++i)
     {
         pFilterIdSet->set(DELETE_DOCIDS[i]);
     }
 
-    IndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs =
-        new IndexManager::FilterTermDocFreqsT(pFilterIdSet);
+    InvertedIndexManager::FilterTermDocFreqsT* pFilterTermDocFreqs =
+        new InvertedIndexManager::FilterTermDocFreqsT(pFilterIdSet);
 
     return new AllDocumentIterator(pFilterTermDocFreqs, MAX_DOCID);
 

@@ -24,7 +24,6 @@ class IDMAnalyzer;
 namespace sf1r
 {
 class DocumentManager;
-class IndexManager;
 class ScdWriter;
 
 class SummarizationStorage;
@@ -41,13 +40,13 @@ public:
             const std::string& scdPath,
             SummarizeConfig schema,
             boost::shared_ptr<DocumentManager> document_manager,
-            boost::shared_ptr<IndexManager> index_manager,
+            //boost::shared_ptr<IndexManager> index_manager,
             idmlib::util::IDMAnalyzer* analyzer);
 
     ~MultiDocSummarizationSubManager();
 
-    void AppendSearchFilter(
-            std::vector<QueryFiltering::FilteringType>& filtingList);
+    //void AppendSearchFilter(
+    //        std::vector<QueryFiltering::FilteringType>& filtingList);
 
     bool GetSummarizationByRawKey(
             const izenelib::util::UString& rawKey,
@@ -99,7 +98,7 @@ private:
     fstream total_Opinion_Scd_;
     fstream total_Score_Scd_;
     boost::shared_ptr<DocumentManager> document_manager_;
-    boost::shared_ptr<IndexManager> index_manager_;
+    //boost::shared_ptr<IndexManager> index_manager_;
     boost::shared_ptr<ScdWriter> score_scd_writer_;
     boost::shared_ptr<ScdWriter> opinion_scd_writer_;
 
