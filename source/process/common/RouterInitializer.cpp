@@ -29,6 +29,7 @@
 #include "controllers/SynonymController.h"
 #include "controllers/CollectionController.h"
 #include "controllers/QueryNormalizeController.h"
+#include "controllers/ExtractKeywordsController.h"
 
 namespace sf1r
 {
@@ -1462,6 +1463,27 @@ void initializeDriverRouter(::izenelib::driver::Router& router, IService* servic
             update_collection_confHandler.get()
         );
         update_collection_confHandler.release();
+    }
+
+    {
+        ExtractKeywordsController extractKeywords;
+        const std::string controllerName("extract_keywords");
+        typedef ::izenelib::driver::ActionHandler<ExtractKeywordsController> handler_type;
+        typedef std::auto_ptr<handler_type> handler_ptr;
+
+        handler_ptr extract_keywordsHandler(
+            new handler_type(
+                extractKeywords,
+                &ExtractKeywordsController::extract_keywords
+            )
+        );
+
+        router.map(
+            controllerName,
+            "extract_keywords",
+            extract_keywordsHandler.get()
+        );
+        extract_keywordsHandler.release();
     }
 
 }
