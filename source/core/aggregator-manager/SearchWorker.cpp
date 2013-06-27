@@ -7,7 +7,7 @@
 #include <common/SearchCache.h>
 #include <common/Utilities.h>
 #include <common/QueryNormalizer.h>
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <search-manager/SearchManager.h>
 #include <search-manager/SearchBase.h>
 #include <search-manager/PersonalizedSearchInfo.h>
@@ -117,7 +117,7 @@ void SearchWorker::getDocumentsByIds(const GetDocumentsByIdsActionItem& actionIt
             PropertyType value;
             PropertyValue2IndexPropertyType converter(value);
             boost::apply_visitor(converter, (*property_value).getVariant());
-            indexManager_->getDocsByPropertyValue(colId, actionItem.propertyName_, value, idList);
+            invertedIndexManager_->getDocsByPropertyValue(colId, actionItem.propertyName_, value, idList);
         }
     }
 
@@ -267,7 +267,7 @@ void SearchWorker::makeQueryIdentity(
     default:
         identity.query = item.env_.queryString_;
         identity.expandedQueryString = item.env_.expandedQueryString_;
-        if (indexManager_->getIndexManagerConfig()->indexStrategy_.indexLevel_
+        if (invertedIndexManager_->getIndexManagerConfig()->indexStrategy_.indexLevel_
                 == izenelib::ir::indexmanager::DOCLEVEL
                 && item.rankingType_ == RankingType::PLM)
         {
@@ -880,6 +880,16 @@ void SearchWorker::clearSearchCache()
 void SearchWorker::clearFilterCache()
 {
     searchManager_->queryBuilder_->reset_cache();
+}
+
+uint32_t SearchWorker::getDocNum()
+{
+    return documentManager_->getNumDocs();
+}
+
+uint32_t SearchWorker::getKeyCount(const std::string& property_name)
+{
+    return invertedIndexManager_->getBTreeIndexer()->count(property_name);
 }
 
 }

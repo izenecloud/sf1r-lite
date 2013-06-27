@@ -1,7 +1,7 @@
 #include "collection_product_data_source.h"
 
 #include <document-manager/DocumentManager.h>
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <search-manager/SearchManager.h>
 #include <common/Utilities.h>
 #include <common/NumericRangePropertyTable.h>
@@ -14,7 +14,7 @@ using namespace izenelib::ir::idmanager;
 
 CollectionProductDataSource::CollectionProductDataSource(
         const boost::shared_ptr<DocumentManager>& document_manager,
-        const boost::shared_ptr<IndexManager>& index_manager,
+        const boost::shared_ptr<InvertedIndexManager>& index_manager,
         const boost::shared_ptr<izenelib::ir::idmanager::IDManager>& id_manager,
         const boost::shared_ptr<SearchManager>& search_manager,
         const PMConfig& config,

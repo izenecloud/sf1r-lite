@@ -5,7 +5,7 @@
 
 #include <common/SFLogger.h>
 #include <common/Utilities.h>
-#include <index-manager/IndexManager.h>
+#include <index-manager/InvertedIndexManager.h>
 #include <search-manager/SearchFactory.h>
 #include <search-manager/SearchManager.h>
 #include <search-manager/QueryPruneFactory.h>
@@ -84,7 +84,7 @@ void IndexBundleActivator::start( IBundleContext::ConstPtr context )
 
 void IndexBundleActivator::stop( IBundleContext::ConstPtr context )
 {
-    indexManager_->flush(false);
+    invertedIndexManager_->flush(false);
     if(miningSearchTracker_)
     {
         miningSearchTracker_->stopTracking();
@@ -266,12 +266,12 @@ bool IndexBundleActivator::init_()
     laManager_ = createLAManager_();
     SF1R_ENSURE_INIT(laManager_);
     SF1R_ENSURE_INIT(initializeQueryManager_());
-    std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open index manager.."<<std::endl;
-    indexManager_ = createIndexManager_();
-    SF1R_ENSURE_INIT(indexManager_);
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open document manager.."<<std::endl;
     documentManager_ = createDocumentManager_();
     SF1R_ENSURE_INIT(documentManager_);
+    std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open index manager.."<<std::endl;
+    invertedIndexManager_ = createInvertedIndexManager_();
+    SF1R_ENSURE_INIT(invertedIndexManager_);
     std::cout<<"["<<config_->collectionName_<<"]"<<"[IndexBundleActivator] open ranking manager.."<<std::endl;
     rankingManager_ = createRankingManager_();
     SF1R_ENSURE_INIT(rankingManager_);
@@ -284,6 +284,9 @@ bool IndexBundleActivator::init_()
     SF1R_ENSURE_INIT(searchAggregator_);
     indexWorker_ = createIndexWorker_();
     SF1R_ENSURE_INIT(indexWorker_);
+    // add all kinds of index that will support increment build.
+    indexWorker_->getIncSupportedIndexManager().addIndex(invertedIndexManager_);
+
     indexAggregator_ = createIndexAggregator_();
     SF1R_ENSURE_INIT(indexAggregator_);
     pQA_ = Singleton<ilplib::qa::QuestionAnalysis>::get();
@@ -296,7 +299,7 @@ bool IndexBundleActivator::init_()
     searchService_->searchWorker_->laManager_ = laManager_;
     searchService_->searchWorker_->idManager_ = idManager_;
     searchService_->searchWorker_->documentManager_ = documentManager_;
-    searchService_->searchWorker_->indexManager_ = indexManager_;
+    searchService_->searchWorker_->invertedIndexManager_ = invertedIndexManager_;
     //searchService_->searchWorker_->rankingManager_ = rankingManager_;
     searchService_->searchWorker_->searchManager_ = searchManager_;
     searchService_->searchWorker_->pQA_ = pQA_;
@@ -306,7 +309,7 @@ bool IndexBundleActivator::init_()
     taskService_->indexAggregator_ = indexAggregator_;
     taskService_->indexWorker_ = indexWorker_;
     taskService_->indexWorker_->idManager_ = idManager_;
-    taskService_->indexWorker_->laManager_ = laManager_;
+    //taskService_->indexWorker_->laManager_ = laManager_;
     taskService_->indexWorker_->documentManager_ = documentManager_;
     taskService_->indexWorker_->searchWorker_= searchWorker_;
     taskService_->indexWorker_->summarizer_.init(LAPool::getInstance()->getLangId(), idManager_);
@@ -424,14 +427,14 @@ IndexBundleActivator::createDocumentManager_() const
     return ret;
 }
 
-boost::shared_ptr<IndexManager>
-IndexBundleActivator::createIndexManager_() const
+boost::shared_ptr<InvertedIndexManager>
+IndexBundleActivator::createInvertedIndexManager_() const
 {
     std::string dir = getCurrentCollectionDataPath_()+"/index/";
     boost::filesystem::create_directories(dir);
-    boost::shared_ptr<IndexManager> ret;
+    boost::shared_ptr<InvertedIndexManager> ret;
 
-    ret.reset(new IndexManager());
+    ret.reset(new InvertedIndexManager(config_));
     if (ret)
     {
         IndexManagerConfig config(config_->indexConfig_);
@@ -471,6 +474,9 @@ IndexBundleActivator::createIndexManager_() const
         collectionIdMapping[config_->collectionName_] = 1;
 
         ret->setIndexManagerConfig(config, collectionIdMapping);
+        ret->idManager_ = idManager_;
+        ret->laManager_ = laManager_;
+        ret->documentManager_ = documentManager_;
     }
     return ret;
 }
@@ -501,11 +507,11 @@ IndexBundleActivator::createSearchManager_() const
 {
     boost::shared_ptr<SearchManager> ret;
 
-    if (documentManager_ && indexManager_ && rankingManager_)
+    if (documentManager_ && invertedIndexManager_ && rankingManager_)
     {
         SearchFactory factory(*config_,
                               documentManager_,
-                              indexManager_,
+                              invertedIndexManager_,
                               rankingManager_);
 
         ret.reset(new SearchManager(*config_, factory));
@@ -557,7 +563,7 @@ IndexBundleActivator::createSearchAggregator_()
 boost::shared_ptr<IndexWorker>
 IndexBundleActivator::createIndexWorker_()
 {
-    boost::shared_ptr<IndexWorker> ret(new IndexWorker(config_, directoryRotator_, indexManager_));
+    boost::shared_ptr<IndexWorker> ret(new IndexWorker(config_, directoryRotator_));
     return ret;
 }
 

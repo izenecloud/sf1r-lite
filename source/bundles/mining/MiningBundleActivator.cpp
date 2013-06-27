@@ -141,7 +141,7 @@ MiningBundleActivator::createMiningManager_(IndexSearchService* indexService) co
                 config_->collPath_,
                 indexService->searchWorker_->documentManager_,
                 indexService->searchWorker_->laManager_,
-                indexService->searchWorker_->indexManager_,
+                indexService->searchWorker_->invertedIndexManager_,
                 indexService->searchWorker_->searchManager_,
                 indexService->searchWorker_->searchCache_,
                 indexService->searchWorker_->idManager_,

@@ -3,7 +3,6 @@
 #include <document-manager/Document.h>
 #include <la-manager/LAManager.h>
 #include <aggregator-manager/IndexWorker.h>
-#include <index-manager/IndexManager.h>
 #include <index/IndexBundleConfiguration.h>
 #include <fstream>
 #include <algorithm>

@@ -192,4 +192,14 @@ bool IndexSearchService::getInternalDocumentId(
     return (internalId != 0);
 }
 
+uint32_t IndexSearchService::getDocNum()
+{
+    return searchWorker_->getDocNum();
+}
+
+uint32_t IndexSearchService::getKeyCount(const std::string& property_name)
+{
+    return searchWorker_->getKeyCount(property_name);
+}
+
 }

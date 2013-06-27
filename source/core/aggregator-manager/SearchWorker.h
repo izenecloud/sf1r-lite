@@ -29,7 +29,7 @@ class IndexBundleConfiguration;
 class MiningSearchService;
 class RecommendSearchService;
 class User;
-class IndexManager;
+class InvertedIndexManager;
 class DocumentManager;
 class LAManager;
 class SearchManager;
@@ -105,6 +105,9 @@ public:
 
     void clearFilterCache();
 
+    uint32_t getDocNum();
+    uint32_t getKeyCount(const std::string& property_name);
+
 private:
     bool getSearchResult_(
             const KeywordSearchActionItem& actionItem,
@@ -153,7 +156,7 @@ private:
     boost::shared_ptr<LAManager> laManager_;
     boost::shared_ptr<IDManager> idManager_;
     boost::shared_ptr<DocumentManager> documentManager_;
-    boost::shared_ptr<IndexManager> indexManager_;
+    boost::shared_ptr<InvertedIndexManager> invertedIndexManager_;
     boost::shared_ptr<SearchManager> searchManager_;
     boost::shared_ptr<MiningManager> miningManager_;
     boost::shared_ptr<SearchCache> searchCache_;

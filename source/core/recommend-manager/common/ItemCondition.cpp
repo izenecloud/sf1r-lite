@@ -16,7 +16,7 @@ void ItemCondition::createBitVector(QueryBuilder* queryBuilder)
     if (filteringList_.empty() || !queryBuilder)
         return;
 
-    boost::shared_ptr<IndexManager::FilterBitmapT> filterBitmap;
+    boost::shared_ptr<InvertedIndexManager::FilterBitmapT> filterBitmap;
     queryBuilder->prepare_filter(filteringList_, filterBitmap);
 
     pBitVector_.reset(new izenelib::ir::indexmanager::BitVector);

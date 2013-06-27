@@ -10,13 +10,13 @@
 #include <net/aggregator/BindCallProxyBase.h>
 #include <directory-manager/DirectoryRotator.h>
 #include <configuration-manager/PropertyConfig.h>
-#include <configuration-manager/ConfigurationTool.h>
 #include <document-manager/Document.h>
 #include <document-manager/text-summarization-submanager/TextSummarizationSubManager.h>
 #include <common/Status.h>
 #include <common/IndexingProgress.h>
 #include <common/ScdParser.h>
 #include <common/ScdWriterController.h>
+#include <index-manager/IncSupportedIndexManager.h>
 
 #include <ir/id_manager/IDManager.h>
 #include <ir/index_manager/index/IndexerDocument.h>
@@ -36,15 +36,14 @@ using izenelib::ir::idmanager::IDManager;
 class IndexBundleConfiguration;
 class MiningTaskService;
 class RecommendTaskService;
-class IndexManager;
 class DocumentManager;
 class LAManager;
 class SearchManager;
 class MiningManager;
 class ScdWriterController;
-class IndexHooker;
 class SearchWorker;
 class DistributeRequestHooker;
+class IndexHooker;
 
 class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
 {
@@ -59,26 +58,22 @@ class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
         RTYPE  ///RType update to index
     };
 
-    typedef boost::tuple<UpdateType, Document, IndexerDocument, IndexerDocument> UpdateBufferDataType;
+    // updatetype, newDoc, oldDocId, timestamp
+    typedef boost::tuple<UpdateType, Document, docid_t, time_t> UpdateBufferDataType;
     typedef stx::btree_map<docid_t, UpdateBufferDataType> UpdateBufferType;
 
 public:
     IndexWorker(
             IndexBundleConfiguration* bundleConfig,
-            DirectoryRotator& directoryRotator,
-            boost::shared_ptr<IndexManager> indexManager);
+            DirectoryRotator& directoryRotator);
 
     ~IndexWorker();
 
     void setManager_test(boost::shared_ptr<IDManager> idManager,
-        boost::shared_ptr<DocumentManager> documentManager,
-        boost::shared_ptr<IndexManager> indexManager,
-        boost::shared_ptr<LAManager> laManager)
+        boost::shared_ptr<DocumentManager> documentManager)
     {
         idManager_ = idManager;
         documentManager_ = documentManager;
-        indexManager_ = indexManager;
-        laManager_ = laManager;
     }
 
 public:
@@ -113,13 +108,14 @@ public:
 
     bool getIndexStatus(Status& status);
 
-    uint32_t getDocNum();
-
-    uint32_t getKeyCount(const std::string& property_name);
-
     boost::shared_ptr<DocumentManager> getDocumentManager() const;
 
     void flush(bool mergeBarrel = false);
+
+    IncSupportedIndexManager& getIncSupportedIndexManager()
+    {
+        return inc_supported_index_manager_;
+    }
 
 private:
     void createPropertyList_();
@@ -142,27 +138,25 @@ private:
 
     bool insertDoc_(
             Document& document,
-            IndexerDocument& indexDocument,
             time_t timestamp,
             bool immediately = false);
 
     bool doInsertDoc_(
             Document& document,
-            IndexerDocument& indexDocument);
+            time_t timestamp);
 
     bool updateDoc_(
+            docid_t oldId,
             Document& document,
-            IndexerDocument& indexDocument,
-            IndexerDocument& oldIndexDocument,
             time_t timestamp,
             IndexWorker::UpdateType updateType,
             bool immediately = false);
 
     bool doUpdateDoc_(
+            docid_t oldId,
             Document& document,
-            IndexerDocument& indexDocument,
-            IndexerDocument& oldIndexDocument,
-            IndexWorker::UpdateType updateType);
+            IndexWorker::UpdateType updateType,
+            time_t timestamp);
 
     void flushUpdateBuffer_();
 
@@ -175,8 +169,6 @@ private:
     bool prepareDocument_(
             SCDDoc& doc,
             Document& document,
-            IndexerDocument& indexDocument,
-            IndexerDocument& oldIndexDocument,
             docid_t& oldId,
             std::string& source,
             time_t& timestamp,
@@ -185,42 +177,7 @@ private:
 
     bool mergeDocument_(
             docid_t oldId,
-            Document& doc,
-            IndexerDocument& indexDocument,
-            bool generateIndexDoc);
-
-    bool prepareIndexDocument_(
-            docid_t oldId,
-            time_t timestamp,
-            const Document& document,
-            IndexerDocument& indexDocument);
-
-    bool prepareIndexDocumentProperty_(
-            docid_t docId,
-            const FieldPair& p,
-            IndexBundleSchema::iterator iter,
-            IndexerDocument& indexDocument);
-
-    bool prepareIndexDocumentStringProperty_(
-            docid_t docId,
-            const FieldPair& p,
-            IndexBundleSchema::iterator iter,
-            IndexerDocument& indexDocument);
-
-    bool prepareIndexRTypeProperties_(
-            docid_t docId,
-            IndexerDocument& indexDocument);
-
-    bool prepareIndexDocumentNumericProperty_(
-            docid_t docId,
-            const izenelib::util::UString & propertyValueU,
-            IndexBundleSchema::iterator iter,
-            IndexerDocument& indexDocument);
-
-    bool checkSeparatorType_(
-            const izenelib::util::UString& propertyValueStr,
-            izenelib::util::UString::EncodingType encoding,
-            char separator);
+            Document& doc);
 
     UpdateType checkUpdateType_(
             const uint128_t& scdDocId,
@@ -242,20 +199,7 @@ private:
             const unsigned int maxDisplayLength,
             std::vector<CharacterOffset>& sentenceOffsetList);
 
-    bool makeForwardIndex_(
-            docid_t docId,
-            const izenelib::util::UString& text,
-            const std::string& propertyName,
-            unsigned int propertyId,
-            const AnalysisInfo& analysisInfo);
-
     size_t getTotalScdSize_(const std::vector<std::string>& scdlist);
-
-    bool requireBackup_(size_t currTotalScdSize);
-
-    bool backup_();
-
-    bool recoverSCD_();
 
     static void value2SCDDoc(const ::izenelib::driver::Value& value, SCDDoc& scddoc);
 
@@ -274,20 +218,19 @@ private:
     MiningTaskService* miningTaskService_;
     RecommendTaskService* recommendTaskService_;
 
-    boost::shared_ptr<LAManager> laManager_;
+    IncSupportedIndexManager inc_supported_index_manager_;
+
     boost::shared_ptr<IDManager> idManager_;
     boost::shared_ptr<DocumentManager> documentManager_;
-    boost::shared_ptr<IndexManager> indexManager_;
+    //boost::shared_ptr<IndexManager> indexManager_;
     boost::shared_ptr<SearchWorker> searchWorker_;
 
     DirectoryRotator& directoryRotator_;
     PropertyConfig dateProperty_;
-    config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap_;
 
     ScdWriterController* scd_writer_;
     TextSummarizationSubManager summarizer_;
 
-    unsigned int collectionId_;
     IndexingProgress indexProgress_;
     bool checkInsert_;
     unsigned int numDeletedDocs_;
@@ -295,13 +238,13 @@ private:
 
     Status indexStatus_;
 
-    std::vector<boost::shared_ptr<LAInput> > laInputs_;
+    //std::vector<boost::shared_ptr<LAInput> > laInputs_;
     std::vector<string> propertyList_;
     std::map<std::string, uint32_t> productSourceCount_;
-    boost::shared_ptr<IndexHooker> hooker_;
 
     size_t totalSCDSizeSinceLastBackup_;
 
+    boost::shared_ptr<IndexHooker> hooker_;
     UpdateBufferType updateBuffer_;
     DistributeRequestHooker *distribute_req_hooker_;
 
