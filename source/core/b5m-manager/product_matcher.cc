@@ -3943,7 +3943,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
             bool cid_found = false;
             for(uint32_t i=0;i<cid_list.size();i++)
             {
-                if(EqualOrIsParent_(cid_list[i], p.cid))
+                if(EqualOrIsParent_(cid_list[i], p.cid) || EqualOrIsParent_(p.cid, cid_list[i]))
                 {
                     cid_found = true;
                     smc.cid_index = i;
