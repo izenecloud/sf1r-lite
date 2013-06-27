@@ -21,7 +21,7 @@ public:
     {
     }
 public:
-    bool classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query);
+    bool classify(NQI::WMVContainer& wmvs, std::string& query);
     
     const char* name()
     {

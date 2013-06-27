@@ -11,24 +11,18 @@ namespace sf1r
 {
 const char* FORMAL_ALIAS_DELIMITER = ":";
 const char* ALIAS_DELIMITER = ";";
+const char* KEYWORD_DELIMITER = " ";
 
 const char* LexiconClassifier::type_ = "lexicon";
+using namespace NQI;
 
 LexiconClassifier::LexiconClassifier(ClassifierContext* context)
     : Classifier(context)
 {
-    maxLength_ = 0;
-    minLength_ = -1;
-//    loadLexicon_();
-    iCategory_.name_ = context_->name_;
-    QIIterator it = context_->config_->find(iCategory_);
-    if (context_->config_->end() == it)
-        iCategory_.op_ = " ";
-     else
-     {
-        iCategory_.op_ = it->op_;
-        iCategory_.operands_ = it->operands_;
-     }
+    QueryIntentCategory name;
+    name.name_ = context_->name_;
+    iCategory_ = context_->config_->find(name);
+    loadLexicon();
     //reloadThread_= boost::thread(&LexiconClassifier::reloadLexicon_, this);
 }
 
@@ -57,13 +51,7 @@ void LexiconClassifier::loadLexicon()
             unsigned short size= line.size();
             if (0 == size)
                 continue;
-            if ( maxLength_ < size )
-                maxLength_ = size;
-            if ( minLength_ > size )
-                minLength_ = size;
-                //lexicons_[iCategory].insert(make_pair(line, line));
             lexicons_.insert(make_pair(line, line));
-                //std::cout<<line<<" "<< line<<"\n";
         }
         else
         {
@@ -71,13 +59,7 @@ void LexiconClassifier::loadLexicon()
             unsigned short size= formalName.size();
             if (0 == size)
                 continue;
-            if ( maxLength_ < size )
-                maxLength_ = size;
-            if ( minLength_ > size )
-                minLength_ = size;
-                //lexicons_[iCategory].insert(make_pair(formalName, formalName));
             lexicons_.insert(make_pair(formalName, formalName));
-                //std::cout<<formalName<<" "<< formalName<<"\n";
                 
             line.erase(0, formalEnd + 1);
             while (true)
@@ -88,13 +70,7 @@ void LexiconClassifier::loadLexicon()
                     unsigned short size= line.size();
                     if (0 == size)
                         break;
-                    if ( maxLength_ < size )
-                        maxLength_ = size;
-                    if ( minLength_ > size )
-                        minLength_ = size;
-                    //lexicons_[iCategory].insert(make_pair(line, formalName));
                     lexicons_.insert(make_pair(line, formalName));
-                //std::cout<<line<<" "<< formalName<<"\n";
                     break;
                 }
                 std::string aliasName = line.substr(0, aliasEnd);
@@ -102,18 +78,11 @@ void LexiconClassifier::loadLexicon()
                 unsigned short size= aliasName.size();
                 if (0 == size)
                     continue;
-                if ( maxLength_ < size )
-                    maxLength_ = size;
-                if ( minLength_ > size )
-                    minLength_ = size;
-                    //lexicons_[iCategory].insert(make_pair(aliasName, formalName));
                 lexicons_.insert(make_pair(aliasName, formalName));
-                //std::cout<<aliasName<<" "<< formalName<<"\n";
             }
         }
     }
     fs.close();
-    //}
     return;
 }
 
@@ -153,7 +122,7 @@ void LexiconClassifier::reloadLexicon()
     }*/
 }
 
-bool LexiconClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
+bool LexiconClassifier::classify(WMVContainer& wmvs, std::string& query)
 {
     if (query.empty())
         return false;
@@ -163,9 +132,46 @@ bool LexiconClassifier::classify(std::map<QueryIntentCategory, std::list<std::st
         std::cout<<"shared_lock::try_lock return'\n";
         return -1;
     }
-    if ((0 == maxLength_) || lexicons_.empty() || " " == iCategory_.op_)
+    if (lexicons_.empty() || iCategory_ == context_->config_->end())
         return false;
-    size_t pos = 0;
+    
+    std::size_t pos = 0;
+    std::size_t end = query.size();
+    bool ret = false;
+    bool isBreak = false;
+
+    while ((pos < end) && (!isBreak))
+    {
+        std::size_t found = query.find_first_of(KEYWORD_DELIMITER, pos);
+        std::size_t size = 0;
+        if (std::string::npos == found)
+        {
+            size = end - pos;
+            isBreak = true;
+        }
+        else
+        {
+            size = found - pos;
+        }
+        std::string word = query.substr(pos, size);
+        
+        boost::unordered_map<std::string, std::string>::iterator it = lexicons_.find(word);
+        if (lexicons_.end() != it)
+        {
+            word = it->second;
+            wmvs[*iCategory_].push_back(make_pair(word, 1));
+            query.erase(pos, found-pos+1);
+            ret = true;
+        }
+        else
+        {
+            pos = found+1;
+        }
+    }
+
+    return ret;
+
+    /*size_t pos = 0;
     size_t end = query.size() - 1;
     unsigned short wordSize = maxLength_;
     while (pos <= end)
@@ -201,8 +207,7 @@ bool LexiconClassifier::classify(std::map<QueryIntentCategory, std::list<std::st
             pos++;
             wordSize = maxLength_;
         }
-    }
-    return intents.empty() ? false : true;
+    }*/
 }
 
 }

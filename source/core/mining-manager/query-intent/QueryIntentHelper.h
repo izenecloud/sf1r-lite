@@ -14,11 +14,13 @@
 #include <util/driver/Response.h>
 #include <configuration-manager/QueryIntentConfig.h>
 
+#include "Classifier.h"
+
 namespace sf1r
 {
 void refineRequest(izenelib::driver::Request& request,
              izenelib::driver::Response& response,
-             std::map<QueryIntentCategory, std::list<std::string> >& intents);
+             NQI::WMVContainer& wmvs);
 }
 
 #endif // QueryIntentHelper.h

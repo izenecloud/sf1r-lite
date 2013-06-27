@@ -21,7 +21,7 @@ public:
     LexiconClassifier(ClassifierContext* context);
     ~LexiconClassifier();
 public:
-    bool classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query);
+    bool classify(NQI::WMVContainer& wmvs, std::string& query);
    
     const char* name()
     {
@@ -40,12 +40,11 @@ public:
     {
         return 0;
     }
-protected:
+private:
     boost::unordered_map<std::string, std::string> lexicons_;
     unsigned short maxLength_;
     unsigned short minLength_;
-    QueryIntentCategory iCategory_;
-private:
+    QIIterator iCategory_;
     //std::map<QueryIntentCategory, boost::unordered_map<std::string, std::string> >lexicons_;
     static const char* type_;
 

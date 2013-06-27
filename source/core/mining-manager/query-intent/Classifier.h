@@ -22,6 +22,42 @@ namespace sf1r
 typedef std::string ClassifierType;
 typedef std::string ClassifierName;
 
+extern const char* KEYWORD_DELIMITER;
+
+namespace NQI   //NamespaceQueryIntent
+{
+    extern const unsigned int REMOVED_WORD_WEIGHT;
+    extern const std::string NODE_DELIMITER;
+
+    typedef QueryIntentCategory KeyType;
+    typedef std::string ValueType;
+    typedef std::list<ValueType>   MultiValueType;
+    typedef MultiValueType::iterator MultiVIterator;
+    
+    typedef std::pair<ValueType, unsigned int> WVType;
+    typedef std::list<WVType >   WMVType; // Weighted multivalue type
+    typedef WMVType::iterator WMVIterator;
+
+    typedef std::map<KeyType, WMVType> WMVContainer; // Weighted multivalue type container
+    typedef WMVContainer::iterator WMVCIterator;
+    
+    bool nameCompare(WVType& lv, WVType& rv);
+    bool weightCompare(WVType& lv, WVType& rv);
+    
+    bool calculateWeight(WVType& lv, WVType& rv);
+    bool calculateWeight(WVType& wv, ValueType& v);
+    
+    void combineWMVS(WMVContainer& wmvs, std::string& remainKeywords);
+    bool combineWMV(WMVType& wmv, int number);
+    bool commonAncester(WMVType& wmv, int number);
+    void printWMV(WMVType& wmv);
+
+    void reserveKeywords(WMVType& wmv, std::string& removedWords);
+    void resumeKeywords(WMVType& wmv, std::string& keyword);
+    void deleteKeywords(WMVType& wmv);
+
+} // namespace NQI
+
 class ClassifierContext
 {
 public:
@@ -61,15 +97,11 @@ public:
     //
     // classify query into several QueryIntentType, remove classified keywords from query.
     //
-    virtual bool classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query) = 0;
+    virtual bool classify(NQI::WMVContainer& wmvs, std::string& query) = 0;
 
     virtual const char* name() = 0;
 
     virtual int priority() = 0;
-
-    virtual void loadLexicon()
-    {
-    }
 
     virtual void reloadLexicon()
     {
@@ -86,4 +118,3 @@ protected:
 }
 
 #endif //Classifier.h
-

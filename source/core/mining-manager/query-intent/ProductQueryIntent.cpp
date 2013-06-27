@@ -2,6 +2,7 @@
 #include "QueryIntentHelper.h"
 
 #include <common/Keys.h>
+#include <common/QueryNormalizer.h>
 
 #include <boost/unordered_map.hpp>
 #include <map>
@@ -13,6 +14,7 @@ namespace sf1r
 {
 using driver::Keys;
 using namespace izenelib::driver;
+using namespace NQI;
 
 ProductQueryIntent::ProductQueryIntent(IntentContext* context)
     : QueryIntent(context)
@@ -47,77 +49,72 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
     std::string keywords = asString(request[Keys::search][Keys::keywords]);
     if (keywords.empty() || "*" == keywords)
         return;
-   
-    izenelib::driver::Value& conditions = request[Keys::conditions];
-    const izenelib::driver::Value::ArrayType* array = conditions.getPtr<Value::ArrayType>();
+    if (keywords.size() > 60)
+        return;
+    //std::string mode = asString(request[Keys::search][Keys::searching_mode][Keys::mode]);
+    //boost::to_lower(mode);
+    //if (mode == "suffix")
+    //    return;
+    std::string normalizedQuery;
+    QueryNormalizer::get()->normalize(keywords, normalizedQuery);
+    LOG(INFO)<<normalizedQuery; 
+    
+    bool intentSpecified = false;
     boost::unordered_map<std::string, bool> bitmap;
+    izenelib::driver::Value& enables = request["query_intent"];
+    const izenelib::driver::Value::ArrayType* array = enables.getPtr<Value::ArrayType>();
+    if (array && (0 != array->size()))
+    {
+        intentSpecified = true;
+        for (std::size_t i = 0; i < array->size(); i++)
+        {
+            std::string property = asString((*array)[i][Keys::property]);
+            bitmap.insert(make_pair(property, true));
+        }
+    }
+    
+    izenelib::driver::Value& conditions = request[Keys::conditions];
+    array = conditions.getPtr<Value::ArrayType>();
     if (array && (0 != array->size()))
     {
         for (std::size_t i = 0; i < array->size(); i++)
         {
-            std::string condition = asString((*array)[i][Keys::property]);
-            for (std::size_t priority = 0; priority < classifiers_.size(); priority++)
-            {
-                ContainerIterator it = classifiers_[priority].begin();
-                for (; it != classifiers_[priority].end(); it++)
-                {
-                    if (condition == (*it)->name())
-                    {
-                        bitmap.insert(make_pair(condition, false));
-                        break;
-                    }
-                }
-                if (it != classifiers_[priority].end())
-                    break;
-            }
+            std::string property = asString((*array)[i][Keys::property]);
+            bitmap.insert(make_pair(property, false));
         }
     }
     
-    izenelib::driver::Value& disables = request["query_intent"];
-    array = disables.getPtr<Value::ArrayType>();
-    if (array && (0 != array->size()))
-    {
-        for (std::size_t i = 0; i < array->size(); i++)
-        {
-            std::string condition = asString((*array)[i][Keys::property]);
-            for (std::size_t priority = 0; priority < classifiers_.size(); priority++)
-            {
-                ContainerIterator it = classifiers_[priority].begin();
-                for (; it != classifiers_[priority].end(); it++)
-                {
-                    if (condition == (*it)->name())
-                    {
-                        bitmap.insert(make_pair(condition, false));
-                        break;
-                    }
-                }
-                if (it != classifiers_[priority].end())
-                    break;
-            }
-        }
-    }
     
-    std::map<QueryIntentCategory, std::list<std::string> > intents;
+    WMVContainer wmvs;
     bool ret = false;
     for (std::size_t priority = 0; priority < classifiers_.size(); priority++)
     {
         ContainerIterator it = classifiers_[priority].begin();
         for(; it != classifiers_[priority].end(); it++)
         {
-            if (bitmap.end() == bitmap.find((*it)->name()))
-                ret |= (*it)->classify(intents, keywords);
+            boost::unordered_map<std::string, bool>::iterator bIt = bitmap.find((*it)->name());
+            if (intentSpecified) 
+            {
+                if((bitmap.end() != bIt) && (bIt->second) )
+                    ret |= (*it)->classify(wmvs, normalizedQuery);
+            }
+            else if ( bitmap.end() == bIt || bIt->second)
+                ret |= (*it)->classify(wmvs, normalizedQuery);
+            
         }
     }
     bitmap.clear();
   
     if (!ret)
         return;
-    request[Keys::search][Keys::keywords] = keywords;
+    combineWMVS(wmvs, normalizedQuery);
+    request[Keys::search][Keys::keywords] = normalizedQuery;
     
-    boost::trim(keywords);
-    if (keywords.empty() )
+    boost::trim(normalizedQuery);
+    if (normalizedQuery.empty() )
         request[Keys::search][Keys::keywords] = "*";
-    refineRequest(request, response, intents);
+    refineRequest(request, response, wmvs);
+    wmvs.clear();
 }
 
 void ProductQueryIntent::reloadLexicon()

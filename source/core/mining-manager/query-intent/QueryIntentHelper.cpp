@@ -1,4 +1,5 @@
 #include "QueryIntentHelper.h"
+#include "Classifier.h"
 
 #include <util/driver/Value.h>
 #include <util/driver/Request.h>
@@ -12,20 +13,23 @@ namespace sf1r
 {
 using driver::Keys;
 using namespace izenelib::driver;
+using namespace NQI;
 
 void refineRequest(izenelib::driver::Request& request,
              izenelib::driver::Response& response,
-             std::map<QueryIntentCategory, std::list<std::string> >& intents)
+             WMVContainer& wmvs)
 {
+    if (wmvs.empty())
+        return;
     izenelib::driver::Value& conditions = request[Keys::conditions];
     izenelib::driver::Value& queryIntents = response["query_intent"];
-    std::map<QueryIntentCategory, std::list<std::string> >::iterator array;
-    std::list<std::string>::iterator item;
-    for (array = intents.begin(); array != intents.end(); array++)
+    WMVCIterator array;
+    WMVIterator item;
+    for (array = wmvs.begin(); array != wmvs.end(); array++)
     {
-        izenelib::driver::Value& condition = conditions();
         if (array->second.empty())
             continue;
+        izenelib::driver::Value& condition = conditions();
         condition[Keys::property] = array->first.name_;
         condition["operator"] = array->first.op_;
         int operands = array->first.operands_;
@@ -39,8 +43,9 @@ void refineRequest(izenelib::driver::Request& request,
         {
             if (i >= operands)
                 break;
-            values() = *item;
-            queryIntentValues() = *item;
+            values() = item->first;
+            LOG(INFO)<<item->first;
+            queryIntentValues() = item->first;
         }
     }
 }

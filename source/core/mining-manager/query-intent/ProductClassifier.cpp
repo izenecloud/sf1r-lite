@@ -9,10 +9,10 @@ namespace sf1r
 {
 
 using izenelib::util::UString;
-
+using namespace NQI;
 const char* ProductClassifier::type_ = "product";
 
-bool ProductClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
+bool ProductClassifier::classify(WMVContainer& wmvs, std::string& query)
 {
     if (query.empty())
         return false;
@@ -26,7 +26,6 @@ bool ProductClassifier::classify(std::map<QueryIntentCategory, std::list<std::st
 
     if (pathVec.empty())
         return false;
-    std::list<std::string> intent;
     std::string category = "";
     for (size_t i = 0; i < pathVec[0].size(); i++)
     {
@@ -34,8 +33,7 @@ bool ProductClassifier::classify(std::map<QueryIntentCategory, std::list<std::st
         if ( i < pathVec[0].size() - 1)
             category +=">";
     }
-    intent.push_back(category);
-    intents[*it] = intent;
+    wmvs[*it].push_back(make_pair(category, 1));
     return true;
 }
 }

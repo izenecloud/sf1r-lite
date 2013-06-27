@@ -13,9 +13,7 @@ Classifier* ClassifierFactory::createClassifier(ClassifierContext* context)
     std::string type;
     if ((type = LexiconClassifier::type()) == context->type_)
     {
-        Classifier* classifier = new LexiconClassifier(context);
-        classifier->loadLexicon();
-        return classifier;
+        return new LexiconClassifier(context);
     }
     if ((type = ProductClassifier::type()) == context->type_)
     {
@@ -27,9 +25,7 @@ Classifier* ClassifierFactory::createClassifier(ClassifierContext* context)
     }
     if ((type = TrieClassifier::type()) == context->type_)
     {
-        Classifier* classifier = new TrieClassifier(context);
-        classifier->loadLexicon();
-        return classifier;
+        return new TrieClassifier(context);
     }
     else
         return NULL;

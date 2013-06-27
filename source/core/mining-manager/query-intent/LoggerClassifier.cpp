@@ -1,6 +1,5 @@
 #include "LoggerClassifier.h"
 #include <util/ustring/UString.h>
-#include <common/QueryNormalizer.h>
 #include <vector>
 #include <list>
 
@@ -10,10 +9,11 @@ namespace sf1r
 {
 
 using izenelib::util::UString;
+using namespace NQI;
 
 const char* LoggerClassifier::type_ = "logger";
 
-bool LoggerClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
+bool LoggerClassifier::classify(WMVContainer& wmvs, std::string& query)
 {
     if (query.empty())
         return false;
@@ -24,14 +24,11 @@ bool LoggerClassifier::classify(std::map<QueryIntentCategory, std::list<std::str
         return false;
     std::vector<std::vector<std::string> > pathVec;
     std::vector<int> freqVec;
-    std::string normalizedQuery;
-    QueryNormalizer::get()->normalize(query, normalizedQuery);
-    if (!(context_->miningManager_->getFreqGroupLabel(normalizedQuery, context_->name_, 1, pathVec, freqVec)))
+    if (!(context_->miningManager_->getFreqGroupLabel(query, context_->name_, 1, pathVec, freqVec)))
         return false;
 
     if (pathVec.empty())
         return false;
-    std::list<std::string> intent;
     std::string category = "";
     for (size_t i = 0; i < pathVec[0].size(); i++)
     {
@@ -39,8 +36,7 @@ bool LoggerClassifier::classify(std::map<QueryIntentCategory, std::list<std::str
         if ( i < pathVec[0].size() - 1)
             category +=">";
     }
-    intent.push_back(category);
-    intents[*it] = intent;
+    wmvs[*it].push_back(make_pair(category, 1));
     return true;
 }
 }

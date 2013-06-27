@@ -7,10 +7,88 @@
 
 namespace sf1r
 {
-const std::string FORMAT_LSB = "[";
-const std::string FORMAT_RSB = "]";
+static const std::string FORMAT_LSB = "[";
+static const std::string FORMAT_RSB = "]";
+static const std::string FORMAT_OR  = "/";
+static const std::string FORMAT_SYNONYM = ":";
+static const std::string SYNONYM_DELIMITER = " ";
 
 const char* TrieClassifier::type_ = "trie";
+
+using namespace NQI;
+
+TrieClassifier::TrieClassifier(ClassifierContext* context)
+    : Classifier(context)
+{
+    QueryIntentCategory name;
+    name.name_ = context_->name_;
+    iCategory_ = context_->config_->find(name);
+    synonym_.clear();
+    loadSynonym();
+    loadLexicon();
+}
+
+TrieClassifier::~TrieClassifier()
+{
+    trie_.clear();
+}
+
+void TrieClassifier::loadSynonym()
+{
+    std::string synonymFile = context_->lexiconDirectory_ + context_->name_ + "Synonym";
+    if (!boost::filesystem::exists(synonymFile) 
+        || !boost::filesystem::is_regular_file(synonymFile))
+        return;
+    std::ifstream fs;
+    fs.open(synonymFile.c_str(), std::ios::in);
+    if (!fs)
+        return;
+    std::string line;
+    while (!fs.eof())
+    {
+        getline(fs, line);
+        std::size_t found = line.find(FORMAT_SYNONYM);
+        if (std::string::npos == found)
+            continue;
+        std::size_t pos = found + 1;
+        MultiValueType mv;
+        while (std::size_t synonym = line.find(SYNONYM_DELIMITER, pos))
+        {
+            if (std::string::npos == synonym)
+            {
+                mv.push_back(line.substr(pos, line.size() - pos));
+                //std::cout<<line.substr(pos, line.size() - pos)<<std::endl;
+                break;
+            }
+            mv.push_back(line.substr(pos, synonym - pos));
+            //std::cout<<line.substr(pos, synonym - pos)<<std::endl;
+            pos = synonym + 1;
+        }
+        line.erase(found, line.size() - found);
+        line += " ";
+        pos = 0;
+        while (std::size_t synonym = line.find(SYNONYM_DELIMITER, pos))
+        {
+            std::string key;
+            if (std::string::npos == synonym)
+            {
+                break;
+            }
+            key = line.substr(pos, synonym - pos);
+            //std::cout<<key<<"\n";
+            SynonymIterator it = synonym_.find(key);
+            if (synonym_.end() == it)
+                synonym_.insert(make_pair(key, mv));
+            else
+            {
+                MultiVIterator mit = mv.begin();
+                for (; mit != mv.end(); mit++)
+                    it->second.push_back(*mit);
+            }
+            pos = synonym + 1;
+        }
+    }
+}
 
 void TrieClassifier::loadLexicon()
 {
@@ -68,17 +146,39 @@ void TrieClassifier::loadLexicon()
                 }
                 else
                 {
-                    category += ">";
+                    category += NODE_DELIMITER;
                     category += word;
                 }
-                std::size_t size = word.size();
-                if (size == 0)
-                    continue;
-                if (size > maxLength_)
-                    maxLength_ = size;
-                if (size < minLength_)
-                    minLength_ = size;
-                lexicons_.insert(make_pair(word, category));
+                TrieIterator it = trie_.find(word);
+                if (trie_.end() == it)
+                {
+                    MultiValueType mv;
+                    mv.push_back(category);
+                    trie_.insert(make_pair(word, mv));
+                }
+                else
+                    it->second.push_back(category);
+
+                std::size_t pos = 0;
+                while (std::size_t found = word.find(FORMAT_OR, pos))
+                {
+                    if (std::string::npos == found)
+                        break;
+                    std::string key = word.substr(pos, found-pos);
+                    pos = found + 1;
+                    //std::cout<<key<<std::endl;
+                    SynonymIterator it = synonym_.find(key);
+                    if (synonym_.end() == it)
+                    {
+                        MultiValueType mv;
+                        mv.push_back(word);
+                        synonym_.insert(make_pair(key, mv));
+                    }
+                    else
+                    {
+                        it->second.push_back(word);
+                    }
+                }
                 //std::cout<<word<<" "<< category<<"\n";
             }
         }
@@ -88,30 +188,175 @@ void TrieClassifier::loadLexicon()
     return;
 }
 
-bool TrieClassifier::classify(std::map<QueryIntentCategory, std::list<std::string> >& intents, std::string& query)
+void TrieClassifier::reloadLexicon()
 {
-    if (!LexiconClassifier::classify(intents, query))
+    boost::unique_lock<boost::shared_mutex> ul(mtx_);
+    loadLexicon();
+}
+
+bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
+{
+    if (query.empty())
         return false;
-    if ( -1 == iCategory_.operands_)
-        return true;
-    if ((std::size_t)iCategory_.operands_ < intents[iCategory_].size())
+    if (context_->config_->end() == iCategory_)
+        return false;
+    
+    boost::shared_lock<boost::shared_mutex> sl(mtx_, boost::try_to_lock);
+    if (!sl)
     {
-        if (iCategory_.operands_ == 1)
+        std::cout<<"shared_lock::try_lock return'\n";
+        return false;
+    }
+    
+    std::size_t pos = 0;
+    std::size_t end = query.size();
+    bool ret = false;
+    bool isBreak = false;
+   
+    // exact search and erase
+    WMVType& mvContainer = wmvs[*iCategory_];
+    //std::queue<std::string> voters;
+    std::list<std::string> voters;
+    std::string removedWords = "";
+    while ((pos < end) && (!isBreak))
+    {
+        std::size_t found = query.find_first_of(KEYWORD_DELIMITER, pos);
+        std::size_t size = 0;
+        if (std::string::npos == found)
         {
-            std::list<std::string> values = intents[iCategory_];
-            std::list<std::string>::iterator it = values.begin();
-            std::size_t max = 0;
-            std::string maxString;
-            for (; it != values.end(); it++)
+            size = end - pos;
+            isBreak = true;
+        }
+        else
+        {
+            size = found - pos;
+        }
+        std::string word = query.substr(pos, size);
+        
+        std::list<std::string>::iterator voter = voters.begin();
+        for (; voter != voters.end(); voter++)
+        {
+            if (*voter == word)
             {
-                if (max < it->size())
-                    maxString = (*it);
+                voters.push_back(word);
+                if (trie_.end() == trie_.find(word))
+                {
+                    query.erase(pos, size + 1);
+                    removedWords += " ";
+                    removedWords += word;
+                }
+                break;
             }
-            intents[iCategory_].clear();
-            intents[iCategory_].push_back(maxString);
+        }
+        if (voters.end() != voter)
+        {
+            pos = found+1;
+            continue;
+        }
+
+        TrieIterator it = trie_.find(word);
+        if (trie_.end() != it)
+        {
+            MultiValueType& mv = it->second;
+            MultiVIterator vIt = mv.begin();
+            for (; vIt != mv.end(); vIt++)
+                mvContainer.push_back(make_pair(*vIt,0));
+            
+            voters.push_back(word);
+            query.erase(pos, size + 1);
+            removedWords += " ";
+            removedWords += word;
+            ret = true;
+        }
+        else
+        {
+            // synonym. fuzzy search and reserve.
+            SynonymIterator sit = synonym_.find(word);
+            if (synonym_.end() != sit)
+            {
+                MultiVIterator mvIt = sit->second.begin();
+                for (; mvIt != sit->second.end(); mvIt++)
+                {
+                    std::list<std::string>::iterator voter = voters.begin();
+                    for (; voter != voters.end(); voter++)
+                    {
+                        if (*voter == *mvIt)
+                        {
+                            voters.push_back(*mvIt);
+                            break;
+                        }
+                    }
+                    if (voters.end() != voter)
+                        continue;
+                    
+                    voters.push_back(*mvIt);
+                    TrieIterator tIt = trie_.find(*mvIt);
+                    if (trie_.end() != tIt)
+                    {
+                        MultiValueType& mv = tIt->second;
+                        MultiVIterator vIt = mv.begin();
+                        for (; vIt != mv.end(); vIt++)
+                            mvContainer.push_back(make_pair(*vIt,0));
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                voters.push_back(word);
+            }
+            pos = found+1;
         }
     }
-    return true;
+    
+    //std::cout<<"vote begin\n";
+    std::list<std::string>::iterator vIt = voters.begin();
+    for (; vIt != voters.end(); vIt++)
+    {
+        std::string word = *vIt;
+        //std::cout<<word<<"\n"; 
+        // vote
+        // 男=>服饰鞋帽>男装>...
+        // 保护套=>手机数码>手机配件>手机保护套
+        WMVIterator wmvIt = mvContainer.begin();
+        for (; wmvIt != mvContainer.end(); wmvIt++)
+        {
+            calculateWeight(*wmvIt, word);
+            //std::cout<<wmvIt->first<<" "<<wmvIt->second<<"\n";
+        }
+    }
+    voters.clear();
+    //std::cout<<query<<"\n"<<removedWords<"\n";
+    //std::cout<<"vote end\n";
+    reserveKeywords(mvContainer, removedWords);
+    // combine.
+    // query:男装 外套
+    // 男装=>服饰鞋帽>男装
+    // 外套=>服饰鞋帽>男装>外套
+    //       服饰鞋帽>女装>外套
+    // 男装 外套=>服饰鞋帽>男装>外套
+    /*mvContainer.sort(nameCompare);
+    WMVIterator it = mvContainer.begin();
+    for (; it != mvContainer.end(); it++)
+    {
+        WVType& value = *it;
+        WMVIterator cIt = it;
+        cIt ++;
+        for (; cIt != mvContainer.end(); cIt++)
+        {
+           calculateWeight(*cIt, value); 
+        }
+    }
+    mvContainer.sort(weightCompare);
+    unsigned int maxWeight = 0;
+    for (it = mvContainer.begin(); it != mvContainer.end(); it++)
+    {
+        if (maxWeight > it->second)
+            break;
+        wmvs[*iCategory_].push_back(*it);
+        maxWeight = it->second;
+    }*/
+    return ret;
 }
 
 }
