@@ -933,9 +933,9 @@ bool ProductMatcher::Index(const std::string& kpath, const std::string& scd_path
         }
         if(invalid_attribute)
         {
-#ifdef B5M_DEBUG
-            //LOG(INFO)<<"invalid SPU attribute "<<spid<<","<<sattribute<<std::endl;
-#endif
+//#ifdef B5M_DEBUG
+//#endif
+            LOG(INFO)<<"invalid SPU attribute "<<spid<<","<<sattribute<<std::endl;
             continue;
         }
         for(uint32_t i=0;i<product.attributes.size();i++)
@@ -2316,6 +2316,14 @@ void ProductMatcher::GetKeywords(const ATermList& term_list, KeywordVector& keyw
                             need_append = false;
                         }
                     }
+                    if(need_append&&found_keyword.term_list.size()>0)
+                    {
+                        if((double)found_keyword.attribute_apps.size()/tag.attribute_apps.size()>=1.0)
+                        {
+                            found_keyword.kweight = 0.0;
+                            keyword_vector.push_back(found_keyword);
+                        }
+                    }
                     //for(uint32_t i=0;i<keyword_vector.size();i++)
                     //{
                         //int select = SelectKeyword_(tag, keyword_vector[i]);
@@ -3622,6 +3630,7 @@ void ProductMatcher::GenSpuContributor_(const KeywordTag& tag, SpuContributor& s
         //const Product& p = products_[app.spu_id];
         //std::string stext;
         //tag.text.convertString(stext, UString::UTF_8);
+        //LOG(ERROR)<<"paweight add "<<stext<<","<<p.stitle<<","<<paweight<<std::endl;
         //LOG(ERROR)<<"lenweight add "<<stext<<","<<p.stitle<<","<<scv.lenweight<<","<<tag.term_list.size()<<std::endl;
     }
 }
@@ -3935,7 +3944,7 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         if(!IsPriceSim_(price, p.price)) continue;
         //if(!IsValuePriceSim_(price.Mid(), p.price)) continue;
         SpuContributorValue& scv = it->second;
-        //LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<std::endl;
+        //LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<","<<scv.paweight<<","<<p.aweight<<std::endl;
         scv.lenweight/=text_term_len;
         if(IsSpuMatch_(p, scv))
         {

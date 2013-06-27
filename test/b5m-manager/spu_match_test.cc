@@ -42,6 +42,8 @@ int main(int ac, char** av)
     std::vector<std::string> scd_list;
     ScdParser::getScdList(scd_path, scd_list);
     izenelib::util::ClockTimer clocker;
+    uint32_t all_count = 0;
+    uint32_t match_count = 0;
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
@@ -64,15 +66,17 @@ int main(int ac, char** av)
             doc.getString("Title", stitle);
             ProductMatcher::Product result_product;
             matcher.Process(doc, result_product, true);
+            all_count++;
             bool spu_match = false;
             if(!result_product.stitle.empty())
             {
                 spu_match = true;
+                match_count++;
             }
             if(!spu_match)
             {
                 LOG(ERROR)<<"unmatch for "<<stitle<<std::endl;
-                return EXIT_FAILURE;
+                //return EXIT_FAILURE;
             }
             else
             {
@@ -82,6 +86,7 @@ int main(int ac, char** av)
         
     }
     std::cerr<<"clocker used "<<clocker.elapsed()<<std::endl;
+    std::cerr<<"stat "<<all_count<<","<<match_count<<std::endl;
     return EXIT_SUCCESS;
 }
 
