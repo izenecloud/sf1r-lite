@@ -2227,51 +2227,150 @@ bool MiningManager::GetSuffixMatch(
         // two chars without space -> one word
         // three chars without space -> one word
         // short query with sapces -> words with spaces ...
+        double rank_boundary = 0.2;
 
-        if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true && 
-                                    major_tokens.size() + minor_tokens.size() < 7 && major_tokens.size() < 4)
+        double total_score = 0;
+        double major_score = 0;
+        double minor_score = 0;
+        unsigned int major_highscore_size = 0;
+        unsigned int major_size = major_tokens.size();
+        unsigned int minor_size = minor_tokens.size();
+        unsigned int total_size = major_size + minor_size;
+        std::list<std::pair<UString, double> > boundary_minor_tokens;
+        std::list<std::pair<UString, double> > boundary_major_tokens;
+
+        for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
         {
-            if (!QueryNormalizer::get()->isLongQuery(pattern)) // short query
+            if (i->second >= 3)
             {
-                std::cout << std::endl;
-                LOG (INFO) << "[SHORT SEARCH] First, for short query: 2 3 and some with space  ";
-                std::list<std::pair<UString, double> > major_tokens_short;
-                std::list<std::pair<UString, double> > minor_tokens_short;
+                major_highscore_size++;
+            }
 
-                std::vector<std::string> tokens;
-                QueryNormalizer::get()->tokenizeQuery(pattern, tokens);
+            double tmp_score = 0;
+
+            if (i->second < 1)
+            {
+                major_score += 0.12;
+                boundary_minor_tokens.push_back(std::make_pair(i->first, 0.12));
+            }
+            else if (major_size >= 5)
+            {
+                tmp_score = (i->second)/5;
+                major_score += tmp_score;
+                boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+            }
+            else if (major_size >= 3)
+            {
+                tmp_score = (i->second)/6;
+                major_score += tmp_score;
+                boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+            }
+            else if(major_size > 0)
+            {
+                tmp_score = (i->second)/7;
+                major_score += tmp_score;
+                boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+            }
+        }
+
+        for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
+        {
+            if (i->second < 1)
+            {
+                minor_score += i->second;
+                boundary_minor_tokens.push_back(*i);
+            }
+            else
+            {
+                double tmp_score = (i->second)/8;
+                minor_score += tmp_score;
+                boundary_minor_tokens.push_back(std::make_pair(i->first, tmp_score));
+            }
+        }
+        total_score = minor_score + major_score;
                 
-                bool useShort = true;
-                if (tokens.size() == 1 && QueryNormalizer::get()->countCharNum(tokens[0]) < 4)
-                {
-                    UString ukey(pattern, izenelib::util::UString::UTF_8);
-                    major_tokens_short.push_back(std::make_pair(ukey, 3.0));
-                }
-                else if (tokens.size() > 1)
-                {
-                    for (std::vector<std::string>::iterator i = tokens.begin(); i != tokens.end(); ++i)
-                    {
-                        if (QueryNormalizer::get()->countCharNum(*i) > 3)
-                        {
-                            useShort = false;
-                            break;
-                        }
-                    }
-                    if (useShort)
-                    {
-                        for (unsigned int i = 0; i < tokens.size(); ++i)
-                        {
-                            UString ukey(tokens[i], izenelib::util::UString::UTF_8);
-                            major_tokens_short.push_back(std::make_pair(ukey, 3.0));
-                        }
-                    }
-                }
-                else
-                    useShort = false;
+        cout << "total_score :" <<total_score <<endl;
+        cout << "major_score :" <<major_score <<endl;
+        cout << "minor_score :" <<minor_score <<endl;
 
-                if ( useShort)
+        if (major_size >= 7) // 7 8 9 10 ...
+        {
+            ///0.54 + 0.3 // 0.54 + 0.4
+            if (major_highscore_size >= 5)
+                rank_boundary = major_score * 0.54 + minor_score * 0.3;
+            else
+                rank_boundary = major_score * 0.54 + minor_score * 0.4;
+        }
+        else if (major_size >= 5) // 5 6
+        {
+            ///0.53 + 0.4  // 0.53 + 0.55
+            if (major_highscore_size > 3)
+                rank_boundary = major_score * 0.53 + minor_score * 0.4;
+            else
+                rank_boundary = major_size * 0.53 + minor_score * 0.55;
+        }
+        else if (major_size >= 3) // 3 4
+        {
+            ///0.6 + 0.4 // 0.6 + 0.6
+            if (major_highscore_size > 2)
+                rank_boundary = major_score * 0.6 + minor_score * 0.4;
+            else
+                rank_boundary = major_score * 0.6 + minor_score * 0.6;
+        }
+        else if (major_size > 0) // 1 2
+        {
+            ///0.75 + 0.65
+            rank_boundary = major_score * 0.75 + minor_score * 0.65;
+        }
+        else
+        {
+            ///0.7
+            rank_boundary = total_score * 0.7;
+        }
+
+
+        if (!QueryNormalizer::get()->isLongQuery(pattern))
+        {
+            double rank_boundary_short = 0.2;
+            std::cout << std::endl;
+            LOG (INFO) << "[SHORT SEARCH] First, for short query: 2 3 and some with space  ";
+            std::list<std::pair<UString, double> > major_tokens_short;
+            std::list<std::pair<UString, double> > minor_tokens_short;
+
+            std::vector<std::string> tokens;
+            QueryNormalizer::get()->tokenizeQuery(pattern, tokens);
+            
+            bool useShort = true;
+            if (tokens.size() == 1 && QueryNormalizer::get()->countCharNum(tokens[0]) < 4)
+            {
+                UString ukey(pattern, izenelib::util::UString::UTF_8);
+                major_tokens_short.push_back(std::make_pair(ukey, 0.3));
+            }
+            else if (tokens.size() > 1)
+            {
+                for (std::vector<std::string>::iterator i = tokens.begin(); i != tokens.end(); ++i)
                 {
-                    totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                    if (QueryNormalizer::get()->countCharNum(*i) > 3)
+                    {
+                        useShort = false;
+                        break;
+                    }
+                }
+                if (useShort)
+                {
+                    for (unsigned int i = 0; i < tokens.size(); ++i)
+                    {
+                        UString ukey(tokens[i], izenelib::util::UString::UTF_8);
+                        major_tokens_short.push_back(std::make_pair(ukey, 0.3));
+                    }
+                }
+            }
+            else
+                useShort = false;
+
+            if ( useShort)
+            {
+                totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                             actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
                                             major_tokens_short,
                                             minor_tokens_short,
@@ -2280,37 +2379,20 @@ bool MiningManager::GetSuffixMatch(
                                             actionOperation.actionItem_.searchingMode_.filtermode_,
                                             filter_param,
                                             actionOperation.actionItem_.groupParam_,
-                                            res_list);
-                }
+                                            res_list,
+                                            rank_boundary_short);
             }
             
             if (res_list.empty())
             {
-                std::cout << std::endl;
-                LOG (INFO) << "[SHORT QUERY PRUNE]Use Query prune in fuzzy search ....";
-
+                LOG (INFO) << "USE all major_tokens search for short query" ;
                 std::list<std::pair<UString, double> > major_tokens_frune;
                 std::list<std::pair<UString, double> > minor_tokens_frune;
         
-                cout<<"major_tokens: ";
-                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin();
-                        i != major_tokens.end(); ++i)
-                {
-                    std::string key;
-                    (i->first).convertString(key, izenelib::util::UString::UTF_8);
-                    cout<<key<<" ";
+                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
                     major_tokens_frune.push_back(*i);
-                }
-                cout<<endl<<"minor_tokens: ";
-                for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin();
-                        i != minor_tokens.end(); ++i)
-                {
-
-                    std::string key;
-                    (i->first).convertString(key, izenelib::util::UString::UTF_8);
-                    cout<<key<<" ";
+                for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
                     major_tokens_frune.push_back(*i);
-                }
 
                 totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
                                             actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
@@ -2321,231 +2403,55 @@ bool MiningManager::GetSuffixMatch(
                                             actionOperation.actionItem_.searchingMode_.filtermode_,
                                             filter_param,
                                             actionOperation.actionItem_.groupParam_,
-                                            res_list);
-                if (res_list.empty())
+                                            res_list,
+                                            rank_boundary_short);
+                if (res_list.empty() && actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true)
                 {
-                    std::cout << std::endl;
-                    LOG (INFO) << "[SHORT BACK TO NORMAL FUZZY SEARCH]The prune search result number is zero, back to Normal fuzzy search ... ";
-
+                    rank_boundary_short = rank_boundary;
                     totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                            major_tokens,
-                                            minor_tokens,
-                                            search_in_properties,
-                                            max_docs,
-                                            actionOperation.actionItem_.searchingMode_.filtermode_,
-                                            filter_param,
-                                            actionOperation.actionItem_.groupParam_,
-                                            res_list);
-                    if (res_list.empty())
-                    {
-                        for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin();
-                        i != major_tokens.end(); ++i)
-                        {
-                            minor_tokens.push_back(*i);
-                        }
-                        major_tokens.clear();
-                        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                            major_tokens,
-                                            minor_tokens,
-                                            search_in_properties,
-                                            max_docs,
-                                            actionOperation.actionItem_.searchingMode_.filtermode_,
-                                            filter_param,
-                                            actionOperation.actionItem_.groupParam_,
-                                            res_list);
-                    }
-
+                                                    actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
+                                                    boundary_major_tokens,
+                                                    boundary_minor_tokens,
+                                                    search_in_properties,
+                                                    max_docs,
+                                                    actionOperation.actionItem_.searchingMode_.filtermode_,
+                                                    filter_param,
+                                                    actionOperation.actionItem_.groupParam_,
+                                                    res_list,
+                                                    rank_boundary_short);
                 }
             }
         }
+        else if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true)
+        {
+            LOG(INFO) << "DO FUZZY SEARCH WITH rank_boundary :" << rank_boundary;
+            totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                                                    actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
+                                                    boundary_major_tokens,
+                                                    boundary_minor_tokens,
+                                                    search_in_properties,
+                                                    max_docs,
+                                                    actionOperation.actionItem_.searchingMode_.filtermode_,
+                                                    filter_param,
+                                                    actionOperation.actionItem_.groupParam_,
+                                                    res_list,
+                                                    rank_boundary);
+        }
         else
         {
+            rank_boundary = 0.4;
+            cout << "rank_boundary :" << rank_boundary <<endl;
             totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                        actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                        major_tokens,
-                                        minor_tokens,
-                                        search_in_properties,
-                                        max_docs,
-                                        actionOperation.actionItem_.searchingMode_.filtermode_,
-                                        filter_param,
-                                        actionOperation.actionItem_.groupParam_,
-                                        res_list);
-            if (res_list.empty() && major_tokens.size() != 0)
-            {
-                std::vector<std::pair<std::string, double> > v_pair;
-                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
-                {
-                    std::string key;
-                    (i->first).convertString(key, izenelib::util::UString::UTF_8);
-                    v_pair.push_back(make_pair(key, i->second));
-                }
-                std::sort(v_pair.begin(), v_pair.end(), greater_pair);
-                unsigned int maxTokenCount = 0;
-                if (major_tokens.size() >= 5)
-                {
-                    maxTokenCount = 4;
-                }
-                else
-                    maxTokenCount = major_tokens.size() -1;
-
-                unsigned int count = 0;
-                double boundary = 0;
-                if (major_tokens.size() == 1)
-                    boundary = 0.01;
-                else
-                    boundary = v_pair[maxTokenCount - 1].second;
-                
-                std::list<std::pair<UString, double> > new_major_tokens;
-                std::list<std::pair<UString, double> > new_minor_tokens;
-                for (std::list<std::pair<UString, double> >::iterator i = minor_tokens.begin(); i != minor_tokens.end(); ++i)
-                {
-                    new_minor_tokens.push_back(*i);
-                }
-
-                for (std::list<std::pair<UString, double> >::iterator i = major_tokens.begin(); i != major_tokens.end(); ++i)
-                {
-                    if (count < maxTokenCount)
-                    {
-                        if (i->second >= boundary)
-                        {
-                            new_major_tokens.push_back(*i);
-                            count++;
-                        }
-                        else
-                            minor_tokens.push_back(*i);
-                    }
-                    else
-                        minor_tokens.push_back(*i);
-
-                    new_minor_tokens.push_back(*i);
-                }
-                
-                if (actionOperation.actionItem_.searchingMode_.useQueryPrune_ == true && major_tokens.size() >= 4)
-                {
-                    std::cout << "The new prune query is";
-                    for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); i != new_major_tokens.end(); ++i)
-                    {
-                        std::string word;
-                        (i->first).convertString(word, izenelib::util::UString::UTF_8);
-                        std::cout << " " << word;
-                        pruneQueryString_ += word;
-                        pruneQueryString_ += " ";
-                    }
-                    cout << endl;
-                    totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                        actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                        new_major_tokens,
-                                        minor_tokens,
-                                        search_in_properties,
-                                        max_docs,
-                                        actionOperation.actionItem_.searchingMode_.filtermode_,
-                                        filter_param,
-                                        actionOperation.actionItem_.groupParam_,
-                                        res_list);
-                    if (res_list.empty())
-                    {
-                        if (new_major_tokens.size() > 1)
-                        {
-                            std::cout << "Start second search ........................." << std::endl;
-                            pruneQueryString_ = "";
-                            minor_tokens.push_back(new_major_tokens.back());
-                            new_major_tokens.pop_back();
-
-                            std::cout << "The second new query is:";
-                            for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); 
-                                    i != new_major_tokens.end(); ++i)
-                            {
-                                std::string word;
-                                (i->first).convertString(word, izenelib::util::UString::UTF_8);
-                                std::cout << " " << word;
-                                pruneQueryString_ += word;
-                                pruneQueryString_ += " ";
-                            }
-                            totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                            new_major_tokens,
-                                            minor_tokens,
-                                            search_in_properties,
-                                            max_docs,
-                                            actionOperation.actionItem_.searchingMode_.filtermode_,
-                                            filter_param,
-                                            actionOperation.actionItem_.groupParam_,
-                                            res_list);
-
-                            if (res_list.empty())
-                            {
-                                if (new_major_tokens.size() > 1)
-                                {
-                                    std::cout << "Start third search ........................." << std::endl;
-                                    pruneQueryString_ = "";
-                                    minor_tokens.push_back(new_major_tokens.back());
-                                    new_major_tokens.pop_back();
-                                    if (new_major_tokens.size() > 1)
-                                    {
-                                        std::cout << "The third new query is:";
-                                        for (std::list<std::pair<UString, double> >::iterator i = new_major_tokens.begin(); 
-                                            i != new_major_tokens.end(); ++i)
-                                        {
-                                            std::string word;
-                                            (i->first).convertString(word, izenelib::util::UString::UTF_8);
-                                            std::cout << " " << word;
-                                            pruneQueryString_ += word;
-                                            pruneQueryString_ += " ";
-                                        }
-                                        std::cout << std::endl;
-                                        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                                        actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                                        new_major_tokens,
-                                                        minor_tokens,
-                                                        search_in_properties,
-                                                        max_docs,
-                                                        actionOperation.actionItem_.searchingMode_.filtermode_,
-                                                        filter_param,
-                                                        actionOperation.actionItem_.groupParam_,
-                                                        res_list);
-                                    }
-
-                                    if (res_list.empty())
-                                    {
-                                        new_major_tokens.clear();
-                                        std::cout << "USE minor search ...." << std::endl;
-                                        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                                                actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                                                new_major_tokens,
-                                                new_minor_tokens,
-                                                search_in_properties,
-                                                max_docs,
-                                                actionOperation.actionItem_.searchingMode_.filtermode_,
-                                                filter_param,
-                                                actionOperation.actionItem_.groupParam_,
-                                                res_list);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    if (res_list.empty())
-                    {
-                        new_major_tokens.clear();
-                        std::cout << "USE minor search ...." << std::endl;
-                        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-                        actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-                        new_major_tokens,
-                        new_minor_tokens,
-                        search_in_properties,
-                        max_docs,
-                        actionOperation.actionItem_.searchingMode_.filtermode_,
-                        filter_param,
-                        actionOperation.actionItem_.groupParam_,
-                        res_list);
-                    }
-                }
-            }
+                                                    actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
+                                                    major_tokens,
+                                                    minor_tokens,
+                                                    search_in_properties,
+                                                    max_docs,
+                                                    actionOperation.actionItem_.searchingMode_.filtermode_,
+                                                    filter_param,
+                                                    actionOperation.actionItem_.groupParam_,
+                                                    res_list,
+                                                    rank_boundary);
         }
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)

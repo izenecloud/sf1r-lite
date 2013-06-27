@@ -780,7 +780,9 @@ int do_main(int ac, char** av)
                 Hits left_hits;
                 typedef std::list<UString> Left;
                 Left left;
+                izenelib::util::ClockTimer clocker;
                 matcher.GetSearchKeywords(query, hits, left_hits, left);
+                std::cout<<"[COST]"<<clocker.elapsed()<<std::endl;
                 for(Hits::const_iterator it = hits.begin();it!=hits.end();++it)
                 {
                     const std::pair<UString, double>& v = *it;

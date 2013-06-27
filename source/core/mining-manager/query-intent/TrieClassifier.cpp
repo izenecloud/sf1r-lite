@@ -20,9 +20,9 @@ using namespace NQI;
 TrieClassifier::TrieClassifier(ClassifierContext* context)
     : Classifier(context)
 {
-    QueryIntentCategory name;
+    NQI::KeyType name;
     name.name_ = context_->name_;
-    iCategory_ = context_->config_->find(name);
+    keyPtr_ = context_->config_->find(name);
     synonym_.clear();
     loadSynonym();
     loadLexicon();
@@ -198,8 +198,6 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
 {
     if (query.empty())
         return false;
-    if (context_->config_->end() == iCategory_)
-        return false;
     
     boost::shared_lock<boost::shared_mutex> sl(mtx_, boost::try_to_lock);
     if (!sl)
@@ -214,7 +212,7 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
     bool isBreak = false;
    
     // exact search and erase
-    WMVType& mvContainer = wmvs[*iCategory_];
+    WMVType& mvContainer = wmvs[*keyPtr_];
     //std::queue<std::string> voters;
     std::list<std::string> voters;
     std::string removedWords = "";

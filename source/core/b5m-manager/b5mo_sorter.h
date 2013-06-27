@@ -28,7 +28,7 @@ namespace sf1r {
             Value(const ScdDocument& d, const std::string& t):doc(d), ts(t)
             {
             }
-            bool Parse(const std::string& str)
+            bool Parse(const std::string& str, Json::Reader* json_reader)
             {
                 std::size_t begp=0;
                 std::size_t endp=str.find('\t', begp);
@@ -47,8 +47,8 @@ namespace sf1r {
                 std::string json_str = str.substr(begp);
                 if(json_str.empty()) return false;
                 Json::Value value;
-                static Json::Reader json_reader;
-                json_reader.parse(json_str, value);
+                //static Json::Reader json_reader;
+                json_reader->parse(json_str, value);
                 JsonDocument::ToDocument(value, doc);
                 return true;
             }
@@ -103,6 +103,7 @@ namespace sf1r {
         std::ofstream mirror_ofs_;
         boost::shared_ptr<ScdTypeWriter> pwriter_;
         B5mpDocGenerator pgenerator_;
+        Json::Reader json_reader_;
     };
 
 }

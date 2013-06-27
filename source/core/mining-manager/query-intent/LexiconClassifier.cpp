@@ -19,9 +19,9 @@ using namespace NQI;
 LexiconClassifier::LexiconClassifier(ClassifierContext* context)
     : Classifier(context)
 {
-    QueryIntentCategory name;
+    NQI::KeyType name;
     name.name_ = context_->name_;
-    iCategory_ = context_->config_->find(name);
+    keyPtr_ = context_->config_->find(name);
     loadLexicon();
     //reloadThread_= boost::thread(&LexiconClassifier::reloadLexicon_, this);
 }
@@ -132,7 +132,7 @@ bool LexiconClassifier::classify(WMVContainer& wmvs, std::string& query)
         std::cout<<"shared_lock::try_lock return'\n";
         return -1;
     }
-    if (lexicons_.empty() || iCategory_ == context_->config_->end())
+    if (lexicons_.empty() )
         return false;
     
     std::size_t pos = 0;
@@ -159,7 +159,7 @@ bool LexiconClassifier::classify(WMVContainer& wmvs, std::string& query)
         if (lexicons_.end() != it)
         {
             word = it->second;
-            wmvs[*iCategory_].push_back(make_pair(word, 1));
+            wmvs[*keyPtr_].push_back(make_pair(word, 1));
             query.erase(pos, found-pos+1);
             ret = true;
         }

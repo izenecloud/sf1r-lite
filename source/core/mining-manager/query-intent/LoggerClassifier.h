@@ -18,6 +18,9 @@ public:
     LoggerClassifier(ClassifierContext* context)
         : Classifier(context)
     {
+        NQI::KeyType name;
+        name.name_ = context_->name_;
+        keyPtr_ = context_->config_->find(name);
     }
 public:
     bool classify(NQI::WMVContainer& wmvs, std::string& query);
@@ -37,6 +40,7 @@ public:
         return 1;
     }
 private:
+    NQI::KeyTypePtr keyPtr_;
     static const char* type_;
 };
 

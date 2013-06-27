@@ -95,6 +95,13 @@ TARGET_LINK_LIBRARIES(spu_match_test  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${li
 SET_TARGET_PROPERTIES(spu_match_test PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin/b5m
 )
+ADD_EXECUTABLE(keywords_test
+keywords_test.cc
+)
+TARGET_LINK_LIBRARIES(keywords_test  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(keywords_test PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/testbin/b5m
+)
 ADD_EXECUTABLE(t_commentdb
 Runner.cpp
 t_commentdb.cc
@@ -120,6 +127,15 @@ TARGET_LINK_LIBRARIES(b5m_search_keyword  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  
 SET_TARGET_PROPERTIES(b5m_search_keyword PROPERTIES
 RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
 )
+
+ADD_EXECUTABLE(b5m_extract_keyword
+b5m_extract_keyword.cc
+)
+TARGET_LINK_LIBRARIES(b5m_extract_keyword  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  ${libs})
+SET_TARGET_PROPERTIES(b5m_extract_keyword PROPERTIES
+RUNTIME_OUTPUT_DIRECTORY ${SF1RENGINE_ROOT}/b5m
+)
+
 
 ADD_EXECUTABLE(b5m_category_mapper
 b5m_category_mapper.cc

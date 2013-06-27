@@ -44,7 +44,7 @@ private:
     boost::unordered_map<std::string, std::string> lexicons_;
     unsigned short maxLength_;
     unsigned short minLength_;
-    QIIterator iCategory_;
+    NQI::KeyTypePtr keyPtr_;
     //std::map<QueryIntentCategory, boost::unordered_map<std::string, std::string> >lexicons_;
     static const char* type_;
 

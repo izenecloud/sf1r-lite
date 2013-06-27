@@ -1444,7 +1444,7 @@ bool IndexWorker::insertDoc_(
     if (hooker_)
     {
         ///TODO compatibility issue:
-        if (!hooker_->HookInsert(document, indexDocument, timestamp))
+        if (!hooker_->HookInsert(document, timestamp))
             return false;
     }
     if (immediately)
@@ -1500,7 +1500,7 @@ bool IndexWorker::updateDoc_(
     if (hooker_)
     {
         ///Notice: the success of HookUpdate will not affect following update
-        hooker_->HookUpdate(document, indexDocument, timestamp);
+        hooker_->HookUpdate(document, indexDocument.getOldId(), timestamp);
     }
 
     if (immediately)

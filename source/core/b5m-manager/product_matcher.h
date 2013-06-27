@@ -47,6 +47,7 @@ namespace sf1r {
         typedef std::vector<std::pair<uint32_t, uint32_t> > FrequentValue;
         typedef boost::unordered_map<TermList, FrequentValue> NgramFrequent;
         typedef boost::unordered_map<TermList, UString> KeywordText;
+        typedef std::vector<std::pair<uint32_t, double> > FeatureVector;
 
         struct Position
         {
@@ -78,7 +79,7 @@ namespace sf1r {
                 ar & begin & end;
             }
         };
-        
+
         struct WeightType
         {
             WeightType()
@@ -158,7 +159,7 @@ namespace sf1r {
 
         private:
             V d_;
-            
+
         };
         template<class K, class V>
         class stdmap : public std::map<K,V>
@@ -186,12 +187,12 @@ namespace sf1r {
 
         private:
             V d_;
-            
+
         };
 
         typedef dmap<std::string, double> StringToScore;
-        struct CategoryNameApp 
-          : boost::less_than_comparable<CategoryNameApp> 
+        struct CategoryNameApp
+          : boost::less_than_comparable<CategoryNameApp>
            //,boost::equality_comparable<CategoryNameApp>
         {
             uint32_t cid;
@@ -226,7 +227,7 @@ namespace sf1r {
             std::string attribute_name;
             bool is_optional;
             double lprop; //length proportion
-            
+
             //bool is_complete;
             friend class boost::serialization::access;
             template<class Archive>
@@ -283,7 +284,7 @@ namespace sf1r {
                 //if(a1.pos.begin<a2.pos.begin) return true;
                 //else if(a1.pos.begin>a2.pos.begin) return false;
                 //else return a1.pos.end<a2.pos.end;
-            
+
             //}
         //};
 
@@ -633,12 +634,12 @@ namespace sf1r {
                 return name+":"+GetValue();
             }
         };
-        
+
 
         struct Product
         {
             Product()
-            : cid(0), price(0.0), aweight(0.0), tweight(0.0), score(0.0)
+            : cid(0), aweight(0.0), tweight(0.0), score(0.0)
             {
             }
             std::string spid;
@@ -646,7 +647,8 @@ namespace sf1r {
             std::string scategory;
             std::string fcategory; //front-end category
             cid_t cid;
-            double price; 
+            //double price;
+            ProductPrice price;
             std::vector<Attribute> attributes;
             std::vector<Attribute> dattributes; //display attributes
             std::string sbrand;
@@ -768,9 +770,9 @@ namespace sf1r {
         //return true if this is a complete match, else false: to return parent nodes
         bool GetFrontendCategory(UString& backend, UString& frontend) const;
         void GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy = false, cid_t cid=0);
-        void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<UString>& left);
+        void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, uint32_t> >&res);
         void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<std::pair<UString, double> >& left_hits, std::list<UString>& left);
-        bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);        
+        bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
         void SetCmaPath(const std::string& path)
         { cma_path_ = path; }
         bool IsIndexDone() const;
@@ -783,7 +785,7 @@ namespace sf1r {
         { matcher_only_ = m; }
 
         void SetCategoryMaxDepth(uint16_t d)
-        { 
+        {
             category_max_depth_ = d;
             LOG(INFO)<<"set category max depth to "<<d<<std::endl;
         }
@@ -794,8 +796,11 @@ namespace sf1r {
         static void SetIndexDone_(const std::string& path, bool b);
         static bool IsIndexDone_(const std::string& path);
         void Init_();
-        bool PriceMatch_(double p1, double p2);
-        double PriceSim_(double offerp, double spup);
+        double PriceSim_(double offerp, double spup) const;
+        bool IsValuePriceSim_(double op, double p) const;
+        bool IsPriceSim_(const ProductPrice& op, const ProductPrice& p) const;
+        double PriceDiff_(double op, double p) const;
+        double PriceDiff_(const ProductPrice& op, const ProductPrice& p) const;
         void AnalyzeNoSymbol_(const izenelib::util::UString& text, std::vector<Term>& result);
         void Analyze_(const izenelib::util::UString& text, std::vector<Term>& result);
         //void AnalyzeCR_(const izenelib::util::UString& text, std::vector<izenelib::util::UString>& result);
@@ -838,6 +843,12 @@ namespace sf1r {
         bool SpuMatched_(const WeightType& weight, const Product& p) const;
         int SelectKeyword_(const KeywordTag& tag1, const KeywordTag& tag2) const;
         bool IsFuzzyMatched_(const ATermList& keyword, const FuzzyApp& app) const;
+
+        cid_t GetLevelCid_(const std::string& scategory, uint32_t level) const;
+        void GenFeatureVector_(const std::vector<KeywordTag>& keywords, FeatureVector& feature_vector) const;
+        void FeatureVectorAdd_(FeatureVector& o, const FeatureVector& a) const;
+        void FeatureVectorNorm_(FeatureVector& v) const;
+        double Cosine_(const FeatureVector& v1, const FeatureVector& v2) const;
 
         static uint32_t TextLength_(const std::string& text)
         {
@@ -946,15 +957,17 @@ namespace sf1r {
         Back2Front back2front_;
         KeywordVector all_keywords_; //not serialized
         boost::regex type_regex_;
-        
+
         std::map<string, size_t> synonym_map_;
         std::vector<std::vector<string> > synonym_dict_;
-        
+
+        std::vector<FeatureVector> feature_vectors_;
+
         //NgramFrequent nf_;
 
         const static double optional_weight_ = 0.2;
         const static std::string AVERSION;
-        
+
     };
 
     class ProductMatcherInstance : public izenelib::util::Singleton<ProductMatcher>
@@ -964,4 +977,3 @@ namespace sf1r {
 }
 
 #endif
-

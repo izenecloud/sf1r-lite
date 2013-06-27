@@ -16,11 +16,6 @@ bool ProductClassifier::classify(WMVContainer& wmvs, std::string& query)
 {
     if (query.empty())
         return false;
-    QueryIntentCategory iCategory;
-    iCategory.name_ = context_->name_;
-    QIIterator it = context_->config_->find(iCategory);
-    if (context_->config_->end() == it)
-        return false;
     std::vector<std::vector<std::string> > pathVec;
     context_->miningManager_->GetProductCategory(query, 1, pathVec);
 
@@ -33,7 +28,7 @@ bool ProductClassifier::classify(WMVContainer& wmvs, std::string& query)
         if ( i < pathVec[0].size() - 1)
             category +=">";
     }
-    wmvs[*it].push_back(make_pair(category, 1));
+    wmvs[*keyPtr_].push_back(make_pair(category, 1));
     return true;
 }
 }

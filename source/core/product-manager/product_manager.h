@@ -4,7 +4,6 @@
 #include <common/type_defs.h>
 
 #include <document-manager/Document.h>
-#include <ir/index_manager/index/IndexerDocument.h>
 #include "pm_def.h"
 #include "pm_types.h"
 #include "pm_config.h"
@@ -20,11 +19,7 @@ namespace sf1r
 
 class DocumentManager;
 class ProductDataSource;
-class OperationProcessor;
-class ProductEditor;
 class ProductPriceTrend;
-class ProductClustering;
-class ProductClusteringPostItem;
 class PMUtil;
 
 class ProductManager
@@ -36,32 +31,18 @@ public:
             const std::string& work_dir,
             const boost::shared_ptr<DocumentManager>& document_manager,
             ProductDataSource* data_source,
-            OperationProcessor* op_processor,
             ProductPriceTrend* price_trend,
             const PMConfig& config);
 
     ~ProductManager();
 
-    bool Recover();
+    bool HookInsert(PMDocumentType& doc, time_t timestamp);
 
-    bool HookInsert(PMDocumentType& doc, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp);
-
-    bool HookUpdate(PMDocumentType& to, izenelib::ir::indexmanager::IndexerDocument& index_document, time_t timestamp);
+    bool HookUpdate(PMDocumentType& to, docid_t oldid, time_t timestamp);
 
     bool HookDelete(uint32_t docid, time_t timestamp);
 
     bool FinishHook(time_t timestamp);
-
-    //update documents in A, so need transfer
-    bool UpdateADoc(const Document& doc);
-
-    //all intervention functions.
-    bool AddGroup(const std::vector<uint32_t>& docid_list, PMDocumentType& info, const ProductEditOption& option);
-
-    bool AppendToGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
-
-    bool RemoveFromGroup(const izenelib::util::UString& uuid, const std::vector<uint32_t>& docid_list, const ProductEditOption& option);
-
 
     bool GetMultiPriceHistory(
             PriceHistoryList& history_list,
@@ -97,12 +78,6 @@ public:
     }
 
 private:
-    ProductClustering* GetClustering_();
-
-
-    bool GenOperations_();
-
-
     bool GetTimestamp_(const PMDocumentType& doc, time_t& timestamp) const;
 
     bool GetGroupProperties_(const PMDocumentType& doc, std::map<std::string, std::string>& group_prop_map) const;
@@ -115,11 +90,8 @@ private:
     PMConfig config_;
     boost::shared_ptr<DocumentManager> document_manager_;
     ProductDataSource* data_source_;
-    OperationProcessor* op_processor_;
     ProductPriceTrend* price_trend_;
     PMUtil* util_;
-    ProductClustering* clustering_;
-    ProductEditor* editor_;
     std::string error_;
 
     bool has_price_trend_;

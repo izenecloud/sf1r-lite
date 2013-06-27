@@ -30,6 +30,7 @@ namespace NQI   //NamespaceQueryIntent
     extern const std::string NODE_DELIMITER;
 
     typedef QueryIntentCategory KeyType;
+    typedef QIIterator KeyTypePtr;
     typedef std::string ValueType;
     typedef std::list<ValueType>   MultiValueType;
     typedef MultiValueType::iterator MultiVIterator;

@@ -50,7 +50,7 @@ public:
 private:
     TrieContainer trie_;
     SynonymContainer synonym_;
-    QIIterator iCategory_;
+    NQI::KeyTypePtr keyPtr_;
     boost::shared_mutex  mtx_;
     
     static const char* type_;
