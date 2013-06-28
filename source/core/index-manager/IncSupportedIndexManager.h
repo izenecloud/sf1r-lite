@@ -32,8 +32,8 @@ public:
     void postProcessForAPI();
 
     bool insertDocument(const Document& doc, time_t timestamp);
-    bool updateDocument(const Document& olddoc, const Document& newdoc,
-        int updateType, time_t timestamp);
+    bool updateDocument(const Document& olddoc, const Document& old_rtype_doc,
+        const Document& newdoc, int updateType, time_t timestamp);
     void removeDocument(docid_t docid, time_t timestamp);
 
 private:

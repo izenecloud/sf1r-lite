@@ -705,12 +705,13 @@ bool IndexWorker::createDocument(const Value& documentValue)
     scd_writer_->Write(scddoc, INSERT_SCD);
 
     Document document;
+    Document old_rtype_doc;
     //IndexerDocument indexDocument, oldIndexDocument;
     docid_t oldId = 0;
     std::string source = "";
     IndexWorker::UpdateType updateType;
     time_t timestamp = reqlog.timestamp;
-    if (!prepareDocument_(scddoc, document, oldId, source, timestamp, updateType, INSERT_SCD))
+    if (!prepareDocument_(scddoc, document, old_rtype_doc, oldId, source, timestamp, updateType, INSERT_SCD))
         return false;
 
     inc_supported_index_manager_.preProcessForAPI();
@@ -821,19 +822,20 @@ bool IndexWorker::updateDocument(const Value& documentValue)
     LOG(INFO) << "update doc timestamp is : " << timestamp;
 
     Document document;
+    Document old_rtype_doc;
     //IndexerDocument indexDocument, oldIndexDocument;
     docid_t oldId = 0;
     IndexWorker::UpdateType updateType;
     std::string source = "";
 
-    if (!prepareDocument_(scddoc, document, oldId, source, timestamp, updateType, UPDATE_SCD))
+    if (!prepareDocument_(scddoc, document, old_rtype_doc, oldId, source, timestamp, updateType, UPDATE_SCD))
     {
         return false;
     }
 
     inc_supported_index_manager_.preProcessForAPI();
 
-    bool ret = updateDoc_(oldId, document, reqlog.timestamp, updateType, true);
+    bool ret = updateDoc_(oldId, document, old_rtype_doc, reqlog.timestamp, updateType, true);
     if (ret && (updateType != IndexWorker::RTYPE))
     {
         if (!bundleConfig_->enable_forceget_doc_)
@@ -1181,6 +1183,7 @@ bool IndexWorker::insertOrUpdateSCD_(
     uint32_t n = 0;
     long lastOffset = 0;
     Document document;
+    Document old_rtype_doc;
     //IndexerDocument indexDocument, oldIndexDocument;
 
     for (ScdParser::iterator doc_iter = parser.begin();
@@ -1212,9 +1215,8 @@ bool IndexWorker::insertOrUpdateSCD_(
         std::string source = "";
         time_t new_timestamp = timestamp;
         document.clear();
-        //indexDocument.clear();
-        //oldIndexDocument.clear();
-        if (!prepareDocument_(*doc, document, oldId, source, new_timestamp, updateType, scdType))
+        old_rtype_doc.clear();
+        if (!prepareDocument_(*doc, document, old_rtype_doc, oldId, source, new_timestamp, updateType, scdType))
             continue;
 
         if (!source.empty())
@@ -1229,7 +1231,7 @@ bool IndexWorker::insertOrUpdateSCD_(
         }
         else
         {
-            if (!updateDoc_(oldId, document, timestamp, updateType))
+            if (!updateDoc_(oldId, document, old_rtype_doc, timestamp, updateType))
                 continue;
 
             ++numUpdatedDocs_;
@@ -1401,6 +1403,7 @@ bool IndexWorker::doInsertDoc_(Document& document, time_t timestamp)
 bool IndexWorker::updateDoc_(
         docid_t oldId,
         Document& document,
+        const Document& old_rtype_doc,
         time_t timestamp,
         IndexWorker::UpdateType updateType,
         bool immediately)
@@ -1416,17 +1419,26 @@ bool IndexWorker::updateDoc_(
     }
 
     if (immediately)
-        return doUpdateDoc_(oldId, document, updateType, timestamp);
+        return doUpdateDoc_(oldId, document, old_rtype_doc, updateType, timestamp);
 
     ///updateBuffer_ is used to change random IO in DocumentManager to sequential IO
     std::pair<UpdateBufferType::iterator, bool> insertResult =
         updateBuffer_.insert(document.getId(), UpdateBufferDataType());
 
     UpdateBufferDataType& updateData = insertResult.first.data();
+
+    if (!insertResult.second)
+    {
+        LOG(INFO) << "duplicated update for doc: " << oldId;
+        doUpdateDoc_(updateData.get<2>(), updateData.get<1>(),
+            updateData.get<4>(), updateData.get<0>(), updateData.get<3>());
+    }
+
     updateData.get<0>() = updateType;
     updateData.get<1>().swap(document);
     updateData.get<2>() = oldId;
     updateData.get<3>() = timestamp;
+    updateData.get<4>() = old_rtype_doc;
 
     if (updateBuffer_.size() >= UPDATE_BUFFER_CAPACITY)
     {
@@ -1439,6 +1451,7 @@ bool IndexWorker::updateDoc_(
 bool IndexWorker::doUpdateDoc_(
         docid_t oldId,
         Document& document,
+        const Document& old_rtype_doc,
         IndexWorker::UpdateType updateType,
         time_t timestamp)
 {
@@ -1479,7 +1492,7 @@ bool IndexWorker::doUpdateDoc_(
     }
     }
 
-    inc_supported_index_manager_.updateDocument(oldDoc, document, updateType, timestamp);
+    inc_supported_index_manager_.updateDocument(oldDoc, old_rtype_doc, document, updateType, timestamp);
     return true;
 }
 
@@ -1551,8 +1564,8 @@ void IndexWorker::flushUpdateBuffer_()
             }
             else
             {
-                inc_supported_index_manager_.updateDocument(oldDoc, updateData.get<1>(),
-                    updateData.get<0>(), updateData.get<3>());
+                inc_supported_index_manager_.updateDocument(oldDoc, updateData.get<4>(),
+                    updateData.get<1>(), updateData.get<0>(), updateData.get<3>());
             }
         }
     }
@@ -1605,6 +1618,7 @@ void IndexWorker::saveSourceCount_(SCD_TYPE scdType)
 bool IndexWorker::prepareDocument_(
         SCDDoc& doc,
         Document& document,
+        Document& old_rtype_doc,
         docid_t& oldId,
         std::string& source,
         time_t& timestamp,
@@ -1689,6 +1703,9 @@ bool IndexWorker::prepareDocument_(
             boost::shared_ptr<NumericPropertyTableBase>& datePropertyTable = documentManager_->getNumericPropertyTable(dateProperty_.getName());
             if (datePropertyTable)
             {
+                std::string rtypevalue;
+                datePropertyTable->getStringValue(docId, rtypevalue);
+                old_rtype_doc.property(fieldStr) = UString(rtypevalue, bundleConfig_->encoding_);
                 datePropertyTable->setInt64Value(docId, timestamp);
             }
             else
@@ -1710,6 +1727,11 @@ bool IndexWorker::prepareDocument_(
                         izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
                         std::string fieldValue;
                         propertyValueU.convertString(fieldValue, encoding);
+
+                        std::string rtypevalue;
+                        rtypeprop->getRTypeString(docId, rtypevalue);
+                        old_rtype_doc.property(fieldStr) = UString(rtypevalue, bundleConfig_->encoding_);
+
                         rtypeprop->updateRTypeString(docId, fieldValue);
                     }
                     else
@@ -1764,6 +1786,11 @@ bool IndexWorker::prepareDocument_(
                     izenelib::util::UString::EncodingType encoding = bundleConfig_->encoding_;
                     std::string fieldValue;
                     propertyValueU.convertString(fieldValue, encoding);
+
+                    std::string rtypevalue;
+                    numericPropertyTable->getStringValue(docId, rtypevalue);
+                    old_rtype_doc.property(fieldStr) = UString(rtypevalue, bundleConfig_->encoding_);
+                    
                     numericPropertyTable->setStringValue(docId, fieldValue);
                 }
                 else
@@ -1782,6 +1809,11 @@ bool IndexWorker::prepareDocument_(
                     izenelib::util::UString dateStr;
                     time_t ts = Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
                     boost::shared_ptr<NumericPropertyTableBase>& datePropertyTable = documentManager_->getNumericPropertyTable(iter->getName());
+
+                    std::string rtypevalue;
+                    datePropertyTable->getStringValue(docId, rtypevalue);
+                    old_rtype_doc.property(fieldStr) = UString(rtypevalue, bundleConfig_->encoding_);
+
                     datePropertyTable->setInt64Value(docId, ts);
                 }
                 else
@@ -1810,6 +1842,11 @@ bool IndexWorker::prepareDocument_(
         time_t tm = timestamp / 1000000;
         boost::shared_ptr<NumericPropertyTableBase>& numericPropertyTable
             = documentManager_->getNumericPropertyTable(dateProperty_.getName());
+
+        std::string rtypevalue;
+        numericPropertyTable->getStringValue(docId, rtypevalue);
+        old_rtype_doc.property(dateProperty_.getName()) = UString(rtypevalue, bundleConfig_->encoding_);
+
         numericPropertyTable->setInt64Value(docId, tm);
     }
 
