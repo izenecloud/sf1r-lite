@@ -962,7 +962,7 @@ namespace sf1r {
         std::vector<std::vector<string> > synonym_dict_;
 
         std::vector<FeatureVector> feature_vectors_;
-
+        boost::unordered_map<cid_t, uint32_t> first_level_category_;
         //NgramFrequent nf_;
 
         const static double optional_weight_ = 0.2;
