@@ -937,7 +937,6 @@ void InvertedIndexManager::prepareIndexDocumentCommon(const Document& document,
         IndexBundleSchema::const_iterator iter = schema.find(tempPropertyConfig);
         bool isIndexSchema = (iter != schema.end());
 
-        const izenelib::util::UString& propValue = document.property(it->first).get<izenelib::util::UString>();
         if (boost::iequals(propertyName, DOCID))
         {
             continue;
@@ -948,6 +947,7 @@ void InvertedIndexManager::prepareIndexDocumentCommon(const Document& document,
         }
         else if (isIndexSchema)
         {
+            const izenelib::util::UString& propValue = document.property(it->first).get<izenelib::util::UString>();
             switch(iter->getType())
             {
             case STRING_PROPERTY_TYPE:

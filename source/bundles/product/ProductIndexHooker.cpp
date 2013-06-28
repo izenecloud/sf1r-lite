@@ -14,12 +14,12 @@ ProductIndexHooker::~ProductIndexHooker()
 
 }
 
-bool ProductIndexHooker::HookInsert(Document& doc, time_t timestamp)
+bool ProductIndexHooker::HookInsert(const Document& doc, time_t timestamp)
 {
     return product_manager_->HookInsert(doc, timestamp);
 }
 
-bool ProductIndexHooker::HookUpdate(Document& doc, docid_t oldid, time_t timestamp)
+bool ProductIndexHooker::HookUpdate(const Document& doc, docid_t oldid, time_t timestamp)
 {
     return product_manager_->HookUpdate(doc, oldid, timestamp);
 }

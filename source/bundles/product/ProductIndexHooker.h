@@ -18,8 +18,8 @@ class ProductIndexHooker : public IndexHooker
 public:
     ProductIndexHooker(const boost::shared_ptr<ProductManager>& product_manager);
     ~ProductIndexHooker();
-    bool HookInsert(Document& doc, time_t timestamp);
-    bool HookUpdate(Document& doc, docid_t oldid, time_t timestamp);
+    bool HookInsert(const Document& doc, time_t timestamp);
+    bool HookUpdate(const Document& doc, docid_t oldid, time_t timestamp);
     bool HookDelete(docid_t docid, time_t timestamp);
     bool FinishHook(time_t timestamp);
 
