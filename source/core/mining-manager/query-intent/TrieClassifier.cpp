@@ -207,7 +207,6 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
     }
     
     std::size_t pos = 0;
-    std::size_t end = query.size();
     bool ret = false;
     bool isBreak = false;
    
@@ -216,13 +215,13 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
     //std::queue<std::string> voters;
     std::list<std::string> voters;
     std::string removedWords = "";
-    while ((pos < end) && (!isBreak))
+    while ((pos < query.size()) && (!isBreak))
     {
-        std::size_t found = query.find_first_of(KEYWORD_DELIMITER, pos);
+        std::size_t found = query.find(KEYWORD_DELIMITER, pos);
         std::size_t size = 0;
         if (std::string::npos == found)
         {
-            size = end - pos;
+            size = query.size() - pos;
             isBreak = true;
         }
         else
@@ -230,14 +229,14 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
             size = found - pos;
         }
         std::string word = query.substr(pos, size);
-        
+
         std::list<std::string>::iterator voter = voters.begin();
         for (; voter != voters.end(); voter++)
         {
             if (*voter == word)
             {
                 voters.push_back(word);
-                if (trie_.end() == trie_.find(word))
+                if (trie_.end() != trie_.find(word))
                 {
                     query.erase(pos, size + 1);
                     removedWords += " ";

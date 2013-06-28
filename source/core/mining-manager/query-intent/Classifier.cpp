@@ -40,6 +40,7 @@ namespace NQI
 
     bool combineWMV(WMVType& wmv, int number)
     {
+        //printWMV(wmv);
         wmv.sort(nameCompare);
         // 
         WMVIterator it = wmv.begin();
@@ -98,6 +99,7 @@ namespace NQI
 
     bool commonAncester(WMVType& wmv, int number)
     {
+        //printWMV(wmv);
         wmv.sort(nameCompare);
         WMVIterator it = wmv.begin();
         if (REMOVED_WORD_WEIGHT == it->second)
