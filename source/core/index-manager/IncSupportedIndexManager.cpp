@@ -1,11 +1,11 @@
 #include "IncSupportedIndexManager.h"
-#include "IncSupportedIndex.h"
+#include "IIncSupportedIndex.h"
 #include <document-manager/DocumentManager.h>
 
 namespace sf1r
 {
 
-void IncSupportedIndexManager::addIndex(boost::shared_ptr<IncSupportedIndex> index)
+void IncSupportedIndexManager::addIndex(boost::shared_ptr<IIncSupportedIndex> index)
 {
     if (index)
         inc_index_list_.push_back(index);

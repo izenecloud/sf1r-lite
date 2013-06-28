@@ -25,7 +25,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include "IncSupportedIndex.h"
+#include "IIncSupportedIndex.h"
 
 namespace sf1r
 {
@@ -111,7 +111,7 @@ class IndexBundleConfiguration;
 class DocumentManager;
 
 class InvertedIndexManager: public izenelib::ir::indexmanager::Indexer,
-    public IncSupportedIndex, public boost::enable_shared_from_this<InvertedIndexManager>
+    public IIncSupportedIndex, public boost::enable_shared_from_this<InvertedIndexManager>
 {
 friend class QueryBuilder;
 public:

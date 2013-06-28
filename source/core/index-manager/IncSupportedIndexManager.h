@@ -11,14 +11,14 @@ namespace sf1r
 // Define the interface for the index which will support increment build.
 // This kind of index will be updated while iterating the SCD files or
 // some update/insert/delete api coming.
-class IncSupportedIndex;
+class IIncSupportedIndex;
 class Document;
 
 class IncSupportedIndexManager
 {
 public:
     ~IncSupportedIndexManager() {}
-    void addIndex(boost::shared_ptr<IncSupportedIndex> index);
+    void addIndex(boost::shared_ptr<IIncSupportedIndex> index);
 
     void flush();
     void optimize(bool wait);
@@ -37,7 +37,7 @@ public:
     void removeDocument(docid_t docid, time_t timestamp);
 
 private:
-    std::vector<boost::shared_ptr<IncSupportedIndex> > inc_index_list_;
+    std::vector<boost::shared_ptr<IIncSupportedIndex> > inc_index_list_;
 };
 
 }

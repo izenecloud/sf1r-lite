@@ -7,10 +7,10 @@ class Document;
 // Define the interface for the index which will support increment build.
 // This kind of index will be updated while iterating the SCD files or
 // some update/insert/delete api coming.
-class IncSupportedIndex
+class IIncSupportedIndex
 {
 public:
-    virtual ~IncSupportedIndex() {}
+    virtual ~IIncSupportedIndex() {}
     virtual void flush(bool force) = 0;
     virtual void optimize(bool wait) = 0;
 
