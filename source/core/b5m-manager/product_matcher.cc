@@ -314,7 +314,15 @@ bool ProductMatcher::Open(const std::string& kpath)
             LOG(INFO)<<"back2front size "<<back2front_.size()<<std::endl;
             path = path_+"/feature_vector";
             izenelib::am::ssf::Util<>::LoadOne(path, feature_vectors_);
-            
+
+            for(uint32_t i=0;i<feature_vectors_.size();i++)
+            {
+                std::string category = category_list_[i].name;
+//                LOG(INFO)<<"i: "<<i<<" cid: "<<category_list_[i].cid<<endl;
+                cid_t cid = GetLevelCid_(category, 1);
+                first_level_category_[cid] = 1;
+//                LOG(INFO)<<"first level cid: "<<cid<<" name: "<<category_list_[cid].name<<endl;
+            }
             //path = path_+"/nf";
             //std::map<uint64_t, uint32_t> nf_map;
             //izenelib::am::ssf::Util<>::Load(path, nf_map);
@@ -2442,18 +2450,45 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
 {
     if(!IsOpen()) return;
     if(text.length() == 0) return;
+    //对text进行分词
     ATermList term_list;
     Analyze_(text, term_list);
+    //获取text中商品相关的关键词
     KeywordVector keyword_vector;
     GetKeywords(term_list, keyword_vector, false);
+    //根据关键词，求特征向量
+    FeatureVector feature_vector;
+    GenFeatureVector_(keyword_vector, feature_vector);
+    boost::unordered_map<cid_t, uint32_t>::iterator iter;
+
+    //寻找可能的一级类目
+    std::vector<std::pair<cid_t, double> > cos_value;
+    for(iter=first_level_category_.begin();iter!=first_level_category_.end();iter++)
+    {
+        double tcos = Cosine_(feature_vector, feature_vectors_[iter->first]);
+        std::vector<std::pair<cid_t, double> >::iterator it;
+        for(it = cos_value.begin();it!=cos_value.end();it++)
+        {
+            if(it->second < tcos)
+                break;
+        }
+        cos_value.insert(it, make_pair(iter->first, tcos));
+    }
+    for(uint32_t i=0;i<10;i++)
+    {
+        LOG(INFO)<<"i: "<<i<<" cos: "<<cos_value[i].second<<" cid: "<<cos_value[i].first<<" name: "<<category_list_[cos_value[i].first].name<<endl;
+    }
+
+
     boost::unordered_map<std::string, uint32_t> note;
     KeywordVector temp_k;
+    //抽取出类目相关的关键词
     for(uint32_t i=0;i<keyword_vector.size();i++)
     {
         KeywordTag& ki = keyword_vector[i];
         std::string str;
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
-        cout<<"keyword: "<<str<<endl;
+//        cout<<"keyword: "<<str<<endl;
         if(!(ki.category_name_apps.empty()))
         {
             std::string term;
@@ -2464,6 +2499,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                  bool is_res = false;
                  for(;it!=ki.category_name_apps.end();it++)
                  {
+/*
                      cout<<"term: " <<term
                        <<" cid: "<<it->cid
                        <<" depth: "<<it->depth
@@ -2473,6 +2509,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                        <<" is_parent: " <<category_list_[it->cid].is_parent
                        <<" depth: " <<category_list_[it->cid].depth
                        <<" has_spu: " << category_list_[it->cid].has_spu<<endl;
+*/
                      std::string man_category = category_list_[it->cid].name.substr(0,category_list_[it->cid].name.find_first_of(">"));
                      if(man_category.find(term) != std::string::npos)
                          is_res = true;
@@ -2490,6 +2527,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                     i++;
             continue;
         }
+        //按照位置重排关键词顺序
         std::vector<Position>::iterator it;
         for(it = ki.positions.begin();it!=ki.positions.end();it++)
         {
@@ -2526,7 +2564,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         std::string term, str;
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
         term = str;
-        cout<<"Term: "<<term<<endl;
+//        cout<<"Term: "<<term<<endl;
         uint32_t j = i;
         boost::unordered_map<uint32_t, uint32_t> spus;
         std::vector<AttributeApp>::iterator it1 = ki.attribute_apps.begin();
@@ -2539,17 +2577,19 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             if(it1->attribute_name == "品牌")
             {
                 brand_count++;
-                cout<<" term " <<term << " brand匹配到: " <<products_[it1->spu_id].sbrand<<endl;
+//                cout<<" term " <<term << " brand匹配到: " <<products_[it1->spu_id].sbrand<<endl;
             }
             if(it1->attribute_name == "型号")
             {
                 model_count++;
+/*
                 cout<<" term "<<term << " model匹配到: ";
                 std::vector<Attribute>::iterator it;
                 for(it=products_[it1->spu_id].attributes.begin();it!=products_[it1->spu_id].attributes.end();it++)
                     if(it->name == "型号")
                         cout<<it->values[0];
                 cout<<endl;
+*/
             }
             spus[it1->spu_id]=1;
             it1++;
@@ -2587,9 +2627,12 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             }
             spus.clear();
             spus = sp;
-            cout<<"sp size: "<<sp.size()<<endl;
+//            cout<<"sp size: "<<sp.size()<<endl;
             temp_k[j].text.convertString(str,izenelib::util::UString::UTF_8);
-            term += str;
+            if(temp_k[j].positions[0].begin == temp_k[i].positions[0].end + 1)
+                term += " "+str;
+            else
+                term += str;
             i++;
         }
         cout<<"Term res: "<<term<<"  "<<temp_k[i].positions[0].begin<<endl;
@@ -2633,87 +2676,6 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             }
         }
     }
-/*
-    for(uint32_t i=0;i<keyword_vector.size();i++)
-    {
-
-        //combine
-
-        const KeywordTag& k = keyword_vector[i];
-        std::string terms_str;
-        GetTermsString_(k.text, terms_str);
-        if(k.kweight==0.0)
-        {
-            cout <<"k.kweight == 0.0 : "<<terms_str<<endl;
-        }
-        else
-        {
-            bool is_category = false;
-            bool is_brand = false;
-            bool is_type = false;
-            bool is_thirdparty = false;
-            if(k.category_name_apps.empty()&&k.attribute_apps.empty())
-            {
-                is_thirdparty = true;
-            }
-            if(!k.category_name_apps.empty())
-            {
-                is_category = true;
-            }
-            for(uint32_t j=0;j<k.attribute_apps.size();j++)
-            {
-                const AttributeApp& app = k.attribute_apps[j];
-                if(app.attribute_name=="品牌")
-                {
-                    is_brand = true;
-                }
-                else if(app.attribute_name=="型号")
-                {
-                    is_type = true;
-                }
-            }
-
-            bool is_res = false;
-            if(is_category)
-            {
-                is_res = true;
-            }
-            else if(is_brand)
-            {
-                is_res = true;
-            }
-            else if(is_type)
-            {
-                for(uint32_t j=0;j<terms_str.size();j++)
-                {
-                    if(terms_str.at(j) <'0' || terms_str.at(j) > '9')
-                        is_res = true;
-                }
-            }
-            else if(is_thirdparty)
-            {
-                //do nothing
-            }
-
-
-            if(is_res)
-            {
-                std::string stext;
-                k.text.convertString(stext, UString::UTF_8);
-                std::cerr<<"[HITS]"<<stext<<std::endl;
-
-                std::vector<Position>::const_iterator it;
-                uint32_t pos=99999999;
-                for(it = (k.positions).begin();it!=(k.positions).end();it++)
-                {
-                    cout <<terms_str<<"   "<<it->begin<<"    "<<it->end<<endl;
-                    if(it->begin < pos) pos = it->begin;
-                }
-                res.push_back(std::make_pair(k.text, pos));
-            }
-        }
-    }
-*/
 }
 
 void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<std::pair<UString, double> >& left_hits, std::list<UString>& left)
@@ -2735,7 +2697,7 @@ void ProductMatcher::GetSearchKeywords(const UString& text, std::list<std::pair<
     Document doc;
     doc.property("Title") = text;
     std::vector<Product> result_products;
-#ifdef B5M_DEBUG
+#ifdef B5M_DEBUGgi
     std::cout<<"[BEFORE COMPUTE]"<<clocker.elapsed()<<std::endl;
     clocker.restart();
 #endif
