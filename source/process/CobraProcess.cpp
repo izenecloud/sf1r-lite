@@ -5,6 +5,7 @@
 
 #include <log-manager/LogServerConnection.h>
 #include <la-manager/LAPool.h>
+#include <la-manager/KNlpWrapper.h>
 #include <license-manager/LicenseManager.h>
 #include <license-manager/LicenseCustManager.h>
 #include <aggregator-manager/CollectionDataReceiver.h>
@@ -78,6 +79,8 @@ bool CobraProcess::initialize(const std::string& configFileDir)
         return false;
     }
 
+    if(!initKNlpWrapper()) return false;
+
     if(!initLogManager()) return false;
 
     if(!initFireWall()) return false;
@@ -89,6 +92,16 @@ bool CobraProcess::initialize(const std::string& configFileDir)
     initNodeManager();
 
     return true;
+}
+
+bool CobraProcess::initKNlpWrapper()
+{
+    const bfs::path resource = SF1Config::get()->getResourceDir();
+    const std::string dictDir = (resource / "dict" / "term_category").string();
+    KNlpWrapper* knlpWrapper = KNlpWrapper::get();
+
+    return knlpWrapper->initTokenizer(dictDir) &&
+        knlpWrapper->initClassifier(dictDir);
 }
 
 bool CobraProcess::initLogManager()
