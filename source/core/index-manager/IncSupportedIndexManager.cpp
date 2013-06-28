@@ -1,11 +1,11 @@
 #include "IncSupportedIndexManager.h"
-#include "IIncSupportedIndex.h"
+#include "IncSupportedIndex.h"
 #include <document-manager/DocumentManager.h>
 
 namespace sf1r
 {
 
-void IncSupportedIndexManager::addIndex(boost::shared_ptr<IIncSupportedIndex> index)
+void IncSupportedIndexManager::addIndex(boost::shared_ptr<IncSupportedIndex> index)
 {
     if (index)
         inc_index_list_.push_back(index);
@@ -71,11 +71,11 @@ bool IncSupportedIndexManager::insertDocument(const Document& doc, time_t timest
         inc_index_list_[i]->insertDocument(doc, timestamp);
     return true;
 }
-bool IncSupportedIndexManager::updateDocument(const Document& olddoc, const Document& newdoc,
-    int updateType, time_t timestamp)
+bool IncSupportedIndexManager::updateDocument(const Document& olddoc, const Document& old_rtype_doc,
+    const Document& newdoc, int updateType, time_t timestamp)
 {
     for (size_t i = 0; i< inc_index_list_.size(); ++i)
-        inc_index_list_[i]->updateDocument(olddoc, newdoc, updateType, timestamp);
+        inc_index_list_[i]->updateDocument(olddoc, old_rtype_doc, newdoc, updateType, timestamp);
     return true;
 }
 void IncSupportedIndexManager::removeDocument(docid_t docid, time_t timestamp)

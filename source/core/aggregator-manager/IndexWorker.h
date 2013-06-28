@@ -58,8 +58,8 @@ class IndexWorker : public net::aggregator::BindCallProxyBase<IndexWorker>
         RTYPE  ///RType update to index
     };
 
-    // updatetype, newDoc, oldDocId, timestamp
-    typedef boost::tuple<UpdateType, Document, docid_t, time_t> UpdateBufferDataType;
+    // updatetype, newDoc, oldDocId, timestamp, OldDocumentForRType
+    typedef boost::tuple<UpdateType, Document, docid_t, time_t, Document> UpdateBufferDataType;
     typedef stx::btree_map<docid_t, UpdateBufferDataType> UpdateBufferType;
 
 public:
@@ -148,6 +148,7 @@ private:
     bool updateDoc_(
             docid_t oldId,
             Document& document,
+            const Document& old_rtype_doc,
             time_t timestamp,
             IndexWorker::UpdateType updateType,
             bool immediately = false);
@@ -155,6 +156,7 @@ private:
     bool doUpdateDoc_(
             docid_t oldId,
             Document& document,
+            const Document& old_rtype_doc,
             IndexWorker::UpdateType updateType,
             time_t timestamp);
 
@@ -169,6 +171,7 @@ private:
     bool prepareDocument_(
             SCDDoc& doc,
             Document& document,
+            Document& old_rtype_doc,
             docid_t& oldId,
             std::string& source,
             time_t& timestamp,

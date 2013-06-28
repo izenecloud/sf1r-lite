@@ -5,12 +5,12 @@ namespace sf1r
 {
 class Document;
 // Define the interface for the index which will support increment build.
-// This kind of index will be updated while iterating the SCD files or 
+// This kind of index will be updated while iterating the SCD files or
 // some update/insert/delete api coming.
-class IIncSupportedIndex
+class IncSupportedIndex
 {
 public:
-    virtual ~IIncSupportedIndex() {}
+    virtual ~IncSupportedIndex() {}
     virtual void flush(bool force) = 0;
     virtual void optimize(bool wait) = 0;
 
@@ -28,8 +28,8 @@ public:
     virtual void postProcessForAPI() = 0;
 
     virtual bool insertDocument(const Document& doc, time_t timestamp) = 0;
-    virtual bool updateDocument(const Document& olddoc, const Document& newdoc,
-        int updateType, time_t timestamp) = 0;
+    virtual bool updateDocument(const Document& olddoc, const Document& old_rtype_doc,
+        const Document& newdoc, int updateType, time_t timestamp) = 0;
     virtual void removeDocument(docid_t docid, time_t timestamp) = 0;
 
 };

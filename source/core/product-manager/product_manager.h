@@ -36,9 +36,9 @@ public:
 
     ~ProductManager();
 
-    bool HookInsert(PMDocumentType& doc, time_t timestamp);
+    bool HookInsert(const PMDocumentType& doc, time_t timestamp);
 
-    bool HookUpdate(PMDocumentType& to, docid_t oldid, time_t timestamp);
+    bool HookUpdate(const PMDocumentType& to, docid_t oldid, time_t timestamp);
 
     bool HookDelete(uint32_t docid, time_t timestamp);
 

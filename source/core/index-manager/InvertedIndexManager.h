@@ -25,7 +25,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include "IIncSupportedIndex.h"
+#include "IncSupportedIndex.h"
 
 namespace sf1r
 {
@@ -111,7 +111,7 @@ class IndexBundleConfiguration;
 class DocumentManager;
 
 class InvertedIndexManager: public izenelib::ir::indexmanager::Indexer,
-    public IIncSupportedIndex, public boost::enable_shared_from_this<InvertedIndexManager>
+    public IncSupportedIndex, public boost::enable_shared_from_this<InvertedIndexManager>
 {
 friend class QueryBuilder;
 public:
@@ -127,7 +127,7 @@ public:
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
            const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT> filterBitMap);
-    
+
     virtual void flush(bool force = true);
     virtual void optimize(bool wait);
     virtual void preBuildFromSCD(size_t total_filesize);
@@ -140,7 +140,7 @@ public:
     virtual void postProcessForAPI();
 
     virtual bool insertDocument(const Document& doc, time_t timestamp);
-    virtual bool updateDocument(const Document& olddoc, const Document& newdoc, int updateType, time_t timestamp);
+    virtual bool updateDocument(const Document& olddoc, const Document& old_rtype_doc, const Document& newdoc, int updateType, time_t timestamp);
     virtual void removeDocument(docid_t docid, time_t timestamp);
 
 private:
@@ -160,7 +160,7 @@ private:
     void prepareIndexDocumentCommon(const Document& newdoc,
         const IndexBundleSchema& schema, izenelib::ir::indexmanager::IndexerDocument& indexdoc);
     bool prepareIndexDocumentForInsert(const Document& newdoc, const IndexBundleSchema& schema, izenelib::ir::indexmanager::IndexerDocument& indexdoc);
-    bool prepareIndexDocumentForUpdate(const Document& olddoc, const Document& newdoc,
+    bool prepareIndexDocumentForUpdate(const Document& olddoc, const Document& old_rtype_doc, const Document& newdoc,
         int updateType, const IndexBundleSchema& schema, 
         izenelib::ir::indexmanager::IndexerDocument& new_indexdoc, izenelib::ir::indexmanager::IndexerDocument& old_indexdoc);
 
@@ -173,6 +173,10 @@ private:
 
     bool prepareIndexRTypeProperties_(
             docid_t docId, const IndexBundleSchema& schema,
+            izenelib::ir::indexmanager::IndexerDocument& indexDocument);
+    bool prepareIndexRTypeProperties_(
+            docid_t docId, const Document& old_rtype_doc,
+            const IndexBundleSchema& schema,
             izenelib::ir::indexmanager::IndexerDocument& indexDocument);
 
     bool prepareIndexDocumentNumericProperty_(

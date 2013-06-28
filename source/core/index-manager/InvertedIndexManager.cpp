@@ -450,6 +450,35 @@ void InvertedIndexManager::postProcessForAPI()
 
 bool InvertedIndexManager::prepareIndexRTypeProperties_(
         docid_t docId,
+        const Document& old_rtype_doc,
+        const IndexBundleSchema& schema,
+        IndexerDocument& indexDocument)
+{
+    IndexerPropertyConfig indexerPropertyConfig;
+    Document::property_const_iterator it = old_rtype_doc.propertyBegin();
+    for (; it != old_rtype_doc.propertyEnd(); ++it)
+    {
+        tempPropertyConfig.propertyName_ = it->first;
+        IndexBundleSchema::const_iterator index_it = schema.find(tempPropertyConfig);
+        if (index_it == schema.end())
+            continue;
+        if (index_it->getType() == STRING_PROPERTY_TYPE ||
+            index_it->getType() == SUBDOC_PROPERTY_TYPE)
+        {
+            prepareIndexDocumentStringProperty_(docId, it->first, 
+                it->second.get<izenelib::util::UString>(), index_it, indexDocument);
+        }
+        else
+        {
+            prepareIndexDocumentNumericProperty_(docId, it->second.get<izenelib::util::UString>(),
+                index_it, indexDocument);
+        }
+    }
+    return true;
+}
+
+bool InvertedIndexManager::prepareIndexRTypeProperties_(
+        docid_t docId,
         const IndexBundleSchema& schema,
         IndexerDocument& indexDocument)
 {
@@ -937,7 +966,6 @@ void InvertedIndexManager::prepareIndexDocumentCommon(const Document& document,
         IndexBundleSchema::const_iterator iter = schema.find(tempPropertyConfig);
         bool isIndexSchema = (iter != schema.end());
 
-        const izenelib::util::UString& propValue = document.property(it->first).get<izenelib::util::UString>();
         if (boost::iequals(propertyName, DOCID))
         {
             continue;
@@ -948,6 +976,7 @@ void InvertedIndexManager::prepareIndexDocumentCommon(const Document& document,
         }
         else if (isIndexSchema)
         {
+            const izenelib::util::UString& propValue = document.property(it->first).get<izenelib::util::UString>();
             switch(iter->getType())
             {
             case STRING_PROPERTY_TYPE:
@@ -990,14 +1019,16 @@ bool InvertedIndexManager::prepareIndexDocumentForInsert(const Document& newdoc,
     return true;
 }
 
-bool InvertedIndexManager::prepareIndexDocumentForUpdate(const Document& olddoc, const Document& newdoc,
-    int updateType, const IndexBundleSchema& schema, IndexerDocument& new_indexdoc, IndexerDocument& old_indexdoc)
+bool InvertedIndexManager::prepareIndexDocumentForUpdate(const Document& olddoc, const Document& old_rtype_doc,
+    const Document& newdoc, int updateType,
+    const IndexBundleSchema& schema, IndexerDocument& new_indexdoc,
+    IndexerDocument& old_indexdoc)
 {
     docid_t docId = newdoc.getId();
     docid_t oldId = olddoc.getId();
     if (updateType == RTYPE)
     {
-        prepareIndexRTypeProperties_(oldId, schema, old_indexdoc);
+        prepareIndexRTypeProperties_(oldId, old_rtype_doc, schema, old_indexdoc);
     }
     new_indexdoc.setOldId(oldId);
     new_indexdoc.setDocId(docId, collectionId_);
@@ -1015,12 +1046,12 @@ bool InvertedIndexManager::insertDocument(const Document& newdoc, time_t timesta
     return izenelib::ir::indexmanager::Indexer::insertDocument(indexdoc);
 }
 
-bool InvertedIndexManager::updateDocument(const Document& olddoc, const Document& newdoc,
+bool InvertedIndexManager::updateDocument(const Document& olddoc, const Document& old_rtype_doc, const Document& newdoc,
     int updateType, time_t timestamp)
 {
     IndexerDocument old_indexdoc;
     IndexerDocument new_indexdoc;
-    prepareIndexDocumentForUpdate(olddoc, newdoc, updateType, bundleConfig_->indexSchema_,
+    prepareIndexDocumentForUpdate(olddoc, old_rtype_doc, newdoc, updateType, bundleConfig_->indexSchema_,
         new_indexdoc, old_indexdoc);
 
     prepareIndexRTypeProperties_(newdoc.getId(), bundleConfig_->indexSchema_, new_indexdoc);

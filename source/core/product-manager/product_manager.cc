@@ -62,7 +62,7 @@ ProductManager::~ProductManager()
     delete util_;
 }
 
-bool ProductManager::HookInsert(PMDocumentType& doc, time_t timestamp)
+bool ProductManager::HookInsert(const PMDocumentType& doc, time_t timestamp)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
@@ -87,7 +87,7 @@ bool ProductManager::HookInsert(PMDocumentType& doc, time_t timestamp)
     return true;
 }
 
-bool ProductManager::HookUpdate(PMDocumentType& to, docid_t oldid, time_t timestamp)
+bool ProductManager::HookUpdate(const PMDocumentType& to, docid_t oldid, time_t timestamp)
 {
     inhook_ = true;
     boost::mutex::scoped_lock lock(human_mutex_);
