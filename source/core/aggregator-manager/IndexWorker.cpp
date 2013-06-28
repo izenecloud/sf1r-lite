@@ -1954,14 +1954,21 @@ void IndexWorker::document2SCDDoc(const Document& document, SCDDoc& scddoc)
         std::size_t insertto = propertyId;
         // the first position for SCDDoc must be preserved for the DOCID,
         const std::string& propertyName = it->first;
-        const izenelib::util::UString& propValue = document.property(it->first).get<izenelib::util::UString>();
-        if (boost::iequals(propertyName, DOCID))
+
+        try
         {
-            insertto = 0;
-            --propertyId;
+            const izenelib::util::UString& propValue = document.property(it->first).get<izenelib::util::UString>();
+            if (boost::iequals(propertyName, DOCID))
+            {
+                insertto = 0;
+                --propertyId;
+            }
+            scddoc[insertto].first.assign(it->first);
+            scddoc[insertto].second.assign(propValue);
         }
-        scddoc[insertto].first.assign(it->first);
-        scddoc[insertto].second.assign(propValue);
+        catch(const boost::bad_get& e)
+        {
+        }
     }
 }
 
