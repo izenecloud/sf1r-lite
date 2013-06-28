@@ -25,7 +25,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include "IIncSupportedIndex.h"
+#include "IncSupportedIndex.h"
 
 namespace sf1r
 {
@@ -111,7 +111,7 @@ class IndexBundleConfiguration;
 class DocumentManager;
 
 class InvertedIndexManager: public izenelib::ir::indexmanager::Indexer,
-    public IIncSupportedIndex, public boost::enable_shared_from_this<InvertedIndexManager>
+    public IncSupportedIndex, public boost::enable_shared_from_this<InvertedIndexManager>
 {
 friend class QueryBuilder;
 public:
@@ -127,7 +127,7 @@ public:
     ///Make range query on BTree index to fill the Filter, which is required by the filter utility of SearchManager
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
            const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT> filterBitMap);
-    
+
     virtual void flush(bool force = true);
     virtual void optimize(bool wait);
     virtual void preBuildFromSCD(size_t total_filesize);
