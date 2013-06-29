@@ -1,6 +1,7 @@
 #include "ProductTokenizer.h"
 #include <common/CMAKnowledgeFactory.h>
 #include <b5m-manager/product_matcher.h>
+#include <la-manager/KNlpWrapper.h>
 
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
@@ -292,6 +293,8 @@ bool ProductTokenizer::GetTokenResults(
         std::list<std::pair<UString,double> >& minor_tokens,
         UString& refined_results)
 {
+    return GetTokenResultsByKNlp_(pattern, minor_tokens, refined_results);
+
     if (matcher_ && GetTokenResultsByMatcher_(pattern, major_tokens, minor_tokens, refined_results))
     {
         return true;
@@ -306,6 +309,39 @@ bool ProductTokenizer::GetTokenResults(
     }
 
     return false;
+}
+
+bool ProductTokenizer::GetTokenResultsByKNlp_(
+        const std::string& pattern,
+        std::list<std::pair<UString,double> >& token_results,
+        UString& refined_results)
+{
+    KNlpWrapper::token_score_list_t tokenScores;
+    KNlpWrapper::string_t kstr(pattern);
+    KNlpWrapper::get()->fmmTokenize(kstr, tokenScores);
+
+    double scoreSum = 0;
+
+    for (KNlpWrapper::token_score_list_t::const_iterator it =
+             tokenScores.begin(); it != tokenScores.end(); ++it)
+    {
+        scoreSum += it->second;
+    }
+
+    std::ostringstream oss;
+    for (KNlpWrapper::token_score_list_t::const_iterator it =
+             tokenScores.begin(); it != tokenScores.end(); ++it)
+    {
+        std::string str = it->first.get_bytes("utf-8");
+        UString ustr(str, UString::UTF_8);
+        double score = it->second / scoreSum;
+
+        token_results.push_back(std::make_pair(ustr, score));
+        oss << str << "/" << std::setprecision(2) << score << " ";
+    }
+    refined_results.assign(oss.str(), UString::UTF_8);
+
+    return true;
 }
 
 bool ProductTokenizer::GetTokenResultsByCMA_(
