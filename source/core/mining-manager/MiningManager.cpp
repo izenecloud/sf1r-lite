@@ -2223,18 +2223,51 @@ bool MiningManager::GetSuffixMatch(
         }
 
         const double rank_boundary = 0.8;
+        bool isAndSearch = !QueryNormalizer::get()->isLongQuery(pattern);
+        bool isOrSearch = true;
 
-        totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
-            actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
-            major_tokens,
-            minor_tokens,
-            search_in_properties,
-            max_docs,
-            actionOperation.actionItem_.searchingMode_.filtermode_,
-            filter_param,
-            actionOperation.actionItem_.groupParam_,
-            res_list,
-            rank_boundary);
+        if (isAndSearch)
+        {
+            LOG(INFO) << "for short query, try AND search first";
+            std::list<std::pair<UString, double> > short_query_major_tokens(major_tokens);
+            std::list<std::pair<UString, double> > short_query_minor_tokens;
+
+            for (std::list<std::pair<UString, double> >::iterator it = minor_tokens.begin();
+                 it != minor_tokens.end(); ++it)
+            {
+                short_query_major_tokens.push_back(*it);
+            }
+
+            totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
+                short_query_major_tokens,
+                short_query_minor_tokens,
+                search_in_properties,
+                max_docs,
+                actionOperation.actionItem_.searchingMode_.filtermode_,
+                filter_param,
+                actionOperation.actionItem_.groupParam_,
+                res_list,
+                rank_boundary);
+
+            isOrSearch = res_list.empty();
+        }
+
+        if (isOrSearch)
+        {
+            LOG(INFO) << "for long query or short AND result is empty, try OR search";
+            totalCount = suffixMatchManager_->AllPossibleSuffixMatch(
+                actionOperation.actionItem_.languageAnalyzerInfo_.synonymExtension_,
+                major_tokens,
+                minor_tokens,
+                search_in_properties,
+                max_docs,
+                actionOperation.actionItem_.searchingMode_.filtermode_,
+                filter_param,
+                actionOperation.actionItem_.groupParam_,
+                res_list,
+                rank_boundary);
+        }
 
         if (mining_schema_.suffixmatch_schema.suffix_incremental_enable)
         {
