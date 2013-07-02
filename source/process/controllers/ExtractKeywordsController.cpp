@@ -30,14 +30,14 @@
  		std::string page = asString(request()[Keys::text]);
  		UString uspage;
  		uspage.assign(page, izenelib::util::UString::UTF_8);
- 		std::list<std::pair<UString, uint32_t> > res;
+ 		std::list<std::pair<UString, uint32_t> > res_ca, res_brand, res_model;
  		std::list<std::pair<UString, uint32_t> >::iterator it;
  		LOG(INFO)<<"content: "<<page<<endl;
- 		matcher_->ExtractKeywordsFromPage(uspage, res);
- 		LOG(INFO)<<"keywords count: "<<res.size()<<endl;
+ 		matcher_->ExtractKeywordsFromPage(uspage, res_ca, res_brand, res_model);
+ 		LOG(INFO)<<"keywords count: "<<res_ca.size() + res_brand.size() + res_model.size()<<endl;
 
  		Value& keywords = response()[Keys::keywords];
- 		for(it=res.begin();it!=res.end();it++)
+ 		for(it=res_ca.begin();it!=res_ca.end();it++)
  		{
  			Value& keyword = keywords();
  			std::string value;
@@ -45,6 +45,27 @@
  			LOG(INFO)<<"keyword: "<<value<<endl;
  			keyword[Keys::value] = value;
  			keyword[Keys::pos] = boost::lexical_cast<std::string>(it->second);
+ 			keyword[Keys::type] = "category";
+ 		}
+ 		for(it=res_brand.begin();it!=res_brand.end();it++)
+ 		{
+ 			Value& keyword = keywords();
+ 			std::string value;
+ 			it->first.convertString(value, izenelib::util::UString::UTF_8);
+ 			LOG(INFO)<<"keyword: "<<value<<endl;
+ 			keyword[Keys::value] = value;
+ 			keyword[Keys::pos] = boost::lexical_cast<std::string>(it->second);
+ 			keyword[Keys::type] = "brand";
+ 		}
+ 		for(it=res_model.begin();it!=res_model.end();it++)
+ 		{
+ 			Value& keyword = keywords();
+ 			std::string value;
+ 			it->first.convertString(value, izenelib::util::UString::UTF_8);
+ 			LOG(INFO)<<"keyword: "<<value<<endl;
+ 			keyword[Keys::value] = value;
+ 			keyword[Keys::pos] = boost::lexical_cast<std::string>(it->second);
+ 			keyword[Keys::type] = "model";
  		}
  	}
  }// end of namespace sf1r

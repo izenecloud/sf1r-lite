@@ -43,7 +43,8 @@ struct ServerHandler
         Hits left_hits;
         typedef std::list<UString> Left;
         Left left;
-        matcher_->ExtractKeywordsFromPage(text, hits);
+        Hits res_brand, res_model;
+        matcher_->ExtractKeywordsFromPage(text, hits, res_brand, res_model);
         int status = 0;
         std::string sresult;
 
