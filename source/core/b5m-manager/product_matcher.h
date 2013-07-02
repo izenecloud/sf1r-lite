@@ -770,7 +770,7 @@ namespace sf1r {
         //return true if this is a complete match, else false: to return parent nodes
         bool GetFrontendCategory(UString& backend, UString& frontend) const;
         void GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy = false, cid_t cid=0);
-        void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, uint32_t> >&res);
+        void ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, uint32_t> >&res_ca, std::list<std::pair<UString, uint32_t> >&res_brand, std::list<std::pair<UString, uint32_t> >&res_model);
         void GetSearchKeywords(const UString& text, std::list<std::pair<UString, double> >& hits, std::list<std::pair<UString, double> >& left_hits, std::list<UString>& left);
         bool GetSynonymSet(const UString& pattern, std::vector<UString>& synonym_set, int& setid);
         void SetCmaPath(const std::string& path)

@@ -2446,7 +2446,7 @@ void ProductMatcher::GetKeywords(const ATermList& term_list, KeywordVector& keyw
     }
 
 }
-void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, uint32_t> >& res)
+void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std::pair<UString, uint32_t> >& res_ca, std::list<std::pair<UString, uint32_t> >& res_brand, std::list<std::pair<UString, uint32_t> >& res_model)
 {
     if(!IsOpen()) return;
     if(text.length() == 0) return;
@@ -2516,7 +2516,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                  }
                  if(is_res)
                  {
-                     res.push_back(std::make_pair(ki.text, ki.positions[0].begin));
+                     res_ca.push_back(std::make_pair(ki.text, ki.positions[0].begin));
                      note[term]=1;
                  }
              }
@@ -2557,7 +2557,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         cout<<str<<"  "<<temp_k[i].positions[0].begin<<"  "<<temp_k[i].positions[0].end<<endl;
     }
 */
-    cout<<"before combine"<<endl;
+//    cout<<"before combine"<<endl;
     for(uint32_t i=0;i<temp_k.size();i++)
     {
         KeywordTag& ki = temp_k[i];
@@ -2576,12 +2576,37 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         {
             if(it1->attribute_name == "品牌")
             {
-                brand_count++;
+		cid_t cid = products_[it1->spu_id].cid;
+                cid = GetLevelCid_(category_list_[cid].name, 1);
+                bool b = false;
+                for(uint32_t i=0;i<10;i++)
+                {
+		    if(cos_value[i].first == cid)
+                    {
+                        b = true;
+                        break;
+                    }
+                }
+                if(b)
+                    brand_count++;
 //                cout<<" term " <<term << " brand匹配到: " <<products_[it1->spu_id].sbrand<<endl;
             }
             if(it1->attribute_name == "型号")
             {
-                model_count++;
+
+		cid_t cid = products_[it1->spu_id].cid;
+                cid = GetLevelCid_(category_list_[cid].name, 1);
+                bool b = false;
+                for(uint32_t i=0;i<10;i++)
+                {
+		    if(cos_value[i].first == cid)
+                    {
+                        b = true;
+                        break;
+                    }
+                }
+                if(b)
+                    model_count++;
 /*
                 cout<<" term "<<term << " model匹配到: ";
                 std::vector<Attribute>::iterator it;
@@ -2594,9 +2619,9 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             spus[it1->spu_id]=1;
             it1++;
         }
-        if(brand_count > 20)
+        if(brand_count > 5)
             is_brand = true;
-        if(model_count > 10)
+        if(model_count > 5)
             is_model = true;
 
         while(j<temp_k.size()-1)
@@ -2635,7 +2660,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 term += str;
             i++;
         }
-        cout<<"Term res: "<<term<<"  "<<temp_k[i].positions[0].begin<<endl;
+//        cout<<"Term res: "<<term<<"  "<<temp_k[i].positions[0].begin<<endl;
 
         if(!is_brand)
         {
@@ -2658,7 +2683,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 note[term]=1;
                 UString usterm;
                 usterm.assign(term, izenelib::util::UString::UTF_8);
-                res.push_back(std::make_pair(usterm, ki.positions[0].begin));
+                res_brand.push_back(std::make_pair(usterm, ki.positions[0].begin));
             }
             else if(is_model)
             {
@@ -2669,7 +2694,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                         note[term]=1;
                         UString usterm;
                         usterm.assign(term, izenelib::util::UString::UTF_8);
-                        res.push_back(std::make_pair(usterm, ki.positions[0].begin));
+                        res_model.push_back(std::make_pair(usterm, ki.positions[0].begin));
                         break;
                     }
                 }
