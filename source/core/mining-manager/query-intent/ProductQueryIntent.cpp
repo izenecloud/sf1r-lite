@@ -51,10 +51,10 @@ void ProductQueryIntent::process(izenelib::driver::Request& request, izenelib::d
         return;
     if (keywords.size() > 60)
         return;
-    //std::string mode = asString(request[Keys::search][Keys::searching_mode][Keys::mode]);
-    //boost::to_lower(mode);
-    //if (mode == "suffix")
-    //    return;
+    std::string mode = asString(request[Keys::search][Keys::searching_mode][Keys::mode]);
+    boost::to_lower(mode);
+    if (mode == "suffix")
+        return;
     std::string normalizedQuery;
     QueryNormalizer::get()->normalize(keywords, normalizedQuery);
     LOG(INFO)<<normalizedQuery; 
