@@ -10,7 +10,7 @@ QueryIntentManager::QueryIntentManager(QueryIntentConfig* config, std::string& r
     miningManager_ = miningManager;
 #ifdef QUERY_INTENT_TIMER    
     nQuery_ = 0;
-    microseconds_ = 0;
+    nanoseconds_ = 0;
 #endif
     init_();
 }
@@ -18,9 +18,9 @@ QueryIntentManager::QueryIntentManager(QueryIntentConfig* config, std::string& r
 QueryIntentManager::~QueryIntentManager()
 {
 #ifdef QUERY_INTENT_TIMER    
-    double rate = (double)microseconds_ / nQuery_;
+    double rate = (double)nanoseconds_ / nQuery_;
     std::cout<<"==========================================================\n";
-    std::cout<<"| QueryIntent rate = "<<rate<<"(microseconds per query)  |\n";
+    std::cout<<"| QueryIntent rate = "<<rate<<"(nanoseconds per query)  |\n";
     std::cout<<"==========================================================\n";
 #endif
     destroy_();
@@ -68,17 +68,18 @@ void QueryIntentManager::queryIntent(
     izenelib::driver::Request& request,
     izenelib::driver::Response& response)
 {
-#ifdef QUERY_INTENT_TIMER    
-    struct timeval begin;
-    gettimeofday(&begin, NULL);
+#ifdef QUERY_INTENT_TIMER
+    int clk_id = CLOCK_REALTIME;
+    struct timespec begin;
+    clock_gettime(clk_id, &begin);
 #endif
     if (intent_)
         intent_->process(request, response);
 #ifdef QUERY_INTENT_TIMER    
-    struct timeval end;
-    gettimeofday(&end, NULL);
+    struct timespec end;
+    clock_gettime(clk_id, &end);
     nQuery_++;
-    microseconds_ = 1e6 * (end.tv_sec - begin.tv_sec) + (end.tv_usec - begin.tv_usec);
+    nanoseconds_ = 1e9 * (end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec);
 #endif
 }
 
