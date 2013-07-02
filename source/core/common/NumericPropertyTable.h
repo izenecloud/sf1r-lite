@@ -236,8 +236,9 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
         data_[pos] = static_cast<T>(value);
@@ -247,8 +248,9 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
         data_[pos] = static_cast<T>(value);
@@ -258,8 +260,9 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
 	data_[pos] = static_cast<T>(value);
@@ -269,8 +272,9 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
         data_[pos] = static_cast<T>(value);
@@ -280,8 +284,9 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
         try
@@ -300,8 +305,9 @@ public:
     {
         if (pos >= data_.size())
         {
-            ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-            data_.resize(pos + 1, invalidValue_);
+            ScopedWriteBoolLock lock(mutex_, true);
+            if (pos >= data_.size())
+                data_.resize(pos + 1, invalidValue_);
         }
 
         data_[pos] = value;
@@ -414,8 +420,9 @@ inline bool NumericPropertyTable<int8_t>::setStringValue(std::size_t pos, const 
 {
     if (pos >= data_.size())
     {
-        ScopedWriteBoolLock lock(mutex_, pos >= data_.capacity() ? true:false);
-        data_.resize(pos + 1, invalidValue_);
+        ScopedWriteBoolLock lock(mutex_, true);
+        if (pos >= data_.size())
+            data_.resize(pos + 1, invalidValue_);
     }
 
     try

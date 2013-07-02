@@ -150,7 +150,8 @@ private:
             const izenelib::util::UString& text,
             const std::string& propertyName,
             unsigned int propertyId,
-            const AnalysisInfo& analysisInfo);
+            const AnalysisInfo& analysisInfo,
+            boost::shared_ptr<LAInput>& laInput);
 
     bool checkSeparatorType_(
             const izenelib::util::UString& propertyValueStr,
@@ -194,7 +195,6 @@ private:
     // update type, newdoc, olddoc, newindexdoc, oldindexdoc.
     boost::shared_ptr<IndexModeSelector> index_mode_selector_;
     unsigned int collectionId_;
-    std::vector<boost::shared_ptr<LAInput> > laInputs_;
     config_tool::PROPERTY_ALIAS_MAP_T propertyAliasMap_;
     IndexBundleConfiguration* bundleConfig_;
     boost::shared_ptr<LAManager> laManager_;
