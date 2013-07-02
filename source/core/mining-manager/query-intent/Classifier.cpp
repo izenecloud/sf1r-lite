@@ -5,7 +5,7 @@ namespace sf1r
 namespace NQI
 {
     const unsigned int REMOVED_WORD_WEIGHT = -1;
-    const double RATIO_THRESHOLD = 0.667;
+    const double RATIO_THRESHOLD = 0.666;
     const std::string NODE_DELIMITER = ">";
     bool nameCompare(WVType& lv, WVType& rv)
     {
@@ -40,7 +40,6 @@ namespace NQI
 
     bool combineWMV(WMVType& wmv, int number)
     {
-        //printWMV(wmv);
         wmv.sort(nameCompare);
         // 
         WMVIterator it = wmv.begin();
@@ -241,6 +240,8 @@ namespace NQI
 
     void reserveKeywords(WMVType& wmv, std::string& removedWords)
     {
+        if (removedWords.empty())
+            return;
         wmv.sort(weightCompare);
         WMVIterator it = wmv.begin();
         if (REMOVED_WORD_WEIGHT == it->second)
@@ -249,7 +250,7 @@ namespace NQI
             it->first += removedWords;
         }
         else
-        wmv.push_front(make_pair(removedWords, REMOVED_WORD_WEIGHT));
+            wmv.push_front(make_pair(removedWords, REMOVED_WORD_WEIGHT));
     }
 
     void resumeKeywords(WMVType& wmv, std::string& keyword)

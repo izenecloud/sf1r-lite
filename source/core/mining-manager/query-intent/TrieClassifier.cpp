@@ -162,9 +162,16 @@ void TrieClassifier::loadLexicon()
                 std::size_t pos = 0;
                 while (std::size_t found = word.find(FORMAT_OR, pos))
                 {
+                    std::size_t size = 0;
                     if (std::string::npos == found)
-                        break;
-                    std::string key = word.substr(pos, found-pos);
+                    {
+                        size = word.size() - pos;
+                    }
+                    else
+                    {
+                        size = found - pos;
+                    }
+                    std::string key = word.substr(pos, size);
                     pos = found + 1;
                     //std::cout<<key<<std::endl;
                     SynonymIterator it = synonym_.find(key);
@@ -178,6 +185,8 @@ void TrieClassifier::loadLexicon()
                     {
                         it->second.push_back(word);
                     }
+                    if (std::string::npos == found)
+                        break;
                 }
                 //std::cout<<word<<" "<< category<<"\n";
             }
@@ -241,6 +250,7 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
                     query.erase(pos, size + 1);
                     removedWords += " ";
                     removedWords += word;
+                    ret = true;
                 }
                 break;
             }
@@ -294,7 +304,7 @@ bool TrieClassifier::classify(WMVContainer& wmvs, std::string& query)
                         MultiVIterator vIt = mv.begin();
                         for (; vIt != mv.end(); vIt++)
                             mvContainer.push_back(make_pair(*vIt,0));
-                        break;
+                        ret = true;
                     }
                 }
             }
