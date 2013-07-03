@@ -1,4 +1,5 @@
 #include <b5m-manager/product_matcher.h>
+#include <common/ScdWriter.h>
 #include <boost/program_options.hpp>
 using namespace sf1r;
 namespace po = boost::program_options;
@@ -10,13 +11,13 @@ int main(int ac, char** av)
         ("help", "produce help message")
         ("knowledge-dir,K", po::value<std::string>(), "specify knowledge dir")
         ("scd-path,S", po::value<std::string>(), "specify scd path")
+        ("discover", po::value<std::string>(),  "specify whether do the new spu discover and the output directory")
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
     po::notify(vm); 
     if (vm.count("help")) {
-        std::cout << desc << std::endl;
-        return 1;
+        std::cout << desc << std::endl; return 1;
     }
     std::string scd_path;
     std::string knowledge_dir;
@@ -28,6 +29,12 @@ int main(int ac, char** av)
         knowledge_dir = vm["knowledge-dir"].as<std::string>();
         std::cout << "knowledge-dir: " << knowledge_dir <<std::endl;
     } 
+    std::string discover;
+    if(vm.count("discover"))
+    {
+        discover = vm["discover"].as<std::string>();
+        std::cout << "discover: " << discover <<std::endl;
+    }
     if( knowledge_dir.empty()||scd_path.empty())
     {
         return EXIT_FAILURE;
@@ -44,6 +51,13 @@ int main(int ac, char** av)
     izenelib::util::ClockTimer clocker;
     uint32_t all_count = 0;
     uint32_t match_count = 0;
+    boost::shared_ptr<ScdWriter> discover_writer;
+    if(!discover.empty())
+    {
+        boost::filesystem::remove_all(discover);
+        boost::filesystem::create_directories(discover);
+        discover_writer.reset(new ScdWriter(discover, INSERT_SCD));
+    }
     for(uint32_t i=0;i<scd_list.size();i++)
     {
         std::string scd_file = scd_list[i];
@@ -76,6 +90,10 @@ int main(int ac, char** av)
             if(!spu_match)
             {
                 LOG(ERROR)<<"unmatch for "<<stitle<<std::endl;
+                if(discover_writer)
+                {
+                    discover_writer->Append(doc);
+                }
                 //return EXIT_FAILURE;
             }
             else
@@ -85,8 +103,12 @@ int main(int ac, char** av)
         }
         
     }
+    if(discover_writer)
+    {
+        discover_writer->Close();
+    }
     std::cerr<<"clocker used "<<clocker.elapsed()<<std::endl;
-    std::cerr<<"stat "<<all_count<<","<<match_count<<std::endl;
+    std::cerr<<"stat "<<all_count<<","<<match_count<<","<<all_count-match_count<<std::endl;
     return EXIT_SUCCESS;
 }
 
