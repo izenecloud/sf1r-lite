@@ -293,9 +293,16 @@ bool ProductTokenizer::GetTokenResults(
         std::list<std::pair<UString,double> >& minor_tokens,
         UString& refined_results)
 {
-    return GetTokenResultsByKNlp_(pattern, minor_tokens, refined_results);
+    std::list<std::pair<UString,double> > temp_major_tokens;
+    std::list<std::pair<UString,double> > temp_minor_tokens;
+    UString temp_refined_results;
 
-    if (matcher_ && GetTokenResultsByMatcher_(pattern, major_tokens, minor_tokens, refined_results))
+    GetTokenResultsByKNlp_(pattern, minor_tokens, temp_refined_results);
+
+    if (matcher_ && GetTokenResultsByMatcher_(pattern,
+                                              temp_major_tokens,
+                                              temp_minor_tokens,
+                                              refined_results))
     {
         return true;
     }
@@ -303,9 +310,13 @@ bool ProductTokenizer::GetTokenResults(
     switch (type_)
     {
     case TOKENIZER_DICT:
-        return GetTokenResultsByDict_(pattern, minor_tokens, refined_results);
+        return GetTokenResultsByDict_(pattern,
+                                      temp_minor_tokens,
+                                      refined_results);
     case TOKENIZER_CMA:
-        return GetTokenResultsByCMA_(pattern, minor_tokens, refined_results);
+        return GetTokenResultsByCMA_(pattern,
+                                     temp_minor_tokens,
+                                     refined_results);
     }
 
     return false;
@@ -337,7 +348,7 @@ bool ProductTokenizer::GetTokenResultsByKNlp_(
         double score = it->second / scoreSum;
 
         token_results.push_back(std::make_pair(ustr, score));
-        oss << str << "/" << std::setprecision(2) << score << " ";
+        oss << str << " ";
     }
     refined_results.assign(oss.str(), UString::UTF_8);
 
