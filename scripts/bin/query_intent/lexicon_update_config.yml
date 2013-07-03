@@ -2,6 +2,8 @@ sf1:
   ip: localhost
   port: 8888
 
+mode:  
+
 collection:
   - b5mp
 

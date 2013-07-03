@@ -26,13 +26,20 @@ tries.each do |property|
   jobs.push(tries_job);
 end
 
-scheduler = Rufus::Scheduler.start_new
+if "cron" == config["mode"]
+  scheduler = Rufus::Scheduler.start_new
 
-scheduler.cron '00 02 * * 1-7' do
+  scheduler.cron '00 02 * * 1-7' do
+    jobs.each do |job|
+     job.run
+    end
+    Job.update
+  end
+
+  scheduler.join
+else
   jobs.each do |job|
    job.run
   end
   Job.update
 end
-
-scheduler.join
