@@ -27,6 +27,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <util/concurrent_queue.h>
+//#include <boost/atomic.hpp>
 
 namespace sf1r
 {
@@ -137,6 +139,7 @@ private:
     bool deleteSCD_(ScdParser& parser, time_t timestamp);
 
     bool insertDoc_(
+            size_t wid,
             Document& document,
             time_t timestamp,
             bool immediately = false);
@@ -146,6 +149,7 @@ private:
             time_t timestamp);
 
     bool updateDoc_(
+            size_t wid,
             docid_t oldId,
             Document& document,
             const Document& old_rtype_doc,
@@ -160,7 +164,7 @@ private:
             IndexWorker::UpdateType updateType,
             time_t timestamp);
 
-    void flushUpdateBuffer_();
+    void flushUpdateBuffer_(size_t wid);
 
     bool deleteDoc_(docid_t docid, time_t timestamp);
 
@@ -168,14 +172,23 @@ private:
 
     void saveSourceCount_(SCD_TYPE scdType);
 
+    bool prepareDocIdAndUpdateType_(const izenelib::util::UString& scdDocIdUStr,
+        const SCDDoc& scddoc, SCD_TYPE scdType,
+        docid_t& oldDocId, docid_t& newDocId, IndexWorker::UpdateType& updateType);
+
+    bool prepareDocIdAndUpdateType_(const std::string& scdDocIdStr,
+        const SCDDoc& scddoc, SCD_TYPE scdType,
+        docid_t& oldDocId, docid_t& newDocId, IndexWorker::UpdateType& updateType);
+
     bool prepareDocument_(
-            SCDDoc& doc,
+            const SCDDoc& doc,
             Document& document,
             Document& old_rtype_doc,
-            docid_t& oldId,
+            const docid_t& oldId,
+            const docid_t& docId,
             std::string& source,
             time_t& timestamp,
-            UpdateType& updateType,
+            const UpdateType& updateType,
             SCD_TYPE scdType);
 
     bool mergeDocument_(
@@ -184,7 +197,7 @@ private:
 
     UpdateType checkUpdateType_(
             const uint128_t& scdDocId,
-            SCDDoc& doc,
+            const SCDDoc& doc,
             docid_t& oldId,
             docid_t& docId,
             SCD_TYPE scdType);
@@ -215,6 +228,7 @@ private:
 
     void scheduleOptimizeTask();
     void lazyOptimizeIndex(int calltype);
+    void indexSCDDocFunc(int workerid);
 
 private:
     IndexBundleConfiguration* bundleConfig_;
@@ -248,7 +262,7 @@ private:
     size_t totalSCDSizeSinceLastBackup_;
 
     boost::shared_ptr<IndexHooker> hooker_;
-    UpdateBufferType updateBuffer_;
+    std::vector<UpdateBufferType> updateBuffer_;
     DistributeRequestHooker *distribute_req_hooker_;
 
     izenelib::util::CronExpression scheduleExpression_;
@@ -257,6 +271,30 @@ private:
     friend class IndexSearchService;
     friend class IndexBundleActivator;
     friend class ProductBundleActivator;
+
+    struct IndexDocInfo
+    {
+        SCDDocPtr docptr;
+        docid_t oldDocId;
+        docid_t newDocId;
+        SCD_TYPE scdType;
+        UpdateType updateType;
+        time_t timestamp;
+        IndexDocInfo()
+            : scdType(NOT_SCD), timestamp(0)
+        {
+        }
+        IndexDocInfo(SCDDocPtr i_doc, docid_t i_oid, docid_t i_nid,
+            const SCD_TYPE& i_scdType, const UpdateType& i_updatetype, const time_t& i_time)
+            : docptr(i_doc), oldDocId(i_oid), newDocId(i_nid),
+            scdType(i_scdType), updateType(i_updatetype), timestamp(i_time)
+        {
+        }
+    };
+
+    std::vector<izenelib::util::concurrent_queue<IndexDocInfo>* > asynchronousTasks_;
+    std::vector<boost::thread*> index_thread_workers_;
+    bool* index_thread_status_;
 };
 
 }

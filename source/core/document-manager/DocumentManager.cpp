@@ -131,10 +131,11 @@ bool DocumentManager::insertDocument(const Document& document)
         {
             if (propertyLengthDb_.size() <= *pid)
             {
-                boost::mutex::scoped_lock lock(mutex_);
+                boost::unique_lock<boost::shared_mutex> lock(shared_mutex_);
                 if (propertyLengthDb_.size() <= *pid)
                     propertyLengthDb_.resize(*pid + 1);
             }
+            boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
             propertyLengthDb_[*pid] += stringValue->length();
         }
     }
@@ -209,8 +210,9 @@ bool DocumentManager::updatePartialDocument(const Document& document)
     return updateDocument(oldDoc);
 }
 
-bool DocumentManager::isDeleted(docid_t docId) const
+bool DocumentManager::isDeleted(docid_t docId)
 {
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
     if (docId == 0 || docId > delfilter_.size())
     {
         return false;
@@ -224,8 +226,11 @@ bool DocumentManager::removeDocument(docid_t docId)
     if (docId < 1) return false;
     if (delfilter_.size() < docId)
     {
-        delfilter_.resize(docId);
+        boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
+        if (delfilter_.size() < docId)
+            delfilter_.resize(docId);
     }
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
     if(delfilter_.test(docId - 1))
         return false;
     delfilter_.set(docId - 1);
@@ -233,12 +238,13 @@ bool DocumentManager::removeDocument(docid_t docId)
     return true;
 }
 
-std::size_t DocumentManager::getTotalPropertyLength(const std::string& property) const
+std::size_t DocumentManager::getTotalPropertyLength(const std::string& property)
 {
 
     boost::unordered_map< std::string, unsigned int>::const_iterator iter =
         propertyAliasMap_.find(property);
 
+    boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
     if (iter != propertyAliasMap_.end() && iter->second < propertyLengthDb_.size())
         return propertyLengthDb_[ iter->second ];
     else
@@ -369,14 +375,16 @@ docid_t DocumentManager::getMaxDocId() const
     return propertyValueTable_->getMaxDocId();
 }
 
-uint32_t DocumentManager::getNumDocs() const
+uint32_t DocumentManager::getNumDocs()
 {
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
     return getMaxDocId() - delfilter_.count();
 }
 
 bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list)
 {
     docid_list.clear();
+    boost::shared_lock<boost::shared_mutex> lock(delfilter_mutex_);
     DelFilterType::size_type find = delfilter_.find_first();
     docid_list.reserve(delfilter_.count());
     while (find!=DelFilterType::npos)
@@ -390,7 +398,7 @@ bool DocumentManager::getDeletedDocIdList(std::vector<docid_t>& docid_list)
 
 bool DocumentManager::loadDelFilter_()
 {
-    boost::mutex::scoped_lock lock(delfilter_mutex_);
+    boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
 
     const std::string filter_file = (boost::filesystem::path(path_)/"del_filter").string();
     std::vector<DelFilterBlockType> filter_data;
@@ -405,7 +413,7 @@ bool DocumentManager::loadDelFilter_()
 
 bool DocumentManager::saveDelFilter_()
 {
-    boost::mutex::scoped_lock lock(delfilter_mutex_);
+    boost::unique_lock<boost::shared_mutex> lock(delfilter_mutex_);
 
     const std::string filter_file = (boost::filesystem::path(path_)/"del_filter").string();
     std::vector<DelFilterBlockType> filter_data(delfilter_.num_blocks());
