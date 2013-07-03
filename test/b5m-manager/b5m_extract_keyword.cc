@@ -38,7 +38,7 @@ struct ServerHandler
         cmd = uri::decoded(cmd);
         std::cout<<"cmd:"<<cmd<<std::endl;
         UString text(cmd, UString::UTF_8);
-        typedef std::list<std::pair<UString, uint32_t> > Hits;
+        typedef std::list<std::pair<UString, std::pair<uint32_t, uint32_t> > > Hits;
         Hits hits;
         Hits left_hits;
         typedef std::list<UString> Left;
@@ -50,12 +50,12 @@ struct ServerHandler
 
         for(Hits::const_iterator it = hits.begin();it!=hits.end();++it)
         {
-            const std::pair<UString, double>& v = *it;
+            const std::pair<UString, std::pair<uint32_t, uint32_t> >& v = *it;
             std::string str;
             v.first.convertString(str, UString::UTF_8);
             sresult+=str;
             sresult+=",";
-            sresult+=boost::lexical_cast<std::string>(v.second);
+            sresult+=boost::lexical_cast<std::string>((v.second).first);
             sresult+="|";
         }
         //for(Left::const_iterator it = left.begin();it!=left.end();++it)
