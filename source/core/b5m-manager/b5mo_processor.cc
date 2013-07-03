@@ -207,7 +207,8 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
 
                 //}
                 //process attributes
-                
+
+                //doc.eraseProperty("Attribute");
                 const std::vector<ProductMatcher::Attribute>& attributes = product.attributes;
                 const std::vector<ProductMatcher::Attribute>& dattributes = product.dattributes;
                 if(!attributes.empty()||!dattributes.empty())
@@ -216,23 +217,27 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
                     {
                         doc.property("Attribute") = ProductMatcher::AttributesText(dattributes);
                     }
-                    else
+                    else if(!attributes.empty())
                     {
-                        std::vector<ProductMatcher::Attribute> eattributes;
-                        UString attrib_ustr;
-                        doc.getProperty("Attribute", attrib_ustr);
-                        std::string attrib_str;
-                        attrib_ustr.convertString(attrib_str, UString::UTF_8);
-                        boost::algorithm::trim(attrib_str);
-                        if(!attrib_str.empty())
-                        {
-                            ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
-                        }
-                        std::vector<ProductMatcher::Attribute> new_attributes(attributes);
-                        //ProductMatcher::MergeAttributes(new_attributes, dattributes);
-                        ProductMatcher::MergeAttributes(new_attributes, eattributes);
-                        doc.property("Attribute") = ProductMatcher::AttributesText(new_attributes); 
+                        doc.property("Attribute") = ProductMatcher::AttributesText(attributes);
                     }
+                    //else
+                    //{
+                        //std::vector<ProductMatcher::Attribute> eattributes;
+                        //UString attrib_ustr;
+                        //doc.getProperty("Attribute", attrib_ustr);
+                        //std::string attrib_str;
+                        //attrib_ustr.convertString(attrib_str, UString::UTF_8);
+                        //boost::algorithm::trim(attrib_str);
+                        //if(!attrib_str.empty())
+                        //{
+                            //ProductMatcher::ParseAttributes(attrib_ustr, eattributes);
+                        //}
+                        //std::vector<ProductMatcher::Attribute> new_attributes(attributes);
+                        ////ProductMatcher::MergeAttributes(new_attributes, dattributes);
+                        //ProductMatcher::MergeAttributes(new_attributes, eattributes);
+                        //doc.property("Attribute") = ProductMatcher::AttributesText(new_attributes); 
+                    //}
                 }
             }
             match_ofs_<<sdocid<<","<<spid<<","<<stitle<<"\t["<<product.stitle<<"]"<<std::endl;
