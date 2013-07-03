@@ -22,7 +22,7 @@ namespace
 {
 const static std::string DOCID("DOCID");
 const static std::string DATE("DATE");
-sf1r::PropertyConfig tempPropertyConfig;
+//sf1r::PropertyConfig tempPropertyConfig;
 
 enum UpdateType
 {
@@ -231,14 +231,6 @@ InvertedIndexManager::InvertedIndexManager(IndexBundleConfiguration* bundleConfi
         throw std::runtime_error("Date Property Doesn't exist in config");
 
     config_tool::buildPropertyAliasMap(bundleConfig_->indexSchema_, propertyAliasMap_);
-    ///propertyId starts from 1
-    laInputs_.resize(bundleConfig_->indexSchema_.size() + 1);
-
-    for (IndexBundleSchema::const_iterator iter = indexSchema.begin(), iterEnd = indexSchema.end();
-            iter != iterEnd; ++iter)
-    {
-        laInputs_[iter->getPropertyId()].reset(new LAInput);
-    }
 }
 
 InvertedIndexManager::~InvertedIndexManager()
@@ -454,6 +446,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
         const IndexBundleSchema& schema,
         IndexerDocument& indexDocument)
 {
+    sf1r::PropertyConfig tempPropertyConfig;
     IndexerPropertyConfig indexerPropertyConfig;
     Document::property_const_iterator it = old_rtype_doc.propertyBegin();
     for (; it != old_rtype_doc.propertyEnd(); ++it)
@@ -482,6 +475,7 @@ bool InvertedIndexManager::prepareIndexRTypeProperties_(
         const IndexBundleSchema& schema,
         IndexerDocument& indexDocument)
 {
+    sf1r::PropertyConfig tempPropertyConfig;
     IndexerPropertyConfig indexerPropertyConfig;
     DocumentManager::RTypeStringPropTableMap& rtype_string_proptable = documentManager_->getRTypeStringPropTableMap();
     for (DocumentManager::RTypeStringPropTableMap::const_iterator rtype_it = rtype_string_proptable.begin();
@@ -624,9 +618,9 @@ bool InvertedIndexManager::makeForwardIndex_(
         const izenelib::util::UString& text,
         const std::string& propertyName,
         unsigned int propertyId,
-        const AnalysisInfo& analysisInfo)
+        const AnalysisInfo& analysisInfo,
+        boost::shared_ptr<LAInput>& laInput)
 {
-    boost::shared_ptr<LAInput>& laInput = laInputs_[propertyId];
     laInput.reset(new LAInput);
     laInput->setDocId(docId);
 
@@ -682,7 +676,8 @@ bool InvertedIndexManager::prepareIndexDocumentStringProperty_(
         }
         else
         {
-            if (!makeForwardIndex_(docId, propertyValueU, property_name, iter->getPropertyId(), analysisInfo))
+            boost::shared_ptr<LAInput> laInput;
+            if (!makeForwardIndex_(docId, propertyValueU, property_name, iter->getPropertyId(), analysisInfo, laInput))
             {
                 LOG(ERROR) << "Forward Indexing Failed Error";
                 return false;
@@ -695,19 +690,19 @@ bool InvertedIndexManager::prepareIndexDocumentStringProperty_(
                     split_string(propertyValueU, props, encoding,',');
 
                     MultiValueIndexPropertyType indexData =
-                        std::make_pair(laInputs_[iter->getPropertyId()], props);
+                        std::make_pair(laInput, props);
                     indexDocument.insertProperty(indexerPropertyConfig, indexData);
                 }
                 else
                 {
                     IndexPropertyType indexData = std::make_pair(
-                        laInputs_[iter->getPropertyId()], propertyValueU);
+                        laInput, propertyValueU);
                     indexDocument.insertProperty(indexerPropertyConfig, indexData);
                 }
             }
             else
                 indexDocument.insertProperty(
-                    indexerPropertyConfig, laInputs_[iter->getPropertyId()]);
+                    indexerPropertyConfig, laInput);
 
             // For alias indexing
             config_tool::PROPERTY_ALIAS_MAP_T::iterator mapIter =
@@ -725,7 +720,7 @@ bool InvertedIndexManager::prepareIndexDocumentStringProperty_(
                             propertyValueU,
                             property_name,
                             vecIter->getPropertyId(),
-                            aliasAnalysisInfo))
+                            aliasAnalysisInfo, laInput))
                     {
                         LOG(ERROR) << "Forward Indexing Failed";
                         return false;
@@ -739,7 +734,7 @@ bool InvertedIndexManager::prepareIndexDocumentStringProperty_(
                     aliasIndexerPropertyConfig.setIsMultiValue(vecIter->getIsMultiValue());
                     aliasIndexerPropertyConfig.setIsStoreDocLen(vecIter->getIsStoreDocLen());
                     indexDocument.insertProperty(
-                        aliasIndexerPropertyConfig, laInputs_[vecIter->getPropertyId()]);
+                        aliasIndexerPropertyConfig, laInput);
                 } // end - for
             } // end - if (mapIter != end())
         }
@@ -959,6 +954,8 @@ void InvertedIndexManager::prepareIndexDocumentCommon(const Document& document,
 {
     docid_t docId = document.getId();
     Document::property_const_iterator it = document.propertyBegin();
+
+    sf1r::PropertyConfig tempPropertyConfig;
     for (; it != document.propertyEnd(); ++it)
     {
         const std::string& propertyName = it->first;
@@ -1099,6 +1096,7 @@ bool InvertedIndexManager::mergeDocument_(
         LOG(INFO) << "olddoc is empty while merge for IndexDocument";
         return false;
     }
+    sf1r::PropertyConfig tempPropertyConfig;
     docid_t newid = newdoc.getId();
     for (Document::property_const_iterator it = olddoc.propertyBegin(); it != olddoc.propertyEnd(); ++it)
     {

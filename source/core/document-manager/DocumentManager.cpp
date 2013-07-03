@@ -131,7 +131,9 @@ bool DocumentManager::insertDocument(const Document& document)
         {
             if (propertyLengthDb_.size() <= *pid)
             {
-                propertyLengthDb_.resize(*pid + 1);
+                boost::mutex::scoped_lock lock(mutex_);
+                if (propertyLengthDb_.size() <= *pid)
+                    propertyLengthDb_.resize(*pid + 1);
             }
             propertyLengthDb_[*pid] += stringValue->length();
         }
