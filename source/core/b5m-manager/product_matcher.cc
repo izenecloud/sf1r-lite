@@ -239,7 +239,7 @@ ProductMatcher::ProductMatcher()
  test_docid_("7bc999f5d10830d0c59487bd48a73cae"),
  left_bracket_("("), right_bracket_(")"), place_holder_("__PLACE_HOLDER__"), blank_(" "),
  left_bracket_term_(0), right_bracket_term_(0), place_holder_term_(0),
- type_regex_("[a-zA-Z\\d\\-]{4,}")
+ type_regex_("[a-zA-Z\\d\\-]{4,}"), vol_regex_("^(8|16|32|64)gb?$")
 {
 }
 
@@ -2178,6 +2178,23 @@ void ProductMatcher::GetFrontendCategory(const UString& text, uint32_t limit, st
         //if(results.size()==limit) break;
     //}
 }
+bool ProductMatcher::GetKeyword(const UString& text, KeywordTag& tag)
+{
+    std::vector<Term> term_list;
+    Analyze_(text, term_list);
+    std::vector<term_t> ids(term_list.size());
+    for(uint32_t i=0;i<ids.size();i++)
+    {
+        ids[i] = term_list[i].id;
+    }
+    TrieType::const_iterator it = trie_.find(ids);
+    if(it!=trie_.end())
+    {
+        tag = it->second;
+        return true;
+    }
+    return false;
+}
 
 void ProductMatcher::GetKeywords(const ATermList& term_list, KeywordVector& keyword_vector, bool bfuzzy, cid_t cid)
 {
@@ -3566,6 +3583,8 @@ void ProductMatcher::GenSpuContributor_(const KeywordTag& tag, SpuContributor& s
         const AttributeApp& app = tag.attribute_apps[i];
         if(app.spu_id==0) continue;
         SpuContributorValue& scv = sc[app.spu_id];
+        if(scv.IsAttributeFound(app.attribute_name)) continue;
+        scv.attribute_found.insert(app.attribute_name);
         double p_point = 0.0;
         if(app.is_optional)
         {
@@ -3676,13 +3695,13 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
     for(uint32_t i=0;i<keywords.size();i++)
     {
         const KeywordTag& tag = keywords[i];
+        std::string str;
+        tag.text.convertString(str, UString::UTF_8);
         //double kweight = tag.kweight;
         //double terms_length = tl.size()-(tag.ngram-1);
         //double len_weight = terms_length/text_term_len;
 #ifdef B5M_DEBUG
-        const TermList& tl = tag.term_list;
-        std::string text = GetText_(tl);
-        std::cout<<"[KEYWORD]"<<text<<","<<tag.kweight<<std::endl;
+        std::cout<<"[KEYWORD]"<<str<<","<<tag.kweight<<std::endl;
 #endif
         if(given_cid==0)
         {
@@ -3692,6 +3711,28 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         if(price.Positive())
         {
             GenSpuContributor_(tag, spu_cc);
+            if(boost::regex_match(str, vol_regex_))
+            {
+                std::string new_str;
+                if(boost::algorithm::ends_with(str, "b"))
+                {
+                    new_str = str.substr(0, str.length()-1);
+                }
+                else
+                {
+                    new_str = str+"b";
+                }
+#ifdef B5M_DEBUG
+                LOG(INFO)<<"find new vol str "<<new_str<<std::endl;
+#endif
+                UString new_text(new_str, UString::UTF_8);
+                KeywordTag new_tag;
+                if(GetKeyword(new_text, new_tag))
+                {
+                    GenSpuContributor_(new_tag, spu_cc);
+                }
+            }
+
         }
     }
     std::vector<uint32_t> cid_list;
@@ -3906,7 +3947,9 @@ void ProductMatcher::Compute2_(const Document& doc, const std::vector<Term>& ter
         if(!IsPriceSim_(price, p.price)) continue;
         //if(!IsValuePriceSim_(price.Mid(), p.price)) continue;
         SpuContributorValue& scv = it->second;
-        //LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<","<<scv.paweight<<","<<p.aweight<<std::endl;
+#ifdef B5M_DEBUG
+        LOG(ERROR)<<p.stitle<<","<<scv.lenweight<<","<<text_term_len<<","<<scv.paweight<<","<<p.aweight<<std::endl;
+#endif
         scv.lenweight/=text_term_len;
         if(IsSpuMatch_(p, scv))
         {
@@ -4387,13 +4430,14 @@ bool ProductMatcher::IsValuePriceSim_(double op, double p) const
 {
     if(p<=0.0) return true;
     if(op<=0.0) return false;
-    double ratio = 4.0;
-    if(p<=100.0) ratio = 4.0;
-    else if(p<=5000.0) ratio = 3.0;
-    else ratio = 2.0;
-    double r = std::max(op, p)/std::min(op,p);
-    if(r<=ratio) return true;
-    return false;
+    static const double thlow = 0.25;
+    double thhigh = 4.0;
+    if(p<=100.0) thhigh = 4.0;
+    else if(p<=5000.0) thhigh = 3.0;
+    else thhigh = 2.0;
+    double v = op/p;
+    if(v>=thlow&&v<=thhigh) return true;
+    else return false;
 }
 
 bool ProductMatcher::IsPriceSim_(const ProductPrice& op, const ProductPrice& p) const
@@ -4529,10 +4573,17 @@ void ProductMatcher::ParseAttributes(const UString& ustr, std::vector<Attribute>
         Attribute attribute;
         attribute.is_optional = false;
         const std::vector<izenelib::util::UString>& attrib_value_list = attrib_list[i].second;
-        if(attrib_value_list.size()!=1) continue; //ignore empty value attrib and multi value attribs
+        if(attrib_value_list.empty()) continue;
         izenelib::util::UString attrib_value = attrib_value_list[0];
+        for(uint32_t a=1;a<attrib_value_list.size();a++)
+        {
+            attrib_value.append(UString(" ",UString::UTF_8));
+            attrib_value.append(attrib_value_list[a]);
+        }
+        if(attrib_value.empty()) continue;
+        //if(attrib_value_list.size()!=1) continue; //ignore empty value attrib and multi value attribs
         izenelib::util::UString attrib_name = attrib_list[i].first;
-        if(attrib_value.length()==0 || attrib_value.length()>30) continue;
+        //if(attrib_value.length()==0 || attrib_value.length()>30) continue;
         attrib_name.convertString(attribute.name, UString::UTF_8);
         boost::algorithm::trim(attribute.name);
         if(boost::algorithm::ends_with(attribute.name, "_optional"))
@@ -4548,11 +4599,11 @@ void ProductMatcher::ParseAttributes(const UString& ustr, std::vector<Attribute>
         {
             boost::algorithm::trim(attribute.values[v]);
         }
-        if(attribute.name=="容量" && attribute.values.size()==1 && boost::algorithm::ends_with(attribute.values[0], "G"))
-        {
-            std::string gb_value = attribute.values[0]+"B";
-            attribute.values.push_back(gb_value);
-        }
+        //if(attribute.name=="容量" && attribute.values.size()==1 && boost::algorithm::ends_with(attribute.values[0], "G"))
+        //{
+            //std::string gb_value = attribute.values[0]+"B";
+            //attribute.values.push_back(gb_value);
+        //}
         attributes.push_back(attribute);
     }
 }
