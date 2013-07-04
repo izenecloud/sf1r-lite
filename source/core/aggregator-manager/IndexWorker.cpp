@@ -1321,10 +1321,15 @@ bool IndexWorker::insertOrUpdateSCD_(
         {
             if (boost::iequals(p->first, DOCID))
             {
-                if (!prepareDocIdAndUpdateType_(p->second, *docptr, scdType,
+                std::string scdDocIdStr;
+                p->second.convertString(scdDocIdStr, bundleConfig_->encoding_);
+                uint128_t scdDocId = Utilities::md5ToUint128(scdDocIdStr);
+
+                if (!prepareDocIdAndUpdateType_(scdDocId, *docptr, scdType,
                         oldId, docId, updateType))
                     break;
-                workerid = docId % asynchronousTasks_.size();
+
+                workerid = scdDocId % asynchronousTasks_.size();
                 continue;
             }
             if (!bundleConfig_->productSourceField_.empty()
@@ -1756,6 +1761,13 @@ bool IndexWorker::prepareDocIdAndUpdateType_(const std::string& scdDocIdStr,
     docid_t& oldDocId, docid_t& newDocId, IndexWorker::UpdateType& updateType)
 {
     uint128_t scdDocId = Utilities::md5ToUint128(scdDocIdStr);
+    return prepareDocIdAndUpdateType_(scdDocId, scddoc, scdType, oldDocId, newDocId, updateType);
+}
+
+bool IndexWorker::prepareDocIdAndUpdateType_(const uint128_t& scdDocId,
+    const SCDDoc& scddoc, SCD_TYPE scdType,
+    docid_t& oldDocId, docid_t& newDocId, IndexWorker::UpdateType& updateType)
+{
     if (scdType != INSERT_SCD)
     {
         updateType = checkUpdateType_(scdDocId, scddoc, oldDocId, newDocId, scdType);

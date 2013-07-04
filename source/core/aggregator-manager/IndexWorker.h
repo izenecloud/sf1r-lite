@@ -180,6 +180,10 @@ private:
         const SCDDoc& scddoc, SCD_TYPE scdType,
         docid_t& oldDocId, docid_t& newDocId, IndexWorker::UpdateType& updateType);
 
+    bool prepareDocIdAndUpdateType_(const uint128_t& scdDocId,
+        const SCDDoc& scddoc, SCD_TYPE scdType,
+        docid_t& oldDocId, docid_t& newDocId, IndexWorker::UpdateType& updateType);
+
     bool prepareDocument_(
             const SCDDoc& doc,
             Document& document,
