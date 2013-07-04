@@ -213,7 +213,7 @@ void B5mpProcessor::GetOutputP_(ValueType& value)
     doc.eraseProperty("OID");
     int64_t itemcount = 0;
     doc.getProperty("itemcount", itemcount);
-    UString ptitle;
+    Document::doc_prop_value_strtype ptitle;
     doc.getProperty(B5MHelper::GetSPTPropertyName(), ptitle);
     if(!ptitle.empty())
     {
