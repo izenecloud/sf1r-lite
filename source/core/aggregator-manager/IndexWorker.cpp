@@ -1839,14 +1839,14 @@ bool IndexWorker::prepareDocument_(
             START_PROFILER(pid_date);
             dateExistInSCD = true;
             izenelib::util::UString dateStr;
-            timestamp = Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
+            time_t ts = Utilities::createTimeStampInSeconds(propertyValueU, bundleConfig_->encoding_, dateStr);
             boost::shared_ptr<NumericPropertyTableBase>& datePropertyTable = documentManager_->getNumericPropertyTable(dateProperty_.getName());
             if (datePropertyTable)
             {
                 std::string rtypevalue;
                 datePropertyTable->getStringValue(docId, rtypevalue);
                 old_rtype_doc.property(fieldStr) = UString(rtypevalue, bundleConfig_->encoding_);
-                datePropertyTable->setInt64Value(docId, timestamp);
+                datePropertyTable->setInt64Value(docId, ts);
             }
             else
             {
