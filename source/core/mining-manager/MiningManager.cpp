@@ -46,6 +46,8 @@
 #include "product-score-manager/OfflineProductScorerFactoryImpl.h"
 #include "product-score-manager/ProductScoreTable.h"
 #include "product-ranker/ProductRankerFactory.h"
+#include "category-classify/CategoryClassifyTable.h"
+#include "category-classify/CategoryClassifyMiningTask.h"
 
 #include "tdt-submanager/NaiveTopicDetector.hpp"
 
@@ -170,6 +172,7 @@ MiningManager::MiningManager(
     , customRankManager_(NULL)
     , offlineScorerFactory_(NULL)
     , productScoreManager_(NULL)
+    , categoryClassifyTable_(NULL)
     , groupLabelKnowledge_(NULL)
     , productScorerFactory_(NULL)
     , productRankerFactory_(NULL)
@@ -196,6 +199,7 @@ MiningManager::~MiningManager()
     if (queryIntentManager_) delete queryIntentManager_;
     if (productScorerFactory_) delete productScorerFactory_;
     if (groupLabelKnowledge_) delete groupLabelKnowledge_;
+    if (categoryClassifyTable_) delete categoryClassifyTable_;
     if (productScoreManager_) delete productScoreManager_;
     if (offlineScorerFactory_) delete offlineScorerFactory_;
     if (customRankManager_) delete customRankManager_;
@@ -293,7 +297,8 @@ bool MiningManager::open()
         /**Miningtask Builder*/
         if (mining_schema_.suffixmatch_schema.suffix_match_enable ||
             mining_schema_.group_enable ||
-            mining_schema_.attr_enable )
+            mining_schema_.attr_enable ||
+            mining_schema_.product_ranking_config.isEnable)
         {
             miningTaskBuilder_ = new MiningTaskBuilder( document_manager_);
         }
@@ -513,6 +518,7 @@ bool MiningManager::open()
 
         if (!initMerchantScoreManager_(rankConfig) ||
             !initGroupLabelKnowledge_(rankConfig) ||
+            !initCategoryClassifyTable_(rankConfig) ||
             !initProductScorerFactory_(rankConfig) ||
             !initProductRankerFactory_(rankConfig))
             return false;
@@ -2609,6 +2615,36 @@ bool MiningManager::initGroupLabelKnowledge_(const ProductRankingConfig& rankCon
         }
     }
 
+    return true;
+}
+
+bool MiningManager::initCategoryClassifyTable_(const ProductRankingConfig& rankConfig)
+{
+    if (!rankConfig.isEnable)
+        return true;
+
+    const ProductScoreConfig& classifyConfig =
+        rankConfig.scores[CATEGORY_CLASSIFY_SCORE];
+
+    if (classifyConfig.weight == 0)
+        return true;
+
+    if (categoryClassifyTable_) delete categoryClassifyTable_;
+
+    const bfs::path parentDir(collectionDataPath_);
+    const bfs::path classifyDir(parentDir / "category_classify");
+    bfs::create_directories(classifyDir);
+
+    categoryClassifyTable_ = new CategoryClassifyTable(classifyDir.string(),
+                                                       classifyConfig.propName);
+    if (!categoryClassifyTable_->open())
+    {
+        LOG(ERROR) << "open " << classifyDir << " failed";
+        return false;
+    }
+
+    miningTaskBuilder_->addTask(new CategoryClassifyMiningTask(*document_manager_,
+                                                               *categoryClassifyTable_));
     return true;
 }
 
