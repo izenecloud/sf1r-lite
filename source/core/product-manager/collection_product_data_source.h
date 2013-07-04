@@ -40,7 +40,7 @@ public:
 
     void GetDocIdList(const izenelib::util::UString& uuid, std::vector<uint32_t>& docid_list, uint32_t exceptid);
 
-    bool UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid);
+    bool UpdateUuid(const std::vector<uint32_t>& docid_list, const Document::doc_prop_value_strtype& uuid);
 
     bool SetUuid(izenelib::ir::indexmanager::IndexerDocument& doc, const izenelib::util::UString& uuid);
 

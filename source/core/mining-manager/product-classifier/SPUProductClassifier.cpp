@@ -231,12 +231,12 @@ bool SPUProductClassifier::GetProductCategory(
                 documentCache_.insertValue(docId, doc);
         }
 
-        UString backend = doc.property("Category").get<izenelib::util::UString>();
-        std::string category_str;
-        backend.convertString(category_str, UString::UTF_8);
+        PropertyValue::PropertyValueStrType backend = doc.property("Category").get<PropertyValue::PropertyValueStrType>();
+        std::string category_str = propstr_to_str(backend);
         //LOG(INFO) << category_str;
         UString frontCategory;
-        if(matcher->GetFrontendCategory(backend, frontCategory))
+        UString backend_ustr = propstr_to_ustr(backend);
+        if(matcher->GetFrontendCategory(backend_ustr, frontCategory))
         {
             frontCategories.push_back(frontCategory);
             std::string front_str;

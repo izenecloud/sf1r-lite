@@ -108,7 +108,7 @@ void AttrManager::buildDoc_(docid_t docId, const std::string& propName)
 
         if (it != doc.propertyEnd())
         {
-            const izenelib::util::UString& propValue = it->second.get<izenelib::util::UString>();
+            izenelib::util::UString propValue(propstr_to_ustr(it->second.get<PropertyValue::PropertyValueStrType>()));
             std::vector<AttrPair> attrPairs;
             split_attr_pair(propValue, attrPairs);
 

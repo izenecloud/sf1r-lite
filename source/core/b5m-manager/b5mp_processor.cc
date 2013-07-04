@@ -170,7 +170,7 @@ void B5mpProcessor::ProductMerge_(ValueType& value, const ValueType& another_val
                     PropertyValue& pvalue = value.doc.property(it->first);
                     if(pvalue.which()==docid_value.which()) //is UString
                     {
-                        const UString& uvalue = pvalue.get<UString>();
+                        const PropertyValue::PropertyValueStrType& uvalue = pvalue.getPropertyStrValue();
                         if(uvalue.empty())
                         {
                             pvalue = it->second;

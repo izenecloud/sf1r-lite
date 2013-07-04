@@ -122,7 +122,7 @@ bool SimpleDataSource::GetUuid_(uint32_t docid, izenelib::util::UString& uuid)
     {
         return false;
     }
-    uuid = it->second.get<izenelib::util::UString>();
+    uuid = propstr_to_ustr(it->second.getPropertyStrValue());
     return true;
 }
 

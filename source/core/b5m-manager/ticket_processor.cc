@@ -272,7 +272,7 @@ void TicketProcessor::ProductMerge_(SValueType& value, const SValueType& another
                 PropertyValue& pvalue = value.doc.property(it->first);
                 if(pvalue.which()==docid_value.which()) //is UString
                 {
-                    const UString& uvalue = pvalue.get<UString>();
+                    const PropertyValue::PropertyValueStrType& uvalue = pvalue.getPropertyStrValue();
                     if(uvalue.empty())
                     {
                         pvalue = it->second;

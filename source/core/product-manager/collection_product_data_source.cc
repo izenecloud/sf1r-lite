@@ -55,7 +55,7 @@ void CollectionProductDataSource::GetDocIdList(const izenelib::util::UString& uu
 
 }
 
-bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const izenelib::util::UString& uuid)
+bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_list, const PropertyValue::PropertyValueStrType& uuid)
 {
     if (docid_list.empty()) return false;
     if (uuid.empty()) return false;
@@ -80,7 +80,7 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
             return false;
         }
     }
-    std::vector<izenelib::util::UString> uuid_list(doc_list.size());
+    std::vector<PropertyValue::PropertyValueStrType> uuid_list(doc_list.size());
     for (uint32_t i=0;i<doc_list.size();i++)
     {
         PMDocumentType::property_const_iterator it = doc_list[i].findProperty(config_.uuid_property_name);
@@ -88,7 +88,7 @@ bool CollectionProductDataSource::UpdateUuid(const std::vector<uint32_t>& docid_
         {
             return false;
         }
-        uuid_list[i] = it->second.get<izenelib::util::UString>();
+        uuid_list[i] = it->second.getPropertyStrValue();
     }
 
     //update DM first
@@ -188,14 +188,14 @@ bool CollectionProductDataSource::AddCurUuidToHistory(uint32_t docid)
     {
         return false;
     }
-    izenelib::util::UString uuid;
+    PropertyValue::PropertyValueStrType uuid;
     PMDocumentType::property_const_iterator it = doc.findProperty(config_.uuid_property_name);
     if(it == doc.propertyEnd())
     {
         return false;
     }
-    uuid = it->second.get<izenelib::util::UString>();
-    izenelib::util::UString olduuid;
+    uuid = it->second.getPropertyStrValue();
+    PropertyValue::PropertyValueStrType olduuid;
     doc.getProperty(config_.olduuid_property_name, olduuid);
     if(olduuid.find(uuid) != UString::npos)
     {
@@ -203,19 +203,17 @@ bool CollectionProductDataSource::AddCurUuidToHistory(uint32_t docid)
         std::cout << "warning: current uuid already in history while adding to history" << endl;
         return true;
     }
-    std::string s_olduuid;
-    olduuid.convertString(s_olduuid, UString::UTF_8);
-    std::string s_uuid;
-    uuid.convertString(s_uuid, UString::UTF_8);
+    std::string s_olduuid = propstr_to_str(olduuid);
+    std::string s_uuid = propstr_to_str(uuid);
 
-    izenelib::util::UString new_olduuid;
+    PropertyValue::PropertyValueStrType new_olduuid;
     if(olduuid.empty())
     {
         new_olduuid = uuid;
     }
     else
     {
-        new_olduuid = UString(s_olduuid + "," + s_uuid, UString::UTF_8);
+        new_olduuid = PropertyValue::PropertyValueStrType(s_olduuid + "," + s_uuid);
     }
 
     //update DM first

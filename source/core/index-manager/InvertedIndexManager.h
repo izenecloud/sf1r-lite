@@ -20,6 +20,7 @@
 #include <util/string/StringUtils.h>
 #include <configuration-manager/ConfigurationTool.h>
 #include <configuration-manager/PropertyConfig.h>
+#include <document-manager/Document.h>
 
 #include <3rdparty/am/stx/btree_map.h>
 #include <boost/tuple/tuple.hpp>
@@ -147,14 +148,14 @@ private:
     static void convertData(const std::string& property, const PropertyValue& in, PropertyType& out);
     bool makeForwardIndex_(
             docid_t docId,
-            const izenelib::util::UString& text,
+            const Document::doc_prop_value_strtype& text,
             const std::string& propertyName,
             unsigned int propertyId,
             const AnalysisInfo& analysisInfo,
             boost::shared_ptr<LAInput>& laInput);
 
     bool checkSeparatorType_(
-            const izenelib::util::UString& propertyValueStr,
+            const Document::doc_prop_value_strtype& propertyValueStr,
             izenelib::util::UString::EncodingType encoding,
             char separator);
 
@@ -168,7 +169,7 @@ private:
     bool prepareIndexDocumentStringProperty_(
             docid_t docId,
             const std::string& property_name,
-            const izenelib::util::UString& propertyValueU,
+            const Document::doc_prop_value_strtype& propertyValueU,
             IndexBundleSchema::const_iterator iter,
             izenelib::ir::indexmanager::IndexerDocument& indexDocument);
 
@@ -182,7 +183,7 @@ private:
 
     bool prepareIndexDocumentNumericProperty_(
             docid_t docId,
-            const izenelib::util::UString & propertyValueU,
+            const Document::doc_prop_value_strtype& propertyValueU,
             IndexBundleSchema::const_iterator iter,
             izenelib::ir::indexmanager::IndexerDocument& indexDocument);
 

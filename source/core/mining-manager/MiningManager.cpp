@@ -855,7 +855,7 @@ bool MiningManager::DoMiningCollection(int64_t timestamp)
                 {
                     if (tg_properties.find(property_it->first))
                     {
-                        const izenelib::util::UString& content = property_it->second.get<izenelib::util::UString>();
+                        const Document::doc_prop_value_strtype& content = property_it->second.getPropertyStrValue();
                         tgInfo_->addDocument(docid, content);
                     }
                     property_it++;

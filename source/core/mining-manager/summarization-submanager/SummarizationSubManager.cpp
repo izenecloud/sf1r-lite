@@ -250,22 +250,19 @@ void MultiDocSummarizationSubManager::commentsClassify(int x)
         Document::property_const_iterator title_it = doc.findProperty(schema_.titlePropName);
         if (title_it == doc.propertyEnd()) continue;
 
-        const UString& key = kit->second.get<UString>();
+        const Document::doc_prop_value_strtype& key = kit->second.getPropertyStrValue();
         if (key.empty()) continue;
 
         ContentType content ;
 
-        UString us(cit->second.get<UString>());
-        std::string str;
-        us.convertString(str, izenelib::util::UString::UTF_8);
+        std::string str = propstr_to_str(cit->second.getPropertyStrValue());
         std::pair<UString, UString> advantagepair;
         OpcList_[x]->Classify(str, advantagepair);
 
         AdvantageType advantage = advantagepair.first;
         DisadvantageType disadvantage = advantagepair.second;
 
-        UString us_title(title_it->second.get<UString>());
-        us_title.convertString(str, izenelib::util::UString::UTF_8);
+        str = propstr_to_str(title_it->second.getPropertyStrValue());
         OpcList_[x]->Classify(str,advantagepair);
 
         if(advantage.find(advantagepair.first) == UString::npos)
@@ -334,7 +331,7 @@ bool MultiDocSummarizationSubManager::preProcess()
         Document::property_const_iterator kit = doc.findProperty(schema_.uuidPropName);
         if (kit == doc.propertyEnd()) continue;
 
-        const UString& key = kit->second.get<UString>();
+        const Document::doc_prop_value_strtype& key = kit->second.getPropertyStrValue();
         if (key.empty()) continue;
         comment_cache_storage_->ExpelUpdate(Utilities::md5ToUint128(key), i);
         del_key_set.insert(Utilities::md5ToUint128(key));

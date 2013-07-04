@@ -53,8 +53,7 @@ bool ScdWriter::Append(const Document& doc)
     {
         Open_();
     }
-    std::string sdocid;
-    docid_it->second.get<izenelib::util::UString>().convertString(sdocid, izenelib::util::UString::UTF_8);
+    std::string sdocid = propstr_to_str(docid_it->second.getPropertyStrValue());
     ofs_<<"<"<<DOCID<<">"<<sdocid<<std::endl;
     Document::property_const_iterator it = doc.propertyBegin();
     while(it!=doc.propertyEnd())
