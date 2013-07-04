@@ -171,7 +171,7 @@ bool AttributeProcessor::BuildAttributeId_()
                 std::string sss = boost::lexical_cast<std::string>(name_id)+":"+boost::lexical_cast<std::string>(aid);
                 aid_str += sss;
             }
-            doc.property("AID") = UString(aid_str, UString::UTF_8);
+            doc.property("AID") = str_to_propstr(aid_str);
             writer.Append(doc);
         }
     }

@@ -111,7 +111,7 @@ public:
         return true;
     }
 
-    bool getString(const std::string& pname, std::string& value) const
+    bool getString(const std::string& pname, doc_prop_value_strtype& value) const
     {
         //izenelib::util::UString ustr;
         //if(!getProperty(pname, ustr)) return false;
@@ -164,7 +164,7 @@ public:
 
     void clearExceptDOCID()
     {
-        izenelib::util::UString docid;
+        doc_prop_value_strtype docid;
         getProperty("DOCID", docid);
         clear();
         property("DOCID") = docid;

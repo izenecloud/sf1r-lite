@@ -124,7 +124,7 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
                 spid = sdocid;
                 odb_->insert(sdocid, spid);
             }
-            doc.property("uuid") = UString(spid, UString::UTF_8);
+            doc.property("uuid") = str_to_propstr(spid);
             //std::string olduuid;
             //doc.getString("olduuid", olduuid);
 

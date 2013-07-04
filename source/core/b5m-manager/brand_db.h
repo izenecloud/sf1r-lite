@@ -24,7 +24,7 @@ namespace sf1r {
     public:
         typedef uint128_t IdType;
         typedef uint32_t BidType;
-        typedef izenelib::util::UString StringType;
+        typedef PropertyValue::PropertyValueStrType StringType;
         typedef StringType::value_type CharType;
         typedef std::vector<BidType> BidList;
         typedef std::map<std::string, BidList> SourceType;
@@ -101,10 +101,8 @@ namespace sf1r {
 
         void set_source(const StringType& brand, const BidType& bid)
         {
-            std::string str;
-            brand.convertString(str, StringType::UTF_8);
             std::vector<std::string> text_list;
-            B5MHelper::SplitAttributeValue(str, text_list);
+            B5MHelper::SplitAttributeValue(brand, text_list);
             for(uint32_t i=0;i<text_list.size();i++)
             {
                 source_[text_list[i]].push_back(bid);
@@ -121,10 +119,8 @@ namespace sf1r {
             return id_manager_->getTermStringByTermId(bid, brand);
         }
 
-        bool get_source(const StringType& uinput, StringType& output)
+        bool get_source(const StringType& input, StringType& output)
         {
-            std::string input;
-            uinput.convertString(input, StringType::UTF_8);
             uint32_t begin = 0;
             BidScore bid_score;
             while(begin<input.length())
@@ -184,8 +180,7 @@ namespace sf1r {
                 score_vector.push_back(std::make_pair(score, brand));
             }
             std::sort(score_vector.begin(), score_vector.end());
-            const std::string& soutput = score_vector.back().second;
-            output = StringType(soutput, StringType::UTF_8);
+            output = score_vector.back().second;
             if(output.length()<=1)
             {
                 output.clear();

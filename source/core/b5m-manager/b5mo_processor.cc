@@ -69,15 +69,14 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     {
         ProductPrice pp;
         pp.Parse(uprice);
-        doc.property("Price") = pp.ToUString();
+        doc.property("Price") = ustr_to_propstr(pp.ToUString());
     }
 
     //set mobile tag
-    UString usource;
-    if(doc.getProperty("Source", usource))
+    Document::doc_prop_value_strtype usource;
+    if(doc.getString("Source", usource))
     {
-        std::string ssource;
-        usource.convertString(ssource, izenelib::util::UString::UTF_8);
+        std::string ssource = propstr_to_str(usource);
         if(mobile_source_.find(ssource)!=mobile_source_.end())
         {
             doc.property("mobile") = (int64_t)1;
@@ -93,7 +92,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
         {
             std::string color_str;
             ImageServerClient::GetImageColor(img_file, color_str);
-            doc.property("Color") = UString(color_str, UString::UTF_8);
+            doc.property("Color") = str_to_propstr(color_str);
         }
     }
 
@@ -109,7 +108,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     {
         if(odb_->get(sdocid, spid)) 
         {
-            doc.property("uuid") = UString(spid, UString::UTF_8);
+            doc.property("uuid") = str_to_propstr(spid);
             type = UPDATE_SCD;
         }
         else
@@ -120,19 +119,17 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
     }
     else if(type!=DELETE_SCD) //I or U
     {
-        UString ptitle;
-        UString category;
-        UString brand;
+        Document::doc_prop_value_strtype category;
+        Document::doc_prop_value_strtype brand;
         std::string sbrand;
         std::string scategory;
         doc.eraseProperty(B5MHelper::GetSPTPropertyName());
         doc.getProperty(B5MHelper::GetBrandPropertyName(), brand);
         doc.getProperty("Category", category);
-        category.convertString(scategory, UString::UTF_8);
-        UString title;
+        scategory = propstr_to_str(category);
+        Document::doc_prop_value_strtype title;
         doc.getProperty("Title", title);
-        std::string stitle;
-        title.convertString(stitle, UString::UTF_8);
+        std::string stitle = propstr_to_str(title);
         //brand.convertString(sbrand, UString::UTF_8);
         //std::cerr<<"[ABRAND]"<<sbrand<<std::endl;
         bool is_human_edit = false;
@@ -180,11 +177,11 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
             {
                 if(category.empty())
                 {
-                    category = UString(product.scategory, UString::UTF_8);
+                    category = str_to_propstr(product.scategory);
                     doc.property("Category") = category;
                     if(!product.fcategory.empty())
                     {
-                        UString front(product.fcategory, UString::UTF_8);
+                        Document::doc_prop_value_strtype front(str_to_propstr(product.fcategory));
                         doc.property(tcp) = front;
                     }
                     //if(!category.empty())
@@ -215,11 +212,11 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
                 {
                     if(!dattributes.empty())
                     {
-                        doc.property("Attribute") = ProductMatcher::AttributesText(dattributes);
+                        doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(dattributes));
                     }
                     else if(!attributes.empty())
                     {
-                        doc.property("Attribute") = ProductMatcher::AttributesText(attributes);
+                        doc.property("Attribute") = ustr_to_propstr(ProductMatcher::AttributesText(attributes));
                     }
                     //else
                     //{
@@ -248,13 +245,13 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
         }
         if(!product.stitle.empty() && !title.empty())
         {
-            doc.property(B5MHelper::GetSPTPropertyName()) = UString(product.stitle, UString::UTF_8);
+            doc.property(B5MHelper::GetSPTPropertyName()) = str_to_propstr(product.stitle);
         }
         uint128_t pid = B5MHelper::StringToUint128(spid);
-        UString ebrand;
+        Document::doc_prop_value_strtype ebrand;
         if(bdb_->get(pid, ebrand))
         {
-            brand = ebrand;
+            brand = ustr_to_propstr(ebrand);
         }
         else
         {
@@ -265,7 +262,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
             else if(!product.sbrand.empty())
             {
                 //TODO, remove?
-                brand = UString(product.sbrand, UString::UTF_8);
+                brand = str_to_propstr(product.sbrand);
                 //std::cerr<<"[EBRAND]"<<product.sbrand<<","<<stitle<<std::endl;
             }
             if(!brand.empty())
@@ -284,7 +281,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
             odb_->insert(sdocid, spid);
             cmatch_ofs_<<sdocid<<","<<spid<<","<<old_spid<<std::endl;
         }
-        doc.property("uuid") = UString(spid, UString::UTF_8);
+        doc.property("uuid") = str_to_propstr(spid);
     }
     else
     {
@@ -294,7 +291,7 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
         if(spid.empty()) type=NOT_SCD;
         else
         {
-            doc.property("uuid") = UString(spid, UString::UTF_8);
+            doc.property("uuid") = str_to_propstr(spid);
         }
     }
     if(!changed_match_.empty())
@@ -310,8 +307,8 @@ void B5moProcessor::Process(Document& doc, SCD_TYPE& type)
             if(old_spid!=spid&&!old_spid.empty())
             {
                 ScdDocument old_doc;
-                old_doc.property("DOCID") = UString(sdocid, UString::UTF_8);
-                old_doc.property("uuid") = UString(old_spid, UString::UTF_8);
+                old_doc.property("DOCID") = str_to_propstr(sdocid, UString::UTF_8);
+                old_doc.property("uuid") = str_to_propstr(old_spid, UString::UTF_8);
                 old_doc.type=DELETE_SCD;
                 sorter_->Append(old_doc, last_ts_);
             }
