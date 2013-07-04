@@ -108,6 +108,7 @@ const std::string ProductRankingConfig::kScoreTypeName[] =
     "merchant",     // MERCHANT_SCORE
     "custom",       // CUSTOM_SCORE
     "category",     // CATEGORY_SCORE
+    "category_classify", // CATEGORY_CLASSIFY_SCORE
     "relevance",    // RELEVANCE_SCORE
     "popularity",   // POPULARITY_SCORE
     "fuzzy",        // FUZZY_SCORE
