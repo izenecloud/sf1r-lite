@@ -14,6 +14,7 @@ CategoryClassifyTable::CategoryClassifyTable(
     const std::string& propName)
     : dirPath_(dirPath)
     , propName_(propName)
+    , categories_(1) // doc id 0 is reserved for an empty doc
 {
 }
 

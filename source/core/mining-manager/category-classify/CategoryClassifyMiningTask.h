@@ -26,12 +26,14 @@ public:
 
     virtual bool postProcess();
 
-    virtual docid_t getLastDocId();
+    virtual docid_t getLastDocId() { return startDocId_; }
 
 private:
     DocumentManager& documentManager_;
 
     CategoryClassifyTable& categoryTable_;
+
+    docid_t startDocId_;
 };
 
 } // namespace sf1r

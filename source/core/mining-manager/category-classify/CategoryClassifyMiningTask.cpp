@@ -12,6 +12,7 @@ CategoryClassifyMiningTask::CategoryClassifyMiningTask(
     CategoryClassifyTable& categoryTable)
     : documentManager_(documentManager)
     , categoryTable_(categoryTable)
+    , startDocId_(0)
 {
 }
 
@@ -19,6 +20,9 @@ bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& do
 {
     izenelib::util::UString propValue;
     doc.getProperty(categoryTable_.propName(), propValue);
+
+    if (propValue.empty())
+        return true;
 
     std::string utf8Str;
     propValue.convertString(utf8Str, izenelib::util::UString::UTF_8);
@@ -36,10 +40,14 @@ bool CategoryClassifyMiningTask::buildDocument(docid_t docID, const Document& do
 
 bool CategoryClassifyMiningTask::preProcess()
 {
-    const docid_t startDocId = getLastDocId();
+    startDocId_ = categoryTable_.docIdNum();
     const docid_t endDocId = documentManager_.getMaxDocId();
 
-    if (startDocId > endDocId)
+    LOG(INFO) << "category classify mining task"
+              << ", start docid: " << startDocId_
+              << ", end docid: " << endDocId;
+
+    if (startDocId_ > endDocId)
         return false;
 
     categoryTable_.resize(endDocId + 1);
@@ -54,9 +62,4 @@ bool CategoryClassifyMiningTask::postProcess()
         return false;
     }
     return true;
-}
-
-docid_t CategoryClassifyMiningTask::getLastDocId()
-{
-    return categoryTable_.docIdNum();
 }
