@@ -23,6 +23,7 @@ class Document
     typedef property_named_map::iterator property_mutable_iterator;
 
 public:
+    typedef std::string doc_prop_value_strtype;
     typedef property_named_map::const_iterator property_const_iterator;
     typedef property_named_map::iterator property_iterator;
 
@@ -112,11 +113,26 @@ public:
 
     bool getString(const std::string& pname, std::string& value) const
     {
-        izenelib::util::UString ustr;
-        if(!getProperty(pname, ustr)) return false;
-        ustr.convertString(value, izenelib::util::UString::UTF_8);
+        //izenelib::util::UString ustr;
+        //if(!getProperty(pname, ustr)) return false;
+        //ustr.convertString(value, izenelib::util::UString::UTF_8);
+
+        //
+        // the newest code has changed document property internal value to std::string 
+        if(!getProperty(pname, value)) return false;
         return true;
     }
+
+    doc_prop_value_strtype& getString(const std::string& pname)
+    {
+        return property(pname).get<doc_prop_value_strtype>();
+    }
+
+    const doc_prop_value_strtype& getString(const std::string& pname) const
+    {
+        return property(pname).get<doc_prop_value_strtype>();
+    }
+
 
     property_iterator propertyBegin()
     {

@@ -214,7 +214,7 @@ private:
 
 
     bool makeSentenceBlocks_(
-            const izenelib::util::UString& text,
+            const PropertyValueType& text,
             const unsigned int numOfSummary,
             const unsigned int maxDisplayLength,
             std::vector<CharacterOffset>& sentenceOffsetList);

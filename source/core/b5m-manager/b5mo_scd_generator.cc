@@ -112,7 +112,7 @@ bool B5moScdGenerator::Generate(const std::string& mdb_instance, const std::stri
                 doc.property(property_name) = p->second;
                 if(property_name ==  "uuid")
                 {
-                    p->second.convertString(soldpid, UString::UTF_8);
+                    soldpid = p->second;
                 }
             }
             std::string sdocid;

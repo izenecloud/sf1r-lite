@@ -105,7 +105,7 @@ bool ScdWriter::Append(const SCDDoc& doc)
         const std::string& name = it->first;
         if(name=="DOCID")
         {
-            it->second.convertString(docid_value, izenelib::util::UString::UTF_8);
+            docid_value = it->second;
             docid_found = true;
             break;
         }
@@ -127,8 +127,7 @@ bool ScdWriter::Append(const SCDDoc& doc)
             const std::string& name = it->first;
             if(name!="DOCID")
             {
-                std::string value;
-                it->second.convertString(value, izenelib::util::UString::UTF_8);
+                std::string value = it->second;
                 ofs_<<"<"<<name<<">"<<value<<std::endl;
             }
         }

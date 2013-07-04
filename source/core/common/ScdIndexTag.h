@@ -19,9 +19,7 @@ template <typename Type> struct Converter;
 /// Converter specialization for the default type std::string.
 template <> struct Converter<std::string> {
     inline std::string operator()(const PropertyValueType& in) const {
-        std::string str;
-        in.convertString(str, izenelib::util::UString::UTF_8);
-        return str;
+        return in;
     }
 };
 

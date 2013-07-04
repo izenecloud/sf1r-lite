@@ -186,12 +186,12 @@ BOOST_AUTO_TEST_CASE(testGetDocIdList)
 
     BOOST_CHECK(parser.load(scdPath.string()));
 
-    std::vector<izenelib::util::UString> idList;
+    std::vector<PropertyValueType> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
     BOOST_CHECK_EQUAL(10, idList.size());
 
-    izenelib::util::UString one("1", izenelib::util::UString::UTF_8);
-    izenelib::util::UString ten("10", izenelib::util::UString::UTF_8);
+    PropertyValueType one("1");
+    PropertyValueType ten("10");
 
     BOOST_CHECK(idList.front() == one);
     BOOST_CHECK(idList.back() == ten);
@@ -229,13 +229,12 @@ BOOST_AUTO_TEST_CASE(testIterator)
     BOOST_CHECK_EQUAL(doc->size(), 3);
 
     std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-    izenelib::util::UString idUStr(idStr, izenelib::util::UString::UTF_8);
-    izenelib::util::UString titleUStr("Title " + idStr, izenelib::util::UString::UTF_8);
-    izenelib::util::UString contentUStr("Content " + idStr, izenelib::util::UString::UTF_8);
+    PropertyValueType titleUStr("Title " + idStr);
+    PropertyValueType contentUStr("Content " + idStr);
 
     // <DOCID>
     BOOST_CHECK((*doc)[0].first == docid);
-    BOOST_CHECK_EQUAL(idUStr, (*doc)[0].second);
+    BOOST_CHECK_EQUAL(idStr, (*doc)[0].second);
 
     // <Title>
     BOOST_CHECK((*doc)[1].first == title);
@@ -265,7 +264,7 @@ BOOST_AUTO_TEST_CASE(testEmptySCD)
 
     BOOST_CHECK(parser.load(scdPath.string()));
 
-    std::vector<izenelib::util::UString> idList;
+    std::vector<PropertyValueType> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
 
 
@@ -292,14 +291,13 @@ BOOST_AUTO_TEST_CASE(testOnlyOneDOCID)
 
     BOOST_CHECK(parser.load(scdPath.string()));
 
-    std::vector<izenelib::util::UString> idList;
+    std::vector<PropertyValueType> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
 
     std::string docid("DOCID");
-    izenelib::util::UString one("1", izenelib::util::UString::UTF_8);
 
     BOOST_CHECK(idList.size() == 1);
-    BOOST_CHECK_EQUAL(one, idList.front());
+    BOOST_CHECK_EQUAL("1", idList.front());
 
     int docNum = 0;
     for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
@@ -310,7 +308,7 @@ BOOST_AUTO_TEST_CASE(testOnlyOneDOCID)
 
     // <DOCID>
     BOOST_CHECK((*doc)[0].first == docid);
-    BOOST_CHECK_EQUAL(one, (*doc)[0].second);
+    BOOST_CHECK_EQUAL("1", (*doc)[0].second);
 
     ++docNum;
     }
@@ -332,16 +330,16 @@ BOOST_AUTO_TEST_CASE(testOnlyOneDoc)
 
     BOOST_CHECK(parser.load(scdPath.string()));
 
-    std::vector<izenelib::util::UString> idList;
+    std::vector<PropertyValueType> idList;
     BOOST_CHECK(parser.getDocIdList(idList));
 
     std::string docid("DOCID");
     std::string title("Title");
     std::string content("Content");
 
-    izenelib::util::UString one("1", izenelib::util::UString::UTF_8);
-    izenelib::util::UString titleOne("Title 1", izenelib::util::UString::UTF_8);
-    izenelib::util::UString contentOne("Content 1", izenelib::util::UString::UTF_8);
+    PropertyValueType one("1");
+    PropertyValueType titleOne("Title 1");
+    PropertyValueType contentOne("Content 1");
 
     BOOST_CHECK(idList.size() == 1);
     BOOST_CHECK_EQUAL(one, idList.front());
@@ -390,10 +388,9 @@ BOOST_AUTO_TEST_CASE(testNoTrailingNewLine)
     std::string title("Title");
     std::string content("Content");
 
-    izenelib::util::UString one("1", izenelib::util::UString::UTF_8);
-    izenelib::util::UString titleOne("Title 1", izenelib::util::UString::UTF_8);
-    izenelib::util::UString contentOne("Content 1", izenelib::util::UString::UTF_8);
-
+    PropertyValueType one("1");
+    PropertyValueType titleOne("Title 1");
+    PropertyValueType contentOne("Content 1");
 
     for (ScdParser::iterator doc_iter = parser.begin(); doc_iter != parser.end(); ++doc_iter)
     {
@@ -445,9 +442,9 @@ BOOST_AUTO_TEST_CASE(testCarriageReturn)
         BOOST_CHECK_EQUAL(doc->size(), 3);
 
         std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-        izenelib::util::UString idUStr(idStr, izenelib::util::UString::UTF_8);
-        izenelib::util::UString titleUStr("Title " + idStr, izenelib::util::UString::UTF_8);
-        izenelib::util::UString contentUStr("Content \r ABC " + idStr, izenelib::util::UString::UTF_8);
+        PropertyValueType idUStr(idStr);
+        PropertyValueType titleUStr("Title " + idStr);
+        PropertyValueType contentUStr("Content \r ABC " + idStr);
 
         // <DOCID>
         BOOST_CHECK((*doc)[0].first == docid);
@@ -500,10 +497,10 @@ BOOST_AUTO_TEST_CASE(testUserId)
     BOOST_CHECK(doc->size() == 4);
 
     std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-    izenelib::util::UString idUStr("user_" + idStr, izenelib::util::UString::UTF_8);
-    izenelib::util::UString genderUStr("gender_" + idStr, izenelib::util::UString::UTF_8);
-    izenelib::util::UString ageUStr("age_" + idStr, izenelib::util::UString::UTF_8);
-    izenelib::util::UString areaUStr("area_" + idStr, izenelib::util::UString::UTF_8);
+    PropertyValueType idUStr("user_" + idStr);
+    PropertyValueType genderUStr("gender_" + idStr);
+    PropertyValueType ageUStr("age_" + idStr);
+    PropertyValueType areaUStr("area_" + idStr);
 
     // <UESRID>
     BOOST_CHECK((*doc)[0].first == userid);
@@ -562,11 +559,11 @@ BOOST_AUTO_TEST_CASE(testItemId)
     BOOST_CHECK(doc->size() == 5);
 
     std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-    izenelib::util::UString idUStr("item_" + idStr, izenelib::util::UString::UTF_8);
-    izenelib::util::UString nameUStr("名字_" + idStr, izenelib::util::UString::UTF_8);
-    izenelib::util::UString priceUStr("price_" + idStr, izenelib::util::UString::UTF_8);
-    izenelib::util::UString linkUStr("www.shop.com/product/item_" + idStr, izenelib::util::UString::UTF_8);
-    izenelib::util::UString categoryUStr("分类_" + idStr, izenelib::util::UString::UTF_8);
+    PropertyValueType idUStr("item_" + idStr);
+    PropertyValueType nameUStr("名字_" + idStr);
+    PropertyValueType priceUStr("price_" + idStr);
+    PropertyValueType linkUStr("www.shop.com/product/item_" + idStr);
+    PropertyValueType categoryUStr("分类_" + idStr);
 
     // <UESRID>
     BOOST_CHECK((*doc)[0].first == userid);
@@ -633,10 +630,10 @@ BOOST_AUTO_TEST_CASE(testBracketInPropertyValue)
         BOOST_CHECK(doc->size() == 4);
 
         std::string idStr = boost::lexical_cast<std::string>(docNum + 1);
-        izenelib::util::UString idUStr("<user_>" + idStr, izenelib::util::UString::UTF_8);
-        izenelib::util::UString genderUStr("<gender_>" + idStr, izenelib::util::UString::UTF_8);
-        izenelib::util::UString ageUStr("<age_>" + idStr, izenelib::util::UString::UTF_8);
-        izenelib::util::UString areaUStr("<area_>" + idStr, izenelib::util::UString::UTF_8);
+        PropertyValueType idUStr("<user_>" + idStr);
+        PropertyValueType genderUStr("<gender_>" + idStr);
+        PropertyValueType ageUStr("<age_>" + idStr);
+        PropertyValueType areaUStr("<area_>" + idStr);
 
         // <UESRID>
         BOOST_CHECK((*doc)[0].first == userid);

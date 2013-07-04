@@ -198,8 +198,7 @@ void MultiDocSummarizationSubManager::dealTotalScd(const std::string& filename
                 }
                 else
                 {
-                    std::string content_str;
-                    p->second.convertString(content_str, izenelib::util::UString::UTF_8);
+                    const std::string& content_str = p->second;
                     outNewScd << "<" << p->first << ">" << content_str << endl;
                 }
             }

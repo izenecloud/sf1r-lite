@@ -32,7 +32,7 @@ class ScdParser
 
     /// @brief  Reads a document from the loaded SCD file, when given a DOCID value.
     //          prerequisites: SCD file must be loaded by load(), and getDocIdList() must be called.
-    bool getDoc(const izenelib::util::UString & docId, SCDDoc& doc);
+    bool getDoc(const PropertyValueType & docId, SCDDoc& doc);
 
 public:
     ScdParser();
@@ -64,19 +64,9 @@ public:
     }
 
     /// @brief  A utility function to get all the DOCID values from an SCD
-    bool getDocIdList(std::vector<izenelib::util::UString> & list);
+    bool getDocIdList(std::vector<PropertyValueType> & list);
 
     bool getDocIdList(std::vector<DocIdPair > & list);
-
-
-    /// @brief gets the encoding type from the config
-    inline izenelib::util::UString::EncodingType& getEncodingType()
-    {
-        return encodingType_;
-    };
-
-
-
 
     class iterator
     {
@@ -127,8 +117,6 @@ public:
 
         SCDDocPtr doc_;
 
-        izenelib::util::UString::EncodingType codingType_;
-
         boost::shared_ptr<izenelib::util::izene_streambuf> buffer_;
 
         std::string docDelimiter_;
@@ -178,9 +166,7 @@ private:
 
     long size_;
 
-    izenelib::util::UString::EncodingType encodingType_;
-
-    izenelib::am::rde_hash<izenelib::util::UString, long> docOffsetList_;
+    izenelib::am::rde_hash<PropertyValueType, long> docOffsetList_;
 
     const std::string docDelimiter_; /// the boundary between each docs
 };

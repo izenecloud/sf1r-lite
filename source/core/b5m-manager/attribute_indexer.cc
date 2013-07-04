@@ -1402,7 +1402,7 @@ void AttributeIndexer::BuildProductDocuments_()
             product_doc.property[property_name] = p->second;
             if(property_name=="AID")
             {
-                p->second.convertString(aid_str, UString::UTF_8);
+                aid_str = p->second;
             }
         }
         if(aid_str.length()==0)
