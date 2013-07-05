@@ -32,7 +32,7 @@ class Job
 
   def initialize(config, property)
       @@config = YAML::load_file CONFIG_FILE
-      host = @@config["sf1"]
+      host = @@config["nginx"]
       ip = host["ip"]
       port = host["port"]
       @@uri_prefix = "http://#{ip}:#{port}/sf1r"

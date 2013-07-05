@@ -1,4 +1,4 @@
-sf1:
+nginx:
   ip: localhost
   port: 8888
 
