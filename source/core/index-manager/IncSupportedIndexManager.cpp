@@ -23,6 +23,14 @@ void IncSupportedIndexManager::optimize(bool wait)
         inc_index_list_[i]->optimize(wait);
 }
 
+bool IncSupportedIndexManager::isRealTime()
+{
+    for (size_t i = 0; i< inc_index_list_.size(); ++i)
+        if (inc_index_list_[i]->isRealTime())
+            return true;
+    return false;
+}
+
 void IncSupportedIndexManager::preBuildFromSCD(size_t total_filesize)
 {
     for (size_t i = 0; i< inc_index_list_.size(); ++i)

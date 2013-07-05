@@ -299,6 +299,7 @@ private:
     std::vector<izenelib::util::concurrent_queue<IndexDocInfo>* > asynchronousTasks_;
     std::vector<boost::thread*> index_thread_workers_;
     bool* index_thread_status_;
+    bool is_real_time_;
 };
 
 }

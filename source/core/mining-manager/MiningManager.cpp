@@ -2232,8 +2232,8 @@ bool MiningManager::GetSuffixMatch(
         double minor_score = 0;
         unsigned int major_highscore_size = 0;
         unsigned int major_size = major_tokens.size();
-        unsigned int minor_size = minor_tokens.size();
-        unsigned int total_size = major_size + minor_size;
+        //unsigned int minor_size = minor_tokens.size();
+        //unsigned int total_size = major_size + minor_size;
         std::list<std::pair<UString, double> > boundary_minor_tokens;
         std::list<std::pair<UString, double> > boundary_major_tokens;
 

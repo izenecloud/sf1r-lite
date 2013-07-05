@@ -375,6 +375,11 @@ void InvertedIndexManager::optimize(bool wait)
         waitForMergeFinish();
 }
 
+bool InvertedIndexManager::isRealTime()
+{
+    return izenelib::ir::indexmanager::Indexer::isRealTime();
+}
+
 void InvertedIndexManager::preBuildFromSCD(size_t total_filesize)
 {
     //here, try to set the index mode(default[batch] or realtime)

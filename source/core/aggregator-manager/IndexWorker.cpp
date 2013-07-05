@@ -105,6 +105,7 @@ IndexWorker::IndexWorker(
         index_thread_workers_.push_back(worker_thread);
     }
     updateBuffer_.resize(INDEX_THREAD);
+    is_real_time_ = false;
 }
 
 IndexWorker::~IndexWorker()
@@ -333,6 +334,8 @@ bool IndexWorker::buildCollection(unsigned int numdoc, const std::vector<std::st
     indexProgress_.currentFileIdx = 1;
 
     inc_supported_index_manager_.preBuildFromSCD(indexProgress_.totalFileSize_);
+
+    is_real_time_ = inc_supported_index_manager_.isRealTime();
 
     {
         DirectoryGuard dirGuard(directoryRotator_.currentDirectory().get());
@@ -1339,9 +1342,35 @@ bool IndexWorker::insertOrUpdateSCD_(
         if (workerid == -1)
             continue;
 
-        asynchronousTasks_[workerid]->push(IndexDocInfo(docptr, oldId, docId,
-                scdType, updateType, timestamp));
+        if (is_real_time_)
+        {
+            // real time can not using multi thread because of the inverted index in 
+            // the real time can not handle the out-of-order docid list.
+            std::string source = "";
+            time_t new_timestamp = timestamp;
+            document.clear();
+            old_rtype_doc.clear();
 
+            if (!prepareDocument_(*(docptr), document, old_rtype_doc,
+                    oldId, docId, source, new_timestamp, updateType, scdType))
+                continue;
+
+            if (scdType == INSERT_SCD || oldId == 0)
+            {
+                insertDoc_(0, document, timestamp, true);
+            }
+            else
+            {
+                if (!updateDoc_(0, oldId, document, old_rtype_doc, timestamp, updateType, true))
+                    continue;
+                ++numUpdatedDocs_;
+            }
+        }
+        else
+        {
+            asynchronousTasks_[workerid]->push(IndexDocInfo(docptr, oldId, docId,
+                    scdType, updateType, timestamp));
+        }
         if (!source.empty())
         {
             ++productSourceCount_[source];
@@ -1351,23 +1380,29 @@ bool IndexWorker::insertOrUpdateSCD_(
         boost::this_thread::interruption_point();
     } // end of for loop for all documents
 
-    for (size_t i = 0; i < asynchronousTasks_.size(); ++i)
+    if (is_real_time_)
     {
-        asynchronousTasks_[i]->push(IndexDocInfo());
+        //flushUpdateBuffer_(0);
     }
-    // wait flush finish.
-    for (size_t i = 0; i < asynchronousTasks_.size(); ++i)
+    else
     {
-        while(!updateBuffer_[i].empty() || !asynchronousTasks_[i]->empty() ||
-            index_thread_status_[i])
+        for (size_t i = 0; i < asynchronousTasks_.size(); ++i)
         {
-            sleep(2);
-            //LOG(INFO) << "index thread still buffering ... ";
+            asynchronousTasks_[i]->push(IndexDocInfo());
         }
+        // wait flush finish.
+        for (size_t i = 0; i < asynchronousTasks_.size(); ++i)
+        {
+            while(!updateBuffer_[i].empty() || !asynchronousTasks_[i]->empty() ||
+                index_thread_status_[i])
+            {
+                sleep(2);
+                //LOG(INFO) << "index thread still buffering ... ";
+            }
+        }
+        sleep(1);
+        LOG(INFO) << "scd finished index for all thread.";
     }
-    sleep(1);
-    LOG(INFO) << "scd finished index for all thread.";
-    //flushUpdateBuffer_();
     return true;
 }
 
@@ -1465,7 +1500,7 @@ bool IndexWorker::deleteSCD_(ScdParser& parser, time_t timestamp)
 
         if (!deleteDoc_(*iter, timestamp))
         {
-            //LOG(WARNING) << "Cannot delete removed Document. docid. " << *iter;
+            LOG(WARNING) << "Cannot delete removed Document. docid. " << *iter;
             continue;
         }
         ++indexProgress_.currentFilePos_;
