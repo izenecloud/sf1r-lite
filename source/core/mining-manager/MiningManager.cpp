@@ -2644,7 +2644,8 @@ bool MiningManager::initCategoryClassifyTable_(const ProductRankingConfig& rankC
     }
 
     miningTaskBuilder_->addTask(new CategoryClassifyMiningTask(*document_manager_,
-                                                               *categoryClassifyTable_));
+                                                               *categoryClassifyTable_,
+                                                               classifyConfig.isDebug));
     return true;
 }
 

@@ -2193,6 +2193,7 @@ void CollectionConfig::parseScoreAttr(
 {
     getAttribute(scoreNode, "property", scoreConfig.propName, false);
     getAttribute_FloatType(scoreNode, "weight", scoreConfig.weight, false);
+    getAttribute(scoreNode, "debug", scoreConfig.isDebug, false);
 }
 
 void CollectionConfig::parseRecommendBundleParam(const ticpp::Element * recParamNode, CollectionMeta & collectionMeta)

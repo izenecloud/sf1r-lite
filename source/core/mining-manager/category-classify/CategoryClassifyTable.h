@@ -26,6 +26,7 @@ public:
     bool open();
     bool flush();
 
+    const std::string& dirPath() const { return dirPath_; }
     const std::string& propName() const { return propName_; }
     std::size_t docIdNum() const { return categories_.size(); }
 

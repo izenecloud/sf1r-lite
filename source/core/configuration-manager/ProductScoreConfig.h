@@ -35,6 +35,8 @@ struct ProductScoreConfig
 
     score_t weight;
 
+    bool isDebug; /// whether print debug message
+
     std::vector<ProductScoreConfig> factors;
 
     ProductScoreConfig();
@@ -53,6 +55,7 @@ private:
         ar & type;
         ar & propName;
         ar & weight;
+        ar & isDebug;
         ar & factors;
     }
 };
