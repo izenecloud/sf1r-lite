@@ -128,6 +128,7 @@ public:
     void makeRangeQuery(QueryFiltering::FilteringOperation filterOperation, const std::string& property,
            const std::vector<PropertyValue>& filterParam, boost::shared_ptr<FilterBitmapT> filterBitMap);
 
+    virtual bool isRealTime();
     virtual void flush(bool force = true);
     virtual void optimize(bool wait);
     virtual void preBuildFromSCD(size_t total_filesize);
