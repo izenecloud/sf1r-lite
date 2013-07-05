@@ -2505,7 +2505,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
         KeywordTag& ki = keyword_vector[i];
         std::string str;
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
-//        cout<<"keyword: "<<str<<endl;
+        cout<<"keyword: "<<str<<endl;
         if(!(ki.category_name_apps.empty()))
         {
             std::string term;
@@ -2527,9 +2527,11 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                        <<" depth: " <<category_list_[it->cid].depth
                        <<" has_spu: " << category_list_[it->cid].has_spu<<endl;
 */
+/*
                      std::string man_category = category_list_[it->cid].name.substr(0,category_list_[it->cid].name.find_first_of(">"));
                      if(man_category.find(term) != std::string::npos)
                          is_res = true;
+*/
                  }
                  if(is_res)
                  {
@@ -2542,7 +2544,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             if(j<keyword_vector.size())
                 if(keyword_vector[j].positions[0].begin <= ki.positions[0].end)
                     i++;
-            continue;
+//            continue;
         }
         //按照位置重排关键词顺序
         std::vector<Position>::iterator it;
@@ -2575,13 +2577,46 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
     }
 */
 //    cout<<"before combine"<<endl;
+    KeywordVector::iterator ite = temp_k.begin();
+    KeywordVector tk;
+    while(ite != temp_k.end())
+    {
+        KeywordVector::iterator res = ite;
+        KeywordVector::iterator it = ite;
+        it++;
+        while(it!= temp_k.end())
+        {
+            std::string s;
+            if(res->positions[0].begin >= it->positions[0].begin && res->positions[0].end <= it->positions[0].end)
+                res = it;
+            else if(res->positions[0].begin <= it->positions[0].begin && res->positions[0].end >= it->positions[0].end)
+            {
+            }
+            else break;
+            it++;
+        }
+        ite = it;
+        tk.push_back(*res);
+    }
+    temp_k.clear();
+    temp_k = tk;
+
+    for(KeywordVector::iterator iterat=temp_k.begin();iterat<temp_k.end();iterat++)
+    {
+        cout<<iterat->positions[0].begin<<"  "<<iterat->positions[0].end<<endl;
+        KeywordVector::iterator j= iterat;
+        j++;
+        if( j!=temp_k.end() && j->positions[0].begin < iterat->positions[0].end)
+            temp_k.erase(j);
+//        cout<<"begin : "<<i->positions[0].begin<<"  end: "<<j->positions[0].end<<endl;
+    }
     for(uint32_t i=0;i<temp_k.size();i++)
     {
         KeywordTag& ki = temp_k[i];
         std::string term, str;
         ki.text.convertString(str, izenelib::util::UString::UTF_8);
         term = str;
-//        cout<<"Term: "<<term<<endl;
+        cout<<"Term: "<<term<<endl;
         uint32_t j = i;
         boost::unordered_map<uint32_t, uint32_t> spus;
         std::vector<AttributeApp>::iterator it1 = ki.attribute_apps.begin();
@@ -2636,15 +2671,17 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             spus[it1->spu_id]=1;
             it1++;
         }
-        if(brand_count > 5)
+        if(brand_count > 0)
             is_brand = true;
-        if(model_count > 5)
+        if(model_count > 0)
             is_model = true;
-
+        if(is_brand)
         while(j<temp_k.size()-1)
         {
             j++;
-            if(temp_k[j].positions[0].begin > temp_k[i].positions[0].end)
+            cout<<"j: "<<j<<" i: "<<i<<endl;
+            cout<<temp_k[j].positions[0].begin<<"  "<<temp_k[i].positions[0].end<<endl;
+            if(temp_k[j].positions[0].begin > temp_k[i].positions[0].end + 1 )
             {
                 break;
             }
@@ -2660,6 +2697,7 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 sp[it2->spu_id]=1;
                 it2++;
             }
+            cout<<sp.size()<<endl;
             temp_k[j].text.convertString(str, izenelib::util::UString::UTF_8);
             if(sp.size() == 0)
             {
@@ -2669,13 +2707,14 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
             }
             spus.clear();
             spus = sp;
-//            cout<<"sp size: "<<sp.size()<<endl;
+            cout<<"sp size: "<<sp.size()<<endl;
             temp_k[j].text.convertString(str,izenelib::util::UString::UTF_8);
             if(temp_k[j].positions[0].begin == temp_k[i].positions[0].end + 1)
                 term += " "+str;
             else
                 term += str;
             i++;
+            cout<<term<<endl;
         }
 //        cout<<"Term res: "<<term<<"  "<<temp_k[i].positions[0].begin<<endl;
 
@@ -2704,7 +2743,8 @@ void ProductMatcher::ExtractKeywordsFromPage(const UString& text, std::list<std:
                 note[term]=1;
                 UString usterm;
                 usterm.assign(term, izenelib::util::UString::UTF_8);
-                res_brand.push_back(std::make_pair(usterm, std::make_pair(ki.positions[0].begin, weight)));
+//                if(term.compare(str) != 0)
+                    res_brand.push_back(std::make_pair(usterm, std::make_pair(ki.positions[0].begin, weight)));
             }
             else if(is_model)
             {
